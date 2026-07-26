@@ -1,0 +1,460 @@
+Use the following as the master prompt for your development team or an AI coding agent (such as Claude Code, Cursor, or Codex). It clearly defines **Stages 1 and 2**, emphasizes the cost-saving approach, and sets the architectural foundation for future AI integration.
+
+# IQRA Development Prompt – Stage 1 & Stage 2
+
+You are the Lead Solution Architect and Senior Full-Stack Engineer responsible for building the first version of **Iqra**, an AI-powered Teaching Assistant designed specifically for the Jordanian education system.
+
+## Project Vision
+
+Iqra helps teachers save time by generating lesson plans, worksheets, quizzes, exams, homework, classroom activities, and teaching resources.
+
+The application is **not** a chatbot. It is an AI-powered teaching platform whose intelligence will eventually come from its deep understanding of the Jordanian curriculum.
+
+For the first development stages, we are **not connecting to any AI providers** (OpenAI, Gemini, Claude, Azure OpenAI, etc.) and **will not use any paid OCR or PDF-processing services**.
+
+The system must be architected so these capabilities can be plugged in later without major code changes.
+
+---
+
+# Development Principles
+
+* Build production-quality, scalable architecture.
+* Use clean architecture and modular design.
+* Keep the AI layer completely separated from business logic.
+* Every module should be reusable.
+* Build REST APIs.
+* Follow SOLID principles.
+* Use TypeScript throughout the backend.
+* Document every API.
+* Use Git best practices.
+* Write unit tests where appropriate.
+
+---
+
+# Technology Stack
+
+## Mobile
+
+Flutter
+
+## Backend
+
+NestJS (TypeScript)
+
+## Database
+
+PostgreSQL
+
+## Cache
+
+Redis
+
+## Authentication
+
+Firebase Auth or JWT authentication
+
+## Storage
+
+Local storage during development (abstract storage layer so cloud storage can be added later)
+
+---
+
+# Stage 1 – Core Platform Foundation
+
+## Authentication
+
+Develop:
+
+* Email login
+* Email registration
+* Password reset
+* JWT authentication
+* User roles
+
+Roles:
+
+* Teacher
+* School Admin
+* System Admin
+
+---
+
+## User Profile
+
+Teachers should have:
+
+* Name
+* Email
+* Phone
+* School
+* Subjects
+* Grades taught
+* Language
+* Profile photo
+
+---
+
+## School Module
+
+Create CRUD APIs for:
+
+Schools
+
+Fields:
+
+* Name
+* Logo
+* Academic year
+* Country
+* City
+
+---
+
+## Grade Module
+
+Grades:
+
+Grade 1
+
+...
+
+Grade 12
+
+CRUD APIs.
+
+---
+
+## Subject Module
+
+Each subject belongs to a grade.
+
+Examples:
+
+Arabic
+
+English
+
+Mathematics
+
+Science
+
+Islamic Studies
+
+Social Studies
+
+Computer
+
+etc.
+
+---
+
+## Dashboard
+
+Create a teacher dashboard with placeholders for:
+
+Today's classes
+
+Recent lessons
+
+Recent worksheets
+
+Notifications
+
+Quick actions
+
+No AI functionality yet.
+
+---
+
+## Notifications
+
+Create notification architecture.
+
+Support:
+
+* In-app
+* Push (future)
+
+---
+
+## Settings
+
+Language
+
+Arabic
+
+English
+
+Theme
+
+Profile
+
+Password
+
+---
+
+## Database
+
+Design normalized tables.
+
+Include:
+
+Users
+
+Schools
+
+Subjects
+
+Grades
+
+Teacher Subjects
+
+Teacher Grades
+
+Notifications
+
+Roles
+
+Permissions
+
+---
+
+## REST APIs
+
+Create documented REST endpoints for every module.
+
+---
+
+# Stage 2 – Curriculum Management System
+
+This stage prepares the platform for AI while avoiding any AI or document-processing costs.
+
+---
+
+## Curriculum Structure
+
+The hierarchy should be:
+
+Grade
+
+↓
+
+Subject
+
+↓
+
+Book
+
+↓
+
+Unit
+
+↓
+
+Lesson
+
+↓
+
+Learning Outcomes
+
+---
+
+## Books
+
+Create CRUD.
+
+Fields:
+
+* Title
+* Subject
+* Grade
+* Academic year
+* Language
+* Edition
+
+Allow uploading the PDF only as a reference document.
+
+Do NOT process or read the PDF.
+
+---
+
+## Units
+
+Fields:
+
+* Name
+* Description
+* Order
+
+CRUD.
+
+---
+
+## Lessons
+
+Fields:
+
+* Lesson title
+* Unit
+* Estimated duration
+* Objectives
+* Keywords
+* Teacher notes
+
+CRUD.
+
+---
+
+## Learning Outcomes
+
+Each lesson may have multiple outcomes.
+
+Allow adding:
+
+* Description
+* Bloom's level
+* Skills
+* Notes
+
+CRUD.
+
+---
+
+## Curriculum References
+
+Allow attaching:
+
+* PDF
+* Images
+* Videos
+* External links
+
+Store only metadata and file location.
+
+Do NOT analyze or process content.
+
+---
+
+## Admin Portal
+
+Develop a web-based admin interface to manage:
+
+Schools
+
+Grades
+
+Subjects
+
+Books
+
+Units
+
+Lessons
+
+Learning Outcomes
+
+Resources
+
+---
+
+## Search
+
+Develop database search only.
+
+Search by:
+
+Grade
+
+Subject
+
+Book
+
+Lesson
+
+Keyword
+
+Do NOT implement semantic search.
+
+---
+
+## Future AI Preparation
+
+Although AI is not connected, create an abstraction layer.
+
+Example:
+
+AIService
+
+LessonGenerationService
+
+WorksheetGenerationService
+
+ExamGenerationService
+
+Each service should currently return mock/sample data.
+
+The application must never call OpenAI directly from controllers.
+
+All AI requests should pass through the AI service layer so providers can be swapped later.
+
+---
+
+## Mock Data
+
+Return realistic sample outputs for:
+
+Lesson Plan
+
+Worksheet
+
+Quiz
+
+Exam
+
+Homework
+
+Teacher Report
+
+Parent Message
+
+These mock responses should simulate the final AI experience.
+
+---
+
+## Security
+
+Role-based authorization.
+
+JWT authentication.
+
+Input validation.
+
+Rate limiting.
+
+Secure file uploads.
+
+Audit logs.
+
+---
+
+## Deliverables
+
+At the end of Stages 1 and 2, the following should be complete:
+
+* Fully functional backend.
+* Flutter mobile application shell.
+* Teacher authentication.
+* User profiles.
+* School management.
+* Curriculum management.
+* Admin portal.
+* File upload for curriculum resources.
+* Database schema.
+* REST APIs.
+* Mock AI service layer.
+* Complete documentation.
+* Production-ready architecture for future AI integration.
+
+The code should be clean, scalable, well-documented, and ready for Stage 3, where real AI providers and curriculum intelligence will be integrated without requiring major architectural changes.
+
+This prompt should give the development team enough direction to build a strong, extensible foundation while keeping your initial development costs as low as possible.
