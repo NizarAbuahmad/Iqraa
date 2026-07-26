@@ -10,7 +10,8 @@
   },
   "private": true,
   "dependencies": {
-    "@replit/connectors-sdk": "^0.4.1"
+    "@replit/connectors-sdk": "^0.4.1",
+    "pdf-parse": "^2.4.5"
   },
   "devDependencies": {
     "prettier": "^3.9.5",
