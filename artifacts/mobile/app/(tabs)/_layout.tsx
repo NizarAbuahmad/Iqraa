@@ -1,7 +1,8 @@
 import React from 'react';
 import { Platform, StyleSheet, useColorScheme, View } from 'react-native';
 import { useColors } from '@/hooks/useColors';
-import { Feather } from '@expo/vector-icons';
+import { useLanguage } from '@/context/LanguageContext';
+import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { Tabs } from 'expo-router';
@@ -10,27 +11,28 @@ import { SymbolView } from 'expo-symbols';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function NativeTabLayout() {
+  const { t } = useLanguage();
   return (
     <NativeTabs>
       <NativeTabs.Trigger name="index">
         <Icon sf={{ default: 'house', selected: 'house.fill' }} />
-        <Label>Home</Label>
+        <Label>{t('tabHome')}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="curriculum">
-        <Icon sf={{ default: 'book', selected: 'book.fill' }} />
-        <Label>Curriculum</Label>
+        <Icon sf={{ default: 'books.vertical', selected: 'books.vertical.fill' }} />
+        <Label>{t('tabCurriculum')}</Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="ai-tools">
-        <Icon sf={{ default: 'sparkles', selected: 'sparkles' }} />
-        <Label>AI Tools</Label>
+      <NativeTabs.Trigger name="iqra">
+        <Icon sf={{ default: 'bubble.left.and.bubble.right', selected: 'bubble.left.and.bubble.right.fill' }} />
+        <Label>{t('tabIqra')}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="notifications">
         <Icon sf={{ default: 'bell', selected: 'bell.fill' }} />
-        <Label>Alerts</Label>
+        <Label>{t('tabAlerts')}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="profile">
-        <Icon sf={{ default: 'person', selected: 'person.fill' }} />
-        <Label>Profile</Label>
+        <Icon sf={{ default: 'person.circle', selected: 'person.circle.fill' }} />
+        <Label>{t('tabProfile')}</Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );
@@ -43,6 +45,7 @@ function ClassicTabLayout() {
   const isIOS = Platform.OS === 'ios';
   const isWeb = Platform.OS === 'web';
   const insets = useSafeAreaInsets();
+  const { t } = useLanguage();
 
   return (
     <Tabs
@@ -74,64 +77,87 @@ function ClassicTabLayout() {
         tabBarLabelStyle: { fontFamily: 'Inter_500Medium', fontSize: 10 },
       }}
     >
+      {/* ── Home ──────────────────────────────────────────── */}
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) =>
+          title: t('tabHome'),
+          tabBarIcon: ({ color, focused }) =>
             isIOS ? (
-              <SymbolView name="house" tintColor={color} size={22} />
+              <SymbolView name={focused ? 'house.fill' : 'house'} tintColor={color} size={22} />
             ) : (
-              <Feather name="home" size={22} color={color} />
+              <Ionicons name={focused ? 'home' : 'home-outline'} size={22} color={color} />
             ),
         }}
       />
+
+      {/* ── Curriculum ────────────────────────────────────── */}
       <Tabs.Screen
         name="curriculum"
         options={{
-          title: 'Curriculum',
-          tabBarIcon: ({ color }) =>
+          title: t('tabCurriculum'),
+          tabBarIcon: ({ color, focused }) =>
             isIOS ? (
-              <SymbolView name="book" tintColor={color} size={22} />
+              <SymbolView name={focused ? 'books.vertical.fill' : 'books.vertical'} tintColor={color} size={22} />
             ) : (
-              <Feather name="book" size={22} color={color} />
+              <Ionicons name={focused ? 'library' : 'library-outline'} size={22} color={color} />
             ),
         }}
       />
+
+      {/* ── iQra Chat ─────────────────────────────────────── */}
       <Tabs.Screen
-        name="ai-tools"
+        name="iqra"
         options={{
-          title: 'AI Tools',
-          tabBarIcon: ({ color }) =>
+          title: t('tabIqra'),
+          tabBarIcon: ({ color, focused }) =>
             isIOS ? (
-              <SymbolView name="sparkles" tintColor={color} size={22} />
+              <SymbolView
+                name={focused ? 'bubble.left.and.bubble.right.fill' : 'bubble.left.and.bubble.right'}
+                tintColor={color}
+                size={22}
+              />
             ) : (
-              <Feather name="zap" size={22} color={color} />
+              <Ionicons name={focused ? 'chatbubble-ellipses' : 'chatbubble-ellipses-outline'} size={22} color={color} />
             ),
+          tabBarBadge: undefined,
         }}
       />
+
+      {/* ── Notifications ─────────────────────────────────── */}
       <Tabs.Screen
         name="notifications"
         options={{
-          title: 'Alerts',
-          tabBarIcon: ({ color }) =>
+          title: t('tabAlerts'),
+          tabBarIcon: ({ color, focused }) =>
             isIOS ? (
-              <SymbolView name="bell" tintColor={color} size={22} />
+              <SymbolView name={focused ? 'bell.fill' : 'bell'} tintColor={color} size={22} />
             ) : (
-              <Feather name="bell" size={22} color={color} />
+              <Ionicons name={focused ? 'notifications' : 'notifications-outline'} size={22} color={color} />
             ),
         }}
       />
+
+      {/* ── Profile ───────────────────────────────────────── */}
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
-          tabBarIcon: ({ color }) =>
+          title: t('tabProfile'),
+          tabBarIcon: ({ color, focused }) =>
             isIOS ? (
-              <SymbolView name="person" tintColor={color} size={22} />
+              <SymbolView name={focused ? 'person.circle.fill' : 'person.circle'} tintColor={color} size={22} />
             ) : (
-              <Feather name="user" size={22} color={color} />
+              <Ionicons name={focused ? 'person-circle' : 'person-circle-outline'} size={22} color={color} />
             ),
+        }}
+      />
+
+      {/* ── AI Tools (hidden from tab bar, still routable) ── */}
+      <Tabs.Screen
+        name="ai-tools"
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
         }}
       />
     </Tabs>

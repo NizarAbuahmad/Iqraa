@@ -1,0 +1,308 @@
+/**
+ * Bilingual strings for Iqra app (Arabic / English).
+ * Default language: Arabic (ar).
+ * Usage: const { t } = useLanguage(); then t('key')
+ */
+
+export type Lang = 'ar' | 'en';
+
+const translations = {
+  ar: {
+    // App
+    appName: 'إقرأ',
+    appTagline: 'مساعد التدريس الذكي',
+
+    // Tabs
+    tabHome: 'الرئيسية',
+    tabCurriculum: 'المنهج',
+    tabIqra: 'إقرأ',
+    tabAlerts: 'التنبيهات',
+    tabProfile: 'الملف الشخصي',
+
+    // Auth
+    welcomeBack: 'مرحبًا بعودتك',
+    signInSubtitle: 'سجّل دخولك إلى حسابك',
+    emailAddress: 'البريد الإلكتروني',
+    emailPlaceholder: 'you@school.edu.jo',
+    password: 'كلمة المرور',
+    passwordPlaceholder: 'كلمة مرورك',
+    forgotPassword: 'نسيت كلمة المرور؟',
+    signIn: 'تسجيل الدخول',
+    newToIqra: 'مستخدم جديد؟',
+    createAccount: 'إنشاء حساب',
+
+    // Register
+    createYourAccount: 'إنشاء حسابك',
+    registerSubtitle: 'انضم إلى آلاف المعلمين في الأردن',
+    fullName: 'الاسم الكامل',
+    fullNamePlaceholder: 'اسمك الكامل',
+    schoolName: 'اسم المدرسة',
+    schoolPlaceholder: 'مدرستك',
+    confirmPassword: 'تأكيد كلمة المرور',
+    alreadyHaveAccount: 'لديك حساب بالفعل؟',
+
+    // Forgot password
+    resetPassword: 'إعادة تعيين كلمة المرور',
+    resetSubtitle: 'أدخل بريدك الإلكتروني وسنرسل لك رابط الإعادة',
+    sendResetLink: 'إرسال رابط الإعادة',
+    checkEmail: 'تحقق من بريدك الإلكتروني',
+    resetSentMsg: 'أرسلنا رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني',
+    backToSignIn: 'العودة لتسجيل الدخول',
+
+    // Dashboard
+    goodMorning: 'صباح الخير',
+    goodAfternoon: 'مساء الخير',
+    goodEvening: 'مساء النور',
+    teacher: 'معلم',
+    myMaterials: 'موادي',
+    lessonsThisWeek: 'دروس هذا الأسبوع',
+    subjects: 'المواد',
+    quickActions: 'الإجراءات السريعة',
+    recentMaterials: 'المواد الأخيرة',
+    lessonPlan: 'خطة الدرس',
+    worksheet: 'ورقة العمل',
+    quiz: 'اختبار',
+    curriculum: 'المنهج',
+
+    // Curriculum
+    curriculumTitle: 'المنهج الدراسي',
+    searchSubjects: 'ابحث في المواد...',
+    grade: 'الصف',
+    subjects_count: (n: number) => `${n} مادة`,
+    noSubjectsFound: 'لا توجد مواد',
+    books: 'الكتب',
+    units: 'الوحدات',
+    lessons: 'الدروس',
+    outcomes: 'النتاجات التعليمية',
+    objectives: 'الأهداف',
+    keywords: 'الكلمات المفتاحية',
+    teacherNotes: 'ملاحظات المعلم',
+    generateAILesson: 'توليد خطة درس بالذكاء الاصطناعي',
+
+    // iQra Chat
+    iqraChatTitle: 'إقرأ',
+    iqraChatSubtitle: 'مساعدك الذكي',
+    iqraWelcome: 'مرحبًا! أنا إقرأ، مساعدك الذكي 📚\nيمكنني مساعدتك في الكيمياء والرياضيات للصف العاشر.\nاسألني أي سؤال من الكتاب المدرسي!',
+    iqraPlaceholder: 'اكتب سؤالك هنا...',
+    iqraSend: 'إرسال',
+    iqraSuggested: 'أسئلة مقترحة',
+    iqraNoResults: 'لم أجد معلومات حول هذا الموضوع في الكتب المتوفرة حاليًا. جرّب صياغة مختلفة أو اسأل عن موضوع آخر من المنهج.',
+    iqraSource: 'المصدر',
+    iqraUnit: 'الوحدة',
+    iqraKeyTerms: 'المصطلحات الأساسية',
+    iqraRules: 'القواعد والصيغ',
+    iqraExamples: 'أمثلة',
+    iqraTyping: 'إقرأ تفكر...',
+    teacherMode: 'وضع المعلم',
+    studentMode: 'وضع الطالب',
+
+    // Profile
+    profileTitle: 'الملف الشخصي',
+    mySubjects: 'موادي',
+    myGrades: 'صفوفي',
+    editProfile: 'تعديل الملف الشخصي',
+    settingsTitle: 'الإعدادات',
+    settings: 'الإعدادات',
+    language: 'اللغة',
+    changeLanguage: 'تغيير اللغة',
+    signOut: 'تسجيل الخروج',
+    signOutConfirm: 'هل أنت متأكد من تسجيل الخروج؟',
+    cancel: 'إلغاء',
+    confirm: 'تأكيد',
+
+    // Notifications
+    notificationsTitle: 'التنبيهات',
+    markAllRead: 'تحديد الكل كمقروء',
+    noNotifications: 'لا توجد تنبيهات',
+
+    // Common
+    back: 'رجوع',
+    loading: 'جارٍ التحميل...',
+    error: 'خطأ',
+    retry: 'إعادة المحاولة',
+    save: 'حفظ',
+    close: 'إغلاق',
+    search: 'بحث',
+    generate: 'توليد',
+    generating: 'جارٍ التوليد...',
+    copy: 'نسخ',
+    share: 'مشاركة',
+    min: 'دقيقة',
+
+    // Subjects
+    subject_arabic: 'اللغة العربية',
+    subject_english: 'اللغة الإنجليزية',
+    subject_mathematics: 'الرياضيات',
+    subject_science: 'العلوم',
+    subject_physics: 'الفيزياء',
+    subject_chemistry: 'الكيمياء',
+    subject_biology: 'الأحياء',
+    subject_islamic: 'التربية الإسلامية',
+    subject_social: 'الدراسات الاجتماعية',
+    subject_computer: 'الحاسوب',
+
+    // Grades
+    grade_1: 'الصف الأول',
+    grade_2: 'الصف الثاني',
+    grade_3: 'الصف الثالث',
+    grade_4: 'الصف الرابع',
+    grade_5: 'الصف الخامس',
+    grade_6: 'الصف السادس',
+    grade_7: 'الصف السابع',
+    grade_8: 'الصف الثامن',
+    grade_9: 'الصف التاسع',
+    grade_10: 'الصف العاشر',
+    grade_11: 'الصف الحادي عشر',
+    grade_12: 'الصف الثاني عشر',
+  },
+
+  en: {
+    appName: 'Iqra',
+    appTagline: 'AI Teaching Assistant',
+
+    tabHome: 'Home',
+    tabCurriculum: 'Curriculum',
+    tabIqra: 'iQra',
+    tabAlerts: 'Alerts',
+    tabProfile: 'Profile',
+
+    welcomeBack: 'Welcome back',
+    signInSubtitle: 'Sign in to your teacher account',
+    emailAddress: 'Email address',
+    emailPlaceholder: 'you@school.edu.jo',
+    password: 'Password',
+    passwordPlaceholder: 'Your password',
+    forgotPassword: 'Forgot password?',
+    signIn: 'Sign In',
+    newToIqra: 'New to Iqra?',
+    createAccount: 'Create account',
+
+    createYourAccount: 'Create your account',
+    registerSubtitle: 'Join thousands of Jordanian teachers',
+    fullName: 'Full name',
+    fullNamePlaceholder: 'Your full name',
+    schoolName: 'School name',
+    schoolPlaceholder: 'Your school',
+    confirmPassword: 'Confirm password',
+    alreadyHaveAccount: 'Already have an account?',
+
+    resetPassword: 'Reset password',
+    resetSubtitle: 'Enter your email and we will send you a reset link',
+    sendResetLink: 'Send reset link',
+    checkEmail: 'Check your email',
+    resetSentMsg: 'We sent a password reset link to your email address',
+    backToSignIn: 'Back to sign in',
+
+    goodMorning: 'Good morning',
+    goodAfternoon: 'Good afternoon',
+    goodEvening: 'Good evening',
+    teacher: 'Teacher',
+    myMaterials: 'My materials',
+    lessonsThisWeek: 'Lessons this week',
+    subjects: 'Subjects',
+    quickActions: 'Quick actions',
+    recentMaterials: 'Recent materials',
+    lessonPlan: 'Lesson Plan',
+    worksheet: 'Worksheet',
+    quiz: 'Quiz',
+    curriculum: 'Curriculum',
+
+    curriculumTitle: 'Curriculum',
+    searchSubjects: 'Search subjects...',
+    grade: 'Grade',
+    subjects_count: (n: number) => `${n} subject${n !== 1 ? 's' : ''}`,
+    noSubjectsFound: 'No subjects found',
+    books: 'Books',
+    units: 'Units',
+    lessons: 'Lessons',
+    outcomes: 'Learning Outcomes',
+    objectives: 'Objectives',
+    keywords: 'Keywords',
+    teacherNotes: 'Teacher Notes',
+    generateAILesson: 'Generate AI Lesson Plan',
+
+    iqraChatTitle: 'iQra',
+    iqraChatSubtitle: 'Your smart assistant',
+    iqraWelcome: "Hello! I'm iQra, your AI study assistant 📚\nI can help with Grade 10 Chemistry and Mathematics.\nAsk me anything from your textbook!",
+    iqraPlaceholder: 'Ask iQra anything...',
+    iqraSend: 'Send',
+    iqraSuggested: 'Suggested questions',
+    iqraNoResults: "I couldn't find information about this topic in the available books. Try rephrasing your question or ask about a different curriculum topic.",
+    iqraSource: 'Source',
+    iqraUnit: 'Unit',
+    iqraKeyTerms: 'Key Terms',
+    iqraRules: 'Rules & Formulas',
+    iqraExamples: 'Examples',
+    iqraTyping: 'iQra is thinking...',
+    teacherMode: 'Teacher Mode',
+    studentMode: 'Student Mode',
+
+    profileTitle: 'Profile',
+    mySubjects: 'My Subjects',
+    myGrades: 'My Grades',
+    editProfile: 'Edit Profile',
+    settingsTitle: 'Settings',
+    settings: 'Settings',
+    language: 'Language',
+    changeLanguage: 'Change Language',
+    signOut: 'Sign out',
+    signOutConfirm: 'Are you sure you want to sign out?',
+    cancel: 'Cancel',
+    confirm: 'Confirm',
+
+    notificationsTitle: 'Notifications',
+    markAllRead: 'Mark all as read',
+    noNotifications: 'No notifications',
+
+    back: 'Back',
+    loading: 'Loading...',
+    error: 'Error',
+    retry: 'Retry',
+    save: 'Save',
+    close: 'Close',
+    search: 'Search',
+    generate: 'Generate',
+    generating: 'Generating...',
+    copy: 'Copy',
+    share: 'Share',
+    min: 'min',
+
+    subject_arabic: 'Arabic',
+    subject_english: 'English',
+    subject_mathematics: 'Mathematics',
+    subject_science: 'Science',
+    subject_physics: 'Physics',
+    subject_chemistry: 'Chemistry',
+    subject_biology: 'Biology',
+    subject_islamic: 'Islamic Studies',
+    subject_social: 'Social Studies',
+    subject_computer: 'Computer',
+
+    grade_1: 'Grade 1',
+    grade_2: 'Grade 2',
+    grade_3: 'Grade 3',
+    grade_4: 'Grade 4',
+    grade_5: 'Grade 5',
+    grade_6: 'Grade 6',
+    grade_7: 'Grade 7',
+    grade_8: 'Grade 8',
+    grade_9: 'Grade 9',
+    grade_10: 'Grade 10',
+    grade_11: 'Grade 11',
+    grade_12: 'Grade 12',
+  },
+} as const;
+
+export type TranslationKey = keyof typeof translations.en;
+export type Translations = typeof translations.en;
+
+export function getT(lang: Lang): (key: TranslationKey, ...args: any[]) => string {
+  const dict = translations[lang] as any;
+  return (key: TranslationKey, ...args: any[]) => {
+    const val = dict[key];
+    if (typeof val === 'function') return val(...args);
+    return val ?? key;
+  };
+}
+
+export default translations;

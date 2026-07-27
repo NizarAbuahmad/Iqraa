@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import {
-  Image, KeyboardAvoidingView, Platform, Pressable, ScrollView,
-  StyleSheet, Text, View,
+  Image, KeyboardAvoidingView, Platform, Pressable,
+  ScrollView, StyleSheet, Text, View,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 
@@ -15,6 +17,7 @@ export default function LoginScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { login } = useAuth();
+  const { t, lang, isRTL, toggleLang } = useLanguage();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -26,11 +29,9 @@ export default function LoginScreen() {
     setError('');
     setLoading(true);
     try {
-      await login(email.trim(), password);
-      router.replace('/(tabs)');
+      await login(email, password);
     } catch (e: any) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setError(e.message ?? 'Login failed. Please try again.');
+      setError(e.message ?? 'Login failed');
     } finally {
       setLoading(false);
     }
@@ -39,87 +40,106 @@ export default function LoginScreen() {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: colors.background }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
         contentContainerStyle={[
-          styles.scroll,
-          { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 32 },
+          styles.container,
+          { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 },
         ]}
-        keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
-        {/* Logo + Brand */}
-        <View style={styles.brand}>
-          <View style={[styles.logoWrap, { backgroundColor: colors.primary, borderRadius: colors.radius * 2 }]}>
-            <Image
-              source={require('../../assets/images/icon.png')}
-              style={styles.logo}
-              resizeMode="contain"
-            />
-          </View>
-          <Text style={[styles.appName, { color: colors.primary, fontFamily: 'Inter_700Bold' }]}>Iqra</Text>
-          <Text style={[styles.tagline, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
-            AI Teaching Assistant
+        {/* Language toggle */}
+        <Pressable
+          onPress={() => { Haptics.selectionAsync(); toggleLang(); }}
+          style={[styles.langBtn, { alignSelf: isRTL ? 'flex-start' : 'flex-end', backgroundColor: colors.muted, borderRadius: 16 }]}
+        >
+          <Ionicons name="language" size={16} color={colors.mutedForeground} />
+          <Text style={[styles.langBtnText, { color: colors.mutedForeground, fontFamily: 'Inter_500Medium' }]}>
+            {lang === 'ar' ? 'English' : 'عربي'}
+          </Text>
+        </Pressable>
+
+        {/* Logo */}
+        <View style={styles.logoWrap}>
+          <Image
+            source={require('@/assets/images/icon.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+          <Text style={[styles.appName, { color: colors.primary, fontFamily: 'Inter_700Bold' }]}>
+            {t('appName')}
+          </Text>
+          <Text style={[styles.appTagline, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
+            {t('appTagline')}
           </Text>
         </View>
 
         {/* Card */}
-        <View style={[styles.card, { backgroundColor: colors.card, borderRadius: colors.radius * 1.5, borderColor: colors.border }]}>
-          <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'Inter_700Bold' }]}>
-            Welcome back
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius * 1.5 }]}>
+          <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'Inter_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+            {t('welcomeBack')}
           </Text>
-          <Text style={[styles.sub, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
-            Sign in to your teacher account
+          <Text style={[styles.cardSubtitle, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+            {t('signInSubtitle')}
           </Text>
 
           {error ? (
-            <View style={[styles.errorBanner, { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius }]}>
+            <View style={[styles.errorBanner, { backgroundColor: colors.destructive + '18', borderRadius: 10 }]}>
+              <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
               <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Inter_400Regular' }]}>{error}</Text>
             </View>
           ) : null}
 
           <Input
-            label="Email address"
-            placeholder="you@school.edu.jo"
+            label={t('emailAddress')}
+            placeholder={t('emailPlaceholder')}
             value={email}
             onChangeText={setEmail}
-            leftIcon="mail-outline"
             keyboardType="email-address"
             autoCapitalize="none"
-            autoComplete="email"
+            leftIcon="mail-outline"
+            isRTL={isRTL}
           />
+
           <Input
-            label="Password"
-            placeholder="Your password"
+            label={t('password')}
+            placeholder={t('passwordPlaceholder')}
             value={password}
             onChangeText={setPassword}
+            secureTextEntry={!showPassword}
             leftIcon="lock-closed-outline"
             rightIcon={showPassword ? 'eye-off-outline' : 'eye-outline'}
             onRightIconPress={() => setShowPassword(v => !v)}
-            secureTextEntry={!showPassword}
+            isRTL={isRTL}
           />
 
           <Pressable
             onPress={() => router.push('/(auth)/forgot-password')}
-            style={styles.forgotWrap}
+            style={[styles.forgotRow, isRTL ? { alignItems: 'flex-start' } : { alignItems: 'flex-end' }]}
           >
-            <Text style={[styles.forgot, { color: colors.primary, fontFamily: 'Inter_500Medium' }]}>
-              Forgot password?
+            <Text style={[styles.forgotText, { color: colors.primary, fontFamily: 'Inter_500Medium' }]}>
+              {t('forgotPassword')}
             </Text>
           </Pressable>
 
-          <Button label="Sign In" onPress={handleLogin} loading={loading} fullWidth />
+          <Button
+            label={t('signIn')}
+            onPress={handleLogin}
+            loading={loading}
+            disabled={!email || !password}
+          />
         </View>
 
-        {/* Sign up */}
-        <View style={styles.signupRow}>
-          <Text style={[styles.signupText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
-            New to Iqra?{'  '}
+        {/* Register */}
+        <View style={styles.registerRow}>
+          <Text style={[styles.registerPrompt, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
+            {t('newToIqra')}
           </Text>
           <Pressable onPress={() => router.push('/(auth)/register')}>
-            <Text style={[styles.signupLink, { color: colors.primary, fontFamily: 'Inter_600SemiBold' }]}>
-              Create account
+            <Text style={[styles.registerLink, { color: colors.primary, fontFamily: 'Inter_600SemiBold' }]}>
+              {t('createAccount')}
             </Text>
           </Pressable>
         </View>
@@ -129,20 +149,21 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  scroll: { flexGrow: 1, paddingHorizontal: 24 },
-  brand: { alignItems: 'center', marginBottom: 32 },
-  logoWrap: { width: 72, height: 72, marginBottom: 12, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-  logo: { width: 64, height: 64 },
-  appName: { fontSize: 32, letterSpacing: -0.5, marginBottom: 4 },
-  tagline: { fontSize: 14 },
-  card: { padding: 24, borderWidth: 1, marginBottom: 24 },
-  heading: { fontSize: 22, marginBottom: 4 },
-  sub: { fontSize: 14, marginBottom: 20 },
-  errorBanner: { padding: 12, borderWidth: 1, marginBottom: 16 },
-  errorText: { fontSize: 13 },
-  forgotWrap: { alignSelf: 'flex-end', marginBottom: 20, marginTop: -4 },
-  forgot: { fontSize: 13 },
-  signupRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
-  signupText: { fontSize: 14 },
-  signupLink: { fontSize: 14 },
+  container: { flexGrow: 1, paddingHorizontal: 24, gap: 16 },
+  langBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 6 },
+  langBtnText: { fontSize: 13 },
+  logoWrap: { alignItems: 'center', paddingVertical: 16, gap: 6 },
+  logo: { width: 80, height: 80, borderRadius: 18 },
+  appName: { fontSize: 28 },
+  appTagline: { fontSize: 13 },
+  card: { padding: 24, borderWidth: 1, gap: 16 },
+  cardTitle: { fontSize: 22 },
+  cardSubtitle: { fontSize: 14 },
+  errorBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12 },
+  errorText: { flex: 1, fontSize: 13 },
+  forgotRow: { marginTop: -4 },
+  forgotText: { fontSize: 13 },
+  registerRow: { flexDirection: 'row', justifyContent: 'center', gap: 5, alignItems: 'center' },
+  registerPrompt: { fontSize: 14 },
+  registerLink: { fontSize: 14 },
 });

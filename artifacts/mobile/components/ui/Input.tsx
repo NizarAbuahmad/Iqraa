@@ -10,9 +10,13 @@ interface InputProps extends TextInputProps {
   rightIcon?: keyof typeof Ionicons.glyphMap;
   onRightIconPress?: () => void;
   hint?: string;
+  isRTL?: boolean;
 }
 
-export function Input({ label, error, leftIcon, rightIcon, onRightIconPress, hint, style, ...props }: InputProps) {
+export function Input({
+  label, error, leftIcon, rightIcon, onRightIconPress,
+  hint, style, isRTL = false, ...props
+}: InputProps) {
   const colors = useColors();
   const [focused, setFocused] = useState(false);
 
@@ -21,7 +25,7 @@ export function Input({ label, error, leftIcon, rightIcon, onRightIconPress, hin
   return (
     <View style={styles.container}>
       {label && (
-        <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Inter_500Medium' }]}>
+        <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
           {label}
         </Text>
       )}
@@ -32,11 +36,17 @@ export function Input({ label, error, leftIcon, rightIcon, onRightIconPress, hin
             borderColor,
             borderRadius: colors.radius,
             backgroundColor: focused ? colors.card : colors.input,
+            flexDirection: isRTL ? 'row-reverse' : 'row',
           },
         ]}
       >
         {leftIcon && (
-          <Ionicons name={leftIcon} size={18} color={colors.mutedForeground} style={styles.leftIcon} />
+          <Ionicons
+            name={leftIcon}
+            size={18}
+            color={colors.mutedForeground}
+            style={isRTL ? styles.rightIcon : styles.leftIcon}
+          />
         )}
         <TextInput
           style={[
@@ -45,27 +55,29 @@ export function Input({ label, error, leftIcon, rightIcon, onRightIconPress, hin
               color: colors.foreground,
               fontFamily: 'Inter_400Regular',
               flex: 1,
+              textAlign: isRTL ? 'right' : 'left',
             },
             style,
           ]}
           placeholderTextColor={colors.mutedForeground}
+          writingDirection={isRTL ? 'rtl' : 'ltr'}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           {...props}
         />
         {rightIcon && (
-          <Pressable onPress={onRightIconPress} style={styles.rightIcon}>
+          <Pressable onPress={onRightIconPress} style={isRTL ? styles.leftIconBtn : styles.rightIconBtn}>
             <Ionicons name={rightIcon} size={18} color={colors.mutedForeground} />
           </Pressable>
         )}
       </View>
       {error && (
-        <Text style={[styles.error, { color: colors.destructive, fontFamily: 'Inter_400Regular' }]}>
+        <Text style={[styles.error, { color: colors.destructive, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
           {error}
         </Text>
       )}
       {hint && !error && (
-        <Text style={[styles.hint, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
+        <Text style={[styles.hint, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
           {hint}
         </Text>
       )}
@@ -84,7 +96,9 @@ const styles = StyleSheet.create({
   },
   input: { fontSize: 15, paddingHorizontal: 14, paddingVertical: 12 },
   leftIcon: { marginLeft: 12 },
-  rightIcon: { paddingRight: 12, padding: 4 },
+  rightIcon: { marginRight: 12 },
+  rightIconBtn: { paddingRight: 12, padding: 4 },
+  leftIconBtn: { paddingLeft: 12, padding: 4 },
   error: { fontSize: 12, marginTop: 4 },
   hint: { fontSize: 12, marginTop: 4 },
 });
