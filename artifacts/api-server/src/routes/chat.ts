@@ -41,7 +41,7 @@ chatRouter.post("/chat", async (req, res) => {
 
     const completion = await openai.chat.completions.create({
       model: "gpt-5.6-luna",
-      max_completion_tokens: 1200,
+      max_completion_tokens: 600,   // keep chat replies concise; faster response time
       messages: chatMessages,
     });
 
