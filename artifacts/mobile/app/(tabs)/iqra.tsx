@@ -11,6 +11,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -22,6 +23,7 @@ import {
   getUnitForLesson,
   searchKB,
 } from '@/services/knowledgeBase';
+import { Toast } from '@/components/ui/Toast';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 type Role = 'user' | 'assistant';
@@ -138,7 +140,9 @@ function buildResponse(query: string, results: KBLesson[], lang: 'ar' | 'en', mo
 }
 
 // ─── Message Bubble ───────────────────────────────────────────────────────────
-function MessageBubble({ message, colors, isRTL }: { message: Message; colors: any; isRTL: boolean }) {
+function MessageBubble({
+  message, colors, isRTL, onLongPress,
+}: { message: Message; colors: any; isRTL: boolean; onLongPress?: (text: string) => void }) {
   const isUser = message.role === 'user';
 
   if (isUser) {
@@ -161,7 +165,11 @@ function MessageBubble({ message, colors, isRTL }: { message: Message; colors: a
       <View style={[styles.avatar, { backgroundColor: colors.primary + '20' }]}>
         <Text style={{ fontSize: 16 }}>📚</Text>
       </View>
-      <View style={[styles.bubbleAssistant, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, maxWidth: '82%' }]}>
+      <Pressable
+        onLongPress={() => onLongPress?.(message.text)}
+        delayLongPress={500}
+        style={[styles.bubbleAssistant, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, maxWidth: '82%' }]}
+      >
         {lines.map((line, i) => {
           if (!line.trim()) return <View key={i} style={{ height: 6 }} />;
           const isBold = line.startsWith('**') && line.includes('**');
@@ -206,7 +214,7 @@ function MessageBubble({ message, colors, isRTL }: { message: Message; colors: a
         <Text style={[styles.timestamp, { color: colors.mutedForeground, textAlign: isRTL ? 'left' : 'right' }]}>
           {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </Text>
-      </View>
+      </Pressable>
     </View>
   );
 }
@@ -220,7 +228,11 @@ export default function IqraScreen() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isThinking, setIsThinking] = useState(false);
+  const [toastMsg, setToastMsg] = useState('');
+  const [toastVisible, setToastVisible] = useState(false);
   const listRef = useRef<FlatList>(null);
+
+  const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
 
   const topPad = insets.top + (insets.top === 0 ? 67 : 0);
 
@@ -374,7 +386,15 @@ export default function IqraScreen() {
         showsVerticalScrollIndicator={false}
         onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
         renderItem={({ item }) => (
-          <MessageBubble message={item} colors={colors} isRTL={isRTL} />
+          <MessageBubble
+            message={item}
+            colors={colors}
+            isRTL={isRTL}
+            onLongPress={item.role === 'assistant' ? async (text) => {
+              await Clipboard.setStringAsync(text);
+              showToast(t('copiedToClipboard'));
+            } : undefined}
+          />
         )}
         ListFooterComponent={
           isThinking ? (
@@ -444,6 +464,7 @@ export default function IqraScreen() {
           </Pressable>
         </View>
       </View>
+      <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
     </KeyboardAvoidingView>
   );
 }

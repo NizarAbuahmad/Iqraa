@@ -11,6 +11,12 @@ import { QuizOutput } from '@/services/ai/AIService';
 import { GRADES, SUBJECTS } from '@/services/curriculumData';
 import { Button } from '@/components/ui/Button';
 import { getItem, saveItem, updateItem } from '@/services/workspace';
+import { ExportMenu } from '@/components/ui/ExportMenu';
+import { Toast } from '@/components/ui/Toast';
+import {
+  buildQuizHTML, copyToClipboard, exportAsPDF, exportAsWord,
+  formatQuizText, shareAsText,
+} from '@/services/share';
 
 const ACCENT = '#F59E0B';
 
@@ -52,6 +58,12 @@ export default function QuizScreen() {
   const [showAnswers, setShowAnswers] = useState(false);
   const [savedId, setSavedId] = useState<string | undefined>(params.savedId);
   const [saveLabel, setSaveLabel] = useState<'save' | 'saved' | 'updated'>('save');
+  const [showExport, setShowExport] = useState(false);
+  const [toastMsg, setToastMsg] = useState('');
+  const [toastVisible, setToastVisible] = useState(false);
+  const [loadingPDF, setLoadingPDF] = useState(false);
+  const [loadingWord, setLoadingWord] = useState(false);
+  const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
 
   useEffect(() => {
     if (params.savedId) {
@@ -151,7 +163,44 @@ export default function QuizScreen() {
           : t('saveToWorkspace');
   const saveDone = saveLabel === 'saved' || saveLabel === 'updated';
 
+  const getExportTitle = () => lang === 'ar' ? `اختبار: ${topic.trim()}` : `Quiz: ${topic.trim()}`;
+  const getExportMeta = () => ({ subject: SUBJECTS[subjectIdx].name, grade: GRADES[gradeIdx].name });
+
+  const handleShareText = async () => {
+    if (!result) return;
+    await shareAsText(formatQuizText(result, getExportTitle(), getExportMeta(), lang === 'ar'), getExportTitle());
+  };
+  const handleCopy = async () => {
+    if (!result) return;
+    await copyToClipboard(formatQuizText(result, getExportTitle(), getExportMeta(), lang === 'ar'));
+    showToast(t('copiedToClipboard'));
+  };
+  const handlePDF = async () => {
+    if (!result) return;
+    setLoadingPDF(true);
+    try {
+      await exportAsPDF(buildQuizHTML(result, getExportTitle(), getExportMeta(), lang === 'ar'), getExportTitle().replace(/[^\w\s]/g, '').trim());
+    } catch { showToast(t('generationFailed')); } finally { setLoadingPDF(false); }
+  };
+  const handleWord = async () => {
+    if (!result) return;
+    setLoadingWord(true);
+    try {
+      await exportAsWord(formatQuizText(result, getExportTitle(), getExportMeta(), lang === 'ar'), getExportTitle().replace(/[^\w\s]/g, '').trim(), lang === 'ar');
+    } catch { showToast(t('generationFailed')); } finally { setLoadingWord(false); }
+  };
+
+  const exportLabels = {
+    title: t('exportTitle'),
+    shareLabel: t('exportShare'), shareSub: t('exportShareSub'),
+    copyLabel: t('exportCopy'), copySub: t('exportCopySub'),
+    pdfLabel: t('exportPDF'), pdfSub: t('exportPDFSub'),
+    wordLabel: t('exportWord'), wordSub: t('exportWordSub'),
+    cancel: t('cancel'),
+  };
+
   return (
+    <View style={{ flex: 1 }}>
     <ScrollView
       ref={scrollRef}
       style={{ flex: 1, backgroundColor: colors.background }}
@@ -303,6 +352,13 @@ export default function QuizScreen() {
             <Text style={[styles.saveBtnText, { color: saveDone ? '#fff' : ACCENT, fontFamily: 'Inter_600SemiBold' }]}>{saveBtnLabel}</Text>
           </Pressable>
           <Pressable
+            onPress={() => setShowExport(true)}
+            style={[styles.regenBtn, { borderColor: colors.mutedForeground, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+          >
+            <Ionicons name="share-outline" size={16} color={colors.mutedForeground} />
+            <Text style={[styles.regenText, { color: colors.mutedForeground, fontFamily: 'Inter_600SemiBold' }]}>{t('exportBtn')}</Text>
+          </Pressable>
+          <Pressable
             onPress={generate}
             style={[styles.regenBtn, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
@@ -312,6 +368,21 @@ export default function QuizScreen() {
         </View>
       )}
     </ScrollView>
+
+    <ExportMenu
+      visible={showExport}
+      onClose={() => setShowExport(false)}
+      onShare={handleShareText}
+      onCopy={handleCopy}
+      onPDF={handlePDF}
+      onWord={handleWord}
+      isRTL={isRTL}
+      loadingPDF={loadingPDF}
+      loadingWord={loadingWord}
+      labels={exportLabels}
+    />
+    <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
+    </View>
   );
 }
 

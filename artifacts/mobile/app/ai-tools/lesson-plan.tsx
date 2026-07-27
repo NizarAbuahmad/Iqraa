@@ -11,6 +11,16 @@ import { LessonPlanOutput } from '@/services/ai/AIService';
 import { GRADES, SUBJECTS } from '@/services/curriculumData';
 import { Button } from '@/components/ui/Button';
 import { getItem, saveItem, updateItem } from '@/services/workspace';
+import { ExportMenu } from '@/components/ui/ExportMenu';
+import { Toast } from '@/components/ui/Toast';
+import {
+  buildLessonPlanHTML,
+  copyToClipboard,
+  exportAsPDF,
+  exportAsWord,
+  formatLessonPlanText,
+  shareAsText,
+} from '@/services/share';
 
 const ACCENT = '#1B6B62';
 
@@ -43,6 +53,13 @@ export default function LessonPlanScreen() {
   const [error, setError] = useState('');
   const [savedId, setSavedId] = useState<string | undefined>(params.savedId);
   const [saveLabel, setSaveLabel] = useState<'save' | 'saved' | 'updated'>('save');
+  const [showExport, setShowExport] = useState(false);
+  const [toastMsg, setToastMsg] = useState('');
+  const [toastVisible, setToastVisible] = useState(false);
+  const [loadingPDF, setLoadingPDF] = useState(false);
+  const [loadingWord, setLoadingWord] = useState(false);
+
+  const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
 
   // If editing a saved item, load it and restore its result
   useEffect(() => {
@@ -125,6 +142,53 @@ export default function LessonPlanScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
+  const getExportMeta = () => ({
+    subject: SUBJECTS[subjectIdx].name,
+    grade: GRADES[gradeIdx].name,
+    duration: DURATION_VALUES[durationIdx],
+  });
+
+  const getExportTitle = () => lang === 'ar' ? `خطة درس: ${topic.trim()}` : `Lesson Plan: ${topic.trim()}`;
+
+  const handleShareText = async () => {
+    if (!result) return;
+    const text = formatLessonPlanText(result, getExportTitle(), getExportMeta(), lang === 'ar');
+    await shareAsText(text, getExportTitle());
+  };
+
+  const handleCopy = async () => {
+    if (!result) return;
+    const text = formatLessonPlanText(result, getExportTitle(), getExportMeta(), lang === 'ar');
+    await copyToClipboard(text);
+    showToast(t('copiedToClipboard'));
+  };
+
+  const handlePDF = async () => {
+    if (!result) return;
+    setLoadingPDF(true);
+    try {
+      const html = buildLessonPlanHTML(result, getExportTitle(), getExportMeta(), lang === 'ar');
+      await exportAsPDF(html, getExportTitle().replace(/[^\w\s]/g, '').trim());
+    } catch (e) {
+      showToast(t('generationFailed'));
+    } finally {
+      setLoadingPDF(false);
+    }
+  };
+
+  const handleWord = async () => {
+    if (!result) return;
+    setLoadingWord(true);
+    try {
+      const text = formatLessonPlanText(result, getExportTitle(), getExportMeta(), lang === 'ar');
+      await exportAsWord(text, getExportTitle().replace(/[^\w\s]/g, '').trim(), lang === 'ar');
+    } catch (e) {
+      showToast(t('generationFailed'));
+    } finally {
+      setLoadingWord(false);
+    }
+  };
+
   const topPad = insets.top + (insets.top === 0 ? 67 : 0);
 
   const saveBtnLabel =
@@ -133,7 +197,17 @@ export default function LessonPlanScreen() {
         : savedId ? t('updateInWorkspace')
           : t('saveToWorkspace');
 
+  const exportLabels = {
+    title: t('exportTitle'),
+    shareLabel: t('exportShare'), shareSub: t('exportShareSub'),
+    copyLabel: t('exportCopy'), copySub: t('exportCopySub'),
+    pdfLabel: t('exportPDF'), pdfSub: t('exportPDFSub'),
+    wordLabel: t('exportWord'), wordSub: t('exportWordSub'),
+    cancel: t('cancel'),
+  };
+
   return (
+    <View style={{ flex: 1 }}>
     <ScrollView
       ref={scrollRef}
       style={{ flex: 1, backgroundColor: colors.background }}
@@ -247,6 +321,14 @@ export default function LessonPlanScreen() {
               {saveBtnLabel}
             </Text>
           </Pressable>
+          {/* Export */}
+          <Pressable
+            onPress={() => setShowExport(true)}
+            style={[styles.regenBtn, { borderColor: colors.mutedForeground, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+          >
+            <Ionicons name="share-outline" size={16} color={colors.mutedForeground} />
+            <Text style={[styles.regenText, { color: colors.mutedForeground, fontFamily: 'Inter_600SemiBold' }]}>{t('exportBtn')}</Text>
+          </Pressable>
           {/* Regenerate */}
           <Pressable
             onPress={generate}
@@ -258,6 +340,21 @@ export default function LessonPlanScreen() {
         </View>
       )}
     </ScrollView>
+
+    <ExportMenu
+      visible={showExport}
+      onClose={() => setShowExport(false)}
+      onShare={handleShareText}
+      onCopy={handleCopy}
+      onPDF={handlePDF}
+      onWord={handleWord}
+      isRTL={isRTL}
+      loadingPDF={loadingPDF}
+      loadingWord={loadingWord}
+      labels={exportLabels}
+    />
+    <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
+    </View>
   );
 }
 

@@ -281,6 +281,20 @@ const translations = {
     viewSavedContent: 'عرض المادة',
     noContentAvailable: 'المحتوى غير متاح',
 
+    // Export & sharing
+    exportTitle: 'تصدير المادة',
+    exportShare: 'مشاركة',
+    exportShareSub: 'فتح قائمة المشاركة (واتساب، بريد، ...)',
+    exportCopy: 'نسخ النص',
+    exportCopySub: 'نسخ المحتوى كاملًا إلى الحافظة',
+    exportPDF: 'تصدير PDF',
+    exportPDFSub: 'إنشاء ملف PDF جاهز للطباعة',
+    exportWord: 'تصدير Word',
+    exportWordSub: 'إنشاء ملف .docx قابل للتحرير',
+    copiedToClipboard: 'تم النسخ ✓',
+    exportBtn: 'تصدير',
+    longPressHint: 'اضغط مطوّلًا لنسخ الرسالة',
+
     // Common
     back: 'رجوع',
     loading: 'جارٍ التحميل...',
@@ -575,6 +589,20 @@ const translations = {
     quizType: 'Quiz',
     viewSavedContent: 'View Material',
     noContentAvailable: 'Content not available',
+
+    // Export & sharing
+    exportTitle: 'Export Material',
+    exportShare: 'Share',
+    exportShareSub: 'Open share sheet (WhatsApp, Email, ...)',
+    exportCopy: 'Copy Text',
+    exportCopySub: 'Copy full content to clipboard',
+    exportPDF: 'Export PDF',
+    exportPDFSub: 'Create a print-ready PDF file',
+    exportWord: 'Export Word',
+    exportWordSub: 'Create an editable .docx file',
+    copiedToClipboard: 'Copied ✓',
+    exportBtn: 'Export',
+    longPressHint: 'Long-press to copy message',
 
     back: 'Back',
     loading: 'Loading...',

@@ -9,6 +9,14 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { SavedMaterial, getItem } from '@/services/workspace';
 import { LessonPlanOutput, QuizOutput, WorksheetOutput } from '@/services/ai/AIService';
+import { ExportMenu } from '@/components/ui/ExportMenu';
+import { Toast } from '@/components/ui/Toast';
+import {
+  buildLessonPlanHTML, buildQuizHTML, buildWorksheetHTML,
+  copyToClipboard, exportAsPDF, exportAsWord,
+  formatLessonPlanText, formatQuizText, formatWorksheetText,
+  shareAsText,
+} from '@/services/share';
 
 const TYPE_COLOR: Record<string, string> = {
   lesson: '#1B6B62',
@@ -25,6 +33,12 @@ export default function WorkspaceViewScreen() {
 
   const [item, setItem] = useState<SavedMaterial | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showExport, setShowExport] = useState(false);
+  const [toastMsg, setToastMsg] = useState('');
+  const [toastVisible, setToastVisible] = useState(false);
+  const [loadingPDF, setLoadingPDF] = useState(false);
+  const [loadingWord, setLoadingWord] = useState(false);
+  const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
 
   useEffect(() => {
     if (id) {
@@ -66,7 +80,45 @@ export default function WorkspaceViewScreen() {
       : item.type === 'worksheet' ? '/ai-tools/worksheet'
         : '/ai-tools/quiz';
 
+  const isAr = lang === 'ar';
+  const getPlainText = () => {
+    if (!content) return item.title;
+    if (item.type === 'lesson') return formatLessonPlanText(content as LessonPlanOutput, item.title, { subject: item.subject, grade: item.grade }, isAr);
+    if (item.type === 'worksheet') return formatWorksheetText(content as WorksheetOutput, item.title, { subject: item.subject, grade: item.grade }, isAr);
+    return formatQuizText(content as QuizOutput, item.title, { subject: item.subject, grade: item.grade }, isAr);
+  };
+  const getHTML = () => {
+    if (!content) return '<p></p>';
+    const meta = { subject: item.subject, grade: item.grade };
+    if (item.type === 'lesson') return buildLessonPlanHTML(content as LessonPlanOutput, item.title, meta, isAr);
+    if (item.type === 'worksheet') return buildWorksheetHTML(content as WorksheetOutput, item.title, meta, isAr);
+    return buildQuizHTML(content as QuizOutput, item.title, meta, isAr);
+  };
+
+  const handleShareText = async () => { await shareAsText(getPlainText(), item.title); };
+  const handleCopy = async () => { await copyToClipboard(getPlainText()); showToast(t('copiedToClipboard')); };
+  const handlePDF = async () => {
+    setLoadingPDF(true);
+    try { await exportAsPDF(getHTML(), item.title.replace(/[^\w\s]/g, '').trim()); }
+    catch { showToast(t('error')); } finally { setLoadingPDF(false); }
+  };
+  const handleWord = async () => {
+    setLoadingWord(true);
+    try { await exportAsWord(getPlainText(), item.title.replace(/[^\w\s]/g, '').trim(), isAr); }
+    catch { showToast(t('error')); } finally { setLoadingWord(false); }
+  };
+
+  const exportLabels = {
+    title: t('exportTitle'),
+    shareLabel: t('exportShare'), shareSub: t('exportShareSub'),
+    copyLabel: t('exportCopy'), copySub: t('exportCopySub'),
+    pdfLabel: t('exportPDF'), pdfSub: t('exportPDFSub'),
+    wordLabel: t('exportWord'), wordSub: t('exportWordSub'),
+    cancel: t('cancel'),
+  };
+
   return (
+    <View style={{ flex: 1 }}>
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={{ paddingBottom: 80 }}
@@ -102,6 +154,13 @@ export default function WorkspaceViewScreen() {
           <Ionicons name="create-outline" size={16} color={accent} />
           <Text style={[{ color: accent, fontFamily: 'Inter_500Medium', fontSize: 13 }]}>{t('editItem')}</Text>
         </Pressable>
+        <Pressable
+          onPress={() => setShowExport(true)}
+          style={[styles.actionBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+        >
+          <Ionicons name="share-outline" size={16} color={colors.mutedForeground} />
+          <Text style={[{ color: colors.mutedForeground, fontFamily: 'Inter_500Medium', fontSize: 13 }]}>{t('exportBtn')}</Text>
+        </Pressable>
       </View>
 
       {/* Content */}
@@ -119,6 +178,21 @@ export default function WorkspaceViewScreen() {
         )}
       </View>
     </ScrollView>
+
+    <ExportMenu
+      visible={showExport}
+      onClose={() => setShowExport(false)}
+      onShare={handleShareText}
+      onCopy={handleCopy}
+      onPDF={handlePDF}
+      onWord={handleWord}
+      isRTL={isRTL}
+      loadingPDF={loadingPDF}
+      loadingWord={loadingWord}
+      labels={exportLabels}
+    />
+    <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
+    </View>
   );
 }
 
