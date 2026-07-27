@@ -92,69 +92,82 @@ const SUGGESTIONS: Record<Mode, Record<'ar' | 'en', Suggestion[]>> = {
 };
 
 // ─── Build iQra response from knowledge-base results ────────────────────────
+/**
+ * Build the KB context string sent to the API.
+ * Uses up to 3 top-ranked results so multi-concept questions (e.g.
+ * "difference between functions and derivatives?") have full textbook
+ * backing for both topics rather than just the first match.
+ */
 function buildResponse(query: string, results: KBLesson[], lang: 'ar' | 'en', mode: Mode): string {
   if (results.length === 0) return '';
 
   const isAr = lang === 'ar';
-  const lesson = results[0]; // top result
-  const unit = getUnitForLesson(lesson);
-  const book = getBookForLesson(lesson);
+  const top = results.slice(0, 3);
+  const multiResult = top.length > 1;
 
-  const title = isAr ? lesson.titleAr : lesson.titleEn;
-  const summary = isAr ? lesson.summaryAr : lesson.summaryEn;
-  const concepts = isAr ? lesson.keyConceptsAr : lesson.keyConceptsEn;
-  const unitTitle = unit ? (isAr ? unit.titleAr : unit.titleEn) : '';
-  const bookTitle = book ? (isAr ? book.titleAr : book.titleEn) : '';
+  const blocks = top.map((lesson, idx) => {
+    const unit = getUnitForLesson(lesson);
+    const book = getBookForLesson(lesson);
 
-  let lines: string[] = [];
+    const title    = isAr ? lesson.titleAr    : lesson.titleEn;
+    const summary  = isAr ? lesson.summaryAr  : lesson.summaryEn;
+    const concepts = isAr ? lesson.keyConceptsAr : lesson.keyConceptsEn;
+    const unitTitle  = unit ? (isAr ? unit.titleAr  : unit.titleEn)  : '';
+    const bookTitle  = book ? (isAr ? book.titleAr  : book.titleEn)  : '';
 
-  // Header
-  lines.push(`📚 **${title}**`);
-  if (unitTitle) lines.push(isAr ? `الوحدة: ${unitTitle}` : `Unit: ${unitTitle}`);
-  lines.push('');
+    const lines: string[] = [];
 
-  // Summary
-  lines.push(summary);
-  lines.push('');
-
-  // Key concepts
-  if (concepts.length > 0) {
-    lines.push(isAr ? '**المفاهيم الأساسية:**' : '**Key Concepts:**');
-    concepts.slice(0, 5).forEach(c => lines.push(`• ${c}`));
+    // Header — numbered when multiple results present
+    const prefix = multiResult
+      ? (isAr ? `[مرجع ${idx + 1}] ` : `[Reference ${idx + 1}] `)
+      : '';
+    lines.push(`📚 **${prefix}${title}**`);
+    if (unitTitle) lines.push(isAr ? `الوحدة: ${unitTitle}` : `Unit: ${unitTitle}`);
     lines.push('');
-  }
 
-  // Key terms
-  if (lesson.keyTerms.length > 0) {
-    lines.push(isAr ? '**المصطلحات الأساسية:**' : '**Key Terms:**');
-    lesson.keyTerms.slice(0, 3).forEach(term => {
-      const termName = isAr ? term.ar : term.en;
-      const definition = isAr ? term.definitionAr : term.definitionEn;
-      lines.push(`• **${termName}**: ${definition}`);
-    });
+    // Summary
+    lines.push(summary);
     lines.push('');
-  }
 
-  // Rules (especially for teacher mode or if present)
-  const rules = isAr ? lesson.rulesAr : lesson.rulesEn;
-  if (rules && rules.length > 0) {
-    lines.push(isAr ? '**القواعد والصيغ:**' : '**Rules & Formulas:**');
-    rules.forEach(r => lines.push(`• ${r}`));
-    lines.push('');
-  }
+    // Key concepts (cap at 4 per result to keep context tight)
+    if (concepts.length > 0) {
+      lines.push(isAr ? '**المفاهيم الأساسية:**' : '**Key Concepts:**');
+      concepts.slice(0, 4).forEach(c => lines.push(`• ${c}`));
+      lines.push('');
+    }
 
-  // Examples
-  const examples = isAr ? lesson.examplesAr : lesson.examplesEn;
-  if (examples && examples.length > 0) {
-    lines.push(isAr ? '**أمثلة:**' : '**Examples:**');
-    examples.slice(0, 2).forEach(e => lines.push(`• ${e}`));
-    lines.push('');
-  }
+    // Key terms (cap at 2 per result)
+    if (lesson.keyTerms.length > 0) {
+      lines.push(isAr ? '**المصطلحات:**' : '**Key Terms:**');
+      lesson.keyTerms.slice(0, 2).forEach(term => {
+        const termName   = isAr ? term.ar           : term.en;
+        const definition = isAr ? term.definitionAr : term.definitionEn;
+        lines.push(`• **${termName}**: ${definition}`);
+      });
+      lines.push('');
+    }
 
-  // Source citation
-  lines.push(isAr ? `📖 المصدر: ${bookTitle}` : `📖 Source: ${bookTitle}`);
+    // Rules & Formulas
+    const rules = isAr ? lesson.rulesAr : lesson.rulesEn;
+    if (rules && rules.length > 0) {
+      lines.push(isAr ? '**القواعد والصيغ:**' : '**Rules & Formulas:**');
+      rules.forEach(r => lines.push(`• ${r}`));
+      lines.push('');
+    }
 
-  return lines.join('\n');
+    // Examples (cap at 2 per result)
+    const examples = isAr ? lesson.examplesAr : lesson.examplesEn;
+    if (examples && examples.length > 0) {
+      lines.push(isAr ? '**أمثلة:**' : '**Examples:**');
+      examples.slice(0, 2).forEach(e => lines.push(`• ${e}`));
+      lines.push('');
+    }
+
+    lines.push(isAr ? `📖 المصدر: ${bookTitle}` : `📖 Source: ${bookTitle}`);
+    return lines.join('\n');
+  });
+
+  return blocks.join('\n\n---\n\n');
 }
 
 // ─── Message Bubble ───────────────────────────────────────────────────────────
@@ -306,23 +319,26 @@ export default function IqraScreen() {
       setIsThinking(true);
 
       // 1. Local KB retrieval — grounds the AI answer with textbook content
+      //    Cap at top-3 so the AI has multi-concept context without overflowing the prompt.
       let results: KBLesson[];
       if (pinnedLessonId) {
         const pinned = getLessonById(pinnedLessonId);
-        results = pinned ? [pinned] : searchKBSemantic(q, lang as 'ar' | 'en');
+        results = pinned ? [pinned] : searchKBSemantic(q, lang as 'ar' | 'en').slice(0, 3);
       } else {
-        results = searchKBSemantic(q, lang as 'ar' | 'en');
+        results = searchKBSemantic(q, lang as 'ar' | 'en').slice(0, 3);
       }
+
+      const hasKBMatch = results.length > 0;
 
       // Detect teacher lesson-plan/worksheet/quiz generation intent
       const planKeywords = /خطة|lesson\s*plan|worksheet|ورقة\s*عمل|اختبار\s*(قصير|تكويني)|quiz|generate.*plan/i;
-      const hasPlanIntent = planKeywords.test(q) && results.length > 0 && mode === 'teacher';
+      const hasPlanIntent = planKeywords.test(q) && hasKBMatch && mode === 'teacher';
       const lessonTopic = hasPlanIntent
         ? (lang === 'ar' ? results[0].titleAr : results[0].titleEn)
         : undefined;
 
-      // 2. Build KB context string for the AI
-      const kbContext = results.length > 0
+      // 2. Build KB context string for the AI (undefined = no KB match, AI answers freely)
+      const kbContext = hasKBMatch
         ? buildResponse(q, results, lang as 'ar' | 'en', mode)
         : undefined;
 
@@ -340,13 +356,16 @@ export default function IqraScreen() {
           mode,
           language: lang as 'ar' | 'en',
         });
-        // Guard against empty AI reply (safety filter, quota, etc.)
         if (!responseText.trim()) {
+          // Empty reply — use KB fallback if available, otherwise a soft retry prompt
           responseText = kbContext ?? t('iqraNoResults');
+        } else if (!hasKBMatch) {
+          // AI answered but no textbook content backed it — append a soft disclaimer
+          responseText = responseText + '\n\n' + t('iqraNoKbDisclaimer');
         }
       } catch {
-        // Offline / server down — fall back to local KB response
-        responseText = kbContext ?? t('iqraNoResults');
+        // Offline / server down — use KB fallback if available, else a softer offline message
+        responseText = kbContext ?? t('iqraOfflineFallback');
       }
 
       const assistantMsg: Message = {
