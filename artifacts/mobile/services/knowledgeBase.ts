@@ -973,9 +973,22 @@ function normalizeTokens(text: string): string[] {
 }
 
 /**
+ * Common English stopwords that should never contribute to relevance scoring.
+ * These short words appear in almost every lesson, causing false positives via
+ * substring matching (e.g. "to" inside "touching", "of" inside "coefficient").
+ */
+const SCORE_STOPWORDS = new Set([
+  'the','of','a','an','to','is','in','it','at','on','by','or','and','for',
+  'as','be','do','if','how','me','my','no','so','up','us','we','i','its',
+  'was','are','not','but','can','has','have','with','this','that','from',
+  'are','their','they','will','what','when','find',
+]);
+
+/**
  * Score a single query against a single field string.
  * Exact full-string match = 2× the per-token score.
- * Token exact match = full weight; token substring = half weight.
+ * Token exact match = full weight; token substring (≥3 chars each) = half weight.
+ * Stopwords and single/double-char tokens are skipped to avoid false positives.
  */
 function scoreField(query: string, field: string, weight: number): number {
   const fieldLower = field.toLowerCase();
@@ -989,11 +1002,17 @@ function scoreField(query: string, field: string, weight: number): number {
 
   let score = 0;
   for (const qt of qTokens) {
-    if (qt.length < 2) continue;
+    // Skip very short tokens and English stopwords — they cause too many false positives
+    if (qt.length < 3 || SCORE_STOPWORDS.has(qt)) continue;
     let best = 0;
     for (const ft of fTokens) {
-      if (ft === qt) { best = Math.max(best, weight); }
-      else if (ft.includes(qt) || qt.includes(ft)) { best = Math.max(best, weight * 0.5); }
+      if (ft.length < 2) continue; // skip single-char field tokens
+      if (ft === qt) {
+        best = Math.max(best, weight);
+      } else if (qt.length >= 3 && ft.length >= 3 && (ft.includes(qt) || qt.includes(ft))) {
+        // Require minimum 3 chars on both sides to avoid spurious substring hits
+        best = Math.max(best, weight * 0.5);
+      }
     }
     score += best;
   }

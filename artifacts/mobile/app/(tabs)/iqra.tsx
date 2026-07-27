@@ -14,7 +14,8 @@ import {
 const LOGO_MARK  = require('@/assets/images/logo-mark.png');
 const LOGO_LOCKUP = require('@/assets/images/logo-lockup.png');
 import * as Clipboard from 'expo-clipboard';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
+import { TopicSelector } from '@/components/ui/TopicSelector';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -40,10 +41,22 @@ interface Message {
   role: Role;
   text: string;
   sources?: KBLesson[];
-  /** When set, shows a "Generate Lesson Plan" action button linking to the generator. */
+  /** When set, shows a "Generate Lesson Plan" chip. */
   lessonTopic?: string;
+  /** When set, shows Worksheet + Quiz quick-action chips. */
+  quickTopic?: string;
+  /** When set, shows an "Open lesson" chip navigating back to curriculum. */
+  curriculumLessonId?: string;
+  /** Subject color passed through from curriculum deep-link. */
+  subjectColor?: string;
   timestamp: Date;
 }
+
+// ─── Teaching-context subject options ────────────────────────────────────────
+const CONTEXT_SUBJECTS = [
+  { subjectId: 'mathematics', gradeId: 'grade-10', labelAr: 'رياضيات', labelEn: 'Math' },
+  { subjectId: 'chemistry',   gradeId: 'grade-10', labelAr: 'كيمياء',  labelEn: 'Chemistry' },
+];
 
 // ─── Suggested questions per mode/language ───────────────────────────────────
 interface Suggestion {
@@ -55,41 +68,146 @@ interface Suggestion {
 const SUGGESTIONS: Record<Mode, Record<'ar' | 'en', Suggestion[]>> = {
   teacher: {
     ar: [
-      { text: 'اشرح قواعد الاشتقاق',                   lessonId: 'kbl-math-2-2' },
-      { text: 'ما هي المتجهات في المستوى؟',             lessonId: 'kbl-math-3-1' },
-      { text: 'النسب المثلثية للزوايا',                 lessonId: 'kbl-math-s2-3-1' },
-      { text: 'قانون الجيوب وتطبيقاته',                lessonId: 'kbl-math-s2-4-2' },
-      { text: 'ما هو الاقتران العكسي؟',                lessonId: 'kbl-math-1-3' },
-      { text: 'قاعدة الاحتمال للحوادث المتنافية',      lessonId: 'kbl-math-8-2' },
+      { text: 'ما هو نموذج بور للذرة؟',               lessonId: 'kbl-chem-1-1' },
+      { text: 'اشرح الرابطة التساهمية',               lessonId: 'kbl-chem-3-2' },
+      { text: 'ما هو الاقتران العكسي؟',               lessonId: 'kbl-math-1-3' },
+      { text: 'قاعدة الاحتمال للحوادث المتنافية',     lessonId: 'kbl-math-8-2' },
+      { text: 'الأعداد الكمية وتوزيع الإلكترونات',    lessonId: 'kbl-chem-1-2' },
+      { text: 'اشرح قواعد الاشتقاق',                  lessonId: 'kbl-math-2-2' },
     ],
     en: [
-      { text: 'Explain differentiation rules',          lessonId: 'kbl-math-2-2' },
-      { text: 'What are vectors in the plane?',         lessonId: 'kbl-math-3-1' },
-      { text: 'Trigonometric ratios explained',         lessonId: 'kbl-math-s2-3-1' },
-      { text: 'Law of Sines and applications',          lessonId: 'kbl-math-s2-4-2' },
+      { text: "What is Bohr's model?",                  lessonId: 'kbl-chem-1-1' },
+      { text: 'Explain covalent bonding',               lessonId: 'kbl-chem-3-2' },
       { text: 'What is an inverse function?',           lessonId: 'kbl-math-1-3' },
       { text: 'Probability of mutually exclusive events', lessonId: 'kbl-math-8-2' },
+      { text: 'Quantum numbers explained',              lessonId: 'kbl-chem-1-2' },
+      { text: 'Explain differentiation rules',          lessonId: 'kbl-math-2-2' },
     ],
   },
   student: {
     ar: [
-      { text: 'كيف أجد المشتقة؟',                      lessonId: 'kbl-math-2-2' },
-      { text: 'ما هي القيم العظمى والصغرى؟',           lessonId: 'kbl-math-2-3' },
-      { text: 'اشرح جمع المتجهات',                     lessonId: 'kbl-math-3-2' },
-      { text: 'كيف أحل مسائل الاحتمال؟',               lessonId: 'kbl-math-8-1' },
-      { text: 'ما هي النسب المثلثية؟',                 lessonId: 'kbl-math-s2-3-1' },
-      { text: 'حل نظام معادلتين تربيعيتين',            lessonId: 'kbl-math-s2-1-1' },
+      { text: 'اشرح نموذج بور ببساطة',                lessonId: 'kbl-chem-1-1' },
+      { text: 'كيف أحل مسائل الاحتمال؟',              lessonId: 'kbl-math-8-1' },
+      { text: 'ما الفرق بين رابطة سيجما وباي؟',       lessonId: 'kbl-chem-3-2' },
+      { text: 'كيف أجد مجال الاقتران النسبي؟',        lessonId: 'kbl-math-1-2' },
+      { text: 'اشرح مبدأ أوفباو بسهولة',              lessonId: 'kbl-chem-1-2' },
+      { text: 'كيف أجد المشتقة؟',                     lessonId: 'kbl-math-2-2' },
     ],
     en: [
-      { text: 'How do I find a derivative?',            lessonId: 'kbl-math-2-2' },
-      { text: 'What are maximum and minimum values?',   lessonId: 'kbl-math-2-3' },
-      { text: 'Explain vector addition',                lessonId: 'kbl-math-3-2' },
+      { text: "Help me understand Bohr's model",        lessonId: 'kbl-chem-1-1' },
       { text: 'How do I solve probability problems?',   lessonId: 'kbl-math-8-1' },
-      { text: 'What are trigonometric ratios?',         lessonId: 'kbl-math-s2-3-1' },
-      { text: 'Solve a system of two quadratic equations', lessonId: 'kbl-math-s2-1-1' },
+      { text: 'Difference between sigma and pi bonds?', lessonId: 'kbl-chem-3-2' },
+      { text: 'How to find the domain of a rational function?', lessonId: 'kbl-math-1-2' },
+      { text: 'Explain Aufbau principle simply',        lessonId: 'kbl-chem-1-2' },
+      { text: 'How do I find a derivative?',            lessonId: 'kbl-math-2-2' },
     ],
   },
 };
+
+// ─── Context Banner ───────────────────────────────────────────────────────────
+function ContextBanner({
+  colors, isRTL, lang, t, onContextChange,
+}: {
+  colors: any; isRTL: boolean; lang: 'ar' | 'en';
+  t: (k: any) => string; onContextChange: (ctx: string) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [subjIdx, setSubjIdx] = useState(0);
+  const [topic, setTopicInternal] = useState('');
+
+  const subj = CONTEXT_SUBJECTS[subjIdx];
+
+  const handleTopicChange = (v: string) => {
+    setTopicInternal(v);
+    onContextChange(v);
+  };
+
+  const handleSubjChange = (i: number) => {
+    setSubjIdx(i);
+    setTopicInternal('');
+    onContextChange('');
+  };
+
+  const handleClear = () => {
+    setTopicInternal('');
+    setSubjIdx(0);
+    onContextChange('');
+    setExpanded(false);
+  };
+
+  return (
+    <View style={[ctxStyles.container, { borderTopColor: colors.border, backgroundColor: colors.card }]}>
+      {/* ── Pill header ── */}
+      <View style={[ctxStyles.pillRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }, { paddingHorizontal: 16, paddingVertical: 8 }]}>
+        <Pressable
+          onPress={() => setExpanded(e => !e)}
+          style={[ctxStyles.pill, {
+            backgroundColor: topic ? colors.primary + '18' : colors.muted,
+            borderColor: topic ? colors.primary + '50' : colors.border,
+            flexDirection: isRTL ? 'row-reverse' : 'row',
+            flex: 1,
+          }]}
+        >
+          <Ionicons name="location-outline" size={13} color={topic ? colors.primary : colors.mutedForeground} />
+          <Text
+            numberOfLines={1}
+            style={[ctxStyles.pillText, {
+              color: topic ? colors.primary : colors.mutedForeground,
+              fontFamily: topic ? 'Inter_500Medium' : 'Inter_400Regular',
+              textAlign: isRTL ? 'right' : 'left',
+              flex: 1,
+            }]}
+          >
+            {topic ? `${t('currentlyTeaching')}: ${topic}` : t('setTeachingContext')}
+          </Text>
+          <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={13} color={colors.mutedForeground} style={{ marginStart: 4 }} />
+        </Pressable>
+        {topic && (
+          <Pressable onPress={handleClear} hitSlop={8} style={ctxStyles.clearBtn}>
+            <Ionicons name="close-circle" size={16} color={colors.mutedForeground} />
+          </Pressable>
+        )}
+      </View>
+
+      {/* ── Expanded picker ── */}
+      {expanded && (
+        <View style={[ctxStyles.expanded, { borderTopColor: colors.border, paddingHorizontal: 16, paddingBottom: 12 }]}>
+          {/* Subject toggle */}
+          <View style={[ctxStyles.subjRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            {CONTEXT_SUBJECTS.map((s, i) => (
+              <Pressable
+                key={s.subjectId}
+                onPress={() => handleSubjChange(i)}
+                style={[ctxStyles.subjPill, {
+                  backgroundColor: subjIdx === i ? colors.primary : colors.muted,
+                  borderRadius: 16,
+                }]}
+              >
+                <Text style={[ctxStyles.subjText, {
+                  color: subjIdx === i ? colors.primaryForeground : colors.mutedForeground,
+                  fontFamily: subjIdx === i ? 'Inter_600SemiBold' : 'Inter_400Regular',
+                }]}>
+                  {lang === 'ar' ? s.labelAr : s.labelEn}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          <TopicSelector
+            subjectId={subj.subjectId}
+            gradeId={subj.gradeId}
+            value={topic}
+            onChange={handleTopicChange}
+            lang={lang}
+            isRTL={isRTL}
+            colors={colors}
+            accent={colors.primary}
+            t={t}
+          />
+        </View>
+      )}
+    </View>
+  );
+}
 
 // ─── Build iQra response from knowledge-base results ────────────────────────
 /**
@@ -172,8 +290,12 @@ function buildResponse(query: string, results: KBLesson[], lang: 'ar' | 'en', mo
 
 // ─── Message Bubble ───────────────────────────────────────────────────────────
 function MessageBubble({
-  message, colors, isRTL, onLongPress,
-}: { message: Message; colors: any; isRTL: boolean; onLongPress?: (text: string) => void }) {
+  message, colors, isRTL, onLongPress, onChipPress,
+}: {
+  message: Message; colors: any; isRTL: boolean;
+  onLongPress?: (text: string) => void;
+  onChipPress?: (type: 'worksheet' | 'quiz' | 'lesson-plan' | 'lesson', topic: string, extra?: string) => void;
+}) {
   const isUser = message.role === 'user';
 
   if (isUser) {
@@ -190,83 +312,108 @@ function MessageBubble({
 
   // Render assistant message with markdown-like formatting
   const lines = message.text.split('\n');
+  const hasChips = !!(message.quickTopic);
+
   return (
     <View style={[styles.rowAssistant, isRTL && styles.rowAssistantRTL]}>
       {/* iQra Avatar */}
       <View style={[styles.avatar, { backgroundColor: colors.primary + '20' }]}>
         <Image source={LOGO_MARK} style={{ width: 22, height: 20 }} resizeMode="contain" />
       </View>
-      <Pressable
-        onLongPress={() => onLongPress?.(message.text)}
-        delayLongPress={500}
-        style={[styles.bubbleAssistant, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, maxWidth: '82%' }]}
-      >
-        {lines.map((line, i) => {
-          if (!line.trim()) return <View key={i} style={{ height: 6 }} />;
-          const isBold = line.startsWith('**') && line.includes('**');
-          if (isBold) {
-            const clean = line.replace(/\*\*/g, '');
-            return (
-              <Text key={i} style={[styles.bubbleBold, { color: colors.foreground, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>
-                {clean}
-              </Text>
-            );
-          }
-          if (line.startsWith('•')) {
-            const text = line.substring(1).trim();
-            // Check for inline bold inside bullet
-            const parts = text.split('**');
-            return (
-              <View key={i} style={[styles.bulletRow, isRTL && { flexDirection: 'row-reverse' }]}>
-                <Text style={[{ color: colors.primary, marginTop: 2 }, isRTL ? { marginLeft: 6 } : { marginRight: 6 }]}>•</Text>
-                <Text style={[styles.bubbleText, { color: colors.foreground, flex: 1, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>
-                  {parts.map((p, pi) =>
-                    pi % 2 === 1
-                      ? <Text key={pi} style={{ fontFamily: 'Inter_600SemiBold' }}>{p}</Text>
-                      : p
-                  )}
+      <View style={{ flex: 1, maxWidth: '82%' }}>
+        <Pressable
+          onLongPress={() => onLongPress?.(message.text)}
+          delayLongPress={500}
+          style={[styles.bubbleAssistant, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}
+        >
+          {lines.map((line, i) => {
+            if (!line.trim()) return <View key={i} style={{ height: 6 }} />;
+            const isBold = line.startsWith('**') && line.includes('**');
+            if (isBold) {
+              const clean = line.replace(/\*\*/g, '');
+              return (
+                <Text key={i} style={[styles.bubbleBold, { color: colors.foreground, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>
+                  {clean}
                 </Text>
-              </View>
-            );
-          }
-          if (line.startsWith('📚') || line.startsWith('📖')) {
+              );
+            }
+            if (line.startsWith('•')) {
+              const text = line.substring(1).trim();
+              const parts = text.split('**');
+              return (
+                <View key={i} style={[styles.bulletRow, isRTL && { flexDirection: 'row-reverse' }]}>
+                  <Text style={[{ color: colors.primary, marginTop: 2 }, isRTL ? { marginLeft: 6 } : { marginRight: 6 }]}>•</Text>
+                  <Text style={[styles.bubbleText, { color: colors.foreground, flex: 1, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>
+                    {parts.map((p, pi) =>
+                      pi % 2 === 1
+                        ? <Text key={pi} style={{ fontFamily: 'Inter_600SemiBold' }}>{p}</Text>
+                        : p
+                    )}
+                  </Text>
+                </View>
+              );
+            }
+            if (line.startsWith('📚') || line.startsWith('📖')) {
+              return (
+                <Text key={i} style={[styles.sourceText, { color: colors.mutedForeground, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>
+                  {line}
+                </Text>
+              );
+            }
             return (
-              <Text key={i} style={[styles.sourceText, { color: colors.mutedForeground, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>
+              <Text key={i} style={[styles.bubbleText, { color: colors.foreground, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>
                 {line}
               </Text>
             );
-          }
-          return (
-            <Text key={i} style={[styles.bubbleText, { color: colors.foreground, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>
-              {line}
-            </Text>
-          );
-        })}
-        {/* ── Lesson-plan action button ── */}
-        {message.lessonTopic && (
-          <Pressable
-            onPress={() =>
-              router.push(
-                `/ai-tools/lesson-plan?topic=${encodeURIComponent(message.lessonTopic!)}` as any,
-              )
-            }
-            style={({ pressed }) => [
-              styles.actionBtn,
-              { backgroundColor: colors.primary + '18', borderColor: colors.primary, opacity: pressed ? 0.7 : 1 },
-            ]}
+          })}
+          <Text style={[styles.timestamp, { color: colors.mutedForeground, textAlign: isRTL ? 'left' : 'right' }]}>
+            {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </Text>
+        </Pressable>
+
+        {/* ── Quick-action chips: shown for KB-matched messages and/or curriculum deep-links ── */}
+        {(hasChips || !!message.curriculumLessonId) && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={[styles.chipRow, isRTL && { flexDirection: 'row-reverse' }]}
           >
-            <Ionicons name="document-text-outline" size={13} color={colors.primary} />
-            <Text style={[styles.actionBtnText, { color: colors.primary, fontFamily: 'Inter_500Medium' }]}>
-              {isRTL
-                ? `إنشاء خطة درس: ${message.lessonTopic}`
-                : `Generate Lesson Plan: ${message.lessonTopic}`}
-            </Text>
-          </Pressable>
+            {hasChips && (
+              <>
+                <Pressable
+                  onPress={() => onChipPress?.('worksheet', message.quickTopic!)}
+                  style={({ pressed }) => [styles.actionChip, { backgroundColor: colors.primary + '15', borderColor: colors.primary + '50', opacity: pressed ? 0.7 : 1 }]}
+                >
+                  <Text style={[styles.actionChipText, { color: colors.primary }]}>📝 {isRTL ? 'ورقة عمل' : 'Worksheet'}</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => onChipPress?.('quiz', message.quickTopic!)}
+                  style={({ pressed }) => [styles.actionChip, { backgroundColor: colors.primary + '15', borderColor: colors.primary + '50', opacity: pressed ? 0.7 : 1 }]}
+                >
+                  <Text style={[styles.actionChipText, { color: colors.primary }]}>❓ {isRTL ? 'اختبار' : 'Quiz'}</Text>
+                </Pressable>
+                {message.lessonTopic && (
+                  <Pressable
+                    onPress={() => onChipPress?.('lesson-plan', message.lessonTopic!)}
+                    style={({ pressed }) => [styles.actionChip, { backgroundColor: colors.primary + '18', borderColor: colors.primary + '60', opacity: pressed ? 0.7 : 1 }]}
+                  >
+                    <Text style={[styles.actionChipText, { color: colors.primary }]}>📄 {isRTL ? 'خطة درس' : 'Lesson Plan'}</Text>
+                  </Pressable>
+                )}
+              </>
+            )}
+            {/* "Open lesson" chip is independent — shown whenever message originated from a curriculum deep-link */}
+            {message.curriculumLessonId && (
+              <Pressable
+                onPress={() => onChipPress?.('lesson', message.curriculumLessonId!, message.subjectColor)}
+                style={({ pressed }) => [styles.actionChip, { backgroundColor: colors.muted, borderColor: colors.border, opacity: pressed ? 0.7 : 1 }]}
+              >
+                <Text style={[styles.actionChipText, { color: colors.foreground }]}>📖 {isRTL ? 'فتح الدرس' : 'Open lesson'}</Text>
+              </Pressable>
+            )}
+          </ScrollView>
         )}
-        <Text style={[styles.timestamp, { color: colors.mutedForeground, textAlign: isRTL ? 'left' : 'right' }]}>
-          {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </Text>
-      </Pressable>
+      </View>
     </View>
   );
 }
@@ -277,19 +424,31 @@ export default function IqraScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { t, lang, isRTL } = useLanguage();
+  const params = useLocalSearchParams<{
+    initialMessage?: string;
+    lessonId?: string;
+    subjectColor?: string;
+  }>();
+
   const [mode, setMode] = useState<Mode>('teacher');
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isThinking, setIsThinking] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
+  const [teachingCtx, setTeachingCtx] = useState('');
+  // Deep-link state: curriculum lesson to surface as "Open lesson" chip
+  const [deepLinkLessonId, setDeepLinkLessonId] = useState<string | null>(params.lessonId ?? null);
+  const [deepLinkColor, setDeepLinkColor] = useState<string | null>(params.subjectColor ?? null);
+  // Auto-send: initial message from deep-link, fired once after welcome message appears
+  const [autoMessagePending, setAutoMessagePending] = useState<string | null>(params.initialMessage ?? null);
   const listRef = useRef<FlatList>(null);
 
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
 
   const topPad = insets.top + (insets.top === 0 ? 67 : 0);
 
-  // Welcome message on mount
+  // Welcome message on mount / language change
   useEffect(() => {
     setMessages([
       {
@@ -301,12 +460,31 @@ export default function IqraScreen() {
     ]);
   }, [lang]);
 
+  // Sync deep-link params whenever the tab is navigated to with new params.
+  // Tab screens stay mounted, so useState initializers only run once — this
+  // effect re-applies fresh params each time the user taps "Ask iQra" on a
+  // different lesson without unmounting the screen.
+  useEffect(() => {
+    if (params.initialMessage) {
+      setDeepLinkLessonId(params.lessonId ?? null);
+      setDeepLinkColor(params.subjectColor ?? null);
+      setAutoMessagePending(params.initialMessage);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.initialMessage, params.lessonId, params.subjectColor]);
+
   const sendMessage = useCallback(
     async (text: string, pinnedLessonId?: string) => {
       const q = text.trim();
       if (!q || isThinking) return;
       setInput('');
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+      // Capture and consume the deep-link state so "Open lesson" chip appears once
+      const msgLessonId = deepLinkLessonId;
+      const msgColor    = deepLinkColor;
+      setDeepLinkLessonId(null);
+      setDeepLinkColor(null);
 
       const userMsg: Message = {
         id: Date.now().toString(),
@@ -337,10 +515,22 @@ export default function IqraScreen() {
         ? (lang === 'ar' ? results[0].titleAr : results[0].titleEn)
         : undefined;
 
-      // 2. Build KB context string for the AI (undefined = no KB match, AI answers freely)
-      const kbContext = hasKBMatch
-        ? buildResponse(q, results, lang as 'ar' | 'en', mode)
+      // Quick-action topic: set for any KB-matched message so worksheet/quiz chips appear
+      const quickTopic = hasKBMatch
+        ? (lessonTopic ?? (lang === 'ar' ? results[0].titleAr : results[0].titleEn))
         : undefined;
+
+      // 2. Build KB context string for the AI
+      //    Prepend teaching context so the AI knows what lesson the teacher is working on.
+      const teachingPrefix = teachingCtx
+        ? (lang === 'ar'
+          ? `[سياق التدريس: المعلم يدرّس حاليًا "${teachingCtx}"]\n\n`
+          : `[Teaching context: Teacher is currently teaching "${teachingCtx}"]\n\n`)
+        : '';
+
+      const kbContext = hasKBMatch
+        ? teachingPrefix + buildResponse(q, results, lang as 'ar' | 'en', mode)
+        : (teachingCtx ? teachingPrefix.trim() : undefined);
 
       // 3. Build conversation history (last 10 messages for context window)
       const history = updatedMessages.slice(-10).map(m => ({
@@ -357,14 +547,11 @@ export default function IqraScreen() {
           language: lang as 'ar' | 'en',
         });
         if (!responseText.trim()) {
-          // Empty reply — use KB fallback if available, otherwise a soft retry prompt
           responseText = kbContext ?? t('iqraNoResults');
         } else if (!hasKBMatch) {
-          // AI answered but no textbook content backed it — append a soft disclaimer
           responseText = responseText + '\n\n' + t('iqraNoKbDisclaimer');
         }
       } catch {
-        // Offline / server down — use KB fallback if available, else a softer offline message
         responseText = kbContext ?? t('iqraOfflineFallback');
       }
 
@@ -374,6 +561,9 @@ export default function IqraScreen() {
         text: responseText,
         sources: results,
         lessonTopic,
+        quickTopic,
+        curriculumLessonId: msgLessonId ?? undefined,
+        subjectColor: msgColor ?? undefined,
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, assistantMsg]);
@@ -381,8 +571,38 @@ export default function IqraScreen() {
 
       setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
     },
-    [isThinking, lang, messages, mode, t],
+    [deepLinkColor, deepLinkLessonId, isThinking, lang, messages, mode, t, teachingCtx],
   );
+
+  // Auto-send deep-link message once welcome message is in place
+  useEffect(() => {
+    if (autoMessagePending && messages.length === 1 && messages[0].id === 'welcome') {
+      const msg = autoMessagePending;
+      setAutoMessagePending(null);
+      sendMessage(msg);
+    }
+  }, [messages, autoMessagePending, sendMessage]);
+
+  // Handle quick-action chip taps
+  const handleChipPress = useCallback((
+    type: 'worksheet' | 'quiz' | 'lesson-plan' | 'lesson',
+    topic: string,
+    extra?: string,
+  ) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (type === 'worksheet') {
+      router.push(`/ai-tools/worksheet?topic=${encodeURIComponent(topic)}` as any);
+    } else if (type === 'quiz') {
+      router.push(`/ai-tools/quiz?topic=${encodeURIComponent(topic)}` as any);
+    } else if (type === 'lesson-plan') {
+      router.push(`/ai-tools/lesson-plan?topic=${encodeURIComponent(topic)}` as any);
+    } else if (type === 'lesson') {
+      router.push({
+        pathname: '/curriculum/lesson-detail',
+        params: { lessonId: topic, subjectColor: extra ?? colors.primary },
+      });
+    }
+  }, [colors.primary]);
 
   const suggestions = SUGGESTIONS[mode][lang as 'ar' | 'en'];
 
@@ -469,6 +689,17 @@ export default function IqraScreen() {
             </Pressable>
           ))}
         </ScrollView>
+
+        {/* ── Teaching-context banner (teacher mode only) ── */}
+        {mode === 'teacher' && (
+          <ContextBanner
+            colors={colors}
+            isRTL={isRTL}
+            lang={lang as 'ar' | 'en'}
+            t={t}
+            onContextChange={setTeachingCtx}
+          />
+        )}
       </View>
 
       {/* ─── Messages ──────────────────────────────────────────────── */}
@@ -485,6 +716,7 @@ export default function IqraScreen() {
             message={item}
             colors={colors}
             isRTL={isRTL}
+            onChipPress={handleChipPress}
             onLongPress={item.role === 'assistant' ? async (text) => {
               await Clipboard.setStringAsync(text);
               showToast(t('copiedToClipboard'));
@@ -595,8 +827,9 @@ const styles = StyleSheet.create({
   sourceText: { fontSize: 11, marginTop: 6, fontFamily: 'Inter_400Regular', fontStyle: 'italic' },
   timestamp: { fontSize: 10, marginTop: 6, fontFamily: 'Inter_400Regular' },
 
-  actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 10, borderWidth: 1 },
-  actionBtnText: { fontSize: 12, flexShrink: 1 },
+  chipRow: { flexDirection: 'row', gap: 6, marginTop: 6, paddingBottom: 2 },
+  actionChip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 16, borderWidth: 1 },
+  actionChipText: { fontSize: 12, fontFamily: 'Inter_500Medium' },
 
   thinkingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
   thinkingBubble: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderWidth: 1 },
@@ -606,4 +839,17 @@ const styles = StyleSheet.create({
   inputWrap: { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 14, paddingVertical: 8, gap: 8 },
   input: { flex: 1, fontSize: 14, maxHeight: 100, paddingVertical: 0 },
   sendBtn: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+});
+
+// ─── Context-banner styles ────────────────────────────────────────────────────
+const ctxStyles = StyleSheet.create({
+  container:  { borderTopWidth: StyleSheet.hairlineWidth },
+  pillRow:    { alignItems: 'center', gap: 6 },
+  pill:       { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
+  pillText:   { fontSize: 12 },
+  clearBtn:   { padding: 4 },
+  expanded:   { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 10 },
+  subjRow:    { flexDirection: 'row', gap: 8, marginBottom: 10 },
+  subjPill:   { paddingHorizontal: 14, paddingVertical: 6 },
+  subjText:   { fontSize: 13 },
 });

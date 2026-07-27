@@ -97,7 +97,7 @@ describe('searchKB — Arabic prefix stripping', () => {
     const results = searchKB('الاحتمال', 'ar');
     assert.ok(results.length > 0, 'searchKB returned no results for "الاحتمال"');
     assert.ok(
-      results[0].id === 'kbl-math-8-1' || results[0].id === 'kbl-math-8-2',
+      results[0].id === 'kbl-math-8-1' || results[0].id === 'kbl-math-8-2' || results[0].id === 'kbl-math-8-3',
       `Expected a probability lesson first for "الاحتمال", got "${results[0].id}"`,
     );
   });

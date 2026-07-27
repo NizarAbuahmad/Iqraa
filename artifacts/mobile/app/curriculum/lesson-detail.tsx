@@ -69,19 +69,39 @@ export default function LessonDetailScreen() {
       </View>
 
       <View style={styles.body}>
-        {/* Generate AI content button */}
-        <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            router.push({ pathname: '/ai-tools/lesson-plan', params: { topic: lesson.title } });
-          }}
-          style={[styles.aiBtn, { backgroundColor: color, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-        >
-          <Ionicons name="sparkles" size={18} color="#fff" />
-          <Text style={[styles.aiBtnText, { color: '#fff', fontFamily: 'Inter_600SemiBold' }]}>
-            {t('generateAILesson')}
-          </Text>
-        </Pressable>
+        {/* Action buttons row */}
+        <View style={[styles.actionRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              router.push({ pathname: '/ai-tools/lesson-plan', params: { topic: lesson.title } });
+            }}
+            style={[styles.aiBtn, { backgroundColor: color, borderRadius: colors.radius, flex: 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+          >
+            <Ionicons name="sparkles" size={18} color="#fff" />
+            <Text style={[styles.aiBtnText, { color: '#fff', fontFamily: 'Inter_600SemiBold' }]}>
+              {t('generateAILesson')}
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              const msgText = lang === 'ar'
+                ? `ما الذي يجب أن أعرفه قبل تدريس: ${lessonTitle}؟`
+                : `What should I know before teaching: ${lessonTitle}?`;
+              router.push({
+                pathname: '/(tabs)/iqra',
+                params: { initialMessage: msgText, lessonId: lessonId, subjectColor: color },
+              } as any);
+            }}
+            style={[styles.askIqraBtn, { backgroundColor: colors.card, borderColor: color, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+          >
+            <Ionicons name="chatbubble-ellipses-outline" size={16} color={color} />
+            <Text style={[styles.askIqraBtnText, { color, fontFamily: 'Inter_600SemiBold' }]}>
+              {t('askIqra')}
+            </Text>
+          </Pressable>
+        </View>
 
         {/* Objectives */}
         <Section title={t('learningObjectives')} icon="checkmark-circle-outline" color={color} isRTL={isRTL}>
@@ -169,8 +189,11 @@ const styles = StyleSheet.create({
   heroPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
   heroPillText: { fontSize: 12 },
   body: { padding: 20 },
-  aiBtn: { alignItems: 'center', justifyContent: 'center', gap: 8, padding: 16, marginBottom: 24 },
-  aiBtnText: { fontSize: 15 },
+  actionRow: { gap: 10, marginBottom: 24 },
+  aiBtn: { alignItems: 'center', justifyContent: 'center', gap: 8, padding: 14 },
+  aiBtnText: { fontSize: 14 },
+  askIqraBtn: { alignItems: 'center', justifyContent: 'center', gap: 6, padding: 12, borderWidth: 1.5 },
+  askIqraBtnText: { fontSize: 13 },
   section: { marginBottom: 20 },
   sectionHeader: { alignItems: 'center', gap: 6, marginBottom: 10 },
   sectionTitle: { fontSize: 15 },
