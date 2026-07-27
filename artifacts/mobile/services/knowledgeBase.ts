@@ -1048,12 +1048,26 @@ export function searchKB(query: string, lang: 'ar' | 'en' = 'ar'): KBLesson[] {
  * Use this everywhere instead of bare searchKB so vague queries still return
  * useful context for the AI.
  */
+/**
+ * Normalize Arabic text for fuzzy matching:
+ * strips hamza variants (أإآ→ا), alef maqsura (ى→ي), taa marbuta (ة→ه),
+ * and diacritics so that "الاول" matches "الأول", etc.
+ */
+function normalizeAr(s: string): string {
+  return s
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/ى/g, 'ي')
+    .replace(/ة/g, 'ه')
+    .replace(/[\u064B-\u065F]/g, ''); // strip tashkeel
+}
+
 export function searchKBSemantic(query: string, lang: 'ar' | 'en' = 'ar'): KBLesson[] {
   const q = query.trim();
+  const qn = normalizeAr(q); // normalized for Arabic pattern matching
 
-  // Semester preference signals
-  const prefersS2 = /فصل\s*(ال)?ثاني|semester\s*2|\bs2\b/i.test(q);
-  const prefersS1 = /فصل\s*(ال)?(أول|اول)|semester\s*1|\bs1\b/i.test(q);
+  // Semester preference signals (work on normalized text)
+  const prefersS2 = /فصل\s*(ال)?ثاني|semester\s*2|\bs2\b/i.test(qn);
+  const prefersS1 = /فصل\s*(ال)?(اول)|semester\s*1|\bs1\b/i.test(qn);
 
   // 1. Regular score-based search
   const regular = searchKB(q, lang);
@@ -1066,20 +1080,20 @@ export function searchKBSemantic(query: string, lang: 'ar' | 'en' = 'ar'): KBLes
   }
   if (regular.length > 0) return regular;
 
-  // 2. Ordinal lesson references: "first lesson", "الدرس الأول", "الدرس الثاني في الفصل الثاني"
+  // 2. Ordinal lesson references — normalized so "الاول" == "الأول"
   const ordinals: [RegExp, number][] = [
-    [/\b(أول|أولى|الأول|الأولى|first|1st|درس\s*1)\b/i, 1],
-    [/\b(ثاني|ثانية|الثاني|الثانية|second|2nd|درس\s*2)\b/i, 2],
-    [/\b(ثالث|ثالثة|الثالث|الثالثة|third|3rd|درس\s*3)\b/i, 3],
-    [/\b(رابع|رابعة|الرابع|الرابعة|fourth|4th|درس\s*4)\b/i, 4],
-    [/\b(خامس|خامسة|الخامس|الخامسة|fifth|5th|درس\s*5)\b/i, 5],
+    [/(اول|اولي|الاول|الاولي|first|1st|درس\s*1)/i, 1],
+    [/(ثاني|ثانيه|الثاني|الثانيه|second|2nd|درس\s*2)/i, 2],
+    [/(ثالث|ثالثه|الثالث|الثالثه|third|3rd|درس\s*3)/i, 3],
+    [/(رابع|رابعه|الرابع|الرابعه|fourth|4th|درس\s*4)/i, 4],
+    [/(خامس|خامسه|الخامس|الخامسه|fifth|5th|درس\s*5)/i, 5],
   ];
 
   const bookId = prefersS2 ? 'kb-math-10-s2' : 'kb-math-10-s1';
   const orderedLessons = getLessonsForBook(bookId);
 
   for (const [pattern, num] of ordinals) {
-    if (pattern.test(q)) {
+    if (pattern.test(qn)) {
       const lesson = orderedLessons[num - 1];
       if (lesson) return [lesson];
     }

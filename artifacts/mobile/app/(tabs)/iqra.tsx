@@ -311,7 +311,7 @@ export default function IqraScreen() {
       }
 
       // Detect teacher lesson-plan/worksheet/quiz generation intent
-      const planKeywords = /خطة\s*(درس|تدريس)|lesson\s*plan|worksheet|ورقة\s*عمل|اختبار\s*(قصير|تكويني)|quiz|generate.*plan|أعطني\s*خطة|أعد\s*لي\s*خطة/i;
+      const planKeywords = /خطة|lesson\s*plan|worksheet|ورقة\s*عمل|اختبار\s*(قصير|تكويني)|quiz|generate.*plan/i;
       const hasPlanIntent = planKeywords.test(q) && results.length > 0 && mode === 'teacher';
       const lessonTopic = hasPlanIntent
         ? (lang === 'ar' ? results[0].titleAr : results[0].titleEn)
@@ -336,6 +336,10 @@ export default function IqraScreen() {
           mode,
           language: lang as 'ar' | 'en',
         });
+        // Guard against empty AI reply (safety filter, quota, etc.)
+        if (!responseText.trim()) {
+          responseText = kbContext ?? t('iqraNoResults');
+        }
       } catch {
         // Offline / server down — fall back to local KB response
         responseText = kbContext ?? t('iqraNoResults');
