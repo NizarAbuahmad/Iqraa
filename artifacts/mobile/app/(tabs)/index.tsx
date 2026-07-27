@@ -3,20 +3,25 @@ import {
   Pressable, RefreshControl, ScrollView, StyleSheet, Text, View,
 } from 'react-native';
 import { router } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
+import { useCallback } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { SavedMaterial, getRecentItems } from '@/services/workspace';
 
-const TYPE_COLORS: Record<string, string> = {
-  'Lesson Plan': '#1B6B62',
-  'خطة الدرس': '#1B6B62',
-  'Worksheet': '#8B5CF6',
-  'ورقة العمل': '#8B5CF6',
-  'Quiz': '#F59E0B',
-  'اختبار': '#F59E0B',
+const TYPE_COLOR: Record<string, string> = {
+  lesson: '#1B6B62',
+  worksheet: '#8B5CF6',
+  quiz: '#F59E0B',
+};
+const TYPE_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
+  lesson: 'document-text-outline',
+  worksheet: 'list-outline',
+  quiz: 'help-circle-outline',
 };
 
 export default function DashboardScreen() {
@@ -25,16 +30,28 @@ export default function DashboardScreen() {
   const { user } = useAuth();
   const { t, lang, isRTL } = useLanguage();
   const [refreshing, setRefreshing] = useState(false);
+  const [recentItems, setRecentItems] = useState<SavedMaterial[]>([]);
+
+  const loadRecent = useCallback(async () => {
+    const items = await getRecentItems(3);
+    setRecentItems(items);
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadRecent();
+    }, [loadRecent]),
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await new Promise(r => setTimeout(r, 800));
+    await loadRecent();
+    await new Promise(r => setTimeout(r, 400));
     setRefreshing(false);
   };
 
   const topPad = insets.top + (insets.top === 0 ? 67 : 0);
 
-  // Greeting based on time of day
   const hour = new Date().getHours();
   const greeting = hour < 12 ? t('goodMorning') : hour < 17 ? t('goodAfternoon') : t('goodEvening');
 
@@ -44,26 +61,40 @@ export default function DashboardScreen() {
     { id: 'lesson-plan', labelKey: 'lessonPlan' as const, icon: 'document-text-outline' as const, color: '#1B6B62', route: '/ai-tools/lesson-plan' },
     { id: 'worksheet',   labelKey: 'worksheet'   as const, icon: 'list-outline'          as const, color: '#8B5CF6', route: '/ai-tools/worksheet' },
     { id: 'quiz',        labelKey: 'quiz'         as const, icon: 'help-circle-outline'   as const, color: '#F59E0B', route: '/ai-tools/quiz' },
-    { id: 'curriculum',  labelKey: 'curriculum'   as const, icon: 'library-outline'       as const, color: '#10B981', route: '/(tabs)/curriculum' },
+    { id: 'workspace',   labelKey: 'myWorkspace'  as const, icon: 'folder-outline'        as const, color: '#10B981', route: '/workspace' },
   ];
-
-  const RECENT_MATERIALS = isRTL
-    ? [
-        { id: '1', title: 'خطة درس: الروابط الكيميائية', type: 'خطة الدرس', subject: 'الكيمياء', grade: 'الصف العاشر', time: 'منذ ساعتين' },
-        { id: '2', title: 'ورقة عمل: كثيرات الحدود', type: 'ورقة العمل', subject: 'الرياضيات', grade: 'الصف العاشر', time: 'منذ يوم' },
-        { id: '3', title: 'اختبار: الاحتمال', type: 'اختبار', subject: 'الرياضيات', grade: 'الصف العاشر', time: 'منذ يومين' },
-      ]
-    : [
-        { id: '1', title: 'Chemical Bonding Lesson Plan', type: 'Lesson Plan', subject: 'Chemistry', grade: 'Grade 10', time: '2h ago' },
-        { id: '2', title: 'Polynomial Functions Worksheet', type: 'Worksheet', subject: 'Mathematics', grade: 'Grade 10', time: '1d ago' },
-        { id: '3', title: 'Probability Quiz', type: 'Quiz', subject: 'Mathematics', grade: 'Grade 10', time: '2d ago' },
-      ];
 
   const STATS = [
-    { label: isRTL ? 'موادي' : 'Materials', value: '12', icon: 'document-text-outline' as const, color: colors.primary },
-    { label: isRTL ? 'دروس الأسبوع' : 'This week', value: '8',  icon: 'calendar-outline'  as const, color: colors.accent },
-    { label: isRTL ? 'المواد'   : 'Subjects',  value: (user?.subjects?.length ?? 2).toString(), icon: 'library-outline'   as const, color: '#8B5CF6' },
+    { label: lang === 'ar' ? 'موادي' : 'Materials', value: String(recentItems.length > 0 ? recentItems.length : '—'), icon: 'document-text-outline' as const, color: colors.primary },
+    { label: lang === 'ar' ? 'أدوات الذكاء' : 'AI Tools', value: '3', icon: 'sparkles-outline' as const, color: colors.accent },
+    { label: lang === 'ar' ? 'المواد' : 'Subjects', value: (user?.subjects?.length ?? 2).toString(), icon: 'library-outline' as const, color: '#8B5CF6' },
   ];
+
+  const typeLabel = (type: string) => {
+    if (type === 'lesson') return lang === 'ar' ? 'خطة درس' : 'Lesson Plan';
+    if (type === 'worksheet') return lang === 'ar' ? 'ورقة عمل' : 'Worksheet';
+    return lang === 'ar' ? 'اختبار' : 'Quiz';
+  };
+
+  const formatDate = (iso: string) => {
+    try {
+      const d = new Date(iso);
+      const now = new Date();
+      const diffMs = now.getTime() - d.getTime();
+      const diffH = Math.floor(diffMs / 3600000);
+      const diffD = Math.floor(diffMs / 86400000);
+      if (lang === 'ar') {
+        if (diffH < 1) return 'منذ قليل';
+        if (diffH < 24) return `منذ ${diffH} ساعة`;
+        if (diffD < 7) return `منذ ${diffD} يوم`;
+        return d.toLocaleDateString('ar-JO', { day: 'numeric', month: 'short' });
+      }
+      if (diffH < 1) return 'Just now';
+      if (diffH < 24) return `${diffH}h ago`;
+      if (diffD < 7) return `${diffD}d ago`;
+      return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    } catch { return ''; }
+  };
 
   return (
     <ScrollView
@@ -132,38 +163,78 @@ export default function DashboardScreen() {
 
       {/* ─── Recent Materials ──────────────────────────────────── */}
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'Inter_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
-          {t('recentMaterials')}
-        </Text>
-        <View style={{ gap: 10 }}>
-          {RECENT_MATERIALS.map(m => {
-            const typeColor = TYPE_COLORS[m.type] ?? colors.primary;
-            return (
-              <Pressable
-                key={m.id}
-                onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
-                style={({ pressed }) => [styles.materialCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.8 : 1 }]}
-              >
-                <View style={[styles.materialIcon, { backgroundColor: typeColor + '18', borderRadius: 12 }]}>
-                  <Ionicons name="document-text-outline" size={20} color={typeColor} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.materialTitle, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={1}>
-                    {m.title}
-                  </Text>
-                  <View style={[styles.materialMeta, isRTL && { flexDirection: 'row-reverse' }]}>
-                    <View style={[styles.typePill, { backgroundColor: typeColor + '18', borderRadius: 8 }]}>
-                      <Text style={[styles.typeText, { color: typeColor, fontFamily: 'Inter_500Medium' }]}>{m.type}</Text>
-                    </View>
-                    <Text style={[styles.gradeText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>{m.grade}</Text>
-                    <Text style={[styles.timeText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>{m.time}</Text>
-                  </View>
-                </View>
-                <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={16} color={colors.mutedForeground} />
-              </Pressable>
-            );
-          })}
+        <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
+          <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'Inter_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+            {t('recentMaterials')}
+          </Text>
+          {recentItems.length > 0 && (
+            <Pressable onPress={() => router.push('/workspace')}>
+              <Text style={[{ color: colors.primary, fontFamily: 'Inter_500Medium', fontSize: 13 }]}>
+                {lang === 'ar' ? 'عرض الكل' : 'View all'}
+              </Text>
+            </Pressable>
+          )}
         </View>
+
+        {recentItems.length === 0 ? (
+          /* Empty state */
+          <Pressable
+            onPress={() => router.push('/(tabs)/ai-tools')}
+            style={({ pressed }) => [
+              styles.emptyCard,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                borderRadius: colors.radius,
+                opacity: pressed ? 0.8 : 1,
+              },
+            ]}
+          >
+            <Ionicons name="folder-open-outline" size={32} color={colors.mutedForeground} style={{ opacity: 0.5 }} />
+            <Text style={[{ color: colors.mutedForeground, fontFamily: 'Inter_400Regular', fontSize: 13, textAlign: 'center', lineHeight: 20 }]}>
+              {lang === 'ar'
+                ? 'لا توجد مواد محفوظة بعد\nاضغط لإنشاء أول مادة'
+                : 'No saved materials yet\nTap to create your first'}
+            </Text>
+          </Pressable>
+        ) : (
+          <View style={{ gap: 10 }}>
+            {recentItems.map(m => {
+              const color = TYPE_COLOR[m.type] ?? colors.primary;
+              const icon = TYPE_ICON[m.type] ?? 'document-text-outline';
+              return (
+                <Pressable
+                  key={m.id}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    router.push({ pathname: '/workspace/view', params: { id: m.id } });
+                  }}
+                  style={({ pressed }) => [styles.materialCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.8 : 1 }]}
+                >
+                  <View style={[styles.materialIcon, { backgroundColor: color + '18', borderRadius: 12 }]}>
+                    <Ionicons name={icon} size={20} color={color} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={[styles.materialTitle, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}
+                      numberOfLines={1}
+                    >
+                      {m.title}
+                    </Text>
+                    <View style={[styles.materialMeta, isRTL && { flexDirection: 'row-reverse' }]}>
+                      <View style={[styles.typePill, { backgroundColor: color + '18', borderRadius: 8 }]}>
+                        <Text style={[styles.typeText, { color, fontFamily: 'Inter_500Medium' }]}>{typeLabel(m.type)}</Text>
+                      </View>
+                      <Text style={[styles.gradeText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>{m.grade}</Text>
+                      <Text style={[styles.timeText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>{formatDate(m.savedAt)}</Text>
+                    </View>
+                  </View>
+                  <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={16} color={colors.mutedForeground} />
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
       </View>
 
       {/* ─── Knowledge Base Banner ─────────────────────────────── */}
@@ -211,6 +282,7 @@ const styles = StyleSheet.create({
   actionCard: { width: '47%', padding: 18, borderWidth: 1, alignItems: 'center', gap: 10 },
   actionIcon: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center' },
   actionLabel: { fontSize: 13 },
+  emptyCard: { padding: 30, borderWidth: 1, borderStyle: 'dashed', alignItems: 'center', gap: 10 },
   materialCard: { flexDirection: 'row', alignItems: 'center', padding: 14, borderWidth: 1, gap: 12 },
   materialIcon: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   materialTitle: { fontSize: 14, marginBottom: 4 },

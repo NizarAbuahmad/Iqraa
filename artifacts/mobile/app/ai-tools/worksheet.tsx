@@ -1,6 +1,6 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -10,6 +10,7 @@ import { aiService } from '@/services/ai/generators';
 import { WorksheetOutput } from '@/services/ai/AIService';
 import { GRADES, SUBJECTS } from '@/services/curriculumData';
 import { Button } from '@/components/ui/Button';
+import { getItem, saveItem, updateItem } from '@/services/workspace';
 
 const ACCENT = '#8B5CF6';
 
@@ -24,6 +25,10 @@ export default function WorksheetScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
+  const params = useLocalSearchParams<{
+    savedId?: string; gradeIdx?: string; subjectIdx?: string;
+    topic?: string; diffIdx?: string; numQIdx?: string; selectedTypes?: string;
+  }>();
   const scrollRef = useRef<ScrollView>(null);
 
   const gradeNames = GRADES.map(g => lang === 'ar' ? g.nameAr : g.name);
@@ -31,21 +36,42 @@ export default function WorksheetScreen() {
   const diffLabels = [t('difficultyEasy'), t('difficultyMedium'), t('difficultyHard'), t('difficultyMixed')];
   const numQLabels = NUM_Q_OPTIONS.map(n => String(n));
 
-  const [gradeIdx, setGradeIdx] = useState(7);
-  const [subjectIdx, setSubjectIdx] = useState(3);
-  const [topic, setTopic] = useState('');
-  const [diffIdx, setDiffIdx] = useState(1); // medium
-  const [numQIdx, setNumQIdx] = useState(2); // 10
-  const [selectedTypes, setSelectedTypes] = useState<Set<QType>>(new Set(['multiple_choice', 'short_answer']));
+  const parseTypes = (raw?: string): Set<QType> => {
+    if (!raw) return new Set(['multiple_choice', 'short_answer']);
+    try { return new Set(JSON.parse(raw) as QType[]); } catch { return new Set(['multiple_choice', 'short_answer']); }
+  };
+
+  const [gradeIdx, setGradeIdx] = useState(params.gradeIdx ? parseInt(params.gradeIdx, 10) : 7);
+  const [subjectIdx, setSubjectIdx] = useState(params.subjectIdx ? parseInt(params.subjectIdx, 10) : 3);
+  const [topic, setTopic] = useState(params.topic ?? '');
+  const [diffIdx, setDiffIdx] = useState(params.diffIdx ? parseInt(params.diffIdx, 10) : 1);
+  const [numQIdx, setNumQIdx] = useState(params.numQIdx ? parseInt(params.numQIdx, 10) : 2);
+  const [selectedTypes, setSelectedTypes] = useState<Set<QType>>(parseTypes(params.selectedTypes));
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<WorksheetOutput | null>(null);
   const [error, setError] = useState('');
+  const [savedId, setSavedId] = useState<string | undefined>(params.savedId);
+  const [saveLabel, setSaveLabel] = useState<'save' | 'saved' | 'updated'>('save');
+
+  useEffect(() => {
+    if (params.savedId) {
+      getItem(params.savedId).then(item => {
+        if (item) {
+          try { setResult(JSON.parse(item.content) as WorksheetOutput); } catch { /* noop */ }
+        }
+      });
+    }
+  }, [params.savedId]);
+
+  useEffect(() => {
+    if (result) setSaveLabel(savedId ? 'updated' : 'save');
+  }, [result]);
 
   const toggleType = (type: QType) => {
     setSelectedTypes(prev => {
       const next = new Set(prev);
       if (next.has(type)) {
-        if (next.size === 1) return prev; // keep at least one
+        if (next.size === 1) return prev;
         next.delete(type);
       } else {
         next.add(type);
@@ -56,7 +82,7 @@ export default function WorksheetScreen() {
 
   const generate = async () => {
     if (!topic.trim()) { setError(t('topicRequired')); return; }
-    setError(''); setLoading(true); setResult(null);
+    setError(''); setLoading(true); setResult(null); setSaveLabel('save');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
       const out = await aiService.generateWorksheet({
@@ -78,6 +104,33 @@ export default function WorksheetScreen() {
     }
   };
 
+  const handleSave = async () => {
+    if (!result) return;
+    const title = lang === 'ar'
+      ? `ورقة عمل: ${topic.trim()}`
+      : `Worksheet: ${topic.trim()}`;
+    const formState = {
+      gradeIdx, subjectIdx, topic: topic.trim(),
+      diffIdx, numQIdx, selectedTypes: JSON.stringify(Array.from(selectedTypes)),
+    };
+    if (savedId) {
+      await updateItem(savedId, {
+        title, subject: SUBJECTS[subjectIdx].name, grade: GRADES[gradeIdx].name,
+        topic: topic.trim(), language: lang, content: JSON.stringify(result), formState,
+      });
+      setSaveLabel('updated');
+    } else {
+      const saved = await saveItem({
+        type: 'worksheet', title,
+        subject: SUBJECTS[subjectIdx].name, grade: GRADES[gradeIdx].name,
+        topic: topic.trim(), language: lang, content: JSON.stringify(result), formState,
+      });
+      setSavedId(saved.id);
+      setSaveLabel('saved');
+    }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
   const typeLabels: Record<QType, string> = {
     multiple_choice: t('typeMultipleChoice'),
     short_answer: t('typeShortAnswer'),
@@ -86,6 +139,13 @@ export default function WorksheetScreen() {
   };
 
   const topPad = insets.top + (insets.top === 0 ? 67 : 0);
+
+  const saveBtnLabel =
+    saveLabel === 'saved' ? t('savedSuccess')
+      : saveLabel === 'updated' ? t('updatedSuccess')
+        : savedId ? t('updateInWorkspace')
+          : t('saveToWorkspace');
+  const saveDone = saveLabel === 'saved' || saveLabel === 'updated';
 
   return (
     <ScrollView
@@ -113,7 +173,6 @@ export default function WorksheetScreen() {
         <PickerField label={t('grade')} value={gradeNames[gradeIdx]} options={gradeNames} onChange={setGradeIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
         <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
 
-        {/* Topic */}
         <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('topicLabel')}</Text>
         <View style={[styles.input, { backgroundColor: colors.card, borderColor: error && !topic ? colors.destructive : colors.border, borderRadius: colors.radius }]}>
           <TextInput
@@ -126,35 +185,18 @@ export default function WorksheetScreen() {
           />
         </View>
 
-        {/* Difficulty */}
         <PickerField label={t('difficultyLabel')} value={diffLabels[diffIdx]} options={diffLabels} onChange={setDiffIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
-
-        {/* Number of questions */}
         <PickerField label={t('numQuestionsLabel')} value={numQLabels[numQIdx]} options={numQLabels} onChange={setNumQIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
 
-        {/* Question types */}
         <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left', marginBottom: 10 }]}>{t('questionTypesLabel')}</Text>
         <View style={[styles.checkboxGroup, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
           {ALL_Q_TYPES.map(type => (
-            <CheckboxRow
-              key={type}
-              label={typeLabels[type]}
-              checked={selectedTypes.has(type)}
-              onToggle={() => toggleType(type)}
-              accent={ACCENT}
-              colors={colors}
-              isRTL={isRTL}
-            />
+            <CheckboxRow key={type} label={typeLabels[type]} checked={selectedTypes.has(type)} onToggle={() => toggleType(type)} accent={ACCENT} colors={colors} isRTL={isRTL} />
           ))}
         </View>
 
         {error ? <Text style={[{ color: colors.destructive, fontSize: 13, fontFamily: 'Inter_400Regular', marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
-        <Button
-          label={loading ? t('generating') : t('createWorksheetBtn')}
-          onPress={generate}
-          loading={loading}
-          fullWidth
-        />
+        <Button label={loading ? t('generating') : t('createWorksheetBtn')} onPress={generate} loading={loading} fullWidth />
       </View>
 
       {/* Loading */}
@@ -168,44 +210,36 @@ export default function WorksheetScreen() {
       {/* Result */}
       {result && (
         <View style={{ paddingHorizontal: 20 }}>
-          {/* Title banner */}
           <View style={[styles.successBanner, { backgroundColor: ACCENT + '15', borderColor: ACCENT + '30', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Ionicons name="document-text" size={18} color={ACCENT} />
             <Text style={[{ color: ACCENT, fontFamily: 'Inter_600SemiBold', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{result.title}</Text>
           </View>
 
-          {/* Instructions */}
           <Text style={[{ color: colors.mutedForeground, fontFamily: 'Inter_400Regular', fontSize: 12, marginBottom: 16, lineHeight: 18, textAlign: isRTL ? 'right' : 'left' }]}>
             {result.instructions}
           </Text>
 
-          {/* Questions by section */}
-          {result.sections.map(sec => {
-            let qNum = 0;
-            // Find question offset across sections
-            return (
-              <View key={sec.title} style={{ marginBottom: 20 }}>
-                <Text style={[styles.secTitle, { color: colors.foreground, fontFamily: 'Inter_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>{sec.title}</Text>
-                {sec.questions.map((q, i) => (
-                  <View key={i} style={[styles.qCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                    <Text style={[styles.qNum, { color: ACCENT, fontFamily: 'Inter_600SemiBold' }]}>{i + 1}.</Text>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[{ color: colors.foreground, fontFamily: 'Inter_400Regular', fontSize: 13, lineHeight: 19, textAlign: isRTL ? 'right' : 'left' }]}>{q.text}</Text>
-                      {q.options?.map(o => (
-                        <View key={o} style={[styles.optionRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                          <View style={[styles.optionDot, { borderColor: colors.border }]} />
-                          <Text style={[{ color: colors.mutedForeground, fontFamily: 'Inter_400Regular', fontSize: 12, flex: 1 }]}>{o}</Text>
-                        </View>
-                      ))}
-                      <Text style={[styles.pts, { color: ACCENT, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{q.points} {t('pts')}</Text>
-                    </View>
+          {result.sections.map(sec => (
+            <View key={sec.title} style={{ marginBottom: 20 }}>
+              <Text style={[styles.secTitle, { color: colors.foreground, fontFamily: 'Inter_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>{sec.title}</Text>
+              {sec.questions.map((q, i) => (
+                <View key={i} style={[styles.qCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                  <Text style={[styles.qNum, { color: ACCENT, fontFamily: 'Inter_600SemiBold' }]}>{i + 1}.</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[{ color: colors.foreground, fontFamily: 'Inter_400Regular', fontSize: 13, lineHeight: 19, textAlign: isRTL ? 'right' : 'left' }]}>{q.text}</Text>
+                    {q.options?.map(o => (
+                      <View key={o} style={[styles.optionRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                        <View style={[styles.optionDot, { borderColor: colors.border }]} />
+                        <Text style={[{ color: colors.mutedForeground, fontFamily: 'Inter_400Regular', fontSize: 12, flex: 1 }]}>{o}</Text>
+                      </View>
+                    ))}
+                    <Text style={[styles.pts, { color: ACCENT, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{q.points} {t('pts')}</Text>
                   </View>
-                ))}
-              </View>
-            );
-          })}
+                </View>
+              ))}
+            </View>
+          ))}
 
-          {/* Answer Key */}
           {result.answerKey.length > 0 && (
             <View style={{ marginBottom: 8 }}>
               <View style={[styles.akHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -225,15 +259,27 @@ export default function WorksheetScreen() {
         </View>
       )}
 
-      {/* Regenerate */}
+      {/* Save + Regenerate */}
       {result && !loading && (
-        <Pressable
-          onPress={generate}
-          style={[styles.regenBtn, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-        >
-          <Ionicons name="refresh-outline" size={16} color={ACCENT} />
-          <Text style={[styles.regenText, { color: ACCENT, fontFamily: 'Inter_600SemiBold' }]}>{t('regenerateBtn')}</Text>
-        </Pressable>
+        <View style={{ marginHorizontal: 20, gap: 10, marginTop: 8, marginBottom: 20 }}>
+          <Pressable
+            onPress={handleSave}
+            style={({ pressed }) => [
+              styles.saveBtn,
+              { backgroundColor: saveDone ? ACCENT : 'transparent', borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.8 : 1 },
+            ]}
+          >
+            <Ionicons name={saveDone ? 'checkmark-circle' : 'bookmark-outline'} size={16} color={saveDone ? '#fff' : ACCENT} />
+            <Text style={[styles.saveBtnText, { color: saveDone ? '#fff' : ACCENT, fontFamily: 'Inter_600SemiBold' }]}>{saveBtnLabel}</Text>
+          </Pressable>
+          <Pressable
+            onPress={generate}
+            style={[styles.regenBtn, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+          >
+            <Ionicons name="refresh-outline" size={16} color={ACCENT} />
+            <Text style={[styles.regenText, { color: ACCENT, fontFamily: 'Inter_600SemiBold' }]}>{t('regenerateBtn')}</Text>
+          </Pressable>
+        </View>
       )}
     </ScrollView>
   );
@@ -244,10 +290,7 @@ function CheckboxRow({ label, checked, onToggle, accent, colors, isRTL }: {
   accent: string; colors: ReturnType<typeof useColors>; isRTL: boolean;
 }) {
   return (
-    <Pressable
-      onPress={onToggle}
-      style={[styles.checkRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-    >
+    <Pressable onPress={onToggle} style={[styles.checkRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
       <View style={[styles.checkbox, { borderColor: checked ? accent : colors.border, backgroundColor: checked ? accent : 'transparent' }]}>
         {checked && <Ionicons name="checkmark" size={13} color="#fff" />}
       </View>
@@ -315,6 +358,8 @@ const styles = StyleSheet.create({
   akRow: { gap: 8, marginBottom: 6, alignItems: 'flex-start' },
   akNum: { fontSize: 13, width: 22 },
   akAnswer: { flex: 1, fontSize: 13, lineHeight: 19 },
-  regenBtn: { alignItems: 'center', gap: 8, padding: 14, borderWidth: 1.5, marginHorizontal: 20, marginTop: 8, marginBottom: 20 },
+  saveBtn: { alignItems: 'center', gap: 8, padding: 14, borderWidth: 1.5 },
+  saveBtnText: { fontSize: 14 },
+  regenBtn: { alignItems: 'center', gap: 8, padding: 14, borderWidth: 1.5 },
   regenText: { fontSize: 14 },
 });

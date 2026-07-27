@@ -154,6 +154,7 @@ export default function ProfileScreen() {
           {t('settingsSection')}
         </Text>
         <View style={{ gap: 8 }}>
+          <SettingRow icon="folder-outline" label={t('myWorkspace')} onPress={() => router.push('/workspace')} isRTL={isRTL} colors={colors} />
           <SettingRow icon="person-outline" label={t('editProfile')} onPress={() => {}} isRTL={isRTL} colors={colors} />
           <SettingRow icon="lock-closed-outline" label={t('changePassword')} onPress={() => {}} isRTL={isRTL} colors={colors} />
           <SettingRow icon="settings-outline" label={t('settings')} onPress={() => router.push('/settings')} isRTL={isRTL} colors={colors} />

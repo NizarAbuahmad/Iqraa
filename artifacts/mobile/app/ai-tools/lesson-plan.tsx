@@ -1,5 +1,5 @@
-import React, { useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,6 +10,7 @@ import { aiService } from '@/services/ai/generators';
 import { LessonPlanOutput } from '@/services/ai/AIService';
 import { GRADES, SUBJECTS } from '@/services/curriculumData';
 import { Button } from '@/components/ui/Button';
+import { getItem, saveItem, updateItem } from '@/services/workspace';
 
 const ACCENT = '#1B6B62';
 
@@ -20,7 +21,10 @@ export default function LessonPlanScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
-  const { topic: initialTopic } = useLocalSearchParams<{ topic?: string }>();
+  const params = useLocalSearchParams<{
+    topic?: string; savedId?: string;
+    gradeIdx?: string; subjectIdx?: string; durationIdx?: string; styleIdx?: string; objectives?: string;
+  }>();
   const scrollRef = useRef<ScrollView>(null);
 
   const gradeNames = GRADES.map(g => lang === 'ar' ? g.nameAr : g.name);
@@ -28,21 +32,43 @@ export default function LessonPlanScreen() {
   const durationLabels = DURATION_VALUES.map(d => `${d} ${t('min')}`);
   const styleLabels = [t('teachingStyleDirect'), t('teachingStyleInquiry'), t('teachingStyleCollaborative')];
 
-  const [gradeIdx, setGradeIdx] = useState(9);
-  const [subjectIdx, setSubjectIdx] = useState(2);
-  const [topic, setTopic] = useState(initialTopic ?? '');
-  const [objectives, setObjectives] = useState('');
-  const [durationIdx, setDurationIdx] = useState(1); // 45 min
-  const [styleIdx, setStyleIdx] = useState(0);
+  const [gradeIdx, setGradeIdx] = useState(params.gradeIdx ? parseInt(params.gradeIdx, 10) : 9);
+  const [subjectIdx, setSubjectIdx] = useState(params.subjectIdx ? parseInt(params.subjectIdx, 10) : 2);
+  const [topic, setTopic] = useState(params.topic ?? '');
+  const [objectives, setObjectives] = useState(params.objectives ?? '');
+  const [durationIdx, setDurationIdx] = useState(params.durationIdx ? parseInt(params.durationIdx, 10) : 1);
+  const [styleIdx, setStyleIdx] = useState(params.styleIdx ? parseInt(params.styleIdx, 10) : 0);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<LessonPlanOutput | null>(null);
   const [error, setError] = useState('');
+  const [savedId, setSavedId] = useState<string | undefined>(params.savedId);
+  const [saveLabel, setSaveLabel] = useState<'save' | 'saved' | 'updated'>('save');
+
+  // If editing a saved item, load it and restore its result
+  useEffect(() => {
+    if (params.savedId) {
+      getItem(params.savedId).then(item => {
+        if (item) {
+          try {
+            const parsed = JSON.parse(item.content) as LessonPlanOutput;
+            setResult(parsed);
+          } catch { /* noop */ }
+        }
+      });
+    }
+  }, [params.savedId]);
+
+  // Reset save label when result changes (new generation)
+  useEffect(() => {
+    if (result) setSaveLabel(savedId ? 'updated' : 'save');
+  }, [result]);
 
   const generate = async () => {
     if (!topic.trim()) { setError(t('topicRequired')); return; }
     setError('');
     setLoading(true);
     setResult(null);
+    setSaveLabel('save');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
       const out = await aiService.generateLessonPlan({
@@ -64,7 +90,48 @@ export default function LessonPlanScreen() {
     }
   };
 
+  const handleSave = async () => {
+    if (!result) return;
+    const title = lang === 'ar'
+      ? `خطة درس: ${topic.trim()}`
+      : `Lesson Plan: ${topic.trim()}`;
+    const formState = { gradeIdx, subjectIdx, topic: topic.trim(), durationIdx, styleIdx, objectives };
+
+    if (savedId) {
+      await updateItem(savedId, {
+        title,
+        subject: SUBJECTS[subjectIdx].name,
+        grade: GRADES[gradeIdx].name,
+        topic: topic.trim(),
+        language: lang,
+        content: JSON.stringify(result),
+        formState,
+      });
+      setSaveLabel('updated');
+    } else {
+      const saved = await saveItem({
+        type: 'lesson',
+        title,
+        subject: SUBJECTS[subjectIdx].name,
+        grade: GRADES[gradeIdx].name,
+        topic: topic.trim(),
+        language: lang,
+        content: JSON.stringify(result),
+        formState,
+      });
+      setSavedId(saved.id);
+      setSaveLabel('saved');
+    }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
   const topPad = insets.top + (insets.top === 0 ? 67 : 0);
+
+  const saveBtnLabel =
+    saveLabel === 'saved' ? t('savedSuccess')
+      : saveLabel === 'updated' ? t('updatedSuccess')
+        : savedId ? t('updateInWorkspace')
+          : t('saveToWorkspace');
 
   return (
     <ScrollView
@@ -151,15 +218,44 @@ export default function LessonPlanScreen() {
       {/* Result */}
       {result && <LessonPlanResult plan={result} colors={colors} isRTL={isRTL} t={t} />}
 
-      {/* Regenerate */}
+      {/* Save + Regenerate */}
       {result && !loading && (
-        <Pressable
-          onPress={generate}
-          style={[styles.regenBtn, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-        >
-          <Ionicons name="refresh-outline" size={16} color={ACCENT} />
-          <Text style={[styles.regenText, { color: ACCENT, fontFamily: 'Inter_600SemiBold' }]}>{t('regenerateBtn')}</Text>
-        </Pressable>
+        <View style={{ marginHorizontal: 20, gap: 10, marginTop: 4, marginBottom: 20 }}>
+          {/* Save button */}
+          <Pressable
+            onPress={handleSave}
+            style={({ pressed }) => [
+              styles.saveBtn,
+              {
+                backgroundColor: (saveLabel === 'saved' || saveLabel === 'updated') ? ACCENT : 'transparent',
+                borderColor: ACCENT,
+                borderRadius: colors.radius,
+                flexDirection: isRTL ? 'row-reverse' : 'row',
+                opacity: pressed ? 0.8 : 1,
+              },
+            ]}
+          >
+            <Ionicons
+              name={(saveLabel === 'saved' || saveLabel === 'updated') ? 'checkmark-circle' : 'bookmark-outline'}
+              size={16}
+              color={(saveLabel === 'saved' || saveLabel === 'updated') ? '#fff' : ACCENT}
+            />
+            <Text style={[
+              styles.saveBtnText,
+              { color: (saveLabel === 'saved' || saveLabel === 'updated') ? '#fff' : ACCENT, fontFamily: 'Inter_600SemiBold' },
+            ]}>
+              {saveBtnLabel}
+            </Text>
+          </Pressable>
+          {/* Regenerate */}
+          <Pressable
+            onPress={generate}
+            style={[styles.regenBtn, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+          >
+            <Ionicons name="refresh-outline" size={16} color={ACCENT} />
+            <Text style={[styles.regenText, { color: ACCENT, fontFamily: 'Inter_600SemiBold' }]}>{t('regenerateBtn')}</Text>
+          </Pressable>
+        </View>
       )}
     </ScrollView>
   );
@@ -303,6 +399,8 @@ const styles = StyleSheet.create({
   bulletDot: { width: 6, height: 6, borderRadius: 3, marginTop: 7, flexShrink: 0 },
   bulletText: { flex: 1, fontSize: 13, lineHeight: 20 },
   bodyText: { fontSize: 13, lineHeight: 20 },
-  regenBtn: { alignItems: 'center', gap: 8, padding: 14, borderWidth: 1.5, marginHorizontal: 20, marginTop: 4, marginBottom: 20 },
+  saveBtn: { alignItems: 'center', gap: 8, padding: 14, borderWidth: 1.5 },
+  saveBtnText: { fontSize: 14 },
+  regenBtn: { alignItems: 'center', gap: 8, padding: 14, borderWidth: 1.5 },
   regenText: { fontSize: 14 },
 });

@@ -1,6 +1,6 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -10,6 +10,7 @@ import { aiService } from '@/services/ai/generators';
 import { QuizOutput } from '@/services/ai/AIService';
 import { GRADES, SUBJECTS } from '@/services/curriculumData';
 import { Button } from '@/components/ui/Button';
+import { getItem, saveItem, updateItem } from '@/services/workspace';
 
 const ACCENT = '#F59E0B';
 
@@ -23,6 +24,10 @@ export default function QuizScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
+  const params = useLocalSearchParams<{
+    savedId?: string; gradeIdx?: string; subjectIdx?: string;
+    topic?: string; durationIdx?: string; marksIdx?: string; selectedTypes?: string;
+  }>();
   const scrollRef = useRef<ScrollView>(null);
 
   const gradeNames = GRADES.map(g => lang === 'ar' ? g.nameAr : g.name);
@@ -30,16 +35,37 @@ export default function QuizScreen() {
   const durationLabels = DURATION_OPTIONS.map(d => `${d} ${t('min')}`);
   const marksLabels = MARKS_OPTIONS.map(m => String(m));
 
-  const [gradeIdx, setGradeIdx] = useState(9);
-  const [subjectIdx, setSubjectIdx] = useState(2);
-  const [topic, setTopic] = useState('');
-  const [durationIdx, setDurationIdx] = useState(2); // 20 min
-  const [marksIdx, setMarksIdx] = useState(1); // 20 marks
-  const [selectedTypes, setSelectedTypes] = useState<Set<QType>>(new Set(['multiple_choice', 'true_false', 'short_answer']));
+  const parseTypes = (raw?: string): Set<QType> => {
+    if (!raw) return new Set(['multiple_choice', 'true_false', 'short_answer']);
+    try { return new Set(JSON.parse(raw) as QType[]); } catch { return new Set(['multiple_choice', 'true_false', 'short_answer']); }
+  };
+
+  const [gradeIdx, setGradeIdx] = useState(params.gradeIdx ? parseInt(params.gradeIdx, 10) : 9);
+  const [subjectIdx, setSubjectIdx] = useState(params.subjectIdx ? parseInt(params.subjectIdx, 10) : 2);
+  const [topic, setTopic] = useState(params.topic ?? '');
+  const [durationIdx, setDurationIdx] = useState(params.durationIdx ? parseInt(params.durationIdx, 10) : 2);
+  const [marksIdx, setMarksIdx] = useState(params.marksIdx ? parseInt(params.marksIdx, 10) : 1);
+  const [selectedTypes, setSelectedTypes] = useState<Set<QType>>(parseTypes(params.selectedTypes));
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<QuizOutput | null>(null);
   const [error, setError] = useState('');
   const [showAnswers, setShowAnswers] = useState(false);
+  const [savedId, setSavedId] = useState<string | undefined>(params.savedId);
+  const [saveLabel, setSaveLabel] = useState<'save' | 'saved' | 'updated'>('save');
+
+  useEffect(() => {
+    if (params.savedId) {
+      getItem(params.savedId).then(item => {
+        if (item) {
+          try { setResult(JSON.parse(item.content) as QuizOutput); } catch { /* noop */ }
+        }
+      });
+    }
+  }, [params.savedId]);
+
+  useEffect(() => {
+    if (result) setSaveLabel(savedId ? 'updated' : 'save');
+  }, [result]);
 
   const toggleType = (type: QType) => {
     setSelectedTypes(prev => {
@@ -67,7 +93,7 @@ export default function QuizScreen() {
 
   const generate = async () => {
     if (!topic.trim()) { setError(t('topicRequired')); return; }
-    setError(''); setLoading(true); setResult(null); setShowAnswers(false);
+    setError(''); setLoading(true); setResult(null); setShowAnswers(false); setSaveLabel('save');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
       const out = await aiService.generateQuiz({
@@ -89,7 +115,41 @@ export default function QuizScreen() {
     }
   };
 
+  const handleSave = async () => {
+    if (!result) return;
+    const title = lang === 'ar'
+      ? `اختبار: ${topic.trim()}`
+      : `Quiz: ${topic.trim()}`;
+    const formState = {
+      gradeIdx, subjectIdx, topic: topic.trim(),
+      durationIdx, marksIdx, selectedTypes: JSON.stringify(Array.from(selectedTypes)),
+    };
+    if (savedId) {
+      await updateItem(savedId, {
+        title, subject: SUBJECTS[subjectIdx].name, grade: GRADES[gradeIdx].name,
+        topic: topic.trim(), language: lang, content: JSON.stringify(result), formState,
+      });
+      setSaveLabel('updated');
+    } else {
+      const saved = await saveItem({
+        type: 'quiz', title,
+        subject: SUBJECTS[subjectIdx].name, grade: GRADES[gradeIdx].name,
+        topic: topic.trim(), language: lang, content: JSON.stringify(result), formState,
+      });
+      setSavedId(saved.id);
+      setSaveLabel('saved');
+    }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
   const topPad = insets.top + (insets.top === 0 ? 67 : 0);
+
+  const saveBtnLabel =
+    saveLabel === 'saved' ? t('savedSuccess')
+      : saveLabel === 'updated' ? t('updatedSuccess')
+        : savedId ? t('updateInWorkspace')
+          : t('saveToWorkspace');
+  const saveDone = saveLabel === 'saved' || saveLabel === 'updated';
 
   return (
     <ScrollView
@@ -117,7 +177,6 @@ export default function QuizScreen() {
         <PickerField label={t('grade')} value={gradeNames[gradeIdx]} options={gradeNames} onChange={setGradeIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
         <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
 
-        {/* Topic */}
         <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('topicLabel')}</Text>
         <View style={[styles.input, { backgroundColor: colors.card, borderColor: error && !topic ? colors.destructive : colors.border, borderRadius: colors.radius }]}>
           <TextInput
@@ -130,36 +189,18 @@ export default function QuizScreen() {
           />
         </View>
 
-        {/* Duration */}
         <PickerField label={t('quizDurationLabel')} value={durationLabels[durationIdx]} options={durationLabels} onChange={setDurationIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
-
-        {/* Total marks */}
         <PickerField label={t('totalMarksLabel')} value={marksLabels[marksIdx]} options={marksLabels} onChange={setMarksIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
 
-        {/* Question types */}
         <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left', marginBottom: 10 }]}>{t('questionTypesLabel')}</Text>
         <View style={[styles.checkboxGroup, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
           {ALL_Q_TYPES.map(type => (
-            <CheckboxRow
-              key={type}
-              label={TYPE_LABEL[type]}
-              checked={selectedTypes.has(type)}
-              onToggle={() => toggleType(type)}
-              accent={ACCENT}
-              colors={colors}
-              isRTL={isRTL}
-            />
+            <CheckboxRow key={type} label={TYPE_LABEL[type]} checked={selectedTypes.has(type)} onToggle={() => toggleType(type)} accent={ACCENT} colors={colors} isRTL={isRTL} />
           ))}
         </View>
 
         {error ? <Text style={[{ color: colors.destructive, fontSize: 13, fontFamily: 'Inter_400Regular', marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
-        <Button
-          label={loading ? t('generatingQuiz') : t('generateQuizBtn')}
-          onPress={generate}
-          loading={loading}
-          fullWidth
-          style={{ backgroundColor: ACCENT }}
-        />
+        <Button label={loading ? t('generatingQuiz') : t('generateQuizBtn')} onPress={generate} loading={loading} fullWidth style={{ backgroundColor: ACCENT }} />
       </View>
 
       {/* Loading */}
@@ -173,7 +214,6 @@ export default function QuizScreen() {
       {/* Result */}
       {result && (
         <View style={{ paddingHorizontal: 20 }}>
-          {/* Quiz header card */}
           <View style={[styles.quizHeader, { backgroundColor: ACCENT + '15', borderColor: ACCENT + '40', borderRadius: colors.radius }]}>
             <Text style={[styles.quizTitle, { color: colors.foreground, fontFamily: 'Inter_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>{result.title}</Text>
             <View style={[styles.quizMeta, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -183,7 +223,6 @@ export default function QuizScreen() {
             </View>
           </View>
 
-          {/* Show/hide answers toggle */}
           <Pressable
             onPress={() => setShowAnswers(v => !v)}
             style={[styles.toggleBtn, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
@@ -194,7 +233,6 @@ export default function QuizScreen() {
             </Text>
           </Pressable>
 
-          {/* Questions */}
           {result.questions.map((q, i) => {
             const tc = TYPE_COLOR[q.type as QType] ?? ACCENT;
             return (
@@ -251,15 +289,27 @@ export default function QuizScreen() {
         </View>
       )}
 
-      {/* Regenerate */}
+      {/* Save + Regenerate */}
       {result && !loading && (
-        <Pressable
-          onPress={generate}
-          style={[styles.regenBtn, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-        >
-          <Ionicons name="refresh-outline" size={16} color={ACCENT} />
-          <Text style={[styles.regenText, { color: ACCENT, fontFamily: 'Inter_600SemiBold' }]}>{t('regenerateBtn')}</Text>
-        </Pressable>
+        <View style={{ marginHorizontal: 20, gap: 10, marginTop: 4, marginBottom: 20 }}>
+          <Pressable
+            onPress={handleSave}
+            style={({ pressed }) => [
+              styles.saveBtn,
+              { backgroundColor: saveDone ? ACCENT : 'transparent', borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.8 : 1 },
+            ]}
+          >
+            <Ionicons name={saveDone ? 'checkmark-circle' : 'bookmark-outline'} size={16} color={saveDone ? '#fff' : ACCENT} />
+            <Text style={[styles.saveBtnText, { color: saveDone ? '#fff' : ACCENT, fontFamily: 'Inter_600SemiBold' }]}>{saveBtnLabel}</Text>
+          </Pressable>
+          <Pressable
+            onPress={generate}
+            style={[styles.regenBtn, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+          >
+            <Ionicons name="refresh-outline" size={16} color={ACCENT} />
+            <Text style={[styles.regenText, { color: ACCENT, fontFamily: 'Inter_600SemiBold' }]}>{t('regenerateBtn')}</Text>
+          </Pressable>
+        </View>
       )}
     </ScrollView>
   );
@@ -279,10 +329,7 @@ function CheckboxRow({ label, checked, onToggle, accent, colors, isRTL }: {
   accent: string; colors: ReturnType<typeof useColors>; isRTL: boolean;
 }) {
   return (
-    <Pressable
-      onPress={onToggle}
-      style={[styles.checkRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-    >
+    <Pressable onPress={onToggle} style={[styles.checkRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
       <View style={[styles.checkbox, { borderColor: checked ? accent : colors.border, backgroundColor: checked ? accent : 'transparent' }]}>
         {checked && <Ionicons name="checkmark" size={13} color="#fff" />}
       </View>
@@ -350,6 +397,8 @@ const styles = StyleSheet.create({
   optLabel: { fontSize: 13, width: 20 },
   ansBox: { alignItems: 'center', gap: 6, padding: 10, marginTop: 8 },
   expBox: { padding: 10, marginTop: 8 },
-  regenBtn: { alignItems: 'center', gap: 8, padding: 14, borderWidth: 1.5, marginHorizontal: 20, marginTop: 4, marginBottom: 20 },
+  saveBtn: { alignItems: 'center', gap: 8, padding: 14, borderWidth: 1.5 },
+  saveBtnText: { fontSize: 14 },
+  regenBtn: { alignItems: 'center', gap: 8, padding: 14, borderWidth: 1.5 },
   regenText: { fontSize: 14 },
 });
