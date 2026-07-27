@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,19 +13,27 @@ import { Button } from '@/components/ui/Button';
 
 const ACCENT = '#1B6B62';
 
+const DURATION_VALUES = [30, 45, 60, 90];
+const STYLE_IDS = ['direct', 'inquiry', 'collaborative'] as const;
+
 export default function LessonPlanScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
   const { topic: initialTopic } = useLocalSearchParams<{ topic?: string }>();
+  const scrollRef = useRef<ScrollView>(null);
 
   const gradeNames = GRADES.map(g => lang === 'ar' ? g.nameAr : g.name);
   const subjectNames = SUBJECTS.map(s => lang === 'ar' ? s.nameAr : s.name);
+  const durationLabels = DURATION_VALUES.map(d => `${d} ${t('min')}`);
+  const styleLabels = [t('teachingStyleDirect'), t('teachingStyleInquiry'), t('teachingStyleCollaborative')];
 
-  const [gradeIdx, setGradeIdx] = useState(9); // Grade 10
-  const [subjectIdx, setSubjectIdx] = useState(2); // Mathematics
+  const [gradeIdx, setGradeIdx] = useState(9);
+  const [subjectIdx, setSubjectIdx] = useState(2);
   const [topic, setTopic] = useState(initialTopic ?? '');
-  const [duration, setDuration] = useState('45');
+  const [objectives, setObjectives] = useState('');
+  const [durationIdx, setDurationIdx] = useState(1); // 45 min
+  const [styleIdx, setStyleIdx] = useState(0);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<LessonPlanOutput | null>(null);
   const [error, setError] = useState('');
@@ -41,11 +49,14 @@ export default function LessonPlanScreen() {
         grade: GRADES[gradeIdx].name,
         subject: SUBJECTS[subjectIdx].name,
         topic: topic.trim(),
-        duration: parseInt(duration) || 45,
+        duration: DURATION_VALUES[durationIdx],
         language: lang === 'ar' ? 'arabic' : 'english',
+        teachingStyle: STYLE_IDS[styleIdx],
+        objectives: objectives.trim() || undefined,
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setResult(out);
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
     } catch {
       setError(t('generationFailed'));
     } finally {
@@ -57,11 +68,13 @@ export default function LessonPlanScreen() {
 
   return (
     <ScrollView
+      ref={scrollRef}
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={{ paddingBottom: 60 }}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
+      {/* Header */}
       <View style={[styles.header, { backgroundColor: ACCENT, paddingTop: topPad + 12 }]}>
         <Pressable onPress={() => router.back()} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
@@ -75,10 +88,12 @@ export default function LessonPlanScreen() {
         </Text>
       </View>
 
+      {/* Form */}
       <View style={styles.form}>
-        <PickerField label={t('grade')} value={gradeNames[gradeIdx]} options={gradeNames} onChange={i => setGradeIdx(i)} colors={colors} isRTL={isRTL} accent={ACCENT} />
-        <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} onChange={i => setSubjectIdx(i)} colors={colors} isRTL={isRTL} accent={ACCENT} />
+        <PickerField label={t('grade')} value={gradeNames[gradeIdx]} options={gradeNames} onChange={setGradeIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
+        <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
 
+        {/* Topic */}
         <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('topicLabel')}
         </Text>
@@ -93,18 +108,26 @@ export default function LessonPlanScreen() {
           />
         </View>
 
-        <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Inter_500Medium', marginTop: 4, textAlign: isRTL ? 'right' : 'left' }]}>
-          {t('durationLabel')}
+        {/* Objectives (optional) */}
+        <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+          {t('objectivesLabel')}
         </Text>
         <View style={[styles.inputBox, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
           <TextInput
-            style={[styles.textInput, { color: colors.foreground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}
-            value={duration}
-            onChangeText={setDuration}
-            keyboardType="number-pad"
-            maxLength={3}
+            style={[styles.textInput, { color: colors.foreground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left', minHeight: 60 }]}
+            placeholder={t('objectivesPlaceholder')}
+            placeholderTextColor={colors.mutedForeground}
+            value={objectives}
+            onChangeText={setObjectives}
+            multiline
           />
         </View>
+
+        {/* Duration picker */}
+        <PickerField label={t('durationLabel')} value={durationLabels[durationIdx]} options={durationLabels} onChange={setDurationIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
+
+        {/* Teaching style picker */}
+        <PickerField label={t('teachingStyleLabel')} value={styleLabels[styleIdx]} options={styleLabels} onChange={setStyleIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
 
         {error ? <Text style={[{ color: colors.destructive, fontFamily: 'Inter_400Regular', fontSize: 13, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
         <Button
@@ -115,6 +138,7 @@ export default function LessonPlanScreen() {
         />
       </View>
 
+      {/* Loading state */}
       {loading && (
         <View style={[styles.loadingBox, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, marginHorizontal: 20, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <ActivityIndicator color={ACCENT} />
@@ -124,12 +148,29 @@ export default function LessonPlanScreen() {
         </View>
       )}
 
+      {/* Result */}
       {result && <LessonPlanResult plan={result} colors={colors} isRTL={isRTL} t={t} />}
+
+      {/* Regenerate */}
+      {result && !loading && (
+        <Pressable
+          onPress={generate}
+          style={[styles.regenBtn, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+        >
+          <Ionicons name="refresh-outline" size={16} color={ACCENT} />
+          <Text style={[styles.regenText, { color: ACCENT, fontFamily: 'Inter_600SemiBold' }]}>{t('regenerateBtn')}</Text>
+        </Pressable>
+      )}
     </ScrollView>
   );
 }
 
-function LessonPlanResult({ plan, colors, isRTL, t }: { plan: LessonPlanOutput; colors: ReturnType<typeof useColors>; isRTL: boolean; t: (k: any) => string }) {
+function LessonPlanResult({ plan, colors, isRTL, t }: {
+  plan: LessonPlanOutput;
+  colors: ReturnType<typeof useColors>;
+  isRTL: boolean;
+  t: (k: any, ...a: any[]) => string;
+}) {
   return (
     <View style={{ paddingHorizontal: 20, paddingTop: 4 }}>
       <View style={[styles.resultHeader, { backgroundColor: ACCENT + '15', borderColor: ACCENT + '30', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -151,6 +192,12 @@ function LessonPlanResult({ plan, colors, isRTL, t }: { plan: LessonPlanOutput; 
       <ResultSection title={t('sectionMainActivity')} icon="people-outline" isRTL={isRTL}>
         <BodyText text={plan.mainActivity} colors={colors} isRTL={isRTL} />
       </ResultSection>
+      <ResultSection title={t('sectionGuidedPractice')} icon="hand-left-outline" isRTL={isRTL}>
+        <BodyText text={plan.guidedPractice} colors={colors} isRTL={isRTL} />
+      </ResultSection>
+      <ResultSection title={t('sectionIndependentPractice')} icon="person-outline" isRTL={isRTL}>
+        <BodyText text={plan.independentPractice} colors={colors} isRTL={isRTL} />
+      </ResultSection>
       <ResultSection title={t('sectionClosure')} icon="stop-circle-outline" isRTL={isRTL}>
         <BodyText text={plan.closure} colors={colors} isRTL={isRTL} />
       </ResultSection>
@@ -167,7 +214,9 @@ function LessonPlanResult({ plan, colors, isRTL, t }: { plan: LessonPlanOutput; 
   );
 }
 
-function ResultSection({ title, icon, isRTL, children }: { title: string; icon: keyof typeof Ionicons.glyphMap; isRTL: boolean; children: React.ReactNode }) {
+function ResultSection({ title, icon, isRTL, children }: {
+  title: string; icon: keyof typeof Ionicons.glyphMap; isRTL: boolean; children: React.ReactNode;
+}) {
   const colors = useColors();
   return (
     <View style={{ marginBottom: 16 }}>
@@ -254,4 +303,6 @@ const styles = StyleSheet.create({
   bulletDot: { width: 6, height: 6, borderRadius: 3, marginTop: 7, flexShrink: 0 },
   bulletText: { flex: 1, fontSize: 13, lineHeight: 20 },
   bodyText: { fontSize: 13, lineHeight: 20 },
+  regenBtn: { alignItems: 'center', gap: 8, padding: 14, borderWidth: 1.5, marginHorizontal: 20, marginTop: 4, marginBottom: 20 },
+  regenText: { fontSize: 14 },
 });

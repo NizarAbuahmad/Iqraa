@@ -14,6 +14,15 @@ export interface AIRequest {
   duration?: number;
   language?: 'arabic' | 'english';
   additionalContext?: string;
+  // Lesson plan extras
+  teachingStyle?: 'direct' | 'inquiry' | 'collaborative';
+  objectives?: string;
+  // Worksheet extras
+  difficulty?: 'easy' | 'medium' | 'hard' | 'mixed';
+  numQuestions?: number;
+  questionTypes?: Array<'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false'>;
+  // Quiz extras
+  totalMarks?: number;
 }
 
 export interface LessonPlanOutput {
@@ -25,6 +34,8 @@ export interface LessonPlanOutput {
   materials: string[];
   introduction: string;
   mainActivity: string;
+  guidedPractice: string;
+  independentPractice: string;
   closure: string;
   assessment: string;
   differentiation: string;
@@ -35,6 +46,7 @@ export interface WorksheetOutput {
   title: string;
   instructions: string;
   sections: WorksheetSection[];
+  answerKey: WorksheetAnswerKeyItem[];
 }
 
 export interface WorksheetSection {
@@ -48,6 +60,11 @@ export interface WorksheetQuestion {
   options?: string[];
   answer?: string;
   points: number;
+}
+
+export interface WorksheetAnswerKeyItem {
+  num: number;
+  answer: string;
 }
 
 export interface QuizOutput {
