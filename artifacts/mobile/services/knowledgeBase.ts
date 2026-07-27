@@ -1131,3 +1131,25 @@ export function getLessonsForBook(bookId: string): KBLesson[] {
   const unitIds = KB_UNITS.filter(u => u.bookId === bookId).map(u => u.id);
   return KB_LESSONS.filter(l => unitIds.includes(l.unitId));
 }
+
+/** All KB units for a given subject + grade, ordered by their `order` field. */
+export function getUnitsForSubjectGrade(subjectId: string, gradeId: string): KBUnit[] {
+  const bookIds = KB_BOOKS
+    .filter(b => b.subjectId === subjectId && b.gradeId === gradeId)
+    .map(b => b.id);
+  return KB_UNITS
+    .filter(u => bookIds.includes(u.bookId))
+    .sort((a, b) => a.order - b.order);
+}
+
+/** All KB lessons inside a single unit, ordered by their `order` field. */
+export function getLessonsForUnit(unitId: string): KBLesson[] {
+  return KB_LESSONS
+    .filter(l => l.unitId === unitId)
+    .sort((a, b) => a.order - b.order);
+}
+
+/** True when there is KB content for the given subject + grade. */
+export function hasKBContent(subjectId: string, gradeId: string): boolean {
+  return KB_BOOKS.some(b => b.subjectId === subjectId && b.gradeId === gradeId);
+}

@@ -9,6 +9,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { LessonPlanOutput } from '@/services/ai/AIService';
 import { GRADES, SUBJECTS } from '@/services/curriculumData';
+import { TopicSelector } from '@/components/ui/TopicSelector';
 import { Button } from '@/components/ui/Button';
 import { getItem, saveItem, updateItem } from '@/services/workspace';
 import { ExportMenu } from '@/components/ui/ExportMenu';
@@ -45,6 +46,17 @@ export default function LessonPlanScreen() {
   const [gradeIdx, setGradeIdx] = useState(params.gradeIdx ? parseInt(params.gradeIdx, 10) : 9);
   const [subjectIdx, setSubjectIdx] = useState(params.subjectIdx ? parseInt(params.subjectIdx, 10) : 2);
   const [topic, setTopic] = useState(params.topic ?? '');
+
+  // Reset topic when grade or subject changes so stale KB selections are cleared
+  const prevGradeRef = React.useRef(gradeIdx);
+  const prevSubjectRef = React.useRef(subjectIdx);
+  useEffect(() => {
+    if (prevGradeRef.current !== gradeIdx || prevSubjectRef.current !== subjectIdx) {
+      setTopic('');
+      prevGradeRef.current = gradeIdx;
+      prevSubjectRef.current = subjectIdx;
+    }
+  }, [gradeIdx, subjectIdx]);
   const [objectives, setObjectives] = useState(params.objectives ?? '');
   const [durationIdx, setDurationIdx] = useState(params.durationIdx ? parseInt(params.durationIdx, 10) : 1);
   const [styleIdx, setStyleIdx] = useState(params.styleIdx ? parseInt(params.styleIdx, 10) : 0);
@@ -234,20 +246,19 @@ export default function LessonPlanScreen() {
         <PickerField label={t('grade')} value={gradeNames[gradeIdx]} options={gradeNames} onChange={setGradeIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
         <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
 
-        {/* Topic */}
-        <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
-          {t('topicLabel')}
-        </Text>
-        <View style={[styles.inputBox, { backgroundColor: colors.card, borderColor: error && !topic ? colors.destructive : colors.border, borderRadius: colors.radius }]}>
-          <TextInput
-            style={[styles.textInput, { color: colors.foreground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}
-            placeholder={t('topicPlaceholder')}
-            placeholderTextColor={colors.mutedForeground}
-            value={topic}
-            onChangeText={text => { setTopic(text); setError(''); }}
-            multiline
-          />
-        </View>
+        {/* Topic / lesson selector */}
+        <TopicSelector
+          subjectId={SUBJECTS[subjectIdx].id}
+          gradeId={GRADES[gradeIdx].id}
+          value={topic}
+          onChange={text => { setTopic(text); setError(''); }}
+          lang={lang as 'ar' | 'en'}
+          isRTL={isRTL}
+          colors={colors}
+          accent={ACCENT}
+          hasError={!!error && !topic}
+          t={t}
+        />
 
         {/* Objectives (optional) */}
         <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>

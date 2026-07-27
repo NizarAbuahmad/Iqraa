@@ -9,6 +9,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { QuizOutput } from '@/services/ai/AIService';
 import { GRADES, SUBJECTS } from '@/services/curriculumData';
+import { TopicSelector } from '@/components/ui/TopicSelector';
 import { Button } from '@/components/ui/Button';
 import { getItem, saveItem, updateItem } from '@/services/workspace';
 import { ExportMenu } from '@/components/ui/ExportMenu';
@@ -21,10 +22,18 @@ import {
 const ACCENT = '#F59E0B';
 
 type QType = 'multiple_choice' | 'true_false' | 'short_answer';
+type Difficulty = 'easy' | 'medium' | 'hard';
+type DifficultyLevel = 'normal' | 'high' | 'difficult';
 
 const DURATION_OPTIONS = [10, 15, 20, 25, 30, 45];
 const MARKS_OPTIONS = [10, 20, 25, 30, 40, 50, 100];
 const ALL_Q_TYPES: QType[] = ['multiple_choice', 'true_false', 'short_answer'];
+const DIFFICULTY_IDS: DifficultyLevel[] = ['normal', 'high', 'difficult'];
+const DIFFICULTY_MAP: Record<DifficultyLevel, Difficulty> = {
+  normal: 'easy',
+  high: 'medium',
+  difficult: 'hard',
+};
 
 export default function QuizScreen() {
   const colors = useColors();
@@ -40,6 +49,7 @@ export default function QuizScreen() {
   const subjectNames = SUBJECTS.map(s => lang === 'ar' ? s.nameAr : s.name);
   const durationLabels = DURATION_OPTIONS.map(d => `${d} ${t('min')}`);
   const marksLabels = MARKS_OPTIONS.map(m => String(m));
+  const diffLabels = [t('difficultyNormal'), t('difficultyHigh'), t('difficultyDifficult')];
 
   const parseTypes = (raw?: string): Set<QType> => {
     if (!raw) return new Set(['multiple_choice', 'true_false', 'short_answer']);
@@ -49,6 +59,19 @@ export default function QuizScreen() {
   const [gradeIdx, setGradeIdx] = useState(params.gradeIdx ? parseInt(params.gradeIdx, 10) : 9);
   const [subjectIdx, setSubjectIdx] = useState(params.subjectIdx ? parseInt(params.subjectIdx, 10) : 2);
   const [topic, setTopic] = useState(params.topic ?? '');
+  const [diffIdx, setDiffIdx] = useState(0);
+
+  // Reset topic when grade or subject changes
+  const prevGradeRef = React.useRef(gradeIdx);
+  const prevSubjectRef = React.useRef(subjectIdx);
+  useEffect(() => {
+    if (prevGradeRef.current !== gradeIdx || prevSubjectRef.current !== subjectIdx) {
+      setTopic('');
+      prevGradeRef.current = gradeIdx;
+      prevSubjectRef.current = subjectIdx;
+    }
+  }, [gradeIdx, subjectIdx]);
+
   const [durationIdx, setDurationIdx] = useState(params.durationIdx ? parseInt(params.durationIdx, 10) : 2);
   const [marksIdx, setMarksIdx] = useState(params.marksIdx ? parseInt(params.marksIdx, 10) : 1);
   const [selectedTypes, setSelectedTypes] = useState<Set<QType>>(parseTypes(params.selectedTypes));
@@ -116,6 +139,7 @@ export default function QuizScreen() {
         duration: DURATION_OPTIONS[durationIdx],
         totalMarks: MARKS_OPTIONS[marksIdx],
         questionTypes: Array.from(selectedTypes),
+        difficulty: DIFFICULTY_MAP[DIFFICULTY_IDS[diffIdx]],
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setResult(out);
@@ -226,18 +250,20 @@ export default function QuizScreen() {
         <PickerField label={t('grade')} value={gradeNames[gradeIdx]} options={gradeNames} onChange={setGradeIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
         <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
 
-        <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('topicLabel')}</Text>
-        <View style={[styles.input, { backgroundColor: colors.card, borderColor: error && !topic ? colors.destructive : colors.border, borderRadius: colors.radius }]}>
-          <TextInput
-            style={[{ color: colors.foreground, fontFamily: 'Inter_400Regular', fontSize: 15, textAlign: isRTL ? 'right' : 'left' }]}
-            placeholder={t('topicPlaceholderQuiz')}
-            placeholderTextColor={colors.mutedForeground}
-            value={topic}
-            onChangeText={text => { setTopic(text); setError(''); }}
-            multiline
-          />
-        </View>
+        <TopicSelector
+          subjectId={SUBJECTS[subjectIdx].id}
+          gradeId={GRADES[gradeIdx].id}
+          value={topic}
+          onChange={text => { setTopic(text); setError(''); }}
+          lang={lang as 'ar' | 'en'}
+          isRTL={isRTL}
+          colors={colors}
+          accent={ACCENT}
+          hasError={!!error && !topic}
+          t={t}
+        />
 
+        <PickerField label={t('levelLabel')} value={diffLabels[diffIdx]} options={diffLabels} onChange={setDiffIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
         <PickerField label={t('quizDurationLabel')} value={durationLabels[durationIdx]} options={durationLabels} onChange={setDurationIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
         <PickerField label={t('totalMarksLabel')} value={marksLabels[marksIdx]} options={marksLabels} onChange={setMarksIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
 

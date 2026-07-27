@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -9,6 +10,9 @@ import {
   TextInput,
   View,
 } from 'react-native';
+
+const LOGO_MARK  = require('@/assets/images/logo-mark.png');
+const LOGO_LOCKUP = require('@/assets/images/logo-lockup.png');
 import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -177,7 +181,7 @@ function MessageBubble({
     <View style={[styles.rowAssistant, isRTL && styles.rowAssistantRTL]}>
       {/* iQra Avatar */}
       <View style={[styles.avatar, { backgroundColor: colors.primary + '20' }]}>
-        <Text style={{ fontSize: 16 }}>📚</Text>
+        <Image source={LOGO_MARK} style={{ width: 22, height: 20 }} resizeMode="contain" />
       </View>
       <Pressable
         onLongPress={() => onLongPress?.(message.text)}
@@ -380,12 +384,14 @@ export default function IqraScreen() {
           {/* Brand */}
           <View style={[styles.brandRow, isRTL && { flexDirection: 'row-reverse' }]}>
             <View style={[styles.iqraIcon, { backgroundColor: colors.primary }]}>
-              <Text style={{ fontSize: 18 }}>📚</Text>
+              <Image source={LOGO_MARK} style={{ width: 26, height: 24 }} resizeMode="contain" />
             </View>
             <View>
-              <Text style={[styles.headerTitle, { color: colors.foreground, fontFamily: 'Inter_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
-                {t('iqraChatTitle')}
-              </Text>
+              <Image
+                source={LOGO_LOCKUP}
+                style={[styles.headerLockup, isRTL && { alignSelf: 'flex-end' }]}
+                resizeMode="contain"
+              />
               <Text style={[styles.headerSub, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
                 {t('iqraChatSubtitle')}
               </Text>
@@ -470,7 +476,7 @@ export default function IqraScreen() {
           isThinking ? (
             <View style={[styles.thinkingRow, isRTL && { flexDirection: 'row-reverse' }]}>
               <View style={[styles.avatar, { backgroundColor: colors.primary + '20' }]}>
-                <Text style={{ fontSize: 16 }}>📚</Text>
+                <Image source={LOGO_MARK} style={{ width: 22, height: 20 }} resizeMode="contain" />
               </View>
               <View style={[styles.thinkingBubble, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
                 <ActivityIndicator size="small" color={colors.primary} />
@@ -545,7 +551,7 @@ const styles = StyleSheet.create({
   headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, marginBottom: 10 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   iqraIcon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: 20 },
+  headerLockup: { height: 32, width: 140 },
   headerSub: { fontSize: 12, marginTop: 1 },
   modeToggle: { flexDirection: 'row', padding: 3, gap: 2 },
   modeBtn: { paddingHorizontal: 12, paddingVertical: 5 },

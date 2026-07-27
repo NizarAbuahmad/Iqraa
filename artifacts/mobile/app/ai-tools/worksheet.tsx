@@ -9,6 +9,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { WorksheetOutput } from '@/services/ai/AIService';
 import { GRADES, SUBJECTS } from '@/services/curriculumData';
+import { TopicSelector } from '@/components/ui/TopicSelector';
 import { Button } from '@/components/ui/Button';
 import { getItem, saveItem, updateItem } from '@/services/workspace';
 import { ExportMenu } from '@/components/ui/ExportMenu';
@@ -20,10 +21,16 @@ import {
 
 const ACCENT = '#8B5CF6';
 
+type DifficultyLevel = 'normal' | 'high' | 'difficult';
 type Difficulty = 'easy' | 'medium' | 'hard' | 'mixed';
 type QType = 'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false';
 
-const DIFFICULTY_IDS: Difficulty[] = ['easy', 'medium', 'hard', 'mixed'];
+const DIFFICULTY_IDS: DifficultyLevel[] = ['normal', 'high', 'difficult'];
+const DIFFICULTY_MAP: Record<DifficultyLevel, Difficulty> = {
+  normal: 'easy',
+  high: 'medium',
+  difficult: 'hard',
+};
 const NUM_Q_OPTIONS = [5, 8, 10, 12, 15, 20];
 const ALL_Q_TYPES: QType[] = ['multiple_choice', 'short_answer', 'fill_blank', 'true_false'];
 
@@ -39,7 +46,7 @@ export default function WorksheetScreen() {
 
   const gradeNames = GRADES.map(g => lang === 'ar' ? g.nameAr : g.name);
   const subjectNames = SUBJECTS.map(s => lang === 'ar' ? s.nameAr : s.name);
-  const diffLabels = [t('difficultyEasy'), t('difficultyMedium'), t('difficultyHard'), t('difficultyMixed')];
+  const diffLabels = [t('difficultyNormal'), t('difficultyHigh'), t('difficultyDifficult')];
   const numQLabels = NUM_Q_OPTIONS.map(n => String(n));
 
   const parseTypes = (raw?: string): Set<QType> => {
@@ -50,7 +57,18 @@ export default function WorksheetScreen() {
   const [gradeIdx, setGradeIdx] = useState(params.gradeIdx ? parseInt(params.gradeIdx, 10) : 7);
   const [subjectIdx, setSubjectIdx] = useState(params.subjectIdx ? parseInt(params.subjectIdx, 10) : 3);
   const [topic, setTopic] = useState(params.topic ?? '');
-  const [diffIdx, setDiffIdx] = useState(params.diffIdx ? parseInt(params.diffIdx, 10) : 1);
+  const [diffIdx, setDiffIdx] = useState(params.diffIdx ? parseInt(params.diffIdx, 10) : 0);
+
+  // Reset topic when grade or subject changes
+  const prevGradeRef = React.useRef(gradeIdx);
+  const prevSubjectRef = React.useRef(subjectIdx);
+  useEffect(() => {
+    if (prevGradeRef.current !== gradeIdx || prevSubjectRef.current !== subjectIdx) {
+      setTopic('');
+      prevGradeRef.current = gradeIdx;
+      prevSubjectRef.current = subjectIdx;
+    }
+  }, [gradeIdx, subjectIdx]);
   const [numQIdx, setNumQIdx] = useState(params.numQIdx ? parseInt(params.numQIdx, 10) : 2);
   const [selectedTypes, setSelectedTypes] = useState<Set<QType>>(parseTypes(params.selectedTypes));
   const [loading, setLoading] = useState(false);
@@ -102,7 +120,7 @@ export default function WorksheetScreen() {
         subject: SUBJECTS[subjectIdx].name,
         topic: topic.trim(),
         language: lang === 'ar' ? 'arabic' : 'english',
-        difficulty: DIFFICULTY_IDS[diffIdx],
+        difficulty: DIFFICULTY_MAP[DIFFICULTY_IDS[diffIdx]],
         numQuestions: NUM_Q_OPTIONS[numQIdx],
         questionTypes: Array.from(selectedTypes),
       });
@@ -222,17 +240,18 @@ export default function WorksheetScreen() {
         <PickerField label={t('grade')} value={gradeNames[gradeIdx]} options={gradeNames} onChange={setGradeIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
         <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
 
-        <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('topicLabel')}</Text>
-        <View style={[styles.input, { backgroundColor: colors.card, borderColor: error && !topic ? colors.destructive : colors.border, borderRadius: colors.radius }]}>
-          <TextInput
-            style={[{ color: colors.foreground, fontFamily: 'Inter_400Regular', fontSize: 15, textAlign: isRTL ? 'right' : 'left' }]}
-            placeholder={t('topicPlaceholderWorksheet')}
-            placeholderTextColor={colors.mutedForeground}
-            value={topic}
-            onChangeText={text => { setTopic(text); setError(''); }}
-            multiline
-          />
-        </View>
+        <TopicSelector
+          subjectId={SUBJECTS[subjectIdx].id}
+          gradeId={GRADES[gradeIdx].id}
+          value={topic}
+          onChange={text => { setTopic(text); setError(''); }}
+          lang={lang as 'ar' | 'en'}
+          isRTL={isRTL}
+          colors={colors}
+          accent={ACCENT}
+          hasError={!!error && !topic}
+          t={t}
+        />
 
         <PickerField label={t('difficultyLabel')} value={diffLabels[diffIdx]} options={diffLabels} onChange={setDiffIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
         <PickerField label={t('numQuestionsLabel')} value={numQLabels[numQIdx]} options={numQLabels} onChange={setNumQIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
