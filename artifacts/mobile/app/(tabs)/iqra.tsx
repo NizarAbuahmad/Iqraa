@@ -2,8 +2,6 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -13,6 +11,7 @@ import {
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
@@ -234,6 +233,7 @@ function MessageBubble({
 export default function IqraScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
   const { t, lang, isRTL } = useLanguage();
   const [mode, setMode] = useState<Mode>('teacher');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -430,61 +430,56 @@ export default function IqraScreen() {
       />
 
       {/* ─── Input Bar ─────────────────────────────────────────────── */}
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={0}
+      <View
+        style={[
+          styles.inputBar,
+          {
+            backgroundColor: colors.card,
+            borderTopColor: colors.border,
+            paddingBottom: tabBarHeight + Math.max(insets.bottom, 8),
+          },
+        ]}
       >
         <View
           style={[
-            styles.inputBar,
-            {
-              backgroundColor: colors.card,
-              borderTopColor: colors.border,
-              paddingBottom: insets.bottom + 8,
-            },
+            styles.inputWrap,
+            { backgroundColor: colors.muted, borderRadius: 24 },
+            isRTL && { flexDirection: 'row-reverse' },
           ]}
         >
-          <View
+          <TextInput
             style={[
-              styles.inputWrap,
-              { backgroundColor: colors.muted, borderRadius: 24 },
-              isRTL && { flexDirection: 'row-reverse' },
+              styles.input,
+              { color: colors.foreground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' },
+            ]}
+            placeholder={t('iqraPlaceholder')}
+            placeholderTextColor={colors.mutedForeground}
+            value={input}
+            onChangeText={setInput}
+            multiline
+            maxLength={400}
+            onSubmitEditing={() => sendMessage(input)}
+          />
+          <Pressable
+            onPress={() => sendMessage(input)}
+            disabled={!input.trim() || isThinking}
+            style={({ pressed }) => [
+              styles.sendBtn,
+              {
+                backgroundColor: input.trim() ? colors.primary : colors.muted,
+                borderRadius: 20,
+                opacity: pressed ? 0.8 : 1,
+              },
             ]}
           >
-            <TextInput
-              style={[
-                styles.input,
-                { color: colors.foreground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' },
-              ]}
-              placeholder={t('iqraPlaceholder')}
-              placeholderTextColor={colors.mutedForeground}
-              value={input}
-              onChangeText={setInput}
-              multiline
-              maxLength={400}
-              onSubmitEditing={() => sendMessage(input)}
+            <Ionicons
+              name={isRTL ? 'arrow-back' : 'arrow-forward'}
+              size={18}
+              color={input.trim() ? colors.primaryForeground : colors.mutedForeground}
             />
-            <Pressable
-              onPress={() => sendMessage(input)}
-              disabled={!input.trim() || isThinking}
-              style={({ pressed }) => [
-                styles.sendBtn,
-                {
-                  backgroundColor: input.trim() ? colors.primary : colors.muted,
-                  borderRadius: 20,
-                  opacity: pressed ? 0.8 : 1,
-                },
-              ]}
-            >
-              <Ionicons
-                name={isRTL ? 'arrow-back' : 'arrow-forward'}
-                size={18}
-                color={input.trim() ? colors.primaryForeground : colors.mutedForeground}
-              />
-            </Pressable>
-          </View>
+          </Pressable>
         </View>
-      </KeyboardAvoidingView>
+      </View>
       <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
     </View>
   );
