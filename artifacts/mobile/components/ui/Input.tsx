@@ -60,7 +60,7 @@ export function Input({
             style,
           ]}
           placeholderTextColor={colors.mutedForeground}
-          writingDirection={isRTL ? 'rtl' : 'ltr'}
+
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           {...props}

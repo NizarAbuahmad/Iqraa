@@ -1,42 +1,45 @@
-import React, { useState } from 'react';
-import {
-  Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View,
-} from 'react-native';
+import React from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
+import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 
-function InfoRow({ icon, label, value, color }: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string; color: string }) {
+function InfoRow({ icon, label, value, color, isRTL }: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string; color: string; isRTL: boolean }) {
+  const colors = useColors();
   return (
-    <View style={styles.infoRow}>
+    <View style={[styles.infoRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
       <View style={[styles.infoIcon, { backgroundColor: color + '18' }]}>
         <Ionicons name={icon} size={16} color={color} />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={[styles.infoLabel, { color: '#7A8E8C' }]}>{label}</Text>
-        <Text style={[styles.infoValue]}>{value || '—'}</Text>
+        <Text style={[styles.infoLabel, { color: colors.mutedForeground, textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
+        <Text style={[styles.infoValue, { color: colors.foreground, textAlign: isRTL ? 'right' : 'left' }]}>{value || '—'}</Text>
       </View>
     </View>
   );
 }
 
-function SettingRow({ icon, label, onPress, destructive, colors }: { icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void; destructive?: boolean; colors: any }) {
+function SettingRow({ icon, label, onPress, destructive, isRTL, colors }: {
+  icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void;
+  destructive?: boolean; isRTL: boolean; colors: ReturnType<typeof useColors>;
+}) {
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [
         styles.settingRow,
-        { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.7 : 1 },
+        { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.7 : 1, flexDirection: isRTL ? 'row-reverse' : 'row' },
       ]}
     >
       <Ionicons name={icon} size={20} color={destructive ? colors.destructive : colors.primary} />
-      <Text style={[styles.settingLabel, { color: destructive ? colors.destructive : colors.foreground, fontFamily: 'Inter_500Medium' }]}>
+      <Text style={[styles.settingLabel, { color: destructive ? colors.destructive : colors.foreground, fontFamily: 'Inter_500Medium', flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>
         {label}
       </Text>
-      {!destructive && <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} style={{ marginLeft: 'auto' }} />}
+      {!destructive && <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={16} color={colors.mutedForeground} />}
     </Pressable>
   );
 }
@@ -44,6 +47,7 @@ function SettingRow({ icon, label, onPress, destructive, colors }: { icon: keyof
 export default function ProfileScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { t, isRTL } = useLanguage();
   const { user, logout } = useAuth();
 
   const topPad = insets.top + (insets.top === 0 ? 67 : 0);
@@ -54,15 +58,19 @@ export default function ProfileScreen() {
     .map(w => w[0]?.toUpperCase() ?? '')
     .join('') ?? 'T';
 
+  const roleLabel = user?.role === 'teacher' ? t('roleTeacher') : user?.role === 'school_admin' ? t('roleAdmin') : t('roleSysAdmin');
+
   const handleLogout = () => {
-    Alert.alert('Sign out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('signOut'), t('signOutConfirm'), [
+      { text: t('cancel'), style: 'cancel' },
       {
-        text: 'Sign out', style: 'destructive', onPress: async () => {
+        text: t('signOut'),
+        style: 'destructive',
+        onPress: async () => {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
           await logout();
           router.replace('/(auth)/login');
-        }
+        },
       },
     ]);
   };
@@ -82,11 +90,11 @@ export default function ProfileScreen() {
             </Text>
           </View>
           <Text style={[styles.userName, { color: colors.primaryForeground, fontFamily: 'Inter_700Bold' }]}>
-            {user?.name ?? 'Teacher'}
+            {user?.name ?? t('roleTeacher')}
           </Text>
           <View style={[styles.roleBadge, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
             <Text style={[styles.roleText, { color: colors.primaryForeground, fontFamily: 'Inter_500Medium' }]}>
-              {user?.role === 'teacher' ? 'Teacher' : user?.role === 'school_admin' ? 'School Admin' : 'System Admin'}
+              {roleLabel}
             </Text>
           </View>
         </View>
@@ -94,24 +102,28 @@ export default function ProfileScreen() {
 
       <View style={{ paddingHorizontal: 20, paddingTop: 24 }}>
         {/* Info card */}
-        <Text style={[styles.section, { color: colors.mutedForeground, fontFamily: 'Inter_500Medium' }]}>PROFILE INFO</Text>
+        <Text style={[styles.section, { color: colors.mutedForeground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+          {t('profileInfo')}
+        </Text>
         <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-          <InfoRow icon="mail-outline" label="Email" value={user?.email ?? ''} color={colors.primary} />
+          <InfoRow icon="mail-outline" label={t('email')} value={user?.email ?? ''} color={colors.primary} isRTL={isRTL} />
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <InfoRow icon="call-outline" label="Phone" value={user?.phone ?? ''} color={colors.info} />
+          <InfoRow icon="call-outline" label={t('phone')} value={user?.phone ?? ''} color={colors.info} isRTL={isRTL} />
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <InfoRow icon="business-outline" label="School" value={user?.school ?? ''} color={colors.accent} />
+          <InfoRow icon="business-outline" label={t('school')} value={user?.school ?? ''} color={colors.accent} isRTL={isRTL} />
         </View>
 
         {/* Subjects & Grades */}
-        <Text style={[styles.section, { color: colors.mutedForeground, fontFamily: 'Inter_500Medium', marginTop: 20 }]}>TEACHING</Text>
+        <Text style={[styles.section, { color: colors.mutedForeground, fontFamily: 'Inter_500Medium', marginTop: 20, textAlign: isRTL ? 'right' : 'left' }]}>
+          {t('teaching')}
+        </Text>
         <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
           <View style={styles.tagSection}>
-            <Text style={[styles.tagLabel, { color: colors.foreground, fontFamily: 'Inter_500Medium' }]}>Subjects</Text>
+            <Text style={[styles.tagLabel, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('mySubjects')}</Text>
             {(user?.subjects?.length ?? 0) === 0 ? (
-              <Text style={[{ color: colors.mutedForeground, fontFamily: 'Inter_400Regular', fontSize: 13 }]}>Not set</Text>
+              <Text style={[{ color: colors.mutedForeground, fontFamily: 'Inter_400Regular', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }]}>{t('notSet')}</Text>
             ) : (
-              <View style={styles.tags}>
+              <View style={[styles.tags, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 {user?.subjects?.map(s => (
                   <View key={s} style={[styles.tag, { backgroundColor: colors.secondary }]}>
                     <Text style={[styles.tagText, { color: colors.primary, fontFamily: 'Inter_500Medium' }]}>{s}</Text>
@@ -122,11 +134,11 @@ export default function ProfileScreen() {
           </View>
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
           <View style={styles.tagSection}>
-            <Text style={[styles.tagLabel, { color: colors.foreground, fontFamily: 'Inter_500Medium' }]}>Grades</Text>
+            <Text style={[styles.tagLabel, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('myGrades')}</Text>
             {(user?.grades?.length ?? 0) === 0 ? (
-              <Text style={[{ color: colors.mutedForeground, fontFamily: 'Inter_400Regular', fontSize: 13 }]}>Not set</Text>
+              <Text style={[{ color: colors.mutedForeground, fontFamily: 'Inter_400Regular', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }]}>{t('notSet')}</Text>
             ) : (
-              <View style={styles.tags}>
+              <View style={[styles.tags, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 {user?.grades?.map(g => (
                   <View key={g} style={[styles.tag, { backgroundColor: colors.muted }]}>
                     <Text style={[styles.tagText, { color: colors.mutedForeground, fontFamily: 'Inter_500Medium' }]}>{g}</Text>
@@ -138,14 +150,15 @@ export default function ProfileScreen() {
         </View>
 
         {/* Settings */}
-        <Text style={[styles.section, { color: colors.mutedForeground, fontFamily: 'Inter_500Medium', marginTop: 20 }]}>SETTINGS</Text>
+        <Text style={[styles.section, { color: colors.mutedForeground, fontFamily: 'Inter_500Medium', marginTop: 20, textAlign: isRTL ? 'right' : 'left' }]}>
+          {t('settingsSection')}
+        </Text>
         <View style={{ gap: 8 }}>
-          <SettingRow icon="person-outline" label="Edit Profile" onPress={() => {}} colors={colors} />
-          <SettingRow icon="lock-closed-outline" label="Change Password" onPress={() => {}} colors={colors} />
-          <SettingRow icon="language-outline" label="Language / اللغة" onPress={() => {}} colors={colors} />
-          <SettingRow icon="moon-outline" label="Theme" onPress={() => {}} colors={colors} />
-          <SettingRow icon="help-circle-outline" label="Help & Support" onPress={() => {}} colors={colors} />
-          <SettingRow icon="log-out-outline" label="Sign Out" onPress={handleLogout} destructive colors={colors} />
+          <SettingRow icon="person-outline" label={t('editProfile')} onPress={() => {}} isRTL={isRTL} colors={colors} />
+          <SettingRow icon="lock-closed-outline" label={t('changePassword')} onPress={() => {}} isRTL={isRTL} colors={colors} />
+          <SettingRow icon="settings-outline" label={t('settings')} onPress={() => router.push('/settings')} isRTL={isRTL} colors={colors} />
+          <SettingRow icon="help-circle-outline" label={t('helpSupport')} onPress={() => {}} isRTL={isRTL} colors={colors} />
+          <SettingRow icon="log-out-outline" label={t('signOut')} onPress={handleLogout} destructive isRTL={isRTL} colors={colors} />
         </View>
       </View>
     </ScrollView>
@@ -162,16 +175,16 @@ const styles = StyleSheet.create({
   roleText: { fontSize: 12 },
   section: { fontSize: 11, letterSpacing: 0.8, marginBottom: 8 },
   infoCard: { borderWidth: 1, overflow: 'hidden' },
-  infoRow: { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 },
+  infoRow: { alignItems: 'center', padding: 14, gap: 12 },
   infoIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  infoLabel: { fontSize: 11, marginBottom: 2 },
-  infoValue: { fontSize: 14, fontFamily: 'Inter_400Regular', color: '#1A2B2A' },
+  infoLabel: { fontSize: 11, marginBottom: 2, fontFamily: 'Inter_400Regular' },
+  infoValue: { fontSize: 14, fontFamily: 'Inter_400Regular' },
   divider: { height: 1, marginHorizontal: 14 },
   tagSection: { padding: 14, gap: 8 },
   tagLabel: { fontSize: 13 },
-  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  tags: { flexWrap: 'wrap', gap: 6 },
   tag: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   tagText: { fontSize: 12 },
-  settingRow: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12, borderWidth: 1 },
+  settingRow: { alignItems: 'center', padding: 16, gap: 12, borderWidth: 1 },
   settingLabel: { fontSize: 15 },
 });

@@ -1,118 +1,83 @@
 import React from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
+import { useLanguage } from '@/context/LanguageContext';
 
-interface Tool {
+interface ToolDef {
   id: string;
-  title: string;
-  description: string;
+  titleKey: string;
+  descKey: string;
   icon: keyof typeof Ionicons.glyphMap;
   color: string;
   route: string;
-  badge?: string;
+  routeParams?: Record<string, string>;
+  badgeKey?: string;
 }
 
-const TOOLS: Tool[] = [
+const TOOLS: ToolDef[] = [
   {
     id: 'lesson-plan',
-    title: 'Lesson Plan',
-    description: 'Generate a complete, structured lesson plan with objectives, activities, and assessment strategies.',
+    titleKey: 'toolLessonPlanTitle',
+    descKey: 'toolLessonPlanDesc',
     icon: 'document-text-outline',
     color: '#1B6B62',
     route: '/ai-tools/lesson-plan',
-    badge: 'Popular',
+    badgeKey: 'popularBadge',
   },
   {
     id: 'worksheet',
-    title: 'Worksheet',
-    description: 'Create differentiated worksheets with multiple question types for any topic or grade.',
+    titleKey: 'toolWorksheetTitle',
+    descKey: 'toolWorksheetDesc',
     icon: 'list-outline',
     color: '#8B5CF6',
     route: '/ai-tools/worksheet',
   },
   {
     id: 'quiz',
-    title: 'Quiz',
-    description: 'Build auto-graded quizzes with multiple choice, true/false, and short answer questions.',
+    titleKey: 'toolQuizTitle',
+    descKey: 'toolQuizDesc',
     icon: 'help-circle-outline',
     color: '#F59E0B',
     route: '/ai-tools/quiz',
-    badge: 'New',
+    badgeKey: 'newBadge',
   },
   {
     id: 'homework',
-    title: 'Homework',
-    description: 'Design meaningful homework assignments that reinforce classroom learning.',
+    titleKey: 'toolHomeworkTitle',
+    descKey: 'toolHomeworkDesc',
     icon: 'home-outline',
     color: '#3B82F6',
-    route: '/ai-tools/lesson-plan',
+    route: '/ai-tools/coming-soon',
+    routeParams: { tool: 'homework' },
   },
   {
     id: 'exam',
-    title: 'Exam Paper',
-    description: 'Generate complete exam papers aligned with Jordanian curriculum standards.',
+    titleKey: 'toolExamTitle',
+    descKey: 'toolExamDesc',
     icon: 'school-outline',
     color: '#EF4444',
-    route: '/ai-tools/lesson-plan',
+    route: '/ai-tools/coming-soon',
+    routeParams: { tool: 'exam' },
   },
   {
     id: 'parent-msg',
-    title: 'Parent Message',
-    description: 'Draft professional parent communication in Arabic or English in seconds.',
+    titleKey: 'toolParentMsgTitle',
+    descKey: 'toolParentMsgDesc',
     icon: 'chatbubble-outline',
     color: '#10B981',
-    route: '/ai-tools/lesson-plan',
+    route: '/ai-tools/coming-soon',
+    routeParams: { tool: 'parent-msg' },
   },
 ];
-
-function ToolCard({ tool }: { tool: Tool }) {
-  const colors = useColors();
-  return (
-    <Pressable
-      onPress={() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        router.push(tool.route as any);
-      }}
-      style={({ pressed }) => [
-        styles.card,
-        {
-          backgroundColor: colors.card,
-          borderColor: colors.border,
-          borderRadius: colors.radius,
-          opacity: pressed ? 0.8 : 1,
-        },
-      ]}
-    >
-      <View style={[styles.iconWrap, { backgroundColor: tool.color + '1A', borderRadius: 14 }]}>
-        <Ionicons name={tool.icon} size={28} color={tool.color} />
-      </View>
-      <View style={{ flex: 1 }}>
-        <View style={styles.titleRow}>
-          <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'Inter_600SemiBold' }]}>
-            {tool.title}
-          </Text>
-          {tool.badge && (
-            <View style={[styles.badge, { backgroundColor: tool.color + '22' }]}>
-              <Text style={[styles.badgeText, { color: tool.color, fontFamily: 'Inter_600SemiBold' }]}>{tool.badge}</Text>
-            </View>
-          )}
-        </View>
-        <Text style={[styles.cardDesc, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]} numberOfLines={2}>
-          {tool.description}
-        </Text>
-      </View>
-      <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
-    </Pressable>
-  );
-}
 
 export default function AIToolsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { t, isRTL } = useLanguage();
   const topPad = insets.top + (insets.top === 0 ? 67 : 0);
 
   return (
@@ -122,26 +87,68 @@ export default function AIToolsScreen() {
       showsVerticalScrollIndicator={false}
     >
       <View style={[styles.header, { paddingTop: topPad + 16, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Inter_700Bold' }]}>AI Tools</Text>
-        <View style={[styles.aiBadge, { backgroundColor: colors.primary + '18', borderRadius: 20 }]}>
+        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Inter_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+          {t('aiTools')}
+        </Text>
+        <View style={[styles.aiBadge, { backgroundColor: colors.primary + '18', borderRadius: 20, alignSelf: isRTL ? 'flex-end' : 'flex-start', flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <Ionicons name="sparkles-outline" size={14} color={colors.primary} />
           <Text style={[styles.aiBadgeText, { color: colors.primary, fontFamily: 'Inter_600SemiBold' }]}>
-            Powered by AI
+            {t('poweredByAI')}
           </Text>
         </View>
-        <Text style={[styles.subtitle, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
-          Generate teaching materials tailored to the Jordanian curriculum in seconds.
+        <Text style={[styles.subtitle, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+          {t('aiToolsSubtitle')}
         </Text>
       </View>
 
       <View style={styles.list}>
-        {TOOLS.map(t => <ToolCard key={t.id} tool={t} />)}
+        {TOOLS.map(tool => (
+          <Pressable
+            key={tool.id}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push({ pathname: tool.route as any, params: tool.routeParams });
+            }}
+            style={({ pressed }) => [
+              styles.card,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                borderRadius: colors.radius,
+                opacity: pressed ? 0.8 : 1,
+                flexDirection: isRTL ? 'row-reverse' : 'row',
+              },
+            ]}
+          >
+            <View style={[styles.iconWrap, { backgroundColor: tool.color + '1A', borderRadius: 14 }]}>
+              <Ionicons name={tool.icon} size={28} color={tool.color} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <View style={[styles.titleRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'Inter_600SemiBold' }]}>
+                  {t(tool.titleKey as any)}
+                </Text>
+                {tool.badgeKey && (
+                  <View style={[styles.badge, { backgroundColor: tool.color + '22' }]}>
+                    <Text style={[styles.badgeText, { color: tool.color, fontFamily: 'Inter_600SemiBold' }]}>
+                      {t(tool.badgeKey as any)}
+                    </Text>
+                  </View>
+                )}
+              </View>
+              <Text style={[styles.cardDesc, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={2}>
+                {t(tool.descKey as any)}
+              </Text>
+            </View>
+            <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
+          </Pressable>
+        ))}
       </View>
 
-      <View style={[styles.note, { backgroundColor: colors.muted, borderRadius: colors.radius, marginHorizontal: 20 }]}>
+      <View style={[styles.note, { backgroundColor: colors.muted, borderRadius: colors.radius, marginHorizontal: 20, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <Ionicons name="information-circle-outline" size={16} color={colors.mutedForeground} />
-        <Text style={[styles.noteText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
-          AI generation currently uses sample outputs. Full AI integration with curriculum intelligence is coming in Stage 3.
+        <Text style={[styles.noteText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+          {t('aiToolsNote')}
         </Text>
       </View>
     </ScrollView>
@@ -151,17 +158,17 @@ export default function AIToolsScreen() {
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 20, borderBottomWidth: 1 },
   title: { fontSize: 28, marginBottom: 8 },
-  aiBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, alignSelf: 'flex-start', marginBottom: 10 },
+  aiBadge: { alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, marginBottom: 10 },
   aiBadgeText: { fontSize: 12 },
   subtitle: { fontSize: 13, lineHeight: 20 },
   list: { padding: 20, gap: 12 },
-  card: { flexDirection: 'row', alignItems: 'center', padding: 18, borderWidth: 1, gap: 14 },
+  card: { alignItems: 'center', padding: 18, borderWidth: 1, gap: 14 },
   iconWrap: { width: 56, height: 56, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+  titleRow: { alignItems: 'center', gap: 8, marginBottom: 4 },
   cardTitle: { fontSize: 15 },
   badge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 },
   badgeText: { fontSize: 10 },
   cardDesc: { fontSize: 12, lineHeight: 17 },
-  note: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, padding: 14, marginBottom: 20 },
+  note: { alignItems: 'flex-start', gap: 8, padding: 14, marginBottom: 20 },
   noteText: { flex: 1, fontSize: 12, lineHeight: 17 },
 });

@@ -5,30 +5,40 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
+import { useLanguage } from '@/context/LanguageContext';
 import { BOOKS, Book } from '@/services/curriculumData';
 
 export default function SubjectsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { t, isRTL, lang } = useLanguage();
   const { gradeId, gradeName, subjectId, subjectName, subjectColor } = useLocalSearchParams<{
-    gradeId: string; gradeName: string; subjectId: string; subjectName: string; subjectColor: string;
+    gradeId: string; gradeName: string;
+    subjectId: string; subjectName: string; subjectColor: string;
   }>();
 
   const books = BOOKS.filter(b => b.subjectId === subjectId && b.gradeId === gradeId);
   const color = subjectColor ?? colors.primary;
+  // curriculum.tsx already passes the translated name based on current lang
+  const displaySubject = subjectName;
+  const displayGrade = gradeName;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       {/* Hero */}
       <View style={[styles.hero, { backgroundColor: color, paddingTop: insets.top + 12 }]}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={22} color="#fff" />
+        <Pressable onPress={() => router.back()} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
+          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
-        <View style={styles.heroContent}>
-          <Text style={[styles.heroGrade, { color: 'rgba(255,255,255,0.75)', fontFamily: 'Inter_400Regular' }]}>{gradeName}</Text>
-          <Text style={[styles.heroTitle, { color: '#fff', fontFamily: 'Inter_700Bold' }]}>{subjectName}</Text>
-          <Text style={[styles.heroSub, { color: 'rgba(255,255,255,0.8)', fontFamily: 'Inter_400Regular' }]}>
-            {books.length} book{books.length !== 1 ? 's' : ''} available
+        <View style={[styles.heroContent, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+          <Text style={[styles.heroGrade, { color: 'rgba(255,255,255,0.75)', fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+            {displayGrade}
+          </Text>
+          <Text style={[styles.heroTitle, { color: '#fff', fontFamily: 'Inter_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+            {displaySubject}
+          </Text>
+          <Text style={[styles.heroSub, { color: 'rgba(255,255,255,0.8)', fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+            {t('booksAvailable', books.length)}
           </Text>
         </View>
       </View>
@@ -41,43 +51,59 @@ export default function SubjectsScreen() {
         ListEmptyComponent={
           <View style={styles.empty}>
             <Ionicons name="library-outline" size={40} color={colors.mutedForeground} />
-            <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'Inter_600SemiBold' }]}>No books yet</Text>
-            <Text style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
-              Books for {subjectName} in {gradeName} will appear here.
+            <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'Inter_600SemiBold' }]}>
+              {t('noBooks')}
+            </Text>
+            <Text style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: 'center' }]}>
+              {t('noBooksDesc', displaySubject, displayGrade)}
             </Text>
           </View>
         }
-        renderItem={({ item: book }) => (
-          <Pressable
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push({ pathname: '/curriculum/lessons', params: { bookId: book.id, bookTitle: book.title, subjectColor: color } });
-            }}
-            style={({ pressed }) => [
-              styles.bookCard,
-              { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.8 : 1 },
-            ]}
-          >
-            <View style={[styles.bookIcon, { backgroundColor: color + '1A', borderRadius: 12 }]}>
-              <Ionicons name="book-outline" size={24} color={color} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.bookTitle, { color: colors.foreground, fontFamily: 'Inter_600SemiBold' }]}>{book.title}</Text>
-              <View style={styles.bookMeta}>
-                <View style={[styles.pill, { backgroundColor: colors.muted }]}>
-                  <Text style={[styles.pillText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>{book.academicYear}</Text>
-                </View>
-                <View style={[styles.pill, { backgroundColor: colors.muted }]}>
-                  <Text style={[styles.pillText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>{book.language}</Text>
-                </View>
-                <View style={[styles.pill, { backgroundColor: colors.muted }]}>
-                  <Text style={[styles.pillText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>Ed. {book.edition}</Text>
+        renderItem={({ item: book }) => {
+          const bookTitle = lang === 'ar' ? (book.titleAr || book.title) : book.title;
+          return (
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push({
+                  pathname: '/curriculum/lessons',
+                  params: { bookId: book.id, bookTitle: book.title, bookTitleAr: book.titleAr, subjectColor: color },
+                });
+              }}
+              style={({ pressed }) => [
+                styles.bookCard,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  borderRadius: colors.radius,
+                  opacity: pressed ? 0.8 : 1,
+                  flexDirection: isRTL ? 'row-reverse' : 'row',
+                },
+              ]}
+            >
+              <View style={[styles.bookIcon, { backgroundColor: color + '1A', borderRadius: 12 }]}>
+                <Ionicons name="book-outline" size={24} color={color} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.bookTitle, { color: colors.foreground, fontFamily: 'Inter_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+                  {bookTitle}
+                </Text>
+                <View style={[styles.bookMeta, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                  <View style={[styles.pill, { backgroundColor: colors.muted }]}>
+                    <Text style={[styles.pillText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>{book.academicYear}</Text>
+                  </View>
+                  <View style={[styles.pill, { backgroundColor: colors.muted }]}>
+                    <Text style={[styles.pillText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>{book.language}</Text>
+                  </View>
+                  <View style={[styles.pill, { backgroundColor: colors.muted }]}>
+                    <Text style={[styles.pillText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>Ed. {book.edition}</Text>
+                  </View>
                 </View>
               </View>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
-          </Pressable>
-        )}
+              <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
+            </Pressable>
+          );
+        }}
       />
     </View>
   );
@@ -90,13 +116,13 @@ const styles = StyleSheet.create({
   heroGrade: { fontSize: 13 },
   heroTitle: { fontSize: 28 },
   heroSub: { fontSize: 13, marginTop: 2 },
-  bookCard: { flexDirection: 'row', alignItems: 'center', padding: 16, borderWidth: 1, gap: 14 },
+  bookCard: { alignItems: 'center', padding: 16, borderWidth: 1, gap: 14 },
   bookIcon: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   bookTitle: { fontSize: 15, marginBottom: 8 },
-  bookMeta: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
+  bookMeta: { gap: 6, flexWrap: 'wrap' },
   pill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   pillText: { fontSize: 11 },
   empty: { alignItems: 'center', paddingTop: 60, gap: 10 },
   emptyTitle: { fontSize: 18 },
-  emptyText: { fontSize: 14, textAlign: 'center' },
+  emptyText: { fontSize: 14 },
 });

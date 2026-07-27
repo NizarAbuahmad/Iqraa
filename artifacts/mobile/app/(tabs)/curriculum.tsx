@@ -86,7 +86,7 @@ export default function CurriculumScreen() {
             placeholderTextColor={colors.mutedForeground}
             value={search}
             onChangeText={setSearch}
-            writingDirection={isRTL ? 'rtl' : 'ltr'}
+
           />
           {search.length > 0 && (
             <Pressable onPress={() => setSearch('')}>

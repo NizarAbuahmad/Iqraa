@@ -422,7 +422,6 @@ export default function IqraScreen() {
             onChangeText={setInput}
             multiline
             maxLength={400}
-            writingDirection={isRTL ? 'rtl' : 'ltr'}
             onSubmitEditing={() => sendMessage(input)}
           />
           <Pressable
