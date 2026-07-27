@@ -24,6 +24,7 @@ import {
   searchKB,
 } from '@/services/knowledgeBase';
 import { Toast } from '@/components/ui/Toast';
+import { remoteAIService } from '@/services/ai/RemoteAIService';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 type Role = 'user' | 'assistant';
@@ -272,13 +273,11 @@ export default function IqraScreen() {
         text: q,
         timestamp: new Date(),
       };
-      setMessages(prev => [...prev, userMsg]);
+      const updatedMessages = [...messages, userMsg];
+      setMessages(updatedMessages);
       setIsThinking(true);
 
-      // Simulate search + processing delay
-      await new Promise(r => setTimeout(r, 900 + Math.random() * 600));
-
-      // Pinned chips bypass search — fetch the lesson directly by ID
+      // 1. Local KB retrieval — grounds the AI answer with textbook content
       let results: KBLesson[];
       if (pinnedLessonId) {
         const pinned = getLessonById(pinnedLessonId);
@@ -287,10 +286,29 @@ export default function IqraScreen() {
         results = searchKB(q, lang as 'ar' | 'en');
       }
 
-      const responseText =
-        results.length > 0
-          ? buildResponse(q, results, lang as 'ar' | 'en', mode)
-          : t('iqraNoResults');
+      // 2. Build KB context string for the AI
+      const kbContext = results.length > 0
+        ? buildResponse(q, results, lang as 'ar' | 'en', mode)
+        : undefined;
+
+      // 3. Build conversation history (last 10 messages for context window)
+      const history = updatedMessages.slice(-10).map(m => ({
+        role: m.role as 'user' | 'assistant',
+        content: m.text,
+      }));
+
+      let responseText: string;
+      try {
+        responseText = await remoteAIService.chat({
+          messages: history,
+          context: kbContext,
+          mode,
+          language: lang as 'ar' | 'en',
+        });
+      } catch {
+        // Offline / server down — fall back to local KB response
+        responseText = kbContext ?? t('iqraNoResults');
+      }
 
       const assistantMsg: Message = {
         id: (Date.now() + 1).toString(),
@@ -304,7 +322,7 @@ export default function IqraScreen() {
 
       setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
     },
-    [isThinking, lang, mode, t],
+    [isThinking, lang, messages, mode, t],
   );
 
   const suggestions = SUGGESTIONS[mode][lang as 'ar' | 'en'];

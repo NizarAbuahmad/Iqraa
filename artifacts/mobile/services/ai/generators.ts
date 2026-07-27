@@ -541,3 +541,4 @@ export class MockAIService extends AIService {
 }
 
 export const aiService = new MockAIService();
+// Legacy mock export kept for fallback use inside RemoteAIService

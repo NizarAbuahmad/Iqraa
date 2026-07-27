@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { aiService } from '@/services/ai/generators';
+import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { WorksheetOutput } from '@/services/ai/AIService';
 import { GRADES, SUBJECTS } from '@/services/curriculumData';
 import { Button } from '@/components/ui/Button';

@@ -10,6 +10,10 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: openai
+    description: OpenAI AI chat, image, and audio operations
+  - name: generate
+    description: AI content generation for teachers
 paths:
   /healthz:
     get:
@@ -24,6 +28,215 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /openai/conversations:
+    get:
+      operationId: listOpenaiConversations
+      tags: [openai]
+      summary: List all conversations
+      responses:
+        "200":
+          description: List of conversations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OpenaiConversation"
+    post:
+      operationId: createOpenaiConversation
+      tags: [openai]
+      summary: Create a new conversation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OpenaiConversationInput"
+      responses:
+        "201":
+          description: Created conversation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiConversation"
+  /openai/conversations/{id}:
+    get:
+      operationId: getOpenaiConversation
+      tags: [openai]
+      summary: Get conversation with messages
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Conversation with messages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiConversationWithMessages"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiError"
+    delete:
+      operationId: deleteOpenaiConversation
+      tags: [openai]
+      summary: Delete a conversation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiError"
+  /openai/conversations/{id}/messages:
+    get:
+      operationId: listOpenaiMessages
+      tags: [openai]
+      summary: List messages in a conversation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OpenaiMessage"
+    post:
+      operationId: sendOpenaiMessage
+      tags: [openai]
+      summary: Send a text message and receive a streaming text response
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OpenaiMessageInput"
+      responses:
+        "200":
+          description: SSE stream of assistant text chunks
+          content:
+            text/event-stream: {}
+  /generate/lesson-plan:
+    post:
+      operationId: generateLessonPlan
+      tags: [generate]
+      summary: Generate an AI lesson plan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateRequest"
+      responses:
+        "200":
+          description: Generated lesson plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LessonPlanOutput"
+        "500":
+          description: Generation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiError"
+  /generate/worksheet:
+    post:
+      operationId: generateWorksheet
+      tags: [generate]
+      summary: Generate an AI worksheet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateRequest"
+      responses:
+        "200":
+          description: Generated worksheet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorksheetOutput"
+        "500":
+          description: Generation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiError"
+  /generate/quiz:
+    post:
+      operationId: generateQuiz
+      tags: [generate]
+      summary: Generate an AI quiz
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateRequest"
+      responses:
+        "200":
+          description: Generated quiz
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuizOutput"
+        "500":
+          description: Generation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiError"
+  /chat:
+    post:
+      operationId: chatWithIqra
+      tags: [openai]
+      summary: Chat with iQra assistant (SSE stream)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IqraChatRequest"
+      responses:
+        "200":
+          description: SSE stream of assistant text chunks
+          content:
+            text/event-stream: {}
+        "500":
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiError"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +246,294 @@ components:
           type: string
       required:
         - status
-
+    OpenaiConversation:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - createdAt
+    OpenaiMessage:
+      type: object
+      properties:
+        id:
+          type: integer
+        conversationId:
+          type: integer
+        role:
+          type: string
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - conversationId
+        - role
+        - content
+        - createdAt
+    OpenaiConversationInput:
+      type: object
+      properties:
+        title:
+          type: string
+      required:
+        - title
+    OpenaiMessageInput:
+      type: object
+      properties:
+        content:
+          type: string
+      required:
+        - content
+    OpenaiConversationWithMessages:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/OpenaiMessage"
+      required:
+        - id
+        - title
+        - createdAt
+        - messages
+    OpenaiError:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+    IqraChatRequest:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            type: object
+            properties:
+              role:
+                type: string
+              content:
+                type: string
+            required:
+              - role
+              - content
+        context:
+          type: string
+          description: Knowledge-base context (lesson text) to ground the answer
+        mode:
+          type: string
+          enum: [teacher, student]
+        language:
+          type: string
+          enum: [ar, en]
+      required:
+        - messages
+    GenerateRequest:
+      type: object
+      properties:
+        grade:
+          type: string
+        subject:
+          type: string
+        topic:
+          type: string
+        duration:
+          type: integer
+        language:
+          type: string
+          enum: [arabic, english]
+        additionalContext:
+          type: string
+        teachingStyle:
+          type: string
+          enum: [direct, inquiry, collaborative]
+        objectives:
+          type: string
+        difficulty:
+          type: string
+          enum: [easy, medium, hard, mixed]
+        numQuestions:
+          type: integer
+        questionTypes:
+          type: array
+          items:
+            type: string
+        totalMarks:
+          type: integer
+      required:
+        - grade
+        - subject
+        - topic
+    LessonPlanOutput:
+      type: object
+      properties:
+        title:
+          type: string
+        grade:
+          type: string
+        subject:
+          type: string
+        duration:
+          type: integer
+        objectives:
+          type: array
+          items:
+            type: string
+        materials:
+          type: array
+          items:
+            type: string
+        introduction:
+          type: string
+        mainActivity:
+          type: string
+        guidedPractice:
+          type: string
+        independentPractice:
+          type: string
+        closure:
+          type: string
+        assessment:
+          type: string
+        differentiation:
+          type: string
+        homework:
+          type: string
+      required:
+        - title
+        - grade
+        - subject
+        - duration
+        - objectives
+        - materials
+        - introduction
+        - mainActivity
+        - guidedPractice
+        - independentPractice
+        - closure
+        - assessment
+        - differentiation
+        - homework
+    WorksheetSection:
+      type: object
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorksheetQuestion"
+      required:
+        - type
+        - title
+        - questions
+    WorksheetQuestion:
+      type: object
+      properties:
+        text:
+          type: string
+        options:
+          type: array
+          items:
+            type: string
+        answer:
+          type: string
+        points:
+          type: integer
+      required:
+        - text
+        - points
+    WorksheetAnswerKeyItem:
+      type: object
+      properties:
+        num:
+          type: integer
+        answer:
+          type: string
+      required:
+        - num
+        - answer
+    WorksheetOutput:
+      type: object
+      properties:
+        title:
+          type: string
+        instructions:
+          type: string
+        sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorksheetSection"
+        answerKey:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorksheetAnswerKeyItem"
+      required:
+        - title
+        - instructions
+        - sections
+        - answerKey
+    QuizQuestion:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        text:
+          type: string
+        options:
+          type: array
+          items:
+            type: string
+        correctAnswer:
+          type: string
+        points:
+          type: integer
+        explanation:
+          type: string
+      required:
+        - id
+        - type
+        - text
+        - correctAnswer
+        - points
+        - explanation
+    QuizOutput:
+      type: object
+      properties:
+        title:
+          type: string
+        duration:
+          type: integer
+        totalPoints:
+          type: integer
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuizQuestion"
+      required:
+        - title
+        - duration
+        - totalPoints
+        - questions
