@@ -24,6 +24,8 @@ export interface Book {
   language: string;
   edition: string;
   hasKnowledgeBase?: boolean; // true = sourced from uploaded PDF
+  /** Who can see this book. Defaults to 'all' if omitted. */
+  audience?: 'teacher' | 'student' | 'all';
 }
 
 export interface Unit {
@@ -103,7 +105,9 @@ export const BOOKS: Book[] = [
     language: 'Arabic',
     edition: '2nd',
     hasKnowledgeBase: true,
+    audience: 'all',
   },
+  // ── Math Grade 10 – Semester 1 ─────────────────────────────────────────────
   {
     id: 'book-math-10',
     title: 'Mathematics – Grade 10, Semester 1',
@@ -114,7 +118,33 @@ export const BOOKS: Book[] = [
     language: 'Arabic',
     edition: '3rd',
     hasKnowledgeBase: true,
+    audience: 'all',
   },
+  {
+    id: 'book-math-10-guide',
+    title: 'Mathematics – Grade 10, Semester 1 (Teacher Guide)',
+    titleAr: 'دليل المعلم – الرياضيات – الصف العاشر – الفصل الأول',
+    subjectId: 'mathematics',
+    gradeId: 'grade-10',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '3rd',
+    hasKnowledgeBase: true,
+    audience: 'teacher',
+  },
+  {
+    id: 'book-math-10-exercises',
+    title: 'Mathematics – Grade 10, Semester 1 (Exercise Book)',
+    titleAr: 'كتاب التمارين – الرياضيات – الصف العاشر – الفصل الأول',
+    subjectId: 'mathematics',
+    gradeId: 'grade-10',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '3rd',
+    hasKnowledgeBase: true,
+    audience: 'student',
+  },
+  // ── Math Grade 10 – Semester 2 ─────────────────────────────────────────────
   {
     id: 'book-math-10-s2',
     title: 'Mathematics – Grade 10, Semester 2',
@@ -125,6 +155,31 @@ export const BOOKS: Book[] = [
     language: 'Arabic',
     edition: '3rd',
     hasKnowledgeBase: true,
+    audience: 'all',
+  },
+  {
+    id: 'book-math-10-s2-guide',
+    title: 'Mathematics – Grade 10, Semester 2 (Teacher Guide)',
+    titleAr: 'دليل المعلم – الرياضيات – الصف العاشر – الفصل الثاني',
+    subjectId: 'mathematics',
+    gradeId: 'grade-10',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '3rd',
+    hasKnowledgeBase: true,
+    audience: 'teacher',
+  },
+  {
+    id: 'book-math-10-s2-exercises',
+    title: 'Mathematics – Grade 10, Semester 2 (Exercise Book)',
+    titleAr: 'كتاب التمارين – الرياضيات – الصف العاشر – الفصل الثاني',
+    subjectId: 'mathematics',
+    gradeId: 'grade-10',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '3rd',
+    hasKnowledgeBase: true,
+    audience: 'student',
   },
   // ── Other grades ───────────────────────────────────────────────────────────
   {
@@ -507,8 +562,19 @@ export function getLessonById(id: string): Lesson | undefined {
   return LESSONS.find(l => l.id === id);
 }
 
-export function getBooksForSubjectGrade(subjectId: string, gradeId: string): Book[] {
-  return BOOKS.filter(b => b.subjectId === subjectId && b.gradeId === gradeId);
+export function getBooksForSubjectGrade(
+  subjectId: string,
+  gradeId: string,
+  role?: 'teacher' | 'student' | 'school_admin' | 'system_admin',
+): Book[] {
+  return BOOKS.filter(b => {
+    if (b.subjectId !== subjectId || b.gradeId !== gradeId) return false;
+    const aud = b.audience ?? 'all';
+    if (aud === 'all') return true;
+    // teachers and admins see everything; students only see 'student' + 'all'
+    if (!role || role === 'teacher' || role === 'school_admin' || role === 'system_admin') return true;
+    return aud === 'student';
+  });
 }
 
 // ─── Notifications ────────────────────────────────────────────────────────────

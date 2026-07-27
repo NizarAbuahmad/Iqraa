@@ -6,20 +6,32 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { useAuth } from '@/context/AuthContext';
 import { BOOKS, Book } from '@/services/curriculumData';
 
 export default function SubjectsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
+  const { user } = useAuth();
   const { gradeId, gradeName, subjectId, subjectName, subjectColor } = useLocalSearchParams<{
     gradeId: string; gradeName: string;
     subjectId: string; subjectName: string; subjectColor: string;
   }>();
 
-  const books = BOOKS.filter(b => b.subjectId === subjectId && b.gradeId === gradeId);
+  const role = user?.role;
+
+  // Filter by subject/grade first, then by audience based on role
+  const books = BOOKS.filter(b => {
+    if (b.subjectId !== subjectId || b.gradeId !== gradeId) return false;
+    const aud = b.audience ?? 'all';
+    if (aud === 'all') return true;
+    // teachers and admins see teacher guides + everything
+    if (!role || role === 'teacher' || role === 'school_admin' || role === 'system_admin') return true;
+    return aud === 'student';
+  });
+
   const color = subjectColor ?? colors.primary;
-  // curriculum.tsx already passes the translated name based on current lang
   const displaySubject = subjectName;
   const displayGrade = gradeName;
 
@@ -61,6 +73,8 @@ export default function SubjectsScreen() {
         }
         renderItem={({ item: book }) => {
           const bookTitle = lang === 'ar' ? (book.titleAr || book.title) : book.title;
+          const isTeacherOnly = book.audience === 'teacher';
+          const isStudentBook = book.audience === 'student';
           return (
             <Pressable
               onPress={() => {
@@ -74,7 +88,7 @@ export default function SubjectsScreen() {
                 styles.bookCard,
                 {
                   backgroundColor: colors.card,
-                  borderColor: colors.border,
+                  borderColor: isTeacherOnly ? color + '55' : colors.border,
                   borderRadius: colors.radius,
                   opacity: pressed ? 0.8 : 1,
                   flexDirection: isRTL ? 'row-reverse' : 'row',
@@ -82,13 +96,32 @@ export default function SubjectsScreen() {
               ]}
             >
               <View style={[styles.bookIcon, { backgroundColor: color + '1A', borderRadius: 12 }]}>
-                <Ionicons name="book-outline" size={24} color={color} />
+                <Ionicons
+                  name={isTeacherOnly ? 'school-outline' : isStudentBook ? 'reader-outline' : 'book-outline'}
+                  size={24}
+                  color={color}
+                />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.bookTitle, { color: colors.foreground, fontFamily: 'Inter_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
                   {bookTitle}
                 </Text>
                 <View style={[styles.bookMeta, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                  {/* Audience badge */}
+                  {isTeacherOnly && (
+                    <View style={[styles.pill, { backgroundColor: color + '22' }]}>
+                      <Text style={[styles.pillText, { color, fontFamily: 'Inter_600SemiBold' }]}>
+                        {lang === 'ar' ? 'للمعلم' : 'Teacher'}
+                      </Text>
+                    </View>
+                  )}
+                  {isStudentBook && (
+                    <View style={[styles.pill, { backgroundColor: colors.muted }]}>
+                      <Text style={[styles.pillText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
+                        {lang === 'ar' ? 'للطالب' : 'Student'}
+                      </Text>
+                    </View>
+                  )}
                   <View style={[styles.pill, { backgroundColor: colors.muted }]}>
                     <Text style={[styles.pillText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>{book.academicYear}</Text>
                   </View>
