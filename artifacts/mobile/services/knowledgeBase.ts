@@ -528,36 +528,86 @@ export const KB_LESSONS: KBLesson[] = [
 // SEARCH UTILITIES
 // ─────────────────────────────────────────────────────
 
+/** Strip the most common Arabic one- or two-letter prefixes from a single word. */
+function stripArabicPrefix(word: string): string {
+  // Order matters: try two-letter prefixes first
+  const prefixes = ['ال', 'وال', 'بال', 'لل', 'فال', 'و', 'ب', 'ل', 'ف', 'ك'];
+  for (const p of prefixes) {
+    if (word.startsWith(p) && word.length > p.length + 1) {
+      return word.slice(p.length);
+    }
+  }
+  return word;
+}
+
+/** Tokenise + normalise a string for fuzzy matching. */
+function normalizeTokens(text: string): string[] {
+  return text
+    .toLowerCase()
+    .split(/[\s،,،.。]+/)
+    .map(w => w.trim())
+    .filter(Boolean)
+    .map(stripArabicPrefix);
+}
+
+/**
+ * Score a single query against a single field string.
+ * Exact full-string match = 2× the per-token score.
+ * Token exact match = full weight; token substring = half weight.
+ */
+function scoreField(query: string, field: string, weight: number): number {
+  const fieldLower = field.toLowerCase();
+  const queryLower = query.toLowerCase();
+
+  // Full string exact / substring match
+  if (fieldLower.includes(queryLower)) return weight * 2;
+
+  // Token-level match
+  const qTokens = normalizeTokens(query);
+  const fTokens = normalizeTokens(field);
+  if (qTokens.length === 0 || fTokens.length === 0) return 0;
+
+  let score = 0;
+  for (const qt of qTokens) {
+    if (qt.length < 2) continue; // skip very short tokens
+    let best = 0;
+    for (const ft of fTokens) {
+      if (ft === qt) { best = Math.max(best, weight); }
+      else if (ft.includes(qt) || qt.includes(ft)) { best = Math.max(best, weight * 0.5); }
+    }
+    score += best;
+  }
+  return score;
+}
+
 /**
  * Search the knowledge base for relevant lessons matching a query.
+ * Handles Arabic prefix variation (الرابطة matches رابطة) and partial word matches.
  * Returns ranked results (most relevant first).
  */
 export function searchKB(query: string, lang: 'ar' | 'en' = 'ar'): KBLesson[] {
-  const q = query.toLowerCase().trim();
+  const q = query.trim();
   if (!q) return [];
 
   const scored = KB_LESSONS.map(lesson => {
     let score = 0;
-    const title = (lang === 'ar' ? lesson.titleAr : lesson.titleEn).toLowerCase();
-    const summary = (lang === 'ar' ? lesson.summaryAr : lesson.summaryEn).toLowerCase();
+
+    const title   = lang === 'ar' ? lesson.titleAr   : lesson.titleEn;
+    const summary = lang === 'ar' ? lesson.summaryAr  : lesson.summaryEn;
     const concepts = lang === 'ar' ? lesson.keyConceptsAr : lesson.keyConceptsEn;
-    const terms = lesson.keyTerms.map(t => (lang === 'ar' ? t.ar : t.en).toLowerCase());
+    const terms   = lesson.keyTerms.map(t => lang === 'ar' ? t.ar : t.en);
 
-    // Title match: highest weight
-    if (title.includes(q)) score += 10;
-    // Keyword in concepts
-    concepts.forEach(c => { if (c.toLowerCase().includes(q)) score += 4; });
-    // Terms
-    terms.forEach(t => { if (t.includes(q)) score += 3; });
-    // Summary
-    if (summary.includes(q)) score += 2;
+    score += scoreField(q, title,   10);
+    concepts.forEach(c => { score += scoreField(q, c, 4); });
+    terms.forEach(t =>    { score += scoreField(q, t, 3); });
+    score += scoreField(q, summary, 2);
 
-    // Also search English side regardless of lang for mixed queries
-    if (lesson.titleEn.toLowerCase().includes(q)) score += 5;
-    lesson.keyConceptsEn.forEach(c => { if (c.toLowerCase().includes(q)) score += 2; });
+    // Always cross-check English side to handle mixed / transliterated queries
+    score += scoreField(q, lesson.titleEn, 5);
+    lesson.keyConceptsEn.forEach(c => { score += scoreField(q, c, 2); });
     lesson.keyTerms.forEach(t => {
-      if (t.en.toLowerCase().includes(q)) score += 2;
-      if (t.definitionEn.toLowerCase().includes(q)) score += 1;
+      score += scoreField(q, t.en, 2);
+      score += scoreField(q, t.definitionEn, 1);
     });
 
     return { lesson, score };
@@ -567,6 +617,14 @@ export function searchKB(query: string, lang: 'ar' | 'en' = 'ar'): KBLesson[] {
     .filter(s => s.score > 0)
     .sort((a, b) => b.score - a.score)
     .map(s => s.lesson);
+}
+
+/**
+ * Fetch a single lesson by its ID — used when suggestion chips are pinned
+ * directly to a lesson so the result is guaranteed.
+ */
+export function getLessonById(id: string): KBLesson | undefined {
+  return KB_LESSONS.find(l => l.id === id);
 }
 
 /**

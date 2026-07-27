@@ -20,6 +20,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import {
   KBLesson,
   getBookForLesson,
+  getLessonById,
   getUnitForLesson,
   searchKB,
 } from '@/services/knowledgeBase';
@@ -38,37 +39,43 @@ interface Message {
 }
 
 // ─── Suggested questions per mode/language ───────────────────────────────────
-const SUGGESTIONS: Record<Mode, Record<'ar' | 'en', string[]>> = {
+interface Suggestion {
+  text: string;
+  /** When set, tapping this chip bypasses search and fetches the lesson directly. */
+  lessonId?: string;
+}
+
+const SUGGESTIONS: Record<Mode, Record<'ar' | 'en', Suggestion[]>> = {
   teacher: {
     ar: [
-      'ما هي نظرية بور؟',
-      'اشرح الرابطة التساهمية',
-      'ما هو الاقتران العكسي؟',
-      'قاعدة الاحتمال للحوادث المتنافية',
-      'الأعداد الكمية وأنواعها',
+      { text: 'ما هي نظرية بور؟',                      lessonId: 'kbl-chem-1-1' },
+      { text: 'اشرح الرابطة التساهمية',                lessonId: 'kbl-chem-3-2' },
+      { text: 'ما هو الاقتران العكسي؟',                lessonId: 'kbl-math-1-3' },
+      { text: 'قاعدة الاحتمال للحوادث المتنافية',      lessonId: 'kbl-math-8-2' },
+      { text: 'الأعداد الكمية وأنواعها',               lessonId: 'kbl-chem-1-2' },
     ],
     en: [
-      "What is Bohr's model?",
-      'Explain covalent bonding',
-      'What is an inverse function?',
-      'Probability of mutually exclusive events',
-      'Quantum numbers explained',
+      { text: "What is Bohr's model?",                  lessonId: 'kbl-chem-1-1' },
+      { text: 'Explain covalent bonding',               lessonId: 'kbl-chem-3-2' },
+      { text: 'What is an inverse function?',           lessonId: 'kbl-math-1-3' },
+      { text: 'Probability of mutually exclusive events', lessonId: 'kbl-math-8-2' },
+      { text: 'Quantum numbers explained',              lessonId: 'kbl-chem-1-2' },
     ],
   },
   student: {
     ar: [
-      'ساعدني في فهم نظرية بور',
-      'كيف أحل مسائل الاحتمال؟',
-      'ما الفرق بين رابطة سيجما وباي؟',
-      'كيف أجد مجال الاقتران النسبي؟',
-      'اشرح مبدأ أوفباو بطريقة بسيطة',
+      { text: 'ساعدني في فهم نظرية بور',               lessonId: 'kbl-chem-1-1' },
+      { text: 'كيف أحل مسائل الاحتمال؟',               lessonId: 'kbl-math-8-1' },
+      { text: 'ما الفرق بين رابطة سيجما وباي؟',        lessonId: 'kbl-chem-3-2' },
+      { text: 'كيف أجد مجال الاقتران النسبي؟',         lessonId: 'kbl-math-1-2' },
+      { text: 'اشرح مبدأ أوفباو بطريقة بسيطة',         lessonId: 'kbl-chem-1-2' },
     ],
     en: [
-      "Help me understand Bohr's model",
-      'How do I solve probability problems?',
-      'Difference between sigma and pi bonds?',
-      'How to find the domain of a rational function?',
-      'Explain Aufbau principle simply',
+      { text: "Help me understand Bohr's model",        lessonId: 'kbl-chem-1-1' },
+      { text: 'How do I solve probability problems?',   lessonId: 'kbl-math-8-1' },
+      { text: 'Difference between sigma and pi bonds?', lessonId: 'kbl-chem-3-2' },
+      { text: 'How to find the domain of a rational function?', lessonId: 'kbl-math-1-2' },
+      { text: 'Explain Aufbau principle simply',        lessonId: 'kbl-chem-1-2' },
     ],
   },
 };
@@ -249,7 +256,7 @@ export default function IqraScreen() {
   }, [lang]);
 
   const sendMessage = useCallback(
-    async (text: string) => {
+    async (text: string, pinnedLessonId?: string) => {
       const q = text.trim();
       if (!q || isThinking) return;
       setInput('');
@@ -267,7 +274,15 @@ export default function IqraScreen() {
       // Simulate search + processing delay
       await new Promise(r => setTimeout(r, 900 + Math.random() * 600));
 
-      const results = searchKB(q, lang as 'ar' | 'en');
+      // Pinned chips bypass search — fetch the lesson directly by ID
+      let results: KBLesson[];
+      if (pinnedLessonId) {
+        const pinned = getLessonById(pinnedLessonId);
+        results = pinned ? [pinned] : searchKB(q, lang as 'ar' | 'en');
+      } else {
+        results = searchKB(q, lang as 'ar' | 'en');
+      }
+
       const responseText =
         results.length > 0
           ? buildResponse(q, results, lang as 'ar' | 'en', mode)
@@ -363,14 +378,14 @@ export default function IqraScreen() {
           {suggestions.map((s, i) => (
             <Pressable
               key={i}
-              onPress={() => sendMessage(s)}
+              onPress={() => sendMessage(s.text, s.lessonId)}
               style={({ pressed }) => [
                 styles.chip,
                 { backgroundColor: colors.secondary, borderRadius: 20, opacity: pressed ? 0.7 : 1 },
               ]}
             >
               <Text style={[styles.chipText, { color: colors.primary, fontFamily: 'Inter_500Medium' }]}>
-                {s}
+                {s.text}
               </Text>
             </Pressable>
           ))}
