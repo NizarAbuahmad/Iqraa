@@ -11,6 +11,7 @@ import {
   Inter_700Bold,
   useFonts,
 } from '@expo-google-fonts/inter';
+import { Ionicons } from '@expo/vector-icons';
 import { router, Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
@@ -54,6 +55,9 @@ export default function RootLayout() {
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
+    // Vector icons must be explicitly loaded — Ionicons font powers all
+    // non-iOS tab bar icons and in-app icons on Android / web.
+    ...Ionicons.font,
   });
 
   useEffect(() => {

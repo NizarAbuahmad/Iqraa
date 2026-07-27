@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
+import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,7 +22,7 @@ import {
   getBookForLesson,
   getLessonById,
   getUnitForLesson,
-  searchKB,
+  searchKBSemantic,
 } from '@/services/knowledgeBase';
 import { Toast } from '@/components/ui/Toast';
 import { remoteAIService } from '@/services/ai/RemoteAIService';
@@ -35,6 +36,8 @@ interface Message {
   role: Role;
   text: string;
   sources?: KBLesson[];
+  /** When set, shows a "Generate Lesson Plan" action button linking to the generator. */
+  lessonTopic?: string;
   timestamp: Date;
 }
 
@@ -222,6 +225,27 @@ function MessageBubble({
             </Text>
           );
         })}
+        {/* ── Lesson-plan action button ── */}
+        {message.lessonTopic && (
+          <Pressable
+            onPress={() =>
+              router.push(
+                `/ai-tools/lesson-plan?topic=${encodeURIComponent(message.lessonTopic!)}` as any,
+              )
+            }
+            style={({ pressed }) => [
+              styles.actionBtn,
+              { backgroundColor: colors.primary + '18', borderColor: colors.primary, opacity: pressed ? 0.7 : 1 },
+            ]}
+          >
+            <Ionicons name="document-text-outline" size={13} color={colors.primary} />
+            <Text style={[styles.actionBtnText, { color: colors.primary, fontFamily: 'Inter_500Medium' }]}>
+              {isRTL
+                ? `إنشاء خطة درس: ${message.lessonTopic}`
+                : `Generate Lesson Plan: ${message.lessonTopic}`}
+            </Text>
+          </Pressable>
+        )}
         <Text style={[styles.timestamp, { color: colors.mutedForeground, textAlign: isRTL ? 'left' : 'right' }]}>
           {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </Text>
@@ -281,10 +305,17 @@ export default function IqraScreen() {
       let results: KBLesson[];
       if (pinnedLessonId) {
         const pinned = getLessonById(pinnedLessonId);
-        results = pinned ? [pinned] : searchKB(q, lang as 'ar' | 'en');
+        results = pinned ? [pinned] : searchKBSemantic(q, lang as 'ar' | 'en');
       } else {
-        results = searchKB(q, lang as 'ar' | 'en');
+        results = searchKBSemantic(q, lang as 'ar' | 'en');
       }
+
+      // Detect teacher lesson-plan/worksheet/quiz generation intent
+      const planKeywords = /خطة\s*(درس|تدريس)|lesson\s*plan|worksheet|ورقة\s*عمل|اختبار\s*(قصير|تكويني)|quiz|generate.*plan|أعطني\s*خطة|أعد\s*لي\s*خطة/i;
+      const hasPlanIntent = planKeywords.test(q) && results.length > 0 && mode === 'teacher';
+      const lessonTopic = hasPlanIntent
+        ? (lang === 'ar' ? results[0].titleAr : results[0].titleEn)
+        : undefined;
 
       // 2. Build KB context string for the AI
       const kbContext = results.length > 0
@@ -315,6 +346,7 @@ export default function IqraScreen() {
         role: 'assistant',
         text: responseText,
         sources: results,
+        lessonTopic,
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, assistantMsg]);
@@ -533,6 +565,9 @@ const styles = StyleSheet.create({
   bulletRow: { flexDirection: 'row', alignItems: 'flex-start', marginVertical: 1 },
   sourceText: { fontSize: 11, marginTop: 6, fontFamily: 'Inter_400Regular', fontStyle: 'italic' },
   timestamp: { fontSize: 10, marginTop: 6, fontFamily: 'Inter_400Regular' },
+
+  actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 10, borderWidth: 1 },
+  actionBtnText: { fontSize: 12, flexShrink: 1 },
 
   thinkingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
   thinkingBubble: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderWidth: 1 },
