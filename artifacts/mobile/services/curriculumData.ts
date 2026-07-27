@@ -115,6 +115,17 @@ export const BOOKS: Book[] = [
     edition: '3rd',
     hasKnowledgeBase: true,
   },
+  {
+    id: 'book-math-10-s2',
+    title: 'Mathematics – Grade 10, Semester 2',
+    titleAr: 'الرياضيات – الصف العاشر – الفصل الثاني',
+    subjectId: 'mathematics',
+    gradeId: 'grade-10',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '3rd',
+    hasKnowledgeBase: true,
+  },
   // ── Other grades ───────────────────────────────────────────────────────────
   {
     id: 'book-english-10',

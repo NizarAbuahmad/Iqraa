@@ -48,34 +48,38 @@ interface Suggestion {
 const SUGGESTIONS: Record<Mode, Record<'ar' | 'en', Suggestion[]>> = {
   teacher: {
     ar: [
-      { text: 'ما هي نظرية بور؟',                      lessonId: 'kbl-chem-1-1' },
-      { text: 'اشرح الرابطة التساهمية',                lessonId: 'kbl-chem-3-2' },
+      { text: 'اشرح قواعد الاشتقاق',                   lessonId: 'kbl-math-2-2' },
+      { text: 'ما هي المتجهات في المستوى؟',             lessonId: 'kbl-math-3-1' },
+      { text: 'النسب المثلثية للزوايا',                 lessonId: 'kbl-math-s2-3-1' },
+      { text: 'قانون الجيوب وتطبيقاته',                lessonId: 'kbl-math-s2-4-2' },
       { text: 'ما هو الاقتران العكسي؟',                lessonId: 'kbl-math-1-3' },
       { text: 'قاعدة الاحتمال للحوادث المتنافية',      lessonId: 'kbl-math-8-2' },
-      { text: 'الأعداد الكمية وأنواعها',               lessonId: 'kbl-chem-1-2' },
     ],
     en: [
-      { text: "What is Bohr's model?",                  lessonId: 'kbl-chem-1-1' },
-      { text: 'Explain covalent bonding',               lessonId: 'kbl-chem-3-2' },
+      { text: 'Explain differentiation rules',          lessonId: 'kbl-math-2-2' },
+      { text: 'What are vectors in the plane?',         lessonId: 'kbl-math-3-1' },
+      { text: 'Trigonometric ratios explained',         lessonId: 'kbl-math-s2-3-1' },
+      { text: 'Law of Sines and applications',          lessonId: 'kbl-math-s2-4-2' },
       { text: 'What is an inverse function?',           lessonId: 'kbl-math-1-3' },
       { text: 'Probability of mutually exclusive events', lessonId: 'kbl-math-8-2' },
-      { text: 'Quantum numbers explained',              lessonId: 'kbl-chem-1-2' },
     ],
   },
   student: {
     ar: [
-      { text: 'ساعدني في فهم نظرية بور',               lessonId: 'kbl-chem-1-1' },
+      { text: 'كيف أجد المشتقة؟',                      lessonId: 'kbl-math-2-2' },
+      { text: 'ما هي القيم العظمى والصغرى؟',           lessonId: 'kbl-math-2-3' },
+      { text: 'اشرح جمع المتجهات',                     lessonId: 'kbl-math-3-2' },
       { text: 'كيف أحل مسائل الاحتمال؟',               lessonId: 'kbl-math-8-1' },
-      { text: 'ما الفرق بين رابطة سيجما وباي؟',        lessonId: 'kbl-chem-3-2' },
-      { text: 'كيف أجد مجال الاقتران النسبي؟',         lessonId: 'kbl-math-1-2' },
-      { text: 'اشرح مبدأ أوفباو بطريقة بسيطة',         lessonId: 'kbl-chem-1-2' },
+      { text: 'ما هي النسب المثلثية؟',                 lessonId: 'kbl-math-s2-3-1' },
+      { text: 'حل نظام معادلتين تربيعيتين',            lessonId: 'kbl-math-s2-1-1' },
     ],
     en: [
-      { text: "Help me understand Bohr's model",        lessonId: 'kbl-chem-1-1' },
+      { text: 'How do I find a derivative?',            lessonId: 'kbl-math-2-2' },
+      { text: 'What are maximum and minimum values?',   lessonId: 'kbl-math-2-3' },
+      { text: 'Explain vector addition',                lessonId: 'kbl-math-3-2' },
       { text: 'How do I solve probability problems?',   lessonId: 'kbl-math-8-1' },
-      { text: 'Difference between sigma and pi bonds?', lessonId: 'kbl-chem-3-2' },
-      { text: 'How to find the domain of a rational function?', lessonId: 'kbl-math-1-2' },
-      { text: 'Explain Aufbau principle simply',        lessonId: 'kbl-chem-1-2' },
+      { text: 'What are trigonometric ratios?',         lessonId: 'kbl-math-s2-3-1' },
+      { text: 'Solve a system of two quadratic equations', lessonId: 'kbl-math-s2-1-1' },
     ],
   },
 };
@@ -397,6 +401,7 @@ export default function IqraScreen() {
         ref={listRef}
         data={messages}
         keyExtractor={m => m.id}
+        style={{ flex: 1 }}
         contentContainerStyle={styles.messageList}
         showsVerticalScrollIndicator={false}
         onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
