@@ -310,11 +310,7 @@ export default function IqraScreen() {
   const suggestions = SUGGESTIONS[mode][lang as 'ar' | 'en'];
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: colors.background }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={0}
-    >
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       {/* ─── Header ────────────────────────────────────────────────── */}
       <View
         style={[
@@ -434,58 +430,63 @@ export default function IqraScreen() {
       />
 
       {/* ─── Input Bar ─────────────────────────────────────────────── */}
-      <View
-        style={[
-          styles.inputBar,
-          {
-            backgroundColor: colors.card,
-            borderTopColor: colors.border,
-            paddingBottom: insets.bottom + 8,
-          },
-        ]}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
       >
         <View
           style={[
-            styles.inputWrap,
-            { backgroundColor: colors.muted, borderRadius: 24 },
-            isRTL && { flexDirection: 'row-reverse' },
+            styles.inputBar,
+            {
+              backgroundColor: colors.card,
+              borderTopColor: colors.border,
+              paddingBottom: insets.bottom + 8,
+            },
           ]}
         >
-          <TextInput
+          <View
             style={[
-              styles.input,
-              { color: colors.foreground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' },
-            ]}
-            placeholder={t('iqraPlaceholder')}
-            placeholderTextColor={colors.mutedForeground}
-            value={input}
-            onChangeText={setInput}
-            multiline
-            maxLength={400}
-            onSubmitEditing={() => sendMessage(input)}
-          />
-          <Pressable
-            onPress={() => sendMessage(input)}
-            disabled={!input.trim() || isThinking}
-            style={({ pressed }) => [
-              styles.sendBtn,
-              {
-                backgroundColor: input.trim() ? colors.primary : colors.muted,
-                borderRadius: 20,
-                opacity: pressed ? 0.8 : 1,
-              },
+              styles.inputWrap,
+              { backgroundColor: colors.muted, borderRadius: 24 },
+              isRTL && { flexDirection: 'row-reverse' },
             ]}
           >
-            <Ionicons
-              name={isRTL ? 'arrow-back' : 'arrow-forward'}
-              size={18}
-              color={input.trim() ? colors.primaryForeground : colors.mutedForeground}
+            <TextInput
+              style={[
+                styles.input,
+                { color: colors.foreground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' },
+              ]}
+              placeholder={t('iqraPlaceholder')}
+              placeholderTextColor={colors.mutedForeground}
+              value={input}
+              onChangeText={setInput}
+              multiline
+              maxLength={400}
+              onSubmitEditing={() => sendMessage(input)}
             />
-          </Pressable>
+            <Pressable
+              onPress={() => sendMessage(input)}
+              disabled={!input.trim() || isThinking}
+              style={({ pressed }) => [
+                styles.sendBtn,
+                {
+                  backgroundColor: input.trim() ? colors.primary : colors.muted,
+                  borderRadius: 20,
+                  opacity: pressed ? 0.8 : 1,
+                },
+              ]}
+            >
+              <Ionicons
+                name={isRTL ? 'arrow-back' : 'arrow-forward'}
+                size={18}
+                color={input.trim() ? colors.primaryForeground : colors.mutedForeground}
+              />
+            </Pressable>
+          </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
       <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
