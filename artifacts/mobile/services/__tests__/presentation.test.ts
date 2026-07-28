@@ -352,4 +352,84 @@ describe('PresentationScreen — simulated state flow', () => {
     assert.equal(canGoTo(totalSlides - 1), true);
     assert.equal(canGoTo(totalSlides), false, 'cannot go past last slide');
   });
+
+  it('store is cleared when presentation screen exits (prevents stale activity re-appearing)', () => {
+    const activity = makeMockActivity();
+
+    // Builder sets the activity (handleStartPresentation in builder.tsx)
+    setPendingClassroomActivity(activity);
+
+    // Presentation screen mounts — activity must be present with at least one slide
+    const loaded = getPendingClassroomActivity();
+    assert.ok(loaded, 'activity must be in store when presentation screen mounts');
+    assert.ok(loaded!.slides.length >= 1, 'activity must have at least one slide');
+
+    // Presentation screen exits — useFocusEffect cleanup calls clearClassroomActivity()
+    clearClassroomActivity();
+
+    assert.equal(
+      getPendingClassroomActivity(),
+      null,
+      'store must be empty after presentation screen exits',
+    );
+  });
+});
+
+// ─── 6. Builder → store → presentation handoff ────────────────────────────────
+
+describe('builder → store → presentation — end-to-end handoff', () => {
+  beforeEach(() => {
+    clearClassroomActivity();
+  });
+
+  it('getPendingClassroomActivity() returns a valid activity with at least one slide after builder sets it', () => {
+    // Simulate what handleStartPresentation() in builder.tsx does
+    const generated = makeMockActivity();
+    setPendingClassroomActivity(generated);
+
+    const retrieved = getPendingClassroomActivity();
+
+    assert.ok(retrieved !== null, 'activity must not be null after builder sets it');
+    assert.equal(typeof retrieved!.activityName, 'string', 'activityName must be a string');
+    assert.ok(retrieved!.activityName.length > 0, 'activityName must be non-empty');
+    assert.ok(Array.isArray(retrieved!.slides), 'slides must be an array');
+    assert.ok(retrieved!.slides.length >= 1, 'activity must have at least one slide');
+
+    // The exact object reference is preserved (no serialisation round-trip)
+    assert.equal(retrieved, generated, 'retrieved activity must be the same object reference');
+  });
+
+  it('first slide title and slideNumber are accessible immediately on the presentation screen', () => {
+    const generated = makeMockActivity();
+    setPendingClassroomActivity(generated);
+
+    // Presentation screen reads the store on mount
+    const loaded = getPendingClassroomActivity()!;
+    const firstSlide = loaded.slides[0];
+
+    assert.ok(firstSlide, 'first slide must exist');
+    assert.equal(typeof firstSlide.title, 'string');
+    assert.equal(typeof firstSlide.slideNumber, 'number');
+    assert.equal(firstSlide.slideNumber, 1, 'first slide must have slideNumber 1');
+  });
+
+  it('store is null before builder sets it (no phantom activity on first launch)', () => {
+    // Nothing set yet
+    assert.equal(getPendingClassroomActivity(), null);
+  });
+
+  it('clearClassroomActivity() after exit leaves store empty for the next session', () => {
+    setPendingClassroomActivity(makeMockActivity());
+    assert.ok(getPendingClassroomActivity() !== null, 'activity present before exit');
+
+    // Simulate useFocusEffect cleanup
+    clearClassroomActivity();
+
+    assert.equal(getPendingClassroomActivity(), null, 'store empty after exit');
+
+    // A subsequent builder run sets a fresh activity normally
+    const second = { ...makeMockActivity(), activityName: 'Second Session' };
+    setPendingClassroomActivity(second);
+    assert.equal(getPendingClassroomActivity()?.activityName, 'Second Session');
+  });
 });
