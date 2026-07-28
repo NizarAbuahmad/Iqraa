@@ -16,7 +16,7 @@ import { getItem, saveItem, updateItem } from '@/services/workspace';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import {
-  buildWorksheetHTML, copyToClipboard, exportAsPDF, exportAsWord,
+  buildWorksheetHTML, buildWorksheetSlidesHTML, copyToClipboard, exportAsPDF, exportAsWord,
   formatWorksheetText, shareAsText,
 } from '@/services/share';
 
@@ -82,6 +82,7 @@ export default function WorksheetScreen() {
   const [toastVisible, setToastVisible] = useState(false);
   const [loadingPDF, setLoadingPDF] = useState(false);
   const [loadingWord, setLoadingWord] = useState(false);
+  const [loadingSlides, setLoadingSlides] = useState(false);
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
 
   useEffect(() => {
@@ -207,12 +208,22 @@ export default function WorksheetScreen() {
     } catch { showToast(t('generationFailed')); } finally { setLoadingWord(false); }
   };
 
+  const handleSlides = async () => {
+    if (!result) return;
+    setLoadingSlides(true);
+    try {
+      const html = buildWorksheetSlidesHTML(result, getExportTitle(), getExportMeta(), lang === 'ar');
+      await exportAsPDF(html, (getExportTitle() + '-slides').replace(/[^\w\s-]/g, '').trim());
+    } catch { showToast(t('generationFailed')); } finally { setLoadingSlides(false); }
+  };
+
   const exportLabels = {
     title: t('exportTitle'),
     shareLabel: t('exportShare'), shareSub: t('exportShareSub'),
     copyLabel: t('exportCopy'), copySub: t('exportCopySub'),
     pdfLabel: t('exportPDF'), pdfSub: t('exportPDFSub'),
     wordLabel: t('exportWord'), wordSub: t('exportWordSub'),
+    slidesLabel: t('exportSlides'), slidesSub: t('exportSlidesSub'),
     cancel: t('cancel'),
   };
 
@@ -368,9 +379,11 @@ export default function WorksheetScreen() {
       onCopy={handleCopy}
       onPDF={handlePDF}
       onWord={handleWord}
+      onSlides={handleSlides}
       isRTL={isRTL}
       loadingPDF={loadingPDF}
       loadingWord={loadingWord}
+      loadingSlides={loadingSlides}
       labels={exportLabels}
     />
     <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
