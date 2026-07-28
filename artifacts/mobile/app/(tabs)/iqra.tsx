@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -116,106 +117,184 @@ const SUGGESTIONS: Record<Mode, Record<'ar' | 'en', Suggestion[]>> = {
 
 // ─── Context Banner ───────────────────────────────────────────────────────────
 function ContextBanner({
-  colors, isRTL, lang, t, onContextChange,
+  colors, isRTL, lang, t, onContextChange, onAsk,
 }: {
   colors: any; isRTL: boolean; lang: 'ar' | 'en';
-  t: (k: any) => string; onContextChange: (ctx: string) => void;
+  t: (k: any) => string;
+  onContextChange: (ctx: string) => void;
+  onAsk: (topic: string) => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
   const [subjIdx, setSubjIdx] = useState(0);
   const [topic, setTopicInternal] = useState('');
+  // Draft topic while modal is open; only committed on confirm
+  const [draftTopic, setDraftTopic] = useState('');
+  const [draftSubjIdx, setDraftSubjIdx] = useState(0);
 
-  const subj = CONTEXT_SUBJECTS[subjIdx];
+  const subj = CONTEXT_SUBJECTS[draftSubjIdx];
 
-  const handleTopicChange = (v: string) => {
-    setTopicInternal(v);
-    onContextChange(v);
+  const openModal = () => {
+    setDraftTopic(topic);
+    setDraftSubjIdx(subjIdx);
+    setModalOpen(true);
   };
 
-  const handleSubjChange = (i: number) => {
-    setSubjIdx(i);
-    setTopicInternal('');
-    onContextChange('');
+  const handleConfirm = () => {
+    setSubjIdx(draftSubjIdx);
+    setTopicInternal(draftTopic);
+    onContextChange(draftTopic);
+    setModalOpen(false);
+    if (draftTopic.trim()) {
+      onAsk(draftTopic.trim());
+    }
+  };
+
+  const handleCancel = () => {
+    setModalOpen(false);
   };
 
   const handleClear = () => {
     setTopicInternal('');
     setSubjIdx(0);
     onContextChange('');
-    setExpanded(false);
   };
 
   return (
-    <View style={[ctxStyles.container, { borderTopColor: colors.border, backgroundColor: colors.card }]}>
-      {/* ── Pill header ── */}
-      <View style={[ctxStyles.pillRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }, { paddingHorizontal: 16, paddingVertical: 8 }]}>
-        <Pressable
-          onPress={() => setExpanded(e => !e)}
-          style={[ctxStyles.pill, {
-            backgroundColor: topic ? colors.primary + '18' : colors.muted,
-            borderColor: topic ? colors.primary + '50' : colors.border,
-            flexDirection: isRTL ? 'row-reverse' : 'row',
-            flex: 1,
-          }]}
-        >
-          <Ionicons name="location-outline" size={13} color={topic ? colors.primary : colors.mutedForeground} />
-          <Text
-            numberOfLines={1}
-            style={[ctxStyles.pillText, {
-              color: topic ? colors.primary : colors.mutedForeground,
-              fontFamily: topic ? 'Inter_500Medium' : 'Inter_400Regular',
-              textAlign: isRTL ? 'right' : 'left',
+    <>
+      {/* ── Compact pill shown in header ── */}
+      <View style={[ctxStyles.container, { borderTopColor: colors.border, backgroundColor: colors.card }]}>
+        <View style={[ctxStyles.pillRow, { flexDirection: isRTL ? 'row-reverse' : 'row', paddingHorizontal: 16, paddingVertical: 8 }]}>
+          <Pressable
+            onPress={openModal}
+            style={[ctxStyles.pill, {
+              backgroundColor: topic ? colors.primary + '18' : colors.muted,
+              borderColor: topic ? colors.primary + '50' : colors.border,
+              flexDirection: isRTL ? 'row-reverse' : 'row',
               flex: 1,
             }]}
           >
-            {topic ? `${t('currentlyTeaching')}: ${topic}` : t('setTeachingContext')}
-          </Text>
-          <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={13} color={colors.mutedForeground} style={{ marginStart: 4 }} />
-        </Pressable>
-        {topic && (
-          <Pressable onPress={handleClear} hitSlop={8} style={ctxStyles.clearBtn}>
-            <Ionicons name="close-circle" size={16} color={colors.mutedForeground} />
+            <Ionicons name="location-outline" size={13} color={topic ? colors.primary : colors.mutedForeground} />
+            <Text
+              numberOfLines={1}
+              style={[ctxStyles.pillText, {
+                color: topic ? colors.primary : colors.mutedForeground,
+                fontFamily: topic ? 'Inter_500Medium' : 'Inter_400Regular',
+                textAlign: isRTL ? 'right' : 'left',
+                flex: 1,
+              }]}
+            >
+              {topic ? `${t('currentlyTeaching')}: ${topic}` : t('setTeachingContext')}
+            </Text>
+            <Ionicons name="chevron-down" size={13} color={colors.mutedForeground} style={{ marginStart: 4 }} />
           </Pressable>
-        )}
+          {topic ? (
+            <Pressable onPress={handleClear} hitSlop={8} style={ctxStyles.clearBtn}>
+              <Ionicons name="close-circle" size={16} color={colors.mutedForeground} />
+            </Pressable>
+          ) : null}
+        </View>
       </View>
 
-      {/* ── Expanded picker ── */}
-      {expanded && (
-        <View style={[ctxStyles.expanded, { borderTopColor: colors.border, paddingHorizontal: 16, paddingBottom: 12 }]}>
-          {/* Subject toggle */}
-          <View style={[ctxStyles.subjRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            {CONTEXT_SUBJECTS.map((s, i) => (
-              <Pressable
-                key={s.subjectId}
-                onPress={() => handleSubjChange(i)}
-                style={[ctxStyles.subjPill, {
-                  backgroundColor: subjIdx === i ? colors.primary : colors.muted,
-                  borderRadius: 16,
-                }]}
-              >
-                <Text style={[ctxStyles.subjText, {
-                  color: subjIdx === i ? colors.primaryForeground : colors.mutedForeground,
-                  fontFamily: subjIdx === i ? 'Inter_600SemiBold' : 'Inter_400Regular',
-                }]}>
-                  {lang === 'ar' ? s.labelAr : s.labelEn}
-                </Text>
-              </Pressable>
-            ))}
+      {/* ── Full-screen Modal with scrollable picker + CTA ── */}
+      <Modal
+        visible={modalOpen}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={handleCancel}
+      >
+        <View style={[ctxStyles.modal, { backgroundColor: colors.background }]}>
+          {/* Modal header */}
+          <View style={[ctxStyles.modalHeader, { borderBottomColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            <Pressable onPress={handleCancel} hitSlop={10} style={ctxStyles.modalCancel}>
+              <Text style={[ctxStyles.modalCancelText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
+                {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+              </Text>
+            </Pressable>
+            <Text style={[ctxStyles.modalTitle, { color: colors.foreground, fontFamily: 'Inter_700Bold' }]}>
+              {t('setTeachingContext')}
+            </Text>
+            <View style={{ width: 60 }} />
           </View>
-          <TopicSelector
-            subjectId={subj.subjectId}
-            gradeId={subj.gradeId}
-            value={topic}
-            onChange={handleTopicChange}
-            lang={lang}
-            isRTL={isRTL}
-            colors={colors}
-            accent={colors.primary}
-            t={t}
-          />
+
+          {/* Scrollable body */}
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={ctxStyles.modalBody}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Subject pills */}
+            <Text style={[ctxStyles.modalSectionLabel, { color: colors.mutedForeground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+              {lang === 'ar' ? 'المادة' : 'Subject'}
+            </Text>
+            <View style={[ctxStyles.subjRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              {CONTEXT_SUBJECTS.map((s, i) => (
+                <Pressable
+                  key={s.subjectId}
+                  onPress={() => { setDraftSubjIdx(i); setDraftTopic(''); }}
+                  style={[ctxStyles.subjPill, {
+                    backgroundColor: draftSubjIdx === i ? colors.primary : colors.muted,
+                    borderRadius: 16,
+                    borderWidth: 1.5,
+                    borderColor: draftSubjIdx === i ? colors.primary : colors.border,
+                  }]}
+                >
+                  <Text style={[ctxStyles.subjText, {
+                    color: draftSubjIdx === i ? colors.primaryForeground : colors.mutedForeground,
+                    fontFamily: draftSubjIdx === i ? 'Inter_600SemiBold' : 'Inter_400Regular',
+                  }]}>
+                    {lang === 'ar' ? s.labelAr : s.labelEn}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
+            {/* Topic selector */}
+            <Text style={[ctxStyles.modalSectionLabel, { color: colors.mutedForeground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left', marginTop: 18 }]}>
+              {lang === 'ar' ? 'الدرس' : 'Lesson'}
+            </Text>
+            <TopicSelector
+              subjectId={subj.subjectId}
+              gradeId={subj.gradeId}
+              value={draftTopic}
+              onChange={setDraftTopic}
+              lang={lang}
+              isRTL={isRTL}
+              colors={colors}
+              accent={colors.primary}
+              t={t}
+            />
+          </ScrollView>
+
+          {/* CTA at bottom */}
+          <View style={[ctxStyles.modalFooter, { borderTopColor: colors.border, backgroundColor: colors.card }]}>
+            <Pressable
+              onPress={handleConfirm}
+              disabled={!draftTopic.trim()}
+              style={({ pressed }) => [
+                ctxStyles.askBtn,
+                {
+                  backgroundColor: draftTopic.trim() ? colors.primary : colors.muted,
+                  borderRadius: colors.radius,
+                  opacity: pressed ? 0.85 : 1,
+                  flexDirection: isRTL ? 'row-reverse' : 'row',
+                },
+              ]}
+            >
+              <Ionicons name="chatbubble-ellipses-outline" size={18} color={draftTopic.trim() ? colors.primaryForeground : colors.mutedForeground} />
+              <Text style={[ctxStyles.askBtnText, {
+                color: draftTopic.trim() ? colors.primaryForeground : colors.mutedForeground,
+                fontFamily: 'Inter_700Bold',
+              }]}>
+                {draftTopic.trim()
+                  ? (lang === 'ar' ? `اسأل iQra عن: ${draftTopic}` : `Ask iQra about: ${draftTopic}`)
+                  : (lang === 'ar' ? 'اختر درسًا أولاً' : 'Select a lesson first')}
+              </Text>
+            </Pressable>
+          </View>
         </View>
-      )}
-    </View>
+      </Modal>
+    </>
   );
 }
 
@@ -685,6 +764,11 @@ export default function IqraScreen() {
             lang={lang as 'ar' | 'en'}
             t={t}
             onContextChange={setTeachingCtx}
+            onAsk={(topic) => sendMessage(
+              lang === 'ar'
+                ? `أنا أدرّس "${topic}" لطلاب الصف العاشر. قدّم لي نظرة شاملة عن هذا الموضوع مع أهم المفاهيم.`
+                : `I'm teaching "${topic}" to Grade 10 students. Give me a comprehensive overview of this topic with key concepts.`
+            )}
           />
         )}
       </View>
@@ -841,8 +925,18 @@ const ctxStyles = StyleSheet.create({
   pill:       { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
   pillText:   { fontSize: 12 },
   clearBtn:   { padding: 4 },
-  expanded:   { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 10 },
-  subjRow:    { flexDirection: 'row', gap: 8, marginBottom: 10 },
+  subjRow:    { flexDirection: 'row', gap: 8, marginBottom: 4 },
   subjPill:   { paddingHorizontal: 14, paddingVertical: 6 },
   subjText:   { fontSize: 13 },
+  // Modal
+  modal:        { flex: 1 },
+  modalHeader:  { alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1 },
+  modalCancel:  { width: 60 },
+  modalCancelText: { fontSize: 14 },
+  modalTitle:   { fontSize: 16 },
+  modalBody:    { padding: 20, paddingBottom: 40 },
+  modalSectionLabel: { fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
+  modalFooter:  { padding: 16, borderTopWidth: 1 },
+  askBtn:       { alignItems: 'center', justifyContent: 'center', gap: 10, padding: 16 },
+  askBtnText:   { fontSize: 15, flexShrink: 1 },
 });
