@@ -1,2 +1,3 @@
 - [Iqra App Architecture](iqra-architecture.md) — knowledge base, i18n, tabs, iQra chat, curriculum data structure and key decisions
 - [AI Integration Architecture](ai-integration.md) — API routes, RemoteAIService, iQra RAG flow, fallback strategy, Metro config fix for openai tmp dirs
+- [Auth & Workspace API](auth-workspace-api.md) — JWT tokens, SecureStore, DB tables, route map, User type changes, db rebuild note

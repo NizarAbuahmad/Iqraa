@@ -356,7 +356,15 @@ generateRouter.post('/classroom-activity', async (req, res) => {
   const isAr = body.language === 'arabic';
   try {
     const prompt = isAr ? classroomPromptAr(body) : classroomPromptEn(body);
-    const raw = await callAI(prompt);
+    const completion = await openai.chat.completions.create({
+      model: "gpt-5.6-luna",
+      max_completion_tokens: 2000,
+      messages: [
+        { role: "system", content: isAr ? SYSTEM_AR : SYSTEM_EN },
+        { role: "user", content: prompt },
+      ],
+    });
+    const raw = completion.choices[0]?.message?.content ?? "{}";
     const data = extractJSON(raw);
     res.json(data);
   } catch (err) {

@@ -52,13 +52,27 @@ export default function ProfileScreen() {
 
   const topPad = insets.top + (insets.top === 0 ? 67 : 0);
 
-  const initials = user?.name
-    .split(' ')
-    .slice(0, 2)
-    .map(w => w[0]?.toUpperCase() ?? '')
-    .join('') ?? 'T';
+  const initials = user
+    ? [user.firstName?.[0], user.lastName?.[0]]
+        .filter(Boolean)
+        .map(c => c!.toUpperCase())
+        .join('') || 'T'
+    : 'T';
 
-  const roleLabel = user?.role === 'teacher' ? t('roleTeacher') : user?.role === 'school_admin' ? t('roleAdmin') : t('roleSysAdmin');
+  const roleLabel =
+    user?.role === 'teacher'
+      ? t('roleTeacher')
+      : user?.role === 'school_admin'
+        ? t('roleAdmin')
+        : t('roleSysAdmin');
+
+  const memberSince = user?.createdAt
+    ? new Date(user.createdAt).toLocaleDateString(isRTL ? 'ar-JO' : 'en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+    : '';
 
   const handleLogout = () => {
     Alert.alert(t('signOut'), t('signOutConfirm'), [
@@ -90,7 +104,7 @@ export default function ProfileScreen() {
             </Text>
           </View>
           <Text style={[styles.userName, { color: colors.primaryForeground, fontFamily: 'Inter_700Bold' }]}>
-            {user?.name ?? t('roleTeacher')}
+            {user ? `${user.firstName} ${user.lastName}` : t('roleTeacher')}
           </Text>
           <View style={[styles.roleBadge, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
             <Text style={[styles.roleText, { color: colors.primaryForeground, fontFamily: 'Inter_500Medium' }]}>
@@ -107,47 +121,60 @@ export default function ProfileScreen() {
         </Text>
         <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
           <InfoRow icon="mail-outline" label={t('email')} value={user?.email ?? ''} color={colors.primary} isRTL={isRTL} />
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <InfoRow icon="call-outline" label={t('phone')} value={user?.phone ?? ''} color={colors.info} isRTL={isRTL} />
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <InfoRow icon="business-outline" label={t('school')} value={user?.school ?? ''} color={colors.accent} isRTL={isRTL} />
+          {memberSince ? (
+            <>
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
+              <InfoRow icon="calendar-outline" label="Member since" value={memberSince} color={colors.info} isRTL={isRTL} />
+            </>
+          ) : null}
+          {user?.phone ? (
+            <>
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
+              <InfoRow icon="call-outline" label={t('phone')} value={user.phone} color={colors.info} isRTL={isRTL} />
+            </>
+          ) : null}
+          {user?.school ? (
+            <>
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
+              <InfoRow icon="business-outline" label={t('school')} value={user.school} color={colors.accent} isRTL={isRTL} />
+            </>
+          ) : null}
         </View>
 
-        {/* Subjects & Grades */}
-        <Text style={[styles.section, { color: colors.mutedForeground, fontFamily: 'Inter_500Medium', marginTop: 20, textAlign: isRTL ? 'right' : 'left' }]}>
-          {t('teaching')}
-        </Text>
-        <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-          <View style={styles.tagSection}>
-            <Text style={[styles.tagLabel, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('mySubjects')}</Text>
-            {(user?.subjects?.length ?? 0) === 0 ? (
-              <Text style={[{ color: colors.mutedForeground, fontFamily: 'Inter_400Regular', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }]}>{t('notSet')}</Text>
-            ) : (
-              <View style={[styles.tags, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                {user?.subjects?.map(s => (
-                  <View key={s} style={[styles.tag, { backgroundColor: colors.secondary }]}>
-                    <Text style={[styles.tagText, { color: colors.primary, fontFamily: 'Inter_500Medium' }]}>{s}</Text>
+        {/* Subjects & Grades — only show if populated */}
+        {((user?.subjects?.length ?? 0) > 0 || (user?.grades?.length ?? 0) > 0) ? (
+          <>
+            <Text style={[styles.section, { color: colors.mutedForeground, fontFamily: 'Inter_500Medium', marginTop: 20, textAlign: isRTL ? 'right' : 'left' }]}>
+              {t('teaching')}
+            </Text>
+            <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
+              {(user?.subjects?.length ?? 0) > 0 ? (
+                <View style={styles.tagSection}>
+                  <Text style={[styles.tagLabel, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('mySubjects')}</Text>
+                  <View style={[styles.tags, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                    {user?.subjects?.map(s => (
+                      <View key={s} style={[styles.tag, { backgroundColor: colors.secondary }]}>
+                        <Text style={[styles.tagText, { color: colors.primary, fontFamily: 'Inter_500Medium' }]}>{s}</Text>
+                      </View>
+                    ))}
                   </View>
-                ))}
-              </View>
-            )}
-          </View>
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <View style={styles.tagSection}>
-            <Text style={[styles.tagLabel, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('myGrades')}</Text>
-            {(user?.grades?.length ?? 0) === 0 ? (
-              <Text style={[{ color: colors.mutedForeground, fontFamily: 'Inter_400Regular', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }]}>{t('notSet')}</Text>
-            ) : (
-              <View style={[styles.tags, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                {user?.grades?.map(g => (
-                  <View key={g} style={[styles.tag, { backgroundColor: colors.muted }]}>
-                    <Text style={[styles.tagText, { color: colors.mutedForeground, fontFamily: 'Inter_500Medium' }]}>{g}</Text>
+                </View>
+              ) : null}
+              {(user?.grades?.length ?? 0) > 0 ? (
+                <View style={styles.tagSection}>
+                  <Text style={[styles.tagLabel, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('myGrades')}</Text>
+                  <View style={[styles.tags, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                    {user?.grades?.map(g => (
+                      <View key={g} style={[styles.tag, { backgroundColor: colors.muted }]}>
+                        <Text style={[styles.tagText, { color: colors.mutedForeground, fontFamily: 'Inter_500Medium' }]}>{g}</Text>
+                      </View>
+                    ))}
                   </View>
-                ))}
-              </View>
-            )}
-          </View>
-        </View>
+                </View>
+              ) : null}
+            </View>
+          </>
+        ) : null}
 
         {/* Settings */}
         <Text style={[styles.section, { color: colors.mutedForeground, fontFamily: 'Inter_500Medium', marginTop: 20, textAlign: isRTL ? 'right' : 'left' }]}>

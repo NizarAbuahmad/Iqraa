@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
@@ -12,7 +12,7 @@ import {
   useFonts,
 } from '@expo-google-fonts/inter';
 import { Ionicons } from '@expo/vector-icons';
-import { router, Stack } from 'expo-router';
+import { router, Stack, useNavigationContainerRef } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { LanguageProvider } from '@/context/LanguageContext';
@@ -23,6 +23,8 @@ const queryClient = new QueryClient();
 
 function RootLayoutNav() {
   const { user, isLoading } = useAuth();
+  // Track the last auth state so we only navigate on transitions
+  const prevLoading = useRef(true);
 
   useEffect(() => {
     if (!isLoading) {
@@ -31,6 +33,7 @@ function RootLayoutNav() {
       } else {
         router.replace('/(auth)/login');
       }
+      prevLoading.current = false;
     }
   }, [user, isLoading]);
 

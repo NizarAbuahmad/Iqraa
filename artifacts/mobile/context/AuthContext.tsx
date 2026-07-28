@@ -1,19 +1,40 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import {
+  getAccessToken,
+  getRefreshToken,
+  storeTokens,
+  clearTokens,
+  apiJson,
+  setOnRefreshFailed,
+  getApiBaseUrl,
+} from '@/services/apiClient';
 
 export type UserRole = 'teacher' | 'school_admin' | 'system_admin';
 
 export interface User {
   id: string;
+  firstName: string;
+  lastName: string;
+  /** Convenience computed field: firstName + lastName */
   name: string;
   email: string;
+  role: UserRole;
+  preferredLanguage: 'en' | 'ar';
+  createdAt: string;
+  // Legacy optional fields kept for profile screen compatibility
   phone?: string;
   school?: string;
-  subjects: string[];
-  grades: string[];
-  language: 'en' | 'ar';
-  role: UserRole;
-  profilePhoto?: string;
+  subjects?: string[];
+  grades?: string[];
+  language?: 'en' | 'ar';
+}
+
+export interface RegisterData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  confirmPassword?: string;
 }
 
 interface AuthContextType {
@@ -22,37 +43,100 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
-  updateProfile: (data: Partial<User>) => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
-}
-
-export interface RegisterData {
-  name: string;
-  email: string;
-  password: string;
-  school?: string;
+  resetPassword: (token: string, password: string, confirmPassword: string) => Promise<void>;
+  updateProfile: (data: { preferredLanguage?: string; firstName?: string; lastName?: string }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const USER_KEY = '@iqra_user';
-const TOKEN_KEY = '@iqra_token';
+type ApiUser = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+  preferredLanguage: string;
+  createdAt: string;
+  lastLogin?: string;
+};
 
-function generateId() {
-  return Date.now().toString() + Math.random().toString(36).substr(2, 9);
+function toUser(apiUser: ApiUser): User {
+  return {
+    id: apiUser.id,
+    firstName: apiUser.firstName,
+    lastName: apiUser.lastName,
+    name: `${apiUser.firstName} ${apiUser.lastName}`,
+    email: apiUser.email,
+    role: apiUser.role as UserRole,
+    preferredLanguage: (apiUser.preferredLanguage as 'en' | 'ar') ?? 'en',
+    language: (apiUser.preferredLanguage as 'en' | 'ar') ?? 'en',
+    createdAt: apiUser.createdAt,
+    subjects: [],
+    grades: [],
+  };
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const redirectToLogin = useRef<(() => void) | null>(null);
 
+  // Register redirect callback so token-refresh failures can navigate to login
+  const setRedirectToLogin = useCallback((fn: () => void) => {
+    redirectToLogin.current = fn;
+  }, []);
+
+  useEffect(() => {
+    setOnRefreshFailed(() => {
+      setUser(null);
+      redirectToLogin.current?.();
+    });
+  }, []);
+
+  // On mount: try to restore session from stored access token
   useEffect(() => {
     (async () => {
       try {
-        const stored = await AsyncStorage.getItem(USER_KEY);
-        if (stored) setUser(JSON.parse(stored));
-      } catch (e) {
-        // ignore
+        const accessToken = await getAccessToken();
+        if (!accessToken) {
+          setIsLoading(false);
+          return;
+        }
+
+        // Verify token is still valid by fetching /auth/me
+        try {
+          const apiUser = await apiJson<ApiUser>('/auth/me');
+          setUser(toUser(apiUser));
+        } catch {
+          // Token invalid — try refresh
+          const refreshToken = await getRefreshToken();
+          if (!refreshToken) {
+            await clearTokens();
+            setIsLoading(false);
+            return;
+          }
+
+          try {
+            const res = await fetch(`${getApiBaseUrl()}/auth/refresh`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ refreshToken }),
+            });
+            if (res.ok) {
+              const data = await res.json() as { accessToken: string; refreshToken: string };
+              await storeTokens(data.accessToken, data.refreshToken);
+              const apiUser = await apiJson<ApiUser>('/auth/me');
+              setUser(toUser(apiUser));
+            } else {
+              await clearTokens();
+            }
+          } catch {
+            await clearTokens();
+          }
+        }
+      } catch {
+        await clearTokens();
       } finally {
         setIsLoading(false);
       }
@@ -62,71 +146,104 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     if (!email || !password) throw new Error('Email and password are required');
     if (!email.includes('@')) throw new Error('Invalid email address');
-    if (password.length < 6) throw new Error('Password must be at least 6 characters');
 
-    // Mock login - simulate network delay
-    await new Promise(r => setTimeout(r, 800));
+    const data = await apiJson<{ accessToken: string; refreshToken: string; user: ApiUser }>(
+      '/auth/login',
+      {
+        method: 'POST',
+        body: JSON.stringify({ email: email.trim(), password }),
+      },
+    );
 
-    const mockUser: User = {
-      id: generateId(),
-      name: email.split('@')[0].replace('.', ' ').replace(/\b\w/g, l => l.toUpperCase()),
-      email,
-      school: 'Al-Hashimiyya Secondary School',
-      subjects: ['Mathematics', 'Science'],
-      grades: ['Grade 9', 'Grade 10', 'Grade 11'],
-      language: 'en',
-      role: 'teacher',
-    };
-
-    await AsyncStorage.setItem(USER_KEY, JSON.stringify(mockUser));
-    await AsyncStorage.setItem(TOKEN_KEY, 'mock-jwt-token-' + generateId());
-    setUser(mockUser);
+    await storeTokens(data.accessToken, data.refreshToken);
+    setUser(toUser(data.user));
   }, []);
 
-  const register = useCallback(async (data: RegisterData) => {
-    if (!data.name) throw new Error('Name is required');
-    if (!data.email || !data.email.includes('@')) throw new Error('Valid email is required');
-    if (!data.password || data.password.length < 6) throw new Error('Password must be at least 6 characters');
+  const register = useCallback(async (payload: RegisterData) => {
+    if (!payload.firstName?.trim()) throw new Error('First name is required');
+    if (!payload.lastName?.trim()) throw new Error('Last name is required');
+    if (!payload.email?.includes('@')) throw new Error('Valid email is required');
+    if (!payload.password || payload.password.length < 8)
+      throw new Error('Password must be at least 8 characters');
+    if (payload.confirmPassword && payload.confirmPassword !== payload.password)
+      throw new Error('Passwords do not match');
 
-    await new Promise(r => setTimeout(r, 1000));
+    const data = await apiJson<{ accessToken: string; refreshToken: string; user: ApiUser }>(
+      '/auth/register',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          firstName: payload.firstName.trim(),
+          lastName: payload.lastName.trim(),
+          email: payload.email.trim(),
+          password: payload.password,
+          confirmPassword: payload.confirmPassword,
+        }),
+      },
+    );
 
-    const newUser: User = {
-      id: generateId(),
-      name: data.name,
-      email: data.email,
-      school: data.school ?? '',
-      subjects: [],
-      grades: [],
-      language: 'en',
-      role: 'teacher',
-    };
-
-    await AsyncStorage.setItem(USER_KEY, JSON.stringify(newUser));
-    await AsyncStorage.setItem(TOKEN_KEY, 'mock-jwt-token-' + generateId());
-    setUser(newUser);
+    await storeTokens(data.accessToken, data.refreshToken);
+    setUser(toUser(data.user));
   }, []);
 
   const logout = useCallback(async () => {
-    await AsyncStorage.removeItem(USER_KEY);
-    await AsyncStorage.removeItem(TOKEN_KEY);
+    try {
+      const refreshToken = await getRefreshToken();
+      await apiJson('/auth/logout', {
+        method: 'POST',
+        body: JSON.stringify({ refreshToken }),
+      });
+    } catch {
+      // Ignore errors — clear local state regardless
+    }
+    await clearTokens();
     setUser(null);
   }, []);
 
-  const updateProfile = useCallback(async (data: Partial<User>) => {
-    if (!user) return;
-    const updated = { ...user, ...data };
-    await AsyncStorage.setItem(USER_KEY, JSON.stringify(updated));
-    setUser(updated);
-  }, [user]);
-
   const forgotPassword = useCallback(async (email: string) => {
-    if (!email || !email.includes('@')) throw new Error('Valid email is required');
-    await new Promise(r => setTimeout(r, 800));
-    // Mock - just succeeds
+    if (!email?.includes('@')) throw new Error('Valid email is required');
+    await apiJson('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email: email.trim() }),
+    });
+  }, []);
+
+  const resetPassword = useCallback(async (
+    token: string,
+    password: string,
+    confirmPassword: string,
+  ) => {
+    await apiJson('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password, confirmPassword }),
+    });
+  }, []);
+
+  const updateProfile = useCallback(async (data: {
+    preferredLanguage?: string;
+    firstName?: string;
+    lastName?: string;
+  }) => {
+    const updated = await apiJson<ApiUser>('/auth/users/profile', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+    setUser(toUser(updated));
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout, updateProfile, forgotPassword }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isLoading,
+        login,
+        register,
+        logout,
+        forgotPassword,
+        resetPassword,
+        updateProfile,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

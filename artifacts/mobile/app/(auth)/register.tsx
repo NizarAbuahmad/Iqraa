@@ -17,11 +17,13 @@ export default function RegisterScreen() {
   const insets = useSafeAreaInsets();
   const { register } = useAuth();
 
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
-  const [school, setSchool] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -29,7 +31,13 @@ export default function RegisterScreen() {
     setError('');
     setLoading(true);
     try {
-      await register({ name: name.trim(), email: email.trim(), password, school: school.trim() });
+      await register({
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.trim(),
+        password,
+        confirmPassword,
+      });
       router.replace('/(tabs)');
     } catch (e: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -38,6 +46,13 @@ export default function RegisterScreen() {
       setLoading(false);
     }
   };
+
+  const canSubmit =
+    firstName.trim().length > 0 &&
+    lastName.trim().length > 0 &&
+    email.includes('@') &&
+    password.length >= 8 &&
+    (confirmPassword === '' || confirmPassword === password);
 
   return (
     <KeyboardAvoidingView
@@ -61,24 +76,39 @@ export default function RegisterScreen() {
           Create your account
         </Text>
         <Text style={[styles.sub, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
-          Join thousands of Jordanian teachers using Iqra
+          Join thousands of teachers using Iqra
         </Text>
 
         <View style={[styles.card, { backgroundColor: colors.card, borderRadius: colors.radius * 1.5, borderColor: colors.border }]}>
           {error ? (
             <View style={[styles.errorBanner, { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius }]}>
+              <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
               <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Inter_400Regular' }]}>{error}</Text>
             </View>
           ) : null}
 
-          <Input
-            label="Full name"
-            placeholder="Ahmad Al-Rashidi"
-            value={name}
-            onChangeText={setName}
-            leftIcon="person-outline"
-            autoCapitalize="words"
-          />
+          <View style={styles.nameRow}>
+            <View style={styles.nameField}>
+              <Input
+                label="First name"
+                placeholder="Ahmad"
+                value={firstName}
+                onChangeText={setFirstName}
+                leftIcon="person-outline"
+                autoCapitalize="words"
+              />
+            </View>
+            <View style={styles.nameField}>
+              <Input
+                label="Last name"
+                placeholder="Al-Rashidi"
+                value={lastName}
+                onChangeText={setLastName}
+                autoCapitalize="words"
+              />
+            </View>
+          </View>
+
           <Input
             label="Email address"
             placeholder="you@school.edu.jo"
@@ -88,26 +118,42 @@ export default function RegisterScreen() {
             keyboardType="email-address"
             autoCapitalize="none"
           />
-          <Input
-            label="School name"
-            placeholder="Al-Hashimiyya Secondary School"
-            value={school}
-            onChangeText={setSchool}
-            leftIcon="school-outline"
-            hint="Optional — you can add this later"
-          />
+
           <Input
             label="Password"
-            placeholder="At least 6 characters"
+            placeholder="At least 8 characters"
             value={password}
             onChangeText={setPassword}
             leftIcon="lock-closed-outline"
             rightIcon={showPassword ? 'eye-off-outline' : 'eye-outline'}
             onRightIconPress={() => setShowPassword(v => !v)}
             secureTextEntry={!showPassword}
+            hint={password.length > 0 && password.length < 8 ? 'Minimum 8 characters' : undefined}
           />
 
-          <Button label="Create Account" onPress={handleRegister} loading={loading} fullWidth />
+          <Input
+            label="Confirm password"
+            placeholder="Re-enter your password"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            leftIcon="lock-closed-outline"
+            rightIcon={showConfirm ? 'eye-off-outline' : 'eye-outline'}
+            onRightIconPress={() => setShowConfirm(v => !v)}
+            secureTextEntry={!showConfirm}
+            hint={
+              confirmPassword.length > 0 && confirmPassword !== password
+                ? 'Passwords do not match'
+                : undefined
+            }
+          />
+
+          <Button
+            label="Create Account"
+            onPress={handleRegister}
+            loading={loading}
+            disabled={!canSubmit}
+            fullWidth
+          />
 
           <Text style={[styles.terms, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
             By creating an account you agree to our Terms of Service and Privacy Policy.
@@ -134,10 +180,12 @@ const styles = StyleSheet.create({
   back: { marginBottom: 20, width: 40 },
   heading: { fontSize: 26, marginBottom: 6 },
   sub: { fontSize: 14, marginBottom: 24 },
-  card: { padding: 24, borderWidth: 1, marginBottom: 24 },
-  errorBanner: { padding: 12, borderWidth: 1, marginBottom: 16 },
-  errorText: { fontSize: 13 },
-  terms: { fontSize: 11, textAlign: 'center', marginTop: 16, lineHeight: 17 },
+  card: { padding: 24, borderWidth: 1, marginBottom: 24, gap: 16 },
+  errorBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderWidth: 1 },
+  errorText: { flex: 1, fontSize: 13 },
+  nameRow: { flexDirection: 'row', gap: 12 },
+  nameField: { flex: 1 },
+  terms: { fontSize: 11, textAlign: 'center', lineHeight: 17 },
   loginRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
   loginText: { fontSize: 14 },
   loginLink: { fontSize: 14 },
