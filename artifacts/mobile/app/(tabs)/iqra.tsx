@@ -28,6 +28,7 @@ import {
   getTopicSuggestions,
   searchKBSemantic,
 } from '@/services/knowledgeBase';
+import { getLessonById as getCurriculumLessonById } from '@/services/curriculumData';
 import {
   CONTEXT_CHAR_BUDGET,
   TRIM_TIERS,
@@ -223,9 +224,9 @@ function ContextBanner({
 
 // ─── Message Bubble ───────────────────────────────────────────────────────────
 function MessageBubble({
-  message, colors, isRTL, onLongPress, onChipPress, onSuggestionPress,
+  message, colors, isRTL, mode, onLongPress, onChipPress, onSuggestionPress,
 }: {
-  message: Message; colors: any; isRTL: boolean;
+  message: Message; colors: any; isRTL: boolean; mode: Mode;
   onLongPress?: (text: string) => void;
   onChipPress?: (type: 'worksheet' | 'quiz' | 'lesson-plan' | 'activity' | 'lesson', topic: string, extra?: string) => void;
   onSuggestionPress?: (text: string, lessonId: string) => void;
@@ -351,6 +352,20 @@ function MessageBubble({
                 <Text style={[styles.actionChipText, { color: colors.foreground }]}>📖 {isRTL ? 'فتح الدرس' : 'Open lesson'}</Text>
               </Pressable>
             )}
+            {/* Activity chip from curriculum deep-link — teacher mode only, topic resolved from curriculum lesson id */}
+            {message.curriculumLessonId && mode === 'teacher' && !hasChips && (() => {
+              const lesson = getCurriculumLessonById(message.curriculumLessonId!);
+              const topic = lesson ? (isRTL ? lesson.titleAr : lesson.title) : null;
+              if (!topic) return null;
+              return (
+                <Pressable
+                  onPress={() => onChipPress?.('activity', topic)}
+                  style={({ pressed }) => [styles.actionChip, { backgroundColor: '#E67E2215', borderColor: '#E67E2250', opacity: pressed ? 0.7 : 1 }]}
+                >
+                  <Text style={[styles.actionChipText, { color: '#E67E22' }]}>{isRTL ? '⚡ نشاط' : '⚡ Activity'}</Text>
+                </Pressable>
+              );
+            })()}
           </ScrollView>
         )}
         {/* ── Out-of-scope topic suggestion chips ── */}
@@ -688,6 +703,7 @@ export default function IqraScreen() {
             message={item}
             colors={colors}
             isRTL={isRTL}
+            mode={mode}
             onChipPress={handleChipPress}
             onLongPress={item.role === 'assistant' ? async (text) => {
               await Clipboard.setStringAsync(text);
