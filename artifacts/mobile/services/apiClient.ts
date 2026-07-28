@@ -2,7 +2,7 @@
  * API client with automatic token refresh and auth headers.
  * Mirrors the URL pattern from RemoteAIService.
  */
-import * as SecureStore from 'expo-secure-store';
+import * as storage from './secureStorage';
 
 const ACCESS_TOKEN_KEY = 'iqra_access_token';
 const REFRESH_TOKEN_KEY = 'iqra_refresh_token';
@@ -14,24 +14,24 @@ export function getApiBaseUrl(): string {
 }
 
 export async function getAccessToken(): Promise<string | null> {
-  return SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
+  return storage.getItem(ACCESS_TOKEN_KEY);
 }
 
 export async function getRefreshToken(): Promise<string | null> {
-  return SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+  return storage.getItem(REFRESH_TOKEN_KEY);
 }
 
 export async function storeTokens(accessToken: string, refreshToken: string): Promise<void> {
   await Promise.all([
-    SecureStore.setItemAsync(ACCESS_TOKEN_KEY, accessToken),
-    SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refreshToken),
+    storage.setItem(ACCESS_TOKEN_KEY, accessToken),
+    storage.setItem(REFRESH_TOKEN_KEY, refreshToken),
   ]);
 }
 
 export async function clearTokens(): Promise<void> {
   await Promise.all([
-    SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY),
-    SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY),
+    storage.deleteItem(ACCESS_TOKEN_KEY),
+    storage.deleteItem(REFRESH_TOKEN_KEY),
   ]);
 }
 
