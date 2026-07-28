@@ -1,5 +1,5 @@
 import {
-  AIRequest, AIService, LessonPlanOutput,
+  ActivityOutput, ActivityStep, AIRequest, AIService, LessonPlanOutput,
   QuizOutput, QuizQuestion, WorksheetAnswerKeyItem,
   WorksheetOutput, WorksheetSection,
 } from './AIService';
@@ -510,6 +510,71 @@ export class MockAIService extends AIService {
       duration,
       totalPoints: questions.reduce((s, q) => s + q.points, 0),
       questions,
+    };
+  }
+
+  async generateActivity(req: AIRequest): Promise<ActivityOutput> {
+    await this.delay();
+    const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
+    const topic = req.topic;
+    const actType = req.activityType ?? 'group';
+    const duration = req.duration ?? 30;
+    const stepDur = Math.max(5, Math.round((duration - 10) / 2));
+
+    if (lang === 'ar') {
+      const groupLabel: Record<string, string> = {
+        individual: 'فردي', group: `3-4 طلاب`, discussion: 'الصف كامل',
+        'hands-on': 'ثنائي أو رباعي', game: 'فرق من 4 طلاب',
+      };
+      const steps: ActivityStep[] = [
+        { stepNumber: 1, title: 'التمهيد', description: `اطرح على الطلاب سؤالاً تحفيزياً: "أين نصادف ${topic} في حياتنا؟" استمع لإجابات 3-4 طلاب وسجّلها على السبورة لبناء الفضول.`, durationMin: 5 },
+        { stepNumber: 2, title: 'النشاط الرئيسي', description: `قسّم الطلاب حسب ${groupLabel[actType] ?? 'مجموعات'}. يتعاون أفراد كل مجموعة على استكشاف ${topic} من خلال المهمة المطروحة، مع تدوين ملاحظاتهم وتوزيع الأدوار بينهم (قائد، كاتب، مقرر).`, durationMin: stepDur },
+        { stepNumber: 3, title: 'العرض والمناقشة', description: `تعرض كل مجموعة نتائجها في 90 ثانية. يسجّل المعلم النقاط الرئيسية على السبورة ويفتح نقاشاً مختصراً حول الاختلافات بين المجموعات.`, durationMin: stepDur },
+        { stepNumber: 4, title: 'التلخيص والتقييم', description: `يكتب كل طالب جملةً واحدة تلخّص أهم ما تعلّمه. تُجمع الأوراق كبطاقة خروج للتقييم البنائي.`, durationMin: 5 },
+      ];
+      return {
+        title: `نشاط "${topic}" – ${actType === 'game' ? 'لعبة تعليمية' : actType === 'discussion' ? 'نقاش' : 'تعلم تعاوني'}`,
+        activityType: actType,
+        totalDuration: duration,
+        objective: req.objectives?.trim() || `أن يطبق الطلاب مفاهيم ${topic} ويناقشوها مع زملائهم لتعزيز الفهم`,
+        groupSize: groupLabel[actType] ?? '3-4 طلاب',
+        materials: ['الكتاب المدرسي', 'أوراق عمل مطبوعة', 'أقلام ملونة', 'لاصق ورقي للبطاقات'],
+        steps,
+        teacherTips: [
+          'وزّع الأدوار داخل كل مجموعة قبل البدء لضمان مشاركة الجميع.',
+          'تجوّل بين المجموعات كل 3 دقائق وقدّم توجيهاً خفيفاً دون إعطاء الإجابات.',
+          'استخدم مؤقتاً مرئياً على السبورة لإدارة الوقت.',
+        ],
+        differentiation: 'للطلاب المتقدمين: قدّم تحدياً إضافياً أو اطلب منهم ربط الموضوع بدرس سابق. للطلاب المحتاجين لدعم: قدّم بطاقة مرجعية تحتوي المصطلحات والصيغ الأساسية.',
+        assessment: 'راقب جودة النقاش داخل المجموعات، وقيّم بطاقات الخروج للتحقق من الفهم، وسجّل ملاحظات عن الطلاب الذين يحتاجون دعماً إضافياً.',
+      };
+    }
+
+    const groupLabel: Record<string, string> = {
+      individual: 'Individual', group: '3-4 students', discussion: 'Whole class',
+      'hands-on': 'Pairs or groups of 4', game: 'Teams of 4',
+    };
+    const steps: ActivityStep[] = [
+      { stepNumber: 1, title: 'Warm-up', description: `Ask a thought-provoking question: "Where do we encounter ${topic} in daily life?" Take responses from 3-4 students and note them on the board to build curiosity.`, durationMin: 5 },
+      { stepNumber: 2, title: 'Main Activity', description: `Divide students into ${groupLabel[actType] ?? 'groups'}. Groups collaborate to explore ${topic} through the assigned task, noting findings and distributing roles (leader, recorder, presenter).`, durationMin: stepDur },
+      { stepNumber: 3, title: 'Share & Discuss', description: `Each group presents findings in 90 seconds. Record key points on the board and facilitate a brief discussion around differences between groups.`, durationMin: stepDur },
+      { stepNumber: 4, title: 'Wrap-up', description: `Each student writes one sentence summarising their main learning. Collect as an exit ticket for formative assessment.`, durationMin: 5 },
+    ];
+    return {
+      title: `${topic} – ${actType === 'game' ? 'Learning Game' : actType === 'discussion' ? 'Discussion' : 'Collaborative Activity'}`,
+      activityType: actType,
+      totalDuration: duration,
+      objective: req.objectives?.trim() || `Students will apply and discuss concepts of ${topic} with peers to deepen understanding`,
+      groupSize: groupLabel[actType] ?? '3-4 students',
+      materials: ['Textbook', 'Printed worksheets', 'Coloured markers', 'Sticky notes'],
+      steps,
+      teacherTips: [
+        'Assign roles inside each group before starting to ensure full participation.',
+        'Circulate every 3 minutes and give light guidance without giving answers.',
+        'Display a visible timer on the board to help manage pacing.',
+      ],
+      differentiation: 'Advanced students: offer an extension challenge or ask them to connect the topic to a previous lesson. Students needing support: provide a reference card with key terms and formulas.',
+      assessment: 'Monitor quality of group discussion, review exit tickets for comprehension, and note students who need follow-up support.',
     };
   }
 

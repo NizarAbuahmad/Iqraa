@@ -3,7 +3,7 @@
  * Falls back to MockAIService automatically if the network call fails
  * (e.g. offline, server unavailable).
  */
-import { AIRequest, AIService, LessonPlanOutput, QuizOutput, WorksheetOutput } from './AIService';
+import { ActivityOutput, AIRequest, AIService, LessonPlanOutput, QuizOutput, WorksheetOutput } from './AIService';
 import { MockAIService } from './generators';
 
 // The API server is available at /api on the same Replit dev domain.
@@ -64,6 +64,15 @@ export class RemoteAIService extends AIService {
     } catch (e) {
       console.warn('[RemoteAIService] quiz fallback:', e);
       return this.fallback.generateQuiz(req);
+    }
+  }
+
+  async generateActivity(req: AIRequest): Promise<ActivityOutput> {
+    try {
+      return await postJSON<ActivityOutput>('/generate/activity', req);
+    } catch (e) {
+      console.warn('[RemoteAIService] activity fallback:', e);
+      return this.fallback.generateActivity(req);
     }
   }
 

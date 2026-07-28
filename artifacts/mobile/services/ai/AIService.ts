@@ -23,6 +23,8 @@ export interface AIRequest {
   questionTypes?: Array<'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false'>;
   // Quiz extras
   totalMarks?: number;
+  // Activity extras
+  activityType?: 'individual' | 'group' | 'discussion' | 'hands-on' | 'game';
 }
 
 export interface LessonPlanOutput {
@@ -84,9 +86,30 @@ export interface QuizQuestion {
   explanation: string;
 }
 
+export interface ActivityStep {
+  stepNumber: number;
+  title: string;
+  description: string;
+  durationMin: number;
+}
+
+export interface ActivityOutput {
+  title: string;
+  activityType: string;
+  totalDuration: number;
+  objective: string;
+  groupSize: string;
+  materials: string[];
+  steps: ActivityStep[];
+  teacherTips: string[];
+  differentiation: string;
+  assessment: string;
+}
+
 export abstract class AIService {
   abstract generateLessonPlan(req: AIRequest): Promise<LessonPlanOutput>;
   abstract generateWorksheet(req: AIRequest): Promise<WorksheetOutput>;
   abstract generateQuiz(req: AIRequest): Promise<QuizOutput>;
   abstract generateHomework(req: AIRequest): Promise<WorksheetOutput>;
+  abstract generateActivity(req: AIRequest): Promise<ActivityOutput>;
 }

@@ -353,6 +353,33 @@ const translations = {
     grade_10: 'الصف العاشر',
     grade_11: 'الصف الحادي عشر',
     grade_12: 'الصف الثاني عشر',
+
+    // Activity generator
+    toolActivityTitle: 'مولّد الأنشطة',
+    toolActivityDesc: 'أنشئ أنشطة تعليمية تفاعلية بناءً على الصف والموضوع وهدف الدرس.',
+    activityBadge: 'نشاط ذكي',
+    createActivityTitle: 'توليد نشاط',
+    activityTypeLabel: 'نوع النشاط',
+    activityTypeIndividual: 'فردي',
+    activityTypeGroup: 'جماعي',
+    activityTypeDiscussion: 'نقاش',
+    activityTypeHandsOn: 'تطبيقي عملي',
+    activityTypeGame: 'لعبة تعليمية',
+    activityObjectiveLabel: 'هدف النشاط (اختياري)',
+    activityObjectivePlaceholder: 'ما الذي يجب أن يتمكن الطلاب من فعله بعد النشاط؟',
+    generateActivityBtn: 'توليد النشاط',
+    generatingActivity: 'جارٍ توليد النشاط...',
+    craftingActivity: 'جارٍ إعداد النشاط…',
+    activityReady: 'تم توليد النشاط بنجاح',
+    sectionActivitySteps: 'خطوات النشاط',
+    sectionTeacherTips: 'نصائح للمعلم',
+    activityGroupSize: 'حجم المجموعة',
+    activityStep: 'خطوة',
+    activityMin: 'د',
+
+    // Slides export
+    exportSlides: 'تصدير شرائح',
+    exportSlidesSub: 'إنشاء ملف PDF بتنسيق العرض التقديمي',
   },
 
   en: {
@@ -678,6 +705,33 @@ const translations = {
     grade_10: 'Grade 10',
     grade_11: 'Grade 11',
     grade_12: 'Grade 12',
+
+    // Activity generator
+    toolActivityTitle: 'Activity Generator',
+    toolActivityDesc: 'Create engaging classroom activities based on grade, topic, and lesson objective.',
+    activityBadge: 'AI Activity',
+    createActivityTitle: 'Generate Activity',
+    activityTypeLabel: 'Activity type',
+    activityTypeIndividual: 'Individual',
+    activityTypeGroup: 'Group work',
+    activityTypeDiscussion: 'Discussion',
+    activityTypeHandsOn: 'Hands-on',
+    activityTypeGame: 'Learning game',
+    activityObjectiveLabel: 'Lesson objective (optional)',
+    activityObjectivePlaceholder: 'What should students be able to do after this activity?',
+    generateActivityBtn: 'Generate Activity',
+    generatingActivity: 'Generating activity...',
+    craftingActivity: 'Crafting your activity…',
+    activityReady: 'Activity generated successfully',
+    sectionActivitySteps: 'Activity Steps',
+    sectionTeacherTips: 'Teacher Tips',
+    activityGroupSize: 'Group size',
+    activityStep: 'Step',
+    activityMin: 'min',
+
+    // Slides export
+    exportSlides: 'Export Slides',
+    exportSlidesSub: 'Create a PDF presentation',
   },
 } as const;
 

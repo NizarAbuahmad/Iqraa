@@ -104,6 +104,31 @@ generateRouter.post("/generate/homework", async (req, res) => {
   }
 });
 
+// ─── Activity ─────────────────────────────────────────────────────────────────
+generateRouter.post("/generate/activity", async (req, res) => {
+  try {
+    const body = req.body;
+    const isAr = body.language !== "english";
+    const prompt = isAr ? activityPromptAr(body) : activityPromptEn(body);
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-5.6-luna",
+      max_completion_tokens: 2000,
+      messages: [
+        { role: "system", content: isAr ? SYSTEM_AR : SYSTEM_EN },
+        { role: "user", content: prompt },
+      ],
+    });
+
+    const raw = completion.choices[0]?.message?.content ?? "{}";
+    const parsed = extractJSON(raw);
+    res.json(parsed);
+  } catch (err) {
+    logger.error({ err }, "generate activity error");
+    res.status(500).json({ error: "AI generation failed. Please try again." });
+  }
+});
+
 // ─── System prompts ──────────────────────────────────────────────────────────
 const SYSTEM_AR = `أنت مولّد محتوى تعليمي متخصص للمنهج الأردني.
 قم بإنشاء محتوى احترافي ودقيق مناسب للمعلمين.
@@ -267,6 +292,61 @@ Return JSON in this exact shape:
       "explanation": "Explanation of answer"
     }
   ]
+}`;
+}
+
+// ─── Activity prompt builders ────────────────────────────────────────────────
+function activityPromptAr(b: any): string {
+  const dur = b.duration ?? 30;
+  const type = b.activityType ?? "group";
+  const typeLabel: Record<string, string> = {
+    individual: "فردي", group: "جماعي تعاوني", discussion: "نقاش صفي",
+    "hands-on": "تطبيقي عملي", game: "لعبة تعليمية",
+  };
+  return `صمّم نشاطًا تعليميًا ${typeLabel[type] ?? type} لمادة ${b.subject} للصف ${b.grade} حول موضوع "${b.topic}".
+مدة النشاط: ${dur} دقيقة.
+${b.objectives ? `هدف النشاط: ${b.objectives}` : ""}
+${b.additionalContext ? `\nسياق الكتاب المدرسي:\n${b.additionalContext}` : ""}
+
+أعد JSON بالشكل الآتي (بالعربية):
+{
+  "title": "عنوان النشاط",
+  "activityType": "${type}",
+  "totalDuration": ${dur},
+  "objective": "هدف النشاط بجملة واحدة",
+  "groupSize": "حجم المجموعة (مثل: 3-4 طلاب)",
+  "materials": ["مادة 1", "مادة 2"],
+  "steps": [
+    { "stepNumber": 1, "title": "عنوان الخطوة", "description": "وصف تفصيلي للخطوة", "durationMin": 5 }
+  ],
+  "teacherTips": ["نصيحة 1", "نصيحة 2"],
+  "differentiation": "كيف تتعامل مع الطلاب ذوي المستويات المختلفة",
+  "assessment": "كيف تقيّم نجاح النشاط"
+}`;
+}
+
+function activityPromptEn(b: any): string {
+  const dur = b.duration ?? 30;
+  const type = b.activityType ?? "group";
+  return `Design a ${type} classroom activity for ${b.subject}, ${b.grade}, on the topic "${b.topic}".
+Duration: ${dur} minutes.
+${b.objectives ? `Lesson objective: ${b.objectives}` : ""}
+${b.additionalContext ? `\nTextbook context:\n${b.additionalContext}` : ""}
+
+Return JSON in this exact shape:
+{
+  "title": "Activity title",
+  "activityType": "${type}",
+  "totalDuration": ${dur},
+  "objective": "One-sentence activity objective",
+  "groupSize": "e.g. 3-4 students",
+  "materials": ["item 1", "item 2"],
+  "steps": [
+    { "stepNumber": 1, "title": "Step title", "description": "Detailed step description for the teacher", "durationMin": 5 }
+  ],
+  "teacherTips": ["tip 1", "tip 2"],
+  "differentiation": "How to adapt for different learner levels",
+  "assessment": "How to assess activity success"
 }`;
 }
 

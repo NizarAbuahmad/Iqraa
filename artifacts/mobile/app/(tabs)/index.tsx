@@ -58,10 +58,11 @@ export default function DashboardScreen() {
   const firstName = user?.name?.split(' ')[0] ?? t('teacher');
 
   const QUICK_ACTIONS = [
-    { id: 'lesson-plan', labelKey: 'lessonPlan' as const, icon: 'document-text-outline' as const, color: '#1B6B62', route: '/ai-tools/lesson-plan' },
-    { id: 'worksheet',   labelKey: 'worksheet'   as const, icon: 'list-outline'          as const, color: '#8B5CF6', route: '/ai-tools/worksheet' },
-    { id: 'quiz',        labelKey: 'quiz'         as const, icon: 'help-circle-outline'   as const, color: '#F59E0B', route: '/ai-tools/quiz' },
-    { id: 'workspace',   labelKey: 'myWorkspace'  as const, icon: 'folder-outline'        as const, color: '#10B981', route: '/workspace' },
+    { id: 'lesson-plan', labelKey: 'lessonPlan'      as const, icon: 'document-text-outline' as const, color: '#1B6B62', route: '/ai-tools/lesson-plan' },
+    { id: 'worksheet',   labelKey: 'worksheet'        as const, icon: 'list-outline'          as const, color: '#8B5CF6', route: '/ai-tools/worksheet' },
+    { id: 'quiz',        labelKey: 'quiz'             as const, icon: 'help-circle-outline'   as const, color: '#F59E0B', route: '/ai-tools/quiz' },
+    { id: 'activity',    labelKey: 'toolActivityTitle' as const, icon: 'flash-outline'         as const, color: '#E67E22', route: '/ai-tools/activity' },
+    { id: 'workspace',   labelKey: 'myWorkspace'      as const, icon: 'folder-outline'        as const, color: '#10B981', route: '/workspace' },
   ];
 
   const STATS = [

@@ -26,9 +26,11 @@ interface ExportMenuProps {
   onCopy: () => void;
   onPDF: () => void;
   onWord: () => void;
+  onSlides?: () => void;
   isRTL: boolean;
   loadingPDF?: boolean;
   loadingWord?: boolean;
+  loadingSlides?: boolean;
   /** i18n labels */
   labels: {
     title: string;
@@ -40,6 +42,8 @@ interface ExportMenuProps {
     pdfSub: string;
     wordLabel: string;
     wordSub: string;
+    slidesLabel?: string;
+    slidesSub?: string;
     cancel: string;
   };
 }
@@ -51,9 +55,11 @@ export function ExportMenu({
   onCopy,
   onPDF,
   onWord,
+  onSlides,
   isRTL,
   loadingPDF,
   loadingWord,
+  loadingSlides,
   labels,
 }: ExportMenuProps) {
   const colors = useColors();
@@ -89,6 +95,14 @@ export function ExportMenu({
       color: '#2563EB',
       loading: loadingWord,
     },
+    ...(onSlides && labels.slidesLabel ? [{
+      id: 'slides',
+      icon: 'easel-outline' as keyof typeof Ionicons.glyphMap,
+      label: labels.slidesLabel,
+      sublabel: labels.slidesSub ?? '',
+      color: '#7C3AED',
+      loading: loadingSlides,
+    }] : []),
   ];
 
   const handlers: Record<string, () => void> = {
@@ -96,6 +110,7 @@ export function ExportMenu({
     copy: onCopy,
     pdf: onPDF,
     word: onWord,
+    ...(onSlides ? { slides: onSlides } : {}),
   };
 
   return (

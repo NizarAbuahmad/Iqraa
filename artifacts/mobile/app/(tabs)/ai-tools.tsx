@@ -46,6 +46,15 @@ const TOOLS: ToolDef[] = [
     badgeKey: 'newBadge',
   },
   {
+    id: 'activity',
+    titleKey: 'toolActivityTitle',
+    descKey: 'toolActivityDesc',
+    icon: 'flash-outline',
+    color: '#E67E22',
+    route: '/ai-tools/activity',
+    badgeKey: 'newBadge',
+  },
+  {
     id: 'homework',
     titleKey: 'toolHomeworkTitle',
     descKey: 'toolHomeworkDesc',
