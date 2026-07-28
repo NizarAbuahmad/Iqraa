@@ -25,6 +25,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import {
   KBLesson,
   getLessonById,
+  getTopicSuggestions,
   searchKBSemantic,
 } from '@/services/knowledgeBase';
 import {
@@ -55,6 +56,8 @@ interface Message {
   curriculumLessonId?: string;
   /** Subject color passed through from curriculum deep-link. */
   subjectColor?: string;
+  /** When set, renders tappable topic-suggestion chips below the message text. */
+  suggestions?: { text: string; lessonId: string }[];
   timestamp: Date;
 }
 
@@ -220,11 +223,12 @@ function ContextBanner({
 
 // ─── Message Bubble ───────────────────────────────────────────────────────────
 function MessageBubble({
-  message, colors, isRTL, onLongPress, onChipPress,
+  message, colors, isRTL, onLongPress, onChipPress, onSuggestionPress,
 }: {
   message: Message; colors: any; isRTL: boolean;
   onLongPress?: (text: string) => void;
   onChipPress?: (type: 'worksheet' | 'quiz' | 'lesson-plan' | 'lesson', topic: string, extra?: string) => void;
+  onSuggestionPress?: (text: string, lessonId: string) => void;
 }) {
   const isUser = message.role === 'user';
 
@@ -342,6 +346,25 @@ function MessageBubble({
               </Pressable>
             )}
           </ScrollView>
+        )}
+        {/* ── Out-of-scope topic suggestion chips ── */}
+        {message.suggestions && message.suggestions.length > 0 && (
+          <View style={[styles.suggestionChipsRow, isRTL && { flexDirection: 'row-reverse' }]}>
+            {message.suggestions.map((s, i) => (
+              <Pressable
+                key={i}
+                onPress={() => onSuggestionPress?.(s.text, s.lessonId)}
+                style={({ pressed }) => [
+                  styles.suggestionChip,
+                  { backgroundColor: colors.primary + '15', borderColor: colors.primary + '60', opacity: pressed ? 0.7 : 1 },
+                ]}
+              >
+                <Text style={[styles.suggestionChipText, { color: colors.primary, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+                  {s.text}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
         )}
       </View>
     </View>
@@ -472,20 +495,27 @@ export default function IqraScreen() {
       }));
 
       let responseText: string;
-      try {
-        responseText = await remoteAIService.chat({
-          messages: history,
-          context: kbContext,
-          mode,
-          language: lang as 'ar' | 'en',
-        });
-        if (!responseText.trim()) {
-          responseText = kbContext ?? t('iqraNoResults');
-        } else if (!hasKBMatch) {
-          responseText = responseText + '\n\n' + t('iqraNoKbDisclaimer');
+      let outOfScopeSuggestions: { text: string; lessonId: string }[] | undefined;
+
+      if (!hasKBMatch) {
+        // No textbook content matches — show friendly out-of-scope message with
+        // 3 topic suggestion chips drawn from the KB so the user can explore.
+        responseText = t('iqraOutOfScope');
+        outOfScopeSuggestions = getTopicSuggestions(3, lang as 'ar' | 'en');
+      } else {
+        try {
+          responseText = await remoteAIService.chat({
+            messages: history,
+            context: kbContext,
+            mode,
+            language: lang as 'ar' | 'en',
+          });
+          if (!responseText.trim()) {
+            responseText = kbContext ?? t('iqraNoResults');
+          }
+        } catch {
+          responseText = kbContext ?? t('iqraOfflineFallback');
         }
-      } catch {
-        responseText = kbContext ?? t('iqraOfflineFallback');
       }
 
       const assistantMsg: Message = {
@@ -497,6 +527,7 @@ export default function IqraScreen() {
         quickTopic,
         curriculumLessonId: msgLessonId ?? undefined,
         subjectColor: msgColor ?? undefined,
+        suggestions: outOfScopeSuggestions,
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, assistantMsg]);
@@ -654,6 +685,7 @@ export default function IqraScreen() {
               await Clipboard.setStringAsync(text);
               showToast(t('copiedToClipboard'));
             } : undefined}
+            onSuggestionPress={(text, lessonId) => sendMessage(text, lessonId)}
           />
         )}
         ListFooterComponent={
@@ -763,6 +795,10 @@ const styles = StyleSheet.create({
   chipRow: { flexDirection: 'row', gap: 6, marginTop: 6, paddingBottom: 2 },
   actionChip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 16, borderWidth: 1 },
   actionChipText: { fontSize: 12, fontFamily: 'Inter_500Medium' },
+
+  suggestionChipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
+  suggestionChip: { paddingHorizontal: 11, paddingVertical: 6, borderRadius: 14, borderWidth: 1 },
+  suggestionChipText: { fontSize: 12 },
 
   thinkingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
   thinkingBubble: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderWidth: 1 },

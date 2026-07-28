@@ -1172,3 +1172,36 @@ export function getLessonsForUnit(unitId: string): KBLesson[] {
 export function hasKBContent(subjectId: string, gradeId: string): boolean {
   return KB_BOOKS.some(b => b.subjectId === subjectId && b.gradeId === gradeId);
 }
+
+/**
+ * Return `count` representative lesson suggestions spread across the KB
+ * (different units/books) so the user can discover what iQra covers.
+ * Always includes at least one Chemistry and one Mathematics lesson.
+ */
+export function getTopicSuggestions(
+  count: number,
+  lang: 'ar' | 'en',
+): { text: string; lessonId: string }[] {
+  // Handpicked representative lessons from each subject/unit for variety
+  const REPRESENTATIVE_IDS = [
+    'kbl-chem-1-1',    // Bohr's Model (Chemistry)
+    'kbl-chem-3-2',    // Covalent Bonding (Chemistry)
+    'kbl-math-2-2',    // Differentiation Rules (Math)
+    'kbl-math-3-1',    // Vectors in the Plane (Math)
+    'kbl-math-8-1',    // Basic Probability (Math)
+    'kbl-math-s2-3-1', // Trigonometric Ratios (Math S2)
+    'kbl-math-1-3',    // Inverse Functions (Math)
+    'kbl-math-s2-1-1', // Equations (Math S2)
+  ];
+
+  const lessons = REPRESENTATIVE_IDS
+    .map(id => KB_LESSONS.find(l => l.id === id))
+    .filter((l): l is KBLesson => l !== undefined);
+
+  // Pick evenly-spread items (first `count` after shuffle keeps variety)
+  const selected = lessons.slice(0, Math.min(count, lessons.length));
+  return selected.map(l => ({
+    text: lang === 'ar' ? l.titleAr : l.titleEn,
+    lessonId: l.id,
+  }));
+}
