@@ -15,6 +15,7 @@ import * as Haptics from 'expo-haptics';
 import { useLanguage } from '@/context/LanguageContext';
 import { ActivitySlide, ClassroomActivity } from '@/services/ai/AIService';
 import { getPendingClassroomActivity, clearClassroomActivity } from '@/services/classroomStore';
+import { timerColor } from '@/services/presentationUtils';
 
 // ─── Color constants ──────────────────────────────────────────────────────────
 const BG = '#0D0D14';
@@ -26,12 +27,6 @@ const ACCENT = '#4F46E5';
 const TIMER_GREEN = '#22C55E';
 const TIMER_AMBER = '#F59E0B';
 const TIMER_RED = '#EF4444';
-
-function timerColor(pct: number): string {
-  if (pct > 0.5) return TIMER_GREEN;
-  if (pct > 0.2) return TIMER_AMBER;
-  return TIMER_RED;
-}
 
 function slideTypeAccent(type: ActivitySlide['type']): string {
   if (type === 'challenge') return '#E67E22';
