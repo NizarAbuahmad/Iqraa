@@ -227,7 +227,7 @@ function MessageBubble({
 }: {
   message: Message; colors: any; isRTL: boolean;
   onLongPress?: (text: string) => void;
-  onChipPress?: (type: 'worksheet' | 'quiz' | 'lesson-plan' | 'lesson', topic: string, extra?: string) => void;
+  onChipPress?: (type: 'worksheet' | 'quiz' | 'lesson-plan' | 'activity' | 'lesson', topic: string, extra?: string) => void;
   onSuggestionPress?: (text: string, lessonId: string) => void;
 }) {
   const isUser = message.role === 'user';
@@ -334,6 +334,12 @@ function MessageBubble({
                     <Text style={[styles.actionChipText, { color: colors.primary }]}>📄 {isRTL ? 'خطة درس' : 'Lesson Plan'}</Text>
                   </Pressable>
                 )}
+                <Pressable
+                  onPress={() => onChipPress?.('activity', message.quickTopic!)}
+                  style={({ pressed }) => [styles.actionChip, { backgroundColor: '#E67E2215', borderColor: '#E67E2250', opacity: pressed ? 0.7 : 1 }]}
+                >
+                  <Text style={[styles.actionChipText, { color: '#E67E22' }]}>{isRTL ? '⚡ نشاط' : '⚡ Activity'}</Text>
+                </Pressable>
               </>
             )}
             {/* "Open lesson" chip is independent — shown whenever message originated from a curriculum deep-link */}
@@ -549,7 +555,7 @@ export default function IqraScreen() {
 
   // Handle quick-action chip taps
   const handleChipPress = useCallback((
-    type: 'worksheet' | 'quiz' | 'lesson-plan' | 'lesson',
+    type: 'worksheet' | 'quiz' | 'lesson-plan' | 'activity' | 'lesson',
     topic: string,
     extra?: string,
   ) => {
@@ -560,6 +566,8 @@ export default function IqraScreen() {
       router.push(`/ai-tools/quiz?topic=${encodeURIComponent(topic)}` as any);
     } else if (type === 'lesson-plan') {
       router.push(`/ai-tools/lesson-plan?topic=${encodeURIComponent(topic)}` as any);
+    } else if (type === 'activity') {
+      router.push(`/ai-tools/activity?topic=${encodeURIComponent(topic)}` as any);
     } else if (type === 'lesson') {
       router.push({
         pathname: '/curriculum/lesson-detail',
