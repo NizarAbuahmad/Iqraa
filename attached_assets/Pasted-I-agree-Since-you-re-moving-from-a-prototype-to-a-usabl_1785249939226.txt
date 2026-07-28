@@ -1,0 +1,282 @@
+I agree. Since you're moving from a prototype to a usable product, **email authentication should be the next feature**. It unlocks cloud sync, user-specific workspaces, subscriptions, and future school deployments.
+
+Here's the prompt I'd give your developer or AI coding agent.
+
+# IQRA Task #37 – Email Authentication & User Accounts
+
+## Objective
+
+Implement a production-ready email authentication system for Iqra. This is the first step toward transforming the application from a local demo into a real cloud-based product.
+
+At this stage, authentication should use **email and password only**. Google, Apple, and Microsoft login will be added later.
+
+---
+
+# Goals
+
+Implement:
+
+* User registration
+* Email login
+* Secure logout
+* Password reset
+* Email verification (recommended, can be optional during development)
+* Persistent login
+* Workspace synchronization
+* User profile
+
+All future data (generated lessons, worksheets, quizzes, activities, chats, settings, favorites, etc.) must belong to the authenticated user.
+
+---
+
+# Authentication Flow
+
+## Registration
+
+Fields:
+
+* First Name
+* Last Name
+* Email Address
+* Password
+* Confirm Password
+
+Validation:
+
+* Required fields
+* Valid email format
+* Email must be unique
+* Password minimum 8 characters
+* Password strength validation
+* Confirm password must match
+
+After registration:
+
+* Create user profile
+* Create empty workspace
+* Sign user in automatically (or require email verification depending on environment)
+
+---
+
+## Login
+
+Fields:
+
+* Email
+* Password
+
+Features:
+
+* Remember Me
+* Forgot Password
+
+Validation:
+
+* Invalid credentials
+* Locked account handling (future)
+* Loading state
+* Friendly error messages
+
+---
+
+## Forgot Password
+
+User enters email.
+
+System sends password reset email.
+
+User can create a new password.
+
+---
+
+## Logout
+
+Logout from all authenticated screens.
+
+Clear local cache while preserving app preferences such as language and theme.
+
+---
+
+# User Profile
+
+Each user should have:
+
+* User ID
+* First Name
+* Last Name
+* Email
+* Profile Picture (placeholder)
+* Preferred Language
+* Account Type (Teacher for now)
+* Created Date
+* Last Login
+
+Design the model to support future roles:
+
+* Teacher
+* Student
+* Parent
+* School Admin
+* System Admin
+
+---
+
+# Workspace Synchronization
+
+After login, all generated content must sync with the user's account.
+
+Synchronize:
+
+* AI Chats
+* Lesson Plans
+* Worksheets
+* Quizzes
+* Activities
+* Saved Resources
+* Favorites
+* History
+
+The user should be able to log into another device and continue working from the same workspace.
+
+---
+
+# Local Cache
+
+Support offline performance.
+
+Cache:
+
+* Recent chats
+* Recent generators
+* User profile
+* Language
+* Recently viewed curriculum
+
+When internet is available:
+
+Automatically synchronize changes.
+
+---
+
+# Security
+
+* Hash passwords securely (never store plain text)
+* JWT authentication
+* Refresh tokens
+* Secure session management
+* API authorization middleware
+* HTTPS-ready architecture
+
+---
+
+# Backend APIs
+
+Implement endpoints for:
+
+POST /auth/register
+
+POST /auth/login
+
+POST /auth/logout
+
+POST /auth/forgot-password
+
+POST /auth/reset-password
+
+GET /auth/me
+
+PATCH /users/profile
+
+---
+
+# Mobile Application
+
+Create authentication screens:
+
+## Welcome
+
+* Login
+* Create Account
+
+---
+
+## Login Screen
+
+Email
+
+Password
+
+Remember Me
+
+Forgot Password
+
+Login Button
+
+Create Account
+
+---
+
+## Registration Screen
+
+First Name
+
+Last Name
+
+Email
+
+Password
+
+Confirm Password
+
+Create Account
+
+---
+
+## Forgot Password Screen
+
+Email
+
+Send Reset Link
+
+---
+
+# User Experience
+
+If the user is already authenticated:
+
+Skip the authentication flow and go directly to the Teacher Dashboard.
+
+If the authentication token expires:
+
+Refresh automatically.
+
+If refresh fails:
+
+Redirect to Login.
+
+---
+
+# Future Compatibility
+
+Design the authentication module so future login providers can be added without changing the app architecture:
+
+* Google Sign-In
+* Apple Sign-In
+* Microsoft Sign-In
+* School Single Sign-On (SSO)
+
+---
+
+# Success Criteria
+
+At the end of this task:
+
+* Users can create an account using email and password.
+* Users can log in securely.
+* Users remain signed in across app restarts.
+* Each user has an isolated cloud workspace.
+* Generated content is linked to the authenticated account.
+* Password reset is functional.
+* The authentication architecture is scalable and ready for additional identity providers.
+
+After this task is complete, the next feature I would implement is the **Teacher Dashboard**, because once users can log in, they should land in a personalized workspace rather than directly in the AI chat. That will make Iqra feel like a complete teacher platform rather than just an AI tool.
