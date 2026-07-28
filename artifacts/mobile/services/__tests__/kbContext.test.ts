@@ -20,6 +20,7 @@ import {
   buildLessonBlock,
   TRIM_TIERS,
   CONTEXT_CHAR_BUDGET,
+  deduplicateByUnit,
 } from '../kbContext.ts';
 import { getLessonById, KB_LESSONS } from '../knowledgeBase.ts';
 
@@ -173,6 +174,85 @@ describe('buildResponse — examples dropped before terms', () => {
     // Summary must always be present
     const summarySnippet = base!.summaryEn.slice(0, 40);
     assert.ok(result.includes(summarySnippet), 'Summary must always be present after trimming');
+  });
+});
+
+// ─── 5. deduplicateByUnit ─────────────────────────────────────────────────────
+
+describe('deduplicateByUnit', () => {
+  it('returns empty array for empty input', () => {
+    assert.deepStrictEqual(deduplicateByUnit([]), []);
+  });
+
+  it('returns single lesson unchanged', () => {
+    const lesson = getLessonById('kbl-math-2-2');
+    assert.ok(lesson !== undefined, 'Fixture kbl-math-2-2 not found');
+    const result = deduplicateByUnit([lesson!]);
+    assert.strictEqual(result.length, 1);
+    assert.strictEqual(result[0].id, 'kbl-math-2-2');
+  });
+
+  it('passes through three lessons from different units without dropping any', () => {
+    // kbl-chem-1-2 (kbu-chem-1), kbl-math-2-2 (kbu-math-2), kbl-math-8-1 (kbu-math-8)
+    const ids = ['kbl-chem-1-2', 'kbl-math-2-2', 'kbl-math-8-1'];
+    const lessons = ids.map(id => getLessonById(id)).filter(Boolean) as any[];
+    assert.strictEqual(lessons.length, 3, 'Could not load all three fixtures');
+    const result = deduplicateByUnit(lessons, 3);
+    assert.strictEqual(result.length, 3, 'Expected all three distinct-unit lessons to pass through');
+    assert.deepStrictEqual(result.map((l: any) => l.id), ids);
+  });
+
+  it('removes the second lesson when two top results share a unit', () => {
+    // kbl-math-2-1 and kbl-math-2-2 are both in kbu-math-2; kbl-math-8-1 is in kbu-math-8
+    const ids = ['kbl-math-2-1', 'kbl-math-2-2', 'kbl-math-8-1'];
+    const lessons = ids.map(id => getLessonById(id)).filter(Boolean) as any[];
+    assert.strictEqual(lessons.length, 3, 'Could not load all three fixtures');
+    const result = deduplicateByUnit(lessons, 3);
+    // kbl-math-2-2 should be skipped (same unit as kbl-math-2-1)
+    assert.strictEqual(result.length, 2, 'Expected 2 results after deduplication');
+    assert.strictEqual(result[0].id, 'kbl-math-2-1', 'First result should be highest-ranked lesson');
+    assert.strictEqual(result[1].id, 'kbl-math-8-1', 'Second slot should be next distinct-unit lesson');
+    assert.ok(!result.find((l: any) => l.id === 'kbl-math-2-2'), 'Duplicate-unit lesson should be excluded');
+  });
+
+  it('returns only one result when all input lessons share a unit', () => {
+    // kbl-math-2-1, kbl-math-2-2, kbl-math-2-3 are all in kbu-math-2
+    const ids = ['kbl-math-2-1', 'kbl-math-2-2'];
+    const lessons = ids.map(id => getLessonById(id)).filter(Boolean) as any[];
+    assert.strictEqual(lessons.length, 2, 'Could not load fixtures');
+    const result = deduplicateByUnit(lessons, 3);
+    assert.strictEqual(result.length, 1, 'Expected only 1 result when all share a unit');
+    assert.strictEqual(result[0].id, 'kbl-math-2-1', 'First result should be the top-ranked lesson');
+  });
+
+  it('respects the maxResults cap', () => {
+    // Six lessons across six different units — cap at 2
+    const ids = [
+      'kbl-chem-1-1', // kbu-chem-1
+      'kbl-chem-3-1', // kbu-chem-3
+      'kbl-math-1-1', // kbu-math-1
+      'kbl-math-2-1', // kbu-math-2
+    ];
+    const lessons = ids.map(id => getLessonById(id)).filter(Boolean) as any[];
+    const result = deduplicateByUnit(lessons, 2);
+    assert.strictEqual(result.length, 2, 'Should not exceed maxResults even with distinct units');
+    assert.strictEqual(result[0].id, 'kbl-chem-1-1');
+    assert.strictEqual(result[1].id, 'kbl-chem-3-1');
+  });
+
+  it('fills open slots with later distinct-unit lessons (promotes a lesson over a same-unit duplicate)', () => {
+    // First two share a unit; third is distinct — third should promote to slot 2
+    const ids = [
+      'kbl-math-2-1', // kbu-math-2
+      'kbl-math-2-2', // kbu-math-2  ← duplicate, should be skipped
+      'kbl-chem-3-2', // kbu-chem-3  ← should promote to slot 2
+    ];
+    const lessons = ids.map(id => getLessonById(id)).filter(Boolean) as any[];
+    assert.strictEqual(lessons.length, 3, 'Could not load fixtures');
+    const result = deduplicateByUnit(lessons, 3);
+    assert.strictEqual(result.length, 2, 'Expected 2 distinct-unit results');
+    assert.strictEqual(result[0].id, 'kbl-math-2-1');
+    assert.strictEqual(result[1].id, 'kbl-chem-3-2', 'Third-ranked lesson should promote when second is a duplicate');
   });
 });
 

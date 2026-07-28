@@ -33,6 +33,7 @@ import {
   BlockOpts,
   buildLessonBlock,
   buildResponse,
+  deduplicateByUnit,
 } from '@/services/kbContext';
 import { Toast } from '@/components/ui/Toast';
 import { remoteAIService } from '@/services/ai/RemoteAIService';
@@ -425,14 +426,17 @@ export default function IqraScreen() {
       setMessages(updatedMessages);
       setIsThinking(true);
 
-      // 1. Local KB retrieval — grounds the AI answer with textbook content
-      //    Cap at top-3 so the AI has multi-concept context without overflowing the prompt.
+      // 1. Local KB retrieval — grounds the AI answer with textbook content.
+      //    Deduplicate by unit so the model gets context from distinct curriculum
+      //    areas rather than three overlapping lessons from the same unit.
       let results: KBLesson[];
       if (pinnedLessonId) {
         const pinned = getLessonById(pinnedLessonId);
-        results = pinned ? [pinned] : searchKBSemantic(q, lang as 'ar' | 'en').slice(0, 3);
+        results = pinned
+          ? [pinned]
+          : deduplicateByUnit(searchKBSemantic(q, lang as 'ar' | 'en'), 3);
       } else {
-        results = searchKBSemantic(q, lang as 'ar' | 'en').slice(0, 3);
+        results = deduplicateByUnit(searchKBSemantic(q, lang as 'ar' | 'en'), 3);
       }
 
       const hasKBMatch = results.length > 0;

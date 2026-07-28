@@ -8,6 +8,34 @@
 import type { KBLesson } from './knowledgeBase.ts';
 import { getBookForLesson, getUnitForLesson } from './knowledgeBase.ts';
 
+// ─── Unit deduplication ───────────────────────────────────────────────────────
+
+/**
+ * Given lessons ranked by relevance (highest score first), return up to
+ * `maxResults` lessons ensuring **at most one lesson per curriculum unit**.
+ *
+ * Why: `searchKBSemantic` can return multiple lessons from the same unit (e.g.
+ * kbl-math-2-1, kbl-math-2-2, kbl-math-2-3 for "explain derivatives"). Passing
+ * three overlapping blocks wastes the character budget and causes the model to
+ * repeat itself. Deduplicating by unit lets the budget serve genuinely distinct
+ * topics while still honouring the relevance ranking within the kept slots.
+ *
+ * Algorithm: iterate the full ranked list; add each lesson only if its unit has
+ * not been seen yet. Stop when `maxResults` distinct-unit lessons are collected.
+ */
+export function deduplicateByUnit(ranked: KBLesson[], maxResults = 3): KBLesson[] {
+  const seenUnits = new Set<string>();
+  const selected: KBLesson[] = [];
+  for (const lesson of ranked) {
+    if (selected.length >= maxResults) break;
+    if (!seenUnits.has(lesson.unitId)) {
+      seenUnits.add(lesson.unitId);
+      selected.push(lesson);
+    }
+  }
+  return selected;
+}
+
 // ─── Budget & trimming constants ─────────────────────────────────────────────
 
 /**
