@@ -118,7 +118,7 @@ export interface TeacherCompanion {
 
 export interface ActivitySlide {
   slideNumber: number;
-  type: 'intro' | 'challenge' | 'reveal' | 'summary';
+  type: 'intro' | 'challenge' | 'reveal' | 'summary' | 'bingo-call' | 'relay-problem';
   title: string;
   content: string;
   hint?: string;

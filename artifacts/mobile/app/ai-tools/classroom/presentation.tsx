@@ -37,6 +37,8 @@ function slideTypeAccent(type: ActivitySlide['type']): string {
   if (type === 'challenge') return '#E67E22';
   if (type === 'reveal') return '#22C55E';
   if (type === 'summary') return ACCENT;
+  if (type === 'bingo-call') return '#A855F7';
+  if (type === 'relay-problem') return '#F43F5E';
   return '#8B8CA4';
 }
 
@@ -112,7 +114,12 @@ function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
       {/* Slide type badge */}
       <View style={[slideStyles.badge, { backgroundColor: accent + '22', borderColor: accent + '44' }]}>
         <Text style={[slideStyles.badgeText, { color: accent, fontFamily: 'Inter_600SemiBold' }]}>
-          {slide.type === 'intro' ? '🎯' : slide.type === 'challenge' ? '🔐' : slide.type === 'reveal' ? '🔓' : '🎉'}
+          {slide.type === 'intro' ? '🎯'
+            : slide.type === 'challenge' ? '🔐'
+            : slide.type === 'reveal' ? '🔓'
+            : slide.type === 'bingo-call' ? '🎱'
+            : slide.type === 'relay-problem' ? '🏃'
+            : '🎉'}
           {'  '}{slide.title}
         </Text>
       </View>

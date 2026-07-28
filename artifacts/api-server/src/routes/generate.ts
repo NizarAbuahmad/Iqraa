@@ -381,6 +381,96 @@ function classroomPromptAr(b: any): string {
     individual: 'فردي', pairs: 'ثنائي', groups: 'مجموعات', 'whole-class': 'الصف بأكمله',
   };
   const diffs: Record<string, string> = { easy: 'سهل', standard: 'متوسط', advanced: 'متقدم' };
+
+  const actType = b.activityType ?? 'escape-challenge';
+
+  if (actType === 'bingo') {
+    return `أنت مصمم أنشطة صفية تفاعلية. أنشئ نشاط "بينجو المصطلحات" لمادة ${b.subject}، الصف ${b.grade}، موضوع "${b.topic}".
+المدة: ${b.duration} دقيقة | الصعوبة: ${diffs[b.difficulty] ?? b.difficulty} | التجميع: ${groups[b.groupType] ?? b.groupType} | الهدف: ${goals[b.teachingGoal] ?? b.teachingGoal}
+${b.additionalContext ? `\nمحتوى الكتاب المدرسي:\n${b.additionalContext}` : ''}
+
+أعد JSON بالشكل الآتي (بالعربية الكاملة):
+{
+  "activityName": "بينجو – ${b.topic}",
+  "activityType": "bingo",
+  "grade": "${b.grade}",
+  "subject": "${b.subject}",
+  "lesson": "${b.topic}",
+  "duration": ${b.duration},
+  "difficulty": "${b.difficulty}",
+  "groupType": "${b.groupType}",
+  "learningObjective": "الهدف التعليمي بجملة واحدة",
+  "materials": ["بطاقات بينجو مطبوعة","قصاصات ورقية للتغطية","مؤقت"],
+  "teacherPreparation": "خطوات إعداد المعلم",
+  "slides": [
+    { "slideNumber": 1, "type": "intro", "title": "🎱 بينجو المصطلحات", "content": "شرح آلية اللعبة", "durationSeconds": 0 },
+    {
+      "slideNumber": 2,
+      "type": "bingo-call",
+      "title": "الاستدعاء 1",
+      "content": "تلميح أو تعريف المصطلح الأول",
+      "answer": "المصطلح الصحيح",
+      "durationSeconds": 30,
+      "teacher": {
+        "expectedAnswer": "المصطلح المستدعى",
+        "teachingTips": "نصيحة للمعلم"
+      }
+    }
+  ],
+  "teacherNotes": ["ملاحظة 1"],
+  "answerKey": ["المصطلح 1: تعريفه"],
+  "printables": ["بطاقات بينجو 5×5 (نسخة مختلفة لكل طالب)","قائمة الاستدعاء للمعلم"],
+  "assessment": "كيف تقيّم النشاط",
+  "extensionChallenge": "تحدٍّ إضافي للمتقدمين"
+}
+أنشئ قائمة استدعاء من ${Math.floor(b.duration / 2)} مصطلحًا على الأقل (شريحة bingo-call لكل مصطلح).`;
+  }
+
+  if (actType === 'relay') {
+    return `أنت مصمم أنشطة صفية تفاعلية. أنشئ نشاط "سباق التتابع" لمادة ${b.subject}، الصف ${b.grade}، موضوع "${b.topic}".
+المدة: ${b.duration} دقيقة | الصعوبة: ${diffs[b.difficulty] ?? b.difficulty} | التجميع: ${groups[b.groupType] ?? b.groupType} | الهدف: ${goals[b.teachingGoal] ?? b.teachingGoal}
+${b.additionalContext ? `\nمحتوى الكتاب المدرسي:\n${b.additionalContext}` : ''}
+
+أعد JSON بالشكل الآتي (بالعربية الكاملة):
+{
+  "activityName": "سباق التتابع – ${b.topic}",
+  "activityType": "relay",
+  "grade": "${b.grade}",
+  "subject": "${b.subject}",
+  "lesson": "${b.topic}",
+  "duration": ${b.duration},
+  "difficulty": "${b.difficulty}",
+  "groupType": "${b.groupType}",
+  "learningObjective": "الهدف التعليمي بجملة واحدة",
+  "materials": ["أوراق التتابع المطبوعة","مؤقت","أقلام ملونة"],
+  "teacherPreparation": "خطوات إعداد المعلم وتقسيم الفرق",
+  "slides": [
+    { "slideNumber": 1, "type": "intro", "title": "🏃 سباق التتابع", "content": "شرح آلية السباق", "durationSeconds": 0 },
+    {
+      "slideNumber": 2,
+      "type": "relay-problem",
+      "title": "المسألة 1 من 4",
+      "content": "نص المسألة الأولى مع المعطيات",
+      "hint": "تلميح مساعد",
+      "answer": "الإجابة الأولى (تُمرَّر للمسألة التالية)",
+      "durationSeconds": ${Math.round((b.duration * 60) / 5)},
+      "teacher": {
+        "expectedAnswer": "الإجابة التفصيلية",
+        "commonMisconceptions": "أخطاء شائعة",
+        "teachingTips": "نصيحة للمعلم",
+        "suggestedQuestions": ["سؤال متابعة"]
+      }
+    }
+  ],
+  "teacherNotes": ["ملاحظة 1"],
+  "answerKey": ["المسألة 1: الإجابة الأولى","المسألة 2: …"],
+  "printables": ["أوراق التتابع (نسخة لكل فريق)","لوحة النتائج"],
+  "assessment": "كيف تقيّم النشاط",
+  "extensionChallenge": "تحدٍّ إضافي للمتقدمين"
+}
+أنشئ سلسلة من 4-6 مسائل متصلة (إجابة كل مسألة تُمرَّر للتالية). أضف شريحة ملخص في النهاية.`;
+  }
+
   return `أنت مصمم أنشطة صفية تفاعلية. أنشئ نشاط "تحدي الهروب" لمادة ${b.subject}، الصف ${b.grade}، موضوع "${b.topic}".
 المدة: ${b.duration} دقيقة | الصعوبة: ${diffs[b.difficulty] ?? b.difficulty} | التجميع: ${groups[b.groupType] ?? b.groupType} | الهدف: ${goals[b.teachingGoal] ?? b.teachingGoal}
 ${b.additionalContext ? `\nمحتوى الكتاب المدرسي:\n${b.additionalContext}` : ''}
@@ -442,6 +532,95 @@ ${b.additionalContext ? `\nمحتوى الكتاب المدرسي:\n${b.addition
 }
 
 function classroomPromptEn(b: any): string {
+  const actType = b.activityType ?? 'escape-challenge';
+
+  if (actType === 'bingo') {
+    return `You are an interactive classroom activity designer. Create a "Vocabulary Bingo" activity for ${b.subject}, Grade ${b.grade}, topic "${b.topic}".
+Duration: ${b.duration} min | Difficulty: ${b.difficulty} | Groups: ${b.groupType} | Goal: ${b.teachingGoal}
+${b.additionalContext ? `\nTextbook context:\n${b.additionalContext}` : ''}
+
+Return JSON in this exact shape (all text in English):
+{
+  "activityName": "Math Bingo – ${b.topic}",
+  "activityType": "bingo",
+  "grade": "${b.grade}",
+  "subject": "${b.subject}",
+  "lesson": "${b.topic}",
+  "duration": ${b.duration},
+  "difficulty": "${b.difficulty}",
+  "groupType": "${b.groupType}",
+  "learningObjective": "One-sentence learning objective",
+  "materials": ["Printed bingo cards","Chips or paper scraps","Timer"],
+  "teacherPreparation": "Teacher setup steps",
+  "slides": [
+    { "slideNumber": 1, "type": "intro", "title": "🎱 Vocabulary Bingo", "content": "How to play explanation", "durationSeconds": 0 },
+    {
+      "slideNumber": 2,
+      "type": "bingo-call",
+      "title": "Call 1",
+      "content": "Clue or definition for the first term",
+      "answer": "The correct term",
+      "durationSeconds": 30,
+      "teacher": {
+        "expectedAnswer": "The called term",
+        "teachingTips": "Teaching advice"
+      }
+    }
+  ],
+  "teacherNotes": ["note 1"],
+  "answerKey": ["Term 1: its definition"],
+  "printables": ["5×5 Bingo cards (unique per student)","Teacher caller list"],
+  "assessment": "How to assess the activity",
+  "extensionChallenge": "Extension challenge for advanced students"
+}
+Generate a caller list of at least ${Math.floor(b.duration / 2)} terms (one bingo-call slide per term). End with a summary slide.`;
+  }
+
+  if (actType === 'relay') {
+    return `You are an interactive classroom activity designer. Create a "Relay Race" activity for ${b.subject}, Grade ${b.grade}, topic "${b.topic}".
+Duration: ${b.duration} min | Difficulty: ${b.difficulty} | Groups: ${b.groupType} | Goal: ${b.teachingGoal}
+${b.additionalContext ? `\nTextbook context:\n${b.additionalContext}` : ''}
+
+Return JSON in this exact shape (all text in English):
+{
+  "activityName": "Relay Race – ${b.topic}",
+  "activityType": "relay",
+  "grade": "${b.grade}",
+  "subject": "${b.subject}",
+  "lesson": "${b.topic}",
+  "duration": ${b.duration},
+  "difficulty": "${b.difficulty}",
+  "groupType": "${b.groupType}",
+  "learningObjective": "One-sentence learning objective",
+  "materials": ["Printed relay sheets","Timer","Coloured markers"],
+  "teacherPreparation": "Teacher setup steps and team arrangement",
+  "slides": [
+    { "slideNumber": 1, "type": "intro", "title": "🏃 Relay Race", "content": "How the relay works", "durationSeconds": 0 },
+    {
+      "slideNumber": 2,
+      "type": "relay-problem",
+      "title": "Problem 1 of 4",
+      "content": "Problem text with given data",
+      "hint": "A helpful hint",
+      "answer": "First answer (passed to the next problem)",
+      "durationSeconds": ${Math.round((b.duration * 60) / 5)},
+      "teacher": {
+        "expectedAnswer": "Detailed expected answer",
+        "commonMisconceptions": "Common student errors",
+        "teachingTips": "Teaching advice",
+        "suggestedQuestions": ["Follow-up question"]
+      }
+    }
+  ],
+  "teacherNotes": ["note 1"],
+  "answerKey": ["Problem 1: first answer","Problem 2: …"],
+  "printables": ["Relay worksheets (one per team)","Scoreboard"],
+  "assessment": "How to assess the activity",
+  "extensionChallenge": "Extension challenge for advanced students"
+}
+Generate a chain of 4–6 linked problems (each answer feeds the next). Add a summary slide at the end.`;
+  }
+
   return `You are an interactive classroom activity designer. Create a Math Escape Challenge for ${b.subject}, Grade ${b.grade}, topic "${b.topic}".
 Duration: ${b.duration} min | Difficulty: ${b.difficulty} | Groups: ${b.groupType} | Goal: ${b.teachingGoal}
 ${b.additionalContext ? `\nTextbook context:\n${b.additionalContext}` : ''}

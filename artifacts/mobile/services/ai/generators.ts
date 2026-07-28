@@ -586,7 +586,199 @@ export class MockAIService extends AIService {
     const topic = req.topic;
     const dur = req.duration ?? 20;
     const slideDuration = Math.round((dur * 60) / 5);
+    const actType = req.activityType ?? 'escape-challenge';
 
+    // ── Bingo ──────────────────────────────────────────────────────────────────
+    if (actType === 'bingo') {
+      if (isAr) {
+        return {
+          activityName: `بينجو – ${topic}`,
+          activityType: 'bingo',
+          grade: req.grade,
+          subject: req.subject,
+          lesson: topic,
+          duration: dur,
+          difficulty: req.difficulty,
+          groupType: req.groupType,
+          learningObjective: `مراجعة مفردات وتعريفات ${topic} بأسلوب تنافسي ممتع`,
+          materials: ['بطاقات بينجو مطبوعة (بطاقة لكل طالب)', 'قصاصات ورقية أو حصص صغيرة للتغطية', 'مؤقت'],
+          teacherPreparation: 'اطبع بطاقات بينجو مختلفة لكل طالب (5×5 مربع). جهّز قائمة الاستدعاء بالمصطلحات والتعريفات.',
+          teacherNotes: ['ناقش الإجابات بعد الانتهاء لتعزيز الفهم', 'يمكن اللعب لجولتين مع تبديل البطاقات'],
+          answerKey: [`المصطلح 1: تعريف ${topic}`, `المصطلح 2: خاصية ${topic}`, `المصطلح 3: تطبيق ${topic}`],
+          printables: ['بطاقات بينجو 5×5 (نسخة مختلفة لكل طالب)', 'قائمة الاستدعاء للمعلم'],
+          assessment: 'قيّم سرعة التعرف على المصطلحات ودقتها. راقب من يحتاج مراجعة إضافية.',
+          extensionChallenge: `اطلب من الفائز شرح 3 مصطلحات من بطاقته بكلماته الخاصة`,
+          slides: [
+            { slideNumber: 1, type: 'intro', title: '🎱 بينجو المصطلحات', content: `مرحبًا بكم في بينجو ${topic}!\nلكل طالب بطاقة 5×5 مليئة بالمصطلحات.\nعندما أستدعي مصطلحًا، غطّ المربع المناسب.\nأول من يكمل صفًا أو عمودًا أو قطرًا يصرخ بينجو!`, durationSeconds: 0 },
+            { slideNumber: 2, type: 'bingo-call', title: 'الاستدعاء 1', content: `تعريف: المفهوم الأساسي الأول في ${topic}`, hint: `فكّر في تعريف ${topic}`, answer: `المصطلح 1`, durationSeconds: 30, teacher: { expectedAnswer: `المصطلح المحدد من وحدة ${topic}`, teachingTips: 'امنح الطلاب 20-30 ثانية للبحث في بطاقاتهم', suggestedQuestions: ['هل تتذكر هذا المصطلح من الدرس؟'] } },
+            { slideNumber: 3, type: 'bingo-call', title: 'الاستدعاء 2', content: `خاصية: ${topic} يُستخدم عندما…`, hint: 'فكّر في حالات التطبيق', answer: 'المصطلح 2', durationSeconds: 30, teacher: { expectedAnswer: `تطبيق مباشر من وحدة ${topic}`, teachingTips: 'ذكّر الطلاب بمثال من الكتاب', suggestedQuestions: ['أين طبّقنا هذا في الدرس؟'] } },
+            { slideNumber: 4, type: 'bingo-call', title: 'الاستدعاء 3', content: `قاعدة: إذا كان … في ${topic}، فإن النتيجة هي…`, hint: 'راجع القواعد الأساسية', answer: 'المصطلح 3', durationSeconds: 30, teacher: { expectedAnswer: `القاعدة المرتبطة بـ${topic}`, teachingTips: 'اربط السؤال بخطوة الحل التي درسناها' } },
+            { slideNumber: 5, type: 'bingo-call', title: 'الاستدعاء 4', content: `مثال: أوجد نتيجة تطبيق مفهوم من ${topic} في موقف حياتي`, hint: 'تذكّر التطبيقات الحياتية', answer: 'المصطلح 4', durationSeconds: 30, teacher: { expectedAnswer: `مثال حياتي على ${topic}`, teachingTips: 'يمكن قبول أكثر من مصطلح إذا كانت الإجابة منطقية' } },
+            { slideNumber: 6, type: 'bingo-call', title: 'الاستدعاء 5', content: `المعادلة: الصيغة الرياضية المرتبطة بـ${topic} هي…`, hint: 'تذكّر صيغ وحدتنا', answer: 'المصطلح 5', durationSeconds: 30, teacher: { expectedAnswer: `الصيغة المرتبطة بـ${topic}`, teachingTips: 'اعرض الصيغة بعد الاستدعاء للتأكيد' } },
+            { slideNumber: 7, type: 'bingo-call', title: 'الاستدعاء 6', content: `ما الفرق بين المفهومين الرئيسيين في ${topic}؟`, hint: 'قارن المفهومين', answer: 'المصطلح 6', durationSeconds: 30, teacher: { expectedAnswer: `الفرق بين مفهومَي ${topic}`, teachingTips: 'ادفع الطلاب للتفكير النقدي هنا' } },
+            { slideNumber: 8, type: 'bingo-call', title: 'الاستدعاء 7', content: `أي خاصية من خصائص ${topic} تنطبق على هذا الموقف: …؟`, hint: 'راجع قائمة الخصائص', answer: 'المصطلح 7', durationSeconds: 30, teacher: { expectedAnswer: `الخاصية المناسبة من ${topic}`, teachingTips: 'أعطِ مثالًا إضافيًا إذا بدا الطلاب متوقفين' } },
+            { slideNumber: 9, type: 'bingo-call', title: 'الاستدعاء 8', content: `الوحدة المستخدمة لقياس كمية مرتبطة بـ${topic} هي…`, hint: 'فكّر في وحدات القياس', answer: 'المصطلح 8', durationSeconds: 30, teacher: { expectedAnswer: `وحدة القياس المرتبطة بـ${topic}`, teachingTips: 'ذكّر الطلاب بجدول الوحدات' } },
+            { slideNumber: 10, type: 'summary', title: '🎉 انتهت الجولة!', content: `أحسنتم جميعًا!\nراجعنا اليوم مفردات ${topic} الأساسية.\n\nناقش مع زميلك:\n• أي مصطلح كان الأصعب؟\n• أي مصطلح تريد مراجعته مجددًا؟`, durationSeconds: 0 },
+          ],
+        };
+      }
+      return {
+        activityName: `Math Bingo – ${topic}`,
+        activityType: 'bingo',
+        grade: req.grade,
+        subject: req.subject,
+        lesson: topic,
+        duration: dur,
+        difficulty: req.difficulty,
+        groupType: req.groupType,
+        learningObjective: `Review key vocabulary and definitions of ${topic} in a competitive, fun format`,
+        materials: ['Printed bingo cards (one per student, each unique)', 'Small chips or paper scraps for covering squares', 'Timer'],
+        teacherPreparation: 'Print unique 5×5 bingo cards for each student. Prepare a caller list of terms and definitions.',
+        teacherNotes: ['Discuss answers after the game to reinforce learning', 'Play two rounds with swapped cards for deeper review'],
+        answerKey: [`Term 1: definition of ${topic}`, `Term 2: property of ${topic}`, `Term 3: application of ${topic}`],
+        printables: ['5×5 Bingo cards (unique per student)', "Teacher's caller list"],
+        assessment: 'Observe recognition speed and accuracy. Note students who struggle to find terms.',
+        extensionChallenge: `Ask the winner to explain 3 terms from their card in their own words`,
+        slides: [
+          { slideNumber: 1, type: 'intro', title: '🎱 Vocabulary Bingo', content: `Welcome to ${topic} Bingo!\nEach card has a 5×5 grid of terms.\nWhen I call a clue, cover the matching term.\nFirst to complete a row, column, or diagonal shouts BINGO!`, durationSeconds: 0 },
+          { slideNumber: 2, type: 'bingo-call', title: 'Call 1', content: `Definition: The core concept at the heart of ${topic}`, hint: `Think about the definition of ${topic}`, answer: 'Term 1', durationSeconds: 30, teacher: { expectedAnswer: `The key term from the ${topic} unit`, teachingTips: 'Give students 20-30 seconds to scan their cards', suggestedQuestions: ['Do you remember this term from the lesson?'] } },
+          { slideNumber: 3, type: 'bingo-call', title: 'Call 2', content: `Property: ${topic} is used when…`, hint: 'Think about when we apply this concept', answer: 'Term 2', durationSeconds: 30, teacher: { expectedAnswer: `A direct application from the ${topic} unit`, teachingTips: 'Remind students of the textbook example' } },
+          { slideNumber: 4, type: 'bingo-call', title: 'Call 3', content: `Rule: In ${topic}, when … the result is…`, hint: 'Recall the main rules', answer: 'Term 3', durationSeconds: 30, teacher: { expectedAnswer: `The rule linked to ${topic}`, teachingTips: 'Connect the clue to the solution steps we studied' } },
+          { slideNumber: 5, type: 'bingo-call', title: 'Call 4', content: `Example: Name a real-world application of a concept from ${topic}`, hint: 'Think of everyday applications', answer: 'Term 4', durationSeconds: 30, teacher: { expectedAnswer: `A real-world example of ${topic}`, teachingTips: 'Accept multiple terms if the reasoning is sound' } },
+          { slideNumber: 6, type: 'bingo-call', title: 'Call 5', content: `Formula: The mathematical expression associated with ${topic} is…`, hint: 'Recall the formulas from our unit', answer: 'Term 5', durationSeconds: 30, teacher: { expectedAnswer: `The formula linked to ${topic}`, teachingTips: 'Display the formula after calling to confirm' } },
+          { slideNumber: 7, type: 'bingo-call', title: 'Call 6', content: `What is the main difference between the two key concepts in ${topic}?`, hint: 'Compare the two concepts', answer: 'Term 6', durationSeconds: 30, teacher: { expectedAnswer: `The distinction between the two concepts in ${topic}`, teachingTips: 'Push students toward critical thinking here' } },
+          { slideNumber: 8, type: 'bingo-call', title: 'Call 7', content: `Which property of ${topic} applies to this situation: …?`, hint: 'Review your list of properties', answer: 'Term 7', durationSeconds: 30, teacher: { expectedAnswer: `The appropriate property from ${topic}`, teachingTips: 'Give an extra example if students seem stuck' } },
+          { slideNumber: 9, type: 'bingo-call', title: 'Call 8', content: `The unit used to measure a quantity related to ${topic} is…`, hint: 'Think about units of measurement', answer: 'Term 8', durationSeconds: 30, teacher: { expectedAnswer: `The measurement unit related to ${topic}`, teachingTips: 'Remind students of the units table' } },
+          { slideNumber: 10, type: 'summary', title: '🎉 Round Complete!', content: `Well done everyone!\nWe reviewed key vocabulary from ${topic}.\n\nDiscuss with a partner:\n• Which term was hardest to remember?\n• Which term would you like to revisit?`, durationSeconds: 0 },
+        ],
+      };
+    }
+
+    // ── Relay Race ─────────────────────────────────────────────────────────────
+    if (actType === 'relay') {
+      if (isAr) {
+        return {
+          activityName: `سباق التتابع – ${topic}`,
+          activityType: 'relay',
+          grade: req.grade,
+          subject: req.subject,
+          lesson: topic,
+          duration: dur,
+          difficulty: req.difficulty,
+          groupType: req.groupType,
+          learningObjective: `تطبيق مهارات ${topic} في سلسلة من المسائل المتصلة ضمن فرق تنافسية`,
+          materials: ['السبورة', 'أوراق التتابع المطبوعة', 'مؤقت', 'أقلام ملونة (لون لكل فريق)'],
+          teacherPreparation: 'قسّم الطلاب إلى فرق من 4-5 أفراد. اطبع ورقة تتابع لكل فريق. اشرح آلية التمرير: كل طالب يحل مسألة ويمرر الإجابة للتالي.',
+          teacherNotes: ['تحقق أن الفرق متوازنة المستوى', 'شجّع التحقق من الإجابة قبل التمرير'],
+          answerKey: [
+            'المسألة 1: الإجابة الأولى (تُمرَّر للمسألة 2)',
+            'المسألة 2: استخدم إجابة 1 + خطوة جديدة',
+            'المسألة 3: استخدم إجابة 2 + خطوة جديدة',
+            'المسألة 4: الإجابة النهائية للتتابع',
+          ],
+          printables: ['أوراق التتابع (نسخة لكل فريق)', 'لوحة النتائج'],
+          assessment: 'قيّم صحة الإجابة النهائية وسرعة إنجاز التتابع. ناقش أين حدثت الأخطاء في السلسلة.',
+          extensionChallenge: `اطلب من الفريق الفائز تصميم سلسلة تتابع جديدة لفريق آخر`,
+          slides: [
+            { slideNumber: 1, type: 'intro', title: '🏃 سباق التتابع', content: `سباق ${topic} التتابعي!\nكل فريق يحل سلسلة من 4 مسائل متصلة.\nإجابة كل مسألة هي المدخل للمسألة التالية.\nالفريق الذي ينتهي أولاً بإجابة صحيحة يفوز!`, durationSeconds: 0 },
+            {
+              slideNumber: 2, type: 'relay-problem', title: 'المسألة 1 من 4',
+              content: `احسب القيمة الأولى:\nطبّق ${topic} على المعطيات التالية وأوجد (أ).\n\nمعطيات: حدّدها من الكتاب المدرسي`,
+              hint: 'ابدأ بتحديد المعطيات وطبّق الخطوة الأولى',
+              answer: 'أ = القيمة الأولى',
+              durationSeconds: slideDuration,
+              teacher: { expectedAnswer: `القيمة الأولى (أ) من تطبيق ${topic}`, commonMisconceptions: 'قد يخطئ الطلاب في تحديد المعطيات', teachingTips: 'تأكد أن كل فريق يكتب إجابته بوضوح قبل التمرير', suggestedQuestions: ['ما المعطى الذي تستخدمه في الخطوة الأولى؟'] },
+            },
+            {
+              slideNumber: 3, type: 'relay-problem', title: 'المسألة 2 من 4',
+              content: `استخدم (أ) من المسألة 1:\nالآن طبّق ${topic} مرة أخرى مع (أ) لإيجاد (ب).`,
+              hint: 'استبدل (أ) في المعادلة الجديدة',
+              answer: 'ب = القيمة الثانية',
+              durationSeconds: slideDuration,
+              teacher: { expectedAnswer: `القيمة الثانية (ب) باستخدام نتيجة (أ)`, commonMisconceptions: 'استخدام قيمة خاطئة من المسألة السابقة', teachingTips: 'اطلب من الفرق التحقق من (أ) قبل الانتقال' },
+            },
+            {
+              slideNumber: 4, type: 'relay-problem', title: 'المسألة 3 من 4',
+              content: `استخدم (ب) من المسألة 2:\nطبّق خاصية ${topic} الثانية مع (ب) لإيجاد (ج).`,
+              hint: 'تذكّر الخاصية الثانية التي درسناها',
+              answer: 'ج = القيمة الثالثة',
+              durationSeconds: slideDuration,
+              teacher: { expectedAnswer: `القيمة الثالثة (ج) باستخدام نتيجة (ب)`, commonMisconceptions: 'الخلط بين الخصائص المختلفة', teachingTips: 'ذكّر بالفرق بين الخاصيتين إذا لزم' },
+            },
+            {
+              slideNumber: 5, type: 'relay-problem', title: 'المسألة الأخيرة 4 من 4',
+              content: `المسألة النهائية!\nاستخدم (ج) من المسألة 3:\nطبّق ${topic} بالكامل لإيجاد الإجابة النهائية (د).`,
+              hint: 'وحّد كل نتائجك لإيجاد الحل الكامل',
+              answer: 'د = الإجابة النهائية',
+              durationSeconds: slideDuration,
+              teacher: { expectedAnswer: `الإجابة النهائية (د) لسلسلة التتابع`, commonMisconceptions: 'أخطاء التراكم من المسائل السابقة', teachingTips: 'ناقش مع الصف كيف تراكمت الأخطاء في السلسلة', suggestedQuestions: ['كيف أثّرت الخطأ في المسألة 1 على النتيجة النهائية؟'] },
+            },
+            { slideNumber: 6, type: 'summary', title: '🎉 اكتملت السلسلة!', content: `أحسنتم!\nاليوم طبّقتم ${topic} في سلسلة متكاملة.\n\nالدرس المهم:\n• كل خطوة تبني على السابقة\n• الدقة في البداية تضمن صحة النهاية\n• تحقق دائمًا قبل التمرير`, durationSeconds: 0 },
+          ],
+        };
+      }
+      return {
+        activityName: `Relay Race – ${topic}`,
+        activityType: 'relay',
+        grade: req.grade,
+        subject: req.subject,
+        lesson: topic,
+        duration: dur,
+        difficulty: req.difficulty,
+        groupType: req.groupType,
+        learningObjective: `Apply ${topic} skills in a chain of connected problems within competing teams`,
+        materials: ['Whiteboard', 'Printed relay sheets (one per team)', 'Timer', 'Coloured markers (one per team)'],
+        teacherPreparation: 'Divide students into teams of 4-5. Print a relay sheet for each team. Explain the relay rule: each student solves a problem and passes their answer to the next.',
+        teacherNotes: ['Balance teams by ability level', 'Encourage students to verify their answer before passing'],
+        answerKey: [
+          'Problem 1: First answer (passed to problem 2)',
+          'Problem 2: Use answer 1 + a new step',
+          'Problem 3: Use answer 2 + a new step',
+          'Problem 4: Final answer for the relay chain',
+        ],
+        printables: ['Relay worksheets (one per team)', 'Scoreboard'],
+        assessment: 'Evaluate the correctness of the final answer and completion speed. Discuss where errors entered the chain.',
+        extensionChallenge: `Challenge the winning team to design their own relay chain for another team to solve`,
+        slides: [
+          { slideNumber: 1, type: 'intro', title: '🏃 Relay Race', content: `${topic} Relay Race!\nEach team solves a chain of 4 connected problems.\nYour answer to each problem feeds the next one.\nThe first team to finish with the correct final answer wins!`, durationSeconds: 0 },
+          {
+            slideNumber: 2, type: 'relay-problem', title: 'Problem 1 of 4',
+            content: `Find the first value:\nApply ${topic} to the given data and find (a).\n\nData: see your printed relay sheet`,
+            hint: 'Start by identifying the given data and apply the first step',
+            answer: 'a = first value',
+            durationSeconds: slideDuration,
+            teacher: { expectedAnswer: `First value (a) from applying ${topic}`, commonMisconceptions: 'Students may misread the given data', teachingTips: 'Make sure each team writes their answer clearly before passing', suggestedQuestions: ['Which piece of data do you use in the first step?'] },
+          },
+          {
+            slideNumber: 3, type: 'relay-problem', title: 'Problem 2 of 4',
+            content: `Use (a) from Problem 1:\nNow apply ${topic} again with (a) to find (b).`,
+            hint: 'Substitute (a) into the new expression',
+            answer: 'b = second value',
+            durationSeconds: slideDuration,
+            teacher: { expectedAnswer: `Second value (b) using the result of (a)`, commonMisconceptions: 'Using a wrong value carried from the previous problem', teachingTips: 'Ask teams to double-check (a) before moving on' },
+          },
+          {
+            slideNumber: 4, type: 'relay-problem', title: 'Problem 3 of 4',
+            content: `Use (b) from Problem 2:\nApply the second property of ${topic} with (b) to find (c).`,
+            hint: 'Recall the second property we studied',
+            answer: 'c = third value',
+            durationSeconds: slideDuration,
+            teacher: { expectedAnswer: `Third value (c) using the result of (b)`, commonMisconceptions: 'Confusing the two main properties', teachingTips: 'Remind students of the distinction if needed' },
+          },
+          {
+            slideNumber: 5, type: 'relay-problem', title: 'Final Problem 4 of 4',
+            content: `FINAL PROBLEM!\nUse (c) from Problem 3:\nApply the full ${topic} process to find the final answer (d).`,
+            hint: 'Combine all your results to reach the complete solution',
+            answer: 'd = final answer',
+            durationSeconds: slideDuration,
+            teacher: { expectedAnswer: `Final answer (d) for the relay chain`, commonMisconceptions: 'Accumulated errors from earlier problems', teachingTips: 'Discuss with the class how early errors propagated through the chain', suggestedQuestions: ['How did an error in Problem 1 affect the final answer?'] },
+          },
+          { slideNumber: 6, type: 'summary', title: '🎉 Chain Complete!', content: `Outstanding!\nToday you applied ${topic} across a full connected chain.\n\nKey takeaways:\n• Each step builds on the previous one\n• Accuracy early guarantees a correct final answer\n• Always verify before passing`, durationSeconds: 0 },
+        ],
+      };
+    }
+
+    // ── Escape Challenge (default) ─────────────────────────────────────────────
     if (isAr) {
       return {
         activityName: `تحدي الهروب – ${topic}`,
