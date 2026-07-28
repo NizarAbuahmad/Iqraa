@@ -172,7 +172,7 @@ function worksheetPromptAr(b: any): string {
   return `أنشئ ${isHW ? "واجبًا منزليًا" : "ورقة عمل"} لمادة ${b.subject} للصف ${b.grade} حول "${b.topic}".
 عدد الأسئلة: ${n}، المستوى: ${b.difficulty ?? "متوسط"}
 أنواع الأسئلة المطلوبة: ${(b.questionTypes ?? ["short_answer"]).join(", ")}
-
+${b.additionalContext ? `\nسياق الكتاب المدرسي (استخدمه لصياغة أسئلة دقيقة ومرتبطة بالمنهج):\n${b.additionalContext}` : ""}
 أعد JSON بالشكل الآتي (بالعربية):
 {
   "title": "عنوان الورقة",
@@ -198,7 +198,7 @@ function worksheetPromptEn(b: any): string {
   return `Create a ${isHW ? "homework assignment" : "worksheet"} for ${b.subject}, ${b.grade}, on "${b.topic}".
 Number of questions: ${n}, difficulty: ${b.difficulty ?? "medium"}
 Question types: ${(b.questionTypes ?? ["short_answer"]).join(", ")}
-
+${b.additionalContext ? `\nTextbook context (use this to craft accurate, curriculum-aligned questions):\n${b.additionalContext}` : ""}
 Return JSON in this exact shape:
 {
   "title": "Worksheet title",
@@ -224,7 +224,7 @@ function quizPromptAr(b: any): string {
   return `أنشئ اختبارًا لمادة ${b.subject} للصف ${b.grade} حول "${b.topic}".
 عدد الأسئلة: ${n}، العلامة الكاملة: ${marks}
 أنواع الأسئلة: ${(b.questionTypes ?? ["multiple_choice", "true_false"]).join(", ")}
-
+${b.additionalContext ? `\nسياق الكتاب المدرسي (استخدمه لصياغة أسئلة دقيقة ومرتبطة بالمنهج):\n${b.additionalContext}` : ""}
 أعد JSON بالشكل الآتي (بالعربية):
 {
   "title": "عنوان الاختبار",
@@ -250,7 +250,7 @@ function quizPromptEn(b: any): string {
   return `Create a quiz for ${b.subject}, ${b.grade}, on "${b.topic}".
 Number of questions: ${n}, total marks: ${marks}
 Question types: ${(b.questionTypes ?? ["multiple_choice", "true_false"]).join(", ")}
-
+${b.additionalContext ? `\nTextbook context (use this to craft accurate, curriculum-aligned questions):\n${b.additionalContext}` : ""}
 Return JSON in this exact shape:
 {
   "title": "Quiz title",

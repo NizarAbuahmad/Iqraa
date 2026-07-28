@@ -6,7 +6,54 @@
  */
 
 import type { KBLesson } from './knowledgeBase.ts';
-import { getBookForLesson, getUnitForLesson } from './knowledgeBase.ts';
+import { getBookForLesson, getUnitForLesson, searchKBSemantic } from './knowledgeBase.ts';
+
+// ─── Generator KB context ────────────────────────────────────────────────────
+
+/**
+ * Build a compact textbook context string for the AI generator prompts
+ * (lesson-plan, worksheet, quiz). Searches the KB for the given topic,
+ * then serialises the top match's summary, key concepts, and rules.
+ *
+ * Unlike the full iQra `buildResponse`, this is intentionally compact —
+ * generators receive one focused lesson block rather than three, because
+ * the user has already selected the specific lesson via TopicSelector.
+ *
+ * Returns an empty string when no KB match is found (topic is off-curriculum
+ * or the KB doesn't cover that subject/grade yet), so callers can omit
+ * `additionalContext` gracefully.
+ */
+export function buildGeneratorContext(topic: string, lang: 'ar' | 'en'): string {
+  const results = searchKBSemantic(topic, lang);
+  if (results.length === 0) return '';
+
+  const lesson = results[0];
+  const isAr   = lang === 'ar';
+  const title    = isAr ? lesson.titleAr       : lesson.titleEn;
+  const summary  = isAr ? lesson.summaryAr     : lesson.summaryEn;
+  const concepts = isAr ? lesson.keyConceptsAr : lesson.keyConceptsEn;
+  const rules    = isAr ? (lesson.rulesAr ?? []) : (lesson.rulesEn ?? []);
+
+  const lines: string[] = [
+    isAr ? `📚 الدرس: ${title}` : `📚 Lesson: ${title}`,
+    '',
+    summary,
+  ];
+
+  if (concepts.length > 0) {
+    lines.push('');
+    lines.push(isAr ? 'المفاهيم الأساسية:' : 'Key Concepts:');
+    concepts.slice(0, 5).forEach(c => lines.push(`• ${c}`));
+  }
+
+  if (rules.length > 0) {
+    lines.push('');
+    lines.push(isAr ? 'القواعد والصيغ:' : 'Rules & Formulas:');
+    rules.forEach(r => lines.push(`• ${r}`));
+  }
+
+  return lines.join('\n');
+}
 
 // ─── Unit deduplication ───────────────────────────────────────────────────────
 

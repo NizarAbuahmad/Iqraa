@@ -7,6 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
+import { buildGeneratorContext } from '@/services/kbContext';
 import { WorksheetOutput } from '@/services/ai/AIService';
 import { GRADES, SUBJECTS } from '@/services/curriculumData';
 import { TopicSelector } from '@/components/ui/TopicSelector';
@@ -115,6 +116,7 @@ export default function WorksheetScreen() {
     setError(''); setLoading(true); setResult(null); setSaveLabel('save');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
+      const additionalContext = buildGeneratorContext(topic.trim(), lang as 'ar' | 'en') || undefined;
       const out = await aiService.generateWorksheet({
         grade: GRADES[gradeIdx].name,
         subject: SUBJECTS[subjectIdx].name,
@@ -123,6 +125,7 @@ export default function WorksheetScreen() {
         difficulty: DIFFICULTY_MAP[DIFFICULTY_IDS[diffIdx]],
         numQuestions: NUM_Q_OPTIONS[numQIdx],
         questionTypes: Array.from(selectedTypes),
+        additionalContext,
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setResult(out);

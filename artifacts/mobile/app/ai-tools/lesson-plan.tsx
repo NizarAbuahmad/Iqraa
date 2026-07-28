@@ -7,6 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
+import { buildGeneratorContext } from '@/services/kbContext';
 import { LessonPlanOutput } from '@/services/ai/AIService';
 import { GRADES, SUBJECTS } from '@/services/curriculumData';
 import { TopicSelector } from '@/components/ui/TopicSelector';
@@ -100,6 +101,7 @@ export default function LessonPlanScreen() {
     setSaveLabel('save');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
+      const additionalContext = buildGeneratorContext(topic.trim(), lang as 'ar' | 'en') || undefined;
       const out = await aiService.generateLessonPlan({
         grade: GRADES[gradeIdx].name,
         subject: SUBJECTS[subjectIdx].name,
@@ -108,6 +110,7 @@ export default function LessonPlanScreen() {
         language: lang === 'ar' ? 'arabic' : 'english',
         teachingStyle: STYLE_IDS[styleIdx],
         objectives: objectives.trim() || undefined,
+        additionalContext,
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setResult(out);
