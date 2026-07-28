@@ -106,10 +106,67 @@ export interface ActivityOutput {
   assessment: string;
 }
 
+// ─── Interactive Classroom Engine ────────────────────────────────────────────
+
+export interface TeacherCompanion {
+  expectedAnswer: string;
+  commonMisconceptions?: string;
+  teachingTips?: string;
+  suggestedQuestions?: string[];
+  differentiationTips?: string;
+}
+
+export interface ActivitySlide {
+  slideNumber: number;
+  type: 'intro' | 'challenge' | 'reveal' | 'summary';
+  title: string;
+  content: string;
+  hint?: string;
+  answer?: string;
+  unlockCode?: string;
+  /** 0 = no auto-timer (teacher controls pace) */
+  durationSeconds: number;
+  teacher?: TeacherCompanion;
+}
+
+export interface ClassroomActivity {
+  activityName: string;
+  activityType: string;
+  grade: string;
+  subject: string;
+  lesson: string;
+  duration: number;
+  difficulty: 'easy' | 'standard' | 'advanced';
+  groupType: 'individual' | 'pairs' | 'groups' | 'whole-class';
+  learningObjective: string;
+  materials: string[];
+  teacherPreparation: string;
+  slides: ActivitySlide[];
+  teacherNotes: string[];
+  answerKey: string[];
+  printables: string[];
+  assessment: string;
+  extensionChallenge: string;
+}
+
+export interface ClassroomActivityRequest {
+  grade: string;
+  subject: string;
+  topic: string;
+  activityType: string;
+  duration: number;
+  difficulty: 'easy' | 'standard' | 'advanced';
+  groupType: 'individual' | 'pairs' | 'groups' | 'whole-class';
+  teachingGoal: 'warm-up' | 'practice' | 'revision' | 'assessment' | 'critical-thinking';
+  language: 'arabic' | 'english';
+  additionalContext?: string;
+}
+
 export abstract class AIService {
   abstract generateLessonPlan(req: AIRequest): Promise<LessonPlanOutput>;
   abstract generateWorksheet(req: AIRequest): Promise<WorksheetOutput>;
   abstract generateQuiz(req: AIRequest): Promise<QuizOutput>;
   abstract generateHomework(req: AIRequest): Promise<WorksheetOutput>;
   abstract generateActivity(req: AIRequest): Promise<ActivityOutput>;
+  abstract generateClassroomActivity(req: ClassroomActivityRequest): Promise<ClassroomActivity>;
 }

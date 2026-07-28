@@ -350,6 +350,137 @@ Return JSON in this exact shape:
 }`;
 }
 
+// ─── Classroom Activity route ─────────────────────────────────────────────────
+generateRouter.post('/classroom-activity', async (req, res) => {
+  const body = req.body as Record<string, unknown>;
+  const isAr = body.language === 'arabic';
+  try {
+    const prompt = isAr ? classroomPromptAr(body) : classroomPromptEn(body);
+    const raw = await callAI(prompt);
+    const data = extractJSON(raw);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: String(err) });
+  }
+});
+
+function classroomPromptAr(b: any): string {
+  const goals: Record<string, string> = {
+    'warm-up': 'تمهيد', practice: 'تدريب', revision: 'مراجعة',
+    assessment: 'تقييم', 'critical-thinking': 'تفكير ناقد',
+  };
+  const groups: Record<string, string> = {
+    individual: 'فردي', pairs: 'ثنائي', groups: 'مجموعات', 'whole-class': 'الصف بأكمله',
+  };
+  const diffs: Record<string, string> = { easy: 'سهل', standard: 'متوسط', advanced: 'متقدم' };
+  return `أنت مصمم أنشطة صفية تفاعلية. أنشئ نشاط "تحدي الهروب" لمادة ${b.subject}، الصف ${b.grade}، موضوع "${b.topic}".
+المدة: ${b.duration} دقيقة | الصعوبة: ${diffs[b.difficulty] ?? b.difficulty} | التجميع: ${groups[b.groupType] ?? b.groupType} | الهدف: ${goals[b.teachingGoal] ?? b.teachingGoal}
+${b.additionalContext ? `\nمحتوى الكتاب المدرسي:\n${b.additionalContext}` : ''}
+
+أعد JSON بالشكل الآتي (بالعربية الكاملة، لا تستخدم أي حروف إنجليزية في النصوص):
+{
+  "activityName": "اسم النشاط",
+  "activityType": "escape-challenge",
+  "grade": "${b.grade}",
+  "subject": "${b.subject}",
+  "lesson": "${b.topic}",
+  "duration": ${b.duration},
+  "difficulty": "${b.difficulty}",
+  "groupType": "${b.groupType}",
+  "learningObjective": "الهدف التعليمي بجملة واحدة",
+  "materials": ["مادة 1","مادة 2"],
+  "teacherPreparation": "خطوات إعداد المعلم",
+  "slides": [
+    {
+      "slideNumber": 1,
+      "type": "intro",
+      "title": "مهمتكم",
+      "content": "وصف المهمة",
+      "durationSeconds": 0
+    },
+    {
+      "slideNumber": 2,
+      "type": "challenge",
+      "title": "التحدي 1",
+      "content": "نص التحدي",
+      "hint": "تلميح مساعد",
+      "answer": "الإجابة الصحيحة",
+      "unlockCode": "5",
+      "durationSeconds": 180,
+      "teacher": {
+        "expectedAnswer": "الإجابة المفصّلة",
+        "commonMisconceptions": "أخطاء شائعة",
+        "teachingTips": "نصائح للمعلم",
+        "suggestedQuestions": ["سؤال 1"],
+        "differentiationTips": "كيف تتعامل مع مستويات مختلفة"
+      }
+    },
+    {
+      "slideNumber": 3,
+      "type": "reveal",
+      "title": "تم فتح الكود!",
+      "content": "وصف الكود المفتوح",
+      "unlockCode": "5",
+      "durationSeconds": 0
+    }
+  ],
+  "teacherNotes": ["ملاحظة 1"],
+  "answerKey": ["إجابة التحدي 1"],
+  "printables": ["بطاقات التحديات","مفتاح الإجابات"],
+  "assessment": "كيف تقيّم النشاط",
+  "extensionChallenge": "تحدٍّ إضافي للمتقدمين"
+}
+أنشئ ${Math.floor(b.duration / 4)} تحديًا على الأقل. كل تحدٍّ يتبعه شريحة كشف.`;
+}
+
+function classroomPromptEn(b: any): string {
+  return `You are an interactive classroom activity designer. Create a Math Escape Challenge for ${b.subject}, Grade ${b.grade}, topic "${b.topic}".
+Duration: ${b.duration} min | Difficulty: ${b.difficulty} | Groups: ${b.groupType} | Goal: ${b.teachingGoal}
+${b.additionalContext ? `\nTextbook context:\n${b.additionalContext}` : ''}
+
+Return JSON in this exact shape (all text in English):
+{
+  "activityName": "Activity name",
+  "activityType": "escape-challenge",
+  "grade": "${b.grade}",
+  "subject": "${b.subject}",
+  "lesson": "${b.topic}",
+  "duration": ${b.duration},
+  "difficulty": "${b.difficulty}",
+  "groupType": "${b.groupType}",
+  "learningObjective": "One-sentence learning objective",
+  "materials": ["item 1","item 2"],
+  "teacherPreparation": "Teacher setup steps",
+  "slides": [
+    { "slideNumber": 1, "type": "intro", "title": "Your Mission", "content": "Mission description", "durationSeconds": 0 },
+    {
+      "slideNumber": 2,
+      "type": "challenge",
+      "title": "Challenge 1",
+      "content": "Challenge question text",
+      "hint": "A helpful hint",
+      "answer": "The correct answer",
+      "unlockCode": "5",
+      "durationSeconds": 180,
+      "teacher": {
+        "expectedAnswer": "Detailed expected answer",
+        "commonMisconceptions": "Common student errors",
+        "teachingTips": "Teaching advice",
+        "suggestedQuestions": ["Follow-up question"],
+        "differentiationTips": "How to support different levels"
+      }
+    },
+    { "slideNumber": 3, "type": "reveal", "title": "Code Unlocked!", "content": "Code reveal message", "unlockCode": "5", "durationSeconds": 0 }
+  ],
+  "teacherNotes": ["note 1"],
+  "answerKey": ["Challenge 1 answer"],
+  "printables": ["Challenge cards","Answer key"],
+  "assessment": "How to assess the activity",
+  "extensionChallenge": "Extension challenge for advanced students"
+}
+Generate at least ${Math.floor(b.duration / 4)} challenges. Each challenge slide is followed by a reveal slide.`;
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function extractJSON(raw: string): unknown {
   // Strip markdown code fences if present
