@@ -1,0 +1,241 @@
+Given your objective (**an investor-ready MVP, not a production launch**), I would reprioritize your backlog.
+
+Many of the remaining tasks are important for a commercial product but won't materially improve an investor demo.
+
+---
+
+# IQRA Investor MVP Roadmap (Updated)
+
+## ✅ Phase 1 — Completed
+
+### Foundation
+
+* ✅ Bilingual (Arabic RTL / English)
+* ✅ Teacher Dashboard
+* ✅ Curriculum Browser
+* ✅ Grade 10 Mathematics
+* ✅ Grade 10 Chemistry
+* ✅ Branding & Design System
+* ✅ Teacher Accounts (Basic)
+* ✅ Production AI System Prompt
+* ✅ Subject-aware AI routing
+* ✅ PDF & Word Export
+* ✅ Interactive Classroom MVP
+* ✅ Activity Builder
+* ✅ Presentation Mode
+* ✅ Teacher Companion Panel
+* ✅ 132 automated tests
+
+---
+
+# 🚀 Phase 2 — Investor Demo (Current Priority)
+
+## 1. Interactive Classroom 2.0 ⭐⭐⭐⭐⭐
+
+**Objective:** Create the feature investors remember.
+
+### Activity Marketplace
+
+* Featured activities
+* Activity categories
+* Search & filters
+* Recommended activities
+
+### Premium Activities
+
+Build polished versions of:
+
+* Math Escape Challenge
+* Error Detective
+* Relay Race
+* Gallery Walk
+* Exit Ticket
+
+### Classroom Experience
+
+* Better animations
+* Celebration screens
+* Student view
+* Progress tracker
+* Improved presentation flow
+* Rich teacher guidance
+
+---
+
+## 2. Lesson Flow Engine ⭐⭐⭐⭐⭐
+
+Move beyond isolated generators.
+
+Generate a complete lesson journey:
+
+```text
+Lesson Objectives
+      ↓
+Warm-up
+      ↓
+Interactive Activity
+      ↓
+Guided Practice
+      ↓
+Independent Practice
+      ↓
+Assessment
+      ↓
+Exit Ticket
+```
+
+This reinforces that IQRA supports teaching, not just content creation.
+
+---
+
+## 3. Teacher Workspace ⭐⭐⭐⭐☆
+
+Expand the dashboard into a true workspace.
+
+### Features
+
+* Continue Working
+* My Lessons
+* Saved Worksheets
+* Saved Quizzes
+* Saved Activities
+* Search
+* Favorites
+* Recent Files
+* Suggested Next Action
+
+---
+
+## 4. Resource Library ⭐⭐⭐⭐☆
+
+Automatically organize all generated content.
+
+```
+Grade 10
+    ↓
+Mathematics
+    ↓
+Lesson Plans
+Worksheets
+Quizzes
+Activities
+```
+
+Support:
+
+* Search
+* Rename
+* Duplicate
+* Delete
+* Favorite
+
+---
+
+## 5. Interactive Presentation Polish ⭐⭐⭐⭐☆
+
+Enhance the classroom experience.
+
+* Smooth slide transitions
+* Better timers
+* Dark presentation mode
+* Improved teacher controls
+* Better slide layouts
+* Visual polish
+
+---
+
+## 6. Curriculum Expansion ⭐⭐⭐⭐☆
+
+Complete Grade 10 coverage.
+
+Then prepare the structure for:
+
+* Grade 9
+* Grade 11
+* Grade 12
+
+This demonstrates scalability.
+
+---
+
+## 7. Vision Screens ⭐⭐⭐⭐☆
+
+Prototype (non-functional) screens for:
+
+* Student App
+* Parent App
+* School Dashboard
+* Learning Analytics
+* AI Insights
+
+These communicate the long-term platform vision.
+
+---
+
+## 8. Investor Demo Polish ⭐⭐⭐⭐⭐
+
+* Professional animations
+* Demo data
+* Empty states
+* Loading states
+* Consistent icons
+* Final UI polish
+* End-to-end demo flow
+
+---
+
+# 📦 Phase 3 — Production Readiness (After Investment)
+
+## AI Infrastructure
+
+* 🔴 #6 Connect to live AI providers
+
+---
+
+## Accounts
+
+* 🔴 #7 Cross-device sync
+* #41 Password reset improvements
+* #42 Local-to-account migration
+* #43 Change password
+
+---
+
+## Export
+
+* #34 PowerPoint (.pptx)
+
+---
+
+## QA & Stability
+
+* #53 Topic validation
+* #54 Defensive AI parsing
+* #33 Large worksheet export
+* #11 Knowledge base accuracy
+* #21 Fresh out-of-scope suggestions
+* #22 Language switching
+* #27 Test automation improvements
+* #28 Multi-lesson ranking improvements
+
+---
+
+# Demo Story
+
+By the end of the MVP, your investor should experience this journey:
+
+1. Open IQRA.
+2. Select **Grade 10 → Mathematics → Unit → Lesson**.
+3. Ask IQRA a curriculum-aware question.
+4. Generate a complete lesson plan, worksheet, quiz, and classroom activity.
+5. Tap **Start Lesson** to launch an interactive classroom with presentation mode, teacher notes, and timers.
+6. See everything automatically organized in the Teacher Workspace.
+7. Finish by showing vision screens for Students, Parents, and Schools, illustrating how IQRA evolves into a complete AI-powered education platform.
+
+---
+
+## My Recommendation
+
+I would **remove Task #6 (Real AI)** from your immediate roadmap and move it to **Phase 3**.
+
+For an investor demo, **mock AI is sufficient** if the outputs are realistic and the user experience is polished. Investors are evaluating the product vision, user workflow, and differentiation—not whether the responses are generated live. The features that will have the biggest impact on your pitch are the **Interactive Classroom**, **Lesson Flow Engine**, **Teacher Workspace**, and a seamless, polished demo experience. Those are what will make IQRA stand out from generic AI tools.
