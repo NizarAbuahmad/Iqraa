@@ -299,6 +299,85 @@ export async function getItems(opts: {
   return items;
 }
 
+/** Seed the workspace with demo content for onboarding / investor demos. */
+export async function seedDemoData(): Promise<void> {
+  const existing = await readLocal();
+  if (existing.length > 0) return; // only seed if empty
+
+  const now = new Date();
+  const hoursAgo = (h: number) => new Date(now.getTime() - h * 3600000).toISOString();
+
+  const demoItems: SavedMaterial[] = [
+    {
+      id: makeLocalId(),
+      type: 'lesson',
+      title: 'خطة درس – الدوال التربيعية',
+      subject: 'الرياضيات',
+      grade: 'الصف العاشر',
+      topic: 'الدوال التربيعية',
+      language: 'ar',
+      savedAt: hoursAgo(2),
+      isFavorite: true,
+      content: JSON.stringify({ title: 'الدوال التربيعية', objectives: ['فهم شكل القطع المكافئ', 'حل المعادلات التربيعية بالتحليل'] }),
+      formState: { subject: 'الرياضيات', grade: 'الصف العاشر', topic: 'الدوال التربيعية', language: 'arabic' },
+    },
+    {
+      id: makeLocalId(),
+      type: 'worksheet',
+      title: 'ورقة عمل – الجدول الدوري',
+      subject: 'الكيمياء',
+      grade: 'الصف العاشر',
+      topic: 'الجدول الدوري',
+      language: 'ar',
+      savedAt: hoursAgo(24),
+      isFavorite: false,
+      content: JSON.stringify({ title: 'الجدول الدوري', sections: [] }),
+      formState: { subject: 'الكيمياء', grade: 'الصف العاشر', topic: 'الجدول الدوري', language: 'arabic' },
+    },
+    {
+      id: makeLocalId(),
+      type: 'quiz',
+      title: 'اختبار – المعادلات التربيعية',
+      subject: 'الرياضيات',
+      grade: 'الصف العاشر',
+      topic: 'المعادلات التربيعية',
+      language: 'ar',
+      savedAt: hoursAgo(48),
+      isFavorite: true,
+      content: JSON.stringify({ title: 'المعادلات التربيعية', questions: [] }),
+      formState: { subject: 'الرياضيات', grade: 'الصف العاشر', topic: 'المعادلات التربيعية', language: 'arabic' },
+    },
+    {
+      id: makeLocalId(),
+      type: 'lesson',
+      title: 'Lesson Plan – Quadratic Functions',
+      subject: 'Mathematics',
+      grade: 'Grade 10',
+      topic: 'Quadratic Functions',
+      language: 'en',
+      savedAt: hoursAgo(72),
+      isFavorite: false,
+      content: JSON.stringify({ title: 'Quadratic Functions', objectives: ['Understand parabola shape', 'Solve quadratic equations by factoring'] }),
+      formState: { subject: 'Mathematics', grade: 'Grade 10', topic: 'Quadratic Functions', language: 'english' },
+    },
+    {
+      id: makeLocalId(),
+      type: 'worksheet',
+      title: 'Worksheet – Periodic Table',
+      subject: 'Chemistry',
+      grade: 'Grade 10',
+      topic: 'Periodic Table',
+      language: 'en',
+      savedAt: hoursAgo(96),
+      isFavorite: false,
+      content: JSON.stringify({ title: 'Periodic Table', sections: [] }),
+      formState: { subject: 'Chemistry', grade: 'Grade 10', topic: 'Periodic Table', language: 'english' },
+    },
+  ];
+
+  await writeLocal(demoItems);
+}
+
 /** Load a single item by id. */
 export async function getItem(id: string): Promise<SavedMaterial | null> {
   if (await isAuthenticated()) {

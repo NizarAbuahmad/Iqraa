@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  Pressable, RefreshControl, ScrollView, StyleSheet, Text, View,
+  Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useFocusEffect } from 'expo-router';
@@ -11,7 +11,7 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { SavedMaterial, getRecentItems } from '@/services/workspace';
+import { SavedMaterial, getItems, getRecentItems, seedDemoData } from '@/services/workspace';
 
 const TYPE_COLOR: Record<string, string> = {
   lesson: '#1B6B62',
@@ -30,24 +30,38 @@ export default function DashboardScreen() {
   const { user } = useAuth();
   const { t, lang, isRTL } = useLanguage();
   const [refreshing, setRefreshing] = useState(false);
-  const [recentItems, setRecentItems] = useState<SavedMaterial[]>([]);
+  const [recentItems,    setRecentItems]    = useState<SavedMaterial[]>([]);
+  const [favoriteItems,  setFavoriteItems]  = useState<SavedMaterial[]>([]);
+  const [continueItem,   setContinueItem]   = useState<SavedMaterial | null>(null);
+  const [seeding,        setSeeding]        = useState(false);
 
-  const loadRecent = useCallback(async () => {
-    const items = await getRecentItems(3);
-    setRecentItems(items);
+  const loadData = useCallback(async () => {
+    const [recent, favs] = await Promise.all([
+      getRecentItems(3),
+      getItems({ favoritesFirst: true }),
+    ]);
+    setRecentItems(recent);
+    setFavoriteItems(favs.filter(i => i.isFavorite).slice(0, 3));
+    setContinueItem(recent[0] ?? null);
   }, []);
 
   useFocusEffect(
-    useCallback(() => {
-      loadRecent();
-    }, [loadRecent]),
+    useCallback(() => { loadData(); }, [loadData]),
   );
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadRecent();
+    await loadData();
     await new Promise(r => setTimeout(r, 400));
     setRefreshing(false);
+  };
+
+  const handleSeedDemo = async () => {
+    setSeeding(true);
+    await seedDemoData();
+    await loadData();
+    setSeeding(false);
+    Alert.alert('', lang === 'ar' ? 'تم تحميل المحتوى التجريبي!' : 'Sample content loaded!');
   };
 
   const topPad = insets.top + (insets.top === 0 ? 67 : 0);
@@ -163,6 +177,87 @@ export default function DashboardScreen() {
         </View>
       </View>
 
+      {/* ─── Continue Working ──────────────────────────────────── */}
+      {continueItem && (
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'Inter_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+            {lang === 'ar' ? 'استكمل العمل' : 'Continue Working'}
+          </Text>
+          <Pressable
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/workspace/view', params: { id: continueItem.id } }); }}
+            style={({ pressed }) => [
+              styles.continueCard,
+              { backgroundColor: colors.card, borderColor: colors.primary + '50', borderRadius: colors.radius, opacity: pressed ? 0.85 : 1, flexDirection: isRTL ? 'row-reverse' : 'row' },
+            ]}
+          >
+            <View style={[styles.continueIcon, { backgroundColor: (TYPE_COLOR[continueItem.type] ?? colors.primary) + '18', borderRadius: 14 }]}>
+              <Ionicons name={TYPE_ICON[continueItem.type] ?? 'document-text-outline'} size={22} color={TYPE_COLOR[continueItem.type] ?? colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[{ color: colors.foreground, fontFamily: 'Inter_600SemiBold', fontSize: 14, textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={1}>
+                {continueItem.title}
+              </Text>
+              <Text style={[{ color: colors.mutedForeground, fontFamily: 'Inter_400Regular', fontSize: 12, marginTop: 2, textAlign: isRTL ? 'right' : 'left' }]}>
+                {continueItem.grade} · {formatDate(continueItem.savedAt)}
+              </Text>
+            </View>
+            <View style={[styles.continueCta, { backgroundColor: colors.primary, borderRadius: 10 }]}>
+              <Text style={[{ color: colors.primaryForeground, fontFamily: 'Inter_600SemiBold', fontSize: 12 }]}>
+                {lang === 'ar' ? 'افتح' : 'Open'}
+              </Text>
+            </View>
+          </Pressable>
+        </View>
+      )}
+
+      {/* ─── My Favourites ─────────────────────────────────────── */}
+      {favoriteItems.length > 0 && (
+        <View style={styles.section}>
+          <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }]}>
+            <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }]}>
+              <Ionicons name="star" size={14} color="#F59E0B" />
+              <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'Inter_600SemiBold', marginBottom: 0 }]}>
+                {lang === 'ar' ? 'المفضلة' : 'Favourites'}
+              </Text>
+            </View>
+            <Pressable onPress={() => router.push('/workspace')}>
+              <Text style={[{ color: colors.primary, fontFamily: 'Inter_500Medium', fontSize: 13 }]}>
+                {lang === 'ar' ? 'عرض الكل' : 'View all'}
+              </Text>
+            </Pressable>
+          </View>
+          <View style={{ gap: 8 }}>
+            {favoriteItems.map(m => {
+              const color = TYPE_COLOR[m.type] ?? colors.primary;
+              const icon  = TYPE_ICON[m.type]  ?? 'document-text-outline';
+              return (
+                <Pressable
+                  key={m.id}
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/workspace/view', params: { id: m.id } }); }}
+                  style={({ pressed }) => [styles.materialCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.8 : 1 }]}
+                >
+                  <View style={[styles.materialIcon, { backgroundColor: color + '18', borderRadius: 12 }]}>
+                    <Ionicons name={icon} size={20} color={color} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.materialTitle, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={1}>
+                      {m.title}
+                    </Text>
+                    <View style={[styles.materialMeta, isRTL && { flexDirection: 'row-reverse' }]}>
+                      <View style={[styles.typePill, { backgroundColor: color + '18', borderRadius: 8 }]}>
+                        <Text style={[styles.typeText, { color, fontFamily: 'Inter_500Medium' }]}>{typeLabel(m.type)}</Text>
+                      </View>
+                      <Text style={[styles.gradeText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>{m.grade}</Text>
+                    </View>
+                  </View>
+                  <Ionicons name="star" size={16} color="#F59E0B" />
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      )}
+
       {/* ─── Recent Materials ──────────────────────────────────── */}
       <View style={styles.section}>
         <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
@@ -180,25 +275,33 @@ export default function DashboardScreen() {
 
         {recentItems.length === 0 ? (
           /* Empty state */
-          <Pressable
-            onPress={() => router.push('/(tabs)/ai-tools')}
-            style={({ pressed }) => [
-              styles.emptyCard,
-              {
-                backgroundColor: colors.card,
-                borderColor: colors.border,
-                borderRadius: colors.radius,
-                opacity: pressed ? 0.8 : 1,
-              },
-            ]}
-          >
-            <Ionicons name="folder-open-outline" size={32} color={colors.mutedForeground} style={{ opacity: 0.5 }} />
-            <Text style={[{ color: colors.mutedForeground, fontFamily: 'Inter_400Regular', fontSize: 13, textAlign: 'center', lineHeight: 20 }]}>
-              {lang === 'ar'
-                ? 'لا توجد مواد محفوظة بعد\nاضغط لإنشاء أول مادة'
-                : 'No saved materials yet\nTap to create your first'}
-            </Text>
-          </Pressable>
+          <View style={{ gap: 10 }}>
+            <Pressable
+              onPress={() => router.push('/(tabs)/ai-tools')}
+              style={({ pressed }) => [
+                styles.emptyCard,
+                { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.8 : 1 },
+              ]}
+            >
+              <Ionicons name="folder-open-outline" size={32} color={colors.mutedForeground} style={{ opacity: 0.5 }} />
+              <Text style={[{ color: colors.mutedForeground, fontFamily: 'Inter_400Regular', fontSize: 13, textAlign: 'center', lineHeight: 20 }]}>
+                {lang === 'ar' ? 'لا توجد مواد محفوظة بعد\nاضغط لإنشاء أول مادة' : 'No saved materials yet\nTap to create your first'}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={handleSeedDemo}
+              disabled={seeding}
+              style={({ pressed }) => [
+                styles.seedBtn,
+                { backgroundColor: colors.muted, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed || seeding ? 0.7 : 1, flexDirection: isRTL ? 'row-reverse' : 'row' },
+              ]}
+            >
+              <Ionicons name="sparkles-outline" size={16} color={colors.mutedForeground} />
+              <Text style={[{ color: colors.mutedForeground, fontFamily: 'Inter_500Medium', fontSize: 13 }]}>
+                {seeding ? (lang === 'ar' ? 'جارٍ التحميل…' : 'Loading…') : (lang === 'ar' ? 'تحميل محتوى تجريبي' : 'Load sample content')}
+              </Text>
+            </Pressable>
+          </View>
         ) : (
           <View style={{ gap: 10 }}>
             {recentItems.map(m => {
@@ -284,6 +387,10 @@ const styles = StyleSheet.create({
   actionCard: { width: '47%', padding: 18, borderWidth: 1, alignItems: 'center', gap: 10 },
   actionIcon: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center' },
   actionLabel: { fontSize: 13 },
+  continueCard:  { flexDirection: 'row', alignItems: 'center', padding: 14, borderWidth: 1.5, gap: 12 },
+  continueIcon:  { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  continueCta:   { paddingHorizontal: 14, paddingVertical: 8, flexShrink: 0 },
+  seedBtn:       { alignItems: 'center', justifyContent: 'center', gap: 8, padding: 12, borderWidth: 1, borderStyle: 'dashed' },
   emptyCard: { padding: 30, borderWidth: 1, borderStyle: 'dashed', alignItems: 'center', gap: 10 },
   materialCard: { flexDirection: 'row', alignItems: 'center', padding: 14, borderWidth: 1, gap: 12 },
   materialIcon: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },

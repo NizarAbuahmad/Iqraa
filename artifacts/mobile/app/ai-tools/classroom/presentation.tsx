@@ -159,7 +159,10 @@ export default function PresentationScreen() {
   const [timerSec, setTimerSec] = useState(0);
   const [timerRunning, setTimerRunning] = useState(false);
   const [timerTotal, setTimerTotal] = useState(0);
+  const [celebrationVisible, setCelebrationVisible] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const celebrationAnim = useRef(new Animated.Value(0)).current;
+  const celebrationScale = useRef(new Animated.Value(0.5)).current;
 
   // Slide fade animation
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -231,14 +234,35 @@ export default function PresentationScreen() {
     return clearIntervalIfRunning;
   }, [timerRunning]);
 
+  const showCelebration = () => {
+    setCelebrationVisible(true);
+    celebrationAnim.setValue(0);
+    celebrationScale.setValue(0.5);
+    Animated.parallel([
+      Animated.spring(celebrationAnim,  { toValue: 1, useNativeDriver: true, damping: 14, stiffness: 180 }),
+      Animated.spring(celebrationScale, { toValue: 1, useNativeDriver: true, damping: 14, stiffness: 180 }),
+    ]).start();
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setTimeout(() => {
+      Animated.timing(celebrationAnim, { toValue: 0, duration: 400, useNativeDriver: true }).start(() => {
+        setCelebrationVisible(false);
+      });
+    }, 2800);
+  };
+
   const goToSlide = (idx: number) => {
     if (!activity || idx < 0 || idx >= activity.slides.length) return;
+    const nextSlide = activity.slides[idx];
     Animated.timing(fadeAnim, { toValue: 0, duration: 140, useNativeDriver: true }).start(() => {
       setSlideIndex(idx);
-      initSlide(activity.slides[idx]);
+      initSlide(nextSlide);
       Animated.timing(fadeAnim, { toValue: 1, duration: 180, useNativeDriver: true }).start();
     });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    // Trigger celebration on summary slides
+    if (nextSlide.type === 'summary') {
+      setTimeout(showCelebration, 350);
+    }
   };
 
   const restartTimer = () => {
@@ -410,6 +434,23 @@ export default function PresentationScreen() {
       {teacherPanelOpen && slide.teacher && (
         <TeacherPanel slide={slide} isRTL={isRTL} t={t} onClose={() => setTeacherPanelOpen(false)} />
       )}
+
+      {/* ── Celebration Overlay ── */}
+      {celebrationVisible && (
+        <Animated.View
+          style={[
+            styles.celebrationOverlay,
+            { opacity: celebrationAnim, pointerEvents: 'none' },
+          ]}
+        >
+          <Animated.View style={[styles.celebrationCard, { transform: [{ scale: celebrationScale }] }]}>
+            <Text style={styles.celebrationEmoji}>🎉</Text>
+            <Text style={[styles.celebrationTitle, { fontFamily: 'Inter_700Bold' }]}>
+              {t('activityComplete' as any)}
+            </Text>
+          </Animated.View>
+        </Animated.View>
+      )}
     </View>
   );
 }
@@ -419,6 +460,10 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: BG },
   centered: { alignItems: 'center', justifyContent: 'center' },
   noActivity: { color: TEXT_MUTED, fontSize: 14, marginBottom: 16 },
+  celebrationOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', zIndex: 20, pointerEvents: 'none' },
+  celebrationCard: { alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(22,23,31,0.92)', borderRadius: 24, paddingHorizontal: 40, paddingVertical: 32, borderWidth: 1, borderColor: TIMER_GREEN + '60', gap: 12 },
+  celebrationEmoji: { fontSize: 64 },
+  celebrationTitle: { fontSize: 22, color: TEXT_PRIMARY, textAlign: 'center', lineHeight: 30 },
   topBar: { alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 10 },
   exitBtn: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', borderRadius: 19, backgroundColor: CARD_BG, borderWidth: 1, borderColor: BORDER },
   progressRow: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 12 },

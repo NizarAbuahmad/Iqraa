@@ -621,6 +621,109 @@ Return JSON in this exact shape (all text in English):
 Generate a chain of 4–6 linked problems (each answer feeds the next). Add a summary slide at the end.`;
   }
 
+  if (b.activityType === 'error-detective') {
+    return `You are an interactive classroom activity designer. Create an "Error Detective" activity for ${b.subject}, Grade ${b.grade}, topic "${b.topic}".
+Duration: ${b.duration} min | Difficulty: ${b.difficulty} | Groups: ${b.groupType} | Goal: ${b.teachingGoal}
+${b.additionalContext ? `\nTextbook context:\n${b.additionalContext}` : ''}
+
+Return JSON in this exact shape (all text in English):
+{
+  "activityName": "Error Detective – ${b.topic}",
+  "activityType": "error-detective",
+  "grade": "${b.grade}", "subject": "${b.subject}", "lesson": "${b.topic}",
+  "duration": ${b.duration}, "difficulty": "${b.difficulty}", "groupType": "${b.groupType}",
+  "learningObjective": "One-sentence objective about identifying and correcting errors",
+  "materials": ["Printed error cards","Red correction pens"],
+  "teacherPreparation": "Setup instructions",
+  "slides": [
+    { "slideNumber": 1, "type": "intro", "title": "🔍 Error Detective", "content": "How the activity works", "durationSeconds": 0 },
+    {
+      "slideNumber": 2, "type": "challenge", "title": "🕵️ Case 1 – Find the Error",
+      "content": "Show a worked solution with ONE deliberate error for students to find",
+      "hint": "A hint pointing toward the error type",
+      "answer": "The error identified and the correct solution",
+      "durationSeconds": ${Math.round((b.duration * 60) / 4)},
+      "teacher": { "expectedAnswer": "Full correct solution", "commonMisconceptions": "Why students make this error", "teachingTips": "How to discuss the error constructively" }
+    },
+    { "slideNumber": 3, "type": "reveal", "title": "✅ Correct Solution", "content": "The full correct solution with explanation", "durationSeconds": 0 }
+  ],
+  "teacherNotes": ["note 1"],
+  "answerKey": ["Error 1 description", "Error 2 description"],
+  "printables": ["Error cards","Investigation report template"],
+  "assessment": "How to assess understanding",
+  "extensionChallenge": "Extension for advanced students"
+}
+Generate 3 error cases, each with a challenge slide followed by a reveal slide. End with a summary slide listing all errors found.`;
+  }
+
+  if (b.activityType === 'gallery-walk') {
+    return `You are an interactive classroom activity designer. Create a "Gallery Walk" activity for ${b.subject}, Grade ${b.grade}, topic "${b.topic}".
+Duration: ${b.duration} min | Difficulty: ${b.difficulty} | Groups: ${b.groupType} | Goal: ${b.teachingGoal}
+${b.additionalContext ? `\nTextbook context:\n${b.additionalContext}` : ''}
+
+Return JSON in this exact shape (all text in English):
+{
+  "activityName": "Gallery Walk – ${b.topic}",
+  "activityType": "gallery-walk",
+  "grade": "${b.grade}", "subject": "${b.subject}", "lesson": "${b.topic}",
+  "duration": ${b.duration}, "difficulty": "${b.difficulty}", "groupType": "${b.groupType}",
+  "learningObjective": "One-sentence objective about collaborative station-based exploration",
+  "materials": ["5 large paper sheets posted on walls","Coloured markers","Sticky notes"],
+  "teacherPreparation": "How to set up the 5 stations and manage group rotation",
+  "slides": [
+    { "slideNumber": 1, "type": "intro", "title": "🖼️ Gallery Walk", "content": "Explain the rotation rules and time per station", "durationSeconds": 0 },
+    {
+      "slideNumber": 2, "type": "challenge", "title": "📌 Station 1 – Foundations",
+      "content": "A foundational problem for students to solve and write on the poster",
+      "hint": "A guiding hint",
+      "answer": "See the poster at this station",
+      "durationSeconds": ${Math.round((b.duration * 60) / 6)},
+      "teacher": { "expectedAnswer": "Expected answer for this station", "teachingTips": "What to look for when reviewing this station's poster" }
+    }
+  ],
+  "teacherNotes": ["Circulate to guide discussion"],
+  "answerKey": ["Station 1 answer", "Station 2 answer"],
+  "printables": ["Station cards (A3)","Group tracking sheet"],
+  "assessment": "How to review and debrief",
+  "extensionChallenge": "Extension challenge"
+}
+Generate 5 station slides (foundations, application, analysis, evaluation, creative) plus a summary. Each station has a unique problem type.`;
+  }
+
+  if (b.activityType === 'exit-ticket') {
+    return `You are an interactive classroom activity designer. Create an "Exit Ticket" activity for ${b.subject}, Grade ${b.grade}, topic "${b.topic}".
+Duration: ${b.duration} min | Difficulty: ${b.difficulty} | Groups: ${b.groupType} | Goal: ${b.teachingGoal}
+${b.additionalContext ? `\nTextbook context:\n${b.additionalContext}` : ''}
+
+Return JSON in this exact shape (all text in English):
+{
+  "activityName": "Exit Ticket – ${b.topic}",
+  "activityType": "exit-ticket",
+  "grade": "${b.grade}", "subject": "${b.subject}", "lesson": "${b.topic}",
+  "duration": ${b.duration}, "difficulty": "${b.difficulty}", "groupType": "${b.groupType}",
+  "learningObjective": "Check understanding of ${b.topic} at the end of the lesson",
+  "materials": ["Printed exit ticket (1 per student)","Pen"],
+  "teacherPreparation": "Print tickets; reserve last ${b.duration} minutes of the lesson",
+  "slides": [
+    { "slideNumber": 1, "type": "intro", "title": "🎫 Exit Ticket", "content": "Instructions: individual work, hand in at the door", "durationSeconds": 0 },
+    {
+      "slideNumber": 2, "type": "challenge", "title": "❓ Question 1 – Recall",
+      "content": "Define the main concept of ${b.topic} in your own words",
+      "hint": "Think about what we covered at the start of today's lesson",
+      "answer": "Flexible — assess understanding not memorisation",
+      "durationSeconds": ${Math.round((b.duration * 60) / 4)},
+      "teacher": { "expectedAnswer": "Student-worded definition", "teachingTips": "Look for conceptual understanding" }
+    }
+  ],
+  "teacherNotes": ["Collect at door","Sort into: full / partial / needs support"],
+  "answerKey": ["Q1: definition","Q2: application","Q3: critical thinking"],
+  "printables": ["Exit ticket (one per student)"],
+  "assessment": "Sort tickets into three piles by level of understanding",
+  "extensionChallenge": "Use results to design a targeted warm-up next lesson"
+}
+Generate 3 questions: recall, application, critical thinking. Each is a challenge slide. End with a 'pens down' summary slide.`;
+  }
+
   return `You are an interactive classroom activity designer. Create a Math Escape Challenge for ${b.subject}, Grade ${b.grade}, topic "${b.topic}".
 Duration: ${b.duration} min | Difficulty: ${b.difficulty} | Groups: ${b.groupType} | Goal: ${b.teachingGoal}
 ${b.additionalContext ? `\nTextbook context:\n${b.additionalContext}` : ''}

@@ -778,6 +778,256 @@ export class MockAIService extends AIService {
       };
     }
 
+    // ── Error Detective ────────────────────────────────────────────────────────
+    if (actType === 'error-detective') {
+      if (isAr) {
+        return {
+          activityName: `المحقق الرياضي – ${topic}`,
+          activityType: 'error-detective',
+          grade: req.grade, subject: req.subject, lesson: topic, duration: dur,
+          difficulty: req.difficulty, groupType: req.groupType,
+          learningObjective: `تحديد الأخطاء الشائعة في حل مسائل ${topic} وتصحيحها بمنهجية`,
+          materials: ['السبورة', 'بطاقات الحلول الخاطئة المطبوعة', 'أقلام تصحيح حمراء'],
+          teacherPreparation: 'اطبع 3 حلول خاطئة مسبقًا. اطلب من الطلاب العمل في ثنائيات.',
+          teacherNotes: ['ناقش سبب الخطأ وليس فقط الإجابة الصحيحة', 'استخدم أخطاء حقيقية من اختبارات سابقة'],
+          answerKey: ['الخطأ 1: إشارة سالبة مفقودة', 'الخطأ 2: قسمة على المتغير بدلاً من إخراجه', 'الخطأ 3: نسيان الجذر السالب'],
+          printables: ['بطاقات الحلول الخاطئة', 'نموذج التقرير التحقيقي'],
+          assessment: 'قيّم قدرة الطلاب على تحديد الخطأ وشرح سببه وتقديم الحل الصحيح.',
+          extensionChallenge: `اطلب من الطلاب تصميم خطأ متعمد في حل ${topic} وتبادله مع مجموعة أخرى.`,
+          slides: [
+            { slideNumber: 1, type: 'intro', title: '🔍 المحقق الرياضي', content: `مهمتك: اكشف الخطأ في الحلول التالية!\nكل حل يحتوي على خطأ واحد على الأقل.\nحدّد الخطأ، اشرح سببه، وقدّم الحل الصحيح.\n\nعمل ثنائي – دقيقتان لكل بطاقة`, durationSeconds: 0 },
+            {
+              slideNumber: 2, type: 'challenge',
+              title: '🕵️ الجريمة 1 – أوجد الخطأ',
+              content: `الطالب كتب هذا الحل:\n\nحل معادلة: س² - 9 = 0\nس² = 9\nس = 3\n\n❓ أين الخطأ؟`,
+              hint: 'هل هناك حالتان لـ√9 ؟',
+              answer: 'الخطأ: نسيان الجذر السالب\nالصحيح: س = 3 أو س = -3',
+              durationSeconds: slideDuration,
+              teacher: { expectedAnswer: 'نسيان الجذر السالب ± 3', commonMisconceptions: 'الطلاب يعتقدون أن الجذر التربيعي له قيمة موجبة فقط', teachingTips: 'ذكّر: √9 = ±3 دائمًا عند حل المعادلات', suggestedQuestions: ['ما عدد حلول المعادلة التربيعية؟', 'متى تكون الحلول كلاهما موجبة؟'] },
+            },
+            { slideNumber: 3, type: 'reveal', title: '✅ الحل الصحيح', content: 'الخطأ: أخذ الجذر الموجب فقط\n\nالحل الكامل:\nس² = 9\nس = ±3\n\nإذن: س = 3 أو س = -3\n\n🏅 نقطة لمن اكتشف الخطأ!', durationSeconds: 0 },
+            {
+              slideNumber: 4, type: 'challenge',
+              title: '🕵️ الجريمة 2 – أوجد الخطأ',
+              content: `الطالب كتب هذا الحل:\n\nحل معادلة: 3س² - 6س = 0\n3س² = 6س\nس = 2\n\n❓ أين الخطأ؟`,
+              hint: 'ماذا يحدث عند القسمة على المتغير؟',
+              answer: 'الخطأ: القسمة على (س) تُفقد الحل س = 0\nالصحيح: س(3س - 6) = 0، إذن س = 0 أو س = 2',
+              durationSeconds: slideDuration,
+              teacher: { expectedAnswer: 'قسمة طرفي المعادلة على (س) تُضيّع الحل س = 0', commonMisconceptions: 'الطلاب يقسمون على المتغير ظنًا أنه مبسّط', teachingTips: 'القاعدة الذهبية: لا تقسم على متغير، بل أخرجه عاملاً', suggestedQuestions: ['لماذا لا يجوز القسمة على س؟', 'كيف تتحقق أن س = 0 حل صحيح؟'] },
+            },
+            { slideNumber: 5, type: 'reveal', title: '✅ الحل الصحيح', content: 'الخطأ: القسمة على (س) تُفقد الحل الثاني\n\nالطريقة الصحيحة:\n3س² - 6س = 0\nس(3س - 6) = 0\nس = 0  أو  3س - 6 = 0\nس = 0  أو  س = 2\n\n⚠️ لا تقسم أبدًا على متغير!', durationSeconds: 0 },
+            {
+              slideNumber: 6, type: 'challenge',
+              title: '🕵️ الجريمة 3 – أوجد الخطأ',
+              content: `الطالب كتب هذا الحل:\n\nحل معادلة: س² + 4س + 4 = 0\n(س + 4)(س + 1) = 0\nس = -4 أو س = -1\n\n❓ أين الخطأ؟`,
+              hint: 'ما الأعداد التي حاصل ضربها 4 ومجموعها 4؟',
+              answer: 'الخطأ: التحليل خاطئ\nالصحيح: (س + 2)² = 0، إذن س = -2 (جذر مزدوج)',
+              durationSeconds: slideDuration,
+              teacher: { expectedAnswer: '(س + 2)(س + 2) = 0 وليس (س + 4)(س + 1)', commonMisconceptions: 'اختيار عاملين عشوائيين بدون التحقق', teachingTips: 'تحقق دائمًا: 2 × 2 = 4 و 2 + 2 = 4 ✓', suggestedQuestions: ['ما الفرق بين هذه المعادلة والسابقة؟', 'ما معنى الجذر المزدوج هندسيًا؟'] },
+            },
+            { slideNumber: 7, type: 'reveal', title: '✅ الحل الصحيح', content: 'الخطأ: التحليل غير صحيح\n\nالحل الصحيح:\nس² + 4س + 4 = 0\n(س + 2)² = 0\nس + 2 = 0\nس = -2  (جذر مزدوج)\n\n🔑 تذكّر: المربع التام = جذر مزدوج', durationSeconds: 0 },
+            { slideNumber: 8, type: 'summary', title: '🏆 التحقيق اكتمل!', content: `أحسنتم يا محققون!\n\nالأخطاء الشائعة التي اكتشفناها اليوم في ${topic}:\n\n1️⃣ نسيان الجذر السالب\n2️⃣ القسمة على المتغير\n3️⃣ التحليل الخاطئ\n\n💡 هذه الأخطاء تظهر كثيرًا في الامتحانات — تجنّبها!`, durationSeconds: 0 },
+          ],
+        };
+      }
+      return {
+        activityName: `Error Detective – ${topic}`,
+        activityType: 'error-detective',
+        grade: req.grade, subject: req.subject, lesson: topic, duration: dur,
+        difficulty: req.difficulty, groupType: req.groupType,
+        learningObjective: `Identify and correct common mistakes in ${topic} problems through analytical thinking`,
+        materials: ['Whiteboard', 'Printed error cards', 'Red correction pens'],
+        teacherPreparation: 'Print 3 worked solutions with deliberate errors. Students work in pairs.',
+        teacherNotes: ['Discuss WHY the error occurred, not just what the correct answer is', 'Use real errors from previous tests when possible'],
+        answerKey: ['Error 1: Missing negative root', 'Error 2: Dividing by variable loses a solution', 'Error 3: Incorrect factoring'],
+        printables: ['Error cards (one set per pair)', 'Investigation report template'],
+        assessment: 'Assess whether students can identify the error, explain its cause, and provide the correct solution.',
+        extensionChallenge: `Ask students to deliberately introduce an error into a ${topic} solution and swap with another pair to solve.`,
+        slides: [
+          { slideNumber: 1, type: 'intro', title: '🔍 Error Detective', content: `Your mission: spot the mistake in each worked solution!\nEvery solution contains at least one error.\nIdentify the error, explain why it is wrong, and write the correct solution.\n\nWork in pairs — 2 minutes per card`, durationSeconds: 0 },
+          {
+            slideNumber: 2, type: 'challenge',
+            title: '🕵️ Case 1 – Find the Error',
+            content: `A student wrote this solution:\n\nSolve: x² − 9 = 0\nx² = 9\nx = 3\n\n❓ Where is the error?`,
+            hint: 'Are there two possible values for √9?',
+            answer: 'Error: forgot the negative root\nCorrect: x = 3 or x = −3',
+            durationSeconds: slideDuration,
+            teacher: { expectedAnswer: 'Missing the negative root ±3', commonMisconceptions: 'Students assume the square root only yields a positive value', teachingTips: 'Reinforce: √9 = ±3 when solving equations', suggestedQuestions: ['How many solutions does a quadratic equation have?', 'When are both roots positive?'] },
+          },
+          { slideNumber: 3, type: 'reveal', title: '✅ Correct Solution', content: 'Error: taking only the positive root\n\nFull solution:\nx² = 9\nx = ±3\n\nSo: x = 3 or x = −3\n\n🏅 Point to whoever caught the error!', durationSeconds: 0 },
+          {
+            slideNumber: 4, type: 'challenge',
+            title: '🕵️ Case 2 – Find the Error',
+            content: `A student wrote this solution:\n\nSolve: 3x² − 6x = 0\n3x² = 6x\nx = 2\n\n❓ Where is the error?`,
+            hint: 'What happens when you divide both sides by the variable?',
+            answer: 'Error: dividing by x loses the solution x = 0\nCorrect: x(3x − 6) = 0, so x = 0 or x = 2',
+            durationSeconds: slideDuration,
+            teacher: { expectedAnswer: 'Dividing both sides by x eliminates x = 0', commonMisconceptions: 'Students divide by the variable as if it were a constant', teachingTips: 'Golden rule: never divide by a variable — factor it out instead', suggestedQuestions: ['Why can\'t we divide both sides by x?', 'How do you verify x = 0 is a valid solution?'] },
+          },
+          { slideNumber: 5, type: 'reveal', title: '✅ Correct Solution', content: 'Error: dividing by x loses one solution\n\nCorrect method:\n3x² − 6x = 0\nx(3x − 6) = 0\nx = 0  or  3x − 6 = 0\nx = 0  or  x = 2\n\n⚠️ Never divide both sides by a variable!', durationSeconds: 0 },
+          {
+            slideNumber: 6, type: 'challenge',
+            title: '🕵️ Case 3 – Find the Error',
+            content: `A student wrote this solution:\n\nSolve: x² + 4x + 4 = 0\n(x + 4)(x + 1) = 0\nx = −4 or x = −1\n\n❓ Where is the error?`,
+            hint: 'What two numbers multiply to 4 and add to 4?',
+            answer: 'Error: incorrect factoring\nCorrect: (x + 2)² = 0, so x = −2 (double root)',
+            durationSeconds: slideDuration,
+            teacher: { expectedAnswer: '(x + 2)(x + 2) not (x + 4)(x + 1)', commonMisconceptions: 'Guessing factor pairs without checking', teachingTips: 'Always verify: 2 × 2 = 4 ✓ and 2 + 2 = 4 ✓', suggestedQuestions: ['How is this different from the previous equations?', 'What does a double root mean graphically?'] },
+          },
+          { slideNumber: 7, type: 'reveal', title: '✅ Correct Solution', content: 'Error: wrong factor pair\n\nCorrect solution:\nx² + 4x + 4 = 0\n(x + 2)² = 0\nx + 2 = 0\nx = −2  (double root)\n\n🔑 Perfect square → double root!', durationSeconds: 0 },
+          { slideNumber: 8, type: 'summary', title: '🏆 Investigation Complete!', content: `Outstanding detectives!\n\nCommon ${topic} errors we uncovered today:\n\n1️⃣ Forgetting the negative root\n2️⃣ Dividing by a variable\n3️⃣ Incorrect factoring\n\n💡 These errors appear frequently in exams — now you know how to avoid them!`, durationSeconds: 0 },
+        ],
+      };
+    }
+
+    // ── Gallery Walk ────────────────────────────────────────────────────────────
+    if (actType === 'gallery-walk') {
+      if (isAr) {
+        return {
+          activityName: `جولة المعارض – ${topic}`,
+          activityType: 'gallery-walk',
+          grade: req.grade, subject: req.subject, lesson: topic, duration: dur,
+          difficulty: req.difficulty, groupType: req.groupType,
+          learningObjective: `استكشاف جوانب متعددة من ${topic} من خلال مناقشة جماعية في محطات دوّارة`,
+          materials: ['5 أوراق كبيرة مثبّتة على الجدران', 'أقلام ملونة', 'ملصقات لاصقة'],
+          teacherPreparation: 'اكتب مسألة مختلفة على كل ورقة كبيرة. رتّب المجموعات (4-5 أفراد). كل محطة: 3-4 دقائق.',
+          teacherNotes: ['ابدأ المجموعات في محطات مختلفة لتجنب الازدحام', 'شجّع إضافة ملاحظات على ما كتبته المجموعات السابقة'],
+          answerKey: ['محطة 1: حل المسألة الأولى', 'محطة 2: حل المسألة الثانية', 'محطة 3: تطبيق عملي', 'محطة 4: تحليل الخطأ', 'محطة 5: مسألة إبداعية'],
+          printables: ['بطاقات المحطات (A3)', 'ورقة تتبع المجموعات'],
+          assessment: 'راجع ما كتبته المجموعات على الأوراق. ناقش الإجابات المثيرة في الختام.',
+          extensionChallenge: `اطلب من كل مجموعة إضافة محطة جديدة ومسألة خاصة بها.`,
+          slides: [
+            { slideNumber: 1, type: 'intro', title: '🖼️ جولة المعارض', content: `مرحبًا بكم في معرض ${topic}!\n\n5 محطات تعليمية حول الفصل.\nكل مجموعة تتنقل بين المحطات وتناقش المسألة.\nوقت كل محطة: 3-4 دقائق.\n\nاستعدوا — الجولة تبدأ الآن!`, durationSeconds: 0 },
+            { slideNumber: 2, type: 'challenge', title: '📌 المحطة 1 – الأساس', content: `المسألة الأساسية:\nطبّق التعريف الأساسي لـ${topic} لحل هذه المسألة.\n\nاكتبوا حلّكم الجماعي على الورقة.\nأضيفوا: هل تتفقون مع المجموعة السابقة؟`, hint: 'ابدأ بتحديد ما يُطلب', answer: 'انظر إلى الورقة الكبيرة في المحطة', durationSeconds: slideDuration, teacher: { expectedAnswer: `تطبيق مباشر للتعريف الأساسي لـ${topic}`, teachingTips: 'تأكد أن المجموعات تكتب على الورقة وليس فقط تناقش شفهيًا' } },
+            { slideNumber: 3, type: 'challenge', title: '📌 المحطة 2 – التطبيق', content: `مسألة تطبيقية:\nكيف يُستخدم ${topic} لحل هذا الموقف الحياتي؟\n\nناقش مع مجموعتك وسجّل خطوات الحل.\nما الفرق بين هذه المسألة والمحطة 1؟`, hint: 'ابحث عن الرابط بين ${topic} والموقف الحياتي', answer: 'انظر إلى الورقة الكبيرة في المحطة', durationSeconds: slideDuration, teacher: { expectedAnswer: `ربط ${topic} بسياق حياتي حقيقي`, teachingTips: 'شجّع المجموعات على ذكر أمثلة خاصة بهم' } },
+            { slideNumber: 4, type: 'challenge', title: '📌 المحطة 3 – التحليل', content: `مسألة تحليلية:\nما أوجه التشابه والاختلاف بين مفهومين رئيسيين في ${topic}؟\n\narسم مخطط فِن (Venn) على الورقة.\nأضف على الأقل 2 تشابه و2 اختلاف.`, hint: 'فكّر في التعريفات والخصائص', answer: 'انظر إلى الورقة الكبيرة في المحطة', durationSeconds: slideDuration, teacher: { expectedAnswer: `مقارنة المفاهيم الرئيسية في ${topic}`, teachingTips: 'ساعد المجموعات على بدء مخطط فِن إذا احتاجوا' } },
+            { slideNumber: 5, type: 'challenge', title: '📌 المحطة 4 – التقييم', content: `مسألة تقييمية:\nهل الحل التالي صحيح أم خاطئ؟ اشرح لماذا.\n\nحل مقترح لمسألة في ${topic}:\n[انظر الورقة الكبيرة]\n\nقيّم الحل وصحّح أي خطأ.`, hint: 'تحقق خطوة بخطوة', answer: 'انظر إلى الورقة الكبيرة في المحطة', durationSeconds: slideDuration, teacher: { expectedAnswer: `تقييم نقدي لحل خاطئ في ${topic}`, teachingTips: 'تعمّد وضع خطأ شائع في الحل المقترح' } },
+            { slideNumber: 6, type: 'challenge', title: '📌 المحطة 5 – الإبداع', content: `تحدي إبداعي:\nصمّم مسألتك الخاصة في ${topic}!\n\nاكتب مسألة جديدة وقدّم حلّها.\nستقرأ المجموعات الأخرى مسألتك!`, hint: 'اختر موقفًا حياتيًا مثيرًا للاهتمام', answer: 'المسائل الإبداعية تختلف لكل مجموعة', durationSeconds: slideDuration, teacher: { expectedAnswer: `مسألة إبداعية ذات صلة بـ${topic}`, teachingTips: 'اطلب من المجموعات قراءة مسائل بعضها في الختام' } },
+            { slideNumber: 7, type: 'summary', title: '🎨 الجولة اكتملت!', content: `أحسنتم! زرتم جميع محطات معرض ${topic}.\n\nلنستعرض أبرز ما كتبتموه:\n• أجمل إجابة في المحطة 1؟\n• أكثر مسألة حياتية في المحطة 2؟\n• أفضل مسألة إبداعية في المحطة 5؟\n\nناقشوا معًا: ما أكثر ما تعلمتم؟`, durationSeconds: 0 },
+          ],
+        };
+      }
+      return {
+        activityName: `Gallery Walk – ${topic}`,
+        activityType: 'gallery-walk',
+        grade: req.grade, subject: req.subject, lesson: topic, duration: dur,
+        difficulty: req.difficulty, groupType: req.groupType,
+        learningObjective: `Explore multiple dimensions of ${topic} through collaborative discussion at rotating stations`,
+        materials: ['5 large sheets of paper posted on walls', 'Coloured markers', 'Sticky notes'],
+        teacherPreparation: 'Write a different problem on each large sheet. Arrange groups of 4-5. Allow 3-4 minutes per station.',
+        teacherNotes: ['Start groups at different stations to avoid crowding', 'Encourage adding comments to previous groups\' answers'],
+        answerKey: ['Station 1: foundational problem solution', 'Station 2: applied problem solution', 'Station 3: analysis', 'Station 4: error evaluation', 'Station 5: creative design'],
+        printables: ['Station cards (A3 format)', 'Group tracking sheet'],
+        assessment: 'Review what groups wrote on the posters. Highlight interesting answers in the debrief.',
+        extensionChallenge: `Ask each group to add a new station with their own original problem.`,
+        slides: [
+          { slideNumber: 1, type: 'intro', title: '🖼️ Gallery Walk', content: `Welcome to the ${topic} Gallery!\n\n5 learning stations around the room.\nEach group rotates and discusses the problem at each stop.\nTime per station: 3–4 minutes.\n\nGet ready — the gallery opens now!`, durationSeconds: 0 },
+          { slideNumber: 2, type: 'challenge', title: '📌 Station 1 – Foundations', content: `Foundational problem:\nApply the core definition of ${topic} to solve this problem.\n\nWrite your group's solution on the poster.\nDo you agree with the previous group?`, hint: 'Start by identifying what is being asked', answer: 'See the large poster at this station', durationSeconds: slideDuration, teacher: { expectedAnswer: `Direct application of the core ${topic} definition`, teachingTips: 'Make sure groups write on the poster, not just discuss verbally' } },
+          { slideNumber: 3, type: 'challenge', title: '📌 Station 2 – Application', content: `Applied problem:\nHow does ${topic} apply to this real-world scenario?\n\nDiscuss and record the solution steps.\nHow does this differ from Station 1?`, hint: `Find the link between ${topic} and the real-world context`, answer: 'See the large poster at this station', durationSeconds: slideDuration, teacher: { expectedAnswer: `Connecting ${topic} to a real-world context`, teachingTips: 'Encourage groups to cite their own examples' } },
+          { slideNumber: 4, type: 'challenge', title: '📌 Station 3 – Analysis', content: `Analytical challenge:\nWhat are the similarities and differences between the two key concepts in ${topic}?\n\nDraw a Venn diagram on the poster.\nAdd at least 2 similarities and 2 differences.`, hint: 'Think about definitions and properties', answer: 'See the large poster at this station', durationSeconds: slideDuration, teacher: { expectedAnswer: `Comparing the main concepts within ${topic}`, teachingTips: 'Help groups start the Venn diagram if needed' } },
+          { slideNumber: 5, type: 'challenge', title: '📌 Station 4 – Evaluate', content: `Evaluation challenge:\nIs the following solution correct or incorrect? Explain why.\n\nProposed solution for a ${topic} problem:\n[See the large poster]\n\nEvaluate the solution and correct any errors.`, hint: 'Check each step one by one', answer: 'See the large poster at this station', durationSeconds: slideDuration, teacher: { expectedAnswer: `Critical evaluation of a flawed ${topic} solution`, teachingTips: 'Deliberately include a common student error in the proposed solution' } },
+          { slideNumber: 6, type: 'challenge', title: '📌 Station 5 – Create', content: `Creative challenge:\nDesign your own ${topic} problem!\n\nWrite a new problem and provide its solution.\nOther groups will read and solve your creation!`, hint: 'Choose an interesting real-world scenario', answer: 'Creative problems will vary per group', durationSeconds: slideDuration, teacher: { expectedAnswer: `A creative, contextually relevant ${topic} problem`, teachingTips: 'Ask groups to read each other\'s problems during the debrief' } },
+          { slideNumber: 7, type: 'summary', title: '🎨 Gallery Walk Complete!', content: `Excellent! You visited all ${topic} stations.\n\nLet's review the highlights:\n• Best answer at Station 1?\n• Most creative real-world example at Station 2?\n• Best original problem at Station 5?\n\nDiscuss: What was your most important takeaway?`, durationSeconds: 0 },
+        ],
+      };
+    }
+
+    // ── Exit Ticket ─────────────────────────────────────────────────────────────
+    if (actType === 'exit-ticket') {
+      if (isAr) {
+        return {
+          activityName: `بطاقة الخروج – ${topic}`,
+          activityType: 'exit-ticket',
+          grade: req.grade, subject: req.subject, lesson: topic, duration: dur,
+          difficulty: req.difficulty, groupType: req.groupType,
+          learningObjective: `التحقق من مستوى فهم الطلاب لـ${topic} في نهاية الحصة`,
+          materials: ['ورقة بطاقة الخروج المطبوعة (1 لكل طالب)', 'قلم'],
+          teacherPreparation: 'اطبع بطاقة الخروج (3-4 أسئلة). خصّص 5-7 دقائق في نهاية الحصة.',
+          teacherNotes: ['اجمع البطاقات عند الباب', 'راجعها قبل الحصة القادمة لتعديل خطة التدريس'],
+          answerKey: ['السؤال 1: التعريف الأساسي', 'السؤال 2: التطبيق', 'السؤال 3: التفكير الناقد', 'السؤال 4: التقييم الذاتي'],
+          printables: ['بطاقة الخروج (نسخة لكل طالب)'],
+          assessment: 'افرز البطاقات إلى 3 مجموعات: فهم كامل / فهم جزئي / يحتاج دعمًا.',
+          extensionChallenge: `استخدم نتائج البطاقة لتصميم نشاط علاجي في بداية الحصة القادمة.`,
+          slides: [
+            { slideNumber: 1, type: 'intro', title: '🎫 بطاقة الخروج', content: `الوقت المتبقي: ${dur} دقائق\n\nقبل أن تغادر الفصل اليوم،\nأثبت ما تعلمته عن ${topic}.\n\n3 أسئلة سريعة — عمل فردي\nاجمع ورقتك عند الباب عند انتهاء الوقت.`, durationSeconds: 0 },
+            {
+              slideNumber: 2, type: 'challenge',
+              title: '❓ السؤال 1 – تذكّر',
+              content: `في كلماتك الخاصة:\nعرّف المفهوم الرئيسي لـ${topic}.\n\n(جملة أو جملتان تكفيان)`,
+              hint: 'فكّر في ما شرحه المعلم في بداية الحصة',
+              answer: 'إجابة مرنة – يُقيَّم الفهم وليس الحفظ الحرفي',
+              durationSeconds: Math.round(dur * 20),
+              teacher: { expectedAnswer: `تعريف دقيق بكلمات الطالب لـ${topic}`, teachingTips: 'ابحث عن الفهم المفاهيمي وليس الحفظ', suggestedQuestions: ['هل يعكس التعريف الفكرة الأساسية؟'] },
+            },
+            {
+              slideNumber: 3, type: 'challenge',
+              title: '❓ السؤال 2 – تطبيق',
+              content: `حل هذه المسألة القصيرة:\nطبّق ${topic} على مثال من الكتاب المدرسي.\n\n(خطوتان أو ثلاث خطوات)`,
+              hint: 'استخدم الخطوات التي درسناها اليوم',
+              answer: 'حل كامل مع خطوات واضحة',
+              durationSeconds: Math.round(dur * 25),
+              teacher: { expectedAnswer: `حل نموذجي لمسألة ${topic} بخطوات منهجية`, teachingTips: 'قيّم الطريقة وليس الإجابة النهائية فقط', suggestedQuestions: ['هل كانت الخطوات منطقية ومرتبة؟'] },
+            },
+            {
+              slideNumber: 4, type: 'challenge',
+              title: '❓ السؤال 3 – تفكير',
+              content: `سؤال التفكير الناقد:\nمتى لا ينجح أسلوب ${topic} الذي درسناه اليوم؟\nأو: اذكر موقفًا حياتيًا يستخدم ${topic}.\n\n(جملتان أو أكثر)`,
+              hint: 'فكّر في الحدود والاستثناءات',
+              answer: 'إجابة مرنة – إجابات متعددة مقبولة',
+              durationSeconds: Math.round(dur * 20),
+              teacher: { expectedAnswer: `تفكير نقدي حول حدود وتطبيقات ${topic}`, teachingTips: 'هذا أصعب الأسئلة الثلاثة — توقع إجابات متنوعة' },
+            },
+            { slideNumber: 5, type: 'summary', title: '🎫 الوقت انتهى!', content: `ضع قلمك وسلّم ورقتك.\n\nشكرًا على عملك الجاد اليوم في ${topic}!\n\nسأراجع إجاباتكم قبل الحصة القادمة.\n\nإذا كان لديك سؤال، أنا هنا بعد الحصة.`, durationSeconds: 0 },
+          ],
+        };
+      }
+      return {
+        activityName: `Exit Ticket – ${topic}`,
+        activityType: 'exit-ticket',
+        grade: req.grade, subject: req.subject, lesson: topic, duration: dur,
+        difficulty: req.difficulty, groupType: req.groupType,
+        learningObjective: `Check student understanding of ${topic} at the end of the lesson`,
+        materials: ['Printed exit ticket (1 per student)', 'Pen'],
+        teacherPreparation: 'Print the exit ticket (3-4 questions). Reserve 5-7 minutes at the end of the lesson.',
+        teacherNotes: ['Collect tickets at the door', 'Review before the next lesson to adjust your teaching plan'],
+        answerKey: ['Q1: Core definition', 'Q2: Application', 'Q3: Critical thinking', 'Q4: Self-assessment'],
+        printables: ['Exit ticket (one per student)'],
+        assessment: 'Sort tickets into 3 piles: full understanding / partial understanding / needs support.',
+        extensionChallenge: `Use the ticket results to design a targeted warm-up for the next lesson.`,
+        slides: [
+          { slideNumber: 1, type: 'intro', title: '🎫 Exit Ticket', content: `Time remaining: ${dur} minutes\n\nBefore you leave today,\nshow me what you learned about ${topic}.\n\n3 quick questions — individual work\nPlace your paper face-down on my desk when done.`, durationSeconds: 0 },
+          {
+            slideNumber: 2, type: 'challenge',
+            title: '❓ Question 1 – Recall',
+            content: `In your own words:\nDefine the main concept of ${topic}.\n\n(One or two sentences is enough)`,
+            hint: 'Think about what we covered at the start of the lesson',
+            answer: 'Flexible answer — assess understanding, not word-for-word recall',
+            durationSeconds: Math.round(dur * 20),
+            teacher: { expectedAnswer: `An accurate student-worded definition of ${topic}`, teachingTips: 'Look for conceptual understanding, not memorised text', suggestedQuestions: ['Does the definition capture the core idea?'] },
+          },
+          {
+            slideNumber: 3, type: 'challenge',
+            title: '❓ Question 2 – Apply',
+            content: `Solve this short problem:\nApply ${topic} to an example from the textbook.\n\n(Two or three steps)`,
+            hint: 'Use the steps we practised today',
+            answer: 'Full solution with clear steps',
+            durationSeconds: Math.round(dur * 25),
+            teacher: { expectedAnswer: `A model solution for a ${topic} problem with logical steps`, teachingTips: 'Assess the method, not only the final answer', suggestedQuestions: ['Were the steps logical and well-ordered?'] },
+          },
+          {
+            slideNumber: 4, type: 'challenge',
+            title: '❓ Question 3 – Think',
+            content: `Critical thinking question:\nWhen does the ${topic} method we learned today NOT work?\nOR: Name a real-world situation that uses ${topic}.\n\n(Two or more sentences)`,
+            hint: 'Think about limitations and exceptions',
+            answer: 'Flexible answer — multiple acceptable responses',
+            durationSeconds: Math.round(dur * 20),
+            teacher: { expectedAnswer: `Critical thinking about the scope and applications of ${topic}`, teachingTips: 'This is the hardest of the three — expect diverse answers' },
+          },
+          { slideNumber: 5, type: 'summary', title: '🎫 Pens down!', content: `Please place your paper on the desk.\n\nThank you for your hard work on ${topic} today!\n\nI will review your tickets before our next lesson.\n\nIf you have a question, I am available after class.`, durationSeconds: 0 },
+        ],
+      };
+    }
+
     // ── Escape Challenge (default) ─────────────────────────────────────────────
     if (isAr) {
       return {
