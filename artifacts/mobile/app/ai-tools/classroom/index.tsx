@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { buildBuilderRoute } from './classroomRouting';
 
 const ACCENT = '#4F46E5';
 
@@ -80,7 +81,6 @@ const FILTERS: Array<{ key: FilterKey; labelKey: string }> = [
   { key: 'team',  labelKey: 'marketplaceTeam' },
   { key: 'solo',  labelKey: 'marketplaceIndividual' },
 ];
-
 export default function ClassroomHubScreen() {
   const colors  = useColors();
   const insets  = useSafeAreaInsets();
@@ -102,7 +102,7 @@ export default function ClassroomHubScreen() {
 
   const handleSelect = (card: ActivityCard) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    router.push({ pathname: '/ai-tools/classroom/builder', params: { activityType: card.id } } as any);
+    router.push(buildBuilderRoute(card) as any);
   };
 
   const featured = ACTIVITY_CARDS.find(c => c.isFeatured)!;

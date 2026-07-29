@@ -8,7 +8,7 @@
     "build": "node scripts/build.js",
     "serve": "node server/serve.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node --experimental-strip-types --test services/__tests__/knowledgeBase.test.ts services/__tests__/kbContext.test.ts services/__tests__/kbAmbiguity.test.ts services/__tests__/presentation.test.ts services/__tests__/generators.test.ts"
+    "test": "node --experimental-strip-types --test services/__tests__/knowledgeBase.test.ts services/__tests__/kbContext.test.ts services/__tests__/kbAmbiguity.test.ts services/__tests__/presentation.test.ts services/__tests__/generators.test.ts services/__tests__/classroomRouting.test.ts"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

@@ -13,6 +13,7 @@ import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { ClassroomActivity } from '@/services/ai/AIService';
 import { buildGeneratorContext } from '@/services/kbContext';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
+import { resolveActivityType } from './classroomRouting';
 
 const ACCENT = '#4F46E5';
 
@@ -64,7 +65,7 @@ export default function ClassroomBuilderScreen() {
         grade: GRADES[gradeIdx].name,
         subject: SUBJECTS[subjectIdx].name,
         topic: topic.trim(),
-        activityType: params.activityType ?? 'escape-challenge',
+        activityType: resolveActivityType(params),
         duration: DURATIONS[durationIdx],
         difficulty,
         groupType,
