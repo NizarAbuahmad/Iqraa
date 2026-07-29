@@ -417,6 +417,8 @@ const translations = {
     myFavorites: 'المفضلة',
     noFavorites: 'لا توجد مفضلات بعد',
     noFavoritesDesc: 'انقر على النجمة في أي مادة لإضافتها',
+    addedToFavorites: 'تمت الإضافة إلى المفضلة ⭐',
+    removedFromFavorites: 'تمت الإزالة من المفضلة',
     loadDemoData: 'تحميل محتوى تجريبي',
     demoDataLoaded: 'تم تحميل المحتوى التجريبي!',
     // Presentation celebration
@@ -848,6 +850,8 @@ const translations = {
     myFavorites: 'Favourites',
     noFavorites: 'No favourites yet',
     noFavoritesDesc: 'Tap the star on any material to add it',
+    addedToFavorites: 'Added to Favourites ⭐',
+    removedFromFavorites: 'Removed from Favourites',
     loadDemoData: 'Load sample content',
     demoDataLoaded: 'Sample content loaded!',
     // Presentation celebration

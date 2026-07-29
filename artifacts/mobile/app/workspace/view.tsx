@@ -5,9 +5,10 @@ import {
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { SavedMaterial, getItem } from '@/services/workspace';
+import { SavedMaterial, getItem, toggleFavorite } from '@/services/workspace';
 import { LessonPlanOutput, QuizOutput, WorksheetOutput } from '@/services/ai/AIService';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
@@ -38,16 +39,27 @@ export default function WorkspaceViewScreen() {
   const [toastVisible, setToastVisible] = useState(false);
   const [loadingPDF, setLoadingPDF] = useState(false);
   const [loadingWord, setLoadingWord] = useState(false);
+  const [favorited, setFavorited] = useState(false);
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
 
   useEffect(() => {
     if (id) {
       getItem(id).then(m => {
         setItem(m);
+        setFavorited(m?.isFavorite ?? false);
         setLoading(false);
       });
     }
   }, [id]);
+
+  const handleToggleFavorite = async () => {
+    if (!item) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const next = !favorited;
+    setFavorited(next);
+    await toggleFavorite(item.id);
+    showToast(next ? t('addedToFavorites' as any) : t('removedFromFavorites' as any));
+  };
 
   if (loading) {
     return (
@@ -153,6 +165,19 @@ export default function WorkspaceViewScreen() {
         >
           <Ionicons name="create-outline" size={16} color={accent} />
           <Text style={[{ color: accent, fontFamily: 'Inter_500Medium', fontSize: 13 }]}>{t('editItem')}</Text>
+        </Pressable>
+        <Pressable
+          onPress={handleToggleFavorite}
+          style={[styles.actionBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+        >
+          <Ionicons
+            name={favorited ? 'star' : 'star-outline'}
+            size={16}
+            color={favorited ? '#F59E0B' : colors.mutedForeground}
+          />
+          <Text style={[{ color: favorited ? '#F59E0B' : colors.mutedForeground, fontFamily: 'Inter_500Medium', fontSize: 13 }]}>
+            {lang === 'ar' ? 'مفضلة' : 'Favourite'}
+          </Text>
         </Pressable>
         <Pressable
           onPress={() => setShowExport(true)}

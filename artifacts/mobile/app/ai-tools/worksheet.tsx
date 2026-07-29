@@ -12,7 +12,7 @@ import { WorksheetOutput } from '@/services/ai/AIService';
 import { GRADES, SUBJECTS } from '@/services/curriculumData';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { Button } from '@/components/ui/Button';
-import { getItem, saveItem, updateItem } from '@/services/workspace';
+import { getItem, saveItem, toggleFavorite, updateItem } from '@/services/workspace';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import {
@@ -77,6 +77,7 @@ export default function WorksheetScreen() {
   const [error, setError] = useState('');
   const [savedId, setSavedId] = useState<string | undefined>(params.savedId);
   const [saveLabel, setSaveLabel] = useState<'save' | 'saved' | 'updated'>('save');
+  const [favorited, setFavorited] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
@@ -90,6 +91,7 @@ export default function WorksheetScreen() {
       getItem(params.savedId).then(item => {
         if (item) {
           try { setResult(JSON.parse(item.content) as WorksheetOutput); } catch { /* noop */ }
+          setFavorited(item.isFavorite);
         }
       });
     }
@@ -163,6 +165,19 @@ export default function WorksheetScreen() {
       setSaveLabel('saved');
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const handleToggleFavorite = async () => {
+    if (!savedId) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const next = !favorited;
+    setFavorited(next);
+    try {
+      await toggleFavorite(savedId);
+    } catch {
+      setFavorited(!next); // revert on failure
+    }
+    showToast(next ? (lang === 'ar' ? 'تمت الإضافة إلى المفضلة ⭐' : 'Added to Favourites ⭐') : (lang === 'ar' ? 'تمت الإزالة من المفضلة' : 'Removed from Favourites'));
   };
 
   const typeLabels: Record<QType, string> = {
@@ -354,6 +369,20 @@ export default function WorksheetScreen() {
             <Ionicons name={saveDone ? 'checkmark-circle' : 'bookmark-outline'} size={16} color={saveDone ? '#fff' : ACCENT} />
             <Text style={[styles.saveBtnText, { color: saveDone ? '#fff' : ACCENT, fontFamily: 'Inter_600SemiBold' }]}>{saveBtnLabel}</Text>
           </Pressable>
+          {!!savedId && (
+            <Pressable
+              onPress={handleToggleFavorite}
+              style={({ pressed }) => [
+                styles.regenBtn,
+                { borderColor: favorited ? '#F59E0B' : colors.mutedForeground, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', backgroundColor: favorited ? '#F59E0B18' : 'transparent', opacity: pressed ? 0.8 : 1 },
+              ]}
+            >
+              <Ionicons name={favorited ? 'star' : 'star-outline'} size={16} color={favorited ? '#F59E0B' : colors.mutedForeground} />
+              <Text style={[styles.regenText, { color: favorited ? '#F59E0B' : colors.mutedForeground, fontFamily: 'Inter_600SemiBold' }]}>
+                {favorited ? (lang === 'ar' ? 'في المفضلة' : 'Favourited') : (lang === 'ar' ? 'أضف للمفضلة' : 'Add to Favourites')}
+              </Text>
+            </Pressable>
+          )}
           <Pressable
             onPress={() => setShowExport(true)}
             style={[styles.regenBtn, { borderColor: colors.mutedForeground, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
