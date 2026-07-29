@@ -9,7 +9,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiFetch, getAccessToken } from './apiClient';
 
-export type MaterialType = 'lesson' | 'worksheet' | 'quiz';
+export type MaterialType = 'lesson' | 'worksheet' | 'quiz' | 'flow';
 
 export interface SavedMaterial {
   id: string;

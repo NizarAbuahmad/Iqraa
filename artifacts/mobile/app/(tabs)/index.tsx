@@ -17,11 +17,13 @@ const TYPE_COLOR: Record<string, string> = {
   lesson: '#1B6B62',
   worksheet: '#8B5CF6',
   quiz: '#F59E0B',
+  flow: '#00A99D',
 };
 const TYPE_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
   lesson: 'document-text-outline',
   worksheet: 'list-outline',
   quiz: 'help-circle-outline',
+  flow: 'git-branch-outline',
 };
 
 export default function DashboardScreen() {
@@ -89,6 +91,7 @@ export default function DashboardScreen() {
   const typeLabel = (type: string) => {
     if (type === 'lesson') return lang === 'ar' ? 'خطة درس' : 'Lesson Plan';
     if (type === 'worksheet') return lang === 'ar' ? 'ورقة عمل' : 'Worksheet';
+    if (type === 'flow') return lang === 'ar' ? 'مسار الدرس' : 'Lesson Flow';
     return lang === 'ar' ? 'اختبار' : 'Quiz';
   };
 
@@ -152,6 +155,50 @@ export default function DashboardScreen() {
             </View>
           ))}
         </View>
+      </View>
+
+      {/* ─── Lesson Flow Hero Card ─────────────────────────────── */}
+      <View style={{ paddingHorizontal: 16, paddingTop: 18, paddingBottom: 2 }}>
+        <Pressable
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push('/ai-tools/lesson-flow' as any); }}
+          style={({ pressed }) => [{
+            borderRadius: colors.radius,
+            overflow: 'hidden',
+            opacity: pressed ? 0.9 : 1,
+          }]}
+        >
+          <View style={{
+            backgroundColor: '#081B3A',
+            borderRadius: colors.radius,
+            padding: 18,
+            flexDirection: isRTL ? 'row-reverse' : 'row',
+            alignItems: 'center',
+            gap: 14,
+          }}>
+            <View style={{
+              width: 52, height: 52, borderRadius: 16,
+              backgroundColor: '#00A99D22',
+              alignItems: 'center', justifyContent: 'center',
+              borderWidth: 1.5, borderColor: '#00A99D55',
+            }}>
+              <Ionicons name="git-branch-outline" size={26} color="#00A99D" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                <Text style={{ color: '#fff', fontFamily: 'Inter_700Bold', fontSize: 15, textAlign: isRTL ? 'right' : 'left' }}>
+                  {t('toolLessonFlowTitle')}
+                </Text>
+                <View style={{ backgroundColor: '#00A99D', borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2 }}>
+                  <Text style={{ color: '#fff', fontFamily: 'Inter_700Bold', fontSize: 9 }}>NEW</Text>
+                </View>
+              </View>
+              <Text style={{ color: '#94A3B8', fontFamily: 'Inter_400Regular', fontSize: 11.5, textAlign: isRTL ? 'right' : 'left' }}>
+                {t('toolLessonFlowSub')}
+              </Text>
+            </View>
+            <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color="#475569" />
+          </View>
+        </Pressable>
       </View>
 
       {/* ─── Quick Actions ─────────────────────────────────────── */}

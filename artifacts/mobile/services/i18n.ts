@@ -384,6 +384,24 @@ const translations = {
     exportSlides: 'تصدير شرائح',
     exportSlidesSub: 'إنشاء ملف PDF بتنسيق العرض التقديمي',
 
+    // Lesson Flow Engine
+    toolLessonFlowTitle: 'مسار الدرس الكامل',
+    toolLessonFlowSub: 'أهداف • تمهيد • نشاط • تدريب • ورقة عمل • بطاقة خروج',
+    lessonFlowBuildBtn: 'ابنِ درسي',
+    lessonFlowBuilding: 'جارٍ بناء الدرس…',
+    lessonFlowStepObjectives: 'الأهداف التعليمية',
+    lessonFlowStepWarmup: 'النشاط التمهيدي',
+    lessonFlowStepActivity: 'النشاط التفاعلي',
+    lessonFlowStepGuided: 'التدريب الموجّه',
+    lessonFlowStepWorksheet: 'ورقة العمل',
+    lessonFlowStepExitTicket: 'بطاقة الخروج',
+    lessonFlowLaunchClassroom: 'تشغيل في الفصل',
+    lessonFlowExportAll: 'تصدير الكل PDF',
+    lessonFlowSaveFlow: 'حفظ المسار',
+    lessonFlowDurationLabel: 'مدة الحصة',
+    lessonFlowGuidedTitle: 'التدريب الموجّه',
+    lessonFlowObjectivesTitle: 'الأهداف التعليمية',
+
     // Interactive Classroom Engine
     toolClassroomTitle: 'الفصل التفاعلي',
     toolClassroomDesc: 'أنشئ أنشطة تفاعلية وقدّمها على الشاشة مع تحكم كامل بالعرض والمؤقت.',
@@ -817,6 +835,24 @@ const translations = {
     // Slides export
     exportSlides: 'Export Slides',
     exportSlidesSub: 'Create a PDF presentation',
+
+    // Lesson Flow Engine
+    toolLessonFlowTitle: 'Lesson Flow',
+    toolLessonFlowSub: 'Objectives • Warm-up • Activity • Practice • Worksheet • Exit Ticket',
+    lessonFlowBuildBtn: 'Build My Lesson',
+    lessonFlowBuilding: 'Building your lesson…',
+    lessonFlowStepObjectives: 'Learning Objectives',
+    lessonFlowStepWarmup: 'Warm-up Activity',
+    lessonFlowStepActivity: 'Interactive Activity',
+    lessonFlowStepGuided: 'Guided Practice',
+    lessonFlowStepWorksheet: 'Student Worksheet',
+    lessonFlowStepExitTicket: 'Exit Ticket',
+    lessonFlowLaunchClassroom: 'Launch in Classroom',
+    lessonFlowExportAll: 'Export All as PDF',
+    lessonFlowSaveFlow: 'Save Flow',
+    lessonFlowDurationLabel: 'Lesson duration',
+    lessonFlowGuidedTitle: 'Guided Practice',
+    lessonFlowObjectivesTitle: 'Learning Objectives',
 
     // Interactive Classroom Engine
     toolClassroomTitle: 'Interactive Classroom',

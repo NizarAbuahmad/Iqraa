@@ -162,6 +162,32 @@ export interface ClassroomActivityRequest {
   additionalContext?: string;
 }
 
+// ─── Lesson Flow Engine ──────────────────────────────────────────────────────
+
+/**
+ * A complete, coherent lesson journey generated in one tap.
+ * Each field is the output of an individual generator, aligned to the same
+ * topic, grade, and duration.
+ */
+export interface LessonFlowOutput {
+  topic: string;
+  grade: string;
+  subject: string;
+  duration: number;
+  /** Learning objectives extracted from the lesson plan generator. */
+  objectives: string[];
+  /** 10-min warm-up activity to open the lesson. */
+  warmup: ActivityOutput;
+  /** Main interactive classroom activity. */
+  activity: ActivityOutput;
+  /** Teacher-led guided practice notes (rich text). */
+  guidedPractice: string;
+  /** Student worksheet for independent practice. */
+  worksheet: WorksheetOutput;
+  /** 3-question exit ticket to close the lesson. */
+  exitTicket: QuizOutput;
+}
+
 export abstract class AIService {
   abstract generateLessonPlan(req: AIRequest): Promise<LessonPlanOutput>;
   abstract generateWorksheet(req: AIRequest): Promise<WorksheetOutput>;

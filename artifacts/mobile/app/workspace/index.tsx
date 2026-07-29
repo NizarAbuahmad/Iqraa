@@ -17,11 +17,13 @@ const TYPE_COLOR: Record<MaterialType, string> = {
   lesson: '#1B6B62',
   worksheet: '#8B5CF6',
   quiz: '#F59E0B',
+  flow: '#00A99D',
 };
 const TYPE_ICON: Record<MaterialType, keyof typeof Ionicons.glyphMap> = {
   lesson: 'document-text-outline',
   worksheet: 'list-outline',
   quiz: 'help-circle-outline',
+  flow: 'git-branch-outline',
 };
 
 const TABS: Array<{ key: MaterialType | 'all'; labelKey: string }> = [
@@ -92,7 +94,8 @@ export default function WorkspaceScreen() {
     const editRoute =
       item.type === 'lesson' ? '/ai-tools/lesson-plan'
         : item.type === 'worksheet' ? '/ai-tools/worksheet'
-          : '/ai-tools/quiz';
+          : item.type === 'flow' ? '/ai-tools/lesson-flow'
+            : '/ai-tools/quiz';
 
     Alert.alert(
       item.title,
@@ -139,6 +142,7 @@ export default function WorkspaceScreen() {
   const typeLabel = (type: MaterialType) => {
     if (type === 'lesson') return t('lessonType');
     if (type === 'worksheet') return t('worksheetType');
+    if (type === 'flow') return lang === 'ar' ? 'مسار الدرس' : 'Lesson Flow';
     return t('quizType');
   };
 

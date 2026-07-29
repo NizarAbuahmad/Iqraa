@@ -9,7 +9,7 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { File, Paths } from 'expo-file-system';
 
-import { ActivityOutput, LessonPlanOutput, QuizOutput, WorksheetOutput } from '@/services/ai/AIService';
+import { ActivityOutput, LessonFlowOutput, LessonPlanOutput, QuizOutput, WorksheetOutput } from '@/services/ai/AIService';
 
 // ─── Plain-text formatters ────────────────────────────────────────────────────
 
@@ -956,6 +956,146 @@ body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','
 ${slide1}
 ${qSlides.join('\n')}
 ${akSlide}
+</body>
+</html>`;
+}
+
+// ─── Lesson Flow HTML (all-in-one PDF) ───────────────────────────────────────
+
+export function buildLessonFlowHTML(flow: LessonFlowOutput, isAr: boolean): string {
+  const dir = isAr ? 'rtl' : 'ltr';
+  const font = isAr ? `'Amiri', 'Noto Naskh Arabic', serif` : `'Inter', 'Helvetica Neue', sans-serif`;
+  const TEAL = '#00A99D';
+  const NAVY = '#081B3A';
+
+  const meta = `${flow.grade} · ${flow.subject} · ${flow.duration} ${isAr ? 'دقيقة' : 'min'}`;
+
+  /* ── Helpers ── */
+  const secHeader = (label: string, icon: string, color: string) =>
+    `<div class="sec-header" style="background:${color}15;border-left:4px solid ${color};${isAr ? 'border-left:none;border-right:4px solid ' + color : ''}">
+       <span class="sec-icon">${icon}</span>
+       <span class="sec-label" style="color:${color}">${label}</span>
+     </div>`;
+
+  const bulletList = (items: string[]) =>
+    `<ul class="bullets">${items.map(i => `<li>${i}</li>`).join('')}</ul>`;
+
+  const stepCard = (step: { title: string; description: string }, idx: number) =>
+    `<div class="step-card">
+       <div class="step-num" style="background:${TEAL}">${idx + 1}</div>
+       <div class="step-body">
+         <div class="step-title">${step.title}</div>
+         <div class="step-desc">${step.description}</div>
+       </div>
+     </div>`;
+
+  const questionBlock = (q: { text: string; options?: string[]; correctAnswer?: string; points: number }, idx: number) =>
+    `<div class="q-block">
+       <div class="q-top"><span class="q-num">${idx + 1}</span><span class="q-pts">${q.points} ${isAr ? 'نقطة' : 'pts'}</span></div>
+       <div class="q-text">${q.text}</div>
+       ${q.options ? `<div class="q-opts">${q.options.map(o => `<span class="q-opt">○ ${o}</span>`).join('')}</div>` : ''}
+     </div>`;
+
+  /* ── Activity section body ── */
+  const activityBody = (act: ActivityOutput) =>
+    `${act.steps.map((s, i) => stepCard(s, i)).join('')}`;
+
+  /* ── Worksheet questions ── */
+  const wsBody = flow.worksheet.sections.flatMap(s =>
+    s.questions.map((q, i) => questionBlock(q, i))
+  ).join('');
+
+  /* ── Exit ticket questions ── */
+  const etBody = flow.exitTicket.questions.map((q, i) => questionBlock(q, i)).join('');
+
+  return `<!DOCTYPE html>
+<html lang="${isAr ? 'ar' : 'en'}" dir="${dir}">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Amiri:wght@400;700&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: ${font}; font-size: 13px; color: #1f2937; background: #fff; direction: ${dir}; }
+  .page { padding: 28px 32px; max-width: 800px; margin: 0 auto; }
+  /* Cover */
+  .cover { text-align: center; padding: 40px 0 32px; border-bottom: 2px solid ${NAVY}; margin-bottom: 28px; }
+  .cover-icon { font-size: 40px; }
+  .cover-title { font-size: 22px; font-weight: 700; color: ${NAVY}; margin-top: 10px; }
+  .cover-topic { font-size: 16px; color: ${TEAL}; font-weight: 600; margin-top: 6px; }
+  .cover-meta { font-size: 12px; color: #6b7280; margin-top: 8px; }
+  /* Section headers */
+  .sec-header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 6px; margin: 22px 0 12px; }
+  .sec-icon { font-size: 16px; }
+  .sec-label { font-size: 14px; font-weight: 700; }
+  /* Objectives */
+  .bullets { padding-${isAr ? 'right' : 'left'}: 18px; display: flex; flex-direction: column; gap: 5px; }
+  .bullets li { font-size: 12.5px; color: #374151; line-height: 1.5; }
+  /* Step cards */
+  .step-card { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; background: #f9fafb; border-radius: 8px; margin-bottom: 8px; }
+  .step-num { min-width: 24px; height: 24px; border-radius: 50%; color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .step-body { flex: 1; }
+  .step-title { font-size: 12.5px; font-weight: 600; color: #111827; margin-bottom: 3px; }
+  .step-desc { font-size: 11.5px; color: #6b7280; line-height: 1.5; }
+  /* Guided practice */
+  .guided-text { font-size: 12.5px; color: #374151; line-height: 1.7; background: #f0fdf9; border-radius: 8px; padding: 14px; border: 1px solid ${TEAL}30; }
+  /* Questions */
+  .q-block { padding: 10px 12px; background: #f9fafb; border-radius: 8px; margin-bottom: 8px; }
+  .q-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .q-num { background: ${NAVY}; color: #fff; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+  .q-pts { font-size: 10px; color: #9ca3af; margin-${isAr ? 'right' : 'left'}: auto; }
+  .q-text { font-size: 12px; color: #111827; line-height: 1.5; }
+  .q-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 6px; padding-${isAr ? 'right' : 'left'}: 12px; font-size: 10.5px; color: #6b7280; }
+  .q-opt { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* Page break between sections */
+  .page-break { page-break-before: always; padding-top: 24px; }
+  /* Footer */
+  .footer { text-align: center; padding: 20px 0 8px; border-top: 1px solid #e5e7eb; margin-top: 24px; font-size: 10px; color: #9ca3af; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Cover -->
+  <div class="cover">
+    <div class="cover-icon">🎯</div>
+    <div class="cover-title">${isAr ? 'مسار الدرس الكامل' : 'Complete Lesson Flow'}</div>
+    <div class="cover-topic">${flow.topic}</div>
+    <div class="cover-meta">${meta}</div>
+  </div>
+
+  <!-- 1. Objectives -->
+  ${secHeader(isAr ? 'الأهداف التعليمية' : 'Learning Objectives', '🎯', NAVY)}
+  ${bulletList(flow.objectives)}
+
+  <!-- 2. Warm-up -->
+  ${secHeader(isAr ? 'النشاط التمهيدي' : 'Warm-up Activity', '🔥', '#E67E22')}
+  <div style="font-weight:600;font-size:12.5px;color:#1f2937;margin-bottom:6px">${flow.warmup.title}</div>
+  ${activityBody(flow.warmup)}
+
+  <!-- 3. Interactive Activity -->
+  <div class="page-break">
+  ${secHeader(isAr ? 'النشاط التفاعلي' : 'Interactive Activity', '⚡', '#4F46E5')}
+  <div style="font-weight:600;font-size:12.5px;color:#1f2937;margin-bottom:6px">${flow.activity.title}</div>
+  ${activityBody(flow.activity)}
+  </div>
+
+  <!-- 4. Guided Practice -->
+  ${secHeader(isAr ? 'التدريب الموجّه' : 'Guided Practice', '✏️', TEAL)}
+  <div class="guided-text">${flow.guidedPractice}</div>
+
+  <!-- 5. Worksheet -->
+  <div class="page-break">
+  ${secHeader(isAr ? 'ورقة العمل' : 'Student Worksheet', '📄', '#8B5CF6')}
+  ${wsBody}
+  </div>
+
+  <!-- 6. Exit Ticket -->
+  ${secHeader(isAr ? 'بطاقة الخروج' : 'Exit Ticket', '🎫', '#F59E0B')}
+  ${etBody}
+
+  <div class="footer">IQRA Teaching Assistant · ${flow.topic} · ${new Date().toLocaleDateString()}</div>
+</div>
 </body>
 </html>`;
 }

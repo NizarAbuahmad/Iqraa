@@ -9,11 +9,11 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { SavedMaterial, getItem, toggleFavorite } from '@/services/workspace';
-import { LessonPlanOutput, QuizOutput, WorksheetOutput } from '@/services/ai/AIService';
+import { LessonFlowOutput, LessonPlanOutput, QuizOutput, WorksheetOutput } from '@/services/ai/AIService';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import {
-  buildLessonPlanHTML, buildQuizHTML, buildWorksheetHTML,
+  buildLessonFlowHTML, buildLessonPlanHTML, buildQuizHTML, buildWorksheetHTML,
   copyToClipboard, exportAsPDF, exportAsWord,
   formatLessonPlanText, formatQuizText, formatWorksheetText,
   shareAsText,
@@ -23,6 +23,7 @@ const TYPE_COLOR: Record<string, string> = {
   lesson: '#1B6B62',
   worksheet: '#8B5CF6',
   quiz: '#F59E0B',
+  flow: '#00A99D',
 };
 
 export default function WorkspaceViewScreen() {
@@ -90,13 +91,15 @@ export default function WorkspaceViewScreen() {
   const editRoute =
     item.type === 'lesson' ? '/ai-tools/lesson-plan'
       : item.type === 'worksheet' ? '/ai-tools/worksheet'
-        : '/ai-tools/quiz';
+        : item.type === 'flow' ? '/ai-tools/lesson-flow'
+          : '/ai-tools/quiz';
 
   const isAr = lang === 'ar';
   const getPlainText = () => {
     if (!content) return item.title;
     if (item.type === 'lesson') return formatLessonPlanText(content as LessonPlanOutput, item.title, { subject: item.subject, grade: item.grade }, isAr);
     if (item.type === 'worksheet') return formatWorksheetText(content as WorksheetOutput, item.title, { subject: item.subject, grade: item.grade }, isAr);
+    if (item.type === 'flow') return item.title; // flow exports as PDF only
     return formatQuizText(content as QuizOutput, item.title, { subject: item.subject, grade: item.grade }, isAr);
   };
   const getHTML = () => {
@@ -104,6 +107,7 @@ export default function WorkspaceViewScreen() {
     const meta = { subject: item.subject, grade: item.grade };
     if (item.type === 'lesson') return buildLessonPlanHTML(content as LessonPlanOutput, item.title, meta, isAr);
     if (item.type === 'worksheet') return buildWorksheetHTML(content as WorksheetOutput, item.title, meta, isAr);
+    if (item.type === 'flow') return buildLessonFlowHTML(content as unknown as LessonFlowOutput, isAr);
     return buildQuizHTML(content as QuizOutput, item.title, meta, isAr);
   };
 
@@ -198,6 +202,8 @@ export default function WorkspaceViewScreen() {
           <LessonView plan={content as LessonPlanOutput} colors={colors} isRTL={isRTL} t={t} accent={accent} />
         ) : item.type === 'worksheet' ? (
           <WorksheetView ws={content as WorksheetOutput} colors={colors} isRTL={isRTL} t={t} accent={accent} />
+        ) : item.type === 'flow' ? (
+          <FlowView flow={content as unknown as LessonFlowOutput} colors={colors} isRTL={isRTL} lang={lang} accent={accent} />
         ) : (
           <QuizView quiz={content as QuizOutput} colors={colors} isRTL={isRTL} t={t} accent={accent} lang={lang} />
         )}
@@ -353,6 +359,134 @@ function QuizView({ quiz, colors, isRTL, t, accent, lang }: {
             <Text style={[{ color: '#10B981', fontFamily: 'Inter_500Medium', fontSize: 12, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{t('answer')}: {q.correctAnswer}</Text>
           </View>
         </View>
+      ))}
+    </>
+  );
+}
+
+// ─── Lesson Flow renderer ─────────────────────────────────────────────────────
+
+const FLOW_TEAL = '#00A99D';
+const FLOW_NAVY = '#081B3A';
+
+function FlowView({ flow, colors, isRTL, lang, accent }: {
+  flow: LessonFlowOutput; colors: any; isRTL: boolean; lang: string; accent: string;
+}) {
+  const sections: Array<{
+    label: string; icon: keyof typeof Ionicons.glyphMap; color: string;
+    render: () => React.ReactNode;
+  }> = [
+    {
+      label: lang === 'ar' ? 'الأهداف التعليمية' : 'Learning Objectives',
+      icon: 'flag-outline', color: FLOW_NAVY,
+      render: () => (
+        <View style={{ gap: 6 }}>
+          {flow.objectives.map((obj, i) => (
+            <View key={i} style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-start' }]}>
+              <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: FLOW_NAVY, marginTop: 7, flexShrink: 0 }} />
+              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Inter_400Regular', fontSize: 13, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }}>{obj}</Text>
+            </View>
+          ))}
+        </View>
+      ),
+    },
+    {
+      label: lang === 'ar' ? 'النشاط التمهيدي' : 'Warm-up Activity',
+      icon: 'flame-outline', color: '#E67E22',
+      render: () => (
+        <View style={{ gap: 6 }}>
+          <Text style={{ color: colors.primary, fontFamily: 'Inter_600SemiBold', fontSize: 13, marginBottom: 4, textAlign: isRTL ? 'right' : 'left' }}>{flow.warmup.title}</Text>
+          {flow.warmup.steps.map((s, i) => (
+            <View key={i} style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-start', backgroundColor: colors.muted, borderRadius: 8, padding: 10 }]}>
+              <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: '#E67E22', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Text style={{ color: '#fff', fontFamily: 'Inter_700Bold', fontSize: 10 }}>{i + 1}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: colors.foreground, fontFamily: 'Inter_600SemiBold', fontSize: 12.5, textAlign: isRTL ? 'right' : 'left' }}>{s.title}</Text>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Inter_400Regular', fontSize: 12, marginTop: 2, lineHeight: 17, textAlign: isRTL ? 'right' : 'left' }}>{s.description}</Text>
+              </View>
+            </View>
+          ))}
+        </View>
+      ),
+    },
+    {
+      label: lang === 'ar' ? 'النشاط التفاعلي' : 'Interactive Activity',
+      icon: 'flash-outline', color: '#4F46E5',
+      render: () => (
+        <View style={{ gap: 6 }}>
+          <Text style={{ color: colors.primary, fontFamily: 'Inter_600SemiBold', fontSize: 13, marginBottom: 4, textAlign: isRTL ? 'right' : 'left' }}>{flow.activity.title}</Text>
+          {flow.activity.steps.map((s, i) => (
+            <View key={i} style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-start', backgroundColor: colors.muted, borderRadius: 8, padding: 10 }]}>
+              <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: '#4F46E5', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Text style={{ color: '#fff', fontFamily: 'Inter_700Bold', fontSize: 10 }}>{i + 1}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: colors.foreground, fontFamily: 'Inter_600SemiBold', fontSize: 12.5, textAlign: isRTL ? 'right' : 'left' }}>{s.title}</Text>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Inter_400Regular', fontSize: 12, marginTop: 2, lineHeight: 17, textAlign: isRTL ? 'right' : 'left' }}>{s.description}</Text>
+              </View>
+            </View>
+          ))}
+        </View>
+      ),
+    },
+    {
+      label: lang === 'ar' ? 'التدريب الموجّه' : 'Guided Practice',
+      icon: 'pencil-outline', color: FLOW_TEAL,
+      render: () => (
+        <View style={{ backgroundColor: FLOW_TEAL + '10', borderRadius: 8, padding: 12, borderWidth: 1, borderColor: FLOW_TEAL + '30' }}>
+          <Text style={{ color: colors.foreground, fontFamily: 'Inter_400Regular', fontSize: 13, lineHeight: 21, textAlign: isRTL ? 'right' : 'left' }}>{flow.guidedPractice}</Text>
+        </View>
+      ),
+    },
+    {
+      label: lang === 'ar' ? 'ورقة العمل' : 'Student Worksheet',
+      icon: 'document-text-outline', color: '#8B5CF6',
+      render: () => (
+        <View style={{ gap: 6 }}>
+          {flow.worksheet.sections.flatMap(sec => sec.questions).slice(0, 5).map((q, i) => (
+            <View key={i} style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-start', backgroundColor: colors.muted, borderRadius: 8, padding: 10 }]}>
+              <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: '#8B5CF6', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Text style={{ color: '#fff', fontFamily: 'Inter_700Bold', fontSize: 10 }}>{i + 1}</Text>
+              </View>
+              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Inter_400Regular', fontSize: 12.5, lineHeight: 18, textAlign: isRTL ? 'right' : 'left' }}>{q.text}</Text>
+            </View>
+          ))}
+        </View>
+      ),
+    },
+    {
+      label: lang === 'ar' ? 'بطاقة الخروج' : 'Exit Ticket',
+      icon: 'ticket-outline', color: '#F59E0B',
+      render: () => (
+        <View style={{ gap: 6 }}>
+          {flow.exitTicket.questions.slice(0, 3).map((q, i) => (
+            <View key={i} style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-start', backgroundColor: colors.muted, borderRadius: 8, padding: 10 }]}>
+              <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: '#F59E0B', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Text style={{ color: '#fff', fontFamily: 'Inter_700Bold', fontSize: 10 }}>{i + 1}</Text>
+              </View>
+              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Inter_400Regular', fontSize: 12.5, lineHeight: 18, textAlign: isRTL ? 'right' : 'left' }}>{q.text}</Text>
+            </View>
+          ))}
+        </View>
+      ),
+    },
+  ];
+
+  return (
+    <>
+      {/* Meta badge */}
+      <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, marginBottom: 16, flexWrap: 'wrap' }]}>
+        {[flow.grade, flow.subject, `${flow.duration} ${lang === 'ar' ? 'دقيقة' : 'min'}`].map(tag => (
+          <View key={tag} style={{ backgroundColor: FLOW_TEAL + '15', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 }}>
+            <Text style={{ color: FLOW_TEAL, fontFamily: 'Inter_500Medium', fontSize: 12 }}>{tag}</Text>
+          </View>
+        ))}
+      </View>
+      {sections.map(sec => (
+        <ContentSection key={sec.label} title={sec.label} icon={sec.icon} isRTL={isRTL} accent={sec.color} colors={colors}>
+          {sec.render()}
+        </ContentSection>
       ))}
     </>
   );
