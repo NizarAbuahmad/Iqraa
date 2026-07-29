@@ -9,13 +9,13 @@ export type Lang = 'ar' | 'en';
 const translations = {
   ar: {
     // App
-    appName: 'إقرأ',
-    appTagline: 'مساعد التدريس الذكي',
+    appName: 'اقرأ',
+    appTagline: 'ذكاء يساعدك لتعليم أفضل',
 
     // Tabs
     tabHome: 'الرئيسية',
     tabCurriculum: 'المنهج',
-    tabIqra: 'إقرأ',
+    tabIqra: 'اقرأ',
     tabAlerts: 'التنبيهات',
     tabProfile: 'الملف الشخصي',
 
@@ -165,9 +165,9 @@ const translations = {
     typeShortAnswer: 'إجابة قصيرة',
 
     // iQra Chat
-    iqraChatTitle: 'إقرأ',
+    iqraChatTitle: 'اقرأ',
     iqraChatSubtitle: 'مساعدك الذكي',
-    iqraWelcome: 'مرحبًا! أنا إقرأ، مساعدك الذكي 📚\nيمكنني مساعدتك في الكيمياء والرياضيات للصف العاشر.\nاسألني أي سؤال من الكتاب المدرسي!',
+    iqraWelcome: 'مرحبًا! أنا اقرأ، مساعد التدريس الذكي 📚\nأساعدك في الكيمياء والرياضيات للصف العاشر وفق المنهج الأردني.\nاسألني أي سؤال من الكتاب المدرسي!',
     iqraPlaceholder: 'اكتب سؤالك هنا...',
     iqraSend: 'إرسال',
     iqraSuggested: 'أسئلة مقترحة',
@@ -180,7 +180,7 @@ const translations = {
     setTeachingContext: 'اختر الدرس الحالي',
     currentlyTeaching: 'يُدرَّس حاليًا',
     clearContext: 'مسح',
-    askIqra: 'اسأل إقرأ',
+    askIqra: 'اسأل اقرأ',
     quickActionWorksheet: '📝 ورقة عمل',
     quickActionQuiz: '❓ اختبار',
     quickActionLessonPlan: '📄 خطة درس',
@@ -191,7 +191,7 @@ const translations = {
     iqraKeyTerms: 'المصطلحات الأساسية',
     iqraRules: 'القواعد والصيغ',
     iqraExamples: 'أمثلة',
-    iqraTyping: 'إقرأ تفكر...',
+    iqraTyping: 'اقرأ تفكر...',
     teacherMode: 'وضع المعلم',
     studentMode: 'وضع الطالب',
 
@@ -465,12 +465,12 @@ const translations = {
   },
 
   en: {
-    appName: 'Iqra',
+    appName: 'IQRA',
     appTagline: 'AI Teaching Assistant',
 
     tabHome: 'Home',
     tabCurriculum: 'Curriculum',
-    tabIqra: 'iQra',
+    tabIqra: 'IQRA',
     tabAlerts: 'Alerts',
     tabProfile: 'Profile',
 
@@ -482,7 +482,7 @@ const translations = {
     passwordPlaceholder: 'Your password',
     forgotPassword: 'Forgot password?',
     signIn: 'Sign In',
-    newToIqra: 'New to Iqra?',
+    newToIqra: 'New to IQRA?',
     createAccount: 'Create account',
 
     createYourAccount: 'Create your account',
@@ -605,10 +605,10 @@ const translations = {
     typeTrueFalse: 'True / False',
     typeShortAnswer: 'Short Answer',
 
-    iqraChatTitle: 'iQra',
+    iqraChatTitle: 'IQRA',
     iqraChatSubtitle: 'Your smart assistant',
-    iqraWelcome: "Hello! I'm iQra, your AI study assistant 📚\nI can help with Grade 10 Chemistry and Mathematics.\nAsk me anything from your textbook!",
-    iqraPlaceholder: 'Ask iQra anything...',
+    iqraWelcome: "Hello! I'm IQRA, your AI Teaching Assistant 📚\nI can help with Grade 10 Chemistry and Mathematics aligned with the Jordanian curriculum.\nAsk me anything from your textbook!",
+    iqraPlaceholder: 'Ask IQRA anything...',
     iqraSend: 'Send',
     iqraSuggested: 'Suggested questions',
     iqraNoResults: "I couldn't find information about this topic in the available books. Try rephrasing your question or ask about a different curriculum topic.",
@@ -620,7 +620,7 @@ const translations = {
     setTeachingContext: 'Set current lesson',
     currentlyTeaching: 'Currently teaching',
     clearContext: 'Clear',
-    askIqra: 'Ask iQra',
+    askIqra: 'Ask IQRA',
     quickActionWorksheet: '📝 Worksheet',
     quickActionQuiz: '❓ Quiz',
     quickActionLessonPlan: '📄 Lesson Plan',
@@ -631,7 +631,7 @@ const translations = {
     iqraKeyTerms: 'Key Terms',
     iqraRules: 'Rules & Formulas',
     iqraExamples: 'Examples',
-    iqraTyping: 'iQra is thinking...',
+    iqraTyping: 'IQRA is thinking...',
     teacherMode: 'Teacher Mode',
     studentMode: 'Student Mode',
 

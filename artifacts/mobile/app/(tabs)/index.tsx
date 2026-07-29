@@ -354,7 +354,7 @@ export default function DashboardScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.kbTitle, { color: '#fff', fontFamily: 'Inter_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
-                {isRTL ? 'اسأل إقرأ الآن' : 'Ask iQra Now'}
+                {isRTL ? 'اسأل اقرأ الآن' : 'Ask IQRA Now'}
               </Text>
               <Text style={[styles.kbSub, { color: 'rgba(255,255,255,0.85)', fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
                 {isRTL

@@ -293,7 +293,7 @@ function ContextBanner({
                 fontFamily: 'Inter_700Bold',
               }]}>
                 {draftTopic.trim()
-                  ? (lang === 'ar' ? `اسأل iQra عن: ${draftTopic}` : `Ask iQra about: ${draftTopic}`)
+                  ? (lang === 'ar' ? `اسأل اقرأ عن: ${draftTopic}` : `Ask IQRA about: ${draftTopic}`)
                   : (lang === 'ar' ? 'اختر درسًا أولاً' : 'Select a lesson first')}
               </Text>
             </Pressable>

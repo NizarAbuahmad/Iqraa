@@ -76,7 +76,7 @@ export default function RegisterScreen() {
           Create your account
         </Text>
         <Text style={[styles.sub, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
-          Join thousands of teachers using Iqra
+          Join thousands of teachers using IQRA
         </Text>
 
         <View style={[styles.card, { backgroundColor: colors.card, borderRadius: colors.radius * 1.5, borderColor: colors.border }]}>
