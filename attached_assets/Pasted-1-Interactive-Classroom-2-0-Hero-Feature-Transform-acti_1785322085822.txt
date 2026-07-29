@@ -1,0 +1,140 @@
+1. Interactive Classroom 2.0 (Hero Feature)
+
+Transform activities into a live teaching experience.
+
+Activity Marketplace
+Activity categories
+Featured activities
+Recommended activities
+Search & filters
+Launch Activities
+
+Build polished versions of:
+
+Math Escape Challenge
+Error Detective
+Relay Race
+Gallery Walk
+Exit Ticket Challenge
+Presentation Experience
+Animated transitions
+Full-screen presentation
+Teacher controls
+Student view
+Progress tracker
+Enhanced timer
+Celebration animations
+2. Lesson Flow Engine
+
+Instead of generating individual resources, generate an entire lesson.
+
+Lesson Objectives
+        ↓
+Warm-up
+        ↓
+Interactive Activity
+        ↓
+Guided Practice
+        ↓
+Independent Practice
+        ↓
+Assessment
+        ↓
+Exit Ticket
+
+Teachers receive a complete classroom experience with one click.
+
+3. Teacher Workspace
+
+Turn Iqra into a daily workspace.
+
+Dashboard Improvements
+Continue Working
+Recent Lessons
+Quick Actions
+Favorite Resources
+Recommended Next Steps
+Resource Library
+Lesson Plans
+Worksheets
+Quizzes
+Activities
+Search
+Rename
+Duplicate
+Favorites
+Recent Files
+4. Curriculum Expansion
+
+Expand curriculum support:
+
+Mathematics
+Additional Grade 10 units
+Chemistry
+Complete curriculum
+Future Structure
+Grade 9
+Grade 11
+Grade 12
+5. AI Teaching Experience
+
+Improve the generated outputs.
+
+Better Lesson Plans
+Learning objectives
+Teaching strategies
+Differentiation
+Assessment
+Homework
+Better Worksheets
+Multiple difficulty levels
+Answer keys
+Printable layouts
+Better Quizzes
+Mixed question types
+Bloom's taxonomy
+Difficulty selection
+Better Activities
+Structured templates
+Teaching framework alignment
+Teacher guidance
+6. Vision Screens (Prototype)
+
+Design-only screens demonstrating future expansion.
+
+Student App
+AI Tutor
+Homework
+Revision
+Practice
+Parent App
+Student progress
+AI recommendations
+Weekly reports
+School Dashboard
+Teacher activity
+Curriculum coverage
+School analytics
+Learning Analytics
+Student performance
+Learning gaps
+Recommended interventions
+7. Investor Demo Polish
+
+Improve the overall experience.
+
+UI Polish
+Animations
+Empty states
+Icons
+Better typography
+Visual consistency
+Demo Data
+Sample teachers
+Sample lessons
+Sample activities
+Sample generated content
+Performance
+Faster navigation
+Smooth transitions
+Reliable demo flow
