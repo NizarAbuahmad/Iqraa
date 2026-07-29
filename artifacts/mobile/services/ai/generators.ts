@@ -1,11 +1,13 @@
-import {
-  ActivityOutput, ActivityStep, AIRequest, AIService,
+import { AIService } from './AIService.ts';
+import type {
+  ActivityOutput, ActivityStep, AIRequest,
   ClassroomActivity, ClassroomActivityRequest,
   LessonPlanOutput,
   QuizOutput, QuizQuestion, WorksheetAnswerKeyItem,
   WorksheetOutput, WorksheetSection,
-} from './AIService';
-import { KBLesson, getUnitForLesson, searchKB } from '../knowledgeBase';
+} from './AIService.ts';
+import type { KBLesson } from '../knowledgeBase.ts';
+import { getUnitForLesson, searchKB } from '../knowledgeBase.ts';
 
 type Lang = 'ar' | 'en';
 type QType = 'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false';
