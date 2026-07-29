@@ -3,7 +3,7 @@
  * Handles: plain-text share, clipboard copy, PDF (expo-print), Word (.docx).
  */
 
-import { Share } from 'react-native';
+import { Platform, Share } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
@@ -963,9 +963,25 @@ ${akSlide}
 // ─── PDF export ───────────────────────────────────────────────────────────────
 
 export async function exportAsPDF(html: string, filename: string): Promise<void> {
-  // printToFileAsync already creates a temp file — share the URI directly.
-  // (Renaming via the legacy moveAsync / cacheDirectory is unnecessary and
-  //  throws on expo-file-system v19 when imported from the main package.)
+  if (Platform.OS === 'web') {
+    // expo-print's web implementation ignores the html arg and calls window.print()
+    // on the current page → blank result.  Instead, inject an iframe with our HTML
+    // so the browser print dialog shows the actual lesson content.
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'position:fixed;width:0;height:0;opacity:0;border:none;';
+    document.body.appendChild(iframe);
+    const doc = iframe.contentDocument!;
+    doc.open();
+    doc.write(html);
+    doc.close();
+    // Give the browser a tick to render before opening the print dialog.
+    await new Promise<void>(resolve => setTimeout(resolve, 300));
+    iframe.contentWindow!.print();
+    // Remove the iframe after the dialog has had time to open.
+    setTimeout(() => document.body.removeChild(iframe), 3000);
+    return;
+  }
+  // Native: printToFileAsync creates a proper temp PDF file.
   const { uri } = await Print.printToFileAsync({ html, base64: false });
   await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: filename });
 }
@@ -1033,14 +1049,28 @@ export async function exportAsWord(
     }],
   });
 
+  const MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+  if (Platform.OS === 'web') {
+    // On web, expo-file-system File API and expo-sharing are unavailable.
+    // Generate a Blob and trigger a browser download instead.
+    const blob = await Packer.toBlob(doc);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${filename}.docx`;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+    return;
+  }
+
+  // Native: write base64 to cache then share.
   const b64 = await Packer.toBase64String(doc);
   // Use the new expo-file-system v19 File API — avoids the deprecated legacy
   // writeAsStringAsync / cacheDirectory which throw when imported from the
   // main package (not /legacy) in expo-file-system v19.
   const file = new File(Paths.cache, `${filename}.docx`);
   file.write(b64, { encoding: 'base64' });
-  await Sharing.shareAsync(file.uri, {
-    mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    dialogTitle: filename,
-  });
+  await Sharing.shareAsync(file.uri, { mimeType: MIME, dialogTitle: filename });
 }
