@@ -37,6 +37,8 @@ import {
   buildLessonBlock,
   buildResponse,
   deduplicateByUnit,
+  detectSubjectAmbiguity,
+  filterResultsBySubject,
 } from '@/services/kbContext';
 import { Toast } from '@/components/ui/Toast';
 import { remoteAIService } from '@/services/ai/RemoteAIService';
@@ -60,6 +62,10 @@ interface Message {
   subjectColor?: string;
   /** When set, renders tappable topic-suggestion chips below the message text. */
   suggestions?: { text: string; lessonId: string }[];
+  /** When set, renders subject-clarification chips (ambiguous query). */
+  clarificationSubjects?: string[];
+  /** Original query text awaiting subject clarification. */
+  clarificationQuery?: string;
   timestamp: Date;
 }
 
@@ -302,13 +308,20 @@ function ContextBanner({
 // are imported from '@/services/kbContext' above.
 
 // ─── Message Bubble ───────────────────────────────────────────────────────────
+// Subject label map for clarification chips
+const SUBJECT_LABELS: Record<string, { ar: string; en: string; icon: string }> = {
+  mathematics: { ar: 'الرياضيات', en: 'Mathematics', icon: '📐' },
+  chemistry:   { ar: 'الكيمياء',  en: 'Chemistry',   icon: '🧪' },
+};
+
 function MessageBubble({
-  message, colors, isRTL, mode, onLongPress, onChipPress, onSuggestionPress,
+  message, colors, isRTL, mode, onLongPress, onChipPress, onSuggestionPress, onClarifySubject,
 }: {
   message: Message; colors: any; isRTL: boolean; mode: Mode;
   onLongPress?: (text: string) => void;
   onChipPress?: (type: 'worksheet' | 'quiz' | 'lesson-plan' | 'activity' | 'lesson', topic: string, extra?: string) => void;
   onSuggestionPress?: (text: string, lessonId: string) => void;
+  onClarifySubject?: (originalQuery: string, subjectId: string) => void;
 }) {
   const isUser = message.role === 'user';
 
@@ -466,6 +479,36 @@ function MessageBubble({
             ))}
           </View>
         )}
+        {/* ── Subject clarification chips ── */}
+        {message.clarificationSubjects && message.clarificationSubjects.length > 0 && (
+          <View style={[styles.suggestionChipsRow, isRTL && { flexDirection: 'row-reverse' }]}>
+            {message.clarificationSubjects.map((subjectId) => {
+              const labels = SUBJECT_LABELS[subjectId];
+              if (!labels) return null;
+              const label = `${labels.icon} ${isRTL ? labels.ar : labels.en}`;
+              return (
+                <Pressable
+                  key={subjectId}
+                  onPress={() => onClarifySubject?.(message.clarificationQuery!, subjectId)}
+                  style={({ pressed }) => [
+                    styles.suggestionChip,
+                    {
+                      backgroundColor: colors.primary + '18',
+                      borderColor: colors.primary + '70',
+                      opacity: pressed ? 0.7 : 1,
+                      paddingHorizontal: 14,
+                      paddingVertical: 8,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.suggestionChipText, { color: colors.primary, fontFamily: 'Inter_600SemiBold', fontSize: 13 }]}>
+                    {label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
       </View>
     </View>
   );
@@ -527,7 +570,7 @@ export default function IqraScreen() {
   }, [params.initialMessage, params.lessonId, params.subjectColor]);
 
   const sendMessage = useCallback(
-    async (text: string, pinnedLessonId?: string) => {
+    async (text: string, pinnedLessonId?: string, scopeSubjectId?: string) => {
       const q = text.trim();
       if (!q || isThinking) return;
       setInput('');
@@ -560,6 +603,31 @@ export default function IqraScreen() {
           : deduplicateByUnit(searchKBSemantic(q, lang as 'ar' | 'en'), 3);
       } else {
         results = deduplicateByUnit(searchKBSemantic(q, lang as 'ar' | 'en'), 3);
+      }
+
+      // Scope to a specific subject when the teacher answered a clarification chip
+      if (scopeSubjectId) {
+        results = filterResultsBySubject(results, scopeSubjectId);
+      }
+
+      // 1b. Ambiguity check — if top results span multiple subjects and no explicit
+      //     scope is set, ask the teacher to clarify before calling the AI.
+      if (!pinnedLessonId && !scopeSubjectId && !teachingCtx && results.length > 0) {
+        const ambiguousSubjects = detectSubjectAmbiguity(results);
+        if (ambiguousSubjects) {
+          const clarifyMsg: Message = {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant',
+            text: t('iqraClarifySubject'),
+            clarificationSubjects: ambiguousSubjects,
+            clarificationQuery: q,
+            timestamp: new Date(),
+          };
+          setMessages(prev => [...prev, clarifyMsg]);
+          setIsThinking(false);
+          setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
+          return;
+        }
       }
 
       const hasKBMatch = results.length > 0;
@@ -646,6 +714,15 @@ export default function IqraScreen() {
       sendMessage(msg);
     }
   }, [messages, autoMessagePending, sendMessage]);
+
+  // Handle subject-clarification chip taps (ambiguous query flow)
+  const handleClarifySubject = useCallback(
+    (originalQuery: string, subjectId: string) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      sendMessage(originalQuery, undefined, subjectId);
+    },
+    [sendMessage],
+  );
 
   // Handle quick-action chip taps
   const handleChipPress = useCallback((
@@ -794,6 +871,7 @@ export default function IqraScreen() {
               showToast(t('copiedToClipboard'));
             } : undefined}
             onSuggestionPress={(text, lessonId) => sendMessage(text, lessonId)}
+            onClarifySubject={handleClarifySubject}
           />
         )}
         ListFooterComponent={

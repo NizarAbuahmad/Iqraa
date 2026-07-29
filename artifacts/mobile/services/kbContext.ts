@@ -55,6 +55,41 @@ export function buildGeneratorContext(topic: string, lang: 'ar' | 'en'): string 
   return lines.join('\n');
 }
 
+// ─── Subject ambiguity detection ─────────────────────────────────────────────
+
+/**
+ * Inspect the top-N KB results and return the distinct subject IDs found.
+ * Returns `null` when all results belong to the same subject (no ambiguity).
+ * Returns an array of 2+ subject IDs when results span multiple subjects —
+ * the caller should ask the teacher to clarify before invoking the AI.
+ *
+ * We look at the top 5 results because `deduplicateByUnit` can reduce the
+ * visible set; checking a wider window avoids missing cross-subject matches.
+ */
+export function detectSubjectAmbiguity(results: KBLesson[]): string[] | null {
+  const top = results.slice(0, 5);
+  const subjectIds = new Set<string>();
+  for (const lesson of top) {
+    const book = getBookForLesson(lesson);
+    if (book) subjectIds.add(book.subjectId);
+  }
+  return subjectIds.size > 1 ? Array.from(subjectIds) : null;
+}
+
+/**
+ * Filter a ranked KB results array to only lessons belonging to the given
+ * subject. Used after the teacher selects a subject from a clarification chip.
+ */
+export function filterResultsBySubject(
+  results: KBLesson[],
+  subjectId: string,
+): KBLesson[] {
+  return results.filter(lesson => {
+    const book = getBookForLesson(lesson);
+    return book?.subjectId === subjectId;
+  });
+}
+
 // ─── Unit deduplication ───────────────────────────────────────────────────────
 
 /**
