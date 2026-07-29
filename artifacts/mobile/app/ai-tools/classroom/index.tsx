@@ -1,6 +1,6 @@
-import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import React, { useCallback } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -73,6 +73,18 @@ export default function ClassroomHubScreen() {
   const insets = useSafeAreaInsets();
   const { t, isRTL } = useLanguage();
   const topPad = insets.top + (insets.top === 0 ? 67 : 0);
+  const params = useLocalSearchParams<{ noActivity?: string }>();
+
+  // Show toast when redirected back from presentation with no activity
+  useFocusEffect(
+    useCallback(() => {
+      if (params.noActivity === '1') {
+        Alert.alert('', t('buildActivityFirst' as any));
+        // Clear the param so it doesn't re-fire on subsequent focus
+        router.setParams({ noActivity: undefined } as any);
+      }
+    }, [params.noActivity]),
+  );
 
   const handleSelect = (card: ActivityCard) => {
     if (!card.available) return;

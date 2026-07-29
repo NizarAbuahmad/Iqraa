@@ -431,6 +431,7 @@ const translations = {
     slideTypeSummary: 'خلاصة',
     slideOf: 'من',
     noActivityLoaded: 'لم يتم تحميل أي نشاط',
+    buildActivityFirst: 'يرجى إنشاء نشاط أولاً',
   },
 
   en: {
@@ -834,6 +835,7 @@ const translations = {
     slideTypeSummary: 'Summary',
     slideOf: 'of',
     noActivityLoaded: 'No activity loaded',
+    buildActivityFirst: 'Please build an activity first',
   },
 } as const;
 

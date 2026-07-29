@@ -164,12 +164,17 @@ export default function PresentationScreen() {
   // Slide fade animation
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
-  // Load activity on mount
+  // Load activity on mount — redirect back to hub if store is empty
   useEffect(() => {
     const a = getPendingClassroomActivity();
     if (a) {
       setActivity(a);
       initSlide(a.slides[0]);
+    } else {
+      router.replace({
+        pathname: '/ai-tools/classroom',
+        params: { noActivity: '1' },
+      } as any);
     }
   }, []);
 
@@ -248,17 +253,8 @@ export default function PresentationScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
 
-  if (!activity) {
-    return (
-      <View style={[styles.container, styles.centered]}>
-        <StatusBar hidden />
-        <Text style={[styles.noActivity, { fontFamily: 'Inter_400Regular' }]}>{t('noActivityLoaded')}</Text>
-        <Pressable onPress={() => router.back()} style={styles.exitBtn}>
-          <Text style={{ color: ACCENT, fontFamily: 'Inter_600SemiBold' }}>{t('exitPresentation')}</Text>
-        </Pressable>
-      </View>
-    );
-  }
+  // While redirecting (activity is null), render nothing
+  if (!activity) return null;
 
   const slide = activity.slides[slideIndex];
   const totalSlides = activity.slides.length;
