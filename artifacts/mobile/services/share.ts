@@ -7,12 +7,7 @@ import { Share } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import {
-  cacheDirectory,
-  moveAsync,
-  writeAsStringAsync,
-  EncodingType,
-} from 'expo-file-system/legacy';
+import { File, Paths } from 'expo-file-system';
 
 import { ActivityOutput, LessonPlanOutput, QuizOutput, WorksheetOutput } from '@/services/ai/AIService';
 
@@ -968,11 +963,11 @@ ${akSlide}
 // ─── PDF export ───────────────────────────────────────────────────────────────
 
 export async function exportAsPDF(html: string, filename: string): Promise<void> {
+  // printToFileAsync already creates a temp file — share the URI directly.
+  // (Renaming via the legacy moveAsync / cacheDirectory is unnecessary and
+  //  throws on expo-file-system v19 when imported from the main package.)
   const { uri } = await Print.printToFileAsync({ html, base64: false });
-  // Rename to descriptive filename
-  const dest = `${cacheDirectory}${filename}.pdf`;
-  await moveAsync({ from: uri, to: dest });
-  await Sharing.shareAsync(dest, { mimeType: 'application/pdf', dialogTitle: filename });
+  await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: filename });
 }
 
 // ─── Word (.docx) export ──────────────────────────────────────────────────────
@@ -1039,9 +1034,12 @@ export async function exportAsWord(
   });
 
   const b64 = await Packer.toBase64String(doc);
-  const path = `${cacheDirectory}${filename}.docx`;
-  await writeAsStringAsync(path, b64, { encoding: EncodingType.Base64 });
-  await Sharing.shareAsync(path, {
+  // Use the new expo-file-system v19 File API — avoids the deprecated legacy
+  // writeAsStringAsync / cacheDirectory which throw when imported from the
+  // main package (not /legacy) in expo-file-system v19.
+  const file = new File(Paths.cache, `${filename}.docx`);
+  file.write(b64, { encoding: 'base64' });
+  await Sharing.shareAsync(file.uri, {
     mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     dialogTitle: filename,
   });
