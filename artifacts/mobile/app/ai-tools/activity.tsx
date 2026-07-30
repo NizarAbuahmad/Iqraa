@@ -285,6 +285,7 @@ export default function ActivityScreen() {
           label={loading ? t('generatingActivity') : t('generateActivityBtn')}
           onPress={generate}
           loading={loading}
+          disabled={!topic.trim()}
           fullWidth
         />
       </View>

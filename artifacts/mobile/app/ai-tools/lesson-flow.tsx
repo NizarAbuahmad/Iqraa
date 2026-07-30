@@ -26,9 +26,16 @@ import { buildGeneratorContext } from '@/services/kbContext';
 import {
   ActivityOutput,
   LessonFlowOutput,
+  LessonPlanOutput,
   QuizOutput,
   WorksheetOutput,
 } from '@/services/ai/AIService';
+import {
+  runLessonFlowFrom,
+  LessonFlowStepError,
+  type LessonFlowPrior,
+  type StepKey,
+} from '@/services/ai/lessonFlowRunner';
 import { GRADES, SUBJECTS } from '@/services/curriculumData';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { Button } from '@/components/ui/Button';
@@ -43,8 +50,8 @@ const NAVY = '#081B3A';
 const DURATION_VALUES = [45, 60, 90];
 
 type Phase = 'form' | 'building' | 'done';
-type StepKey = 'objectives' | 'warmup' | 'activity' | 'guided' | 'worksheet' | 'exitTicket';
-type StepStatus = 'pending' | 'loading' | 'done';
+// StepKey is imported from lessonFlowRunner
+type StepStatus = 'pending' | 'loading' | 'done' | 'error';
 
 interface StepState {
   objectives: StepStatus;
@@ -82,6 +89,10 @@ export default function LessonFlowScreen() {
   const [phase, setPhase] = useState<Phase>('form');
   const [stepStatus, setStepStatus] = useState<StepState>(INITIAL_STEP_STATE);
   const [error, setError] = useState('');
+  const [failedStep, setFailedStep] = useState<StepKey | null>(null);
+
+  // Holds the raw LessonPlanOutput across steps so guided-practice can reuse it on retry
+  const planRef = React.useRef<LessonPlanOutput | null>(null);
 
   // Result state (built incrementally)
   const [objectives, setObjectives] = useState<string[] | null>(null);
@@ -124,76 +135,68 @@ export default function LessonFlowScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setPhase('building');
     setError('');
+    setFailedStep(null);
     setStepStatus(INITIAL_STEP_STATE);
     setObjectives(null); setWarmup(null); setActivity(null);
     setGuidedPractice(null); setWorksheet(null); setExitTicket(null);
+    planRef.current = null;
+    await executeFlow('objectives', {});
+  };
 
+  const handleRetry = () => {
+    if (!failedStep) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setError('');
+    setStep(failedStep, 'pending');
+    setFailedStep(null);
+    const prior: LessonFlowPrior = {
+      plan: planRef.current ?? undefined,
+      objectives: objectives ?? undefined,
+      warmup: warmup ?? undefined,
+      activity: activity ?? undefined,
+      guidedPractice: guidedPractice ?? undefined,
+      worksheet: worksheet ?? undefined,
+      exitTicket: exitTicket ?? undefined,
+    };
+    executeFlow(failedStep, prior);
+  };
+
+  const executeFlow = async (startKey: StepKey, prior: LessonFlowPrior) => {
     const grade = GRADES[gradeIdx]?.name ?? '';
     const subject = SUBJECTS[subjectIdx]?.name ?? '';
-    const language = lang === 'ar' ? 'arabic' : 'english';
+    const language = (lang === 'ar' ? 'arabic' : 'english') as 'arabic' | 'english';
     const duration = DURATION_VALUES[durationIdx];
 
     try {
       const kbCtx = await buildGeneratorContext(topic, lang === 'ar' ? 'ar' : 'en');
-      const lang_ = language as 'arabic' | 'english';
-      const baseReq = { grade, subject, topic, language: lang_, duration, additionalContext: kbCtx };
+      const req = { grade, subject, topic, language, duration, additionalContext: kbCtx };
 
-      // Step 1 — Objectives (via lesson plan)
-      setStep('objectives', 'loading');
-      const plan = await aiService.generateLessonPlan(baseReq);
-      setObjectives(plan.objectives);
-      setStep('objectives', 'done');
-      scrollRef.current?.scrollToEnd({ animated: true });
-
-      // Step 2 — Warm-up activity (10 min)
-      setStep('warmup', 'loading');
-      const warmupOut = await aiService.generateActivity({
-        ...baseReq,
-        duration: 10,
-        activityType: 'hands-on',
+      await runLessonFlowFrom(startKey, req, aiService, prior, {
+        onStepStart: (key) => setStep(key, 'loading'),
+        onStepDone: (key, partial) => {
+          if (partial.plan) planRef.current = partial.plan as LessonPlanOutput;
+          if (partial.objectives) setObjectives(partial.objectives);
+          if (partial.warmup) setWarmup(partial.warmup);
+          if (partial.activity) setActivity(partial.activity);
+          if (partial.guidedPractice) setGuidedPractice(partial.guidedPractice);
+          if (partial.worksheet) setWorksheet(partial.worksheet);
+          if (partial.exitTicket) setExitTicket(partial.exitTicket);
+          setStep(key, 'done');
+          setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+        },
+        onScroll: () => scrollRef.current?.scrollToEnd({ animated: true }),
       });
-      setWarmup(warmupOut);
-      setStep('warmup', 'done');
-      scrollRef.current?.scrollToEnd({ animated: true });
-
-      // Step 3 — Interactive activity (main duration)
-      setStep('activity', 'loading');
-      const activityOut = await aiService.generateActivity({
-        ...baseReq,
-        activityType: 'game',
-      });
-      setActivity(activityOut);
-      setStep('activity', 'done');
-      scrollRef.current?.scrollToEnd({ animated: true });
-
-      // Step 4 — Guided practice (from lesson plan)
-      setStep('guided', 'loading');
-      // Re-use the lesson plan we already generated — no extra API call needed
-      await new Promise(r => setTimeout(r, 600)); // brief pause for streaming feel
-      setGuidedPractice(plan.guidedPractice);
-      setStep('guided', 'done');
-      scrollRef.current?.scrollToEnd({ animated: true });
-
-      // Step 5 — Worksheet
-      setStep('worksheet', 'loading');
-      const wsOut = await aiService.generateWorksheet({ ...baseReq, numQuestions: 5 });
-      setWorksheet(wsOut);
-      setStep('worksheet', 'done');
-      scrollRef.current?.scrollToEnd({ animated: true });
-
-      // Step 6 — Exit ticket (3 questions)
-      setStep('exitTicket', 'loading');
-      const etOut = await aiService.generateQuiz({ ...baseReq, numQuestions: 3 });
-      setExitTicket(etOut);
-      setStep('exitTicket', 'done');
 
       setPhase('done');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
-    } catch (err: any) {
-      setError(err?.message ?? 'Generation failed');
-      setPhase('form');
-      setStepStatus(INITIAL_STEP_STATE);
+    } catch (err: unknown) {
+      if (err instanceof LessonFlowStepError) {
+        setStep(err.stepKey, 'error');
+        setFailedStep(err.stepKey);
+      }
+      setError(err instanceof Error ? err.message : 'Generation failed');
+      // Stay on 'building' phase — completed steps remain visible
     }
   };
 
@@ -439,6 +442,7 @@ export default function LessonFlowScreen() {
                   color={step.color}
                   status={status}
                   isRTL={isRTL}
+                  lang={lang}
                   colors={colors}
                   collapsed={collapsed[step.key]}
                   onToggleCollapse={() => setCollapsed(prev => ({ ...prev, [step.key]: !prev[step.key] }))}
@@ -460,6 +464,24 @@ export default function LessonFlowScreen() {
                 </StepCard>
               );
             })}
+          </View>
+        )}
+
+        {/* ── Error banner with Retry ── */}
+        {isBuilding && error && failedStep && (
+          <View style={[styles.errorBanner, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            <Ionicons name="alert-circle-outline" size={16} color="#EF4444" style={{ marginTop: 1 }} />
+            <Text style={{ flex: 1, color: '#EF4444', fontFamily: 'Inter_400Regular', fontSize: 13, lineHeight: 18, textAlign: isRTL ? 'right' : 'left' }}>
+              {error}
+            </Text>
+            <Pressable
+              onPress={handleRetry}
+              style={({ pressed }) => ({ backgroundColor: '#EF4444', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, opacity: pressed ? 0.8 : 1 })}
+            >
+              <Text style={{ color: '#fff', fontFamily: 'Inter_600SemiBold', fontSize: 13 }}>
+                {lang === 'ar' ? 'إعادة المحاولة' : 'Retry'}
+              </Text>
+            </Pressable>
           </View>
         )}
 
@@ -524,37 +546,58 @@ interface StepCardProps {
   color: string;
   status: StepStatus;
   isRTL: boolean;
+  lang: string;
   colors: ReturnType<typeof import('@/hooks/useColors').useColors>;
   collapsed: boolean;
   onToggleCollapse: () => void;
   children?: React.ReactNode;
 }
 
-function StepCard({ stepNum, label, icon, color, status, isRTL, colors, collapsed, onToggleCollapse, children }: StepCardProps) {
+function StepCard({ stepNum, label, icon, color, status, isRTL, lang, colors, collapsed, onToggleCollapse, children }: StepCardProps) {
+  const borderColor =
+    status === 'done' ? color + '40' :
+    status === 'error' ? '#EF444450' :
+    colors.border;
+
+  const badgeBg =
+    status === 'done' ? color + '18' :
+    status === 'error' ? '#FEE2E2' :
+    colors.muted;
+
   return (
-    <View style={[styles.stepCard, { backgroundColor: colors.card, borderColor: status === 'done' ? color + '40' : colors.border }]}>
+    <View style={[styles.stepCard, { backgroundColor: colors.card, borderColor }]}>
       {/* Header row */}
       <Pressable
         onPress={status === 'done' ? onToggleCollapse : undefined}
         style={[styles.stepHeader, isRTL && { flexDirection: 'row-reverse' }]}
       >
-        <View style={[styles.stepBadge, { backgroundColor: status === 'done' ? color + '18' : colors.muted }]}>
+        <View style={[styles.stepBadge, { backgroundColor: badgeBg }]}>
           {status === 'loading' ? (
             <ActivityIndicator size="small" color={color} />
           ) : status === 'done' ? (
             <Ionicons name={icon} size={18} color={color} />
+          ) : status === 'error' ? (
+            <Ionicons name="warning-outline" size={18} color="#EF4444" />
           ) : (
             <Text style={{ color: colors.mutedForeground, fontFamily: 'Inter_500Medium', fontSize: 13 }}>{stepNum}</Text>
           )}
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.stepLabel, { color: status === 'done' ? colors.foreground : colors.mutedForeground, fontFamily: 'Inter_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[styles.stepLabel, {
+            color: status === 'done' ? colors.foreground : status === 'error' ? '#EF4444' : colors.mutedForeground,
+            fontFamily: 'Inter_600SemiBold',
+            textAlign: isRTL ? 'right' : 'left',
+          }]}>
             {label}
           </Text>
           {status === 'loading' && (
             <Text style={{ color: color, fontFamily: 'Inter_400Regular', fontSize: 11.5, marginTop: 2, textAlign: isRTL ? 'right' : 'left' }}>
-              {/* short animated dots via text */}
               Generating…
+            </Text>
+          )}
+          {status === 'error' && (
+            <Text style={{ color: '#EF4444', fontFamily: 'Inter_400Regular', fontSize: 11.5, marginTop: 2, textAlign: isRTL ? 'right' : 'left' }}>
+              {lang === 'ar' ? 'فشل — اضغط إعادة المحاولة' : 'Failed — tap Retry below'}
             </Text>
           )}
         </View>
@@ -824,5 +867,17 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  errorBanner: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 4,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    backgroundColor: '#FEF2F2',
+    gap: 10,
+    alignItems: 'center',
   },
 });

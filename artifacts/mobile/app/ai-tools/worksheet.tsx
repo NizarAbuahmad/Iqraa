@@ -293,7 +293,7 @@ export default function WorksheetScreen() {
         </View>
 
         {error ? <Text style={[{ color: colors.destructive, fontSize: 13, fontFamily: 'Inter_400Regular', marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
-        <Button label={loading ? t('generating') : t('createWorksheetBtn')} onPress={generate} loading={loading} fullWidth />
+        <Button label={loading ? t('generating') : t('createWorksheetBtn')} onPress={generate} loading={loading} disabled={!topic.trim()} fullWidth />
       </View>
 
       {/* Loading */}
