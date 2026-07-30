@@ -190,6 +190,24 @@ export default function WorkspaceViewScreen() {
           <Ionicons name="share-outline" size={16} color={colors.mutedForeground} />
           <Text style={[{ color: colors.mutedForeground, fontFamily: 'Inter_500Medium', fontSize: 13 }]}>{t('exportBtn')}</Text>
         </Pressable>
+        {item.type === 'flow' && content && (
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              const flow = content as unknown as LessonFlowOutput;
+              router.push({
+                pathname: '/ai-tools/classroom' as any,
+                params: { topic: flow.topic ?? item.topic },
+              });
+            }}
+            style={[styles.actionBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+          >
+            <Ionicons name="tv-outline" size={16} color="#4F46E5" />
+            <Text style={[{ color: '#4F46E5', fontFamily: 'Inter_500Medium', fontSize: 13 }]}>
+              {lang === 'ar' ? 'الفصل' : 'Classroom'}
+            </Text>
+          </Pressable>
+        )}
       </View>
 
       {/* Content */}

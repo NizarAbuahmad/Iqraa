@@ -375,10 +375,10 @@ export default function LessonFlowScreen() {
             <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Inter_600SemiBold', marginTop: 16, textAlign: isRTL ? 'right' : 'left' }]}>
               {lang === 'ar' ? 'الصف الدراسي' : 'Grade'}
             </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -16 }} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', gap: 8 }}>
               {gradeNames.map((g, i) => (
                 <Pressable key={i} onPress={() => setGradeIdx(i)}
-                  style={[styles.chip, { backgroundColor: gradeIdx === i ? colors.primary : colors.muted, borderColor: gradeIdx === i ? colors.primary : colors.border }]}>
+                  style={[styles.chip, { flexShrink: 0, backgroundColor: gradeIdx === i ? colors.primary : colors.muted, borderColor: gradeIdx === i ? colors.primary : colors.border }]}>
                   <Text style={[styles.chipText, { color: gradeIdx === i ? colors.primaryForeground : colors.foreground, fontFamily: 'Inter_500Medium' }]}>{g}</Text>
                 </Pressable>
               ))}
@@ -388,10 +388,10 @@ export default function LessonFlowScreen() {
             <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Inter_600SemiBold', marginTop: 16, textAlign: isRTL ? 'right' : 'left' }]}>
               {lang === 'ar' ? 'المادة' : 'Subject'}
             </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -16 }} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', gap: 8 }}>
               {subjectNames.map((s, i) => (
                 <Pressable key={i} onPress={() => setSubjectIdx(i)}
-                  style={[styles.chip, { backgroundColor: subjectIdx === i ? colors.primary : colors.muted, borderColor: subjectIdx === i ? colors.primary : colors.border }]}>
+                  style={[styles.chip, { flexShrink: 0, backgroundColor: subjectIdx === i ? colors.primary : colors.muted, borderColor: subjectIdx === i ? colors.primary : colors.border }]}>
                   <Text style={[styles.chipText, { color: subjectIdx === i ? colors.primaryForeground : colors.foreground, fontFamily: 'Inter_500Medium' }]}>{s}</Text>
                 </Pressable>
               ))}
