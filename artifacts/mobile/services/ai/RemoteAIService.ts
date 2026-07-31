@@ -1,5 +1,5 @@
 /**
- * RemoteAIService – calls the Replit API server which proxies to OpenAI.
+ * RemoteAIService – calls the API server which proxies to OpenAI.
  * Falls back to MockAIService automatically if the network call fails
  * (e.g. offline, server unavailable).
  */
@@ -9,15 +9,11 @@ import {
   LessonPlanOutput, QuizOutput, WorksheetOutput,
 } from './AIService';
 import { MockAIService } from './generators';
+import { getApiBaseUrl } from '../apiClient';
 
-// The API server is available at /api on the same Replit dev domain.
-// In Expo web the domain is the same origin, so a relative URL works.
-// In Expo Go / native builds we prefix with the dev domain env var.
+// Shared with apiClient: EXPO_PUBLIC_API_BASE_URL for local, EXPO_PUBLIC_DOMAIN for hosted.
 function apiBase(): string {
-  const domain = process.env.EXPO_PUBLIC_DOMAIN;
-  if (domain) return `https://${domain}/api`;
-  // Fallback: relative URL works for Expo web
-  return '/api';
+  return getApiBaseUrl();
 }
 
 async function postJSON<T>(path: string, body: unknown, timeoutMs = 18_000): Promise<T> {

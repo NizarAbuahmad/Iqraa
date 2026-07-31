@@ -57,6 +57,23 @@ function stripProtocol(domain) {
 }
 
 function getDeploymentDomain() {
+  // Portable local/production: prefer explicit API URL or public domain.
+  if (process.env.EXPO_PUBLIC_API_BASE_URL) {
+    try {
+      return new URL(process.env.EXPO_PUBLIC_API_BASE_URL).host;
+    } catch {
+      console.error(
+        'ERROR: Invalid EXPO_PUBLIC_API_BASE_URL. Example: http://localhost:8080/api',
+      );
+      process.exit(1);
+    }
+  }
+
+  if (process.env.EXPO_PUBLIC_DOMAIN) {
+    return stripProtocol(process.env.EXPO_PUBLIC_DOMAIN);
+  }
+
+  // Legacy Replit fallbacks (optional; not required locally).
   if (process.env.REPLIT_INTERNAL_APP_DOMAIN) {
     return stripProtocol(process.env.REPLIT_INTERNAL_APP_DOMAIN);
   }
@@ -65,12 +82,8 @@ function getDeploymentDomain() {
     return stripProtocol(process.env.REPLIT_DEV_DOMAIN);
   }
 
-  if (process.env.EXPO_PUBLIC_DOMAIN) {
-    return stripProtocol(process.env.EXPO_PUBLIC_DOMAIN);
-  }
-
   console.error(
-    'ERROR: No deployment domain found. Set REPLIT_INTERNAL_APP_DOMAIN, REPLIT_DEV_DOMAIN, or EXPO_PUBLIC_DOMAIN',
+    'ERROR: No deployment domain found. Set EXPO_PUBLIC_API_BASE_URL or EXPO_PUBLIC_DOMAIN',
   );
   process.exit(1);
 }

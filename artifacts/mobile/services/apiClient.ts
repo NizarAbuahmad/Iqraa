@@ -8,8 +8,19 @@ const ACCESS_TOKEN_KEY = 'iqra_access_token';
 const REFRESH_TOKEN_KEY = 'iqra_refresh_token';
 
 export function getApiBaseUrl(): string {
-  const domain = process.env.EXPO_PUBLIC_DOMAIN;
-  if (domain) return `https://${domain}/api`;
+  // Local / explicit override (e.g. http://localhost:8080/api)
+  const explicit = process.env.EXPO_PUBLIC_API_BASE_URL?.trim();
+  if (explicit) return explicit.replace(/\/+$/, '');
+
+  const domain = process.env.EXPO_PUBLIC_DOMAIN?.trim();
+  if (domain) {
+    // Allow full URLs for local http; bare hostnames keep Replit https behavior.
+    if (/^https?:\/\//i.test(domain)) {
+      return `${domain.replace(/\/+$/, '')}/api`;
+    }
+    return `https://${domain}/api`;
+  }
+
   return '/api';
 }
 
