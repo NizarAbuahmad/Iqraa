@@ -15,6 +15,10 @@ process.env.PORT = mobilePort;
 if (!process.env.EXPO_PUBLIC_API_BASE_URL && !process.env.EXPO_PUBLIC_DOMAIN) {
   const apiPort = process.env.API_PORT || "8080";
   process.env.EXPO_PUBLIC_API_BASE_URL = `http://localhost:${apiPort}/api`;
+  console.warn(
+    `[mobile] EXPO_PUBLIC_API_BASE_URL unset — defaulting to ${process.env.EXPO_PUBLIC_API_BASE_URL}. ` +
+      "Set it in the repo-root .env and/or artifacts/mobile/.env.",
+  );
 }
 
 const isWin = process.platform === "win32";

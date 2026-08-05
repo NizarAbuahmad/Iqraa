@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>IQRA Brand Foundation Preview</title>
+  <link rel="icon" type="image/png" href="../assets/images/favicon.png" />
+  <style>
+    :root {
+      --navy: #081B3A;
+      --teal: #00A99D;
+      --bg: #F5F7FA;
+      --text: #081B3A;
+      --muted: #6B7A8D;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    header {
+      background: var(--navy);
+      color: #fff;
+      padding: 20px 28px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    header img { width: 40px; height: 40px; border-radius: 10px; }
+    header h1 { font-size: 18px; margin: 0; font-weight: 650; letter-spacing: 0.02em; }
+    header p { margin: 2px 0 0; opacity: 0.75; font-size: 13px; }
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 28px 20px 60px;
+      display: grid;
+      gap: 22px;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    }
+    .card {
+      background: #fff;
+      border: 1px solid #DDE6E8;
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 8px 24px rgba(8, 27, 58, 0.04);
+    }
+    .card h2 {
+      margin: 0 0 6px;
+      font-size: 15px;
+      font-weight: 650;
+    }
+    .card .meta {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .frame {
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid #DDE6E8;
+      background: #0a1020;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .frame.splash {
+      min-height: 520px;
+      padding: 48px 24px;
+      background: var(--navy);
+    }
+    .frame.splash img { width: 58%; max-width: 420px; height: auto; }
+    .frame.icon {
+      height: 220px;
+      background: #EEF4F4;
+    }
+    .frame.icon img {
+      width: 128px;
+      height: 128px;
+      border-radius: 28px;
+      box-shadow: 0 10px 30px rgba(8,27,58,0.18);
+    }
+    .frame.favicon {
+      height: 160px;
+      background: #EEF4F4;
+      gap: 18px;
+    }
+    .frame.favicon img {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+    }
+    .tab-mock {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #fff;
+      border: 1px solid #DDE6E8;
+      border-radius: 10px 10px 0 0;
+      padding: 8px 12px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .tab-mock img { width: 16px; height: 16px; border-radius: 3px; }
+    .wide { grid-column: 1 / -1; }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="../assets/images/favicon.png" alt="IQRA favicon" />
+    <div>
+      <h1>IQRA Brand Foundation — B1.4 Preview</h1>
+      <p>Icon · Favicon · Splash · Official lockup</p>
+    </div>
+  </header>
+  <main>
+    <section class="card">
+      <h2>App Icon</h2>
+      <p class="meta">Arabic mark + IQRA wordmark on Midnight Navy. Used for iOS/Android icon.</p>
+      <div class="frame icon">
+        <img src="../assets/images/icon.png" alt="IQRA app icon" />
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Favicon</h2>
+      <p class="meta">Compact mark for browser tabs. Check the tab title icon above.</p>
+      <div class="tab-mock">
+        <img src="../assets/images/favicon.png" alt="" />
+        <span>IQRA | اقرأ</span>
+      </div>
+      <div class="frame favicon">
+        <img src="../assets/images/favicon.png" alt="IQRA favicon 32px" />
+        <img src="../assets/images/favicon.png" width="48" height="48" style="width:48px;height:48px;border-radius:10px" alt="IQRA favicon 48px" />
+      </div>
+    </section>
+
+    <section class="card wide">
+      <h2>Splash / Loading</h2>
+      <p class="meta">Full official lockup (Arabic · IQRA · bilingual taglines) centered on Midnight Navy (#081B3A).</p>
+      <div class="frame splash">
+        <img src="../assets/images/splash-icon.png" alt="IQRA splash logo" />
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Light logo (dark surfaces)</h2>
+      <p class="meta">White + teal glyphs for navy / teal backgrounds (login, splash, teal header chip).</p>
+      <div class="frame splash" style="min-height:280px;padding:32px">
+        <img src="../assets/images/logo-lockup.png" alt="IQRA light lockup" style="width:70%;max-width:280px" />
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Dark logo (light surfaces)</h2>
+      <p class="meta">Midnight Navy + teal glyphs for white / light-gray backgrounds (chat header, avatars).</p>
+      <div class="frame icon" style="background:#fff">
+        <img src="../assets/images/logo-lockup-dark.png" alt="IQRA dark lockup" style="width:70%;max-width:280px;height:auto;border-radius:0;box-shadow:none" />
+      </div>
+    </section>
+  </main>
+</body>
+</html>

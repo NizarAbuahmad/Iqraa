@@ -26,22 +26,27 @@ import { getLessonById, KB_LESSONS } from '../knowledgeBase.ts';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+/** Resolve fixture even when MVP hides Chemistry via getLessonById. */
+function fixture(id: string) {
+  return getLessonById(id) ?? KB_LESSONS.find(l => l.id === id);
+}
+
 /** Three of the longest lessons in the KB (Chemistry + Math). */
-const LONG_LESSON_IDS = ['kbl-chem-1-2', 'kbl-math-2-2', 'kbl-chem-3-2'];
+const LONG_LESSON_IDS = ['kbl-chem-1-2', 'kbl-math-s2-nccd-u6_l2', 'kbl-chem-3-2'];
 
 // ─── 1. Single-lesson full-fidelity ──────────────────────────────────────────
 
 describe('buildResponse — single-lesson query', () => {
   it('returns a non-empty string for a known lesson', () => {
-    const lesson = getLessonById('kbl-math-2-2');
-    assert.ok(lesson !== undefined, 'Test fixture kbl-math-2-2 not found in KB');
+    const lesson = fixture('kbl-math-s2-nccd-u6_l2');
+    assert.ok(lesson !== undefined, 'Test fixture kbl-math-s2-nccd-u6_l2 not found in KB');
     const result = buildResponse('differentiation rules', [lesson!], 'en', 'teacher');
     assert.ok(result.length > 0, 'buildResponse returned empty string for single lesson');
   });
 
   it('single-lesson output is well within the budget (tier 0)', () => {
-    const lesson = getLessonById('kbl-math-2-2');
-    assert.ok(lesson !== undefined, 'Test fixture kbl-math-2-2 not found in KB');
+    const lesson = fixture('kbl-math-s2-nccd-u6_l2');
+    assert.ok(lesson !== undefined, 'Test fixture kbl-math-s2-nccd-u6_l2 not found in KB');
     const result = buildResponse('differentiation rules', [lesson!], 'en', 'teacher');
     assert.ok(
       result.length <= CONTEXT_CHAR_BUDGET,
@@ -50,8 +55,8 @@ describe('buildResponse — single-lesson query', () => {
   });
 
   it('single-lesson output at full fidelity includes examples section header', () => {
-    const lesson = getLessonById('kbl-math-2-2');
-    assert.ok(lesson !== undefined, 'Test fixture kbl-math-2-2 not found in KB');
+    const lesson = fixture('kbl-math-s2-nccd-u6_l2');
+    assert.ok(lesson !== undefined, 'Test fixture kbl-math-s2-nccd-u6_l2 not found in KB');
     const result = buildResponse('differentiation rules', [lesson!], 'en', 'teacher');
     // At full fidelity there should be no multi-result reference prefix
     assert.ok(!result.includes('[Reference 1]'), 'Single-lesson result should not have reference prefix');
@@ -62,7 +67,7 @@ describe('buildResponse — single-lesson query', () => {
 
 describe('buildResponse — three-lesson query', () => {
   it('combined output is ≤ CONTEXT_CHAR_BUDGET characters', () => {
-    const lessons = LONG_LESSON_IDS.map(id => getLessonById(id)).filter(Boolean) as any[];
+    const lessons = LONG_LESSON_IDS.map(id => fixture(id)).filter(Boolean) as any[];
     assert.strictEqual(lessons.length, 3, 'Could not load all 3 test fixture lessons');
     const result = buildResponse('explain chemistry and math', lessons, 'en', 'teacher');
     assert.ok(
@@ -72,7 +77,7 @@ describe('buildResponse — three-lesson query', () => {
   });
 
   it('three-lesson output contains reference prefixes', () => {
-    const lessons = LONG_LESSON_IDS.map(id => getLessonById(id)).filter(Boolean) as any[];
+    const lessons = LONG_LESSON_IDS.map(id => fixture(id)).filter(Boolean) as any[];
     const result = buildResponse('broad question', lessons, 'en', 'teacher');
     assert.ok(result.includes('[Reference 1]'), 'Expected [Reference 1] prefix in multi-lesson output');
     assert.ok(result.includes('[Reference 2]'), 'Expected [Reference 2] prefix in multi-lesson output');
@@ -80,7 +85,7 @@ describe('buildResponse — three-lesson query', () => {
   });
 
   it('three-lesson output contains separator lines between blocks', () => {
-    const lessons = LONG_LESSON_IDS.map(id => getLessonById(id)).filter(Boolean) as any[];
+    const lessons = LONG_LESSON_IDS.map(id => fixture(id)).filter(Boolean) as any[];
     const result = buildResponse('broad question', lessons, 'en', 'teacher');
     assert.ok(result.includes('---'), 'Expected --- separator between lesson blocks');
   });
@@ -89,7 +94,7 @@ describe('buildResponse — three-lesson query', () => {
 // ─── 3. Summary and rules always preserved ───────────────────────────────────
 
 describe('buildLessonBlock — summary and rules always present', () => {
-  const lesson = getLessonById('kbl-chem-1-2');
+  const lesson = fixture('kbl-chem-1-2');
 
   for (const opts of TRIM_TIERS) {
     const label = `maxConcepts=${opts.maxConcepts} maxTerms=${opts.maxTerms} maxExamples=${opts.maxExamples}`;
@@ -127,7 +132,7 @@ describe('buildResponse — examples dropped before terms', () => {
    * trimming removes examples before removing key terms.
    */
   it('drops examples before key terms when budget is tight', () => {
-    const base = getLessonById('kbl-chem-1-2');
+    const base = fixture('kbl-chem-1-2');
     assert.ok(base !== undefined, 'Test fixture kbl-chem-1-2 not found');
 
     // Create three copies with inflated examples so the full-fidelity combined
@@ -185,17 +190,17 @@ describe('deduplicateByUnit', () => {
   });
 
   it('returns single lesson unchanged', () => {
-    const lesson = getLessonById('kbl-math-2-2');
-    assert.ok(lesson !== undefined, 'Fixture kbl-math-2-2 not found');
+    const lesson = fixture('kbl-math-s2-nccd-u6_l2');
+    assert.ok(lesson !== undefined, 'Fixture kbl-math-s2-nccd-u6_l2 not found');
     const result = deduplicateByUnit([lesson!]);
     assert.strictEqual(result.length, 1);
-    assert.strictEqual(result[0].id, 'kbl-math-2-2');
+    assert.strictEqual(result[0].id, 'kbl-math-s2-nccd-u6_l2');
   });
 
   it('passes through three lessons from different units without dropping any', () => {
-    // kbl-chem-1-2 (kbu-chem-1), kbl-math-2-2 (kbu-math-2), kbl-math-8-1 (kbu-math-8)
-    const ids = ['kbl-chem-1-2', 'kbl-math-2-2', 'kbl-math-8-1'];
-    const lessons = ids.map(id => getLessonById(id)).filter(Boolean) as any[];
+    // kbl-chem-1-2 (kbu-chem-1), kbl-math-s2-nccd-u6_l2 (kbu-math-2), kbl-math-s2-nccd-u8_l4 (kbu-math-8)
+    const ids = ['kbl-chem-1-2', 'kbl-math-s2-nccd-u6_l2', 'kbl-math-s2-nccd-u8_l4'];
+    const lessons = ids.map(id => fixture(id)).filter(Boolean) as any[];
     assert.strictEqual(lessons.length, 3, 'Could not load all three fixtures');
     const result = deduplicateByUnit(lessons, 3);
     assert.strictEqual(result.length, 3, 'Expected all three distinct-unit lessons to pass through');
@@ -203,26 +208,26 @@ describe('deduplicateByUnit', () => {
   });
 
   it('removes the second lesson when two top results share a unit', () => {
-    // kbl-math-2-1 and kbl-math-2-2 are both in kbu-math-2; kbl-math-8-1 is in kbu-math-8
-    const ids = ['kbl-math-2-1', 'kbl-math-2-2', 'kbl-math-8-1'];
-    const lessons = ids.map(id => getLessonById(id)).filter(Boolean) as any[];
+    // kbl-math-s2-nccd-u6_l1 and kbl-math-s2-nccd-u6_l2 are both in kbu-math-2; kbl-math-s2-nccd-u8_l4 is in kbu-math-8
+    const ids = ['kbl-math-s2-nccd-u6_l1', 'kbl-math-s2-nccd-u6_l2', 'kbl-math-s2-nccd-u8_l4'];
+    const lessons = ids.map(id => fixture(id)).filter(Boolean) as any[];
     assert.strictEqual(lessons.length, 3, 'Could not load all three fixtures');
     const result = deduplicateByUnit(lessons, 3);
-    // kbl-math-2-2 should be skipped (same unit as kbl-math-2-1)
+    // kbl-math-s2-nccd-u6_l2 should be skipped (same unit as kbl-math-s2-nccd-u6_l1)
     assert.strictEqual(result.length, 2, 'Expected 2 results after deduplication');
-    assert.strictEqual(result[0].id, 'kbl-math-2-1', 'First result should be highest-ranked lesson');
-    assert.strictEqual(result[1].id, 'kbl-math-8-1', 'Second slot should be next distinct-unit lesson');
-    assert.ok(!result.find((l: any) => l.id === 'kbl-math-2-2'), 'Duplicate-unit lesson should be excluded');
+    assert.strictEqual(result[0].id, 'kbl-math-s2-nccd-u6_l1', 'First result should be highest-ranked lesson');
+    assert.strictEqual(result[1].id, 'kbl-math-s2-nccd-u8_l4', 'Second slot should be next distinct-unit lesson');
+    assert.ok(!result.find((l: any) => l.id === 'kbl-math-s2-nccd-u6_l2'), 'Duplicate-unit lesson should be excluded');
   });
 
   it('returns only one result when all input lessons share a unit', () => {
-    // kbl-math-2-1, kbl-math-2-2, kbl-math-2-3 are all in kbu-math-2
-    const ids = ['kbl-math-2-1', 'kbl-math-2-2'];
-    const lessons = ids.map(id => getLessonById(id)).filter(Boolean) as any[];
+    // kbl-math-s2-nccd-u6_l1, kbl-math-s2-nccd-u6_l2, kbl-math-s2-nccd-u6_l3 are all in kbu-math-2
+    const ids = ['kbl-math-s2-nccd-u6_l1', 'kbl-math-s2-nccd-u6_l2'];
+    const lessons = ids.map(id => fixture(id)).filter(Boolean) as any[];
     assert.strictEqual(lessons.length, 2, 'Could not load fixtures');
     const result = deduplicateByUnit(lessons, 3);
     assert.strictEqual(result.length, 1, 'Expected only 1 result when all share a unit');
-    assert.strictEqual(result[0].id, 'kbl-math-2-1', 'First result should be the top-ranked lesson');
+    assert.strictEqual(result[0].id, 'kbl-math-s2-nccd-u6_l1', 'First result should be the top-ranked lesson');
   });
 
   it('respects the maxResults cap', () => {
@@ -230,10 +235,10 @@ describe('deduplicateByUnit', () => {
     const ids = [
       'kbl-chem-1-1', // kbu-chem-1
       'kbl-chem-3-1', // kbu-chem-3
-      'kbl-math-1-1', // kbu-math-1
-      'kbl-math-2-1', // kbu-math-2
+      'kbl-math-s2-nccd-u5_l1', // kbu-math-1
+      'kbl-math-s2-nccd-u6_l1', // kbu-math-2
     ];
-    const lessons = ids.map(id => getLessonById(id)).filter(Boolean) as any[];
+    const lessons = ids.map(id => fixture(id)).filter(Boolean) as any[];
     const result = deduplicateByUnit(lessons, 2);
     assert.strictEqual(result.length, 2, 'Should not exceed maxResults even with distinct units');
     assert.strictEqual(result[0].id, 'kbl-chem-1-1');
@@ -243,15 +248,15 @@ describe('deduplicateByUnit', () => {
   it('fills open slots with later distinct-unit lessons (promotes a lesson over a same-unit duplicate)', () => {
     // First two share a unit; third is distinct — third should promote to slot 2
     const ids = [
-      'kbl-math-2-1', // kbu-math-2
-      'kbl-math-2-2', // kbu-math-2  ← duplicate, should be skipped
+      'kbl-math-s2-nccd-u6_l1', // kbu-math-2
+      'kbl-math-s2-nccd-u6_l2', // kbu-math-2  ← duplicate, should be skipped
       'kbl-chem-3-2', // kbu-chem-3  ← should promote to slot 2
     ];
-    const lessons = ids.map(id => getLessonById(id)).filter(Boolean) as any[];
+    const lessons = ids.map(id => fixture(id)).filter(Boolean) as any[];
     assert.strictEqual(lessons.length, 3, 'Could not load fixtures');
     const result = deduplicateByUnit(lessons, 3);
     assert.strictEqual(result.length, 2, 'Expected 2 distinct-unit results');
-    assert.strictEqual(result[0].id, 'kbl-math-2-1');
+    assert.strictEqual(result[0].id, 'kbl-math-s2-nccd-u6_l1');
     assert.strictEqual(result[1].id, 'kbl-chem-3-2', 'Third-ranked lesson should promote when second is a duplicate');
   });
 });
@@ -265,8 +270,8 @@ describe('buildResponse — edge cases', () => {
   });
 
   it('Arabic output uses Arabic labels', () => {
-    const lesson = getLessonById('kbl-math-8-1');
-    assert.ok(lesson !== undefined, 'Test fixture kbl-math-8-1 not found');
+    const lesson = fixture('kbl-math-s2-nccd-u8_l4');
+    assert.ok(lesson !== undefined, 'Test fixture kbl-math-s2-nccd-u8_l4 not found');
     const result = buildResponse('احتمال', [lesson!], 'ar', 'student');
     assert.ok(result.includes('**المفاهيم الأساسية:**') || result.length > 0,
       'Arabic output should use Arabic labels');

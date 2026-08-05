@@ -4,6 +4,7 @@ import chatRouter from "./chat";
 import generateRouter from "./generate";
 import authRouter from "./auth";
 import workspaceRouter from "./workspace";
+import verifiedMathRouter from "./verifiedMath";
 
 const router: IRouter = Router();
 
@@ -12,5 +13,6 @@ router.use("/auth", authRouter);
 router.use("/workspace", workspaceRouter);
 router.use(chatRouter);
 router.use(generateRouter);
+router.use(verifiedMathRouter);
 
 export default router;

@@ -31,14 +31,15 @@ import {
   detectSubjectAmbiguity,
   filterResultsBySubject,
 } from '../kbContext.ts';
-import { getLessonById } from '../knowledgeBase.ts';
+import { getLessonById, KB_LESSONS } from '../knowledgeBase.ts';
 import type { KBLesson } from '../knowledgeBase.ts';
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 // Use real KB lessons so we exercise the actual unit→book→subjectId lookup chain.
+// Falls back to KB_LESSONS (bypasses MVP visibility filter used by getLessonById).
 
 function fixture(id: string): KBLesson {
-  const lesson = getLessonById(id);
+  const lesson = getLessonById(id) ?? KB_LESSONS.find(l => l.id === id);
   if (!lesson) throw new Error(`Test fixture missing: lesson "${id}" not found in KB`);
   return lesson;
 }
@@ -47,9 +48,9 @@ function fixture(id: string): KBLesson {
 const CHEM_A = fixture('kbl-chem-1-1'); // Bohr's Model
 const CHEM_B = fixture('kbl-chem-3-2'); // Covalent Bonding
 
-// Mathematics lessons (book: kb-math-10-s1, subjectId: 'mathematics')
-const MATH_A = fixture('kbl-math-1-1'); // Polynomial Functions
-const MATH_B = fixture('kbl-math-2-1'); // Estimating the Slope of a Curve
+// Mathematics lessons (book: kb-math-10-s2 NCCD, subjectId: 'mathematics')
+const MATH_A = fixture('kbl-math-s2-nccd-u5_l1'); // اقترانات كثيرات الحدود
+const MATH_B = fixture('kbl-math-s2-nccd-u6_l2'); // تقدير ميل المنحنى
 
 // ─── detectSubjectAmbiguity ───────────────────────────────────────────────────
 

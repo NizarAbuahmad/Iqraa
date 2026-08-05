@@ -24,12 +24,63 @@ function findWorkspaceRoot(startDir) {
 const workspaceRoot = findWorkspaceRoot(projectRoot);
 const basePath = (process.env.BASE_PATH || '/').replace(/\/+$/, '');
 
+function loadEnvFile(filePath) {
+  if (!fs.existsSync(filePath)) return;
+  const text = fs.readFileSync(filePath, 'utf8');
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith('#')) continue;
+    const eq = line.indexOf('=');
+    if (eq <= 0) continue;
+    const key = line.slice(0, eq).trim();
+    let value = line.slice(eq + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    if (process.env[key] === undefined) {
+      process.env[key] = value;
+    }
+  }
+}
+
+// Prefer repo-root .env, then mobile/.env (does not override already-set vars).
+loadEnvFile(path.join(workspaceRoot, '.env'));
+loadEnvFile(path.join(projectRoot, '.env'));
+
 function exitWithError(message) {
   console.error(message);
   if (metroProcess) {
     metroProcess.kill();
   }
   process.exit(1);
+}
+
+function assertApiUrlSafeForBuild() {
+  if (process.env.ALLOW_LOCALHOST_API === '1') {
+    console.warn(
+      'ALLOW_LOCALHOST_API=1 — permitting localhost API URL for this local-only build.',
+    );
+    return;
+  }
+
+  const candidates = [
+    process.env.EXPO_PUBLIC_API_BASE_URL,
+    process.env.EXPO_PUBLIC_DOMAIN,
+  ].filter(Boolean);
+
+  for (const value of candidates) {
+    if (/localhost|127\.0\.0\.1/i.test(value)) {
+      exitWithError(
+        'ERROR: Static/production builds cannot bake localhost into the client.\n' +
+          `  Found: ${value}\n` +
+          '  Set EXPO_PUBLIC_API_BASE_URL to your public API URL before building,\n' +
+          '  or set ALLOW_LOCALHOST_API=1 for a local-only test build.',
+      );
+    }
+  }
 }
 
 function setupSignalHandlers() {
@@ -538,6 +589,7 @@ async function main() {
   console.log('Building static Expo Go deployment...');
 
   setupSignalHandlers();
+  assertApiUrlSafeForBuild();
 
   const domain = getDeploymentDomain();
   const expoPublicReplId = getExpoPublicReplId();

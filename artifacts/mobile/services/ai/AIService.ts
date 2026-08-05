@@ -20,7 +20,11 @@ export interface AIRequest {
   // Worksheet extras
   difficulty?: 'easy' | 'medium' | 'hard' | 'mixed';
   numQuestions?: number;
-  questionTypes?: Array<'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false'>;
+  questionTypes?: Array<'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false' | 'word_problem'>;
+  /** When true and priorKnowledge is non-empty, prepend a "مراجعة سابقة" warm-up. */
+  includePriorReview?: boolean;
+  /** Grounded unit prior-knowledge concepts (never invent when empty). */
+  priorKnowledge?: string[];
   // Quiz extras
   totalMarks?: number;
   // Activity extras
@@ -52,7 +56,7 @@ export interface WorksheetOutput {
 }
 
 export interface WorksheetSection {
-  type: 'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false';
+  type: 'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false' | 'word_problem';
   title: string;
   questions: WorksheetQuestion[];
 }

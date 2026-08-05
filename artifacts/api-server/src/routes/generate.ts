@@ -194,9 +194,16 @@ Return JSON in this exact shape:
 function worksheetPromptAr(b: any): string {
   const n = b.numQuestions ?? 8;
   const isHW = b.homework;
+  const types = b.questionTypes ?? ["short_answer"];
+  const wantsWP = types.includes("word_problem");
+  const prior = b.includePriorReview && Array.isArray(b.priorKnowledge) && b.priorKnowledge.length
+    ? b.priorKnowledge
+    : null;
   return `أنشئ ${isHW ? "واجبًا منزليًا" : "ورقة عمل"} لمادة ${b.subject} للصف ${b.grade} حول "${b.topic}".
 عدد الأسئلة: ${n}، المستوى: ${b.difficulty ?? "متوسط"}
-أنواع الأسئلة المطلوبة: ${(b.questionTypes ?? ["short_answer"]).join(", ")}
+أنواع الأسئلة المطلوبة: ${types.join(", ")}
+${wantsWP ? "\nيجب تضمين مسألة حياتية واحدة على الأقل (سيناريو واقعي يتطلب تطبيق مفاهيم الدرس، بأسلوب «حل مسائل حياتية»)." : ""}
+${prior ? `\nابدأ بقسم «مراجعة سابقة» فيه سؤالان أو ثلاثة فقط مبنية حرفيًا على هذه المفاهيم السابقة (لا تختلق غيرها):\n- ${prior.join("\n- ")}` : ""}
 ${b.additionalContext ? `\nسياق الكتاب المدرسي (استخدمه لصياغة أسئلة دقيقة ومرتبطة بالمنهج):\n${b.additionalContext}` : ""}
 أعد JSON بالشكل الآتي (بالعربية):
 {
@@ -214,15 +221,23 @@ ${b.additionalContext ? `\nسياق الكتاب المدرسي (استخدمه 
   "answerKey": [
     { "num": 1, "answer": "الإجابة" }
   ]
-}`;
+}
+مهم: كل سؤال يجب أن يقابله عنصر في answerKey (قسم الإجابات).`;
 }
 
 function worksheetPromptEn(b: any): string {
   const n = b.numQuestions ?? 8;
   const isHW = b.homework;
+  const types = b.questionTypes ?? ["short_answer"];
+  const wantsWP = types.includes("word_problem");
+  const prior = b.includePriorReview && Array.isArray(b.priorKnowledge) && b.priorKnowledge.length
+    ? b.priorKnowledge
+    : null;
   return `Create a ${isHW ? "homework assignment" : "worksheet"} for ${b.subject}, ${b.grade}, on "${b.topic}".
 Number of questions: ${n}, difficulty: ${b.difficulty ?? "medium"}
-Question types: ${(b.questionTypes ?? ["short_answer"]).join(", ")}
+Question types: ${types.join(", ")}
+${wantsWP ? "\nInclude at least one real-life word problem (a realistic scenario that requires applying the lesson concepts)." : ""}
+${prior ? `\nStart with a "Prior knowledge review" section of 2–3 questions drawn only from these concepts (do not invent others):\n- ${prior.join("\n- ")}` : ""}
 ${b.additionalContext ? `\nTextbook context (use this to craft accurate, curriculum-aligned questions):\n${b.additionalContext}` : ""}
 Return JSON in this exact shape:
 {
@@ -240,7 +255,8 @@ Return JSON in this exact shape:
   "answerKey": [
     { "num": 1, "answer": "Answer" }
   ]
-}`;
+}
+Important: every question must have a matching answerKey entry.`;
 }
 
 function quizPromptAr(b: any): string {

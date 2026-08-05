@@ -9,12 +9,16 @@ import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { buildGeneratorContext } from '@/services/kbContext';
 import { ActivityOutput, ActivityStep } from '@/services/ai/AIService';
-import { GRADES, SUBJECTS } from '@/services/curriculumData';
+import {
+  getPickerGrades, getPickerSubjects, resolvePickerIndex,
+} from '@/services/curriculumData';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { Button } from '@/components/ui/Button';
 import { getItem, saveItem, updateItem } from '@/services/workspace';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
+import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
+import { RelatedResourcesPanel } from '@/components/ui/RelatedResourcesPanel';
 import {
   buildActivityHTML,
   buildActivitySlidesHTML,
@@ -40,16 +44,18 @@ export default function ActivityScreen() {
   }>();
   const scrollRef = useRef<ScrollView>(null);
 
-  const gradeNames = GRADES.map(g => lang === 'ar' ? g.nameAr : g.name);
-  const subjectNames = SUBJECTS.map(s => lang === 'ar' ? s.nameAr : s.name);
+  const grades = getPickerGrades();
+  const subjects = getPickerSubjects();
+  const gradeNames = grades.map(g => lang === 'ar' ? g.nameAr : g.name);
+  const subjectNames = subjects.map(s => lang === 'ar' ? s.nameAr : s.name);
   const durationLabels = DURATION_VALUES.map(d => `${d} ${t('min')}`);
   const activityTypeLabels = [
     t('activityTypeIndividual'), t('activityTypeGroup'), t('activityTypeDiscussion'),
     t('activityTypeHandsOn'), t('activityTypeGame'),
   ];
 
-  const [gradeIdx, setGradeIdx] = useState(params.gradeIdx ? parseInt(params.gradeIdx, 10) : 9);
-  const [subjectIdx, setSubjectIdx] = useState(params.subjectIdx ? parseInt(params.subjectIdx, 10) : 2);
+  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(params.gradeIdx, grades.length));
+  const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx, subjects.length));
   const [topic, setTopic] = useState(params.topic ?? '');
   const [activityTypeIdx, setActivityTypeIdx] = useState(params.activityTypeIdx ? parseInt(params.activityTypeIdx, 10) : 1);
   const [durationIdx, setDurationIdx] = useState(params.durationIdx ? parseInt(params.durationIdx, 10) : 1);
@@ -100,8 +106,8 @@ export default function ActivityScreen() {
     try {
       const additionalContext = buildGeneratorContext(topic.trim(), lang as 'ar' | 'en') || undefined;
       const out = await aiService.generateActivity({
-        grade: GRADES[gradeIdx].name,
-        subject: SUBJECTS[subjectIdx].name,
+        grade: grades[gradeIdx].name,
+        subject: subjects[subjectIdx].name,
         topic: topic.trim(),
         language: lang === 'ar' ? 'arabic' : 'english',
         activityType: ACTIVITY_TYPE_IDS[activityTypeIdx],
@@ -124,8 +130,8 @@ export default function ActivityScreen() {
     : `Activity: ${topic.trim()}`;
 
   const getExportMeta = () => ({
-    subject: SUBJECTS[subjectIdx].name,
-    grade: GRADES[gradeIdx].name,
+    subject: subjects[subjectIdx].name,
+    grade: grades[gradeIdx].name,
   });
 
   const handleSave = async () => {
@@ -136,8 +142,8 @@ export default function ActivityScreen() {
     if (savedId) {
       await updateItem(savedId, {
         title,
-        subject: SUBJECTS[subjectIdx].name,
-        grade: GRADES[gradeIdx].name,
+        subject: subjects[subjectIdx].name,
+        grade: grades[gradeIdx].name,
         topic: topic.trim(),
         language: lang,
         content: JSON.stringify(result),
@@ -148,8 +154,8 @@ export default function ActivityScreen() {
       const saved = await saveItem({
         type: 'lesson',
         title,
-        subject: SUBJECTS[subjectIdx].name,
-        grade: GRADES[gradeIdx].name,
+        subject: subjects[subjectIdx].name,
+        grade: grades[gradeIdx].name,
         topic: topic.trim(),
         language: lang,
         content: JSON.stringify(result),
@@ -240,6 +246,7 @@ export default function ActivityScreen() {
           <Ionicons name="flash" size={14} color="#fff" />
           <Text style={[styles.headerBadgeText, { color: '#fff', fontFamily: 'Inter_500Medium' }]}>{t('activityBadge')}</Text>
         </View>
+        <DemoModeBanner onDark isRTL={isRTL} />
         <Text style={[styles.headerTitle, { color: '#fff', fontFamily: 'Inter_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('createActivityTitle')}
         </Text>
@@ -251,8 +258,8 @@ export default function ActivityScreen() {
         <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
 
         <TopicSelector
-          subjectId={SUBJECTS[subjectIdx].id}
-          gradeId={GRADES[gradeIdx].id}
+          subjectId={subjects[subjectIdx].id}
+          gradeId={grades[gradeIdx].id}
           value={topic}
           onChange={text => { setTopic(text); setError(''); }}
           lang={lang as 'ar' | 'en'}
@@ -302,6 +309,10 @@ export default function ActivityScreen() {
 
       {/* Result */}
       {result && <ActivityResult activity={result} colors={colors} isRTL={isRTL} t={t} lang={lang} />}
+
+      {result && !loading && (
+        <RelatedResourcesPanel toolId="activity" topic={topic.trim()} isRTL={isRTL} />
+      )}
 
       {/* Actions */}
       {result && !loading && (

@@ -41,6 +41,15 @@ Copy the env template and edit values:
 copy .env.example .env
 ```
 
+For Expo (web + native), also ensure the mobile app can see the API URL (Expo loads `.env` from the mobile project root, not only the monorepo root):
+
+```powershell
+# artifacts/mobile/.env  (gitignored)
+EXPO_PUBLIC_API_BASE_URL=http://localhost:8080/api
+```
+
+`pnpm run dev:mobile` / `dev:mobile:web` also inject this from the repo-root `.env` via `artifacts/mobile/scripts/dev.mjs`.
+
 Provision the database schema (requires a valid `DATABASE_URL`):
 
 ```powershell
@@ -87,6 +96,29 @@ Without an OpenAI key, the API process will not start (AI client initializes at 
 | `REPL_ID`, `EXPO_PUBLIC_REPL_ID`, `EXPO_PACKAGER_PROXY_URL`, `REACT_NATIVE_PACKAGER_HOSTNAME` | Unused by local launchers |
 
 Original Replit mobile script (optional): `pnpm --filter @workspace/mobile run dev:replit`.
+
+---
+
+## Math verifier (derivative slice)
+
+Optional SymPy microservice used by verified derivative generation:
+
+```powershell
+cd artifacts\math-verifier
+python -m venv .venv
+.\.venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app:app --host 127.0.0.1 --port 8090
+```
+
+Done criterion (20 items, zero wrong keys): `python prove_slice.py`
+
+Set `MATH_VERIFIER_URL=http://127.0.0.1:8090` in the repo-root `.env`. API routes:
+
+- `POST /api/generate/verified-derivative/template`
+- `POST /api/generate/verified-derivative/ai`
+- `POST /api/generate/verified-derivative/batch`
+- `POST /api/verify/derivative`
 
 ---
 
@@ -139,6 +171,33 @@ pnpm --filter @workspace/mobile run dev -- --web
 - Defaults to packager port **8081**
 - Points at `http://localhost:8080/api` unless you override `EXPO_PUBLIC_API_BASE_URL`
 - Press `w` in the Expo CLI for web, or use `--web` as above
+
+---
+
+## API environment flow
+
+Resolution order in `artifacts/mobile/services/apiClient.ts` → `getApiBaseUrl()`:
+
+1. `EXPO_PUBLIC_API_BASE_URL` (preferred)
+2. `EXPO_PUBLIC_DOMAIN` → `https://{domain}/api` (or `{url}/api` if it already includes a scheme)
+3. **Dev only** fallback → `http://localhost:8080/api` **with a console warning**
+4. **Production** fallback → relative `/api` (same-origin reverse proxy) **with a console error/warning**
+
+| Mode | How env is loaded | Expected API URL |
+|------|-------------------|------------------|
+| **Web (development)** | `dev.mjs` loads repo-root `.env` into Metro; Expo also reads `artifacts/mobile/.env` | `http://localhost:8080/api` — never the Expo origin `:8081` |
+| **Mobile (development)** | Same as web via `pnpm run dev:mobile` | Simulator/emulator: `http://localhost:8080/api`. Physical device: set `EXPO_PUBLIC_API_BASE_URL=http://<LAN-IP>:8080/api` |
+| **Production / static build** | `scripts/build.js` loads root + mobile `.env`; requires `EXPO_PUBLIC_API_BASE_URL` or `EXPO_PUBLIC_DOMAIN` | Public HTTPS API URL. **Localhost is rejected** unless `ALLOW_LOCALHOST_API=1` (local test builds only) |
+
+Quick checks:
+
+```powershell
+# API up
+Invoke-RestMethod http://localhost:8080/api/healthz
+
+# Wrong (Expo HTML — do not use as API)
+# http://localhost:8081/api/auth/login  → text/html
+```
 
 ---
 

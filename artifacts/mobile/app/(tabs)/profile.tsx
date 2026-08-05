@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -74,17 +74,28 @@ export default function ProfileScreen() {
       })
     : '';
 
+  const performLogout = async () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    await logout();
+    router.replace('/(auth)/login');
+  };
+
   const handleLogout = () => {
+    // RN Alert.alert action buttons are unreliable on web — use window.confirm there.
+    if (Platform.OS === 'web') {
+      const ok =
+        typeof window !== 'undefined' &&
+        window.confirm(`${t('signOut')}\n\n${t('signOutConfirm')}`);
+      if (ok) void performLogout();
+      return;
+    }
+
     Alert.alert(t('signOut'), t('signOutConfirm'), [
       { text: t('cancel'), style: 'cancel' },
       {
         text: t('signOut'),
         style: 'destructive',
-        onPress: async () => {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-          await logout();
-          router.replace('/(auth)/login');
-        },
+        onPress: () => { void performLogout(); },
       },
     ]);
   };
@@ -124,7 +135,7 @@ export default function ProfileScreen() {
           {memberSince ? (
             <>
               <View style={[styles.divider, { backgroundColor: colors.border }]} />
-              <InfoRow icon="calendar-outline" label="Member since" value={memberSince} color={colors.info} isRTL={isRTL} />
+              <InfoRow icon="calendar-outline" label={t('memberSince')} value={memberSince} color={colors.info} isRTL={isRTL} />
             </>
           ) : null}
           {user?.phone ? (
@@ -182,10 +193,7 @@ export default function ProfileScreen() {
         </Text>
         <View style={{ gap: 8 }}>
           <SettingRow icon="folder-outline" label={t('myWorkspace')} onPress={() => router.push('/workspace')} isRTL={isRTL} colors={colors} />
-          <SettingRow icon="person-outline" label={t('editProfile')} onPress={() => {}} isRTL={isRTL} colors={colors} />
-          <SettingRow icon="lock-closed-outline" label={t('changePassword')} onPress={() => {}} isRTL={isRTL} colors={colors} />
           <SettingRow icon="settings-outline" label={t('settings')} onPress={() => router.push('/settings')} isRTL={isRTL} colors={colors} />
-          <SettingRow icon="help-circle-outline" label={t('helpSupport')} onPress={() => {}} isRTL={isRTL} colors={colors} />
           <SettingRow icon="log-out-outline" label={t('signOut')} onPress={handleLogout} destructive isRTL={isRTL} colors={colors} />
         </View>
       </View>

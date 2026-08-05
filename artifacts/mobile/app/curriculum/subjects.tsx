@@ -7,7 +7,13 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
-import { BOOKS, Book } from '@/services/curriculumData';
+import {
+  Book,
+  getBooksForSubjectGrade,
+  getLessonsForUnit,
+  getSemesterLabel,
+  getUnitsForBook,
+} from '@/services/curriculumData';
 
 export default function SubjectsScreen() {
   const colors = useColors();
@@ -19,38 +25,29 @@ export default function SubjectsScreen() {
     subjectId: string; subjectName: string; subjectColor: string;
   }>();
 
-  const role = user?.role;
-
-  // Filter by subject/grade first, then by audience based on role
-  const books = BOOKS.filter(b => {
-    if (b.subjectId !== subjectId || b.gradeId !== gradeId) return false;
-    const aud = b.audience ?? 'all';
-    if (aud === 'all') return true;
-    // teachers and admins see teacher guides + everything
-    if (!role || role === 'teacher' || role === 'school_admin' || role === 'system_admin') return true;
-    return aud === 'student';
-  });
+  const books: Book[] = getBooksForSubjectGrade(
+    subjectId ?? '',
+    gradeId ?? '',
+    user?.role,
+  ).slice().sort((a, b) => (a.semester ?? 99) - (b.semester ?? 99));
 
   const color = subjectColor ?? colors.primary;
-  const displaySubject = subjectName;
-  const displayGrade = gradeName;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      {/* Hero */}
       <View style={[styles.hero, { backgroundColor: color, paddingTop: insets.top + 12 }]}>
         <Pressable onPress={() => router.back()} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
         <View style={[styles.heroContent, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
           <Text style={[styles.heroGrade, { color: 'rgba(255,255,255,0.75)', fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
-            {displayGrade}
+            {t('jordanCurriculum')} · {gradeName}
           </Text>
           <Text style={[styles.heroTitle, { color: '#fff', fontFamily: 'Inter_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
-            {displaySubject}
+            {subjectName}
           </Text>
-          <Text style={[styles.heroSub, { color: 'rgba(255,255,255,0.8)', fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
-            {t('booksAvailable', books.length)}
+          <Text style={[styles.heroSub, { color: 'rgba(255,255,255,0.85)', fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+            {t('selectSemester')}
           </Text>
         </View>
       </View>
@@ -58,80 +55,63 @@ export default function SubjectsScreen() {
       <FlatList
         data={books}
         keyExtractor={b => b.id}
-        contentContainerStyle={{ padding: 20, paddingBottom: 60, gap: 12 }}
+        contentContainerStyle={{ padding: 20, paddingBottom: 60, gap: 14 }}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Ionicons name="library-outline" size={40} color={colors.mutedForeground} />
+            <Ionicons name="calendar-outline" size={40} color={colors.mutedForeground} />
             <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'Inter_600SemiBold' }]}>
-              {t('noBooks')}
+              {t('noSemesters')}
             </Text>
             <Text style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: 'center' }]}>
-              {t('noBooksDesc', displaySubject, displayGrade)}
+              {t('noBooksDesc', subjectName ?? '', gradeName ?? '')}
             </Text>
           </View>
         }
         renderItem={({ item: book }) => {
-          const bookTitle = lang === 'ar' ? (book.titleAr || book.title) : book.title;
-          const isTeacherOnly = book.audience === 'teacher';
-          const isStudentBook = book.audience === 'student';
+          const units = getUnitsForBook(book.id);
+          const lessonCount = units.reduce((n, u) => n + getLessonsForUnit(u.id).length, 0);
+          const semesterLabel = getSemesterLabel(book, lang);
+          const semesterNum = book.semester;
+
           return (
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 router.push({
                   pathname: '/curriculum/lessons',
-                  params: { bookId: book.id, bookTitle: book.title, bookTitleAr: book.titleAr, subjectColor: color },
+                  params: {
+                    bookId: book.id,
+                    bookTitle: book.title,
+                    bookTitleAr: book.titleAr,
+                    subjectColor: color,
+                    semesterLabel,
+                  },
                 });
               }}
               style={({ pressed }) => [
-                styles.bookCard,
+                styles.semesterCard,
                 {
                   backgroundColor: colors.card,
-                  borderColor: isTeacherOnly ? color + '55' : colors.border,
+                  borderColor: colors.border,
                   borderRadius: colors.radius,
-                  opacity: pressed ? 0.8 : 1,
+                  opacity: pressed ? 0.85 : 1,
                   flexDirection: isRTL ? 'row-reverse' : 'row',
                 },
               ]}
             >
-              <View style={[styles.bookIcon, { backgroundColor: color + '1A', borderRadius: 12 }]}>
-                <Ionicons
-                  name={isTeacherOnly ? 'school-outline' : isStudentBook ? 'reader-outline' : 'book-outline'}
-                  size={24}
-                  color={color}
-                />
+              <View style={[styles.semesterBadge, { backgroundColor: color }]}>
+                <Text style={[styles.semesterBadgeText, { fontFamily: 'Inter_700Bold' }]}>
+                  {semesterNum ?? '•'}
+                </Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.bookTitle, { color: colors.foreground, fontFamily: 'Inter_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
-                  {bookTitle}
+                <Text style={[styles.semesterTitle, { color: colors.foreground, fontFamily: 'Inter_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+                  {semesterLabel}
                 </Text>
-                <View style={[styles.bookMeta, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                  {/* Audience badge */}
-                  {isTeacherOnly && (
-                    <View style={[styles.pill, { backgroundColor: color + '22' }]}>
-                      <Text style={[styles.pillText, { color, fontFamily: 'Inter_600SemiBold' }]}>
-                        {lang === 'ar' ? 'للمعلم' : 'Teacher'}
-                      </Text>
-                    </View>
-                  )}
-                  {isStudentBook && (
-                    <View style={[styles.pill, { backgroundColor: colors.muted }]}>
-                      <Text style={[styles.pillText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
-                        {lang === 'ar' ? 'للطالب' : 'Student'}
-                      </Text>
-                    </View>
-                  )}
-                  <View style={[styles.pill, { backgroundColor: colors.muted }]}>
-                    <Text style={[styles.pillText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>{book.academicYear}</Text>
-                  </View>
-                  <View style={[styles.pill, { backgroundColor: colors.muted }]}>
-                    <Text style={[styles.pillText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>{book.language}</Text>
-                  </View>
-                  <View style={[styles.pill, { backgroundColor: colors.muted }]}>
-                    <Text style={[styles.pillText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>Ed. {book.edition}</Text>
-                  </View>
-                </View>
+                <Text style={[styles.semesterMeta, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+                  {t('unitsAndLessons', units.length, lessonCount)}
+                </Text>
               </View>
               <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
             </Pressable>
@@ -148,13 +128,19 @@ const styles = StyleSheet.create({
   heroContent: { gap: 4 },
   heroGrade: { fontSize: 13 },
   heroTitle: { fontSize: 28 },
-  heroSub: { fontSize: 13, marginTop: 2 },
-  bookCard: { alignItems: 'center', padding: 16, borderWidth: 1, gap: 14 },
-  bookIcon: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  bookTitle: { fontSize: 15, marginBottom: 8 },
-  bookMeta: { gap: 6, flexWrap: 'wrap' },
-  pill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  pillText: { fontSize: 11 },
+  heroSub: { fontSize: 14, marginTop: 6 },
+  semesterCard: { alignItems: 'center', padding: 18, borderWidth: 1, gap: 14 },
+  semesterBadge: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  semesterBadgeText: { fontSize: 20, color: '#fff' },
+  semesterTitle: { fontSize: 17, marginBottom: 4 },
+  semesterMeta: { fontSize: 13 },
   empty: { alignItems: 'center', paddingTop: 60, gap: 10 },
   emptyTitle: { fontSize: 18 },
   emptyText: { fontSize: 14 },

@@ -7,20 +7,79 @@ import * as storage from './secureStorage';
 const ACCESS_TOKEN_KEY = 'iqra_access_token';
 const REFRESH_TOKEN_KEY = 'iqra_refresh_token';
 
+const LOCAL_DEV_API = 'http://localhost:8080/api';
+
+function isLocalhostUrl(url: string): boolean {
+  return /^(https?:\/\/)?(localhost|127\.0\.0\.1)(:|\/|$)/i.test(url);
+}
+
+function warnMissingApiEnv(resolved: string, detail: string) {
+  const msg =
+    `[api] EXPO_PUBLIC_API_BASE_URL (or EXPO_PUBLIC_DOMAIN) is unset. ${detail} ` +
+    `Resolved: ${resolved}`;
+  if (typeof __DEV__ !== 'undefined' && __DEV__) {
+    console.warn(msg);
+  } else {
+    console.error(msg);
+  }
+}
+
+function assertNotLocalhostInProduction(url: string) {
+  if (typeof __DEV__ !== 'undefined' && __DEV__) return;
+  if (!isLocalhostUrl(url)) return;
+  console.error(
+    `[api] Production build resolved API to localhost (${url}). ` +
+      'Rebuild with a public EXPO_PUBLIC_API_BASE_URL — localhost will not work for users.',
+  );
+}
+
 export function getApiBaseUrl(): string {
-  // Local / explicit override (e.g. http://localhost:8080/api)
   const explicit = process.env.EXPO_PUBLIC_API_BASE_URL?.trim();
-  if (explicit) return explicit.replace(/\/+$/, '');
+  if (explicit) {
+    const url = explicit.replace(/\/+$/, '');
+    assertNotLocalhostInProduction(url);
+    return url;
+  }
 
   const domain = process.env.EXPO_PUBLIC_DOMAIN?.trim();
   if (domain) {
-    // Allow full URLs for local http; bare hostnames keep Replit https behavior.
-    if (/^https?:\/\//i.test(domain)) {
-      return `${domain.replace(/\/+$/, '')}/api`;
-    }
-    return `https://${domain}/api`;
+    // Allow full URLs for local http; bare hostnames keep hosted https behavior.
+    const url = /^https?:\/\//i.test(domain)
+      ? `${domain.replace(/\/+$/, '')}/api`
+      : `https://${domain}/api`;
+    assertNotLocalhostInProduction(url);
+    return url;
   }
 
+  // ── Missing env ──────────────────────────────────────────────────────────
+  // Dev web on :8081 must not use relative `/api` (Metro returns HTML).
+  if (typeof __DEV__ !== 'undefined' && __DEV__) {
+    if (typeof window !== 'undefined') {
+      const { hostname, port } = window.location;
+      if (
+        (hostname === 'localhost' || hostname === '127.0.0.1') &&
+        port !== '8080'
+      ) {
+        warnMissingApiEnv(
+          LOCAL_DEV_API,
+          'Using local API for Expo web. Set EXPO_PUBLIC_API_BASE_URL in artifacts/mobile/.env or the repo root .env.',
+        );
+        return LOCAL_DEV_API;
+      }
+    }
+
+    warnMissingApiEnv(
+      LOCAL_DEV_API,
+      'Using local API for development. Physical devices need your LAN IP, e.g. http://192.168.x.x:8080/api.',
+    );
+    return LOCAL_DEV_API;
+  }
+
+  // Production without env: same-origin `/api` (reverse-proxy deployments only).
+  warnMissingApiEnv(
+    '/api',
+    'Falling back to relative "/api" (same-origin). Set EXPO_PUBLIC_API_BASE_URL at build time.',
+  );
   return '/api';
 }
 

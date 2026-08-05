@@ -49,6 +49,16 @@ Thumbs.db
 .env.local
 .env.*.local
 
+# Math verifier local artifacts
+artifacts/math-verifier/.venv/
+artifacts/math-verifier/prove_slice_report.json
+artifacts/math-verifier/__pycache__/
+artifacts/math-verifier/**/__pycache__/
+
+# Large teacher PDF support packs (catalog JSON is committed; binaries stay local)
+knowledge-base/**/support-pdfs/
+knowledge-base/**/*.pdf
+
 # Replit
 .cache/
 .local/

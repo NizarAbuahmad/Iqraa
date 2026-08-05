@@ -4,39 +4,9 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
-import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { Tabs } from 'expo-router';
-import { Icon, Label, NativeTabs } from 'expo-router/unstable-native-tabs';
 import { SymbolView } from 'expo-symbols';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-function NativeTabLayout() {
-  const { t } = useLanguage();
-  return (
-    <NativeTabs>
-      <NativeTabs.Trigger name="index">
-        <Icon sf={{ default: 'house', selected: 'house.fill' }} />
-        <Label>{t('tabHome')}</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="curriculum">
-        <Icon sf={{ default: 'books.vertical', selected: 'books.vertical.fill' }} />
-        <Label>{t('tabCurriculum')}</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="iqra">
-        <Icon sf={{ default: 'bubble.left.and.bubble.right', selected: 'bubble.left.and.bubble.right.fill' }} />
-        <Label>{t('tabIqra')}</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="notifications">
-        <Icon sf={{ default: 'bell', selected: 'bell.fill' }} />
-        <Label>{t('tabAlerts')}</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="profile">
-        <Icon sf={{ default: 'person.circle', selected: 'person.circle.fill' }} />
-        <Label>{t('tabProfile')}</Label>
-      </NativeTabs.Trigger>
-    </NativeTabs>
-  );
-}
 
 function ClassicTabLayout() {
   const colors = useColors();
@@ -165,8 +135,7 @@ function ClassicTabLayout() {
 }
 
 export default function TabLayout() {
-  if (isLiquidGlassAvailable()) {
-    return <NativeTabLayout />;
-  }
+  // Classic Tabs only — NativeTabs lacks BottomTabBarHeight context and crashes
+  // iqra.tsx (useBottomTabBarHeight) in Expo Go.
   return <ClassicTabLayout />;
 }

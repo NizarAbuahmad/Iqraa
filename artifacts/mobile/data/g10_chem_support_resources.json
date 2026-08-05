@@ -1,0 +1,580 @@
+{
+  "meta": {
+    "grade": "الصف العاشر",
+    "subject": "الكيمياء",
+    "subjectId": "chemistry",
+    "purpose": "Official books + teacher support materials for Iqra chemistry grounding.",
+    "pdf_dir_relative": "knowledge-base/grade-10-chemistry/support-pdfs",
+    "source_note": "Imported from c:\\Users\\Lenovo\\Downloads\\Raya studio\\Iqraa\\Calude app\\Knowledge Base\\10th grade\\alchamy. Brochure skipped; (1) duplicates collapsed.",
+    "count_unique": 28,
+    "count_source": 29
+  },
+  "resources": [
+    {
+      "id": "g10-chem-sup-001",
+      "titleAr": "10th grade, alchamy.2nd semester",
+      "filename": "10th grade, alchamy.2nd semester.pdf",
+      "type": "official_book",
+      "unitTags": [
+        "chem-s2"
+      ],
+      "authorAr": null,
+      "sizeBytes": 58646564,
+      "subjectId": "chemistry",
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر",
+        "chem-s2",
+        "official_book"
+      ]
+    },
+    {
+      "id": "g10-chem-sup-002",
+      "titleAr": "10th grade, alchamy1st semester",
+      "filename": "10th grade, alchamy1st semester.pdf",
+      "type": "official_book",
+      "unitTags": [
+        "chem-s1"
+      ],
+      "authorAr": null,
+      "sizeBytes": 29124500,
+      "subjectId": "chemistry",
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر",
+        "chem-s1",
+        "official_book"
+      ]
+    },
+    {
+      "id": "g10-chem-sup-003",
+      "titleAr": "أسئلة منوعة كيمياء الصف العاشر الفصل الأول",
+      "filename": "أسئلة منوعة كيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
+      "type": "quiz",
+      "unitTags": [
+        "chem-s1"
+      ],
+      "authorAr": "مريم السرطاوي",
+      "sizeBytes": 227212,
+      "subjectId": "chemistry",
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر",
+        "chem-s1",
+        "quiz"
+      ]
+    },
+    {
+      "id": "g10-chem-sup-004",
+      "titleAr": "اختبار الشهر الأول كيمياء الصف العاشر الفصل الثاني",
+      "filename": "اختبار الشهر الأول كيمياء الصف العاشر الفصل الثاني أ. محمد طارق عوض.pdf",
+      "type": "quiz",
+      "unitTags": [
+        "chem-s2"
+      ],
+      "authorAr": "محمد طارق عوض",
+      "sizeBytes": 58224,
+      "subjectId": "chemistry",
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر",
+        "chem-s2",
+        "quiz"
+      ]
+    },
+    {
+      "id": "g10-chem-sup-005",
+      "titleAr": "اختبار الوحدة الأولى البنية الذرية",
+      "filename": "اختبار الوحدة الأولى البنية الذرية إعداد المعلمة ولاء شعواطة.pdf",
+      "type": "quiz",
+      "unitTags": [
+        "chem-s1-u1"
+      ],
+      "authorAr": "ولاء شعواطة",
+      "sizeBytes": 357947,
+      "subjectId": "chemistry",
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر",
+        "chem-s1-u1",
+        "quiz"
+      ]
+    },
+    {
+      "id": "g10-chem-sup-006",
+      "titleAr": "المادة المقررة لتعويض الفاقد التعليمي لمادة الكيمياء الصف العاشر",
+      "filename": "المادة المقررة لتعويض الفاقد التعليمي لمادة الكيمياء الصف العاشر.pdf",
+      "type": "remedial",
+      "unitTags": [
+        "chem-g10-general"
+      ],
+      "authorAr": null,
+      "sizeBytes": 2612943,
+      "subjectId": "chemistry",
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر",
+        "chem-g10-general",
+        "remedial"
+      ]
+    },
+    {
+      "id": "g10-chem-sup-007",
+      "titleAr": "بنك أسئلة الكيمياء الصف العاشر الفصل الأول",
+      "filename": "بنك أسئلة الكيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
+      "type": "quiz",
+      "unitTags": [
+        "chem-s1"
+      ],
+      "authorAr": "مريم السرطاوي",
+      "sizeBytes": 707952,
+      "subjectId": "chemistry",
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر",
+        "chem-s1",
+        "quiz"
+      ]
+    },
+    {
+      "id": "g10-chem-sup-008",
+      "titleAr": "دليل المعلم لمادة الكيمياء الصف العاشر الفصل الأول",
+      "filename": "دليل المعلم لمادة الكيمياء الصف العاشر الفصل الأول.pdf",
+      "type": "official_book",
+      "unitTags": [
+        "chem-s1"
+      ],
+      "authorAr": null,
+      "sizeBytes": 55193457,
+      "subjectId": "chemistry",
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر",
+        "chem-s1",
+        "official_book"
+      ]
+    },
+    {
+      "id": "g10-chem-sup-009",
+      "titleAr": "دليل المعلم لمادة الكيمياء الصف العاشر الفصل الثاني",
+      "filename": "دليل المعلم لمادة الكيمياء الصف العاشر الفصل الثاني.pdf",
+      "type": "official_book",
+      "unitTags": [
+        "chem-s2"
+      ],
+      "authorAr": null,
+      "sizeBytes": 38253996,
+      "subjectId": "chemistry",
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر",
+        "chem-s2",
+        "official_book"
+      ]
+    },
+    {
+      "id": "g10-chem-sup-010",
+      "titleAr": "دوسية الفصل الأول كيمياء الصف العاشر",
+      "filename": "دوسية الفصل الأول كيمياء الصف العاشر أ. عبير المصري.pdf",
+      "type": "remedial",
+      "unitTags": [
+        "chem-s1"
+      ],
+      "authorAr": "عبير المصري",
+      "sizeBytes": 1615124,
+      "subjectId": "chemistry",
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر",
+        "chem-s1",
+        "remedial"
+      ]
+    },
+    {
+      "id": "g10-chem-sup-011",
+      "titleAr": "دوسية الكيمياء الصف العاشر الفصل الثاني",
+      "filename": "دوسية الكيمياء الصف العاشر الفصل الثاني أ.ولاء شعواطة.pdf",
+      "type": "remedial",
+      "unitTags": [
+        "chem-s2"
+      ],
+      "authorAr": "ولاء شعواطة",
+      "sizeBytes": 6106249,
+      "subjectId": "chemistry",
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر",
+        "chem-s2",
+        "remedial"
+      ]
+    },
+    {
+      "id": "g10-chem-sup-012",
+      "titleAr": "دوسية الكيمياء الصف العاشر الفصل الثاني",
+      "filename": "دوسية الكيمياء الصف العاشر الفصل الثاني إعداد م. مريم السرطاوي.pdf",
+      "type": "remedial",
+      "unitTags": [
+        "chem-s2"
+      ],
+      "authorAr": "مريم السرطاوي",
+      "sizeBytes": 3749571,
+      "subjectId": "chemistry",
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر",
+        "chem-s2",
+        "remedial"
+      ]
+    },
+    {
+      "id": "g10-chem-sup-013",
+      "titleAr": "دوسية الكيمياء الصف العاشر الفصل الدراسي الأول 2021",
+      "filename": "دوسية الكيمياء الصف العاشر الفصل الدراسي الأول 2021 م. مريم السرطاوي.pdf",
+      "type": "remedial",
+      "unitTags": [
+        "chem-s1"
+      ],
+      "authorAr": "مريم السرطاوي",
+      "sizeBytes": 4983987,
+      "subjectId": "chemistry",
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر",
+        "chem-s1",
+        "remedial"
+      ]
+    },
+    {
+      "id": "g10-chem-sup-014",
+      "titleAr": "دوسية الوحدة الأولى الكيمياء الصف العاشر الفصل الأول",
+      "filename": "دوسية الوحدة الأولى الكيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
+      "type": "remedial",
+      "unitTags": [
+        "chem-s1-u1",
+        "chem-s1"
+      ],
+      "authorAr": "مريم السرطاوي",
+      "sizeBytes": 1811036,
+      "subjectId": "chemistry",
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر",
+        "chem-s1-u1",
+        "chem-s1",
+        "remedial"
+      ]
+    },
+    {
+      "id": "g10-chem-sup-015",
+      "titleAr": "دوسية الوحدة الثالثة الكيمياء الصف العاشر الفصل الأول",
+      "filename": "دوسية الوحدة الثالثة الكيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
+      "type": "remedial",
+      "unitTags": [
+        "chem-s1-u3",
+        "chem-s1"
+      ],
+      "authorAr": "مريم السرطاوي",
+      "sizeBytes": 2412831,
+      "subjectId": "chemistry",
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر",
+        "chem-s1-u3",
+        "chem-s1",
+        "remedial"
+      ]
+    },
+    {
+      "id": "g10-chem-sup-016",
+      "titleAr": "دوسية الوحدة الثانية الكيمياء الصف العاشر الفصل الأول",
+      "filename": "دوسية الوحدة الثانية الكيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
+      "type": "remedial",
+      "unitTags": [
+        "chem-s1-u2",
+        "chem-s1"
+      ],
+      "authorAr": "مريم السرطاوي",
+      "sizeBytes": 2282249,
+      "subjectId": "chemistry",
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر",
+        "chem-s1-u2",
+        "chem-s1",
+        "remedial"
+      ]
+    },
+    {
+      "id": "g10-chem-sup-017",
+      "titleAr": "كتاب الأنشطة والتجارب العملية كيمياء الصف العاشر الفصل الأول",
+      "filename": "كتاب الأنشطة والتجارب العملية كيمياء الصف العاشر الفصل الأول.pdf",
+      "type": "official_book",
+      "unitTags": [
+        "chem-s1"
+      ],
+      "authorAr": null,
+      "sizeBytes": 3141923,
+      "subjectId": "chemistry",
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر",
+        "chem-s1",
+        "official_book"
+      ]
+    },
+    {
+      "id": "g10-chem-sup-018",
+      "titleAr": "كتاب الأنشطة والتجارب العملية كيمياء الصف العاشر الفصل الثاني",
+      "filename": "كتاب الأنشطة والتجارب العملية كيمياء الصف العاشر الفصل الثاني.pdf",
+      "type": "official_book",
+      "unitTags": [
+        "chem-s2"
+      ],
+      "authorAr": null,
+      "sizeBytes": 1758377,
+      "subjectId": "chemistry",
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر",
+        "chem-s2",
+        "official_book"
+      ]
+    },
+    {
+      "id": "g10-chem-sup-019",
+      "titleAr": "كتاب الطالب لمادة الكيمياء الصف العاشر الفصل الأول",
+      "filename": "كتاب الطالب لمادة الكيمياء الصف العاشر الفصل الأول.pdf",
+      "type": "official_book",
+      "unitTags": [
+        "chem-s1"
+      ],
+      "authorAr": null,
+      "sizeBytes": 24778814,
+      "subjectId": "chemistry",
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر",
+        "chem-s1",
+        "official_book"
+      ]
+    },
+    {
+      "id": "g10-chem-sup-020",
+      "titleAr": "كتاب الطالب لمادة الكيمياء الصف العاشر الفصل الثاني",
+      "filename": "كتاب الطالب لمادة الكيمياء الصف العاشر الفصل الثاني.pdf",
+      "type": "official_book",
+      "unitTags": [
+        "chem-s2"
+      ],
+      "authorAr": null,
+      "sizeBytes": 27409185,
+      "subjectId": "chemistry",
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر",
+        "chem-s2",
+        "official_book"
+      ]
+    },
+    {
+      "id": "g10-chem-sup-021",
+      "titleAr": "ملخص الكيمياء الصف العاشر الفصل الدراسي الأول",
+      "filename": "ملخص الكيمياء الصف العاشر الفصل الدراسي الأول أ. ولاء شعواطة.pdf",
+      "type": "summary",
+      "unitTags": [
+        "chem-s1"
+      ],
+      "authorAr": "ولاء شعواطة",
+      "sizeBytes": 4736025,
+      "subjectId": "chemistry",
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر",
+        "chem-s1",
+        "summary"
+      ]
+    },
+    {
+      "id": "g10-chem-sup-022",
+      "titleAr": "ملخص الوحدة الخامسة الكيمياء الصف العاشر",
+      "filename": "ملخص الوحدة الخامسة الكيمياء الصف العاشر إعداد م. مريم السرطاوي.pdf",
+      "type": "summary",
+      "unitTags": [
+        "chem-s2-u5"
+      ],
+      "authorAr": "مريم السرطاوي",
+      "sizeBytes": 2258772,
+      "subjectId": "chemistry",
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر",
+        "chem-s2-u5",
+        "summary"
+      ]
+    },
+    {
+      "id": "g10-chem-sup-023",
+      "titleAr": "ملخص الوحدة الرابعة الكيمياء الصف العاشر",
+      "filename": "ملخص الوحدة الرابعة الكيمياء الصف العاشر إعداد م. مريم السرطاوي.pdf",
+      "type": "summary",
+      "unitTags": [
+        "chem-s2-u4"
+      ],
+      "authorAr": "مريم السرطاوي",
+      "sizeBytes": 2747824,
+      "subjectId": "chemistry",
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر",
+        "chem-s2-u4",
+        "summary"
+      ]
+    },
+    {
+      "id": "g10-chem-sup-024",
+      "titleAr": "ملزمة الكيمياء الصف العاشر الفصل الثاني",
+      "filename": "ملزمة الكيمياء الصف العاشر الفصل الثاني أ. عبير المصري.pdf",
+      "type": "summary",
+      "unitTags": [
+        "chem-s2"
+      ],
+      "authorAr": "عبير المصري",
+      "sizeBytes": 1652511,
+      "subjectId": "chemistry",
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر",
+        "chem-s2",
+        "summary"
+      ]
+    },
+    {
+      "id": "g10-chem-sup-025",
+      "titleAr": "ورقة عمل التفاعلات الكيميائية كيمياء عاشر",
+      "filename": "ورقة عمل التفاعلات الكيميائية كيمياء عاشر أ. محمد طارق.pdf",
+      "type": "worksheet",
+      "unitTags": [
+        "chem-s2-u5"
+      ],
+      "authorAr": "محمد طارق",
+      "sizeBytes": 403163,
+      "subjectId": "chemistry",
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر",
+        "chem-s2-u5",
+        "worksheet"
+      ]
+    },
+    {
+      "id": "g10-chem-sup-026",
+      "titleAr": "ورقة عمل قانون ماكس بلانك الكيمياء للصف العاشر",
+      "filename": "ورقة عمل قانون ماكس بلانك الكيمياء للصف العاشر أ. عبير المصري.pdf",
+      "type": "worksheet",
+      "unitTags": [
+        "chem-s1-u1"
+      ],
+      "authorAr": "عبير المصري",
+      "sizeBytes": 150140,
+      "subjectId": "chemistry",
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر",
+        "chem-s1-u1",
+        "worksheet"
+      ]
+    },
+    {
+      "id": "g10-chem-sup-027",
+      "titleAr": "ورقة عمل كيمياء الصف العاشر نظرية بور",
+      "filename": "ورقة عمل كيمياء الصف العاشر نظرية بور أ. محمد طارق.pdf",
+      "type": "worksheet",
+      "unitTags": [
+        "chem-s1-u1"
+      ],
+      "authorAr": "محمد طارق",
+      "sizeBytes": 219398,
+      "subjectId": "chemistry",
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر",
+        "chem-s1-u1",
+        "worksheet"
+      ]
+    },
+    {
+      "id": "g10-chem-sup-028",
+      "titleAr": "ورقة عمل كيمياء الصف العاشر نظرية بور الذرية شبكة منهاجي التعليمية",
+      "filename": "ورقة عمل كيمياء الصف العاشر نظرية بور الذرية شبكة منهاجي التعليمية.pdf",
+      "type": "worksheet",
+      "unitTags": [
+        "chem-s1-u1"
+      ],
+      "authorAr": null,
+      "sizeBytes": 552090,
+      "subjectId": "chemistry",
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر",
+        "chem-s1-u1",
+        "worksheet"
+      ]
+    }
+  ]
+}

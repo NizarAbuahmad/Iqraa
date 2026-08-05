@@ -6,28 +6,53 @@
  */
 
 import type { KBLesson } from './knowledgeBase.ts';
-import { getBookForLesson, getUnitForLesson, searchKBSemantic } from './knowledgeBase.ts';
+import {
+  getBookForLesson,
+  getUnitForLesson,
+  resolveGroundedKbLesson,
+  searchKBRanked,
+  searchKBSemantic,
+} from './knowledgeBase.ts';
+import {
+  findNccdSem1LessonByKbId,
+  findNccdSem1UnitByLessonKbId,
+  isNccdSem1TitleOnlyTier,
+} from './curriculumG10MathSem1.ts';
+import {
+  findNccdLessonByKbId,
+  findNccdUnitByLessonKbId,
+} from './curriculumG10MathSem2.ts';
+import { buildSupportResourcesContext } from './mathSupportResources.ts';
 
 // ─── Generator KB context ────────────────────────────────────────────────────
 
-/**
- * Build a compact textbook context string for the AI generator prompts
- * (lesson-plan, worksheet, quiz). Searches the KB for the given topic,
- * then serialises the top match's summary, key concepts, and rules.
- *
- * Unlike the full iQra `buildResponse`, this is intentionally compact —
- * generators receive one focused lesson block rather than three, because
- * the user has already selected the specific lesson via TopicSelector.
- *
- * Returns an empty string when no KB match is found (topic is off-curriculum
- * or the KB doesn't cover that subject/grade yet), so callers can omit
- * `additionalContext` gracefully.
- */
-export function buildGeneratorContext(topic: string, lang: 'ar' | 'en'): string {
-  const results = searchKBSemantic(topic, lang);
-  if (results.length === 0) return '';
+export type BuildGeneratorContextOptions = {
+  /**
+   * Teacher-typed objectives (optional field on lesson-plan screen).
+   * When non-empty, these replace curriculum نتاجات in the context block.
+   */
+  teacherObjectives?: string;
+};
 
-  const lesson = results[0];
+export type GeneratorGrounding = {
+  /** True only for exact / high-confidence title-aligned KB matches. */
+  grounded: boolean;
+  lesson: KBLesson | null;
+  score: number;
+  /** Compact textbook context; empty when ungrounded. */
+  context: string;
+  /**
+   * Explicit note for the model when ungrounded — must not claim curriculum grounding.
+   * Empty when grounded.
+   */
+  ungroundedNote: string;
+};
+
+function serializeLessonContext(
+  lesson: KBLesson,
+  lang: 'ar' | 'en',
+  options?: BuildGeneratorContextOptions,
+): string {
   const isAr   = lang === 'ar';
   const title    = isAr ? lesson.titleAr       : lesson.titleEn;
   const summary  = isAr ? lesson.summaryAr     : lesson.summaryEn;
@@ -39,6 +64,51 @@ export function buildGeneratorContext(topic: string, lang: 'ar' | 'en'): string 
     '',
     summary,
   ];
+
+  const teacherObj = options?.teacherObjectives?.trim();
+  const nccdS2 = findNccdLessonByKbId(lesson.id);
+  const nccdS1 = findNccdSem1LessonByKbId(lesson.id);
+  const nccdS1Unit = findNccdSem1UnitByLessonKbId(lesson.id);
+  const titleOnlyUnit =
+    !!nccdS1Unit && isNccdSem1TitleOnlyTier(nccdS1Unit.data_tier);
+
+  const curriculumObjectives = nccdS2?.objectives?.length
+    ? nccdS2.objectives
+    : nccdS1?.objectives?.length
+      ? nccdS1.objectives
+      : (lesson.objectives?.length ? lesson.objectives : []);
+  const vocabulary = nccdS2?.vocabulary?.length
+    ? nccdS2.vocabulary
+    : nccdS1?.vocabulary?.length
+      ? nccdS1.vocabulary
+      : [];
+  const unitObjectives = nccdS1Unit?.unit_objectives ?? [];
+
+  if (teacherObj) {
+    lines.push('');
+    lines.push(isAr ? 'النتاجات (من المعلم):' : 'Objectives (teacher):');
+    teacherObj.split('\n').map(s => s.trim()).filter(Boolean).forEach(o => lines.push(`• ${o}`));
+  } else if (curriculumObjectives.length > 0) {
+    lines.push('');
+    lines.push(isAr ? 'النتاجات (من المنهج الرسمي):' : 'Official curriculum outcomes:');
+    curriculumObjectives.forEach(o => lines.push(`• ${o}`));
+  } else if (titleOnlyUnit && unitObjectives.length > 0) {
+    // Sem1 units 2–4: real lesson title, but outcomes are unit-level only
+    const unitTitle = isAr ? nccdS1Unit!.title_ar : nccdS1Unit!.title_en;
+    lines.push('');
+    lines.push(
+      isAr
+        ? `النتاجات (على مستوى الوحدة «${unitTitle}» — ليست نتاجات درس محدد):`
+        : `Unit-level outcomes for “${unitTitle}” (not lesson-specific):`,
+    );
+    unitObjectives.forEach(o => lines.push(`• ${o}`));
+  }
+
+  if (vocabulary.length > 0) {
+    lines.push('');
+    lines.push(isAr ? 'المصطلحات:' : 'Vocabulary:');
+    vocabulary.forEach(v => lines.push(`• ${v}`));
+  }
 
   if (concepts.length > 0) {
     lines.push('');
@@ -52,7 +122,75 @@ export function buildGeneratorContext(topic: string, lang: 'ar' | 'en'): string 
     rules.forEach(r => lines.push(`• ${r}`));
   }
 
+  const support = buildSupportResourcesContext(title, [lesson], lang, 3);
+  if (support) {
+    lines.push('');
+    lines.push(support);
+  }
+
   return lines.join('\n');
+}
+
+/**
+ * Resolve whether a topic is curriculum-grounded for generation.
+ * Weak fuzzy hits are rejected — never silently substitute an unrelated lesson.
+ */
+export function resolveGeneratorGrounding(
+  topic: string,
+  lang: 'ar' | 'en',
+  options?: BuildGeneratorContextOptions,
+): GeneratorGrounding {
+  const lesson = resolveGroundedKbLesson(topic, lang);
+  if (!lesson) {
+    const isAr = lang === 'ar';
+    return {
+      grounded: false,
+      lesson: null,
+      score: 0,
+      context: '',
+      ungroundedNote: isAr
+        ? 'تنبيه: الموضوع غير موجود في المنهج المتاح حالياً. أنشئ خطة عامة دون الادعاء أنها مبنية على نتاجات درس محدد من الكتاب.'
+        : 'NOTE: topic not found in the available curriculum KB. Generate a generic plan; do not claim textbook grounding.',
+    };
+  }
+
+  const ranked = searchKBRanked(topic, lang);
+  const score = ranked.find(r => r.lesson.id === lesson.id)?.score ?? 0;
+  return {
+    grounded: true,
+    lesson,
+    score,
+    context: serializeLessonContext(lesson, lang, options),
+    ungroundedNote: '',
+  };
+}
+
+/**
+ * Build a compact textbook context string for the AI generator prompts
+ * (lesson-plan, worksheet, quiz). Requires an exact / high-confidence KB match.
+ *
+ * Returns an empty string when ungrounded so callers can fall back to generic
+ * generation without presenting unrelated curriculum content as grounded.
+ */
+export function buildGeneratorContext(
+  topic: string,
+  lang: 'ar' | 'en',
+  options?: BuildGeneratorContextOptions,
+): string {
+  return resolveGeneratorGrounding(topic, lang, options).context;
+}
+
+/**
+ * Unit-level "تعلمت سابقًا" / prior-knowledge concepts for a grounded lesson.
+ * Returns [] when the unit has no `prior_knowledge` in NCCD JSON yet.
+ * Does not fabricate content.
+ */
+export function getUnitPriorKnowledge(lessonKbId: string): string[] {
+  const s1 = findNccdSem1UnitByLessonKbId(lessonKbId);
+  if (s1?.prior_knowledge?.length) return [...s1.prior_knowledge];
+  const s2 = findNccdUnitByLessonKbId(lessonKbId);
+  if (s2?.prior_knowledge?.length) return [...s2.prior_knowledge];
+  return [];
 }
 
 // ─── Subject ambiguity detection ─────────────────────────────────────────────
@@ -238,13 +376,14 @@ export function buildResponse(
   const isAr = lang === 'ar';
   const top = results.slice(0, 3);
   const multiResult = top.length > 1;
+  const supportBlock = buildSupportResourcesContext(query, top, lang, 4);
 
   // Try each trim tier until the combined context fits within the budget
   for (const opts of TRIM_TIERS) {
     const blocks = top.map((lesson, idx) =>
       buildLessonBlock(lesson, idx, multiResult, isAr, opts)
     );
-    const combined = blocks.join('\n\n---\n\n');
+    const combined = [blocks.join('\n\n---\n\n'), supportBlock].filter(Boolean).join('\n\n');
     if (combined.length <= CONTEXT_CHAR_BUDGET) {
       return combined;
     }
@@ -259,5 +398,6 @@ export function buildResponse(
     const summary = isAr ? lesson.summaryAr : lesson.summaryEn;
     return `📚 **${prefix}${title}**\n${summary}`;
   });
-  return summaryLines.join('\n\n---\n\n');
+  const fallback = summaryLines.join('\n\n---\n\n');
+  return supportBlock ? `${fallback}\n\n${supportBlock}` : fallback;
 }

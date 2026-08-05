@@ -7,14 +7,18 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
-import { buildGeneratorContext } from '@/services/kbContext';
+import { getUnitPriorKnowledge, resolveGeneratorGrounding } from '@/services/kbContext';
 import { WorksheetOutput } from '@/services/ai/AIService';
-import { GRADES, SUBJECTS } from '@/services/curriculumData';
+import {
+  getPickerGrades, getPickerSubjects, resolvePickerIndex,
+} from '@/services/curriculumData';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { Button } from '@/components/ui/Button';
 import { getItem, saveItem, toggleFavorite, updateItem } from '@/services/workspace';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
+import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
+import { RelatedResourcesPanel } from '@/components/ui/RelatedResourcesPanel';
 import {
   buildWorksheetHTML, buildWorksheetSlidesHTML, copyToClipboard, exportAsPDF, exportAsWord,
   formatWorksheetText, shareAsText,
@@ -24,7 +28,7 @@ const ACCENT = '#8B5CF6';
 
 type DifficultyLevel = 'normal' | 'high' | 'difficult';
 type Difficulty = 'easy' | 'medium' | 'hard' | 'mixed';
-type QType = 'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false';
+type QType = 'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false' | 'word_problem';
 
 const DIFFICULTY_IDS: DifficultyLevel[] = ['normal', 'high', 'difficult'];
 const DIFFICULTY_MAP: Record<DifficultyLevel, Difficulty> = {
@@ -33,7 +37,7 @@ const DIFFICULTY_MAP: Record<DifficultyLevel, Difficulty> = {
   difficult: 'hard',
 };
 const NUM_Q_OPTIONS = [5, 8, 10, 12, 15, 20];
-const ALL_Q_TYPES: QType[] = ['multiple_choice', 'short_answer', 'fill_blank', 'true_false'];
+const ALL_Q_TYPES: QType[] = ['multiple_choice', 'short_answer', 'fill_blank', 'true_false', 'word_problem'];
 
 export default function WorksheetScreen() {
   const colors = useColors();
@@ -42,11 +46,14 @@ export default function WorksheetScreen() {
   const params = useLocalSearchParams<{
     savedId?: string; gradeIdx?: string; subjectIdx?: string;
     topic?: string; diffIdx?: string; numQIdx?: string; selectedTypes?: string;
+    isHomework?: string;
   }>();
   const scrollRef = useRef<ScrollView>(null);
 
-  const gradeNames = GRADES.map(g => lang === 'ar' ? g.nameAr : g.name);
-  const subjectNames = SUBJECTS.map(s => lang === 'ar' ? s.nameAr : s.name);
+  const grades = getPickerGrades();
+  const subjects = getPickerSubjects();
+  const gradeNames = grades.map(g => lang === 'ar' ? g.nameAr : g.name);
+  const subjectNames = subjects.map(s => lang === 'ar' ? s.nameAr : s.name);
   const diffLabels = [t('difficultyNormal'), t('difficultyHigh'), t('difficultyDifficult')];
   const numQLabels = NUM_Q_OPTIONS.map(n => String(n));
 
@@ -55,8 +62,8 @@ export default function WorksheetScreen() {
     try { return new Set(JSON.parse(raw) as QType[]); } catch { return new Set(['multiple_choice', 'short_answer']); }
   };
 
-  const [gradeIdx, setGradeIdx] = useState(params.gradeIdx ? parseInt(params.gradeIdx, 10) : 7);
-  const [subjectIdx, setSubjectIdx] = useState(params.subjectIdx ? parseInt(params.subjectIdx, 10) : 3);
+  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(params.gradeIdx, grades.length));
+  const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx, subjects.length));
   const [topic, setTopic] = useState(params.topic ?? '');
   const [diffIdx, setDiffIdx] = useState(params.diffIdx ? parseInt(params.diffIdx, 10) : 0);
 
@@ -72,8 +79,11 @@ export default function WorksheetScreen() {
   }, [gradeIdx, subjectIdx]);
   const [numQIdx, setNumQIdx] = useState(params.numQIdx ? parseInt(params.numQIdx, 10) : 2);
   const [selectedTypes, setSelectedTypes] = useState<Set<QType>>(parseTypes(params.selectedTypes));
+  const [includePriorReview, setIncludePriorReview] = useState(false);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<WorksheetOutput | null>(null);
+  /** null until first generate; then whether the worksheet used a confident KB lesson. */
+  const [curriculumGrounded, setCurriculumGrounded] = useState<boolean | null>(null);
   const [error, setError] = useState('');
   const [savedId, setSavedId] = useState<string | undefined>(params.savedId);
   const [saveLabel, setSaveLabel] = useState<'save' | 'saved' | 'updated'>('save');
@@ -85,6 +95,19 @@ export default function WorksheetScreen() {
   const [loadingWord, setLoadingWord] = useState(false);
   const [loadingSlides, setLoadingSlides] = useState(false);
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
+
+  // Prior-knowledge availability for the currently selected lesson (no fabrication)
+  const priorKnowledge = (() => {
+    if (!topic.trim()) return [] as string[];
+    const g = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en');
+    if (!g.lesson) return [] as string[];
+    return getUnitPriorKnowledge(g.lesson.id);
+  })();
+  const priorReviewAvailable = priorKnowledge.length > 0;
+
+  useEffect(() => {
+    if (!priorReviewAvailable && includePriorReview) setIncludePriorReview(false);
+  }, [priorReviewAvailable, includePriorReview]);
 
   useEffect(() => {
     if (params.savedId) {
@@ -114,23 +137,38 @@ export default function WorksheetScreen() {
     });
   };
 
+  const isHomework = params.isHomework === '1';
+
   const generate = async () => {
     if (!topic.trim()) { setError(t('topicRequired')); return; }
-    setError(''); setLoading(true); setResult(null); setSaveLabel('save');
+    setError(''); setLoading(true); setResult(null); setCurriculumGrounded(null);
+    setSaveLabel('save');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
-      const additionalContext = buildGeneratorContext(topic.trim(), lang as 'ar' | 'en') || undefined;
-      const out = await aiService.generateWorksheet({
-        grade: GRADES[gradeIdx].name,
-        subject: SUBJECTS[subjectIdx].name,
+      const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en');
+      const unitPrior = grounding.lesson ? getUnitPriorKnowledge(grounding.lesson.id) : [];
+      const usePrior = includePriorReview && unitPrior.length > 0;
+      const additionalContext = (
+        grounding.grounded ? grounding.context : grounding.ungroundedNote
+      ) || undefined;
+      const baseReq = {
+        grade: grades[gradeIdx].name,
+        subject: subjects[subjectIdx].name,
         topic: topic.trim(),
-        language: lang === 'ar' ? 'arabic' : 'english',
+        language: (lang === 'ar' ? 'arabic' : 'english') as 'arabic' | 'english',
         difficulty: DIFFICULTY_MAP[DIFFICULTY_IDS[diffIdx]],
         numQuestions: NUM_Q_OPTIONS[numQIdx],
         questionTypes: Array.from(selectedTypes),
         additionalContext,
-      });
+        includePriorReview: usePrior,
+        priorKnowledge: usePrior ? unitPrior : undefined,
+      };
+      // Homework uses a distinct generator — not a worksheet clone.
+      const out = isHomework
+        ? await aiService.generateHomework(baseReq)
+        : await aiService.generateWorksheet(baseReq);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setCurriculumGrounded(grounding.grounded);
       setResult(out);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
     } catch {
@@ -142,23 +180,25 @@ export default function WorksheetScreen() {
 
   const handleSave = async () => {
     if (!result) return;
-    const title = lang === 'ar'
-      ? `ورقة عمل: ${topic.trim()}`
-      : `Worksheet: ${topic.trim()}`;
+    const title = isHomework
+      ? (lang === 'ar' ? `واجب منزلي: ${topic.trim()}` : `Homework: ${topic.trim()}`)
+      : (lang === 'ar' ? `ورقة عمل: ${topic.trim()}` : `Worksheet: ${topic.trim()}`);
     const formState = {
       gradeIdx, subjectIdx, topic: topic.trim(),
       diffIdx, numQIdx, selectedTypes: JSON.stringify(Array.from(selectedTypes)),
+      materialKind: isHomework ? 'homework' : 'worksheet',
+      isHomework,
     };
     if (savedId) {
       await updateItem(savedId, {
-        title, subject: SUBJECTS[subjectIdx].name, grade: GRADES[gradeIdx].name,
+        title, subject: subjects[subjectIdx].name, grade: grades[gradeIdx].name,
         topic: topic.trim(), language: lang, content: JSON.stringify(result), formState,
       });
       setSaveLabel('updated');
     } else {
       const saved = await saveItem({
         type: 'worksheet', title,
-        subject: SUBJECTS[subjectIdx].name, grade: GRADES[gradeIdx].name,
+        subject: subjects[subjectIdx].name, grade: grades[gradeIdx].name,
         topic: topic.trim(), language: lang, content: JSON.stringify(result), formState,
       });
       setSavedId(saved.id);
@@ -177,7 +217,7 @@ export default function WorksheetScreen() {
     } catch {
       setFavorited(!next); // revert on failure
     }
-    showToast(next ? (lang === 'ar' ? 'تمت الإضافة إلى المفضلة ⭐' : 'Added to Favourites ⭐') : (lang === 'ar' ? 'تمت الإزالة من المفضلة' : 'Removed from Favourites'));
+    showToast(next ? (lang === 'ar' ? 'أضفتها إلى المفضلة ⭐' : 'Added to Favourites ⭐') : (lang === 'ar' ? 'أزلتها من المفضلة' : 'Removed from Favourites'));
   };
 
   const typeLabels: Record<QType, string> = {
@@ -185,6 +225,7 @@ export default function WorksheetScreen() {
     short_answer: t('typeShortAnswer'),
     fill_blank: t('typeFillBlank'),
     true_false: t('typeTrueFalse'),
+    word_problem: t('typeWordProblem'),
   };
 
   const topPad = insets.top + (insets.top === 0 ? 67 : 0);
@@ -197,7 +238,7 @@ export default function WorksheetScreen() {
   const saveDone = saveLabel === 'saved' || saveLabel === 'updated';
 
   const getExportTitle = () => lang === 'ar' ? `ورقة عمل: ${topic.trim()}` : `Worksheet: ${topic.trim()}`;
-  const getExportMeta = () => ({ subject: SUBJECTS[subjectIdx].name, grade: GRADES[gradeIdx].name });
+  const getExportMeta = () => ({ subject: subjects[subjectIdx].name, grade: grades[gradeIdx].name });
 
   const handleShareText = async () => {
     if (!result) return;
@@ -256,11 +297,12 @@ export default function WorksheetScreen() {
         <Pressable onPress={() => router.back()} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
+        <DemoModeBanner onDark isRTL={isRTL} />
         <Text style={[styles.headerTitle, { color: '#fff', fontFamily: 'Inter_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
-          {t('createWorksheetTitle')}
+          {isHomework ? t('createHomework') : t('createWorksheetTitle')}
         </Text>
         <Text style={[styles.headerSub, { color: 'rgba(255,255,255,0.75)', fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
-          {t('worksheetSubtitle')}
+          {isHomework ? t('homeworkSubtitle') : t('worksheetSubtitle')}
         </Text>
       </View>
 
@@ -270,8 +312,8 @@ export default function WorksheetScreen() {
         <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
 
         <TopicSelector
-          subjectId={SUBJECTS[subjectIdx].id}
-          gradeId={GRADES[gradeIdx].id}
+          subjectId={subjects[subjectIdx].id}
+          gradeId={grades[gradeIdx].id}
           value={topic}
           onChange={text => { setTopic(text); setError(''); }}
           lang={lang as 'ar' | 'en'}
@@ -292,6 +334,29 @@ export default function WorksheetScreen() {
           ))}
         </View>
 
+        <View style={[styles.checkboxGroup, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: priorReviewAvailable ? 1 : 0.55 }]}>
+          <CheckboxRow
+            label={t('includePriorReviewLabel')}
+            checked={includePriorReview && priorReviewAvailable}
+            onToggle={() => { if (priorReviewAvailable) setIncludePriorReview(v => !v); }}
+            accent={ACCENT}
+            colors={colors}
+            isRTL={isRTL}
+            disabled={!priorReviewAvailable}
+          />
+          {!priorReviewAvailable ? (
+            <Text style={{
+              color: colors.mutedForeground,
+              fontFamily: 'Inter_400Regular',
+              fontSize: 12,
+              marginTop: 2,
+              textAlign: isRTL ? 'right' : 'left',
+            }}>
+              {t('priorReviewUnavailableNote')}
+            </Text>
+          ) : null}
+        </View>
+
         {error ? <Text style={[{ color: colors.destructive, fontSize: 13, fontFamily: 'Inter_400Regular', marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
         <Button label={loading ? t('generating') : t('createWorksheetBtn')} onPress={generate} loading={loading} disabled={!topic.trim()} fullWidth />
       </View>
@@ -301,6 +366,29 @@ export default function WorksheetScreen() {
         <View style={[styles.loadBox, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, marginHorizontal: 20, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <ActivityIndicator color={ACCENT} />
           <Text style={[{ color: colors.mutedForeground, fontFamily: 'Inter_400Regular', fontSize: 14 }]}>{t('buildingWorksheet')}</Text>
+        </View>
+      )}
+
+      {/* Grounding status — never present ungrounded output as curriculum-backed */}
+      {result && curriculumGrounded === false && (
+        <View style={{
+          marginHorizontal: 20,
+          marginBottom: 12,
+          padding: 12,
+          borderRadius: colors.radius,
+          borderWidth: 1,
+          borderColor: colors.border,
+          backgroundColor: colors.card,
+        }}>
+          <Text style={{
+            color: colors.mutedForeground,
+            fontFamily: 'Inter_400Regular',
+            fontSize: 13,
+            lineHeight: 20,
+            textAlign: isRTL ? 'right' : 'left',
+          }}>
+            {t('curriculumUngroundedNoticeWorksheet')}
+          </Text>
         </View>
       )}
 
@@ -356,6 +444,14 @@ export default function WorksheetScreen() {
         </View>
       )}
 
+      {result && !loading && (
+        <RelatedResourcesPanel
+          toolId={isHomework ? 'homework' : 'worksheet'}
+          topic={topic.trim()}
+          isRTL={isRTL}
+        />
+      )}
+
       {/* Save + Regenerate */}
       {result && !loading && (
         <View style={{ marginHorizontal: 20, gap: 10, marginTop: 8, marginBottom: 20 }}>
@@ -379,7 +475,7 @@ export default function WorksheetScreen() {
             >
               <Ionicons name={favorited ? 'star' : 'star-outline'} size={16} color={favorited ? '#F59E0B' : colors.mutedForeground} />
               <Text style={[styles.regenText, { color: favorited ? '#F59E0B' : colors.mutedForeground, fontFamily: 'Inter_600SemiBold' }]}>
-                {favorited ? (lang === 'ar' ? 'في المفضلة' : 'Favourited') : (lang === 'ar' ? 'أضف للمفضلة' : 'Add to Favourites')}
+                {favorited ? (lang === 'ar' ? 'في المفضلة' : 'Favourited') : (lang === 'ar' ? 'أضف إلى المفضلة' : 'Add to Favourites')}
               </Text>
             </Pressable>
           )}
@@ -420,16 +516,21 @@ export default function WorksheetScreen() {
   );
 }
 
-function CheckboxRow({ label, checked, onToggle, accent, colors, isRTL }: {
+function CheckboxRow({ label, checked, onToggle, accent, colors, isRTL, disabled }: {
   label: string; checked: boolean; onToggle: () => void;
   accent: string; colors: ReturnType<typeof useColors>; isRTL: boolean;
+  disabled?: boolean;
 }) {
   return (
-    <Pressable onPress={onToggle} style={[styles.checkRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+    <Pressable
+      onPress={disabled ? undefined : onToggle}
+      disabled={disabled}
+      style={[styles.checkRow, { flexDirection: isRTL ? 'row-reverse' : 'row', opacity: disabled ? 0.6 : 1 }]}
+    >
       <View style={[styles.checkbox, { borderColor: checked ? accent : colors.border, backgroundColor: checked ? accent : 'transparent' }]}>
         {checked && <Ionicons name="checkmark" size={13} color="#fff" />}
       </View>
-      <Text style={[{ color: colors.foreground, fontFamily: checked ? 'Inter_500Medium' : 'Inter_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
+      <Text style={[{ color: disabled ? colors.mutedForeground : colors.foreground, fontFamily: checked ? 'Inter_500Medium' : 'Inter_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
     </Pressable>
   );
 }

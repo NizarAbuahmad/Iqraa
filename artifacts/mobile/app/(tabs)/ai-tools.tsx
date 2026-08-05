@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -6,6 +6,9 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { DEMO_MODE } from '@/services/ai/demoMode';
+import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
+import { openGeogebraGraphing } from '@/services/geogebra';
 
 interface ToolDef {
   id: string;
@@ -13,12 +16,23 @@ interface ToolDef {
   descKey: string;
   icon: keyof typeof Ionicons.glyphMap;
   color: string;
-  route: string;
+  route?: string;
   routeParams?: Record<string, string>;
   badgeKey?: string;
+  /** External tool (e.g. GeoGebra) — opens browser instead of in-app route. */
+  externalAction?: 'geogebra-graphing';
+  /** Hide from non-math surfaces when we add subject filtering later. */
+  mathOnly?: boolean;
 }
 
-const TOOLS: ToolDef[] = [
+type WorkflowSection = {
+  id: string;
+  titleKey: string;
+  tools: ToolDef[];
+};
+
+/** Core teaching jobs — ordered by when teachers use them. */
+const BEFORE_CLASS: ToolDef[] = [
   {
     id: 'lesson-plan',
     titleKey: 'toolLessonPlanTitle',
@@ -26,34 +40,69 @@ const TOOLS: ToolDef[] = [
     icon: 'document-text-outline',
     color: '#1B6B62',
     route: '/ai-tools/lesson-plan',
-    badgeKey: 'popularBadge',
+  },
+  {
+    id: 'simplify',
+    titleKey: 'simplifyExplanationTitle',
+    descKey: 'simplifyExplanationSubtitle',
+    icon: 'bulb-outline',
+    color: '#00A99D',
+    route: '/ai-tools/lesson-plan',
+    routeParams: { simplify: '1' },
+  },
+];
+
+const DURING_CLASS: ToolDef[] = [
+  {
+    id: 'activity',
+    titleKey: 'toolActivityTitle',
+    descKey: 'toolActivityDesc',
+    icon: 'people-outline',
+    color: '#E67E22',
+    route: '/ai-tools/activity',
+  },
+  {
+    id: 'geogebra',
+    titleKey: 'toolGeogebraTitle',
+    descKey: 'toolGeogebraDesc',
+    icon: 'analytics-outline',
+    color: '#990000',
+    badgeKey: 'toolGeogebraBadge',
+    externalAction: 'geogebra-graphing',
+    mathOnly: true,
   },
   {
     id: 'worksheet',
     titleKey: 'toolWorksheetTitle',
     descKey: 'toolWorksheetDesc',
     icon: 'list-outline',
-    color: '#8B5CF6',
+    color: '#0E8F86',
     route: '/ai-tools/worksheet',
   },
+];
+
+const AFTER_CLASS: ToolDef[] = [
   {
     id: 'quiz',
     titleKey: 'toolQuizTitle',
     descKey: 'toolQuizDesc',
-    icon: 'help-circle-outline',
+    icon: 'checkmark-circle-outline',
     color: '#F59E0B',
     route: '/ai-tools/quiz',
-    badgeKey: 'newBadge',
   },
   {
-    id: 'activity',
-    titleKey: 'toolActivityTitle',
-    descKey: 'toolActivityDesc',
-    icon: 'flash-outline',
-    color: '#E67E22',
-    route: '/ai-tools/activity',
-    badgeKey: 'newBadge',
+    id: 'homework',
+    titleKey: 'toolHomeworkTitle',
+    descKey: 'toolHomeworkDesc',
+    icon: 'home-outline',
+    color: '#1B6B62',
+    route: '/ai-tools/worksheet',
+    routeParams: { isHomework: '1' },
   },
+];
+
+/** Secondary / specialized — available but not part of the core prep flow. */
+const MORE_TOOLS: ToolDef[] = [
   {
     id: 'classroom',
     titleKey: 'toolClassroomTitle',
@@ -61,41 +110,124 @@ const TOOLS: ToolDef[] = [
     icon: 'tv-outline',
     color: '#4F46E5',
     route: '/ai-tools/classroom',
-    badgeKey: 'newBadge',
   },
   {
-    id: 'homework',
-    titleKey: 'toolHomeworkTitle',
-    descKey: 'toolHomeworkDesc',
-    icon: 'home-outline',
-    color: '#3B82F6',
+    id: 'lesson-flow',
+    titleKey: 'toolLessonFlowTitle',
+    descKey: 'toolLessonFlowSub',
+    icon: 'git-branch-outline',
+    color: '#0EA5E9',
+    route: '/ai-tools/lesson-flow',
+  },
+  {
+    id: 'parent-msg',
+    titleKey: 'toolParentMsgTitle',
+    descKey: 'toolParentMsgDesc',
+    icon: 'mail-outline',
+    color: '#8B5CF6',
     route: '/ai-tools/coming-soon',
-    routeParams: { tool: 'homework' },
+    routeParams: { tool: 'parent-msg' },
+    badgeKey: 'comingSoon',
   },
   {
     id: 'exam',
     titleKey: 'toolExamTitle',
     descKey: 'toolExamDesc',
     icon: 'school-outline',
-    color: '#EF4444',
+    color: '#64748B',
     route: '/ai-tools/coming-soon',
     routeParams: { tool: 'exam' },
-  },
-  {
-    id: 'parent-msg',
-    titleKey: 'toolParentMsgTitle',
-    descKey: 'toolParentMsgDesc',
-    icon: 'chatbubble-outline',
-    color: '#10B981',
-    route: '/ai-tools/coming-soon',
-    routeParams: { tool: 'parent-msg' },
+    badgeKey: 'comingSoon',
   },
 ];
+
+const WORKFLOW: WorkflowSection[] = [
+  { id: 'before', titleKey: 'toolsBeforeClass', tools: BEFORE_CLASS },
+  { id: 'during', titleKey: 'toolsDuringClass', tools: DURING_CLASS },
+  { id: 'after', titleKey: 'toolsAfterClass', tools: AFTER_CLASS },
+];
+
+async function runToolAction(tool: ToolDef) {
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  if (tool.externalAction === 'geogebra-graphing') {
+    await openGeogebraGraphing();
+    return;
+  }
+  if (tool.route) {
+    router.push({ pathname: tool.route as any, params: tool.routeParams });
+  }
+}
+
+function ToolCard({
+  tool,
+  isRTL,
+  colors,
+  t,
+  compact,
+}: {
+  tool: ToolDef;
+  isRTL: boolean;
+  colors: ReturnType<typeof useColors>;
+  t: (key: any) => string;
+  compact?: boolean;
+}) {
+  const isExternal = !!tool.externalAction;
+  return (
+    <Pressable
+      onPress={() => { void runToolAction(tool); }}
+      style={({ pressed }) => [
+        styles.card,
+        compact && styles.cardCompact,
+        {
+          backgroundColor: colors.card,
+          borderColor: colors.border,
+          borderRadius: colors.radius,
+          opacity: pressed ? 0.8 : 1,
+          flexDirection: isRTL ? 'row-reverse' : 'row',
+        },
+      ]}
+    >
+      <View style={[
+        styles.iconWrap,
+        compact && styles.iconWrapCompact,
+        { backgroundColor: tool.color + '1A', borderRadius: 14 },
+      ]}>
+        <Ionicons name={tool.icon} size={compact ? 22 : 28} color={tool.color} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <View style={[styles.titleRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'Inter_600SemiBold', fontSize: compact ? 14 : 15 }]}>
+            {t(tool.titleKey as any)}
+          </Text>
+          {tool.badgeKey && (
+            <View style={[styles.badge, { backgroundColor: tool.color + '22' }]}>
+              <Text style={[styles.badgeText, { color: tool.color, fontFamily: 'Inter_600SemiBold' }]}>
+                {t(tool.badgeKey as any)}
+              </Text>
+            </View>
+          )}
+        </View>
+        <Text
+          style={[styles.cardDesc, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}
+          numberOfLines={compact ? 2 : 3}
+        >
+          {t(tool.descKey as any)}
+        </Text>
+      </View>
+      <Ionicons
+        name={isExternal ? 'open-outline' : (isRTL ? 'chevron-back' : 'chevron-forward')}
+        size={18}
+        color={colors.mutedForeground}
+      />
+    </Pressable>
+  );
+}
 
 export default function AIToolsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL } = useLanguage();
+  const [moreOpen, setMoreOpen] = useState(false);
   const topPad = insets.top + (insets.top === 0 ? 67 : 0);
 
   return (
@@ -108,62 +240,66 @@ export default function AIToolsScreen() {
         <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Inter_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('aiTools')}
         </Text>
-        <View style={[styles.aiBadge, { backgroundColor: colors.primary + '18', borderRadius: 20, alignSelf: isRTL ? 'flex-end' : 'flex-start', flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <Ionicons name="sparkles-outline" size={14} color={colors.primary} />
-          <Text style={[styles.aiBadgeText, { color: colors.primary, fontFamily: 'Inter_600SemiBold' }]}>
-            {t('poweredByAI')}
-          </Text>
-        </View>
+        {DEMO_MODE ? (
+          <DemoModeBanner isRTL={isRTL} />
+        ) : (
+          <View style={[styles.aiBadge, { backgroundColor: colors.primary + '18', borderRadius: 20, alignSelf: isRTL ? 'flex-end' : 'flex-start', flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            <Ionicons name="sparkles-outline" size={14} color={colors.primary} />
+            <Text style={[styles.aiBadgeText, { color: colors.primary, fontFamily: 'Inter_600SemiBold' }]}>
+              {t('poweredByAI')}
+            </Text>
+          </View>
+        )}
         <Text style={[styles.subtitle, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('aiToolsSubtitle')}
         </Text>
       </View>
 
-      <View style={styles.list}>
-        {TOOLS.map(tool => (
-          <Pressable
-            key={tool.id}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push({ pathname: tool.route as any, params: tool.routeParams });
-            }}
-            style={({ pressed }) => [
-              styles.card,
-              {
-                backgroundColor: colors.card,
-                borderColor: colors.border,
-                borderRadius: colors.radius,
-                opacity: pressed ? 0.8 : 1,
-                flexDirection: isRTL ? 'row-reverse' : 'row',
-              },
-            ]}
-          >
-            <View style={[styles.iconWrap, { backgroundColor: tool.color + '1A', borderRadius: 14 }]}>
-              <Ionicons name={tool.icon} size={28} color={tool.color} />
+      {WORKFLOW.map(section => (
+        <View key={section.id} style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.mutedForeground, fontFamily: 'Inter_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+            {t(section.titleKey as any)}
+          </Text>
+          <View style={styles.list}>
+            {section.tools.map(tool => (
+              <ToolCard key={tool.id} tool={tool} isRTL={isRTL} colors={colors} t={t} />
+            ))}
+          </View>
+        </View>
+      ))}
+
+      {/* More tools — secondary, collapsed by default */}
+      <View style={styles.section}>
+        <Pressable
+          onPress={() => {
+            Haptics.selectionAsync();
+            setMoreOpen(v => !v);
+          }}
+          style={[styles.moreHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+        >
+          <Text style={[styles.sectionTitle, { color: colors.mutedForeground, fontFamily: 'Inter_600SemiBold', marginBottom: 0 }]}>
+            {t('toolsMoreTitle')}
+          </Text>
+          <Ionicons
+            name={moreOpen ? 'chevron-up' : 'chevron-down'}
+            size={18}
+            color={colors.mutedForeground}
+          />
+        </Pressable>
+        {moreOpen && (
+          <>
+            <Text style={[styles.moreHint, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+              {t('toolsMoreHint')}
+            </Text>
+            <View style={styles.list}>
+              {MORE_TOOLS.map(tool => (
+                <ToolCard key={tool.id} tool={tool} isRTL={isRTL} colors={colors} t={t} compact />
+              ))}
             </View>
-            <View style={{ flex: 1 }}>
-              <View style={[styles.titleRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'Inter_600SemiBold' }]}>
-                  {t(tool.titleKey as any)}
-                </Text>
-                {tool.badgeKey && (
-                  <View style={[styles.badge, { backgroundColor: tool.color + '22' }]}>
-                    <Text style={[styles.badgeText, { color: tool.color, fontFamily: 'Inter_600SemiBold' }]}>
-                      {t(tool.badgeKey as any)}
-                    </Text>
-                  </View>
-                )}
-              </View>
-              <Text style={[styles.cardDesc, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={2}>
-                {t(tool.descKey as any)}
-              </Text>
-            </View>
-            <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
-          </Pressable>
-        ))}
+          </>
+        )}
       </View>
 
-      {/* My Workspace shortcut */}
       <Pressable
         onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/workspace'); }}
         style={({ pressed }) => [
@@ -193,12 +329,14 @@ export default function AIToolsScreen() {
         <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
       </Pressable>
 
-      <View style={[styles.note, { backgroundColor: colors.muted, borderRadius: colors.radius, marginHorizontal: 20, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        <Ionicons name="information-circle-outline" size={16} color={colors.mutedForeground} />
-        <Text style={[styles.noteText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
-          {t('aiToolsNote')}
-        </Text>
-      </View>
+      {DEMO_MODE && (
+        <View style={[styles.note, { backgroundColor: colors.muted, borderRadius: colors.radius, marginHorizontal: 20, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <Ionicons name="information-circle-outline" size={16} color={colors.mutedForeground} />
+          <Text style={[styles.noteText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+            {t('aiToolsNote')}
+          </Text>
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -209,15 +347,33 @@ const styles = StyleSheet.create({
   aiBadge: { alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, marginBottom: 10 },
   aiBadgeText: { fontSize: 12 },
   subtitle: { fontSize: 13, lineHeight: 20 },
-  list: { padding: 20, gap: 12 },
-  card: { alignItems: 'center', padding: 18, borderWidth: 1, gap: 14 },
-  iconWrap: { width: 56, height: 56, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  titleRow: { alignItems: 'center', gap: 8, marginBottom: 4 },
+  section: { paddingTop: 8 },
+  sectionTitle: {
+    fontSize: 12,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    marginBottom: 10,
+    paddingHorizontal: 20,
+  },
+  moreHeader: {
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    marginBottom: 4,
+  },
+  moreHint: { fontSize: 12, lineHeight: 17, paddingHorizontal: 20, marginBottom: 8 },
+  list: { paddingHorizontal: 20, gap: 10, paddingBottom: 8 },
+  card: { alignItems: 'center', padding: 16, borderWidth: 1, gap: 14 },
+  cardCompact: { padding: 14 },
+  iconWrap: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  iconWrapCompact: { width: 44, height: 44 },
+  titleRow: { alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' },
   cardTitle: { fontSize: 15 },
   badge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 },
   badgeText: { fontSize: 10 },
   cardDesc: { fontSize: 12, lineHeight: 17 },
-  workspaceCard: { alignItems: 'center', padding: 16, borderWidth: 1, gap: 14, marginBottom: 0 },
+  workspaceCard: { alignItems: 'center', padding: 16, borderWidth: 1, gap: 14, marginTop: 8 },
   workspaceIcon: { width: 46, height: 46, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   note: { alignItems: 'flex-start', gap: 8, padding: 14, marginBottom: 20 },
   noteText: { flex: 1, fontSize: 12, lineHeight: 17 },

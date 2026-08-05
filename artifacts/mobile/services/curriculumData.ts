@@ -1,3 +1,10 @@
+import {
+  buildNccdSem1BrowserCatalog,
+  isNccdSem1TitleOnlyLesson,
+  isNccdSem1TitleOnlyUnit,
+} from './curriculumG10MathSem1.ts';
+import { buildNccdSem2BrowserCatalog } from './curriculumG10MathSem2.ts';
+
 export interface Grade {
   id: string;
   name: string;
@@ -26,6 +33,8 @@ export interface Book {
   hasKnowledgeBase?: boolean; // true = sourced from uploaded PDF
   /** Who can see this book. Defaults to 'all' if omitted. */
   audience?: 'teacher' | 'student' | 'all';
+  /** Semester number when this book represents a semester (investor demo path). */
+  semester?: 1 | 2;
 }
 
 export interface Unit {
@@ -88,8 +97,68 @@ export const SUBJECTS: Subject[] = [
   { id: 'computer',    name: 'Computer',         nameAr: 'الحاسوب',          icon: 'laptop-outline',  color: '#06B6D4', grades: GRADES.map(g => g.id) },
 ];
 
+/**
+ * Investor MVP curriculum lock.
+ * When true, curriculum UI exposes Jordan → Grade 10 → Mathematics + Chemistry → S1/S2.
+ * Full catalog data below is retained for later expansion — do not delete it.
+ */
+export const INVESTOR_MVP_CURRICULUM = true;
+
+/** Grade / subject / books allowed in the investor demo curriculum path. */
+export const MVP_GRADE_ID = 'grade-10';
+/** @deprecated Prefer MVP_SUBJECT_IDS — kept for older call sites. */
+export const MVP_SUBJECT_ID = 'mathematics';
+export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry'];
+/** Main semester books only (guides/exercises stay in data, hidden from UI). */
+export const MVP_BOOK_IDS: readonly string[] = [
+  'book-math-10',
+  'book-math-10-s2',
+  'book-chem-10',
+  'book-chem-10-s2',
+];
+
+export function getVisibleGrades(): Grade[] {
+  if (!INVESTOR_MVP_CURRICULUM) return GRADES;
+  return GRADES.filter(g => g.id === MVP_GRADE_ID);
+}
+
 export function getSubjectsForGrade(gradeId: string): Subject[] {
-  return SUBJECTS.filter(s => s.grades.includes(gradeId));
+  const subjects = SUBJECTS.filter(s => s.grades.includes(gradeId));
+  if (!INVESTOR_MVP_CURRICULUM) return subjects;
+  if (gradeId !== MVP_GRADE_ID) return [];
+  return subjects.filter(s => (MVP_SUBJECT_IDS as readonly string[]).includes(s.id));
+}
+
+/** Grades shown in AI tools, chat, and other curriculum pickers. */
+export function getPickerGrades(): Grade[] {
+  return getVisibleGrades();
+}
+
+/** Subjects shown in AI tools, chat, and other curriculum pickers. */
+export function getPickerSubjects(gradeId?: string): Subject[] {
+  if (!INVESTOR_MVP_CURRICULUM) {
+    return gradeId ? getSubjectsForGrade(gradeId) : [...SUBJECTS];
+  }
+  return SUBJECTS.filter(s => (MVP_SUBJECT_IDS as readonly string[]).includes(s.id));
+}
+
+/** Clamp a saved/route picker index into the current picker list. */
+export function resolvePickerIndex(
+  raw: string | number | undefined,
+  length: number,
+  fallback = 0,
+): number {
+  if (length <= 0) return 0;
+  const n = typeof raw === 'string' ? parseInt(raw, 10) : raw;
+  if (n == null || !Number.isFinite(n) || n < 0 || n >= length) return fallback;
+  return n;
+}
+
+/** True when a subject/grade pair is allowed in investor-facing pickers. */
+export function isPickerCurriculumVisible(subjectId: string, gradeId: string): boolean {
+  if (!INVESTOR_MVP_CURRICULUM) return true;
+  return gradeId === MVP_GRADE_ID
+    && (MVP_SUBJECT_IDS as readonly string[]).includes(subjectId);
 }
 
 // ─── Books ────────────────────────────────────────────────────────────────────
@@ -106,6 +175,20 @@ export const BOOKS: Book[] = [
     edition: '2nd',
     hasKnowledgeBase: true,
     audience: 'all',
+    semester: 1,
+  },
+  {
+    id: 'book-chem-10-s2',
+    title: 'Chemistry – Grade 10, Semester 2',
+    titleAr: 'الكيمياء – الصف العاشر – الفصل الثاني',
+    subjectId: 'chemistry',
+    gradeId: 'grade-10',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
   },
   // ── Math Grade 10 – Semester 1 ─────────────────────────────────────────────
   {
@@ -119,6 +202,7 @@ export const BOOKS: Book[] = [
     edition: '3rd',
     hasKnowledgeBase: true,
     audience: 'all',
+    semester: 1,
   },
   {
     id: 'book-math-10-guide',
@@ -156,6 +240,7 @@ export const BOOKS: Book[] = [
     edition: '3rd',
     hasKnowledgeBase: true,
     audience: 'all',
+    semester: 2,
   },
   {
     id: 'book-math-10-s2-guide',
@@ -235,7 +320,8 @@ export const BOOKS: Book[] = [
 ];
 
 // ─── Units ────────────────────────────────────────────────────────────────────
-export const UNITS: Unit[] = [
+/** Hardcoded units; Math G10 S2 rows below are superseded by NCCD at export. */
+const _HARDCODED_UNITS: Unit[] = [
   // Chemistry Grade 10 — from uploaded PDF
   {
     id: 'unit-chem-10-1',
@@ -264,8 +350,26 @@ export const UNITS: Unit[] = [
     descriptionAr: 'الرابطة الأيونية، التساهمية (أحادية/ثنائية/ثلاثية)، رابطتا سيجما وباي، الرابطة الفلزية',
     order: 3,
   },
+  {
+    id: 'unit-chem-10-s2-4',
+    bookId: 'book-chem-10-s2',
+    name: 'Unit 4 (Semester 2)',
+    nameAr: 'الوحدة الرابعة',
+    description: 'Grade 10 Chemistry semester 2 — unit 4 (enrich from teacher guide / summaries)',
+    descriptionAr: 'كيمياء الصف العاشر – الفصل الثاني – الوحدة الرابعة',
+    order: 1,
+  },
+  {
+    id: 'unit-chem-10-s2-5',
+    bookId: 'book-chem-10-s2',
+    name: 'Chemical Reactions / Unit 5',
+    nameAr: 'الوحدة الخامسة – التفاعلات الكيميائية',
+    description: 'Chemical reactions and related semester-2 topics',
+    descriptionAr: 'التفاعلات الكيميائية وموضوعات الفصل الثاني ذات الصلة',
+    order: 2,
+  },
 
-  // Math Grade 10 — from uploaded PDF
+  // Math Grade 10 — Semester 1 LEGACY (superseded by NCCD JSON; not exported)
   {
     id: 'unit-math-10-1',
     bookId: 'book-math-10',
@@ -303,6 +407,44 @@ export const UNITS: Unit[] = [
     order: 8,
   },
 
+  // Math Grade 10 — Semester 2 LEGACY (superseded by NCCD JSON; not exported)
+  {
+    id: 'unit-math-10-s2-1',
+    bookId: 'book-math-10-s2',
+    name: 'Equations',
+    nameAr: 'المعادلات',
+    description: 'Special equations and systems of linear/quadratic equations',
+    descriptionAr: 'معادلات خاصة وأنظمة معادلات خطية وتربيعية',
+    order: 1,
+  },
+  {
+    id: 'unit-math-10-s2-2',
+    bookId: 'book-math-10-s2',
+    name: 'The Circle',
+    nameAr: 'الدائرة',
+    description: 'Chords, arcs, angles, and the equation of a circle',
+    descriptionAr: 'الأوتار والأقواس والزوايا ومعادلة الدائرة',
+    order: 2,
+  },
+  {
+    id: 'unit-math-10-s2-3',
+    bookId: 'book-math-10-s2',
+    name: 'Trigonometry',
+    nameAr: 'حساب المثلثات',
+    description: 'Trigonometric ratios, graphs, and equations',
+    descriptionAr: 'النسب المثلثية وتمثيلها وحل المعادلات المثلثية',
+    order: 3,
+  },
+  {
+    id: 'unit-math-10-s2-4',
+    bookId: 'book-math-10-s2',
+    name: 'Applications of Trigonometry',
+    nameAr: 'تطبيقات المثلثات',
+    description: 'Bearings, law of sines, law of cosines, and triangle area',
+    descriptionAr: 'الاتجاه من الشمال وقانونا الجيوب وجيوب التمام ومساحة المثلث',
+    order: 4,
+  },
+
   // Other books
   {
     id: 'unit-eng-10-1',
@@ -325,7 +467,8 @@ export const UNITS: Unit[] = [
 ];
 
 // ─── Lessons ──────────────────────────────────────────────────────────────────
-export const LESSONS: Lesson[] = [
+/** Hardcoded lessons; Math G10 S2 rows below are superseded by NCCD at export. */
+const _HARDCODED_LESSONS: Lesson[] = [
   // ── Chemistry Grade 10: Atomic Structure ──────────────────────────────────
   {
     id: 'lesson-chem-1',
@@ -400,6 +543,48 @@ export const LESSONS: Lesson[] = [
     teacherNotesAr: 'استخدم نماذج الكرة والعصا لإظهار هندسة الروابط. قارن H₂ وO₂ وN₂ كأمثلة على الروابط الأحادية والثنائية والثلاثية.',
     outcomes: [
       { id: 'o-chem-3-1', lessonId: 'lesson-chem-3', description: 'Students draw Lewis structures for simple molecules', descriptionAr: 'يرسم الطلاب تراكيب لويس للجزيئات البسيطة', bloomsLevel: 'Apply', skills: ['Spatial reasoning'] },
+    ],
+  },
+  {
+    id: 'lesson-chem-s2-4',
+    unitId: 'unit-chem-10-s2-4',
+    title: 'Unit 4 – Semester 2',
+    titleAr: 'الوحدة الرابعة – الفصل الثاني',
+    estimatedDuration: 45,
+    objectives: [
+      'Review core ideas of Chemistry Unit 4 (Semester 2)',
+      'Use official student book and Unit 4 summary for practice',
+    ],
+    objectivesAr: [
+      'يراجع المفاهيم الأساسية للوحدة الرابعة (الفصل الثاني)',
+      'يستخدم كتاب الطالب وملخص الوحدة الرابعة للتدريب',
+    ],
+    keywords: ['chemistry', 'unit 4', 'semester 2'],
+    keywordsAr: ['كيمياء', 'الوحدة الرابعة', 'الفصل الثاني'],
+    teacherNotes: 'Enrich from دليل المعلم فصل ثاني and ملخص الوحدة الرابعة.',
+    teacherNotesAr: 'أثْرِ من دليل المعلم للفصل الثاني وملخص الوحدة الرابعة.',
+    outcomes: [],
+  },
+  {
+    id: 'lesson-chem-s2-5',
+    unitId: 'unit-chem-10-s2-5',
+    title: 'Chemical Reactions',
+    titleAr: 'التفاعلات الكيميائية',
+    estimatedDuration: 50,
+    objectives: [
+      'Classify types of chemical reactions',
+      'Write and balance simple chemical equations',
+    ],
+    objectivesAr: [
+      'يصنّف أنواع التفاعلات الكيميائية',
+      'يكتب معادلات كيميائية بسيطة ويوازنها',
+    ],
+    keywords: ['chemical reactions', 'equations', 'reactants', 'products'],
+    keywordsAr: ['تفاعلات كيميائية', 'معادلات', 'متفاعلات', 'نواتج'],
+    teacherNotes: 'Use ورقة عمل التفاعلات الكيميائية and Unit 5 summary.',
+    teacherNotesAr: 'استخدم ورقة عمل التفاعلات الكيميائية وملخص الوحدة الخامسة.',
+    outcomes: [
+      { id: 'o-chem-s2-5-1', lessonId: 'lesson-chem-s2-5', description: 'Students classify a reaction from a classroom example', descriptionAr: 'يصنّف الطلاب تفاعلاً من مثال صفي', bloomsLevel: 'Apply', skills: ['Classification'] },
     ],
   },
 
@@ -530,6 +715,368 @@ export const LESSONS: Lesson[] = [
     ],
   },
 
+  // ── Math Grade 10 Semester 2 LEGACY (superseded by NCCD JSON; not exported) ──
+  {
+    id: 'lesson-math-s2-1-1',
+    unitId: 'unit-math-10-s2-1',
+    title: 'Solving Special Equations',
+    titleAr: 'حل معادلات خاصة',
+    estimatedDuration: 45,
+    objectives: [
+      'Solve equations with integer exponents greater than 2 using factoring',
+      'Reduce higher-degree equations to quadratic form by substitution',
+      'Apply the zero-product property to find all real solutions',
+    ],
+    objectivesAr: [
+      'يحل معادلات بأس صحيح أكبر من 2 باستخدام التحليل',
+      'يحوّل معادلات أعلى درجة إلى صورة تربيعية بالتعويض',
+      'يطبق خاصية الضرب الصفري لإيجاد جميع الحلول الحقيقية',
+    ],
+    keywords: ['factoring', 'zero-product', 'quadratic form', 'substitution'],
+    keywordsAr: ['تحليل', 'ضرب صفري', 'صورة تربيعية', 'تعويض'],
+    teacherNotes: 'Start with factoring out GCF, then introduce u-substitution for equations like x⁶ − 3x³ − 40 = 0.',
+    teacherNotesAr: 'ابدأ بإخراج العامل المشترك، ثم قدّم التعويض u لمعادلات مثل x⁶ − 3x³ − 40 = 0.',
+    outcomes: [
+      { id: 'o-math-s2-1-1', lessonId: 'lesson-math-s2-1-1', description: 'Students solve special higher-degree equations', descriptionAr: 'يحل الطلاب معادلات خاصة من درجات أعلى', bloomsLevel: 'Apply', skills: ['Algebraic manipulation'] },
+    ],
+  },
+  {
+    id: 'lesson-math-s2-1-2',
+    unitId: 'unit-math-10-s2-1',
+    title: 'Solving a System: Linear and Quadratic Equations',
+    titleAr: 'حل نظام مكون من معادلة خطية ومعادلة تربيعية',
+    estimatedDuration: 45,
+    objectives: [
+      'Solve a linear-quadratic system by substitution',
+      'Interpret 0, 1, or 2 solutions geometrically',
+      'Verify solutions in both original equations',
+    ],
+    objectivesAr: [
+      'يحل نظامًا خطيًا-تربيعيًا بطريقة التعويض',
+      'يفسّر هندسيًا وجود 0 أو 1 أو 2 من الحلول',
+      'يتحقق من الحلول في المعادلتين الأصليتين',
+    ],
+    keywords: ['system of equations', 'substitution', 'intersection'],
+    keywordsAr: ['نظام معادلات', 'تعويض', 'تقاطع'],
+    teacherNotes: 'Graph both curves when possible so students see tangent vs. two intersection points.',
+    teacherNotesAr: 'ارسم المنحنيين متى أمكن ليرى الطلاب التماس مقابل نقطتي تقاطع.',
+    outcomes: [
+      { id: 'o-math-s2-1-2', lessonId: 'lesson-math-s2-1-2', description: 'Students solve linear-quadratic systems', descriptionAr: 'يحل الطلاب أنظمة خطية-تربيعية', bloomsLevel: 'Apply', skills: ['Problem solving'] },
+    ],
+  },
+  {
+    id: 'lesson-math-s2-1-3',
+    unitId: 'unit-math-10-s2-1',
+    title: 'Solving a System of Two Quadratic Equations',
+    titleAr: 'حل نظام مكون من معادلتين تربيعيتين',
+    estimatedDuration: 45,
+    objectives: [
+      'Solve quadratic-quadratic systems by elimination or substitution',
+      'Determine the possible number of solutions (0–4)',
+      'Check candidate solutions in both equations',
+    ],
+    objectivesAr: [
+      'يحل نظامًا تربيعيًا-تربيعيًا بالطرح أو التعويض',
+      'يحدد عدد الحلول الممكنة (0–4)',
+      'يتحقق من الحلول المرشحة في المعادلتين',
+    ],
+    keywords: ['elimination', 'quadratic system', 'solutions'],
+    keywordsAr: ['طرح', 'نظام تربيعي', 'حلول'],
+    teacherNotes: 'When x² coefficients match, subtract first to get a linear relation, then substitute back.',
+    teacherNotesAr: 'إذا تساوى معاملا x²، اطرح أولًا للحصول على علاقة خطية ثم عوّض.',
+    outcomes: [
+      { id: 'o-math-s2-1-3', lessonId: 'lesson-math-s2-1-3', description: 'Students solve systems of two quadratic equations', descriptionAr: 'يحل الطلاب أنظمة من معادلتين تربيعيتين', bloomsLevel: 'Analyze', skills: ['Algebraic reasoning'] },
+    ],
+  },
+  {
+    id: 'lesson-math-s2-2-1',
+    unitId: 'unit-math-10-s2-2',
+    title: 'Chords, Diameters, and Tangents of a Circle',
+    titleAr: 'أوتار الدائرة وأقطارها ومماساتها',
+    estimatedDuration: 45,
+    objectives: [
+      'Distinguish chord, diameter, and tangent',
+      'Apply tangent ⊥ radius at the point of tangency',
+      'Use equal-chord distance properties from the center',
+    ],
+    objectivesAr: [
+      'يميّز بين الوتر والقطر والمماس',
+      'يطبق عمودية المماس على نصف القطر عند نقطة التماس',
+      'يستخدم خواص الأوتار المتساوية وبعدها عن المركز',
+    ],
+    keywords: ['chord', 'diameter', 'tangent', 'radius'],
+    keywordsAr: ['وتر', 'قطر', 'مماس', 'نصف قطر'],
+    teacherNotes: 'Use compass constructions so students see equal chords are equidistant from the center.',
+    teacherNotesAr: 'استخدم الرسم بالفرجار ليرى الطلاب أن الأوتار المتساوية متساوية البعد عن المركز.',
+    outcomes: [
+      { id: 'o-math-s2-2-1', lessonId: 'lesson-math-s2-2-1', description: 'Students apply chord and tangent properties', descriptionAr: 'يطبق الطلاب خواص الأوتار والمماسات', bloomsLevel: 'Apply', skills: ['Geometric reasoning'] },
+    ],
+  },
+  {
+    id: 'lesson-math-s2-2-2',
+    unitId: 'unit-math-10-s2-2',
+    title: 'Arcs and Sectors of a Circle',
+    titleAr: 'الأقواس والقطاعات الدائرية',
+    estimatedDuration: 45,
+    objectives: [
+      'Compute arc length using degrees or radians',
+      'Compute sector area using degrees or radians',
+      'Convert between degrees and radians when needed',
+    ],
+    objectivesAr: [
+      'يحسب طول القوس بالدرجات أو الراديان',
+      'يحسب مساحة القطاع بالدرجات أو الراديان',
+      'يحوّل بين الدرجات والراديان عند الحاجة',
+    ],
+    keywords: ['arc', 'sector', 'radian', 'arc length'],
+    keywordsAr: ['قوس', 'قطاع', 'راديان', 'طول القوس'],
+    teacherNotes: 'Contrast fraction-of-circumference formulas with radian forms l = rθ and A = ½r²θ.',
+    teacherNotesAr: 'قارن صيغ الكسر من المحيط مع صيغ الراديان l = rθ و A = ½r²θ.',
+    outcomes: [
+      { id: 'o-math-s2-2-2', lessonId: 'lesson-math-s2-2-2', description: 'Students calculate arc length and sector area', descriptionAr: 'يحسب الطلاب طول القوس ومساحة القطاع', bloomsLevel: 'Apply', skills: ['Numerical reasoning'] },
+    ],
+  },
+  {
+    id: 'lesson-math-s2-2-3',
+    unitId: 'unit-math-10-s2-2',
+    title: 'Angles in a Circle',
+    titleAr: 'الزوايا في الدائرة',
+    estimatedDuration: 45,
+    objectives: [
+      'Relate central and inscribed angles on the same arc',
+      'Apply the angle in a semicircle theorem (90°)',
+      'Use equal inscribed angles on the same arc',
+    ],
+    objectivesAr: [
+      'يربط الزاوية المركزية بالمحيطية على نفس القوس',
+      'يطبق نظرية الزاوية في نصف دائرة (= 90°)',
+      'يستخدم تساوي الزوايا المحيطية على نفس القوس',
+    ],
+    keywords: ['central angle', 'inscribed angle', 'semicircle'],
+    keywordsAr: ['زاوية مركزية', 'زاوية محيطية', 'نصف دائرة'],
+    teacherNotes: 'Have students measure inscribed vs. central angles on the same arc to discover the half relationship.',
+    teacherNotesAr: 'اجعل الطلاب يقيسون الزاوية المحيطية والمركزية على نفس القوس لاكتشاف علاقة النصف.',
+    outcomes: [
+      { id: 'o-math-s2-2-3', lessonId: 'lesson-math-s2-2-3', description: 'Students apply circle-angle theorems', descriptionAr: 'يطبق الطلاب نظريات زوايا الدائرة', bloomsLevel: 'Apply', skills: ['Geometric reasoning'] },
+    ],
+  },
+  {
+    id: 'lesson-math-s2-2-4',
+    unitId: 'unit-math-10-s2-2',
+    title: 'Equation of a Circle',
+    titleAr: 'معادلة الدائرة',
+    estimatedDuration: 45,
+    objectives: [
+      'Write (x−h)² + (y−k)² = r² from center and radius',
+      'Find center and radius by completing the square',
+      'Convert between standard and general forms',
+    ],
+    objectivesAr: [
+      'يكتب (x−h)² + (y−k)² = r² من المركز ونصف القطر',
+      'يجد المركز ونصف القطر بإكمال المربع',
+      'يحوّل بين الصورة القياسية والعامة',
+    ],
+    keywords: ['circle equation', 'center', 'radius', 'completing the square'],
+    keywordsAr: ['معادلة الدائرة', 'مركز', 'نصف قطر', 'إكمال المربع'],
+    teacherNotes: 'Drill completing the square on general form before asking for graphing.',
+    teacherNotesAr: 'درّب إكمال المربع على الصورة العامة قبل الانتقال إلى الرسم.',
+    outcomes: [
+      { id: 'o-math-s2-2-4', lessonId: 'lesson-math-s2-2-4', description: 'Students write and interpret circle equations', descriptionAr: 'يكتب الطلاب معادلات الدائرة ويفسّرونها', bloomsLevel: 'Apply', skills: ['Algebraic manipulation'] },
+    ],
+  },
+  {
+    id: 'lesson-math-s2-3-1',
+    unitId: 'unit-math-10-s2-3',
+    title: 'Trigonometric Ratios',
+    titleAr: 'النسب المثلثية',
+    estimatedDuration: 45,
+    objectives: [
+      'Define sin, cos, and tan in a right triangle',
+      'Use sin²A + cos²A = 1 and tan A = sin A / cos A',
+      'Recall special values for 30°, 45°, and 60°',
+    ],
+    objectivesAr: [
+      'يعرّف sin و cos و tan في المثلث القائم',
+      'يستخدم sin²A + cos²A = 1 و tan A = sin A / cos A',
+      'يستذكر القيم الخاصة لـ 30° و 45° و 60°',
+    ],
+    keywords: ['sine', 'cosine', 'tangent', 'right triangle'],
+    keywordsAr: ['جيب', 'جيب التمام', 'ظل', 'مثلث قائم'],
+    teacherNotes: 'Build a reference table for 30°/45°/60° and require students to derive, not memorize only.',
+    teacherNotesAr: 'ابنِ جدولًا مرجعيًا لـ 30°/45°/60° واطلب الاشتقاق لا الحفظ فقط.',
+    outcomes: [
+      { id: 'o-math-s2-3-1', lessonId: 'lesson-math-s2-3-1', description: 'Students apply basic trigonometric ratios', descriptionAr: 'يطبق الطلاب النسب المثلثية الأساسية', bloomsLevel: 'Apply', skills: ['Numerical reasoning'] },
+    ],
+  },
+  {
+    id: 'lesson-math-s2-3-2',
+    unitId: 'unit-math-10-s2-3',
+    title: 'Trigonometric Ratios for Angles in a Full Rotation',
+    titleAr: 'النسب المثلثية للزوايا ضمن الدورة الواحدة',
+    estimatedDuration: 45,
+    objectives: [
+      'Determine signs of trig ratios by quadrant (ASTC)',
+      'Find reference angles for angles in 0°–360°',
+      'Evaluate trig ratios using reference angles',
+    ],
+    objectivesAr: [
+      'يحدد إشارات النسب المثلثية حسب الربع (ASTC)',
+      'يجد الزاوية المرجعية للزوايا من 0° إلى 360°',
+      'يحسب النسب المثلثية باستخدام الزاوية المرجعية',
+    ],
+    keywords: ['quadrant', 'ASTC', 'reference angle', 'unit circle'],
+    keywordsAr: ['ربع', 'ASTC', 'زاوية مرجعية', 'دائرة الوحدة'],
+    teacherNotes: 'Use the unit circle wall chart; practice sin 150° and cos 240° as class openers.',
+    teacherNotesAr: 'استخدم مخطط دائرة الوحدة؛ تمرّن على sin 150° و cos 240° كبداية للحصة.',
+    outcomes: [
+      { id: 'o-math-s2-3-2', lessonId: 'lesson-math-s2-3-2', description: 'Students evaluate trig ratios for any angle in a rotation', descriptionAr: 'يحسب الطلاب النسب المثلثية لأي زاوية في الدورة', bloomsLevel: 'Apply', skills: ['Analytical thinking'] },
+    ],
+  },
+  {
+    id: 'lesson-math-s2-3-3',
+    unitId: 'unit-math-10-s2-3',
+    title: 'Graphing Trigonometric Functions',
+    titleAr: 'تمثيل الاقترانات المثلثية',
+    estimatedDuration: 45,
+    objectives: [
+      'Sketch y = sin x and y = cos x over one period',
+      'Identify amplitude, period, and phase shift',
+      'Compare sine and cosine graphs',
+    ],
+    objectivesAr: [
+      'يرسم y = sin x و y = cos x خلال دورة واحدة',
+      'يحدد السعة والدورة وإزاحة الطور',
+      'يقارن بين تمثيلي الجيب وجيب التمام',
+    ],
+    keywords: ['amplitude', 'period', 'phase shift', 'graph'],
+    keywordsAr: ['سعة', 'دورة', 'إزاحة طور', 'تمثيل'],
+    teacherNotes: 'Start from key points (0, π/2, π, 3π/2, 2π) before introducing transformations.',
+    teacherNotesAr: 'ابدأ من النقاط الأساسية قبل إدخال التحويلات.',
+    outcomes: [
+      { id: 'o-math-s2-3-3', lessonId: 'lesson-math-s2-3-3', description: 'Students graph basic trigonometric functions', descriptionAr: 'يرسم الطلاب الاقترانات المثلثية الأساسية', bloomsLevel: 'Understand', skills: ['Graphical interpretation'] },
+    ],
+  },
+  {
+    id: 'lesson-math-s2-3-4',
+    unitId: 'unit-math-10-s2-3',
+    title: 'Solving Trigonometric Equations',
+    titleAr: 'حل المعادلات المثلثية',
+    estimatedDuration: 45,
+    objectives: [
+      'Solve basic trig equations on [0°, 360°]',
+      'Use reference angles and quadrant signs',
+      'Check extraneous or missing solutions in the interval',
+    ],
+    objectivesAr: [
+      'يحل معادلات مثلثية أساسية على [0°, 360°]',
+      'يستخدم الزاوية المرجعية وإشارات الأرباع',
+      'يتحقق من الحلول الزائدة أو الناقصة في الفترة',
+    ],
+    keywords: ['trigonometric equation', 'general solution', 'interval'],
+    keywordsAr: ['معادلة مثلثية', 'حل عام', 'فترة'],
+    teacherNotes: 'Always list both solutions in a full rotation for equations like sin θ = ½.',
+    teacherNotesAr: 'اذكر دائمًا الحلين في الدورة الكاملة لمعادلات مثل sin θ = ½.',
+    outcomes: [
+      { id: 'o-math-s2-3-4', lessonId: 'lesson-math-s2-3-4', description: 'Students solve trigonometric equations in a given interval', descriptionAr: 'يحل الطلاب معادلات مثلثية في فترة معطاة', bloomsLevel: 'Apply', skills: ['Problem solving'] },
+    ],
+  },
+  {
+    id: 'lesson-math-s2-4-1',
+    unitId: 'unit-math-10-s2-4',
+    title: 'Bearing (Direction from North)',
+    titleAr: 'الاتجاه من الشمال',
+    estimatedDuration: 45,
+    objectives: [
+      'Interpret three-digit bearings measured clockwise from north',
+      'Draw scale diagrams for bearing word problems',
+      'Solve basic navigation problems with trig ratios',
+    ],
+    objectivesAr: [
+      'يفسّر الاتجاهات الثلاثية المقاسة من الشمال مع عقارب الساعة',
+      'يرسم مخططات مقياس لمسائل الاتجاه',
+      'يحل مسائل ملاحة أساسية بالنسب المثلثية',
+    ],
+    keywords: ['bearing', 'navigation', 'north', 'diagram'],
+    keywordsAr: ['اتجاه', 'ملاحة', 'شمال', 'مخطط'],
+    teacherNotes: 'Require a labeled north arrow on every diagram before computing.',
+    teacherNotesAr: 'اشترط سهم شمال مسمّى على كل مخطط قبل الحساب.',
+    outcomes: [
+      { id: 'o-math-s2-4-1', lessonId: 'lesson-math-s2-4-1', description: 'Students solve bearing problems', descriptionAr: 'يحل الطلاب مسائل الاتجاه من الشمال', bloomsLevel: 'Apply', skills: ['Problem solving'] },
+    ],
+  },
+  {
+    id: 'lesson-math-s2-4-2',
+    unitId: 'unit-math-10-s2-4',
+    title: 'The Law of Sines',
+    titleAr: 'قانون الجيوب',
+    estimatedDuration: 45,
+    objectives: [
+      'Apply a/sin A = b/sin B = c/sin C',
+      'Solve ASA and AAS triangles',
+      'Recognize when SSA may be ambiguous',
+    ],
+    objectivesAr: [
+      'يطبق a/sin A = b/sin B = c/sin C',
+      'يحل مثلثات ASA و AAS',
+      'يتعرّف متى تكون حالة SSA غامضة',
+    ],
+    keywords: ['law of sines', 'ASA', 'AAS', 'ambiguous case'],
+    keywordsAr: ['قانون الجيوب', 'ASA', 'AAS', 'حالة غموض'],
+    teacherNotes: 'Introduce the ambiguous case with one carefully chosen SSA example.',
+    teacherNotesAr: 'قدّم حالة الغموض بمثال SSA واحد مختار بعناية.',
+    outcomes: [
+      { id: 'o-math-s2-4-2', lessonId: 'lesson-math-s2-4-2', description: 'Students apply the law of sines', descriptionAr: 'يطبق الطلاب قانون الجيوب', bloomsLevel: 'Apply', skills: ['Problem solving'] },
+    ],
+  },
+  {
+    id: 'lesson-math-s2-4-3',
+    unitId: 'unit-math-10-s2-4',
+    title: 'The Law of Cosines',
+    titleAr: 'قانون جيوب التمام',
+    estimatedDuration: 45,
+    objectives: [
+      'Apply a² = b² + c² − 2bc·cos A',
+      'Solve SSS and SAS triangles',
+      'Relate the formula to Pythagoras when A = 90°',
+    ],
+    objectivesAr: [
+      'يطبق a² = b² + c² − 2bc·cos A',
+      'يحل مثلثات SSS و SAS',
+      'يربط الصيغة بنظرية فيثاغورس عندما A = 90°',
+    ],
+    keywords: ['law of cosines', 'SSS', 'SAS', 'Pythagoras'],
+    keywordsAr: ['قانون جيوب التمام', 'SSS', 'SAS', 'فيثاغورس'],
+    teacherNotes: 'Show that the cosine term vanishes at 90° to connect with prior knowledge.',
+    teacherNotesAr: 'بيّن اختفاء حد جيب التمام عند 90° للربط بالمعرفة السابقة.',
+    outcomes: [
+      { id: 'o-math-s2-4-3', lessonId: 'lesson-math-s2-4-3', description: 'Students apply the law of cosines', descriptionAr: 'يطبق الطلاب قانون جيوب التمام', bloomsLevel: 'Apply', skills: ['Problem solving'] },
+    ],
+  },
+  {
+    id: 'lesson-math-s2-4-4',
+    unitId: 'unit-math-10-s2-4',
+    title: 'Area of a Triangle Using Sine',
+    titleAr: 'مساحة المثلث باستعمال جيب الزاوية',
+    estimatedDuration: 40,
+    objectives: [
+      'Apply Area = ½ab·sin C for an included angle',
+      'Choose sine-area vs. ½bh appropriately',
+      'Solve application problems involving triangular area',
+    ],
+    objectivesAr: [
+      'يطبق المساحة = ½ab·sin C للزاوية المحصورة',
+      'يختار صيغة الجيب أو ½bh بحسب المعطيات',
+      'يحل مسائل تطبيقية على مساحة المثلث',
+    ],
+    keywords: ['triangle area', 'included angle', 'sine'],
+    keywordsAr: ['مساحة المثلث', 'زاوية محصورة', 'جيب'],
+    teacherNotes: 'Give mixed sets so students decide which area formula fits the given data.',
+    teacherNotesAr: 'أعطِ مجموعات مختلطة ليقرر الطلاب أي صيغة مساحة تناسب المعطيات.',
+    outcomes: [
+      { id: 'o-math-s2-4-4', lessonId: 'lesson-math-s2-4-4', description: 'Students compute triangle area using sine', descriptionAr: 'يحسب الطلاب مساحة المثلث باستخدام الجيب', bloomsLevel: 'Apply', skills: ['Numerical reasoning'] },
+    ],
+  },
+
   // ── Other books ───────────────────────────────────────────────────────────
   {
     id: 'lesson-sci-1',
@@ -549,6 +1096,51 @@ export const LESSONS: Lesson[] = [
   },
 ];
 
+// ─── Active catalog: hide legacy Math G10 S1/S2, inject NCCD catalogs ─────────
+const _MATH_G10_S1_BOOK_ID = 'book-math-10';
+const _MATH_G10_S2_BOOK_ID = 'book-math-10-s2';
+const _nccdSem1Browser = buildNccdSem1BrowserCatalog();
+const _nccdSem2Browser = buildNccdSem2BrowserCatalog();
+const _legacyMathBookIds = new Set([_MATH_G10_S1_BOOK_ID, _MATH_G10_S2_BOOK_ID]);
+const _legacyMathUnitIds = new Set(
+  _HARDCODED_UNITS.filter(u => _legacyMathBookIds.has(u.bookId)).map(u => u.id),
+);
+
+/** Active units — legacy Math G10 S1/S2 replaced by NCCD-sourced browser rows. */
+export const UNITS: Unit[] = [
+  ..._HARDCODED_UNITS.filter(u => !_legacyMathBookIds.has(u.bookId)),
+  ..._nccdSem1Browser.units,
+  ..._nccdSem2Browser.units,
+];
+
+/** Active lessons — legacy Math G10 S1/S2 replaced by NCCD-sourced browser rows. */
+export const LESSONS: Lesson[] = [
+  ..._HARDCODED_LESSONS.filter(l => !_legacyMathUnitIds.has(l.unitId)),
+  ..._nccdSem1Browser.lessons,
+  ..._nccdSem2Browser.lessons,
+];
+
+/** Math Grade 10 Semester 1 book id (NCCD-backed). */
+export const MATH_G10_S1_BOOK_ID = 'book-math-10';
+
+/**
+ * @deprecated Sem1 is now NCCD-backed. Always false — kept for call-site compat.
+ * Prefer isBrowserLessonTitleOnly / isBrowserUnitTitleOnly.
+ */
+export function isBrowserCurriculumPreparing(_bookId: string): boolean {
+  return false;
+}
+
+/** UI: Sem1 units 2–4 — real titles, unit-level objectives only. */
+export function isBrowserUnitTitleOnly(unitId: string): boolean {
+  return isNccdSem1TitleOnlyUnit(unitId);
+}
+
+/** UI: Sem1 units 2–4 lessons — title confirmed, no per-lesson objectives yet. */
+export function isBrowserLessonTitleOnly(lessonId: string): boolean {
+  return isNccdSem1TitleOnlyLesson(lessonId);
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 export function getLessonsForUnit(unitId: string): Lesson[] {
   return LESSONS.filter(l => l.unitId === unitId);
@@ -562,6 +1154,21 @@ export function getLessonById(id: string): Lesson | undefined {
   return LESSONS.find(l => l.id === id);
 }
 
+export function getUnitById(id: string): Unit | undefined {
+  return UNITS.find(u => u.id === id);
+}
+
+export function getBookById(id: string): Book | undefined {
+  return BOOKS.find(b => b.id === id);
+}
+
+/** Semester label for demo navigation (falls back to book title). */
+export function getSemesterLabel(book: Book, lang: 'ar' | 'en'): string {
+  if (book.semester === 1) return lang === 'ar' ? 'الفصل الأول' : 'Semester 1';
+  if (book.semester === 2) return lang === 'ar' ? 'الفصل الثاني' : 'Semester 2';
+  return lang === 'ar' ? (book.titleAr || book.title) : book.title;
+}
+
 export function getBooksForSubjectGrade(
   subjectId: string,
   gradeId: string,
@@ -569,6 +1176,7 @@ export function getBooksForSubjectGrade(
 ): Book[] {
   return BOOKS.filter(b => {
     if (b.subjectId !== subjectId || b.gradeId !== gradeId) return false;
+    if (INVESTOR_MVP_CURRICULUM && !MVP_BOOK_IDS.includes(b.id)) return false;
     const aud = b.audience ?? 'all';
     if (aud === 'all') return true;
     // teachers and admins see everything; students only see 'student' + 'all'
@@ -577,11 +1185,17 @@ export function getBooksForSubjectGrade(
   });
 }
 
+/** True when a book id is allowed in the current curriculum UI surface. */
+export function isCurriculumBookVisible(bookId: string): boolean {
+  if (!INVESTOR_MVP_CURRICULUM) return BOOKS.some(b => b.id === bookId);
+  return MVP_BOOK_IDS.includes(bookId);
+}
+
 // ─── Notifications ────────────────────────────────────────────────────────────
 export const MOCK_NOTIFICATIONS = [
   { id: 'n1', title: 'تحديث المنهج', titleEn: 'Curriculum Update', body: 'تم تحديث منهج الكيمياء للصف العاشر للعام 2024-2025.', bodyEn: 'Grade 10 Chemistry curriculum updated for 2024-2025.', time: 'منذ ساعتين', timeEn: '2h ago', read: false, type: 'info' },
-  { id: 'n2', title: 'خطة الدرس جاهزة', titleEn: 'Lesson Plan Ready', body: 'خطة الدرس التي ولّدها الذكاء الاصطناعي لموضوع الروابط الكيميائية جاهزة.', bodyEn: 'AI-generated lesson plan for Chemical Bonding is ready.', time: 'منذ 4 ساعات', timeEn: '4h ago', read: false, type: 'success' },
+  { id: 'n2', title: 'خطة الدرس جاهزة', titleEn: 'Lesson Plan Ready', body: 'خطة درس الروابط الكيميائية جاهزة للاستخدام.', bodyEn: 'AI-generated lesson plan for Chemical Bonding is ready.', time: 'منذ 4 ساعات', timeEn: '4h ago', read: false, type: 'success' },
   { id: 'n3', title: 'رسالة المدير', titleEn: 'Admin Message', body: 'جدول الاختبارات النصفية متاح. يرجى مراجعة القاعات المخصصة.', bodyEn: 'Midterm exam schedule posted. Please review your assigned rooms.', time: 'منذ يوم', timeEn: '1d ago', read: true, type: 'warning' },
   { id: 'n4', title: 'مورد تعليمي جديد', titleEn: 'New Resource', body: 'تمت إضافة ورقة عمل جديدة لمادة العلوم – الصف الثامن.', bodyEn: 'New worksheet for Science Grade 8 has been added.', time: 'منذ يومين', timeEn: '2d ago', read: true, type: 'info' },
-  { id: 'n5', title: 'الملف الشخصي غير مكتمل', titleEn: 'Incomplete Profile', body: 'أكمل ملفك الشخصي لفتح جميع الميزات.', bodyEn: 'Complete your teacher profile to unlock all features.', time: 'منذ 3 أيام', timeEn: '3d ago', read: true, type: 'info' },
+  { id: 'n5', title: 'حسابك غير مكتمل', titleEn: 'Incomplete Profile', body: 'أكمل بيانات حسابك لتفعيل كل الميزات.', bodyEn: 'Complete your teacher profile to unlock all features.', time: 'منذ 3 أيام', timeEn: '3d ago', read: true, type: 'info' },
 ];

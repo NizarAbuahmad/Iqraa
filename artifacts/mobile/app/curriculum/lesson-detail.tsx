@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -6,7 +6,11 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { getLessonById } from '@/services/curriculumData';
+import {
+  getLessonById,
+  isBrowserLessonTitleOnly,
+} from '@/services/curriculumData';
+import { DEMO_MODE } from '@/services/ai/demoMode';
 
 const BLOOMS_COLORS: Record<string, string> = {
   Remember: '#6366F1',
@@ -21,9 +25,32 @@ export default function LessonDetailScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
-  const { lessonId, subjectColor } = useLocalSearchParams<{ lessonId: string; subjectColor: string }>();
+  const { lessonId, subjectColor, openLessonPlan, topicOverride } = useLocalSearchParams<{
+    lessonId: string;
+    subjectColor: string;
+    openLessonPlan?: string;
+    topicOverride?: string;
+  }>();
   const lesson = getLessonById(lessonId);
   const color = subjectColor ?? colors.primary;
+  const openedLessonPlan = useRef(false);
+  const showTitleOnly = lesson ? isBrowserLessonTitleOnly(lesson.id) : false;
+
+  const lessonTitle = lesson
+    ? (lang === 'ar' ? (lesson.titleAr || lesson.title) : lesson.title)
+    : '';
+
+  // Demo resume path: land on Lesson Overview, then open Lesson Plan as the default tool
+  useEffect(() => {
+    if (!DEMO_MODE || openLessonPlan !== '1' || !lesson || openedLessonPlan.current) return;
+    openedLessonPlan.current = true;
+    const topic = (typeof topicOverride === 'string' && topicOverride.trim())
+      || (lang === 'ar' ? (lesson.titleAr || lesson.title) : lesson.title);
+    const timer = setTimeout(() => {
+      router.push({ pathname: '/ai-tools/lesson-plan', params: { topic } });
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [openLessonPlan, lesson, lang, topicOverride]);
 
   if (!lesson) {
     return (
@@ -33,7 +60,6 @@ export default function LessonDetailScreen() {
     );
   }
 
-  const lessonTitle = lang === 'ar' ? (lesson.titleAr || lesson.title) : lesson.title;
   const objectivesArr = lang === 'ar' ? (lesson.objectivesAr || lesson.objectives) : lesson.objectives;
   const keywordsArr = lang === 'ar' ? (lesson.keywordsAr || lesson.keywords) : lesson.keywords;
   const noteText = lang === 'ar' ? (lesson.teacherNotesAr || lesson.teacherNotes) : lesson.teacherNotes;
@@ -53,6 +79,13 @@ export default function LessonDetailScreen() {
           {lessonTitle}
         </Text>
         <View style={[styles.heroMeta, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          {showTitleOnly ? (
+            <View style={[styles.heroPill, { backgroundColor: 'rgba(255,255,255,0.25)' }]}>
+              <Text style={[styles.heroPillText, { color: '#fff', fontFamily: 'Inter_500Medium' }]}>
+                {t('curriculumTitleOnlyBadge')}
+              </Text>
+            </View>
+          ) : null}
           <View style={[styles.heroPill, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
             <Ionicons name="time-outline" size={12} color="#fff" />
             <Text style={[styles.heroPillText, { color: '#fff', fontFamily: 'Inter_400Regular' }]}>

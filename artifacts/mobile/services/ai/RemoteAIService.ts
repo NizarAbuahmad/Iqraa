@@ -1,17 +1,21 @@
 /**
- * RemoteAIService – calls the API server which proxies to OpenAI.
- * Falls back to MockAIService automatically if the network call fails
- * (e.g. offline, server unavailable).
+ * AI service used by the app.
+ *
+ * Investor Demo Mode (DEMO_MODE=true): always uses MockAIService locally.
+ * No OpenAI / network calls.
+ *
+ * When DEMO_MODE is flipped off post-funding, this resumes remote API calls
+ * with mock fallback on failure.
  */
 import {
   ActivityOutput, AIRequest, AIService,
   ClassroomActivity, ClassroomActivityRequest,
   LessonPlanOutput, QuizOutput, WorksheetOutput,
 } from './AIService';
+import { DEMO_MODE } from './demoMode';
 import { MockAIService } from './generators';
 import { getApiBaseUrl } from '../apiClient';
 
-// Shared with apiClient: EXPO_PUBLIC_API_BASE_URL for local, EXPO_PUBLIC_DOMAIN for hosted.
 function apiBase(): string {
   return getApiBaseUrl();
 }
@@ -41,6 +45,7 @@ export class RemoteAIService extends AIService {
   private fallback = new MockAIService();
 
   async generateLessonPlan(req: AIRequest): Promise<LessonPlanOutput> {
+    if (DEMO_MODE) return this.fallback.generateLessonPlan(req);
     try {
       return await postJSON<LessonPlanOutput>('/generate/lesson-plan', req);
     } catch (e) {
@@ -50,6 +55,7 @@ export class RemoteAIService extends AIService {
   }
 
   async generateWorksheet(req: AIRequest): Promise<WorksheetOutput> {
+    if (DEMO_MODE) return this.fallback.generateWorksheet(req);
     try {
       return await postJSON<WorksheetOutput>('/generate/worksheet', req);
     } catch (e) {
@@ -59,6 +65,7 @@ export class RemoteAIService extends AIService {
   }
 
   async generateQuiz(req: AIRequest): Promise<QuizOutput> {
+    if (DEMO_MODE) return this.fallback.generateQuiz(req);
     try {
       return await postJSON<QuizOutput>('/generate/quiz', req);
     } catch (e) {
@@ -68,6 +75,7 @@ export class RemoteAIService extends AIService {
   }
 
   async generateActivity(req: AIRequest): Promise<ActivityOutput> {
+    if (DEMO_MODE) return this.fallback.generateActivity(req);
     try {
       return await postJSON<ActivityOutput>('/generate/activity', req);
     } catch (e) {
@@ -77,6 +85,7 @@ export class RemoteAIService extends AIService {
   }
 
   async generateHomework(req: AIRequest): Promise<WorksheetOutput> {
+    if (DEMO_MODE) return this.fallback.generateHomework(req);
     try {
       return await postJSON<WorksheetOutput>('/generate/homework', req);
     } catch (e) {
@@ -86,6 +95,7 @@ export class RemoteAIService extends AIService {
   }
 
   async generateClassroomActivity(req: ClassroomActivityRequest): Promise<ClassroomActivity> {
+    if (DEMO_MODE) return this.fallback.generateClassroomActivity(req);
     try {
       return await postJSON<ClassroomActivity>('/generate/classroom-activity', req);
     } catch (e) {
@@ -95,8 +105,7 @@ export class RemoteAIService extends AIService {
   }
 
   /**
-   * Chat with iQra — sends conversation history + KB context to the server.
-   * Returns the assistant's text reply.
+   * Chat with iQra. In Demo Mode this throws so callers use local KB text.
    */
   async chat(params: {
     messages: { role: string; content: string }[];
@@ -104,6 +113,11 @@ export class RemoteAIService extends AIService {
     mode: 'teacher' | 'student';
     language: 'ar' | 'en';
   }): Promise<string> {
+    if (DEMO_MODE) {
+      // Prefer grounding text already built by the chat screen.
+      if (params.context?.trim()) return params.context.trim();
+      throw new Error('Demo Mode: local KB only');
+    }
     const res = await postJSON<{ content: string }>('/chat', params);
     return res.content ?? '';
   }

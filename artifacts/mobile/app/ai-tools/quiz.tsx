@@ -9,12 +9,16 @@ import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { buildGeneratorContext } from '@/services/kbContext';
 import { QuizOutput } from '@/services/ai/AIService';
-import { GRADES, SUBJECTS } from '@/services/curriculumData';
+import {
+  getPickerGrades, getPickerSubjects, resolvePickerIndex,
+} from '@/services/curriculumData';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { Button } from '@/components/ui/Button';
 import { getItem, saveItem, toggleFavorite, updateItem } from '@/services/workspace';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
+import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
+import { RelatedResourcesPanel } from '@/components/ui/RelatedResourcesPanel';
 import {
   buildQuizHTML, buildQuizSlidesHTML, copyToClipboard, exportAsPDF, exportAsWord,
   formatQuizText, shareAsText,
@@ -46,8 +50,10 @@ export default function QuizScreen() {
   }>();
   const scrollRef = useRef<ScrollView>(null);
 
-  const gradeNames = GRADES.map(g => lang === 'ar' ? g.nameAr : g.name);
-  const subjectNames = SUBJECTS.map(s => lang === 'ar' ? s.nameAr : s.name);
+  const grades = getPickerGrades();
+  const subjects = getPickerSubjects();
+  const gradeNames = grades.map(g => lang === 'ar' ? g.nameAr : g.name);
+  const subjectNames = subjects.map(s => lang === 'ar' ? s.nameAr : s.name);
   const durationLabels = DURATION_OPTIONS.map(d => `${d} ${t('min')}`);
   const marksLabels = MARKS_OPTIONS.map(m => String(m));
   const diffLabels = [t('difficultyNormal'), t('difficultyHigh'), t('difficultyDifficult')];
@@ -57,8 +63,8 @@ export default function QuizScreen() {
     try { return new Set(JSON.parse(raw) as QType[]); } catch { return new Set(['multiple_choice', 'true_false', 'short_answer']); }
   };
 
-  const [gradeIdx, setGradeIdx] = useState(params.gradeIdx ? parseInt(params.gradeIdx, 10) : 9);
-  const [subjectIdx, setSubjectIdx] = useState(params.subjectIdx ? parseInt(params.subjectIdx, 10) : 2);
+  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(params.gradeIdx, grades.length));
+  const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx, subjects.length));
   const [topic, setTopic] = useState(params.topic ?? '');
   const [diffIdx, setDiffIdx] = useState(0);
 
@@ -137,8 +143,8 @@ export default function QuizScreen() {
     try {
       const additionalContext = buildGeneratorContext(topic.trim(), lang as 'ar' | 'en') || undefined;
       const out = await aiService.generateQuiz({
-        grade: GRADES[gradeIdx].name,
-        subject: SUBJECTS[subjectIdx].name,
+        grade: grades[gradeIdx].name,
+        subject: subjects[subjectIdx].name,
         topic: topic.trim(),
         language: lang === 'ar' ? 'arabic' : 'english',
         duration: DURATION_OPTIONS[durationIdx],
@@ -168,14 +174,14 @@ export default function QuizScreen() {
     };
     if (savedId) {
       await updateItem(savedId, {
-        title, subject: SUBJECTS[subjectIdx].name, grade: GRADES[gradeIdx].name,
+        title, subject: subjects[subjectIdx].name, grade: grades[gradeIdx].name,
         topic: topic.trim(), language: lang, content: JSON.stringify(result), formState,
       });
       setSaveLabel('updated');
     } else {
       const saved = await saveItem({
         type: 'quiz', title,
-        subject: SUBJECTS[subjectIdx].name, grade: GRADES[gradeIdx].name,
+        subject: subjects[subjectIdx].name, grade: grades[gradeIdx].name,
         topic: topic.trim(), language: lang, content: JSON.stringify(result), formState,
       });
       setSavedId(saved.id);
@@ -194,7 +200,7 @@ export default function QuizScreen() {
     } catch {
       setFavorited(!next); // revert on failure
     }
-    showToast(next ? (lang === 'ar' ? 'تمت الإضافة إلى المفضلة ⭐' : 'Added to Favourites ⭐') : (lang === 'ar' ? 'تمت الإزالة من المفضلة' : 'Removed from Favourites'));
+    showToast(next ? (lang === 'ar' ? 'أضفتها إلى المفضلة ⭐' : 'Added to Favourites ⭐') : (lang === 'ar' ? 'أزلتها من المفضلة' : 'Removed from Favourites'));
   };
 
   const topPad = insets.top + (insets.top === 0 ? 67 : 0);
@@ -207,7 +213,7 @@ export default function QuizScreen() {
   const saveDone = saveLabel === 'saved' || saveLabel === 'updated';
 
   const getExportTitle = () => lang === 'ar' ? `اختبار: ${topic.trim()}` : `Quiz: ${topic.trim()}`;
-  const getExportMeta = () => ({ subject: SUBJECTS[subjectIdx].name, grade: GRADES[gradeIdx].name });
+  const getExportMeta = () => ({ subject: subjects[subjectIdx].name, grade: grades[gradeIdx].name });
 
   const handleShareText = async () => {
     if (!result) return;
@@ -266,6 +272,7 @@ export default function QuizScreen() {
         <Pressable onPress={() => router.back()} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
+        <DemoModeBanner onDark isRTL={isRTL} />
         <Text style={[styles.headerTitle, { color: '#fff', fontFamily: 'Inter_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('createQuizTitle')}
         </Text>
@@ -280,8 +287,8 @@ export default function QuizScreen() {
         <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
 
         <TopicSelector
-          subjectId={SUBJECTS[subjectIdx].id}
-          gradeId={GRADES[gradeIdx].id}
+          subjectId={subjects[subjectIdx].id}
+          gradeId={grades[gradeIdx].id}
           value={topic}
           onChange={text => { setTopic(text); setError(''); }}
           lang={lang as 'ar' | 'en'}
@@ -393,6 +400,10 @@ export default function QuizScreen() {
         </View>
       )}
 
+      {result && !loading && (
+        <RelatedResourcesPanel toolId="quiz" topic={topic.trim()} isRTL={isRTL} />
+      )}
+
       {/* Save + Regenerate */}
       {result && !loading && (
         <View style={{ marginHorizontal: 20, gap: 10, marginTop: 4, marginBottom: 20 }}>
@@ -416,7 +427,7 @@ export default function QuizScreen() {
             >
               <Ionicons name={favorited ? 'star' : 'star-outline'} size={16} color={favorited ? '#F59E0B' : colors.mutedForeground} />
               <Text style={[styles.regenText, { color: favorited ? '#F59E0B' : colors.mutedForeground, fontFamily: 'Inter_600SemiBold' }]}>
-                {favorited ? (lang === 'ar' ? 'في المفضلة' : 'Favourited') : (lang === 'ar' ? 'أضف للمفضلة' : 'Add to Favourites')}
+                {favorited ? (lang === 'ar' ? 'في المفضلة' : 'Favourited') : (lang === 'ar' ? 'أضف إلى المفضلة' : 'Add to Favourites')}
               </Text>
             </Pressable>
           )}

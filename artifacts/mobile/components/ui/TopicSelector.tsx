@@ -4,23 +4,53 @@
  * Replaces the free-text topic <TextInput> on the three AI-tool screens.
  *
  * • When the KB has content for the chosen subject + grade, it shows a
- *   two-level cascade:
- *     1. Unit picker  (first option = "Entire Book")
+ *   two-level cascade (الوحدة → الدرس):
+ *     1. Unit picker  (first option = "Entire Book", then units grouped by semester)
  *     2. Lesson picker (first option = "Entire Unit", shown once a unit is picked)
+ *   Topic is set only after a lesson (or entire-unit / entire-book) is chosen.
  * • When there is no KB content it falls back to a plain TextInput.
  */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Pressable, ScrollView, StyleSheet, Text, TextInput, View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import {
-  KB_BOOKS, KB_UNITS,
+  KB_BOOKS,
   getLessonsForUnit, getUnitsForSubjectGrade, hasKBContent,
+  type KBUnit,
 } from '@/services/knowledgeBase';
 
 const ENTIRE_BOOK = '__entire_book__';
 const ENTIRE_UNIT = '__entire_unit__';
+
+type UnitSemesterGroup = {
+  semester: 1 | 2;
+  label: string;
+  units: KBUnit[];
+};
+
+/** Group units under non-selectable semester headers (S1 then S2). */
+function groupUnitsBySemester(
+  units: KBUnit[],
+  t: (key: any) => string,
+): UnitSemesterGroup[] {
+  const bookById = new Map(KB_BOOKS.map(b => [b.id, b]));
+  const bySem = new Map<1 | 2, KBUnit[]>();
+  for (const unit of units) {
+    const sem = (bookById.get(unit.bookId)?.semester ?? 1) as 1 | 2;
+    const list = bySem.get(sem) ?? [];
+    list.push(unit);
+    bySem.set(sem, list);
+  }
+  return ([1, 2] as const)
+    .filter(sem => (bySem.get(sem)?.length ?? 0) > 0)
+    .map(sem => ({
+      semester: sem,
+      label: sem === 1 ? t('semester1Short') : t('semester2Short'),
+      units: bySem.get(sem)!,
+    }));
+}
 
 interface Props {
   subjectId: string;
@@ -42,6 +72,25 @@ export function TopicSelector({
 }: Props) {
   const units = getUnitsForSubjectGrade(subjectId, gradeId);
   const kbAvailable = hasKBContent(subjectId, gradeId);
+  const unitGroups = useMemo(() => groupUnitsBySemester(units, t), [units, t]);
+
+  // Runtime proof for /ai-tools/* topic dropdown (reads KB, not curriculumData).
+  useEffect(() => {
+    const s1 = units.filter(u => u.bookId === 'kb-math-10-s1');
+    const u1 = s1.find(u => u.id === 'kbu-math-s1-nccd-u1');
+    const u1Lessons = u1 ? getLessonsForUnit(u1.id).map(l => l.titleAr) : [];
+    // eslint-disable-next-line no-console
+    console.log('[TopicSelector-PROOF]', {
+      subjectId,
+      gradeId,
+      source: 'knowledgeBase.getUnitsForSubjectGrade / getLessonsForUnit',
+      unitTitles: units.map(u => `${u.bookId}:${u.titleAr}`),
+      s1UnitTitles: s1.map(u => u.titleAr),
+      u1Title: u1?.titleAr ?? null,
+      u1Lessons,
+      hasLegacyEquations: units.some(u => u.id === 'kbu-math-s2-1' || u.titleAr === 'المعادلات'),
+    });
+  }, [subjectId, gradeId, units]);
 
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
@@ -59,7 +108,9 @@ export function TopicSelector({
     onChange('');
   }, [subjectId, gradeId]);
 
-  // Derive the topic string whenever selections change
+  // Derive the topic string whenever selections change.
+  // Require a lesson (or entire-unit / entire-book) before setting topic —
+  // unit-only selection used to set the unit title (e.g. wrong "المعادلات").
   useEffect(() => {
     if (!kbAvailable) return;
     if (!selectedUnitId) { onChange(''); return; }
@@ -72,16 +123,21 @@ export function TopicSelector({
     const unit = units.find(u => u.id === selectedUnitId);
     if (!unit) return;
 
-    if (!selectedLessonId || selectedLessonId === ENTIRE_UNIT) {
+    // Unit chosen but no lesson yet → wait for lesson picker
+    if (!selectedLessonId) {
+      onChange('');
+      return;
+    }
+
+    if (selectedLessonId === ENTIRE_UNIT) {
       onChange(lang === 'ar' ? unit.titleAr : unit.titleEn);
       return;
     }
 
     const lesson = lessons.find(l => l.id === selectedLessonId);
     if (lesson) {
-      const unitLabel = lang === 'ar' ? unit.titleAr : unit.titleEn;
-      const lessonLabel = lang === 'ar' ? lesson.titleAr : lesson.titleEn;
-      onChange(`${unitLabel} – ${lessonLabel}`);
+      // Lesson title alone for precise KB / NCCD matching
+      onChange(lang === 'ar' ? lesson.titleAr : lesson.titleEn);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedUnitId, selectedLessonId, lang]);
@@ -118,10 +174,20 @@ export function TopicSelector({
   }
 
   // ── KB cascade ────────────────────────────────────────────────────────────
+  const selectedUnit = selectedUnitId && selectedUnitId !== ENTIRE_BOOK
+    ? units.find(u => u.id === selectedUnitId)
+    : undefined;
+  const selectedSemesterLabel = selectedUnit
+    ? unitGroups.find(g => g.units.some(u => u.id === selectedUnit.id))?.label
+    : null;
+
+  const unitTitle = selectedUnit
+    ? (lang === 'ar' ? selectedUnit.titleAr : selectedUnit.titleEn)
+    : '';
   const unitDisplayValue = selectedUnitId === ENTIRE_BOOK
     ? t('entireBook')
-    : selectedUnitId
-      ? (units.find(u => u.id === selectedUnitId)?.[lang === 'ar' ? 'titleAr' : 'titleEn'] ?? '')
+    : selectedUnit
+      ? (selectedSemesterLabel ? `${selectedSemesterLabel} · ${unitTitle}` : unitTitle)
       : '';
 
   const lessonDisplayValue = selectedLessonId === ENTIRE_UNIT
@@ -161,21 +227,30 @@ export function TopicSelector({
 
       {unitOpen && (
         <View style={[s.dropdown, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-          <ScrollView nestedScrollEnabled style={{ maxHeight: 230 }}>
+          <ScrollView nestedScrollEnabled style={{ maxHeight: 280 }}>
             <DropdownItem
               label={`📚  ${t('entireBook')}`}
               selected={selectedUnitId === ENTIRE_BOOK}
               onPress={() => handleUnitSelect(ENTIRE_BOOK)}
               accent={accent} colors={colors} isRTL={isRTL}
             />
-            {units.map(unit => (
-              <DropdownItem
-                key={unit.id}
-                label={lang === 'ar' ? unit.titleAr : unit.titleEn}
-                selected={selectedUnitId === unit.id}
-                onPress={() => handleUnitSelect(unit.id)}
-                accent={accent} colors={colors} isRTL={isRTL}
-              />
+            {unitGroups.map(group => (
+              <View key={`sem-${group.semester}`}>
+                <SemesterSectionHeader
+                  label={group.label}
+                  colors={colors}
+                  isRTL={isRTL}
+                />
+                {group.units.map(unit => (
+                  <DropdownItem
+                    key={unit.id}
+                    label={lang === 'ar' ? unit.titleAr : unit.titleEn}
+                    selected={selectedUnitId === unit.id}
+                    onPress={() => handleUnitSelect(unit.id)}
+                    accent={accent} colors={colors} isRTL={isRTL}
+                  />
+                ))}
+              </View>
             ))}
           </ScrollView>
         </View>
@@ -234,6 +309,33 @@ export function TopicSelector({
 }
 
 // ── Internal helpers ───────────────────────────────────────────────────────────
+
+function SemesterSectionHeader({ label, colors, isRTL }: {
+  label: string; colors: any; isRTL: boolean;
+}) {
+  return (
+    <View
+      style={{
+        paddingHorizontal: 14,
+        paddingTop: 10,
+        paddingBottom: 6,
+        backgroundColor: colors.muted,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+      }}
+      accessibilityRole="header"
+    >
+      <Text style={{
+        color: colors.mutedForeground,
+        fontFamily: 'Inter_600SemiBold',
+        fontSize: 12,
+        textAlign: isRTL ? 'right' : 'left',
+      }}>
+        {label}
+      </Text>
+    </View>
+  );
+}
 
 function DropdownItem({ label, selected, onPress, accent, colors, isRTL }: {
   label: string; selected: boolean; onPress: () => void;

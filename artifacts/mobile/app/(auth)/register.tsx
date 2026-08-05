@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +17,7 @@ export default function RegisterScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { register } = useAuth();
+  const { t, isRTL } = useLanguage();
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -67,73 +69,79 @@ export default function RegisterScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Back */}
-        <Pressable onPress={() => router.back()} style={styles.back}>
-          <Ionicons name="arrow-back" size={22} color={colors.foreground} />
+        <Pressable
+          onPress={() => router.back()}
+          style={[styles.back, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
+        >
+          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
         </Pressable>
 
-        <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'Inter_700Bold' }]}>
-          Create your account
+        <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'Inter_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+          {t('createYourAccount')}
         </Text>
-        <Text style={[styles.sub, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
-          Join thousands of teachers using IQRA
+        <Text style={[styles.sub, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+          {t('registerSubtitle')}
         </Text>
 
         <View style={[styles.card, { backgroundColor: colors.card, borderRadius: colors.radius * 1.5, borderColor: colors.border }]}>
           {error ? (
-            <View style={[styles.errorBanner, { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius }]}>
+            <View style={[styles.errorBanner, { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
-              <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Inter_400Regular' }]}>{error}</Text>
+              <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text>
             </View>
           ) : null}
 
-          <View style={styles.nameRow}>
+          <View style={[styles.nameRow, isRTL && { flexDirection: 'row-reverse' }]}>
             <View style={styles.nameField}>
               <Input
-                label="First name"
-                placeholder="Ahmad"
+                label={t('firstName')}
+                placeholder={t('firstNamePlaceholder')}
                 value={firstName}
                 onChangeText={setFirstName}
                 leftIcon="person-outline"
                 autoCapitalize="words"
+                isRTL={isRTL}
               />
             </View>
             <View style={styles.nameField}>
               <Input
-                label="Last name"
-                placeholder="Al-Rashidi"
+                label={t('lastName')}
+                placeholder={t('lastNamePlaceholder')}
                 value={lastName}
                 onChangeText={setLastName}
                 autoCapitalize="words"
+                isRTL={isRTL}
               />
             </View>
           </View>
 
           <Input
-            label="Email address"
-            placeholder="you@school.edu.jo"
+            label={t('emailAddress')}
+            placeholder={t('emailPlaceholder')}
             value={email}
             onChangeText={setEmail}
             leftIcon="mail-outline"
             keyboardType="email-address"
             autoCapitalize="none"
+            isRTL={isRTL}
           />
 
           <Input
-            label="Password"
-            placeholder="At least 8 characters"
+            label={t('password')}
+            placeholder={t('passwordMinHint')}
             value={password}
             onChangeText={setPassword}
             leftIcon="lock-closed-outline"
             rightIcon={showPassword ? 'eye-off-outline' : 'eye-outline'}
             onRightIconPress={() => setShowPassword(v => !v)}
             secureTextEntry={!showPassword}
-            hint={password.length > 0 && password.length < 8 ? 'Minimum 8 characters' : undefined}
+            hint={password.length > 0 && password.length < 8 ? t('passwordMinHint') : undefined}
+            isRTL={isRTL}
           />
 
           <Input
-            label="Confirm password"
-            placeholder="Re-enter your password"
+            label={t('confirmPassword')}
+            placeholder={t('confirmPasswordPlaceholder')}
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             leftIcon="lock-closed-outline"
@@ -142,13 +150,14 @@ export default function RegisterScreen() {
             secureTextEntry={!showConfirm}
             hint={
               confirmPassword.length > 0 && confirmPassword !== password
-                ? 'Passwords do not match'
+                ? t('passwordsDoNotMatch')
                 : undefined
             }
+            isRTL={isRTL}
           />
 
           <Button
-            label="Create Account"
+            label={t('createAccount')}
             onPress={handleRegister}
             loading={loading}
             disabled={!canSubmit}
@@ -156,17 +165,17 @@ export default function RegisterScreen() {
           />
 
           <Text style={[styles.terms, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
-            By creating an account you agree to our Terms of Service and Privacy Policy.
+            {t('registerTerms')}
           </Text>
         </View>
 
-        <View style={styles.loginRow}>
+        <View style={[styles.loginRow, isRTL && { flexDirection: 'row-reverse' }]}>
           <Text style={[styles.loginText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
-            Already have an account?{'  '}
+            {t('alreadyHaveAccount')}{'  '}
           </Text>
           <Pressable onPress={() => router.replace('/(auth)/login')}>
             <Text style={[styles.loginLink, { color: colors.primary, fontFamily: 'Inter_600SemiBold' }]}>
-              Sign in
+              {t('signIn')}
             </Text>
           </Pressable>
         </View>
@@ -181,7 +190,7 @@ const styles = StyleSheet.create({
   heading: { fontSize: 26, marginBottom: 6 },
   sub: { fontSize: 14, marginBottom: 24 },
   card: { padding: 24, borderWidth: 1, marginBottom: 24, gap: 16 },
-  errorBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderWidth: 1 },
+  errorBanner: { alignItems: 'center', gap: 8, padding: 12, borderWidth: 1 },
   errorText: { flex: 1, fontSize: 13 },
   nameRow: { flexDirection: 'row', gap: 12 },
   nameField: { flex: 1 },

@@ -1,0 +1,6 @@
+# Core (prove_slice.py): sympy only.
+sympy>=1.12
+# HTTP microservice (uvicorn app:app):
+fastapi>=0.115
+uvicorn[standard]>=0.34
+pydantic>=2.10

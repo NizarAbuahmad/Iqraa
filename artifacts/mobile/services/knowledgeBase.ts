@@ -4,9 +4,24 @@
  *  • Mathematics Grade 10, Semester 1 (الرياضيات - الصف العاشر - الفصل الأول)
  *  • Mathematics Grade 10, Semester 2 (الرياضيات - الصف العاشر - الفصل الثاني)
  *
- * This is the ONLY source iQra uses to answer questions.
- * Add more books by appending to KB_BOOKS / KB_UNITS / KB_LESSONS.
+ * Grade 10 Math Semester 1/2 units/lessons are seeded from
+ * data/iqra_curriculum_g10_math_sem{1,2}.json (NCCD). Legacy hardcoded Math
+ * S1/S2 rows remain below but are excluded from the exported catalog.
+ *
+ * Investor MVP: helper lookups hide Chemistry and non-Math books from UI surfaces.
  */
+import {
+  INVESTOR_MVP_CURRICULUM,
+  isPickerCurriculumVisible,
+} from './curriculumData.ts';
+import {
+  NCCD_S1_BOOK_ID,
+  buildNccdSem1Catalog,
+} from './curriculumG10MathSem1.ts';
+import {
+  NCCD_S2_BOOK_ID,
+  buildNccdSem2Catalog,
+} from './curriculumG10MathSem2.ts';
 
 export interface KBBook {
   id: string;
@@ -37,11 +52,21 @@ export interface KBLesson {
   keyConceptsAr: string[];
   keyConceptsEn: string[];
   keyTerms: Array<{ ar: string; en: string; definitionAr: string; definitionEn: string }>;
+  /** Official curriculum outcomes (النتاجات). Empty when not available. */
+  objectives: string[];
+  /** Period count from the teacher guide, or null if unknown. */
+  periods: number | null;
   examplesAr?: string[];
   examplesEn?: string[];
   rulesAr?: string[];
   rulesEn?: string[];
 }
+
+/** Legacy hardcoded lessons may omit objectives/periods — normalized on export. */
+type HardcodedKBLesson = Omit<KBLesson, 'objectives' | 'periods'> & {
+  objectives?: string[];
+  periods?: number | null;
+};
 
 // ─────────────────────────────────────────────────────
 // BOOKS
@@ -54,7 +79,16 @@ export const KB_BOOKS: KBBook[] = [
     titleAr: 'الكيمياء – الصف العاشر – الفصل الأول',
     titleEn: 'Chemistry – Grade 10 – Semester 1',
     semester: 1,
-    source: '10th_grade,_alchamy1st_semester_1785071530814.pdf',
+    source: 'كتاب الطالب لمادة الكيمياء الصف العاشر الفصل الأول.pdf',
+  },
+  {
+    id: 'kb-chem-10-s2',
+    gradeId: 'grade-10',
+    subjectId: 'chemistry',
+    titleAr: 'الكيمياء – الصف العاشر – الفصل الثاني',
+    titleEn: 'Chemistry – Grade 10 – Semester 2',
+    semester: 2,
+    source: 'كتاب الطالب لمادة الكيمياء الصف العاشر الفصل الثاني.pdf',
   },
   {
     id: 'kb-math-10-s1',
@@ -77,21 +111,24 @@ export const KB_BOOKS: KBBook[] = [
 ];
 
 // ─────────────────────────────────────────────────────
-// UNITS
+// UNITS (hardcoded — S2 book rows kept but superseded below)
 // ─────────────────────────────────────────────────────
-export const KB_UNITS: KBUnit[] = [
-  // ── CHEMISTRY ──────────────────────────────────────
+const HARDCODED_KB_UNITS: KBUnit[] = [
+  // ── CHEMISTRY S1 ───────────────────────────────────
   { id: 'kbu-chem-1', bookId: 'kb-chem-10-s1', order: 1, titleAr: 'بنية الذرة وتركيبها', titleEn: 'Atomic Structure' },
   { id: 'kbu-chem-2', bookId: 'kb-chem-10-s1', order: 2, titleAr: 'الجدول الدوري وخواص العناصر', titleEn: 'Periodic Table and Properties of Elements' },
   { id: 'kbu-chem-3', bookId: 'kb-chem-10-s1', order: 3, titleAr: 'الروابط الكيميائية', titleEn: 'Chemical Bonding' },
+  // ── CHEMISTRY S2 ───────────────────────────────────
+  { id: 'kbu-chem-s2-4', bookId: 'kb-chem-10-s2', order: 1, titleAr: 'الوحدة الرابعة', titleEn: 'Unit 4 (Semester 2)' },
+  { id: 'kbu-chem-s2-5', bookId: 'kb-chem-10-s2', order: 2, titleAr: 'الوحدة الخامسة – التفاعلات الكيميائية', titleEn: 'Unit 5 – Chemical Reactions' },
 
-  // ── MATH S1: Units 5–8 (Jordan curriculum numbering) ──
+  // ── MATH S1 legacy (superseded by NCCD JSON — kept for reference, not exported) ──
   { id: 'kbu-math-1', bookId: 'kb-math-10-s1', order: 5, titleAr: 'الاقترانات', titleEn: 'Functions' },
   { id: 'kbu-math-2', bookId: 'kb-math-10-s1', order: 6, titleAr: 'المشتقات', titleEn: 'Derivatives' },
   { id: 'kbu-math-3', bookId: 'kb-math-10-s1', order: 7, titleAr: 'المتجهات', titleEn: 'Vectors' },
   { id: 'kbu-math-8', bookId: 'kb-math-10-s1', order: 8, titleAr: 'الإحصاء والاحتمالات', titleEn: 'Statistics and Probability' },
 
-  // ── MATH S2: Units 1–4 (Jordan curriculum numbering) ──
+  // ── MATH S2 legacy (superseded by NCCD JSON — kept for reference, not exported) ──
   { id: 'kbu-math-s2-1', bookId: 'kb-math-10-s2', order: 1, titleAr: 'المعادلات', titleEn: 'Equations' },
   { id: 'kbu-math-s2-2', bookId: 'kb-math-10-s2', order: 2, titleAr: 'الدائرة', titleEn: 'The Circle' },
   { id: 'kbu-math-s2-3', bookId: 'kb-math-10-s2', order: 3, titleAr: 'حساب المثلثات', titleEn: 'Trigonometry' },
@@ -99,9 +136,9 @@ export const KB_UNITS: KBUnit[] = [
 ];
 
 // ─────────────────────────────────────────────────────
-// LESSONS — CHEMISTRY
+// LESSONS (hardcoded — S2 book lessons kept but superseded below)
 // ─────────────────────────────────────────────────────
-export const KB_LESSONS: KBLesson[] = [
+const HARDCODED_KB_LESSONS: HardcodedKBLesson[] = [
 
   // ══════════════════════════════════════════════════════
   // CHEMISTRY
@@ -199,6 +236,33 @@ export const KB_LESSONS: KBLesson[] = [
     ],
   },
 
+  // ── Unit 2: Periodic Table ────────────────────────────
+  {
+    id: 'kbl-chem-2-1',
+    unitId: 'kbu-chem-2',
+    order: 1,
+    titleAr: 'الجدول الدوري وخواص العناصر',
+    titleEn: 'Periodic Table and Element Properties',
+    summaryAr:
+      'يُرتَّب الجدول الدوري العناصر وفق تزايد العدد الذري. تظهر خواص دورية مثل نصف القطر الذري وطاقة التأين والكهروسالبية عبر الدورات والمجموعات، مما يساعد على تفسير سلوك العناصر وتفاعلاتها.',
+    summaryEn:
+      'The periodic table arranges elements by increasing atomic number. Periodic trends such as atomic radius, ionization energy, and electronegativity help explain element behavior and reactivity across periods and groups.',
+    keyConceptsAr: ['العدد الذري', 'الدورات والمجموعات', 'نصف القطر الذري', 'طاقة التأين', 'الكهروسالبية'],
+    keyConceptsEn: ['Atomic number', 'Periods and groups', 'Atomic radius', 'Ionization energy', 'Electronegativity'],
+    keyTerms: [
+      { ar: 'طاقة التأين', en: 'Ionization Energy', definitionAr: 'الطاقة اللازمة لنزع إلكترون من ذرة متعادلة في الحالة الغازية', definitionEn: 'Energy required to remove an electron from a gaseous neutral atom' },
+      { ar: 'الكهروسالبية', en: 'Electronegativity', definitionAr: 'قدرة الذرة على جذب إلكترونات الرابطة نحوها', definitionEn: 'Ability of an atom to attract bonding electrons toward itself' },
+    ],
+    rulesAr: [
+      'نصف القطر الذري يزداد نزولاً في المجموعة ويتناقص عبر الدورة',
+      'طاقة التأين تزداد عمومًا عبر الدورة وتتراجع نزولاً في المجموعة',
+    ],
+    rulesEn: [
+      'Atomic radius generally increases down a group and decreases across a period',
+      'Ionization energy generally increases across a period and decreases down a group',
+    ],
+  },
+
   // ── Unit 3: Chemical Bonding ──────────────────────────
   {
     id: 'kbl-chem-3-1',
@@ -263,6 +327,40 @@ export const KB_LESSONS: KBLesson[] = [
     keyConceptsEn: ['Sea of electrons (delocalized)', 'Positive metal cations', 'Electrical and thermal conductivity', 'Malleability and ductility'],
     keyTerms: [
       { ar: 'الرابطة الفلزية', en: 'Metallic Bond', definitionAr: 'قوة التجاذب بين الأيونات الموجبة للفلزات والإلكترونات الحرة في الشبكة البلورية', definitionEn: 'The attraction between positive metal ions and the delocalized sea of electrons in the crystal lattice' },
+    ],
+  },
+
+  // ── Chemistry S2 Unit 4 ───────────────────────────────
+  {
+    id: 'kbl-chem-s2-4-1',
+    unitId: 'kbu-chem-s2-4',
+    order: 1,
+    titleAr: 'الوحدة الرابعة – مفاهيم أساسية',
+    titleEn: 'Unit 4 – Core Concepts',
+    summaryAr:
+      'وحدة من الفصل الثاني في كيمياء الصف العاشر. استخدم ملخص الوحدة الرابعة ودوسية الفصل الثاني وكتاب الطالب للفصل الثاني لإثراء الشرح والتمارين.',
+    summaryEn:
+      'Semester-2 Grade 10 Chemistry unit. Use the Unit 4 summary, S2 dossiers, and the student book to enrich explanations and practice.',
+    keyConceptsAr: ['مفاهيم الوحدة الرابعة', 'تطبيقات صفية', 'تمارين مراجعة'],
+    keyConceptsEn: ['Unit 4 concepts', 'Classroom applications', 'Review practice'],
+    keyTerms: [],
+  },
+
+  // ── Chemistry S2 Unit 5: Reactions ────────────────────
+  {
+    id: 'kbl-chem-s2-5-1',
+    unitId: 'kbu-chem-s2-5',
+    order: 1,
+    titleAr: 'التفاعلات الكيميائية',
+    titleEn: 'Chemical Reactions',
+    summaryAr:
+      'تتناول الوحدة الخامسة التفاعلات الكيميائية: أنواعها، تمثيلها بمعادلات، وربطها بالحسابات والتطبيقات الصفية. يمكن دعم الحصة بورقة عمل التفاعلات وملخص الوحدة الخامسة.',
+    summaryEn:
+      'Unit 5 covers chemical reactions: types, equation representation, and classroom applications. Support lessons with the reactions worksheet and Unit 5 summary.',
+    keyConceptsAr: ['أنواع التفاعلات', 'المعادلة الكيميائية', 'حفظ الكتلة', 'تطبيقات حياتية'],
+    keyConceptsEn: ['Reaction types', 'Chemical equations', 'Conservation of mass', 'Real-life applications'],
+    keyTerms: [
+      { ar: 'التفاعل الكيميائي', en: 'Chemical Reaction', definitionAr: 'تغيّر ينتج مواد جديدة بخواص مختلفة عن المواد المتفاعلة', definitionEn: 'A change that produces new substances with different properties from the reactants' },
     ],
   },
 
@@ -948,6 +1046,66 @@ export const KB_LESSONS: KBLesson[] = [
 ];
 
 // ─────────────────────────────────────────────────────
+// EXPORTED CATALOG — NCCD S1/S2 supersede legacy Math book rows
+// ─────────────────────────────────────────────────────
+const _nccdSem1 = buildNccdSem1Catalog();
+const _nccdSem2 = buildNccdSem2Catalog();
+const _legacyS1UnitIds = new Set(
+  HARDCODED_KB_UNITS.filter(u => u.bookId === NCCD_S1_BOOK_ID).map(u => u.id),
+);
+const _legacyS2UnitIds = new Set(
+  HARDCODED_KB_UNITS.filter(u => u.bookId === NCCD_S2_BOOK_ID).map(u => u.id),
+);
+const _legacyMathUnitIds = new Set([..._legacyS1UnitIds, ..._legacyS2UnitIds]);
+
+function normalizeHardcodedLesson(lesson: HardcodedKBLesson): KBLesson {
+  return {
+    ...lesson,
+    objectives: lesson.objectives ?? [],
+    periods: lesson.periods ?? null,
+  };
+}
+
+/** Active units: Chemistry + NCCD Math S1 + NCCD Math S2. */
+export const KB_UNITS: KBUnit[] = [
+  ...HARDCODED_KB_UNITS.filter(
+    u => u.bookId !== NCCD_S1_BOOK_ID && u.bookId !== NCCD_S2_BOOK_ID,
+  ),
+  ..._nccdSem1.units,
+  ..._nccdSem2.units,
+];
+
+/** Active lessons: Chemistry + NCCD Math S1 + NCCD Math S2. */
+export const KB_LESSONS: KBLesson[] = [
+  ...HARDCODED_KB_LESSONS
+    .filter(l => !_legacyMathUnitIds.has(l.unitId))
+    .map(normalizeHardcodedLesson),
+  ..._nccdSem1.lessons,
+  ..._nccdSem2.lessons,
+];
+
+// Runtime proof: Sem1 JSON must be in the live KB (not curriculumData).
+// Look for this in Metro / browser console after a --clear restart.
+(() => {
+  const s1Units = KB_UNITS.filter(u => u.bookId === NCCD_S1_BOOK_ID);
+  const u1 = s1Units.find(u => u.id === 'kbu-math-s1-nccd-u1');
+  const u1Lessons = KB_LESSONS.filter(l => l.unitId === 'kbu-math-s1-nccd-u1')
+    .sort((a, b) => a.order - b.order)
+    .map(l => l.titleAr);
+  const legacyEquationsStillPresent = KB_UNITS.some(u => u.id === 'kbu-math-s2-1');
+  // eslint-disable-next-line no-console
+  console.log('[KB-CATALOG-PROOF]', {
+    sem1JsonUnitCount: _nccdSem1.units.length,
+    sem1JsonLessonCount: _nccdSem1.lessons.length,
+    s1UnitTitles: s1Units.map(u => u.titleAr),
+    u1Title: u1?.titleAr ?? null,
+    u1LessonCount: u1Lessons.length,
+    u1Lessons,
+    legacyEquationsUnitPresent: legacyEquationsStillPresent,
+  });
+})();
+
+// ─────────────────────────────────────────────────────
 // SEARCH UTILITIES
 // ─────────────────────────────────────────────────────
 
@@ -1024,7 +1182,10 @@ function scoreField(query: string, field: string, weight: number): number {
  * Handles Arabic prefix variation and partial word matches.
  * Returns ranked results (most relevant first).
  */
-export function searchKB(query: string, lang: 'ar' | 'en' = 'ar'): KBLesson[] {
+export type KBScoredLesson = { lesson: KBLesson; score: number };
+
+/** Ranked KB hits with scores — used for confidence gating in chat. */
+export function searchKBRanked(query: string, lang: 'ar' | 'en' = 'ar'): KBScoredLesson[] {
   const q = query.trim();
   if (!q) return [];
 
@@ -1035,14 +1196,21 @@ export function searchKB(query: string, lang: 'ar' | 'en' = 'ar'): KBLesson[] {
     const summary  = lang === 'ar' ? lesson.summaryAr  : lesson.summaryEn;
     const concepts = lang === 'ar' ? lesson.keyConceptsAr : lesson.keyConceptsEn;
     const terms    = lesson.keyTerms.map(t => lang === 'ar' ? t.ar : t.en);
+    const unit = getUnitForLesson(lesson);
+    const unitTitle = unit
+      ? (lang === 'ar' ? unit.titleAr : unit.titleEn)
+      : '';
 
     score += scoreField(q, title,   10);
+    // Unit titles (e.g. الأسس والمعادلات) must rank — teachers often ask by unit name
+    if (unitTitle) score += scoreField(q, unitTitle, 12);
     concepts.forEach(c => { score += scoreField(q, c, 4); });
     terms.forEach(t =>    { score += scoreField(q, t, 3); });
     score += scoreField(q, summary, 2);
 
     // Cross-check English side for mixed/transliterated queries
     score += scoreField(q, lesson.titleEn, 5);
+    if (unit) score += scoreField(q, unit.titleEn, 6);
     lesson.keyConceptsEn.forEach(c => { score += scoreField(q, c, 2); });
     lesson.keyTerms.forEach(t => {
       score += scoreField(q, t.en, 2);
@@ -1052,21 +1220,28 @@ export function searchKB(query: string, lang: 'ar' | 'en' = 'ar'): KBLesson[] {
     return { lesson, score };
   });
 
+  const visibleIds = new Set(filterVisibleLessons(KB_LESSONS).map(l => l.id));
   return scored
-    .filter(s => s.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .map(s => s.lesson);
+    .filter(s => s.score > 0 && visibleIds.has(s.lesson.id))
+    .sort((a, b) => b.score - a.score);
 }
 
-/**
- * Semantic KB search that handles:
- *  • "semester 2 / الفصل الثاني" with no specific topic  → all S2 lessons
- *  • "first/second/... lesson (in semester N)"           → lesson by ordinal
- *  • Falls back to regular scoreField search otherwise
- *
- * Use this everywhere instead of bare searchKB so vague queries still return
- * useful context for the AI.
- */
+export function searchKB(query: string, lang: 'ar' | 'en' = 'ar'): KBLesson[] {
+  return searchKBRanked(query, lang).map(s => s.lesson);
+}
+
+/** Minimum lexical score to treat a KB hit as confident for grounding. */
+export const KB_CONFIDENT_SCORE = 10;
+
+/** True when the top ranked hit clears the confidence bar vs the runner-up. */
+export function isConfidentKbHit(ranked: KBScoredLesson[]): boolean {
+  const top = ranked[0];
+  if (!top || top.score < KB_CONFIDENT_SCORE) return false;
+  const second = ranked[1];
+  if (!second) return true;
+  return top.score >= second.score * 1.2;
+}
+
 /**
  * Normalize Arabic text for fuzzy matching:
  * strips hamza variants (أإآ→ا), alef maqsura (ى→ي), taa marbuta (ة→ه),
@@ -1079,6 +1254,107 @@ function normalizeAr(s: string): string {
     .replace(/ة/g, 'ه')
     .replace(/[\u064B-\u065F]/g, ''); // strip tashkeel
 }
+
+function normalizeTitleKey(s: string): string {
+  return normalizeAr(s)
+    .toLowerCase()
+    .replace(/[-–—_/\\|]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** Query and lesson title share an exact or strong lexical overlap. */
+function titleAffinity(query: string, title: string): boolean {
+  const nq = normalizeTitleKey(query);
+  const nt = normalizeTitleKey(title);
+  if (!nq || !nt) return false;
+  if (nq === nt) return true;
+  if (nt.includes(nq) || nq.includes(nt)) return true;
+
+  const qTokens = nq.split(' ').map(stripArabicPrefix).filter(t => t.length >= 3);
+  if (qTokens.length === 0) return false;
+  const titleBlob = nt.split(' ').map(stripArabicPrefix).join(' ');
+  const hits = qTokens.filter(t => titleBlob.includes(t));
+  return hits.length >= Math.max(1, Math.ceil(qTokens.length * 0.6));
+}
+
+/**
+ * Stricter affinity for generator grounding — every distinctive query token
+ * (length ≥ 4) must appear in the title so "معادلات خاصة" does not ground
+ * onto a lab that merely mentions "معادلات".
+ */
+function strongTitleAffinity(query: string, title: string): boolean {
+  const nq = normalizeTitleKey(query);
+  const nt = normalizeTitleKey(title);
+  if (!nq || !nt) return false;
+  if (nq === nt) return true;
+  if (nt.includes(nq)) return true;
+
+  const qTokens = [...new Set(
+    nq.split(' ').map(stripArabicPrefix).filter(t => t.length >= 4),
+  )];
+  if (qTokens.length === 0) return titleAffinity(query, title);
+  const titleBlob = nt.split(' ').map(stripArabicPrefix).join(' ');
+  return qTokens.every(t => titleBlob.includes(t));
+}
+
+/**
+ * Resolve a curriculum-grounded lesson for AI generation.
+ * Returns null when there is no exact / high-confidence title-aligned match.
+ * Callers must treat null as ungrounded — never substitute a weak fuzzy hit.
+ */
+export function resolveGroundedKbLesson(
+  query: string,
+  lang: 'ar' | 'en' = 'ar',
+): KBLesson | null {
+  const q = query.trim();
+  if (!q) return null;
+
+  const ranked = searchKBRanked(q, lang);
+  if (ranked.length === 0) return null;
+
+  const exact = ranked.find(r => {
+    const title = lang === 'ar' ? r.lesson.titleAr : r.lesson.titleEn;
+    return normalizeTitleKey(title) === normalizeTitleKey(q);
+  });
+  if (exact) return exact.lesson;
+
+  if (!isConfidentKbHit(ranked)) return null;
+
+  const top = ranked[0]!;
+  const title = lang === 'ar' ? top.lesson.titleAr : top.lesson.titleEn;
+  if (strongTitleAffinity(q, title)) return top.lesson;
+
+  // Unit-name asks (e.g. الأسس والمعادلات) may rank via unit-title boost.
+  // Accept only when the query is essentially the unit title — not a longer
+  // different topic that shares a word like "معادلات".
+  const unit = getUnitForLesson(top.lesson);
+  const unitTitle = unit
+    ? (lang === 'ar' ? unit.titleAr : unit.titleEn)
+    : '';
+  if (!unitTitle) return null;
+  const nq = normalizeTitleKey(q);
+  const nu = normalizeTitleKey(unitTitle);
+  const qTokenCount = nq.split(' ').filter(Boolean).length;
+  const uTokenCount = nu.split(' ').filter(Boolean).length;
+  const unitIsQuery =
+    nq === nu
+    || nu.includes(nq)
+    || (nq.includes(nu) && qTokenCount <= uTokenCount + 1);
+  if (!unitIsQuery) return null;
+
+  return top.lesson;
+}
+
+/**
+ * Semantic KB search that handles:
+ *  • "semester 2 / الفصل الثاني" with no specific topic  → all S2 lessons
+ *  • "first/second/... lesson (in semester N)"           → lesson by ordinal
+ *  • Falls back to regular scoreField search otherwise
+ *
+ * Use this everywhere instead of bare searchKB so vague queries still return
+ * useful context for the AI.
+ */
 
 export function searchKBSemantic(query: string, lang: 'ar' | 'en' = 'ar'): KBLesson[] {
   const q = query.trim();
@@ -1130,7 +1406,9 @@ export function searchKBSemantic(query: string, lang: 'ar' | 'en' = 'ar'): KBLes
  * directly to a lesson so the result is guaranteed.
  */
 export function getLessonById(id: string): KBLesson | undefined {
-  return KB_LESSONS.find(l => l.id === id);
+  const lesson = KB_LESSONS.find(l => l.id === id);
+  if (!lesson) return undefined;
+  return isKbLessonVisible(lesson) ? lesson : undefined;
 }
 
 /**
@@ -1151,14 +1429,40 @@ export function getLessonsForBook(bookId: string): KBLesson[] {
   return KB_LESSONS.filter(l => unitIds.includes(l.unitId));
 }
 
-/** All KB units for a given subject + grade, ordered by their `order` field. */
+function isKbBookVisible(book: KBBook): boolean {
+  return isPickerCurriculumVisible(book.subjectId, book.gradeId);
+}
+
+function isKbLessonVisible(lesson: KBLesson): boolean {
+  if (!INVESTOR_MVP_CURRICULUM) return true;
+  const book = getBookForLesson(lesson);
+  return book ? isKbBookVisible(book) : false;
+}
+
+function filterVisibleLessons(lessons: KBLesson[]): KBLesson[] {
+  if (!INVESTOR_MVP_CURRICULUM) return lessons;
+  return lessons.filter(isKbLessonVisible);
+}
+
+/** All KB units for a given subject + grade (S1 then S2), ordered within each book. */
 export function getUnitsForSubjectGrade(subjectId: string, gradeId: string): KBUnit[] {
-  const bookIds = KB_BOOKS
-    .filter(b => b.subjectId === subjectId && b.gradeId === gradeId)
-    .map(b => b.id);
-  return KB_UNITS
-    .filter(u => bookIds.includes(u.bookId))
-    .sort((a, b) => a.order - b.order);
+  if (!isPickerCurriculumVisible(subjectId, gradeId) && INVESTOR_MVP_CURRICULUM) {
+    return [];
+  }
+  const books = KB_BOOKS
+    .filter(b => b.subjectId === subjectId && b.gradeId === gradeId && isKbBookVisible(b))
+    .slice()
+    .sort((a, b) => a.id.localeCompare(b.id)); // s1 before s2 by id
+
+  const units: KBUnit[] = [];
+  for (const book of books) {
+    units.push(
+      ...KB_UNITS
+        .filter(u => u.bookId === book.id)
+        .sort((a, b) => a.order - b.order),
+    );
+  }
+  return units;
 }
 
 /** All KB lessons inside a single unit, ordered by their `order` field. */
@@ -1170,35 +1474,43 @@ export function getLessonsForUnit(unitId: string): KBLesson[] {
 
 /** True when there is KB content for the given subject + grade. */
 export function hasKBContent(subjectId: string, gradeId: string): boolean {
-  return KB_BOOKS.some(b => b.subjectId === subjectId && b.gradeId === gradeId);
+  return KB_BOOKS.some(
+    b => b.subjectId === subjectId && b.gradeId === gradeId && isKbBookVisible(b),
+  );
 }
 
 /**
  * Return `count` representative lesson suggestions spread across the KB
- * (different units/books) so the user can discover what iQra covers.
- * Always includes at least one Chemistry and one Mathematics lesson.
+ * so the user can discover what iQra covers.
  */
 export function getTopicSuggestions(
   count: number,
   lang: 'ar' | 'en',
 ): { text: string; lessonId: string }[] {
-  // Handpicked representative lessons from each subject/unit for variety
-  const REPRESENTATIVE_IDS = [
-    'kbl-chem-1-1',    // Bohr's Model (Chemistry)
-    'kbl-chem-3-2',    // Covalent Bonding (Chemistry)
-    'kbl-math-2-2',    // Differentiation Rules (Math)
-    'kbl-math-3-1',    // Vectors in the Plane (Math)
-    'kbl-math-8-1',    // Basic Probability (Math)
-    'kbl-math-s2-3-1', // Trigonometric Ratios (Math S2)
-    'kbl-math-1-3',    // Inverse Functions (Math)
-    'kbl-math-s2-1-1', // Equations (Math S2)
-  ];
+  // Handpicked Grade 10 Math lessons (S1 + S2). Chemistry kept in data, hidden in MVP.
+  const REPRESENTATIVE_IDS = INVESTOR_MVP_CURRICULUM
+    ? [
+        'kbl-math-s1-nccd-u1_l4',    // حل المعادلة الأسية (NCCD S1)
+        'kbl-math-s1-nccd-u2_l1',    // أوتار الدائرة (NCCD S1 title-only)
+        'kbl-math-s2-nccd-u5_l3',    // تركيب الاقترانات (NCCD S2)
+        'kbl-math-s2-nccd-u6_l2',    // الاشتقاق (NCCD S2)
+        'kbl-chem-1-1',              // نظرية بور
+        'kbl-chem-3-2',              // الرابطة التساهمية
+        'kbl-chem-s2-5-1',           // التفاعلات الكيميائية
+      ]
+    : [
+        'kbl-chem-1-1',
+        'kbl-chem-3-2',
+        'kbl-math-s1-nccd-u1_l4',
+        'kbl-math-s2-nccd-u5_l3',
+        'kbl-math-s2-nccd-u6_l2',
+        'kbl-math-s2-nccd-u8_l4',
+      ];
 
   const lessons = REPRESENTATIVE_IDS
     .map(id => KB_LESSONS.find(l => l.id === id))
     .filter((l): l is KBLesson => l !== undefined);
 
-  // Pick evenly-spread items (first `count` after shuffle keeps variety)
   const selected = lessons.slice(0, Math.min(count, lessons.length));
   return selected.map(l => ({
     text: lang === 'ar' ? l.titleAr : l.titleEn,

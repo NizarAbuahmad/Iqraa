@@ -8,7 +8,9 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { Button } from '@/components/ui/Button';
-import { GRADES, SUBJECTS } from '@/services/curriculumData';
+import {
+  getPickerGrades, getPickerSubjects, resolvePickerIndex,
+} from '@/services/curriculumData';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { ClassroomActivity } from '@/services/ai/AIService';
 import { buildGeneratorContext } from '@/services/kbContext';
@@ -31,11 +33,11 @@ export default function ClassroomBuilderScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const topPad = insets.top + (insets.top === 0 ? 67 : 0);
 
-  const gradeNames = GRADES.map(g => lang === 'ar' ? g.nameAr : g.name);
-  const subjectNames = SUBJECTS.map(s => lang === 'ar' ? s.nameAr : s.name);
+  const grades = getPickerGrades();
+  const subjects = getPickerSubjects();
 
-  const [gradeIdx, setGradeIdx] = useState(9); // Grade 10 default
-  const [subjectIdx, setSubjectIdx] = useState(2); // Mathematics default
+  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(undefined, grades.length));
+  const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(undefined, subjects.length));
   const [topic, setTopic] = useState('');
   const [durationIdx, setDurationIdx] = useState(1); // 20 min default
   const [difficulty, setDifficulty] = useState<Difficulty>('standard');
@@ -62,8 +64,8 @@ export default function ClassroomBuilderScreen() {
     try {
       const additionalContext = buildGeneratorContext(topic.trim(), lang as 'ar' | 'en') || undefined;
       const out = await aiService.generateClassroomActivity({
-        grade: GRADES[gradeIdx].name,
-        subject: SUBJECTS[subjectIdx].name,
+        grade: grades[gradeIdx].name,
+        subject: subjects[subjectIdx].name,
         topic: topic.trim(),
         activityType: resolveActivityType(params),
         duration: DURATIONS[durationIdx],
@@ -166,13 +168,13 @@ export default function ClassroomBuilderScreen() {
         <View style={{ marginBottom: 18 }}>
           <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('grade')}</Text>
           <View style={[styles.pillRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            {[8, 9, 10, 11].map(g => {
-              const idx = g - 1;
+            {grades.map((g, idx) => {
               const active = gradeIdx === idx;
+              const label = lang === 'ar' ? g.nameAr : g.name;
               return (
-                <Pressable key={g} onPress={() => setGradeIdx(idx)} style={[styles.pill, { backgroundColor: active ? ACCENT : colors.card, borderColor: active ? ACCENT : colors.border, borderRadius: colors.radius }]}>
+                <Pressable key={g.id} onPress={() => setGradeIdx(idx)} style={[styles.pill, { backgroundColor: active ? ACCENT : colors.card, borderColor: active ? ACCENT : colors.border, borderRadius: colors.radius }]}>
                   <Text style={[styles.pillText, { color: active ? '#fff' : colors.mutedForeground, fontFamily: active ? 'Inter_600SemiBold' : 'Inter_400Regular' }]}>
-                    {lang === 'ar' ? `${g}` : `${g}`}
+                    {label}
                   </Text>
                 </Pressable>
               );
@@ -184,7 +186,7 @@ export default function ClassroomBuilderScreen() {
         <View style={{ marginBottom: 18 }}>
           <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('subjects')}</Text>
           <View style={[styles.pillRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            {SUBJECTS.slice(0, 5).map((s, i) => {
+            {subjects.map((s, i) => {
               const active = subjectIdx === i;
               return (
                 <Pressable key={s.id} onPress={() => setSubjectIdx(i)} style={[styles.pill, { backgroundColor: active ? ACCENT : colors.card, borderColor: active ? ACCENT : colors.border, borderRadius: colors.radius }]}>
@@ -199,8 +201,8 @@ export default function ClassroomBuilderScreen() {
 
         {/* Topic */}
         <TopicSelector
-          subjectId={SUBJECTS[subjectIdx].id}
-          gradeId={GRADES[gradeIdx].id}
+          subjectId={subjects[subjectIdx].id}
+          gradeId={grades[gradeIdx].id}
           value={topic}
           onChange={v => { setTopic(v); setError(''); }}
           lang={lang as 'ar' | 'en'}

@@ -7,14 +7,18 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
-import { buildGeneratorContext } from '@/services/kbContext';
+import { resolveGeneratorGrounding } from '@/services/kbContext';
 import { LessonPlanOutput } from '@/services/ai/AIService';
-import { GRADES, SUBJECTS } from '@/services/curriculumData';
+import {
+  getPickerGrades, getPickerSubjects, resolvePickerIndex,
+} from '@/services/curriculumData';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { Button } from '@/components/ui/Button';
 import { getItem, saveItem, toggleFavorite, updateItem } from '@/services/workspace';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
+import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
+import { RelatedResourcesPanel } from '@/components/ui/RelatedResourcesPanel';
 import {
   buildLessonPlanHTML,
   buildLessonPlanSlidesHTML,
@@ -37,16 +41,20 @@ export default function LessonPlanScreen() {
   const params = useLocalSearchParams<{
     topic?: string; savedId?: string;
     gradeIdx?: string; subjectIdx?: string; durationIdx?: string; styleIdx?: string; objectives?: string;
+    simplify?: string;
   }>();
+  const isSimplify = params.simplify === '1';
   const scrollRef = useRef<ScrollView>(null);
 
-  const gradeNames = GRADES.map(g => lang === 'ar' ? g.nameAr : g.name);
-  const subjectNames = SUBJECTS.map(s => lang === 'ar' ? s.nameAr : s.name);
+  const grades = getPickerGrades();
+  const subjects = getPickerSubjects();
+  const gradeNames = grades.map(g => lang === 'ar' ? g.nameAr : g.name);
+  const subjectNames = subjects.map(s => lang === 'ar' ? s.nameAr : s.name);
   const durationLabels = DURATION_VALUES.map(d => `${d} ${t('min')}`);
   const styleLabels = [t('teachingStyleDirect'), t('teachingStyleInquiry'), t('teachingStyleCollaborative')];
 
-  const [gradeIdx, setGradeIdx] = useState(params.gradeIdx ? parseInt(params.gradeIdx, 10) : 9);
-  const [subjectIdx, setSubjectIdx] = useState(params.subjectIdx ? parseInt(params.subjectIdx, 10) : 2);
+  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(params.gradeIdx, grades.length));
+  const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx, subjects.length));
   const [topic, setTopic] = useState(params.topic ?? '');
 
   // Reset topic when grade or subject changes so stale KB selections are cleared
@@ -64,6 +72,8 @@ export default function LessonPlanScreen() {
   const [styleIdx, setStyleIdx] = useState(params.styleIdx ? parseInt(params.styleIdx, 10) : 0);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<LessonPlanOutput | null>(null);
+  /** null until first generate; then whether the plan used a confident KB lesson. */
+  const [curriculumGrounded, setCurriculumGrounded] = useState<boolean | null>(null);
   const [error, setError] = useState('');
   const [savedId, setSavedId] = useState<string | undefined>(params.savedId);
   const [saveLabel, setSaveLabel] = useState<'save' | 'saved' | 'updated'>('save');
@@ -102,21 +112,33 @@ export default function LessonPlanScreen() {
     setError('');
     setLoading(true);
     setResult(null);
+    setCurriculumGrounded(null);
     setSaveLabel('save');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
-      const additionalContext = buildGeneratorContext(topic.trim(), lang as 'ar' | 'en') || undefined;
+      const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en', {
+        teacherObjectives: objectives.trim() || undefined,
+      });
+      const additionalContext = [
+        isSimplify ? 'mode:simplify' : '',
+        grounding.grounded ? grounding.context : grounding.ungroundedNote,
+      ].filter(Boolean).join('\n') || undefined;
       const out = await aiService.generateLessonPlan({
-        grade: GRADES[gradeIdx].name,
-        subject: SUBJECTS[subjectIdx].name,
-        topic: topic.trim(),
+        grade: grades[gradeIdx].name,
+        subject: subjects[subjectIdx].name,
+        topic: isSimplify && !/تبسيط|simplify/i.test(topic)
+          ? (lang === 'ar' ? `تبسيط الشرح: ${topic.trim()}` : `Simplify explanation: ${topic.trim()}`)
+          : topic.trim(),
         duration: DURATION_VALUES[durationIdx],
         language: lang === 'ar' ? 'arabic' : 'english',
         teachingStyle: STYLE_IDS[styleIdx],
-        objectives: objectives.trim() || undefined,
+        objectives: isSimplify
+          ? (objectives.trim() || (lang === 'ar' ? 'تبسيط الشرح' : 'Simplify explanation'))
+          : (objectives.trim() || undefined),
         additionalContext,
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setCurriculumGrounded(grounding.grounded);
       setResult(out);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
     } catch {
@@ -136,8 +158,8 @@ export default function LessonPlanScreen() {
     if (savedId) {
       await updateItem(savedId, {
         title,
-        subject: SUBJECTS[subjectIdx].name,
-        grade: GRADES[gradeIdx].name,
+        subject: subjects[subjectIdx].name,
+        grade: grades[gradeIdx].name,
         topic: topic.trim(),
         language: lang,
         content: JSON.stringify(result),
@@ -148,8 +170,8 @@ export default function LessonPlanScreen() {
       const saved = await saveItem({
         type: 'lesson',
         title,
-        subject: SUBJECTS[subjectIdx].name,
-        grade: GRADES[gradeIdx].name,
+        subject: subjects[subjectIdx].name,
+        grade: grades[gradeIdx].name,
         topic: topic.trim(),
         language: lang,
         content: JSON.stringify(result),
@@ -171,12 +193,12 @@ export default function LessonPlanScreen() {
     } catch {
       setFavorited(!next); // revert on failure
     }
-    showToast(next ? (lang === 'ar' ? 'تمت الإضافة إلى المفضلة ⭐' : 'Added to Favourites ⭐') : (lang === 'ar' ? 'تمت الإزالة من المفضلة' : 'Removed from Favourites'));
+    showToast(next ? (lang === 'ar' ? 'أضفتها إلى المفضلة ⭐' : 'Added to Favourites ⭐') : (lang === 'ar' ? 'أزلتها من المفضلة' : 'Removed from Favourites'));
   };
 
   const getExportMeta = () => ({
-    subject: SUBJECTS[subjectIdx].name,
-    grade: GRADES[gradeIdx].name,
+    subject: subjects[subjectIdx].name,
+    grade: grades[gradeIdx].name,
     duration: DURATION_VALUES[durationIdx],
   });
 
@@ -270,9 +292,15 @@ export default function LessonPlanScreen() {
           <Ionicons name="sparkles" size={14} color="#fff" />
           <Text style={[styles.headerBadgeText, { color: '#fff', fontFamily: 'Inter_500Medium' }]}>{t('aiLessonPlanBadge')}</Text>
         </View>
+        <DemoModeBanner onDark isRTL={isRTL} />
         <Text style={[styles.headerTitle, { color: '#fff', fontFamily: 'Inter_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
-          {t('generateLessonPlanTitle')}
+          {isSimplify ? t('simplifyExplanationTitle') : t('generateLessonPlanTitle')}
         </Text>
+        {isSimplify ? (
+          <Text style={[{ color: 'rgba(255,255,255,0.75)', fontFamily: 'Inter_400Regular', fontSize: 13, marginTop: 4, textAlign: isRTL ? 'right' : 'left' }]}>
+            {t('simplifyExplanationSubtitle')}
+          </Text>
+        ) : null}
       </View>
 
       {/* Form */}
@@ -282,8 +310,8 @@ export default function LessonPlanScreen() {
 
         {/* Topic / lesson selector */}
         <TopicSelector
-          subjectId={SUBJECTS[subjectIdx].id}
-          gradeId={GRADES[gradeIdx].id}
+          subjectId={subjects[subjectIdx].id}
+          gradeId={grades[gradeIdx].id}
           value={topic}
           onChange={text => { setTopic(text); setError(''); }}
           lang={lang as 'ar' | 'en'}
@@ -334,8 +362,39 @@ export default function LessonPlanScreen() {
         </View>
       )}
 
+      {/* Grounding status — never present ungrounded output as curriculum-backed */}
+      {result && curriculumGrounded === false && (
+        <View style={{
+          marginHorizontal: 20,
+          marginBottom: 12,
+          padding: 12,
+          borderRadius: colors.radius,
+          borderWidth: 1,
+          borderColor: colors.border,
+          backgroundColor: colors.card,
+        }}>
+          <Text style={{
+            color: colors.mutedForeground,
+            fontFamily: 'Inter_400Regular',
+            fontSize: 13,
+            lineHeight: 20,
+            textAlign: isRTL ? 'right' : 'left',
+          }}>
+            {t('curriculumUngroundedNotice')}
+          </Text>
+        </View>
+      )}
+
       {/* Result */}
       {result && <LessonPlanResult plan={result} colors={colors} isRTL={isRTL} t={t} />}
+
+      {result && !loading && (
+        <RelatedResourcesPanel
+          toolId={isSimplify ? 'simplify' : 'lesson-plan'}
+          topic={topic.trim()}
+          isRTL={isRTL}
+        />
+      )}
 
       {/* Save + Regenerate */}
       {result && !loading && (
@@ -383,7 +442,7 @@ export default function LessonPlanScreen() {
             >
               <Ionicons name={favorited ? 'star' : 'star-outline'} size={16} color={favorited ? '#F59E0B' : colors.mutedForeground} />
               <Text style={[styles.regenText, { color: favorited ? '#F59E0B' : colors.mutedForeground, fontFamily: 'Inter_600SemiBold' }]}>
-                {favorited ? (lang === 'ar' ? 'في المفضلة' : 'Favourited') : (lang === 'ar' ? 'أضف للمفضلة' : 'Add to Favourites')}
+                {favorited ? (lang === 'ar' ? 'في المفضلة' : 'Favourited') : (lang === 'ar' ? 'أضف إلى المفضلة' : 'Add to Favourites')}
               </Text>
             </Pressable>
           )}

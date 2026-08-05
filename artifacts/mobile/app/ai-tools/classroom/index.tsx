@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
 import { buildBuilderRoute } from './classroomRouting';
 
 const ACCENT = '#4F46E5';
@@ -135,11 +136,12 @@ export default function ClassroomHubScreen() {
             <Ionicons name="storefront-outline" size={16} color="rgba(255,255,255,0.8)" />
             <Text style={[styles.headerBadge, { fontFamily: 'Inter_500Medium' }]}>{t('classroomBadge')}</Text>
           </View>
+          <DemoModeBanner onDark isRTL={isRTL} />
           <Text style={[styles.headerTitle, { fontFamily: 'Inter_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
-            {lang === 'ar' ? 'متجر الأنشطة' : 'Activity Marketplace'}
+            {lang === 'ar' ? 'أنشطة الحصة' : 'Activity Marketplace'}
           </Text>
           <Text style={[styles.headerSub, { fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
-            {lang === 'ar' ? '6 أنشطة تفاعلية — اختر وأطلق في ثوانٍ' : '6 interactive activities — pick one and launch in seconds'}
+            {lang === 'ar' ? '6 أنشطة تفاعلية جاهزة — اختر نشاطاً وابدأ الحصة' : '6 interactive activities — pick one and launch in seconds'}
           </Text>
 
           {/* Search */}
@@ -229,7 +231,7 @@ export default function ClassroomHubScreen() {
             <View style={[styles.empty, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
               <Text style={{ fontSize: 32 }}>🔍</Text>
               <Text style={[{ color: colors.mutedForeground, fontFamily: 'Inter_400Regular', fontSize: 14, textAlign: 'center' }]}>
-                {lang === 'ar' ? 'لا توجد أنشطة تطابق بحثك' : 'No activities match your search'}
+                {lang === 'ar' ? 'لا توجد أنشطة مطابقة لبحثك' : 'No activities match your search'}
               </Text>
             </View>
           ) : (

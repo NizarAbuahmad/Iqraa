@@ -87,12 +87,12 @@ export function Input({
 
 const styles = StyleSheet.create({
   container: { marginBottom: 16 },
-  label: { fontSize: 13, marginBottom: 6, letterSpacing: 0.2 },
+  label: { fontSize: 14, marginBottom: 7, letterSpacing: 0.2, fontWeight: '500' },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1.5,
-    minHeight: 48,
+    minHeight: 50,
   },
   input: { fontSize: 15, paddingHorizontal: 14, paddingVertical: 12 },
   leftIcon: { marginLeft: 12 },

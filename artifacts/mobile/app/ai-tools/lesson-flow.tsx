@@ -14,7 +14,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -36,11 +36,14 @@ import {
   type LessonFlowPrior,
   type StepKey,
 } from '@/services/ai/lessonFlowRunner';
-import { GRADES, SUBJECTS } from '@/services/curriculumData';
+import {
+  getPickerGrades, getPickerSubjects, resolvePickerIndex,
+} from '@/services/curriculumData';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { Button } from '@/components/ui/Button';
 import { saveItem } from '@/services/workspace';
 import { Toast } from '@/components/ui/Toast';
+import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
 import { buildLessonFlowHTML, exportAsPDF } from '@/services/share';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -78,11 +81,15 @@ export default function LessonFlowScreen() {
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
   const scrollRef = useRef<ScrollView>(null);
+  const params = useLocalSearchParams<{ topic?: string }>();
+
+  const grades = getPickerGrades();
+  const subjects = getPickerSubjects();
 
   // Form state
-  const [topic, setTopic] = useState('');
-  const [gradeIdx, setGradeIdx] = useState(9);
-  const [subjectIdx, setSubjectIdx] = useState(2);
+  const [topic, setTopic] = useState(params.topic ?? '');
+  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(undefined, grades.length));
+  const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(undefined, subjects.length));
   const [durationIdx, setDurationIdx] = useState(0);
 
   // Generation state
@@ -119,8 +126,8 @@ export default function LessonFlowScreen() {
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
 
-  const gradeNames = GRADES.map(g => lang === 'ar' ? g.nameAr : g.name);
-  const subjectNames = SUBJECTS.map(s => lang === 'ar' ? s.nameAr : s.name);
+  const gradeNames = grades.map(g => lang === 'ar' ? g.nameAr : g.name);
+  const subjectNames = subjects.map(s => lang === 'ar' ? s.nameAr : s.name);
   const durationLabels = DURATION_VALUES.map(d => `${d} ${t('min')}`);
 
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
@@ -162,8 +169,8 @@ export default function LessonFlowScreen() {
   };
 
   const executeFlow = async (startKey: StepKey, prior: LessonFlowPrior) => {
-    const grade = GRADES[gradeIdx]?.name ?? '';
-    const subject = SUBJECTS[subjectIdx]?.name ?? '';
+    const grade = grades[gradeIdx]?.name ?? '';
+    const subject = subjects[subjectIdx]?.name ?? '';
     const language = (lang === 'ar' ? 'arabic' : 'english') as 'arabic' | 'english';
     const duration = DURATION_VALUES[durationIdx];
 
@@ -206,8 +213,8 @@ export default function LessonFlowScreen() {
     if (!objectives || !warmup || !activity || !guidedPractice || !worksheet || !exitTicket) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-    const grade = GRADES[gradeIdx]?.name ?? '';
-    const subject = SUBJECTS[subjectIdx]?.name ?? '';
+    const grade = grades[gradeIdx]?.name ?? '';
+    const subject = subjects[subjectIdx]?.name ?? '';
     const duration = DURATION_VALUES[durationIdx];
 
     const flow: LessonFlowOutput = {
@@ -255,8 +262,8 @@ export default function LessonFlowScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setLoadingPDF(true);
     try {
-      const grade = GRADES[gradeIdx]?.name ?? '';
-      const subject = SUBJECTS[subjectIdx]?.name ?? '';
+      const grade = grades[gradeIdx]?.name ?? '';
+      const subject = subjects[subjectIdx]?.name ?? '';
       const duration = DURATION_VALUES[durationIdx];
       const flow: LessonFlowOutput = {
         topic, grade, subject, duration,
@@ -334,6 +341,7 @@ export default function LessonFlowScreen() {
               <Text style={[styles.headerSub, { color: '#94A3B8', fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
                 {t('toolLessonFlowSub')}
               </Text>
+              <DemoModeBanner onDark isRTL={isRTL} />
             </View>
           </View>
 
@@ -363,8 +371,8 @@ export default function LessonFlowScreen() {
               {lang === 'ar' ? 'موضوع الدرس' : 'Lesson Topic'}
             </Text>
             <TopicSelector
-              gradeId={GRADES[gradeIdx]?.id ?? ''}
-              subjectId={SUBJECTS[subjectIdx]?.id ?? ''}
+              gradeId={grades[gradeIdx]?.id ?? ''}
+              subjectId={subjects[subjectIdx]?.id ?? ''}
               value={topic}
               onChange={setTopic}
               lang={lang as 'ar' | 'en'}
@@ -376,7 +384,7 @@ export default function LessonFlowScreen() {
 
             {/* Grade */}
             <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Inter_600SemiBold', marginTop: 16, textAlign: isRTL ? 'right' : 'left' }]}>
-              {lang === 'ar' ? 'الصف الدراسي' : 'Grade'}
+              {lang === 'ar' ? 'الصف' : 'Grade'}
             </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', gap: 8 }}>
               {gradeNames.map((g, i) => (
@@ -479,7 +487,7 @@ export default function LessonFlowScreen() {
               style={({ pressed }) => ({ backgroundColor: '#EF4444', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, opacity: pressed ? 0.8 : 1 })}
             >
               <Text style={{ color: '#fff', fontFamily: 'Inter_600SemiBold', fontSize: 13 }}>
-                {lang === 'ar' ? 'إعادة المحاولة' : 'Retry'}
+                {lang === 'ar' ? 'أعد المحاولة' : 'Retry'}
               </Text>
             </Pressable>
           </View>
@@ -597,7 +605,7 @@ function StepCard({ stepNum, label, icon, color, status, isRTL, lang, colors, co
           )}
           {status === 'error' && (
             <Text style={{ color: '#EF4444', fontFamily: 'Inter_400Regular', fontSize: 11.5, marginTop: 2, textAlign: isRTL ? 'right' : 'left' }}>
-              {lang === 'ar' ? 'فشل — اضغط إعادة المحاولة' : 'Failed — tap Retry below'}
+              {lang === 'ar' ? 'تعذّر إكمال الخطوة — أعد المحاولة' : 'Failed — tap Retry below'}
             </Text>
           )}
         </View>

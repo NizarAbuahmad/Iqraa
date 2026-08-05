@@ -7,11 +7,56 @@ import type {
   WorksheetOutput, WorksheetSection,
 } from './AIService.ts';
 import type { KBLesson } from '../knowledgeBase.ts';
-import { getUnitForLesson, searchKB } from '../knowledgeBase.ts';
+import { getUnitForLesson, resolveGroundedKbLesson } from '../knowledgeBase.ts';
+import {
+  parseDocumentGrounding,
+  type DocumentGrounding,
+} from '../documents/grounding.ts';
+import {
+  beginMathPracticeSession,
+  isMathContext,
+  takeConcreteMath,
+  takeConcreteMathBatch,
+  type DiffTier,
+} from './mathPractice.ts';
 
 type Lang = 'ar' | 'en';
-type QType = 'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false';
+type QType = 'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false' | 'word_problem';
 interface WQ { text: string; options?: string[]; answer: string; points: number }
+
+/** KB lesson only when the topic clears the grounding confidence bar. */
+function groundedKb(topic: string, lang: Lang): KBLesson | null {
+  return resolveGroundedKbLesson(topic, lang);
+}
+
+function docsFromReq(req: AIRequest): DocumentGrounding {
+  return parseDocumentGrounding(req.additionalContext);
+}
+
+function lpObjectivesFromDocs(
+  topic: string,
+  docs: DocumentGrounding,
+  lang: Lang,
+): string[] | null {
+  if (!docs.present) return null;
+  if (docs.objectives.length >= 2) return docs.objectives.slice(0, 4);
+  if (docs.concepts.length) {
+    const c = docs.concepts;
+    if (lang === 'ar') {
+      return [
+        `أن يُعرِّف الطالب ${c[0]} (من المواد المرفوعة)`,
+        c[1] ? `أن يشرح الطالب ${c[1]} بأمثلة من الملف` : `أن يطبق مفهوم ${topic} مستندًا إلى الملف`,
+        `أن يحل تمارين مرتبطة بـ«${topic}» بمستويات متدرجة`,
+      ];
+    }
+    return [
+      `Students define ${c[0]} (from uploaded materials)`,
+      c[1] ? `Students explain ${c[1]} with examples from the file` : `Students apply ${topic} using the uploaded file`,
+      `Students solve progressive practice on “${topic}”`,
+    ];
+  }
+  return null;
+}
 
 // ─── Core helpers ─────────────────────────────────────────────────────────────
 
@@ -25,10 +70,34 @@ function placeCorrect(correct: string, wrongs: string[]): string[] {
   return [...wrongs.slice(0, pos), correct, ...wrongs.slice(pos)];
 }
 
+/** Normalize question stem for duplicate detection (ignore answer-space padding). */
+function questionStemKey(text: string): string {
+  return text
+    .replace(/\n\n(?:الإجابة|Answer|مساحة العمل|Work space):[\s\S]*$/u, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** Shared entry: concrete math practice, else null (caller may use non-math templates). */
+function tryMathPractice(
+  type: QType,
+  topic: string,
+  kb: KBLesson | null,
+  diff: string,
+  lang: Lang,
+  points: number,
+): WQ | null {
+  if (!isMathContext(topic, kb)) return null;
+  const tier: DiffTier = diff === 'easy' || diff === 'hard' ? diff : 'medium';
+  return takeConcreteMath(type, topic, kb, tier, lang, points);
+}
+
 // ─── Lesson Plan helpers (Arabic) ────────────────────────────────────────────
 
 function lpObjectivesAr(topic: string, kb: KBLesson | null, custom?: string): string[] {
   if (custom?.trim()) return custom.trim().split('\n').filter(Boolean);
+  // Prefer official curriculum outcomes when present on the KB lesson
+  if (kb?.objectives?.length) return [...kb.objectives];
   if (kb?.keyConceptsAr.length) {
     const c = kb.keyConceptsAr;
     return [
@@ -89,6 +158,7 @@ function lpClosureAr(topic: string, dur: number): string {
 
 function lpObjectivesEn(topic: string, kb: KBLesson | null, custom?: string): string[] {
   if (custom?.trim()) return custom.trim().split('\n').filter(Boolean);
+  if (kb?.objectives?.length) return [...kb.objectives];
   if (kb?.keyConceptsEn.length) {
     const c = kb.keyConceptsEn;
     return [
@@ -179,6 +249,8 @@ function tfPts(_diff: string) { return 2; }
 
 function makeMCQ_ar(topic: string, kb: KBLesson | null, diff: string): WQ {
   const pts = mcPts(diff);
+  const math = tryMathPractice('multiple_choice', topic, kb, diff, 'ar', pts);
+  if (math) return math;
   const t0 = kb?.keyTerms?.[0];
   const t1 = kb?.keyTerms?.[1];
   const c0 = kb?.keyConceptsAr?.[0] ?? topic;
@@ -200,6 +272,8 @@ function makeMCQ_ar(topic: string, kb: KBLesson | null, diff: string): WQ {
 
 function makeSAQ_ar(topic: string, kb: KBLesson | null, diff: string): WQ {
   const pts = saPts(diff);
+  const math = tryMathPractice('short_answer', topic, kb, diff, 'ar', pts);
+  if (math) return math;
   const t0 = kb?.keyTerms?.[0];
   const t1 = kb?.keyTerms?.[1];
   const c0 = kb?.keyConceptsAr?.[0] ?? topic;
@@ -218,6 +292,8 @@ function makeSAQ_ar(topic: string, kb: KBLesson | null, diff: string): WQ {
 
 function makeFBQ_ar(topic: string, kb: KBLesson | null, diff: string): WQ {
   const pts = fbPts(diff);
+  const math = tryMathPractice('fill_blank', topic, kb, diff, 'ar', pts);
+  if (math) return math;
   const t0 = kb?.keyTerms?.[0];
   const t1 = kb?.keyTerms?.[1];
   const c0 = kb?.keyConceptsAr?.[0] ?? topic;
@@ -234,6 +310,8 @@ function makeFBQ_ar(topic: string, kb: KBLesson | null, diff: string): WQ {
 
 function makeTFQ_ar(topic: string, kb: KBLesson | null, _diff: string): WQ {
   const pts = tfPts(_diff);
+  const math = tryMathPractice('true_false', topic, kb, _diff, 'ar', pts);
+  if (math) return math;
   const c0 = kb?.keyConceptsAr?.[0] ?? topic;
   const c1 = kb?.keyConceptsAr?.[1] ?? `تطبيق ${topic}`;
   const templates: Array<() => WQ> = [
@@ -249,10 +327,49 @@ function makeTFQ_ar(topic: string, kb: KBLesson | null, _diff: string): WQ {
   return pick(templates)();
 }
 
+/** Real-life word problem aligned with "حل مسائل حياتية" curriculum phrasing. */
+function makeWPQ_ar(topic: string, kb: KBLesson | null, diff: string): WQ {
+  const pts = saPts(diff);
+  const math = tryMathPractice('word_problem', topic, kb, diff, 'ar', pts);
+  if (math) return math;
+  const c0 = kb?.keyConceptsAr?.[0] ?? topic;
+  const obj = kb?.objectives?.find(o => /حياتي|مسألة|نمذج/.test(o));
+  const templates: Array<() => WQ> = [
+    () => ({
+      text: `مسألة حياتية: يحتاج محلّ تجاري إلى تطبيق «${topic}» لحساب تكلفة عرض ترويجي. اكتب المعطيات اللازمة، ثم حل المسألة مبيّنًا خطواتك.`,
+      answer: `نمذجة الموقف بمفاهيم ${topic}، ثم الحل خطوة بخطوة والتحقق من المعقولية.`,
+      points: pts,
+    }),
+    () => ({
+      text: `مسألة حياتية: تريد عائلة تخطيط ميزانية أسبوعية باستخدام ${c0}. صِغ مسألة من واقع الحياة تتطلب ${topic}، ثم حلّها.`,
+      answer: `صياغة موقف حقيقي + تطبيق ${topic} + إجابة عددية مع وحدات إن لزم.`,
+      points: pts,
+    }),
+    () => ({
+      text: obj
+        ? `مسألة حياتية مرتبطة بنتاج الدرس («${obj}»): صف موقفًا يوميًا، ثم حلّه باستعمال ${topic}.`
+        : `مسألة حياتية: مهندس يحتاج ${topic} لتقدير كمية مواد لمشروع صغير. اكتب المعطيات وحل المسألة.`,
+      answer: `تحديد المعطيات والمطلوب، اختيار الأسلوب المناسب لـ${topic}، الحل والتحقق.`,
+      points: pts,
+    }),
+  ];
+  return pick(templates)();
+}
+
+function makePriorReviewQ_ar(concept: string): WQ {
+  return {
+    text: `مراجعة: اشرح مفهوم «${concept}» بإيجاز، واذكر مثالًا واحدًا يوضح فهمك.`,
+    answer: `تعريف موجز لـ«${concept}» + مثال صحيح.`,
+    points: 3,
+  };
+}
+
 // ─── English question factories ───────────────────────────────────────────────
 
 function makeMCQ_en(topic: string, kb: KBLesson | null, diff: string): WQ {
   const pts = mcPts(diff);
+  const math = tryMathPractice('multiple_choice', topic, kb, diff, 'en', pts);
+  if (math) return math;
   const t0 = kb?.keyTerms?.[0];
   const t1 = kb?.keyTerms?.[1];
   const c0 = kb?.keyConceptsEn?.[0] ?? topic;
@@ -273,6 +390,8 @@ function makeMCQ_en(topic: string, kb: KBLesson | null, diff: string): WQ {
 
 function makeSAQ_en(topic: string, kb: KBLesson | null, diff: string): WQ {
   const pts = saPts(diff);
+  const math = tryMathPractice('short_answer', topic, kb, diff, 'en', pts);
+  if (math) return math;
   const t0 = kb?.keyTerms?.[0];
   const t1 = kb?.keyTerms?.[1];
   const c0 = kb?.keyConceptsEn?.[0] ?? topic;
@@ -291,6 +410,8 @@ function makeSAQ_en(topic: string, kb: KBLesson | null, diff: string): WQ {
 
 function makeFBQ_en(topic: string, kb: KBLesson | null, diff: string): WQ {
   const pts = fbPts(diff);
+  const math = tryMathPractice('fill_blank', topic, kb, diff, 'en', pts);
+  if (math) return math;
   const t0 = kb?.keyTerms?.[0];
   const t1 = kb?.keyTerms?.[1];
   const c0 = kb?.keyConceptsEn?.[0] ?? topic;
@@ -307,6 +428,8 @@ function makeFBQ_en(topic: string, kb: KBLesson | null, diff: string): WQ {
 
 function makeTFQ_en(topic: string, kb: KBLesson | null, _diff: string): WQ {
   const pts = tfPts(_diff);
+  const math = tryMathPractice('true_false', topic, kb, _diff, 'en', pts);
+  if (math) return math;
   const c0 = kb?.keyConceptsEn?.[0] ?? topic;
   const c1 = kb?.keyConceptsEn?.[1] ?? `application of ${topic}`;
   const templates: Array<() => WQ> = [
@@ -322,13 +445,59 @@ function makeTFQ_en(topic: string, kb: KBLesson | null, _diff: string): WQ {
   return pick(templates)();
 }
 
+/** Real-life word problem aligned with curriculum "solve real-life problems" outcomes. */
+function makeWPQ_en(topic: string, kb: KBLesson | null, diff: string): WQ {
+  const pts = saPts(diff);
+  const math = tryMathPractice('word_problem', topic, kb, diff, 'en', pts);
+  if (math) return math;
+  const c0 = kb?.keyConceptsEn?.[0] ?? topic;
+  const templates: Array<() => WQ> = [
+    () => ({
+      text: `Real-life problem: A shop needs to apply “${topic}” to price a promotion. List the given information, then solve step by step.`,
+      answer: `Model the situation with ${topic}, solve step by step, and check reasonableness.`,
+      points: pts,
+    }),
+    () => ({
+      text: `Real-life problem: A family is planning a weekly budget using ${c0}. Write a everyday scenario that requires ${topic}, then solve it.`,
+      answer: `Clear real-world setup + application of ${topic} + numerical answer with units if needed.`,
+      points: pts,
+    }),
+    () => ({
+      text: `Real-life problem: An engineer needs ${topic} to estimate materials for a small project. State the givens and solve.`,
+      answer: `Identify givens and goal, choose a ${topic} method, solve and verify.`,
+      points: pts,
+    }),
+  ];
+  return pick(templates)();
+}
+
+function makePriorReviewQ_en(concept: string): WQ {
+  return {
+    text: `Review: Briefly explain “${concept}” and give one example that shows your understanding.`,
+    answer: `Short definition of “${concept}” + one correct example.`,
+    points: 3,
+  };
+}
+
 // ─── Section title builders ───────────────────────────────────────────────────
 
 function sectionTitleAr(type: QType, pts: number): string {
-  return { multiple_choice: `أولًا – اختيار متعدد [${pts} نقطة]`, short_answer: `ثانيًا – إجابة قصيرة [${pts} نقطة]`, fill_blank: `ثالثًا – إكمال الفراغات [${pts} نقطة]`, true_false: `رابعًا – صح أو خطأ [${pts} نقطة]` }[type];
+  return {
+    multiple_choice: `أولًا – اختيار متعدد [${pts} نقطة]`,
+    short_answer: `ثانيًا – إجابة قصيرة [${pts} نقطة]`,
+    fill_blank: `ثالثًا – إكمال الفراغات [${pts} نقطة]`,
+    true_false: `رابعًا – صح أو خطأ [${pts} نقطة]`,
+    word_problem: `خامسًا – مسألة حياتية [${pts} نقطة]`,
+  }[type];
 }
 function sectionTitleEn(type: QType, pts: number): string {
-  return { multiple_choice: `Section A – Multiple Choice [${pts} pts]`, short_answer: `Section B – Short Answer [${pts} pts]`, fill_blank: `Section C – Fill in the Blanks [${pts} pts]`, true_false: `Section D – True or False [${pts} pts]` }[type];
+  return {
+    multiple_choice: `Section A – Multiple Choice [${pts} pts]`,
+    short_answer: `Section B – Short Answer [${pts} pts]`,
+    fill_blank: `Section C – Fill in the Blanks [${pts} pts]`,
+    true_false: `Section D – True or False [${pts} pts]`,
+    word_problem: `Section E – Real-life word problem [${pts} pts]`,
+  }[type];
 }
 
 // ─── Quiz question factories ──────────────────────────────────────────────────
@@ -370,10 +539,149 @@ export class MockAIService extends AIService {
   async generateLessonPlan(req: AIRequest): Promise<LessonPlanOutput> {
     await this.delay();
     const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
-    const kb = searchKB(req.topic, lang)[0] ?? null;
-    const topic = req.topic;
+    const docs = docsFromReq(req);
+    const rawTopic = req.topic;
+    const isSimplify =
+      /تبسيط|بسّط|بسط|simplify/i.test(rawTopic)
+      || /تبسيط|simplify/i.test(req.objectives ?? '')
+      || (/simplify/i.test(req.additionalContext ?? '') && !docs.present);
+    const topic = (
+      docs.present && docs.title
+        ? docs.title
+        : rawTopic
+            .replace(/^(تبسيط\s*الشرح|بسّط\s*الشرح|بسط\s*الشرح|simplify(\s+explanation)?)\s*[:：\-]?\s*/i, '')
+            .trim()
+    ) || rawTopic;
+    const kb = docs.present ? null : groundedKb(topic, lang);
     const dur = req.duration ?? 45;
     const style = req.teachingStyle ?? 'direct';
+    const fileLabel = docs.fileNames[0]
+      ? (lang === 'ar' ? `الملف «${docs.fileNames[0]}»` : `file “${docs.fileNames[0]}”`)
+      : (lang === 'ar' ? 'المواد المرفوعة' : 'the uploaded materials');
+    const conceptLine = docs.concepts.slice(0, 3).join(lang === 'ar' ? ' · ' : ' · ');
+    const exampleLine = docs.examples[0] || docs.plainSnippets[0] || '';
+    const docObjectives = lpObjectivesFromDocs(topic, docs, lang);
+
+    if (isSimplify) {
+      if (lang === 'ar') {
+        return {
+          title: `تبسيط الشرح – ${topic}`,
+          grade: req.grade, subject: req.subject, duration: Math.min(dur, 20),
+          objectives: [
+            `يفهم الطالب فكرة «${topic}» بلغة بسيطة`,
+            'يربط المفهوم بمثال من الحياة اليومية',
+            'يعيد شرح الفكرة بجملة أو جملتين',
+          ],
+          materials: ['سبورة', 'مثال بصري بسيط', 'بطاقة جملة مفتاحية'],
+          introduction: `اليوم سنبسّط «${topic}» دون مصطلحات معقّدة. ابدأ بسؤال: ماذا تعرف أصلاً عن هذا الموضوع؟`,
+          mainActivity:
+            `الشرح المبسط لـ«${topic}»:\n`
+            + `1) الفكرة بجملة واحدة: ${kb?.summaryAr ?? docs.summary ?? `«${topic}» تعني فهم العلاقة الأساسية خطوة بخطوة.`}\n`
+            + '2) مثال من الحياة: اختر موقفاً مألوفاً للطلاب واربطه بالفكرة.\n'
+            + '3) قاعدة ذهبية قصيرة يحفظها الطالب.\n'
+            + '4) خطأ شائع واحد وكيف نتجنّبه.',
+          guidedPractice: `معاً: حلّ مثالاً واحداً سهِّلاً على «${topic}» مع تفكير بصوت عالٍ وبكلمات بسيطة فقط.`,
+          independentPractice: 'اطلب من كل طالب إعادة الشرح لزميله بجملتين فقط، ثم صحّح أي تعقيد لغوي.',
+          closure: `اطلب جملة ختامية: «${topic} يعني …» واكتب أفضل صياغة مبسطة على السبورة.`,
+          assessment: 'تحقق سريع شفهي: اسأل 3 طلاب أن يشرحوا الفكرة دون النظر للدفتر.',
+          differentiation: 'للمتعثرين: مثال واحد إضافي بصري. للمتقدمين: اطلب مثالاً حياتياً جديداً من عندهم.',
+          homework: 'اكتب في المنزل شرحاً مبسطاً لـ«' + topic + '» في 4–5 أسطر لمبتدئ.',
+        };
+      }
+      return {
+        title: `Simplified Explanation – ${topic}`,
+        grade: req.grade, subject: req.subject, duration: Math.min(dur, 20),
+        objectives: [
+          `Students understand “${topic}” in plain language`,
+          'Students connect the idea to a real-life example',
+          'Students restate the idea in one or two sentences',
+        ],
+        materials: ['Board', 'Simple visual example', 'Key-sentence card'],
+        introduction: `Today we simplify “${topic}” without heavy jargon. Start with: What do you already know?`,
+        mainActivity:
+          `Plain-language breakdown of “${topic}”:\n`
+          + `1) One-sentence idea: ${kb?.summaryEn ?? docs.summary ?? `“${topic}” means understanding the core relationship step by step.`}\n`
+          + '2) Real-life example students already know.\n'
+          + '3) One golden rule to remember.\n'
+          + '4) One common mistake and how to avoid it.',
+        guidedPractice: `Together: solve one easy example on “${topic}” while thinking aloud in simple words only.`,
+        independentPractice: 'Pair share: each student explains the idea in two sentences; coach away jargon.',
+        closure: `Exit line: “${topic} means …” — capture the clearest student wording on the board.`,
+        assessment: 'Quick oral check: three students explain the idea without notes.',
+        differentiation: 'Support: one extra visual. Stretch: invent a new real-life example.',
+        homework: `At home, write a 4–5 sentence plain explanation of “${topic}” for a beginner.`,
+      };
+    }
+
+    // Document-grounded lesson plan (Demo Mode) — prefer uploaded materials over KB soft pin
+    if (docs.present) {
+      if (lang === 'ar') {
+        return {
+          title: `${topic} – خطة درس`,
+          grade: req.grade, subject: req.subject, duration: dur,
+          objectives: docObjectives ?? lpObjectivesAr(topic, null, req.objectives),
+          materials: [
+            fileLabel.replace(/^الملف /, 'الملف المرفوع: ').replace(/^الملف$/, 'المواد المرفوعة'),
+            ...lpMaterialsAr(req.subject).slice(0, 3),
+          ],
+          introduction:
+            `اعتمادًا على ${fileLabel}: ابدأ بعرض فكرة من الملف واسأل: «ماذا نعرف عن ${topic}؟»`
+            + (conceptLine ? ` سجّل المفاهيم الظاهرة: ${conceptLine}.` : '')
+            + (docs.summary ? ` ملخص الملف: ${docs.summary}` : ''),
+          mainActivity:
+            `(${Math.round(dur * 0.3)} دقيقة) – شرح مباشر من المواد المرفوعة:\n\n`
+            + (conceptLine
+              ? conceptLine.split(' · ').map((c, i) => `${i + 1}. اشرح «${c}» مع مثال من الملف.`).join('\n')
+              : `1. اشرح المفهوم الرئيسي لـ«${topic}» كما يظهر في الملف.\n2. قدّم مثالين متدرجين.\n3. اكتب الخطوات على السبورة.`)
+            + (exampleLine ? `\n\nمثال جاهز من الملف:\n• ${exampleLine}` : ''),
+          guidedPractice:
+            `(${Math.round(dur * 0.22)} دقيقة) – "نحن نفعل":\n\n`
+            + `• حل مثال مشترك مستمد من ${fileLabel} مع مشاركة الطلاب في كل خطوة.\n`
+            + '• أسئلة استرشادية: ماذا نفعل أولًا؟ كيف يرتبط هذا بهدف الدرس؟\n'
+            + '• صحّح المفاهيم الخاطئة فور ظهورها.',
+          independentPractice: lpIndependentAr(dur),
+          closure: lpClosureAr(topic, dur),
+          assessment:
+            `تقويم تكويني مرتبط بـ${fileLabel}: سؤالان قصيران على المفاهيم`
+            + (conceptLine ? ` (${docs.concepts.slice(0, 2).join(' / ')})` : '')
+            + ' + بطاقة خروج بجملة واحدة.',
+          differentiation: lpDifferentiation(topic, 'ar'),
+          homework: `واجب قصير من نفس محور ${fileLabel}: تمرينان + جملة تلخيص عن «${topic}».`,
+        };
+      }
+      return {
+        title: `${topic} – Lesson Plan`,
+        grade: req.grade, subject: req.subject, duration: dur,
+        objectives: docObjectives ?? lpObjectivesEn(topic, null, req.objectives),
+        materials: [
+          `Uploaded: ${docs.fileNames[0] ?? 'teacher materials'}`,
+          ...lpMaterialsEn(req.subject).slice(0, 3),
+        ],
+        introduction:
+          `Using ${fileLabel}: open with one idea from the file and ask “What do we already know about ${topic}?”`
+          + (conceptLine ? ` Capture visible concepts: ${conceptLine}.` : '')
+          + (docs.summary ? ` File summary: ${docs.summary}` : ''),
+        mainActivity:
+          `(${Math.round(dur * 0.3)} min) – Direct teach from uploaded materials:\n\n`
+          + (conceptLine
+            ? conceptLine.split(' · ').map((c, i) => `${i + 1}. Explain “${c}” with an example from the file.`).join('\n')
+            : `1. Teach the core idea of “${topic}” as it appears in the file.\n2. Give two progressive examples.\n3. Model steps on the board.`)
+          + (exampleLine ? `\n\nFile-ready example:\n• ${exampleLine}` : ''),
+        guidedPractice:
+          `(${Math.round(dur * 0.22)} min) – We do:\n\n`
+          + `• Work one shared example drawn from ${fileLabel} with student voices at each step.\n`
+          + '• Prompt: What first? How does this link to today’s objective?\n'
+          + '• Correct misconceptions immediately.',
+        independentPractice: lpIndependentEn(dur),
+        closure: lpClosureEn(topic, dur),
+        assessment:
+          `Formative check tied to ${fileLabel}: two short items on`
+          + (conceptLine ? ` ${docs.concepts.slice(0, 2).join(' / ')}` : ' key ideas')
+          + ' + one-sentence exit ticket.',
+        differentiation: lpDifferentiation(topic, 'en'),
+        homework: `Short homework from the same ${fileLabel} thread: two practice items + one summary sentence on “${topic}”.`,
+      };
+    }
 
     if (lang === 'ar') {
       return {
@@ -409,58 +717,145 @@ export class MockAIService extends AIService {
 
   async generateWorksheet(req: AIRequest): Promise<WorksheetOutput> {
     await this.delay();
+    beginMathPracticeSession();
     const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
-    const kb = searchKB(req.topic, lang)[0] ?? null;
-    const topic = req.topic;
-    const diff = req.difficulty ?? 'medium';
-    const totalQ = req.numQuestions ?? 10;
-    const types: QType[] = (req.questionTypes as QType[]) ?? ['multiple_choice', 'short_answer'];
+    const docs = docsFromReq(req);
+    const topic = (docs.present && docs.title) ? docs.title : req.topic;
+    // Prefer uploaded materials over a weakly matching KB lesson
+    const kb = docs.present ? null : groundedKb(topic, lang);
+    const selectedTypes: QType[] = (req.questionTypes as QType[])?.length
+      ? (req.questionTypes as QType[])
+      : ['multiple_choice', 'short_answer'];
+    const wantsWordProblem = selectedTypes.includes('word_problem');
+    const mainTypes = selectedTypes.filter(t => t !== 'word_problem');
+    if (mainTypes.length === 0) mainTypes.push('short_answer');
 
-    // Distribute questions evenly across selected types, remainder goes to first type
-    const perType = Math.max(1, Math.floor(totalQ / types.length));
+    // In-class practice: progressive difficulty (easy → medium → hard)
+    const totalQ = Math.min(12, Math.max(6, req.numQuestions ?? 8));
+    const priorConcepts = req.includePriorReview && req.priorKnowledge?.length
+      ? req.priorKnowledge
+      : [];
+    const priorCount = priorConcepts.length > 0
+      ? Math.min(3, Math.max(2, Math.min(priorConcepts.length, 3)))
+      : 0;
+    const mainTotal = Math.max(1, totalQ - (wantsWordProblem ? 1 : 0));
+
+    const answerSpace = lang === 'ar'
+      ? '\n\nالإجابة:\n_________________________________\n_________________________________'
+      : '\n\nAnswer:\n_________________________________\n_________________________________';
+
     const sections: WorksheetSection[] = [];
     const answerKey: WorksheetAnswerKeyItem[] = [];
     let qNum = 1;
-    let remaining = totalQ;
 
-    for (let ti = 0; ti < types.length; ti++) {
-      const type = types[ti];
-      // Last type gets whatever is left to guarantee exact total
-      const count = ti === types.length - 1 ? remaining : Math.min(perType, remaining);
-      remaining -= count;
+    const usedStems = new Set<string>();
 
-      const questions: WQ[] = [];
-      for (let i = 0; i < count; i++) {
-        // Factory called once per question — each call uses pick() for random variation
-        let q: WQ;
-        if (lang === 'ar') {
-          if (type === 'multiple_choice') q = makeMCQ_ar(topic, kb, diff);
-          else if (type === 'short_answer') q = makeSAQ_ar(topic, kb, diff);
-          else if (type === 'fill_blank') q = makeFBQ_ar(topic, kb, diff);
-          else q = makeTFQ_ar(topic, kb, diff);
-        } else {
-          if (type === 'multiple_choice') q = makeMCQ_en(topic, kb, diff);
-          else if (type === 'short_answer') q = makeSAQ_en(topic, kb, diff);
-          else if (type === 'fill_blank') q = makeFBQ_en(topic, kb, diff);
-          else q = makeTFQ_en(topic, kb, diff);
-        }
-        questions.push(q);
-        answerKey.push({ num: qNum++, answer: q.answer });
+    const makeGenericQ = (type: QType, diff: DiffTier): WQ => {
+      if (lang === 'ar') {
+        if (type === 'multiple_choice') return makeMCQ_ar(topic, kb, diff);
+        if (type === 'short_answer') return makeSAQ_ar(topic, kb, diff);
+        if (type === 'fill_blank') return makeFBQ_ar(topic, kb, diff);
+        if (type === 'word_problem') return makeWPQ_ar(topic, kb, diff);
+        return makeTFQ_ar(topic, kb, diff);
       }
+      if (type === 'multiple_choice') return makeMCQ_en(topic, kb, diff);
+      if (type === 'short_answer') return makeSAQ_en(topic, kb, diff);
+      if (type === 'fill_blank') return makeFBQ_en(topic, kb, diff);
+      if (type === 'word_problem') return makeWPQ_en(topic, kb, diff);
+      return makeTFQ_en(topic, kb, diff);
+    };
 
-      const sectionPts = questions.reduce((s, q) => s + q.points, 0);
+    /** Main-body question via shared factories (math → concrete practice). Dedup stems. */
+    const makeQ = (type: QType, diff: DiffTier): WQ => {
+      for (let attempt = 0; attempt < 12; attempt++) {
+        const q = makeGenericQ(type, diff);
+        const key = questionStemKey(q.text);
+        if (!usedStems.has(key)) {
+          usedStems.add(key);
+          return q;
+        }
+      }
+      const fallback = makeGenericQ(type, diff);
+      usedStems.add(questionStemKey(fallback.text));
+      return fallback;
+    };
+
+    const pushQuestion = (type: QType, q: WQ, withSpace: boolean) => {
+      let out = q;
+      if (withSpace && type !== 'multiple_choice' && type !== 'true_false') {
+        out = { ...q, text: `${q.text}${answerSpace}` };
+      }
+      return out;
+    };
+
+    // Optional prior-knowledge warm-up (only when grounded unit data exists)
+    if (priorCount > 0) {
+      const questions: WQ[] = [];
+      for (let i = 0; i < priorCount; i++) {
+        const concept = priorConcepts[i % priorConcepts.length];
+        const q = lang === 'ar' ? makePriorReviewQ_ar(concept) : makePriorReviewQ_en(concept);
+        const withSpace = pushQuestion('short_answer', q, true);
+        questions.push(withSpace);
+        answerKey.push({ num: qNum++, answer: withSpace.answer ?? '—' });
+      }
       sections.push({
-        type,
-        title: lang === 'ar' ? sectionTitleAr(type, sectionPts) : sectionTitleEn(type, sectionPts),
+        type: 'short_answer',
+        title: lang === 'ar' ? 'مراجعة سابقة' : 'Prior knowledge review',
         questions,
       });
     }
 
+    // Distribute main questions across selected types with progressive difficulty
+    const easyN = Math.max(1, Math.floor(mainTotal * 0.35));
+    const hardN = Math.max(1, Math.floor(mainTotal * 0.25));
+    const midN = Math.max(1, mainTotal - easyN - hardN);
+    const buckets: Array<{ count: number; diff: DiffTier; title: string }> = lang === 'ar'
+      ? [
+          { count: easyN, diff: 'easy', title: 'أ) تمارين تمهيدية (سهل)' },
+          { count: midN, diff: 'medium', title: 'ب) تمارين صفية (متوسط)' },
+          { count: hardN, diff: 'hard', title: 'ج) تحدٍّ سريع (أصعب)' },
+        ]
+      : [
+          { count: easyN, diff: 'easy', title: 'A) Warm-up practice (Easy)' },
+          { count: midN, diff: 'medium', title: 'B) Class practice (Medium)' },
+          { count: hardN, diff: 'hard', title: 'C) Quick stretch (Harder)' },
+        ];
+
+    let typeIdx = 0;
+    for (const bucket of buckets) {
+      const questions: WQ[] = [];
+      let sectionType: QType = mainTypes[0];
+      for (let i = 0; i < bucket.count; i++) {
+        const type = mainTypes[typeIdx % mainTypes.length];
+        typeIdx += 1;
+        sectionType = type;
+        const q = pushQuestion(type, makeQ(type, bucket.diff), true);
+        questions.push(q);
+        answerKey.push({ num: qNum++, answer: q.answer ?? '—' });
+      }
+      if (questions.length > 0) {
+        sections.push({ type: sectionType, title: bucket.title, questions });
+      }
+    }
+
+    // At least one life-application word problem when selected
+    if (wantsWordProblem) {
+      const q = pushQuestion('word_problem', makeQ('word_problem', 'medium'), true);
+      sections.push({
+        type: 'word_problem',
+        title: lang === 'ar' ? 'مسألة حياتية' : 'Real-life word problem',
+        questions: [q],
+      });
+      answerKey.push({ num: qNum++, answer: q.answer ?? '—' });
+    }
+
     return {
-      title: lang === 'ar' ? `${req.subject} – ${topic} – ورقة عمل` : `${req.subject} – ${topic} – Worksheet`,
+      title: lang === 'ar'
+        ? `ورقة عمل صفية – ${topic}`
+        : `In-class Worksheet – ${topic}`,
       instructions: lang === 'ar'
-        ? `الاسم: ________________  الصف: ${req.grade}  التاريخ: ________________\n\nاقرأ كل سؤال بعناية. بيّن خطوات حلّك حيثما أمكن.`
-        : `Name: ________________  Grade: ${req.grade}  Date: ________________\n\nRead each question carefully. Show all working where applicable.`,
+        ? `الاسم: ________________    الصف: ${req.grade}    التاريخ: ________________\n\nمقدمة قصيرة: هذه ورقة تدريب صفية حول «${topic}». اعمل بهدوء، وابدأ بالأسهل ثم انتقل للأصعب.\n\n• أجب في المساحات المخصصة.\n• بيّن خطوات الحل عند الحاجة.\n• لا حاجة لملاحظات المعلم — هذه ورقة للطالب.`
+        : `Name: ________________    Grade: ${req.grade}    Date: ________________\n\nShort intro: This is an in-class practice sheet on “${topic}”. Work quietly and move from easier to harder items.\n\n• Write in the answer spaces provided.\n• Show working where needed.\n• Student sheet only — no teacher notes.`,
       sections,
       answerKey,
     };
@@ -468,8 +863,9 @@ export class MockAIService extends AIService {
 
   async generateQuiz(req: AIRequest): Promise<QuizOutput> {
     await this.delay();
+    beginMathPracticeSession();
     const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
-    const kb = searchKB(req.topic, lang)[0] ?? null;
+    const kb = groundedKb(req.topic, lang);
     const topic = req.topic;
     const totalMarks = req.totalMarks ?? 20;
     const duration = req.duration ?? 20;
@@ -482,6 +878,21 @@ export class MockAIService extends AIService {
     const questions: QuizQuestion[] = [];
     let qIdx = 1;
     let usedPts = 0;
+    const usedStems = new Set<string>();
+
+    const pushUnique = (factory: () => QuizQuestion): QuizQuestion => {
+      for (let attempt = 0; attempt < 12; attempt++) {
+        const q = factory();
+        const key = questionStemKey(q.text);
+        if (!usedStems.has(key)) {
+          usedStems.add(key);
+          return q;
+        }
+      }
+      const q = factory();
+      usedStems.add(questionStemKey(q.text));
+      return q;
+    };
 
     for (const type of types) {
       for (let rep = 0; rep < 2; rep++) {
@@ -492,13 +903,13 @@ export class MockAIService extends AIService {
         usedPts += pts;
 
         if (lang === 'ar') {
-          if (type === 'multiple_choice') questions.push(makeQuizMCQ_ar(topic, kb, pts, id));
-          else if (type === 'true_false') questions.push(makeQuizTF_ar(topic, kb, pts, id));
-          else questions.push(makeQuizSA_ar(topic, kb, pts, id));
+          if (type === 'multiple_choice') questions.push(pushUnique(() => makeQuizMCQ_ar(topic, kb, pts, id)));
+          else if (type === 'true_false') questions.push(pushUnique(() => makeQuizTF_ar(topic, kb, pts, id)));
+          else questions.push(pushUnique(() => makeQuizSA_ar(topic, kb, pts, id)));
         } else {
-          if (type === 'multiple_choice') questions.push(makeQuizMCQ_en(topic, kb, pts, id));
-          else if (type === 'true_false') questions.push(makeQuizTF_en(topic, kb, pts, id));
-          else questions.push(makeQuizSA_en(topic, kb, pts, id));
+          if (type === 'multiple_choice') questions.push(pushUnique(() => makeQuizMCQ_en(topic, kb, pts, id)));
+          else if (type === 'true_false') questions.push(pushUnique(() => makeQuizTF_en(topic, kb, pts, id)));
+          else questions.push(pushUnique(() => makeQuizSA_en(topic, kb, pts, id)));
         }
       }
     }
@@ -519,28 +930,41 @@ export class MockAIService extends AIService {
 
   async generateActivity(req: AIRequest): Promise<ActivityOutput> {
     await this.delay();
+    beginMathPracticeSession();
     const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
+    const kb = groundedKb(req.topic, lang);
     const topic = req.topic;
     const actType = req.activityType ?? 'group';
     const duration = req.duration ?? 30;
     const stepDur = Math.max(5, Math.round((duration - 10) / 2));
+    const math = isMathContext(topic, kb, req.subject);
+    const practice = math ? takeConcreteMathBatch(3, topic, kb, lang, 'medium') : [];
 
     if (lang === 'ar') {
       const groupLabel: Record<string, string> = {
         individual: 'فردي', group: `3-4 طلاب`, discussion: 'الصف كامل',
         'hands-on': 'ثنائي أو رباعي', game: 'فرق من 4 طلاب',
       };
-      const steps: ActivityStep[] = [
-        { stepNumber: 1, title: 'التمهيد', description: `اطرح على الطلاب سؤالاً تحفيزياً: "أين نصادف ${topic} في حياتنا؟" استمع لإجابات 3-4 طلاب وسجّلها على السبورة لبناء الفضول.`, durationMin: 5 },
-        { stepNumber: 2, title: 'النشاط الرئيسي', description: `قسّم الطلاب حسب ${groupLabel[actType] ?? 'مجموعات'}. يتعاون أفراد كل مجموعة على استكشاف ${topic} من خلال المهمة المطروحة، مع تدوين ملاحظاتهم وتوزيع الأدوار بينهم (قائد، كاتب، مقرر).`, durationMin: stepDur },
-        { stepNumber: 3, title: 'العرض والمناقشة', description: `تعرض كل مجموعة نتائجها في 90 ثانية. يسجّل المعلم النقاط الرئيسية على السبورة ويفتح نقاشاً مختصراً حول الاختلافات بين المجموعات.`, durationMin: stepDur },
-        { stepNumber: 4, title: 'التلخيص والتقييم', description: `يكتب كل طالب جملةً واحدة تلخّص أهم ما تعلّمه. تُجمع الأوراق كبطاقة خروج للتقييم البنائي.`, durationMin: 5 },
-      ];
+      const steps: ActivityStep[] = math && practice.length >= 2
+        ? [
+            { stepNumber: 1, title: 'التمهيد', description: `اعرض المسألة التالية على السبورة واطلب من الطلاب محاولة سريعة فردية (دقيقتان):\n${practice[0].text}\n(الإجابة المتوقعة للمعلم: ${practice[0].answer})`, durationMin: 5 },
+            { stepNumber: 2, title: 'النشاط الرئيسي', description: `قسّم الطلاب حسب ${groupLabel[actType] ?? 'مجموعات'}. تحل كل مجموعة المسألتين:\n1) ${practice[1]?.text ?? practice[0].text}\n2) ${practice[2]?.text ?? practice[0].text}\nيكتب المقرر خطوات الحل كاملة.`, durationMin: stepDur },
+            { stepNumber: 3, title: 'العرض والمناقشة', description: `تعرض مجموعتان حلولهما. قارن الطرق (جبري / بياني إن لزم) وصحّح الأخطاء الشائعة دون إعطاء الإجابة مباشرة أولًا.`, durationMin: stepDur },
+            { stepNumber: 4, title: 'التلخيص والتقييم', description: `بطاقة خروج: اكتب حلًا مختصرًا لمسألة شبيهة أو أعد صياغة خطوة واحدة من حل اليوم. الإجابات المرجعية: ${practice.map(p => p.answer).join(' ؛ ')}`, durationMin: 5 },
+          ]
+        : [
+            { stepNumber: 1, title: 'التمهيد', description: `اطرح على الطلاب سؤالاً تحفيزياً: "أين نصادف ${topic} في حياتنا؟" استمع لإجابات 3-4 طلاب وسجّلها على السبورة لبناء الفضول.`, durationMin: 5 },
+            { stepNumber: 2, title: 'النشاط الرئيسي', description: `قسّم الطلاب حسب ${groupLabel[actType] ?? 'مجموعات'}. يتعاون أفراد كل مجموعة على استكشاف ${topic} من خلال المهمة المطروحة، مع تدوين ملاحظاتهم وتوزيع الأدوار بينهم (قائد، كاتب، مقرر).`, durationMin: stepDur },
+            { stepNumber: 3, title: 'العرض والمناقشة', description: `تعرض كل مجموعة نتائجها في 90 ثانية. يسجّل المعلم النقاط الرئيسية على السبورة ويفتح نقاشاً مختصراً حول الاختلافات بين المجموعات.`, durationMin: stepDur },
+            { stepNumber: 4, title: 'التلخيص والتقييم', description: `يكتب كل طالب جملةً واحدة تلخّص أهم ما تعلّمه. تُجمع الأوراق كبطاقة خروج للتقييم البنائي.`, durationMin: 5 },
+          ];
       return {
         title: `نشاط "${topic}" – ${actType === 'game' ? 'لعبة تعليمية' : actType === 'discussion' ? 'نقاش' : 'تعلم تعاوني'}`,
         activityType: actType,
         totalDuration: duration,
-        objective: req.objectives?.trim() || `أن يطبق الطلاب مفاهيم ${topic} ويناقشوها مع زملائهم لتعزيز الفهم`,
+        objective: req.objectives?.trim() || (math
+          ? `أن يحل الطلاب مسائل محددة حول ${topic} ويشرحوا خطوات الحل`
+          : `أن يطبق الطلاب مفاهيم ${topic} ويناقشوها مع زملائهم لتعزيز الفهم`),
         groupSize: groupLabel[actType] ?? '3-4 طلاب',
         materials: ['الكتاب المدرسي', 'أوراق عمل مطبوعة', 'أقلام ملونة', 'لاصق ورقي للبطاقات'],
         steps,
@@ -550,7 +974,9 @@ export class MockAIService extends AIService {
           'استخدم مؤقتاً مرئياً على السبورة لإدارة الوقت.',
         ],
         differentiation: 'للطلاب المتقدمين: قدّم تحدياً إضافياً أو اطلب منهم ربط الموضوع بدرس سابق. للطلاب المحتاجين لدعم: قدّم بطاقة مرجعية تحتوي المصطلحات والصيغ الأساسية.',
-        assessment: 'راقب جودة النقاش داخل المجموعات، وقيّم بطاقات الخروج للتحقق من الفهم، وسجّل ملاحظات عن الطلاب الذين يحتاجون دعماً إضافياً.',
+        assessment: math
+          ? `تحقق من صحة حلول المسائل المعروضة. الإجابات: ${practice.map(p => p.answer).join(' ؛ ')}`
+          : 'راقب جودة النقاش داخل المجموعات، وقيّم بطاقات الخروج للتحقق من الفهم، وسجّل ملاحظات عن الطلاب الذين يحتاجون دعماً إضافياً.',
       };
     }
 
@@ -558,17 +984,26 @@ export class MockAIService extends AIService {
       individual: 'Individual', group: '3-4 students', discussion: 'Whole class',
       'hands-on': 'Pairs or groups of 4', game: 'Teams of 4',
     };
-    const steps: ActivityStep[] = [
-      { stepNumber: 1, title: 'Warm-up', description: `Ask a thought-provoking question: "Where do we encounter ${topic} in daily life?" Take responses from 3-4 students and note them on the board to build curiosity.`, durationMin: 5 },
-      { stepNumber: 2, title: 'Main Activity', description: `Divide students into ${groupLabel[actType] ?? 'groups'}. Groups collaborate to explore ${topic} through the assigned task, noting findings and distributing roles (leader, recorder, presenter).`, durationMin: stepDur },
-      { stepNumber: 3, title: 'Share & Discuss', description: `Each group presents findings in 90 seconds. Record key points on the board and facilitate a brief discussion around differences between groups.`, durationMin: stepDur },
-      { stepNumber: 4, title: 'Wrap-up', description: `Each student writes one sentence summarising their main learning. Collect as an exit ticket for formative assessment.`, durationMin: 5 },
-    ];
+    const steps: ActivityStep[] = math && practice.length >= 2
+      ? [
+          { stepNumber: 1, title: 'Warm-up', description: `Put this problem on the board for a 2-minute individual try:\n${practice[0].text}\n(Teacher key: ${practice[0].answer})`, durationMin: 5 },
+          { stepNumber: 2, title: 'Main Activity', description: `Divide into ${groupLabel[actType] ?? 'groups'}. Each group solves:\n1) ${practice[1]?.text ?? practice[0].text}\n2) ${practice[2]?.text ?? practice[0].text}\nRecorder writes full working.`, durationMin: stepDur },
+          { stepNumber: 3, title: 'Share & Discuss', description: `Two groups present. Compare methods and surface common errors before revealing answers.`, durationMin: stepDur },
+          { stepNumber: 4, title: 'Wrap-up', description: `Exit ticket: briefly solve a similar item or rewrite one solution step. Keys: ${practice.map(p => p.answer).join(' ; ')}`, durationMin: 5 },
+        ]
+      : [
+          { stepNumber: 1, title: 'Warm-up', description: `Ask a thought-provoking question: "Where do we encounter ${topic} in daily life?" Take responses from 3-4 students and note them on the board to build curiosity.`, durationMin: 5 },
+          { stepNumber: 2, title: 'Main Activity', description: `Divide students into ${groupLabel[actType] ?? 'groups'}. Groups collaborate to explore ${topic} through the assigned task, noting findings and distributing roles (leader, recorder, presenter).`, durationMin: stepDur },
+          { stepNumber: 3, title: 'Share & Discuss', description: `Each group presents findings in 90 seconds. Record key points on the board and facilitate a brief discussion around differences between groups.`, durationMin: stepDur },
+          { stepNumber: 4, title: 'Wrap-up', description: `Each student writes one sentence summarising their main learning. Collect as an exit ticket for formative assessment.`, durationMin: 5 },
+        ];
     return {
       title: `${topic} – ${actType === 'game' ? 'Learning Game' : actType === 'discussion' ? 'Discussion' : 'Collaborative Activity'}`,
       activityType: actType,
       totalDuration: duration,
-      objective: req.objectives?.trim() || `Students will apply and discuss concepts of ${topic} with peers to deepen understanding`,
+      objective: req.objectives?.trim() || (math
+        ? `Students will solve concrete ${topic} problems and explain their steps`
+        : `Students will apply and discuss concepts of ${topic} with peers to deepen understanding`),
       groupSize: groupLabel[actType] ?? '3-4 students',
       materials: ['Textbook', 'Printed worksheets', 'Coloured markers', 'Sticky notes'],
       steps,
@@ -578,21 +1013,71 @@ export class MockAIService extends AIService {
         'Display a visible timer on the board to help manage pacing.',
       ],
       differentiation: 'Advanced students: offer an extension challenge or ask them to connect the topic to a previous lesson. Students needing support: provide a reference card with key terms and formulas.',
-      assessment: 'Monitor quality of group discussion, review exit tickets for comprehension, and note students who need follow-up support.',
+      assessment: math
+        ? `Check accuracy of the assigned problems. Keys: ${practice.map(p => p.answer).join(' ; ')}`
+        : 'Monitor quality of group discussion, review exit tickets for comprehension, and note students who need follow-up support.',
     };
   }
 
   async generateClassroomActivity(req: ClassroomActivityRequest): Promise<ClassroomActivity> {
     await this.delay();
+    beginMathPracticeSession();
     const isAr = req.language === 'arabic';
     const topic = req.topic;
+    const kb = groundedKb(topic, isAr ? 'ar' : 'en');
     const dur = req.duration ?? 20;
     const slideDuration = Math.round((dur * 60) / 5);
     const actType = req.activityType ?? 'escape-challenge';
+    const math = isMathContext(topic, kb, req.subject);
+    const bingoItems = math && actType === 'bingo'
+      ? takeConcreteMathBatch(8, topic, kb, isAr ? 'ar' : 'en', 'medium')
+      : [];
+    const relayItems = math && actType === 'relay'
+      ? takeConcreteMathBatch(4, topic, kb, isAr ? 'ar' : 'en', 'medium')
+      : [];
 
     // ── Bingo ──────────────────────────────────────────────────────────────────
     if (actType === 'bingo') {
       if (isAr) {
+        if (math && bingoItems.length >= 4) {
+          const calls = bingoItems.slice(0, 8).map((item, i) => ({
+            slideNumber: i + 2,
+            type: 'bingo-call' as const,
+            title: `الاستدعاء ${i + 1}`,
+            content: item.text,
+            hint: 'حل المسألة ثم غطّ الإجابة على بطاقتك إن وُجدت',
+            answer: item.answer,
+            durationSeconds: 30,
+            teacher: {
+              expectedAnswer: item.answer,
+              teachingTips: 'امنح 20–30 ثانية للحل قبل الكشف',
+              suggestedQuestions: ['ما الخطوة الأولى؟'],
+            },
+          }));
+          return {
+            activityName: `بينجو مسائل – ${topic}`,
+            activityType: 'bingo',
+            grade: req.grade,
+            subject: req.subject,
+            lesson: topic,
+            duration: dur,
+            difficulty: req.difficulty,
+            groupType: req.groupType,
+            learningObjective: `حل مسائل محددة في ${topic} بأسلوب تنافسي`,
+            materials: ['بطاقات بينجو مطبوعة', 'قصاصات تغطية', 'مؤقت'],
+            teacherPreparation: 'اطبع بطاقات تتضمن الإجابات العددية/الناتج. استدعِ المسائل بالترتيب.',
+            teacherNotes: ['ناقش الحل بعد كل استدعاء', 'يمكن اللعب لجولتين'],
+            answerKey: bingoItems.map((item, i) => `المسألة ${i + 1}: ${item.answer}`),
+            printables: ['بطاقات بينجو', 'قائمة المسائل للمعلم'],
+            assessment: 'راقب صحة الحلول وسرعة التعرف على الناتج.',
+            extensionChallenge: 'اطلب من الفائز شرح حل مسألتين من بطاقته',
+            slides: [
+              { slideNumber: 1, type: 'intro', title: '🎱 بينجو المسائل', content: `بينجو ${topic}!\nلكل طالب بطاقة بإجابات.\nأحل المسألة المستدعاة، ثم غطّ الناتج المطابق.\nأول من يكمل صفًا يصرخ بينجو!`, durationSeconds: 0 },
+              ...calls,
+              { slideNumber: calls.length + 2, type: 'summary', title: '🎉 انتهت الجولة!', content: `أحسنتم!\nراجعنا مسائل ${topic}.\nناقش: أي مسألة كانت الأصعب؟`, durationSeconds: 0 },
+            ],
+          };
+        }
         return {
           activityName: `بينجو – ${topic}`,
           activityType: 'bingo',
@@ -621,6 +1106,45 @@ export class MockAIService extends AIService {
             { slideNumber: 8, type: 'bingo-call', title: 'الاستدعاء 7', content: `أي خاصية من خصائص ${topic} تنطبق على هذا الموقف: …؟`, hint: 'راجع قائمة الخصائص', answer: 'المصطلح 7', durationSeconds: 30, teacher: { expectedAnswer: `الخاصية المناسبة من ${topic}`, teachingTips: 'أعطِ مثالًا إضافيًا إذا بدا الطلاب متوقفين' } },
             { slideNumber: 9, type: 'bingo-call', title: 'الاستدعاء 8', content: `الوحدة المستخدمة لقياس كمية مرتبطة بـ${topic} هي…`, hint: 'فكّر في وحدات القياس', answer: 'المصطلح 8', durationSeconds: 30, teacher: { expectedAnswer: `وحدة القياس المرتبطة بـ${topic}`, teachingTips: 'ذكّر الطلاب بجدول الوحدات' } },
             { slideNumber: 10, type: 'summary', title: '🎉 انتهت الجولة!', content: `أحسنتم جميعًا!\nراجعنا اليوم مفردات ${topic} الأساسية.\n\nناقش مع زميلك:\n• أي مصطلح كان الأصعب؟\n• أي مصطلح تريد مراجعته مجددًا؟`, durationSeconds: 0 },
+          ],
+        };
+      }
+      if (math && bingoItems.length >= 4) {
+        const calls = bingoItems.slice(0, 8).map((item, i) => ({
+          slideNumber: i + 2,
+          type: 'bingo-call' as const,
+          title: `Call ${i + 1}`,
+          content: item.text,
+          hint: 'Solve, then cover the matching answer on your card',
+          answer: item.answer,
+          durationSeconds: 30,
+          teacher: {
+            expectedAnswer: item.answer,
+            teachingTips: 'Allow 20–30 seconds before revealing',
+            suggestedQuestions: ['What is your first step?'],
+          },
+        }));
+        return {
+          activityName: `Problem Bingo – ${topic}`,
+          activityType: 'bingo',
+          grade: req.grade,
+          subject: req.subject,
+          lesson: topic,
+          duration: dur,
+          difficulty: req.difficulty,
+          groupType: req.groupType,
+          learningObjective: `Solve concrete ${topic} problems in a competitive format`,
+          materials: ['Printed bingo cards', 'Cover chips', 'Timer'],
+          teacherPreparation: 'Print cards with numeric answers. Call problems in order.',
+          teacherNotes: ['Discuss each solution after calling', 'Play two rounds if time allows'],
+          answerKey: bingoItems.map((item, i) => `Problem ${i + 1}: ${item.answer}`),
+          printables: ['Bingo cards', 'Teacher problem list'],
+          assessment: 'Watch solution accuracy and speed.',
+          extensionChallenge: 'Ask the winner to explain two solutions from their card',
+          slides: [
+            { slideNumber: 1, type: 'intro', title: '🎱 Problem Bingo', content: `${topic} Bingo!\nEach card has answers.\nSolve the called problem, cover the matching result.\nFirst complete row wins!`, durationSeconds: 0 },
+            ...calls,
+            { slideNumber: calls.length + 2, type: 'summary', title: '🎉 Round Complete!', content: `Well done!\nWe practiced real ${topic} problems.`, durationSeconds: 0 },
           ],
         };
       }
@@ -659,6 +1183,44 @@ export class MockAIService extends AIService {
     // ── Relay Race ─────────────────────────────────────────────────────────────
     if (actType === 'relay') {
       if (isAr) {
+        if (math && relayItems.length >= 4) {
+          return {
+            activityName: `سباق التتابع – ${topic}`,
+            activityType: 'relay',
+            grade: req.grade,
+            subject: req.subject,
+            lesson: topic,
+            duration: dur,
+            difficulty: req.difficulty,
+            groupType: req.groupType,
+            learningObjective: `حل أربع مسائل محددة في ${topic} ضمن فرق تنافسية`,
+            materials: ['السبورة', 'أوراق التتابع المطبوعة', 'مؤقت', 'أقلام ملونة'],
+            teacherPreparation: 'قسّم الطلاب إلى فرق. كل فرد يحل مسألة واحدة ثم يمرّر للالتالي.',
+            teacherNotes: ['تحقق من توازن الفرق', 'شجّع التحقق قبل التمرير'],
+            answerKey: relayItems.map((item, i) => `المسألة ${i + 1}: ${item.answer}`),
+            printables: ['أوراق التتابع', 'لوحة النتائج'],
+            assessment: 'قيّم صحة إجابات المسائل الأربع وسرعة الإنجاز.',
+            extensionChallenge: 'اطلب من الفريق الفائز صياغة مسألة خامسة للفريق الآخر',
+            slides: [
+              { slideNumber: 1, type: 'intro', title: '🏃 سباق التتابع', content: `سباق مسائل ${topic}!\nكل فريق يحل 4 مسائل متتالية.\nالفريق الأسرع بإجابات صحيحة يفوز.`, durationSeconds: 0 },
+              ...relayItems.map((item, i) => ({
+                slideNumber: i + 2,
+                type: 'relay-problem' as const,
+                title: `المسألة ${i + 1} من 4`,
+                content: item.text,
+                hint: 'بيّن خطواتك قبل التمرير',
+                answer: item.answer,
+                durationSeconds: slideDuration,
+                teacher: {
+                  expectedAnswer: item.answer,
+                  teachingTips: 'تأكد أن الفريق يكتب الناتج بوضوح',
+                  suggestedQuestions: ['ما خطوتك الأولى؟'],
+                },
+              })),
+              { slideNumber: 6, type: 'summary', title: '🎉 اكتملت السلسلة!', content: `أحسنتم!\nحللتم اليوم مسائل ${topic} الحقيقية.\nتحقق دائمًا قبل التمرير.`, durationSeconds: 0 },
+            ],
+          };
+        }
         return {
           activityName: `سباق التتابع – ${topic}`,
           activityType: 'relay',
@@ -1345,26 +1907,101 @@ export class MockAIService extends AIService {
 
   async generateHomework(req: AIRequest): Promise<WorksheetOutput> {
     await this.delay();
+    beginMathPracticeSession();
     const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
+    const kb = groundedKb(req.topic, lang);
     const topic = req.topic;
+    const estMinutes = 25;
+    const math = isMathContext(topic, kb, req.subject);
+
+    const workSpace = lang === 'ar'
+      ? '\n\nمساحة العمل:\n_________________________________\n_________________________________\n_________________________________'
+      : '\n\nWork space:\n_________________________________\n_________________________________\n_________________________________';
+
+    const usedStems = new Set<string>();
+    const core: WQ[] = [];
+    for (let i = 0; i < 3; i++) {
+      let q: WQ | null = null;
+      for (let attempt = 0; attempt < 12; attempt++) {
+        const candidate = lang === 'ar' ? makeSAQ_ar(topic, kb, 'medium') : makeSAQ_en(topic, kb, 'medium');
+        const key = questionStemKey(candidate.text);
+        if (!usedStems.has(key)) {
+          usedStems.add(key);
+          q = candidate;
+          break;
+        }
+      }
+      if (!q) q = lang === 'ar' ? makeSAQ_ar(topic, kb, 'hard') : makeSAQ_en(topic, kb, 'hard');
+      core.push({
+        ...q,
+        text: `${q.text}${workSpace}`,
+        points: 8,
+      });
+    }
+
+    const challengePractice = math
+      ? takeConcreteMath('short_answer', topic, kb, 'hard', lang, 12)
+      : null;
+    const challenge: WQ = challengePractice
+      ? {
+          text: lang === 'ar'
+            ? `سؤال التحدي (اختياري لكن يُحتسب):\n${challengePractice.text}${workSpace}`
+            : `Challenge question (optional but graded):\n${challengePractice.text}${workSpace}`,
+          points: 12,
+          answer: challengePractice.answer,
+        }
+      : lang === 'ar'
+        ? {
+            text: `سؤال التحدي (اختياري لكن يُحتسب):\nابتكر مسألة من حياتك اليومية ترتبط بـ«${topic}»، ثم حلّها موضّحًا كل خطوة. اشرح لماذا يصلح حلّك في المنزل دون مساعدة المعلم.${workSpace}`,
+            points: 12,
+            answer: 'مسألة أصلية منطقية + حل متدرج صحيح',
+          }
+        : {
+            text: `Challenge question (optional but graded):\nInvent a real-life problem connected to “${topic}”, then solve it step by step. Explain how a student can finish it independently at home.${workSpace}`,
+            points: 12,
+            answer: 'Original sensible problem + correct stepped solution',
+          };
+
+    const reflection: WQ = lang === 'ar'
+      ? {
+          text: `تأمل قصير (٣–٤ جمل):\nما أصعب جزء في «${topic}» اليوم؟ وما الاستراتيجية التي ستستخدمها للمراجعة قبل الحصة القادمة؟`,
+          points: 4,
+          answer: 'تأمل صادق يذكر صعوبة محددة واستراتيجية مراجعة',
+        }
+      : {
+          text: `Short reflection (3–4 sentences):\nWhat was the hardest part of “${topic}” today, and what strategy will you use to revise before next class?`,
+          points: 4,
+          answer: 'Honest reflection naming a specific difficulty and a revision strategy',
+        };
+
     return {
-      title: lang === 'ar' ? `واجب منزلي – ${topic}` : `Homework – ${topic}`,
+      title: lang === 'ar'
+        ? `واجب منزلي – ${topic}`
+        : `Homework Assignment – ${topic}`,
       instructions: lang === 'ar'
-        ? 'أجب عن جميع الأسئلة بشكل مستقل. الموعد النهائي: الحصة القادمة.'
-        : 'Complete all questions independently. Due: next class session.',
-      sections: [{
-        type: 'short_answer',
-        title: lang === 'ar' ? 'تمارين تدريبية' : 'Practice Problems',
-        questions: [
-          { text: lang === 'ar' ? `حلّ مسألة مرتبطة بـ${topic} واشرح كل خطوة.` : `Solve a problem related to ${topic} and explain each step.`, points: 10 },
-          { text: lang === 'ar' ? `ابحث عن مثال حياتي لـ${topic} وصفه بـ3-5 جمل.` : `Find a real-world example of ${topic} and describe it in 3-5 sentences.`, points: 10 },
-          { text: lang === 'ar' ? `ضع مسألة خاصة بك تتعلق بـ${topic} وقدّم حلّها.` : `Create your own problem involving ${topic} and provide the solution.`, points: 10 },
-        ],
-      }],
+        ? `تعليمات للطالب\n• أنجز هذا الواجب بمفردك في المنزل (بدون ورقة عمل صفية).\n• الوقت التقديري: حوالي ${estMinutes} دقيقة.\n• الموعد: الحصة القادمة.\n• ابدأ بالتمارين المستقلة، ثم حاول سؤال التحدي.\n• أظهر خطواتك — الجودة أهم من السرعة.`
+        : `Student instructions\n• Complete this assignment independently at home (not an in-class worksheet).\n• Estimated time: about ${estMinutes} minutes.\n• Due: next class.\n• Start with the independent practice, then try the challenge.\n• Show your steps — clarity matters more than speed.`,
+      sections: [
+        {
+          type: 'short_answer',
+          title: lang === 'ar' ? '١) تدريب مستقل' : '1) Independent practice',
+          questions: core,
+        },
+        {
+          type: 'short_answer',
+          title: lang === 'ar' ? '٢) سؤال التحدي' : '2) Challenge question',
+          questions: [challenge],
+        },
+        {
+          type: 'short_answer',
+          title: lang === 'ar' ? '٣) تأمل سريع' : '3) Quick reflection',
+          questions: [reflection],
+        },
+      ],
       answerKey: [
-        { num: 1, answer: lang === 'ar' ? 'حل تدريجي مع شرح كل خطوة' : 'Step-by-step solution with explanation' },
-        { num: 2, answer: lang === 'ar' ? 'مثال واضح ووصف دقيق' : 'Clear example with accurate description' },
-        { num: 3, answer: lang === 'ar' ? 'مسألة منطقية مع حل صحيح' : 'Logical problem with correct solution' },
+        ...core.map((q, i) => ({ num: i + 1, answer: q.answer ?? '—' })),
+        { num: core.length + 1, answer: challenge.answer ?? '—' },
+        { num: core.length + 2, answer: reflection.answer ?? '—' },
       ],
     };
   }
