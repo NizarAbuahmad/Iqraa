@@ -1,0 +1,53 @@
+# Render Blueprint — free-tier demo deployment.
+#
+# Two services:
+#   iqraa-api  — Express API (free web service; sleeps after ~15 min idle,
+#                first request after sleep takes ~30-60s to wake)
+#   iqraa-web  — Expo web static export (always awake; static files)
+# Database lives on Neon (free Postgres), NOT on Render — Render's free
+# Postgres is deleted after 30 days, Neon's free tier persists.
+#
+# Both DATABASE_URL and OPENAI_API_KEY are set by hand in the Render
+# dashboard on first deploy (sync: false below). OPENAI_API_KEY can be a
+# placeholder while the app runs with DEMO_MODE = true — the AI endpoints
+# are not exercised by the demo.
+
+services:
+  - type: web
+    name: iqraa-api
+    runtime: node
+    plan: free
+    buildCommand: corepack enable && corepack prepare pnpm@11.18.0 --activate && pnpm install --frozen-lockfile && pnpm --filter @workspace/api-server run build
+    startCommand: pnpm --filter @workspace/api-server run start
+    healthCheckPath: /api/healthz
+    envVars:
+      - key: NODE_VERSION
+        value: 24.15.0
+      - key: NODE_ENV
+        value: production
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+
+  - type: web
+    name: iqraa-web
+    runtime: static
+    buildCommand: corepack enable && corepack prepare pnpm@11.18.0 --activate && pnpm install --frozen-lockfile && cd artifacts/mobile && pnpm exec expo export --platform web
+    staticPublishPath: artifacts/mobile/dist
+    envVars:
+      - key: NODE_VERSION
+        value: 24.15.0
+      # Baked into the JS bundle at build time. Must be the API service's
+      # public URL + /api. If Render assigns a different hostname than
+      # iqraa-api.onrender.com (name collision), update this and redeploy.
+      - key: EXPO_PUBLIC_API_BASE_URL
+        value: https://iqraa-api.onrender.com/api
+    # Expo Router is a single-page app: every path must serve index.html
+    # or deep links (e.g. /workspace) 404 on refresh.
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
