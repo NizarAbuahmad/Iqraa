@@ -50,10 +50,16 @@ EXPO_PUBLIC_API_BASE_URL=http://localhost:8080/api
 
 `pnpm run dev:mobile` / `dev:mobile:web` also inject this from the repo-root `.env` via `artifacts/mobile/scripts/dev.mjs`.
 
-Provision the database schema (requires a valid `DATABASE_URL`):
+Provision the database schema (requires a valid `DATABASE_URL` in the repo-root `.env`):
 
 ```powershell
 pnpm --filter @workspace/db run push
+```
+
+This loads the root `.env` automatically. If push fails with password authentication errors, fix the password in `DATABASE_URL` and create the DB if needed:
+
+```powershell
+& "C:\Program Files\PostgreSQL\17\bin\psql.exe" -U postgres -h localhost -d postgres -c "CREATE DATABASE iqraa;"
 ```
 
 ---
