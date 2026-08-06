@@ -18,12 +18,14 @@ const TYPE_COLOR: Record<MaterialType, string> = {
   worksheet: '#8B5CF6',
   quiz: '#F59E0B',
   flow: '#00A99D',
+  activity: '#EC4899',
 };
 const TYPE_ICON: Record<MaterialType, keyof typeof Ionicons.glyphMap> = {
   lesson: 'document-text-outline',
   worksheet: 'list-outline',
   quiz: 'help-circle-outline',
   flow: 'git-branch-outline',
+  activity: 'game-controller-outline',
 };
 
 const TABS: Array<{ key: MaterialType | 'all'; labelKey: string }> = [
