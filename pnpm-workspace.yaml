@@ -36,6 +36,12 @@ minimumReleaseAgeExclude:
 
 packages:
   - artifacts/*
+  # Design sandbox only (Replit Canvas component previews) — not product UI and
+  # imported by nothing. Its shadcn kit fails typecheck under @types/react 19,
+  # and because `build` runs `typecheck && build`, that failure blocked the
+  # build for the ENTIRE monorepo. Excluded rather than deleted so the previews
+  # stay on disk; see CLEANUP_PLAN.md for the delete-vs-move decision.
+  - '!artifacts/mockup-sandbox'
   - lib/*
   - lib/integrations/*
   - scripts

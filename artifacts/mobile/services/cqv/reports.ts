@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import { type MaterialType } from '@/services/workspace';
 import { getArtifactDef } from './artifacts';
 import { getCqvLesson } from './catalog';
 import {
@@ -86,7 +87,9 @@ export type CqvGeneratedOutput = {
   artifactId: CqvArtifactId;
   title: string;
   content: string;
-  materialType: 'lesson' | 'worksheet' | 'quiz' | 'flow';
+  // Was a hand-copied duplicate of the MaterialType union, which silently
+  // drifted from the source of truth. Reference the type instead.
+  materialType: MaterialType;
   generatedAt: string;
 };
 

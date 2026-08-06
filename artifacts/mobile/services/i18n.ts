@@ -120,7 +120,6 @@ const translations = {
     homeGenerate: 'أنشئ',
     homeAiToolsTitle: 'مسار التحضير',
     smartTemplatesTitle: 'ابدأ بسرعة',
-    changeLesson: 'تغيير الدرس',
     openDocument: 'عرض',
     relatedResourcesDone: '✅ تم تجهيز المادة.',
     relatedResourcesHint: 'قد يفيدك أيضاً:',
@@ -152,8 +151,6 @@ const translations = {
 
     // Curriculum — lessons screen
     unitLabel: 'الوحدة',
-    selectUnit: 'اختر الوحدة',
-    selectLesson: 'اختر الدرس',
     unitsAvailable: (n: number) => `${n} وحدة`,
     lessonsCount: (n: number) => `${n} درس`,
     noUnitsOrLessons: 'لا وحدات أو دروس بعد',
@@ -700,7 +697,6 @@ const translations = {
     homeGenerate: 'Generate',
     homeAiToolsTitle: 'Prep path',
     smartTemplatesTitle: 'Start fast',
-    changeLesson: 'Change lesson',
     openDocument: 'Open',
     relatedResourcesDone: '✅ Created successfully.',
     relatedResourcesHint: 'You may also need:',
@@ -730,8 +726,6 @@ const translations = {
       `${units} unit${units !== 1 ? 's' : ''} · ${lessons} lesson${lessons !== 1 ? 's' : ''}`,
 
     unitLabel: 'Unit',
-    selectUnit: 'Select a unit',
-    selectLesson: 'Select a lesson',
     unitsAvailable: (n: number) => `${n} unit${n !== 1 ? 's' : ''}`,
     lessonsCount: (n: number) => `${n} lesson${n !== 1 ? 's' : ''}`,
     noUnitsOrLessons: 'No units or lessons yet',

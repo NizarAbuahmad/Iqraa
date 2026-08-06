@@ -9,7 +9,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiFetch, getAccessToken } from './apiClient';
 
-export type MaterialType = 'lesson' | 'worksheet' | 'quiz' | 'flow';
+// 'activity' is a first-class kind: it is stage 3 of the lesson flow, a CQV
+// artifact type ('classroom-activity'), and already has a `materialActivity`
+// label and a ContinueMaterialKind member. It was missing here, which made the
+// `item.type === 'activity'` branch in continueTeaching.ts provably dead — so a
+// saved activity arriving without formState was silently labelled a lesson.
+export type MaterialType = 'lesson' | 'worksheet' | 'quiz' | 'flow' | 'activity';
 
 export interface SavedMaterial {
   id: string;
