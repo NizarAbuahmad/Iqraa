@@ -32,12 +32,18 @@ Vision screens (student/parent/school dashboards) are deprioritized.
   see LOCAL_SETUP.md).
 - `mockup-sandbox` is excluded from the workspace — it is a design sandbox,
   not product UI, and its type errors used to block the whole monorepo build.
+- **Hosted demo is LIVE** (2026-08-07, free tier — see render.yaml):
+  - Web: https://iqraa-web.onrender.com (static, always awake)
+  - API: https://iqraa-api-dfxu.onrender.com (`iqraa-api` name was taken —
+    note the `-dfxu` suffix; sleeps after ~15 min idle, ~30-60s to wake.
+    **Warm it up before demos.**)
+  - DB: Neon free Postgres, project "iqraa", eu-central-1 (Frankfurt).
+    Schema pushed; register/login verified end-to-end against it.
+  - Demo account: demo@iqraa.app / IqraaDemo2026
 
 ## Top blockers (in priority order)
 
-1. **No hosted demo.** Replit production deploy is failing; no Dockerfile/CI.
-   A shareable link is the current #1 engineering goal.
-2. **No external validation.** Zero real teachers have used the product.
+1. **No external validation.** Zero real teachers have used the product.
    Getting 3–5 Jordanian teachers on it beats any further polish.
 3. **Verifier not visible in UI.** The SymPy math-verifier works but the app
    doesn't surface verification (badge / rejected-count / proof panel).
