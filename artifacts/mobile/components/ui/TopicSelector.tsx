@@ -52,12 +52,21 @@ function groupUnitsBySemester(
     }));
 }
 
+export type TopicSelectionDetail = {
+  /** KB unit order (e.g. 5 for الوحدة 5); null for entire-book / nothing chosen. */
+  unitOrder: number | null;
+  unitTitle: string | null;
+  lessonTitle: string | null;
+};
+
 interface Props {
   subjectId: string;
   gradeId: string;
   /** Controlled topic string – parent owns this value. */
   value: string;
   onChange: (topic: string) => void;
+  /** Optional structured selection info alongside the topic string. */
+  onSelectionDetail?: (detail: TopicSelectionDetail) => void;
   lang: 'ar' | 'en';
   isRTL: boolean;
   colors: any;
@@ -67,7 +76,7 @@ interface Props {
 }
 
 export function TopicSelector({
-  subjectId, gradeId, value, onChange,
+  subjectId, gradeId, value, onChange, onSelectionDetail,
   lang, isRTL, colors, accent, hasError, t,
 }: Props) {
   const units = getUnitsForSubjectGrade(subjectId, gradeId);
@@ -112,32 +121,39 @@ export function TopicSelector({
   // Require a lesson (or entire-unit / entire-book) before setting topic —
   // unit-only selection used to set the unit title (e.g. wrong "المعادلات").
   useEffect(() => {
+    const noDetail: TopicSelectionDetail = { unitOrder: null, unitTitle: null, lessonTitle: null };
     if (!kbAvailable) return;
-    if (!selectedUnitId) { onChange(''); return; }
+    if (!selectedUnitId) { onChange(''); onSelectionDetail?.(noDetail); return; }
 
     if (selectedUnitId === ENTIRE_BOOK) {
       onChange(t('entireBook'));
+      onSelectionDetail?.(noDetail);
       return;
     }
 
     const unit = units.find(u => u.id === selectedUnitId);
     if (!unit) return;
+    const unitTitle = lang === 'ar' ? unit.titleAr : unit.titleEn;
 
     // Unit chosen but no lesson yet → wait for lesson picker
     if (!selectedLessonId) {
       onChange('');
+      onSelectionDetail?.({ unitOrder: unit.order, unitTitle, lessonTitle: null });
       return;
     }
 
     if (selectedLessonId === ENTIRE_UNIT) {
-      onChange(lang === 'ar' ? unit.titleAr : unit.titleEn);
+      onChange(unitTitle);
+      onSelectionDetail?.({ unitOrder: unit.order, unitTitle, lessonTitle: unitTitle });
       return;
     }
 
     const lesson = lessons.find(l => l.id === selectedLessonId);
     if (lesson) {
       // Lesson title alone for precise KB / NCCD matching
-      onChange(lang === 'ar' ? lesson.titleAr : lesson.titleEn);
+      const lessonTitle = lang === 'ar' ? lesson.titleAr : lesson.titleEn;
+      onChange(lessonTitle);
+      onSelectionDetail?.({ unitOrder: unit.order, unitTitle, lessonTitle });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedUnitId, selectedLessonId, lang]);

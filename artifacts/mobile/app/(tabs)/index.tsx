@@ -1,7 +1,8 @@
 import React, { useCallback, useState } from 'react';
 import {
-  Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View,
+  Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,9 +27,14 @@ import {
   inferToolFromPrompt,
   type HomeToolId,
 } from '@/services/homeAiTools';
+import { TopicSelector, type TopicSelectionDetail } from '@/components/ui/TopicSelector';
 
 const NAVY = '#081B3A';
 const TEAL = '#00A99D';
+
+/** Teacher's explicitly chosen "current lesson" for the home context banner. */
+const HOME_LESSON_KEY = '@iqra_home_lesson_v1';
+type HomeLessonPick = { topic: string; unitOrder: number | null };
 
 /** Soft accent tints for hero prep tabs */
 const SUGGEST_ACCENT: Record<string, { bg: string; border: string; iconBg: string }> = {
@@ -50,6 +56,12 @@ export default function DashboardScreen() {
   const [recentItems, setRecentItems] = useState<SavedMaterial[]>([]);
   const [continueItem, setContinueItem] = useState<SavedMaterial | null>(null);
   const [prompt, setPrompt] = useState('');
+  const [lessonPick, setLessonPick] = useState<HomeLessonPick | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [draftTopic, setDraftTopic] = useState('');
+  const [draftDetail, setDraftDetail] = useState<TopicSelectionDetail>({
+    unitOrder: null, unitTitle: null, lessonTitle: null,
+  });
 
   const loadData = useCallback(async () => {
     const recent = await getRecentItems(4);
@@ -59,6 +71,12 @@ export default function DashboardScreen() {
       ?? recent[0]
       ?? null;
     setContinueItem(preferred);
+    try {
+      const raw = await AsyncStorage.getItem(HOME_LESSON_KEY);
+      setLessonPick(raw ? (JSON.parse(raw) as HomeLessonPick) : null);
+    } catch {
+      setLessonPick(null);
+    }
   }, [lang]);
 
   useFocusEffect(
@@ -82,16 +100,22 @@ export default function DashboardScreen() {
       ? buildDemoContinueCard(lang, t as any)
       : null;
 
+  // The teacher's explicit pick wins; otherwise fall back to the last saved
+  // material, then to the demo lesson.
   const lessonTopic =
-    continueCard?.focusTitle
+    lessonPick?.topic
+    ?? continueCard?.focusTitle
     ?? (lang === 'ar' ? DEMO_CONTINUE.lessonTitleAr : DEMO_CONTINUE.lessonTitleEn);
 
   const contextSubject = lang === 'ar' ? 'الرياضيات' : 'Mathematics';
   const contextGrade = lang === 'ar' ? 'الصف العاشر' : 'Grade 10';
-  const unitNumber =
-    (continueItem?.formState?.unitNumber as number | undefined)
-    ?? DEMO_CONTINUE.unitNumber;
-  const contextUnit = `${t('unitNumberLabel', unitNumber)} • ${lessonTopic}`;
+  const unitNumber = lessonPick
+    ? lessonPick.unitOrder
+    : (continueItem?.formState?.unitNumber as number | undefined)
+      ?? DEMO_CONTINUE.unitNumber;
+  const contextUnit = unitNumber == null
+    ? lessonTopic
+    : `${t('unitNumberLabel', unitNumber)} • ${lessonTopic}`;
 
   const visibleTools = getVisibleHomeTools();
   const visibleSuggestions = getVisibleHeroSuggestions();
@@ -116,16 +140,27 @@ export default function DashboardScreen() {
     openGenerator(toolId, topic);
   };
 
+  // Opens the unit→lesson picker (it used to push the CURRENT lesson's detail
+  // page, which only displayed the lesson and offered no way to change it).
   const openChangeLesson = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push({
-      pathname: '/curriculum/lesson-detail',
-      params: {
-        lessonId: DEMO_CONTINUE.lessonId,
-        subjectColor: TEAL,
-        topicOverride: lessonTopic,
-      },
-    });
+    setDraftTopic('');
+    setDraftDetail({ unitOrder: null, unitTitle: null, lessonTitle: null });
+    setPickerOpen(true);
+  };
+
+  const confirmLessonPick = async () => {
+    const topic = draftTopic.trim();
+    if (!topic) return;
+    const pick: HomeLessonPick = { topic, unitOrder: draftDetail.unitOrder };
+    setLessonPick(pick);
+    setPickerOpen(false);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      await AsyncStorage.setItem(HOME_LESSON_KEY, JSON.stringify(pick));
+    } catch {
+      // Non-fatal: the pick still applies for this session.
+    }
   };
 
   const openContinueTeaching = () => {
@@ -512,6 +547,88 @@ export default function DashboardScreen() {
           </View>
         )}
       </View>
+
+      {/* ── Change-lesson picker (unit → lesson from the curriculum KB) ── */}
+      <Modal
+        visible={pickerOpen}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setPickerOpen(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: colors.background }}>
+          <View
+            style={[
+              styles.pickerHeader,
+              { borderBottomColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' },
+            ]}
+          >
+            <Pressable onPress={() => setPickerOpen(false)} hitSlop={10} style={{ width: 64 }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Inter_400Regular', fontSize: 14 }}>
+                {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+              </Text>
+            </Pressable>
+            <Text style={{ color: colors.foreground, fontFamily: 'Inter_700Bold', fontSize: 16 }}>
+              {t('changeLesson')}
+            </Text>
+            <View style={{ width: 64 }} />
+          </View>
+
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <Text
+              style={{
+                color: colors.mutedForeground,
+                fontFamily: 'Inter_400Regular',
+                fontSize: 13,
+                marginBottom: 14,
+                textAlign: isRTL ? 'right' : 'left',
+              }}
+            >
+              {lang === 'ar'
+                ? 'اختر الوحدة ثم الدرس من المنهاج الأردني — الرياضيات، الصف العاشر.'
+                : 'Pick the unit, then the lesson — Jordan curriculum, Mathematics, Grade 10.'}
+            </Text>
+            <TopicSelector
+              subjectId="mathematics"
+              gradeId="grade-10"
+              value={draftTopic}
+              onChange={setDraftTopic}
+              onSelectionDetail={setDraftDetail}
+              lang={lang as 'ar' | 'en'}
+              isRTL={isRTL}
+              colors={colors}
+              accent={TEAL}
+              t={t}
+            />
+            <Pressable
+              onPress={confirmLessonPick}
+              disabled={!draftTopic.trim()}
+              style={({ pressed }) => [
+                styles.pickerConfirm,
+                {
+                  backgroundColor: draftTopic.trim() ? TEAL : colors.muted,
+                  opacity: pressed ? 0.88 : 1,
+                },
+              ]}
+              accessibilityRole="button"
+            >
+              <Text
+                style={{
+                  color: draftTopic.trim() ? '#fff' : colors.mutedForeground,
+                  fontFamily: 'Inter_600SemiBold',
+                  fontSize: 15,
+                }}
+              >
+                {lang === 'ar' ? 'اعتماد الدرس' : 'Set lesson'}
+              </Text>
+            </Pressable>
+          </ScrollView>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -555,6 +672,21 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontFamily: 'Inter_600SemiBold',
     fontSize: 12.5,
+  },
+  pickerHeader: {
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 18,
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+  },
+  pickerConfirm: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 14,
+    paddingVertical: 14,
+    marginTop: 18,
   },
 
   hero: {
