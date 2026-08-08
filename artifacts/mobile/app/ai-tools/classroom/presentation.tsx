@@ -34,6 +34,7 @@ function slideTypeAccent(type: ActivitySlide['type']): string {
   if (type === 'summary') return ACCENT;
   if (type === 'bingo-call') return '#A855F7';
   if (type === 'relay-problem') return '#F43F5E';
+  if (type === 'question') return '#3B82F6';
   return '#8B8CA4';
 }
 
@@ -99,6 +100,98 @@ function TeacherPanel({
   );
 }
 
+// ─── Question Slide (whole-class ABCD response) ──────────────────────────────
+function QuestionOptions({
+  slide, isRTL, t, revealed, onToggleReveal,
+}: {
+  slide: ActivitySlide;
+  isRTL: boolean;
+  t: (k: any) => string;
+  revealed: boolean;
+  onToggleReveal: () => void;
+}) {
+  const options = slide.options ?? [];
+  if (options.length === 0) return null;
+  // Arabic response letters mirror the printed أ ب ج د cards students hold up.
+  const letters = isRTL ? ['أ', 'ب', 'ج', 'د', 'هـ'] : ['A', 'B', 'C', 'D', 'E'];
+
+  return (
+    <View style={qStyles.wrap}>
+      {/* Routine reminder — projected so students see the rule, not just hear it */}
+      <View style={[qStyles.respondBanner, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+        <Ionicons name="hand-left-outline" size={16} color="#3B82F6" />
+        <Text style={[qStyles.respondText, { fontFamily: 'Inter_600SemiBold' }]}>
+          {t('allStudentsAnswer')}
+        </Text>
+      </View>
+
+      <View style={qStyles.grid}>
+        {options.map((opt, i) => {
+          const isCorrect = revealed && i === slide.correctIndex;
+          const isDimmed = revealed && i !== slide.correctIndex;
+          return (
+            <View
+              key={i}
+              style={[
+                qStyles.option,
+                {
+                  borderColor: isCorrect ? TIMER_GREEN : BORDER,
+                  backgroundColor: isCorrect ? TIMER_GREEN + '18' : CARD_BG,
+                  opacity: isDimmed ? 0.4 : 1,
+                  flexDirection: isRTL ? 'row-reverse' : 'row',
+                },
+              ]}
+            >
+              <View style={[qStyles.letterBadge, { backgroundColor: isCorrect ? TIMER_GREEN : '#3B82F6' + '30' }]}>
+                <Text style={[qStyles.letterText, { color: isCorrect ? '#fff' : '#3B82F6', fontFamily: 'Inter_700Bold' }]}>
+                  {letters[i] ?? '•'}
+                </Text>
+              </View>
+              <Text
+                style={[
+                  qStyles.optionText,
+                  { textAlign: isRTL ? 'right' : 'left', fontFamily: isCorrect ? 'Inter_700Bold' : 'Inter_500Medium' },
+                ]}
+              >
+                {opt}
+              </Text>
+              {isCorrect && <Ionicons name="checkmark-circle" size={26} color={TIMER_GREEN} />}
+            </View>
+          );
+        })}
+      </View>
+
+      {/* Reveal control */}
+      <Pressable
+        onPress={onToggleReveal}
+        style={[
+          qStyles.revealBtn,
+          {
+            borderColor: revealed ? BORDER : TIMER_GREEN + '60',
+            backgroundColor: revealed ? 'transparent' : TIMER_GREEN + '12',
+            flexDirection: isRTL ? 'row-reverse' : 'row',
+          },
+        ]}
+      >
+        <Ionicons name={revealed ? 'eye-off-outline' : 'checkmark-circle-outline'} size={18} color={revealed ? TEXT_MUTED : TIMER_GREEN} />
+        <Text style={[qStyles.revealBtnText, { color: revealed ? TEXT_MUTED : TIMER_GREEN, fontFamily: 'Inter_600SemiBold' }]}>
+          {revealed ? t('hideAnswer') : t('revealAnswer')}
+        </Text>
+      </Pressable>
+
+      {/* The trust moment: the projected proof that this key cannot be wrong */}
+      {revealed && slide.verified && (
+        <View style={[qStyles.verifiedBadge, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <Ionicons name="shield-checkmark" size={16} color={TIMER_GREEN} />
+          <Text style={[qStyles.verifiedText, { fontFamily: 'Inter_600SemiBold' }]}>
+            {t('verifiedAnswerBadge')}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
 // ─── Slide Content ────────────────────────────────────────────────────────────
 function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
   const accent = slideTypeAccent(slide.type);
@@ -114,6 +207,7 @@ function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
             : slide.type === 'reveal' ? '🔓'
             : slide.type === 'bingo-call' ? '🎱'
             : slide.type === 'relay-problem' ? '🏃'
+            : slide.type === 'question' ? '🙋'
             : '🎉'}
           {'  '}{slide.title}
         </Text>
@@ -347,6 +441,20 @@ export default function PresentationScreen() {
         >
           <SlideView slide={slide} isRTL={isRTL} />
 
+          {/* Whole-class ABCD options (question slides own their reveal) */}
+          {slide.type === 'question' && (
+            <QuestionOptions
+              slide={slide}
+              isRTL={isRTL}
+              t={t}
+              revealed={answerVisible}
+              onToggleReveal={() => {
+                setAnswerVisible(v => !v);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              }}
+            />
+          )}
+
           {/* Hint */}
           {slide.hint && (
             <View style={styles.revealSection}>
@@ -369,8 +477,8 @@ export default function PresentationScreen() {
             </View>
           )}
 
-          {/* Answer */}
-          {slide.answer && (
+          {/* Answer (question slides reveal through their option grid instead) */}
+          {slide.answer && slide.type !== 'question' && (
             <View style={styles.revealSection}>
               <Pressable
                 onPress={() => { setAnswerVisible(v => !v); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); }}
@@ -495,6 +603,22 @@ const slideStyles = StyleSheet.create({
   codeBadge: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, marginTop: 28, backgroundColor: TIMER_GREEN + '15', borderRadius: 14, borderWidth: 1, borderColor: TIMER_GREEN + '40', padding: 20 },
   codeLabel: { fontSize: 28 },
   codeValue: { fontSize: 48, color: TIMER_GREEN },
+});
+
+// Sized for projection: options readable from the back of a classroom.
+const qStyles = StyleSheet.create({
+  wrap: { marginTop: 8, gap: 14 },
+  respondBanner: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 10, backgroundColor: '#3B82F6' + '14', borderWidth: 1, borderColor: '#3B82F6' + '35', alignSelf: 'center' },
+  respondText: { fontSize: 14, color: '#3B82F6' },
+  grid: { gap: 12 },
+  option: { alignItems: 'center', gap: 14, borderWidth: 2, borderRadius: 16, paddingVertical: 18, paddingHorizontal: 18 },
+  letterBadge: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  letterText: { fontSize: 22 },
+  optionText: { flex: 1, fontSize: 22, color: TEXT_PRIMARY, lineHeight: 32 },
+  revealBtn: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 13, borderRadius: 12, borderWidth: 1 },
+  revealBtnText: { fontSize: 15 },
+  verifiedBadge: { alignItems: 'center', justifyContent: 'center', gap: 8, alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, backgroundColor: TIMER_GREEN + '12', borderWidth: 1, borderColor: TIMER_GREEN + '45' },
+  verifiedText: { fontSize: 13.5, color: TIMER_GREEN },
 });
 
 const panelStyles = StyleSheet.create({

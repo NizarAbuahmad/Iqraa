@@ -1036,6 +1036,171 @@ export class MockAIService extends AIService {
       ? takeConcreteMathBatch(4, topic, kb, isAr ? 'ar' : 'en', 'medium')
       : [];
 
+    // ── Quick Check (whole-class ABCD response) ────────────────────────────────
+    // Every student answers every question (mini-whiteboards / letter cards) —
+    // formative assessment, not a quiz show. Wrong options are misconception
+    // distractors from the concrete bank, so the show of hands tells the
+    // teacher WHICH mistake the class is making.
+    if (actType === 'quick-check') {
+      const tier = req.difficulty === 'easy' ? 'easy' as const
+        : req.difficulty === 'advanced' ? 'hard' as const
+        : 'medium' as const;
+      const mcqs: { text: string; options: string[]; answer: string }[] = [];
+      if (math) {
+        for (let i = 0; i < 4; i++) {
+          const q = takeConcreteMath('multiple_choice', topic, kb, tier, isAr ? 'ar' : 'en', 0);
+          if (q?.options?.length) mcqs.push({ text: q.text, options: q.options, answer: q.answer });
+        }
+      }
+
+      if (mcqs.length >= 2) {
+        const qSlides = mcqs.map((q, i) => {
+          const correctIndex = Math.max(0, q.options.indexOf(q.answer));
+          return {
+            slideNumber: i + 2,
+            type: 'question' as const,
+            title: isAr ? `سؤال ${i + 1}` : `Question ${i + 1}`,
+            content: q.text,
+            options: q.options,
+            correctIndex,
+            verified: true,
+            durationSeconds: 45,
+            teacher: {
+              expectedAnswer: q.answer,
+              commonMisconceptions: q.options
+                .filter(o => o !== q.answer)
+                .map(o => (isAr ? `«${o}» — خطأ شائع مقصود` : `“${o}” — a deliberate common error`))
+                .join('\n'),
+              teachingTips: isAr
+                ? 'الكل يجيب معًا: ارفعوا بطاقة الحرف عند انتهاء المؤقت. اقرأ توزيع الأيدي قبل الكشف — كل خيار خاطئ يكشف خطأً شائعًا محددًا.'
+                : 'All students answer together: hold up your letter card when the timer ends. Read the spread of hands before revealing — each wrong option maps to a specific misconception.',
+            },
+          };
+        });
+        return {
+          activityName: isAr ? `تحقق سريع – ${topic}` : `Quick Check – ${topic}`,
+          activityType: 'quick-check',
+          grade: req.grade,
+          subject: req.subject,
+          lesson: topic,
+          duration: dur,
+          difficulty: req.difficulty,
+          groupType: 'whole-class',
+          learningObjective: isAr
+            ? `تشخيص فهم الصف كاملًا في ${topic} عبر أسئلة يجيب عنها كل طالب`
+            : `Diagnose whole-class understanding of ${topic} — every student answers every question`,
+          materials: isAr
+            ? ['بطاقات الحروف أ ب ج د (أو ألواح صغيرة)', 'شاشة عرض']
+            : ['A B C D letter cards (or mini whiteboards)', 'Projector'],
+          teacherPreparation: isAr
+            ? 'اطبع بطاقات الحروف مرة واحدة وتُعاد في كل حصة. اعرض السؤال، شغّل المؤقت، والجميع يرفع إجابته معًا.'
+            : 'Print the letter cards once — reuse every lesson. Show the question, run the timer, everyone answers at once.',
+          teacherNotes: isAr
+            ? ['لا تكشف الإجابة قبل أن يجيب الجميع', 'إن انقسم الصف بين خيارين، اطلب من الطرفين التبرير ثم أعد التصويت']
+            : ['Never reveal before everyone has answered', 'If the class splits between two options, have each side argue, then re-vote'],
+          answerKey: mcqs.map((q, i) => (isAr ? `سؤال ${i + 1}: ${q.answer}` : `Q${i + 1}: ${q.answer}`)),
+          printables: isAr ? ['بطاقات الحروف أ ب ج د'] : ['A B C D letter cards'],
+          assessment: isAr
+            ? 'توزيع الإجابات نفسه هو التقييم: أي خيار خاطئ يرتفع كثيرًا يحدد الخطأ الشائع الذي يجب إعادة شرحه.'
+            : 'The spread of answers IS the assessment: a frequently raised wrong option pinpoints the misconception to re-teach.',
+          extensionChallenge: isAr
+            ? 'اطلب ممن أجاب صحيحًا أن يقنع زميلًا اختار إجابة خاطئة — دون إخباره بالحل'
+            : 'Ask a correct answerer to convince a classmate who chose wrong — without stating the answer',
+          slides: [
+            {
+              slideNumber: 1,
+              type: 'intro',
+              title: isAr ? '🙋 تحقق سريع' : '🙋 Quick Check',
+              content: isAr
+                ? `${topic}\n\nالقواعد:\n• يظهر السؤال ويبدأ المؤقت\n• الجميع يفكر بصمت — لا أيدي مرفوعة\n• عند انتهاء الوقت: الكل يرفع بطاقة الحرف معًا\n• ثم نكشف الإجابة الصحيحة ونناقش`
+                : `${topic}\n\nRules:\n• The question appears and the timer starts\n• Everyone thinks silently — no hands up\n• When time ends: everyone raises a letter card together\n• Then we reveal and discuss`,
+              durationSeconds: 0,
+            },
+            ...qSlides,
+            {
+              slideNumber: qSlides.length + 2,
+              type: 'summary',
+              title: isAr ? '🎉 أحسنتم!' : '🎉 Well done!',
+              content: isAr
+                ? `راجعنا ${topic} بإجابات الصف كامل.\n\nناقش مع زميلك:\n• أي سؤال كان الأصعب؟\n• أي خطأ شائع وقعت فيه وفهمته الآن؟`
+                : `We checked ${topic} with the whole class answering.\n\nDiscuss with a partner:\n• Which question was hardest?\n• Which common error did you make and now understand?`,
+              durationSeconds: 0,
+            },
+          ],
+        };
+      }
+
+      // Non-math (or exhausted bank): open questions from the lesson's
+      // objectives — honest discussion prompts, no fabricated options.
+      const objectives = (kb?.objectives ?? []).slice(0, 3);
+      const stems = objectives.length > 0 ? objectives : [topic];
+      const openSlides = stems.map((obj, i) => ({
+        slideNumber: i + 2,
+        type: 'challenge' as const,
+        title: isAr ? `سؤال ${i + 1}` : `Question ${i + 1}`,
+        content: isAr
+          ? `اشرح بكلماتك:\n${obj}\n\nاكتب إجابتك على لوحك الصغير.`
+          : `Explain in your own words:\n${obj}\n\nWrite your answer on your mini whiteboard.`,
+        hint: isAr ? 'ابدأ بمثال ثم اشرح القاعدة' : 'Start with an example, then state the rule',
+        durationSeconds: 60,
+        teacher: {
+          expectedAnswer: obj,
+          teachingTips: isAr
+            ? 'اطلب من الجميع الكتابة، ثم اختر 2–3 ألواح مختلفة واعرضها للنقاش.'
+            : 'Everyone writes; pick 2–3 different boards and discuss them.',
+        },
+      }));
+      return {
+        activityName: isAr ? `تحقق سريع – ${topic}` : `Quick Check – ${topic}`,
+        activityType: 'quick-check',
+        grade: req.grade,
+        subject: req.subject,
+        lesson: topic,
+        duration: dur,
+        difficulty: req.difficulty,
+        groupType: 'whole-class',
+        learningObjective: isAr
+          ? `تشخيص فهم الصف في ${topic} عبر أسئلة قصيرة يجيب عنها الجميع كتابةً`
+          : `Diagnose class understanding of ${topic} through short all-write questions`,
+        materials: isAr ? ['ألواح صغيرة وأقلام', 'شاشة عرض'] : ['Mini whiteboards and markers', 'Projector'],
+        teacherPreparation: isAr
+          ? 'وزّع الألواح الصغيرة. يظهر السؤال، الجميع يكتب، ثم يرفع الجميع ألواحهم معًا.'
+          : 'Hand out mini whiteboards. Question appears, everyone writes, all boards go up together.',
+        teacherNotes: isAr
+          ? ['امسح الغرفة بعينيك عند رفع الألواح — هذا هو التقييم']
+          : ['Scan the room when boards go up — that scan is the assessment'],
+        answerKey: stems.map((obj, i) => (isAr ? `سؤال ${i + 1}: ${obj}` : `Q${i + 1}: ${obj}`)),
+        printables: [],
+        assessment: isAr
+          ? 'قارن الألواح المرفوعة بالإجابة المتوقعة وحدد من يحتاج دعمًا.'
+          : 'Compare raised boards with the expected answer; note who needs support.',
+        extensionChallenge: isAr
+          ? 'اطلب من طالب متمكن إعادة صياغة أفضل إجابة بمثال جديد'
+          : 'Ask a strong student to restate the best answer with a new example',
+        slides: [
+          {
+            slideNumber: 1,
+            type: 'intro',
+            title: isAr ? '🙋 تحقق سريع' : '🙋 Quick Check',
+            content: isAr
+              ? `${topic}\n\nالقواعد:\n• يظهر السؤال ويبدأ المؤقت\n• الجميع يكتب إجابته على لوحه\n• عند انتهاء الوقت: الكل يرفع لوحه معًا`
+              : `${topic}\n\nRules:\n• The question appears and the timer starts\n• Everyone writes on their board\n• When time ends: all boards up together`,
+            durationSeconds: 0,
+          },
+          ...openSlides,
+          {
+            slideNumber: openSlides.length + 2,
+            type: 'summary',
+            title: isAr ? '🎉 أحسنتم!' : '🎉 Well done!',
+            content: isAr
+              ? `راجعنا ${topic} بمشاركة الجميع.\nناقش: أي سؤال كان الأصعب؟`
+              : `We reviewed ${topic} with everyone participating.\nDiscuss: which question was hardest?`,
+            durationSeconds: 0,
+          },
+        ],
+      };
+    }
+
     // ── Bingo ──────────────────────────────────────────────────────────────────
     if (actType === 'bingo') {
       if (isAr) {

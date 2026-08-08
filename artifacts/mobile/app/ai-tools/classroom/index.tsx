@@ -40,6 +40,15 @@ const ACTIVITY_CARDS: ActivityCard[] = [
     accentColor: ACCENT,
   },
   {
+    id: 'quick-check', emoji: '🙋',
+    titleKey: 'activityQuickCheckTitle', descKey: 'activityQuickCheckDesc',
+    difficulty: 'Easy–Advanced', groupType: 'Whole Class', duration: '5–15 min',
+    // isFeatured must stay false: the hub renders ONE hero card
+    // (find(isFeatured)) and drops every other featured card from the list.
+    durationMin: 15, isTeam: false, isSolo: false, isNew: true, isFeatured: false,
+    accentColor: '#3B82F6',
+  },
+  {
     id: 'error-detective', emoji: '🔍',
     titleKey: 'activityErrorTitle', descKey: 'activityErrorDesc',
     difficulty: 'Medium', groupType: 'Pairs', duration: '15–25 min',
