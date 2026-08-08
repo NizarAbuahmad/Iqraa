@@ -122,7 +122,7 @@ export interface TeacherCompanion {
 
 export interface ActivitySlide {
   slideNumber: number;
-  type: 'intro' | 'challenge' | 'reveal' | 'summary' | 'bingo-call' | 'relay-problem';
+  type: 'intro' | 'challenge' | 'reveal' | 'summary' | 'bingo-call' | 'relay-problem' | 'question';
   title: string;
   content: string;
   hint?: string;
@@ -131,6 +131,16 @@ export interface ActivitySlide {
   /** 0 = no auto-timer (teacher controls pace) */
   durationSeconds: number;
   teacher?: TeacherCompanion;
+  /**
+   * Whole-class MCQ payload — only for type 'question'.
+   * Options are display-ready (already shuffled); wrong options are built
+   * from real misconception distractors so the show of hands tells the
+   * teacher WHICH mistake the class is making.
+   */
+  options?: string[];
+  correctIndex?: number;
+  /** True when the answer key is correct by construction / verifier-checked. */
+  verified?: boolean;
 }
 
 export interface ClassroomActivity {

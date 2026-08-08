@@ -15,7 +15,7 @@ import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { ClassroomActivity } from '@/services/ai/AIService';
 import { buildGeneratorContext } from '@/services/kbContext';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
-import { resolveActivityType } from './classroomRouting';
+import { ACTIVITY_CARDS, resolveActivityType } from './classroomRouting';
 
 const ACCENT = '#4F46E5';
 
@@ -30,6 +30,8 @@ export default function ClassroomBuilderScreen() {
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
   const params = useLocalSearchParams<{ activityType?: string }>();
+  // Header reflects the card the teacher picked (falls back to escape-challenge).
+  const selectedCard = ACTIVITY_CARDS.find(c => c.id === resolveActivityType(params));
   const scrollRef = useRef<ScrollView>(null);
   const topPad = insets.top + (insets.top === 0 ? 67 : 0);
 
@@ -152,9 +154,9 @@ export default function ClassroomBuilderScreen() {
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
         <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginBottom: 6 }]}>
-          <Text style={{ fontSize: 22 }}>🔐</Text>
+          <Text style={{ fontSize: 22 }}>{selectedCard?.emoji ?? '🔐'}</Text>
           <Text style={[{ color: '#fff', fontFamily: 'Inter_700Bold', fontSize: 20, textAlign: isRTL ? 'right' : 'left' }]}>
-            {t('classroomBuilderSubtitle')}
+            {selectedCard ? t(selectedCard.titleKey as any) : t('classroomBuilderSubtitle')}
           </Text>
         </View>
         <Text style={[{ color: 'rgba(255,255,255,0.8)', fontFamily: 'Inter_400Regular', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }]}>

@@ -17,6 +17,8 @@ export interface ActivityCard {
 }
 
 export const ACTIVITY_CARDS: ActivityCard[] = [
+  // escape-challenge stays first: resolveActivityType()'s fallback must match
+  // the first card (see classroomRouting.test.ts consistency check).
   {
     id: 'escape-challenge',
     emoji: '🔐',
@@ -26,6 +28,16 @@ export const ACTIVITY_CARDS: ActivityCard[] = [
     difficulty: 'Easy–Advanced',
     groupType: 'Groups',
     duration: '10–30 min',
+  },
+  {
+    id: 'quick-check',
+    emoji: '🙋',
+    titleKey: 'activityQuickCheckTitle',
+    descKey: 'activityQuickCheckDesc',
+    available: true,
+    difficulty: 'Easy–Advanced',
+    groupType: 'Whole Class',
+    duration: '5–15 min',
   },
   {
     id: 'bingo',
