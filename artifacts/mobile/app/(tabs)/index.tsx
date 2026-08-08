@@ -28,13 +28,14 @@ import {
   type HomeToolId,
 } from '@/services/homeAiTools';
 import { TopicSelector, type TopicSelectionDetail } from '@/components/ui/TopicSelector';
+import { getPickerSubjects } from '@/services/curriculumData';
 
 const NAVY = '#081B3A';
 const TEAL = '#00A99D';
 
 /** Teacher's explicitly chosen "current lesson" for the home context banner. */
 const HOME_LESSON_KEY = '@iqra_home_lesson_v1';
-type HomeLessonPick = { topic: string; unitOrder: number | null };
+type HomeLessonPick = { topic: string; unitOrder: number | null; subjectId?: string };
 
 /** Soft accent tints for hero prep tabs */
 const SUGGEST_ACCENT: Record<string, { bg: string; border: string; iconBg: string }> = {
@@ -59,9 +60,11 @@ export default function DashboardScreen() {
   const [lessonPick, setLessonPick] = useState<HomeLessonPick | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [draftTopic, setDraftTopic] = useState('');
+  const [draftSubjectId, setDraftSubjectId] = useState('mathematics');
   const [draftDetail, setDraftDetail] = useState<TopicSelectionDetail>({
     unitOrder: null, unitTitle: null, lessonTitle: null,
   });
+  const pickerSubjects = getPickerSubjects();
 
   const loadData = useCallback(async () => {
     const recent = await getRecentItems(4);
@@ -107,7 +110,13 @@ export default function DashboardScreen() {
     ?? continueCard?.focusTitle
     ?? (lang === 'ar' ? DEMO_CONTINUE.lessonTitleAr : DEMO_CONTINUE.lessonTitleEn);
 
-  const contextSubject = lang === 'ar' ? 'الرياضيات' : 'Mathematics';
+  // Banner subject follows the picked lesson's subject (defaults to math).
+  const pickedSubject = lessonPick?.subjectId
+    ? pickerSubjects.find(s => s.id === lessonPick.subjectId)
+    : undefined;
+  const contextSubject = pickedSubject
+    ? (lang === 'ar' ? pickedSubject.nameAr : pickedSubject.name)
+    : (lang === 'ar' ? 'الرياضيات' : 'Mathematics');
   const contextGrade = lang === 'ar' ? 'الصف العاشر' : 'Grade 10';
   const unitNumber = lessonPick
     ? lessonPick.unitOrder
@@ -145,6 +154,7 @@ export default function DashboardScreen() {
   const openChangeLesson = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setDraftTopic('');
+    setDraftSubjectId(lessonPick?.subjectId ?? 'mathematics');
     setDraftDetail({ unitOrder: null, unitTitle: null, lessonTitle: null });
     setPickerOpen(true);
   };
@@ -152,7 +162,7 @@ export default function DashboardScreen() {
   const confirmLessonPick = async () => {
     const topic = draftTopic.trim();
     if (!topic) return;
-    const pick: HomeLessonPick = { topic, unitOrder: draftDetail.unitOrder };
+    const pick: HomeLessonPick = { topic, unitOrder: draftDetail.unitOrder, subjectId: draftSubjectId };
     setLessonPick(pick);
     setPickerOpen(false);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -589,11 +599,59 @@ export default function DashboardScreen() {
               }}
             >
               {lang === 'ar'
-                ? 'اختر الوحدة ثم الدرس من المنهاج الأردني — الرياضيات، الصف العاشر.'
-                : 'Pick the unit, then the lesson — Jordan curriculum, Mathematics, Grade 10.'}
+                ? 'اختر المادة ثم الوحدة ثم الدرس من المنهاج الأردني — الصف العاشر.'
+                : 'Pick the subject, unit, then lesson — Jordan curriculum, Grade 10.'}
             </Text>
+
+            {/* Subject pills */}
+            <Text
+              style={{
+                color: colors.foreground,
+                fontFamily: 'Inter_500Medium',
+                fontSize: 14,
+                marginBottom: 8,
+                textAlign: isRTL ? 'right' : 'left',
+              }}
+            >
+              {lang === 'ar' ? 'المادة' : 'Subject'}
+            </Text>
+            <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+              {pickerSubjects.map(s => {
+                const active = draftSubjectId === s.id;
+                return (
+                  <Pressable
+                    key={s.id}
+                    onPress={() => {
+                      // Changing subject invalidates the unit/lesson draft.
+                      setDraftSubjectId(s.id);
+                      setDraftTopic('');
+                      setDraftDetail({ unitOrder: null, unitTitle: null, lessonTitle: null });
+                    }}
+                    style={{
+                      paddingHorizontal: 16,
+                      paddingVertical: 9,
+                      borderRadius: 20,
+                      borderWidth: 1.5,
+                      borderColor: active ? TEAL : colors.border,
+                      backgroundColor: active ? TEAL + '16' : colors.card,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: active ? TEAL : colors.mutedForeground,
+                        fontFamily: active ? 'Inter_600SemiBold' : 'Inter_400Regular',
+                        fontSize: 13.5,
+                      }}
+                    >
+                      {lang === 'ar' ? s.nameAr : s.name}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
             <TopicSelector
-              subjectId="mathematics"
+              subjectId={draftSubjectId}
               gradeId="grade-10"
               value={draftTopic}
               onChange={setDraftTopic}
