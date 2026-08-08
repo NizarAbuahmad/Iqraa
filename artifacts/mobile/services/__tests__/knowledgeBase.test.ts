@@ -29,11 +29,11 @@ import { INVESTOR_MVP_CURRICULUM } from '../curriculumData.ts';
 // fall back to a text search which may return a wrong lesson.
 const CHIP_LESSON_IDS = [
   // teacher – Arabic
-  'kbl-chem-1-1',
-  'kbl-chem-3-2',
+  'kbl-chem-s1-nccd-u1_l1',
+  'kbl-chem-s1-nccd-u3_l1',
   'kbl-math-s2-nccd-u5_l4',
   'kbl-math-s2-nccd-u8_l4',
-  'kbl-chem-1-2',
+  'kbl-chem-s1-nccd-u1_l2',
   // teacher – English (same ids, listed for documentation)
   // student – Arabic
   'kbl-math-s2-nccd-u8_l4',
@@ -65,13 +65,13 @@ describe('searchKB — Arabic prefix stripping', () => {
   // Chemistry search is hidden under investor MVP visibility — skip when locked.
   const chemIt = INVESTOR_MVP_CURRICULUM ? it.skip : it;
 
-  chemIt('"رابطة" (without ال) returns kbl-chem-3-1 (الرابطة الأيونية) as top result', () => {
+  chemIt('"رابطة" (without ال) returns a unit-3 bonding lesson as top result', () => {
     const results = searchKB('رابطة', 'ar');
     assert.ok(results.length > 0, 'searchKB returned no results for "رابطة"');
     const topId = results[0].id;
     assert.ok(
-      topId === 'kbl-chem-3-1' || topId === 'kbl-chem-3-2' || topId === 'kbl-chem-3-3',
-      `Expected a chemical-bonding lesson (kbl-chem-3-*) to rank first for "رابطة", got "${topId}"`,
+      topId.startsWith('kbl-chem-s1-nccd-u3_'),
+      `Expected a unit-3 bonding lesson (kbl-chem-s1-nccd-u3_*) to rank first for "رابطة", got "${topId}"`,
     );
   });
 
@@ -80,21 +80,24 @@ describe('searchKB — Arabic prefix stripping', () => {
     assert.ok(results.length > 0, 'searchKB returned no results for "الرابطة"');
     const topId = results[0].id;
     assert.ok(
-      topId === 'kbl-chem-3-1' || topId === 'kbl-chem-3-2' || topId === 'kbl-chem-3-3',
-      `Expected a chemical-bonding lesson first for "الرابطة", got "${topId}"`,
+      topId.startsWith('kbl-chem-s1-nccd-u3_'),
+      `Expected a unit-3 bonding lesson first for "الرابطة", got "${topId}"`,
     );
   });
 
-  chemIt('"الأيونية" matches kbl-chem-3-1 as top result', () => {
+  chemIt('"الأيونية" matches a unit-3 bonding/compounds lesson as top result', () => {
     const results = searchKB('الأيونية', 'ar');
     assert.ok(results.length > 0, 'searchKB returned no results for "الأيونية"');
-    assert.strictEqual(results[0].id, 'kbl-chem-3-1');
+    assert.ok(
+      results[0].id.startsWith('kbl-chem-s1-nccd-u3_'),
+      `Expected a unit-3 lesson for "الأيونية", got "${results[0].id}"`,
+    );
   });
 
-  chemIt('"أوفباو" (without ال) still surfaces kbl-chem-1-2 (النموذج الميكانيكي)', () => {
+  chemIt('"أوفباو" (without ال) surfaces kbl-chem-s1-nccd-u2_l1 (التوزيع الإلكتروني — per the student book)', () => {
     const results = searchKB('أوفباو', 'ar');
     assert.ok(results.length > 0, 'searchKB returned no results for "أوفباو"');
-    assert.strictEqual(results[0].id, 'kbl-chem-1-2');
+    assert.strictEqual(results[0].id, 'kbl-chem-s1-nccd-u2_l1');
   });
 
   it('"الاحتمال" returns a probability lesson first', () => {
@@ -116,11 +119,11 @@ describe('searchKB — English chip queries', () => {
   // Teacher chips: concise phrasing → expected lesson must be #1
   // Math NCCD titles are Arabic-only. Chemistry search is hidden under MVP.
   const TEACHER_CHIPS: Array<{ text: string; expectedId: string; lang?: 'ar' | 'en'; chem?: boolean }> = [
-    { text: "What is Bohr's model?",                    expectedId: 'kbl-chem-1-1', chem: true },
-    { text: 'Explain covalent bonding',                 expectedId: 'kbl-chem-3-2', chem: true },
+    { text: "What is Bohr's model?",                    expectedId: 'kbl-chem-s1-nccd-u1_l1', chem: true },
+    { text: 'Explain covalent bonding',                 expectedId: 'kbl-chem-s1-nccd-u3_l1', chem: true },
     { text: 'الاقتران العكسي',                          expectedId: 'kbl-math-s2-nccd-u5_l4', lang: 'ar' },
     { text: 'تمييز الحادثين المتنافيين',               expectedId: 'kbl-math-s2-nccd-u8_l4', lang: 'ar' },
-    { text: 'Quantum numbers explained',                expectedId: 'kbl-chem-1-2', chem: true },
+    { text: 'Quantum numbers explained',                expectedId: 'kbl-chem-s1-nccd-u1_l2', chem: true },
   ];
 
   for (const { text, expectedId, lang, chem } of TEACHER_CHIPS) {
@@ -137,11 +140,11 @@ describe('searchKB — English chip queries', () => {
   }
 
   const STUDENT_CHIPS: Array<{ text: string; expectedId: string; lang?: 'ar' | 'en'; chem?: boolean }> = [
-    { text: "Help me understand Bohr's model",               expectedId: 'kbl-chem-1-1', chem: true },
+    { text: "Help me understand Bohr's model",               expectedId: 'kbl-chem-s1-nccd-u1_l1', chem: true },
     { text: 'تمييز الحادثين المتنافيين من الحادثين غير المتنافيين', expectedId: 'kbl-math-s2-nccd-u8_l4', lang: 'ar' },
-    { text: 'Difference between sigma and pi bonds?',        expectedId: 'kbl-chem-3-2', chem: true },
+    { text: 'Difference between sigma and pi bonds?',        expectedId: 'kbl-chem-s1-nccd-u3_l1', chem: true },
     { text: 'قسمة كثيرات الحدود والاقترانات النسبية',       expectedId: 'kbl-math-s2-nccd-u5_l2', lang: 'ar' },
-    { text: 'Explain Aufbau principle simply',               expectedId: 'kbl-chem-1-2', chem: true },
+    { text: 'Explain Aufbau principle simply',               expectedId: 'kbl-chem-s1-nccd-u2_l1', chem: true },
   ];
 
   for (const { text, expectedId, lang, chem } of STUDENT_CHIPS) {

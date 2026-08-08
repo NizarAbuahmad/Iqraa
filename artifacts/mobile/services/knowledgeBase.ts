@@ -22,6 +22,10 @@ import {
   NCCD_S2_BOOK_ID,
   buildNccdSem2Catalog,
 } from './curriculumG10MathSem2.ts';
+import {
+  CHEM_S1_BOOK_ID,
+  buildChemSem1Catalog,
+} from './curriculumG10ChemSem1.ts';
 
 export interface KBBook {
   id: string;
@@ -1050,13 +1054,24 @@ const HARDCODED_KB_LESSONS: HardcodedKBLesson[] = [
 // ─────────────────────────────────────────────────────
 const _nccdSem1 = buildNccdSem1Catalog();
 const _nccdSem2 = buildNccdSem2Catalog();
+const _chemSem1 = buildChemSem1Catalog();
 const _legacyS1UnitIds = new Set(
   HARDCODED_KB_UNITS.filter(u => u.bookId === NCCD_S1_BOOK_ID).map(u => u.id),
 );
 const _legacyS2UnitIds = new Set(
   HARDCODED_KB_UNITS.filter(u => u.bookId === NCCD_S2_BOOK_ID).map(u => u.id),
 );
-const _legacyMathUnitIds = new Set([..._legacyS1UnitIds, ..._legacyS2UnitIds]);
+// Chemistry S1 hardcoded rows are superseded by the student-book JSON —
+// they mislabelled unit 2 («الجدول الدوري وخواص العناصر»; the book says
+// «التوزيع الإلكتروني والدورية») and carried no objectives.
+const _legacyChemS1UnitIds = new Set(
+  HARDCODED_KB_UNITS.filter(u => u.bookId === CHEM_S1_BOOK_ID).map(u => u.id),
+);
+const _supersededUnitIds = new Set([
+  ..._legacyS1UnitIds,
+  ..._legacyS2UnitIds,
+  ..._legacyChemS1UnitIds,
+]);
 
 function normalizeHardcodedLesson(lesson: HardcodedKBLesson): KBLesson {
   return {
@@ -1066,20 +1081,24 @@ function normalizeHardcodedLesson(lesson: HardcodedKBLesson): KBLesson {
   };
 }
 
-/** Active units: Chemistry + NCCD Math S1 + NCCD Math S2. */
+/** Active units: NCCD Chem S1 + Chem S2 (hardcoded) + NCCD Math S1/S2. */
 export const KB_UNITS: KBUnit[] = [
   ...HARDCODED_KB_UNITS.filter(
-    u => u.bookId !== NCCD_S1_BOOK_ID && u.bookId !== NCCD_S2_BOOK_ID,
+    u => u.bookId !== NCCD_S1_BOOK_ID
+      && u.bookId !== NCCD_S2_BOOK_ID
+      && u.bookId !== CHEM_S1_BOOK_ID,
   ),
+  ..._chemSem1.units,
   ..._nccdSem1.units,
   ..._nccdSem2.units,
 ];
 
-/** Active lessons: Chemistry + NCCD Math S1 + NCCD Math S2. */
+/** Active lessons: NCCD Chem S1 + Chem S2 (hardcoded) + NCCD Math S1/S2. */
 export const KB_LESSONS: KBLesson[] = [
   ...HARDCODED_KB_LESSONS
-    .filter(l => !_legacyMathUnitIds.has(l.unitId))
+    .filter(l => !_supersededUnitIds.has(l.unitId))
     .map(normalizeHardcodedLesson),
+  ..._chemSem1.lessons,
   ..._nccdSem1.lessons,
   ..._nccdSem2.lessons,
 ];

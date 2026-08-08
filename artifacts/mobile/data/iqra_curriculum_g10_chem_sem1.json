@@ -1,0 +1,202 @@
+{
+  "meta": {
+    "grade": "الصف العاشر",
+    "grade_en": "Grade 10",
+    "subject": "الكيمياء",
+    "subject_en": "Chemistry",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 1,
+    "provenance_note": "كل البيانات على مستوى الدرس (الفكرة الرئيسة، نتاجات التعلم، المفاهيم والمصطلحات مع مقابلها الإنجليزي) منسوخة من صفحات افتتاح الدروس في كتاب الطالب نفسه — لا اجتهاد ولا توليد. الفكرة العامة لكل وحدة منسوخة من صفحة افتتاح الوحدة.",
+    "source_books": {
+      "units_1_3": "كتاب الطالب - الكيمياء - الصف العاشر - الفصل الأول - الطبعة الثانية 1447هـ/2026م (الطبعة الأولى التجريبية) - ملف المستودع: attached_assets/10th_grade,_alchamy1st_semester_1785071530814.pdf"
+    },
+    "schema_version": "1.0",
+    "known_gaps": [
+      "لا يتضمن كتاب الطالب عدد الحصص لكل درس (periods = null في كل الدروس) — يحتاج دليل معلم الكيمياء للفصل الأول وهو غير متوفر في مستودع المشروع حاليًا.",
+      "أقسام «الإثراء والتوسع» (الخلايا الكهروضوئية، مجهر القوة الذرية، السبائك) و«مراجعة الوحدة» لم تُدرَج كدروس — يمكن إضافتها لاحقًا كنوع enrichment إذا احتاجها المعلمون.",
+      "التجارب الاستهلالية أُدرجت كدروس من نوع lab بلا نتاجات — الكتاب لا يذكر نتاجات لها.",
+      "العنوان الإنجليزي المطبوع في افتتاحية درس الوحدة 3 الأول يكرر عنوان الوحدة (Compounds and Chemical Bonds) — اعتُمدت ترجمة أمينة لعنوان الدرس العربي بدلًا منه (انظر title_note)."
+    ],
+    "replaces_note": "يحل هذا الملف محل بيانات الكيمياء ف1 المكتوبة يدويًا في knowledgeBase.ts، والتي كانت تسمي الوحدة الثانية «الجدول الدوري وخواص العناصر» بينما اسمها في الكتاب المعتمد «التوزيع الإلكتروني والدورية»."
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "بنية الذرة وتركيبها",
+      "title_en": "The Structure and Composition of the Atom",
+      "general_idea_ar": "يُعد تطور العلوم وأدوات البحث العلمي الأساس الذي أسهم في تطوير النظريات التي فسرت بنية الذرة، وساعد على تعرف تركيبها وخصائصها.",
+      "total_periods": null,
+      "lessons": [
+        {
+          "id": "u1_lab",
+          "order": 0,
+          "type": "lab",
+          "title_ar": "تجربة استهلالية: الطيف الذري",
+          "title_en": "Introductory Experiment: The Atomic Spectrum",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "نظرية بور لذرة الهيدروجين",
+          "title_en": "The Bohr Theory of the Hydrogen Atom",
+          "main_idea_ar": "ينبعث الضوء من ذرة الهيدروجين المثارة في صورة وحدات من الطاقة (وحدات الكم) تسمى الفوتونات.",
+          "periods": null,
+          "objectives": [
+            "أوضح المقصود بالطيف الكهرمغناطيسي.",
+            "أوضح أهم فروض نظرية بور لذرة الهيدروجين.",
+            "أحسب طاقة المستويات وفق نظرية بور."
+          ],
+          "vocabulary": [
+            { "ar": "الطيف المرئي", "en": "Visible Spectrum" },
+            { "ar": "الطيف المتصل", "en": "Continuous Spectrum" },
+            { "ar": "الطيف غير المرئي", "en": "Invisible Spectrum" },
+            { "ar": "الكم", "en": "Quantum" },
+            { "ar": "طول الموجة", "en": "Wavelength" },
+            { "ar": "التردد", "en": "Frequency" },
+            { "ar": "الذرة المثارة", "en": "Excited Atom" },
+            { "ar": "الطيف الذري", "en": "Atomic Spectrum" },
+            { "ar": "الطيف الخطي", "en": "Line Spectrum" },
+            { "ar": "مستوى الطاقة", "en": "Energy Level" }
+          ]
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "النموذج الميكانيكي الموجي للذرة",
+          "title_en": "The Wave Mechanical Model of the Atom",
+          "main_idea_ar": "يمكن وصف وجود الإلكترون حول النواة، وطاقته، وشكل الفلك فيه باستخدام أعداد الكم.",
+          "periods": null,
+          "objectives": [
+            "أستكشف الذرة ومراحل تطورها.",
+            "أستدل على الصفات المميزة للعناصر عن طريق أعداد الكم الأربعة."
+          ],
+          "vocabulary": [
+            { "ar": "الفلك", "en": "Orbital" },
+            { "ar": "أعداد الكم", "en": "Quantum Numbers" },
+            { "ar": "النظرية الميكانيكية الموجية", "en": "Wave Mechanical Theory" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "التوزيع الإلكتروني والدورية",
+      "title_en": "Electron Configuration and Periodicity",
+      "general_idea_ar": "لكل ذرة تركيب خاص بها يحدد خصائصها الفيزيائية والكيميائية.",
+      "total_periods": null,
+      "lessons": [
+        {
+          "id": "u2_lab",
+          "order": 0,
+          "type": "lab",
+          "title_ar": "تجربة استهلالية: نمذجة التوزيع الإلكتروني",
+          "title_en": "Introductory Experiment: Modeling Electron Configuration",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "التوزيع الإلكتروني للذرات",
+          "title_en": "Electronic Configuration",
+          "main_idea_ar": "تتوزع الإلكترونات في كل مستوى وفق مبادئ تحقق الاستقرار للذرات، وتحدد الصفات العامة للعناصر.",
+          "periods": null,
+          "objectives": [
+            "أكتب التوزيع الإلكتروني لمجموعة من العناصر وأيوناتها.",
+            "أحدد الصفات المميزة للعناصر بحسب توزيعها.",
+            "أوضح العلاقة بين موقع العنصر وخصائصه وصفاته."
+          ],
+          "vocabulary": [
+            { "ar": "مبدأ أوفباو", "en": "Aufbau Principle" },
+            { "ar": "قاعدة هوند", "en": "Hund's Rule" },
+            { "ar": "العناصر الممثلة", "en": "The Representative Elements" },
+            { "ar": "العناصر الانتقالية", "en": "Transition Elements" },
+            { "ar": "طاقة التأين", "en": "Ionization Energy" }
+          ]
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "الخصائص الدورية للعناصر",
+          "title_en": "Periodic Properties of the Elements",
+          "main_idea_ar": "تملك العناصر عددًا من الصفات المرتبطة بتوزيعها الإلكتروني، وموقعها في الجدول الدوري.",
+          "periods": null,
+          "objectives": [
+            "أتنبأ بدورية الصفات لعناصر الدورة والمجموعة في الجدول الدوري."
+          ],
+          "vocabulary": [
+            { "ar": "نصف القطر الذري", "en": "Atomic Radius" },
+            { "ar": "شحنة النواة الفعالة", "en": "Effective Nuclear Charge" },
+            { "ar": "طاقة التأين", "en": "Ionization Energy" },
+            { "ar": "السالبية الكهربائية", "en": "Electronegativity" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "المركبات والروابط الكيميائية",
+      "title_en": "Compounds and Chemical Bonds",
+      "general_idea_ar": "تعتمد خصائص المركبات الكيميائية على الروابط بين مكوناتها.",
+      "total_periods": null,
+      "lessons": [
+        {
+          "id": "u3_lab",
+          "order": 0,
+          "type": "lab",
+          "title_ar": "تجربة استهلالية: الروابط في المركبات التساهمية",
+          "title_en": "Introductory Experiment: Bonds in Covalent Compounds",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "الروابط الكيميائية وأنواعها",
+          "title_en": "Chemical Bonds and Their Types",
+          "title_note": "العنوان الإنجليزي المطبوع في الكتاب لهذا الدرس يكرر عنوان الوحدة (Compounds and Chemical Bonds) — اعتُمدت هنا ترجمة أمينة للعنوان العربي.",
+          "main_idea_ar": "توجد أنواع عدة للروابط الكيميائية التي تربط بين ذرات العناصر.",
+          "periods": null,
+          "objectives": [
+            "أستقصي أنواع الروابط الكيميائية، وكيفية تشكلها."
+          ],
+          "vocabulary": [
+            { "ar": "الرابطة التساهمية الأحادية", "en": "Mono Covalent Bond" },
+            { "ar": "الرابطة التساهمية الثنائية", "en": "Double Covalent Bond" },
+            { "ar": "الرابطة التساهمية الثلاثية", "en": "Triple Covalent Bond" },
+            { "ar": "الرابطة الفلزية", "en": "Metallic Bond" },
+            { "ar": "بحر الإلكترونات", "en": "Sea of Electrons" },
+            { "ar": "تركيب لويس", "en": "Lewis Structure" }
+          ]
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "الصيغ الكيميائية وخصائص المركبات",
+          "title_en": "Chemical Formulas and Compounds Properties",
+          "main_idea_ar": "للمركبات الكيميائية خصائص محددة تختلف باختلاف نوع الروابط فيها.",
+          "periods": null,
+          "objectives": [
+            "أذكر خصائص بعض المركبات الكيميائية عن طريق نوع الرابطة فيها.",
+            "أعبر عن بعض المركبات بالصيغ الكيميائية."
+          ],
+          "vocabulary": [
+            { "ar": "المركبات الأيونية", "en": "Ionic Compounds" },
+            { "ar": "المركبات التساهمية (الجزيئية)", "en": "Covalent (Molecular) Compounds" }
+          ]
+        }
+      ]
+    }
+  ]
+}

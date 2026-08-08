@@ -45,8 +45,8 @@ function fixture(id: string): KBLesson {
 }
 
 // Chemistry lessons (book: kb-chem-10-s1, subjectId: 'chemistry')
-const CHEM_A = fixture('kbl-chem-1-1'); // Bohr's Model
-const CHEM_B = fixture('kbl-chem-3-2'); // Covalent Bonding
+const CHEM_A = fixture('kbl-chem-s1-nccd-u1_l1'); // Bohr's Model
+const CHEM_B = fixture('kbl-chem-s1-nccd-u3_l1'); // Chemical bonds and their types
 
 // Mathematics lessons (book: kb-math-10-s2 NCCD, subjectId: 'mathematics')
 const MATH_A = fixture('kbl-math-s2-nccd-u5_l1'); // اقترانات كثيرات الحدود
