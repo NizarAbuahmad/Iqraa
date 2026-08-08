@@ -389,6 +389,23 @@ export default function DashboardScreen() {
             >
               {contextUnit}
             </Text>
+            {/* Confirms attachments belong to THIS lesson — media is keyed by
+                lesson, so a clip added under a different lesson is invisible
+                here, which otherwise looks like "nothing happened". */}
+            {media.length > 0 ? (
+              <View
+                style={[
+                  styles.mediaBadge,
+                  { flexDirection: isRTL ? 'row-reverse' : 'row', borderColor: TEAL + '55', backgroundColor: TEAL + '14' },
+                ]}
+              >
+                <Ionicons name="albums-outline" size={13} color={TEAL} />
+                <Text style={{ color: TEAL, fontFamily: 'Inter_600SemiBold', fontSize: 11.5 }}>
+                  {t('mediaAttachedCount', media.length)}
+                </Text>
+              </View>
+            ) : null}
+
             <View style={[styles.contextActions, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               {/* Front door to Class Mode: prep → projector in one tap. */}
               <Pressable
@@ -998,6 +1015,16 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
   },
   contextActions: { alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  mediaBadge: {
+    alignSelf: 'flex-start',
+    alignItems: 'center',
+    gap: 5,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    marginBottom: 8,
+  },
   mediaRow: {
     alignItems: 'center',
     gap: 10,
