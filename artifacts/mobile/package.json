@@ -10,7 +10,7 @@
     "serve": "node server/serve.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "cqv:scaffold": "node ./scripts/cqv-scaffold.mjs",
-    "test": "node --experimental-strip-types --test services/__tests__/knowledgeBase.test.ts services/__tests__/kbContext.test.ts services/__tests__/kbAmbiguity.test.ts services/__tests__/presentation.test.ts services/__tests__/generators.test.ts services/__tests__/quickCheck.test.ts services/__tests__/classroomRouting.test.ts services/__tests__/validation.test.ts services/__tests__/lessonFlowRunner.test.ts services/__tests__/documentGrounding.test.ts services/__tests__/mathSupportResources.test.ts"
+    "test": "node --experimental-strip-types --test services/__tests__/knowledgeBase.test.ts services/__tests__/kbContext.test.ts services/__tests__/kbAmbiguity.test.ts services/__tests__/presentation.test.ts services/__tests__/generators.test.ts services/__tests__/quickCheck.test.ts services/__tests__/classDeck.test.ts services/__tests__/classroomRouting.test.ts services/__tests__/validation.test.ts services/__tests__/lessonFlowRunner.test.ts services/__tests__/documentGrounding.test.ts services/__tests__/mathSupportResources.test.ts"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
