@@ -8,6 +8,7 @@ import {
   setOnRefreshFailed,
   getApiBaseUrl,
 } from '@/services/apiClient';
+import { setActiveLessonContextUser } from '@/services/lessonContext';
 
 export type UserRole = 'teacher' | 'school_admin' | 'system_admin';
 
@@ -81,6 +82,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const redirectToLogin = useRef<(() => void) | null>(null);
+
+  // Scope the lesson-context storage to the signed-in user. Covers every
+  // transition (login, register, session restore, logout) in one place —
+  // without it a second account on the same device inherited the previous
+  // teacher's lesson pick and skipped first-run onboarding.
+  useEffect(() => {
+    setActiveLessonContextUser(user?.id ?? null);
+  }, [user?.id]);
 
   // Register redirect callback so token-refresh failures can navigate to login
   const setRedirectToLogin = useCallback((fn: () => void) => {
