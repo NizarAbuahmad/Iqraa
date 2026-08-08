@@ -37,6 +37,8 @@ import {
   searchKBRanked,
   searchKBSemantic,
 } from '@/services/knowledgeBase';
+import { getPickerSubjects } from '@/services/curriculumData';
+import { loadLessonPick, saveLessonPick } from '@/services/lessonContext';
 import {
   buildResponse,
   deduplicateByUnit,
@@ -182,9 +184,15 @@ type EphemeralSuggestion = {
 };
 
 // ─── Teaching-context subject options (investor MVP: Grade 10 Math only) ─────
-const CONTEXT_SUBJECTS = [
-  { subjectId: 'mathematics', gradeId: 'grade-10', labelAr: 'رياضيات', labelEn: 'Math' },
-];
+// All MVP subjects with KB content — kept in lockstep with the home picker
+// (was hardcoded to mathematics only, which is why the chat's change-lesson
+// sheet showed a single subject while home showed three).
+const CONTEXT_SUBJECTS = getPickerSubjects().map(s => ({
+  subjectId: s.id,
+  gradeId: 'grade-10',
+  labelAr: s.nameAr,
+  labelEn: s.name,
+}));
 
 // ─── Suggested questions per mode/language ───────────────────────────────────
 interface Suggestion {
@@ -234,7 +242,7 @@ const SUGGESTIONS: Record<Mode, Record<'ar' | 'en', Suggestion[]>> = {
 
 // ─── Context Banner ───────────────────────────────────────────────────────────
 function ContextBanner({
-  colors, isRTL, lang, t, onContextChange, onAsk, hidePill, externalOpen, onExternalOpenChange,
+  colors, isRTL, lang, t, onContextChange, onAsk, hidePill, externalOpen, onExternalOpenChange, onGlobalPick,
 }: {
   colors: any; isRTL: boolean; lang: 'ar' | 'en';
   t: (k: any) => string;
@@ -244,6 +252,8 @@ function ContextBanner({
   hidePill?: boolean;
   externalOpen?: boolean;
   onExternalOpenChange?: (open: boolean) => void;
+  /** Confirmed picks propagate to the app-wide current-lesson context. */
+  onGlobalPick?: (pick: { topic: string; subjectId: string }) => void;
 }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [subjIdx, setSubjIdx] = useState(0);
@@ -278,6 +288,7 @@ function ContextBanner({
     onContextChange(draftTopic);
     setOpen(false);
     if (draftTopic.trim()) {
+      onGlobalPick?.({ topic: draftTopic.trim(), subjectId: subj.subjectId });
       onAsk(draftTopic.trim());
     }
   };
@@ -820,6 +831,22 @@ export default function IqraScreen() {
     ]);
   }, [lang, t]);
 
+  // Adopt the app-wide "current lesson" (picked on home) as the chat's
+  // starting context — overriding the demo seed above, so home, tools and
+  // chat all agree on one lesson. Runs after the seed effect (declaration
+  // order) and again on language change, which re-seeds.
+  useEffect(() => {
+    void loadLessonPick().then(pick => {
+      if (!pick?.topic) return;
+      setTeachingCtx(prev => (prev.trim() ? prev : pick.topic));
+      const hits = searchKBSemantic(pick.topic, lang as 'ar' | 'en');
+      if (hits[0]) {
+        setSessionMemory(prev => pinLesson(prev, hits[0]!, 'soft'));
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang]);
+
   useEffect(() => {
     setSessionDocs(getSessionDocuments());
     return subscribeSessionDocuments(() => setSessionDocs(getSessionDocuments()));
@@ -919,6 +946,13 @@ export default function IqraScreen() {
 
       thinkingRef.current = true;
       setIsThinking(true);
+
+      // Demo-mode replies are near-instant, which makes the thinking bubble
+      // flash imperceptibly. A short dwell keeps the "اقرأ يكتب…" moment
+      // visible; real AI latency will replace this entirely.
+      if (DEMO_MODE) {
+        await new Promise(resolve => setTimeout(resolve, 750));
+      }
 
       // 0. Intent Router — BEFORE curriculum context / Teaching Assistant.
       //    Greetings & small talk must never trigger lesson generation.
@@ -1633,6 +1667,11 @@ export default function IqraScreen() {
           hidePill
           externalOpen={changeLessonOpen}
           onExternalOpenChange={setChangeLessonOpen}
+          onGlobalPick={(pick) => {
+            // Changing the lesson in chat updates the app-wide context too —
+            // home and the tools hub follow (one source of truth).
+            void saveLessonPick({ topic: pick.topic, unitOrder: null, subjectId: pick.subjectId });
+          }}
           onContextChange={(ctx) => {
             setTeachingCtx(ctx);
             if (!ctx.trim()) return;

@@ -9,6 +9,8 @@ import { useLanguage } from '@/context/LanguageContext';
 import { DEMO_MODE } from '@/services/ai/demoMode';
 import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
 import { openGeogebraGraphing } from '@/services/geogebra';
+import { getPickerSubjects } from '@/services/curriculumData';
+import { loadLessonPick } from '@/services/lessonContext';
 
 interface ToolDef {
   id: string;
@@ -154,7 +156,20 @@ async function runToolAction(tool: ToolDef) {
     return;
   }
   if (tool.route) {
-    router.push({ pathname: tool.route as any, params: tool.routeParams });
+    // Prefill from the global "current lesson" so a tool opened from the hub
+    // already knows the teacher's context (set on home / in chat). Explicit
+    // routeParams always win; the teacher can still change it in the tool —
+    // that change stays local to the material being generated.
+    const pick = await loadLessonPick();
+    const prefill: Record<string, string> = {};
+    if (pick?.topic && !tool.routeParams?.topic) {
+      prefill.topic = pick.topic;
+      if (pick.subjectId) {
+        const idx = getPickerSubjects().findIndex(s => s.id === pick.subjectId);
+        if (idx >= 0) prefill.subjectIdx = String(idx);
+      }
+    }
+    router.push({ pathname: tool.route as any, params: { ...prefill, ...tool.routeParams } });
   }
 }
 

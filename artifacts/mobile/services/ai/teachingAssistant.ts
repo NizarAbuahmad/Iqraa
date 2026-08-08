@@ -5,6 +5,7 @@
 
 import type { KBLesson } from '../knowledgeBase';
 import { getBookForLesson, getUnitForLesson } from '../knowledgeBase';
+import { SUBJECTS } from '../curriculumData';
 import {
   formatSupportResourcesBlock,
   searchSupportResources,
@@ -357,13 +358,16 @@ export function resolveCurriculumContext(lesson: KBLesson): CurriculumContext {
   const book = getBookForLesson(lesson);
   const unit = getUnitForLesson(lesson);
   const semester = (book?.semester === 2 ? 2 : 1) as 1 | 2;
+  // Subject follows the lesson's book — this used to hardcode الرياضيات,
+  // which stamped chemistry/finlit replies with the wrong subject line.
+  const subject = book ? SUBJECTS.find(s => s.id === book.subjectId) : undefined;
   return {
     curriculumAr: 'المنهاج الأردني',
     curriculumEn: 'Jordan Curriculum',
     gradeAr: 'الصف العاشر',
     gradeEn: 'Grade 10',
-    subjectAr: 'الرياضيات',
-    subjectEn: 'Mathematics',
+    subjectAr: subject?.nameAr ?? 'الرياضيات',
+    subjectEn: subject?.name ?? 'Mathematics',
     semester,
     semesterLabelAr: semester === 1 ? 'الفصل الأول' : 'الفصل الثاني',
     semesterLabelEn: semester === 1 ? 'Semester 1' : 'Semester 2',
