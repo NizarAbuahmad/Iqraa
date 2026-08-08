@@ -7,13 +7,28 @@
  * the chat's initial teaching context. Rule of the design: tools PREFILL
  * from this context but never lock to it — a change made inside a single
  * generator stays local to that material.
+ *
+ * Storage is scoped PER USER: AuthContext calls setActiveLessonContextUser
+ * on login/register/restore/logout. Without the scoping, a second account
+ * on the same device inherited the previous teacher's lesson and never saw
+ * the first-run onboarding picker.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export const HOME_LESSON_KEY = '@iqra_home_lesson_v1';
+const HOME_LESSON_KEY = '@iqra_home_lesson_v1';
+const ONBOARDED_KEY = '@iqra_onboarded_v1';
 
-/** Set once the teacher has seen the first-run lesson prompt. */
-export const ONBOARDED_KEY = '@iqra_onboarded_v1';
+/** Current user id — null while signed out. */
+let activeUserId: string | null = null;
+
+/** Called by AuthContext whenever the signed-in user changes. */
+export function setActiveLessonContextUser(userId: string | null): void {
+  activeUserId = userId;
+}
+
+function scopedKey(base: string): string {
+  return activeUserId ? `${base}:${activeUserId}` : base;
+}
 
 export type HomeLessonPick = {
   topic: string;
@@ -23,7 +38,7 @@ export type HomeLessonPick = {
 
 export async function loadLessonPick(): Promise<HomeLessonPick | null> {
   try {
-    const raw = await AsyncStorage.getItem(HOME_LESSON_KEY);
+    const raw = await AsyncStorage.getItem(scopedKey(HOME_LESSON_KEY));
     return raw ? (JSON.parse(raw) as HomeLessonPick) : null;
   } catch {
     return null;
@@ -32,7 +47,7 @@ export async function loadLessonPick(): Promise<HomeLessonPick | null> {
 
 export async function saveLessonPick(pick: HomeLessonPick): Promise<void> {
   try {
-    await AsyncStorage.setItem(HOME_LESSON_KEY, JSON.stringify(pick));
+    await AsyncStorage.setItem(scopedKey(HOME_LESSON_KEY), JSON.stringify(pick));
   } catch {
     // Non-fatal: the pick still applies for the current session.
   }
@@ -40,7 +55,7 @@ export async function saveLessonPick(pick: HomeLessonPick): Promise<void> {
 
 export async function wasOnboarded(): Promise<boolean> {
   try {
-    return (await AsyncStorage.getItem(ONBOARDED_KEY)) === '1';
+    return (await AsyncStorage.getItem(scopedKey(ONBOARDED_KEY))) === '1';
   } catch {
     return true; // fail closed: never nag if storage is broken
   }
@@ -48,7 +63,7 @@ export async function wasOnboarded(): Promise<boolean> {
 
 export async function markOnboarded(): Promise<void> {
   try {
-    await AsyncStorage.setItem(ONBOARDED_KEY, '1');
+    await AsyncStorage.setItem(scopedKey(ONBOARDED_KEY), '1');
   } catch {
     // ignore
   }

@@ -81,13 +81,16 @@ export default function DashboardScreen() {
     setLessonPick(pick);
     // First-run onboarding: a brand-new teacher lands on home with no lesson
     // chosen — open the picker once so the whole app starts contextualised.
-    if (!pick && !(await wasOnboarded())) {
+    // Gated on user so it runs only after the per-user storage scope is set
+    // (user?.id in the deps re-runs this when auth lands).
+    if (user && !pick && !(await wasOnboarded())) {
       await markOnboarded();
       setDraftTopic('');
       setDraftDetail({ unitOrder: null, unitTitle: null, lessonTitle: null });
       setPickerOpen(true);
     }
-  }, [lang]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang, user?.id]);
 
   useFocusEffect(
     useCallback(() => { loadData(); }, [loadData]),
