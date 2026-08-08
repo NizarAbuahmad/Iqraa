@@ -9,6 +9,8 @@ import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { getUnitPriorKnowledge, resolveGeneratorGrounding } from '@/services/kbContext';
 import { WorksheetOutput } from '@/services/ai/AIService';
+import { buildDeckFromWorksheet } from '@/services/classDeck';
+import { setPendingClassroomActivity } from '@/services/classroomStore';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
 } from '@/services/curriculumData';
@@ -404,6 +406,38 @@ export default function WorksheetScreen() {
             {result.instructions}
           </Text>
 
+          {/* Class Mode: project the same worksheet the class is holding.
+              Students answer from their seats (letter cards / whiteboards);
+              the teacher reveals each answer on screen. */}
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en');
+              setPendingClassroomActivity(
+                buildDeckFromWorksheet(result, topic.trim(), lang === 'ar', {
+                  lesson: grounding.lesson,
+                  verified: false,
+                }),
+              );
+              router.push('/ai-tools/classroom/presentation' as any);
+            }}
+            style={({ pressed }) => [
+              styles.presentBtn,
+              {
+                backgroundColor: ACCENT,
+                borderRadius: colors.radius,
+                flexDirection: isRTL ? 'row-reverse' : 'row',
+                opacity: pressed ? 0.88 : 1,
+              },
+            ]}
+            accessibilityRole="button"
+          >
+            <Ionicons name="tv-outline" size={18} color="#fff" />
+            <Text style={{ color: '#fff', fontFamily: 'Inter_700Bold', fontSize: 14 }}>
+              {t('presentOnScreen')}
+            </Text>
+          </Pressable>
+
           {result.sections.map(sec => (
             <View key={sec.title} style={{ marginBottom: 20 }}>
               <Text style={[styles.secTitle, { color: colors.foreground, fontFamily: 'Inter_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>{sec.title}</Text>
@@ -583,6 +617,7 @@ const styles = StyleSheet.create({
   loadBox: { alignItems: 'center', gap: 12, padding: 20, borderWidth: 1, marginBottom: 16 },
   successBanner: { alignItems: 'center', gap: 10, padding: 14, borderWidth: 1, marginBottom: 12 },
   secTitle: { fontSize: 14, marginBottom: 10 },
+  presentBtn: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, marginBottom: 16 },
   qCard: { padding: 14, borderWidth: 1, gap: 10, marginBottom: 8 },
   qNum: { fontSize: 14, width: 20 },
   optionRow: { alignItems: 'center', gap: 8, marginTop: 6 },

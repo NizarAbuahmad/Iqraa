@@ -7,8 +7,10 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
-import { buildGeneratorContext } from '@/services/kbContext';
+import { buildGeneratorContext, resolveGeneratorGrounding } from '@/services/kbContext';
 import { QuizOutput } from '@/services/ai/AIService';
+import { buildDeckFromQuiz } from '@/services/classDeck';
+import { setPendingClassroomActivity } from '@/services/classroomStore';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
 } from '@/services/curriculumData';
@@ -334,6 +336,38 @@ export default function QuizScreen() {
             </View>
           </View>
 
+          {/* Class Mode: project this quiz as whole-class response slides.
+              Phones are banned in class, so students answer from their seats
+              with printed أ ب ج د cards and the teacher reveals on screen. */}
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en');
+              setPendingClassroomActivity(
+                buildDeckFromQuiz(result, topic.trim(), lang === 'ar', {
+                  lesson: grounding.lesson,
+                  verified: false,
+                }),
+              );
+              router.push('/ai-tools/classroom/presentation' as any);
+            }}
+            style={({ pressed }) => [
+              styles.presentBtn,
+              {
+                backgroundColor: ACCENT,
+                borderRadius: colors.radius,
+                flexDirection: isRTL ? 'row-reverse' : 'row',
+                opacity: pressed ? 0.88 : 1,
+              },
+            ]}
+            accessibilityRole="button"
+          >
+            <Ionicons name="tv-outline" size={18} color="#fff" />
+            <Text style={{ color: '#fff', fontFamily: 'Inter_700Bold', fontSize: 14 }}>
+              {t('presentOnScreen')}
+            </Text>
+          </Pressable>
+
           <Pressable
             onPress={() => setShowAnswers(v => !v)}
             style={[styles.toggleBtn, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
@@ -541,6 +575,7 @@ const styles = StyleSheet.create({
   quizTitle: { fontSize: 16, marginBottom: 10 },
   quizMeta: { gap: 8, flexWrap: 'wrap' },
   toggleBtn: { alignItems: 'center', gap: 6, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 16 },
+  presentBtn: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, marginBottom: 12 },
   qCard: { borderWidth: 1, padding: 16, marginBottom: 12 },
   qTop: { alignItems: 'center', gap: 8, marginBottom: 10 },
   qNumCircle: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },

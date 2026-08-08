@@ -36,6 +36,10 @@ import {
   wasOnboarded,
   type HomeLessonPick,
 } from '@/services/lessonContext';
+import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
+import { resolveGeneratorGrounding } from '@/services/kbContext';
+import { objectivesSlide } from '@/services/classDeck';
+import { setPendingClassroomActivity } from '@/services/classroomStore';
 
 const NAVY = '#081B3A';
 const TEAL = '#00A99D';
@@ -179,6 +183,40 @@ export default function DashboardScreen() {
     await saveLessonPick(pick);
   };
 
+  /**
+   * Class Mode entry: build a deck for the current lesson straight from the
+   * curriculum book (objectives + verified Quick Check questions) and go to
+   * the projector screen. No prep required — the teacher can start cold.
+   */
+  const startClass = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const topic = lessonTopic.trim();
+    const grounding = resolveGeneratorGrounding(topic, lang as 'ar' | 'en');
+    const subjectName = pickedSubject?.name ?? 'Mathematics';
+    const activity = await aiService.generateClassroomActivity({
+      grade: '10',
+      subject: subjectName,
+      topic,
+      activityType: 'quick-check',
+      duration: 15,
+      difficulty: 'standard',
+      groupType: 'whole-class',
+      teachingGoal: 'warm-up',
+      language: lang === 'ar' ? 'arabic' : 'english',
+    });
+    // Lead with the lesson's real النتاجات when the book has them.
+    const objSlide = objectivesSlide(grounding.lesson, topic, lang === 'ar', 2);
+    const slides = objSlide
+      ? [
+          activity.slides[0]!,
+          objSlide,
+          ...activity.slides.slice(1).map((s, i) => ({ ...s, slideNumber: i + 3 })),
+        ]
+      : activity.slides;
+    setPendingClassroomActivity({ ...activity, slides });
+    router.push('/ai-tools/classroom/presentation' as any);
+  };
+
   const openContinueTeaching = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (continueItem) {
@@ -279,23 +317,42 @@ export default function DashboardScreen() {
             >
               {contextUnit}
             </Text>
-            <Pressable
-              onPress={openChangeLesson}
-              style={({ pressed }) => [
-                styles.changeLessonBtn,
-                {
-                  opacity: pressed ? 0.88 : 1,
-                  flexDirection: isRTL ? 'row-reverse' : 'row',
-                },
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel={t('changeLesson')}
-            >
-              <Ionicons name="swap-horizontal" size={15} color="#fff" />
-              <Text style={styles.changeLessonBtnText}>
-                {t('changeLesson')}
-              </Text>
-            </Pressable>
+            <View style={[styles.contextActions, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              {/* Front door to Class Mode: prep → projector in one tap. */}
+              <Pressable
+                onPress={startClass}
+                style={({ pressed }) => [
+                  styles.startClassBtn,
+                  {
+                    opacity: pressed ? 0.88 : 1,
+                    flexDirection: isRTL ? 'row-reverse' : 'row',
+                  },
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={t('startClass')}
+              >
+                <Ionicons name="tv" size={15} color="#fff" />
+                <Text style={styles.startClassBtnText}>{t('startClass')}</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={openChangeLesson}
+                style={({ pressed }) => [
+                  styles.changeLessonBtn,
+                  {
+                    opacity: pressed ? 0.88 : 1,
+                    flexDirection: isRTL ? 'row-reverse' : 'row',
+                  },
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={t('changeLesson')}
+              >
+                <Ionicons name="swap-horizontal" size={15} color="#fff" />
+                <Text style={styles.changeLessonBtnText}>
+                  {t('changeLesson')}
+                </Text>
+              </Pressable>
+            </View>
           </View>
         </View>
       </View>
@@ -735,6 +792,21 @@ const styles = StyleSheet.create({
   changeLessonBtnText: {
     color: '#fff',
     fontFamily: 'Inter_600SemiBold',
+    fontSize: 12.5,
+  },
+  contextActions: { alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  startClassBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#B45309',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+  },
+  startClassBtnText: {
+    color: '#fff',
+    fontFamily: 'Inter_700Bold',
     fontSize: 12.5,
   },
   pickerHeader: {
