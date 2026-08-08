@@ -29,13 +29,16 @@ import {
 } from '@/services/homeAiTools';
 import { TopicSelector, type TopicSelectionDetail } from '@/components/ui/TopicSelector';
 import { getPickerSubjects } from '@/services/curriculumData';
+import {
+  loadLessonPick,
+  markOnboarded,
+  saveLessonPick,
+  wasOnboarded,
+  type HomeLessonPick,
+} from '@/services/lessonContext';
 
 const NAVY = '#081B3A';
 const TEAL = '#00A99D';
-
-/** Teacher's explicitly chosen "current lesson" for the home context banner. */
-const HOME_LESSON_KEY = '@iqra_home_lesson_v1';
-type HomeLessonPick = { topic: string; unitOrder: number | null; subjectId?: string };
 
 /** Soft accent tints for hero prep tabs */
 const SUGGEST_ACCENT: Record<string, { bg: string; border: string; iconBg: string }> = {
@@ -74,11 +77,15 @@ export default function DashboardScreen() {
       ?? recent[0]
       ?? null;
     setContinueItem(preferred);
-    try {
-      const raw = await AsyncStorage.getItem(HOME_LESSON_KEY);
-      setLessonPick(raw ? (JSON.parse(raw) as HomeLessonPick) : null);
-    } catch {
-      setLessonPick(null);
+    const pick = await loadLessonPick();
+    setLessonPick(pick);
+    // First-run onboarding: a brand-new teacher lands on home with no lesson
+    // chosen — open the picker once so the whole app starts contextualised.
+    if (!pick && !(await wasOnboarded())) {
+      await markOnboarded();
+      setDraftTopic('');
+      setDraftDetail({ unitOrder: null, unitTitle: null, lessonTitle: null });
+      setPickerOpen(true);
     }
   }, [lang]);
 
@@ -166,11 +173,7 @@ export default function DashboardScreen() {
     setLessonPick(pick);
     setPickerOpen(false);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    try {
-      await AsyncStorage.setItem(HOME_LESSON_KEY, JSON.stringify(pick));
-    } catch {
-      // Non-fatal: the pick still applies for this session.
-    }
+    await saveLessonPick(pick);
   };
 
   const openContinueTeaching = () => {
