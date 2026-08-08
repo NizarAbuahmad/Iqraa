@@ -465,6 +465,41 @@ export default function PresentationScreen() {
     }
   };
 
+  // Keyboard + presentation-clicker control (web/projector). A teacher runs
+  // the class from the front of the room, not from the laptop: clickers send
+  // PageDown/PageUp or arrows, and Space is the universal "advance".
+  // Arrow direction follows the on-screen buttons, which mirror in RTL.
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+    const onKey = (e: KeyboardEvent) => {
+      const forwardKeys = ['PageDown', ' ', 'Spacebar', 'Enter', isRTL ? 'ArrowLeft' : 'ArrowRight'];
+      const backKeys = ['PageUp', isRTL ? 'ArrowRight' : 'ArrowLeft'];
+      if (forwardKeys.includes(e.key)) {
+        e.preventDefault();
+        setSlideIndexSafely(1);
+      } else if (backKeys.includes(e.key)) {
+        e.preventDefault();
+        setSlideIndexSafely(-1);
+      } else if (e.key === 'Escape') {
+        router.back();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+
+  /** Step relative to the CURRENT slide (read from state at call time). */
+  const setSlideIndexSafely = (delta: number) => {
+    setSlideIndex(current => {
+      const next = current + delta;
+      if (!activity || next < 0 || next >= activity.slides.length) return current;
+      initSlide(activity.slides[next]!);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      if (activity.slides[next]!.type === 'summary') setTimeout(showCelebration, 350);
+      return next;
+    });
+  };
+
   const restartTimer = () => {
     if (!activity) return;
     const s = activity.slides[slideIndex];
@@ -505,19 +540,28 @@ export default function PresentationScreen() {
           <Ionicons name="close" size={22} color={TEXT_MUTED} />
         </Pressable>
 
-        {/* Progress dots */}
+        {/* Progress dots — each wrapped in a real touch target (the bare 6px
+            dots were unhittable, which stranded teachers on slide 1). */}
         <View style={[styles.progressRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           {activity.slides.map((s, i) => (
-            <Pressable key={i} onPress={() => goToSlide(i)}>
+            <Pressable key={i} onPress={() => goToSlide(i)} hitSlop={8} style={styles.dotTarget}>
               <View style={[
                 styles.dot,
                 {
-                  width: i === slideIndex ? 20 : 6,
+                  width: i === slideIndex ? 20 : 8,
+                  height: i === slideIndex ? 8 : 8,
                   backgroundColor: i === slideIndex ? slideTypeAccent(s.type) : (i < slideIndex ? BORDER + 'aa' : BORDER),
                 },
               ]} />
             </Pressable>
           ))}
+        </View>
+
+        {/* Position + what this slide is — orientation at a glance */}
+        <View style={styles.counterBox}>
+          <Text style={[styles.counterText, { fontFamily: 'Inter_700Bold' }]}>
+            {slideIndex + 1}/{totalSlides}
+          </Text>
         </View>
 
         {/* Timer */}
@@ -613,13 +657,19 @@ export default function PresentationScreen() {
 
       {/* ── Bottom Controls ── */}
       <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 10, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        {/* Prev */}
+        {/* Prev — labelled: an unlabelled chevron in an RTL layout is a
+            coin-flip for which way is "forward". */}
         <Pressable
           onPress={() => goToSlide(slideIndex - 1)}
           disabled={isFirst}
-          style={[styles.navBtn, { opacity: isFirst ? 0.3 : 1 }]}
+          style={[styles.navBtnWide, { opacity: isFirst ? 0.3 : 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+          accessibilityRole="button"
+          accessibilityLabel={t('prevSlide')}
         >
-          <Ionicons name={isRTL ? 'chevron-forward' : 'chevron-back'} size={22} color={TEXT_PRIMARY} />
+          <Ionicons name={isRTL ? 'chevron-forward' : 'chevron-back'} size={20} color={TEXT_PRIMARY} />
+          <Text style={[styles.navLabel, { color: TEXT_PRIMARY, fontFamily: 'Inter_500Medium' }]}>
+            {t('prevSlide')}
+          </Text>
         </Pressable>
 
         {/* Action row */}
@@ -642,9 +692,21 @@ export default function PresentationScreen() {
         <Pressable
           onPress={() => goToSlide(slideIndex + 1)}
           disabled={isLast}
-          style={[styles.navBtn, { opacity: isLast ? 0.3 : 1, backgroundColor: isLast ? 'transparent' : ACCENT }]}
+          style={[
+            styles.navBtnWide,
+            {
+              opacity: isLast ? 0.3 : 1,
+              backgroundColor: isLast ? 'transparent' : ACCENT,
+              flexDirection: isRTL ? 'row-reverse' : 'row',
+            },
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel={t('nextSlide')}
         >
-          <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={22} color={isLast ? TEXT_MUTED : '#fff'} />
+          <Text style={[styles.navLabel, { color: isLast ? TEXT_MUTED : '#fff', fontFamily: 'Inter_700Bold' }]}>
+            {t('nextSlide')}
+          </Text>
+          <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color={isLast ? TEXT_MUTED : '#fff'} />
         </Pressable>
       </View>
 
@@ -699,6 +761,11 @@ const styles = StyleSheet.create({
   revealText: { fontSize: 14, color: TEXT_PRIMARY, lineHeight: 22 },
   bottomBar: { alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: BORDER, backgroundColor: CARD_BG },
   navBtn: { width: 46, height: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 23 },
+  navBtnWide: { alignItems: 'center', justifyContent: 'center', gap: 6, minWidth: 110, height: 46, borderRadius: 23, paddingHorizontal: 16 },
+  navLabel: { fontSize: 14 },
+  dotTarget: { paddingVertical: 10, paddingHorizontal: 2, justifyContent: 'center' },
+  counterBox: { minWidth: 54, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, backgroundColor: CARD_BG, borderWidth: 1, borderColor: BORDER },
+  counterText: { fontSize: 13, color: TEXT_PRIMARY },
   actionRow: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, paddingHorizontal: 10 },
   actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: BORDER },
   actionLabel: { fontSize: 12, color: TEXT_MUTED },
