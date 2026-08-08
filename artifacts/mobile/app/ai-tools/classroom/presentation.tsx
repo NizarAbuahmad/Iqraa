@@ -1,6 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
+  Image,
+  Linking,
+  Platform,
   Pressable,
   ScrollView,
   StatusBar,
@@ -16,6 +19,22 @@ import { useLanguage } from '@/context/LanguageContext';
 import { ActivitySlide, ClassroomActivity } from '@/services/ai/AIService';
 import { getPendingClassroomActivity, clearClassroomActivity } from '@/services/classroomStore';
 import { timerColor } from '@/services/presentationUtils';
+import { geogebraCommandUrl, openGeogebraWithCommands } from '@/services/geogebra';
+import { youtubeEmbedUrl } from '@/services/classMedia';
+
+/** Open a media URL outside the app (native fallback — no WebView dep). */
+async function openExternalMedia(url: string): Promise<void> {
+  if (!url) return;
+  try {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.open(url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    await Linking.openURL(url);
+  } catch {
+    // ignore — nothing to project
+  }
+}
 
 // ─── Color constants ──────────────────────────────────────────────────────────
 const BG = '#0D0D14';
@@ -35,7 +54,92 @@ function slideTypeAccent(type: ActivitySlide['type']): string {
   if (type === 'bingo-call') return '#A855F7';
   if (type === 'relay-problem') return '#F43F5E';
   if (type === 'question') return '#3B82F6';
+  if (type === 'graph') return '#0EA5E9';
+  if (type === 'media') return '#B45309';
   return '#8B8CA4';
+}
+
+// ─── Graph slide (GeoGebra) ───────────────────────────────────────────────────
+// On web (the projector case) the calculator is embedded so the class sees the
+// curve inside the deck; on native there's no WebView dependency, so we open
+// GeoGebra full-screen instead.
+function GraphView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; t: (k: any) => string }) {
+  const commands = slide.graphCommands ?? [];
+  const url = geogebraCommandUrl(commands);
+
+  return (
+    <View style={mediaStyles.wrap}>
+      {commands.length > 0 && (
+        <View style={mediaStyles.cmdRow}>
+          {commands.map((c, i) => (
+            <View key={i} style={mediaStyles.cmdPill}>
+              <Text style={[mediaStyles.cmdText, { fontFamily: 'Inter_700Bold' }]}>{c}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {Platform.OS === 'web' ? (
+        <View style={mediaStyles.frame}>
+          {React.createElement('iframe', {
+            src: url,
+            style: { width: '100%', height: '100%', border: '0', borderRadius: 14 },
+            allowFullScreen: true,
+            title: 'GeoGebra',
+          })}
+        </View>
+      ) : (
+        <Pressable
+          onPress={() => { void openGeogebraWithCommands(commands); }}
+          style={[mediaStyles.openBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+        >
+          <Ionicons name="stats-chart" size={20} color="#fff" />
+          <Text style={[mediaStyles.openBtnText, { fontFamily: 'Inter_700Bold' }]}>
+            {t('openGraph')}
+          </Text>
+        </Pressable>
+      )}
+    </View>
+  );
+}
+
+// ─── Media slide (image / YouTube) ────────────────────────────────────────────
+function MediaView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; t: (k: any) => string }) {
+  const url = slide.mediaUrl ?? '';
+  const embed = slide.mediaKind === 'video' ? youtubeEmbedUrl(url) : null;
+
+  return (
+    <View style={mediaStyles.wrap}>
+      {slide.mediaKind === 'image' ? (
+        <Image
+          source={{ uri: url }}
+          style={mediaStyles.image}
+          resizeMode="contain"
+          accessibilityLabel={slide.mediaCaption || ''}
+        />
+      ) : Platform.OS === 'web' && embed ? (
+        <View style={mediaStyles.frame}>
+          {React.createElement('iframe', {
+            src: embed,
+            style: { width: '100%', height: '100%', border: '0', borderRadius: 14 },
+            allow: 'accelerometer; clipboard-write; encrypted-media; picture-in-picture; fullscreen',
+            allowFullScreen: true,
+            title: slide.mediaCaption || 'video',
+          })}
+        </View>
+      ) : (
+        <Pressable
+          onPress={() => { void openExternalMedia(url); }}
+          style={[mediaStyles.openBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+        >
+          <Ionicons name="play-circle" size={20} color="#fff" />
+          <Text style={[mediaStyles.openBtnText, { fontFamily: 'Inter_700Bold' }]}>
+            {t('openMedia')}
+          </Text>
+        </Pressable>
+      )}
+    </View>
+  );
 }
 
 // ─── Teacher Panel ────────────────────────────────────────────────────────────
@@ -208,6 +312,8 @@ function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
             : slide.type === 'bingo-call' ? '🎱'
             : slide.type === 'relay-problem' ? '🏃'
             : slide.type === 'question' ? '🙋'
+            : slide.type === 'graph' ? '📈'
+            : slide.type === 'media' ? '🎬'
             : '🎉'}
           {'  '}{slide.title}
         </Text>
@@ -441,6 +547,10 @@ export default function PresentationScreen() {
         >
           <SlideView slide={slide} isRTL={isRTL} />
 
+          {/* Graph (GeoGebra) and media (image / YouTube) slides */}
+          {slide.type === 'graph' && <GraphView slide={slide} isRTL={isRTL} t={t} />}
+          {slide.type === 'media' && <MediaView slide={slide} isRTL={isRTL} t={t} />}
+
           {/* Whole-class ABCD options (question slides own their reveal) */}
           {slide.type === 'question' && (
             <QuestionOptions
@@ -603,6 +713,40 @@ const slideStyles = StyleSheet.create({
   codeBadge: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, marginTop: 28, backgroundColor: TIMER_GREEN + '15', borderRadius: 14, borderWidth: 1, borderColor: TIMER_GREEN + '40', padding: 20 },
   codeLabel: { fontSize: 28 },
   codeValue: { fontSize: 48, color: TIMER_GREEN },
+});
+
+// Graph + media slides: the frame is the star, sized for a projector.
+const mediaStyles = StyleSheet.create({
+  wrap: { marginTop: 10, gap: 12 },
+  cmdRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' },
+  cmdPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: '#0EA5E9' + '18',
+    borderWidth: 1,
+    borderColor: '#0EA5E9' + '45',
+  },
+  cmdText: { fontSize: 20, color: TEXT_PRIMARY },
+  frame: {
+    width: '100%',
+    height: 460,
+    borderRadius: 14,
+    overflow: 'hidden',
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: BORDER,
+  },
+  image: { width: '100%', height: 460, borderRadius: 14, backgroundColor: CARD_BG },
+  openBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: ACCENT,
+    borderRadius: 14,
+    paddingVertical: 18,
+  },
+  openBtnText: { fontSize: 17, color: '#fff' },
 });
 
 // Sized for projection: options readable from the back of a classroom.
