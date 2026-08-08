@@ -32,7 +32,7 @@ function fixture(id: string) {
 }
 
 /** Three of the longest lessons in the KB (Chemistry + Math). */
-const LONG_LESSON_IDS = ['kbl-chem-1-2', 'kbl-math-s2-nccd-u6_l2', 'kbl-chem-3-2'];
+const LONG_LESSON_IDS = ['kbl-chem-s1-nccd-u1_l2', 'kbl-math-s2-nccd-u6_l2', 'kbl-chem-s1-nccd-u3_l1'];
 
 // ─── 1. Single-lesson full-fidelity ──────────────────────────────────────────
 
@@ -94,13 +94,13 @@ describe('buildResponse — three-lesson query', () => {
 // ─── 3. Summary and rules always preserved ───────────────────────────────────
 
 describe('buildLessonBlock — summary and rules always present', () => {
-  const lesson = fixture('kbl-chem-1-2');
+  const lesson = fixture('kbl-chem-s1-nccd-u1_l2');
 
   for (const opts of TRIM_TIERS) {
     const label = `maxConcepts=${opts.maxConcepts} maxTerms=${opts.maxTerms} maxExamples=${opts.maxExamples}`;
 
     it(`summary is present at trim tier [${label}]`, () => {
-      assert.ok(lesson !== undefined, 'Test fixture kbl-chem-1-2 not found');
+      assert.ok(lesson !== undefined, 'Test fixture kbl-chem-s1-nccd-u1_l2 not found');
       const block = buildLessonBlock(lesson!, 0, false, false, opts);
       // The summary is always included right after the title/header blank line
       // We verify the lesson's EN summary text appears somewhere in the block
@@ -112,7 +112,7 @@ describe('buildLessonBlock — summary and rules always present', () => {
     });
 
     it(`rules section is present at trim tier [${label}] (when lesson has rules)`, () => {
-      assert.ok(lesson !== undefined, 'Test fixture kbl-chem-1-2 not found');
+      assert.ok(lesson !== undefined, 'Test fixture kbl-chem-s1-nccd-u1_l2 not found');
       if (!lesson!.rulesEn || lesson!.rulesEn.length === 0) return;
       const block = buildLessonBlock(lesson!, 0, false, false, opts);
       assert.ok(
@@ -132,14 +132,28 @@ describe('buildResponse — examples dropped before terms', () => {
    * trimming removes examples before removing key terms.
    */
   it('drops examples before key terms when budget is tight', () => {
-    const base = fixture('kbl-chem-1-2');
-    assert.ok(base !== undefined, 'Test fixture kbl-chem-1-2 not found');
+    const base = fixture('kbl-chem-s1-nccd-u1_l2');
+    assert.ok(base !== undefined, 'Test fixture kbl-chem-s1-nccd-u1_l2 not found');
 
-    // Create three copies with inflated examples so the full-fidelity combined
-    // string is definitely over 3000 chars.
+    // Create three copies with inflated summary + examples so the
+    // full-fidelity combined string is definitely over 3000 chars.
+    // (The lesson data itself is book-faithful and lean, so the test pads
+    // its own fixture instead of depending on fat lesson content.)
     const longExample = 'Example: '.padEnd(300, 'x'); // 300-char example
+    // Sized so tier 0 (with examples) overflows the budget but tier 1
+    // (examples dropped, terms kept) fits: buildResponse appends a support-
+    // resources block on top of the three lesson blocks, so each tier-1
+    // block must stay ≈≤800 chars for the combined output to fit.
+    const longSummary = 'Summary '.padEnd(400, 'y');
     const heavyLesson = {
       ...base!,
+      summaryEn: longSummary,
+      summaryAr: longSummary,
+      // Terms need definitions to render — book-sourced vocab has none, so
+      // the test supplies its own.
+      keyTerms: [
+        { ar: 'مصطلح', en: 'term', definitionAr: 'تعريف قصير', definitionEn: 'a short definition' },
+      ],
       examplesEn: [longExample, longExample],
       examplesAr: [longExample, longExample],
     };
@@ -176,8 +190,8 @@ describe('buildResponse — examples dropped before terms', () => {
       assert.ok(!result.includes(longExample), 'Examples should be absent after trimming');
     }
 
-    // Summary must always be present
-    const summarySnippet = base!.summaryEn.slice(0, 40);
+    // Summary must always be present (the padded one — heavyLesson replaces it)
+    const summarySnippet = longSummary.slice(0, 40);
     assert.ok(result.includes(summarySnippet), 'Summary must always be present after trimming');
   });
 });
@@ -198,8 +212,8 @@ describe('deduplicateByUnit', () => {
   });
 
   it('passes through three lessons from different units without dropping any', () => {
-    // kbl-chem-1-2 (kbu-chem-1), kbl-math-s2-nccd-u6_l2 (kbu-math-2), kbl-math-s2-nccd-u8_l4 (kbu-math-8)
-    const ids = ['kbl-chem-1-2', 'kbl-math-s2-nccd-u6_l2', 'kbl-math-s2-nccd-u8_l4'];
+    // kbl-chem-s1-nccd-u1_l2 (unit u1), kbl-math-s2-nccd-u6_l2, kbl-math-s2-nccd-u8_l4
+    const ids = ['kbl-chem-s1-nccd-u1_l2', 'kbl-math-s2-nccd-u6_l2', 'kbl-math-s2-nccd-u8_l4'];
     const lessons = ids.map(id => fixture(id)).filter(Boolean) as any[];
     assert.strictEqual(lessons.length, 3, 'Could not load all three fixtures');
     const result = deduplicateByUnit(lessons, 3);
@@ -233,16 +247,16 @@ describe('deduplicateByUnit', () => {
   it('respects the maxResults cap', () => {
     // Six lessons across six different units — cap at 2
     const ids = [
-      'kbl-chem-1-1', // kbu-chem-1
-      'kbl-chem-3-1', // kbu-chem-3
+      'kbl-chem-s1-nccd-u1_l1', // unit u1
+      'kbl-chem-s1-nccd-u3_l1', // unit u3
       'kbl-math-s2-nccd-u5_l1', // kbu-math-1
       'kbl-math-s2-nccd-u6_l1', // kbu-math-2
     ];
     const lessons = ids.map(id => fixture(id)).filter(Boolean) as any[];
     const result = deduplicateByUnit(lessons, 2);
     assert.strictEqual(result.length, 2, 'Should not exceed maxResults even with distinct units');
-    assert.strictEqual(result[0].id, 'kbl-chem-1-1');
-    assert.strictEqual(result[1].id, 'kbl-chem-3-1');
+    assert.strictEqual(result[0].id, 'kbl-chem-s1-nccd-u1_l1');
+    assert.strictEqual(result[1].id, 'kbl-chem-s1-nccd-u3_l1');
   });
 
   it('fills open slots with later distinct-unit lessons (promotes a lesson over a same-unit duplicate)', () => {
@@ -250,14 +264,14 @@ describe('deduplicateByUnit', () => {
     const ids = [
       'kbl-math-s2-nccd-u6_l1', // kbu-math-2
       'kbl-math-s2-nccd-u6_l2', // kbu-math-2  ← duplicate, should be skipped
-      'kbl-chem-3-2', // kbu-chem-3  ← should promote to slot 2
+      'kbl-chem-s1-nccd-u3_l2', // unit u3  ← should promote to slot 2
     ];
     const lessons = ids.map(id => fixture(id)).filter(Boolean) as any[];
     assert.strictEqual(lessons.length, 3, 'Could not load fixtures');
     const result = deduplicateByUnit(lessons, 3);
     assert.strictEqual(result.length, 2, 'Expected 2 distinct-unit results');
     assert.strictEqual(result[0].id, 'kbl-math-s2-nccd-u6_l1');
-    assert.strictEqual(result[1].id, 'kbl-chem-3-2', 'Third-ranked lesson should promote when second is a duplicate');
+    assert.strictEqual(result[1].id, 'kbl-chem-s1-nccd-u3_l2', 'Third-ranked lesson should promote when second is a duplicate');
   });
 });
 
