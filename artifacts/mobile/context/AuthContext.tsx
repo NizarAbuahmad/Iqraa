@@ -9,6 +9,7 @@ import {
   getApiBaseUrl,
 } from '@/services/apiClient';
 import { setActiveLessonContextUser } from '@/services/lessonContext';
+import { setActiveMediaUser } from '@/services/lessonMedia';
 
 export type UserRole = 'teacher' | 'school_admin' | 'system_admin';
 
@@ -89,6 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // teacher's lesson pick and skipped first-run onboarding.
   useEffect(() => {
     setActiveLessonContextUser(user?.id ?? null);
+    setActiveMediaUser(user?.id ?? null);
   }, [user?.id]);
 
   // Register redirect callback so token-refresh failures can navigate to login

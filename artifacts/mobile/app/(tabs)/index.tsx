@@ -40,6 +40,18 @@ import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { resolveGeneratorGrounding } from '@/services/kbContext';
 import { objectivesSlide } from '@/services/classDeck';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
+import {
+  buildGraphSlide,
+  buildMediaSlide,
+  classifyMediaUrl,
+  extractGraphCommands,
+} from '@/services/classMedia';
+import {
+  addLessonMedia,
+  getLessonMedia,
+  removeLessonMedia,
+  type LessonMediaItem,
+} from '@/services/lessonMedia';
 
 const NAVY = '#081B3A';
 const TEAL = '#00A99D';
@@ -72,6 +84,11 @@ export default function DashboardScreen() {
     unitOrder: null, unitTitle: null, lessonTitle: null,
   });
   const pickerSubjects = getPickerSubjects();
+  // Class Mode media attached to the CURRENT lesson (shown as deck slides).
+  const [media, setMedia] = useState<LessonMediaItem[]>([]);
+  const [mediaUrl, setMediaUrl] = useState('');
+  const [mediaCaption, setMediaCaption] = useState('');
+  const [mediaError, setMediaError] = useState('');
 
   const loadData = useCallback(async () => {
     const recent = await getRecentItems(4);
@@ -83,6 +100,12 @@ export default function DashboardScreen() {
     setContinueItem(preferred);
     const pick = await loadLessonPick();
     setLessonPick(pick);
+    // Media follows the lesson actually shown (pick, else last material,
+    // else the demo lesson) so it is never orphaned.
+    const shownTopic = pick?.topic
+      ?? (recent.find(i => i.language === lang) ?? recent[0])?.topic
+      ?? (lang === 'ar' ? DEMO_CONTINUE.lessonTitleAr : DEMO_CONTINUE.lessonTitleEn);
+    setMedia(await getLessonMedia(shownTopic));
     // First-run onboarding: a brand-new teacher lands on home with no lesson
     // chosen — open the picker once so the whole app starts contextualised.
     // Gated on user so it runs only after the per-user storage scope is set
@@ -204,17 +227,66 @@ export default function DashboardScreen() {
       teachingGoal: 'warm-up',
       language: lang === 'ar' ? 'arabic' : 'english',
     });
-    // Lead with the lesson's real النتاجات when the book has them.
-    const objSlide = objectivesSlide(grounding.lesson, topic, lang === 'ar', 2);
-    const slides = objSlide
-      ? [
-          activity.slides[0]!,
-          objSlide,
-          ...activity.slides.slice(1).map((s, i) => ({ ...s, slideNumber: i + 3 })),
-        ]
-      : activity.slides;
+    // Deck order: rules → objectives → [graph for math] → questions →
+    // [teacher's media] → summary. Everything is optional; the deck stays
+    // valid when a lesson has no objectives, no plottable function, and no
+    // attached media.
+    const isAr = lang === 'ar';
+    const objSlide = objectivesSlide(grounding.lesson, topic, isAr, 0);
+
+    // Plot what the class is actually about: the lesson's own examples AND
+    // the functions inside the generated questions (curriculum objectives
+    // are prose and rarely contain a plottable definition).
+    const isMath = (pickedSubject?.id ?? 'mathematics') === 'mathematics';
+    const graphCommands = isMath
+      ? extractGraphCommands(
+          [
+            topic,
+            ...(grounding.lesson?.examplesAr ?? []),
+            ...(grounding.lesson?.objectives ?? []),
+            ...activity.slides.map(s => s.content),
+          ].join(' \n '),
+        )
+      : [];
+    // Math lessons always get a graph slide — with the lesson's functions
+    // preloaded when we found any, otherwise a blank calculator the teacher
+    // can type into live.
+    const graphSlide = isMath ? buildGraphSlide(graphCommands, topic, isAr, 0) : null;
+
+    const media = await getLessonMedia(topic);
+    const mediaSlides = media.map(m => buildMediaSlide(m.kind, m.url, m.caption, isAr, 0));
+
+    const [intro, ...rest] = activity.slides;
+    const summary = rest.length && rest[rest.length - 1]!.type === 'summary' ? rest.pop()! : null;
+
+    const slides = [
+      intro!,
+      ...(objSlide ? [objSlide] : []),
+      ...(graphSlide ? [graphSlide] : []),
+      ...rest,
+      ...mediaSlides,
+      ...(summary ? [summary] : []),
+    ].map((s, i) => ({ ...s, slideNumber: i + 1 }));
+
     setPendingClassroomActivity({ ...activity, slides });
     router.push('/ai-tools/classroom/presentation' as any);
+  };
+
+  const addMedia = async () => {
+    const url = mediaUrl.trim();
+    const kind = classifyMediaUrl(url);
+    if (!kind) { setMediaError(t('addMediaInvalid')); return; }
+    setMediaError('');
+    await addLessonMedia(lessonTopic, { kind, url, caption: mediaCaption.trim() });
+    setMedia(await getLessonMedia(lessonTopic));
+    setMediaUrl('');
+    setMediaCaption('');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const dropMedia = async (url: string) => {
+    await removeLessonMedia(lessonTopic, url);
+    setMedia(await getLessonMedia(lessonTopic));
   };
 
   const openContinueTeaching = () => {
@@ -725,6 +797,137 @@ export default function DashboardScreen() {
               accent={TEAL}
               t={t}
             />
+            {/* Class Mode media for the lesson shown in the banner (which
+                falls back to the demo lesson before the first pick). */}
+            {lessonTopic.trim() ? (
+              <View style={{ marginTop: 26 }}>
+                <Text
+                  style={{
+                    color: colors.foreground,
+                    fontFamily: 'Inter_600SemiBold',
+                    fontSize: 14,
+                    textAlign: isRTL ? 'right' : 'left',
+                  }}
+                >
+                  {t('addMediaTitle')}
+                </Text>
+                <Text
+                  style={{
+                    color: colors.mutedForeground,
+                    fontFamily: 'Inter_400Regular',
+                    fontSize: 12,
+                    marginTop: 4,
+                    marginBottom: 10,
+                    textAlign: isRTL ? 'right' : 'left',
+                  }}
+                >
+                  {t('addMediaHint')}
+                </Text>
+
+                {media.map(m => (
+                  <View
+                    key={m.url}
+                    style={[
+                      styles.mediaRow,
+                      {
+                        backgroundColor: colors.card,
+                        borderColor: colors.border,
+                        flexDirection: isRTL ? 'row-reverse' : 'row',
+                      },
+                    ]}
+                  >
+                    <Ionicons
+                      name={m.kind === 'video' ? 'logo-youtube' : 'image-outline'}
+                      size={18}
+                      color={m.kind === 'video' ? '#EF4444' : TEAL}
+                    />
+                    <Text
+                      numberOfLines={1}
+                      style={{
+                        flex: 1,
+                        color: colors.foreground,
+                        fontFamily: 'Inter_400Regular',
+                        fontSize: 12.5,
+                        textAlign: isRTL ? 'right' : 'left',
+                      }}
+                    >
+                      {m.caption || m.url}
+                    </Text>
+                    <Pressable onPress={() => { void dropMedia(m.url); }} hitSlop={8}>
+                      <Ionicons name="close-circle" size={18} color={colors.mutedForeground} />
+                    </Pressable>
+                  </View>
+                ))}
+
+                <TextInput
+                  value={mediaUrl}
+                  onChangeText={(v) => { setMediaUrl(v); setMediaError(''); }}
+                  placeholder={t('addMediaPlaceholder')}
+                  placeholderTextColor={colors.mutedForeground}
+                  autoCapitalize="none"
+                  style={[
+                    styles.mediaInput,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: mediaError ? '#EF4444' : colors.border,
+                      color: colors.foreground,
+                      textAlign: isRTL ? 'right' : 'left',
+                    },
+                  ]}
+                />
+                <TextInput
+                  value={mediaCaption}
+                  onChangeText={setMediaCaption}
+                  placeholder={t('addMediaCaption')}
+                  placeholderTextColor={colors.mutedForeground}
+                  style={[
+                    styles.mediaInput,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: colors.border,
+                      color: colors.foreground,
+                      textAlign: isRTL ? 'right' : 'left',
+                    },
+                  ]}
+                />
+                {mediaError ? (
+                  <Text
+                    style={{
+                      color: '#EF4444',
+                      fontFamily: 'Inter_400Regular',
+                      fontSize: 12,
+                      textAlign: isRTL ? 'right' : 'left',
+                    }}
+                  >
+                    {mediaError}
+                  </Text>
+                ) : null}
+                <Pressable
+                  onPress={() => { void addMedia(); }}
+                  disabled={!mediaUrl.trim()}
+                  style={({ pressed }) => [
+                    styles.mediaAddBtn,
+                    {
+                      borderColor: mediaUrl.trim() ? TEAL : colors.border,
+                      opacity: pressed ? 0.85 : 1,
+                      flexDirection: isRTL ? 'row-reverse' : 'row',
+                    },
+                  ]}
+                >
+                  <Ionicons name="add" size={16} color={mediaUrl.trim() ? TEAL : colors.mutedForeground} />
+                  <Text
+                    style={{
+                      color: mediaUrl.trim() ? TEAL : colors.mutedForeground,
+                      fontFamily: 'Inter_600SemiBold',
+                      fontSize: 13,
+                    }}
+                  >
+                    {t('addMediaAdd')}
+                  </Text>
+                </Pressable>
+              </View>
+            ) : null}
+
             <Pressable
               onPress={confirmLessonPick}
               disabled={!draftTopic.trim()}
@@ -795,6 +998,32 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
   },
   contextActions: { alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  mediaRow: {
+    alignItems: 'center',
+    gap: 10,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 8,
+  },
+  mediaInput: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontFamily: 'Inter_400Regular',
+    fontSize: 13,
+    marginBottom: 8,
+  },
+  mediaAddBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderWidth: 1.5,
+    borderRadius: 10,
+    paddingVertical: 11,
+  },
   startClassBtn: {
     alignItems: 'center',
     justifyContent: 'center',

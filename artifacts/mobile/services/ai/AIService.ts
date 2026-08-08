@@ -122,7 +122,7 @@ export interface TeacherCompanion {
 
 export interface ActivitySlide {
   slideNumber: number;
-  type: 'intro' | 'challenge' | 'reveal' | 'summary' | 'bingo-call' | 'relay-problem' | 'question';
+  type: 'intro' | 'challenge' | 'reveal' | 'summary' | 'bingo-call' | 'relay-problem' | 'question' | 'graph' | 'media';
   title: string;
   content: string;
   hint?: string;
@@ -141,6 +141,17 @@ export interface ActivitySlide {
   correctIndex?: number;
   /** True when the answer key is correct by construction / verifier-checked. */
   verified?: boolean;
+  /**
+   * GeoGebra commands for type 'graph' — e.g. ['f(x)=x^2', 'g(x)=x+1'].
+   * The class screen embeds them on web and opens GeoGebra on native, so
+   * the teacher can drag/zoom the curve live in front of the class.
+   */
+  graphCommands?: string[];
+  /** Media payload for type 'media' — projected image or video. */
+  mediaKind?: 'image' | 'video';
+  /** Image URL / data URI, or a YouTube watch/share link. */
+  mediaUrl?: string;
+  mediaCaption?: string;
 }
 
 export interface ClassroomActivity {
