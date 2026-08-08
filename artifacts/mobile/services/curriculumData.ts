@@ -95,6 +95,7 @@ export const SUBJECTS: Subject[] = [
   { id: 'islamic',     name: 'Islamic Studies',  nameAr: 'التربية الإسلامية',icon: 'moon',            color: '#F59E0B', grades: GRADES.map(g => g.id) },
   { id: 'social',      name: 'Social Studies',   nameAr: 'الدراسات الاجتماعية', icon: 'globe',        color: '#EC4899', grades: GRADES.slice(0, 9).map(g => g.id) },
   { id: 'computer',    name: 'Computer',         nameAr: 'الحاسوب',          icon: 'laptop-outline',  color: '#06B6D4', grades: GRADES.map(g => g.id) },
+  { id: 'financial-literacy', name: 'Financial Literacy', nameAr: 'الثقافة المالية', icon: 'wallet-outline', color: '#B45309', grades: GRADES.slice(9).map(g => g.id) },
 ];
 
 /**
@@ -108,7 +109,7 @@ export const INVESTOR_MVP_CURRICULUM = true;
 export const MVP_GRADE_ID = 'grade-10';
 /** @deprecated Prefer MVP_SUBJECT_IDS — kept for older call sites. */
 export const MVP_SUBJECT_ID = 'mathematics';
-export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry'];
+export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy'];
 /** Main semester books only (guides/exercises stay in data, hidden from UI). */
 export const MVP_BOOK_IDS: readonly string[] = [
   'book-math-10',

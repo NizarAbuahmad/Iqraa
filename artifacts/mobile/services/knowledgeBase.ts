@@ -26,6 +26,10 @@ import {
   CHEM_S1_BOOK_ID,
   buildChemSem1Catalog,
 } from './curriculumG10ChemSem1.ts';
+import {
+  FINLIT_S1_BOOK_ID,
+  buildFinlitSem1Catalog,
+} from './curriculumG10FinlitSem1.ts';
 
 export interface KBBook {
   id: string;
@@ -93,6 +97,15 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Chemistry – Grade 10 – Semester 2',
     semester: 2,
     source: 'كتاب الطالب لمادة الكيمياء الصف العاشر الفصل الثاني.pdf',
+  },
+  {
+    id: FINLIT_S1_BOOK_ID,
+    gradeId: 'grade-10',
+    subjectId: 'financial-literacy',
+    titleAr: 'الثقافة المالية – الصف العاشر – الفصل الأول',
+    titleEn: 'Financial Literacy – Grade 10 – Semester 1',
+    semester: 1,
+    source: 'knowledge-base/grade-10-financial-literacy/الثقافة المالية 10 ف1.pdf',
   },
   {
     id: 'kb-math-10-s1',
@@ -1055,6 +1068,7 @@ const HARDCODED_KB_LESSONS: HardcodedKBLesson[] = [
 const _nccdSem1 = buildNccdSem1Catalog();
 const _nccdSem2 = buildNccdSem2Catalog();
 const _chemSem1 = buildChemSem1Catalog();
+const _finlitSem1 = buildFinlitSem1Catalog();
 const _legacyS1UnitIds = new Set(
   HARDCODED_KB_UNITS.filter(u => u.bookId === NCCD_S1_BOOK_ID).map(u => u.id),
 );
@@ -1089,6 +1103,7 @@ export const KB_UNITS: KBUnit[] = [
       && u.bookId !== CHEM_S1_BOOK_ID,
   ),
   ..._chemSem1.units,
+  ..._finlitSem1.units,
   ..._nccdSem1.units,
   ..._nccdSem2.units,
 ];
@@ -1099,6 +1114,7 @@ export const KB_LESSONS: KBLesson[] = [
     .filter(l => !_supersededUnitIds.has(l.unitId))
     .map(normalizeHardcodedLesson),
   ..._chemSem1.lessons,
+  ..._finlitSem1.lessons,
   ..._nccdSem1.lessons,
   ..._nccdSem2.lessons,
 ];
