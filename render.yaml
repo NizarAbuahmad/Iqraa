@@ -1,9 +1,13 @@
 # Render Blueprint — free-tier demo deployment.
 #
-# Two services:
-#   iqraa-api  — Express API (free web service; sleeps after ~15 min idle,
-#                first request after sleep takes ~30-60s to wake)
-#   iqraa-web  — Expo web static export (always awake; static files)
+# Three services:
+#   iqraa-api      — Express API (free web service; sleeps after ~15 min idle,
+#                    first request after sleep takes ~30-60s to wake)
+#   iqraa-web      — Expo web static export (always awake; static files)
+#   iqraa-verifier — SymPy math verifier (FastAPI). The API proxies it at
+#                    /api/verify/derivative. Without it deployed, the app
+#                    cannot symbolically verify anything in production and
+#                    honestly falls back to the "reviewed bank" label.
 # Database lives on Neon (free Postgres), NOT on Render — Render's free
 # Postgres is deleted after 30 days, Neon's free tier persists.
 #
@@ -31,6 +35,24 @@ services:
         sync: false
       - key: OPENAI_API_KEY
         sync: false
+      # Points the API's mathVerifierClient at the deployed verifier below.
+      # fromService keeps the URL correct even if Render suffixes the name.
+      - key: MATH_VERIFIER_URL
+        fromService:
+          type: web
+          name: iqraa-verifier
+          property: hostport
+
+  - type: web
+    name: iqraa-verifier
+    runtime: python
+    plan: free
+    rootDir: artifacts/math-verifier
+    buildCommand: pip install -r requirements.txt
+    # Single worker: the service forks a ProcessPoolExecutor per request so a
+    # runaway SymPy job can be killed on timeout.
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT --workers 1
+    healthCheckPath: /healthz
 
   - type: web
     name: iqraa-web

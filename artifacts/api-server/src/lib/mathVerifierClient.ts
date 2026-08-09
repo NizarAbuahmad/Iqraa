@@ -3,7 +3,20 @@
  * Latin x only — never send Arabic notation.
  */
 
-const DEFAULT_URL = process.env.MATH_VERIFIER_URL ?? "http://127.0.0.1:8090";
+/**
+ * Render's `fromService` injects a bare "host:port" with no scheme, so the
+ * env value is normalised here rather than assuming a well-formed URL.
+ * Localhost defaults to http; anything else to https.
+ */
+function normaliseVerifierUrl(raw: string | undefined): string {
+  const value = (raw ?? "").trim();
+  if (!value) return "http://127.0.0.1:8090";
+  if (/^https?:\/\//i.test(value)) return value.replace(/\/+$/, "");
+  const isLocal = /^(localhost|127\.0\.0\.1)(:|$)/i.test(value);
+  return `${isLocal ? "http" : "https"}://${value.replace(/\/+$/, "")}`;
+}
+
+const DEFAULT_URL = normaliseVerifierUrl(process.env.MATH_VERIFIER_URL);
 const VERIFY_TIMEOUT_MS = 2_500;
 
 export type VerifyResult = {

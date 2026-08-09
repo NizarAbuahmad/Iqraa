@@ -19,6 +19,32 @@ import {
   takeConcreteMathBatch,
   type DiffTier,
 } from './mathPractice.ts';
+import { isDerivativeQuestion } from './verifyMathGuards.ts';
+
+/**
+ * Symbolic verification, loaded lazily.
+ *
+ * verifyMath pulls in apiClient → expo-secure-store, which cannot be
+ * type-stripped by the Node test runner. Importing it at module scope would
+ * make generators.ts unloadable in tests, so it is resolved on demand and
+ * degrades to the honest 'bank' label whenever it is unavailable.
+ */
+type VerifyOutcome = { verifiedBy: 'symbolic' | 'bank'; computedAnswer?: string };
+const BANK_OUTCOME: VerifyOutcome = { verifiedBy: 'bank' };
+
+async function verifyIfPossible(
+  question: string,
+  answer: string,
+  distractors: string[],
+): Promise<VerifyOutcome> {
+  if (!isDerivativeQuestion(question)) return BANK_OUTCOME;
+  try {
+    const mod = await import('./verifyMath.ts');
+    return await mod.verifyMathItem(question, answer, distractors);
+  } catch {
+    return BANK_OUTCOME;
+  }
+}
 
 type Lang = 'ar' | 'en';
 type QType = 'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false' | 'word_problem';
@@ -1054,8 +1080,18 @@ export class MockAIService extends AIService {
       }
 
       if (mcqs.length >= 2) {
+        // Ask the SymPy verifier to actually prove what it can (derivative
+        // slice today). Runs in parallel with a per-item timeout; anything
+        // it cannot prove stays labelled as a reviewed bank item.
+        const outcomes = await Promise.all(
+          mcqs.map(q =>
+            verifyIfPossible(q.text, q.answer, q.options.filter(o => o !== q.answer)),
+          ),
+        );
+
         const qSlides = mcqs.map((q, i) => {
           const correctIndex = Math.max(0, q.options.indexOf(q.answer));
+          const outcome = outcomes[i]!;
           return {
             slideNumber: i + 2,
             type: 'question' as const,
@@ -1064,6 +1100,8 @@ export class MockAIService extends AIService {
             options: q.options,
             correctIndex,
             verified: true,
+            verifiedBy: outcome.verifiedBy,
+            computedAnswer: outcome.computedAnswer,
             durationSeconds: 45,
             teacher: {
               expectedAnswer: q.answer,
