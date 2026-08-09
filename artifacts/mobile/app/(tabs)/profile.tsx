@@ -194,6 +194,7 @@ export default function ProfileScreen() {
         </Text>
         <View style={{ gap: 8 }}>
           <SettingRow icon="folder-outline" label={t('myWorkspace')} onPress={() => router.push('/workspace')} isRTL={isRTL} colors={colors} />
+          <SettingRow icon="people-outline" label={t('myClasses')} onPress={() => router.push('/classes')} isRTL={isRTL} colors={colors} />
           <SettingRow icon="settings-outline" label={t('settings')} onPress={() => router.push('/settings')} isRTL={isRTL} colors={colors} />
           {/* Bring the home "start here" card back — dismissing it should never
               be a one-way door for a teacher who wants the reminder again. */}

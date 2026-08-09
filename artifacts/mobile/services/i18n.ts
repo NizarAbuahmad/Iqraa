@@ -6,6 +6,34 @@
 
 export type Lang = 'ar' | 'en';
 
+/**
+ * Count students the way Arabic actually does it.
+ *
+ * Arabic inflects a counted noun by number class rather than a single
+ * singular/plural split: one takes the noun alone, two takes the dual, three to
+ * ten take the plural, and eleven upward return to the singular in the
+ * accusative. Substituting a digit into one fixed template gets three of those
+ * four cases wrong, which reads as broken Arabic to a teacher.
+ */
+export function arCountStudents(n: number): string {
+  if (n === 0) return 'لا طلاب';
+  if (n === 1) return 'طالب واحد';
+  if (n === 2) return 'طالبان';
+  if (n >= 3 && n <= 10) return `${n} طلاب`;
+  return `${n} طالبًا`;
+}
+
+/** English side of the same count, so screens have one call for both. */
+export function enCountStudents(n: number): string {
+  if (n === 0) return 'No students';
+  return `${n} ${n === 1 ? 'student' : 'students'}`;
+}
+
+/** Count students in the active language. */
+export function countStudents(n: number, lang: Lang): string {
+  return lang === 'ar' ? arCountStudents(n) : enCountStudents(n);
+}
+
 const translations = {
   ar: {
     // App
@@ -614,6 +642,35 @@ const translations = {
     slideOf: 'من',
     noActivityLoaded: 'لا نشاط محمّل بعد',
     buildActivityFirst: 'جهّز نشاطاً أولاً',
+
+    // Roster — classes and students
+    classes: 'الصفوف',
+    myClasses: 'صفوفي',
+    newClass: 'صف جديد',
+    createClass: 'أنشئ الصف',
+    className: 'اسم الصف',
+    classNamePlaceholder: 'مثال: العاشر رياضيات أ',
+    noClassesYet: 'لا صفوف بعد',
+    noClassesDesc: 'أنشئ صفًّا وأضف طلابك لتتمكّن من تقييم مستواهم',
+    studentsCount: 'طالبًا',
+    noStudentsYet: 'لا طلاب في هذا الصف',
+    noStudentsDesc: 'أضف أسماء طلابك — يمكنك لصق القائمة كاملة دفعة واحدة',
+    addStudents: 'أضف طلابًا',
+    studentNames: 'أسماء الطلاب',
+    studentNamesPlaceholder: 'اسم في كل سطر، أو افصل بينها بفاصلة',
+    studentNamesHint: 'الصق قائمة أسماء — سطر لكل طالب',
+    // Arabic counts its nouns by number class, so a single template with a
+    // substituted digit reads wrong for most values. arCountStudents applies
+    // the real rule (1 / 2 / 3–10 / 11+).
+    willAddCount: (n: number) => `سيُضاف ${arCountStudents(n)}`,
+    addToClass: 'أضف إلى الصف',
+    removeStudent: 'أزل من الصف',
+    removeStudentConfirm: (name: string) => `إزالة ${name} من هذا الصف؟ سيبقى سجلّه محفوظًا.`,
+    studentsAdded: (n: number) => `تمت إضافة ${arCountStudents(n)}`,
+    noNewStudents: 'لا أسماء جديدة لإضافتها',
+    skippedExisting: (names: string) => `موجودون في الصف مسبقًا، لم تُضف: ${names}`,
+    rosterNeedsConnection: 'قائمة الطلاب تحتاج اتصالاً بالخادم',
+    remove: 'إزالة',
   },
 
   en: {
@@ -1201,6 +1258,32 @@ const translations = {
     slideOf: 'of',
     noActivityLoaded: 'No activity loaded',
     buildActivityFirst: 'Please build an activity first',
+
+    // Roster — classes and students
+    classes: 'Classes',
+    myClasses: 'My classes',
+    newClass: 'New class',
+    createClass: 'Create class',
+    className: 'Class name',
+    classNamePlaceholder: 'e.g. Grade 10 Math A',
+    noClassesYet: 'No classes yet',
+    noClassesDesc: 'Create a class and add your students so you can evaluate their level',
+    studentsCount: 'students',
+    noStudentsYet: 'No students in this class',
+    noStudentsDesc: 'Add your students — you can paste the whole list at once',
+    addStudents: 'Add students',
+    studentNames: 'Student names',
+    studentNamesPlaceholder: 'One name per line, or separated by commas',
+    studentNamesHint: 'Paste a list — one student per line',
+    willAddCount: (n: number) => `Will add ${n} ${n === 1 ? 'student' : 'students'}`,
+    addToClass: 'Add to class',
+    removeStudent: 'Remove from class',
+    removeStudentConfirm: (name: string) => `Remove ${name} from this class? Their record is kept.`,
+    studentsAdded: (n: number) => `Added ${n} ${n === 1 ? 'student' : 'students'}`,
+    noNewStudents: 'No new names to add',
+    skippedExisting: (names: string) => `Already in this class, not added: ${names}`,
+    rosterNeedsConnection: 'The roster needs a connection to the server',
+    remove: 'Remove',
   },
 } as const;
 

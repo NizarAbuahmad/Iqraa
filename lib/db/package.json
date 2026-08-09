@@ -9,7 +9,8 @@
   },
   "scripts": {
     "push": "node ./scripts/push.mjs",
-    "push-force": "node ./scripts/push.mjs --force"
+    "push-force": "node ./scripts/push.mjs --force",
+    "seed:assessment": "node ./scripts/seed-assessment.mjs"
   },
   "dependencies": {
     "drizzle-orm": "catalog:",
