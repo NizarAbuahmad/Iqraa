@@ -4,6 +4,10 @@ import {
   isNccdSem1TitleOnlyUnit,
 } from './curriculumG10MathSem1.ts';
 import { buildNccdSem2BrowserCatalog } from './curriculumG10MathSem2.ts';
+import {
+  FINLIT_S1_CURRICULUM_BOOK_ID,
+  buildFinlitSem1BrowserCatalog,
+} from './curriculumG10FinlitSem1.ts';
 
 export interface Grade {
   id: string;
@@ -116,6 +120,8 @@ export const MVP_BOOK_IDS: readonly string[] = [
   'book-math-10-s2',
   'book-chem-10',
   'book-chem-10-s2',
+  // Financial literacy is Semester 1 only — no S2 book exists in the NCCD data.
+  FINLIT_S1_CURRICULUM_BOOK_ID,
 ];
 
 export function getVisibleGrades(): Grade[] {
@@ -266,6 +272,20 @@ export const BOOKS: Book[] = [
     edition: '3rd',
     hasKnowledgeBase: true,
     audience: 'student',
+  },
+  // ── Financial Literacy Grade 10 – Semester 1 ───────────────────────────────
+  {
+    id: FINLIT_S1_CURRICULUM_BOOK_ID,
+    title: 'Financial Literacy – Grade 10, Semester 1',
+    titleAr: 'الثقافة المالية – الصف العاشر – الفصل الأول',
+    subjectId: 'financial-literacy',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
   },
   // ── Other grades ───────────────────────────────────────────────────────────
   {
@@ -1102,6 +1122,7 @@ const _MATH_G10_S1_BOOK_ID = 'book-math-10';
 const _MATH_G10_S2_BOOK_ID = 'book-math-10-s2';
 const _nccdSem1Browser = buildNccdSem1BrowserCatalog();
 const _nccdSem2Browser = buildNccdSem2BrowserCatalog();
+const _finlitSem1Browser = buildFinlitSem1BrowserCatalog();
 const _legacyMathBookIds = new Set([_MATH_G10_S1_BOOK_ID, _MATH_G10_S2_BOOK_ID]);
 const _legacyMathUnitIds = new Set(
   _HARDCODED_UNITS.filter(u => _legacyMathBookIds.has(u.bookId)).map(u => u.id),
@@ -1112,6 +1133,7 @@ export const UNITS: Unit[] = [
   ..._HARDCODED_UNITS.filter(u => !_legacyMathBookIds.has(u.bookId)),
   ..._nccdSem1Browser.units,
   ..._nccdSem2Browser.units,
+  ..._finlitSem1Browser.units,
 ];
 
 /** Active lessons — legacy Math G10 S1/S2 replaced by NCCD-sourced browser rows. */
@@ -1119,6 +1141,7 @@ export const LESSONS: Lesson[] = [
   ..._HARDCODED_LESSONS.filter(l => !_legacyMathUnitIds.has(l.unitId)),
   ..._nccdSem1Browser.lessons,
   ..._nccdSem2Browser.lessons,
+  ..._finlitSem1Browser.lessons,
 ];
 
 /** Math Grade 10 Semester 1 book id (NCCD-backed). */
