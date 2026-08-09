@@ -5,12 +5,14 @@ import generateRouter from "./generate";
 import authRouter from "./auth";
 import workspaceRouter from "./workspace";
 import verifiedMathRouter from "./verifiedMath";
+import curriculumRouter from "./curriculum";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use("/auth", authRouter);
 router.use("/workspace", workspaceRouter);
+router.use(curriculumRouter);
 router.use(chatRouter);
 router.use(generateRouter);
 router.use(verifiedMathRouter);

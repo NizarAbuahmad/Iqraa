@@ -1,0 +1,147 @@
+/**
+ * Grade 10 Chemistry — Semester 1 curriculum (NCCD student book).
+ * Source of truth: data/iqra_curriculum_g10_chem_sem1.json
+ *
+ * Unlike Math S1 (teacher guide), the chemistry student book prints the
+ * الفكرة الرئيسة, نتاجات التعلم and bilingual المفاهيم والمصطلحات in every
+ * lesson opener — so every core lesson here is lesson-level data. The book
+ * carries no period counts (periods stay null; see meta.known_gaps).
+ *
+ * Note: does not import knowledgeBase (avoids circular dependency).
+ */
+
+import raw from '../data/iqra_curriculum_g10_chem_sem1.json' with { type: 'json' };
+
+/** Book id in KB_BOOKS that this JSON supersedes. */
+export const CHEM_S1_BOOK_ID = 'kb-chem-10-s1';
+
+export type ChemSem1Vocab = { ar: string; en: string };
+
+export type ChemSem1Lesson = {
+  id: string;
+  order: number;
+  type?: string;
+  title_ar: string;
+  title_en: string;
+  title_note?: string;
+  main_idea_ar: string;
+  periods: number | null;
+  objectives: string[];
+  vocabulary: ChemSem1Vocab[];
+};
+
+export type ChemSem1Unit = {
+  id: string;
+  number: number;
+  title_ar: string;
+  title_en: string;
+  general_idea_ar: string;
+  total_periods: number | null;
+  lessons: ChemSem1Lesson[];
+};
+
+export type ChemSem1CurriculumFile = {
+  meta: Record<string, unknown>;
+  units: ChemSem1Unit[];
+};
+
+export const nccdG10ChemSem1 = raw as ChemSem1CurriculumFile;
+
+/** Shape compatible with KBUnit / KBLesson in knowledgeBase.ts */
+type ChemKbUnit = {
+  id: string;
+  bookId: string;
+  order: number;
+  titleAr: string;
+  titleEn: string;
+};
+
+type ChemKbLesson = {
+  id: string;
+  unitId: string;
+  order: number;
+  titleAr: string;
+  titleEn: string;
+  summaryAr: string;
+  summaryEn: string;
+  keyConceptsAr: string[];
+  keyConceptsEn: string[];
+  keyTerms: Array<{ ar: string; en: string; definitionAr: string; definitionEn: string }>;
+  objectives: string[];
+  periods: number | null;
+};
+
+/** Stable KB unit id (e.g. u1 → kbu-chem-s1-nccd-u1). */
+export function chemSem1UnitKbId(jsonUnitId: string): string {
+  return `kbu-chem-s1-nccd-${jsonUnitId}`;
+}
+
+/** Stable KB lesson id (e.g. u1_l1 → kbl-chem-s1-nccd-u1_l1). */
+export function chemSem1LessonKbId(jsonLessonId: string): string {
+  return `kbl-chem-s1-nccd-${jsonLessonId}`;
+}
+
+/** Look up a JSON lesson by mapped KB lesson id. */
+export function findChemSem1LessonByKbId(kbLessonId: string): ChemSem1Lesson | null {
+  const prefix = 'kbl-chem-s1-nccd-';
+  if (!kbLessonId.startsWith(prefix)) return null;
+  const jsonId = kbLessonId.slice(prefix.length);
+  for (const u of nccdG10ChemSem1.units) {
+    const hit = u.lessons.find(l => l.id === jsonId);
+    if (hit) return hit;
+  }
+  return null;
+}
+
+/**
+ * Map the chemistry JSON into KB units + lessons for book kb-chem-10-s1.
+ * Arabic strings are copied byte-for-byte from the JSON (which copies the
+ * student book). Labs carry no objectives — the book prints none for them.
+ */
+export function buildChemSem1Catalog(): { units: ChemKbUnit[]; lessons: ChemKbLesson[] } {
+  const units: ChemKbUnit[] = nccdG10ChemSem1.units.map(u => ({
+    id: chemSem1UnitKbId(u.id),
+    bookId: CHEM_S1_BOOK_ID,
+    order: u.number,
+    titleAr: u.title_ar,
+    titleEn: u.title_en,
+  }));
+
+  const lessons: ChemKbLesson[] = [];
+  for (const u of nccdG10ChemSem1.units) {
+    const unitKbId = chemSem1UnitKbId(u.id);
+    for (const lesson of u.lessons) {
+      const vocab = lesson.vocabulary ?? [];
+      const objectives = lesson.objectives ?? [];
+      const isLab = lesson.type === 'lab';
+      lessons.push({
+        id: chemSem1LessonKbId(lesson.id),
+        unitId: unitKbId,
+        order: lesson.order,
+        titleAr: lesson.title_ar,
+        titleEn: lesson.title_en,
+        summaryAr: lesson.main_idea_ar
+          || (isLab
+            ? `تجربة استهلالية لوحدة «${u.title_ar}».`
+            : `درس «${lesson.title_ar}» من وحدة «${u.title_ar}».`),
+        summaryEn: lesson.main_idea_ar
+          ? lesson.main_idea_ar
+          : (isLab
+            ? `Introductory experiment for unit “${u.title_en}”.`
+            : `Lesson “${lesson.title_en}” from unit “${u.title_en}”.`),
+        keyConceptsAr: vocab.map(v => v.ar),
+        keyConceptsEn: vocab.map(v => v.en),
+        keyTerms: vocab.map(v => ({
+          ar: v.ar,
+          en: v.en,
+          definitionAr: '',
+          definitionEn: '',
+        })),
+        objectives: [...objectives],
+        periods: lesson.periods ?? null,
+      });
+    }
+  }
+
+  return { units, lessons };
+}
