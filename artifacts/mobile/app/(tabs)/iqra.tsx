@@ -67,6 +67,7 @@ import {
 } from '@/services/ai/teachingAssistant';
 import { classifyChatIntent } from '@/services/ai/intentRouter';
 import { BrandLogo } from '@/components/ui/BrandLogo';
+import { IqraaMark } from '@/components/ui/IqraaMark';
 import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
 import { CurrentLessonCard } from '@/components/ui/CurrentLessonCard';
 import { DocumentAttachButtons, DocumentAttachmentBar } from '@/components/ui/DocumentAttachmentBar';
@@ -651,9 +652,7 @@ function MessageBubble({
 
   return (
     <View style={[styles.rowAssistant, isRTL && styles.rowAssistantRTL]}>
-      <View style={[styles.avatar, { backgroundColor: colors.primary + '20' }]}>
-        <BrandLogo variant="mark" width={22} height={20} />
-      </View>
+      <IqraaMark size={34} tone="soft" style={styles.avatar} />
       <View style={{ flex: 1, maxWidth: '82%' }}>
         <Pressable
           onLongPress={() => onLongPress?.(message.text)}
@@ -1557,9 +1556,7 @@ export default function IqraScreen() {
         <View style={[styles.headerTop, isRTL && { flexDirection: 'row-reverse' }]}>
           {/* Brand */}
           <View style={[styles.brandRow, isRTL && { flexDirection: 'row-reverse' }]}>
-            <View style={[styles.iqraIcon, { backgroundColor: colors.primary }]}>
-              <BrandLogo variant="mark" onDark width={26} height={24} />
-            </View>
+            <IqraaMark size={42} tone="brand" />
             <View>
               <BrandLogo
                 variant="lockup"
@@ -1729,9 +1726,7 @@ export default function IqraScreen() {
         ListFooterComponent={
           isThinking ? (
             <View style={[styles.thinkingRow, isRTL && { flexDirection: 'row-reverse' }]}>
-              <View style={[styles.avatar, { backgroundColor: colors.primary + '20' }]}>
-                <BrandLogo variant="mark" width={22} height={20} />
-              </View>
+              <IqraaMark size={34} tone="soft" thinking style={styles.avatar} />
               <View style={[styles.thinkingBubble, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
                 <ActivityIndicator size="small" color={colors.primary} />
                 <Text style={[styles.thinkingText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
@@ -1887,6 +1882,9 @@ export default function IqraScreen() {
 }
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
+/** Reading column. Chat is prose; past ~760px the line length stops being readable. */
+const CONTENT_MAX_WIDTH = 760;
+
 const styles = StyleSheet.create({
   header: { borderBottomWidth: 1, paddingBottom: 10 },
   headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, marginBottom: 10 },
@@ -1908,7 +1906,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
 
-  messageList: { padding: 16, gap: 12, paddingBottom: 8 },
+  messageList: { padding: 16, gap: 12, paddingBottom: 8, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' },
 
   // Physical trailing edge (right). Do not flip for language RTL — that pinned bubbles left.
   rowUser: { width: '100%', flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 4 },
@@ -1926,7 +1924,7 @@ const styles = StyleSheet.create({
 
   rowAssistant: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 4 },
   rowAssistantRTL: { flexDirection: 'row-reverse' },
-  avatar: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 4 },
+  avatar: { marginTop: 4 },
   bubbleAssistant: { padding: 14, borderWidth: 1 },
   bubbleBold: { fontSize: 14, fontFamily: 'Inter_600SemiBold', marginBottom: 2 },
   bubbleText: { fontSize: 13, lineHeight: 20, fontFamily: 'Inter_400Regular' },
@@ -1943,6 +1941,7 @@ const styles = StyleSheet.create({
   thinkingText: { fontSize: 13 },
 
   inputBar: { borderTopWidth: 1, paddingHorizontal: 12, paddingTop: 10 },
+  inputBarInner: { width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' },
   inputWrap: { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 14, paddingVertical: 8, gap: 8 },
   input: { flex: 1, fontSize: 14, maxHeight: 100, paddingVertical: 0 },
   sendBtn: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
