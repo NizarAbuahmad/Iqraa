@@ -18,6 +18,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const HOME_LESSON_KEY = '@iqra_home_lesson_v1';
 const ONBOARDED_KEY = '@iqra_onboarded_v1';
 
+/** Set once the teacher dismisses the home "start here" coach card. */
+const COACH_DISMISSED_KEY = '@iqra_coach_dismissed_v1';
+
 /** Current user id — null while signed out. */
 let activeUserId: string | null = null;
 
@@ -64,6 +67,26 @@ export async function wasOnboarded(): Promise<boolean> {
 export async function markOnboarded(): Promise<void> {
   try {
     await AsyncStorage.setItem(scopedKey(ONBOARDED_KEY), '1');
+  } catch {
+    // ignore
+  }
+}
+
+export async function wasCoachDismissed(): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(scopedKey(COACH_DISMISSED_KEY))) === '1';
+  } catch {
+    return true; // fail closed: never nag
+  }
+}
+
+export async function setCoachDismissed(dismissed: boolean): Promise<void> {
+  try {
+    if (dismissed) {
+      await AsyncStorage.setItem(scopedKey(COACH_DISMISSED_KEY), '1');
+    } else {
+      await AsyncStorage.removeItem(scopedKey(COACH_DISMISSED_KEY));
+    }
   } catch {
     // ignore
   }

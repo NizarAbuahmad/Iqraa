@@ -33,6 +33,8 @@ import {
   loadLessonPick,
   markOnboarded,
   saveLessonPick,
+  setCoachDismissed,
+  wasCoachDismissed,
   wasOnboarded,
   type HomeLessonPick,
 } from '@/services/lessonContext';
@@ -89,6 +91,8 @@ export default function DashboardScreen() {
   const [mediaUrl, setMediaUrl] = useState('');
   const [mediaCaption, setMediaCaption] = useState('');
   const [mediaError, setMediaError] = useState('');
+  /** First-run "start here" card — teachers can't discover what they can't see. */
+  const [coachVisible, setCoachVisible] = useState(false);
 
   const loadData = useCallback(async () => {
     const recent = await getRecentItems(4);
@@ -116,6 +120,7 @@ export default function DashboardScreen() {
       setDraftDetail({ unitOrder: null, unitTitle: null, lessonTitle: null });
       setPickerOpen(true);
     }
+    if (user) setCoachVisible(!(await wasCoachDismissed()));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang, user?.id]);
 
@@ -367,6 +372,36 @@ export default function DashboardScreen() {
         </View>
         {DEMO_MODE ? <DemoModeBanner isRTL={isRTL} /> : null}
       </View>
+
+      {/* 0 ── First-run coach: the three steps of a teacher's week */}
+      {coachVisible ? (
+        <View style={styles.sectionPad}>
+          <View style={[styles.coachCard, { backgroundColor: NAVY }]}>
+            <View style={[styles.coachHead, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <Ionicons name="sparkles" size={16} color={TEAL} />
+              <Text style={[styles.coachTitle, { fontFamily: 'Inter_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+                {t('coachTitle')}
+              </Text>
+            </View>
+            {[t('coachStep1'), t('coachStep2'), t('coachStep3')].map((step, i) => (
+              <View key={i} style={[styles.coachRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                <View style={styles.coachNum}>
+                  <Text style={[styles.coachNumText, { fontFamily: 'Inter_700Bold' }]}>{i + 1}</Text>
+                </View>
+                <Text style={[styles.coachStep, { fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+                  {step}
+                </Text>
+              </View>
+            ))}
+            <Pressable
+              onPress={() => { setCoachVisible(false); void setCoachDismissed(true); }}
+              style={({ pressed }) => [styles.coachBtn, { opacity: pressed ? 0.85 : 1 }]}
+            >
+              <Text style={[styles.coachBtnText, { fontFamily: 'Inter_600SemiBold' }]}>{t('coachDismiss')}</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
 
       {/* 1 ── Compact Curriculum Context */}
       <View style={styles.sectionPad}>
@@ -1015,6 +1050,23 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
   },
   contextActions: { alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  coachCard: { borderRadius: 16, padding: 16, gap: 10 },
+  coachHead: { alignItems: 'center', gap: 7, marginBottom: 2 },
+  coachTitle: { color: '#fff', fontSize: 15, flex: 1 },
+  coachRow: { alignItems: 'flex-start', gap: 10 },
+  coachNum: {
+    width: 20, height: 20, borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    alignItems: 'center', justifyContent: 'center', marginTop: 1,
+  },
+  coachNumText: { color: '#fff', fontSize: 11 },
+  coachStep: { color: 'rgba(255,255,255,0.86)', fontSize: 12.5, lineHeight: 19, flex: 1 },
+  coachBtn: {
+    alignSelf: 'flex-start', marginTop: 4,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10,
+  },
+  coachBtnText: { color: '#fff', fontSize: 13 },
   mediaBadge: {
     alignSelf: 'flex-start',
     alignItems: 'center',

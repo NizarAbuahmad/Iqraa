@@ -69,7 +69,7 @@ function GraphView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; 
 
   return (
     <View style={mediaStyles.wrap}>
-      {commands.length > 0 && (
+      {commands.length > 0 ? (
         <View style={mediaStyles.cmdRow}>
           {commands.map((c, i) => (
             <View key={i} style={mediaStyles.cmdPill}>
@@ -77,6 +77,16 @@ function GraphView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; 
             </View>
           ))}
         </View>
+      ) : (
+        // A blank calculator with no explanation reads as a bug mid-lesson.
+        <Text
+          style={[
+            mediaStyles.emptyHint,
+            { fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' },
+          ]}
+        >
+          {t('graphEmptyHint')}
+        </Text>
       )}
 
       {Platform.OS === 'web' ? (
@@ -795,6 +805,7 @@ const mediaStyles = StyleSheet.create({
     borderColor: '#0EA5E9' + '45',
   },
   cmdText: { fontSize: 20, color: TEXT_PRIMARY },
+  emptyHint: { fontSize: 14, color: TEXT_MUTED, lineHeight: 22 },
   frame: {
     width: '100%',
     height: 460,
