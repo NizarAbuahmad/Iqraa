@@ -18,6 +18,7 @@ import { getItem, saveItem, toggleFavorite, updateItem } from '@/services/worksp
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
+import { EditableList, EditableText } from '@/components/ui/Editable';
 import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
 import { RelatedResourcesPanel } from '@/components/ui/RelatedResourcesPanel';
 import {
@@ -77,6 +78,12 @@ export default function LessonPlanScreen() {
   const [curriculumGrounded, setCurriculumGrounded] = useState<boolean | null>(null);
   /** Title of the curriculum lesson the output was anchored to, when grounded. */
   const [groundedLesson, setGroundedLesson] = useState<string | null>(null);
+  /**
+   * Fields the teacher has changed. Kept so provenance stays honest — a plan
+   * that has been edited is no longer purely machine-written, and the save
+   * button needs to know there is something new to save.
+   */
+  const [editedFields, setEditedFields] = useState<ReadonlySet<string>>(new Set());
   const [error, setError] = useState('');
   const [savedId, setSavedId] = useState<string | undefined>(params.savedId);
   const [saveLabel, setSaveLabel] = useState<'save' | 'saved' | 'updated'>('save');
@@ -110,6 +117,13 @@ export default function LessonPlanScreen() {
     if (result) setSaveLabel(savedId ? 'updated' : 'save');
   }, [result]);
 
+  const applyEdit = <K extends keyof LessonPlanOutput>(field: K, value: LessonPlanOutput[K]) => {
+    setResult(prev => (prev ? { ...prev, [field]: value } : prev));
+    setEditedFields(prev => new Set(prev).add(field as string));
+    // Something changed since the last save, so offer to save it again.
+    setSaveLabel(savedId ? 'updated' : 'save');
+  };
+
   const generate = async () => {
     if (!topic.trim()) { setError(t('topicRequired')); return; }
     setError('');
@@ -117,6 +131,7 @@ export default function LessonPlanScreen() {
     setResult(null);
     setCurriculumGrounded(null);
     setGroundedLesson(null);
+    setEditedFields(new Set());
     setSaveLabel('save');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
@@ -389,7 +404,16 @@ export default function LessonPlanScreen() {
       )}
 
       {/* Result */}
-      {result && <LessonPlanResult plan={result} colors={colors} isRTL={isRTL} t={t} />}
+      {result && (
+        <LessonPlanResult
+          plan={result}
+          colors={colors}
+          isRTL={isRTL}
+          t={t}
+          onEdit={applyEdit}
+          editedFields={editedFields}
+        />
+      )}
 
       {result && !loading && (
         <RelatedResourcesPanel
@@ -488,11 +512,14 @@ export default function LessonPlanScreen() {
   );
 }
 
-function LessonPlanResult({ plan, colors, isRTL, t }: {
+function LessonPlanResult({ plan, colors, isRTL, t, onEdit, editedFields }: {
   plan: LessonPlanOutput;
   colors: ReturnType<typeof useColors>;
   isRTL: boolean;
   t: (k: any, ...a: any[]) => string;
+  /** Commits one field of the plan. The screen owns the plan; this just reports. */
+  onEdit: <K extends keyof LessonPlanOutput>(field: K, value: LessonPlanOutput[K]) => void;
+  editedFields: ReadonlySet<string>;
 }) {
   return (
     <View style={{ paddingHorizontal: 20, paddingTop: 4 }}>
@@ -504,34 +531,104 @@ function LessonPlanResult({ plan, colors, isRTL, t }: {
       </View>
 
       <ResultSection title={t('sectionObjectives')} icon="flag-outline" isRTL={isRTL}>
-        {plan.objectives.map((o, i) => <BulletItem key={i} text={o} colors={colors} isRTL={isRTL} />)}
+        <EditableList
+          items={plan.objectives}
+          onChange={next => onEdit('objectives', next)}
+          colors={colors}
+          isRTL={isRTL}
+          placeholder={t('editPlaceholder')}
+          addLabel={t('editAddItem')}
+        />
       </ResultSection>
       <ResultSection title={t('sectionMaterials')} icon="bag-outline" isRTL={isRTL}>
-        {plan.materials.map((m, i) => <BulletItem key={i} text={m} colors={colors} isRTL={isRTL} />)}
+        <EditableList
+          items={plan.materials}
+          onChange={next => onEdit('materials', next)}
+          colors={colors}
+          isRTL={isRTL}
+          placeholder={t('editPlaceholder')}
+          addLabel={t('editAddItem')}
+        />
       </ResultSection>
       <ResultSection title={t('sectionIntroduction')} icon="play-outline" isRTL={isRTL}>
-        <BodyText text={plan.introduction} colors={colors} isRTL={isRTL} />
+        <EditableText
+          value={plan.introduction}
+          onChange={next => onEdit('introduction', next)}
+          colors={colors}
+          isRTL={isRTL}
+          placeholder={t('editPlaceholder')}
+          edited={editedFields.has('introduction')}
+        />
       </ResultSection>
       <ResultSection title={t('sectionMainActivity')} icon="people-outline" isRTL={isRTL}>
-        <BodyText text={plan.mainActivity} colors={colors} isRTL={isRTL} />
+        <EditableText
+          value={plan.mainActivity}
+          onChange={next => onEdit('mainActivity', next)}
+          colors={colors}
+          isRTL={isRTL}
+          placeholder={t('editPlaceholder')}
+          edited={editedFields.has('mainActivity')}
+        />
       </ResultSection>
       <ResultSection title={t('sectionGuidedPractice')} icon="hand-left-outline" isRTL={isRTL}>
-        <BodyText text={plan.guidedPractice} colors={colors} isRTL={isRTL} />
+        <EditableText
+          value={plan.guidedPractice}
+          onChange={next => onEdit('guidedPractice', next)}
+          colors={colors}
+          isRTL={isRTL}
+          placeholder={t('editPlaceholder')}
+          edited={editedFields.has('guidedPractice')}
+        />
       </ResultSection>
       <ResultSection title={t('sectionIndependentPractice')} icon="person-outline" isRTL={isRTL}>
-        <BodyText text={plan.independentPractice} colors={colors} isRTL={isRTL} />
+        <EditableText
+          value={plan.independentPractice}
+          onChange={next => onEdit('independentPractice', next)}
+          colors={colors}
+          isRTL={isRTL}
+          placeholder={t('editPlaceholder')}
+          edited={editedFields.has('independentPractice')}
+        />
       </ResultSection>
       <ResultSection title={t('sectionClosure')} icon="stop-circle-outline" isRTL={isRTL}>
-        <BodyText text={plan.closure} colors={colors} isRTL={isRTL} />
+        <EditableText
+          value={plan.closure}
+          onChange={next => onEdit('closure', next)}
+          colors={colors}
+          isRTL={isRTL}
+          placeholder={t('editPlaceholder')}
+          edited={editedFields.has('closure')}
+        />
       </ResultSection>
       <ResultSection title={t('sectionAssessment')} icon="checkmark-done-outline" isRTL={isRTL}>
-        <BodyText text={plan.assessment} colors={colors} isRTL={isRTL} />
+        <EditableText
+          value={plan.assessment}
+          onChange={next => onEdit('assessment', next)}
+          colors={colors}
+          isRTL={isRTL}
+          placeholder={t('editPlaceholder')}
+          edited={editedFields.has('assessment')}
+        />
       </ResultSection>
       <ResultSection title={t('sectionDifferentiation')} icon="layers-outline" isRTL={isRTL}>
-        <BodyText text={plan.differentiation} colors={colors} isRTL={isRTL} />
+        <EditableText
+          value={plan.differentiation}
+          onChange={next => onEdit('differentiation', next)}
+          colors={colors}
+          isRTL={isRTL}
+          placeholder={t('editPlaceholder')}
+          edited={editedFields.has('differentiation')}
+        />
       </ResultSection>
       <ResultSection title={t('sectionHomework')} icon="home-outline" isRTL={isRTL}>
-        <BodyText text={plan.homework} colors={colors} isRTL={isRTL} />
+        <EditableText
+          value={plan.homework}
+          onChange={next => onEdit('homework', next)}
+          colors={colors}
+          isRTL={isRTL}
+          placeholder={t('editPlaceholder')}
+          edited={editedFields.has('homework')}
+        />
       </ResultSection>
     </View>
   );
