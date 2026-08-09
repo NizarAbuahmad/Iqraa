@@ -24,10 +24,15 @@ Vision screens (student/parent/school dashboards) are deprioritized.
 ## What works today (verified, not assumed)
 
 - `pnpm install` and full `pnpm run typecheck` pass clean on Windows.
-- Mobile test suite: 177 tests, 0 failures.
+- Mobile test suite: 219 tests, 0 failures (10 skipped). The `test` script now
+  globs `services/__tests__/**/*.test.ts` — it used to be a hand-listed set of
+  files that had drifted, so two suites never ran.
 - Local dev runs end to end: Express API (:8080) + Postgres 17 (`iqraa` db,
   6 tables) + Expo web (:8083). Login/register work against the local DB.
-- Curriculum data loads in-app (S1: 4 units / 18 lessons).
+- Curriculum data loads in-app (math S1: 4 units / 18 lessons).
+- Financial Literacy G10 S1 is browsable (2 units / 10 lessons, NCCD-sourced).
+  It was previously offered as a subject tile with no book behind it, so the
+  subject dead-ended on the "no semesters" empty state.
 - Expo Go on a phone works over LAN (firewall rule `Iqraa-Dev-8080-8083`;
   see LOCAL_SETUP.md).
 - `mockup-sandbox` is excluded from the workspace — it is a design sandbox,

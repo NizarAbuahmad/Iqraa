@@ -25,6 +25,7 @@ const SUBJECT_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   islamic:     'moon',
   social:      'globe',
   computer:    'laptop-outline',
+  'financial-literacy': 'wallet-outline',
 };
 
 function SubjectCard({ subject, onPress, isRTL }: { subject: Subject; onPress: () => void; isRTL: boolean }) {

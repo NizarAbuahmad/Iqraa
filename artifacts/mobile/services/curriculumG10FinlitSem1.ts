@@ -141,3 +141,99 @@ export function buildFinlitSem1Catalog(): { units: FinlitKbUnit[]; lessons: Finl
 
   return { units, lessons };
 }
+
+/** Book id in curriculumData.BOOKS this catalog fills (browser id space). */
+export const FINLIT_S1_CURRICULUM_BOOK_ID = 'book-finlit-10';
+
+/** Shape compatible with Unit / Lesson in curriculumData.ts */
+type FinlitBrowserUnit = {
+  id: string;
+  bookId: string;
+  name: string;
+  nameAr: string;
+  description: string;
+  descriptionAr: string;
+  order: number;
+};
+
+type FinlitBrowserLesson = {
+  id: string;
+  unitId: string;
+  title: string;
+  titleAr: string;
+  estimatedDuration: number;
+  objectives: string[];
+  objectivesAr: string[];
+  keywords: string[];
+  keywordsAr: string[];
+  teacherNotes: string;
+  teacherNotesAr: string;
+  outcomes: Array<{
+    id: string;
+    lessonId: string;
+    description: string;
+    descriptionAr: string;
+    bloomsLevel: 'Understand';
+    skills: string[];
+  }>;
+};
+
+/**
+ * Map the financial-literacy JSON into curriculum-browser Unit/Lesson rows for
+ * book-finlit-10. Uses the same ids as the KB catalog above, so a lesson picked
+ * in the browser and the same lesson pulled from the KB agree.
+ *
+ * The student book prints no حصص counts (periods is null for every lesson) and
+ * no teacher guide exists, so estimatedDuration falls back to one 45-minute
+ * period — same convention as the math catalogs.
+ */
+export function buildFinlitSem1BrowserCatalog(): {
+  units: FinlitBrowserUnit[];
+  lessons: FinlitBrowserLesson[];
+} {
+  const units: FinlitBrowserUnit[] = nccdG10FinlitSem1.units.map(u => {
+    const lessonTitles = u.lessons.map(l => l.title_ar).join(' · ');
+    return {
+      id: finlitSem1UnitKbId(u.id),
+      bookId: FINLIT_S1_CURRICULUM_BOOK_ID,
+      name: u.title_en,
+      nameAr: u.title_ar,
+      description: lessonTitles,
+      descriptionAr: lessonTitles,
+      order: u.number,
+    };
+  });
+
+  const lessons: FinlitBrowserLesson[] = [];
+  for (const u of nccdG10FinlitSem1.units) {
+    const unitKbId = finlitSem1UnitKbId(u.id);
+    for (const lesson of u.lessons) {
+      const objectives = [...(lesson.objectives ?? [])];
+      const vocabulary = (lesson.vocabulary ?? []).map(v => v.ar);
+      const lessonKbId = finlitSem1LessonKbId(lesson.id);
+      lessons.push({
+        id: lessonKbId,
+        unitId: unitKbId,
+        title: lesson.title_ar,
+        titleAr: lesson.title_ar,
+        estimatedDuration: (lesson.periods ?? 1) * 45,
+        objectives,
+        objectivesAr: [...objectives],
+        keywords: [...vocabulary],
+        keywordsAr: [...vocabulary],
+        teacherNotes: '',
+        teacherNotesAr: '',
+        outcomes: objectives.map((o, i) => ({
+          id: `o-finlit-s1-${lesson.id}-${i}`,
+          lessonId: lessonKbId,
+          description: o,
+          descriptionAr: o,
+          bloomsLevel: 'Understand' as const,
+          skills: [] as string[],
+        })),
+      });
+    }
+  }
+
+  return { units, lessons };
+}
