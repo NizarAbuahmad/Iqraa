@@ -65,11 +65,28 @@ describe('Math G10 S1 browser catalog — NCCD unify', () => {
     assert.ok(lesson && lesson.objectives.length > 0);
   });
 
-  it('Units 2–4 are title-only', () => {
-    assert.equal(isBrowserUnitTitleOnly('kbu-math-s1-nccd-u2'), true);
-    assert.equal(isBrowserUnitTitleOnly('kbu-math-s1-nccd-u3'), true);
-    assert.equal(isBrowserUnitTitleOnly('kbu-math-s1-nccd-u4'), true);
-    assert.equal(isBrowserLessonTitleOnly('kbl-math-s1-nccd-u2_l1'), true);
+  it('Units 2–4 are no longer title-only — completed from the teacher guide', () => {
+    // They shipped title-only while only the student book was available, which
+    // gave objectives per unit rather than per lesson. The Semester 1 teacher
+    // guide's unit-plan tables supplied the per-lesson breakdown.
+    assert.equal(isBrowserUnitTitleOnly('kbu-math-s1-nccd-u2'), false);
+    assert.equal(isBrowserUnitTitleOnly('kbu-math-s1-nccd-u3'), false);
+    assert.equal(isBrowserUnitTitleOnly('kbu-math-s1-nccd-u4'), false);
+    assert.equal(isBrowserLessonTitleOnly('kbl-math-s1-nccd-u2_l1'), false);
+  });
+
+  it('every Sem1 lesson carries at least one objective', () => {
+    // The evaluation module generates and grades against objectives, so a
+    // lesson without one cannot be assessed at all.
+    const units = getUnitsForBook('book-math-10');
+    for (const unit of units) {
+      for (const lesson of getLessonsForUnit(unit.id)) {
+        assert.ok(
+          lesson.objectives.length > 0,
+          `lesson "${lesson.titleAr}" in "${unit.nameAr}" has no objectives`,
+        );
+      }
+    }
   });
 
   it('isBrowserCurriculumPreparing is always false (S1 is NCCD-backed)', () => {
@@ -85,11 +102,12 @@ describe('Math G10 S1 browser catalog — NCCD unify', () => {
     assert.ok(!g.context.includes('على مستوى الوحدة'));
   });
 
-  it('Unit 2 generator context uses unit_objectives, labeled as unit-level', () => {
+  it('Unit 2 generator context now uses per-lesson objectives', () => {
     const g = resolveGeneratorGrounding('أوتار الدائرة وأقطارها ومماساتها', 'ar');
     assert.equal(g.grounded, true);
-    assert.ok(g.context.includes('على مستوى الوحدة'));
-    assert.ok(g.context.includes('حساب طول القوس، ومساحة القطاع الدائري'));
-    assert.ok(!g.context.includes('النتاجات (من المنهج الرسمي):'));
+    assert.ok(g.context.includes('النتاجات (من المنهج الرسمي):'));
+    assert.ok(g.context.includes('الوتر'));
+    // No longer falls back to the coarser unit-level wording.
+    assert.ok(!g.context.includes('على مستوى الوحدة'));
   });
 });

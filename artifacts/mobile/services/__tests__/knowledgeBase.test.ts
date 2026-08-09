@@ -212,10 +212,15 @@ describe('resolveGroundedKbLesson — confidence gate', () => {
     assert.equal(units.some(u => u.titleAr === 'المعادلات'), false, 'TopicSelector must not offer legacy المعادلات');
   });
 
-  it('Sem1 Unit 2 title-only lesson is grounded but has empty objectives', () => {
+  it('Sem1 Unit 2 lesson is grounded and now carries per-lesson objectives', () => {
+    // Units 2-4 used to be title-only: real lesson titles from the student
+    // book, but objectives only at unit level. They were completed from the
+    // Semester 1 teacher guide's unit-plan tables, so a lesson here now grounds
+    // generation the same way Unit 1 always did.
     const lesson = resolveGroundedKbLesson('أوتار الدائرة وأقطارها ومماساتها', 'ar');
     assert.ok(lesson, 'Expected grounded match for أوتار الدائرة');
     assert.equal(lesson!.id, 'kbl-math-s1-nccd-u2_l1');
-    assert.equal(lesson!.objectives.length, 0, 'Title-only lesson keeps empty per-lesson objectives');
+    assert.ok(lesson!.objectives.length > 0, 'Unit 2 lesson should carry its own objectives');
+    assert.ok(lesson!.objectives.some(o => o.includes('الوتر')));
   });
 });
