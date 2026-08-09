@@ -6,6 +6,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { confirm } from '@/services/confirm';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import {
@@ -67,23 +68,18 @@ export default function WorkspaceScreen() {
     reload();
   };
 
-  const handleDelete = (item: SavedMaterial) => {
-    Alert.alert(
-      t('deleteConfirmTitle'),
-      t('deleteConfirmMsg'),
-      [
-        { text: t('cancel'), style: 'cancel' },
-        {
-          text: t('deleteItem'),
-          style: 'destructive',
-          onPress: async () => {
-            await deleteItem(item.id);
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-            reload();
-          },
-        },
-      ],
-    );
+  const handleDelete = async (item: SavedMaterial) => {
+    const ok = await confirm({
+      title: t('deleteConfirmTitle'),
+      message: t('deleteConfirmMsg'),
+      confirmLabel: t('deleteItem'),
+      cancelLabel: t('cancel'),
+      destructive: true,
+    });
+    if (!ok) return;
+    await deleteItem(item.id);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    reload();
   };
 
   const handleDuplicate = async (id: string) => {
@@ -122,7 +118,7 @@ export default function WorkspaceScreen() {
         {
           text: t('deleteItem'),
           style: 'destructive',
-          onPress: () => handleDelete(item),
+          onPress: () => { void handleDelete(item); },
         },
         { text: t('cancel'), style: 'cancel' },
       ],

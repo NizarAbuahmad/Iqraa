@@ -9,7 +9,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Modal,
   Pressable,
@@ -33,6 +32,7 @@ import {
   type RosterStudent,
 } from '@/services/roster';
 import { countStudents } from '@/services/i18n';
+import { confirm } from '@/services/confirm';
 
 const ACCENT = '#1B6B62';
 
@@ -101,23 +101,22 @@ export default function ClassDetailScreen() {
     }
   };
 
-  const onRemove = (student: RosterStudent) => {
-    Alert.alert(t('removeStudent'), t('removeStudentConfirm', student.displayName), [
-      { text: t('cancel'), style: 'cancel' },
-      {
-        text: t('remove'),
-        style: 'destructive',
-        onPress: async () => {
-          if (!id) return;
-          try {
-            await removeStudentFromClass(id, student.id);
-            setStudents(prev => prev.filter(s => s.id !== student.id));
-          } catch (err) {
-            setError(err instanceof Error ? err.message : t('rosterNeedsConnection'));
-          }
-        },
-      },
-    ]);
+  const onRemove = async (student: RosterStudent) => {
+    if (!id) return;
+    const ok = await confirm({
+      title: t('removeStudent'),
+      message: t('removeStudentConfirm', student.displayName),
+      confirmLabel: t('remove'),
+      cancelLabel: t('cancel'),
+      destructive: true,
+    });
+    if (!ok) return;
+    try {
+      await removeStudentFromClass(id, student.id);
+      setStudents(prev => prev.filter(s => s.id !== student.id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('rosterNeedsConnection'));
+    }
   };
 
   const align = isRTL ? 'right' : 'left';
@@ -223,7 +222,7 @@ export default function ClassDetailScreen() {
                   </Text>
                 ) : null}
               </View>
-              <Pressable onPress={() => onRemove(item)} hitSlop={10}>
+              <Pressable onPress={() => { void onRemove(item); }} hitSlop={10}>
                 <Ionicons name="close" size={20} color={colors.mutedForeground} />
               </Pressable>
             </View>
