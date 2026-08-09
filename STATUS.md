@@ -29,7 +29,19 @@ Vision screens (student/parent/school dashboards) are deprioritized.
   files that had drifted, so two suites never ran.
 - Local dev runs end to end: Express API (:8080) + Postgres 17 (`iqraa` db,
   6 tables) + Expo web (:8083). Login/register work against the local DB.
-- Curriculum data loads in-app (math S1: 4 units / 18 lessons).
+- Curriculum data loads in-app (math S1: 4 units / 18 lessons). It now lives in
+  `lib/curriculum` (`@workspace/curriculum`), shared by mobile and the API —
+  `services/curriculumData.ts` and `services/curriculumG10*.ts` are re-export
+  shims, so app imports are unchanged. The API serves it at `/api/curriculum/*`
+  (grades, subjects, books, units, lessons, objectives) because evaluation
+  questions must be generated and graded against objectives server-side.
+- **Learning-objective coverage is thin, and unevenly classified.** Measured from
+  the running API: math S1 has 11 objectives **all in Unit 1** (units 2–4 are
+  title-only — 13 lessons, zero objectives); math S2 has 61; financial literacy
+  40; chemistry 4. Only chemistry's 4 carry a hand-authored Bloom's level — the
+  other 112 are stamped `'Understand'` by the catalog builders. Objectives expose
+  `bloomsSource: 'authored' | 'defaulted'` so consumers can tell the difference
+  instead of trusting a default. See `docs/student-evaluation-module-plan.md`.
 - Financial Literacy G10 S1 is browsable (2 units / 10 lessons, NCCD-sourced).
   It was previously offered as a subject tile with no book behind it, so the
   subject dead-ended on the "no semesters" empty state.

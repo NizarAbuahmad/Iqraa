@@ -5,7 +5,11 @@
     "tsBuildInfoFile": ".tsbuildinfo",
     "outDir": "dist",
     "rootDir": "src",
-    "types": ["node"]
+    "types": ["node"],
+    // Tests import with explicit .ts extensions because node --experimental-strip-types
+    // requires them. The build is esbuild, not tsc, so nothing here needs to emit.
+    "noEmit": true,
+    "allowImportingTsExtensions": true
   },
   "include": ["src"],
   "references": [
@@ -14,6 +18,9 @@
     },
     {
       "path": "../../lib/api-zod"
+    },
+    {
+      "path": "../../lib/curriculum"
     },
     {
       "path": "../../lib/integrations-openai-ai-server"
