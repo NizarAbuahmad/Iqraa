@@ -583,6 +583,7 @@ const prepStyles = StyleSheet.create({
 
 function MessageBubble({
   message, colors, isRTL, onLongPress, onClarifySubject, onPedagogicalClarify, prepProgress,
+  introName, introPitch,
 }: {
   message: Message; colors: any; isRTL: boolean;
   onLongPress?: (text: string) => void;
@@ -590,6 +591,9 @@ function MessageBubble({
   onPedagogicalClarify?: (originalQuery: string, option: ClarificationOption) => void;
   /** Live session prep progress — shown under the latest meaningful reply. */
   prepProgress?: PrepProgressView | null;
+  /** Assistant identity, shown on the opening turn only. */
+  introName?: string;
+  introPitch?: string;
 }) {
   const isUser = message.role === 'user';
   const timeLabel = message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -631,6 +635,39 @@ function MessageBubble({
             {timeLabel}
           </Text>
         </View>
+      </View>
+    );
+  }
+
+  /**
+   * The opening turn is an introduction, not a remark.
+   *
+   * It used to arrive as an ordinary assistant bubble, which put the first
+   * thing a teacher ever reads inside the same container as every later reply,
+   * and gave the assistant no face, no name and no stated purpose. As a centred
+   * intro it does the job an empty state is for: say who this is, say what it
+   * can do, then get out of the way. It sits at the top of the thread, so it
+   * scrolls off on its own once a real conversation starts.
+   */
+  if (message.id === 'welcome') {
+    return (
+      <View style={styles.intro}>
+        <IqraaMark size={64} tone="soft" />
+        <Text style={[styles.introName, { color: colors.primary, fontFamily: 'Cairo_700Bold' }]}>
+          {introName}
+        </Text>
+        <Text
+          style={[
+            styles.introPitch,
+            {
+              color: colors.mutedForeground,
+              fontFamily: 'Almarai_400Regular',
+              writingDirection: isRTL ? 'rtl' : 'ltr',
+            },
+          ]}
+        >
+          {introPitch}
+        </Text>
       </View>
     );
   }
@@ -1673,6 +1710,8 @@ export default function IqraScreen() {
             } : undefined}
             onClarifySubject={handleClarifySubject}
             onPedagogicalClarify={handlePedagogicalClarify}
+            introName={t('iqraAgentName')}
+            introPitch={t('iqraAgentPitch')}
             prepProgress={
               item.id === lastPrepMessageId ? livePrepProgress : null
             }
@@ -1877,6 +1916,9 @@ const styles = StyleSheet.create({
   rowAssistant: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 4 },
   rowAssistantRTL: { flexDirection: 'row-reverse' },
   avatar: { marginTop: 4 },
+  intro: { alignItems: 'center', gap: 10, paddingTop: 28, paddingBottom: 12, paddingHorizontal: 24 },
+  introName: { fontSize: 22, textAlign: 'center' },
+  introPitch: { fontSize: 14, lineHeight: 23, textAlign: 'center', maxWidth: 380 },
   bubbleAssistant: { padding: 14, borderWidth: 1 },
   bubbleBold: { fontSize: 14, fontFamily: 'Cairo_600SemiBold', marginBottom: 2 },
   bubbleText: { fontSize: 13, lineHeight: 20, fontFamily: 'Almarai_400Regular' },
