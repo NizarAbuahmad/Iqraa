@@ -285,6 +285,10 @@ const translations = {
     // is judged; the front door should not oversell what the rest labels.
     iqraAgentName: 'مساعد إقرأ',
     iqraAgentPitch: 'أساعدك في التخطيط، واقتراح الأفكار، وإعداد الاختبارات. كيف أدعمك اليوم؟',
+    // Grounding: whether generated material is anchored to a curriculum lesson.
+    groundedInCurriculum: (lesson: string) => `مرتبط بالمنهاج الأردني — ${lesson}`,
+    notGroundedTitle: 'محتوى عام، غير مرتبط بدرس من المنهاج',
+    notGroundedHint: 'لم نجد درسًا مطابقًا في المنهاج لهذا الموضوع، فوُلِّد المحتوى بصورة عامة. اختر الدرس من «المنهج» لربطه بنتاجات الدرس ومصطلحاته.',
     iqraWelcome: 'مرحبًا — أنا اقرأ، رفيقك في تحضير الحصص.',
     iqraWelcomeDocs: 'أنا اقرأ، رفيقك في تحضير الحصص.\n\nارفع خطة درس أو عرضاً أو ورقة عمل أو صورة من الكتاب — ونحضّر معاً التلخيص والشرح وخطط الدرس وأوراق العمل والواجبات والاختبارات من موادك.',
     iqraPlaceholder: 'اكتب ما تحتاجه...',
@@ -913,6 +917,9 @@ const translations = {
     iqraWelcome: '🔥 THIS IS BUILD TEST',
     iqraAgentName: 'IQRA Assistant',
     iqraAgentPitch: 'I help with planning, ideas, and building assessments. What do you need today?',
+    groundedInCurriculum: (lesson: string) => `Anchored to the Jordanian curriculum — ${lesson}`,
+    notGroundedTitle: 'General content, not tied to a curriculum lesson',
+    notGroundedHint: 'No matching curriculum lesson was found for this topic, so the content was generated generically. Pick the lesson from Curriculum to anchor it to real outcomes and vocabulary.',
     iqraWelcomeDocs: 'I’m IQRA’s AI Teaching Assistant.\n\nUpload a lesson plan, PowerPoint, worksheet, or a photo of a textbook page — and I’ll help you summarize, explain, build lesson plans, worksheets, homework, and quizzes from your own materials.',
     iqraPlaceholder: 'Ask IQRA anything...',
     iqraPlaceholderDocs: 'Ask about your files… or type: Summarize this lesson',

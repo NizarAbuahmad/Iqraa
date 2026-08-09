@@ -7,12 +7,13 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
-import { buildGeneratorContext } from '@/services/kbContext';
+import { buildGeneratorContext, resolveGeneratorGrounding } from '@/services/kbContext';
 import { ActivityOutput, ActivityStep } from '@/services/ai/AIService';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
 } from '@/services/curriculumData';
 import { TopicSelector } from '@/components/ui/TopicSelector';
+import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { Button } from '@/components/ui/Button';
 import { getItem, saveItem, updateItem } from '@/services/workspace';
 import { ExportMenu } from '@/components/ui/ExportMenu';
@@ -62,6 +63,9 @@ export default function ActivityScreen() {
   const [objective, setObjective] = useState(params.objective ?? '');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ActivityOutput | null>(null);
+  /** Whether the output was anchored to a curriculum lesson, and which one. */
+  const [curriculumGrounded, setCurriculumGrounded] = useState<boolean | null>(null);
+  const [groundedLesson, setGroundedLesson] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [savedId, setSavedId] = useState<string | undefined>(params.savedId);
   const [saveLabel, setSaveLabel] = useState<'save' | 'saved' | 'updated'>('save');
@@ -104,6 +108,11 @@ export default function ActivityScreen() {
     setError(''); setLoading(true); setResult(null); setSaveLabel('save');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
+      const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en');
+      setCurriculumGrounded(grounding.grounded);
+      setGroundedLesson(
+        grounding.lesson ? (lang === 'ar' ? grounding.lesson.titleAr : grounding.lesson.titleEn) : null,
+      );
       const additionalContext = buildGeneratorContext(topic.trim(), lang as 'ar' | 'en') || undefined;
       const out = await aiService.generateActivity({
         grade: grades[gradeIdx].name,
@@ -308,6 +317,24 @@ export default function ActivityScreen() {
       )}
 
       {/* Result */}
+      {/* What the material is anchored to. Shown both ways: a teacher needs to
+          know it IS tied to the lesson as much as when it isn't. */}
+      {result && curriculumGrounded !== null && (
+        <View style={{ marginHorizontal: 20 }}>
+          <GroundingNotice
+            grounded={curriculumGrounded}
+            lessonTitle={groundedLesson}
+            isRTL={isRTL}
+            colors={colors}
+            labels={{
+              grounded: (l: string) => t('groundedInCurriculum', l),
+              generic: t('notGroundedTitle'),
+              genericHint: t('notGroundedHint'),
+            }}
+          />
+        </View>
+      )}
+
       {result && <ActivityResult activity={result} colors={colors} isRTL={isRTL} t={t} lang={lang} />}
 
       {result && !loading && (
