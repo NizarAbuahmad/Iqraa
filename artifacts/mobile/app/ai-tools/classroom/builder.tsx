@@ -97,7 +97,7 @@ export default function ClassroomBuilderScreen() {
     label, options, value, onChange,
   }: { label: string; options: { value: T; label: string }[]; value: T; onChange: (v: T) => void }) => (
     <View style={{ marginBottom: 18 }}>
-      <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
+      <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
       <View style={[styles.pillRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         {options.map(o => {
           const active = o.value === value;
@@ -111,7 +111,7 @@ export default function ClassroomBuilderScreen() {
                 borderRadius: colors.radius,
               }]}
             >
-              <Text style={[styles.pillText, { color: active ? '#fff' : colors.mutedForeground, fontFamily: active ? 'Inter_600SemiBold' : 'Inter_400Regular' }]}>
+              <Text style={[styles.pillText, { color: active ? '#fff' : colors.mutedForeground, fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular' }]}>
                 {o.label}
               </Text>
             </Pressable>
@@ -155,11 +155,11 @@ export default function ClassroomBuilderScreen() {
         </Pressable>
         <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginBottom: 6 }]}>
           <Text style={{ fontSize: 22 }}>{selectedCard?.emoji ?? '🔐'}</Text>
-          <Text style={[{ color: '#fff', fontFamily: 'Inter_700Bold', fontSize: 20, textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 20, textAlign: isRTL ? 'right' : 'left' }]}>
             {selectedCard ? t(selectedCard.titleKey as any) : t('classroomBuilderSubtitle')}
           </Text>
         </View>
-        <Text style={[{ color: 'rgba(255,255,255,0.8)', fontFamily: 'Inter_400Regular', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[{ color: 'rgba(255,255,255,0.8)', fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }]}>
           {t('classroomBuilderTitle')}
         </Text>
       </View>
@@ -168,14 +168,14 @@ export default function ClassroomBuilderScreen() {
       <View style={styles.form}>
         {/* Grade */}
         <View style={{ marginBottom: 18 }}>
-          <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('grade')}</Text>
+          <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('grade')}</Text>
           <View style={[styles.pillRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             {grades.map((g, idx) => {
               const active = gradeIdx === idx;
               const label = lang === 'ar' ? g.nameAr : g.name;
               return (
                 <Pressable key={g.id} onPress={() => setGradeIdx(idx)} style={[styles.pill, { backgroundColor: active ? ACCENT : colors.card, borderColor: active ? ACCENT : colors.border, borderRadius: colors.radius }]}>
-                  <Text style={[styles.pillText, { color: active ? '#fff' : colors.mutedForeground, fontFamily: active ? 'Inter_600SemiBold' : 'Inter_400Regular' }]}>
+                  <Text style={[styles.pillText, { color: active ? '#fff' : colors.mutedForeground, fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular' }]}>
                     {label}
                   </Text>
                 </Pressable>
@@ -186,13 +186,13 @@ export default function ClassroomBuilderScreen() {
 
         {/* Subject */}
         <View style={{ marginBottom: 18 }}>
-          <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('subjects')}</Text>
+          <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('subjects')}</Text>
           <View style={[styles.pillRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             {subjects.map((s, i) => {
               const active = subjectIdx === i;
               return (
                 <Pressable key={s.id} onPress={() => setSubjectIdx(i)} style={[styles.pill, { backgroundColor: active ? ACCENT : colors.card, borderColor: active ? ACCENT : colors.border, borderRadius: colors.radius }]}>
-                  <Text style={[styles.pillText, { color: active ? '#fff' : colors.mutedForeground, fontFamily: active ? 'Inter_600SemiBold' : 'Inter_400Regular' }]}>
+                  <Text style={[styles.pillText, { color: active ? '#fff' : colors.mutedForeground, fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular' }]}>
                     {lang === 'ar' ? s.nameAr : s.name}
                   </Text>
                 </Pressable>
@@ -217,13 +217,13 @@ export default function ClassroomBuilderScreen() {
 
         {/* Duration */}
         <View style={{ marginBottom: 18 }}>
-          <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('durationLabel')}</Text>
+          <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('durationLabel')}</Text>
           <View style={[styles.pillRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             {DURATIONS.map((d, i) => {
               const active = durationIdx === i;
               return (
                 <Pressable key={d} onPress={() => setDurationIdx(i)} style={[styles.pill, { backgroundColor: active ? ACCENT : colors.card, borderColor: active ? ACCENT : colors.border, borderRadius: colors.radius }]}>
-                  <Text style={[styles.pillText, { color: active ? '#fff' : colors.mutedForeground, fontFamily: active ? 'Inter_600SemiBold' : 'Inter_400Regular' }]}>
+                  <Text style={[styles.pillText, { color: active ? '#fff' : colors.mutedForeground, fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular' }]}>
                     {d} {t('min')}
                   </Text>
                 </Pressable>
@@ -236,7 +236,7 @@ export default function ClassroomBuilderScreen() {
         <PillGroup label={lang === 'ar' ? 'نوع المجموعة' : 'Class type'} options={groupOpts} value={groupType} onChange={setGroupType} />
         <PillGroup label={t('teachingGoalLabel')} options={goalOpts} value={teachingGoal} onChange={setTeachingGoal} />
 
-        {error ? <Text style={[{ color: colors.destructive, fontFamily: 'Inter_400Regular', fontSize: 13, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
+        {error ? <Text style={[{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
 
         <Button
           label={loading ? t('generatingClassroom') : t('generateClassroomBtn')}
@@ -250,7 +250,7 @@ export default function ClassroomBuilderScreen() {
       {loading && (
         <View style={[styles.loadingBox, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, marginHorizontal: 20, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <ActivityIndicator color={ACCENT} />
-          <Text style={[styles.loadingText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
+          <Text style={[styles.loadingText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
             {t('generatingClassroom')}
           </Text>
         </View>
@@ -262,15 +262,15 @@ export default function ClassroomBuilderScreen() {
           {/* Ready banner */}
           <View style={[styles.readyBanner, { backgroundColor: ACCENT + '12', borderColor: ACCENT + '30', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Ionicons name="checkmark-circle" size={20} color={ACCENT} />
-            <Text style={[styles.readyText, { color: ACCENT, fontFamily: 'Inter_600SemiBold' }]}>{t('classroomReady')}</Text>
+            <Text style={[styles.readyText, { color: ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>{t('classroomReady')}</Text>
           </View>
 
           {/* Activity overview */}
           <View style={[styles.previewCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-            <Text style={[styles.previewTitle, { color: colors.foreground, fontFamily: 'Inter_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+            <Text style={[styles.previewTitle, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
               {result.activityName}
             </Text>
-            <Text style={[styles.previewObj, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+            <Text style={[styles.previewObj, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
               {result.learningObjective}
             </Text>
 
@@ -284,13 +284,13 @@ export default function ClassroomBuilderScreen() {
 
           {/* Materials */}
           <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-            <Text style={[styles.sectionLabel, { color: ACCENT, fontFamily: 'Inter_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+            <Text style={[styles.sectionLabel, { color: ACCENT, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
               {lang === 'ar' ? 'المواد اللازمة' : 'Materials'}
             </Text>
             {result.materials.map((m, i) => (
               <View key={i} style={[styles.bullet, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <View style={[styles.dot, { backgroundColor: ACCENT }]} />
-                <Text style={[styles.bulletText, { color: colors.foreground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{m}</Text>
+                <Text style={[styles.bulletText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{m}</Text>
               </View>
             ))}
           </View>
@@ -301,7 +301,7 @@ export default function ClassroomBuilderScreen() {
             style={({ pressed }) => [styles.ctaBtn, { backgroundColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.88 : 1 }]}
           >
             <Ionicons name="play-circle" size={22} color="#fff" />
-            <Text style={[styles.ctaText, { fontFamily: 'Inter_700Bold' }]}>{t('startPresentation')}</Text>
+            <Text style={[styles.ctaText, { fontFamily: 'Cairo_700Bold' }]}>{t('startPresentation')}</Text>
           </Pressable>
 
           <Pressable
@@ -309,7 +309,7 @@ export default function ClassroomBuilderScreen() {
             style={[styles.regenBtn, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="refresh-outline" size={16} color={ACCENT} />
-            <Text style={[styles.regenText, { color: ACCENT, fontFamily: 'Inter_600SemiBold' }]}>{t('regenerateBtn')}</Text>
+            <Text style={[styles.regenText, { color: ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>{t('regenerateBtn')}</Text>
           </Pressable>
         </View>
       )}
@@ -322,7 +322,7 @@ function StatItem({ icon, label, accent }: { icon: keyof typeof Ionicons.glyphMa
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
       <Ionicons name={icon} size={13} color={accent} />
-      <Text style={{ fontSize: 12, color: accent, fontFamily: 'Inter_500Medium' }}>{label}</Text>
+      <Text style={{ fontSize: 12, color: accent, fontFamily: 'Cairo_500Medium' }}>{label}</Text>
     </View>
   );
 }

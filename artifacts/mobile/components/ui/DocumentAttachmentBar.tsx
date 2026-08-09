@@ -180,13 +180,13 @@ export function DocumentAttachmentBar({
               <View style={{ maxWidth: 140 }}>
                 <Text
                   numberOfLines={1}
-                  style={{ color: colors.foreground, fontFamily: 'Inter_500Medium', fontSize: 12 }}
+                  style={{ color: colors.foreground, fontFamily: 'Cairo_500Medium', fontSize: 12 }}
                 >
                   {d.name}
                 </Text>
                 <Text
                   numberOfLines={1}
-                  style={{ color: colors.mutedForeground, fontFamily: 'Inter_400Regular', fontSize: 10 }}
+                  style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 10 }}
                 >
                   {statusLabel(d)}
                   {d.status !== 'ready' && d.status !== 'error'
@@ -211,7 +211,7 @@ export function DocumentAttachmentBar({
         <Text
           style={{
             color: colors.mutedForeground,
-            fontFamily: 'Inter_400Regular',
+            fontFamily: 'Almarai_400Regular',
             fontSize: 11,
             textAlign: rtl ? 'right' : 'left',
             paddingHorizontal: 4,

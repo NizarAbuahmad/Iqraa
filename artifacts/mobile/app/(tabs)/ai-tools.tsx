@@ -211,19 +211,19 @@ function ToolCard({
       </View>
       <View style={{ flex: 1 }}>
         <View style={[styles.titleRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'Inter_600SemiBold', fontSize: compact ? 14 : 15 }]}>
+          <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: compact ? 14 : 15 }]}>
             {t(tool.titleKey as any)}
           </Text>
           {tool.badgeKey && (
             <View style={[styles.badge, { backgroundColor: tool.color + '22' }]}>
-              <Text style={[styles.badgeText, { color: tool.color, fontFamily: 'Inter_600SemiBold' }]}>
+              <Text style={[styles.badgeText, { color: tool.color, fontFamily: 'Cairo_600SemiBold' }]}>
                 {t(tool.badgeKey as any)}
               </Text>
             </View>
           )}
         </View>
         <Text
-          style={[styles.cardDesc, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}
+          style={[styles.cardDesc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}
           numberOfLines={compact ? 2 : 3}
         >
           {t(tool.descKey as any)}
@@ -252,7 +252,7 @@ export default function AIToolsScreen() {
       showsVerticalScrollIndicator={false}
     >
       <View style={[styles.header, { paddingTop: topPad + 16, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Inter_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('aiTools')}
         </Text>
         {DEMO_MODE ? (
@@ -260,19 +260,19 @@ export default function AIToolsScreen() {
         ) : (
           <View style={[styles.aiBadge, { backgroundColor: colors.primary + '18', borderRadius: 20, alignSelf: isRTL ? 'flex-end' : 'flex-start', flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Ionicons name="sparkles-outline" size={14} color={colors.primary} />
-            <Text style={[styles.aiBadgeText, { color: colors.primary, fontFamily: 'Inter_600SemiBold' }]}>
+            <Text style={[styles.aiBadgeText, { color: colors.primary, fontFamily: 'Cairo_600SemiBold' }]}>
               {t('poweredByAI')}
             </Text>
           </View>
         )}
-        <Text style={[styles.subtitle, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.subtitle, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('aiToolsSubtitle')}
         </Text>
       </View>
 
       {WORKFLOW.map(section => (
         <View key={section.id} style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.mutedForeground, fontFamily: 'Inter_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[styles.sectionTitle, { color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
             {t(section.titleKey as any)}
           </Text>
           <View style={styles.list}>
@@ -292,7 +292,7 @@ export default function AIToolsScreen() {
           }}
           style={[styles.moreHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
         >
-          <Text style={[styles.sectionTitle, { color: colors.mutedForeground, fontFamily: 'Inter_600SemiBold', marginBottom: 0 }]}>
+          <Text style={[styles.sectionTitle, { color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', marginBottom: 0 }]}>
             {t('toolsMoreTitle')}
           </Text>
           <Ionicons
@@ -303,7 +303,7 @@ export default function AIToolsScreen() {
         </Pressable>
         {moreOpen && (
           <>
-            <Text style={[styles.moreHint, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+            <Text style={[styles.moreHint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
               {t('toolsMoreHint')}
             </Text>
             <View style={styles.list}>
@@ -334,10 +334,10 @@ export default function AIToolsScreen() {
           <Ionicons name="folder-outline" size={22} color="#10B981" />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={[{ color: colors.foreground, fontFamily: 'Inter_600SemiBold', fontSize: 15, textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 15, textAlign: isRTL ? 'right' : 'left' }]}>
             {t('myWorkspace')}
           </Text>
-          <Text style={[{ color: colors.mutedForeground, fontFamily: 'Inter_400Regular', fontSize: 12, textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: isRTL ? 'right' : 'left' }]}>
             {t('workspaceSubtitle')}
           </Text>
         </View>
@@ -347,7 +347,7 @@ export default function AIToolsScreen() {
       {DEMO_MODE && (
         <View style={[styles.note, { backgroundColor: colors.muted, borderRadius: colors.radius, marginHorizontal: 20, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <Ionicons name="information-circle-outline" size={16} color={colors.mutedForeground} />
-          <Text style={[styles.noteText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[styles.noteText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
             {t('aiToolsNote')}
           </Text>
         </View>

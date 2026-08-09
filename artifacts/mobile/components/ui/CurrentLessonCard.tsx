@@ -194,7 +194,7 @@ export function CurrentLessonCard({
             )}
             <Text
               style={{
-                fontFamily: r.done ? 'Inter_600SemiBold' : 'Inter_500Medium',
+                fontFamily: r.done ? 'Cairo_600SemiBold' : 'Cairo_500Medium',
                 fontSize: 12,
                 color: r.done ? colors.primary : colors.foreground,
               }}
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   collapsedTitle: {
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Cairo_600SemiBold',
     fontSize: 13,
   },
   headerRow: {
@@ -243,20 +243,20 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   curriculum: {
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'Almarai_400Regular',
     fontSize: 11,
   },
   subject: {
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Cairo_500Medium',
     fontSize: 12,
   },
   unit: {
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Cairo_700Bold',
     fontSize: 14,
     lineHeight: 20,
   },
   meta: {
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'Almarai_400Regular',
     fontSize: 11,
   },
   changeBtn: {
@@ -275,11 +275,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   changeBtnText: {
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Cairo_600SemiBold',
     fontSize: 12,
   },
   generatedLabel: {
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Cairo_500Medium',
     fontSize: 11,
     marginTop: 2,
   },

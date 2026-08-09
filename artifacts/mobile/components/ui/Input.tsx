@@ -25,7 +25,7 @@ export function Input({
   return (
     <View style={styles.container}>
       {label && (
-        <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
           {label}
         </Text>
       )}
@@ -53,7 +53,7 @@ export function Input({
             styles.input,
             {
               color: colors.foreground,
-              fontFamily: 'Inter_400Regular',
+              fontFamily: 'Almarai_400Regular',
               flex: 1,
               textAlign: isRTL ? 'right' : 'left',
             },
@@ -72,12 +72,12 @@ export function Input({
         )}
       </View>
       {error && (
-        <Text style={[styles.error, { color: colors.destructive, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.error, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
           {error}
         </Text>
       )}
       {hint && !error && (
-        <Text style={[styles.hint, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.hint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
           {hint}
         </Text>
       )}

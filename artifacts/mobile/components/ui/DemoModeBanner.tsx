@@ -32,7 +32,7 @@ export function DemoModeBanner({ onDark = false, isRTL }: Props) {
       <Text
         style={[
           styles.text,
-          { color: textColor, fontFamily: 'Inter_400Regular', textAlign: rtl ? 'right' : 'left' },
+          { color: textColor, fontFamily: 'Almarai_400Regular', textAlign: rtl ? 'right' : 'left' },
         ]}
       >
         {t('demoModeBadge')}

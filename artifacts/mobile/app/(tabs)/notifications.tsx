@@ -37,18 +37,18 @@ export default function NotificationsScreen() {
       <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <View style={[styles.headerRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <View style={{ alignItems: isRTL ? 'flex-end' : 'flex-start' }}>
-            <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Inter_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+            <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
               {t('notificationsTitle')}
             </Text>
             {unreadCount > 0 && (
-              <Text style={[styles.unreadCount, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
+              <Text style={[styles.unreadCount, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
                 {t('unread', unreadCount)}
               </Text>
             )}
           </View>
           {unreadCount > 0 && (
             <Pressable onPress={markAllRead} style={[styles.markAllBtn, { backgroundColor: colors.secondary, borderRadius: 20 }]}>
-              <Text style={[styles.markAllText, { color: colors.primary, fontFamily: 'Inter_500Medium' }]}>{t('markAllRead')}</Text>
+              <Text style={[styles.markAllText, { color: colors.primary, fontFamily: 'Cairo_500Medium' }]}>{t('markAllRead')}</Text>
             </Pressable>
           )}
         </View>
@@ -63,7 +63,7 @@ export default function NotificationsScreen() {
         ListEmptyComponent={
           <View style={styles.empty}>
             <Ionicons name="notifications-off-outline" size={40} color={colors.mutedForeground} />
-            <Text style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
+            <Text style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
               {t('noNotifications')}
             </Text>
           </View>
@@ -91,13 +91,13 @@ export default function NotificationsScreen() {
                 <Ionicons name={icon} size={20} color={color} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.notifTitle, { color: colors.foreground, fontFamily: n.read ? 'Inter_500Medium' : 'Inter_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+                <Text style={[styles.notifTitle, { color: colors.foreground, fontFamily: n.read ? 'Cairo_500Medium' : 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
                   {title}
                 </Text>
-                <Text style={[styles.notifBody, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={2}>
+                <Text style={[styles.notifBody, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={2}>
                   {body}
                 </Text>
-                <Text style={[styles.notifTime, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{n.time}</Text>
+                <Text style={[styles.notifTime, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{n.time}</Text>
               </View>
               {!n.read && <View style={[styles.dot, { backgroundColor: colors.primary }]} />}
             </Pressable>

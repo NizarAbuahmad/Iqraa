@@ -168,7 +168,7 @@ export function TopicSelector({
   if (!kbAvailable) {
     return (
       <View style={{ marginBottom: 16 }}>
-        <Text style={[s.label, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[s.label, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('topicLabel')}
         </Text>
         <View style={[s.inputBox, {
@@ -177,7 +177,7 @@ export function TopicSelector({
           borderRadius: colors.radius,
         }]}>
           <TextInput
-            style={[s.textInput, { color: colors.foreground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}
+            style={[s.textInput, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}
             placeholder={t('topicPlaceholder')}
             placeholderTextColor={colors.mutedForeground}
             value={value}
@@ -219,7 +219,7 @@ export function TopicSelector({
   return (
     <View style={{ marginBottom: 8 }}>
       {/* ── Unit picker ─────────────────────────── */}
-      <Text style={[s.label, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+      <Text style={[s.label, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
         {t('topicLabel')}
       </Text>
       <Pressable
@@ -233,7 +233,7 @@ export function TopicSelector({
       >
         <Text style={[s.pickerText, {
           color: unitDisplayValue ? colors.foreground : colors.mutedForeground,
-          fontFamily: 'Inter_400Regular',
+          fontFamily: 'Almarai_400Regular',
           textAlign: isRTL ? 'right' : 'left',
         }]}>
           {unitDisplayValue || t('selectUnit')}
@@ -275,7 +275,7 @@ export function TopicSelector({
       {/* ── Lesson picker (only when a specific unit is chosen) ─────────── */}
       {selectedUnitId && selectedUnitId !== ENTIRE_BOOK && (
         <View style={{ marginTop: 4, marginBottom: 8 }}>
-          <Text style={[s.label, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[s.label, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
             {t('selectLesson')}
           </Text>
           <Pressable
@@ -289,7 +289,7 @@ export function TopicSelector({
           >
             <Text style={[s.pickerText, {
               color: lessonDisplayValue ? colors.foreground : colors.mutedForeground,
-              fontFamily: 'Inter_400Regular',
+              fontFamily: 'Almarai_400Regular',
               textAlign: isRTL ? 'right' : 'left',
             }]}>
               {lessonDisplayValue || t('selectLesson')}
@@ -343,7 +343,7 @@ function SemesterSectionHeader({ label, colors, isRTL }: {
     >
       <Text style={{
         color: colors.mutedForeground,
-        fontFamily: 'Inter_600SemiBold',
+        fontFamily: 'Cairo_600SemiBold',
         fontSize: 12,
         textAlign: isRTL ? 'right' : 'left',
       }}>
@@ -371,7 +371,7 @@ function DropdownItem({ label, selected, onPress, accent, colors, isRTL }: {
       <Text style={[{
         flex: 1,
         color: selected ? accent : colors.foreground,
-        fontFamily: selected ? 'Inter_500Medium' : 'Inter_400Regular',
+        fontFamily: selected ? 'Cairo_500Medium' : 'Almarai_400Regular',
         fontSize: 14,
         textAlign: isRTL ? 'right' : 'left',
       }]}>

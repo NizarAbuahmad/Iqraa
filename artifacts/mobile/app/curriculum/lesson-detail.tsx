@@ -55,7 +55,7 @@ export default function LessonDetailScreen() {
   if (!lesson) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }}>{t('lessonNotFound')}</Text>
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }}>{t('lessonNotFound')}</Text>
       </View>
     );
   }
@@ -75,26 +75,26 @@ export default function LessonDetailScreen() {
         <Pressable onPress={() => router.back()} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
-        <Text style={[styles.heroTitle, { color: '#fff', fontFamily: 'Inter_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.heroTitle, { color: '#fff', fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {lessonTitle}
         </Text>
         <View style={[styles.heroMeta, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           {showTitleOnly ? (
             <View style={[styles.heroPill, { backgroundColor: 'rgba(255,255,255,0.25)' }]}>
-              <Text style={[styles.heroPillText, { color: '#fff', fontFamily: 'Inter_500Medium' }]}>
+              <Text style={[styles.heroPillText, { color: '#fff', fontFamily: 'Cairo_500Medium' }]}>
                 {t('curriculumTitleOnlyBadge')}
               </Text>
             </View>
           ) : null}
           <View style={[styles.heroPill, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
             <Ionicons name="time-outline" size={12} color="#fff" />
-            <Text style={[styles.heroPillText, { color: '#fff', fontFamily: 'Inter_400Regular' }]}>
+            <Text style={[styles.heroPillText, { color: '#fff', fontFamily: 'Almarai_400Regular' }]}>
               {lesson.estimatedDuration} {t('min')}
             </Text>
           </View>
           <View style={[styles.heroPill, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
             <Ionicons name="school-outline" size={12} color="#fff" />
-            <Text style={[styles.heroPillText, { color: '#fff', fontFamily: 'Inter_400Regular' }]}>
+            <Text style={[styles.heroPillText, { color: '#fff', fontFamily: 'Almarai_400Regular' }]}>
               {lesson.outcomes.length} {t('outcomes')}
             </Text>
           </View>
@@ -112,7 +112,7 @@ export default function LessonDetailScreen() {
             style={[styles.aiBtn, { backgroundColor: color, borderRadius: colors.radius, flex: 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="sparkles" size={18} color="#fff" />
-            <Text style={[styles.aiBtnText, { color: '#fff', fontFamily: 'Inter_600SemiBold' }]}>
+            <Text style={[styles.aiBtnText, { color: '#fff', fontFamily: 'Cairo_600SemiBold' }]}>
               {t('generateAILesson')}
             </Text>
           </Pressable>
@@ -130,7 +130,7 @@ export default function LessonDetailScreen() {
             style={[styles.askIqraBtn, { backgroundColor: colors.card, borderColor: color, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="chatbubble-ellipses-outline" size={16} color={color} />
-            <Text style={[styles.askIqraBtnText, { color, fontFamily: 'Inter_600SemiBold' }]}>
+            <Text style={[styles.askIqraBtnText, { color, fontFamily: 'Cairo_600SemiBold' }]}>
               {t('askIqra')}
             </Text>
           </Pressable>
@@ -141,7 +141,7 @@ export default function LessonDetailScreen() {
           {objectivesArr.map((obj, i) => (
             <View key={i} style={[styles.bullet, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               <View style={[styles.bulletDot, { backgroundColor: color }]} />
-              <Text style={[styles.bulletText, { color: colors.foreground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+              <Text style={[styles.bulletText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
                 {obj}
               </Text>
             </View>
@@ -153,7 +153,7 @@ export default function LessonDetailScreen() {
           <View style={[styles.keywords, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             {keywordsArr.map(k => (
               <View key={k} style={[styles.keyword, { backgroundColor: color + '15', borderColor: color + '30', borderRadius: 8 }]}>
-                <Text style={[styles.keywordText, { color, fontFamily: 'Inter_500Medium' }]}>{k}</Text>
+                <Text style={[styles.keywordText, { color, fontFamily: 'Cairo_500Medium' }]}>{k}</Text>
               </View>
             ))}
           </View>
@@ -161,7 +161,7 @@ export default function LessonDetailScreen() {
 
         {/* Teacher Notes */}
         <Section title={t('teacherNotes')} icon="clipboard-outline" color={color} isRTL={isRTL}>
-          <Text style={[styles.noteText, { color: colors.foreground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[styles.noteText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
             {noteText}
           </Text>
         </Section>
@@ -175,16 +175,16 @@ export default function LessonDetailScreen() {
               <View key={o.id} style={[styles.outcomeCard, { backgroundColor: colors.muted, borderRadius: colors.radius }]}>
                 <View style={[styles.outcomeTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                   <View style={[styles.bloomsBadge, { backgroundColor: bloomColor + '20' }]}>
-                    <Text style={[styles.bloomsText, { color: bloomColor, fontFamily: 'Inter_600SemiBold' }]}>{o.bloomsLevel}</Text>
+                    <Text style={[styles.bloomsText, { color: bloomColor, fontFamily: 'Cairo_600SemiBold' }]}>{o.bloomsLevel}</Text>
                   </View>
                 </View>
-                <Text style={[styles.outcomeDesc, { color: colors.foreground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+                <Text style={[styles.outcomeDesc, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
                   {outcomeDesc}
                 </Text>
                 <View style={[styles.skills, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                   {o.skills.map(s => (
                     <View key={s} style={[styles.skillPill, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: 6 }]}>
-                      <Text style={[styles.skillText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>{s}</Text>
+                      <Text style={[styles.skillText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>{s}</Text>
                     </View>
                   ))}
                 </View>
@@ -203,7 +203,7 @@ function Section({ title, icon, color, isRTL, children }: { title: string; icon:
     <View style={styles.section}>
       <View style={[styles.sectionHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <Ionicons name={icon} size={16} color={color} />
-        <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'Inter_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
           {title}
         </Text>
       </View>

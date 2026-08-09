@@ -4,13 +4,24 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+/**
+ * Arabic type. Inter has no Arabic glyphs, so every Arabic string — which is
+ * nearly the whole product — was being drawn by whatever fallback each device
+ * happened to pick, at that fallback's own weight. Bold headings were not
+ * reliably bold, and three users on three platforms saw three typefaces.
+ *
+ * Almarai carries body copy; Cairo carries every heavier weight, which is where
+ * headings, titles, buttons and labels live. Both cover Latin and digits too,
+ * so English terms and numerals stay in one family rather than switching
+ * mid-sentence.
+ */
+import { Almarai_400Regular } from '@expo-google-fonts/almarai';
 import {
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
-  useFonts,
-} from '@expo-google-fonts/inter';
+  Cairo_500Medium,
+  Cairo_600SemiBold,
+  Cairo_700Bold,
+} from '@expo-google-fonts/cairo';
+import { useFonts } from '@expo-google-fonts/inter';
 import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -80,10 +91,10 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
+    Almarai_400Regular,
+    Cairo_500Medium,
+    Cairo_600SemiBold,
+    Cairo_700Bold,
     // Vector icons must be explicitly loaded — Ionicons font powers all
     // non-iOS tab bar icons and in-app icons on Android / web.
     ...Ionicons.font,

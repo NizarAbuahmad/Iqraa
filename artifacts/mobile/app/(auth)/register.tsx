@@ -76,10 +76,10 @@ export default function RegisterScreen() {
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
         </Pressable>
 
-        <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'Inter_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('createYourAccount')}
         </Text>
-        <Text style={[styles.sub, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.sub, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('registerSubtitle')}
         </Text>
 
@@ -87,7 +87,7 @@ export default function RegisterScreen() {
           {error ? (
             <View style={[styles.errorBanner, { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
-              <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text>
+              <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text>
             </View>
           ) : null}
 
@@ -164,17 +164,17 @@ export default function RegisterScreen() {
             fullWidth
           />
 
-          <Text style={[styles.terms, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
+          <Text style={[styles.terms, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
             {t('registerTerms')}
           </Text>
         </View>
 
         <View style={[styles.loginRow, isRTL && { flexDirection: 'row-reverse' }]}>
-          <Text style={[styles.loginText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
+          <Text style={[styles.loginText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
             {t('alreadyHaveAccount')}{'  '}
           </Text>
           <Pressable onPress={() => router.replace('/(auth)/login')}>
-            <Text style={[styles.loginLink, { color: colors.primary, fontFamily: 'Inter_600SemiBold' }]}>
+            <Text style={[styles.loginLink, { color: colors.primary, fontFamily: 'Cairo_600SemiBold' }]}>
               {t('signIn')}
             </Text>
           </Pressable>

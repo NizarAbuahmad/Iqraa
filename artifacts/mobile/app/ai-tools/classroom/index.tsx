@@ -143,13 +143,13 @@ export default function ClassroomHubScreen() {
           </Pressable>
           <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginBottom: 8 }]}>
             <Ionicons name="storefront-outline" size={16} color="rgba(255,255,255,0.8)" />
-            <Text style={[styles.headerBadge, { fontFamily: 'Inter_500Medium' }]}>{t('classroomBadge')}</Text>
+            <Text style={[styles.headerBadge, { fontFamily: 'Cairo_500Medium' }]}>{t('classroomBadge')}</Text>
           </View>
           <DemoModeBanner onDark isRTL={isRTL} />
-          <Text style={[styles.headerTitle, { fontFamily: 'Inter_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[styles.headerTitle, { fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
             {lang === 'ar' ? 'أنشطة الحصة' : 'Activity Marketplace'}
           </Text>
-          <Text style={[styles.headerSub, { fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[styles.headerSub, { fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
             {lang === 'ar' ? '6 أنشطة تفاعلية جاهزة — اختر نشاطاً وابدأ الحصة' : '6 interactive activities — pick one and launch in seconds'}
           </Text>
 
@@ -157,7 +157,7 @@ export default function ClassroomHubScreen() {
           <View style={[styles.searchBar, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Ionicons name="search-outline" size={16} color="rgba(255,255,255,0.7)" />
             <TextInput
-              style={[styles.searchInput, { fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}
+              style={[styles.searchInput, { fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}
               placeholder={t('marketplaceSearch' as any)}
               placeholderTextColor="rgba(255,255,255,0.55)"
               value={query}
@@ -181,7 +181,7 @@ export default function ClassroomHubScreen() {
                 onPress={() => { setFilter(f.key); Haptics.selectionAsync(); }}
                 style={[styles.chip, { backgroundColor: active ? ACCENT : colors.muted, borderColor: active ? ACCENT : colors.border }]}
               >
-                <Text style={[styles.chipText, { color: active ? '#fff' : colors.mutedForeground, fontFamily: active ? 'Inter_600SemiBold' : 'Inter_400Regular' }]}>
+                <Text style={[styles.chipText, { color: active ? '#fff' : colors.mutedForeground, fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular' }]}>
                   {t(f.labelKey as any)}
                 </Text>
               </Pressable>
@@ -194,7 +194,7 @@ export default function ClassroomHubScreen() {
           <View style={styles.section}>
             <View style={[styles.sectionHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               <Ionicons name="star" size={14} color="#F59E0B" />
-              <Text style={[styles.sectionLabel, { color: colors.foreground, fontFamily: 'Inter_700Bold' }]}>
+              <Text style={[styles.sectionLabel, { color: colors.foreground, fontFamily: 'Cairo_700Bold' }]}>
                 {t('marketplaceFeatured' as any)}
               </Text>
             </View>
@@ -208,10 +208,10 @@ export default function ClassroomHubScreen() {
               <View style={[styles.featuredTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <Text style={styles.featuredEmoji}>{featured.emoji}</Text>
                 <View style={{ flex: 1, marginHorizontal: 16 }}>
-                  <Text style={[styles.featuredTitle, { fontFamily: 'Inter_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+                  <Text style={[styles.featuredTitle, { fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
                     {t(featured.titleKey as any)}
                   </Text>
-                  <Text style={[styles.featuredDesc, { fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+                  <Text style={[styles.featuredDesc, { fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
                     {t(featured.descKey as any)}
                   </Text>
                 </View>
@@ -230,7 +230,7 @@ export default function ClassroomHubScreen() {
 
         {/* ── All Activities ── */}
         <View style={styles.section}>
-          <Text style={[styles.sectionLabel, { color: colors.foreground, fontFamily: 'Inter_700Bold', marginBottom: 12 }]}>
+          <Text style={[styles.sectionLabel, { color: colors.foreground, fontFamily: 'Cairo_700Bold', marginBottom: 12 }]}>
             {filter === 'all' && !query.trim()
               ? t('marketplaceActivities' as any)
               : `${filtered.length} ${lang === 'ar' ? 'نشاط' : filtered.length === 1 ? 'activity' : 'activities'}`}
@@ -239,7 +239,7 @@ export default function ClassroomHubScreen() {
           {filtered.length === 0 ? (
             <View style={[styles.empty, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
               <Text style={{ fontSize: 32 }}>🔍</Text>
-              <Text style={[{ color: colors.mutedForeground, fontFamily: 'Inter_400Regular', fontSize: 14, textAlign: 'center' }]}>
+              <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, textAlign: 'center' }]}>
                 {lang === 'ar' ? 'لا توجد أنشطة مطابقة لبحثك' : 'No activities match your search'}
               </Text>
             </View>
@@ -257,7 +257,7 @@ export default function ClassroomHubScreen() {
                   {/* New badge */}
                   {card.isNew && (
                     <View style={[styles.newBadge, { backgroundColor: card.accentColor }]}>
-                      <Text style={[styles.newBadgeText, { fontFamily: 'Inter_600SemiBold' }]}>
+                      <Text style={[styles.newBadgeText, { fontFamily: 'Cairo_600SemiBold' }]}>
                         {t('marketplaceNew' as any)}
                       </Text>
                     </View>
@@ -268,10 +268,10 @@ export default function ClassroomHubScreen() {
                       <Text style={{ fontSize: 26 }}>{card.emoji}</Text>
                     </View>
                     <View style={{ flex: 1, marginHorizontal: 14 }}>
-                      <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'Inter_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+                      <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
                         {t(card.titleKey as any)}
                       </Text>
-                      <Text style={[styles.cardDesc, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={2}>
+                      <Text style={[styles.cardDesc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={2}>
                         {t(card.descKey as any)}
                       </Text>
                     </View>
@@ -297,7 +297,7 @@ function MetaPill({ icon, label, color }: { icon: keyof typeof Ionicons.glyphMap
   return (
     <View style={styles.metaPill}>
       <Ionicons name={icon} size={11} color={color} />
-      <Text style={[styles.metaPillText, { color, fontFamily: 'Inter_500Medium' }]}>{label}</Text>
+      <Text style={[styles.metaPillText, { color, fontFamily: 'Cairo_500Medium' }]}>{label}</Text>
     </View>
   );
 }
@@ -306,7 +306,7 @@ function FeaturedPill({ icon, label }: { icon: keyof typeof Ionicons.glyphMap; l
   return (
     <View style={styles.metaPill}>
       <Ionicons name={icon} size={11} color="rgba(255,255,255,0.8)" />
-      <Text style={[styles.metaPillText, { color: 'rgba(255,255,255,0.9)', fontFamily: 'Inter_500Medium' }]}>{label}</Text>
+      <Text style={[styles.metaPillText, { color: 'rgba(255,255,255,0.9)', fontFamily: 'Cairo_500Medium' }]}>{label}</Text>
     </View>
   );
 }

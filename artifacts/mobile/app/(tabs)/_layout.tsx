@@ -44,7 +44,7 @@ function ClassicTabLayout() {
               style={[StyleSheet.absoluteFill, { backgroundColor: colors.background }]}
             />
           ) : null,
-        tabBarLabelStyle: { fontFamily: 'Inter_500Medium', fontSize: 10 },
+        tabBarLabelStyle: { fontFamily: 'Cairo_500Medium', fontSize: 10 },
       }}
     >
       {/* ── Home ──────────────────────────────────────────── */}

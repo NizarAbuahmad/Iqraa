@@ -37,7 +37,7 @@ function SettingRow({ icon, label, onPress, destructive, isRTL, colors }: {
       ]}
     >
       <Ionicons name={icon} size={20} color={destructive ? colors.destructive : colors.primary} />
-      <Text style={[styles.settingLabel, { color: destructive ? colors.destructive : colors.foreground, fontFamily: 'Inter_500Medium', flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>
+      <Text style={[styles.settingLabel, { color: destructive ? colors.destructive : colors.foreground, fontFamily: 'Cairo_500Medium', flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>
         {label}
       </Text>
       {!destructive && <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={16} color={colors.mutedForeground} />}
@@ -111,15 +111,15 @@ export default function ProfileScreen() {
       <View style={[styles.headerBg, { backgroundColor: colors.primary, paddingTop: topPad + 16 }]}>
         <View style={styles.avatarWrap}>
           <View style={[styles.avatar, { backgroundColor: 'rgba(255,255,255,0.25)' }]}>
-            <Text style={[styles.initials, { color: colors.primaryForeground, fontFamily: 'Inter_700Bold' }]}>
+            <Text style={[styles.initials, { color: colors.primaryForeground, fontFamily: 'Cairo_700Bold' }]}>
               {initials}
             </Text>
           </View>
-          <Text style={[styles.userName, { color: colors.primaryForeground, fontFamily: 'Inter_700Bold' }]}>
+          <Text style={[styles.userName, { color: colors.primaryForeground, fontFamily: 'Cairo_700Bold' }]}>
             {user ? `${user.firstName} ${user.lastName}` : t('roleTeacher')}
           </Text>
           <View style={[styles.roleBadge, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-            <Text style={[styles.roleText, { color: colors.primaryForeground, fontFamily: 'Inter_500Medium' }]}>
+            <Text style={[styles.roleText, { color: colors.primaryForeground, fontFamily: 'Cairo_500Medium' }]}>
               {roleLabel}
             </Text>
           </View>
@@ -128,7 +128,7 @@ export default function ProfileScreen() {
 
       <View style={{ paddingHorizontal: 20, paddingTop: 24 }}>
         {/* Info card */}
-        <Text style={[styles.section, { color: colors.mutedForeground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.section, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('profileInfo')}
         </Text>
         <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
@@ -156,17 +156,17 @@ export default function ProfileScreen() {
         {/* Subjects & Grades — only show if populated */}
         {((user?.subjects?.length ?? 0) > 0 || (user?.grades?.length ?? 0) > 0) ? (
           <>
-            <Text style={[styles.section, { color: colors.mutedForeground, fontFamily: 'Inter_500Medium', marginTop: 20, textAlign: isRTL ? 'right' : 'left' }]}>
+            <Text style={[styles.section, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', marginTop: 20, textAlign: isRTL ? 'right' : 'left' }]}>
               {t('teaching')}
             </Text>
             <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
               {(user?.subjects?.length ?? 0) > 0 ? (
                 <View style={styles.tagSection}>
-                  <Text style={[styles.tagLabel, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('mySubjects')}</Text>
+                  <Text style={[styles.tagLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('mySubjects')}</Text>
                   <View style={[styles.tags, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                     {user?.subjects?.map(s => (
                       <View key={s} style={[styles.tag, { backgroundColor: colors.secondary }]}>
-                        <Text style={[styles.tagText, { color: colors.primary, fontFamily: 'Inter_500Medium' }]}>{s}</Text>
+                        <Text style={[styles.tagText, { color: colors.primary, fontFamily: 'Cairo_500Medium' }]}>{s}</Text>
                       </View>
                     ))}
                   </View>
@@ -174,11 +174,11 @@ export default function ProfileScreen() {
               ) : null}
               {(user?.grades?.length ?? 0) > 0 ? (
                 <View style={styles.tagSection}>
-                  <Text style={[styles.tagLabel, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('myGrades')}</Text>
+                  <Text style={[styles.tagLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('myGrades')}</Text>
                   <View style={[styles.tags, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                     {user?.grades?.map(g => (
                       <View key={g} style={[styles.tag, { backgroundColor: colors.muted }]}>
-                        <Text style={[styles.tagText, { color: colors.mutedForeground, fontFamily: 'Inter_500Medium' }]}>{g}</Text>
+                        <Text style={[styles.tagText, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium' }]}>{g}</Text>
                       </View>
                     ))}
                   </View>
@@ -189,7 +189,7 @@ export default function ProfileScreen() {
         ) : null}
 
         {/* Settings */}
-        <Text style={[styles.section, { color: colors.mutedForeground, fontFamily: 'Inter_500Medium', marginTop: 20, textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.section, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', marginTop: 20, textAlign: isRTL ? 'right' : 'left' }]}>
           {t('settingsSection')}
         </Text>
         <View style={{ gap: 8 }}>
@@ -226,8 +226,8 @@ const styles = StyleSheet.create({
   infoCard: { borderWidth: 1, overflow: 'hidden' },
   infoRow: { alignItems: 'center', padding: 14, gap: 12 },
   infoIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  infoLabel: { fontSize: 11, marginBottom: 2, fontFamily: 'Inter_400Regular' },
-  infoValue: { fontSize: 14, fontFamily: 'Inter_400Regular' },
+  infoLabel: { fontSize: 11, marginBottom: 2, fontFamily: 'Almarai_400Regular' },
+  infoValue: { fontSize: 14, fontFamily: 'Almarai_400Regular' },
   divider: { height: 1, marginHorizontal: 14 },
   tagSection: { padding: 14, gap: 8 },
   tagLabel: { fontSize: 13 },

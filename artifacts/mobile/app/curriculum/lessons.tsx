@@ -58,13 +58,13 @@ export default function LessonsScreen() {
         <Pressable onPress={() => router.back()} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
-        <Text style={[styles.eyebrow, { color: 'rgba(255,255,255,0.75)', fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.eyebrow, { color: 'rgba(255,255,255,0.75)', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
           {semesterLabel}
         </Text>
-        <Text style={[styles.title, { color: '#fff', fontFamily: 'Inter_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.title, { color: '#fff', fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('selectUnit')}
         </Text>
-        <Text style={[styles.sub, { color: 'rgba(255,255,255,0.8)', fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.sub, { color: 'rgba(255,255,255,0.8)', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('unitsAvailable', units.length)}
         </Text>
       </View>
@@ -77,7 +77,7 @@ export default function LessonsScreen() {
         ListEmptyComponent={
           <View style={styles.empty}>
             <Ionicons name="folder-open-outline" size={40} color={colors.mutedForeground} />
-            <Text style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
+            <Text style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
               {t('noUnitsOrLessons')}
             </Text>
           </View>
@@ -113,30 +113,30 @@ export default function LessonsScreen() {
               ]}
             >
               <View style={[styles.unitBadge, { backgroundColor: color + '1A' }]}>
-                <Text style={[styles.unitNum, { color, fontFamily: 'Inter_700Bold' }]}>
+                <Text style={[styles.unitNum, { color, fontFamily: 'Cairo_700Bold' }]}>
                   {unit.order}
                 </Text>
               </View>
               <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <Text style={[styles.unitName, { color: colors.foreground, fontFamily: 'Inter_600SemiBold', textAlign: isRTL ? 'right' : 'left', flex: 1, marginBottom: 0 }]}>
+                  <Text style={[styles.unitName, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left', flex: 1, marginBottom: 0 }]}>
                     {unitName}
                   </Text>
                   {isBrowserUnitTitleOnly(unit.id) ? (
                     <View style={[styles.prepBadge, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-                      <Text style={[styles.prepBadgeText, { color: colors.mutedForeground, fontFamily: 'Inter_500Medium' }]}>
+                      <Text style={[styles.prepBadgeText, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium' }]}>
                         {t('curriculumTitleOnlyBadge')}
                       </Text>
                     </View>
                   ) : null}
                 </View>
                 <Text
-                  style={[styles.unitDesc, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}
+                  style={[styles.unitDesc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}
                   numberOfLines={2}
                 >
                   {unitDesc}
                 </Text>
-                <Text style={[styles.unitMeta, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+                <Text style={[styles.unitMeta, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
                   {t('lessonsCount', lessonCount)}
                 </Text>
               </View>
