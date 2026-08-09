@@ -42,6 +42,10 @@ function publicObjective(o: CurriculumObjective) {
     // NCCD-derived objective is stamped 'Understand' by the catalog builder
     // rather than classified. See lib/curriculum/src/objectives.ts.
     bloomsSource: o.bloomsSource,
+    // Inferred from the objective's own wording where the stored level was a
+    // default. `effectiveBloomsLevel` is what callers should read.
+    inferredBloomsLevel: o.inferredBloomsLevel,
+    effectiveBloomsLevel: o.effectiveBloomsLevel,
     skills: o.skills,
     lessonTitleAr: o.lessonTitleAr,
     unitId: o.unitId,

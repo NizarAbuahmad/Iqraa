@@ -21,6 +21,7 @@
  * level) belongs with the generator that needs it. Until then, consumers must
  * branch on `bloomsSource` rather than assume.
  */
+import { classifyBlooms, type BloomsLevel } from './blooms.ts';
 import {
   BOOKS,
   LESSONS,
@@ -42,6 +43,17 @@ export type BloomsSource =
 /** An objective plus everything needed to place it in the curriculum. */
 export interface CurriculumObjective extends LearningOutcome {
   bloomsSource: BloomsSource;
+  /**
+   * Level inferred from the objective's own wording. Populated only where the
+   * stored level was defaulted — an authored classification is a human's call
+   * and a keyword heuristic has no business overruling it.
+   */
+  inferredBloomsLevel: BloomsLevel | null;
+  /**
+   * What a consumer should actually use: the authored level when there is one,
+   * the inferred level otherwise, falling back to the stored value.
+   */
+  effectiveBloomsLevel: BloomsLevel;
   lessonTitle: string;
   lessonTitleAr: string;
   unitId: string;
@@ -70,9 +82,15 @@ function bloomsSourceOf(outcomeId: string): BloomsSource {
 function expand(lesson: Lesson): CurriculumObjective[] {
   const unit = getUnitById(lesson.unitId);
   const book = unit ? getBookById(unit.bookId) : undefined;
-  return lesson.outcomes.map(o => ({
+  return lesson.outcomes.map(o => {
+    const source = bloomsSourceOf(o.id);
+    const inferred =
+      source === 'defaulted' ? classifyBlooms(o.descriptionAr || o.description) : null;
+    return {
     ...o,
-    bloomsSource: bloomsSourceOf(o.id),
+    bloomsSource: source,
+    inferredBloomsLevel: inferred,
+    effectiveBloomsLevel: (source === 'authored' ? o.bloomsLevel : inferred ?? o.bloomsLevel) as BloomsLevel,
     lessonTitle: lesson.title,
     lessonTitleAr: lesson.titleAr,
     unitId: lesson.unitId,
@@ -81,7 +99,8 @@ function expand(lesson: Lesson): CurriculumObjective[] {
     bookId: unit?.bookId ?? '',
     subjectId: book?.subjectId ?? '',
     gradeId: book?.gradeId ?? '',
-  }));
+    };
+  });
 }
 
 /** Every objective in the catalog, indexed by id. Built once at module load. */
