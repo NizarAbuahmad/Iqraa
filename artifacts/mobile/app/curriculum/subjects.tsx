@@ -40,13 +40,13 @@ export default function SubjectsScreen() {
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
         <View style={[styles.heroContent, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
-          <Text style={[styles.heroGrade, { color: 'rgba(255,255,255,0.75)', fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[styles.heroGrade, { color: 'rgba(255,255,255,0.75)', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
             {t('jordanCurriculum')} · {gradeName}
           </Text>
-          <Text style={[styles.heroTitle, { color: '#fff', fontFamily: 'Inter_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[styles.heroTitle, { color: '#fff', fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
             {subjectName}
           </Text>
-          <Text style={[styles.heroSub, { color: 'rgba(255,255,255,0.85)', fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[styles.heroSub, { color: 'rgba(255,255,255,0.85)', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
             {t('selectSemester')}
           </Text>
         </View>
@@ -60,10 +60,10 @@ export default function SubjectsScreen() {
         ListEmptyComponent={
           <View style={styles.empty}>
             <Ionicons name="calendar-outline" size={40} color={colors.mutedForeground} />
-            <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'Inter_600SemiBold' }]}>
+            <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }]}>
               {t('noSemesters')}
             </Text>
-            <Text style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: 'center' }]}>
+            <Text style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
               {t('noBooksDesc', subjectName ?? '', gradeName ?? '')}
             </Text>
           </View>
@@ -101,15 +101,15 @@ export default function SubjectsScreen() {
               ]}
             >
               <View style={[styles.semesterBadge, { backgroundColor: color }]}>
-                <Text style={[styles.semesterBadgeText, { fontFamily: 'Inter_700Bold' }]}>
+                <Text style={[styles.semesterBadgeText, { fontFamily: 'Cairo_700Bold' }]}>
                   {semesterNum ?? '•'}
                 </Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.semesterTitle, { color: colors.foreground, fontFamily: 'Inter_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+                <Text style={[styles.semesterTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
                   {semesterLabel}
                 </Text>
-                <Text style={[styles.semesterMeta, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+                <Text style={[styles.semesterMeta, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
                   {t('unitsAndLessons', units.length, lessonCount)}
                 </Text>
               </View>

@@ -31,7 +31,7 @@ export default function ComingSoonScreen() {
         <Pressable onPress={() => router.back()} style={[styles.backBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
         </Pressable>
-        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Inter_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {toolTitle}
         </Text>
       </View>
@@ -42,11 +42,11 @@ export default function ComingSoonScreen() {
           <Ionicons name="construct-outline" size={56} color={colors.primary} />
         </View>
 
-        <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'Inter_700Bold', textAlign: 'center' }]}>
+        <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: 'center' }]}>
           {t('comingSoon')}
         </Text>
 
-        <Text style={[styles.desc, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: 'center' }]}>
+        <Text style={[styles.desc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
           {t('comingSoonDesc')}
         </Text>
 
@@ -54,7 +54,7 @@ export default function ComingSoonScreen() {
           onPress={() => router.back()}
           style={[styles.backBtnLarge, { backgroundColor: colors.primary, borderRadius: colors.radius }]}
         >
-          <Text style={[styles.backBtnText, { color: colors.primaryForeground, fontFamily: 'Inter_600SemiBold' }]}>
+          <Text style={[styles.backBtnText, { color: colors.primaryForeground, fontFamily: 'Cairo_600SemiBold' }]}>
             {t('comingSoonBack')}
           </Text>
         </Pressable>

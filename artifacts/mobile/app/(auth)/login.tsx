@@ -87,13 +87,13 @@ export default function LoginScreen() {
         accessibilityLabel={lang === 'ar' ? 'التبديل إلى الإنجليزية' : 'Switch to Arabic'}
       >
         <Ionicons name="language-outline" size={15} color="rgba(255,255,255,0.9)" />
-        <Text style={[styles.langBtnText, { fontFamily: 'Inter_500Medium' }]}>
+        <Text style={[styles.langBtnText, { fontFamily: 'Cairo_500Medium' }]}>
           {lang === 'ar' ? 'English' : 'عربي'}
         </Text>
       </Pressable>
 
       <View style={[styles.brandContent, isWide && styles.brandContentWide]}>
-        <Text style={[styles.eyebrow, { fontFamily: 'Inter_500Medium', textAlign: 'center' }]}>
+        <Text style={[styles.eyebrow, { fontFamily: 'Cairo_500Medium', textAlign: 'center' }]}>
           {t('loginBrandEyebrow')}
         </Text>
 
@@ -108,7 +108,7 @@ export default function LoginScreen() {
           style={[
             styles.valueProp,
             {
-              fontFamily: lang === 'ar' ? 'Inter_500Medium' : 'Inter_400Regular',
+              fontFamily: lang === 'ar' ? 'Cairo_500Medium' : 'Almarai_400Regular',
               textAlign: 'center',
               writingDirection: isRTL ? 'rtl' : 'ltr',
             },
@@ -145,7 +145,7 @@ export default function LoginScreen() {
               styles.cardTitle,
               {
                 color: colors.foreground,
-                fontFamily: 'Inter_700Bold',
+                fontFamily: 'Cairo_700Bold',
                 textAlign: isRTL ? 'right' : 'left',
                 writingDirection: isRTL ? 'rtl' : 'ltr',
               },
@@ -158,7 +158,7 @@ export default function LoginScreen() {
               styles.cardSubtitle,
               {
                 color: colors.mutedForeground,
-                fontFamily: 'Inter_400Regular',
+                fontFamily: 'Almarai_400Regular',
                 textAlign: isRTL ? 'right' : 'left',
                 writingDirection: isRTL ? 'rtl' : 'ltr',
               },
@@ -185,7 +185,7 @@ export default function LoginScreen() {
                 styles.errorText,
                 {
                   color: colors.destructive,
-                  fontFamily: 'Inter_400Regular',
+                  fontFamily: 'Almarai_400Regular',
                   textAlign: isRTL ? 'right' : 'left',
                 },
               ]}
@@ -224,7 +224,7 @@ export default function LoginScreen() {
           onPress={() => router.push('/(auth)/forgot-password')}
           style={[styles.forgotRow, { alignItems: isRTL ? 'flex-start' : 'flex-end' }]}
         >
-          <Text style={[styles.forgotText, { color: colors.primary, fontFamily: 'Inter_500Medium' }]}>
+          <Text style={[styles.forgotText, { color: colors.primary, fontFamily: 'Cairo_500Medium' }]}>
             {t('forgotPassword')}
           </Text>
         </Pressable>
@@ -240,11 +240,11 @@ export default function LoginScreen() {
         />
 
         <View style={[styles.registerRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <Text style={[styles.registerPrompt, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
+          <Text style={[styles.registerPrompt, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
             {t('newToIqra')}
           </Text>
           <Pressable onPress={() => router.push('/(auth)/register')}>
-            <Text style={[styles.registerLink, { color: colors.primary, fontFamily: 'Inter_600SemiBold' }]}>
+            <Text style={[styles.registerLink, { color: colors.primary, fontFamily: 'Cairo_600SemiBold' }]}>
               {t('createAccount')}
             </Text>
           </Pressable>

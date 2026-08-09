@@ -133,10 +133,10 @@ export default function ClassDetailScreen() {
         >
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
-        <Text style={[styles.heroTitle, { fontFamily: 'Inter_700Bold', textAlign: align }]}>
+        <Text style={[styles.heroTitle, { fontFamily: 'Cairo_700Bold', textAlign: align }]}>
           {title}
         </Text>
-        <Text style={[styles.heroMeta, { fontFamily: 'Inter_400Regular', textAlign: align }]}>
+        <Text style={[styles.heroMeta, { fontFamily: 'Almarai_400Regular', textAlign: align }]}>
           {countStudents(students.length, lang)}
         </Text>
       </View>
@@ -158,7 +158,7 @@ export default function ClassDetailScreen() {
                 <Text
                   style={{
                     color: colors.destructive,
-                    fontFamily: 'Inter_400Regular',
+                    fontFamily: 'Almarai_400Regular',
                     flex: 1,
                     textAlign: align,
                   }}
@@ -175,7 +175,7 @@ export default function ClassDetailScreen() {
                 <Text
                   style={[
                     styles.emptyTitle,
-                    { color: colors.foreground, fontFamily: 'Inter_600SemiBold' },
+                    { color: colors.foreground, fontFamily: 'Cairo_600SemiBold' },
                   ]}
                 >
                   {t('noStudentsYet')}
@@ -185,7 +185,7 @@ export default function ClassDetailScreen() {
                     styles.emptyText,
                     {
                       color: colors.mutedForeground,
-                      fontFamily: 'Inter_400Regular',
+                      fontFamily: 'Almarai_400Regular',
                       textAlign: 'center',
                     },
                   ]}
@@ -203,7 +203,7 @@ export default function ClassDetailScreen() {
                 <Text
                   style={[
                     styles.rowName,
-                    { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: align },
+                    { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align },
                   ]}
                 >
                   {item.displayName}
@@ -214,7 +214,7 @@ export default function ClassDetailScreen() {
                       styles.rowRef,
                       {
                         color: colors.mutedForeground,
-                        fontFamily: 'Inter_400Regular',
+                        fontFamily: 'Almarai_400Regular',
                         textAlign: align,
                       },
                     ]}
@@ -244,7 +244,7 @@ export default function ClassDetailScreen() {
             <Text
               style={[
                 styles.modalTitle,
-                { color: colors.foreground, fontFamily: 'Inter_600SemiBold', textAlign: align },
+                { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align },
               ]}
             >
               {t('addStudents')}
@@ -252,7 +252,7 @@ export default function ClassDetailScreen() {
             <Text
               style={[
                 styles.modalHint,
-                { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: align },
+                { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align },
               ]}
             >
               {t('studentNamesHint')}
@@ -269,7 +269,7 @@ export default function ClassDetailScreen() {
                 {
                   color: colors.foreground,
                   borderColor: colors.border,
-                  fontFamily: 'Inter_400Regular',
+                  fontFamily: 'Almarai_400Regular',
                   textAlign: align,
                 },
               ]}
@@ -280,7 +280,7 @@ export default function ClassDetailScreen() {
               <Text
                 style={[
                   styles.count,
-                  { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: align },
+                  { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align },
                 ]}
               >
                 {t('willAddCount', parsedNames.length)}
@@ -288,7 +288,7 @@ export default function ClassDetailScreen() {
             ) : null}
             <View style={styles.modalActions}>
               <Pressable onPress={() => setShowAdd(false)} style={styles.modalBtn}>
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Inter_600SemiBold' }}>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }}>
                   {t('cancel')}
                 </Text>
               </Pressable>
@@ -307,7 +307,7 @@ export default function ClassDetailScreen() {
                 {saving ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
-                  <Text style={{ color: '#fff', fontFamily: 'Inter_600SemiBold' }}>
+                  <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold' }}>
                     {t('addToClass')}
                   </Text>
                 )}

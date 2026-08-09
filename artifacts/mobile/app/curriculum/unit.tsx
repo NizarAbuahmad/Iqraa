@@ -44,13 +44,13 @@ export default function UnitLessonsScreen() {
         <Pressable onPress={() => router.back()} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
-        <Text style={[styles.eyebrow, { color: 'rgba(255,255,255,0.75)', fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.eyebrow, { color: 'rgba(255,255,255,0.75)', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
           {semesterLabel ? `${semesterLabel} · ` : ''}{t('unitLabel')} {unit.order}
         </Text>
-        <Text style={[styles.title, { color: '#fff', fontFamily: 'Inter_700Bold', textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={2}>
+        <Text style={[styles.title, { color: '#fff', fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={2}>
           {unitName}
         </Text>
-        <Text style={[styles.sub, { color: 'rgba(255,255,255,0.8)', fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.sub, { color: 'rgba(255,255,255,0.8)', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('selectLesson')} · {t('lessonsCount', lessons.length)}
         </Text>
       </View>
@@ -63,7 +63,7 @@ export default function UnitLessonsScreen() {
         ListEmptyComponent={
           <View style={styles.empty}>
             <Ionicons name="book-outline" size={40} color={colors.mutedForeground} />
-            <Text style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
+            <Text style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
               {t('noUnitsOrLessons')}
             </Text>
           </View>
@@ -100,7 +100,7 @@ export default function UnitLessonsScreen() {
                       styles.lessonTitle,
                       {
                         color: colors.foreground,
-                        fontFamily: 'Inter_500Medium',
+                        fontFamily: 'Cairo_500Medium',
                         textAlign: isRTL ? 'right' : 'left',
                         flex: 1,
                         marginBottom: 0,
@@ -112,7 +112,7 @@ export default function UnitLessonsScreen() {
                   </Text>
                   {isBrowserLessonTitleOnly(lesson.id) ? (
                     <View style={[styles.prepBadge, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-                      <Text style={[styles.prepBadgeText, { color: colors.mutedForeground, fontFamily: 'Inter_500Medium' }]}>
+                      <Text style={[styles.prepBadgeText, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium' }]}>
                         {t('curriculumTitleOnlyBadge')}
                       </Text>
                     </View>
@@ -120,11 +120,11 @@ export default function UnitLessonsScreen() {
                 </View>
                 <View style={[styles.lessonMeta, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                   <Ionicons name="time-outline" size={12} color={colors.mutedForeground} />
-                  <Text style={[styles.lessonTime, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
+                  <Text style={[styles.lessonTime, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
                     {lesson.estimatedDuration} {t('min')}
                   </Text>
                   <Text style={{ color: colors.border }}>·</Text>
-                  <Text style={[styles.lessonTime, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
+                  <Text style={[styles.lessonTime, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
                     {t('objectivesCount', objectivesArr.length)}
                   </Text>
                 </View>

@@ -52,17 +52,17 @@ export default function ForgotPasswordScreen() {
           <Ionicons name="key-outline" size={32} color={colors.primary} />
         </View>
 
-        <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'Inter_700Bold' }]}>
+        <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'Cairo_700Bold' }]}>
           Reset your password
         </Text>
-        <Text style={[styles.sub, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
+        <Text style={[styles.sub, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
           Enter your email address and we'll send you a reset link.
         </Text>
 
         {sent ? (
           <View style={[styles.successBox, { backgroundColor: colors.success + '18', borderColor: colors.success + '44', borderRadius: colors.radius }]}>
             <Ionicons name="checkmark-circle" size={22} color={colors.success} />
-            <Text style={[styles.successText, { color: colors.success, fontFamily: 'Inter_500Medium' }]}>
+            <Text style={[styles.successText, { color: colors.success, fontFamily: 'Cairo_500Medium' }]}>
               Reset link sent! Check your inbox.
             </Text>
           </View>
@@ -70,7 +70,7 @@ export default function ForgotPasswordScreen() {
           <>
             {error ? (
               <View style={[styles.errorBanner, { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius }]}>
-                <Text style={[{ color: colors.destructive, fontSize: 13, fontFamily: 'Inter_400Regular' }]}>{error}</Text>
+                <Text style={[{ color: colors.destructive, fontSize: 13, fontFamily: 'Almarai_400Regular' }]}>{error}</Text>
               </View>
             ) : null}
             <Input
@@ -87,7 +87,7 @@ export default function ForgotPasswordScreen() {
         )}
 
         <Pressable onPress={() => router.replace('/(auth)/login')} style={styles.backToLogin}>
-          <Text style={[styles.backToLoginText, { color: colors.primary, fontFamily: 'Inter_500Medium' }]}>
+          <Text style={[styles.backToLoginText, { color: colors.primary, fontFamily: 'Cairo_500Medium' }]}>
             ← Back to sign in
           </Text>
         </Pressable>

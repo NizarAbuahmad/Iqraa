@@ -45,6 +45,6 @@ const styles = StyleSheet.create({
   text: {
     color: '#fff',
     fontSize: 14,
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Cairo_500Medium',
   },
 });

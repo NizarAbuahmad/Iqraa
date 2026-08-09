@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
   fallbackIqra: {
     color: NAVY,
     fontSize: 18,
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Cairo_700Bold',
     letterSpacing: 2,
   },
   fallbackQ: {

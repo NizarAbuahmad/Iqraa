@@ -300,10 +300,10 @@ export default function WorksheetScreen() {
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
         <DemoModeBanner onDark isRTL={isRTL} />
-        <Text style={[styles.headerTitle, { color: '#fff', fontFamily: 'Inter_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.headerTitle, { color: '#fff', fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {isHomework ? t('createHomework') : t('createWorksheetTitle')}
         </Text>
-        <Text style={[styles.headerSub, { color: 'rgba(255,255,255,0.75)', fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.headerSub, { color: 'rgba(255,255,255,0.75)', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
           {isHomework ? t('homeworkSubtitle') : t('worksheetSubtitle')}
         </Text>
       </View>
@@ -329,7 +329,7 @@ export default function WorksheetScreen() {
         <PickerField label={t('difficultyLabel')} value={diffLabels[diffIdx]} options={diffLabels} onChange={setDiffIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
         <PickerField label={t('numQuestionsLabel')} value={numQLabels[numQIdx]} options={numQLabels} onChange={setNumQIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
 
-        <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left', marginBottom: 10 }]}>{t('questionTypesLabel')}</Text>
+        <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left', marginBottom: 10 }]}>{t('questionTypesLabel')}</Text>
         <View style={[styles.checkboxGroup, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
           {ALL_Q_TYPES.map(type => (
             <CheckboxRow key={type} label={typeLabels[type]} checked={selectedTypes.has(type)} onToggle={() => toggleType(type)} accent={ACCENT} colors={colors} isRTL={isRTL} />
@@ -349,7 +349,7 @@ export default function WorksheetScreen() {
           {!priorReviewAvailable ? (
             <Text style={{
               color: colors.mutedForeground,
-              fontFamily: 'Inter_400Regular',
+              fontFamily: 'Almarai_400Regular',
               fontSize: 12,
               marginTop: 2,
               textAlign: isRTL ? 'right' : 'left',
@@ -359,7 +359,7 @@ export default function WorksheetScreen() {
           ) : null}
         </View>
 
-        {error ? <Text style={[{ color: colors.destructive, fontSize: 13, fontFamily: 'Inter_400Regular', marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
+        {error ? <Text style={[{ color: colors.destructive, fontSize: 13, fontFamily: 'Almarai_400Regular', marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
         <Button label={loading ? t('generating') : t('createWorksheetBtn')} onPress={generate} loading={loading} disabled={!topic.trim()} fullWidth />
       </View>
 
@@ -367,7 +367,7 @@ export default function WorksheetScreen() {
       {loading && (
         <View style={[styles.loadBox, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, marginHorizontal: 20, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <ActivityIndicator color={ACCENT} />
-          <Text style={[{ color: colors.mutedForeground, fontFamily: 'Inter_400Regular', fontSize: 14 }]}>{t('buildingWorksheet')}</Text>
+          <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14 }]}>{t('buildingWorksheet')}</Text>
         </View>
       )}
 
@@ -384,7 +384,7 @@ export default function WorksheetScreen() {
         }}>
           <Text style={{
             color: colors.mutedForeground,
-            fontFamily: 'Inter_400Regular',
+            fontFamily: 'Almarai_400Regular',
             fontSize: 13,
             lineHeight: 20,
             textAlign: isRTL ? 'right' : 'left',
@@ -399,10 +399,10 @@ export default function WorksheetScreen() {
         <View style={{ paddingHorizontal: 20 }}>
           <View style={[styles.successBanner, { backgroundColor: ACCENT + '15', borderColor: ACCENT + '30', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Ionicons name="document-text" size={18} color={ACCENT} />
-            <Text style={[{ color: ACCENT, fontFamily: 'Inter_600SemiBold', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{result.title}</Text>
+            <Text style={[{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{result.title}</Text>
           </View>
 
-          <Text style={[{ color: colors.mutedForeground, fontFamily: 'Inter_400Regular', fontSize: 12, marginBottom: 16, lineHeight: 18, textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, marginBottom: 16, lineHeight: 18, textAlign: isRTL ? 'right' : 'left' }]}>
             {result.instructions}
           </Text>
 
@@ -433,26 +433,26 @@ export default function WorksheetScreen() {
             accessibilityRole="button"
           >
             <Ionicons name="tv-outline" size={18} color="#fff" />
-            <Text style={{ color: '#fff', fontFamily: 'Inter_700Bold', fontSize: 14 }}>
+            <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 14 }}>
               {t('presentOnScreen')}
             </Text>
           </Pressable>
 
           {result.sections.map(sec => (
             <View key={sec.title} style={{ marginBottom: 20 }}>
-              <Text style={[styles.secTitle, { color: colors.foreground, fontFamily: 'Inter_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>{sec.title}</Text>
+              <Text style={[styles.secTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>{sec.title}</Text>
               {sec.questions.map((q, i) => (
                 <View key={i} style={[styles.qCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                  <Text style={[styles.qNum, { color: ACCENT, fontFamily: 'Inter_600SemiBold' }]}>{i + 1}.</Text>
+                  <Text style={[styles.qNum, { color: ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>{i + 1}.</Text>
                   <View style={{ flex: 1 }}>
-                    <Text style={[{ color: colors.foreground, fontFamily: 'Inter_400Regular', fontSize: 13, lineHeight: 19, textAlign: isRTL ? 'right' : 'left' }]}>{q.text}</Text>
+                    <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 19, textAlign: isRTL ? 'right' : 'left' }]}>{q.text}</Text>
                     {q.options?.map(o => (
                       <View key={o} style={[styles.optionRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                         <View style={[styles.optionDot, { borderColor: colors.border }]} />
-                        <Text style={[{ color: colors.mutedForeground, fontFamily: 'Inter_400Regular', fontSize: 12, flex: 1 }]}>{o}</Text>
+                        <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, flex: 1 }]}>{o}</Text>
                       </View>
                     ))}
-                    <Text style={[styles.pts, { color: ACCENT, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{q.points} {t('pts')}</Text>
+                    <Text style={[styles.pts, { color: ACCENT, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{q.points} {t('pts')}</Text>
                   </View>
                 </View>
               ))}
@@ -463,13 +463,13 @@ export default function WorksheetScreen() {
             <View style={{ marginBottom: 8 }}>
               <View style={[styles.akHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <Ionicons name="key-outline" size={15} color={ACCENT} />
-                <Text style={[styles.akTitle, { color: colors.foreground, fontFamily: 'Inter_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>{t('answerKeyTitle')}</Text>
+                <Text style={[styles.akTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>{t('answerKeyTitle')}</Text>
               </View>
               <View style={[styles.akBody, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
                 {result.answerKey.map(item => (
                   <View key={item.num} style={[styles.akRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                    <Text style={[styles.akNum, { color: ACCENT, fontFamily: 'Inter_600SemiBold' }]}>{item.num}.</Text>
-                    <Text style={[styles.akAnswer, { color: colors.foreground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{item.answer}</Text>
+                    <Text style={[styles.akNum, { color: ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>{item.num}.</Text>
+                    <Text style={[styles.akAnswer, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{item.answer}</Text>
                   </View>
                 ))}
               </View>
@@ -497,7 +497,7 @@ export default function WorksheetScreen() {
             ]}
           >
             <Ionicons name={saveDone ? 'checkmark-circle' : 'bookmark-outline'} size={16} color={saveDone ? '#fff' : ACCENT} />
-            <Text style={[styles.saveBtnText, { color: saveDone ? '#fff' : ACCENT, fontFamily: 'Inter_600SemiBold' }]}>{saveBtnLabel}</Text>
+            <Text style={[styles.saveBtnText, { color: saveDone ? '#fff' : ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>{saveBtnLabel}</Text>
           </Pressable>
           {!!savedId && (
             <Pressable
@@ -508,7 +508,7 @@ export default function WorksheetScreen() {
               ]}
             >
               <Ionicons name={favorited ? 'star' : 'star-outline'} size={16} color={favorited ? '#F59E0B' : colors.mutedForeground} />
-              <Text style={[styles.regenText, { color: favorited ? '#F59E0B' : colors.mutedForeground, fontFamily: 'Inter_600SemiBold' }]}>
+              <Text style={[styles.regenText, { color: favorited ? '#F59E0B' : colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }]}>
                 {favorited ? (lang === 'ar' ? 'في المفضلة' : 'Favourited') : (lang === 'ar' ? 'أضف إلى المفضلة' : 'Add to Favourites')}
               </Text>
             </Pressable>
@@ -518,14 +518,14 @@ export default function WorksheetScreen() {
             style={[styles.regenBtn, { borderColor: colors.mutedForeground, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="share-outline" size={16} color={colors.mutedForeground} />
-            <Text style={[styles.regenText, { color: colors.mutedForeground, fontFamily: 'Inter_600SemiBold' }]}>{t('exportBtn')}</Text>
+            <Text style={[styles.regenText, { color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }]}>{t('exportBtn')}</Text>
           </Pressable>
           <Pressable
             onPress={generate}
             style={[styles.regenBtn, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="refresh-outline" size={16} color={ACCENT} />
-            <Text style={[styles.regenText, { color: ACCENT, fontFamily: 'Inter_600SemiBold' }]}>{t('regenerateBtn')}</Text>
+            <Text style={[styles.regenText, { color: ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>{t('regenerateBtn')}</Text>
           </Pressable>
         </View>
       )}
@@ -564,7 +564,7 @@ function CheckboxRow({ label, checked, onToggle, accent, colors, isRTL, disabled
       <View style={[styles.checkbox, { borderColor: checked ? accent : colors.border, backgroundColor: checked ? accent : 'transparent' }]}>
         {checked && <Ionicons name="checkmark" size={13} color="#fff" />}
       </View>
-      <Text style={[{ color: disabled ? colors.mutedForeground : colors.foreground, fontFamily: checked ? 'Inter_500Medium' : 'Inter_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
+      <Text style={[{ color: disabled ? colors.mutedForeground : colors.foreground, fontFamily: checked ? 'Cairo_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -576,12 +576,12 @@ function PickerField({ label, value, options, onChange, colors, isRTL, accent }:
   const [open, setOpen] = useState(false);
   return (
     <View style={{ marginBottom: 16 }}>
-      <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
+      <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
       <Pressable
         onPress={() => setOpen(o => !o)}
         style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center' }]}
       >
-        <Text style={[{ flex: 1, color: colors.foreground, fontFamily: 'Inter_400Regular', fontSize: 15, textAlign: isRTL ? 'right' : 'left' }]}>{value}</Text>
+        <Text style={[{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, textAlign: isRTL ? 'right' : 'left' }]}>{value}</Text>
         <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
       </Pressable>
       {open && (
@@ -593,7 +593,7 @@ function PickerField({ label, value, options, onChange, colors, isRTL, accent }:
                 onPress={() => { onChange(i); setOpen(false); }}
                 style={[{ paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: o === value ? accent + '15' : 'transparent', flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between' }]}
               >
-                <Text style={[{ color: o === value ? accent : colors.foreground, fontFamily: o === value ? 'Inter_500Medium' : 'Inter_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{o}</Text>
+                <Text style={[{ color: o === value ? accent : colors.foreground, fontFamily: o === value ? 'Cairo_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{o}</Text>
                 {o === value && <Ionicons name="checkmark" size={16} color={accent} />}
               </Pressable>
             ))}

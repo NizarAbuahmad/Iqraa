@@ -290,14 +290,14 @@ export default function LessonPlanScreen() {
         </Pressable>
         <View style={[styles.headerBadge, { flexDirection: isRTL ? 'row-reverse' : 'row', alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
           <Ionicons name="sparkles" size={14} color="#fff" />
-          <Text style={[styles.headerBadgeText, { color: '#fff', fontFamily: 'Inter_500Medium' }]}>{t('aiLessonPlanBadge')}</Text>
+          <Text style={[styles.headerBadgeText, { color: '#fff', fontFamily: 'Cairo_500Medium' }]}>{t('aiLessonPlanBadge')}</Text>
         </View>
         <DemoModeBanner onDark isRTL={isRTL} />
-        <Text style={[styles.headerTitle, { color: '#fff', fontFamily: 'Inter_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.headerTitle, { color: '#fff', fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {isSimplify ? t('simplifyExplanationTitle') : t('generateLessonPlanTitle')}
         </Text>
         {isSimplify ? (
-          <Text style={[{ color: 'rgba(255,255,255,0.75)', fontFamily: 'Inter_400Regular', fontSize: 13, marginTop: 4, textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[{ color: 'rgba(255,255,255,0.75)', fontFamily: 'Almarai_400Regular', fontSize: 13, marginTop: 4, textAlign: isRTL ? 'right' : 'left' }]}>
             {t('simplifyExplanationSubtitle')}
           </Text>
         ) : null}
@@ -323,12 +323,12 @@ export default function LessonPlanScreen() {
         />
 
         {/* Objectives (optional) */}
-        <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('objectivesLabel')}
         </Text>
         <View style={[styles.inputBox, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
           <TextInput
-            style={[styles.textInput, { color: colors.foreground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left', minHeight: 60 }]}
+            style={[styles.textInput, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left', minHeight: 60 }]}
             placeholder={t('objectivesPlaceholder')}
             placeholderTextColor={colors.mutedForeground}
             value={objectives}
@@ -343,7 +343,7 @@ export default function LessonPlanScreen() {
         {/* Teaching style picker */}
         <PickerField label={t('teachingStyleLabel')} value={styleLabels[styleIdx]} options={styleLabels} onChange={setStyleIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
 
-        {error ? <Text style={[{ color: colors.destructive, fontFamily: 'Inter_400Regular', fontSize: 13, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
+        {error ? <Text style={[{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
         <Button
           label={loading ? t('generatingLessonPlan') : t('generateLessonPlanBtn')}
           onPress={generate}
@@ -356,7 +356,7 @@ export default function LessonPlanScreen() {
       {loading && (
         <View style={[styles.loadingBox, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, marginHorizontal: 20, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <ActivityIndicator color={ACCENT} />
-          <Text style={[styles.loadingText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
+          <Text style={[styles.loadingText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
             {t('craftingLessonPlan')}
           </Text>
         </View>
@@ -375,7 +375,7 @@ export default function LessonPlanScreen() {
         }}>
           <Text style={{
             color: colors.mutedForeground,
-            fontFamily: 'Inter_400Regular',
+            fontFamily: 'Almarai_400Regular',
             fontSize: 13,
             lineHeight: 20,
             textAlign: isRTL ? 'right' : 'left',
@@ -420,7 +420,7 @@ export default function LessonPlanScreen() {
             />
             <Text style={[
               styles.saveBtnText,
-              { color: (saveLabel === 'saved' || saveLabel === 'updated') ? '#fff' : ACCENT, fontFamily: 'Inter_600SemiBold' },
+              { color: (saveLabel === 'saved' || saveLabel === 'updated') ? '#fff' : ACCENT, fontFamily: 'Cairo_600SemiBold' },
             ]}>
               {saveBtnLabel}
             </Text>
@@ -441,7 +441,7 @@ export default function LessonPlanScreen() {
               ]}
             >
               <Ionicons name={favorited ? 'star' : 'star-outline'} size={16} color={favorited ? '#F59E0B' : colors.mutedForeground} />
-              <Text style={[styles.regenText, { color: favorited ? '#F59E0B' : colors.mutedForeground, fontFamily: 'Inter_600SemiBold' }]}>
+              <Text style={[styles.regenText, { color: favorited ? '#F59E0B' : colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }]}>
                 {favorited ? (lang === 'ar' ? 'في المفضلة' : 'Favourited') : (lang === 'ar' ? 'أضف إلى المفضلة' : 'Add to Favourites')}
               </Text>
             </Pressable>
@@ -452,7 +452,7 @@ export default function LessonPlanScreen() {
             style={[styles.regenBtn, { borderColor: colors.mutedForeground, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="share-outline" size={16} color={colors.mutedForeground} />
-            <Text style={[styles.regenText, { color: colors.mutedForeground, fontFamily: 'Inter_600SemiBold' }]}>{t('exportBtn')}</Text>
+            <Text style={[styles.regenText, { color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }]}>{t('exportBtn')}</Text>
           </Pressable>
           {/* Regenerate */}
           <Pressable
@@ -460,7 +460,7 @@ export default function LessonPlanScreen() {
             style={[styles.regenBtn, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="refresh-outline" size={16} color={ACCENT} />
-            <Text style={[styles.regenText, { color: ACCENT, fontFamily: 'Inter_600SemiBold' }]}>{t('regenerateBtn')}</Text>
+            <Text style={[styles.regenText, { color: ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>{t('regenerateBtn')}</Text>
           </Pressable>
         </View>
       )}
@@ -495,7 +495,7 @@ function LessonPlanResult({ plan, colors, isRTL, t }: {
     <View style={{ paddingHorizontal: 20, paddingTop: 4 }}>
       <View style={[styles.resultHeader, { backgroundColor: ACCENT + '15', borderColor: ACCENT + '30', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <Ionicons name="checkmark-circle" size={20} color={ACCENT} />
-        <Text style={[styles.resultHeaderText, { color: ACCENT, fontFamily: 'Inter_600SemiBold' }]}>
+        <Text style={[styles.resultHeaderText, { color: ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>
           {t('lessonPlanReady')}
         </Text>
       </View>
@@ -542,7 +542,7 @@ function ResultSection({ title, icon, isRTL, children }: {
     <View style={{ marginBottom: 16 }}>
       <View style={[styles.resultSectionHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <Ionicons name={icon} size={15} color={ACCENT} />
-        <Text style={[styles.resultSectionTitle, { color: colors.foreground, fontFamily: 'Inter_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>{title}</Text>
+        <Text style={[styles.resultSectionTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>{title}</Text>
       </View>
       <View style={[styles.resultSectionBody, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
         {children}
@@ -555,13 +555,13 @@ function BulletItem({ text, colors, isRTL }: { text: string; colors: ReturnType<
   return (
     <View style={[styles.bulletRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
       <View style={[styles.bulletDot, { backgroundColor: ACCENT }]} />
-      <Text style={[styles.bulletText, { color: colors.foreground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{text}</Text>
+      <Text style={[styles.bulletText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{text}</Text>
     </View>
   );
 }
 
 function BodyText({ text, colors, isRTL }: { text: string; colors: ReturnType<typeof useColors>; isRTL: boolean }) {
-  return <Text style={[styles.bodyText, { color: colors.foreground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{text}</Text>;
+  return <Text style={[styles.bodyText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{text}</Text>;
 }
 
 function PickerField({ label, value, options, onChange, colors, isRTL, accent }: {
@@ -571,12 +571,12 @@ function PickerField({ label, value, options, onChange, colors, isRTL, accent }:
   const [open, setOpen] = useState(false);
   return (
     <View style={{ marginBottom: 16 }}>
-      <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
+      <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
       <Pressable
         onPress={() => setOpen(o => !o)}
         style={[styles.pickerBtn, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
       >
-        <Text style={[{ color: colors.foreground, fontFamily: 'Inter_400Regular', fontSize: 15, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{value}</Text>
+        <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{value}</Text>
         <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
       </Pressable>
       {open && (
@@ -588,7 +588,7 @@ function PickerField({ label, value, options, onChange, colors, isRTL, accent }:
                 onPress={() => { onChange(i); setOpen(false); }}
                 style={[styles.pickerOption, { borderBottomColor: colors.border, backgroundColor: o === value ? colors.secondary : 'transparent', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
               >
-                <Text style={[{ color: o === value ? accent : colors.foreground, fontFamily: o === value ? 'Inter_500Medium' : 'Inter_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{o}</Text>
+                <Text style={[{ color: o === value ? accent : colors.foreground, fontFamily: o === value ? 'Cairo_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{o}</Text>
                 {o === value && <Ionicons name="checkmark" size={16} color={accent} />}
               </Pressable>
             ))}

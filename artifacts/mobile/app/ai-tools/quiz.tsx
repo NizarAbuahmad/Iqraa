@@ -275,10 +275,10 @@ export default function QuizScreen() {
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
         <DemoModeBanner onDark isRTL={isRTL} />
-        <Text style={[styles.headerTitle, { color: '#fff', fontFamily: 'Inter_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.headerTitle, { color: '#fff', fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('createQuizTitle')}
         </Text>
-        <Text style={[styles.headerSub, { color: 'rgba(255,255,255,0.8)', fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.headerSub, { color: 'rgba(255,255,255,0.8)', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('quizSubtitle')}
         </Text>
       </View>
@@ -305,14 +305,14 @@ export default function QuizScreen() {
         <PickerField label={t('quizDurationLabel')} value={durationLabels[durationIdx]} options={durationLabels} onChange={setDurationIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
         <PickerField label={t('totalMarksLabel')} value={marksLabels[marksIdx]} options={marksLabels} onChange={setMarksIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
 
-        <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left', marginBottom: 10 }]}>{t('questionTypesLabel')}</Text>
+        <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left', marginBottom: 10 }]}>{t('questionTypesLabel')}</Text>
         <View style={[styles.checkboxGroup, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
           {ALL_Q_TYPES.map(type => (
             <CheckboxRow key={type} label={TYPE_LABEL[type]} checked={selectedTypes.has(type)} onToggle={() => toggleType(type)} accent={ACCENT} colors={colors} isRTL={isRTL} />
           ))}
         </View>
 
-        {error ? <Text style={[{ color: colors.destructive, fontSize: 13, fontFamily: 'Inter_400Regular', marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
+        {error ? <Text style={[{ color: colors.destructive, fontSize: 13, fontFamily: 'Almarai_400Regular', marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
         <Button label={loading ? t('generatingQuiz') : t('generateQuizBtn')} onPress={generate} loading={loading} disabled={!topic.trim()} fullWidth style={{ backgroundColor: ACCENT }} />
       </View>
 
@@ -320,7 +320,7 @@ export default function QuizScreen() {
       {loading && (
         <View style={[styles.loadBox, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, marginHorizontal: 20, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <ActivityIndicator color={ACCENT} />
-          <Text style={[{ color: colors.mutedForeground, fontFamily: 'Inter_400Regular', fontSize: 14 }]}>{t('generatingQuiz')}</Text>
+          <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14 }]}>{t('generatingQuiz')}</Text>
         </View>
       )}
 
@@ -328,7 +328,7 @@ export default function QuizScreen() {
       {result && (
         <View style={{ paddingHorizontal: 20 }}>
           <View style={[styles.quizHeader, { backgroundColor: ACCENT + '15', borderColor: ACCENT + '40', borderRadius: colors.radius }]}>
-            <Text style={[styles.quizTitle, { color: colors.foreground, fontFamily: 'Inter_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>{result.title}</Text>
+            <Text style={[styles.quizTitle, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>{result.title}</Text>
             <View style={[styles.quizMeta, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               <MetaPill icon="time-outline" text={`${result.duration} ${t('min')}`} color={ACCENT} />
               <MetaPill icon="star-outline" text={`${result.totalPoints} ${t('pts')}`} color={ACCENT} />
@@ -363,7 +363,7 @@ export default function QuizScreen() {
             accessibilityRole="button"
           >
             <Ionicons name="tv-outline" size={18} color="#fff" />
-            <Text style={{ color: '#fff', fontFamily: 'Inter_700Bold', fontSize: 14 }}>
+            <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 14 }}>
               {t('presentOnScreen')}
             </Text>
           </Pressable>
@@ -373,7 +373,7 @@ export default function QuizScreen() {
             style={[styles.toggleBtn, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
           >
             <Ionicons name={showAnswers ? 'eye-off-outline' : 'eye-outline'} size={16} color={ACCENT} />
-            <Text style={[{ color: ACCENT, fontFamily: 'Inter_500Medium', fontSize: 13 }]}>
+            <Text style={[{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 13 }]}>
               {showAnswers ? t('hideAnswers') : t('showAnswers')}
             </Text>
           </Pressable>
@@ -384,23 +384,23 @@ export default function QuizScreen() {
               <View key={q.id} style={[styles.qCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
                 <View style={[styles.qTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                   <View style={[styles.qNumCircle, { backgroundColor: ACCENT }]}>
-                    <Text style={[{ color: '#fff', fontFamily: 'Inter_700Bold', fontSize: 12 }]}>{i + 1}</Text>
+                    <Text style={[{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 12 }]}>{i + 1}</Text>
                   </View>
                   <View style={[styles.typeBadge, { backgroundColor: tc + '18' }]}>
-                    <Text style={[{ color: tc, fontFamily: 'Inter_500Medium', fontSize: 11 }]}>{TYPE_LABEL[q.type as QType] ?? q.type}</Text>
+                    <Text style={[{ color: tc, fontFamily: 'Cairo_500Medium', fontSize: 11 }]}>{TYPE_LABEL[q.type as QType] ?? q.type}</Text>
                   </View>
-                  <Text style={[{ color: colors.mutedForeground, fontFamily: 'Inter_400Regular', fontSize: 11, marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }]}>{q.points} {t('pts')}</Text>
+                  <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }]}>{q.points} {t('pts')}</Text>
                 </View>
-                <Text style={[styles.qText, { color: colors.foreground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{q.text}</Text>
+                <Text style={[styles.qText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{q.text}</Text>
 
                 {q.options?.map((opt, oi) => {
                   const isCorrect = showAnswers && opt === q.correctAnswer;
                   return (
                     <View key={oi} style={[styles.optRow, { backgroundColor: isCorrect ? '#10B981' + '15' : colors.muted, borderRadius: 8, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                      <Text style={[styles.optLabel, { color: isCorrect ? '#10B981' : colors.mutedForeground, fontFamily: isCorrect ? 'Inter_600SemiBold' : 'Inter_400Regular' }]}>
+                      <Text style={[styles.optLabel, { color: isCorrect ? '#10B981' : colors.mutedForeground, fontFamily: isCorrect ? 'Cairo_600SemiBold' : 'Almarai_400Regular' }]}>
                         {String.fromCharCode(65 + oi)}.
                       </Text>
-                      <Text style={[{ flex: 1, color: isCorrect ? '#10B981' : colors.foreground, fontFamily: isCorrect ? 'Inter_500Medium' : 'Inter_400Regular', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }]}>{opt}</Text>
+                      <Text style={[{ flex: 1, color: isCorrect ? '#10B981' : colors.foreground, fontFamily: isCorrect ? 'Cairo_500Medium' : 'Almarai_400Regular', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }]}>{opt}</Text>
                       {isCorrect && <Ionicons name="checkmark-circle" size={16} color="#10B981" />}
                     </View>
                   );
@@ -409,13 +409,13 @@ export default function QuizScreen() {
                 {showAnswers && q.type === 'true_false' && (
                   <View style={[styles.ansBox, { backgroundColor: '#10B981' + '15', borderRadius: 8, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                     <Ionicons name="checkmark-circle" size={14} color="#10B981" />
-                    <Text style={[{ color: '#10B981', fontFamily: 'Inter_500Medium', fontSize: 13 }]}>{t('answer')}: {q.correctAnswer}</Text>
+                    <Text style={[{ color: '#10B981', fontFamily: 'Cairo_500Medium', fontSize: 13 }]}>{t('answer')}: {q.correctAnswer}</Text>
                   </View>
                 )}
 
                 {showAnswers && q.type === 'short_answer' && (
                   <View style={[styles.ansBox, { backgroundColor: '#3B82F6' + '12', borderRadius: 8 }]}>
-                    <Text style={[{ color: '#3B82F6', fontFamily: 'Inter_500Medium', fontSize: 12, textAlign: isRTL ? 'right' : 'left' }]}>
+                    <Text style={[{ color: '#3B82F6', fontFamily: 'Cairo_500Medium', fontSize: 12, textAlign: isRTL ? 'right' : 'left' }]}>
                       {t('answer')}: {q.correctAnswer}
                     </Text>
                   </View>
@@ -423,7 +423,7 @@ export default function QuizScreen() {
 
                 {showAnswers && (
                   <View style={[styles.expBox, { backgroundColor: colors.muted, borderRadius: 8 }]}>
-                    <Text style={[{ color: colors.mutedForeground, fontFamily: 'Inter_400Regular', fontSize: 12, lineHeight: 18, textAlign: isRTL ? 'right' : 'left' }]}>
+                    <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18, textAlign: isRTL ? 'right' : 'left' }]}>
                       💡 {q.explanation}
                     </Text>
                   </View>
@@ -449,7 +449,7 @@ export default function QuizScreen() {
             ]}
           >
             <Ionicons name={saveDone ? 'checkmark-circle' : 'bookmark-outline'} size={16} color={saveDone ? '#fff' : ACCENT} />
-            <Text style={[styles.saveBtnText, { color: saveDone ? '#fff' : ACCENT, fontFamily: 'Inter_600SemiBold' }]}>{saveBtnLabel}</Text>
+            <Text style={[styles.saveBtnText, { color: saveDone ? '#fff' : ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>{saveBtnLabel}</Text>
           </Pressable>
           {!!savedId && (
             <Pressable
@@ -460,7 +460,7 @@ export default function QuizScreen() {
               ]}
             >
               <Ionicons name={favorited ? 'star' : 'star-outline'} size={16} color={favorited ? '#F59E0B' : colors.mutedForeground} />
-              <Text style={[styles.regenText, { color: favorited ? '#F59E0B' : colors.mutedForeground, fontFamily: 'Inter_600SemiBold' }]}>
+              <Text style={[styles.regenText, { color: favorited ? '#F59E0B' : colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }]}>
                 {favorited ? (lang === 'ar' ? 'في المفضلة' : 'Favourited') : (lang === 'ar' ? 'أضف إلى المفضلة' : 'Add to Favourites')}
               </Text>
             </Pressable>
@@ -470,14 +470,14 @@ export default function QuizScreen() {
             style={[styles.regenBtn, { borderColor: colors.mutedForeground, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="share-outline" size={16} color={colors.mutedForeground} />
-            <Text style={[styles.regenText, { color: colors.mutedForeground, fontFamily: 'Inter_600SemiBold' }]}>{t('exportBtn')}</Text>
+            <Text style={[styles.regenText, { color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }]}>{t('exportBtn')}</Text>
           </Pressable>
           <Pressable
             onPress={generate}
             style={[styles.regenBtn, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="refresh-outline" size={16} color={ACCENT} />
-            <Text style={[styles.regenText, { color: ACCENT, fontFamily: 'Inter_600SemiBold' }]}>{t('regenerateBtn')}</Text>
+            <Text style={[styles.regenText, { color: ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>{t('regenerateBtn')}</Text>
           </Pressable>
         </View>
       )}
@@ -506,7 +506,7 @@ function MetaPill({ icon, text, color }: { icon: keyof typeof Ionicons.glyphMap;
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: color + '18', borderRadius: 20 }}>
       <Ionicons name={icon} size={12} color={color} />
-      <Text style={{ color, fontFamily: 'Inter_500Medium', fontSize: 12 }}>{text}</Text>
+      <Text style={{ color, fontFamily: 'Cairo_500Medium', fontSize: 12 }}>{text}</Text>
     </View>
   );
 }
@@ -520,7 +520,7 @@ function CheckboxRow({ label, checked, onToggle, accent, colors, isRTL }: {
       <View style={[styles.checkbox, { borderColor: checked ? accent : colors.border, backgroundColor: checked ? accent : 'transparent' }]}>
         {checked && <Ionicons name="checkmark" size={13} color="#fff" />}
       </View>
-      <Text style={[{ color: colors.foreground, fontFamily: checked ? 'Inter_500Medium' : 'Inter_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
+      <Text style={[{ color: colors.foreground, fontFamily: checked ? 'Cairo_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -532,12 +532,12 @@ function PickerField({ label, value, options, onChange, colors, isRTL, accent }:
   const [open, setOpen] = useState(false);
   return (
     <View style={{ marginBottom: 16 }}>
-      <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
+      <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
       <Pressable
         onPress={() => setOpen(o => !o)}
         style={[styles.input, { backgroundColor: colors.card, borderColor: open ? accent : colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center' }]}
       >
-        <Text style={[{ flex: 1, color: colors.foreground, fontFamily: 'Inter_400Regular', fontSize: 15, textAlign: isRTL ? 'right' : 'left' }]}>{value}</Text>
+        <Text style={[{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, textAlign: isRTL ? 'right' : 'left' }]}>{value}</Text>
         <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
       </Pressable>
       {open && (
@@ -549,7 +549,7 @@ function PickerField({ label, value, options, onChange, colors, isRTL, accent }:
                 onPress={() => { onChange(i); setOpen(false); }}
                 style={[{ paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: o === value ? accent + '15' : 'transparent', flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between' }]}
               >
-                <Text style={[{ color: o === value ? accent : colors.foreground, fontFamily: o === value ? 'Inter_500Medium' : 'Inter_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{o}</Text>
+                <Text style={[{ color: o === value ? accent : colors.foreground, fontFamily: o === value ? 'Cairo_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{o}</Text>
                 {o === value && <Ionicons name="checkmark" size={16} color={accent} />}
               </Pressable>
             ))}

@@ -35,13 +35,25 @@ Vision screens (student/parent/school dashboards) are deprioritized.
   shims, so app imports are unchanged. The API serves it at `/api/curriculum/*`
   (grades, subjects, books, units, lessons, objectives) because evaluation
   questions must be generated and graded against objectives server-side.
-- **Learning-objective coverage is thin, and unevenly classified.** Measured from
-  the running API: math S1 has 11 objectives **all in Unit 1** (units 2–4 are
-  title-only — 13 lessons, zero objectives); math S2 has 61; financial literacy
-  40; chemistry 4. Only chemistry's 4 carry a hand-authored Bloom's level — the
-  other 112 are stamped `'Understand'` by the catalog builders. Objectives expose
-  `bloomsSource: 'authored' | 'defaulted'` so consumers can tell the difference
-  instead of trusting a default. See `docs/student-evaluation-module-plan.md`.
+- **Math S1 is fully objective-backed.** Units 2–4 were title-only (13 lessons,
+  zero objectives) because only the student book was on hand, which states
+  objectives per unit. They were completed from the Semester 1 teacher guide's
+  `مخطَّط الوحدة` tables (book pages 36B / 76B / 110B): per-lesson objectives,
+  vocabulary and period counts. Math S1 went from 11 objectives to 59, and every
+  Sem1 lesson now carries at least one (guarded by test).
+  - Extraction needs the **winget poppler build**, not `/mingw64/bin/pdftotext` —
+    the latter returns almost no Arabic from these NCCD PDFs, which is why the
+    guide looked unusable. Even with the right build the text layer mangles the
+    lam-alef ligature (`المعادلات` → `المعادالت`) and drops some hamza carriers,
+    so the tables were transcribed from `pdftoppm` renders instead.
+  - **Edition mismatch, unresolved:** the teacher guide gives Unit 2 a fifth
+    lesson (الدوائر المتماسة, 3 حصص) plus a توسُّع item that the student book on
+    file does not have. Not added — see `known_gaps` in the curriculum JSON.
+- Objective counts elsewhere: math S2 61, financial literacy 40, chemistry 4.
+  Only chemistry's 4 carry a hand-authored Bloom's level; the rest are stamped
+  `'Understand'` by the catalog builders, so objectives expose
+  `bloomsSource: 'authored' | 'defaulted'` and an `inferredBloomsLevel` derived
+  from the Arabic action verb. See `docs/student-evaluation-module-plan.md`.
 - Financial Literacy G10 S1 is browsable (2 units / 10 lessons, NCCD-sourced).
   It was previously offered as a subject tile with no book behind it, so the
   subject dead-ended on the "no semesters" empty state.

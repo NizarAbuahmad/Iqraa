@@ -280,6 +280,11 @@ const translations = {
     // iQra Chat
     iqraChatTitle: 'اقرأ',
     iqraChatSubtitle: 'رفيقك في التحضير',
+    // Deliberately not 'المساعد الذكي'. Prose generation is still mocked, and
+    // the product is careful elsewhere to separate what is verified from what
+    // is judged; the front door should not oversell what the rest labels.
+    iqraAgentName: 'مساعد إقرأ',
+    iqraAgentPitch: 'أساعدك في التخطيط، واقتراح الأفكار، وإعداد الاختبارات. كيف أدعمك اليوم؟',
     iqraWelcome: 'مرحبًا — أنا اقرأ، رفيقك في تحضير الحصص.',
     iqraWelcomeDocs: 'أنا اقرأ، رفيقك في تحضير الحصص.\n\nارفع خطة درس أو عرضاً أو ورقة عمل أو صورة من الكتاب — ونحضّر معاً التلخيص والشرح وخطط الدرس وأوراق العمل والواجبات والاختبارات من موادك.',
     iqraPlaceholder: 'اكتب ما تحتاجه...',
@@ -906,6 +911,8 @@ const translations = {
     iqraChatTitle: 'IQRA',
     iqraChatSubtitle: 'Your smart assistant',
     iqraWelcome: '🔥 THIS IS BUILD TEST',
+    iqraAgentName: 'IQRA Assistant',
+    iqraAgentPitch: 'I help with planning, ideas, and building assessments. What do you need today?',
     iqraWelcomeDocs: 'I’m IQRA’s AI Teaching Assistant.\n\nUpload a lesson plan, PowerPoint, worksheet, or a photo of a textbook page — and I’ll help you summarize, explain, build lesson plans, worksheets, homework, and quizzes from your own materials.',
     iqraPlaceholder: 'Ask IQRA anything...',
     iqraPlaceholderDocs: 'Ask about your files… or type: Summarize this lesson',
