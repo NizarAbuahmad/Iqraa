@@ -91,6 +91,8 @@ export default function DashboardScreen() {
   const [mediaUrl, setMediaUrl] = useState('');
   const [mediaCaption, setMediaCaption] = useState('');
   const [mediaError, setMediaError] = useState('');
+  /** Media entry is optional, so it starts closed. */
+  const [mediaOpen, setMediaOpen] = useState(false);
   /** First-run "start here" card — teachers can't discover what they can't see. */
   const [coachVisible, setCoachVisible] = useState(false);
 
@@ -853,28 +855,76 @@ export default function DashboardScreen() {
                 falls back to the demo lesson before the first pick). */}
             {lessonTopic.trim() ? (
               <View style={{ marginTop: 26 }}>
-                <Text
+                {/*
+                  Collapsed by default, and labelled optional.
+
+                  Two empty full-width inputs sat between picking a lesson and
+                  confirming it, taking more room and more visual weight than
+                  «اعتماد الدرس» itself — so adding a link read as a required
+                  step in choosing a lesson, which it never was. As one quiet
+                  row it stays available without standing in the way, and the
+                  «اختياري» chip says so outright rather than leaving it to be
+                  inferred from a placeholder.
+                */}
+                <Pressable
+                  onPress={() => setMediaOpen(o => !o)}
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: mediaOpen }}
                   style={{
-                    color: colors.foreground,
-                    fontFamily: 'Cairo_600SemiBold',
-                    fontSize: 14,
-                    textAlign: isRTL ? 'right' : 'left',
+                    flexDirection: isRTL ? 'row-reverse' : 'row',
+                    alignItems: 'center',
+                    gap: 8,
+                    paddingVertical: 4,
                   }}
                 >
-                  {t('addMediaTitle')}
-                </Text>
-                <Text
-                  style={{
-                    color: colors.mutedForeground,
-                    fontFamily: 'Almarai_400Regular',
-                    fontSize: 12,
-                    marginTop: 4,
-                    marginBottom: 10,
-                    textAlign: isRTL ? 'right' : 'left',
-                  }}
-                >
-                  {t('addMediaHint')}
-                </Text>
+                  <Ionicons
+                    name={mediaOpen ? 'chevron-down' : (isRTL ? 'chevron-back' : 'chevron-forward')}
+                    size={16}
+                    color={colors.mutedForeground}
+                  />
+                  <Text
+                    style={{
+                      color: colors.foreground,
+                      fontFamily: 'Cairo_600SemiBold',
+                      fontSize: 14,
+                      textAlign: isRTL ? 'right' : 'left',
+                    }}
+                  >
+                    {t('addMediaTitle')}
+                  </Text>
+                  <View
+                    style={{
+                      backgroundColor: colors.muted,
+                      borderRadius: 999,
+                      paddingHorizontal: 8,
+                      paddingVertical: 2,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: colors.mutedForeground,
+                        fontFamily: 'Almarai_400Regular',
+                        fontSize: 11,
+                      }}
+                    >
+                      {t('addMediaOptional')}
+                    </Text>
+                  </View>
+                </Pressable>
+                {mediaOpen ? (
+                  <Text
+                    style={{
+                      color: colors.mutedForeground,
+                      fontFamily: 'Almarai_400Regular',
+                      fontSize: 12,
+                      marginTop: 6,
+                      marginBottom: 10,
+                      textAlign: isRTL ? 'right' : 'left',
+                    }}
+                  >
+                    {t('addMediaHint')}
+                  </Text>
+                ) : null}
 
                 {media.map(m => (
                   <View
@@ -911,72 +961,76 @@ export default function DashboardScreen() {
                   </View>
                 ))}
 
-                <TextInput
-                  value={mediaUrl}
-                  onChangeText={(v) => { setMediaUrl(v); setMediaError(''); }}
-                  placeholder={t('addMediaPlaceholder')}
-                  placeholderTextColor={colors.mutedForeground}
-                  autoCapitalize="none"
-                  style={[
-                    styles.mediaInput,
-                    {
-                      backgroundColor: colors.card,
-                      borderColor: mediaError ? '#EF4444' : colors.border,
-                      color: colors.foreground,
-                      textAlign: isRTL ? 'right' : 'left',
-                    },
-                  ]}
-                />
-                <TextInput
-                  value={mediaCaption}
-                  onChangeText={setMediaCaption}
-                  placeholder={t('addMediaCaption')}
-                  placeholderTextColor={colors.mutedForeground}
-                  style={[
-                    styles.mediaInput,
-                    {
-                      backgroundColor: colors.card,
-                      borderColor: colors.border,
-                      color: colors.foreground,
-                      textAlign: isRTL ? 'right' : 'left',
-                    },
-                  ]}
-                />
-                {mediaError ? (
-                  <Text
-                    style={{
-                      color: '#EF4444',
-                      fontFamily: 'Almarai_400Regular',
-                      fontSize: 12,
-                      textAlign: isRTL ? 'right' : 'left',
-                    }}
+                {mediaOpen ? (
+                  <>
+                  <TextInput
+                    value={mediaUrl}
+                    onChangeText={(v) => { setMediaUrl(v); setMediaError(''); }}
+                    placeholder={t('addMediaPlaceholder')}
+                    placeholderTextColor={colors.mutedForeground}
+                    autoCapitalize="none"
+                    style={[
+                      styles.mediaInput,
+                      {
+                        backgroundColor: colors.card,
+                        borderColor: mediaError ? '#EF4444' : colors.border,
+                        color: colors.foreground,
+                        textAlign: isRTL ? 'right' : 'left',
+                      },
+                    ]}
+                  />
+                  <TextInput
+                    value={mediaCaption}
+                    onChangeText={setMediaCaption}
+                    placeholder={t('addMediaCaption')}
+                    placeholderTextColor={colors.mutedForeground}
+                    style={[
+                      styles.mediaInput,
+                      {
+                        backgroundColor: colors.card,
+                        borderColor: colors.border,
+                        color: colors.foreground,
+                        textAlign: isRTL ? 'right' : 'left',
+                      },
+                    ]}
+                  />
+                  {mediaError ? (
+                    <Text
+                      style={{
+                        color: '#EF4444',
+                        fontFamily: 'Almarai_400Regular',
+                        fontSize: 12,
+                        textAlign: isRTL ? 'right' : 'left',
+                      }}
+                    >
+                      {mediaError}
+                    </Text>
+                  ) : null}
+                  <Pressable
+                    onPress={() => { void addMedia(); }}
+                    disabled={!mediaUrl.trim()}
+                    style={({ pressed }) => [
+                      styles.mediaAddBtn,
+                      {
+                        borderColor: mediaUrl.trim() ? TEAL : colors.border,
+                        opacity: pressed ? 0.85 : 1,
+                        flexDirection: isRTL ? 'row-reverse' : 'row',
+                      },
+                    ]}
                   >
-                    {mediaError}
-                  </Text>
+                    <Ionicons name="add" size={16} color={mediaUrl.trim() ? TEAL : colors.mutedForeground} />
+                    <Text
+                      style={{
+                        color: mediaUrl.trim() ? TEAL : colors.mutedForeground,
+                        fontFamily: 'Cairo_600SemiBold',
+                        fontSize: 13,
+                      }}
+                    >
+                      {t('addMediaAdd')}
+                    </Text>
+                  </Pressable>
+                  </>
                 ) : null}
-                <Pressable
-                  onPress={() => { void addMedia(); }}
-                  disabled={!mediaUrl.trim()}
-                  style={({ pressed }) => [
-                    styles.mediaAddBtn,
-                    {
-                      borderColor: mediaUrl.trim() ? TEAL : colors.border,
-                      opacity: pressed ? 0.85 : 1,
-                      flexDirection: isRTL ? 'row-reverse' : 'row',
-                    },
-                  ]}
-                >
-                  <Ionicons name="add" size={16} color={mediaUrl.trim() ? TEAL : colors.mutedForeground} />
-                  <Text
-                    style={{
-                      color: mediaUrl.trim() ? TEAL : colors.mutedForeground,
-                      fontFamily: 'Cairo_600SemiBold',
-                      fontSize: 13,
-                    }}
-                  >
-                    {t('addMediaAdd')}
-                  </Text>
-                </Pressable>
               </View>
             ) : null}
 
