@@ -1,0 +1,445 @@
+/**
+ * Roster — classes and students.
+ *
+ * Students have no accounts (see lib/db/src/schema/students.ts), so every row
+ * here is owned by the teacher who created it and every query is scoped to
+ * `req.user.id`. There is no sharing between teachers yet; when a school layer
+ * arrives, the ownership check is the thing that has to change.
+ *
+ * Students are personal data about minors. Names are never logged, and the
+ * error paths deliberately say "not found" rather than distinguishing "exists
+ * but belongs to another teacher" — the latter leaks the roster of a colleague.
+ */
+import { Router } from "express";
+import { db } from "@workspace/db";
+import { classGroups, classMemberships, students } from "@workspace/db";
+import { and, asc, count, eq, inArray, isNull } from "drizzle-orm";
+import { authMiddleware, type AuthenticatedRequest } from "../middlewares/auth.js";
+import { logger } from "../lib/logger";
+
+const router = Router();
+
+router.use(authMiddleware);
+
+const MAX_BULK_STUDENTS = 200;
+
+function trimmed(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+// ─── Classes ─────────────────────────────────────────────────────────────────
+
+router.get("/classes", async (req: AuthenticatedRequest, res) => {
+  try {
+    // Left-joined aggregate rather than a correlated subquery: the archived
+    // filter has to sit in the JOIN condition, not the WHERE, or classes with
+    // no students disappear from the list instead of showing zero.
+    const rows = await db
+      .select({
+        id: classGroups.id,
+        name: classGroups.name,
+        nameAr: classGroups.nameAr,
+        gradeId: classGroups.gradeId,
+        subjectId: classGroups.subjectId,
+        academicYear: classGroups.academicYear,
+        createdAt: classGroups.createdAt,
+        studentCount: count(students.id),
+      })
+      .from(classGroups)
+      .leftJoin(classMemberships, eq(classMemberships.classGroupId, classGroups.id))
+      .leftJoin(
+        students,
+        and(eq(students.id, classMemberships.studentId), isNull(students.archivedAt)),
+      )
+      .where(and(eq(classGroups.teacherId, req.user!.id), isNull(classGroups.archivedAt)))
+      .groupBy(classGroups.id)
+      .orderBy(asc(classGroups.createdAt));
+
+    res.json({ classes: rows });
+  } catch (err) {
+    logger.error({ err }, "list classes failed");
+    res.status(500).json({ error: "Failed to load classes" });
+  }
+});
+
+router.post("/classes", async (req: AuthenticatedRequest, res) => {
+  try {
+    const name = trimmed(req.body?.name);
+    if (!name) {
+      res.status(400).json({ error: "name is required" });
+      return;
+    }
+
+    const [row] = await db
+      .insert(classGroups)
+      .values({
+        teacherId: req.user!.id,
+        name,
+        nameAr: trimmed(req.body?.nameAr),
+        gradeId: trimmed(req.body?.gradeId),
+        subjectId: trimmed(req.body?.subjectId),
+        academicYear: trimmed(req.body?.academicYear),
+      })
+      .returning();
+
+    res.status(201).json({ class: { ...row, studentCount: 0 } });
+  } catch (err) {
+    logger.error({ err }, "create class failed");
+    res.status(500).json({ error: "Failed to create class" });
+  }
+});
+
+router.get("/classes/:id", async (req: AuthenticatedRequest, res) => {
+  try {
+    const classId = req.params["id"] as string;
+    const [group] = await db
+      .select()
+      .from(classGroups)
+      .where(and(eq(classGroups.id, classId), eq(classGroups.teacherId, req.user!.id)))
+      .limit(1);
+
+    if (!group) {
+      res.status(404).json({ error: "Class not found" });
+      return;
+    }
+
+    const roster = await db
+      .select({
+        id: students.id,
+        displayName: students.displayName,
+        externalRef: students.externalRef,
+        gradeId: students.gradeId,
+        createdAt: students.createdAt,
+      })
+      .from(classMemberships)
+      .innerJoin(students, eq(students.id, classMemberships.studentId))
+      .where(and(eq(classMemberships.classGroupId, classId), isNull(students.archivedAt)))
+      .orderBy(asc(students.displayName));
+
+    res.json({ class: group, students: roster });
+  } catch (err) {
+    logger.error({ err }, "get class failed");
+    res.status(500).json({ error: "Failed to load class" });
+  }
+});
+
+router.patch("/classes/:id", async (req: AuthenticatedRequest, res) => {
+  try {
+    const classId = req.params["id"] as string;
+    const patch: Record<string, unknown> = { updatedAt: new Date() };
+    for (const field of ["name", "nameAr", "gradeId", "subjectId", "academicYear"] as const) {
+      if (req.body?.[field] !== undefined) patch[field] = trimmed(req.body[field]);
+    }
+    if (patch["name"] === "") {
+      res.status(400).json({ error: "name cannot be empty" });
+      return;
+    }
+
+    const [row] = await db
+      .update(classGroups)
+      .set(patch)
+      .where(and(eq(classGroups.id, classId), eq(classGroups.teacherId, req.user!.id)))
+      .returning();
+
+    if (!row) {
+      res.status(404).json({ error: "Class not found" });
+      return;
+    }
+    res.json({ class: row });
+  } catch (err) {
+    logger.error({ err }, "update class failed");
+    res.status(500).json({ error: "Failed to update class" });
+  }
+});
+
+/**
+ * Archive rather than delete. A class is referenced by assignments and, through
+ * them, by results — deleting it would orphan a student's history, which is the
+ * one thing the module exists to keep.
+ */
+router.delete("/classes/:id", async (req: AuthenticatedRequest, res) => {
+  try {
+    const classId = req.params["id"] as string;
+    const [row] = await db
+      .update(classGroups)
+      .set({ archivedAt: new Date(), updatedAt: new Date() })
+      .where(and(eq(classGroups.id, classId), eq(classGroups.teacherId, req.user!.id)))
+      .returning({ id: classGroups.id });
+
+    if (!row) {
+      res.status(404).json({ error: "Class not found" });
+      return;
+    }
+    res.json({ archived: row.id });
+  } catch (err) {
+    logger.error({ err }, "archive class failed");
+    res.status(500).json({ error: "Failed to archive class" });
+  }
+});
+
+// ─── Students ────────────────────────────────────────────────────────────────
+
+router.get("/students", async (req: AuthenticatedRequest, res) => {
+  try {
+    const classId = trimmed(req.query["classId"]);
+
+    if (classId) {
+      const [owned] = await db
+        .select({ id: classGroups.id })
+        .from(classGroups)
+        .where(and(eq(classGroups.id, classId), eq(classGroups.teacherId, req.user!.id)))
+        .limit(1);
+      if (!owned) {
+        res.status(404).json({ error: "Class not found" });
+        return;
+      }
+
+      const rows = await db
+        .select({
+          id: students.id,
+          displayName: students.displayName,
+          externalRef: students.externalRef,
+          gradeId: students.gradeId,
+          createdAt: students.createdAt,
+        })
+        .from(classMemberships)
+        .innerJoin(students, eq(students.id, classMemberships.studentId))
+        .where(and(eq(classMemberships.classGroupId, classId), isNull(students.archivedAt)))
+        .orderBy(asc(students.displayName));
+
+      res.json({ students: rows });
+      return;
+    }
+
+    const rows = await db
+      .select({
+        id: students.id,
+        displayName: students.displayName,
+        externalRef: students.externalRef,
+        gradeId: students.gradeId,
+        createdAt: students.createdAt,
+      })
+      .from(students)
+      .where(and(eq(students.teacherId, req.user!.id), isNull(students.archivedAt)))
+      .orderBy(asc(students.displayName));
+
+    res.json({ students: rows });
+  } catch (err) {
+    logger.error({ err }, "list students failed");
+    res.status(500).json({ error: "Failed to load students" });
+  }
+});
+
+/**
+ * Add students to a class. Accepts one or many, because a teacher setting up
+ * for the first time is typing in a register of thirty, not one name a page.
+ *
+ * Existing students are matched by id and simply joined to the class, so moving
+ * a student into a second subject does not duplicate their record or split
+ * their history across two rows.
+ */
+router.post("/classes/:id/students", async (req: AuthenticatedRequest, res) => {
+  try {
+    const classId = req.params["id"] as string;
+    const [group] = await db
+      .select()
+      .from(classGroups)
+      .where(and(eq(classGroups.id, classId), eq(classGroups.teacherId, req.user!.id)))
+      .limit(1);
+
+    if (!group) {
+      res.status(404).json({ error: "Class not found" });
+      return;
+    }
+
+    const raw = Array.isArray(req.body?.students)
+      ? req.body.students
+      : req.body?.displayName !== undefined
+        ? [req.body]
+        : null;
+
+    if (!raw || raw.length === 0) {
+      res.status(400).json({ error: "Provide a student or a students array" });
+      return;
+    }
+    if (raw.length > MAX_BULK_STUDENTS) {
+      res.status(400).json({ error: `At most ${MAX_BULK_STUDENTS} students per request` });
+      return;
+    }
+
+    const toCreate: { displayName: string; externalRef: string | null }[] = [];
+    const existingIds: string[] = [];
+
+    for (const entry of raw) {
+      const id = trimmed(entry?.id);
+      if (id) {
+        existingIds.push(id);
+        continue;
+      }
+      const displayName = trimmed(entry?.displayName);
+      if (!displayName) {
+        res.status(400).json({ error: "Every student needs a displayName or an id" });
+        return;
+      }
+      toCreate.push({ displayName, externalRef: trimmed(entry?.externalRef) || null });
+    }
+
+    /**
+     * Skip names already in this class.
+     *
+     * Without this, a teacher who re-pastes their register — or adds three
+     * latecomers by pasting the whole list again — gets a second student row
+     * with the same name. From that point the child's results are split across
+     * two records, and nothing on screen shows why one of them is half empty.
+     *
+     * Matching is scoped to this class and is whitespace-normalized only. It
+     * deliberately does not reach across classes or fold Arabic orthography:
+     * merging two people who happen to share a name is a worse failure than
+     * creating a duplicate, because it cannot be undone from the UI. Two real
+     * students with identical names in one class have to be distinguished by
+     * the teacher — their own register has the same problem.
+     */
+    const nameKey = (name: string) => name.replace(/\s+/g, " ").trim().toLowerCase();
+
+    const alreadyInClass = await db
+      .select({ displayName: students.displayName })
+      .from(classMemberships)
+      .innerJoin(students, eq(students.id, classMemberships.studentId))
+      .where(and(eq(classMemberships.classGroupId, classId), isNull(students.archivedAt)));
+
+    const takenNames = new Set(alreadyInClass.map(s => nameKey(s.displayName)));
+    const skipped = toCreate.filter(s => takenNames.has(nameKey(s.displayName)));
+    const fresh = toCreate.filter(s => !takenNames.has(nameKey(s.displayName)));
+    toCreate.length = 0;
+    toCreate.push(...fresh);
+
+    // Only ever attach students this teacher owns — an id from elsewhere must
+    // not pull a stranger's student into this roster.
+    let ownedExisting: { id: string }[] = [];
+    if (existingIds.length > 0) {
+      ownedExisting = await db
+        .select({ id: students.id })
+        .from(students)
+        .where(and(eq(students.teacherId, req.user!.id), inArray(students.id, existingIds)));
+
+      if (ownedExisting.length !== existingIds.length) {
+        res.status(404).json({ error: "One or more students not found" });
+        return;
+      }
+    }
+
+    const created =
+      toCreate.length > 0
+        ? await db
+            .insert(students)
+            .values(
+              toCreate.map(s => ({
+                teacherId: req.user!.id,
+                displayName: s.displayName,
+                externalRef: s.externalRef,
+                gradeId: group.gradeId,
+              })),
+            )
+            .returning()
+        : [];
+
+    const allIds = [...created.map(s => s.id), ...ownedExisting.map(s => s.id)];
+    let joined: { studentId: string }[] = [];
+    if (allIds.length > 0) {
+      joined = await db
+        .insert(classMemberships)
+        .values(allIds.map(studentId => ({ classGroupId: classId, studentId })))
+        // Re-adding a student already in the class is a no-op, not an error —
+        // it is what happens when a teacher taps twice on a slow connection.
+        .onConflictDoNothing()
+        .returning({ studentId: classMemberships.studentId });
+    }
+
+    // `added` counts memberships actually created, so a duplicate tap reports 0
+    // rather than claiming an add that did not happen. `skipped` names the
+    // students who were already on the roster, so the teacher can see that the
+    // shortfall was intentional rather than a failure.
+    res.status(201).json({
+      added: joined.length,
+      created: created.length,
+      skipped: skipped.map(s => s.displayName),
+      students: created,
+    });
+  } catch (err) {
+    logger.error({ err }, "add students failed");
+    res.status(500).json({ error: "Failed to add students" });
+  }
+});
+
+/** Remove from the class only. The student record and their history survive. */
+router.delete("/classes/:id/students/:studentId", async (req: AuthenticatedRequest, res) => {
+  try {
+    const classId = req.params["id"] as string;
+    const studentId = req.params["studentId"] as string;
+
+    const [group] = await db
+      .select({ id: classGroups.id })
+      .from(classGroups)
+      .where(and(eq(classGroups.id, classId), eq(classGroups.teacherId, req.user!.id)))
+      .limit(1);
+
+    if (!group) {
+      res.status(404).json({ error: "Class not found" });
+      return;
+    }
+
+    const removed = await db
+      .delete(classMemberships)
+      .where(
+        and(
+          eq(classMemberships.classGroupId, classId),
+          eq(classMemberships.studentId, studentId),
+        ),
+      )
+      .returning({ id: classMemberships.id });
+
+    if (removed.length === 0) {
+      res.status(404).json({ error: "Student is not in this class" });
+      return;
+    }
+    res.json({ removed: studentId });
+  } catch (err) {
+    logger.error({ err }, "remove student failed");
+    res.status(500).json({ error: "Failed to remove student" });
+  }
+});
+
+router.patch("/students/:id", async (req: AuthenticatedRequest, res) => {
+  try {
+    const studentId = req.params["id"] as string;
+    const patch: Record<string, unknown> = { updatedAt: new Date() };
+    if (req.body?.displayName !== undefined) {
+      const displayName = trimmed(req.body.displayName);
+      if (!displayName) {
+        res.status(400).json({ error: "displayName cannot be empty" });
+        return;
+      }
+      patch["displayName"] = displayName;
+    }
+    if (req.body?.externalRef !== undefined) {
+      patch["externalRef"] = trimmed(req.body.externalRef) || null;
+    }
+
+    const [row] = await db
+      .update(students)
+      .set(patch)
+      .where(and(eq(students.id, studentId), eq(students.teacherId, req.user!.id)))
+      .returning();
+
+    if (!row) {
+      res.status(404).json({ error: "Student not found" });
+      return;
+    }
+    res.json({ student: row });
+  } catch (err) {
+    logger.error({ err }, "update student failed");
+    res.status(500).json({ error: "Failed to update student" });
+  }
+});
+
+export default router;
