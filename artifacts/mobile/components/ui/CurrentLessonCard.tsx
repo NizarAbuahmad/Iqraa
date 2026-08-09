@@ -1,6 +1,11 @@
 /**
  * Compact persistent "Current Lesson" card for IQRA chat (Investor MVP).
  * Collapses after the teacher scrolls the conversation.
+ *
+ * The prep state is shown once — as a progress bar plus chips that carry their
+ * own done/not-done mark. An earlier version printed the same five resources
+ * twice (a "✓ / ○" text line above an identical chip strip), which read as a
+ * bug rather than a summary.
  */
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -17,6 +22,8 @@ type Colors = {
   primary: string;
   primaryForeground: string;
   secondary: string;
+  background: string;
+  success: string;
 };
 
 type Props = {
@@ -27,10 +34,15 @@ type Props = {
   colors: Colors;
   changeLabel: string;
   uploadedLabel: (n: number) => string;
-  generatedLabel: string;
+  /** e.g. "2 من 5 جاهزة" — already localised by the caller. */
+  progressLabel: string;
+  /** Shown instead of the progress label when every resource is done. */
+  allReadyLabel: string;
   onChangeLesson: () => void;
   onToggleCollapse: () => void;
   onResourcePress: (type: SessionArtifact, done: boolean) => void;
+  /** Centres the card content on wide (web) viewports. */
+  maxWidth?: number;
 };
 
 export function CurrentLessonCard({
@@ -41,146 +53,172 @@ export function CurrentLessonCard({
   colors,
   changeLabel,
   uploadedLabel,
-  generatedLabel,
+  progressLabel,
+  allReadyLabel,
   onChangeLesson,
   onToggleCollapse,
   onResourcePress,
+  maxWidth,
 }: Props) {
   const align = isRTL ? 'right' : 'left' as const;
   const rowDir = isRTL ? 'row-reverse' : 'row' as const;
+  const inner = maxWidth ? { width: '100%' as const, maxWidth, alignSelf: 'center' as const } : null;
+
+  const total = lesson.resources.length;
+  const done = lesson.resources.filter(r => r.done).length;
+  const ratio = total > 0 ? done / total : 0;
+  const allReady = total > 0 && done === total;
 
   if (collapsed) {
-    // Change CTA first in row-reverse → sits on the start edge (right in RTL)
-    const changeCompact = (
-      <Pressable
-        onPress={onChangeLesson}
-        hitSlop={8}
-        style={({ pressed }) => [
-          styles.changeBtnCompact,
-          {
-            backgroundColor: colors.primary,
-            opacity: pressed ? 0.88 : 1,
-          },
-        ]}
-        accessibilityRole="button"
-        accessibilityLabel={changeLabel}
-      >
-        <Ionicons name="swap-horizontal" size={13} color={colors.primaryForeground || '#fff'} />
-      </Pressable>
-    );
-    const main = (
-      <Pressable
-        onPress={onToggleCollapse}
-        style={[styles.collapsedMain, { flexDirection: rowDir, flex: 1 }]}
-      >
-        <Text style={{ fontSize: 14 }}>🇯🇴</Text>
-        <Text
-          numberOfLines={1}
-          style={[styles.collapsedTitle, { color: colors.foreground, textAlign: align, flex: 1 }]}
-        >
-          {lesson.unitLesson}
-        </Text>
-        <Ionicons name="chevron-down" size={16} color={colors.mutedForeground} />
-      </Pressable>
-    );
     return (
       <View
         style={[
           styles.collapsed,
-          {
-            backgroundColor: colors.card,
-            borderBottomColor: colors.border,
-            flexDirection: rowDir,
-          },
+          { backgroundColor: colors.card, borderBottomColor: colors.border },
         ]}
       >
-        {changeCompact}
-        {main}
+        <View style={[styles.collapsedInner, inner, { flexDirection: rowDir }]}>
+          <Pressable
+            onPress={onChangeLesson}
+            hitSlop={8}
+            style={({ pressed }) => [
+              styles.changeBtnCompact,
+              { backgroundColor: colors.secondary, opacity: pressed ? 0.8 : 1 },
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel={changeLabel}
+          >
+            <Ionicons name="swap-horizontal" size={14} color={colors.primary} />
+          </Pressable>
+
+          <Pressable
+            onPress={onToggleCollapse}
+            style={[styles.collapsedMain, { flexDirection: rowDir, flex: 1 }]}
+          >
+            <Text style={{ fontSize: 13 }}>🇯🇴</Text>
+            <Text
+              numberOfLines={1}
+              style={[styles.collapsedTitle, { color: colors.foreground, textAlign: align, flex: 1 }]}
+            >
+              {lesson.unitLesson}
+            </Text>
+            <View style={[styles.countPill, { backgroundColor: colors.secondary }]}>
+              <Text style={[styles.countPillText, { color: colors.primary }]}>
+                {done}/{total}
+              </Text>
+            </View>
+            <Ionicons name="chevron-down" size={15} color={colors.mutedForeground} />
+          </Pressable>
+        </View>
       </View>
     );
   }
 
   return (
     <View style={[styles.wrap, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-      <View style={[styles.headerText, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
-        <Pressable onPress={onToggleCollapse} style={[styles.headerRow, { flexDirection: rowDir, width: '100%' }]}>
-          <View style={{ flex: 1, gap: 2 }}>
-            <Text style={[styles.curriculum, { color: colors.mutedForeground, textAlign: align }]}>
-              {lesson.curriculumLabel}
-            </Text>
-            <Text style={[styles.subject, { color: colors.foreground, textAlign: align }]}>
-              {lesson.subjectGrade}
-            </Text>
-            <Text style={[styles.unit, { color: colors.primary, textAlign: align }]} numberOfLines={2}>
+      <View style={[inner, { gap: 10 }]}>
+        {/* Breadcrumb + title + change CTA */}
+        <View style={[styles.headerRow, { flexDirection: rowDir }]}>
+          <Pressable onPress={onToggleCollapse} style={{ flex: 1, gap: 3 }}>
+            <View style={[styles.crumbRow, { flexDirection: rowDir }]}>
+              <Text style={{ fontSize: 12 }}>🇯🇴</Text>
+              <Text
+                numberOfLines={1}
+                style={[styles.curriculum, { color: colors.mutedForeground, textAlign: align, flex: 1 }]}
+              >
+                {lesson.curriculumLabel} · {lesson.subjectGrade}
+              </Text>
+              <Ionicons name="chevron-up" size={15} color={colors.mutedForeground} />
+            </View>
+            <Text style={[styles.unit, { color: colors.foreground, textAlign: align }]} numberOfLines={2}>
               {lesson.unitLesson}
             </Text>
-          </View>
-          <Ionicons name="chevron-up" size={16} color={colors.mutedForeground} />
-        </Pressable>
+          </Pressable>
 
-        <Pressable
-          onPress={onChangeLesson}
-          style={({ pressed }) => [
-            styles.changeBtn,
-            {
-              backgroundColor: colors.primary,
-              opacity: pressed ? 0.88 : 1,
-              flexDirection: rowDir,
-              marginTop: 8,
-            },
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel={changeLabel}
-        >
-          <Ionicons name="swap-horizontal" size={14} color={colors.primaryForeground || '#fff'} />
-          <Text style={[styles.changeBtnText, { color: colors.primaryForeground || '#fff' }]}>
-            {changeLabel}
-          </Text>
-        </Pressable>
-      </View>
-
-      <Text style={[styles.meta, { color: colors.mutedForeground, textAlign: align }]}>
-        {uploadedLabel(lesson.uploadedCount)}
-      </Text>
-
-      <Text style={[styles.generatedLabel, { color: colors.mutedForeground, textAlign: align }]}>
-        {generatedLabel}
-      </Text>
-      <View style={[styles.checkRow, { flexDirection: rowDir }]}>
-        {lesson.resources.map(r => (
-          <Text
-            key={r.type}
-            style={[styles.checkItem, { color: r.done ? '#047857' : colors.mutedForeground }]}
-          >
-            {r.done ? '✓' : '○'} {lang === 'ar' ? r.labelAr : r.labelEn}
-          </Text>
-        ))}
-      </View>
-
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={[styles.resourceStrip, { flexDirection: rowDir }]}
-      >
-        {lesson.resources.map((r: ResourceChip) => (
           <Pressable
-            key={r.type}
-            onPress={() => onResourcePress(r.type, r.done)}
+            onPress={onChangeLesson}
             style={({ pressed }) => [
-              styles.resourceChip,
+              styles.changeBtn,
               {
-                borderColor: r.done ? colors.primary + '66' : colors.border,
-                backgroundColor: r.done ? colors.primary + '12' : colors.muted,
+                backgroundColor: colors.secondary,
+                borderColor: colors.primary + '40',
                 opacity: pressed ? 0.85 : 1,
+                flexDirection: rowDir,
               },
             ]}
+            accessibilityRole="button"
+            accessibilityLabel={changeLabel}
           >
-            <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 12, color: colors.foreground }}>
-              {r.emoji} {lang === 'ar' ? r.labelAr : r.labelEn}
-            </Text>
+            <Ionicons name="swap-horizontal" size={13} color={colors.primary} />
+            <Text style={[styles.changeBtnText, { color: colors.primary }]}>{changeLabel}</Text>
           </Pressable>
-        ))}
-      </ScrollView>
+        </View>
+
+        {/* Prep progress — stated once */}
+        <View style={[styles.progressRow, { flexDirection: rowDir }]}>
+          <View style={[styles.track, { backgroundColor: colors.muted }]}>
+            <View
+              style={[
+                styles.fill,
+                {
+                  backgroundColor: allReady ? colors.success : colors.primary,
+                  width: `${Math.round(ratio * 100)}%`,
+                  alignSelf: isRTL ? 'flex-end' : 'flex-start',
+                },
+              ]}
+            />
+          </View>
+          <Text
+            numberOfLines={1}
+            style={[
+              styles.progressText,
+              { color: allReady ? colors.success : colors.mutedForeground, textAlign: align },
+            ]}
+          >
+            {allReady ? allReadyLabel : progressLabel}
+            {lesson.uploadedCount > 0 ? ` · ${uploadedLabel(lesson.uploadedCount)}` : ''}
+          </Text>
+        </View>
+
+        {/* Resource chips carry their own state — tap to generate or open */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={[styles.resourceStrip, { flexDirection: rowDir }]}
+        >
+          {lesson.resources.map((r: ResourceChip) => (
+            <Pressable
+              key={r.type}
+              onPress={() => onResourcePress(r.type, r.done)}
+              style={({ pressed }) => [
+                styles.resourceChip,
+                {
+                  borderColor: r.done ? colors.success + '66' : colors.border,
+                  backgroundColor: r.done ? colors.success + '1A' : colors.background,
+                  opacity: pressed ? 0.85 : 1,
+                  flexDirection: rowDir,
+                },
+              ]}
+              accessibilityRole="button"
+            >
+              <Text style={styles.resourceEmoji}>{r.emoji}</Text>
+              <Text
+                style={[
+                  styles.resourceText,
+                  { color: r.done ? colors.success : colors.foreground },
+                ]}
+              >
+                {lang === 'ar' ? r.labelAr : r.labelEn}
+              </Text>
+              <Ionicons
+                name={r.done ? 'checkmark-circle' : 'add-circle-outline'}
+                size={13}
+                color={r.done ? colors.success : colors.mutedForeground}
+              />
+            </Pressable>
+          ))}
+        </ScrollView>
+      </View>
     </View>
   );
 }
@@ -188,58 +226,36 @@ export function CurrentLessonCard({
 const styles = StyleSheet.create({
   wrap: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingTop: 10,
     paddingBottom: 10,
-    gap: 6,
   },
   collapsed: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    alignItems: 'center',
-    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 7,
   },
-  collapsedMain: {
-    alignItems: 'center',
-    gap: 8,
-  },
-  collapsedTitle: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 13,
-  },
-  headerRow: {
-    alignItems: 'flex-start',
-    gap: 8,
-  },
-  headerText: {
-    gap: 2,
-  },
-  curriculum: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 11,
-  },
-  subject: {
-    fontFamily: 'Inter_500Medium',
-    fontSize: 12,
-  },
-  unit: {
-    fontFamily: 'Inter_700Bold',
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  meta: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 11,
-  },
+  collapsedInner: { alignItems: 'center', gap: 8 },
+  collapsedMain: { alignItems: 'center', gap: 8 },
+  collapsedTitle: { fontFamily: 'Inter_600SemiBold', fontSize: 13 },
+  countPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 9 },
+  countPillText: { fontFamily: 'Inter_600SemiBold', fontSize: 11 },
+
+  headerRow: { alignItems: 'flex-start', gap: 10 },
+  crumbRow: { alignItems: 'center', gap: 6 },
+  curriculum: { fontFamily: 'Inter_400Regular', fontSize: 11 },
+  unit: { fontFamily: 'Inter_700Bold', fontSize: 15, lineHeight: 21 },
+
   changeBtn: {
     alignItems: 'center',
     gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    borderRadius: 18,
+    borderWidth: 1,
     flexShrink: 0,
   },
+  changeBtnText: { fontFamily: 'Inter_600SemiBold', fontSize: 12 },
   changeBtnCompact: {
     width: 28,
     height: 28,
@@ -247,32 +263,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  changeBtnText: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 12,
-  },
-  generatedLabel: {
-    fontFamily: 'Inter_500Medium',
-    fontSize: 11,
-    marginTop: 2,
-  },
-  checkRow: {
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  checkItem: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 11,
-  },
-  resourceStrip: {
-    gap: 8,
-    paddingTop: 4,
-    paddingBottom: 2,
-  },
+
+  progressRow: { alignItems: 'center', gap: 10 },
+  track: { flex: 1, height: 5, borderRadius: 3, overflow: 'hidden' },
+  fill: { height: '100%', borderRadius: 3 },
+  progressText: { fontFamily: 'Inter_500Medium', fontSize: 11, flexShrink: 0 },
+
+  resourceStrip: { gap: 8, paddingVertical: 1 },
   resourceChip: {
-    paddingHorizontal: 12,
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 11,
     paddingVertical: 7,
     borderRadius: 16,
     borderWidth: 1,
   },
+  resourceEmoji: { fontSize: 12 },
+  resourceText: { fontFamily: 'Inter_500Medium', fontSize: 12 },
 });
