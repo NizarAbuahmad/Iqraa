@@ -63,7 +63,7 @@ function slideTypeAccent(type: ActivitySlide['type']): string {
 // On web (the projector case) the calculator is embedded so the class sees the
 // curve inside the deck; on native there's no WebView dependency, so we open
 // GeoGebra full-screen instead.
-function GraphView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; t: (k: any) => string }) {
+function GraphView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; t: (k: any, arg?: any) => string }) {
   const commands = slide.graphCommands ?? [];
   const url = geogebraCommandUrl(commands);
 
@@ -114,7 +114,7 @@ function GraphView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; 
 }
 
 // ─── Media slide (image / YouTube) ────────────────────────────────────────────
-function MediaView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; t: (k: any) => string }) {
+function MediaView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; t: (k: any, arg?: any) => string }) {
   const url = slide.mediaUrl ?? '';
   const embed = slide.mediaKind === 'video' ? youtubeEmbedUrl(url) : null;
 
@@ -158,7 +158,7 @@ function TeacherPanel({
 }: {
   slide: ActivitySlide;
   isRTL: boolean;
-  t: (k: any) => string;
+  t: (k: any, arg?: any) => string;
   onClose: () => void;
 }) {
   const insets = useSafeAreaInsets();
@@ -220,7 +220,7 @@ function QuestionOptions({
 }: {
   slide: ActivitySlide;
   isRTL: boolean;
-  t: (k: any) => string;
+  t: (k: any, arg?: any) => string;
   revealed: boolean;
   onToggleReveal: () => void;
 }) {
@@ -293,13 +293,39 @@ function QuestionOptions({
         </Text>
       </Pressable>
 
-      {/* The trust moment: the projected proof that this key cannot be wrong */}
+      {/* The trust moment — but the badge states only what actually happened.
+          'symbolic' means SymPy re-derived and compared; 'bank' means a
+          hand-authored reviewed item, which is NOT machine verification. */}
       {revealed && slide.verified && (
-        <View style={[qStyles.verifiedBadge, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <Ionicons name="shield-checkmark" size={16} color={TIMER_GREEN} />
-          <Text style={[qStyles.verifiedText, { fontFamily: 'Cairo_600SemiBold' }]}>
-            {t('verifiedAnswerBadge')}
-          </Text>
+        <View style={{ gap: 6 }}>
+          <View style={[qStyles.verifiedBadge, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            <Ionicons
+              name={slide.verifiedBy === 'symbolic' ? 'shield-checkmark' : 'library-outline'}
+              size={16}
+              color={slide.verifiedBy === 'symbolic' ? TIMER_GREEN : TEXT_MUTED}
+            />
+            <Text
+              style={[
+                qStyles.verifiedText,
+                {
+                  fontFamily: 'Cairo_600SemiBold',
+                  color: slide.verifiedBy === 'symbolic' ? TIMER_GREEN : TEXT_MUTED,
+                },
+              ]}
+            >
+              {slide.verifiedBy === 'symbolic' ? t('verifiedBySymbolic') : t('verifiedByBank')}
+            </Text>
+          </View>
+          {slide.verifiedBy === 'symbolic' && slide.computedAnswer && (
+            <Text
+              style={[
+                qStyles.verifiedText,
+                { fontFamily: 'Almarai_400Regular', color: TEXT_MUTED, textAlign: 'center' },
+              ]}
+            >
+              {t('verifiedComputed', slide.computedAnswer)}
+            </Text>
+          )}
         </View>
       )}
     </View>
@@ -839,7 +865,7 @@ const qStyles = StyleSheet.create({
   optionText: { flex: 1, fontSize: 22, color: TEXT_PRIMARY, lineHeight: 32 },
   revealBtn: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 13, borderRadius: 12, borderWidth: 1 },
   revealBtnText: { fontSize: 15 },
-  verifiedBadge: { alignItems: 'center', justifyContent: 'center', gap: 8, alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, backgroundColor: TIMER_GREEN + '12', borderWidth: 1, borderColor: TIMER_GREEN + '45' },
+  verifiedBadge: { alignItems: 'center', justifyContent: 'center', gap: 8, alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, backgroundColor: CARD_BG, borderWidth: 1, borderColor: BORDER },
   verifiedText: { fontSize: 13.5, color: TIMER_GREEN },
 });
 

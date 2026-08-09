@@ -139,8 +139,18 @@ export interface ActivitySlide {
    */
   options?: string[];
   correctIndex?: number;
-  /** True when the answer key is correct by construction / verifier-checked. */
+  /** True when the answer key passed its correctness check. */
   verified?: boolean;
+  /**
+   * HOW the answer was checked — the badge must not overclaim.
+   *  'symbolic' — SymPy proved it (re-derived and compared). Only the
+   *               derivative slice supports this today.
+   *  'bank'     — hand-authored item from the reviewed question bank.
+   *               Correct, but nobody "verified it mathematically".
+   */
+  verifiedBy?: 'symbolic' | 'bank';
+  /** The answer SymPy computed on its own — the projected evidence. */
+  computedAnswer?: string;
   /**
    * GeoGebra commands for type 'graph' — e.g. ['f(x)=x^2', 'g(x)=x+1'].
    * The class screen embeds them on web and opens GeoGebra on native, so
