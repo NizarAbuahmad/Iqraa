@@ -1,10 +1,18 @@
 /**
- * Compact persistent "Current Lesson" card for IQRA chat (Investor MVP).
- * Collapses after the teacher scrolls the conversation.
+ * Persistent "Current Lesson" card for the IQRA chat.
+ *
+ * Previously this rendered the five resources twice — once as a "○ / ✓" text
+ * row and again as a chip strip — on top of four separate metadata lines, which
+ * made the tallest element on screen also the least readable. Now there is one
+ * resource strip where the chip itself carries its done state, and readiness is
+ * summarised by a single progress bar.
+ *
+ * Collapses to a one-line bar once the teacher scrolls the conversation.
  */
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { HScrollRow } from './HScrollRow';
 import type { CurrentLessonView, ResourceChip } from '@/services/lessonCopilot';
 import type { SessionArtifact } from '@/services/ai/teachingAssistant';
 
@@ -17,6 +25,7 @@ type Colors = {
   primary: string;
   primaryForeground: string;
   secondary: string;
+  success?: string;
 };
 
 type Props = {
@@ -27,7 +36,9 @@ type Props = {
   colors: Colors;
   changeLabel: string;
   uploadedLabel: (n: number) => string;
-  generatedLabel: string;
+  /** "3 of 5 ready" — supplied by the screen so wording stays in i18n. */
+  readinessLabel: (done: number, total: number) => string;
+  readyLabel: string;
   onChangeLesson: () => void;
   onToggleCollapse: () => void;
   onResourcePress: (type: SessionArtifact, done: boolean) => void;
@@ -41,50 +52,24 @@ export function CurrentLessonCard({
   colors,
   changeLabel,
   uploadedLabel,
-  generatedLabel,
+  readinessLabel,
+  readyLabel,
   onChangeLesson,
   onToggleCollapse,
   onResourcePress,
 }: Props) {
-  const align = isRTL ? 'right' : 'left' as const;
-  const rowDir = isRTL ? 'row-reverse' : 'row' as const;
+  const align = isRTL ? ('right' as const) : ('left' as const);
+  const rowDir = isRTL ? ('row-reverse' as const) : ('row' as const);
+  const done = lesson.resources.filter(r => r.done).length;
+  const total = lesson.resources.length;
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+  const allDone = total > 0 && done === total;
+  const doneColor = colors.success ?? '#10B981';
 
   if (collapsed) {
-    // Change CTA first in row-reverse → sits on the start edge (right in RTL)
-    const changeCompact = (
-      <Pressable
-        onPress={onChangeLesson}
-        hitSlop={8}
-        style={({ pressed }) => [
-          styles.changeBtnCompact,
-          {
-            backgroundColor: colors.primary,
-            opacity: pressed ? 0.88 : 1,
-          },
-        ]}
-        accessibilityRole="button"
-        accessibilityLabel={changeLabel}
-      >
-        <Ionicons name="swap-horizontal" size={13} color={colors.primaryForeground || '#fff'} />
-      </Pressable>
-    );
-    const main = (
+    return (
       <Pressable
         onPress={onToggleCollapse}
-        style={[styles.collapsedMain, { flexDirection: rowDir, flex: 1 }]}
-      >
-        <Text style={{ fontSize: 14 }}>🇯🇴</Text>
-        <Text
-          numberOfLines={1}
-          style={[styles.collapsedTitle, { color: colors.foreground, textAlign: align, flex: 1 }]}
-        >
-          {lesson.unitLesson}
-        </Text>
-        <Ionicons name="chevron-down" size={16} color={colors.mutedForeground} />
-      </Pressable>
-    );
-    return (
-      <View
         style={[
           styles.collapsed,
           {
@@ -93,94 +78,167 @@ export function CurrentLessonCard({
             flexDirection: rowDir,
           },
         ]}
+        accessibilityRole="button"
       >
-        {changeCompact}
-        {main}
-      </View>
+        <View style={[styles.collapsedDot, { backgroundColor: colors.primary }]} />
+        <Text
+          numberOfLines={1}
+          style={[styles.collapsedTitle, { color: colors.foreground, textAlign: align, flex: 1 }]}
+        >
+          {lesson.topic}
+        </Text>
+
+        {/* Readiness as five pips — keeps the signal without a second row. */}
+        <View style={[styles.pips, { flexDirection: rowDir }]}>
+          {lesson.resources.map(r => (
+            <View
+              key={r.type}
+              style={[
+                styles.pip,
+                { backgroundColor: r.done ? doneColor : colors.border },
+              ]}
+            />
+          ))}
+        </View>
+
+        <Pressable
+          onPress={onChangeLesson}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={changeLabel}
+          style={({ pressed }) => [
+            styles.iconBtn,
+            { backgroundColor: colors.primary + '14', opacity: pressed ? 0.7 : 1 },
+          ]}
+        >
+          <Ionicons name="swap-horizontal" size={14} color={colors.primary} />
+        </Pressable>
+        <Ionicons name="chevron-down" size={15} color={colors.mutedForeground} />
+      </Pressable>
     );
   }
 
   return (
     <View style={[styles.wrap, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-      <View style={[styles.headerText, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
-        <Pressable onPress={onToggleCollapse} style={[styles.headerRow, { flexDirection: rowDir, width: '100%' }]}>
-          <View style={{ flex: 1, gap: 2 }}>
-            <Text style={[styles.curriculum, { color: colors.mutedForeground, textAlign: align }]}>
+      {/* ── Title block ─────────────────────────────────────────────── */}
+      <View style={[styles.titleRow, { flexDirection: rowDir }]}>
+        <View style={[styles.accent, { backgroundColor: colors.primary }]} />
+        <Pressable onPress={onToggleCollapse} style={{ flex: 1, gap: 2 }}>
+          <View style={[styles.breadcrumb, { flexDirection: rowDir }]}>
+            <Text
+              numberOfLines={1}
+              style={[styles.crumbText, { color: colors.mutedForeground, textAlign: align }]}
+            >
               {lesson.curriculumLabel}
             </Text>
-            <Text style={[styles.subject, { color: colors.foreground, textAlign: align }]}>
+            <View style={[styles.crumbSep, { backgroundColor: colors.mutedForeground }]} />
+            <Text
+              numberOfLines={1}
+              style={[styles.crumbText, { color: colors.mutedForeground, textAlign: align, flexShrink: 1 }]}
+            >
               {lesson.subjectGrade}
             </Text>
-            <Text style={[styles.unit, { color: colors.primary, textAlign: align }]} numberOfLines={2}>
-              {lesson.unitLesson}
-            </Text>
           </View>
-          <Ionicons name="chevron-up" size={16} color={colors.mutedForeground} />
+          <Text
+            numberOfLines={2}
+            style={[styles.topic, { color: colors.foreground, textAlign: align }]}
+          >
+            {lesson.topic}
+          </Text>
         </Pressable>
 
         <Pressable
           onPress={onChangeLesson}
+          accessibilityRole="button"
+          accessibilityLabel={changeLabel}
           style={({ pressed }) => [
             styles.changeBtn,
             {
-              backgroundColor: colors.primary,
-              opacity: pressed ? 0.88 : 1,
+              borderColor: colors.primary + '40',
+              backgroundColor: colors.primary + '10',
               flexDirection: rowDir,
-              marginTop: 8,
+              opacity: pressed ? 0.75 : 1,
             },
           ]}
-          accessibilityRole="button"
-          accessibilityLabel={changeLabel}
         >
-          <Ionicons name="swap-horizontal" size={14} color={colors.primaryForeground || '#fff'} />
-          <Text style={[styles.changeBtnText, { color: colors.primaryForeground || '#fff' }]}>
-            {changeLabel}
-          </Text>
+          <Ionicons name="swap-horizontal" size={13} color={colors.primary} />
+          <Text style={[styles.changeBtnText, { color: colors.primary }]}>{changeLabel}</Text>
+        </Pressable>
+
+        <Pressable onPress={onToggleCollapse} hitSlop={8} style={styles.chevron}>
+          <Ionicons name="chevron-up" size={15} color={colors.mutedForeground} />
         </Pressable>
       </View>
 
-      <Text style={[styles.meta, { color: colors.mutedForeground, textAlign: align }]}>
-        {uploadedLabel(lesson.uploadedCount)}
-      </Text>
-
-      <Text style={[styles.generatedLabel, { color: colors.mutedForeground, textAlign: align }]}>
-        {generatedLabel}
-      </Text>
-      <View style={[styles.checkRow, { flexDirection: rowDir }]}>
-        {lesson.resources.map(r => (
-          <Text
-            key={r.type}
-            style={[styles.checkItem, { color: r.done ? '#047857' : colors.mutedForeground }]}
-          >
-            {r.done ? '✓' : '○'} {lang === 'ar' ? r.labelAr : r.labelEn}
-          </Text>
-        ))}
+      {/* ── Readiness ───────────────────────────────────────────────── */}
+      <View style={[styles.metaRow, { flexDirection: rowDir }]}>
+        <Text
+          style={[
+            styles.readiness,
+            { color: allDone ? doneColor : colors.mutedForeground, textAlign: align },
+          ]}
+        >
+          {allDone ? `✓ ${readyLabel}` : readinessLabel(done, total)}
+        </Text>
+        {lesson.uploadedCount > 0 ? (
+          <View style={[styles.filePill, { backgroundColor: colors.muted, flexDirection: rowDir }]}>
+            <Ionicons name="document-attach-outline" size={11} color={colors.mutedForeground} />
+            <Text style={[styles.filePillText, { color: colors.mutedForeground }]}>
+              {uploadedLabel(lesson.uploadedCount)}
+            </Text>
+          </View>
+        ) : null}
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={[styles.resourceStrip, { flexDirection: rowDir }]}
-      >
+      <View style={[styles.track, { backgroundColor: colors.border }]}>
+        <View
+          style={[
+            styles.fill,
+            {
+              width: `${pct}%`,
+              backgroundColor: allDone ? doneColor : colors.primary,
+              alignSelf: isRTL ? 'flex-end' : 'flex-start',
+            },
+          ]}
+        />
+      </View>
+
+      {/* ── One resource strip: chip carries its own done state ─────── */}
+      <HScrollRow isRTL={isRTL} contentContainerStyle={styles.strip}>
         {lesson.resources.map((r: ResourceChip) => (
           <Pressable
             key={r.type}
             onPress={() => onResourcePress(r.type, r.done)}
+            accessibilityRole="button"
             style={({ pressed }) => [
-              styles.resourceChip,
+              styles.chip,
               {
-                borderColor: r.done ? colors.primary + '66' : colors.border,
-                backgroundColor: r.done ? colors.primary + '12' : colors.muted,
-                opacity: pressed ? 0.85 : 1,
+                borderColor: r.done ? doneColor + '55' : colors.border,
+                backgroundColor: r.done ? doneColor + '12' : colors.muted,
+                flexDirection: rowDir,
+                opacity: pressed ? 0.8 : 1,
               },
             ]}
           >
-            <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 12, color: colors.foreground }}>
-              {r.emoji} {lang === 'ar' ? r.labelAr : r.labelEn}
+            {r.done ? (
+              <Ionicons name="checkmark-circle" size={13} color={doneColor} />
+            ) : (
+              <Text style={styles.chipEmoji}>{r.emoji}</Text>
+            )}
+            <Text
+              style={[
+                styles.chipText,
+                {
+                  color: r.done ? doneColor : colors.foreground,
+                  fontFamily: r.done ? 'Inter_600SemiBold' : 'Inter_500Medium',
+                },
+              ]}
+            >
+              {lang === 'ar' ? r.labelAr : r.labelEn}
             </Text>
           </Pressable>
         ))}
-      </ScrollView>
+      </HScrollRow>
     </View>
   );
 }
@@ -191,88 +249,71 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingTop: 10,
     paddingBottom: 10,
-    gap: 6,
+    gap: 8,
   },
+
+  // Collapsed
   collapsed: {
     borderBottomWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingVertical: 9,
     alignItems: 'center',
     gap: 8,
   },
-  collapsedMain: {
-    alignItems: 'center',
-    gap: 8,
-  },
-  collapsedTitle: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 13,
-  },
-  headerRow: {
-    alignItems: 'flex-start',
-    gap: 8,
-  },
-  headerText: {
-    gap: 2,
-  },
-  curriculum: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 11,
-  },
-  subject: {
-    fontFamily: 'Inter_500Medium',
-    fontSize: 12,
-  },
-  unit: {
-    fontFamily: 'Inter_700Bold',
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  meta: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 11,
-  },
-  changeBtn: {
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    flexShrink: 0,
-  },
-  changeBtnCompact: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+  collapsedDot: { width: 6, height: 6, borderRadius: 3 },
+  collapsedTitle: { fontFamily: 'Inter_600SemiBold', fontSize: 13 },
+  pips: { gap: 3, alignItems: 'center' },
+  pip: { width: 12, height: 3, borderRadius: 2 },
+  iconBtn: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  changeBtnText: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 12,
+
+  // Expanded
+  titleRow: { alignItems: 'center', gap: 10 },
+  accent: { width: 3, height: 30, borderRadius: 2 },
+  breadcrumb: { alignItems: 'center', gap: 6 },
+  crumbText: { fontFamily: 'Inter_400Regular', fontSize: 10.5, letterSpacing: 0.1 },
+  crumbSep: { width: 2, height: 2, borderRadius: 1, opacity: 0.6 },
+  topic: { fontFamily: 'Inter_700Bold', fontSize: 14.5, lineHeight: 20 },
+  changeBtn: {
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    flexShrink: 0,
   },
-  generatedLabel: {
-    fontFamily: 'Inter_500Medium',
-    fontSize: 11,
-    marginTop: 2,
+  changeBtnText: { fontFamily: 'Inter_600SemiBold', fontSize: 11.5 },
+  chevron: { padding: 2 },
+
+  metaRow: { alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  readiness: { fontFamily: 'Inter_500Medium', fontSize: 11.5 },
+  filePill: {
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
   },
-  checkRow: {
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  checkItem: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 11,
-  },
-  resourceStrip: {
-    gap: 8,
-    paddingTop: 4,
-    paddingBottom: 2,
-  },
-  resourceChip: {
-    paddingHorizontal: 12,
+  filePillText: { fontFamily: 'Inter_400Regular', fontSize: 10.5 },
+
+  track: { height: 4, borderRadius: 2, overflow: 'hidden' },
+  fill: { height: 4, borderRadius: 2 },
+
+  strip: { gap: 8, paddingTop: 2, paddingBottom: 2 },
+  chip: {
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 11,
     paddingVertical: 7,
     borderRadius: 16,
     borderWidth: 1,
   },
+  chipEmoji: { fontSize: 12 },
+  chipText: { fontSize: 12 },
 });

@@ -326,10 +326,48 @@ const translations = {
     iqraChatError: 'تعذر إتمام العملية. حاول مرة أخرى أو أعد صياغة الطلب.',
     iqraArtifactNeedTopic: 'حاضر — عن أي درس نجهّز هذه المادة؟ اكتب اسم الدرس أو اختر من الاقتراحات.',
     changeLesson: 'تغيير الدرس',
-    lessonUploadedFiles: (n: number) => `الملفات المرفوعة: ${n}`,
+    lessonUploadedFiles: (n: number) => `${n} ملف`,
     lessonGeneratedLabel: 'جاهز:',
+    lessonReadiness: (done: number, total: number) => `جاهز ${done} من ${total} للحصة`,
+    lessonAllReady: 'الحصة جاهزة بالكامل',
     teacherMode: 'معلم',
     studentMode: 'طالب',
+    teacherModeShort: 'معلم',
+    studentModeShort: 'طالب',
+
+    // iQra chat — agent status line
+    iqraStatusReady: 'جاهز للمساعدة',
+    iqraStatusWorking: 'يعمل الآن…',
+    iqraStatusWithFiles: (n: number) => `يقرأ ${n} من ملفاتك`,
+
+    // iQra chat — reasoning steps (shown while the reply is being built)
+    iqraStepReadingRequest: 'أقرأ طلبك…',
+    iqraStepReviewCurriculum: 'أراجع الدرس في المنهاج الأردني…',
+    iqraStepChoosingActivities: 'أختار الأمثلة والأنشطة المناسبة…',
+    iqraStepWritingPlan: 'أصيغ خطة الدرس…',
+    iqraStepPreparingResource: 'أجهّز المادة بصيغتها النهائية…',
+    iqraStepReadingFiles: 'أقرأ ملفاتك المرفوعة…',
+    iqraStepExtracting: 'أستخرج المفاهيم الأساسية…',
+    iqraStepDrafting: 'أصيغ الإجابة…',
+
+    // iQra chat — welcome hero
+    iqraHeroHeadline: 'كيف نحضّر حصة اليوم؟',
+    iqraHeroSubline: 'اسألني عن أي درس في المنهاج، أو ارفع ملفاتك وسأبني عليها التحضير كاملاً.',
+    iqraCapPlanTitle: 'حضّر خطة درس',
+    iqraCapPlanSub: 'أهداف وتسلسل زمني وأنشطة وتقويم — جاهزة للطباعة',
+    iqraCapUploadTitle: 'ابنِ على ملفاتي',
+    iqraCapUploadSub: 'ارفع PDF أو Word أو عرضاً أو صورة من الكتاب',
+    iqraCapExplainTitle: 'بسّط شرح مفهوم',
+    iqraCapExplainSub: 'لغة أسهل، تشبيهات، وأخطاء الطلبة الشائعة',
+    iqraCapQuizTitle: 'جهّز اختباراً قصيراً',
+    iqraCapQuizSub: 'أسئلة متدرجة الصعوبة مع نموذج الإجابة',
+
+    // iQra chat — message actions
+    iqraActionCopy: 'نسخ',
+    iqraActionExport: 'تصدير',
+    iqraActionRegenerate: 'صياغة أخرى',
+    iqraScrollToLatest: 'الأحدث',
+    iqraSuggestedNext: 'الخطوة التالية',
 
     // Profile
     profileTitle: 'حسابي',
@@ -951,10 +989,49 @@ const translations = {
     iqraChatError: 'Something went wrong while handling your request. Please try again or rephrase.',
     iqraArtifactNeedTopic: 'Sure — which lesson should this material cover? Type the lesson name or pick a topic below.',
     changeLesson: 'Change lesson',
-    lessonUploadedFiles: (n: number) => `Uploaded files: ${n}`,
+    lessonUploadedFiles: (n: number) => `${n} ${n === 1 ? 'file' : 'files'}`,
     lessonGeneratedLabel: 'Generated:',
+    lessonReadiness: (done: number, total: number) => `${done} of ${total} ready for class`,
+    lessonAllReady: 'Fully ready to teach',
     teacherMode: 'Teacher Mode',
     studentMode: 'Student Mode',
+    // Segmented control in the chat header — the long form overflows the row.
+    teacherModeShort: 'Teacher',
+    studentModeShort: 'Student',
+
+    // iQra chat — agent status line
+    iqraStatusReady: 'Ready to help',
+    iqraStatusWorking: 'Working…',
+    iqraStatusWithFiles: (n: number) => `Reading ${n} of your files`,
+
+    // iQra chat — reasoning steps (shown while the reply is being built)
+    iqraStepReadingRequest: 'Reading your request…',
+    iqraStepReviewCurriculum: 'Reviewing the lesson in the Jordan curriculum…',
+    iqraStepChoosingActivities: 'Choosing suitable examples and activities…',
+    iqraStepWritingPlan: 'Drafting the lesson plan…',
+    iqraStepPreparingResource: 'Formatting the material…',
+    iqraStepReadingFiles: 'Reading your uploaded files…',
+    iqraStepExtracting: 'Extracting the key concepts…',
+    iqraStepDrafting: 'Composing the answer…',
+
+    // iQra chat — welcome hero
+    iqraHeroHeadline: 'What are we preparing today?',
+    iqraHeroSubline: 'Ask me about any lesson in the curriculum, or upload your files and I’ll build the whole prep on them.',
+    iqraCapPlanTitle: 'Build a lesson plan',
+    iqraCapPlanSub: 'Objectives, timing, activities and assessment — print-ready',
+    iqraCapUploadTitle: 'Work from my files',
+    iqraCapUploadSub: 'Upload a PDF, Word file, deck, or a photo of the textbook',
+    iqraCapExplainTitle: 'Simplify an explanation',
+    iqraCapExplainSub: 'Plainer language, analogies, and common student errors',
+    iqraCapQuizTitle: 'Create a short quiz',
+    iqraCapQuizSub: 'Graded questions with a full answer key',
+
+    // iQra chat — message actions
+    iqraActionCopy: 'Copy',
+    iqraActionExport: 'Export',
+    iqraActionRegenerate: 'Try again',
+    iqraScrollToLatest: 'Latest',
+    iqraSuggestedNext: 'Next step',
 
     profileTitle: 'Profile',
     profileInfo: 'PROFILE INFO',

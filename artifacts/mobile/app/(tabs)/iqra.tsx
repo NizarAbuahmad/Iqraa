@@ -1,6 +1,7 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
+  Animated,
+  Easing,
   FlatList,
   Modal,
   Pressable,
@@ -69,12 +70,18 @@ import { classifyChatIntent } from '@/services/ai/intentRouter';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
 import { CurrentLessonCard } from '@/components/ui/CurrentLessonCard';
+import { ThinkingIndicator } from '@/components/ui/ThinkingIndicator';
+import { ChatWelcome, type WelcomeCard } from '@/components/ui/ChatWelcome';
+import { RichText } from '@/components/ui/RichText';
+import { HScrollRow } from '@/components/ui/HScrollRow';
 import { DocumentAttachButtons, DocumentAttachmentBar } from '@/components/ui/DocumentAttachmentBar';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import {
+  addAndProcessFiles,
   clearSessionDocuments,
   getDocumentContextBundle,
   getSessionDocuments,
+  pickTeachingDocuments,
   primaryTopicFromDocuments,
   subscribeSessionDocuments,
   type SessionDocument,
@@ -125,6 +132,43 @@ function promptForTeachingAction(
     },
   };
   return prompts[type][lang];
+}
+
+/**
+ * Reasoning steps surfaced while a reply is being built.
+ *
+ * These mirror what the pipeline actually does for that intent — read the ask,
+ * ground it in the curriculum or the uploaded files, then draft — so the wait
+ * reads as deliberate work rather than dead time.
+ */
+function buildThinkingSteps({
+  intent,
+  query,
+  hasDocuments,
+  t,
+}: {
+  intent: string;
+  query: string;
+  hasDocuments: boolean;
+  t: (k: any, ...args: any[]) => string;
+}): string[] {
+  const steps: string[] = [t('iqraStepReadingRequest')];
+
+  if (hasDocuments) {
+    steps.push(t('iqraStepReadingFiles'), t('iqraStepExtracting'));
+  } else {
+    steps.push(t('iqraStepReviewCurriculum'));
+  }
+
+  if (intent === 'artifact' || intent === 'refinement') {
+    const isLessonPlan = /خطة|lesson\s*plan/i.test(query);
+    steps.push(t('iqraStepChoosingActivities'));
+    steps.push(isLessonPlan ? t('iqraStepWritingPlan') : t('iqraStepPreparingResource'));
+  } else {
+    steps.push(t('iqraStepDrafting'));
+  }
+
+  return steps;
 }
 
 function ephemeralFromTeachingActions(
@@ -461,18 +505,20 @@ function LessonPrepProgressCard({
   colors: any;
   isRTL: boolean;
 }) {
+  const success = colors.success ?? '#10B981';
+
   if (progress.allReady) {
     return (
       <View
         style={[
           prepStyles.card,
-          { backgroundColor: '#ECFDF5', borderColor: '#A7F3D0' },
+          { backgroundColor: success + '12', borderColor: success + '40' },
         ]}
       >
         <Text
           style={[
             prepStyles.readyText,
-            { textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' },
+            { color: success, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' },
           ]}
         >
           {isRTL ? '🎉 الدرس جاهز للتدريس.' : '🎉 The lesson is ready to teach.'}
@@ -507,15 +553,17 @@ function LessonPrepProgressCard({
         {isRTL ? 'ما أنجزناه:' : 'Completed:'}
       </Text>
       {progress.done.map(item => (
-        <Text
-          key={item.id}
-          style={[
-            prepStyles.line,
-            { color: colors.foreground, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' },
-          ]}
-        >
-          ✅ {item.label}
-        </Text>
+        <View key={item.id} style={[prepStyles.row, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <Ionicons name="checkmark-circle" size={13} color={success} />
+          <Text
+            style={[
+              prepStyles.line,
+              { color: colors.foreground, flex: 1, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' },
+            ]}
+          >
+            {item.label}
+          </Text>
+        </View>
       ))}
       {progress.remaining.length > 0 ? (
         <>
@@ -533,15 +581,17 @@ function LessonPrepProgressCard({
             {isRTL ? 'ما تبقّى للحصة:' : 'Still needed for the lesson:'}
           </Text>
           {progress.remaining.map(item => (
-            <Text
-              key={item.id}
-              style={[
-                prepStyles.line,
-                { color: colors.mutedForeground, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' },
-              ]}
-            >
-              ⬜ {item.label}
-            </Text>
+            <View key={item.id} style={[prepStyles.row, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <Ionicons name="ellipse-outline" size={13} color={colors.mutedForeground} />
+              <Text
+                style={[
+                  prepStyles.line,
+                  { color: colors.mutedForeground, flex: 1, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' },
+                ]}
+              >
+                {item.label}
+              </Text>
+            </View>
           ))}
         </>
       ) : null}
@@ -573,10 +623,14 @@ const prepStyles = StyleSheet.create({
     fontSize: 12,
     marginBottom: 2,
   },
+  row: {
+    alignItems: 'center',
+    gap: 6,
+  },
   line: {
     fontFamily: 'Inter_400Regular',
     fontSize: 12,
-    lineHeight: 18,
+    lineHeight: 20,
   },
   recommend: {
     fontFamily: 'Inter_500Medium',
@@ -587,13 +641,36 @@ const prepStyles = StyleSheet.create({
   readyText: {
     fontFamily: 'Inter_700Bold',
     fontSize: 13,
-    color: '#047857',
     lineHeight: 20,
   },
 });
 
+/** Fade + lift a message into place so replies land rather than snap in. */
+function MessageEnter({ children }: { children: React.ReactNode }) {
+  const anim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(anim, {
+      toValue: 1,
+      duration: 320,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [anim]);
+  return (
+    <Animated.View
+      style={{
+        opacity: anim,
+        transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
+      }}
+    >
+      {children}
+    </Animated.View>
+  );
+}
+
 function MessageBubble({
   message, colors, isRTL, onLongPress, onClarifySubject, onPedagogicalClarify, prepProgress,
+  onCopy, onExport, copyLabel, exportLabel,
 }: {
   message: Message; colors: any; isRTL: boolean;
   onLongPress?: (text: string) => void;
@@ -601,6 +678,10 @@ function MessageBubble({
   onPedagogicalClarify?: (originalQuery: string, option: ClarificationOption) => void;
   /** Live session prep progress — shown under the latest meaningful reply. */
   prepProgress?: PrepProgressView | null;
+  onCopy?: (text: string) => void;
+  onExport?: (text: string) => void;
+  copyLabel?: string;
+  exportLabel?: string;
 }) {
   const isUser = message.role === 'user';
   const timeLabel = message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -609,8 +690,9 @@ function MessageBubble({
     // User bubbles always sit on the trailing edge (right) — ChatGPT/WhatsApp style.
     // Do NOT flip justifyContent for RTL (that was pinning bubbles to the far left).
     return (
+      <MessageEnter>
       <View style={styles.rowUser}>
-        <View style={[styles.bubbleUser, { backgroundColor: colors.primary, borderRadius: 18 }]}>
+        <View style={[styles.bubbleUser, { backgroundColor: colors.primary }]}>
           {message.attachments && message.attachments.length > 0 ? (
             <View style={[styles.attachList, isRTL && { alignItems: 'flex-end' }]}>
               {message.attachments.map(a => (
@@ -634,75 +716,64 @@ function MessageBubble({
             </View>
           ) : null}
           {message.text ? (
-            <Text style={[styles.bubbleText, { color: colors.primaryForeground, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>
+            <Text style={[styles.userText, { color: colors.primaryForeground, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>
               {message.text}
             </Text>
           ) : null}
-          <Text style={[styles.timestamp, { color: 'rgba(255,255,255,0.7)', textAlign: isRTL ? 'left' : 'right' }]}>
+          <Text style={[styles.timestamp, { color: 'rgba(255,255,255,0.72)', textAlign: isRTL ? 'left' : 'right' }]}>
             {timeLabel}
           </Text>
         </View>
       </View>
+      </MessageEnter>
     );
   }
 
-  // Assistant — avatar + bubble only. Tool shortcuts live in the composer (ephemeral).
-  const lines = message.text.split('\n');
-
+  // Assistant — avatar + bubble. Tool shortcuts live in the composer (ephemeral).
   return (
+    <MessageEnter>
     <View style={[styles.rowAssistant, isRTL && styles.rowAssistantRTL]}>
-      <View style={[styles.avatar, { backgroundColor: colors.primary + '20' }]}>
-        <BrandLogo variant="mark" width={22} height={20} />
+      <View style={[styles.avatar, { backgroundColor: colors.primary + '1F', borderColor: colors.primary + '2E' }]}>
+        <BrandLogo variant="mark" width={20} height={18} />
       </View>
-      <View style={{ flex: 1, maxWidth: '82%' }}>
+      <View style={{ flex: 1, maxWidth: '86%' }}>
         <Pressable
           onLongPress={() => onLongPress?.(message.text)}
-          delayLongPress={500}
-          style={[styles.bubbleAssistant, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: 18 }]}
+          delayLongPress={450}
+          style={[styles.bubbleAssistant, { backgroundColor: colors.card, borderColor: colors.border }]}
         >
-          {lines.map((line, i) => {
-            if (!line.trim()) return <View key={i} style={{ height: 6 }} />;
-            const isBold = line.startsWith('**') && line.includes('**');
-            if (isBold) {
-              const clean = line.replace(/\*\*/g, '');
-              return (
-                <Text key={i} style={[styles.bubbleBold, { color: colors.foreground, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>
-                  {clean}
-                </Text>
-              );
-            }
-            if (line.startsWith('•')) {
-              const text = line.substring(1).trim();
-              const parts = text.split('**');
-              return (
-                <View key={i} style={[styles.bulletRow, isRTL && { flexDirection: 'row-reverse' }]}>
-                  <Text style={[{ color: colors.primary, marginTop: 2 }, isRTL ? { marginLeft: 6 } : { marginRight: 6 }]}>•</Text>
-                  <Text style={[styles.bubbleText, { color: colors.foreground, flex: 1, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>
-                    {parts.map((p, pi) =>
-                      pi % 2 === 1
-                        ? <Text key={pi} style={{ fontFamily: 'Inter_600SemiBold' }}>{p}</Text>
-                        : p
-                    )}
-                  </Text>
-                </View>
-              );
-            }
-            if (line.startsWith('📚') || line.startsWith('📖')) {
-              return (
-                <Text key={i} style={[styles.sourceText, { color: colors.mutedForeground, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>
-                  {line}
-                </Text>
-              );
-            }
-            return (
-              <Text key={i} style={[styles.bubbleText, { color: colors.foreground, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>
-                {line}
-              </Text>
-            );
-          })}
-          <Text style={[styles.timestamp, { color: colors.mutedForeground, textAlign: isRTL ? 'left' : 'right' }]}>
-            {timeLabel}
-          </Text>
+          <RichText text={message.text} colors={colors} isRTL={isRTL} />
+          <View style={[styles.bubbleFooter, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            <Text style={[styles.timestamp, { color: colors.mutedForeground }]}>
+              {timeLabel}
+            </Text>
+            {onCopy || onExport ? (
+              <View style={[styles.actionRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                {onCopy ? (
+                  <Pressable
+                    onPress={() => onCopy(message.text)}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={copyLabel}
+                    style={({ pressed }) => [styles.actionBtn, { opacity: pressed ? 0.5 : 1 }]}
+                  >
+                    <Ionicons name="copy-outline" size={13} color={colors.mutedForeground} />
+                  </Pressable>
+                ) : null}
+                {onExport ? (
+                  <Pressable
+                    onPress={() => onExport(message.text)}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={exportLabel}
+                    style={({ pressed }) => [styles.actionBtn, { opacity: pressed ? 0.5 : 1 }]}
+                  >
+                    <Ionicons name="share-outline" size={13} color={colors.mutedForeground} />
+                  </Pressable>
+                ) : null}
+              </View>
+            ) : null}
+          </View>
         </Pressable>
 
         {/* Clarification choices only — these are part of the dialogue turn, not tool launchers */}
@@ -765,6 +836,7 @@ function MessageBubble({
         ) : null}
       </View>
     </View>
+    </MessageEnter>
   );
 }
 
@@ -794,8 +866,11 @@ export default function IqraScreen() {
   const [sessionDocs, setSessionDocs] = useState<SessionDocument[]>(() => getSessionDocuments());
   /** Composer-only shortcuts — cleared as soon as the teacher taps one or sends a message. */
   const [ephemeralSuggestions, setEphemeralSuggestions] = useState<EphemeralSuggestion[]>([]);
-  /** Status line while the assistant is working (lesson plan vs generic). */
-  const [thinkingLabel, setThinkingLabel] = useState('');
+  /** Named reasoning steps shown while the assistant works (lesson plan vs generic). */
+  const [thinkingSteps, setThinkingSteps] = useState<string[]>([]);
+  const [inputFocused, setInputFocused] = useState(false);
+  /** Drives the "jump to latest" affordance once the teacher scrolls up. */
+  const [showJumpToLatest, setShowJumpToLatest] = useState(false);
   const [lessonCardCollapsed, setLessonCardCollapsed] = useState(false);
   const [changeLessonOpen, setChangeLessonOpen] = useState(false);
   const [exportText, setExportText] = useState('');
@@ -957,13 +1032,17 @@ export default function IqraScreen() {
       // 0. Intent Router — BEFORE curriculum context / Teaching Assistant.
       //    Greetings & small talk must never trigger lesson generation.
       const route = classifyChatIntent(q, lang as 'ar' | 'en');
-      if (route.intent === 'artifact') {
-        setThinkingLabel(
-          /خطة|lesson\s*plan/i.test(q) ? t('iqraGeneratingLessonPlan') : t('iqraGeneratingArtifact'),
-        );
-      } else {
-        setThinkingLabel(t('iqraTyping'));
-      }
+      // Name the work instead of showing a bare spinner — a teacher waiting on a
+      // lesson plan should see the assistant reason, not just "loading".
+      const docsAttached = getSessionDocuments().some(d => d.status === 'ready');
+      setThinkingSteps(
+        buildThinkingSteps({
+          intent: route.intent,
+          query: q,
+          hasDocuments: docsAttached,
+          t,
+        }),
+      );
 
       try {
       if (!route.useTeachingPipeline) {
@@ -1416,7 +1495,7 @@ export default function IqraScreen() {
       } finally {
         thinkingRef.current = false;
         setIsThinking(false);
-        setThinkingLabel('');
+        setThinkingSteps([]);
         setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
       }
     },
@@ -1496,6 +1575,34 @@ export default function IqraScreen() {
     sendMessage(prompt, s.lessonId ?? sessionMemory.activeLessonId ?? undefined);
   }, [lang, sendMessage, sessionMemory.activeLessonId]);
 
+  /** Welcome-hero openers: three send a prompt, the fourth opens the file picker. */
+  const handleWelcomePick = useCallback(
+    async (card: WelcomeCard) => {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      if (card.prompt.trim()) {
+        sendMessage(card.prompt, sessionMemory.activeLessonId ?? undefined);
+        return;
+      }
+      const picked = await pickTeachingDocuments();
+      if (picked.length) {
+        await addAndProcessFiles(picked, (name) => showToast(t('docRejected', name)));
+      }
+    },
+    // showToast is a stable setState wrapper; t/lang cover the label text.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sendMessage, sessionMemory.activeLessonId, t],
+  );
+
+  const handleCopyMessage = useCallback(
+    async (text: string) => {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      await copyToClipboard(text);
+      showToast(t('copiedToClipboard'));
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [t],
+  );
+
   const handleResourcePress = useCallback((type: SessionArtifact, done: boolean) => {
     const topic =
       (lang === 'ar' ? sessionMemory.activeTopicAr : sessionMemory.activeTopicEn)
@@ -1517,6 +1624,62 @@ export default function IqraScreen() {
     };
     sendMessage(lang === 'ar' ? prompts[type].ar : prompts[type].en, sessionMemory.activeLessonId ?? undefined);
   }, [lang, sendMessage, sessionMemory]);
+
+  const canSend = Boolean(input.trim()) && !isThinking;
+
+  const heroGreeting = (() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return t('goodMorning');
+    if (hour < 17) return t('goodAfternoon');
+    return t('goodEvening');
+  })();
+
+  const readyDocCount = sessionDocs.filter(d => d.status === 'ready').length;
+  /** Header presence line — the agent always says what it is doing right now. */
+  const statusLine = isThinking
+    ? t('iqraStatusWorking')
+    : readyDocCount > 0
+      ? t('iqraStatusWithFiles', readyDocCount)
+      : t('iqraStatusReady');
+
+  /** Only the welcome turn is on screen → show the hero instead of a lone bubble. */
+  const showWelcomeHero =
+    messages.length === 1 && messages[0]?.id === 'welcome' && !isThinking;
+
+  const welcomeCards: WelcomeCard[] = useMemo(() => {
+    const topic = (lang === 'ar' ? sessionMemory.activeTopicAr : sessionMemory.activeTopicEn) ?? '';
+    const about = topic ? (lang === 'ar' ? ` عن: ${topic}` : ` about: ${topic}`) : '';
+    return [
+      {
+        id: 'plan',
+        icon: 'document-text-outline',
+        title: t('iqraCapPlanTitle'),
+        subtitle: t('iqraCapPlanSub'),
+        prompt: lang === 'ar' ? `حضّر خطة درس كاملة${about}` : `Prepare a full lesson plan${about}`,
+      },
+      {
+        id: 'upload',
+        icon: 'cloud-upload-outline',
+        title: t('iqraCapUploadTitle'),
+        subtitle: t('iqraCapUploadSub'),
+        prompt: '',
+      },
+      {
+        id: 'explain',
+        icon: 'bulb-outline',
+        title: t('iqraCapExplainTitle'),
+        subtitle: t('iqraCapExplainSub'),
+        prompt: lang === 'ar' ? `بسّط لي شرح المفهوم${about}` : `Simplify the explanation${about}`,
+      },
+      {
+        id: 'quiz',
+        icon: 'checkmark-done-outline',
+        title: t('iqraCapQuizTitle'),
+        subtitle: t('iqraCapQuizSub'),
+        prompt: lang === 'ar' ? `جهّز اختباراً قصيراً${about}` : `Create a short quiz${about}`,
+      },
+    ];
+  }, [lang, sessionMemory.activeTopicAr, sessionMemory.activeTopicEn, t]);
 
   const currentLessonView = buildCurrentLessonView(sessionMemory, sessionDocs, lang as 'ar' | 'en');
   const lessonSuggestions = mode === 'teacher'
@@ -1555,25 +1718,50 @@ export default function IqraScreen() {
         ]}
       >
         <View style={[styles.headerTop, isRTL && { flexDirection: 'row-reverse' }]}>
-          {/* Brand */}
+          {/* Agent identity + live status */}
           <View style={[styles.brandRow, isRTL && { flexDirection: 'row-reverse' }]}>
             <View style={[styles.iqraIcon, { backgroundColor: colors.primary }]}>
-              <BrandLogo variant="mark" onDark width={26} height={24} />
-            </View>
-            <View>
-              <BrandLogo
-                variant="lockup"
-                style={[styles.headerLockup, isRTL && { alignSelf: 'flex-end' }]}
+              <BrandLogo variant="mark" onDark width={22} height={20} />
+              <View
+                style={[
+                  styles.presenceDot,
+                  {
+                    backgroundColor: isThinking ? colors.warning : colors.success,
+                    borderColor: colors.card,
+                    [isRTL ? 'left' : 'right']: -1,
+                  },
+                ]}
               />
-              <Text style={[styles.headerSub, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
-                {t('iqraChatSubtitle')}
+            </View>
+            <View style={{ flexShrink: 1 }}>
+              <Text
+                style={[
+                  styles.headerName,
+                  { color: colors.foreground, textAlign: isRTL ? 'right' : 'left' },
+                ]}
+              >
+                {t('iqraChatTitle')}
               </Text>
-              <DemoModeBanner isRTL={isRTL} />
+              <View style={[styles.statusRow, isRTL && { flexDirection: 'row-reverse' }]}>
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    styles.headerSub,
+                    {
+                      color: isThinking ? colors.primary : colors.mutedForeground,
+                      fontFamily: isThinking ? 'Inter_500Medium' : 'Inter_400Regular',
+                      textAlign: isRTL ? 'right' : 'left',
+                    },
+                  ]}
+                >
+                  {statusLine}
+                </Text>
+              </View>
             </View>
           </View>
 
           {/* Mode toggle */}
-          <View style={[styles.modeToggle, { backgroundColor: colors.muted, borderRadius: 20 }]}>
+          <View style={[styles.modeToggle, { backgroundColor: colors.muted, borderColor: colors.border }]}>
             {(['teacher', 'student'] as Mode[]).map(m => (
               <Pressable
                 key={m}
@@ -1581,10 +1769,17 @@ export default function IqraScreen() {
                   Haptics.selectionAsync();
                   setMode(m);
                 }}
+                accessibilityRole="button"
+                accessibilityState={{ selected: mode === m }}
                 style={[
                   styles.modeBtn,
-                  { borderRadius: 18 },
-                  mode === m && { backgroundColor: colors.primary },
+                  mode === m && {
+                    backgroundColor: colors.primary,
+                    shadowColor: colors.primary,
+                    shadowOpacity: 0.25,
+                    shadowRadius: 6,
+                    shadowOffset: { width: 0, height: 2 },
+                  },
                 ]}
               >
                 <Text
@@ -1592,53 +1787,71 @@ export default function IqraScreen() {
                     styles.modeBtnText,
                     {
                       color: mode === m ? colors.primaryForeground : colors.mutedForeground,
-                      fontFamily: mode === m ? 'Inter_600SemiBold' : 'Inter_400Regular',
+                      fontFamily: mode === m ? 'Inter_600SemiBold' : 'Inter_500Medium',
                     },
                   ]}
                 >
-                  {m === 'teacher' ? (isRTL ? 'معلم' : 'Teacher') : (isRTL ? 'طالب' : 'Student')}
+                  {m === 'teacher' ? t('teacherModeShort') : t('studentModeShort')}
                 </Text>
               </Pressable>
             ))}
           </View>
         </View>
 
-        {/* Lesson-aware suggestions (teacher) or fallback starter chips */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={[styles.suggestionsScroll, isRTL && { flexDirection: 'row-reverse' }]}
-        >
-          {lessonSuggestions.length > 0
-            ? lessonSuggestions.map(s => (
-              <Pressable
-                key={s.id}
-                onPress={() => handleLessonSuggestion(s)}
-                style={({ pressed }) => [
-                  styles.chip,
-                  { backgroundColor: colors.secondary, borderRadius: 20, opacity: pressed ? 0.7 : 1 },
-                ]}
-              >
-                <Text style={[styles.chipText, { color: colors.primary, fontFamily: 'Inter_500Medium' }]}>
-                  {s.emoji} {lang === 'ar' ? s.labelAr : s.labelEn}
-                </Text>
-              </Pressable>
-            ))
-            : suggestions.map((s, i) => (
-              <Pressable
-                key={i}
-                onPress={() => sendMessage(s.text, s.lessonId)}
-                style={({ pressed }) => [
-                  styles.chip,
-                  { backgroundColor: colors.secondary, borderRadius: 20, opacity: pressed ? 0.7 : 1 },
-                ]}
-              >
-                <Text style={[styles.chipText, { color: colors.primary, fontFamily: 'Inter_500Medium' }]}>
-                  {s.text}
-                </Text>
-              </Pressable>
-            ))}
-        </ScrollView>
+        {/* Own line: the English badge ("Demo Mode · Sample AI output") is far
+            too wide to share the status row with the mode toggle. */}
+        <View style={[styles.demoRow, isRTL && { alignItems: 'flex-end' }]}>
+          <DemoModeBanner isRTL={isRTL} />
+        </View>
+
+        {/* Lesson-aware suggestions (teacher) or fallback starter chips.
+            Hidden while the assistant works so the header stops competing
+            with the reply that is landing. */}
+        {!isThinking ? (
+          <HScrollRow isRTL={isRTL} contentContainerStyle={styles.suggestionsScroll}>
+            {lessonSuggestions.length > 0
+              ? lessonSuggestions.map(s => (
+                <Pressable
+                  key={s.id}
+                  onPress={() => handleLessonSuggestion(s)}
+                  accessibilityRole="button"
+                  style={({ pressed }) => [
+                    styles.chip,
+                    {
+                      backgroundColor: colors.secondary,
+                      borderColor: colors.primary + '33',
+                      opacity: pressed ? 0.7 : 1,
+                      transform: [{ scale: pressed ? 0.97 : 1 }],
+                    },
+                  ]}
+                >
+                  <Text style={[styles.chipText, { color: colors.primary, fontFamily: 'Inter_600SemiBold' }]}>
+                    {s.emoji} {lang === 'ar' ? s.labelAr : s.labelEn}
+                  </Text>
+                </Pressable>
+              ))
+              : suggestions.map((s, i) => (
+                <Pressable
+                  key={i}
+                  onPress={() => sendMessage(s.text, s.lessonId)}
+                  accessibilityRole="button"
+                  style={({ pressed }) => [
+                    styles.chip,
+                    {
+                      backgroundColor: colors.secondary,
+                      borderColor: colors.primary + '33',
+                      opacity: pressed ? 0.7 : 1,
+                      transform: [{ scale: pressed ? 0.97 : 1 }],
+                    },
+                  ]}
+                >
+                  <Text style={[styles.chipText, { color: colors.primary, fontFamily: 'Inter_500Medium' }]}>
+                    {s.text}
+                  </Text>
+                </Pressable>
+              ))}
+          </HScrollRow>
+        ) : null}
       </View>
 
       {/* ─── Current lesson (persistent, collapses on scroll) ───────── */}
@@ -1651,7 +1864,8 @@ export default function IqraScreen() {
           colors={colors}
           changeLabel={t('changeLesson')}
           uploadedLabel={(n) => t('lessonUploadedFiles', n)}
-          generatedLabel={t('lessonGeneratedLabel')}
+          readinessLabel={(d, total) => t('lessonReadiness', d, total)}
+          readyLabel={t('lessonAllReady')}
           onChangeLesson={() => setChangeLessonOpen(true)}
           onToggleCollapse={() => setLessonCardCollapsed(c => !c)}
           onResourcePress={handleResourcePress}
@@ -1697,82 +1911,145 @@ export default function IqraScreen() {
       )}
 
       {/* ─── Messages ──────────────────────────────────────────────── */}
-      <FlatList
-        ref={listRef}
-        data={messages}
-        keyExtractor={m => m.id}
-        style={{ flex: 1 }}
-        contentContainerStyle={styles.messageList}
-        showsVerticalScrollIndicator={false}
-        onScroll={(e) => {
-          const y = e.nativeEvent.contentOffset.y;
-          if (y > 48 && !lessonCardCollapsed) setLessonCardCollapsed(true);
-        }}
-        scrollEventThrottle={16}
-        onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
-        renderItem={({ item }) => (
-          <MessageBubble
-            message={item}
-            colors={colors}
-            isRTL={isRTL}
-            onLongPress={item.role === 'assistant' ? (text) => {
-              setExportText(text);
-              setExportVisible(true);
-            } : undefined}
-            onClarifySubject={handleClarifySubject}
-            onPedagogicalClarify={handlePedagogicalClarify}
-            prepProgress={
-              item.id === lastPrepMessageId ? livePrepProgress : null
-            }
-          />
-        )}
-        ListFooterComponent={
-          isThinking ? (
-            <View style={[styles.thinkingRow, isRTL && { flexDirection: 'row-reverse' }]}>
-              <View style={[styles.avatar, { backgroundColor: colors.primary + '20' }]}>
-                <BrandLogo variant="mark" width={22} height={20} />
-              </View>
-              <View style={[styles.thinkingBubble, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-                <ActivityIndicator size="small" color={colors.primary} />
-                <Text style={[styles.thinkingText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
-                  {thinkingLabel || t('iqraTyping')}
-                </Text>
-              </View>
-            </View>
-          ) : null
-        }
-      />
+      <View style={{ flex: 1 }}>
+        <FlatList
+          ref={listRef}
+          data={showWelcomeHero ? [] : messages}
+          keyExtractor={m => m.id}
+          style={{ flex: 1 }}
+          contentContainerStyle={[
+            styles.messageList,
+            showWelcomeHero && styles.messageListEmpty,
+          ]}
+          showsVerticalScrollIndicator={false}
+          onScroll={(e) => {
+            const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+            const y = contentOffset.y;
+            if (y > 48 && !lessonCardCollapsed) setLessonCardCollapsed(true);
+            const distanceFromEnd = contentSize.height - layoutMeasurement.height - y;
+            setShowJumpToLatest(distanceFromEnd > 220);
+          }}
+          scrollEventThrottle={16}
+          onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
+          ListEmptyComponent={
+            showWelcomeHero ? (
+              <ChatWelcome
+                greeting={heroGreeting}
+                headline={t('iqraHeroHeadline')}
+                subline={t('iqraHeroSubline')}
+                cards={welcomeCards}
+                colors={colors}
+                isRTL={isRTL}
+                onPick={handleWelcomePick}
+              />
+            ) : null
+          }
+          renderItem={({ item }) => (
+            <MessageBubble
+              message={item}
+              colors={colors}
+              isRTL={isRTL}
+              onLongPress={item.role === 'assistant' ? (text) => {
+                setExportText(text);
+                setExportVisible(true);
+              } : undefined}
+              onCopy={item.role === 'assistant' ? handleCopyMessage : undefined}
+              onExport={item.role === 'assistant' ? (text) => {
+                setExportText(text);
+                setExportVisible(true);
+              } : undefined}
+              copyLabel={t('iqraActionCopy')}
+              exportLabel={t('iqraActionExport')}
+              onClarifySubject={handleClarifySubject}
+              onPedagogicalClarify={handlePedagogicalClarify}
+              prepProgress={
+                item.id === lastPrepMessageId ? livePrepProgress : null
+              }
+            />
+          )}
+          ListFooterComponent={
+            isThinking ? (
+              <ThinkingIndicator
+                steps={thinkingSteps.length ? thinkingSteps : [t('iqraTyping')]}
+                colors={colors}
+                isRTL={isRTL}
+              />
+            ) : null
+          }
+        />
+
+        {/* Jump back to the newest reply after scrolling up through a long plan */}
+        {showJumpToLatest && !showWelcomeHero ? (
+          <Pressable
+            onPress={() => {
+              listRef.current?.scrollToEnd({ animated: true });
+              setShowJumpToLatest(false);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t('iqraScrollToLatest')}
+            style={({ pressed }) => [
+              styles.jumpBtn,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                flexDirection: isRTL ? 'row-reverse' : 'row',
+                opacity: pressed ? 0.8 : 1,
+              },
+            ]}
+          >
+            <Ionicons name="arrow-down" size={13} color={colors.primary} />
+            <Text style={[styles.jumpBtnText, { color: colors.primary }]}>
+              {t('iqraScrollToLatest')}
+            </Text>
+          </Pressable>
+        ) : null}
+      </View>
 
       {/* ─── Ephemeral input shortcuts (composer only — leave the timeline) ── */}
       {ephemeralSuggestions.length > 0 && !isThinking ? (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={{ maxHeight: 48, backgroundColor: colors.card, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }}
-          contentContainerStyle={[
-            styles.docActionsScroll,
-            { flexDirection: isRTL ? 'row-reverse' : 'row' },
-          ]}
+        <View
+          style={{
+            backgroundColor: colors.card,
+            borderTopWidth: StyleSheet.hairlineWidth,
+            borderTopColor: colors.border,
+            paddingTop: 8,
+          }}
         >
-          {ephemeralSuggestions.map(suggestion => (
-            <Pressable
-              key={suggestion.id}
-              onPress={() => handleEphemeralPress(suggestion)}
-              style={({ pressed }) => [
-                styles.docActionChip,
-                {
-                  borderColor: colors.primary + '55',
-                  backgroundColor: colors.secondary,
-                  opacity: pressed ? 0.85 : 1,
-                },
-              ]}
-            >
-              <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 12, color: colors.foreground }}>
-                {suggestion.label}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
+          <Text
+            style={[
+              styles.nextStepLabel,
+              { color: colors.mutedForeground, textAlign: isRTL ? 'right' : 'left' },
+            ]}
+          >
+            {t('iqraSuggestedNext')}
+          </Text>
+          <HScrollRow
+            isRTL={isRTL}
+            style={{ maxHeight: 46 }}
+            contentContainerStyle={styles.docActionsScroll}
+          >
+            {ephemeralSuggestions.map(suggestion => (
+              <Pressable
+                key={suggestion.id}
+                onPress={() => handleEphemeralPress(suggestion)}
+                accessibilityRole="button"
+                style={({ pressed }) => [
+                  styles.docActionChip,
+                  {
+                    borderColor: colors.primary + '4D',
+                    backgroundColor: colors.secondary,
+                    opacity: pressed ? 0.85 : 1,
+                    transform: [{ scale: pressed ? 0.97 : 1 }],
+                  },
+                ]}
+              >
+                <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 12, color: colors.primary }}>
+                  {suggestion.label}
+                </Text>
+              </Pressable>
+            ))}
+          </HScrollRow>
+        </View>
       ) : null}
 
       {/* ─── Input Bar ─────────────────────────────────────────────── */}
@@ -1796,7 +2073,11 @@ export default function IqraScreen() {
         <View
           style={[
             styles.inputWrap,
-            { backgroundColor: colors.muted, borderRadius: 24 },
+            {
+              backgroundColor: colors.muted,
+              // Focus ring — the composer is the primary action on this screen.
+              borderColor: inputFocused ? colors.primary + '66' : 'transparent',
+            },
             isRTL && { flexDirection: 'row-reverse' },
           ]}
         >
@@ -1810,6 +2091,8 @@ export default function IqraScreen() {
             placeholderTextColor={colors.mutedForeground}
             value={input}
             onChangeText={setInput}
+            onFocus={() => setInputFocused(true)}
+            onBlur={() => setInputFocused(false)}
             multiline
             maxLength={800}
             onSubmitEditing={() => sendMessage(input)}
@@ -1817,22 +2100,38 @@ export default function IqraScreen() {
           <Pressable
             onPress={() => sendMessage(input)}
             disabled={!input.trim() || isThinking}
+            accessibilityRole="button"
+            accessibilityLabel={t('iqraSend')}
             style={({ pressed }) => [
               styles.sendBtn,
               {
-                backgroundColor: input.trim() ? colors.primary : colors.muted,
-                borderRadius: 20,
-                opacity: pressed ? 0.8 : 1,
+                backgroundColor: canSend ? colors.primary : colors.border,
+                opacity: pressed ? 0.85 : 1,
+                transform: [{ scale: pressed && canSend ? 0.92 : 1 }],
+                shadowColor: colors.primary,
+                shadowOpacity: canSend ? 0.3 : 0,
+                shadowRadius: 8,
+                shadowOffset: { width: 0, height: 3 },
               },
             ]}
           >
             <Ionicons
-              name={isRTL ? 'arrow-back' : 'arrow-forward'}
+              name={isThinking ? 'ellipsis-horizontal' : (isRTL ? 'arrow-back' : 'arrow-forward')}
               size={18}
-              color={input.trim() ? colors.primaryForeground : colors.mutedForeground}
+              color={canSend ? colors.primaryForeground : colors.mutedForeground}
             />
           </Pressable>
         </View>
+        {input.length > 700 ? (
+          <Text
+            style={[
+              styles.charCount,
+              { color: colors.mutedForeground, textAlign: isRTL ? 'left' : 'right' },
+            ]}
+          >
+            {input.length} / 800
+          </Text>
+        ) : null}
       </View>
       <ExportMenu
         visible={exportVisible}
@@ -1888,31 +2187,77 @@ export default function IqraScreen() {
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  header: { borderBottomWidth: 1, paddingBottom: 10 },
-  headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, marginBottom: 10 },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  iqraIcon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  headerLockup: { height: 32, width: 140 },
-  headerSub: { fontSize: 12, marginTop: 1 },
-  modeToggle: { flexDirection: 'row', padding: 3, gap: 2 },
-  modeBtn: { paddingHorizontal: 12, paddingVertical: 5 },
-  modeBtnText: { fontSize: 12 },
-  suggestionsScroll: { paddingHorizontal: 16, paddingBottom: 4, gap: 8 },
-  chip: { paddingHorizontal: 14, paddingVertical: 7 },
+  header: { borderBottomWidth: StyleSheet.hairlineWidth, paddingBottom: 8 },
+  headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, gap: 12 },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 },
+  iqraIcon: { width: 38, height: 38, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  presenceDot: {
+    position: 'absolute',
+    bottom: -1,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 2,
+  },
+  headerName: { fontSize: 15, fontFamily: 'Inter_700Bold', letterSpacing: 0.1 },
+  statusRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 1 },
+  headerSub: { fontSize: 11.5 },
+  demoRow: { paddingHorizontal: 16 },
+  modeToggle: { flexDirection: 'row', padding: 3, gap: 2, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, flexShrink: 0 },
+  modeBtn: { paddingHorizontal: 13, paddingVertical: 6, borderRadius: 18 },
+  modeBtnText: { fontSize: 11.5 },
+  suggestionsScroll: { paddingHorizontal: 16, paddingTop: 6, paddingBottom: 4, gap: 8 },
+  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth },
   chipText: { fontSize: 12 },
+  nextStepLabel: {
+    fontSize: 10.5,
+    fontFamily: 'Inter_600SemiBold',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+    paddingHorizontal: 16,
+  },
   docActionsScroll: { paddingHorizontal: 12, paddingVertical: 8, gap: 8 },
   docActionChip: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 13,
     paddingVertical: 8,
     borderRadius: 16,
     borderWidth: 1,
   },
 
-  messageList: { padding: 16, gap: 12, paddingBottom: 8 },
+  messageList: { padding: 16, gap: 14, paddingBottom: 8 },
+  // Grow to fill, but stay top-anchored: centring clipped the last opener card
+  // whenever the lesson card and composer squeezed the list.
+  messageListEmpty: { flexGrow: 1, justifyContent: 'flex-start' },
+
+  jumpBtn: {
+    position: 'absolute',
+    bottom: 14,
+    alignSelf: 'center',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
+    shadowColor: '#081B3A',
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
+  jumpBtnText: { fontSize: 11.5, fontFamily: 'Inter_600SemiBold' },
 
   // Physical trailing edge (right). Do not flip for language RTL — that pinned bubbles left.
   rowUser: { width: '100%', flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 4 },
-  bubbleUser: { maxWidth: '78%', padding: 12, paddingHorizontal: 16, alignSelf: 'flex-end' },
+  bubbleUser: {
+    maxWidth: '80%',
+    padding: 12,
+    paddingHorizontal: 16,
+    alignSelf: 'flex-end',
+    borderRadius: 20,
+    borderBottomRightRadius: 6,
+  },
+  userText: { fontSize: 13.5, lineHeight: 21, fontFamily: 'Inter_400Regular' },
   attachList: { gap: 6, marginBottom: 8 },
   attachChip: {
     flexDirection: 'row',
@@ -1926,26 +2271,57 @@ const styles = StyleSheet.create({
 
   rowAssistant: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 4 },
   rowAssistantRTL: { flexDirection: 'row-reverse' },
-  avatar: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 4 },
-  bubbleAssistant: { padding: 14, borderWidth: 1 },
-  bubbleBold: { fontSize: 14, fontFamily: 'Inter_600SemiBold', marginBottom: 2 },
-  bubbleText: { fontSize: 13, lineHeight: 20, fontFamily: 'Inter_400Regular' },
-  bulletRow: { flexDirection: 'row', alignItems: 'flex-start', marginVertical: 1 },
-  sourceText: { fontSize: 11, marginTop: 6, fontFamily: 'Inter_400Regular', fontStyle: 'italic' },
-  timestamp: { fontSize: 10, marginTop: 6, fontFamily: 'Inter_400Regular' },
+  avatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    marginTop: 4,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  bubbleAssistant: {
+    padding: 14,
+    paddingBottom: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 20,
+    borderTopStartRadius: 6,
+    shadowColor: '#081B3A',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
+  },
+  bubbleFooter: { alignItems: 'center', justifyContent: 'space-between', marginTop: 8, gap: 12 },
+  actionRow: { alignItems: 'center', gap: 4 },
+  actionBtn: { padding: 4, borderRadius: 8 },
+  timestamp: { fontSize: 10, fontFamily: 'Inter_400Regular' },
 
   suggestionChipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
   suggestionChip: { paddingHorizontal: 11, paddingVertical: 6, borderRadius: 14, borderWidth: 1 },
   suggestionChipText: { fontSize: 12 },
 
-  thinkingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  thinkingBubble: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderWidth: 1 },
-  thinkingText: { fontSize: 13 },
-
-  inputBar: { borderTopWidth: 1, paddingHorizontal: 12, paddingTop: 10 },
-  inputWrap: { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 14, paddingVertical: 8, gap: 8 },
-  input: { flex: 1, fontSize: 14, maxHeight: 100, paddingVertical: 0 },
-  sendBtn: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  inputBar: { borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 12, paddingTop: 10 },
+  inputWrap: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    gap: 6,
+    borderRadius: 24,
+    borderWidth: 1.5,
+  },
+  input: { flex: 1, fontSize: 14, maxHeight: 110, paddingVertical: 6, lineHeight: 20 },
+  sendBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  charCount: { fontSize: 10, fontFamily: 'Inter_400Regular', marginTop: 4, paddingHorizontal: 6 },
 });
 
 // ─── Context-banner styles ────────────────────────────────────────────────────
