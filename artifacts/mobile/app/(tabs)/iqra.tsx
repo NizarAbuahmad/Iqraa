@@ -71,6 +71,7 @@ import { IqraaMark } from '@/components/ui/IqraaMark';
 import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
 import { CurrentLessonCard } from '@/components/ui/CurrentLessonCard';
 import { DocumentAttachButtons, DocumentAttachmentBar } from '@/components/ui/DocumentAttachmentBar';
+import { DOCUMENT_UPLOAD_ENABLED } from '@/services/features';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import {
   clearSessionDocuments,
@@ -849,7 +850,7 @@ export default function IqraScreen() {
       {
         id: 'welcome',
         role: 'assistant',
-        text: t('iqraWelcomeDocs'),
+        text: t(DOCUMENT_UPLOAD_ENABLED ? 'iqraWelcomeDocs' : 'iqraWelcome'),
         timestamp: new Date(),
       },
     ]);
@@ -1775,13 +1776,15 @@ export default function IqraScreen() {
           },
         ]}
       >
-        <DocumentAttachmentBar
-          isRTL={isRTL}
-          chipsOnly
-          showAttachButtons={false}
-          onDocumentsReady={handleDocumentsReady}
-          onRejectedFile={(name) => showToast(t('docRejected', name))}
-        />
+        {DOCUMENT_UPLOAD_ENABLED ? (
+          <DocumentAttachmentBar
+            isRTL={isRTL}
+            chipsOnly
+            showAttachButtons={false}
+            onDocumentsReady={handleDocumentsReady}
+            onRejectedFile={(name) => showToast(t('docRejected', name))}
+          />
+        ) : null}
         <View
           style={[
             styles.inputWrap,
@@ -1789,13 +1792,15 @@ export default function IqraScreen() {
             isRTL && { flexDirection: 'row-reverse' },
           ]}
         >
-          <DocumentAttachButtons onRejectedFile={(name) => showToast(t('docRejected', name))} />
+          {DOCUMENT_UPLOAD_ENABLED ? (
+            <DocumentAttachButtons onRejectedFile={(name) => showToast(t('docRejected', name))} />
+          ) : null}
           <TextInput
             style={[
               styles.input,
               { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' },
             ]}
-            placeholder={t('iqraPlaceholderDocs')}
+            placeholder={t(DOCUMENT_UPLOAD_ENABLED ? 'iqraPlaceholderDocs' : 'iqraPlaceholder')}
             placeholderTextColor={colors.mutedForeground}
             value={input}
             onChangeText={setInput}

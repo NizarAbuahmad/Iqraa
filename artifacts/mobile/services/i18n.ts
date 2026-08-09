@@ -914,7 +914,7 @@ const translations = {
 
     iqraChatTitle: 'IQRA',
     iqraChatSubtitle: 'Your smart assistant',
-    iqraWelcome: '🔥 THIS IS BUILD TEST',
+    iqraWelcome: 'Hi — I’m IQRA, your lesson-prep companion.',
     iqraAgentName: 'IQRA Assistant',
     iqraAgentPitch: 'I help with planning, ideas, and building assessments. What do you need today?',
     groundedInCurriculum: (lesson: string) => `Anchored to the Jordanian curriculum — ${lesson}`,
