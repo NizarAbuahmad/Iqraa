@@ -52,6 +52,48 @@ does not have.
 | Math can be machine-verified | **Partly.** The SymPy service proves the *derivative slice only* (`artifacts/mobile/services/ai/verifyMath.ts`). General "is the student's answer equivalent to the key" needs a small new endpoint. |
 | A quiz generator exists | Yes, but only 3 question types (`multiple_choice`, `true_false`, `short_answer` — `AIService.ts:83`). The brief needs 8. The existing generator is for **printable teacher material**, not a graded, delivered, scored assessment. It is a starting point, not a foundation. |
 
+### Curriculum data readiness — measured, not assumed
+
+Phase 0 put objectives behind an HTTP endpoint, which measured the catalog for
+the first time. These are counts from the running API
+(`GET /api/curriculum/objectives?bookId=…`), not estimates:
+
+| Book | Objectives | Bloom's authored | Notes |
+|---|---|---|---|
+| `book-math-10` (Math S1) | **11** | 0 of 11 | **All in Unit 1.** Units 2–4 hold 13 lessons and zero objectives. |
+| `book-math-10-s2` (Math S2) | 61 | 0 of 61 | |
+| `book-finlit-10` (Fin. Lit. S1) | 40 | 0 of 40 | |
+| `book-chem-10` (Chem S1) | 4 | 4 of 4 | Hand-authored, real Bloom's spread |
+
+Two consequences the module has to answer for:
+
+1. **Math S1 units 2–4 cannot be evaluated at all.** They are title-only in the
+   NCCD source. STATUS.md notes this for the curriculum browser, where it is
+   cosmetic; here it is fatal, because an evaluation *is* its objectives. A
+   teacher choosing «الدائرة» must be told the unit isn't ready — not handed a
+   generator with no curriculum behind it, which would invent plausible
+   off-syllabus questions. **The authoring UI gates on objective count.**
+2. **112 of 116 objectives carry no real cognitive classification.** Every
+   derived objective is stamped `'Understand'`, so a competency breakdown built
+   on `bloomsLevel` today would put ~97% of questions in a single bar — and look
+   perfectly healthy doing it.
+
+The fix for (2) is tractable, and the API output shows why: the Arabic action
+verb carries the level.
+
+- «حل نظام مكوَّن من معادلة خطية وأخرى تربيعية» (*solve*) → Apply
+- «تعرُّف عدد الحلول الممكنة» (*identify*) → Remember / Understand
+- «نمذجة مسألة حياتية… ثم حل النظام» (*model*, then solve) → Apply / Analyze
+
+So Phase 2 gets a deterministic verb→Bloom's classifier (حل/احسب/أوجد → Apply;
+اذكر/عرّف/تعرّف → Remember; فسّر/وضّح → Understand; حلّل/قارن/برّر → Analyze), and
+questions carry their own `competency_key` regardless — generation targets a
+competency spread rather than inheriting one flat level from the objective.
+
+Fixing (1) is a curriculum-data task, not an engineering one: someone has to
+author objectives for Math S1 units 2–4. Until then the module runs on Math S1
+Unit 1, Math S2, and Financial Literacy.
+
 **Consequence:** this is not "add a screen." It is a new vertical — roster,
 delivery, grading, analytics — that happens to reuse the curriculum data and the
 verifier. Plan accordingly. Phase 0 and 1 below build things the brief never
@@ -914,7 +956,7 @@ demonstrable; none leaves the tree broken.
 
 | # | Phase | Scope | Done when |
 |---|---|---|---|
-| **0** | Shared curriculum | Extract `lib/curriculum` package from `artifacts/mobile/data` + `curriculum*.ts`; mobile imports it unchanged; add `/curriculum/*` routes | API returns real objectives for G10 math S1; mobile behaviour unchanged; typecheck + 219 tests still green |
+| **0** ✅ | Shared curriculum | Extract `lib/curriculum` package from `artifacts/mobile/data` + `curriculum*.ts`; mobile imports it unchanged; add `/curriculum/*` routes; objective index with `bloomsSource` | **Done** (`feat/curriculum-package`). API returns real objectives; mobile unchanged; typecheck clean across 11 projects; 219 tests still passing + 15 new |
 | **1** | Schema & roster | All §2 tables + migrations; seed competencies + default level scale; roster CRUD + UI | Teacher creates a class, adds 5 students, sees them listed |
 | **2** | Authoring API | Evaluation CRUD, question CRUD, mock generator, the 10 validators, coverage endpoint | `POST /evaluations/:id/generate` returns 15 valid, balanced, objective-tagged questions with DEMO_MODE on |
 | **3** | Authoring UI | Scope → shape → generate → review/edit → preview → publish; all 8 type editors | Teacher builds and publishes an evaluation end-to-end without touching an API client |
