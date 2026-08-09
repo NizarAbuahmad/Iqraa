@@ -7,6 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
+import { setCoachDismissed } from '@/services/lessonContext';
 
 function InfoRow({ icon, label, value, color, isRTL }: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string; color: string; isRTL: boolean }) {
   const colors = useColors();
@@ -194,6 +195,17 @@ export default function ProfileScreen() {
         <View style={{ gap: 8 }}>
           <SettingRow icon="folder-outline" label={t('myWorkspace')} onPress={() => router.push('/workspace')} isRTL={isRTL} colors={colors} />
           <SettingRow icon="settings-outline" label={t('settings')} onPress={() => router.push('/settings')} isRTL={isRTL} colors={colors} />
+          {/* Bring the home "start here" card back — dismissing it should never
+              be a one-way door for a teacher who wants the reminder again. */}
+          <SettingRow
+            icon="help-circle-outline"
+            label={t('coachReopen')}
+            onPress={() => {
+              void setCoachDismissed(false).then(() => router.push('/(tabs)'));
+            }}
+            isRTL={isRTL}
+            colors={colors}
+          />
           <SettingRow icon="log-out-outline" label={t('signOut')} onPress={handleLogout} destructive isRTL={isRTL} colors={colors} />
         </View>
       </View>
