@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { authMiddleware } from "../middlewares/auth.js";
 import healthRouter from "./health";
 import chatRouter from "./chat";
 import generateRouter from "./generate";
@@ -11,12 +12,30 @@ import evaluationsRouter from "./evaluations";
 
 const router: IRouter = Router();
 
+/**
+ * Mount order note: several routers below are mounted without a path prefix,
+ * so they all see every /api request. Any middleware they install must be
+ * path-scoped inside the router — an unscoped `router.use(mw)` here becomes a
+ * middleware for the whole API and shadows everything mounted after it.
+ *
+ * Guards are therefore declared here, at the mount site, where the ordering is
+ * visible. chat and generate call OpenAI on every request; leaving them
+ * unauthenticated is an open-wallet endpoint the day DEMO_MODE is turned off.
+ */
 router.use(healthRouter);
 router.use("/auth", authRouter);
 router.use("/workspace", workspaceRouter);
+// Published national curriculum data — deliberately public, see curriculum.ts.
 router.use(curriculumRouter);
 router.use(rosterRouter);
 router.use(evaluationsRouter);
+// Path-scoped, not `router.use(authMiddleware, chatRouter)` — that form mounts
+// the middleware at "/" and reproduces the original bug, answering 401 for
+// paths no router owns. The prefixes below cover every route these three
+// declare: /chat, /generate/*, and /verify/*.
+router.use("/chat", authMiddleware);
+router.use("/generate", authMiddleware);
+router.use("/verify", authMiddleware);
 router.use(chatRouter);
 router.use(generateRouter);
 router.use(verifiedMathRouter);
