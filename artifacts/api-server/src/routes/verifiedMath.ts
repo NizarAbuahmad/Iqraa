@@ -41,14 +41,15 @@ verifiedMathRouter.post("/generate/verified-derivative/batch", async (req, res) 
   try {
     const template = Math.min(20, Math.max(0, Number(req.query.template ?? 10)));
     const ai = Math.min(20, Math.max(0, Number(req.query.ai ?? 10)));
-    const { items, wrong, attempts_per_ai_item, avg_ai_attempts } = await generateBatch({
-      template,
-      ai,
-    });
+    const { items, wrong, unverified, attempts_per_ai_item, avg_ai_attempts } =
+      await generateBatch({ template, ai });
     res.json({
       total: items.length,
       wrong,
-      pass: wrong === 0 && items.every((i) => i.verified),
+      unverified,
+      // `pass` means every key was checked and every check agreed. An
+      // unreachable verifier fails this, rather than passing by omission.
+      pass: wrong === 0 && unverified === 0 && items.every((i) => i.verified),
       attempts_per_ai_item,
       avg_ai_attempts,
       items,

@@ -20,6 +20,24 @@ import type { KBLesson } from './knowledgeBase.ts';
 
 const THINK_SECONDS = 45;
 
+/**
+ * Turn one question's verification outcome into slide fields.
+ *
+ * A missing outcome is not "unverified pending" — it is unverified, full stop,
+ * and gets no badge. The projector's badge is the only thing standing between a
+ * teacher and asserting to a room that a wrong answer was checked.
+ */
+function outcomeFields(
+  outcome: { verifiedBy: 'symbolic' | 'bank'; computedAnswer?: string } | undefined,
+): Pick<ActivitySlide, 'verified' | 'verifiedBy' | 'computedAnswer'> {
+  if (!outcome) return { verified: false };
+  return {
+    verified: true,
+    verifiedBy: outcome.verifiedBy,
+    ...(outcome.computedAnswer ? { computedAnswer: outcome.computedAnswer } : {}),
+  };
+}
+
 /** Options are stored display-ready; find the correct one by exact text. */
 function indexOfAnswer(options: string[], answer: string): number {
   const i = options.indexOf(answer);
@@ -78,7 +96,21 @@ export function buildDeckFromQuiz(
   quiz: QuizOutput,
   lessonTitle: string,
   isAr: boolean,
-  opts?: { lesson?: KBLesson | null; verified?: boolean },
+  opts?: {
+    lesson?: KBLesson | null;
+    /**
+     * Whole-deck claim. Kept for callers that genuinely vouch for every key.
+     * Prefer `outcomes`: a quiz mixes items the verifier can prove with ones it
+     * cannot, so one boolean is wrong in one direction or the other — `true`
+     * vouches for keys nobody checked, `false` hides the ones that were.
+     */
+    verified?: boolean;
+    /** Per-question provenance, positionally aligned with quiz.questions. */
+    outcomes?: (
+      | { verifiedBy: 'symbolic' | 'bank'; computedAnswer?: string }
+      | undefined
+    )[];
+  },
 ): ClassroomActivity {
   const slides: ActivitySlide[] = [introSlide(quiz.title, lessonTitle, isAr)];
   const objSlide = objectivesSlide(opts?.lesson ?? null, lessonTitle, isAr, slides.length + 1);
@@ -95,7 +127,12 @@ export function buildDeckFromQuiz(
         ? {
             options: q.options,
             correctIndex: indexOfAnswer(q.options!, q.correctAnswer),
-            verified: opts?.verified === true,
+            // Per-question outcome wins when supplied. `verifiedBy: 'bank'`
+            // still shows a badge — it says the answer came from the reviewed
+            // bank, which is a claim about provenance, not about proof.
+            ...(opts?.outcomes
+              ? outcomeFields(opts.outcomes[i])
+              : { verified: opts?.verified === true }),
           }
         : { answer: q.correctAnswer }),
       durationSeconds: THINK_SECONDS,
@@ -217,4 +254,39 @@ export function buildDeckFromWorksheet(
     extensionChallenge: '',
     slides,
   };
+}
+
+/**
+ * Deck order for Start Class: intro → objectives → [graph] → questions →
+ * [teacher's media] → summary.
+ *
+ * Every part except the intro is optional, and the order is the point: the
+ * class sees what it is meant to learn before it sees a question about it.
+ * This lived inline in the home screen, where it could not be tested and did
+ * not survive that screen being retired.
+ */
+export function assembleDeckSlides(parts: {
+  activitySlides: ActivitySlide[];
+  objectives?: ActivitySlide | null;
+  graph?: ActivitySlide | null;
+  media?: ActivitySlide[];
+}): ActivitySlide[] {
+  const [intro, ...rest] = parts.activitySlides;
+  if (!intro) return [];
+
+  // A trailing summary is moved to the end so appended media does not land
+  // after "Well done!". Only a trailing one — a summary mid-deck is a
+  // deliberate section break and stays put.
+  const tail = [...rest];
+  const summary =
+    tail.length && tail[tail.length - 1]!.type === 'summary' ? tail.pop()! : null;
+
+  return [
+    intro,
+    ...(parts.objectives ? [parts.objectives] : []),
+    ...(parts.graph ? [parts.graph] : []),
+    ...tail,
+    ...(parts.media ?? []),
+    ...(summary ? [summary] : []),
+  ].map((s, i) => ({ ...s, slideNumber: i + 1 }));
 }
