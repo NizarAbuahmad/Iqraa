@@ -249,8 +249,11 @@ Both were silent: the system reported success while doing nothing.
 - Verify claims against the running system before acting on any doc, including
   this one. Two of today's findings were things this file asserted or implied
   and the running system contradicted.
-- There is no `CLAUDE.md` and no `.claude/` in the repo, so none of this loads
-  automatically — an agent session starts blind unless handed this file.
-  `.agents/memory/` holds four more context files (`MEMORY.md`,
-  `iqra-architecture.md`, `ai-integration.md`, `auth-workspace-api.md`) that
-  nothing here previously pointed at.
+- `CLAUDE.md` at the repo root points agent sessions here and carries the
+  commands plus the traps that have bitten before. It is deliberately short —
+  **state belongs in this file, not there.** `.agents/memory/` holds four deeper
+  context files (`MEMORY.md`, `iqra-architecture.md`, `ai-integration.md`,
+  `auth-workspace-api.md`).
+- `docs/demo-checklist.md` is the pre-demo runbook: warm the API *and* the
+  verifier, confirm the verifier is real via `GET /api/healthz/verifier`, and
+  prove it is checking with a wrong-answer control.
