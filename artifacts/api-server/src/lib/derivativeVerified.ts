@@ -6,12 +6,30 @@
  * Compute in latin x; convert to س / Arabic digits only at display time.
  */
 
-import { openai } from "@workspace/integrations-openai-ai-server";
-import { verifyDerivative } from "./mathVerifierClient";
+// Explicit extension: this module is loaded directly by node --test as well as
+// through esbuild, and Node's resolver does not guess extensions.
+import { verifyDerivative } from "./mathVerifierClient.ts";
+
+// The OpenAI client is imported lazily, inside callLlm. At module scope it
+// throws when no API key is configured, which made the whole file — including
+// the template path and the pure helpers below, none of which touch a model —
+// unloadable without one. It also stopped the API booting at all on a
+// key-less deploy, long before any AI route was called.
 
 export const DERIVATIVE_TOPIC = "derivative_polynomial" as const;
 
 export type Distractor = { value: string; misconception: string };
+
+/**
+ * How the answer key was established.
+ *
+ * `sympy`         — the verifier re-derived it and confirmed the match.
+ * `code_template` — the power rule in this file computed it and the verifier
+ *                   could not be reached to confirm.
+ *
+ * These are not interchangeable, which is why `verified` no longer covers both.
+ */
+export type VerificationSource = "sympy" | "code_template";
 
 export type DerivativeItem = {
   topic: typeof DERIVATIVE_TOPIC;
@@ -19,10 +37,25 @@ export type DerivativeItem = {
   answer: string;
   distractors: Distractor[];
   source: "template" | "ai_verified";
+  /** True only when the verifier actually confirmed this key. Never assumed. */
   verified: boolean;
+  verificationSource: VerificationSource;
   display: { question: string; answer: string };
   attempts?: number;
 };
+
+/**
+ * The verifier is unreachable (down, asleep, or never deployed) as opposed to
+ * reachable and disagreeing. `mathVerifierClient` reports the first as
+ * `timeout` / `client_error:*` and the second as `answer_mismatch`, and the two
+ * must not be collapsed: one is an infrastructure gap, the other is a wrong key.
+ */
+export function isVerifierUnreachable(error: string | null | undefined): boolean {
+  return error === "timeout" || (error?.startsWith("client_error") ?? false);
+}
+
+/** Injectable so tests can drive the verifier-down path without a live service. */
+export type VerifyFn = typeof verifyDerivative;
 
 const ARABIC_DIGITS: Record<string, string> = {
   "0": "٠",
@@ -67,8 +100,17 @@ function randInt(min: number, max: number): number {
 
 const MAX_TEMPLATE_ATTEMPTS = 8;
 
-/** Path 1 — parameterized template a·x^n; answer from power rule; distractors verified when service up. */
-export async function generateTemplateItem(): Promise<DerivativeItem> {
+/**
+ * Path 1 — parameterized template a·x^n; answer from the power rule.
+ *
+ * When the verifier is unreachable the item is still returned — the key is
+ * computed in code here, not proposed by a model, so it is usable — but it is
+ * labelled `verified: false` / `code_template`. Claiming otherwise would put a
+ * verification badge on an item nothing verified.
+ */
+export async function generateTemplateItem(
+  verify: VerifyFn = verifyDerivative,
+): Promise<DerivativeItem> {
   let lastError = "unknown";
   for (let attempt = 0; attempt < MAX_TEMPLATE_ATTEMPTS; attempt++) {
     let a = 0;
@@ -89,16 +131,18 @@ export async function generateTemplateItem(): Promise<DerivativeItem> {
       });
     }
 
-    const check = await verifyDerivative(question, answer, DERIVATIVE_TOPIC, distractors);
-    if (check.error === "timeout" || check.error?.startsWith("client_error")) {
-      // Service down — trust code-computed template (local power rule).
+    const check = await verify(question, answer, DERIVATIVE_TOPIC, distractors);
+    if (isVerifierUnreachable(check.error)) {
+      // Verifier down — the power rule above still gives a usable key, but
+      // nothing confirmed it, so it does not get to claim it was verified.
       return withDisplay({
         topic: DERIVATIVE_TOPIC,
         question,
         answer,
         distractors,
         source: "template",
-        verified: true,
+        verified: false,
+        verificationSource: "code_template",
       });
     }
     if (check.verified) {
@@ -110,6 +154,7 @@ export async function generateTemplateItem(): Promise<DerivativeItem> {
         distractors,
         source: "template",
         verified: true,
+        verificationSource: "sympy",
       });
     }
     lastError = check.error ?? "mismatch";
@@ -145,6 +190,7 @@ type LlmContract = {
 };
 
 async function callLlm(): Promise<LlmContract> {
+  const { openai } = await import("@workspace/integrations-openai-ai-server");
   const completion = await openai.chat.completions.create({
     model: "gpt-5.6-luna",
     max_completion_tokens: 400,
@@ -170,7 +216,9 @@ export type AiGenerateResult = {
  * Path 2 — LLM proposes item; SymPy must verify answer + distractors.
  * On mismatch/timeout/bad distractors → regenerate. Never returns unverified.
  */
-export async function generateAiVerifiedItem(): Promise<AiGenerateResult> {
+export async function generateAiVerifiedItem(
+  verify: VerifyFn = verifyDerivative,
+): Promise<AiGenerateResult> {
   const attempts: string[] = [];
   for (let i = 0; i < MAX_REGEN; i++) {
     let proposed: LlmContract;
@@ -185,7 +233,7 @@ export async function generateAiVerifiedItem(): Promise<AiGenerateResult> {
       continue;
     }
     const distractors = Array.isArray(proposed.distractors) ? proposed.distractors : [];
-    const check = await verifyDerivative(
+    const check = await verify(
       proposed.question,
       proposed.answer,
       DERIVATIVE_TOPIC,
@@ -205,7 +253,9 @@ export async function generateAiVerifiedItem(): Promise<AiGenerateResult> {
         answer,
         distractors,
         source: "ai_verified",
+        // Unconditionally true: this path only reaches here past check.verified.
         verified: true,
+        verificationSource: "sympy",
         attempts: attempts.length,
       }),
       attempts,
@@ -216,12 +266,16 @@ export async function generateAiVerifiedItem(): Promise<AiGenerateResult> {
   );
 }
 
-export async function generateBatch(opts: {
-  template?: number;
-  ai?: number;
-}): Promise<{
+export async function generateBatch(
+  opts: {
+    template?: number;
+    ai?: number;
+  },
+  verify: VerifyFn = verifyDerivative,
+): Promise<{
   items: DerivativeItem[];
   wrong: number;
+  unverified: number;
   attempts_per_ai_item: number[];
   avg_ai_attempts: number;
 }> {
@@ -230,23 +284,28 @@ export async function generateBatch(opts: {
   const items: DerivativeItem[] = [];
   const attempts_per_ai_item: number[] = [];
 
-  for (let i = 0; i < templateN; i++) items.push(await generateTemplateItem());
+  for (let i = 0; i < templateN; i++) items.push(await generateTemplateItem(verify));
   for (let i = 0; i < aiN; i++) {
-    const { item, attempts } = await generateAiVerifiedItem();
+    const { item, attempts } = await generateAiVerifiedItem(verify);
     items.push(item);
     attempts_per_ai_item.push(attempts.length);
   }
 
+  // `wrong` counts keys the verifier actively disagreed with. `unverified`
+  // counts keys it never saw. A run with the verifier down is not a clean run;
+  // it is a run that proved nothing, and the route's `pass` must reflect that.
   let wrong = 0;
+  let unverified = 0;
   for (const item of items) {
     if (item.source === "template") {
-      const check = await verifyDerivative(
+      const check = await verify(
         item.question,
         item.answer,
         DERIVATIVE_TOPIC,
         item.distractors,
       );
-      if (check.error === "timeout" || check.error?.startsWith("client_error")) {
+      if (isVerifierUnreachable(check.error)) {
+        unverified += 1;
         continue;
       }
       if (!check.verified) wrong += 1;
@@ -260,5 +319,5 @@ export async function generateBatch(opts: {
       ? 0
       : attempts_per_ai_item.reduce((a, b) => a + b, 0) / attempts_per_ai_item.length;
 
-  return { items, wrong, attempts_per_ai_item, avg_ai_attempts };
+  return { items, wrong, unverified, attempts_per_ai_item, avg_ai_attempts };
 }

@@ -255,3 +255,38 @@ export function buildDeckFromWorksheet(
     slides,
   };
 }
+
+/**
+ * Deck order for Start Class: intro → objectives → [graph] → questions →
+ * [teacher's media] → summary.
+ *
+ * Every part except the intro is optional, and the order is the point: the
+ * class sees what it is meant to learn before it sees a question about it.
+ * This lived inline in the home screen, where it could not be tested and did
+ * not survive that screen being retired.
+ */
+export function assembleDeckSlides(parts: {
+  activitySlides: ActivitySlide[];
+  objectives?: ActivitySlide | null;
+  graph?: ActivitySlide | null;
+  media?: ActivitySlide[];
+}): ActivitySlide[] {
+  const [intro, ...rest] = parts.activitySlides;
+  if (!intro) return [];
+
+  // A trailing summary is moved to the end so appended media does not land
+  // after "Well done!". Only a trailing one — a summary mid-deck is a
+  // deliberate section break and stays put.
+  const tail = [...rest];
+  const summary =
+    tail.length && tail[tail.length - 1]!.type === 'summary' ? tail.pop()! : null;
+
+  return [
+    intro,
+    ...(parts.objectives ? [parts.objectives] : []),
+    ...(parts.graph ? [parts.graph] : []),
+    ...tail,
+    ...(parts.media ?? []),
+    ...(summary ? [summary] : []),
+  ].map((s, i) => ({ ...s, slideNumber: i + 1 }));
+}

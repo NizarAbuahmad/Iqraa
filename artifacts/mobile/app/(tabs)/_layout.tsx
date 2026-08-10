@@ -47,35 +47,24 @@ function ClassicTabLayout() {
         tabBarLabelStyle: { fontFamily: 'Cairo_500Medium', fontSize: 10 },
       }}
     >
-      {/* ── Home ──────────────────────────────────────────── */}
+      {/*
+        ── Landing (redirects to iQra) ──────────────────────
+        "index" is still the route Expo Router lands on, but it now forwards to
+        the chat rather than rendering a home screen. Home and chat had grown
+        into the same screen — both carried the current lesson, the same tool
+        chips and a text box — except home's box was a keyword matcher that
+        silently fell back to generating a lesson plan for anything it did not
+        recognise. Chat's box is the real one, so chat is the landing.
+      */}
       <Tabs.Screen
         name="index"
         options={{
-          title: t('tabHome'),
-          tabBarIcon: ({ color, focused }) =>
-            isIOS ? (
-              <SymbolView name={focused ? 'house.fill' : 'house'} tintColor={color} size={22} />
-            ) : (
-              <Ionicons name={focused ? 'home' : 'home-outline'} size={22} color={color} />
-            ),
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
         }}
       />
 
-      {/* ── Curriculum ────────────────────────────────────── */}
-      <Tabs.Screen
-        name="curriculum"
-        options={{
-          title: t('tabCurriculum'),
-          tabBarIcon: ({ color, focused }) =>
-            isIOS ? (
-              <SymbolView name={focused ? 'books.vertical.fill' : 'books.vertical'} tintColor={color} size={22} />
-            ) : (
-              <Ionicons name={focused ? 'library' : 'library-outline'} size={22} color={color} />
-            ),
-        }}
-      />
-
-      {/* ── iQra Chat ─────────────────────────────────────── */}
+      {/* ── iQra Chat (first tab) ─────────────────────────── */}
       <Tabs.Screen
         name="iqra"
         options={{
@@ -91,6 +80,20 @@ function ClassicTabLayout() {
               <Ionicons name={focused ? 'chatbubble-ellipses' : 'chatbubble-ellipses-outline'} size={22} color={color} />
             ),
           tabBarBadge: undefined,
+        }}
+      />
+
+      {/* ── Curriculum ────────────────────────────────────── */}
+      <Tabs.Screen
+        name="curriculum"
+        options={{
+          title: t('tabCurriculum'),
+          tabBarIcon: ({ color, focused }) =>
+            isIOS ? (
+              <SymbolView name={focused ? 'books.vertical.fill' : 'books.vertical'} tintColor={color} size={22} />
+            ) : (
+              <Ionicons name={focused ? 'library' : 'library-outline'} size={22} color={color} />
+            ),
         }}
       />
 

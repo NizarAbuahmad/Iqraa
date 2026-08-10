@@ -100,6 +100,8 @@ import {
   exportAsWord,
   shareAsText,
 } from '@/services/share';
+import { buildClassDeck } from '@/services/startClass';
+import { setPendingClassroomActivity } from '@/services/classroomStore';
 
 function promptForTeachingAction(
   type: TeachingAction['type'],
@@ -859,6 +861,7 @@ export default function IqraScreen() {
   /** Status line while the assistant is working (lesson plan vs generic). */
   const [thinkingLabel, setThinkingLabel] = useState('');
   const [lessonCardCollapsed, setLessonCardCollapsed] = useState(false);
+  const [startingClass, setStartingClass] = useState(false);
   const [changeLessonOpen, setChangeLessonOpen] = useState(false);
   const [exportText, setExportText] = useState('');
   const [exportVisible, setExportVisible] = useState(false);
@@ -1572,6 +1575,7 @@ export default function IqraScreen() {
     sendMessage(prompt, s.lessonId ?? sessionMemory.activeLessonId ?? undefined);
   }, [lang, sendMessage, sessionMemory.activeLessonId]);
 
+
   const handleResourcePress = useCallback((type: SessionArtifact, done: boolean) => {
     const topic =
       (lang === 'ar' ? sessionMemory.activeTopicAr : sessionMemory.activeTopicEn)
@@ -1595,6 +1599,35 @@ export default function IqraScreen() {
   }, [lang, sendMessage, sessionMemory]);
 
   const currentLessonView = buildCurrentLessonView(sessionMemory, sessionDocs, lang as 'ar' | 'en');
+
+  /**
+   * Class Mode entry, carried over from the retired home screen: build a deck
+   * for the current lesson straight from the curriculum book and go to the
+   * projector. No prep required — the teacher can start cold.
+   *
+   * Guarded against a second tap because the deck generation is an async round
+   * trip; without it, an impatient double tap queues two decks and the second
+   * overwrites the first mid-navigation.
+   */
+  const handleStartClass = useCallback(async () => {
+    if (startingClass) return;
+    const topic = currentLessonView?.topic?.trim();
+    if (!topic) return;
+    setStartingClass(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      const activity = await buildClassDeck({ topic, lang: lang as 'ar' | 'en' });
+      setPendingClassroomActivity(activity);
+      router.push('/ai-tools/classroom/presentation' as any);
+    } catch {
+      // Surfacing this as a chat message would be wrong — the teacher pressed a
+      // button on a card, not asked a question. Leave the card as it was so the
+      // press reads as "did not take" and can simply be repeated.
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setStartingClass(false);
+    }
+  }, [startingClass, currentLessonView?.topic, lang]);
   const lessonSuggestions = buildLessonSuggestions(
       sessionMemory,
       lang as 'ar' | 'en',
@@ -1692,6 +1725,9 @@ export default function IqraScreen() {
           isRTL={isRTL}
           lang={lang as 'ar' | 'en'}
           colors={colors}
+          startClassLabel={t('startClass')}
+          startClassBusy={startingClass}
+          onStartClass={handleStartClass}
           changeLabel={t('changeLesson')}
           uploadedLabel={(n) => t('lessonUploadedFiles', n)}
           generatedLabel={t('lessonGeneratedLabel')}

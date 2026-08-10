@@ -194,15 +194,25 @@ export default function ProfileScreen() {
         </Text>
         <View style={{ gap: 8 }}>
           <SettingRow icon="folder-outline" label={t('myWorkspace')} onPress={() => router.push('/workspace')} isRTL={isRTL} colors={colors} />
+          {/*
+            The former home screen. It left the tab bar when chat became the
+            landing, but it is still the only entry point for attaching media to
+            a lesson and for Smart Templates, so it stays reachable from here
+            until those two are rehomed. See STATUS.md.
+          */}
+          <SettingRow icon="grid-outline" label={t('moreTools')} onPress={() => router.push('/home')} isRTL={isRTL} colors={colors} />
           <SettingRow icon="people-outline" label={t('myClasses')} onPress={() => router.push('/classes')} isRTL={isRTL} colors={colors} />
           <SettingRow icon="settings-outline" label={t('settings')} onPress={() => router.push('/settings')} isRTL={isRTL} colors={colors} />
           {/* Bring the home "start here" card back — dismissing it should never
-              be a one-way door for a teacher who wants the reminder again. */}
+              be a one-way door for a teacher who wants the reminder again.
+              Points at /home, not /(tabs): the coach card renders on that
+              screen, and /(tabs) now forwards to the chat where it does not
+              exist, so this would have reset the flag and shown nothing. */}
           <SettingRow
             icon="help-circle-outline"
             label={t('coachReopen')}
             onPress={() => {
-              void setCoachDismissed(false).then(() => router.push('/(tabs)'));
+              void setCoachDismissed(false).then(() => router.push('/home'));
             }}
             isRTL={isRTL}
             colors={colors}
