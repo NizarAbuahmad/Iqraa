@@ -152,3 +152,43 @@ describe('objectivesSlide', () => {
     assert.equal(objectivesSlide(null, 'الاقترانات', true), null);
   });
 });
+
+describe('buildDeckFromQuiz — per-question provenance', () => {
+  // QUIZ is q1 multiple_choice + q2 short_answer. Only the MCQ becomes a
+  // 'question' slide; open-ended items are 'challenge' and carry no badge.
+  // outcomes[] is indexed by question, not by slide.
+  it('badges a question from its own outcome', () => {
+    const deck = buildDeckFromQuiz(QUIZ, 'الاشتقاق', true, {
+      outcomes: [{ verifiedBy: 'symbolic', computedAnswer: '12x^3' }, undefined],
+    });
+    const q = deck.slides.find(s => s.type === 'question');
+    assert.equal(q?.verified, true);
+    assert.equal(q?.verifiedBy, 'symbolic');
+    assert.equal(q?.computedAnswer, '12x^3');
+  });
+
+  it('badges a bank answer as bank, without a computed answer', () => {
+    // 'bank' is still a badge — it claims provenance, not proof — but it must
+    // never carry a computed answer, which only the verifier can produce.
+    const deck = buildDeckFromQuiz(QUIZ, 'الاشتقاق', true, {
+      outcomes: [{ verifiedBy: 'bank' }, undefined],
+    });
+    const q = deck.slides.find(s => s.type === 'question');
+    assert.equal(q?.verifiedBy, 'bank');
+    assert.equal(q?.computedAnswer, undefined);
+  });
+
+  it('shows no badge for a question with no outcome', () => {
+    // Absent evidence is not pending evidence. The projector badge is the last
+    // thing between a teacher and telling a room a wrong answer was checked.
+    const deck = buildDeckFromQuiz(QUIZ, 'الاشتقاق', true, { outcomes: [] });
+    const q = deck.slides.find(s => s.type === 'question');
+    assert.equal(q?.verified, false);
+    assert.equal(q?.verifiedBy, undefined);
+  });
+
+  it('still honours the whole-deck flag when no outcomes are given', () => {
+    const deck = buildDeckFromQuiz(QUIZ, 'الاشتقاق', true, { verified: true });
+    assert.ok(deck.slides.filter(s => s.type === 'question').every(s => s.verified === true));
+  });
+});
