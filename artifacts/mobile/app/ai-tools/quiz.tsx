@@ -10,6 +10,7 @@ import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { buildGeneratorContext, resolveGeneratorGrounding } from '@/services/kbContext';
 import { QuizOutput, QuizQuestion } from '@/services/ai/AIService';
 import { buildDeckFromQuiz } from '@/services/classDeck';
+import { summarizeVerification, type VerifyOutcome } from '@/services/quizVerification';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
@@ -95,6 +96,8 @@ export default function QuizScreen() {
   const [selectedTypes, setSelectedTypes] = useState<Set<QType>>(parseTypes(params.selectedTypes));
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<QuizOutput | null>(null);
+  /** null = not checked yet (or the check failed); [] onwards = per question. */
+  const [outcomes, setOutcomes] = useState<VerifyOutcome[] | null>(null);
   /** Whether the output was anchored to a curriculum lesson, and which one. */
   const [curriculumGrounded, setCurriculumGrounded] = useState<boolean | null>(null);
   const [groundedLesson, setGroundedLesson] = useState<string | null>(null);
@@ -152,6 +155,21 @@ export default function QuizScreen() {
     short_answer: '#10B981',
   };
 
+  /*
+    An edited question's earlier outcome no longer describes it. The teacher may
+    have rewritten the very answer that was proved, so the badge is dropped
+    rather than carried over — a stale ✓ is worse than none.
+  */
+  const effectiveOutcomes: (VerifyOutcome | undefined)[] =
+    outcomes && result
+      ? outcomes.map((o, i) =>
+          editedQuestions.has(result.questions[i]?.id ?? '') ? undefined : o,
+        )
+      : [];
+  const verification = summarizeVerification(
+    effectiveOutcomes.filter((o): o is VerifyOutcome => !!o),
+  );
+
   /** Marks the paper dirty and records which question was touched. */
   const markEdited = (id: string) => {
     setEditedQuestions(prev => new Set(prev).add(id));
@@ -193,7 +211,7 @@ export default function QuizScreen() {
 
   const generate = async () => {
     if (!topic.trim()) { setError(t('topicRequired')); return; }
-    setError(''); setLoading(true); setResult(null); setEditedQuestions(new Set()); setShowAnswers(false); setSaveLabel('save');
+    setError(''); setLoading(true); setResult(null); setOutcomes(null); setEditedQuestions(new Set()); setShowAnswers(false); setSaveLabel('save');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
       const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en');
@@ -216,6 +234,20 @@ export default function QuizScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setResult(out);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
+
+      /*
+        Verification runs after the quiz is on screen, not before. It is a
+        per-question round trip to a service that may be asleep or absent, and
+        making the teacher wait on it would trade a working quiz for a slower
+        one. The summary appears when it resolves; until then the screen simply
+        makes no claim.
+      */
+      setOutcomes(null);
+      void (async () => {
+        const { verifyQuizAnswers } = await import('@/services/quizVerification');
+        const { verifyMathItem } = await import('@/services/ai/verifyMath');
+        setOutcomes(await verifyQuizAnswers(out, verifyMathItem));
+      })().catch(() => setOutcomes(null));
     } catch {
       setError(t('generationFailed'));
     } finally {
@@ -398,6 +430,33 @@ export default function QuizScreen() {
               genericHint: t('notGroundedHint'),
             }}
           />
+          {/* Whether anything actually checked the answer keys. Silent until
+              the check resolves: saying nothing is honest, saying "not
+              verified" while a request is still in flight is not. */}
+          {outcomes && verification.total > 0 && (
+            <View
+              style={[styles.verifyRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+            >
+              <Ionicons
+                name={verification.anySymbolic ? 'shield-checkmark' : 'library-outline'}
+                size={14}
+                color={verification.anySymbolic ? '#10B981' : colors.mutedForeground}
+              />
+              <Text
+                style={[
+                  styles.verifyText,
+                  {
+                    color: verification.anySymbolic ? '#10B981' : colors.mutedForeground,
+                    textAlign: isRTL ? 'right' : 'left',
+                  },
+                ]}
+              >
+                {verification.anySymbolic
+                  ? t('quizVerifiedCount', verification.symbolic, verification.total)
+                  : t('quizVerifiedNone')}
+              </Text>
+            </View>
+          )}
         </View>
       )}
 
@@ -422,7 +481,10 @@ export default function QuizScreen() {
               setPendingClassroomActivity(
                 buildDeckFromQuiz(result, topic.trim(), lang === 'ar', {
                   lesson: grounding.lesson,
-                  verified: false,
+                  // Was a blanket `verified: false`, which hid the keys the
+                  // verifier had actually proved. Per question now, so the
+                  // projector badges exactly what was checked.
+                  outcomes: effectiveOutcomes,
                 }),
               );
               router.push('/ai-tools/classroom/presentation' as any);
@@ -710,6 +772,8 @@ function PickerField({ label, value, options, onChange, colors, isRTL, accent }:
 }
 
 const styles = StyleSheet.create({
+  verifyRow: { alignItems: 'center', gap: 6, marginTop: 8 },
+  verifyText: { fontFamily: 'Cairo_600SemiBold', fontSize: 12, flex: 1 },
   header: { paddingHorizontal: 20, paddingBottom: 24 },
   backBtn: { width: 40, height: 40, justifyContent: 'center', marginBottom: 8 },
   headerTitle: { fontSize: 26 },
