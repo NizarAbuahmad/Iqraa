@@ -26,7 +26,9 @@ import { QUESTION_TYPES } from "../modules/assessment/questionTypes";
 import { COMPETENCY_KEYS, type CompetencyKey } from "../modules/assessment/competency";
 
 const router = Router();
-router.use(authMiddleware);
+// Path-scoped — see the note in roster.ts. Unscoped, this swallowed every
+// request reaching it, including routes belonging to later routers.
+router.use("/evaluations", authMiddleware);
 
 const ALL_TYPES = Object.keys(QUESTION_TYPES) as QuestionType[];
 const DIFFICULTIES: Difficulty[] = ["basic", "standard", "advanced"];

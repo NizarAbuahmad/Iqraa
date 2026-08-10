@@ -3,10 +3,13 @@
  * Collapses after the teacher scrolls the conversation.
  */
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { CurrentLessonView, ResourceChip } from '@/services/lessonCopilot';
 import type { SessionArtifact } from '@/services/ai/teachingAssistant';
+
+/** Carried over from the home screen's Start Class button. */
+const START_CLASS_COLOR = '#B45309';
 
 type Colors = {
   card: string;
@@ -26,6 +29,14 @@ type Props = {
   lang: 'ar' | 'en';
   colors: Colors;
   changeLabel: string;
+  /**
+   * Start Class. Optional so the card still renders where there is no
+   * projector flow to enter; both are omitted together or shown together.
+   */
+  startClassLabel?: string;
+  onStartClass?: () => void;
+  /** Disables the Start button while its deck is being built. */
+  startClassBusy?: boolean;
   uploadedLabel: (n: number) => string;
   generatedLabel: string;
   onChangeLesson: () => void;
@@ -40,6 +51,9 @@ export function CurrentLessonCard({
   lang,
   colors,
   changeLabel,
+  startClassLabel,
+  onStartClass,
+  startClassBusy = false,
   uploadedLabel,
   generatedLabel,
   onChangeLesson,
@@ -119,25 +133,69 @@ export function CurrentLessonCard({
           <Ionicons name="chevron-up" size={16} color={colors.mutedForeground} />
         </Pressable>
 
-        <Pressable
-          onPress={onChangeLesson}
-          style={({ pressed }) => [
-            styles.changeBtn,
-            {
-              backgroundColor: colors.primary,
-              opacity: pressed ? 0.88 : 1,
-              flexDirection: rowDir,
-              marginTop: 8,
-            },
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel={changeLabel}
-        >
-          <Ionicons name="swap-horizontal" size={14} color={colors.primaryForeground || '#fff'} />
-          <Text style={[styles.changeBtnText, { color: colors.primaryForeground || '#fff' }]}>
-            {changeLabel}
-          </Text>
-        </Pressable>
+        <View style={[styles.actionRow, { flexDirection: rowDir }]}>
+          {/*
+            Start Class leads: it is the one action a teacher takes with a
+            class already in front of them, so it must not be the second thing
+            the eye lands on.
+          */}
+          {onStartClass && startClassLabel ? (
+            <Pressable
+              onPress={onStartClass}
+              disabled={startClassBusy}
+              style={({ pressed }) => [
+                styles.changeBtn,
+                {
+                  // Same amber the home screen used, so the action a teacher
+                  // already knows by colour does not change identity on the way
+                  // over from that screen.
+                  backgroundColor: START_CLASS_COLOR,
+                  opacity: startClassBusy ? 0.6 : pressed ? 0.88 : 1,
+                  flexDirection: rowDir,
+                  flex: 1,
+                },
+              ]}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: startClassBusy, busy: startClassBusy }}
+              accessibilityLabel={startClassLabel}
+            >
+              {startClassBusy ? (
+                <ActivityIndicator size="small" color={colors.primaryForeground || '#fff'} />
+              ) : (
+                <Ionicons name="tv-outline" size={14} color={colors.primaryForeground || '#fff'} />
+              )}
+              <Text
+                style={[styles.changeBtnText, { color: colors.primaryForeground || '#fff' }]}
+                numberOfLines={1}
+              >
+                {startClassLabel}
+              </Text>
+            </Pressable>
+          ) : null}
+
+          <Pressable
+            onPress={onChangeLesson}
+            style={({ pressed }) => [
+              styles.changeBtn,
+              {
+                backgroundColor: colors.primary,
+                opacity: pressed ? 0.88 : 1,
+                flexDirection: rowDir,
+                flex: 1,
+              },
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel={changeLabel}
+          >
+            <Ionicons name="swap-horizontal" size={14} color={colors.primaryForeground || '#fff'} />
+            <Text
+              style={[styles.changeBtnText, { color: colors.primaryForeground || '#fff' }]}
+              numberOfLines={1}
+            >
+              {changeLabel}
+            </Text>
+          </Pressable>
+        </View>
       </View>
 
       {/*
@@ -259,8 +317,14 @@ const styles = StyleSheet.create({
     fontFamily: 'Almarai_400Regular',
     fontSize: 11,
   },
+  actionRow: {
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+  },
   changeBtn: {
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 5,
     paddingHorizontal: 12,
     paddingVertical: 8,
