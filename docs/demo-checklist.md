@@ -16,12 +16,13 @@ Three services back the demo, and they fail differently:
 | --- | --- | --- |
 | `iqraa-web` | Render static | Always awake. Rarely the problem. |
 | `iqraa-api` | Render free tier | Sleeps after ~15 min. First request takes 30–60s. |
-| `iqraa-verifier` | Render free tier | Sleeps too. Deployed and healthy since 2026-08-09 — but the API reached it with the wrong URL scheme until `fix/verifier-internal-url` lands. |
+| `iqraa-verifier` | Render free tier | Sleeps too. Live since 2026-08-09; the API has reached it since 2026-08-10. Sleep is now the only thing that breaks it. |
 
 A sleeping verifier, an unreachable one and an undeployed one all produce the
 same symptom, and none of them makes the app show an error. That is not
-hypothetical: a wrong URL scheme was misread as "never deployed" for three
-days. Step 2 is what tells them apart.
+hypothetical: a wrong URL scheme (https to Render's internal plain-HTTP
+address) was misread as "never deployed" for three days, while the service sat
+healthy the whole time. Step 2 is what tells them apart.
 
 ---
 
@@ -52,8 +53,8 @@ Invoke-RestMethod "$api/healthz/verifier"
 | `verifier : ok`, `selfTest : fail` | Reachable but wrong about `d/dx x² = 2x`. | Stop. Something is badly wrong. |
 | `verifier : unreachable` | Asleep, misconfigured, or down. | Run once more — a cold service can miss the 2.5s timeout. Still unreachable → check the Render dashboard **and** `MATH_VERIFIER_URL` before concluding anything; "unreachable" is not the same as "not deployed". |
 
-This endpoint is public on purpose: needing a login to discover the verifier was
-missing is why it stayed missing for three days.
+This endpoint is public on purpose: needing a login to discover the verifier
+was unreachable is part of why it stayed unreachable for three days.
 
 ## 3. Prove it is really verifying
 
@@ -77,14 +78,14 @@ is the only pair that proves the maths is being checked.
 
 ## 4. Check what the app will claim
 
-If the verifier is unreachable, the API now returns `verified: false` with
-`verificationSource: "code_template"` rather than claiming verification it did
-not perform. That is honest, but it means **any verification badge in the UI
-will correctly show "not verified" during the demo.** Know that before a
-prospect asks, rather than during.
+With the verifier reachable, template items come back `verified: true` /
+`verificationSource: "sympy"`. Confirmed against the hosted API on 2026-08-10.
 
-If the verifier is up, template items come back `verified: true` /
-`verificationSource: "sympy"`.
+If it is unreachable — asleep, most likely — the API returns `verified: false`
+with `verificationSource: "code_template"` rather than claiming verification it
+did not perform. That is honest, but it means **the badge will correctly read
+"not verified" for the whole demo.** Know that before a prospect asks, rather
+than during. It is the single strongest argument for step 1.
 
 ---
 

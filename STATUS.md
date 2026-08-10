@@ -23,11 +23,15 @@ generation stays mocked (`DEMO_MODE = true` in
 `artifacts/mobile/services/ai/demoMode.ts` — do not flip it without a decision).
 Vision screens (student/parent/school dashboards) are deprioritized.
 
-> **The strategy is currently not met**, but not for the reason this file said
-> until 2026-08-10. The SymPy verifier **is** deployed and healthy. The API
-> cannot reach it because of a URL-scheme bug — see "Hosted demo" below. Until
-> that is fixed and deployed, nothing in the hosted demo is symbolically
-> verified.
+> **Verification is live on the hosted demo as of 2026-08-10.** Confirmed
+> end to end against `iqraa-api-dfxu.onrender.com`, both directions:
+> `3x^4 - 2x + 7 → 12x^3 - 2` returns `verified: true`, and the same question
+> with `12x^3 + 2` returns `verified: false` with `error: answer_mismatch` —
+> while still reporting `computed_answer: 12*x**3 - 2`. It does not merely
+> reject a wrong key; it derives the right one independently.
+>
+> What remains is surfacing that in the UI (blocker below). The verifier being
+> live is not the same as a teacher being able to see that it ran.
 
 ## What works today (verified, not assumed)
 
@@ -91,22 +95,28 @@ Vision screens (student/parent/school dashboards) are deprioritized.
   - Verifier: https://iqraa-verifier.onrender.com (SymPy/FastAPI,
     `artifacts/math-verifier`) — **up since 2026-08-09**. `/healthz` returns
     `{"status":"ok","topics":["derivative_frac_neg_exp","derivative_polynomial"]}`.
-    - **But the API could not reach it, and the cause was a scheme bug, not a
-      missing service.** The blueprint sets `MATH_VERIFIER_URL` via
-      `fromService … property: hostport`, which yields Render's *internal*
-      address `iqraa-verifier:10000`. Render's private network serves plain
-      **HTTP** there. `normaliseVerifierUrl` treated "not localhost" as "must be
-      https", so the API opened a TLS handshake against a non-TLS port and got
+    - **The API now reaches it.** `MATH_VERIFIER_URL` on `iqraa-api` is set to
+      the public URL `https://iqraa-verifier.onrender.com`. Verified end to end
+      2026-08-10: correct key → `verified: true`; wrong key → `verified: false`,
+      `error: answer_mismatch`, `computed_answer: 12*x**3 - 2`.
+    - **Why it was broken, and why the diagnosis took three days.** The
+      blueprint sets `MATH_VERIFIER_URL` via `fromService … property: hostport`,
+      which yields Render's *internal* address `iqraa-verifier:10000`, and
+      Render's private network serves plain **HTTP** there.
+      `normaliseVerifierUrl` treated "not localhost" as "must be https", so the
+      API opened a TLS handshake against a non-TLS port and got
       `client_error:fetch failed` — instantly, and indistinguishably from the
       service not existing. **This file asserted "NOT DEPLOYED" for exactly that
-      reason, and was wrong.**
-    - Fixed on branch `fix/verifier-internal-url`: the scheme now follows the
-      hostname's shape — no dot means an internal service name, so http.
-      Until that merges and deploys, the workaround is to set
-      `MATH_VERIFIER_URL` on `iqraa-api` to the public URL
-      `https://iqraa-verifier.onrender.com`, which is genuinely TLS.
+      reason, and was wrong.** "Unreachable" and "not deployed" are different
+      states; only the Render dashboard could tell them apart.
+    - `fix/verifier-internal-url` makes the scheme follow the hostname's shape —
+      no dot means an internal service name, so http. **Worth merging even
+      though the public URL works**: without it, the blueprint's own wiring
+      stays a trap, and a re-sync that restores `hostport` would silently break
+      verification again.
     - To check reachability at any time, unauthenticated:
-      `GET /api/healthz/verifier` → `{"verifier":"ok"|"unreachable"}`.
+      `GET /api/healthz/verifier` → `{"verifier":"ok"|"unreachable"}`
+      (needs PR #27 merged).
   - DB: Neon free Postgres, project "iqraa", eu-central-1 (Frankfurt).
     Schema pushed; register/login verified end-to-end against it.
   - Demo account: demo@iqraa.app / IqraaDemo2026
@@ -208,19 +218,19 @@ Landed, in order:
 
 ## Top blockers (in priority order)
 
-1. **Verifier deployed but unreachable from the API.** Nothing in the hosted
-   demo is symbolically verified, and the demo strategy is built on it being
-   verified. The service is healthy; the API sends https to an internal
-   plain-HTTP address. Fix is on `fix/verifier-internal-url`; the one-field
-   workaround is in "Hosted demo" above. The verifier code itself is fine —
-   `python prove_slice.py` passes 20/20 with zero wrong keys.
-2. **No external validation.** Zero real teachers have used the product.
-   Getting 3–5 Jordanian teachers on it beats any further polish.
-3. **Verifier not visible in UI.** The app doesn't surface verification
-   (badge / rejected-count / proof panel). The API now returns
-   `verificationSource: 'sympy' | 'code_template'` alongside `verified`, so
-   there is something truthful to render — a badge must read from both, or it
-   will claim verification on template items again.
+1. **No external validation.** Zero real teachers have used the product.
+   Getting 3–5 Jordanian teachers on it beats any further polish. Now the top
+   blocker outright: the verification story works, and nothing else on this list
+   is worth more than putting it in front of a teacher.
+2. **Verification is live but barely visible.** The projector screen has had a
+   good badge all along — green shield for `symbolic`, muted library icon for
+   the reviewed bank, plus the independently computed answer — but *only* for
+   quick-check decks. The quiz and worksheet tools passed `verified: false` for
+   the whole deck and showed nothing. `claude/verification-badge` (PR #28) fixes
+   the quiz side with per-question outcomes; **worksheet is still untouched**.
+   - Earlier versions of this file said "the app doesn't surface verification".
+     That was wrong too — it surfaced it in exactly one place, which is why
+     nobody noticed the other places were silent.
 4. **OpenAPI drift.** Generated clients reference routes the API doesn't
    implement; real `/auth/*`, `/workspace/*` routes missing from the spec.
    *(Carried from 2026-08-06, not re-verified. The `/auth/*` and `/workspace/*`
