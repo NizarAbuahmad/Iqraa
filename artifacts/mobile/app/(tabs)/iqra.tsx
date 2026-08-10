@@ -51,6 +51,7 @@ import { DEMO_MODE } from '@/services/ai/demoMode';
 import {
   generateChatArtifact,
   resolveArtifactTopic,
+  type ChatArtifactData,
 } from '@/services/ai/chatArtifacts';
 import {
   buildPrepProgressView,
@@ -68,6 +69,7 @@ import {
 import { classifyChatIntent } from '@/services/ai/intentRouter';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 import { IqraaMark } from '@/components/ui/IqraaMark';
+import { LessonPlanView } from '@/components/ui/LessonPlanView';
 import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
 import { CurrentLessonCard } from '@/components/ui/CurrentLessonCard';
 import { DocumentAttachButtons, DocumentAttachmentBar } from '@/components/ui/DocumentAttachmentBar';
@@ -162,6 +164,13 @@ interface Message {
   id: string;
   role: Role;
   text: string;
+  /**
+   * The structured material behind this reply, when the turn produced one.
+   * Chat generates the same objects the tool screens do, so a lesson plan can
+   * be shown as a plan and edited here rather than read as a paragraph.
+   * `text` stays for export, sharing and anything without a renderer yet.
+   */
+  artifactData?: ChatArtifactData;
   sources?: KBLesson[];
   /** Topic used for generator navigation — not rendered as chips in the timeline. */
   lessonTopic?: string;
@@ -584,7 +593,7 @@ const prepStyles = StyleSheet.create({
 
 function MessageBubble({
   message, colors, isRTL, onLongPress, onClarifySubject, onPedagogicalClarify, prepProgress,
-  introName, introPitch,
+  introName, introPitch, onEditArtifact, t,
 }: {
   message: Message; colors: any; isRTL: boolean;
   onLongPress?: (text: string) => void;
@@ -595,6 +604,9 @@ function MessageBubble({
   /** Assistant identity, shown on the opening turn only. */
   introName?: string;
   introPitch?: string;
+  /** Commits a change to this message's structured material. */
+  onEditArtifact?: (messageId: string, next: ChatArtifactData) => void;
+  t: (k: any, ...a: any[]) => string;
 }) {
   const isUser = message.role === 'user';
   const timeLabel = message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -674,6 +686,11 @@ function MessageBubble({
   }
 
   // Assistant — avatar + bubble only. Tool shortcuts live in the composer (ephemeral).
+  // A lesson plan is a document, so show it as one. The prose around it — the
+  // lead-in and the next-step line — still reads as conversation.
+  const planData =
+    message.artifactData?.kind === 'lesson-plan' ? message.artifactData : null;
+
   const lines = message.text.split('\n');
 
   return (
@@ -685,6 +702,26 @@ function MessageBubble({
           delayLongPress={500}
           style={[styles.bubbleAssistant, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: 18 }]}
         >
+          {planData ? (
+            <View style={{ marginBottom: 8 }}>
+              <LessonPlanView
+                plan={planData.plan}
+                colors={colors}
+                isRTL={isRTL}
+                t={t}
+                accent={colors.primary}
+                onEdit={
+                  onEditArtifact
+                    ? (field, value) =>
+                        onEditArtifact(message.id, {
+                          kind: 'lesson-plan',
+                          plan: { ...planData.plan, [field]: value },
+                        })
+                    : undefined
+                }
+              />
+            </View>
+          ) : null}
           {lines.map((line, i) => {
             if (!line.trim()) return <View key={i} style={{ height: 6 }} />;
             const isBold = line.startsWith('**') && line.includes('**');
@@ -839,6 +876,19 @@ export default function IqraScreen() {
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
 
   const topPad = insets.top + (insets.top === 0 ? 67 : 0);
+
+  /**
+   * Persist an edit made to a message's structured material.
+   *
+   * The message keeps its prose as-is: the lead-in and the next-step line are
+   * conversation, not part of the document, and rewriting them from an edited
+   * plan would put words in the assistant's mouth it never said.
+   */
+  const handleEditArtifact = useCallback((messageId: string, next: ChatArtifactData) => {
+    setMessages(prev =>
+      prev.map(m => (m.id === messageId ? { ...m, artifactData: next } : m)),
+    );
+  }, []);
 
   // Welcome message on mount / language change — reset session, keep one default active lesson
   useEffect(() => {
@@ -1147,6 +1197,7 @@ export default function IqraScreen() {
       }));
 
       let responseText: string;
+      let artifactData: ChatArtifactData | undefined;
       let outOfScopeSuggestions: { text: string; lessonId: string }[] | undefined;
       let teachingActions: TeachingAction[] | undefined;
       let pedagogicalClarification: ClarificationOption[] | undefined;
@@ -1255,6 +1306,7 @@ export default function IqraScreen() {
             fromSoftPin: softBareArtifact && !topicStrong,
           });
           responseText = generated.text;
+          artifactData = generated.data;
           lessonTopic = generated.topic;
           quickTopic = generated.topic;
           teachingActions = undefined;
@@ -1385,6 +1437,7 @@ export default function IqraScreen() {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         text: responseText,
+        artifactData,
         sources: results,
         lessonTopic,
         quickTopic,
@@ -1713,6 +1766,8 @@ export default function IqraScreen() {
             onPedagogicalClarify={handlePedagogicalClarify}
             introName={t('iqraAgentName')}
             introPitch={t('iqraAgentPitch')}
+            t={t}
+            onEditArtifact={handleEditArtifact}
             prepProgress={
               item.id === lastPrepMessageId ? livePrepProgress : null
             }

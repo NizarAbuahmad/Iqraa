@@ -70,6 +70,63 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     Schema pushed; register/login verified end-to-end against it.
   - Demo account: demo@iqraa.app / IqraaDemo2026
 
+## Teacher UX work in flight (2026-08-10)
+
+Branch `feat/evaluation-authoring`, **unmerged commits ahead of `main`**. The
+deployed site only shows what is on `main`, which is the usual reason a change
+"did not appear" — check `git log origin/main..origin/feat/evaluation-authoring`
+before debugging anything visual.
+
+Landed on that branch, in order:
+
+- **Arabic typeface.** The app shipped with no Arabic font: all 574 `fontFamily`
+  declarations asked for Inter, which has no Arabic glyphs, so every Arabic
+  string was drawn by a per-device fallback at that fallback's own weight —
+  bold headings were not reliably bold. Almarai now carries body, Cairo carries
+  500/600/700. Chosen to map 1:1 onto the four Inter weights already in use.
+- **Iqraa's mark.** `BrandLogo` is a 1024px two-line lockup and was being drawn
+  at 22px in avatars, where it greys into a smudge — the "empty circles". New
+  `IqraaMark` draws the leaf as vector for small sizes; BrandLogo stays where
+  there is room for it.
+- **Student mode removed** from the Iqraa screen. `Mode` narrowed to a single
+  member so the compiler finds anything that still branches.
+- **Grounding is stated.** All four tools now say whether output is anchored to
+  a curriculum lesson, and name it when it is. Matters most because maths draws
+  on a curated bank of 87 real problems while chemistry and financial literacy
+  fall through to templates, and nothing showed the difference.
+- **Document upload paused** behind `DOCUMENT_UPLOAD_ENABLED` in
+  `services/features.ts`. Off because the curriculum already ships in the app,
+  so uploading a textbook page pays to send content we hold — and with real
+  generation on, it rides along as tokens on every request. Everything behind
+  the flag still compiles; flip to `true` to restore.
+- **Inline editing.** Generated material is editable in place (no edit mode) on
+  the lesson-plan screen, the quiz screen, and lesson plans in chat.
+  `LessonPlanView` is shared between the tool screen and chat so the two cannot
+  drift. Quiz edit transforms live in `services/quizEdits.ts` with tests: the
+  trap is that `correctAnswer` stores option **text**, so rewriting the correct
+  option without carrying the key leaves a question with no right answer.
+- **Chat stopped discarding structure.** It calls the same generators as the
+  tools, then used to flatten the result to a string one line later.
+  `ChatArtifactResult.data` now keeps the object; worksheet/quiz/activity carry
+  it but still render as text until each gets a view.
+
+## Open decisions (2026-08-10)
+
+- **Home vs chat.** They duplicate each other: both carry the current lesson,
+  the tool chips, and a text box. Home's box is a keyword router dressed as an
+  assistant — `inferToolFromPrompt` matches on واجب/ورقة/اختبار/نشاط/خطة and
+  silently defaults to lesson-plan for anything else, and `extractLessonTopic`
+  strips a verb and passes the rest as a topic string. Proposal on the table:
+  make chat the landing tab and fold home's useful parts (current lesson, what
+  is ready, «تابع العمل») into its opening state; retire the home tab. Nizar's
+  own Stitch mockup kept them separate, so the reason for the split is worth
+  settling before acting.
+- **Which model backs AI grading** (blocks the evaluation module's AI-grading
+  phase only — see docs/student-evaluation-module-plan.md §8).
+- **Math S1 Unit 2 edition mismatch**: the teacher guide lists a fifth lesson
+  (الدوائر المتماسة) the student book on file does not have. Recorded in the
+  curriculum JSON's `known_gaps`, not merged in.
+
 ## Top blockers (in priority order)
 
 1. **No external validation.** Zero real teachers have used the product.
