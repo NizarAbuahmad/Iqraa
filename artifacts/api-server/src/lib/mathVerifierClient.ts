@@ -4,16 +4,33 @@
  */
 
 /**
- * Render's `fromService` injects a bare "host:port" with no scheme, so the
- * env value is normalised here rather than assuming a well-formed URL.
- * Localhost defaults to http; anything else to https.
+ * Render's `fromService ... property: hostport` injects a bare "host:port" with
+ * no scheme, so the env value is normalised here rather than assuming a
+ * well-formed URL.
+ *
+ * The scheme is chosen by whether the host is a public name or an internal one.
+ * This distinction is the whole point: `fromService` yields Render's *internal*
+ * address — `iqraa-verifier:10000` — and Render's private network serves plain
+ * HTTP on that port. The previous rule was "localhost is http, everything else
+ * is https", which sent a TLS handshake to a non-TLS port and failed instantly
+ * with `client_error:fetch failed`. That is indistinguishable, from the app's
+ * side, from the verifier not existing — and it cost three days of believing
+ * exactly that.
+ *
+ * A hostname with no dot in it cannot be public DNS, so it is an internal
+ * Render (or Docker/Kubernetes) service name and speaks http.
  */
-function normaliseVerifierUrl(raw: string | undefined): string {
+export function normaliseVerifierUrl(raw: string | undefined): string {
   const value = (raw ?? "").trim();
   if (!value) return "http://127.0.0.1:8090";
   if (/^https?:\/\//i.test(value)) return value.replace(/\/+$/, "");
-  const isLocal = /^(localhost|127\.0\.0\.1)(:|$)/i.test(value);
-  return `${isLocal ? "http" : "https"}://${value.replace(/\/+$/, "")}`;
+
+  const trimmed = value.replace(/\/+$/, "");
+  const host = trimmed.split("/")[0]!.split(":")[0]!;
+  const isLoopback = /^(localhost|127\.0\.0\.1|\[::1\])$/i.test(host);
+  // No dot ⇒ not a public domain ⇒ an internal service name.
+  const isInternal = isLoopback || !host.includes(".");
+  return `${isInternal ? "http" : "https"}://${trimmed}`;
 }
 
 const DEFAULT_URL = normaliseVerifierUrl(process.env.MATH_VERIFIER_URL);
