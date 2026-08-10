@@ -23,9 +23,11 @@ generation stays mocked (`DEMO_MODE = true` in
 `artifacts/mobile/services/ai/demoMode.ts` — do not flip it without a decision).
 Vision screens (student/parent/school dashboards) are deprioritized.
 
-> **The strategy is currently not met.** The SymPy verifier has never been
-> deployed (see "Hosted demo" below), so nothing in the hosted demo is
-> symbolically verified. The code works; the service is missing.
+> **The strategy is currently not met**, but not for the reason this file said
+> until 2026-08-10. The SymPy verifier **is** deployed and healthy. The API
+> cannot reach it because of a URL-scheme bug — see "Hosted demo" below. Until
+> that is fixed and deployed, nothing in the hosted demo is symbolically
+> verified.
 
 ## What works today (verified, not assumed)
 
@@ -80,23 +82,31 @@ Vision screens (student/parent/school dashboards) are deprioritized.
   see LOCAL_SETUP.md).
 - `mockup-sandbox` is excluded from the workspace — it is a design sandbox,
   not product UI, and its type errors used to block the whole monorepo build.
-- **Hosted demo is partly live** (2026-08-07, free tier — see render.yaml).
-  `render.yaml` declares **three** services. Two are up, the third never was:
+- **Hosted demo: all three services are live** (free tier — see render.yaml).
+  All three are blueprint-managed and show **Deployed** in the Render dashboard:
   - Web: https://iqraa-web.onrender.com (static, always awake) — **up**
   - API: https://iqraa-api-dfxu.onrender.com (`iqraa-api` name was taken —
     note the `-dfxu` suffix; sleeps after ~15 min idle, ~30-60s to wake.
     **Warm it up before demos.**) — **up**, login verified 2026-08-10
-  - Verifier: `iqraa-verifier` (SymPy/FastAPI, `artifacts/math-verifier`)
-    — **NOT DEPLOYED.** `POST /api/verify/derivative` on the hosted API returns
-    `client_error:fetch failed`, i.e. the connection is refused rather than
-    timing out. Consistent with `MATH_VERIFIER_URL` being unset, which makes
-    `mathVerifierClient` fall back to `http://127.0.0.1:8090` — localhost
-    inside the API container, where nothing listens.
-    To check at any time, unauthenticated:
-    `GET /api/healthz/verifier` → `{"verifier":"ok"|"unreachable"}`.
-    To fix: apply the Render blueprint so `fromService` wires
-    `MATH_VERIFIER_URL`, or create the service by hand and set that env var on
-    `iqraa-api` yourself, then restart the API.
+  - Verifier: https://iqraa-verifier.onrender.com (SymPy/FastAPI,
+    `artifacts/math-verifier`) — **up since 2026-08-09**. `/healthz` returns
+    `{"status":"ok","topics":["derivative_frac_neg_exp","derivative_polynomial"]}`.
+    - **But the API could not reach it, and the cause was a scheme bug, not a
+      missing service.** The blueprint sets `MATH_VERIFIER_URL` via
+      `fromService … property: hostport`, which yields Render's *internal*
+      address `iqraa-verifier:10000`. Render's private network serves plain
+      **HTTP** there. `normaliseVerifierUrl` treated "not localhost" as "must be
+      https", so the API opened a TLS handshake against a non-TLS port and got
+      `client_error:fetch failed` — instantly, and indistinguishably from the
+      service not existing. **This file asserted "NOT DEPLOYED" for exactly that
+      reason, and was wrong.**
+    - Fixed on branch `fix/verifier-internal-url`: the scheme now follows the
+      hostname's shape — no dot means an internal service name, so http.
+      Until that merges and deploys, the workaround is to set
+      `MATH_VERIFIER_URL` on `iqraa-api` to the public URL
+      `https://iqraa-verifier.onrender.com`, which is genuinely TLS.
+    - To check reachability at any time, unauthenticated:
+      `GET /api/healthz/verifier` → `{"verifier":"ok"|"unreachable"}`.
   - DB: Neon free Postgres, project "iqraa", eu-central-1 (Frankfurt).
     Schema pushed; register/login verified end-to-end against it.
   - Demo account: demo@iqraa.app / IqraaDemo2026
@@ -198,9 +208,11 @@ Landed, in order:
 
 ## Top blockers (in priority order)
 
-1. **Verifier not deployed.** Nothing in the hosted demo is symbolically
-   verified, and the demo strategy is built on it being verified. One Render
-   service away. Details in "Hosted demo" above. The code itself is fine —
+1. **Verifier deployed but unreachable from the API.** Nothing in the hosted
+   demo is symbolically verified, and the demo strategy is built on it being
+   verified. The service is healthy; the API sends https to an internal
+   plain-HTTP address. Fix is on `fix/verifier-internal-url`; the one-field
+   workaround is in "Hosted demo" above. The verifier code itself is fine —
    `python prove_slice.py` passes 20/20 with zero wrong keys.
 2. **No external validation.** Zero real teachers have used the product.
    Getting 3–5 Jordanian teachers on it beats any further polish.

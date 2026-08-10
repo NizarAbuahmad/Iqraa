@@ -16,10 +16,12 @@ Three services back the demo, and they fail differently:
 | --- | --- | --- |
 | `iqraa-web` | Render static | Always awake. Rarely the problem. |
 | `iqraa-api` | Render free tier | Sleeps after ~15 min. First request takes 30–60s. |
-| `iqraa-verifier` | Render free tier | Sleeps too — **and as of 2026-08-10 was never deployed at all.** |
+| `iqraa-verifier` | Render free tier | Sleeps too. Deployed and healthy since 2026-08-09 — but the API reached it with the wrong URL scheme until `fix/verifier-internal-url` lands. |
 
-A sleeping verifier and an undeployed verifier produce the same symptom, and
-neither one makes the app show an error. Step 2 is what tells them apart.
+A sleeping verifier, an unreachable one and an undeployed one all produce the
+same symptom, and none of them makes the app show an error. That is not
+hypothetical: a wrong URL scheme was misread as "never deployed" for three
+days. Step 2 is what tells them apart.
 
 ---
 
@@ -48,7 +50,7 @@ Invoke-RestMethod "$api/healthz/verifier"
 | --- | --- | --- |
 | `verifier : ok`, `selfTest : pass` | Live and correct. | Continue. |
 | `verifier : ok`, `selfTest : fail` | Reachable but wrong about `d/dx x² = 2x`. | Stop. Something is badly wrong. |
-| `verifier : unreachable` | Down, asleep, or not deployed. | Run once more — a cold service can miss the 2.5s timeout. Still unreachable → it is not deployed. |
+| `verifier : unreachable` | Asleep, misconfigured, or down. | Run once more — a cold service can miss the 2.5s timeout. Still unreachable → check the Render dashboard **and** `MATH_VERIFIER_URL` before concluding anything; "unreachable" is not the same as "not deployed". |
 
 This endpoint is public on purpose: needing a login to discover the verifier was
 missing is why it stayed missing for three days.
