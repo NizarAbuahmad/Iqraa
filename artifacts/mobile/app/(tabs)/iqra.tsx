@@ -75,6 +75,13 @@ import { CurrentLessonCard } from '@/components/ui/CurrentLessonCard';
 import { DocumentAttachButtons, DocumentAttachmentBar } from '@/components/ui/DocumentAttachmentBar';
 import { DOCUMENT_UPLOAD_ENABLED } from '@/services/features';
 import { ExportMenu } from '@/components/ui/ExportMenu';
+import { saveItem } from '@/services/workspace';
+import {
+  artifactMaterialType,
+  artifactPayload,
+  artifactRoute,
+  artifactTitle,
+} from '@/services/chatArtifactActions';
 import {
   clearSessionDocuments,
   getDocumentContextBundle,
@@ -593,12 +600,48 @@ const prepStyles = StyleSheet.create({
   },
 });
 
+/** One action under an assistant reply. Icon + label so it reads at a glance. */
+function MessageAction({
+  icon, label, onPress, colors, isRTL, emphasis,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  onPress: () => void;
+  colors: ReturnType<typeof useColors>;
+  isRTL: boolean;
+  emphasis?: boolean;
+}) {
+  const tint = emphasis ? colors.primary : colors.mutedForeground;
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      hitSlop={6}
+      style={({ pressed }) => [
+        styles.actionBtn,
+        {
+          flexDirection: isRTL ? 'row-reverse' : 'row',
+          backgroundColor: emphasis ? colors.primary + '14' : 'transparent',
+          borderColor: emphasis ? colors.primary + '55' : colors.border,
+          opacity: pressed ? 0.6 : 1,
+        },
+      ]}
+    >
+      <Ionicons name={icon} size={13} color={tint} />
+      <Text style={[styles.actionLabel, { color: tint }]} numberOfLines={1}>{label}</Text>
+    </Pressable>
+  );
+}
+
 function MessageBubble({
-  message, colors, isRTL, onLongPress, onClarifySubject, onPedagogicalClarify, prepProgress,
+  message, colors, isRTL, onLongPress, onMessageAction, onClarifySubject, onPedagogicalClarify, prepProgress,
   introName, introPitch, onEditArtifact, t,
 }: {
   message: Message; colors: any; isRTL: boolean;
   onLongPress?: (text: string) => void;
+  /** Copy / share / export / edit for this reply. Omitted for user turns. */
+  onMessageAction?: (action: 'copy' | 'share' | 'export' | 'edit', message: Message) => void;
   onClarifySubject?: (originalQuery: string, subjectId: string) => void;
   onPedagogicalClarify?: (originalQuery: string, option: ClarificationOption) => void;
   /** Live session prep progress — shown under the latest meaningful reply. */
@@ -769,6 +812,54 @@ function MessageBubble({
           </Text>
         </Pressable>
 
+        {/*
+          What the teacher can do with this result.
+
+          Copy, share and export already existed, but only behind a long-press
+          on the bubble — undiscoverable, and barely a gesture at all on web.
+          The row is shown for every assistant turn that produced material, so
+          the material can leave the app the way a teacher expects.
+
+          «تحرير» appears only when the turn carries structured data, because
+          it opens the artifact in its own tool screen where the real editor
+          lives. Offering it for a plain text reply would open an empty editor.
+        */}
+        {onMessageAction && message.role === 'assistant' && message.id !== 'welcome' && message.text.trim() ? (
+          <View style={[styles.actionRow, isRTL && { flexDirection: 'row-reverse' }]}>
+            <MessageAction
+              icon="copy-outline"
+              label={t('copy')}
+              onPress={() => onMessageAction('copy', message)}
+              colors={colors}
+              isRTL={isRTL}
+            />
+            <MessageAction
+              icon="share-outline"
+              label={t('share')}
+              onPress={() => onMessageAction('share', message)}
+              colors={colors}
+              isRTL={isRTL}
+            />
+            <MessageAction
+              icon="download-outline"
+              label={t('export')}
+              onPress={() => onMessageAction('export', message)}
+              colors={colors}
+              isRTL={isRTL}
+            />
+            {message.artifactData ? (
+              <MessageAction
+                icon="create-outline"
+                label={t('edit')}
+                onPress={() => onMessageAction('edit', message)}
+                colors={colors}
+                isRTL={isRTL}
+                emphasis
+              />
+            ) : null}
+          </View>
+        ) : null}
+
         {/* Clarification choices only — these are part of the dialogue turn, not tool launchers */}
         {message.clarificationSubjects && message.clarificationSubjects.length > 0 && (
           <View style={[styles.suggestionChipsRow, isRTL && { flexDirection: 'row-reverse' }]}>
@@ -887,6 +978,7 @@ export default function IqraScreen() {
    * conversation, not part of the document, and rewriting them from an edited
    * plan would put words in the assistant's mouth it never said.
    */
+
   const handleEditArtifact = useCallback((messageId: string, next: ChatArtifactData) => {
     setMessages(prev =>
       prev.map(m => (m.id === messageId ? { ...m, artifactData: next } : m)),
@@ -1601,6 +1693,63 @@ export default function IqraScreen() {
   const currentLessonView = buildCurrentLessonView(sessionMemory, sessionDocs, lang as 'ar' | 'en');
 
   /**
+   * Copy / share / export / edit for one reply.
+   *
+   * «تحرير» saves the artifact to the workspace and opens its tool screen.
+   * That screen is where the editor, the answer-key handling and the export
+   * formats already live — reproducing them inside a chat bubble would be a
+   * second implementation of each, free to drift from the first.
+   */
+  const handleMessageAction = useCallback(
+    async (action: 'copy' | 'share' | 'export' | 'edit', message: Message) => {
+      const title = currentLessonView?.topic ?? 'IQRA';
+      if (action === 'copy') {
+        await copyToClipboard(message.text);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        return;
+      }
+      if (action === 'share') {
+        await shareAsText(message.text, title);
+        return;
+      }
+      if (action === 'export') {
+        setExportText(message.text);
+        setExportVisible(true);
+        return;
+      }
+
+      const data = message.artifactData;
+      if (!data) return;
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      const topic = message.lessonTopic ?? currentLessonView?.topic ?? '';
+      try {
+        const saved = await saveItem({
+          type: artifactMaterialType(data),
+          title: artifactTitle(data, topic, lang as 'ar' | 'en'),
+          subject: '',
+          grade: '',
+          topic,
+          language: lang as 'ar' | 'en',
+          content: JSON.stringify(artifactPayload(data)),
+          // The tool screens pre-fill their form from this. Chat has no form,
+          // but the topic is the field they all read, so carry that much.
+          formState: { topic },
+        });
+        router.push({
+          pathname: artifactRoute(data) as never,
+          params: { savedId: saved.id, topic },
+        });
+      } catch {
+        // Saving is what makes the artifact openable, so a failure here has
+        // nothing to hand the tool screen. Better to leave the teacher in
+        // chat with the material still on screen than to open an empty editor.
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      }
+    },
+    [currentLessonView?.topic, lang],
+  );
+
+  /**
    * Class Mode entry, carried over from the retired home screen: build a deck
    * for the current lesson straight from the curriculum book and go to the
    * projector. No prep required — the teacher can start cold.
@@ -1798,6 +1947,7 @@ export default function IqraScreen() {
               setExportText(text);
               setExportVisible(true);
             } : undefined}
+            onMessageAction={item.role === 'assistant' ? handleMessageAction : undefined}
             onClarifySubject={handleClarifySubject}
             onPedagogicalClarify={handlePedagogicalClarify}
             introName={t('iqraAgentName')}
@@ -1976,6 +2126,12 @@ export default function IqraScreen() {
 const CONTENT_MAX_WIDTH = 760;
 
 const styles = StyleSheet.create({
+  actionRow: { alignItems: 'center', gap: 6, marginTop: 6, flexWrap: 'wrap' },
+  actionBtn: {
+    alignItems: 'center', gap: 4, paddingHorizontal: 9, paddingVertical: 5,
+    borderRadius: 14, borderWidth: 1,
+  },
+  actionLabel: { fontFamily: 'Cairo_500Medium', fontSize: 11.5 },
   header: { borderBottomWidth: 1, paddingBottom: 10 },
   headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, marginBottom: 10 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },

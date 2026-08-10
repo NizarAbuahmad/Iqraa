@@ -473,6 +473,8 @@ const translations = {
     generate: 'جهّز',
     generating: 'يجري التجهيز...',
     copy: 'نسخ',
+    edit: 'تحرير',
+    export: 'تصدير',
     share: 'مشاركة',
     min: 'دقيقة',
 
@@ -1107,6 +1109,8 @@ const translations = {
     generate: 'Generate',
     generating: 'Generating...',
     copy: 'Copy',
+    edit: 'Edit',
+    export: 'Export',
     share: 'Share',
     min: 'min',
 

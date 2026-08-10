@@ -6,8 +6,11 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { saveLessonPick } from '@/services/lessonContext';
 import {
+  getBookById,
   getLessonById,
+  getUnitById,
   isBrowserLessonTitleOnly,
 } from '@/services/curriculumData';
 import { DEMO_MODE } from '@/services/ai/demoMode';
@@ -51,6 +54,24 @@ export default function LessonDetailScreen() {
     }, 350);
     return () => clearTimeout(timer);
   }, [openLessonPlan, lesson, lang, topicOverride]);
+
+  /**
+   * Make this the lesson the whole app is working on.
+   *
+   * The curriculum browser used to hand a topic string to a generator and stop
+   * there, so a teacher could browse to a lesson, generate from it, and still
+   * have the chat, Start Class and grounding pointed at whatever was selected
+   * before. Two doors, the same intent, different resulting state.
+   */
+  const adoptLesson = () => {
+    const topic = lessonTitle.trim();
+    if (!lesson || !topic) return;
+    // The pick is subject-scoped, and the subject lives on the book, not the
+    // lesson — so it is traversed rather than passed in as a route param that
+    // could disagree with the lesson actually being shown.
+    const subjectId = getBookById(getUnitById(lesson.unitId)?.bookId ?? '')?.subjectId ?? '';
+    void saveLessonPick({ topic, unitOrder: null, subjectId });
+  };
 
   if (!lesson) {
     return (
@@ -107,6 +128,7 @@ export default function LessonDetailScreen() {
           <Pressable
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              adoptLesson();
               router.push({ pathname: '/ai-tools/lesson-plan', params: { topic: lesson.title } });
             }}
             style={[styles.aiBtn, { backgroundColor: color, borderRadius: colors.radius, flex: 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
@@ -119,6 +141,7 @@ export default function LessonDetailScreen() {
           <Pressable
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              adoptLesson();
               const msgText = lang === 'ar'
                 ? `ما الذي يجب أن أعرفه قبل تدريس: ${lessonTitle}؟`
                 : `What should I know before teaching: ${lessonTitle}?`;
