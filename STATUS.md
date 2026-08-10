@@ -150,6 +150,30 @@ Landed, in order:
 
 ## Open decisions (2026-08-10)
 
+- ~~**Home vs chat.**~~ **Decided 2026-08-10: chat is the landing tab, home is
+  retired from the tab bar.** `(tabs)/index.tsx` is now a `<Redirect href="/iqra">`
+  — `/` stays the entry point so deep links and the post-login
+  `router.replace('/(tabs)')` keep working. Start Class moved onto
+  `CurrentLessonCard` in chat, and its deck-building orchestration came out of
+  the screen into `services/startClass.ts` + a tested `assembleDeckSlides` in
+  `services/classDeck.ts`.
+  - **Two things did not move and are not yet rehomed:** attaching media to a
+    lesson (`addLessonMedia` — the *only* entry point, and that media feeds
+    Start Class decks via `buildMediaSlide`) and Smart Templates. The old screen
+    therefore still exists at `/home`, off the tab bar, reachable from
+    Profile → «أدوات إضافية». Retiring it fully means rehoming those two first.
+  - The first-run coach card also only renders on that screen, so Profile's
+    "show me the start-here card again" now points at `/home` rather than
+    `/(tabs)`, which would have reset the flag and shown nothing.
+  - The two parked chat-redesign branches were **not** used —
+    `claude/ikra-chat-ux-i087se` (`74c52e8`) and
+    `claude/ikra-chat-agent-uiux-1j6wpm` (`7dcb99f`). Both rewrite `iqra.tsx`
+    and `CurrentLessonCard.tsx` wholesale and conflict with each other; both add
+    a starter-card welcome panel, which is polish, not this decision. Recorded
+    here so the SHAs survive if the branches are deleted.
+
+<details><summary>Original framing of the decision (superseded)</summary>
+
 - **Home vs chat.** They duplicate each other: both carry the current lesson,
   the tool chips, and a text box. Home's box is a keyword router dressed as an
   assistant — `inferToolFromPrompt` matches on واجب/ورقة/اختبار/نشاط/خطة and
@@ -164,6 +188,8 @@ Landed, in order:
     `claude/ikra-chat-agent-uiux-1j6wpm`. Deciding the tab question decides
     whether to land, rebase, or delete them. They are the only unmerged work
     in the repo.
+
+</details>
 - **Which model backs AI grading** (blocks the evaluation module's AI-grading
   phase only — see docs/student-evaluation-module-plan.md §8).
 - **Math S1 Unit 2 edition mismatch**: the teacher guide lists a fifth lesson
