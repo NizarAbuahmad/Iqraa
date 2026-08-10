@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/Button';
 import { getItem, saveItem, toggleFavorite, updateItem } from '@/services/workspace';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
+import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
 import { RelatedResourcesPanel } from '@/components/ui/RelatedResourcesPanel';
 import {
@@ -86,6 +87,8 @@ export default function WorksheetScreen() {
   const [result, setResult] = useState<WorksheetOutput | null>(null);
   /** null until first generate; then whether the worksheet used a confident KB lesson. */
   const [curriculumGrounded, setCurriculumGrounded] = useState<boolean | null>(null);
+  /** Title of the curriculum lesson the output was anchored to, when grounded. */
+  const [groundedLesson, setGroundedLesson] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [savedId, setSavedId] = useState<string | undefined>(params.savedId);
   const [saveLabel, setSaveLabel] = useState<'save' | 'saved' | 'updated'>('save');
@@ -143,7 +146,7 @@ export default function WorksheetScreen() {
 
   const generate = async () => {
     if (!topic.trim()) { setError(t('topicRequired')); return; }
-    setError(''); setLoading(true); setResult(null); setCurriculumGrounded(null);
+    setError(''); setLoading(true); setResult(null); setCurriculumGrounded(null); setGroundedLesson(null);
     setSaveLabel('save');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
@@ -171,6 +174,9 @@ export default function WorksheetScreen() {
         : await aiService.generateWorksheet(baseReq);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setCurriculumGrounded(grounding.grounded);
+      setGroundedLesson(
+        grounding.lesson ? (lang === 'ar' ? grounding.lesson.titleAr : grounding.lesson.titleEn) : null,
+      );
       setResult(out);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
     } catch {
@@ -372,25 +378,21 @@ export default function WorksheetScreen() {
       )}
 
       {/* Grounding status — never present ungrounded output as curriculum-backed */}
-      {result && curriculumGrounded === false && (
-        <View style={{
-          marginHorizontal: 20,
-          marginBottom: 12,
-          padding: 12,
-          borderRadius: colors.radius,
-          borderWidth: 1,
-          borderColor: colors.border,
-          backgroundColor: colors.card,
-        }}>
-          <Text style={{
-            color: colors.mutedForeground,
-            fontFamily: 'Almarai_400Regular',
-            fontSize: 13,
-            lineHeight: 20,
-            textAlign: isRTL ? 'right' : 'left',
-          }}>
-            {t('curriculumUngroundedNoticeWorksheet')}
-          </Text>
+      {/* What the material is anchored to. Shown both ways: a teacher needs
+          to know it IS tied to the lesson as much as when it isn't. */}
+      {result && curriculumGrounded !== null && (
+        <View style={{ marginHorizontal: 20 }}>
+          <GroundingNotice
+            grounded={curriculumGrounded}
+            lessonTitle={groundedLesson}
+            isRTL={isRTL}
+            colors={colors}
+            labels={{
+              grounded: (l: string) => t('groundedInCurriculum', l),
+              generic: t('notGroundedTitle'),
+              genericHint: t('notGroundedHint'),
+            }}
+          />
         </View>
       )}
 
