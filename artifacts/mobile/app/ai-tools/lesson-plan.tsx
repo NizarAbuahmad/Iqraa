@@ -18,7 +18,7 @@ import { getItem, saveItem, toggleFavorite, updateItem } from '@/services/worksp
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
-import { EditableList, EditableText } from '@/components/ui/Editable';
+import { LessonPlanView } from '@/components/ui/LessonPlanView';
 import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
 import { RelatedResourcesPanel } from '@/components/ui/RelatedResourcesPanel';
 import {
@@ -530,139 +530,19 @@ function LessonPlanResult({ plan, colors, isRTL, t, onEdit, editedFields }: {
         </Text>
       </View>
 
-      <ResultSection title={t('sectionObjectives')} icon="flag-outline" isRTL={isRTL}>
-        <EditableList
-          items={plan.objectives}
-          onChange={next => onEdit('objectives', next)}
-          colors={colors}
-          isRTL={isRTL}
-          placeholder={t('editPlaceholder')}
-          addLabel={t('editAddItem')}
-        />
-      </ResultSection>
-      <ResultSection title={t('sectionMaterials')} icon="bag-outline" isRTL={isRTL}>
-        <EditableList
-          items={plan.materials}
-          onChange={next => onEdit('materials', next)}
-          colors={colors}
-          isRTL={isRTL}
-          placeholder={t('editPlaceholder')}
-          addLabel={t('editAddItem')}
-        />
-      </ResultSection>
-      <ResultSection title={t('sectionIntroduction')} icon="play-outline" isRTL={isRTL}>
-        <EditableText
-          value={plan.introduction}
-          onChange={next => onEdit('introduction', next)}
-          colors={colors}
-          isRTL={isRTL}
-          placeholder={t('editPlaceholder')}
-          edited={editedFields.has('introduction')}
-        />
-      </ResultSection>
-      <ResultSection title={t('sectionMainActivity')} icon="people-outline" isRTL={isRTL}>
-        <EditableText
-          value={plan.mainActivity}
-          onChange={next => onEdit('mainActivity', next)}
-          colors={colors}
-          isRTL={isRTL}
-          placeholder={t('editPlaceholder')}
-          edited={editedFields.has('mainActivity')}
-        />
-      </ResultSection>
-      <ResultSection title={t('sectionGuidedPractice')} icon="hand-left-outline" isRTL={isRTL}>
-        <EditableText
-          value={plan.guidedPractice}
-          onChange={next => onEdit('guidedPractice', next)}
-          colors={colors}
-          isRTL={isRTL}
-          placeholder={t('editPlaceholder')}
-          edited={editedFields.has('guidedPractice')}
-        />
-      </ResultSection>
-      <ResultSection title={t('sectionIndependentPractice')} icon="person-outline" isRTL={isRTL}>
-        <EditableText
-          value={plan.independentPractice}
-          onChange={next => onEdit('independentPractice', next)}
-          colors={colors}
-          isRTL={isRTL}
-          placeholder={t('editPlaceholder')}
-          edited={editedFields.has('independentPractice')}
-        />
-      </ResultSection>
-      <ResultSection title={t('sectionClosure')} icon="stop-circle-outline" isRTL={isRTL}>
-        <EditableText
-          value={plan.closure}
-          onChange={next => onEdit('closure', next)}
-          colors={colors}
-          isRTL={isRTL}
-          placeholder={t('editPlaceholder')}
-          edited={editedFields.has('closure')}
-        />
-      </ResultSection>
-      <ResultSection title={t('sectionAssessment')} icon="checkmark-done-outline" isRTL={isRTL}>
-        <EditableText
-          value={plan.assessment}
-          onChange={next => onEdit('assessment', next)}
-          colors={colors}
-          isRTL={isRTL}
-          placeholder={t('editPlaceholder')}
-          edited={editedFields.has('assessment')}
-        />
-      </ResultSection>
-      <ResultSection title={t('sectionDifferentiation')} icon="layers-outline" isRTL={isRTL}>
-        <EditableText
-          value={plan.differentiation}
-          onChange={next => onEdit('differentiation', next)}
-          colors={colors}
-          isRTL={isRTL}
-          placeholder={t('editPlaceholder')}
-          edited={editedFields.has('differentiation')}
-        />
-      </ResultSection>
-      <ResultSection title={t('sectionHomework')} icon="home-outline" isRTL={isRTL}>
-        <EditableText
-          value={plan.homework}
-          onChange={next => onEdit('homework', next)}
-          colors={colors}
-          isRTL={isRTL}
-          placeholder={t('editPlaceholder')}
-          edited={editedFields.has('homework')}
-        />
-      </ResultSection>
+      <LessonPlanView
+        plan={plan}
+        colors={colors}
+        isRTL={isRTL}
+        t={t}
+        accent={ACCENT}
+        onEdit={onEdit}
+        editedFields={editedFields}
+      />
     </View>
   );
 }
 
-function ResultSection({ title, icon, isRTL, children }: {
-  title: string; icon: keyof typeof Ionicons.glyphMap; isRTL: boolean; children: React.ReactNode;
-}) {
-  const colors = useColors();
-  return (
-    <View style={{ marginBottom: 16 }}>
-      <View style={[styles.resultSectionHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        <Ionicons name={icon} size={15} color={ACCENT} />
-        <Text style={[styles.resultSectionTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>{title}</Text>
-      </View>
-      <View style={[styles.resultSectionBody, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-        {children}
-      </View>
-    </View>
-  );
-}
-
-function BulletItem({ text, colors, isRTL }: { text: string; colors: ReturnType<typeof useColors>; isRTL: boolean }) {
-  return (
-    <View style={[styles.bulletRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-      <View style={[styles.bulletDot, { backgroundColor: ACCENT }]} />
-      <Text style={[styles.bulletText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{text}</Text>
-    </View>
-  );
-}
-
-function BodyText({ text, colors, isRTL }: { text: string; colors: ReturnType<typeof useColors>; isRTL: boolean }) {
-  return <Text style={[styles.bodyText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{text}</Text>;
-}
 
 function PickerField({ label, value, options, onChange, colors, isRTL, accent }: {
   label: string; value: string; options: string[]; onChange: (i: number) => void;
