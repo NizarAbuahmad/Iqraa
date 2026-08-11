@@ -32,6 +32,32 @@ export type VerifyOutcome = {
 const BANK: VerifyOutcome = { verifiedBy: 'bank' };
 
 /**
+ * Wake the verifier ahead of time.
+ *
+ * On Render's free tier the verifier sleeps after ~15 min idle and takes
+ * 30-60s to wake — far beyond VERIFY_TIMEOUT_MS. Without this, the first
+ * lesson prep after an idle period silently falls back to the 'bank' label
+ * and the symbolic badge never appears: an invisible failure, precisely in
+ * the demo where the proof matters most.
+ *
+ * Fire-and-forget: no timeout, no error surface, no effect on the UI. It
+ * simply gives the service a head start.
+ */
+let warmUpStarted = false;
+
+export function warmUpVerifier(): void {
+  if (warmUpStarted) return;
+  warmUpStarted = true;
+  // Deliberately not awaited — the caller must never block on this.
+  void apiFetch('/verify/derivative', {
+    method: 'POST',
+    body: JSON.stringify({ question: 'x^2', answer: '2*x' }),
+  }).catch(() => {
+    // Offline or signed out: verification degrades honestly on its own.
+  });
+}
+
+/**
  * Ask the verifier to prove one question's answer key.
  * Always resolves — failures degrade to the honest bank label.
  */
