@@ -76,8 +76,9 @@ import { LessonPlanView } from '@/components/ui/LessonPlanView';
 import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
 import { CurrentLessonCard } from '@/components/ui/CurrentLessonCard';
 import { ChatEmptyState, type StarterCard } from '@/components/ui/ChatEmptyState';
+import { HScrollRow } from '@/components/ui/HScrollRow';
 import { RichMessageText } from '@/components/ui/RichMessageText';
-import { TypingIndicator } from '@/components/ui/TypingIndicator';
+import { ThinkingIndicator } from '@/components/ui/ThinkingIndicator';
 import { CHAT_BUBBLE_MAX_WIDTH, CHAT_MAX_WIDTH } from '@/constants/layout';
 import { DocumentAttachButtons, DocumentAttachmentBar } from '@/components/ui/DocumentAttachmentBar';
 import { DOCUMENT_UPLOAD_ENABLED } from '@/services/features';
@@ -140,6 +141,43 @@ function promptForTeachingAction(
     },
   };
   return prompts[type][lang];
+}
+
+/**
+ * Name what the assistant is doing while it works.
+ *
+ * A bare spinner tells a teacher nothing; naming the steps makes the wait read
+ * as work. The steps mirror the real pipeline: read the request, ground it in
+ * the curriculum (or in uploaded files), then draft.
+ */
+function reasoningStepsFor({
+  intent,
+  query,
+  hasDocuments,
+  t,
+}: {
+  intent: string;
+  query: string;
+  hasDocuments: boolean;
+  t: (k: any, ...args: any[]) => string;
+}): string[] {
+  const steps: string[] = [t('iqraStepReadingRequest')];
+
+  if (hasDocuments) {
+    steps.push(t('iqraStepReadingFiles'), t('iqraStepExtracting'));
+  } else {
+    steps.push(t('iqraStepReviewCurriculum'));
+  }
+
+  if (intent === 'artifact' || intent === 'refinement') {
+    const isLessonPlan = /خطة|lesson\s*plan/i.test(query);
+    steps.push(t('iqraStepChoosingActivities'));
+    steps.push(isLessonPlan ? t('iqraStepWritingPlan') : t('iqraStepPreparingResource'));
+  } else {
+    steps.push(t('iqraStepDrafting'));
+  }
+
+  return steps;
 }
 
 function ephemeralFromTeachingActions(
@@ -887,6 +925,8 @@ export default function IqraScreen() {
   const [ephemeralSuggestions, setEphemeralSuggestions] = useState<EphemeralSuggestion[]>([]);
   /** Status line while the assistant is working (lesson plan vs generic). */
   const [thinkingLabel, setThinkingLabel] = useState('');
+  /** Named steps shown while the assistant works (agent, not spinner). */
+  const [thinkingSteps, setThinkingSteps] = useState<string[]>([]);
   const [lessonCardCollapsed, setLessonCardCollapsed] = useState(false);
   const [startingClass, setStartingClass] = useState(false);
   const [changeLessonOpen, setChangeLessonOpen] = useState(false);
@@ -1071,22 +1111,34 @@ export default function IqraScreen() {
       thinkingRef.current = true;
       setIsThinking(true);
 
-      // Demo-mode replies are near-instant, which makes the thinking bubble
-      // flash imperceptibly. A short dwell keeps the "اقرأ يكتب…" moment
-      // visible; real AI latency will replace this entirely.
-      if (DEMO_MODE) {
-        await new Promise(resolve => setTimeout(resolve, 750));
-      }
-
       // 0. Intent Router — BEFORE curriculum context / Teaching Assistant.
       //    Greetings & small talk must never trigger lesson generation.
+      //    Classified FIRST so the reasoning steps are known before the dwell
+      //    below; otherwise the named steps appear only after the wait and
+      //    flash past unread.
       const route = classifyChatIntent(q, lang as 'ar' | 'en');
+      // Name the work rather than showing a bare spinner.
+      setThinkingSteps(
+        reasoningStepsFor({
+          intent: route.intent,
+          query: q,
+          hasDocuments: !!(attachments && attachments.length) || sessionDocs.length > 0,
+          t,
+        }),
+      );
       if (route.intent === 'artifact') {
         setThinkingLabel(
           /خطة|lesson\s*plan/i.test(q) ? t('iqraGeneratingLessonPlan') : t('iqraGeneratingArtifact'),
         );
       } else {
         setThinkingLabel(t('iqraTyping'));
+      }
+
+      // Demo-mode replies are near-instant, which makes the reasoning steps
+      // flash imperceptibly. A short dwell keeps the named step readable;
+      // real AI latency will replace this entirely.
+      if (DEMO_MODE) {
+        await new Promise(resolve => setTimeout(resolve, 750));
       }
 
       try {
@@ -1542,6 +1594,7 @@ export default function IqraScreen() {
         thinkingRef.current = false;
         setIsThinking(false);
         setThinkingLabel('');
+        setThinkingSteps([]);
         atBottomRef.current = true;
         setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
       }
@@ -1808,10 +1861,9 @@ export default function IqraScreen() {
           {/* Lesson-aware suggestions (teacher) or fallback starter chips.
               Hidden on the empty screen — the hero already offers starting points. */}
           {!showHero ? (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={[styles.suggestionsScroll, isRTL && { flexDirection: 'row-reverse' }]}
+            <HScrollRow
+              isRTL={isRTL}
+              contentContainerStyle={styles.suggestionsScroll}
             >
               {lessonSuggestions.length > 0
                 ? lessonSuggestions.map(s => (
@@ -1850,7 +1902,7 @@ export default function IqraScreen() {
                     </Text>
                   </Pressable>
                 ))}
-            </ScrollView>
+            </HScrollRow>
           ) : null}
         </View>
       </View>
@@ -1985,17 +2037,11 @@ export default function IqraScreen() {
           }}
           ListFooterComponent={
             isThinking ? (
-              <View style={[styles.thinkingRow, isRTL && { flexDirection: 'row-reverse' }]}>
-                <View style={[styles.avatar, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-                  <BrandLogo variant="mark" width={20} height={18} />
-                </View>
-                <View style={[styles.thinkingBubble, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                  <TypingIndicator color={colors.primary} />
-                  <Text style={[styles.thinkingText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
-                    {thinkingLabel || t('iqraTyping')}
-                  </Text>
-                </View>
-              </View>
+              <ThinkingIndicator
+                steps={thinkingSteps.length ? thinkingSteps : [thinkingLabel || t('iqraTyping')]}
+                colors={colors}
+                isRTL={isRTL}
+              />
             ) : null
           }
         />
@@ -2022,14 +2068,12 @@ export default function IqraScreen() {
 
       {/* ─── Ephemeral input shortcuts (composer only — leave the timeline) ── */}
       {ephemeralSuggestions.length > 0 && !isThinking ? (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
+        <HScrollRow
+          isRTL={isRTL}
           style={{ maxHeight: 48, backgroundColor: colors.card, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }}
           contentContainerStyle={[
             styles.docActionsScroll,
             isWide && { width: '100%', maxWidth: CHAT_MAX_WIDTH, alignSelf: 'center' },
-            { flexDirection: isRTL ? 'row-reverse' : 'row' },
           ]}
         >
           {ephemeralSuggestions.map(suggestion => (
@@ -2050,7 +2094,7 @@ export default function IqraScreen() {
               </Text>
             </Pressable>
           ))}
-        </ScrollView>
+        </HScrollRow>
       ) : null}
 
       {/* ─── Input Bar ─────────────────────────────────────────────── */}

@@ -7,6 +7,7 @@
  * twice (a "✓ / ○" text line above an identical chip strip), which read as a
  * bug rather than a summary.
  */
+import { HScrollRow } from './HScrollRow';
 import React from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -195,10 +196,9 @@ export function CurrentLessonCard({
         </View>
 
         {/* Resource chips carry their own state — tap to generate or open */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={[styles.resourceStrip, { flexDirection: rowDir }]}
+        <HScrollRow
+          isRTL={isRTL}
+          contentContainerStyle={styles.resourceStrip}
         >
           {lesson.resources.map((r: ResourceChip) => (
             <Pressable
@@ -231,7 +231,7 @@ export function CurrentLessonCard({
               />
             </Pressable>
           ))}
-        </ScrollView>
+        </HScrollRow>
       </View>
     </View>
   );
