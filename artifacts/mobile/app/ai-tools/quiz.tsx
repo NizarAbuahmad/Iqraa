@@ -8,13 +8,23 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { buildGeneratorContext, resolveGeneratorGrounding } from '@/services/kbContext';
-import { QuizOutput } from '@/services/ai/AIService';
+import { QuizOutput, QuizQuestion } from '@/services/ai/AIService';
 import { buildDeckFromQuiz } from '@/services/classDeck';
+import { summarizeVerification, type VerifyOutcome } from '@/services/quizVerification';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
 } from '@/services/curriculumData';
 import { TopicSelector } from '@/components/ui/TopicSelector';
+import { GroundingNotice } from '@/components/ui/GroundingNotice';
+import { EditableText } from '@/components/ui/Editable';
+import { confirm } from '@/services/confirm';
+import {
+  applyOptionEdit,
+  applyQuestionEdit,
+  parsePoints,
+  removeQuestionAt,
+} from '@/services/quizEdits';
 import { Button } from '@/components/ui/Button';
 import { getItem, saveItem, toggleFavorite, updateItem } from '@/services/workspace';
 import { ExportMenu } from '@/components/ui/ExportMenu';
@@ -86,6 +96,13 @@ export default function QuizScreen() {
   const [selectedTypes, setSelectedTypes] = useState<Set<QType>>(parseTypes(params.selectedTypes));
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<QuizOutput | null>(null);
+  /** null = not checked yet (or the check failed); [] onwards = per question. */
+  const [outcomes, setOutcomes] = useState<VerifyOutcome[] | null>(null);
+  /** Whether the output was anchored to a curriculum lesson, and which one. */
+  const [curriculumGrounded, setCurriculumGrounded] = useState<boolean | null>(null);
+  const [groundedLesson, setGroundedLesson] = useState<string | null>(null);
+  /** Ids of questions the teacher has changed, so provenance stays honest. */
+  const [editedQuestions, setEditedQuestions] = useState<ReadonlySet<string>>(new Set());
   const [error, setError] = useState('');
   const [showAnswers, setShowAnswers] = useState(false);
   const [savedId, setSavedId] = useState<string | undefined>(params.savedId);
@@ -138,11 +155,70 @@ export default function QuizScreen() {
     short_answer: '#10B981',
   };
 
+  /*
+    An edited question's earlier outcome no longer describes it. The teacher may
+    have rewritten the very answer that was proved, so the badge is dropped
+    rather than carried over — a stale ✓ is worse than none.
+  */
+  const effectiveOutcomes: (VerifyOutcome | undefined)[] =
+    outcomes && result
+      ? outcomes.map((o, i) =>
+          editedQuestions.has(result.questions[i]?.id ?? '') ? undefined : o,
+        )
+      : [];
+  const verification = summarizeVerification(
+    effectiveOutcomes.filter((o): o is VerifyOutcome => !!o),
+  );
+
+  /** Marks the paper dirty and records which question was touched. */
+  const markEdited = (id: string) => {
+    setEditedQuestions(prev => new Set(prev).add(id));
+    setSaveLabel(savedId ? 'updated' : 'save');
+  };
+
+  const updateQuestion = (index: number, patch: Partial<QuizQuestion>) => {
+    setResult(prev => (prev ? applyQuestionEdit(prev, index, patch) : prev));
+    const id = result?.questions[index]?.id;
+    if (id) markEdited(id);
+  };
+
+  const updateOption = (index: number, optionIndex: number, next: string) => {
+    setResult(prev => {
+      if (!prev) return prev;
+      const questions = prev.questions.map((q, i) =>
+        i === index ? applyOptionEdit(q, optionIndex, next) : q,
+      );
+      return { ...prev, questions };
+    });
+    const id = result?.questions[index]?.id;
+    if (id) markEdited(id);
+  };
+
+  const removeQuestion = async (index: number) => {
+    const q = result?.questions[index];
+    if (!q) return;
+    const ok = await confirm({
+      title: t('deleteQuestion'),
+      message: q.text,
+      confirmLabel: t('remove'),
+      cancelLabel: t('cancel'),
+      destructive: true,
+    });
+    if (!ok) return;
+    setResult(prev => (prev ? removeQuestionAt(prev, index) : prev));
+    setSaveLabel(savedId ? 'updated' : 'save');
+  };
+
   const generate = async () => {
     if (!topic.trim()) { setError(t('topicRequired')); return; }
-    setError(''); setLoading(true); setResult(null); setShowAnswers(false); setSaveLabel('save');
+    setError(''); setLoading(true); setResult(null); setOutcomes(null); setEditedQuestions(new Set()); setShowAnswers(false); setSaveLabel('save');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
+      const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en');
+      setCurriculumGrounded(grounding.grounded);
+      setGroundedLesson(
+        grounding.lesson ? (lang === 'ar' ? grounding.lesson.titleAr : grounding.lesson.titleEn) : null,
+      );
       const additionalContext = buildGeneratorContext(topic.trim(), lang as 'ar' | 'en') || undefined;
       const out = await aiService.generateQuiz({
         grade: grades[gradeIdx].name,
@@ -158,6 +234,20 @@ export default function QuizScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setResult(out);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
+
+      /*
+        Verification runs after the quiz is on screen, not before. It is a
+        per-question round trip to a service that may be asleep or absent, and
+        making the teacher wait on it would trade a working quiz for a slower
+        one. The summary appears when it resolves; until then the screen simply
+        makes no claim.
+      */
+      setOutcomes(null);
+      void (async () => {
+        const { verifyQuizAnswers } = await import('@/services/quizVerification');
+        const { verifyMathItem } = await import('@/services/ai/verifyMath');
+        setOutcomes(await verifyQuizAnswers(out, verifyMathItem));
+      })().catch(() => setOutcomes(null));
     } catch {
       setError(t('generationFailed'));
     } finally {
@@ -275,10 +365,10 @@ export default function QuizScreen() {
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
         <DemoModeBanner onDark isRTL={isRTL} />
-        <Text style={[styles.headerTitle, { color: '#fff', fontFamily: 'Inter_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.headerTitle, { color: '#fff', fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('createQuizTitle')}
         </Text>
-        <Text style={[styles.headerSub, { color: 'rgba(255,255,255,0.8)', fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.headerSub, { color: 'rgba(255,255,255,0.8)', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('quizSubtitle')}
         </Text>
       </View>
@@ -305,14 +395,14 @@ export default function QuizScreen() {
         <PickerField label={t('quizDurationLabel')} value={durationLabels[durationIdx]} options={durationLabels} onChange={setDurationIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
         <PickerField label={t('totalMarksLabel')} value={marksLabels[marksIdx]} options={marksLabels} onChange={setMarksIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
 
-        <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left', marginBottom: 10 }]}>{t('questionTypesLabel')}</Text>
+        <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left', marginBottom: 10 }]}>{t('questionTypesLabel')}</Text>
         <View style={[styles.checkboxGroup, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
           {ALL_Q_TYPES.map(type => (
             <CheckboxRow key={type} label={TYPE_LABEL[type]} checked={selectedTypes.has(type)} onToggle={() => toggleType(type)} accent={ACCENT} colors={colors} isRTL={isRTL} />
           ))}
         </View>
 
-        {error ? <Text style={[{ color: colors.destructive, fontSize: 13, fontFamily: 'Inter_400Regular', marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
+        {error ? <Text style={[{ color: colors.destructive, fontSize: 13, fontFamily: 'Almarai_400Regular', marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
         <Button label={loading ? t('generatingQuiz') : t('generateQuizBtn')} onPress={generate} loading={loading} disabled={!topic.trim()} fullWidth style={{ backgroundColor: ACCENT }} />
       </View>
 
@@ -320,15 +410,60 @@ export default function QuizScreen() {
       {loading && (
         <View style={[styles.loadBox, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, marginHorizontal: 20, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <ActivityIndicator color={ACCENT} />
-          <Text style={[{ color: colors.mutedForeground, fontFamily: 'Inter_400Regular', fontSize: 14 }]}>{t('generatingQuiz')}</Text>
+          <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14 }]}>{t('generatingQuiz')}</Text>
         </View>
       )}
 
       {/* Result */}
+      {/* What the material is anchored to. Shown both ways: a teacher needs to
+          know it IS tied to the lesson as much as when it isn't. */}
+      {result && curriculumGrounded !== null && (
+        <View style={{ marginHorizontal: 20 }}>
+          <GroundingNotice
+            grounded={curriculumGrounded}
+            lessonTitle={groundedLesson}
+            isRTL={isRTL}
+            colors={colors}
+            labels={{
+              grounded: (l: string) => t('groundedInCurriculum', l),
+              generic: t('notGroundedTitle'),
+              genericHint: t('notGroundedHint'),
+            }}
+          />
+          {/* Whether anything actually checked the answer keys. Silent until
+              the check resolves: saying nothing is honest, saying "not
+              verified" while a request is still in flight is not. */}
+          {outcomes && verification.total > 0 && (
+            <View
+              style={[styles.verifyRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+            >
+              <Ionicons
+                name={verification.anySymbolic ? 'shield-checkmark' : 'library-outline'}
+                size={14}
+                color={verification.anySymbolic ? '#10B981' : colors.mutedForeground}
+              />
+              <Text
+                style={[
+                  styles.verifyText,
+                  {
+                    color: verification.anySymbolic ? '#10B981' : colors.mutedForeground,
+                    textAlign: isRTL ? 'right' : 'left',
+                  },
+                ]}
+              >
+                {verification.anySymbolic
+                  ? t('quizVerifiedCount', verification.symbolic, verification.total)
+                  : t('quizVerifiedNone')}
+              </Text>
+            </View>
+          )}
+        </View>
+      )}
+
       {result && (
         <View style={{ paddingHorizontal: 20 }}>
           <View style={[styles.quizHeader, { backgroundColor: ACCENT + '15', borderColor: ACCENT + '40', borderRadius: colors.radius }]}>
-            <Text style={[styles.quizTitle, { color: colors.foreground, fontFamily: 'Inter_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>{result.title}</Text>
+            <Text style={[styles.quizTitle, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>{result.title}</Text>
             <View style={[styles.quizMeta, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               <MetaPill icon="time-outline" text={`${result.duration} ${t('min')}`} color={ACCENT} />
               <MetaPill icon="star-outline" text={`${result.totalPoints} ${t('pts')}`} color={ACCENT} />
@@ -346,7 +481,10 @@ export default function QuizScreen() {
               setPendingClassroomActivity(
                 buildDeckFromQuiz(result, topic.trim(), lang === 'ar', {
                   lesson: grounding.lesson,
-                  verified: false,
+                  // Was a blanket `verified: false`, which hid the keys the
+                  // verifier had actually proved. Per question now, so the
+                  // projector badges exactly what was checked.
+                  outcomes: effectiveOutcomes,
                 }),
               );
               router.push('/ai-tools/classroom/presentation' as any);
@@ -363,7 +501,7 @@ export default function QuizScreen() {
             accessibilityRole="button"
           >
             <Ionicons name="tv-outline" size={18} color="#fff" />
-            <Text style={{ color: '#fff', fontFamily: 'Inter_700Bold', fontSize: 14 }}>
+            <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 14 }}>
               {t('presentOnScreen')}
             </Text>
           </Pressable>
@@ -373,7 +511,7 @@ export default function QuizScreen() {
             style={[styles.toggleBtn, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
           >
             <Ionicons name={showAnswers ? 'eye-off-outline' : 'eye-outline'} size={16} color={ACCENT} />
-            <Text style={[{ color: ACCENT, fontFamily: 'Inter_500Medium', fontSize: 13 }]}>
+            <Text style={[{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 13 }]}>
               {showAnswers ? t('hideAnswers') : t('showAnswers')}
             </Text>
           </Pressable>
@@ -384,24 +522,80 @@ export default function QuizScreen() {
               <View key={q.id} style={[styles.qCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
                 <View style={[styles.qTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                   <View style={[styles.qNumCircle, { backgroundColor: ACCENT }]}>
-                    <Text style={[{ color: '#fff', fontFamily: 'Inter_700Bold', fontSize: 12 }]}>{i + 1}</Text>
+                    <Text style={[{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 12 }]}>{i + 1}</Text>
                   </View>
                   <View style={[styles.typeBadge, { backgroundColor: tc + '18' }]}>
-                    <Text style={[{ color: tc, fontFamily: 'Inter_500Medium', fontSize: 11 }]}>{TYPE_LABEL[q.type as QType] ?? q.type}</Text>
+                    <Text style={[{ color: tc, fontFamily: 'Cairo_500Medium', fontSize: 11 }]}>{TYPE_LABEL[q.type as QType] ?? q.type}</Text>
                   </View>
-                  <Text style={[{ color: colors.mutedForeground, fontFamily: 'Inter_400Regular', fontSize: 11, marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }]}>{q.points} {t('pts')}</Text>
+                  <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 10, marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }}>
+                    <View style={{ minWidth: 54 }}>
+                      <EditableText
+                        value={`${q.points}`}
+                        onChange={next => {
+                          // Marks must stay a positive number; a zero-mark
+                          // question takes a student's time and counts for
+                          // nothing, and a non-number breaks the total.
+                          const n = parsePoints(next);
+                          if (n !== null) updateQuestion(i, { points: n });
+                        }}
+                        colors={colors}
+                        isRTL={isRTL}
+                        placeholder={t('pts')}
+                      />
+                    </View>
+                    <Pressable
+                      onPress={() => { void removeQuestion(i); }}
+                      hitSlop={8}
+                      accessibilityRole="button"
+                      accessibilityLabel={t('deleteQuestion')}
+                    >
+                      <Ionicons name="trash-outline" size={15} color={colors.mutedForeground} />
+                    </Pressable>
+                  </View>
                 </View>
-                <Text style={[styles.qText, { color: colors.foreground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{q.text}</Text>
+                <View style={styles.qText}>
+                  <EditableText
+                    value={q.text}
+                    onChange={next => updateQuestion(i, { text: next })}
+                    colors={colors}
+                    isRTL={isRTL}
+                    placeholder={t('editPlaceholder')}
+                    edited={editedQuestions.has(q.id)}
+                  />
+                </View>
 
                 {q.options?.map((opt, oi) => {
                   const isCorrect = showAnswers && opt === q.correctAnswer;
                   return (
                     <View key={oi} style={[styles.optRow, { backgroundColor: isCorrect ? '#10B981' + '15' : colors.muted, borderRadius: 8, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                      <Text style={[styles.optLabel, { color: isCorrect ? '#10B981' : colors.mutedForeground, fontFamily: isCorrect ? 'Inter_600SemiBold' : 'Inter_400Regular' }]}>
+                      <Text style={[styles.optLabel, { color: isCorrect ? '#10B981' : colors.mutedForeground, fontFamily: isCorrect ? 'Cairo_600SemiBold' : 'Almarai_400Regular' }]}>
                         {String.fromCharCode(65 + oi)}.
                       </Text>
-                      <Text style={[{ flex: 1, color: isCorrect ? '#10B981' : colors.foreground, fontFamily: isCorrect ? 'Inter_500Medium' : 'Inter_400Regular', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }]}>{opt}</Text>
-                      {isCorrect && <Ionicons name="checkmark-circle" size={16} color="#10B981" />}
+                      <View style={{ flex: 1 }}>
+                        <EditableText
+                          value={opt}
+                          onChange={next => updateOption(i, oi, next)}
+                          colors={colors}
+                          isRTL={isRTL}
+                          placeholder={t('editPlaceholder')}
+                        />
+                      </View>
+                      {/* Choosing the right answer is a choice among the
+                          options, so it is made by picking one rather than by
+                          retyping it into a separate field. */}
+                      <Pressable
+                        onPress={() => updateQuestion(i, { correctAnswer: opt })}
+                        hitSlop={6}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: opt === q.correctAnswer }}
+                        accessibilityLabel={`${opt} — ${t('answer')}`}
+                      >
+                        <Ionicons
+                          name={opt === q.correctAnswer ? 'checkmark-circle' : 'ellipse-outline'}
+                          size={17}
+                          color={opt === q.correctAnswer ? '#10B981' : colors.mutedForeground}
+                        />
+                      </Pressable>
                     </View>
                   );
                 })}
@@ -409,23 +603,40 @@ export default function QuizScreen() {
                 {showAnswers && q.type === 'true_false' && (
                   <View style={[styles.ansBox, { backgroundColor: '#10B981' + '15', borderRadius: 8, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                     <Ionicons name="checkmark-circle" size={14} color="#10B981" />
-                    <Text style={[{ color: '#10B981', fontFamily: 'Inter_500Medium', fontSize: 13 }]}>{t('answer')}: {q.correctAnswer}</Text>
+                    <Text style={[{ color: '#10B981', fontFamily: 'Cairo_500Medium', fontSize: 13 }]}>{t('answer')}:</Text>
+                    <View style={{ flex: 1 }}>
+                      <EditableText
+                        value={q.correctAnswer}
+                        onChange={next => updateQuestion(i, { correctAnswer: next })}
+                        colors={colors}
+                        isRTL={isRTL}
+                        placeholder={t('editPlaceholder')}
+                      />
+                    </View>
                   </View>
                 )}
 
                 {showAnswers && q.type === 'short_answer' && (
                   <View style={[styles.ansBox, { backgroundColor: '#3B82F6' + '12', borderRadius: 8 }]}>
-                    <Text style={[{ color: '#3B82F6', fontFamily: 'Inter_500Medium', fontSize: 12, textAlign: isRTL ? 'right' : 'left' }]}>
-                      {t('answer')}: {q.correctAnswer}
-                    </Text>
+                    <EditableText
+                      value={q.correctAnswer}
+                      onChange={next => updateQuestion(i, { correctAnswer: next })}
+                      colors={colors}
+                      isRTL={isRTL}
+                      placeholder={t('editPlaceholder')}
+                    />
                   </View>
                 )}
 
                 {showAnswers && (
                   <View style={[styles.expBox, { backgroundColor: colors.muted, borderRadius: 8 }]}>
-                    <Text style={[{ color: colors.mutedForeground, fontFamily: 'Inter_400Regular', fontSize: 12, lineHeight: 18, textAlign: isRTL ? 'right' : 'left' }]}>
-                      💡 {q.explanation}
-                    </Text>
+                    <EditableText
+                      value={q.explanation}
+                      onChange={next => updateQuestion(i, { explanation: next })}
+                      colors={colors}
+                      isRTL={isRTL}
+                      placeholder={t('editPlaceholder')}
+                    />
                   </View>
                 )}
               </View>
@@ -449,7 +660,7 @@ export default function QuizScreen() {
             ]}
           >
             <Ionicons name={saveDone ? 'checkmark-circle' : 'bookmark-outline'} size={16} color={saveDone ? '#fff' : ACCENT} />
-            <Text style={[styles.saveBtnText, { color: saveDone ? '#fff' : ACCENT, fontFamily: 'Inter_600SemiBold' }]}>{saveBtnLabel}</Text>
+            <Text style={[styles.saveBtnText, { color: saveDone ? '#fff' : ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>{saveBtnLabel}</Text>
           </Pressable>
           {!!savedId && (
             <Pressable
@@ -460,7 +671,7 @@ export default function QuizScreen() {
               ]}
             >
               <Ionicons name={favorited ? 'star' : 'star-outline'} size={16} color={favorited ? '#F59E0B' : colors.mutedForeground} />
-              <Text style={[styles.regenText, { color: favorited ? '#F59E0B' : colors.mutedForeground, fontFamily: 'Inter_600SemiBold' }]}>
+              <Text style={[styles.regenText, { color: favorited ? '#F59E0B' : colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }]}>
                 {favorited ? (lang === 'ar' ? 'في المفضلة' : 'Favourited') : (lang === 'ar' ? 'أضف إلى المفضلة' : 'Add to Favourites')}
               </Text>
             </Pressable>
@@ -470,14 +681,14 @@ export default function QuizScreen() {
             style={[styles.regenBtn, { borderColor: colors.mutedForeground, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="share-outline" size={16} color={colors.mutedForeground} />
-            <Text style={[styles.regenText, { color: colors.mutedForeground, fontFamily: 'Inter_600SemiBold' }]}>{t('exportBtn')}</Text>
+            <Text style={[styles.regenText, { color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }]}>{t('exportBtn')}</Text>
           </Pressable>
           <Pressable
             onPress={generate}
             style={[styles.regenBtn, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="refresh-outline" size={16} color={ACCENT} />
-            <Text style={[styles.regenText, { color: ACCENT, fontFamily: 'Inter_600SemiBold' }]}>{t('regenerateBtn')}</Text>
+            <Text style={[styles.regenText, { color: ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>{t('regenerateBtn')}</Text>
           </Pressable>
         </View>
       )}
@@ -506,7 +717,7 @@ function MetaPill({ icon, text, color }: { icon: keyof typeof Ionicons.glyphMap;
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: color + '18', borderRadius: 20 }}>
       <Ionicons name={icon} size={12} color={color} />
-      <Text style={{ color, fontFamily: 'Inter_500Medium', fontSize: 12 }}>{text}</Text>
+      <Text style={{ color, fontFamily: 'Cairo_500Medium', fontSize: 12 }}>{text}</Text>
     </View>
   );
 }
@@ -520,7 +731,7 @@ function CheckboxRow({ label, checked, onToggle, accent, colors, isRTL }: {
       <View style={[styles.checkbox, { borderColor: checked ? accent : colors.border, backgroundColor: checked ? accent : 'transparent' }]}>
         {checked && <Ionicons name="checkmark" size={13} color="#fff" />}
       </View>
-      <Text style={[{ color: colors.foreground, fontFamily: checked ? 'Inter_500Medium' : 'Inter_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
+      <Text style={[{ color: colors.foreground, fontFamily: checked ? 'Cairo_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -532,12 +743,12 @@ function PickerField({ label, value, options, onChange, colors, isRTL, accent }:
   const [open, setOpen] = useState(false);
   return (
     <View style={{ marginBottom: 16 }}>
-      <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
+      <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
       <Pressable
         onPress={() => setOpen(o => !o)}
         style={[styles.input, { backgroundColor: colors.card, borderColor: open ? accent : colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center' }]}
       >
-        <Text style={[{ flex: 1, color: colors.foreground, fontFamily: 'Inter_400Regular', fontSize: 15, textAlign: isRTL ? 'right' : 'left' }]}>{value}</Text>
+        <Text style={[{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, textAlign: isRTL ? 'right' : 'left' }]}>{value}</Text>
         <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
       </Pressable>
       {open && (
@@ -549,7 +760,7 @@ function PickerField({ label, value, options, onChange, colors, isRTL, accent }:
                 onPress={() => { onChange(i); setOpen(false); }}
                 style={[{ paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: o === value ? accent + '15' : 'transparent', flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between' }]}
               >
-                <Text style={[{ color: o === value ? accent : colors.foreground, fontFamily: o === value ? 'Inter_500Medium' : 'Inter_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{o}</Text>
+                <Text style={[{ color: o === value ? accent : colors.foreground, fontFamily: o === value ? 'Cairo_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{o}</Text>
                 {o === value && <Ionicons name="checkmark" size={16} color={accent} />}
               </Pressable>
             ))}
@@ -561,6 +772,8 @@ function PickerField({ label, value, options, onChange, colors, isRTL, accent }:
 }
 
 const styles = StyleSheet.create({
+  verifyRow: { alignItems: 'center', gap: 6, marginTop: 8 },
+  verifyText: { fontFamily: 'Cairo_600SemiBold', fontSize: 12, flex: 1 },
   header: { paddingHorizontal: 20, paddingBottom: 24 },
   backBtn: { width: 40, height: 40, justifyContent: 'center', marginBottom: 8 },
   headerTitle: { fontSize: 26 },

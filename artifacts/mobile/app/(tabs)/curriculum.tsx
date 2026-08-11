@@ -48,7 +48,7 @@ function SubjectCard({ subject, onPress, isRTL }: { subject: Subject; onPress: (
       <View style={[styles.subjectIcon, { backgroundColor: subject.color + '22', borderRadius: 14 }]}>
         <Ionicons name={SUBJECT_ICONS[subject.id] ?? 'book-outline'} size={26} color={subject.color} />
       </View>
-      <Text style={[styles.subjectName, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: 'center' }]} numberOfLines={2}>
+      <Text style={[styles.subjectName, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: 'center' }]} numberOfLines={2}>
         {name}
       </Text>
       <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={14} color={colors.mutedForeground} style={{ marginTop: 4 }} />
@@ -79,10 +79,10 @@ export default function CurriculumScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       {/* ─── Header ────────────────────────────────────────────── */}
       <View style={[styles.header, { backgroundColor: colors.card, paddingTop: topPad + 12, borderBottomColor: colors.border }]}>
-        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Inter_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('curriculumTitle')}
         </Text>
-        <Text style={[styles.subtitle, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.subtitle, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('jordanCurriculum')}
         </Text>
 
@@ -90,7 +90,7 @@ export default function CurriculumScreen() {
         <View style={[styles.searchRow, { backgroundColor: colors.muted, borderRadius: colors.radius }, isRTL && { flexDirection: 'row-reverse' }]}>
           <Ionicons name="search-outline" size={16} color={colors.mutedForeground} />
           <TextInput
-            style={[styles.searchInput, { color: colors.foreground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}
+            style={[styles.searchInput, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}
             placeholder={t('searchSubjects')}
             placeholderTextColor={colors.mutedForeground}
             value={search}
@@ -134,7 +134,7 @@ export default function CurriculumScreen() {
                     styles.gradeChipText,
                     {
                       color: isActive ? colors.primaryForeground : colors.mutedForeground,
-                      fontFamily: isActive ? 'Inter_600SemiBold' : 'Inter_400Regular',
+                      fontFamily: isActive ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
                     },
                   ]}
                 >
@@ -148,7 +148,7 @@ export default function CurriculumScreen() {
       ) : (
         <View style={[styles.gradeBar, styles.gradeFixed, { borderBottomColor: colors.border, backgroundColor: colors.card }, isRTL && { flexDirection: 'row-reverse' }]}>
           <View style={[styles.gradeChip, { backgroundColor: colors.primary, borderRadius: 20 }]}>
-            <Text style={[styles.gradeChipText, { color: colors.primaryForeground, fontFamily: 'Inter_600SemiBold' }]}>
+            <Text style={[styles.gradeChipText, { color: colors.primaryForeground, fontFamily: 'Cairo_600SemiBold' }]}>
               {lang === 'ar' ? selectedGrade.nameAr : selectedGrade.name}
             </Text>
           </View>
@@ -164,14 +164,14 @@ export default function CurriculumScreen() {
         columnWrapperStyle={{ gap: 12 }}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
-          <Text style={[styles.gradeLabel, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[styles.gradeLabel, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
             {t('subjects_count', subjects.length)} · {lang === 'ar' ? selectedGrade.nameAr : selectedGrade.name}
           </Text>
         }
         ListEmptyComponent={
           <View style={styles.empty}>
             <Ionicons name="search-outline" size={36} color={colors.mutedForeground} />
-            <Text style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
+            <Text style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
               {t('noSubjectsFound')}
             </Text>
           </View>

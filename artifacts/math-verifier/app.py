@@ -97,9 +97,14 @@ def _shutdown() -> None:
 
 @app.get("/healthz")
 def healthz() -> dict[str, Any]:
-    from verify_core import SOLVERS
+    from verify_core import EQUATION_TOPICS, SOLVERS
 
-    return {"status": "ok", "topics": sorted(SOLVERS.keys())}
+    # Equation topics are handled by set comparison, not the SOLVERS registry,
+    # so they must be listed explicitly or the capability looks missing.
+    return {
+        "status": "ok",
+        "topics": sorted(set(SOLVERS.keys()) | set(EQUATION_TOPICS)),
+    }
 
 
 @app.post("/verify/derivative", response_model=VerifyResponse)

@@ -49,7 +49,7 @@ export function RelatedResourcesPanel({ toolId = 'lesson-plan', topic, isRTL }: 
       <Text
         style={[
           styles.done,
-          { color: colors.foreground, fontFamily: 'Inter_600SemiBold', textAlign: rtl ? 'right' : 'left' },
+          { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: rtl ? 'right' : 'left' },
         ]}
       >
         {toolId === 'lesson-plan'
@@ -59,7 +59,7 @@ export function RelatedResourcesPanel({ toolId = 'lesson-plan', topic, isRTL }: 
       <Text
         style={[
           styles.hint,
-          { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: rtl ? 'right' : 'left' },
+          { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: rtl ? 'right' : 'left' },
         ]}
       >
         {t('relatedResourcesHint')}
@@ -82,7 +82,7 @@ export function RelatedResourcesPanel({ toolId = 'lesson-plan', topic, isRTL }: 
                 },
               ]}
             >
-              <Text style={[styles.chipText, { color: colors.foreground, fontFamily: 'Inter_500Medium' }]}>
+              <Text style={[styles.chipText, { color: colors.foreground, fontFamily: 'Cairo_500Medium' }]}>
                 {tool.emoji} {label}
               </Text>
             </Pressable>
@@ -101,7 +101,7 @@ export function RelatedResourcesPanel({ toolId = 'lesson-plan', topic, isRTL }: 
           },
         ]}
       >
-        <Text style={[styles.createAllText, { fontFamily: 'Inter_600SemiBold' }]}>
+        <Text style={[styles.createAllText, { fontFamily: 'Cairo_600SemiBold' }]}>
           {t('relatedCreateAll')}
         </Text>
       </Pressable>

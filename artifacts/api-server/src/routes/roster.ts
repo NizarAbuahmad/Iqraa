@@ -19,7 +19,11 @@ import { logger } from "../lib/logger";
 
 const router = Router();
 
-router.use(authMiddleware);
+// Scoped to this router's own paths. A bare `router.use(authMiddleware)` here
+// matches every path, and because this router is mounted at the root of /api it
+// then answered 401 for routers mounted after it — chat, generate and the math
+// verifier were all guarded by accident of ordering rather than by intent.
+router.use(["/classes", "/students"], authMiddleware);
 
 const MAX_BULK_STUDENTS = 200;
 

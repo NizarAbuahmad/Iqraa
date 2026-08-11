@@ -8,10 +8,13 @@
  * bug rather than a summary.
  */
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { CurrentLessonView, ResourceChip } from '@/services/lessonCopilot';
 import type { SessionArtifact } from '@/services/ai/teachingAssistant';
+
+/** Carried over from the home screen's Start Class button. */
+const START_CLASS_COLOR = '#B45309';
 
 type Colors = {
   card: string;
@@ -33,6 +36,14 @@ type Props = {
   lang: 'ar' | 'en';
   colors: Colors;
   changeLabel: string;
+  /**
+   * Start Class. Optional so the card still renders where there is no
+   * projector flow to enter; both are omitted together or shown together.
+   */
+  startClassLabel?: string;
+  onStartClass?: () => void;
+  /** Disables the Start button while its deck is being built. */
+  startClassBusy?: boolean;
   uploadedLabel: (n: number) => string;
   /** e.g. "2 من 5 جاهزة" — already localised by the caller. */
   progressLabel: string;
@@ -52,6 +63,9 @@ export function CurrentLessonCard({
   lang,
   colors,
   changeLabel,
+  startClassLabel,
+  onStartClass,
+  startClassBusy = false,
   uploadedLabel,
   progressLabel,
   allReadyLabel,
@@ -230,6 +244,9 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 10,
   },
+  // Matches the chat column so the lesson context sits over the thread rather
+  // than sprawling to the window edge on desktop.
+  inner: { width: '100%', maxWidth: 760, alignSelf: 'center' },
   collapsed: {
     borderBottomWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 16,
@@ -248,6 +265,7 @@ const styles = StyleSheet.create({
 
   changeBtn: {
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 5,
     paddingHorizontal: 11,
     paddingVertical: 7,

@@ -69,7 +69,7 @@ export function Button({ label, onPress, variant = 'primary', size = 'md', disab
       {loading ? (
         <ActivityIndicator size="small" color={textColor} />
       ) : (
-        <Text style={[styles.label, { color: textColor, fontSize, fontFamily: 'Inter_600SemiBold' }]}>
+        <Text style={[styles.label, { color: textColor, fontSize, fontFamily: 'Cairo_600SemiBold' }]}>
           {label}
         </Text>
       )}

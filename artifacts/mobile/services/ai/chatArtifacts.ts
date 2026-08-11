@@ -23,11 +23,27 @@ import {
   formatWorksheetText,
 } from '@/services/share';
 
+/**
+ * The structured output, kept alongside the text.
+ *
+ * Chat calls the same generators as the tool screens, so it has always had the
+ * real object — and used to discard it one line later in favour of a formatted
+ * string. Keeping it means chat can render a lesson plan as a plan, and edit
+ * it, instead of showing a paragraph that only looks like one.
+ */
+export type ChatArtifactData =
+  | { kind: 'lesson-plan'; plan: LessonPlanOutput }
+  | { kind: 'worksheet'; worksheet: WorksheetOutput }
+  | { kind: 'quiz'; quiz: QuizOutput }
+  | { kind: 'activity'; activity: ActivityOutput };
+
 export type ChatArtifactResult = {
   text: string;
   artifact: SessionArtifact;
   topic: string;
   lessonId?: string;
+  /** Present for the kinds that have a structured renderer. */
+  data?: ChatArtifactData;
 };
 
 function nextStepLine(artifact: SessionArtifact, isAr: boolean): string {
@@ -137,9 +153,11 @@ export async function generateChatArtifact(opts: {
   const titleBase = topic.trim();
 
   let body = '';
+  let data: ChatArtifactData | undefined;
   switch (artifact) {
     case 'lesson-plan': {
       const out: LessonPlanOutput = await remoteAIService.generateLessonPlan(req);
+      data = { kind: 'lesson-plan', plan: out };
       body = formatLessonPlanText(
         out,
         isAr ? `خطة درس: ${titleBase}` : `Lesson plan: ${titleBase}`,
@@ -150,6 +168,7 @@ export async function generateChatArtifact(opts: {
     }
     case 'worksheet': {
       const out: WorksheetOutput = await remoteAIService.generateWorksheet(req);
+      data = { kind: 'worksheet', worksheet: out };
       body = formatWorksheetText(
         out,
         isAr ? `ورقة عمل: ${titleBase}` : `Worksheet: ${titleBase}`,
@@ -160,6 +179,7 @@ export async function generateChatArtifact(opts: {
     }
     case 'homework': {
       const out: WorksheetOutput = await remoteAIService.generateHomework(req);
+      data = { kind: 'worksheet', worksheet: out };
       body = formatWorksheetText(
         out,
         isAr ? `واجب منزلي: ${titleBase}` : `Homework: ${titleBase}`,
@@ -170,6 +190,7 @@ export async function generateChatArtifact(opts: {
     }
     case 'quiz': {
       const out: QuizOutput = await remoteAIService.generateQuiz(req);
+      data = { kind: 'quiz', quiz: out };
       body = formatQuizText(
         out,
         isAr ? `أداة تقييم: ${titleBase}` : `Short quiz: ${titleBase}`,
@@ -180,6 +201,7 @@ export async function generateChatArtifact(opts: {
     }
     case 'activity': {
       const out: ActivityOutput = await remoteAIService.generateActivity(req);
+      data = { kind: 'activity', activity: out };
       body = formatActivityText(
         out,
         isAr ? `نشاط صفي: ${titleBase}` : `Class activity: ${titleBase}`,
@@ -196,6 +218,7 @@ export async function generateChatArtifact(opts: {
   return {
     text,
     artifact,
+    data,
     topic: titleBase,
     lessonId: lessonForGen?.id,
   };

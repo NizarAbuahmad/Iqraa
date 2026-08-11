@@ -22,8 +22,13 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildDeckFromQuiz, buildDeckFromWorksheet, objectivesSlide } from '../classDeck.ts';
-import type { QuizOutput, WorksheetOutput } from '../ai/AIService.ts';
+import {
+  assembleDeckSlides,
+  buildDeckFromQuiz,
+  buildDeckFromWorksheet,
+  objectivesSlide,
+} from '../classDeck.ts';
+import type { ActivitySlide, QuizOutput, WorksheetOutput } from '../ai/AIService.ts';
 import type { KBLesson } from '../knowledgeBase.ts';
 
 const QUIZ: QuizOutput = {
@@ -150,5 +155,107 @@ describe('objectivesSlide', () => {
   it('returns null when the book has no objectives (no empty slide)', () => {
     assert.equal(objectivesSlide(lessonWithout, 'الاقترانات', true), null);
     assert.equal(objectivesSlide(null, 'الاقترانات', true), null);
+  });
+});
+
+describe('buildDeckFromQuiz — per-question provenance', () => {
+  // QUIZ is q1 multiple_choice + q2 short_answer. Only the MCQ becomes a
+  // 'question' slide; open-ended items are 'challenge' and carry no badge.
+  // outcomes[] is indexed by question, not by slide.
+  it('badges a question from its own outcome', () => {
+    const deck = buildDeckFromQuiz(QUIZ, 'الاشتقاق', true, {
+      outcomes: [{ verifiedBy: 'symbolic', computedAnswer: '12x^3' }, undefined],
+    });
+    const q = deck.slides.find(s => s.type === 'question');
+    assert.equal(q?.verified, true);
+    assert.equal(q?.verifiedBy, 'symbolic');
+    assert.equal(q?.computedAnswer, '12x^3');
+  });
+
+  it('badges a bank answer as bank, without a computed answer', () => {
+    // 'bank' is still a badge — it claims provenance, not proof — but it must
+    // never carry a computed answer, which only the verifier can produce.
+    const deck = buildDeckFromQuiz(QUIZ, 'الاشتقاق', true, {
+      outcomes: [{ verifiedBy: 'bank' }, undefined],
+    });
+    const q = deck.slides.find(s => s.type === 'question');
+    assert.equal(q?.verifiedBy, 'bank');
+    assert.equal(q?.computedAnswer, undefined);
+  });
+
+  it('shows no badge for a question with no outcome', () => {
+    // Absent evidence is not pending evidence. The projector badge is the last
+    // thing between a teacher and telling a room a wrong answer was checked.
+    const deck = buildDeckFromQuiz(QUIZ, 'الاشتقاق', true, { outcomes: [] });
+    const q = deck.slides.find(s => s.type === 'question');
+    assert.equal(q?.verified, false);
+    assert.equal(q?.verifiedBy, undefined);
+  });
+
+  it('still honours the whole-deck flag when no outcomes are given', () => {
+    const deck = buildDeckFromQuiz(QUIZ, 'الاشتقاق', true, { verified: true });
+    assert.ok(deck.slides.filter(s => s.type === 'question').every(s => s.verified === true));
+  });
+});
+
+// ── assembleDeckSlides ────────────────────────────────────────────────────
+// The ordering rule for Start Class. It used to live inline in the home
+// screen, untested, and had to survive that screen being retired.
+
+const slide = (type: ActivitySlide['type'], title: string): ActivitySlide =>
+  ({ slideNumber: 0, type, title, content: title, durationSeconds: 0 }) as ActivitySlide;
+
+describe('assembleDeckSlides', () => {
+  it('numbers slides consecutively from 1', () => {
+    // The presentation screen's progress dots assume this.
+    const deck = assembleDeckSlides({
+      activitySlides: [slide('intro', 'i'), slide('question', 'q1'), slide('question', 'q2')],
+    });
+    assert.deepEqual(deck.map(s => s.slideNumber), [1, 2, 3]);
+  });
+
+  it('puts objectives and the graph before the questions', () => {
+    // The class should see what it is meant to learn before being asked.
+    const deck = assembleDeckSlides({
+      activitySlides: [slide('intro', 'i'), slide('question', 'q1')],
+      objectives: slide('graph', 'obj'),
+      graph: slide('graph', 'graph'),
+    });
+    assert.deepEqual(deck.map(s => s.title), ['i', 'obj', 'graph', 'q1']);
+  });
+
+  it('keeps a trailing summary last when media is appended', () => {
+    // Media appended naively lands after "Well done!", which ends the lesson
+    // twice. The summary is moved, not duplicated.
+    const deck = assembleDeckSlides({
+      activitySlides: [slide('intro', 'i'), slide('question', 'q1'), slide('summary', 'bye')],
+      media: [slide('media', 'video')],
+    });
+    assert.deepEqual(deck.map(s => s.title), ['i', 'q1', 'video', 'bye']);
+  });
+
+  it('leaves a mid-deck summary where it is', () => {
+    // Only a trailing summary is a sign-off; one in the middle is a section
+    // break the generator meant to put there.
+    const deck = assembleDeckSlides({
+      activitySlides: [slide('intro', 'i'), slide('summary', 'part1'), slide('question', 'q1')],
+    });
+    assert.deepEqual(deck.map(s => s.title), ['i', 'part1', 'q1']);
+  });
+
+  it('omits every optional part without leaving a hole', () => {
+    // A lesson with no objectives, nothing plottable and no media is normal,
+    // not an error — chemistry has all three.
+    const deck = assembleDeckSlides({
+      activitySlides: [slide('intro', 'i'), slide('question', 'q1')],
+      objectives: null,
+      graph: null,
+      media: [],
+    });
+    assert.deepEqual(deck.map(s => s.title), ['i', 'q1']);
+  });
+
+  it('returns an empty deck rather than throwing when there is no intro', () => {
+    assert.deepEqual(assembleDeckSlides({ activitySlides: [] }), []);
   });
 });

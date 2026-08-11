@@ -88,7 +88,7 @@ export default function ClassesScreen() {
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
         <Text
-          style={[styles.heroTitle, { fontFamily: 'Inter_700Bold', textAlign: align }]}
+          style={[styles.heroTitle, { fontFamily: 'Cairo_700Bold', textAlign: align }]}
         >
           {t('myClasses')}
         </Text>
@@ -111,7 +111,7 @@ export default function ClassesScreen() {
                 <Text
                   style={{
                     color: colors.destructive,
-                    fontFamily: 'Inter_400Regular',
+                    fontFamily: 'Almarai_400Regular',
                     flex: 1,
                     textAlign: align,
                   }}
@@ -128,7 +128,7 @@ export default function ClassesScreen() {
                 <Text
                   style={[
                     styles.emptyTitle,
-                    { color: colors.foreground, fontFamily: 'Inter_600SemiBold' },
+                    { color: colors.foreground, fontFamily: 'Cairo_600SemiBold' },
                   ]}
                 >
                   {t('noClassesYet')}
@@ -138,7 +138,7 @@ export default function ClassesScreen() {
                     styles.emptyText,
                     {
                       color: colors.mutedForeground,
-                      fontFamily: 'Inter_400Regular',
+                      fontFamily: 'Almarai_400Regular',
                       textAlign: 'center',
                     },
                   ]}
@@ -157,7 +157,7 @@ export default function ClassesScreen() {
                 <Text
                   style={[
                     styles.cardTitle,
-                    { color: colors.foreground, fontFamily: 'Inter_600SemiBold', textAlign: align },
+                    { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align },
                   ]}
                 >
                   {lang === 'ar' && item.nameAr ? item.nameAr : item.name}
@@ -165,7 +165,7 @@ export default function ClassesScreen() {
                 <Text
                   style={[
                     styles.cardMeta,
-                    { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: align },
+                    { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align },
                   ]}
                 >
                   {countStudents(item.studentCount, lang)}
@@ -194,7 +194,7 @@ export default function ClassesScreen() {
             <Text
               style={[
                 styles.modalTitle,
-                { color: colors.foreground, fontFamily: 'Inter_600SemiBold', textAlign: align },
+                { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align },
               ]}
             >
               {t('newClass')}
@@ -210,14 +210,14 @@ export default function ClassesScreen() {
                 {
                   color: colors.foreground,
                   borderColor: colors.border,
-                  fontFamily: 'Inter_400Regular',
+                  fontFamily: 'Almarai_400Regular',
                   textAlign: align,
                 },
               ]}
             />
             <View style={styles.modalActions}>
               <Pressable onPress={() => setShowNew(false)} style={styles.modalBtn}>
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Inter_600SemiBold' }}>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }}>
                   {t('cancel')}
                 </Text>
               </Pressable>
@@ -233,7 +233,7 @@ export default function ClassesScreen() {
                 {creating ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
-                  <Text style={{ color: '#fff', fontFamily: 'Inter_600SemiBold' }}>
+                  <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold' }}>
                     {t('createClass')}
                   </Text>
                 )}

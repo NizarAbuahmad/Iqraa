@@ -73,7 +73,7 @@ function GraphView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; 
         <View style={mediaStyles.cmdRow}>
           {commands.map((c, i) => (
             <View key={i} style={mediaStyles.cmdPill}>
-              <Text style={[mediaStyles.cmdText, { fontFamily: 'Inter_700Bold' }]}>{c}</Text>
+              <Text style={[mediaStyles.cmdText, { fontFamily: 'Cairo_700Bold' }]}>{c}</Text>
             </View>
           ))}
         </View>
@@ -82,7 +82,7 @@ function GraphView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; 
         <Text
           style={[
             mediaStyles.emptyHint,
-            { fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' },
+            { fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' },
           ]}
         >
           {t('graphEmptyHint')}
@@ -104,7 +104,7 @@ function GraphView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; 
           style={[mediaStyles.openBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
         >
           <Ionicons name="stats-chart" size={20} color="#fff" />
-          <Text style={[mediaStyles.openBtnText, { fontFamily: 'Inter_700Bold' }]}>
+          <Text style={[mediaStyles.openBtnText, { fontFamily: 'Cairo_700Bold' }]}>
             {t('openGraph')}
           </Text>
         </Pressable>
@@ -143,7 +143,7 @@ function MediaView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; 
           style={[mediaStyles.openBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
         >
           <Ionicons name="play-circle" size={20} color="#fff" />
-          <Text style={[mediaStyles.openBtnText, { fontFamily: 'Inter_700Bold' }]}>
+          <Text style={[mediaStyles.openBtnText, { fontFamily: 'Cairo_700Bold' }]}>
             {t('openMedia')}
           </Text>
         </Pressable>
@@ -190,7 +190,7 @@ function TeacherPanel({
         {/* Header */}
         <View style={[panelStyles.header, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <Ionicons name="school-outline" size={18} color={ACCENT} />
-          <Text style={[panelStyles.headerText, { fontFamily: 'Inter_700Bold' }]}>{t('teacherPanelTitle')}</Text>
+          <Text style={[panelStyles.headerText, { fontFamily: 'Cairo_700Bold' }]}>{t('teacherPanelTitle')}</Text>
           <Pressable onPress={close} style={panelStyles.closeBtn} hitSlop={12}>
             <Ionicons name="close" size={20} color={TEXT_MUTED} />
           </Pressable>
@@ -234,7 +234,7 @@ function QuestionOptions({
       {/* Routine reminder — projected so students see the rule, not just hear it */}
       <View style={[qStyles.respondBanner, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <Ionicons name="hand-left-outline" size={16} color="#3B82F6" />
-        <Text style={[qStyles.respondText, { fontFamily: 'Inter_600SemiBold' }]}>
+        <Text style={[qStyles.respondText, { fontFamily: 'Cairo_600SemiBold' }]}>
           {t('allStudentsAnswer')}
         </Text>
       </View>
@@ -257,14 +257,14 @@ function QuestionOptions({
               ]}
             >
               <View style={[qStyles.letterBadge, { backgroundColor: isCorrect ? TIMER_GREEN : '#3B82F6' + '30' }]}>
-                <Text style={[qStyles.letterText, { color: isCorrect ? '#fff' : '#3B82F6', fontFamily: 'Inter_700Bold' }]}>
+                <Text style={[qStyles.letterText, { color: isCorrect ? '#fff' : '#3B82F6', fontFamily: 'Cairo_700Bold' }]}>
                   {letters[i] ?? '•'}
                 </Text>
               </View>
               <Text
                 style={[
                   qStyles.optionText,
-                  { textAlign: isRTL ? 'right' : 'left', fontFamily: isCorrect ? 'Inter_700Bold' : 'Inter_500Medium' },
+                  { textAlign: isRTL ? 'right' : 'left', fontFamily: isCorrect ? 'Cairo_700Bold' : 'Cairo_500Medium' },
                 ]}
               >
                 {opt}
@@ -288,7 +288,7 @@ function QuestionOptions({
         ]}
       >
         <Ionicons name={revealed ? 'eye-off-outline' : 'checkmark-circle-outline'} size={18} color={revealed ? TEXT_MUTED : TIMER_GREEN} />
-        <Text style={[qStyles.revealBtnText, { color: revealed ? TEXT_MUTED : TIMER_GREEN, fontFamily: 'Inter_600SemiBold' }]}>
+        <Text style={[qStyles.revealBtnText, { color: revealed ? TEXT_MUTED : TIMER_GREEN, fontFamily: 'Cairo_600SemiBold' }]}>
           {revealed ? t('hideAnswer') : t('revealAnswer')}
         </Text>
       </Pressable>
@@ -308,7 +308,7 @@ function QuestionOptions({
               style={[
                 qStyles.verifiedText,
                 {
-                  fontFamily: 'Inter_600SemiBold',
+                  fontFamily: 'Cairo_600SemiBold',
                   color: slide.verifiedBy === 'symbolic' ? TIMER_GREEN : TEXT_MUTED,
                 },
               ]}
@@ -320,7 +320,7 @@ function QuestionOptions({
             <Text
               style={[
                 qStyles.verifiedText,
-                { fontFamily: 'Inter_400Regular', color: TEXT_MUTED, textAlign: 'center' },
+                { fontFamily: 'Almarai_400Regular', color: TEXT_MUTED, textAlign: 'center' },
               ]}
             >
               {t('verifiedComputed', slide.computedAnswer)}
@@ -341,7 +341,7 @@ function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
     <View style={slideStyles.container}>
       {/* Slide type badge */}
       <View style={[slideStyles.badge, { backgroundColor: accent + '22', borderColor: accent + '44' }]}>
-        <Text style={[slideStyles.badgeText, { color: accent, fontFamily: 'Inter_600SemiBold' }]}>
+        <Text style={[slideStyles.badgeText, { color: accent, fontFamily: 'Cairo_600SemiBold' }]}>
           {slide.type === 'intro' ? '🎯'
             : slide.type === 'challenge' ? '🔐'
             : slide.type === 'reveal' ? '🔓'
@@ -363,7 +363,7 @@ function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
             key={i}
             style={[
               isEquation ? slideStyles.equation : slideStyles.bodyLine,
-              { textAlign: isRTL ? 'right' : 'left', fontFamily: isEquation ? 'Inter_700Bold' : 'Inter_400Regular' },
+              { textAlign: isRTL ? 'right' : 'left', fontFamily: isEquation ? 'Cairo_700Bold' : 'Almarai_400Regular' },
             ]}
           >
             {line}
@@ -374,8 +374,8 @@ function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
       {/* Unlock code badge */}
       {slide.unlockCode && slide.type === 'reveal' && (
         <View style={slideStyles.codeBadge}>
-          <Text style={[slideStyles.codeLabel, { fontFamily: 'Inter_500Medium' }]}>🔑</Text>
-          <Text style={[slideStyles.codeValue, { fontFamily: 'Inter_700Bold' }]}>{slide.unlockCode}</Text>
+          <Text style={[slideStyles.codeLabel, { fontFamily: 'Cairo_500Medium' }]}>🔑</Text>
+          <Text style={[slideStyles.codeValue, { fontFamily: 'Cairo_700Bold' }]}>{slide.unlockCode}</Text>
         </View>
       )}
     </View>
@@ -595,7 +595,7 @@ export default function PresentationScreen() {
 
         {/* Position + what this slide is — orientation at a glance */}
         <View style={styles.counterBox}>
-          <Text style={[styles.counterText, { fontFamily: 'Inter_700Bold' }]}>
+          <Text style={[styles.counterText, { fontFamily: 'Cairo_700Bold' }]}>
             {slideIndex + 1}/{totalSlides}
           </Text>
         </View>
@@ -604,7 +604,7 @@ export default function PresentationScreen() {
         {hasTimer ? (
           <View style={[styles.timerBox, { borderColor: tColor + '44', backgroundColor: tColor + '15' }]}>
             <Ionicons name="timer-outline" size={13} color={tColor} />
-            <Text style={[styles.timerText, { color: tColor, fontFamily: 'Inter_700Bold' }]}>{mm}:{ss}</Text>
+            <Text style={[styles.timerText, { color: tColor, fontFamily: 'Cairo_700Bold' }]}>{mm}:{ss}</Text>
           </View>
         ) : (
           <View style={{ width: 76 }} />
@@ -653,13 +653,13 @@ export default function PresentationScreen() {
                 style={[styles.revealBtn, { borderColor: TIMER_AMBER + '60', backgroundColor: TIMER_AMBER + '12', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
               >
                 <Ionicons name="bulb-outline" size={16} color={TIMER_AMBER} />
-                <Text style={[styles.revealBtnText, { color: TIMER_AMBER, fontFamily: 'Inter_600SemiBold' }]}>
+                <Text style={[styles.revealBtnText, { color: TIMER_AMBER, fontFamily: 'Cairo_600SemiBold' }]}>
                   {hintVisible ? t('hideHint') : t('revealHint')}
                 </Text>
               </Pressable>
               {hintVisible && (
                 <View style={[styles.revealContent, { borderColor: TIMER_AMBER + '40', backgroundColor: TIMER_AMBER + '10' }]}>
-                  <Text style={[styles.revealText, { textAlign: isRTL ? 'right' : 'left', fontFamily: 'Inter_400Regular' }]}>
+                  <Text style={[styles.revealText, { textAlign: isRTL ? 'right' : 'left', fontFamily: 'Almarai_400Regular' }]}>
                     {slide.hint}
                   </Text>
                 </View>
@@ -675,13 +675,13 @@ export default function PresentationScreen() {
                 style={[styles.revealBtn, { borderColor: TIMER_GREEN + '60', backgroundColor: TIMER_GREEN + '12', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
               >
                 <Ionicons name="checkmark-circle-outline" size={16} color={TIMER_GREEN} />
-                <Text style={[styles.revealBtnText, { color: TIMER_GREEN, fontFamily: 'Inter_600SemiBold' }]}>
+                <Text style={[styles.revealBtnText, { color: TIMER_GREEN, fontFamily: 'Cairo_600SemiBold' }]}>
                   {answerVisible ? t('hideAnswer') : t('revealAnswer')}
                 </Text>
               </Pressable>
               {answerVisible && (
                 <View style={[styles.revealContent, { borderColor: TIMER_GREEN + '40', backgroundColor: TIMER_GREEN + '10' }]}>
-                  <Text style={[styles.revealText, { textAlign: isRTL ? 'right' : 'left', fontFamily: 'Inter_700Bold' }]}>
+                  <Text style={[styles.revealText, { textAlign: isRTL ? 'right' : 'left', fontFamily: 'Cairo_700Bold' }]}>
                     {slide.answer}
                   </Text>
                 </View>
@@ -703,7 +703,7 @@ export default function PresentationScreen() {
           accessibilityLabel={t('prevSlide')}
         >
           <Ionicons name={isRTL ? 'chevron-forward' : 'chevron-back'} size={20} color={TEXT_PRIMARY} />
-          <Text style={[styles.navLabel, { color: TEXT_PRIMARY, fontFamily: 'Inter_500Medium' }]}>
+          <Text style={[styles.navLabel, { color: TEXT_PRIMARY, fontFamily: 'Cairo_500Medium' }]}>
             {t('prevSlide')}
           </Text>
         </Pressable>
@@ -713,13 +713,13 @@ export default function PresentationScreen() {
           {hasTimer && (
             <Pressable onPress={restartTimer} style={styles.actionBtn} hitSlop={8}>
               <Ionicons name="refresh-outline" size={18} color={TEXT_MUTED} />
-              <Text style={[styles.actionLabel, { fontFamily: 'Inter_400Regular' }]}>{t('restartTimer')}</Text>
+              <Text style={[styles.actionLabel, { fontFamily: 'Almarai_400Regular' }]}>{t('restartTimer')}</Text>
             </Pressable>
           )}
           {hasTeacherNotes && (
             <Pressable onPress={() => setTeacherPanelOpen(true)} style={[styles.actionBtn, { borderColor: ACCENT + '50', backgroundColor: ACCENT + '12' }]} hitSlop={8}>
               <Ionicons name="school-outline" size={18} color={ACCENT} />
-              <Text style={[styles.actionLabel, { color: ACCENT, fontFamily: 'Inter_500Medium' }]}>{t('teacherPanelTitle')}</Text>
+              <Text style={[styles.actionLabel, { color: ACCENT, fontFamily: 'Cairo_500Medium' }]}>{t('teacherPanelTitle')}</Text>
             </Pressable>
           )}
         </View>
@@ -739,7 +739,7 @@ export default function PresentationScreen() {
           accessibilityRole="button"
           accessibilityLabel={t('nextSlide')}
         >
-          <Text style={[styles.navLabel, { color: isLast ? TEXT_MUTED : '#fff', fontFamily: 'Inter_700Bold' }]}>
+          <Text style={[styles.navLabel, { color: isLast ? TEXT_MUTED : '#fff', fontFamily: 'Cairo_700Bold' }]}>
             {t('nextSlide')}
           </Text>
           <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color={isLast ? TEXT_MUTED : '#fff'} />
@@ -761,7 +761,7 @@ export default function PresentationScreen() {
         >
           <Animated.View style={[styles.celebrationCard, { transform: [{ scale: celebrationScale }] }]}>
             <Text style={styles.celebrationEmoji}>🎉</Text>
-            <Text style={[styles.celebrationTitle, { fontFamily: 'Inter_700Bold' }]}>
+            <Text style={[styles.celebrationTitle, { fontFamily: 'Cairo_700Bold' }]}>
               {t('activityComplete' as any)}
             </Text>
           </Animated.View>
@@ -877,7 +877,7 @@ const panelStyles = StyleSheet.create({
   headerText: { flex: 1, fontSize: 16, color: TEXT_PRIMARY },
   closeBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   section: { marginBottom: 16 },
-  sectionLabel: { fontSize: 11, color: ACCENT, fontFamily: 'Inter_600SemiBold', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 },
+  sectionLabel: { fontSize: 11, color: ACCENT, fontFamily: 'Cairo_600SemiBold', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 },
   sectionText: { fontSize: 13, color: TEXT_PRIMARY, lineHeight: 20 },
   bulletQ: { fontSize: 13, color: TEXT_PRIMARY, lineHeight: 20, marginBottom: 4 },
 });

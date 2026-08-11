@@ -6,6 +6,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { confirm } from '@/services/confirm';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import {
@@ -67,23 +68,18 @@ export default function WorkspaceScreen() {
     reload();
   };
 
-  const handleDelete = (item: SavedMaterial) => {
-    Alert.alert(
-      t('deleteConfirmTitle'),
-      t('deleteConfirmMsg'),
-      [
-        { text: t('cancel'), style: 'cancel' },
-        {
-          text: t('deleteItem'),
-          style: 'destructive',
-          onPress: async () => {
-            await deleteItem(item.id);
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-            reload();
-          },
-        },
-      ],
-    );
+  const handleDelete = async (item: SavedMaterial) => {
+    const ok = await confirm({
+      title: t('deleteConfirmTitle'),
+      message: t('deleteConfirmMsg'),
+      confirmLabel: t('deleteItem'),
+      cancelLabel: t('cancel'),
+      destructive: true,
+    });
+    if (!ok) return;
+    await deleteItem(item.id);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    reload();
   };
 
   const handleDuplicate = async (id: string) => {
@@ -122,7 +118,7 @@ export default function WorkspaceScreen() {
         {
           text: t('deleteItem'),
           style: 'destructive',
-          onPress: () => handleDelete(item),
+          onPress: () => { void handleDelete(item); },
         },
         { text: t('cancel'), style: 'cancel' },
       ],
@@ -173,22 +169,22 @@ export default function WorkspaceScreen() {
         {/* Body */}
         <View style={{ flex: 1 }}>
           <Text
-            style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'Inter_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}
+            style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}
             numberOfLines={2}
           >
             {item.title}
           </Text>
           <View style={[styles.cardMeta, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <View style={[styles.typePill, { backgroundColor: color + '18', borderRadius: 8 }]}>
-              <Text style={[styles.typeText, { color, fontFamily: 'Inter_500Medium' }]}>
+              <Text style={[styles.typeText, { color, fontFamily: 'Cairo_500Medium' }]}>
                 {typeLabel(item.type)}
               </Text>
             </View>
-            <Text style={[styles.metaText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
+            <Text style={[styles.metaText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
               {item.grade}
             </Text>
           </View>
-          <Text style={[styles.metaText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left', marginTop: 2 }]}>
+          <Text style={[styles.metaText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left', marginTop: 2 }]}>
             {t('savedAt')} {formatDate(item.savedAt)}
           </Text>
         </View>
@@ -230,10 +226,10 @@ export default function WorkspaceScreen() {
         >
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
         </Pressable>
-        <Text style={[styles.headerTitle, { color: colors.foreground, fontFamily: 'Inter_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.headerTitle, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('myWorkspace')}
         </Text>
-        <Text style={[styles.headerSub, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.headerSub, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('workspaceSubtitle')}
         </Text>
 
@@ -241,7 +237,7 @@ export default function WorkspaceScreen() {
         <View style={[styles.searchRow, { backgroundColor: colors.muted, borderRadius: 12, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <Ionicons name="search-outline" size={16} color={colors.mutedForeground} />
           <TextInput
-            style={[styles.searchInput, { color: colors.foreground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}
+            style={[styles.searchInput, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}
             placeholder={t('searchWorkspace')}
             placeholderTextColor={colors.mutedForeground}
             value={query}
@@ -275,7 +271,7 @@ export default function WorkspaceScreen() {
                 styles.tabText,
                 {
                   color: activeTab === tab.key ? colors.primary : colors.mutedForeground,
-                  fontFamily: activeTab === tab.key ? 'Inter_600SemiBold' : 'Inter_400Regular',
+                  fontFamily: activeTab === tab.key ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
                 },
               ]}>
                 {t(tab.labelKey as any)}
@@ -299,11 +295,11 @@ export default function WorkspaceScreen() {
           ]}
         >
           <Ionicons name={favoritesOnly ? 'star' : 'star-outline'} size={14} color={favoritesOnly ? '#F59E0B' : colors.mutedForeground} />
-          <Text style={[styles.filterText, { color: favoritesOnly ? '#F59E0B' : colors.mutedForeground, fontFamily: 'Inter_500Medium' }]}>
+          <Text style={[styles.filterText, { color: favoritesOnly ? '#F59E0B' : colors.mutedForeground, fontFamily: 'Cairo_500Medium' }]}>
             {t('favoritesFilter')}
           </Text>
         </Pressable>
-        <Text style={[styles.countText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
+        <Text style={[styles.countText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
           {filtered.length} {lang === 'ar' ? 'مادة' : filtered.length === 1 ? 'item' : 'items'}
         </Text>
       </View>
@@ -320,17 +316,17 @@ export default function WorkspaceScreen() {
         ListEmptyComponent={
           <View style={styles.empty}>
             <Ionicons name="folder-open-outline" size={64} color={colors.mutedForeground} style={{ opacity: 0.4 }} />
-            <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'Inter_600SemiBold', textAlign: 'center' }]}>
+            <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: 'center' }]}>
               {t('noSavedItems')}
             </Text>
-            <Text style={[styles.emptyDesc, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', textAlign: 'center' }]}>
+            <Text style={[styles.emptyDesc, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
               {t('noSavedItemsDesc')}
             </Text>
             <Pressable
               onPress={() => router.push('/(tabs)/ai-tools')}
               style={[styles.emptyBtn, { backgroundColor: colors.primary, borderRadius: colors.radius }]}
             >
-              <Text style={[{ color: colors.primaryForeground, fontFamily: 'Inter_600SemiBold', fontSize: 14 }]}>
+              <Text style={[{ color: colors.primaryForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }]}>
                 {t('aiTools')}
               </Text>
             </Pressable>

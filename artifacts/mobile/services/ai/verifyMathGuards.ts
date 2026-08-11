@@ -6,9 +6,73 @@
  * something no verifier proved, so both gates fail closed.
  */
 
+/** Topics the verifier can prove today. */
+export type VerifiableTopic =
+  | 'derivative_polynomial'
+  | 'equation_linear'
+  | 'equation_quadratic'
+  | 'equation_exponential';
+
 /** True when the text looks like a derivative question the verifier supports. */
 export function isDerivativeQuestion(text: string): boolean {
   return /مشتق|اشتقاق|derivative|d\/dx|f\s*'\s*\(/i.test(text);
+}
+
+const MATH_SAFE = /^[0-9a-zA-Z+\-*/^(). =]+$/;
+
+/**
+ * Pull a single-unknown equation out of question text, e.g.
+ * "ما ناتج / حل: 2x + 5 = 17؟" → "2x+5=17".
+ *
+ * Returns null for systems (the bank joins two equations with '،'), for
+ * anything with more or fewer than one '=', and for non-Latin content —
+ * all cases the set-comparison verifier cannot judge.
+ */
+export function latinEquationFrom(text: string): string | null {
+  const normalised = text
+    .replace(/²/g, '^2')
+    .replace(/³/g, '^3')
+    .replace(/[−–—]/g, '-')
+    .replace(/×/g, '*');
+  // A comma (Arabic or Latin) means two equations — a system, not our case.
+  if (/[،,]/.test(normalised)) return null;
+
+  // Longest run of math-safe characters containing exactly one '='.
+  const candidates = normalised.match(/[0-9a-zA-Z+\-*/^(). ]*=[0-9a-zA-Z+\-*/^(). ]*/g) ?? [];
+  for (const raw of candidates) {
+    const body = raw.trim();
+    if (!body || !MATH_SAFE.test(body)) continue;
+    if ((body.match(/=/g) ?? []).length !== 1) continue;
+    const [lhs, rhs] = body.split('=').map(s => s.trim());
+    if (!lhs || !rhs) continue;
+    // Needs an unknown on one side, and both sides must be real content.
+    if (!/[a-zA-Z]/.test(lhs) && !/[a-zA-Z]/.test(rhs)) continue;
+    return body.replace(/\s+/g, '');
+  }
+  return null;
+}
+
+/**
+ * Decide which verifier topic (if any) a question belongs to.
+ * Returns null when nothing can be honestly claimed.
+ */
+export function classifyVerifiableTopic(
+  text: string,
+): { topic: VerifiableTopic; payload: string } | null {
+  if (isDerivativeQuestion(text)) {
+    const expr = latinExpressionFrom(text);
+    return expr ? { topic: 'derivative_polynomial', payload: expr } : null;
+  }
+  const equation = latinEquationFrom(text);
+  if (!equation) return null;
+  // A digit or symbol raised to the unknown, e.g. 2^n = 16.
+  if (/[0-9a-zA-Z]\^[a-zA-Z]/.test(equation)) {
+    return { topic: 'equation_exponential', payload: equation };
+  }
+  if (/\^\s*2|\^\s*3/.test(equation)) {
+    return { topic: 'equation_quadratic', payload: equation };
+  }
+  return { topic: 'equation_linear', payload: equation };
 }
 
 /**

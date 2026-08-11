@@ -7,12 +7,13 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
-import { buildGeneratorContext } from '@/services/kbContext';
+import { buildGeneratorContext, resolveGeneratorGrounding } from '@/services/kbContext';
 import { ActivityOutput, ActivityStep } from '@/services/ai/AIService';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
 } from '@/services/curriculumData';
 import { TopicSelector } from '@/components/ui/TopicSelector';
+import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { Button } from '@/components/ui/Button';
 import { getItem, saveItem, updateItem } from '@/services/workspace';
 import { ExportMenu } from '@/components/ui/ExportMenu';
@@ -62,6 +63,9 @@ export default function ActivityScreen() {
   const [objective, setObjective] = useState(params.objective ?? '');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ActivityOutput | null>(null);
+  /** Whether the output was anchored to a curriculum lesson, and which one. */
+  const [curriculumGrounded, setCurriculumGrounded] = useState<boolean | null>(null);
+  const [groundedLesson, setGroundedLesson] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [savedId, setSavedId] = useState<string | undefined>(params.savedId);
   const [saveLabel, setSaveLabel] = useState<'save' | 'saved' | 'updated'>('save');
@@ -104,6 +108,11 @@ export default function ActivityScreen() {
     setError(''); setLoading(true); setResult(null); setSaveLabel('save');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
+      const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en');
+      setCurriculumGrounded(grounding.grounded);
+      setGroundedLesson(
+        grounding.lesson ? (lang === 'ar' ? grounding.lesson.titleAr : grounding.lesson.titleEn) : null,
+      );
       const additionalContext = buildGeneratorContext(topic.trim(), lang as 'ar' | 'en') || undefined;
       const out = await aiService.generateActivity({
         grade: grades[gradeIdx].name,
@@ -244,10 +253,10 @@ export default function ActivityScreen() {
         </Pressable>
         <View style={[styles.headerBadge, { flexDirection: isRTL ? 'row-reverse' : 'row', alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
           <Ionicons name="flash" size={14} color="#fff" />
-          <Text style={[styles.headerBadgeText, { color: '#fff', fontFamily: 'Inter_500Medium' }]}>{t('activityBadge')}</Text>
+          <Text style={[styles.headerBadgeText, { color: '#fff', fontFamily: 'Cairo_500Medium' }]}>{t('activityBadge')}</Text>
         </View>
         <DemoModeBanner onDark isRTL={isRTL} />
-        <Text style={[styles.headerTitle, { color: '#fff', fontFamily: 'Inter_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.headerTitle, { color: '#fff', fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('createActivityTitle')}
         </Text>
       </View>
@@ -273,12 +282,12 @@ export default function ActivityScreen() {
         <PickerField label={t('activityTypeLabel')} value={activityTypeLabels[activityTypeIdx]} options={activityTypeLabels} onChange={setActivityTypeIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
         <PickerField label={t('durationLabel')} value={durationLabels[durationIdx]} options={durationLabels} onChange={setDurationIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
 
-        <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('activityObjectiveLabel')}
         </Text>
         <View style={[styles.inputBox, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
           <TextInput
-            style={[styles.textInput, { color: colors.foreground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left', minHeight: 60 }]}
+            style={[styles.textInput, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left', minHeight: 60 }]}
             placeholder={t('activityObjectivePlaceholder')}
             placeholderTextColor={colors.mutedForeground}
             value={objective}
@@ -287,7 +296,7 @@ export default function ActivityScreen() {
           />
         </View>
 
-        {error ? <Text style={[{ color: colors.destructive, fontFamily: 'Inter_400Regular', fontSize: 13, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
+        {error ? <Text style={[{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
         <Button
           label={loading ? t('generatingActivity') : t('generateActivityBtn')}
           onPress={generate}
@@ -301,13 +310,31 @@ export default function ActivityScreen() {
       {loading && (
         <View style={[styles.loadingBox, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, marginHorizontal: 20, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <ActivityIndicator color={ACCENT} />
-          <Text style={[styles.loadingText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
+          <Text style={[styles.loadingText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
             {t('craftingActivity')}
           </Text>
         </View>
       )}
 
       {/* Result */}
+      {/* What the material is anchored to. Shown both ways: a teacher needs to
+          know it IS tied to the lesson as much as when it isn't. */}
+      {result && curriculumGrounded !== null && (
+        <View style={{ marginHorizontal: 20 }}>
+          <GroundingNotice
+            grounded={curriculumGrounded}
+            lessonTitle={groundedLesson}
+            isRTL={isRTL}
+            colors={colors}
+            labels={{
+              grounded: (l: string) => t('groundedInCurriculum', l),
+              generic: t('notGroundedTitle'),
+              genericHint: t('notGroundedHint'),
+            }}
+          />
+        </View>
+      )}
+
       {result && <ActivityResult activity={result} colors={colors} isRTL={isRTL} t={t} lang={lang} />}
 
       {result && !loading && (
@@ -330,7 +357,7 @@ export default function ActivityScreen() {
               size={16}
               color={(saveLabel === 'saved' || saveLabel === 'updated') ? '#fff' : ACCENT}
             />
-            <Text style={[styles.saveBtnText, { color: (saveLabel === 'saved' || saveLabel === 'updated') ? '#fff' : ACCENT, fontFamily: 'Inter_600SemiBold' }]}>
+            <Text style={[styles.saveBtnText, { color: (saveLabel === 'saved' || saveLabel === 'updated') ? '#fff' : ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>
               {saveBtnLabel}
             </Text>
           </Pressable>
@@ -339,14 +366,14 @@ export default function ActivityScreen() {
             style={[styles.regenBtn, { borderColor: colors.mutedForeground, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="share-outline" size={16} color={colors.mutedForeground} />
-            <Text style={[styles.regenText, { color: colors.mutedForeground, fontFamily: 'Inter_600SemiBold' }]}>{t('exportBtn')}</Text>
+            <Text style={[styles.regenText, { color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }]}>{t('exportBtn')}</Text>
           </Pressable>
           <Pressable
             onPress={generate}
             style={[styles.regenBtn, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
             <Ionicons name="refresh-outline" size={16} color={ACCENT} />
-            <Text style={[styles.regenText, { color: ACCENT, fontFamily: 'Inter_600SemiBold' }]}>{t('regenerateBtn')}</Text>
+            <Text style={[styles.regenText, { color: ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>{t('regenerateBtn')}</Text>
           </Pressable>
         </View>
       )}
@@ -384,7 +411,7 @@ function ActivityResult({ activity, colors, isRTL, t, lang }: {
       {/* Success banner */}
       <View style={[styles.resultHeader, { backgroundColor: ACCENT_LOCAL + '15', borderColor: ACCENT_LOCAL + '30', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <Ionicons name="checkmark-circle" size={20} color={ACCENT_LOCAL} />
-        <Text style={[styles.resultHeaderText, { color: ACCENT_LOCAL, fontFamily: 'Inter_600SemiBold' }]}>
+        <Text style={[styles.resultHeaderText, { color: ACCENT_LOCAL, fontFamily: 'Cairo_600SemiBold' }]}>
           {t('activityReady')}
         </Text>
       </View>
@@ -398,10 +425,10 @@ function ActivityResult({ activity, colors, isRTL, t, lang }: {
 
       {/* Objective */}
       <View style={[styles.objectiveBox, { backgroundColor: ACCENT_LOCAL + '10', borderColor: ACCENT_LOCAL + '30', borderRadius: colors.radius }]}>
-        <Text style={[{ color: colors.mutedForeground, fontFamily: 'Inter_500Medium', fontSize: 11, marginBottom: 4, textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 11, marginBottom: 4, textAlign: isRTL ? 'right' : 'left' }]}>
           {lang === 'ar' ? 'الهدف' : 'Objective'}
         </Text>
-        <Text style={[{ color: colors.foreground, fontFamily: 'Inter_400Regular', fontSize: 13, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }]}>
           {activity.objective}
         </Text>
       </View>
@@ -415,7 +442,7 @@ function ActivityResult({ activity, colors, isRTL, t, lang }: {
       <View style={{ marginBottom: 16 }}>
         <View style={[styles.resultSectionHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <Ionicons name="list-outline" size={15} color={ACCENT_LOCAL} />
-          <Text style={[styles.resultSectionTitle, { color: colors.foreground, fontFamily: 'Inter_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[styles.resultSectionTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
             {t('sectionActivitySteps')}
           </Text>
         </View>
@@ -446,7 +473,7 @@ function MetaPill({ icon, label, color }: { icon: keyof typeof Ionicons.glyphMap
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6 }}>
       <Ionicons name={icon} size={13} color={color} />
-      <Text style={{ fontSize: 12, color, fontFamily: 'Inter_500Medium' }}>{label}</Text>
+      <Text style={{ fontSize: 12, color, fontFamily: 'Cairo_500Medium' }}>{label}</Text>
     </View>
   );
 }
@@ -459,16 +486,16 @@ function StepCard({ step, colors, isRTL, t }: {
     <View style={[styles.stepCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
       <View style={[styles.stepHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <View style={[styles.stepNum, { backgroundColor: ACCENT_LOCAL }]}>
-          <Text style={{ color: '#fff', fontSize: 12, fontFamily: 'Inter_700Bold' }}>{step.stepNumber}</Text>
+          <Text style={{ color: '#fff', fontSize: 12, fontFamily: 'Cairo_700Bold' }}>{step.stepNumber}</Text>
         </View>
-        <Text style={[styles.stepTitle, { color: colors.foreground, fontFamily: 'Inter_600SemiBold', flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[styles.stepTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>
           {step.title}
         </Text>
-        <Text style={[styles.stepDur, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
+        <Text style={[styles.stepDur, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
           {step.durationMin} {t('activityMin')}
         </Text>
       </View>
-      <Text style={[styles.stepDesc, { color: colors.foreground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+      <Text style={[styles.stepDesc, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
         {step.description}
       </Text>
     </View>
@@ -484,7 +511,7 @@ function ResultSection({ title, icon, isRTL, children }: {
     <View style={{ marginBottom: 16 }}>
       <View style={[styles.resultSectionHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <Ionicons name={icon} size={15} color={ACCENT_LOCAL} />
-        <Text style={[styles.resultSectionTitle, { color: colors.foreground, fontFamily: 'Inter_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>{title}</Text>
+        <Text style={[styles.resultSectionTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>{title}</Text>
       </View>
       <View style={[styles.resultSectionBody, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
         {children}
@@ -497,13 +524,13 @@ function BulletItem({ text, colors, isRTL }: { text: string; colors: ReturnType<
   return (
     <View style={[styles.bulletRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
       <View style={[styles.bulletDot, { backgroundColor: ACCENT }]} />
-      <Text style={[styles.bulletText, { color: colors.foreground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{text}</Text>
+      <Text style={[styles.bulletText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{text}</Text>
     </View>
   );
 }
 
 function BodyText({ text, colors, isRTL }: { text: string; colors: ReturnType<typeof useColors>; isRTL: boolean }) {
-  return <Text style={[styles.bodyText, { color: colors.foreground, fontFamily: 'Inter_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{text}</Text>;
+  return <Text style={[styles.bodyText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{text}</Text>;
 }
 
 function PickerField({ label, value, options, onChange, colors, isRTL, accent }: {
@@ -513,12 +540,12 @@ function PickerField({ label, value, options, onChange, colors, isRTL, accent }:
   const [open, setOpen] = useState(false);
   return (
     <View style={{ marginBottom: 16 }}>
-      <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Inter_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
+      <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
       <Pressable
         onPress={() => setOpen(o => !o)}
         style={[styles.pickerBtn, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
       >
-        <Text style={[{ color: colors.foreground, fontFamily: 'Inter_400Regular', fontSize: 15, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{value}</Text>
+        <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{value}</Text>
         <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
       </Pressable>
       {open && (
@@ -530,7 +557,7 @@ function PickerField({ label, value, options, onChange, colors, isRTL, accent }:
                 onPress={() => { onChange(i); setOpen(false); }}
                 style={[styles.pickerOption, { borderBottomColor: colors.border, backgroundColor: o === value ? colors.secondary : 'transparent', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
               >
-                <Text style={[{ color: o === value ? accent : colors.foreground, fontFamily: o === value ? 'Inter_500Medium' : 'Inter_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{o}</Text>
+                <Text style={[{ color: o === value ? accent : colors.foreground, fontFamily: o === value ? 'Cairo_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{o}</Text>
                 {o === value && <Ionicons name="checkmark" size={16} color={accent} />}
               </Pressable>
             ))}

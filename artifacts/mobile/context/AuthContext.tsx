@@ -10,6 +10,7 @@ import {
 } from '@/services/apiClient';
 import { setActiveLessonContextUser } from '@/services/lessonContext';
 import { setActiveMediaUser } from '@/services/lessonMedia';
+import { warmUpVerifier } from '@/services/ai/verifyMath';
 
 export type UserRole = 'teacher' | 'school_admin' | 'system_admin';
 
@@ -91,6 +92,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setActiveLessonContextUser(user?.id ?? null);
     setActiveMediaUser(user?.id ?? null);
+    // Signed in → the teacher will likely generate materials shortly. Wake
+    // the sleeping verifier now so the symbolic badge is available when they
+    // do, instead of silently degrading to the bank label. The route needs a
+    // token, so this cannot run any earlier than here.
+    if (user?.id) warmUpVerifier();
   }, [user?.id]);
 
   // Register redirect callback so token-refresh failures can navigate to login
