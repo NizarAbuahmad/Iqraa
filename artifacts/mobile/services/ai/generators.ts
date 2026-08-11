@@ -19,7 +19,7 @@ import {
   takeConcreteMathBatch,
   type DiffTier,
 } from './mathPractice.ts';
-import { isDerivativeQuestion } from './verifyMathGuards.ts';
+import { classifyVerifiableTopic } from './verifyMathGuards.ts';
 
 /**
  * Symbolic verification, loaded lazily.
@@ -37,7 +37,8 @@ async function verifyIfPossible(
   answer: string,
   distractors: string[],
 ): Promise<VerifyOutcome> {
-  if (!isDerivativeQuestion(question)) return BANK_OUTCOME;
+  // Skip the round trip entirely when nothing could be proven anyway.
+  if (!classifyVerifiableTopic(question)) return BANK_OUTCOME;
   try {
     const mod = await import('./verifyMath.ts');
     return await mod.verifyMathItem(question, answer, distractors);
