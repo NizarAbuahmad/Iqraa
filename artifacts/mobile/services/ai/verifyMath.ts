@@ -12,7 +12,11 @@
  *  • Latin notation only — the verifier rejects Arabic numerals/symbols.
  */
 import { apiFetch } from '../apiClient.ts';
-import { isDerivativeQuestion, latinExpressionFrom } from './verifyMathGuards.ts';
+import {
+  classifyVerifiableTopic,
+  isDerivativeQuestion,
+  latinExpressionFrom,
+} from './verifyMathGuards.ts';
 
 export { isDerivativeQuestion, latinExpressionFrom };
 
@@ -66,9 +70,10 @@ export async function verifyMathItem(
   answer: string,
   distractors: string[] = [],
 ): Promise<VerifyOutcome> {
-  if (!isDerivativeQuestion(question)) return BANK;
-  const expr = latinExpressionFrom(question);
-  if (!expr) return BANK;
+  // Derivatives compare by expression equivalence; equations by solution set.
+  // The topic tells the verifier which check to run.
+  const match = classifyVerifiableTopic(question);
+  if (!match) return BANK;
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), VERIFY_TIMEOUT_MS);
@@ -78,8 +83,9 @@ export async function verifyMathItem(
       // The verifier reads distractors as { value }, not { text } — the wrong
       // key silently skipped distractor checking entirely.
       body: JSON.stringify({
-        question: expr,
+        question: match.payload,
         answer,
+        topic: match.topic,
         distractors: distractors.map(d => ({ value: d })),
       }),
       signal: controller.signal,
