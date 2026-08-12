@@ -464,6 +464,8 @@ const translations = {
     exportWord: 'تصدير Word',
     exportWordSub: 'ملف قابل للتحرير',
     copiedToClipboard: 'نُسخ ✓',
+    iqraCopyMessage: 'نسخ',
+    iqraExportMessage: 'تصدير',
     exportBtn: 'تصدير',
     longPressHint: 'اضغط مطوّلاً للنسخ',
 
@@ -1107,6 +1109,8 @@ const translations = {
     exportWord: 'Export Word',
     exportWordSub: 'Create an editable .docx file',
     copiedToClipboard: 'Copied ✓',
+    iqraCopyMessage: 'Copy',
+    iqraExportMessage: 'Export',
     exportBtn: 'Export',
     longPressHint: 'Long-press to copy message',
 

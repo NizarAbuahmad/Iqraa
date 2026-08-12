@@ -109,6 +109,10 @@ import {
   type LessonSuggestion,
 } from '@/services/lessonCopilot';
 import {
+  formatActivityText,
+  formatLessonPlanText,
+  formatQuizText,
+  formatWorksheetText,
   copyToClipboard,
   exportAsPDF,
   exportAsWord,
@@ -187,6 +191,10 @@ interface Message {
    * `text` stays for export, sharing and anything without a renderer yet.
    */
   artifactData?: ChatArtifactData;
+  /** Conversation around a rendered document — shown instead of the full text. */
+  artifactProse?: string;
+  /** Heading + context, so an edited document exports as edited. */
+  artifactMeta?: { title: string; subject: string; grade: string; duration?: number };
   sources?: KBLesson[];
   /** Topic used for generator navigation — not rendered as chips in the timeline. */
   lessonTopic?: string;
@@ -609,7 +617,8 @@ const prepStyles = StyleSheet.create({
 
 function MessageBubble({
   message, colors, isRTL, onLongPress, onClarifySubject, onPedagogicalClarify, prepProgress,
-  introName, introPitch, introActions, onEditArtifact, t,
+  introName, introPitch, introActions, onEditArtifact, onCopy, onExport,
+  copyLabel, exportLabel, t,
 }: {
   message: Message; colors: any; isRTL: boolean;
   onLongPress?: (text: string) => void;
@@ -624,6 +633,11 @@ function MessageBubble({
   introActions?: React.ReactNode;
   /** Commits a change to this message's structured material. */
   onEditArtifact?: (messageId: string, next: ChatArtifactData) => void;
+  /** Both take the whole message: what is copied is not always what is shown. */
+  onCopy?: (message: Message) => void;
+  onExport?: (message: Message) => void;
+  copyLabel?: string;
+  exportLabel?: string;
   t: (k: any, ...a: any[]) => string;
 }) {
   const isUser = message.role === 'user';
@@ -710,7 +724,10 @@ function MessageBubble({
   const planData =
     message.artifactData?.kind === 'lesson-plan' ? message.artifactData : null;
 
-  const lines = message.text.split('\n');
+  // A rendered document replaces the formatted text it was built from. Showing
+  // both put the whole lesson plan on screen twice — once editable, once as the
+  // wall of separators the exporter produces.
+  const lines = (planData ? (message.artifactProse ?? '') : message.text).split('\n');
 
   return (
     <View style={[styles.rowAssistant, isRTL && styles.rowAssistantRTL]}>
@@ -785,6 +802,37 @@ function MessageBubble({
             {timeLabel}
           </Text>
         </Pressable>
+
+        {onCopy && onExport && message.text.trim().length > 60 ? (
+          <View style={[styles.msgActions, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            <Pressable
+              onPress={() => onCopy(message)}
+              hitSlop={6}
+              style={({ pressed }) => [
+                styles.msgActionBtn,
+                { flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.6 : 1 },
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel={copyLabel}
+            >
+              <Ionicons name="copy-outline" size={13} color={colors.mutedForeground} />
+              <Text style={[styles.msgActionText, { color: colors.mutedForeground }]}>{copyLabel}</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => onExport(message)}
+              hitSlop={6}
+              style={({ pressed }) => [
+                styles.msgActionBtn,
+                { flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.6 : 1 },
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel={exportLabel}
+            >
+              <Ionicons name="share-outline" size={13} color={colors.mutedForeground} />
+              <Text style={[styles.msgActionText, { color: colors.mutedForeground }]}>{exportLabel}</Text>
+            </Pressable>
+          </View>
+        ) : null}
 
         {/* Clarification choices only — these are part of the dialogue turn, not tool launchers */}
         {message.clarificationSubjects && message.clarificationSubjects.length > 0 && (
@@ -918,6 +966,47 @@ export default function IqraScreen() {
    * conversation, not part of the document, and rewriting them from an edited
    * plan would put words in the assistant's mouth it never said.
    */
+  /**
+   * What copy and export actually hand over.
+   *
+   * Not the text on screen: a rendered document shows only the conversation
+   * around it, and an edited one has drifted from the text it was generated
+   * with. Re-serialising from the structured data is the only version that is
+   * both complete and current — exporting `message.text` after an edit would
+   * quietly ship the plan as first written.
+   */
+  const documentTextFor = useCallback((message: Message): string => {
+    const data = message.artifactData;
+    const meta = message.artifactMeta;
+    if (!data || !meta) return message.text;
+    const isAr = lang === 'ar';
+    const m = { subject: meta.subject, grade: meta.grade, duration: meta.duration };
+    switch (data.kind) {
+      case 'lesson-plan':
+        return formatLessonPlanText(data.plan, meta.title, m, isAr);
+      case 'worksheet':
+        return formatWorksheetText(data.worksheet, meta.title, m, isAr);
+      case 'quiz':
+        return formatQuizText(data.quiz, meta.title, m, isAr);
+      case 'activity':
+        return formatActivityText(data.activity, meta.title, m, isAr);
+      default:
+        return message.text;
+    }
+  }, [lang]);
+
+  const handleCopyMessage = useCallback(async (message: Message) => {
+    await copyToClipboard(documentTextFor(message));
+    void Haptics.selectionAsync().catch(() => {});
+    showToast(t('copiedToClipboard'));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [documentTextFor, t]);
+
+  const handleExportMessage = useCallback((message: Message) => {
+    setExportText(documentTextFor(message));
+    setExportVisible(true);
+  }, [documentTextFor]);
+
   const handleEditArtifact = useCallback((messageId: string, next: ChatArtifactData) => {
     setMessages(prev =>
       prev.map(m => (m.id === messageId ? { ...m, artifactData: next } : m)),
@@ -1232,6 +1321,8 @@ export default function IqraScreen() {
 
       let responseText: string;
       let artifactData: ChatArtifactData | undefined;
+      let artifactProse: string | undefined;
+      let artifactMeta: Message['artifactMeta'];
       let outOfScopeSuggestions: { text: string; lessonId: string }[] | undefined;
       let teachingActions: TeachingAction[] | undefined;
       let pedagogicalClarification: ClarificationOption[] | undefined;
@@ -1341,6 +1432,13 @@ export default function IqraScreen() {
           });
           responseText = generated.text;
           artifactData = generated.data;
+          artifactProse = generated.prose;
+          artifactMeta = {
+            title: generated.title,
+            subject: generated.meta.subject,
+            grade: generated.meta.grade,
+            duration: generated.meta.duration,
+          };
           lessonTopic = generated.topic;
           quickTopic = generated.topic;
           teachingActions = undefined;
@@ -1472,6 +1570,8 @@ export default function IqraScreen() {
         role: 'assistant',
         text: responseText,
         artifactData,
+        artifactProse,
+        artifactMeta,
         sources: results,
         lessonTopic,
         quickTopic,
@@ -1866,10 +1966,8 @@ export default function IqraScreen() {
           onStartClass={handleStartClass}
           changeLabel={t('changeLesson')}
           uploadedLabel={(n) => t('lessonUploadedFiles', n)}
-          generatedLabel={t('lessonGeneratedLabel')}
           onChangeLesson={() => setChangeLessonOpen(true)}
           onToggleCollapse={() => setLessonCardCollapsed(c => !c)}
-          onResourcePress={handleResourcePress}
         />
       ) : null}
 
@@ -1930,10 +2028,11 @@ export default function IqraScreen() {
             message={item}
             colors={colors}
             isRTL={isRTL}
-            onLongPress={item.role === 'assistant' ? (text) => {
-              setExportText(text);
-              setExportVisible(true);
-            } : undefined}
+            onLongPress={item.role === 'assistant' ? () => handleExportMessage(item) : undefined}
+            onCopy={item.role === 'assistant' ? handleCopyMessage : undefined}
+            onExport={item.role === 'assistant' ? handleExportMessage : undefined}
+            copyLabel={t('iqraCopyMessage')}
+            exportLabel={t('iqraExportMessage')}
             onClarifySubject={handleClarifySubject}
             onPedagogicalClarify={handlePedagogicalClarify}
             introName={t('iqraAgentName')}
@@ -2218,6 +2317,9 @@ const styles = StyleSheet.create({
   sourceText: { fontSize: 11, marginTop: 6, fontFamily: 'Almarai_400Regular', fontStyle: 'italic' },
   timestamp: { fontSize: 10, marginTop: 6, fontFamily: 'Almarai_400Regular' },
 
+  msgActions: { alignItems: 'center', gap: 14, marginTop: 6, paddingHorizontal: 4 },
+  msgActionBtn: { alignItems: 'center', gap: 4 },
+  msgActionText: { fontSize: 11, fontFamily: 'Cairo_500Medium' },
   suggestionChipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
   suggestionChip: { paddingHorizontal: 11, paddingVertical: 6, borderRadius: 14, borderWidth: 1 },
   suggestionChipText: { fontSize: 12 },

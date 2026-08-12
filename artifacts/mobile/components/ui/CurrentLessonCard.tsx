@@ -3,10 +3,9 @@
  * Collapses after the teacher scrolls the conversation.
  */
 import React from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import type { CurrentLessonView, ResourceChip } from '@/services/lessonCopilot';
-import type { SessionArtifact } from '@/services/ai/teachingAssistant';
+import type { CurrentLessonView } from '@/services/lessonCopilot';
 
 /** Carried over from the home screen's Start Class button. */
 const START_CLASS_COLOR = '#B45309';
@@ -38,10 +37,8 @@ type Props = {
   /** Disables the Start button while its deck is being built. */
   startClassBusy?: boolean;
   uploadedLabel: (n: number) => string;
-  generatedLabel: string;
   onChangeLesson: () => void;
   onToggleCollapse: () => void;
-  onResourcePress: (type: SessionArtifact, done: boolean) => void;
 };
 
 export function CurrentLessonCard({
@@ -55,10 +52,8 @@ export function CurrentLessonCard({
   onStartClass,
   startClassBusy = false,
   uploadedLabel,
-  generatedLabel,
   onChangeLesson,
   onToggleCollapse,
-  onResourcePress,
 }: Props) {
   const align = isRTL ? 'right' : 'left' as const;
   const rowDir = isRTL ? 'row-reverse' : 'row' as const;
@@ -270,59 +265,13 @@ export function CurrentLessonCard({
       ) : null}
 
       {/*
-        One row, not two. This used to render `lesson.resources` twice: a text
-        strip of "✓ / ○ label" above a strip of tappable "emoji label" chips —
-        the same five items, same five words, stacked. The status read as a
-        second, broken set of controls.
-
-        A chip now carries its own state: done is tinted and ticked, pending is
-        quiet and shows what it would make. Same row answers "what exists?" and
-        "make me one".
+        The five resource chips used to live here. Every one of them is now in
+        the composer's "+" menu, next to the message box where the teacher is
+        already working — a second copy in the lesson card was one more row of
+        buttons above a conversation, offering nothing the menu does not. The
+        prep state they carried survives as the done/total pill on the
+        collapsed row.
       */}
-      <Text style={[styles.generatedLabel, { color: colors.mutedForeground, textAlign: align }]}>
-        {generatedLabel}
-      </Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={[styles.resourceStrip, { flexDirection: rowDir }]}
-      >
-        {lesson.resources.map((r: ResourceChip) => (
-          <Pressable
-            key={r.type}
-            onPress={() => onResourcePress(r.type, r.done)}
-            accessibilityRole="button"
-            accessibilityState={{ selected: r.done }}
-            accessibilityLabel={`${lang === 'ar' ? r.labelAr : r.labelEn}${
-              r.done ? (lang === 'ar' ? ' — جاهز' : ' — ready') : ''
-            }`}
-            style={({ pressed }) => [
-              styles.resourceChip,
-              {
-                flexDirection: rowDir,
-                borderColor: r.done ? colors.primary + '66' : colors.border,
-                backgroundColor: r.done ? colors.primary + '14' : colors.muted,
-                opacity: pressed ? 0.85 : 1,
-              },
-            ]}
-          >
-            {r.done ? (
-              <Ionicons name="checkmark-circle" size={14} color={colors.primary} />
-            ) : (
-              <Text style={styles.resourceEmoji}>{r.emoji}</Text>
-            )}
-            <Text
-              style={{
-                fontFamily: r.done ? 'Cairo_600SemiBold' : 'Cairo_500Medium',
-                fontSize: 12,
-                color: r.done ? colors.primary : colors.foreground,
-              }}
-            >
-              {lang === 'ar' ? r.labelAr : r.labelEn}
-            </Text>
-          </Pressable>
-        ))}
-      </ScrollView>
      </View>
     </View>
   );
@@ -428,24 +377,5 @@ const styles = StyleSheet.create({
   changeBtnText: {
     fontFamily: 'Cairo_600SemiBold',
     fontSize: 12,
-  },
-  generatedLabel: {
-    fontFamily: 'Cairo_500Medium',
-    fontSize: 11,
-    marginTop: 2,
-  },
-  resourceStrip: {
-    gap: 8,
-    paddingTop: 4,
-    paddingBottom: 2,
-  },
-  resourceEmoji: { fontSize: 13 },
-  resourceChip: {
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 16,
-    borderWidth: 1,
   },
 });
