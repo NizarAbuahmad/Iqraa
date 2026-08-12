@@ -1,0 +1,81 @@
+# What this is for
+#
+# The repo had no checks at all: pull requests merged with zero signal, and
+# `main` is the only branch that deploys. Two things this catches that already
+# went wrong once each — a branch based on a stale `main` silently reverting
+# work, and the api-server suite passing or failing against a `dist/` bundle
+# built from different source than the one under review.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A new push supersedes the run in flight for the same ref.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  workspace:
+    name: typecheck + tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      # Same Node and pnpm the Render build uses, so a green CI means the
+      # deploy has already been exercised on these versions.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.18.0 --activate
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # Covers lib/* project references plus every artifact's own typecheck.
+      - name: Typecheck
+        run: pnpm run typecheck
+
+      # MUST run before the api-server tests. Its mount-order suite boots
+      # dist/index.mjs rather than the source, and `pnpm test` does not build.
+      # Without this step the suite either skips (no bundle) or — worse —
+      # reports on a stale one, which is exactly how a fixed bug appeared to
+      # still be failing.
+      - name: Build api-server
+        run: pnpm --filter @workspace/api-server run build
+
+      - name: Test api-server
+        run: pnpm --filter @workspace/api-server run test
+
+      - name: Test mobile
+        run: pnpm --filter @workspace/mobile run test
+
+  verifier:
+    name: math verifier
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install sympy
+        working-directory: artifacts/math-verifier
+        run: pip install -r requirements.txt
+
+      # These pin what may claim "تم التحقق من الإجابة رياضيًا" on a classroom
+      # screen. A regression here mislabels wrong answers as verified.
+      - name: Verification regression tests
+        working-directory: artifacts/math-verifier
+        env:
+          PYTHONIOENCODING: utf-8
+        run: python -X utf8 test_equations.py

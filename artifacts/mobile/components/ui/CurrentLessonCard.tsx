@@ -63,18 +63,58 @@ export function CurrentLessonCard({
   const align = isRTL ? 'right' : 'left' as const;
   const rowDir = isRTL ? 'row-reverse' : 'row' as const;
 
+  const doneCount = lesson.resources.filter(r => r.done).length;
+  const totalCount = lesson.resources.length;
+
   if (collapsed) {
-    // Change CTA first in row-reverse → sits on the start edge (right in RTL)
-    const changeCompact = (
+    /*
+      This is the default state, so it has to carry the whole job of the card in
+      one line: which lesson is live, how much of it is prepared, and the one
+      action a teacher takes standing in front of a class. Expanded, the card ran
+      to roughly a third of a phone screen — breadcrumb, two full-width buttons,
+      a label and a five-chip strip — all of it above the conversation the screen
+      exists for. Everything still there on tap; none of it in the way.
+
+      Start Class leads in row-reverse, so it lands on the start edge (right in
+      Arabic). Change Lesson is one tap further in, inside the expanded card:
+      switching lessons is a between-classes act, starting one is not.
+    */
+    const lead = onStartClass && startClassLabel ? (
+      <Pressable
+        onPress={onStartClass}
+        disabled={startClassBusy}
+        hitSlop={6}
+        style={({ pressed }) => [
+          styles.startCompact,
+          {
+            backgroundColor: START_CLASS_COLOR,
+            opacity: startClassBusy ? 0.6 : pressed ? 0.88 : 1,
+            flexDirection: rowDir,
+          },
+        ]}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: startClassBusy, busy: startClassBusy }}
+        accessibilityLabel={startClassLabel}
+      >
+        {startClassBusy ? (
+          <ActivityIndicator size="small" color={colors.primaryForeground || '#fff'} />
+        ) : (
+          <Ionicons name="tv-outline" size={13} color={colors.primaryForeground || '#fff'} />
+        )}
+        <Text
+          numberOfLines={1}
+          style={[styles.startCompactText, { color: colors.primaryForeground || '#fff' }]}
+        >
+          {startClassLabel}
+        </Text>
+      </Pressable>
+    ) : (
       <Pressable
         onPress={onChangeLesson}
         hitSlop={8}
         style={({ pressed }) => [
           styles.changeBtnCompact,
-          {
-            backgroundColor: colors.primary,
-            opacity: pressed ? 0.88 : 1,
-          },
+          { backgroundColor: colors.primary, opacity: pressed ? 0.88 : 1 },
         ]}
         accessibilityRole="button"
         accessibilityLabel={changeLabel}
@@ -82,34 +122,53 @@ export function CurrentLessonCard({
         <Ionicons name="swap-horizontal" size={13} color={colors.primaryForeground || '#fff'} />
       </Pressable>
     );
-    const main = (
-      <Pressable
-        onPress={onToggleCollapse}
-        style={[styles.collapsedMain, { flexDirection: rowDir, flex: 1 }]}
-      >
-        <Text style={{ fontSize: 14 }}>🇯🇴</Text>
-        <Text
-          numberOfLines={1}
-          style={[styles.collapsedTitle, { color: colors.foreground, textAlign: align, flex: 1 }]}
-        >
-          {lesson.unitLesson}
-        </Text>
-        <Ionicons name="chevron-down" size={16} color={colors.mutedForeground} />
-      </Pressable>
-    );
+
     return (
       <View
         style={[
           styles.collapsed,
-          {
-            backgroundColor: colors.card,
-            borderBottomColor: colors.border,
-            flexDirection: rowDir,
-          },
+          { backgroundColor: colors.card, borderBottomColor: colors.border },
         ]}
       >
-        {changeCompact}
-        {main}
+        <View style={[styles.inner, styles.collapsedInner, { flexDirection: rowDir }]}>
+          {lead}
+          <Pressable
+            onPress={onToggleCollapse}
+            style={[styles.collapsedMain, { flexDirection: rowDir, flex: 1 }]}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: false }}
+            accessibilityLabel={lesson.unitLesson}
+          >
+            <Text style={{ fontSize: 14 }}>🇯🇴</Text>
+            <Text
+              numberOfLines={1}
+              style={[styles.collapsedTitle, { color: colors.foreground, textAlign: align, flex: 1 }]}
+            >
+              {lesson.unitLesson}
+            </Text>
+            {/* Says there is more under the fold, and how much of it is done. */}
+            {totalCount > 0 ? (
+              <View
+                style={[
+                  styles.countPill,
+                  {
+                    backgroundColor: doneCount > 0 ? colors.primary + '18' : colors.muted,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.countPillText,
+                    { color: doneCount > 0 ? colors.primary : colors.mutedForeground },
+                  ]}
+                >
+                  {doneCount}/{totalCount}
+                </Text>
+              </View>
+            ) : null}
+            <Ionicons name="chevron-down" size={16} color={colors.mutedForeground} />
+          </Pressable>
+        </View>
       </View>
     );
   }
@@ -181,7 +240,9 @@ export function CurrentLessonCard({
                 backgroundColor: colors.primary,
                 opacity: pressed ? 0.88 : 1,
                 flexDirection: rowDir,
-                flex: 1,
+                // Sized to its label, not stretched: sharing the row equally
+                // with Start Class clipped this to "تغيير الدر…" on a phone.
+                flexShrink: 0,
               },
             ]}
             accessibilityRole="button"
@@ -282,12 +343,38 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 14,
     paddingVertical: 8,
+  },
+  collapsedInner: {
     alignItems: 'center',
     gap: 8,
   },
   collapsedMain: {
     alignItems: 'center',
     gap: 8,
+  },
+  startCompact: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    flexShrink: 0,
+    maxWidth: 132,
+  },
+  startCompactText: {
+    fontFamily: 'Cairo_600SemiBold',
+    fontSize: 12,
+  },
+  countPill: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 9,
+    flexShrink: 0,
+  },
+  countPillText: {
+    fontFamily: 'Cairo_600SemiBold',
+    fontSize: 11,
   },
   collapsedTitle: {
     fontFamily: 'Cairo_600SemiBold',

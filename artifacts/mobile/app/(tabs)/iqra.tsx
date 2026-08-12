@@ -74,13 +74,25 @@ import { CHAT_MAX_WIDTH } from '@/constants/layout';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
 import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
 import { CurrentLessonCard } from '@/components/ui/CurrentLessonCard';
-import { DocumentAttachButtons, DocumentAttachmentBar } from '@/components/ui/DocumentAttachmentBar';
+import { DocumentAttachmentBar } from '@/components/ui/DocumentAttachmentBar';
 import { DOCUMENT_UPLOAD_ENABLED } from '@/services/features';
 import { ExportMenu } from '@/components/ui/ExportMenu';
+import { ComposerToolsMenu, type MenuAction, type MenuSection } from '@/components/ui/ComposerToolsMenu';
 import {
+  AFTER_CLASS,
+  BEFORE_CLASS,
+  DURING_CLASS,
+  MORE_TOOLS,
+  type ToolDef,
+} from '@/services/toolCatalog';
+import { openGeogebraGraphing } from '@/services/geogebra';
+import {
+  addAndProcessFiles,
   clearSessionDocuments,
   getDocumentContextBundle,
   getSessionDocuments,
+  pickTeachingDocuments,
+  pickTeachingImages,
   primaryTopicFromDocuments,
   subscribeSessionDocuments,
   type SessionDocument,
@@ -865,9 +877,16 @@ export default function IqraScreen() {
   const [ephemeralSuggestions, setEphemeralSuggestions] = useState<EphemeralSuggestion[]>([]);
   /** Status line while the assistant is working (lesson plan vs generic). */
   const [thinkingLabel, setThinkingLabel] = useState('');
-  const [lessonCardCollapsed, setLessonCardCollapsed] = useState(false);
+  /**
+   * Collapsed by default. Expanded, the lesson card ran to about a third of a
+   * phone screen above a conversation that had not started — the same weight
+   * the header just shed. One line states the lesson and its prep count; the
+   * breadcrumb, Change Lesson and the resource chips are one tap away.
+   */
+  const [lessonCardCollapsed, setLessonCardCollapsed] = useState(true);
   const [startingClass, setStartingClass] = useState(false);
   const [changeLessonOpen, setChangeLessonOpen] = useState(false);
+  const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
   const [exportText, setExportText] = useState('');
   const [exportVisible, setExportVisible] = useState(false);
   const [loadingPDF, setLoadingPDF] = useState(false);
@@ -910,7 +929,7 @@ export default function IqraScreen() {
     setSessionMemory(seedDefaultLessonMemory(emptyChatSessionMemory()));
     clearSessionDocuments();
     setEphemeralSuggestions([]);
-    setLessonCardCollapsed(false);
+    setLessonCardCollapsed(true);
     setMessages([
       {
         id: 'welcome',
@@ -1610,6 +1629,97 @@ export default function IqraScreen() {
     sendMessage(lang === 'ar' ? prompts[type].ar : prompts[type].en, sessionMemory.activeLessonId ?? undefined);
   }, [lang, sendMessage, sessionMemory]);
 
+  /**
+   * The "+" menu.
+   *
+   * Tools the conversation can carry out itself run here and the result lands in
+   * the thread — that is the whole point of reaching them from the composer.
+   * Anything chat cannot produce (the projector deck, the flow editor, GeoGebra)
+   * still hands off to its own screen, carrying the current lesson with it.
+   */
+  const CHAT_NATIVE_TOOLS: Record<string, SessionArtifact> = {
+    'lesson-plan': 'lesson-plan',
+    worksheet: 'worksheet',
+    quiz: 'quiz',
+    activity: 'activity',
+    homework: 'homework',
+  };
+
+  const toolsMenuSections: MenuSection[] = [
+    { id: 'before', title: t('toolsBeforeClass'), tools: BEFORE_CLASS },
+    { id: 'during', title: t('toolsDuringClass'), tools: DURING_CLASS },
+    { id: 'after', title: t('toolsAfterClass'), tools: AFTER_CLASS },
+    { id: 'more', title: t('toolsMoreTitle'), tools: MORE_TOOLS },
+  ];
+
+  const toolsMenuActions: MenuAction[] = DOCUMENT_UPLOAD_ENABLED
+    ? [
+      {
+        id: 'attach-file',
+        icon: 'document-attach-outline',
+        label: t('chatToolsAttachFile'),
+        onPress: async () => {
+          setToolsMenuOpen(false);
+          const picked = await pickTeachingDocuments();
+          if (picked.length) {
+            await addAndProcessFiles(picked, (name: string) => showToast(t('docRejected', name)));
+          }
+        },
+      },
+      {
+        id: 'attach-image',
+        icon: 'image-outline',
+        label: t('chatToolsAttachImage'),
+        onPress: async () => {
+          setToolsMenuOpen(false);
+          const picked = await pickTeachingImages();
+          if (picked.length) {
+            await addAndProcessFiles(picked, (name: string) => showToast(t('docRejected', name)));
+          }
+        },
+      },
+    ]
+    : [];
+
+  const handleToolSelect = useCallback((tool: ToolDef) => {
+    setToolsMenuOpen(false);
+    void Haptics.selectionAsync().catch(() => {});
+
+    const topic =
+      (lang === 'ar' ? sessionMemory.activeTopicAr : sessionMemory.activeTopicEn) ?? '';
+
+    if (tool.externalAction === 'geogebra-graphing') {
+      void openGeogebraGraphing();
+      return;
+    }
+
+    const artifact = CHAT_NATIVE_TOOLS[tool.id];
+    if (artifact && topic) {
+      // `false` = generate rather than open: the teacher asked for the tool, not
+      // for whatever was made earlier.
+      handleResourcePress(artifact, false);
+      return;
+    }
+
+    if (tool.id === 'simplify' && topic) {
+      sendMessage(
+        lang === 'ar'
+          ? `بسّط شرح هذا الدرس بلغة يفهمها الطلاب: ${topic}`
+          : `Explain this lesson in simple language students understand: ${topic}`,
+        sessionMemory.activeLessonId ?? undefined,
+      );
+      return;
+    }
+
+    if (tool.route) {
+      router.push({
+        pathname: tool.route as any,
+        params: { ...(topic ? { topic } : {}), ...(tool.routeParams ?? {}) },
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [handleResourcePress, lang, sendMessage, sessionMemory]);
+
   const currentLessonView = buildCurrentLessonView(sessionMemory, sessionDocs, lang as 'ar' | 'en');
 
   /**
@@ -1938,9 +2048,25 @@ export default function IqraScreen() {
             isRTL && { flexDirection: 'row-reverse' },
           ]}
         >
-          {DOCUMENT_UPLOAD_ENABLED ? (
-            <DocumentAttachButtons onRejectedFile={(name) => showToast(t('docRejected', name))} />
-          ) : null}
+          {/*
+            One "+" instead of a row of icons. It opens every teaching tool plus
+            the upload actions, so the composer gains the whole catalog without
+            gaining a single pixel of chrome.
+          */}
+          <Pressable
+            onPress={() => {
+              void Haptics.selectionAsync().catch(() => {});
+              setToolsMenuOpen(true);
+            }}
+            style={({ pressed }) => [
+              styles.plusBtn,
+              { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel={t('chatToolsTitle')}
+          >
+            <Ionicons name="add" size={20} color={colors.primary} />
+          </Pressable>
           <TextInput
             style={[
               styles.input,
@@ -1975,6 +2101,22 @@ export default function IqraScreen() {
         </View>
         </View>
       </View>
+      <ComposerToolsMenu
+        visible={toolsMenuOpen}
+        onClose={() => setToolsMenuOpen(false)}
+        colors={colors}
+        isRTL={isRTL}
+        title={t('chatToolsTitle')}
+        contextLabel={
+          currentLessonView?.unitLesson ? t('chatToolsFor', currentLessonView.unitLesson) : undefined
+        }
+        actions={toolsMenuActions}
+        sections={toolsMenuSections}
+        labelFor={(tool) => t(tool.titleKey as any)}
+        descFor={(tool) => t(tool.descKey as any)}
+        badgeFor={(tool) => (tool.badgeKey ? t(tool.badgeKey as any) : null)}
+        onSelectTool={handleToolSelect}
+      />
       <ExportMenu
         visible={exportVisible}
         onClose={() => setExportVisible(false)}
@@ -2088,6 +2230,16 @@ const styles = StyleSheet.create({
   inputBarInner: { width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' },
   inputWrap: { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 14, paddingVertical: 8, gap: 8 },
   input: { flex: 1, fontSize: 14, maxHeight: 100, paddingVertical: 0 },
+  plusBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    marginBottom: 1,
+  },
   sendBtn: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
 });
 
