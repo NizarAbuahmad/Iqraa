@@ -85,6 +85,7 @@ function RootLayoutNav() {
       <Stack.Screen name="classes/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="dev" options={{ headerShown: false }} />
       <Stack.Screen name="settings" options={{ headerShown: false }} />
+      <Stack.Screen name="faq" options={{ headerShown: false }} />
     </Stack>
   );
 }
