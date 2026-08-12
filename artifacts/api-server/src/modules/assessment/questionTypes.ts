@@ -16,12 +16,26 @@
  *                     a fact or a judgement.
  */
 import type { GradingMode, QuestionType } from "@workspace/db";
+import { matchesAny, normalizeArabic } from "./normalize.ts";
 
 export interface QuestionDraft {
   type: QuestionType;
   body: Record<string, unknown>;
   expectedAnswer: Record<string, unknown>;
   rubric?: Record<string, unknown> | null;
+}
+
+/**
+ * The outcome of marking one response.
+ *
+ * `fraction` is of the question's marks, not a mark count: the question owns how
+ * much it is worth, the type module owns how much of it was earned.
+ */
+export interface GradeResult {
+  fraction: number;
+  status: "correct" | "partial" | "incorrect" | "unanswered";
+  /** Why, in a form the review screen can show a teacher. */
+  detail?: string;
 }
 
 export interface TypeModule {
@@ -32,9 +46,28 @@ export interface TypeModule {
   defaultGradingMode: GradingMode;
   /** False when a mock generator cannot honestly produce this type. */
   mockable: boolean;
+  /**
+   * Marks a response — present only where marking is not a judgement call.
+   * Its absence is the signal that a question needs a rubric grader or a
+   * teacher, and callers must treat it as such rather than defaulting to zero.
+   */
+  grade?(q: QuestionDraft, response: Record<string, unknown>): GradeResult;
 }
 
 const str = (v: unknown): string => (typeof v === "string" ? v.trim() : "");
+
+const UNANSWERED: GradeResult = { fraction: 0, status: "unanswered" };
+
+/** Marks earned, with the status the dashboard needs to tell apart 0-of-3 from
+ *  not-attempted: those are different diagnoses and drive different advice. */
+function scored(fraction: number, attempted: boolean, detail?: string): GradeResult {
+  if (!attempted) return UNANSWERED;
+  const f = Math.max(0, Math.min(1, fraction));
+  const status = f >= 1 ? "correct" : f > 0 ? "partial" : "incorrect";
+  return { fraction: f, status, ...(detail ? { detail } : {}) };
+}
+
+const asList = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
 
 const multipleChoice: TypeModule = {
   defaultGradingMode: "deterministic",
@@ -74,6 +107,24 @@ const multipleChoice: TypeModule = {
       })),
     };
   },
+  grade(q, response) {
+    const picked = asList(response["optionIds"]).map(str).filter(Boolean);
+    if (picked.length === 0) return UNANSWERED;
+
+    const correct = new Set(asList(q.expectedAnswer["optionIds"]).map(str));
+    const chosen = new Set(picked);
+
+    if (q.body["multiSelect"] !== true) {
+      return scored(chosen.has([...correct][0] ?? "\u0000") && chosen.size === 1 ? 1 : 0, true);
+    }
+
+    // Multi-select: credit for each correct option, penalty for each wrong one,
+    // floored at zero. Without the penalty, ticking every box scores full marks.
+    const hits = [...chosen].filter(id => correct.has(id)).length;
+    const misses = [...chosen].filter(id => !correct.has(id)).length;
+    const fraction = correct.size === 0 ? 0 : (hits - misses) / correct.size;
+    return scored(fraction, true);
+  },
 };
 
 const trueFalse: TypeModule = {
@@ -90,6 +141,11 @@ const trueFalse: TypeModule = {
   },
   sanitizeForStudent(q) {
     return { statement: q.body["statement"] };
+  },
+  grade(q, response) {
+    const given = response["value"];
+    if (typeof given !== "boolean") return UNANSWERED;
+    return scored(given === q.expectedAnswer["value"] ? 1 : 0, true);
   },
 };
 
@@ -111,6 +167,27 @@ const matching: TypeModule = {
   sanitizeForStudent(q) {
     // Right-hand items are shuffled for delivery; order here is the stored one.
     return { left: q.body["left"], right: q.body["right"] };
+  },
+  grade(q, response) {
+    const given = asList(response["pairs"]);
+    if (given.length === 0) return UNANSWERED;
+
+    const key = new Map<string, string>();
+    for (const p of asList(q.expectedAnswer["pairs"])) {
+      const pair = p as Record<string, unknown>;
+      key.set(str(pair["left"]), str(pair["right"]));
+    }
+    if (key.size === 0) return scored(0, true);
+
+    // Per-pair credit: getting four of five links right is not the same as
+    // getting none, and an all-or-nothing mark would report it as none.
+    let hits = 0;
+    for (const p of given) {
+      const pair = p as Record<string, unknown>;
+      const expected = key.get(str(pair["left"]));
+      if (expected !== undefined && expected === str(pair["right"])) hits++;
+    }
+    return scored(hits / key.size, true);
   },
 };
 
@@ -139,6 +216,20 @@ const fillBlank: TypeModule = {
   },
   sanitizeForStudent(q) {
     return { template: q.body["template"], blanks: q.body["blanks"] };
+  },
+  grade(q, response) {
+    const blanks = asList(q.expectedAnswer["blanks"]);
+    const given = asList(response["blanks"]);
+    if (blanks.length === 0) return scored(0, given.length > 0);
+    if (given.every(v => !normalizeArabic(v))) return UNANSWERED;
+
+    let hits = 0;
+    for (let i = 0; i < blanks.length; i++) {
+      const accept = asList((blanks[i] as Record<string, unknown>)?.["accept"]);
+      if (accept.length === 0) continue;
+      if (matchesAny(given[i], accept)) hits++;
+    }
+    return scored(hits / blanks.length, true);
   },
 };
 
