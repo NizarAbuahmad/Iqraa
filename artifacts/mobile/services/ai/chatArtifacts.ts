@@ -38,12 +38,27 @@ export type ChatArtifactData =
   | { kind: 'activity'; activity: ActivityOutput };
 
 export type ChatArtifactResult = {
+  /** The whole material as text — what copy and export hand over. */
   text: string;
+  /**
+   * Just the conversation around the material: the lead-in and the next-step
+   * line. A bubble that renders `data` as a document shows this instead of
+   * `text`, otherwise the plan appears twice — once as an editable document and
+   * again as the formatted wall it was built from.
+   */
+  prose: string;
   artifact: SessionArtifact;
   topic: string;
   lessonId?: string;
   /** Present for the kinds that have a structured renderer. */
   data?: ChatArtifactData;
+  /**
+   * Heading and context the formatters need. Kept so an edited document can be
+   * re-serialised on export; without it, export would ship the version as first
+   * generated and quietly drop the teacher's edits.
+   */
+  title: string;
+  meta: { subject: string; grade: string; duration?: number };
 };
 
 function nextStepLine(artifact: SessionArtifact, isAr: boolean): string {
@@ -152,6 +167,15 @@ export async function generateChatArtifact(opts: {
   const meta = { subject: req.subject, grade: req.grade, duration: req.duration };
   const titleBase = topic.trim();
 
+  const TITLES: Record<SessionArtifact, { ar: string; en: string }> = {
+    'lesson-plan': { ar: 'خطة درس', en: 'Lesson plan' },
+    worksheet: { ar: 'ورقة عمل', en: 'Worksheet' },
+    homework: { ar: 'واجب منزلي', en: 'Homework' },
+    quiz: { ar: 'أداة تقييم', en: 'Short quiz' },
+    activity: { ar: 'نشاط صفي', en: 'Class activity' },
+  };
+  const artifactTitle = `${isAr ? TITLES[artifact].ar : TITLES[artifact].en}: ${titleBase}`;
+
   let body = '';
   let data: ChatArtifactData | undefined;
   switch (artifact) {
@@ -160,7 +184,7 @@ export async function generateChatArtifact(opts: {
       data = { kind: 'lesson-plan', plan: out };
       body = formatLessonPlanText(
         out,
-        isAr ? `خطة درس: ${titleBase}` : `Lesson plan: ${titleBase}`,
+        artifactTitle,
         meta,
         isAr,
       );
@@ -171,7 +195,7 @@ export async function generateChatArtifact(opts: {
       data = { kind: 'worksheet', worksheet: out };
       body = formatWorksheetText(
         out,
-        isAr ? `ورقة عمل: ${titleBase}` : `Worksheet: ${titleBase}`,
+        artifactTitle,
         meta,
         isAr,
       );
@@ -182,7 +206,7 @@ export async function generateChatArtifact(opts: {
       data = { kind: 'worksheet', worksheet: out };
       body = formatWorksheetText(
         out,
-        isAr ? `واجب منزلي: ${titleBase}` : `Homework: ${titleBase}`,
+        artifactTitle,
         meta,
         isAr,
       );
@@ -193,7 +217,7 @@ export async function generateChatArtifact(opts: {
       data = { kind: 'quiz', quiz: out };
       body = formatQuizText(
         out,
-        isAr ? `أداة تقييم: ${titleBase}` : `Short quiz: ${titleBase}`,
+        artifactTitle,
         meta,
         isAr,
       );
@@ -204,7 +228,7 @@ export async function generateChatArtifact(opts: {
       data = { kind: 'activity', activity: out };
       body = formatActivityText(
         out,
-        isAr ? `نشاط صفي: ${titleBase}` : `Class activity: ${titleBase}`,
+        artifactTitle,
         meta,
         isAr,
       );
@@ -214,9 +238,15 @@ export async function generateChatArtifact(opts: {
       body = isAr ? 'تعذر تجهيز هذه المادة.' : 'Could not prepare this material.';
   }
 
-  const text = `${leadIn(titleBase, isAr, fromSoftPin && !fromDocuments, fromDocuments)}${body}\n\n→ ${nextStepLine(artifact, isAr)}`;
+  const lead = leadIn(titleBase, isAr, fromSoftPin && !fromDocuments, fromDocuments);
+  const nextStep = `→ ${nextStepLine(artifact, isAr)}`;
+  const text = `${lead}${body}\n\n${nextStep}`;
+  const prose = `${lead}${nextStep}`;
   return {
     text,
+    prose,
+    title: artifactTitle,
+    meta,
     artifact,
     data,
     topic: titleBase,
