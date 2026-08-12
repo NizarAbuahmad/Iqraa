@@ -44,6 +44,7 @@ const translations = {
     tabHome: 'الرئيسية',
     tabCurriculum: 'المنهج',
     tabIqra: 'اقرأ',
+    tabTools: 'الأدوات',
     tabAlerts: 'التنبيهات',
     tabProfile: 'حسابي',
 
@@ -690,6 +691,9 @@ const translations = {
     noNewStudents: 'لا أسماء جديدة لإضافتها',
     skippedExisting: (names: string) => `موجودون في الصف مسبقًا، لم تُضف: ${names}`,
     rosterNeedsConnection: 'قائمة الطلاب تحتاج اتصالاً بالخادم',
+    rosterStorageUnavailable: 'سجل الصفوف غير مُهيَّأ على الخادم بعد. تواصل مع مسؤول النظام لتفعيله.',
+    rosterCreateFailed: 'تعذّر إنشاء الصف. حاول مرة أخرى.',
+    rosterLoadFailed: 'تعذّر تحميل الصفوف.',
     remove: 'إزالة',
   },
 
@@ -700,6 +704,7 @@ const translations = {
     tabHome: 'Home',
     tabCurriculum: 'Curriculum',
     tabIqra: 'IQRA',
+    tabTools: 'Tools',
     tabAlerts: 'Alerts',
     tabProfile: 'Profile',
 
@@ -1319,6 +1324,9 @@ const translations = {
     noNewStudents: 'No new names to add',
     skippedExisting: (names: string) => `Already in this class, not added: ${names}`,
     rosterNeedsConnection: 'The roster needs a connection to the server',
+    rosterStorageUnavailable: 'Class storage is not set up on the server yet. Ask your administrator to enable it.',
+    rosterCreateFailed: 'Could not create the class. Please try again.',
+    rosterLoadFailed: 'Could not load your classes.',
     remove: 'Remove',
   },
 } as const;

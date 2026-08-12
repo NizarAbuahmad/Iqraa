@@ -97,6 +97,24 @@ function ClassicTabLayout() {
         }}
       />
 
+      {/* ── AI Tools ──────────────────────────────────────── */}
+      <Tabs.Screen
+        name="ai-tools"
+        options={{
+          title: t('tabTools'),
+          tabBarIcon: ({ color, focused }) =>
+            isIOS ? (
+              <SymbolView
+                name={focused ? 'wand.and.stars' : 'wand.and.stars.inverse'}
+                tintColor={color}
+                size={22}
+              />
+            ) : (
+              <Ionicons name={focused ? 'sparkles' : 'sparkles-outline'} size={22} color={color} />
+            ),
+        }}
+      />
+
       {/* ── Notifications ─────────────────────────────────── */}
       <Tabs.Screen
         name="notifications"
@@ -125,14 +143,6 @@ function ClassicTabLayout() {
         }}
       />
 
-      {/* ── AI Tools (hidden from tab bar, still routable) ── */}
-      <Tabs.Screen
-        name="ai-tools"
-        options={{
-          tabBarButton: () => null,
-          tabBarItemStyle: { display: 'none' },
-        }}
-      />
     </Tabs>
   );
 }

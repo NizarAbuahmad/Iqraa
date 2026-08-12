@@ -15,6 +15,15 @@
 # dashboard on first deploy (sync: false below). OPENAI_API_KEY can be a
 # placeholder while the app runs with DEMO_MODE = true — the AI endpoints
 # are not exercised by the demo.
+#
+# SCHEMA IS NOT DEPLOYED. No build step here touches the database — the
+# tables come from `pnpm --filter @workspace/db run push`, run by hand
+# against the Neon DATABASE_URL. Whenever a release adds or changes a
+# table, run that push before or with the deploy, or the endpoints that
+# use the new table answer 503 "storage is not set up on this server"
+# (see failRoster in artifacts/api-server/src/routes/roster.ts). Push is
+# deliberately not wired into buildCommand: drizzle-kit resolves drift by
+# dropping columns, and a deploy is the wrong place to discover that.
 
 services:
   - type: web

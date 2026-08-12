@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   FlatList,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -69,6 +70,7 @@ import {
 import { classifyChatIntent } from '@/services/ai/intentRouter';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 import { IqraaMark } from '@/components/ui/IqraaMark';
+import { CHAT_MAX_WIDTH } from '@/constants/layout';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
 import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
 import { CurrentLessonCard } from '@/components/ui/CurrentLessonCard';
@@ -595,7 +597,7 @@ const prepStyles = StyleSheet.create({
 
 function MessageBubble({
   message, colors, isRTL, onLongPress, onClarifySubject, onPedagogicalClarify, prepProgress,
-  introName, introPitch, onEditArtifact, t,
+  introName, introPitch, introActions, onEditArtifact, t,
 }: {
   message: Message; colors: any; isRTL: boolean;
   onLongPress?: (text: string) => void;
@@ -606,6 +608,8 @@ function MessageBubble({
   /** Assistant identity, shown on the opening turn only. */
   introName?: string;
   introPitch?: string;
+  /** Starting actions, rendered under the pitch on the opening turn only. */
+  introActions?: React.ReactNode;
   /** Commits a change to this message's structured material. */
   onEditArtifact?: (messageId: string, next: ChatArtifactData) => void;
   t: (k: any, ...a: any[]) => string;
@@ -683,6 +687,7 @@ function MessageBubble({
         >
           {introPitch}
         </Text>
+        {introActions}
       </View>
     );
   }
@@ -878,7 +883,14 @@ export default function IqraScreen() {
 
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
 
-  const topPad = insets.top + (insets.top === 0 ? 67 : 0);
+  /** Centred column on desktop web; full-bleed on phones. */
+  const centered = { width: '100%' as const, maxWidth: CHAT_MAX_WIDTH, alignSelf: 'center' as const };
+
+  // Web has no notch and no native header, so the 67pt allowance left a band
+  // of dead space above the logo in the browser.
+  const topPad = insets.top > 0
+    ? insets.top
+    : (Platform.OS === 'web' ? 14 : 67);
 
   /**
    * Persist an edit made to a message's structured material.
@@ -1636,6 +1648,56 @@ export default function IqraScreen() {
   const suggestions = lessonSuggestions.length > 0
     ? []
     : SUGGESTIONS[mode][lang as 'ar' | 'en'];
+  /**
+   * The starting actions, in one place.
+   *
+   * They render inside the intro while the thread is empty and above the
+   * composer once it isn't — the same chips either way, so "حضّر خطة الدرس"
+   * does not become a different affordance halfway through a conversation.
+   */
+  const starterChips = (variant: 'intro' | 'composer') => {
+    const items = lessonSuggestions.length > 0
+      ? lessonSuggestions.map(sug => ({
+        key: sug.id,
+        label: `${sug.emoji} ${lang === 'ar' ? sug.labelAr : sug.labelEn}`,
+        onPress: () => handleLessonSuggestion(sug),
+      }))
+      : suggestions.map((sug, i) => ({
+        key: `s-${i}`,
+        label: sug.text,
+        onPress: () => sendMessage(sug.text, sug.lessonId),
+      }));
+    if (items.length === 0) return null;
+
+    return (
+      <View
+        style={[
+          variant === 'intro' ? styles.introChips : styles.composerChips,
+          { flexDirection: isRTL ? 'row-reverse' : 'row' },
+        ]}
+      >
+        {items.map(item => (
+          <Pressable
+            key={item.key}
+            onPress={item.onPress}
+            style={({ pressed }) => [
+              styles.chip,
+              {
+                backgroundColor: colors.secondary,
+                borderColor: colors.primary + '2E',
+                opacity: pressed ? 0.7 : 1,
+              },
+            ]}
+          >
+            <Text style={[styles.chipText, { color: colors.primary, fontFamily: 'Cairo_500Medium' }]}>
+              {item.label}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+    );
+  };
+
   const livePrepProgress = DEMO_MODE
     ? buildPrepProgressView(sessionMemory, lang as 'ar' | 'en')
     : null;
@@ -1661,60 +1723,24 @@ export default function IqraScreen() {
           },
         ]}
       >
-        <View style={[styles.headerTop, isRTL && { flexDirection: 'row-reverse' }]}>
-          {/* Brand */}
-          <View style={[styles.brandRow, isRTL && { flexDirection: 'row-reverse' }]}>
-            <IqraaMark size={42} tone="brand" />
-            <View>
-              <BrandLogo
-                variant="lockup"
-                style={[styles.headerLockup, isRTL && { alignSelf: 'flex-end' }]}
-              />
-              <Text style={[styles.headerSub, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
-                {t('iqraChatSubtitle')}
-              </Text>
-              <DemoModeBanner isRTL={isRTL} />
-            </View>
-          </View>
-
+        {/*
+          Identity only.
+          The header used to carry the mark, the wordmark, a tagline, the demo
+          label and a scrolling strip of tool chips — five things above a
+          conversation that had not started yet, on a phone where that strip
+          cost a third of the screen. The chips are actions, so they belong
+          where the teacher is acting: in the thread while it is empty, above
+          the composer once it isn't. What is left here is the logo, plus the
+          demo pill, which stays because hiding it would let sample content
+          read as real.
+        */}
+        <View style={[styles.headerTop, centered, isRTL && { flexDirection: 'row-reverse' }]}>
+          <BrandLogo
+            variant="lockup"
+            style={[styles.headerLockup, isRTL && { alignSelf: 'flex-end' }]}
+          />
+          <DemoModeBanner isRTL={isRTL} />
         </View>
-
-        {/* Lesson-aware suggestions (teacher) or fallback starter chips */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={[styles.suggestionsScroll, isRTL && { flexDirection: 'row-reverse' }]}
-        >
-          {lessonSuggestions.length > 0
-            ? lessonSuggestions.map(s => (
-              <Pressable
-                key={s.id}
-                onPress={() => handleLessonSuggestion(s)}
-                style={({ pressed }) => [
-                  styles.chip,
-                  { backgroundColor: colors.secondary, borderRadius: 20, opacity: pressed ? 0.7 : 1 },
-                ]}
-              >
-                <Text style={[styles.chipText, { color: colors.primary, fontFamily: 'Cairo_500Medium' }]}>
-                  {s.emoji} {lang === 'ar' ? s.labelAr : s.labelEn}
-                </Text>
-              </Pressable>
-            ))
-            : suggestions.map((s, i) => (
-              <Pressable
-                key={i}
-                onPress={() => sendMessage(s.text, s.lessonId)}
-                style={({ pressed }) => [
-                  styles.chip,
-                  { backgroundColor: colors.secondary, borderRadius: 20, opacity: pressed ? 0.7 : 1 },
-                ]}
-              >
-                <Text style={[styles.chipText, { color: colors.primary, fontFamily: 'Cairo_500Medium' }]}>
-                  {s.text}
-                </Text>
-              </Pressable>
-            ))}
-        </ScrollView>
       </View>
 
       {/* ─── Current lesson (persistent, collapses on scroll) ───────── */}
@@ -1781,7 +1807,7 @@ export default function IqraScreen() {
         data={messages}
         keyExtractor={m => m.id}
         style={{ flex: 1 }}
-        contentContainerStyle={styles.messageList}
+        contentContainerStyle={[styles.messageList, centered]}
         showsVerticalScrollIndicator={false}
         onScroll={(e) => {
           const y = e.nativeEvent.contentOffset.y;
@@ -1802,6 +1828,11 @@ export default function IqraScreen() {
             onPedagogicalClarify={handlePedagogicalClarify}
             introName={t('iqraAgentName')}
             introPitch={t('iqraAgentPitch')}
+            // Only while the thread is still just the intro — otherwise the
+            // same three chips appear twice on one screen.
+            introActions={
+              item.id === 'welcome' && messages.length <= 1 ? starterChips('intro') : null
+            }
             t={t}
             onEditArtifact={handleEditArtifact}
             prepProgress={
@@ -1824,6 +1855,28 @@ export default function IqraScreen() {
         }
       />
 
+      {/*
+        Standing shortcuts, above the composer.
+        Shown once the intro has scrolled out of the way, and only when the
+        one-shot follow-ups below are not — two chip strips stacked on a phone
+        is the clutter this change set out to remove.
+      */}
+      {ephemeralSuggestions.length === 0 && !isThinking && messages.length > 1 ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{
+            maxHeight: 48,
+            backgroundColor: colors.card,
+            borderTopWidth: StyleSheet.hairlineWidth,
+            borderTopColor: colors.border,
+          }}
+          contentContainerStyle={[styles.docActionsScroll, centered]}
+        >
+          {starterChips('composer')}
+        </ScrollView>
+      ) : null}
+
       {/* ─── Ephemeral input shortcuts (composer only — leave the timeline) ── */}
       {ephemeralSuggestions.length > 0 && !isThinking ? (
         <ScrollView
@@ -1832,6 +1885,7 @@ export default function IqraScreen() {
           style={{ maxHeight: 48, backgroundColor: colors.card, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }}
           contentContainerStyle={[
             styles.docActionsScroll,
+            centered,
             { flexDirection: isRTL ? 'row-reverse' : 'row' },
           ]}
         >
@@ -1867,6 +1921,7 @@ export default function IqraScreen() {
           },
         ]}
       >
+        <View style={centered}>
         {DOCUMENT_UPLOAD_ENABLED ? (
           <DocumentAttachmentBar
             isRTL={isRTL}
@@ -1917,6 +1972,7 @@ export default function IqraScreen() {
               color={input.trim() ? colors.primaryForeground : colors.mutedForeground}
             />
           </Pressable>
+        </View>
         </View>
       </View>
       <ExportMenu
@@ -1976,14 +2032,10 @@ export default function IqraScreen() {
 const CONTENT_MAX_WIDTH = 760;
 
 const styles = StyleSheet.create({
-  header: { borderBottomWidth: 1, paddingBottom: 10 },
-  headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, marginBottom: 10 },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  iqraIcon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  headerLockup: { height: 32, width: 140 },
-  headerSub: { fontSize: 12, marginTop: 1 },
-  suggestionsScroll: { paddingHorizontal: 16, paddingBottom: 4, gap: 8 },
-  chip: { paddingHorizontal: 14, paddingVertical: 7 },
+  header: { borderBottomWidth: StyleSheet.hairlineWidth, paddingBottom: 10 },
+  headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16 },
+  headerLockup: { height: 28, width: 122 },
+  chip: { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
   chipText: { fontSize: 12 },
   docActionsScroll: { paddingHorizontal: 12, paddingVertical: 8, gap: 8 },
   docActionChip: {
@@ -2015,6 +2067,8 @@ const styles = StyleSheet.create({
   intro: { alignItems: 'center', gap: 10, paddingTop: 28, paddingBottom: 12, paddingHorizontal: 24 },
   introName: { fontSize: 22, textAlign: 'center' },
   introPitch: { fontSize: 14, lineHeight: 23, textAlign: 'center', maxWidth: 380 },
+  introChips: { flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginTop: 6 },
+  composerChips: { gap: 8 },
   bubbleAssistant: { padding: 14, borderWidth: 1 },
   bubbleBold: { fontSize: 14, fontFamily: 'Cairo_600SemiBold', marginBottom: 2 },
   bubbleText: { fontSize: 13, lineHeight: 20, fontFamily: 'Almarai_400Regular' },
