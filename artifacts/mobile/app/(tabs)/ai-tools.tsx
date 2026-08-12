@@ -187,6 +187,40 @@ export default function AIToolsScreen() {
         )}
       </View>
 
+      {/*
+        The retired home screen. It is still the only way to attach media to a
+        lesson and to reach Smart Templates, so it stays reachable — here, among
+        the tools, rather than in the account settings where it used to sit.
+      */}
+      <Pressable
+        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/home'); }}
+        style={({ pressed }) => [
+          styles.workspaceCard,
+          {
+            backgroundColor: colors.card,
+            borderColor: colors.border,
+            borderRadius: colors.radius,
+            marginHorizontal: 20,
+            marginBottom: 12,
+            opacity: pressed ? 0.8 : 1,
+            flexDirection: isRTL ? 'row-reverse' : 'row',
+          },
+        ]}
+      >
+        <View style={[styles.workspaceIcon, { backgroundColor: '#6366F1' + '18', borderRadius: 12 }]}>
+          <Ionicons name="grid-outline" size={22} color="#6366F1" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 15, textAlign: isRTL ? 'right' : 'left' }]}>
+            {t('moreTools')}
+          </Text>
+          <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: isRTL ? 'right' : 'left' }]}>
+            {t('toolsMoreHint')}
+          </Text>
+        </View>
+        <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
+      </Pressable>
+
       <Pressable
         onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/workspace'); }}
         style={({ pressed }) => [
