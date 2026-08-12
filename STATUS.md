@@ -4,9 +4,9 @@
 > true, **edit this file in the same PR that changes it.** Older audits live in
 > `docs/archive/` — they are historical snapshots, do not act on them.
 
-_Last verified: 2026-08-10, against the running system (local Linux checkout +
-the hosted demo API). Earlier lines carried over from the 2026-08-06 pass on
-Windows 11 are marked where they were not re-checked._
+_Last verified: 2026-08-12, against the running system (local Linux checkout +
+the hosted demo API). Earlier lines carried over from the 2026-08-10 and
+2026-08-06 passes are marked where they were not re-checked._
 
 ## What Iqraa is
 
@@ -37,13 +37,20 @@ Vision screens (student/parent/school dashboards) are deprioritized.
 
 - `pnpm install` and full `pnpm run typecheck` pass clean (checked on Windows
   2026-08-06 and on Linux 2026-08-10).
-- Mobile test suite: 287 tests, 0 failures (10 skipped). The `test` script
+- Mobile test suite: 311 tests, 0 failures (10 skipped). The `test` script
   globs `services/__tests__/**/*.test.ts` — it used to be a hand-listed set of
   files that had drifted, so two suites never ran.
-- API test suite: 31 tests, 0 failures. Its `test` script globs
+- API test suite: 68 tests, 0 failures. Its `test` script globs
   `src/**/__tests__/**/*.test.ts`; it was scoped to `src/modules/**` and so
   never ran anything under `src/lib` or `src/routes`. The mount-order suite
   boots the built bundle, so run `pnpm build` before `pnpm test` or it skips.
+- **CI runs on every pull request** (`.github/workflows/ci.yml`, added
+  2026-08-12): typecheck, then the api-server build *before* its tests, then
+  both suites, plus the SymPy verification regressions. Node and pnpm are
+  pinned to the versions the Render build uses. Before this the repo had no
+  checks at all, which is how a `dist/` bundle built from an older commit was
+  read as two failing tests on `main` for two days — the api-server suite boots
+  `dist/index.mjs` and `pnpm test` does not build it.
 - Local dev runs end to end: Express API (:8080) + Postgres 17 (`iqraa` db,
   6 tables) + Expo web (:8083). Login/register work against the local DB.
 - Curriculum data loads in-app (math S1: 4 units / 18 lessons). It now lives in
@@ -76,7 +83,12 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     `'Understand'` by the catalog builders, so objectives expose
     `bloomsSource: 'authored' | 'defaulted'` and an `inferredBloomsLevel`
     derived from the Arabic action verb.
-    See `docs/student-evaluation-module-plan.md`.
+    See `docs/student-evaluation-module-plan.md` — **note its "nothing is
+    implemented yet" header is out of date**: as of 2026-08-12 its phases 0–2
+    are largely built (schema, roster + UI, evaluation CRUD/generate/coverage/
+    publish, validators), plus deterministic marking and level aggregation.
+    What is missing is any evaluation UI, the attempts/answer-entry endpoints,
+    and the dashboard.
 - Chemistry is thinner than "math + chemistry first" implies: 3 units /
   9 lessons against math's 4 / 18 per semester.
 - Financial Literacy G10 S1 is browsable (2 units / 10 lessons, NCCD-sourced).
@@ -128,8 +140,9 @@ Vision screens (student/parent/school dashboards) are deprioritized.
 ## Teacher UX pass — merged 2026-08-10
 
 Was on `feat/evaluation-authoring`; **now merged into `main`** (`06ed814`).
-Nothing is outstanding on that branch. The only unmerged work in the repo is
-two parked chat-redesign branches — see "Open decisions".
+Nothing is outstanding on that branch. (For unmerged work, see "Open
+decisions" — as of 2026-08-12 only `claude/ikra-chat-agent-uiux-1j6wpm`
+remains parked.)
 
 General rule that still applies: the deployed site only shows what is on
 `main`, which is the usual reason a change "did not appear" — check
@@ -168,6 +181,77 @@ Landed, in order:
   `ChatArtifactResult.data` now keeps the object; worksheet/quiz/activity carry
   it but still render as text until each gets a view.
 
+## Chat + evaluation pass — merged 2026-08-12
+
+Four PRs (#32, #34, #35, #36), all on `main`.
+
+**The chat screen shed its chrome.** The header carried a mark, a wordmark, a
+tagline, a demo label and a scrolling strip of tool chips above a conversation
+that had not started — about a third of a phone screen. It is now the logo plus
+the demo pill. The tool chips moved into the thread: inside the intro while it
+is the only thing there, above the composer once a conversation exists, never
+both at once. The current-lesson card, which opened to another third of a
+screen, now defaults to one line — Start Class, lesson name, a done/total pill —
+with the breadcrumb, Change Lesson and the rest one tap away. Web also stopped
+applying a 67pt notch allowance it does not need and now centres content in a
+readable column instead of stretching it across the window.
+
+**The composer's "+" opens the whole tool catalog.** `services/toolCatalog.ts`
+is now the single list, shared with the AI Tools screen — two hand-maintained
+copies drift, and a tool added to one surface would quietly not exist on the
+other. Tools the conversation can carry out run inline; the rest hand off to
+their own screen carrying the current lesson. The five resource chips left the
+lesson card as redundant with it.
+
+**Results can be copied and exported**, and stopped rendering twice — a
+generated lesson plan arrived as an editable document *and* as the entire
+formatted plan again beneath it. A message that renders a document now shows
+only the conversation around it. Copy and export re-serialise from the
+structured data, so an edited plan exports as edited rather than as first
+generated.
+
+**Objective answers can now be marked.** `TypeModule` could validate and
+sanitise a question but not mark one, so the roster, the generator and publish
+all led nowhere. `grade()` exists on exactly the four types where marking is not
+a judgement call; its absence on the other four is the contract that stops a
+caller defaulting an ungraded answer to zero. `modules/assessment/normalize.ts`
+folds Arabic orthography before comparing — hamza carriers, taa marbuta, final
+yaa, harakat, tatweel, Arabic-Indic digits — so a student who writes الدائره for
+الدائرة keeps the mark. Standalone hamza is deliberately left alone; folding it
+changes words.
+
+**Marks aggregate into a level** (`modules/assessment/scoring.ts`), with two
+refusals: a competency backed by fewer than two questions or under a tenth of
+total marks reports no percentage at all, and a headline average is capped when
+its parts do not support it. Pure functions, 13 tests, no database needed.
+
+**Also:** AI Tools joined the tab bar; More Tools moved from the account screen
+to that tab (it is still the only route to lesson media and Smart Templates, so
+it was moved rather than removed); "كيف أستخدم اقرأ؟" is now a nine-question FAQ
+(`app/faq.tsx`) instead of re-opening the retired home screen's coach card.
+
+### Roster storage — a production incident worth remembering
+
+Creating a class on the hosted demo failed with a generic 500 rendered as
+English "Failed to create class" inside an Arabic dialog, behind the sheet the
+teacher was looking at. The handler was fine: **the Neon database had no roster
+tables.** Nothing in the deploy creates them — the schema comes from
+`pnpm --filter @workspace/db run push`, which only ever runs by hand, and a
+release had added the tables without anyone running it.
+
+Fixed in production by creating the three tables directly. In the repo:
+roster routes now detect Postgres `42P01` / `42703` and answer 503 with
+`code: "roster_storage_unavailable"` instead of a generic 500, the client
+translates that code rather than echoing English into an Arabic UI, and
+`render.yaml` states that no build step touches the database. The detection
+walks the error's `cause` chain — drizzle wraps driver failures in
+`_DrizzleQueryError`, so a check against the top level silently never matches.
+
+**The rule this leaves:** when a release adds or changes a table, run the schema
+push against the deployed `DATABASE_URL` as part of shipping it. Push is
+deliberately not wired into `buildCommand` — drizzle-kit resolves drift by
+dropping columns, and a deploy is the wrong place to discover that.
+
 ## Open decisions (2026-08-10)
 
 - ~~**Home vs chat.**~~ **Decided 2026-08-10: chat is the landing tab, home is
@@ -180,17 +264,18 @@ Landed, in order:
   - **Two things did not move and are not yet rehomed:** attaching media to a
     lesson (`addLessonMedia` — the *only* entry point, and that media feeds
     Start Class decks via `buildMediaSlide`) and Smart Templates. The old screen
-    therefore still exists at `/home`, off the tab bar, reachable from
-    Profile → «أدوات إضافية». Retiring it fully means rehoming those two first.
-  - The first-run coach card also only renders on that screen, so Profile's
-    "show me the start-here card again" now points at `/home` rather than
-    `/(tabs)`, which would have reset the flag and shown nothing.
-  - The two parked chat-redesign branches were **not** used —
-    `claude/ikra-chat-ux-i087se` (`74c52e8`) and
-    `claude/ikra-chat-agent-uiux-1j6wpm` (`7dcb99f`). Both rewrite `iqra.tsx`
-    and `CurrentLessonCard.tsx` wholesale and conflict with each other; both add
-    a starter-card welcome panel, which is polish, not this decision. Recorded
-    here so the SHAs survive if the branches are deleted.
+    therefore still exists at `/home`, off the tab bar. As of 2026-08-12 it is
+    reached from the **AI Tools tab** → «أدوات إضافية», not from Profile.
+    Retiring it fully still means rehoming those two first.
+  - The first-run coach card only renders on that screen. Profile no longer
+    re-opens it: «كيف أستخدم اقرأ؟» now goes to `app/faq.tsx` instead.
+  - The two parked chat-redesign branches are resolved. `claude/ikra-chat-ux-i087se`
+    was rebuilt on current `main` and merged across PRs #32, #34, #35 and #36;
+    PR #33, which re-applied the pre-rebase version, was closed as superseded
+    (it would have reverted this pass's `CurrentLessonCard` work and committed a
+    stray `.pyc`). `claude/ikra-chat-agent-uiux-1j6wpm` (`7dcb99f`) is still
+    parked and unmerged — SHA recorded here so it survives if the branch is
+    deleted.
 
 <details><summary>Original framing of the decision (superseded)</summary>
 
@@ -250,6 +335,14 @@ Landed, in order:
   though DEMO_MODE means no model is called. Render passes a placeholder for
   exactly this reason. `derivativeVerified.ts` was changed to import it lazily;
   the other two were left alone.
+- **Deployed schema is not deployed.** No build step touches the database;
+  tables come from `pnpm --filter @workspace/db run push`, run by hand against
+  `DATABASE_URL`. A release that adds a table and skips that push produces
+  endpoints that answer 503 on a database missing it — see the roster incident
+  under "Chat + evaluation pass".
+- **`pnpm test` in api-server does not build.** Its mount-order suite boots
+  `dist/index.mjs`, so a stale bundle reports on code nobody is looking at. CI
+  now builds first; do the same locally.
 - Curriculum PDFs tracked in git (8 files, one on LFS; `.git` is ~67MB) —
   slow clones.
 - Legacy duplicate `lib/integrations/openai_ai_integrations` mirrors the active

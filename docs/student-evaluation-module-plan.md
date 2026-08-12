@@ -1,7 +1,17 @@
 # Student Level Evaluation Module — Design & Implementation Plan
 
-> Status: **proposal, not yet built.** Written 2026-08-09 against the repo at
-> commit `2b88517`. Nothing in this document is implemented yet.
+> Status: **partly built.** Written 2026-08-09 against commit `2b88517`, when
+> nothing here existed. As of **2026-08-12** phases 0–2 are largely done —
+> `lib/curriculum` and `/curriculum/*`, the §2 tables, roster CRUD + UI, and
+> evaluation create/generate/coverage/publish with the validators — plus
+> deterministic marking (`modules/assessment/questionTypes.ts` `grade()` +
+> `normalize.ts`) and level aggregation (`scoring.ts`) from phases 5–6.
+>
+> **Still missing:** any evaluation UI (phase 3), the attempts and answer-entry
+> endpoints (phase 4), and the dashboard screens. §0's "students don't exist"
+> table is therefore historical — read it as the starting point, not the
+> current state.
+>
 > Verify claims against the running system before acting on them.
 
 ## Confirmed decisions (2026-08-09)
