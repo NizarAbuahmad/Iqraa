@@ -865,7 +865,13 @@ export default function IqraScreen() {
   const [ephemeralSuggestions, setEphemeralSuggestions] = useState<EphemeralSuggestion[]>([]);
   /** Status line while the assistant is working (lesson plan vs generic). */
   const [thinkingLabel, setThinkingLabel] = useState('');
-  const [lessonCardCollapsed, setLessonCardCollapsed] = useState(false);
+  /**
+   * Collapsed by default. Expanded, the lesson card ran to about a third of a
+   * phone screen above a conversation that had not started — the same weight
+   * the header just shed. One line states the lesson and its prep count; the
+   * breadcrumb, Change Lesson and the resource chips are one tap away.
+   */
+  const [lessonCardCollapsed, setLessonCardCollapsed] = useState(true);
   const [startingClass, setStartingClass] = useState(false);
   const [changeLessonOpen, setChangeLessonOpen] = useState(false);
   const [exportText, setExportText] = useState('');
@@ -910,7 +916,7 @@ export default function IqraScreen() {
     setSessionMemory(seedDefaultLessonMemory(emptyChatSessionMemory()));
     clearSessionDocuments();
     setEphemeralSuggestions([]);
-    setLessonCardCollapsed(false);
+    setLessonCardCollapsed(true);
     setMessages([
       {
         id: 'welcome',
