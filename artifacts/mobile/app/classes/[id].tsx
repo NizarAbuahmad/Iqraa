@@ -24,6 +24,7 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import {
+  RosterError,
   addStudents,
   getClass,
   parseStudentNames,
@@ -50,6 +51,19 @@ export default function ClassDetailScreen() {
   const [namesText, setNamesText] = useState('');
   const [saving, setSaving] = useState(false);
 
+  /** Server errors arrive in English; this screen is Arabic-first. */
+  const describe = useCallback(
+    (err: unknown): string => {
+      if (err instanceof RosterError) {
+        if (err.isStorageUnavailable) return t('rosterStorageUnavailable');
+        if (err.status === 0 || err.status >= 500) return t('rosterLoadFailed');
+        return err.message;
+      }
+      return t('rosterNeedsConnection');
+    },
+    [t],
+  );
+
   const load = useCallback(async () => {
     if (!id) return;
     setError('');
@@ -58,11 +72,11 @@ export default function ClassDetailScreen() {
       setGroup(g);
       setStudents(s);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('rosterNeedsConnection'));
+      setError(describe(err));
     } finally {
       setLoading(false);
     }
-  }, [id, t]);
+  }, [id, describe]);
 
   useFocusEffect(
     useCallback(() => {
@@ -95,7 +109,7 @@ export default function ClassDetailScreen() {
         setError(t('noNewStudents'));
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('rosterNeedsConnection'));
+      setError(describe(err));
     } finally {
       setSaving(false);
     }
@@ -115,7 +129,7 @@ export default function ClassDetailScreen() {
       await removeStudentFromClass(id, student.id);
       setStudents(prev => prev.filter(s => s.id !== student.id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('rosterNeedsConnection'));
+      setError(describe(err));
     }
   };
 

@@ -22,8 +22,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { createClass, listClasses, type ClassGroup } from '@/services/roster';
-import { countStudents } from '@/services/i18n';
+import { RosterError, createClass, listClasses, type ClassGroup } from '@/services/roster';
+import { countStudents, type TranslationKey } from '@/services/i18n';
 
 const ACCENT = '#1B6B62';
 
@@ -39,16 +39,32 @@ export default function ClassesScreen() {
   const [newName, setNewName] = useState('');
   const [creating, setCreating] = useState(false);
 
+  /**
+   * The API answers in English; this screen is Arabic-first. Translate the
+   * condition rather than echoing the server's sentence into the dialog.
+   */
+  const describe = useCallback(
+    (err: unknown, fallback: TranslationKey): string => {
+      if (err instanceof RosterError) {
+        if (err.isStorageUnavailable) return t('rosterStorageUnavailable');
+        if (err.status === 0 || err.status >= 500) return t(fallback);
+        return err.message;
+      }
+      return t('rosterNeedsConnection');
+    },
+    [t],
+  );
+
   const load = useCallback(async () => {
     setError('');
     try {
       setClasses(await listClasses());
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('rosterNeedsConnection'));
+      setError(describe(err, 'rosterLoadFailed'));
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [describe]);
 
   useFocusEffect(
     useCallback(() => {
@@ -69,7 +85,7 @@ export default function ClassesScreen() {
       setClasses(prev => [...prev, created]);
       router.push({ pathname: '/classes/[id]', params: { id: created.id } });
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('rosterNeedsConnection'));
+      setError(describe(err, 'rosterCreateFailed'));
     } finally {
       setCreating(false);
     }
@@ -215,6 +231,25 @@ export default function ClassesScreen() {
                 },
               ]}
             />
+            {/* The list's error banner sits behind this sheet, so a failed
+                create looked like nothing happened. Say it here too. */}
+            {error ? (
+              <View style={[styles.modalError, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
+                <Text
+                  style={{
+                    color: colors.destructive,
+                    fontFamily: 'Almarai_400Regular',
+                    fontSize: 12.5,
+                    lineHeight: 19,
+                    flex: 1,
+                    textAlign: align,
+                  }}
+                >
+                  {error}
+                </Text>
+              </View>
+            ) : null}
             <View style={styles.modalActions}>
               <Pressable onPress={() => setShowNew(false)} style={styles.modalBtn}>
                 <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }}>
@@ -292,6 +327,7 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 18 },
   input: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
   modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10 },
+  modalError: { alignItems: 'flex-start', gap: 8 },
   modalBtn: { paddingHorizontal: 18, paddingVertical: 11, borderRadius: 10 },
   modalPrimary: { minWidth: 110, alignItems: 'center' },
 });

@@ -31,6 +31,50 @@ function trimmed(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+/**
+ * The roster tables are created by `pnpm --filter @workspace/db run push`, which
+ * is a manual step — no deploy runs it. When an environment is missing that
+ * push, Postgres answers every roster query with 42P01 (undefined_table) or
+ * 42703 (undefined_column), and the generic 500 below turned that into
+ * "Failed to create class": true, useless, and indistinguishable from a bug in
+ * the handler. Name the actual condition so the client can say something the
+ * teacher can act on, and so the log points at the fix.
+ */
+function isSchemaMissing(err: unknown): boolean {
+  // Drizzle wraps driver failures in _DrizzleQueryError and hangs the real pg
+  // error off `cause`, so the code is never on the object it hands back. Walk
+  // the chain; a check against the top level alone silently never matches.
+  for (let cur: unknown = err, depth = 0; cur && depth < 5; depth++) {
+    const code = (cur as { code?: unknown }).code;
+    if (code === "42P01" || code === "42703") return true;
+    cur = (cur as { cause?: unknown }).cause;
+  }
+  return false;
+}
+
+/** Single exit for every roster failure: 503 + a code when the schema is absent. */
+function failRoster(
+  res: Parameters<Parameters<typeof router.get>[1]>[1],
+  err: unknown,
+  action: string,
+  message: string,
+): void {
+  if (isSchemaMissing(err)) {
+    logger.error(
+      { err },
+      `${action} failed — roster tables are missing from this database. ` +
+        "Run `pnpm --filter @workspace/db run push` against DATABASE_URL.",
+    );
+    res.status(503).json({
+      code: "roster_storage_unavailable",
+      error: "Roster storage is not set up on this server yet.",
+    });
+    return;
+  }
+  logger.error({ err }, `${action} failed`);
+  res.status(500).json({ error: message });
+}
+
 // ─── Classes ─────────────────────────────────────────────────────────────────
 
 router.get("/classes", async (req: AuthenticatedRequest, res) => {
@@ -61,8 +105,7 @@ router.get("/classes", async (req: AuthenticatedRequest, res) => {
 
     res.json({ classes: rows });
   } catch (err) {
-    logger.error({ err }, "list classes failed");
-    res.status(500).json({ error: "Failed to load classes" });
+    failRoster(res, err, "list classes", "Failed to load classes");
   }
 });
 
@@ -88,8 +131,7 @@ router.post("/classes", async (req: AuthenticatedRequest, res) => {
 
     res.status(201).json({ class: { ...row, studentCount: 0 } });
   } catch (err) {
-    logger.error({ err }, "create class failed");
-    res.status(500).json({ error: "Failed to create class" });
+    failRoster(res, err, "create class", "Failed to create class");
   }
 });
 
@@ -122,8 +164,7 @@ router.get("/classes/:id", async (req: AuthenticatedRequest, res) => {
 
     res.json({ class: group, students: roster });
   } catch (err) {
-    logger.error({ err }, "get class failed");
-    res.status(500).json({ error: "Failed to load class" });
+    failRoster(res, err, "get class", "Failed to load class");
   }
 });
 
@@ -151,8 +192,7 @@ router.patch("/classes/:id", async (req: AuthenticatedRequest, res) => {
     }
     res.json({ class: row });
   } catch (err) {
-    logger.error({ err }, "update class failed");
-    res.status(500).json({ error: "Failed to update class" });
+    failRoster(res, err, "update class", "Failed to update class");
   }
 });
 
@@ -176,8 +216,7 @@ router.delete("/classes/:id", async (req: AuthenticatedRequest, res) => {
     }
     res.json({ archived: row.id });
   } catch (err) {
-    logger.error({ err }, "archive class failed");
-    res.status(500).json({ error: "Failed to archive class" });
+    failRoster(res, err, "archive class", "Failed to archive class");
   }
 });
 
@@ -229,8 +268,7 @@ router.get("/students", async (req: AuthenticatedRequest, res) => {
 
     res.json({ students: rows });
   } catch (err) {
-    logger.error({ err }, "list students failed");
-    res.status(500).json({ error: "Failed to load students" });
+    failRoster(res, err, "list students", "Failed to load students");
   }
 });
 
@@ -370,8 +408,7 @@ router.post("/classes/:id/students", async (req: AuthenticatedRequest, res) => {
       students: created,
     });
   } catch (err) {
-    logger.error({ err }, "add students failed");
-    res.status(500).json({ error: "Failed to add students" });
+    failRoster(res, err, "add students", "Failed to add students");
   }
 });
 
@@ -408,8 +445,7 @@ router.delete("/classes/:id/students/:studentId", async (req: AuthenticatedReque
     }
     res.json({ removed: studentId });
   } catch (err) {
-    logger.error({ err }, "remove student failed");
-    res.status(500).json({ error: "Failed to remove student" });
+    failRoster(res, err, "remove student", "Failed to remove student");
   }
 });
 
@@ -441,8 +477,7 @@ router.patch("/students/:id", async (req: AuthenticatedRequest, res) => {
     }
     res.json({ student: row });
   } catch (err) {
-    logger.error({ err }, "update student failed");
-    res.status(500).json({ error: "Failed to update student" });
+    failRoster(res, err, "update student", "Failed to update student");
   }
 });
 

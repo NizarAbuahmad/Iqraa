@@ -33,15 +33,47 @@ export interface NewStudent {
   externalRef?: string;
 }
 
+/**
+ * A roster failure the screen can translate.
+ *
+ * The server replies in English; the app is Arabic-first. Echoing `error`
+ * straight into the UI is how "Failed to create class" ended up in an Arabic
+ * dialog. Carry the status and the server's machine-readable `code` instead,
+ * and let the screen choose the wording.
+ */
+export class RosterError extends Error {
+  readonly status: number;
+  readonly code: string;
+
+  constructor(message: string, status: number, code: string) {
+    super(message);
+    this.name = 'RosterError';
+    this.status = status;
+    this.code = code;
+  }
+
+  /** The database this server talks to has no roster tables yet. */
+  get isStorageUnavailable(): boolean {
+    return this.code === 'roster_storage_unavailable';
+  }
+}
+
 async function readJson<T>(res: Response, action: string): Promise<T> {
   if (!res.ok) {
     let detail = '';
+    let code = '';
     try {
-      detail = ((await res.json()) as { error?: string }).error ?? '';
+      const body = (await res.json()) as { error?: string; code?: string };
+      detail = body.error ?? '';
+      code = body.code ?? '';
     } catch {
       /* body wasn't JSON — the status is all we have */
     }
-    throw new Error(detail || `${action} failed (${res.status})`);
+    throw new RosterError(
+      detail || `${action} failed (${res.status})`,
+      res.status,
+      code,
+    );
   }
   return (await res.json()) as T;
 }
