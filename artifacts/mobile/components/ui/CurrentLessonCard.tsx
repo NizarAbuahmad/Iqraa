@@ -5,6 +5,7 @@
 import React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { JordanFlag } from '@/components/ui/JordanFlag';
 import type { CurrentLessonView } from '@/services/lessonCopilot';
 
 /** Carried over from the home screen's Start Class button. */
@@ -134,7 +135,7 @@ export function CurrentLessonCard({
             accessibilityState={{ expanded: false }}
             accessibilityLabel={lesson.unitLesson}
           >
-            <Text style={{ fontSize: 14 }}>🇯🇴</Text>
+            <JordanFlag width={17} />
             <Text
               numberOfLines={1}
               style={[styles.collapsedTitle, { color: colors.foreground, textAlign: align, flex: 1 }]}

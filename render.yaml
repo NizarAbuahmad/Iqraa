@@ -66,7 +66,11 @@ services:
   - type: web
     name: iqraa-web
     runtime: static
-    buildCommand: corepack enable && corepack prepare pnpm@11.18.0 --activate && pnpm install --frozen-lockfile && cd artifacts/mobile && pnpm exec expo export --platform web
+    # `build:web` = expo export + scripts/inject-pwa.mjs. The export alone
+    # produces an index.html with no manifest link, so the site is visitable
+    # but not installable — see that script's header for why the manifest
+    # cannot come from app/+html.tsx.
+    buildCommand: corepack enable && corepack prepare pnpm@11.18.0 --activate && pnpm install --frozen-lockfile && cd artifacts/mobile && pnpm run build:web
     staticPublishPath: artifacts/mobile/dist
     envVars:
       - key: NODE_VERSION
