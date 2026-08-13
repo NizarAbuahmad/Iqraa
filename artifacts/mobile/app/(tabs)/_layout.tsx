@@ -115,17 +115,19 @@ function ClassicTabLayout() {
         }}
       />
 
-      {/* ── Notifications ─────────────────────────────────── */}
+      {/*
+        ── Notifications (hidden from the tab bar) ──────────
+        The screen renders "no notifications" and nothing else — there is no
+        source feeding it. A tab that has never shown anything does not read as
+        "empty today", it teaches teachers there is nothing there, and it takes
+        a fifth of the bar from the four that work. The screen stays so the tab
+        is one line to restore the day notifications exist.
+      */}
       <Tabs.Screen
         name="notifications"
         options={{
-          title: t('tabAlerts'),
-          tabBarIcon: ({ color, focused }) =>
-            isIOS ? (
-              <SymbolView name={focused ? 'bell.fill' : 'bell'} tintColor={color} size={22} />
-            ) : (
-              <Ionicons name={focused ? 'notifications' : 'notifications-outline'} size={22} color={color} />
-            ),
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
         }}
       />
 
