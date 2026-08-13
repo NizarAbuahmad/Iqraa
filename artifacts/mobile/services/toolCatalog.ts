@@ -129,14 +129,12 @@ export const MORE_TOOLS: ToolDef[] = [
     badgeKey: 'comingSoon',
   },
   {
-    id: 'exam',
-    titleKey: 'toolExamTitle',
-    descKey: 'toolExamDesc',
-    icon: 'school-outline',
+    id: 'evaluations',
+    titleKey: 'evaluations',
+    descKey: 'evaluationsSubtitle',
+    icon: 'clipboard-outline',
     color: '#64748B',
-    route: '/ai-tools/coming-soon',
-    routeParams: { tool: 'exam' },
-    badgeKey: 'comingSoon',
+    route: '/evaluations',
   },
 ];
 
