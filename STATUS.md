@@ -444,9 +444,9 @@ resubmit, matching the new marks exactly); copied a result and read the
 formatted text back off the clipboard; triggered the Share fallback and
 confirmed it copies and toasts instead of crashing.
 
-## Results dashboard, 2026-08-13
+## Results dashboard, merged 2026-08-13
 
-Per-evaluation class overview: `أدخل إجابات الطلاب` sits beside a new
+PR #43, on `main`. Per-evaluation class overview: `أدخل إجابات الطلاب` sits beside a new
 `لوحة النتائج` button on the evaluation detail screen, opening every
 student's attempt at a glance — level distribution (four colour-coded bars),
 the class average, a "N of M graded" count, and a per-student list (name,
@@ -463,6 +463,36 @@ Verified in a real browser with two students in different levels (one
 scoring 33%/beginner, one 100%/capped-to-proficient by the critical-thinking
 demotion rule) against the running API and local Postgres: the distribution
 bars, the average, and both rows matched the API responses exactly.
+
+## Fixed 2026-08-13 — changing the lesson mid-chat didn't take
+
+Reported: picking a new topic via **تغيير الدرس** didn't update the
+current-lesson bar or Start Class. Reproduced in a real browser: pick a new
+lesson, confirm, and the header still showed the old one — worse, the
+assistant's reply also talked about the old lesson, so it wasn't just a
+display bug.
+
+**Root cause — a stale closure, not a data problem.** Confirming a new
+lesson calls two things back-to-back: `onContextChange(topic)` (queues a
+`setSessionMemory` pinning the new lesson — a state update, applied on the
+*next* render) and then, synchronously in the same handler,
+`onAsk(topic)` → `sendMessage(text, sessionMemory.activeLessonId)`. That
+`sessionMemory` is the one closed over by *this* render, i.e. still the
+previous lesson, because the pin from `onContextChange` hasn't committed
+yet. `sendMessage`'s own KB-search pipeline treats a passed lesson id as an
+authoritative pin, so the old lesson id rode along as `pinnedLessonId` and
+the pipeline answered about it — then re-confirmed it as the active lesson,
+stomping the update that was already queued. Two state writes, correct
+order in the code, wrong order in what actually lands, because one of them
+was reading data from before the other had run.
+
+**Fix:** `onAsk` no longer reads `sessionMemory.activeLessonId` from its
+own render closure. It re-resolves the lesson from the topic string with
+the same `searchKBSemantic` call `onContextChange` already made, so both
+land on the same freshly-picked lesson instead of racing. Verified in a
+real browser: picked "الاشتقاق" under "المشتقات," confirmed, and both the
+header ("المشتقات • الاشتقاق") and the assistant's reply ("...لدرس
+«الاشتقاق»؟") updated together.
 
 ## Open decisions (2026-08-10)
 
