@@ -9,6 +9,7 @@ import verifiedMathRouter from "./verifiedMath";
 import curriculumRouter from "./curriculum";
 import rosterRouter from "./roster";
 import evaluationsRouter from "./evaluations";
+import attemptsRouter from "./attempts";
 
 const router: IRouter = Router();
 
@@ -29,6 +30,7 @@ router.use("/workspace", workspaceRouter);
 router.use(curriculumRouter);
 router.use(rosterRouter);
 router.use(evaluationsRouter);
+router.use(attemptsRouter);
 // Path-scoped, not `router.use(authMiddleware, chatRouter)` — that form mounts
 // the middleware at "/" and reproduces the original bug, answering 401 for
 // paths no router owns. The prefixes below cover every route these three
