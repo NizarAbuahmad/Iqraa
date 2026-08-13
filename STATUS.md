@@ -394,6 +394,56 @@ marks — currently only possible by deleting and regenerating the whole set),
 a coverage meter, and the mobile answer-entry screens (Phase 4's UI — the API
 has existed since #40).
 
+## Answer-entry screens — Phase 4's UI, 2026-08-13
+
+The evaluation pipeline is now demoable end to end in the app: author →
+generate → publish → **enter a student's answers → submit → see their level**
+— the last piece was reachable only via direct API calls until now. From a
+published evaluation, **أدخل إجابات الطلاب** opens a class → student picker
+(reusing the roster's own two-step navigation rather than inventing a new
+one), each student's row showing their attempt's status and, once graded,
+their percent. Opening a student finds-or-creates their attempt and renders
+every question type with a real input — tap-to-select for multiple choice
+and true/false, a per-row picker for matching, one text field per blank for
+fill-in, a text area for the four open-response types — each answer saved as
+it's entered (one `PUT` per field) rather than batched, so a dropped
+connection loses at most the field being edited. Submitting shows the graded
+result inline: level badge, percent, marks, and the four competency rows
+(each a percentage or "بيانات غير كافية" per the sufficiency rule), with
+**نسخ** and **مشاركة** buttons the teacher asked for.
+
+**Caught by using the actual app, again:** clicking **مشاركة** threw
+`Share is not supported in this browser` and crashed the screen — RN Web's
+`Share.share()` requires `navigator.share`, which most desktop browsers don't
+implement. This is the same class of bug the `Alert.alert`-on-web issue was
+(looks fine on a phone, breaks in the browser teachers are demoed on), and it
+was already latent in `shareAsText` for every existing caller (the quiz
+screen's share button included) — none of them wrapped the call. Fixed at the
+source: `shareAsText` now detects the missing API and falls back to copying
+to the clipboard, returning which one happened so the caller can toast
+correctly. Every existing call site is fixed by the same change; none needed
+to touch their own code.
+
+**Honest about today's ceiling:** every evaluation buildable through the
+authoring UI is 100% open-ended (the mock generator only emits `ai_rubric`
+types — see the Phase 4 backend section above), and open-ended grading
+(Tier 3) doesn't exist yet. Submitting one of those today correctly reports
+"لا توجد علامة بعد" rather than a fabricated zero or a fake level — proven in
+testing against a mixed evaluation seeded with a `multiple_choice` and a
+`true_false` question directly in the database (there is still no manual
+question-authoring UI): those two graded and drove the level and competency
+breakdown exactly as expected; the six open-ended questions alongside them
+stayed excluded and the result stayed marked provisional.
+
+**Verified in a real browser against the running API + local Postgres:**
+reopened a student with an existing graded attempt and confirmed every prior
+answer round-tripped correctly (multiple-choice selection, true/false
+toggle, saved open-text) rather than resetting; changed an answer, confirmed
+the `PUT` fired and the result recomputed (level and percent both changed on
+resubmit, matching the new marks exactly); copied a result and read the
+formatted text back off the clipboard; triggered the Share fallback and
+confirmed it copies and toasts instead of crashing.
+
 ## Open decisions (2026-08-10)
 
 - ~~**Home vs chat.**~~ **Decided 2026-08-10: chat is the landing tab, home is

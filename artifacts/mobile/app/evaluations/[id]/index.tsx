@@ -172,6 +172,18 @@ export default function EvaluationDetailScreen() {
         </View>
       ) : null}
 
+      {evaluation?.status === 'published' && (
+        <Pressable
+          onPress={() => router.push({ pathname: '/evaluations/[id]/answers', params: { id: evaluation.id } })}
+          style={[styles.enterAnswersBtn, { backgroundColor: ACCENT, marginHorizontal: 20, marginTop: 16, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+        >
+          <Ionicons name="create-outline" size={18} color="#fff" />
+          <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+            {t('enterAnswersBtn')}
+          </Text>
+        </Pressable>
+      )}
+
       <View style={{ padding: 20, gap: 10 }}>
         {questions.map((q, i) => (
           <View key={q.id} style={[styles.qCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -246,4 +258,5 @@ const styles = StyleSheet.create({
   qText: { fontSize: 14, lineHeight: 20 },
   actionBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: 15, borderRadius: 10 },
   actionBtnOutline: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 13, borderRadius: 10, borderWidth: 1.5, marginBottom: 10 },
+  enterAnswersBtn: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 10 },
 });

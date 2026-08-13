@@ -141,3 +141,125 @@ export async function publishEvaluation(id: string): Promise<Evaluation> {
   const data = await readJson<{ evaluation: Evaluation }>(res, 'Publishing evaluation');
   return data.evaluation;
 }
+
+// ─── Attempts (teacher answer entry) ────────────────────────────────────────
+
+export type AttemptStatus =
+  | 'not_started'
+  | 'in_progress'
+  | 'submitted'
+  | 'grading'
+  | 'graded'
+  | 'needs_review'
+  | 'abandoned';
+
+export type Verdict = 'correct' | 'partial' | 'incorrect' | 'unanswered';
+export type LevelKey = 'beginner' | 'developing' | 'proficient' | 'advanced';
+export type CompetencyKey = 'knowledge' | 'understanding' | 'application' | 'critical_thinking';
+
+export interface Attempt {
+  id: string;
+  evaluationId: string;
+  studentId: string;
+  status: AttemptStatus;
+  questionSnapshot: EvaluationQuestion[];
+  startedAt: string | null;
+  submittedAt: string | null;
+  gradedAt: string | null;
+}
+
+export interface AttemptListRow {
+  id: string;
+  studentId: string;
+  studentName: string;
+  status: AttemptStatus;
+  startedAt: string | null;
+  submittedAt: string | null;
+  gradedAt: string | null;
+  result: AttemptResult | null;
+}
+
+export interface AttemptAnswer {
+  id: string;
+  attemptId: string;
+  questionId: string;
+  response: Record<string, unknown>;
+}
+
+export interface AttemptQuestionGrade {
+  questionId: string;
+  awardedMarks: string | number;
+  maxMarks: string | number;
+  verdict: Verdict;
+  rationaleAr?: string;
+}
+
+export interface CompetencyScore {
+  earned: number;
+  total: number;
+  percent: number | null;
+  questionCount: number;
+  sufficient: boolean;
+}
+
+export interface AttemptResult {
+  attemptId: string;
+  earnedMarks: string;
+  totalMarks: string;
+  percent: string;
+  competencyScores: Record<CompetencyKey, CompetencyScore>;
+  levelKey: LevelKey | null;
+  isProvisional: boolean;
+}
+
+export async function listAttempts(evaluationId: string): Promise<AttemptListRow[]> {
+  const res = await apiFetch(`/evaluations/${evaluationId}/attempts`);
+  const data = await readJson<{ attempts: AttemptListRow[] }>(res, 'Loading attempts');
+  return data.attempts;
+}
+
+/** Find-or-create: safe to call every time a teacher opens a student's entry screen. */
+export async function startAttempt(evaluationId: string, studentId: string): Promise<Attempt> {
+  const res = await apiFetch(`/evaluations/${evaluationId}/attempts`, {
+    method: 'POST',
+    body: JSON.stringify({ studentId }),
+  });
+  const data = await readJson<{ attempt: Attempt }>(res, 'Starting attempt');
+  return data.attempt;
+}
+
+export async function getAttempt(attemptId: string): Promise<{
+  attempt: Attempt;
+  evaluation: { id: string; title: string; titleAr: string };
+  student: { id: string; displayName: string };
+  questions: EvaluationQuestion[];
+  answers: AttemptAnswer[];
+  grades: AttemptQuestionGrade[];
+  result: AttemptResult | null;
+}> {
+  const res = await apiFetch(`/attempts/${attemptId}`);
+  return readJson(res, 'Loading attempt');
+}
+
+export async function saveAnswer(
+  attemptId: string,
+  questionId: string,
+  response: Record<string, unknown>,
+): Promise<AttemptAnswer> {
+  const res = await apiFetch(`/attempts/${attemptId}/answers/${questionId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ response }),
+  });
+  const data = await readJson<{ answer: AttemptAnswer }>(res, 'Saving answer');
+  return data.answer;
+}
+
+export async function submitAttempt(attemptId: string): Promise<{
+  attempt: Attempt;
+  grades: AttemptQuestionGrade[];
+  ungradedQuestionIds: string[];
+  result: AttemptResult;
+}> {
+  const res = await apiFetch(`/attempts/${attemptId}/submit`, { method: 'POST' });
+  return readJson(res, 'Submitting attempt');
+}
