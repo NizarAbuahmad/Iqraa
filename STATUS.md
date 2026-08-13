@@ -394,9 +394,9 @@ marks — currently only possible by deleting and regenerating the whole set),
 a coverage meter, and the mobile answer-entry screens (Phase 4's UI — the API
 has existed since #40).
 
-## Answer-entry screens — Phase 4's UI, 2026-08-13
+## Answer-entry screens — Phase 4's UI, merged 2026-08-13
 
-The evaluation pipeline is now demoable end to end in the app: author →
+PR #42, on `main`. The evaluation pipeline is now demoable end to end in the app: author →
 generate → publish → **enter a student's answers → submit → see their level**
 — the last piece was reachable only via direct API calls until now. From a
 published evaluation, **أدخل إجابات الطلاب** opens a class → student picker
@@ -443,6 +443,26 @@ the `PUT` fired and the result recomputed (level and percent both changed on
 resubmit, matching the new marks exactly); copied a result and read the
 formatted text back off the clipboard; triggered the Share fallback and
 confirmed it copies and toasts instead of crashing.
+
+## Results dashboard, 2026-08-13
+
+Per-evaluation class overview: `أدخل إجابات الطلاب` sits beside a new
+`لوحة النتائج` button on the evaluation detail screen, opening every
+student's attempt at a glance — level distribution (four colour-coded bars),
+the class average, a "N of M graded" count, and a per-student list (name,
+status pill, level + percent once graded) that taps straight into that
+student's answer-entry screen. No new backend: it reuses
+`GET /evaluations/:id/attempts` from the Phase 4 backend PR, which already
+returns each attempt joined with its result. The class average and level
+counts are computed client-side over graded attempts only — a student who
+hasn't started yet has no percent to fold in, and averaging them in as zero
+would understate the class rather than honestly report that fewer students
+have been assessed than are on the roster.
+
+Verified in a real browser with two students in different levels (one
+scoring 33%/beginner, one 100%/capped-to-proficient by the critical-thinking
+demotion rule) against the running API and local Postgres: the distribution
+bars, the average, and both rows matched the API responses exactly.
 
 ## Open decisions (2026-08-10)
 
