@@ -252,6 +252,41 @@ push against the deployed `DATABASE_URL` as part of shipping it. Push is
 deliberately not wired into `buildCommand` — drizzle-kit resolves drift by
 dropping columns, and a deploy is the wrong place to discover that.
 
+## Logo, flag, installability — merged 2026-08-13
+
+PR #38, on `main`.
+
+**The chat header's mark was unreadable at the size it's actually shown.**
+`BrandLogo`'s lockup is a two-line image built for a splash screen; at the
+~28px the header rendered it, each line of type lands about ten pixels tall
+and dissolves into a grey smudge (the component's own doc comment already
+said so — the header just wasn't using it). Swapped to `IqraaMark` at 30px
+plus a live `<Text>` wordmark, which is what the mark was designed for.
+
+**The Jordan flag was two letters, not a flag.** `🇯🇴` is a pair of regional-
+indicator codepoints; Windows' Segoe UI Emoji has no flag glyphs for them, so
+it rendered as literal Latin "jo" inside Arabic UI. Invisible in this sandbox
+(Chromium ships Noto Color Emoji, which does render it) — only visible on the
+user's actual machine. Replaced with `components/ui/JordanFlag.tsx`, a plain
+SVG, everywhere the emoji appeared.
+
+**The Notifications tab is hidden.** It has only ever rendered "no
+notifications" — nothing feeds it. A tab that has never shown anything reads
+as "there is nothing here" rather than "empty today," and it was costing a
+fifth of the tab bar. The route stays registered so restoring it is one line.
+
+**The web build is installable.** A teacher projecting the app got a browser
+chrome — address bar, tabs, bookmarks strip — across the top of the lesson.
+`public/manifest.webmanifest` plus `scripts/inject-pwa.mjs` (a post-`expo
+export` patch to `dist/index.html`: manifest link, scheme-scoped theme-color,
+Apple PWA meta tags, RTL `lang`/`dir`) make it installable to a home screen or
+app-list entry, opening fullscreen. `app/+html.tsx` was tried first and
+looked correct in the diff but had zero effect — Expo only honours that file
+when `web.output` is `"static"`, and this app exports as an SPA, so it was
+silently ignored. Caught only by actually running the export and grepping the
+generated HTML. `render.yaml`'s `iqraa-web` build now calls `pnpm run
+build:web` (export + inject) instead of a bare `expo export`.
+
 ## Open decisions (2026-08-10)
 
 - ~~**Home vs chat.**~~ **Decided 2026-08-10: chat is the landing tab, home is
