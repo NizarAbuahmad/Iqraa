@@ -798,6 +798,13 @@ const translations = {
     provisionalResultNote: 'نتيجة أولية — بعض الأسئلة من النوع المفتوح تحتاج تصحيحًا يدويًا لم يُبنَ بعد.',
     noGradedQuestionsYet: 'لا توجد علامة بعد — كل أسئلة هذا التقييم من نوع يحتاج تصحيحًا يدويًا.',
     resultPercentLabel: (p: string) => `${p}٪`,
+    resultsDashboardBtn: 'لوحة النتائج',
+    resultsDashboardTitle: 'لوحة النتائج',
+    classAverageLabel: 'المتوسط العام',
+    levelDistributionLabel: 'توزيع المستويات',
+    gradedCountLabel: (n: number, total: number) => `قُيِّم ${n} من ${total} طالبًا`,
+    noAttemptsYet: 'لا محاولات بعد',
+    noAttemptsYetDesc: 'لم تُدخَل إجابات أي طالب لهذا التقييم بعد',
   },
 
   en: {
@@ -1534,6 +1541,13 @@ const translations = {
     provisionalResultNote: "Provisional result — some open-ended questions still need manual grading, which isn't built yet.",
     noGradedQuestionsYet: 'No score yet — every question in this evaluation needs manual grading.',
     resultPercentLabel: (p: string) => `${p}%`,
+    resultsDashboardBtn: 'Results dashboard',
+    resultsDashboardTitle: 'Results dashboard',
+    classAverageLabel: 'Class average',
+    levelDistributionLabel: 'Level distribution',
+    gradedCountLabel: (n: number, total: number) => `${n} of ${total} students graded`,
+    noAttemptsYet: 'No attempts yet',
+    noAttemptsYetDesc: "No student's answers have been entered for this evaluation yet",
   },
 } as const;
 

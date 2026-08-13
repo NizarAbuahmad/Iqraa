@@ -173,15 +173,26 @@ export default function EvaluationDetailScreen() {
       ) : null}
 
       {evaluation?.status === 'published' && (
-        <Pressable
-          onPress={() => router.push({ pathname: '/evaluations/[id]/answers', params: { id: evaluation.id } })}
-          style={[styles.enterAnswersBtn, { backgroundColor: ACCENT, marginHorizontal: 20, marginTop: 16, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-        >
-          <Ionicons name="create-outline" size={18} color="#fff" />
-          <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
-            {t('enterAnswersBtn')}
-          </Text>
-        </Pressable>
+        <View style={{ marginHorizontal: 20, marginTop: 16, gap: 10 }}>
+          <Pressable
+            onPress={() => router.push({ pathname: '/evaluations/[id]/answers', params: { id: evaluation.id } })}
+            style={[styles.enterAnswersBtn, { backgroundColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+          >
+            <Ionicons name="create-outline" size={18} color="#fff" />
+            <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+              {t('enterAnswersBtn')}
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => router.push({ pathname: '/evaluations/[id]/results', params: { id: evaluation.id } })}
+            style={[styles.resultsBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+          >
+            <Ionicons name="bar-chart-outline" size={18} color={ACCENT} />
+            <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 15 }}>
+              {t('resultsDashboardBtn')}
+            </Text>
+          </Pressable>
+        </View>
       )}
 
       <View style={{ padding: 20, gap: 10 }}>
@@ -259,4 +270,5 @@ const styles = StyleSheet.create({
   actionBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: 15, borderRadius: 10 },
   actionBtnOutline: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 13, borderRadius: 10, borderWidth: 1.5, marginBottom: 10 },
   enterAnswersBtn: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 10 },
+  resultsBtn: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 13, borderRadius: 10, borderWidth: 1.5 },
 });
