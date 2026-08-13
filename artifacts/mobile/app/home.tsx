@@ -415,7 +415,7 @@ export default function DashboardScreen() {
         >
           <View style={[styles.contextBody, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
             <Text style={[styles.contextFlag, { fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
-              🇯🇴 {t('jordanCurriculum')}
+              {t('jordanCurriculum')}
             </Text>
             <Text style={[styles.contextMeta, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
               {contextSubject} • {contextGrade}

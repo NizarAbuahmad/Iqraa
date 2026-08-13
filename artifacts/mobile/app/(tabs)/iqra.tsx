@@ -68,7 +68,6 @@ import {
   type TeachingAction,
 } from '@/services/ai/teachingAssistant';
 import { classifyChatIntent } from '@/services/ai/intentRouter';
-import { BrandLogo } from '@/components/ui/BrandLogo';
 import { IqraaMark } from '@/components/ui/IqraaMark';
 import { CHAT_MAX_WIDTH } from '@/constants/layout';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
@@ -1945,10 +1944,20 @@ export default function IqraScreen() {
           read as real.
         */}
         <View style={[styles.headerTop, centered, isRTL && { flexDirection: 'row-reverse' }]}>
-          <BrandLogo
-            variant="lockup"
-            style={[styles.headerLockup, isRTL && { alignSelf: 'flex-end' }]}
-          />
+          {/*
+            The mark, not the lockup. BrandLogo is the full two-line lockup —
+            اقرأ stacked over the IQRA wordmark — in a 1024px square; at the 28px
+            this header allows, each line of type lands about ten pixels tall and
+            dissolves into a grey smudge. IqraaMark exists for exactly this size
+            (see its own note), and the word beside it is live text, so it stays
+            sharp and reads at a glance.
+          */}
+          <View style={[styles.brandRow, isRTL && { flexDirection: 'row-reverse' }]}>
+            <IqraaMark size={30} tone="brand" />
+            <Text style={[styles.brandWord, { color: colors.foreground }]}>
+              {t('appName')}
+            </Text>
+          </View>
           <DemoModeBanner isRTL={isRTL} />
         </View>
       </View>
@@ -2275,7 +2284,8 @@ const CONTENT_MAX_WIDTH = 760;
 const styles = StyleSheet.create({
   header: { borderBottomWidth: StyleSheet.hairlineWidth, paddingBottom: 10 },
   headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16 },
-  headerLockup: { height: 28, width: 122 },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
+  brandWord: { fontFamily: 'Cairo_700Bold', fontSize: 19, letterSpacing: 0.2 },
   chip: { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
   chipText: { fontSize: 12 },
   docActionsScroll: { paddingHorizontal: 12, paddingVertical: 8, gap: 8 },
