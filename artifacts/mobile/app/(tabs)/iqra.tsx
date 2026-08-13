@@ -2009,12 +2009,22 @@ export default function IqraScreen() {
               }));
             }
           }}
-          onAsk={(topic) => sendMessage(
-            lang === 'ar'
-              ? `أدرّس "${topic}" للصف العاشر. أعطني نظرة شاملة عن الموضوع مع أهم مفاهيمه.`
-              : `I'm teaching "${topic}" to Grade 10 students. Give me a comprehensive overview of this topic with key concepts.`,
-            sessionMemory.activeLessonId ?? undefined,
-          )}
+          onAsk={(topic) => {
+            // `onContextChange` just fired and queued the pin update for this
+            // same topic, but React hasn't applied it yet — `sessionMemory`
+            // in this closure is still the *previous* lesson. Passing that
+            // stale id here as `pinnedLessonId` forced sendMessage's pipeline
+            // to keep answering about the lesson the teacher just left.
+            // Resolve fresh, the same way onContextChange does, so both agree
+            // on the lesson that was actually just picked.
+            const hits = searchKBSemantic(topic, lang as 'ar' | 'en');
+            sendMessage(
+              lang === 'ar'
+                ? `أدرّس "${topic}" للصف العاشر. أعطني نظرة شاملة عن الموضوع مع أهم مفاهيمه.`
+                : `I'm teaching "${topic}" to Grade 10 students. Give me a comprehensive overview of this topic with key concepts.`,
+              hits[0]?.id ?? undefined,
+            );
+          }}
         />
       )}
 
