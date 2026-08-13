@@ -287,9 +287,9 @@ silently ignored. Caught only by actually running the export and grepping the
 generated HTML. `render.yaml`'s `iqraa-web` build now calls `pnpm run
 build:web` (export + inject) instead of a bare `expo export`.
 
-## Attempts API — Phase 4 backend, 2026-08-13
+## Attempts API — Phase 4 backend, merged 2026-08-13
 
-Not yet a PR — verified locally, about to open one. API only; no mobile UI.
+PR #40, on `main`. API only; no mobile UI (that gap is closed below).
 The evaluation plan (`docs/student-evaluation-module-plan.md`) calls this
 "answer entry (teacher)": a teacher opens a student, enters what they wrote on
 paper, and the app grades it. The schema for this (`attempts`, `attemptAnswers`,
@@ -341,11 +341,58 @@ typed `Record<string, unknown>`; `scoreAttempt()` has always returned an
 array (`ObjectiveScore[]`) there. Corrected the type annotation — jsonb, so no
 migration.
 
-**Still missing** before this is demoable end-to-end: an evaluation-authoring
-UI to reach a published evaluation at all (Phase 3), and the mobile
-answer-entry screens themselves (`evaluations/[id]/answers/*` in the plan's
-§5.2) — this session deliberately scoped to the backend only, since a
-teacher-entry screen with nothing to attach it to would be unreachable.
+**Still missing** at the time this shipped: an evaluation-authoring UI to
+reach a published evaluation at all (Phase 3, closed the same day — see the
+next section), and the mobile answer-entry screens themselves
+(`evaluations/[id]/answers/*` in the plan's §5.2) — this PR deliberately
+scoped to the backend only, since a teacher-entry screen with nothing to
+attach it to would be unreachable.
+
+## Evaluation authoring — minimal Phase 3, 2026-08-13
+
+A teacher can now build and publish a real evaluation from the app: pick a
+book, pick learning objectives, pick question types and a count, generate,
+review, publish — end to end, reachable from **الأدوات → أدوات إضافية →
+التقييمات**. This is deliberately smaller than the plan's §1.1 wizard (no
+per-question editing, no coverage meter, no preview-as-student step): it
+proves the pipeline the way #40's attempts API did — the smallest real slice,
+not the whole vision.
+
+**New:** `services/evaluations.ts` (client mirroring `roster.ts` — an
+`EvaluationError` with `status`/`code`, same `readJson` pattern) and three
+screens — `app/evaluations/index.tsx` (list), `new.tsx` (the form: title,
+book, objectives, types, difficulty, count — submits by creating the
+evaluation and immediately generating), `[id].tsx` (read-only question review
++ publish/regenerate). Objective and book data come straight from
+`@workspace/curriculum`, already bundled client-side — no network round trip,
+and it cannot drift from what the server accepts, since both read the same
+package. The old "ورقة امتحان" (exam paper) tool-catalog entry, a
+`comingSoon`-badged placeholder pointing nowhere, is replaced with the real
+`/evaluations` route — it was reserving exactly this feature.
+
+**Caught by using the actual app, not just typecheck:** the publish
+confirmation used `Alert.alert` directly, which — per `services/confirm.ts`'s
+own doc comment — silently does nothing on the web build; the dialog never
+fires its buttons there. This exact failure mode was already hit and fixed
+once before (roster removal, saved-material delete), with a shared `confirm()`
+helper built specifically to stop it recurring. Caught by driving the actual
+button in a real browser (Playwright against the local dev server), not by
+reading the code — it typechecked and looked correct in the diff.
+
+**Verified in a real browser against the running API + local Postgres:**
+logged in, opened AI Tools → أدوات إضافية → التقييمات, saw the evaluation
+created via #40's API testing already listed with its correct status and
+marks, opened "New evaluation," picked the chemistry book (real Bloom's
+data), selected two objectives and four question types (including
+`multiple_choice`/`true_false`, to prove non-`ai_rubric` types round-trip
+through this form even though the mock generator can't produce them),
+generated a full 8-question evaluation, reviewed it, published, and confirmed
+after a fresh page reload that the status persisted as منشور.
+
+**Still missing:** per-question editing (retype a stem, fix an option, adjust
+marks — currently only possible by deleting and regenerating the whole set),
+a coverage meter, and the mobile answer-entry screens (Phase 4's UI — the API
+has existed since #40).
 
 ## Open decisions (2026-08-10)
 

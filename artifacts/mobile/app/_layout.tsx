@@ -83,6 +83,9 @@ function RootLayoutNav() {
       <Stack.Screen name="ai-tools/lesson-flow" options={{ headerShown: false }} />
       <Stack.Screen name="classes/index" options={{ headerShown: false }} />
       <Stack.Screen name="classes/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="evaluations/index" options={{ headerShown: false }} />
+      <Stack.Screen name="evaluations/new" options={{ headerShown: false }} />
+      <Stack.Screen name="evaluations/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="dev" options={{ headerShown: false }} />
       <Stack.Screen name="settings" options={{ headerShown: false }} />
       <Stack.Screen name="faq" options={{ headerShown: false }} />
