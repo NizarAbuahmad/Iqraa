@@ -104,8 +104,8 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     }
   });
 
-  it("guards roster and evaluation routes", async () => {
-    for (const route of ["/students", "/classes", "/evaluations"]) {
+  it("guards roster, evaluation and attempt routes", async () => {
+    for (const route of ["/students", "/classes", "/evaluations", "/attempts"]) {
       const res = await fetch(`${base}${route}`);
       assert.equal(res.status, 401, `${route} must require a token`);
     }

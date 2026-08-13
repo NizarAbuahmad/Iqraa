@@ -9,9 +9,17 @@
  */
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { evaluations, evaluationQuestions, levelScales } from "@workspace/db";
+import {
+  attemptResults,
+  attempts,
+  evaluations,
+  evaluationQuestions,
+  levelBands,
+  levelScales,
+  students,
+} from "@workspace/db";
 import type { Difficulty, QuestionType } from "@workspace/db";
-import { and, asc, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import {
   getBookById,
   getObjectivesForBook,
@@ -538,6 +546,141 @@ router.post("/evaluations/:id/publish", async (req: AuthenticatedRequest, res) =
   } catch (err) {
     logger.error({ err }, "publish failed");
     res.status(500).json({ error: "Failed to publish" });
+  }
+});
+
+// ─── Attempts (teacher answer entry) ────────────────────────────────────────
+// Creation lives here, under /evaluations, because starting an attempt needs
+// the evaluation's live questions and level scale. Everything after creation
+// (answers, submit) is keyed by the attempt's own id and lives in attempts.ts.
+
+async function ownedStudent(id: string, teacherId: string) {
+  const [row] = await db
+    .select()
+    .from(students)
+    .where(and(eq(students.id, id), eq(students.teacherId, teacherId)))
+    .limit(1);
+  return row;
+}
+
+router.get("/evaluations/:id/attempts", async (req: AuthenticatedRequest, res) => {
+  try {
+    const evaluation = await ownedEvaluation(req.params["id"] as string, req.user!.id);
+    if (!evaluation) {
+      res.status(404).json({ error: "Evaluation not found" });
+      return;
+    }
+
+    const rows = await db
+      .select({
+        id: attempts.id,
+        studentId: attempts.studentId,
+        studentName: students.displayName,
+        status: attempts.status,
+        startedAt: attempts.startedAt,
+        submittedAt: attempts.submittedAt,
+        gradedAt: attempts.gradedAt,
+      })
+      .from(attempts)
+      .innerJoin(students, eq(students.id, attempts.studentId))
+      .where(eq(attempts.evaluationId, evaluation.id))
+      .orderBy(asc(students.displayName));
+
+    const attemptIds = rows.map(r => r.id);
+    const results = attemptIds.length
+      ? await db.select().from(attemptResults).where(inArray(attemptResults.attemptId, attemptIds))
+      : [];
+    const byAttempt = new Map(results.map(r => [r.attemptId, r]));
+
+    res.json({ attempts: rows.map(r => ({ ...r, result: byAttempt.get(r.id) ?? null })) });
+  } catch (err) {
+    logger.error({ err }, "list attempts failed");
+    res.status(500).json({ error: "Failed to load attempts" });
+  }
+});
+
+/**
+ * Find-or-create: re-opening answer entry for a student who already has an
+ * attempt returns it rather than starting a second one. Teacher entry has no
+ * "resume where I left off" UI of its own — the attempt itself is that state.
+ */
+router.post("/evaluations/:id/attempts", async (req: AuthenticatedRequest, res) => {
+  try {
+    const evaluation = await ownedEvaluation(req.params["id"] as string, req.user!.id);
+    if (!evaluation) {
+      res.status(404).json({ error: "Evaluation not found" });
+      return;
+    }
+    if (evaluation.status !== "published") {
+      res.status(409).json({ error: "Publish this evaluation before entering answers" });
+      return;
+    }
+
+    const studentId = trimmed(req.body?.studentId);
+    if (!studentId) {
+      res.status(400).json({ error: "studentId is required" });
+      return;
+    }
+    const student = await ownedStudent(studentId, req.user!.id);
+    if (!student) {
+      res.status(404).json({ error: "Student not found" });
+      return;
+    }
+
+    const [existing] = await db
+      .select()
+      .from(attempts)
+      .where(
+        and(
+          eq(attempts.evaluationId, evaluation.id),
+          eq(attempts.studentId, studentId),
+          eq(attempts.source, "teacher_entry"),
+        ),
+      )
+      .limit(1);
+    if (existing) {
+      res.json({ attempt: existing, created: false });
+      return;
+    }
+
+    const questions = await liveQuestions(evaluation.id);
+    if (questions.length === 0) {
+      res.status(409).json({ error: "This evaluation has no questions" });
+      return;
+    }
+
+    // Frozen at start, per the plan: a later edit to the evaluation or the
+    // scale must not retroactively change what this attempt is graded against.
+    const bands = evaluation.levelScaleId
+      ? await db
+          .select()
+          .from(levelBands)
+          .where(eq(levelBands.scaleId, evaluation.levelScaleId))
+          .orderBy(asc(levelBands.sortOrder))
+      : [];
+    if (bands.length === 0) {
+      res.status(409).json({ error: "No level scale is configured for this evaluation" });
+      return;
+    }
+
+    const [row] = await db
+      .insert(attempts)
+      .values({
+        evaluationId: evaluation.id,
+        studentId,
+        source: "teacher_entry",
+        enteredBy: req.user!.id,
+        status: "in_progress",
+        startedAt: new Date(),
+        questionSnapshot: questions,
+        levelScaleSnapshot: { scaleId: evaluation.levelScaleId, bands },
+      })
+      .returning();
+
+    res.status(201).json({ attempt: row, created: true });
+  } catch (err) {
+    logger.error({ err }, "create attempt failed");
+    res.status(500).json({ error: "Failed to start attempt" });
   }
 });
 

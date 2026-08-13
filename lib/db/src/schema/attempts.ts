@@ -199,7 +199,8 @@ export const attemptResults = pgTable("attempt_results", {
    * as a percentage, because one question is noise, not measurement.
    */
   competencyScores: jsonb("competency_scores").$type<Record<string, unknown>>().notNull().default({}),
-  objectiveScores: jsonb("objective_scores").$type<Record<string, unknown>>().notNull().default({}),
+  /** An array — `scoring.ts`'s `ObjectiveScore[]`, one entry per objective touched. */
+  objectiveScores: jsonb("objective_scores").$type<unknown[]>().notNull().default([]),
   levelKey: text("level_key").$type<LevelKey | null>(),
   levelScaleId: uuid("level_scale_id").references(() => levelScales.id),
   levelScaleVersion: integer("level_scale_version").notNull().default(1),

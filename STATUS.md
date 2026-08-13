@@ -40,7 +40,7 @@ Vision screens (student/parent/school dashboards) are deprioritized.
 - Mobile test suite: 311 tests, 0 failures (10 skipped). The `test` script
   globs `services/__tests__/**/*.test.ts` — it used to be a hand-listed set of
   files that had drifted, so two suites never ran.
-- API test suite: 68 tests, 0 failures. Its `test` script globs
+- API test suite: 74 tests, 0 failures. Its `test` script globs
   `src/**/__tests__/**/*.test.ts`; it was scoped to `src/modules/**` and so
   never ran anything under `src/lib` or `src/routes`. The mount-order suite
   boots the built bundle, so run `pnpm build` before `pnpm test` or it skips.
@@ -286,6 +286,66 @@ when `web.output` is `"static"`, and this app exports as an SPA, so it was
 silently ignored. Caught only by actually running the export and grepping the
 generated HTML. `render.yaml`'s `iqraa-web` build now calls `pnpm run
 build:web` (export + inject) instead of a bare `expo export`.
+
+## Attempts API — Phase 4 backend, 2026-08-13
+
+Not yet a PR — verified locally, about to open one. API only; no mobile UI.
+The evaluation plan (`docs/student-evaluation-module-plan.md`) calls this
+"answer entry (teacher)": a teacher opens a student, enters what they wrote on
+paper, and the app grades it. The schema for this (`attempts`, `attemptAnswers`,
+`attemptQuestionGrades`, `attemptResults`, and friends) already existed —
+phases 5–6's grading engine (`questionTypes.ts` `grade()`, `scoring.ts`
+`scoreAttempt()`) was already built and tested but had nothing calling it. This
+wires them together rather than building them.
+
+**New:** `POST/GET /evaluations/:id/attempts` (find-or-create, list — in
+`evaluations.ts`, since starting an attempt needs the evaluation's live
+questions and level scale), and `GET /attempts/:id`,
+`PUT /attempts/:id/answers/:questionId`, `POST /attempts/:id/submit` (new
+`routes/attempts.ts`, self-scoped `router.use("/attempts", authMiddleware)`,
+never re-declaring `/evaluations`'s own guard). An attempt snapshots its
+questions and level-scale bands at creation, per the plan's §7: a later edit
+to the evaluation or the scale must not retroactively change what an
+in-flight attempt is graded against.
+
+**Grading is honest about what it can't grade yet.** New
+`modules/assessment/gradeAttempt.ts` (pure, unit-tested) runs `grade()` over
+every question that has one and folds the results through `scoreAttempt()`.
+A question whose type has no `grade()` — `short_answer`, `open_ended`,
+`problem_solving`, `practical_task`, i.e. anything `ai_rubric` or `manual` —
+is **not** scored as zero; it is left out of the persisted grades and the
+score entirely, and the attempt is marked `needs_review` /
+`isProvisional: true`. Tier 2 (SymPy math equivalence) and Tier 3 (AI rubric
+grading) don't exist yet, so today that is every question the mock generator
+produces — `mockGenerator.ts` only emits `ai_rubric` types, since it won't
+fabricate MCQ distractors or true/false statements from curriculum text. A
+teacher-authored evaluation with real objective questions grades those
+questions for real today; nothing here pretends to grade the rest.
+
+**Verified against a real database, not just typecheck + unit tests** (this
+file's own rule): stood up local Postgres 16, pushed the schema, seeded the
+default level scale, registered a teacher, created a class and a student,
+generated a mock evaluation (confirmed: all six generated questions were
+`ai_rubric`, exactly as designed), inserted one `multiple_choice` and one
+`true_false` question directly (there is still no "add a manual question" API
+— that's Phase 3 authoring UI, not built), published, created an attempt,
+entered three answers, and submitted. Result: the two deterministic questions
+graded correctly (one correct, one incorrect), the six `ai_rubric` questions
+were excluded rather than zeroed, `isProvisional: true`, level resolved to
+`نامٍ` at the resulting percentage. Fixed an answer and resubmitted: grade and
+result rows were replaced in place (row counts stayed at 2 and 1), not
+duplicated.
+
+**Fixed in passing:** `attemptResults.objectiveScores`'s Drizzle column was
+typed `Record<string, unknown>`; `scoreAttempt()` has always returned an
+array (`ObjectiveScore[]`) there. Corrected the type annotation — jsonb, so no
+migration.
+
+**Still missing** before this is demoable end-to-end: an evaluation-authoring
+UI to reach a published evaluation at all (Phase 3), and the mobile
+answer-entry screens themselves (`evaluations/[id]/answers/*` in the plan's
+§5.2) — this session deliberately scoped to the backend only, since a
+teacher-entry screen with nothing to attach it to would be unreachable.
 
 ## Open decisions (2026-08-10)
 
