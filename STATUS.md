@@ -576,6 +576,47 @@ mobile suite 293/293 passing (10 skipped, unrelated); api-server suite
 cases above); sandboxed-iframe behavior isolated-tested in a real browser
 before picking `allow-same-origin` over a bare `sandbox=""`.
 
+## Live-AI test mode with a budget cap, 2026-08-15
+
+Wanted a way to test real OpenAI output — instead of `DEMO_MODE`'s mocks —
+without risking an open-ended bill, plus an explicit on/off switch rather than
+editing source. Two flags, both default to the safe (mocked) state:
+
+- **`AI_LIVE_MODE`** (api-server, must be exactly `"true"`) gates every
+  OpenAI-backed route (`chat.ts`, `generate.ts`, `derivativeVerified.ts`) —
+  off by default, checked *before* the network call.
+- **`EXPO_PUBLIC_DEMO_MODE`** (mobile) now reads from env instead of being
+  hardcoded — `demoMode.ts`'s `DEMO_MODE` const is `true` unless the var is
+  literally `"false"`. Same safe-by-default shape, client side.
+
+A new `artifacts/api-server/src/lib/aiBudget.ts` tracks estimated USD spend
+in-process (token counts from each completion × a hardcoded per-model
+pricing table) and throws before the next OpenAI call once `AI_BUDGET_USD`
+(default `$2`) is reached — the routes turn that into a `429` with a clear
+message, which the mobile client's existing AI-error handling already
+catches and falls back to mocked content for, no new client code needed.
+`GET /api/healthz/ai-budget` (public, same reasoning as `/healthz/verifier`)
+reports `{ liveMode, model, spentUsd, limitUsd, remainingUsd }` for checking
+spend without digging through logs.
+
+Also fixed while wiring this: the hardcoded, likely-invalid `gpt-5.6-luna`
+model id across all three OpenAI call sites (the landmine this file already
+flagged) — now `AI_MODEL`, default `gpt-4o-mini` for affordable testing.
+
+**Known limits, by design:** the budget counter is process-memory only —
+resets on restart, not shared across instances, not a substitute for the
+hard usage limit that should also be set on the OpenAI account itself
+(Settings → Billing → Usage limits). Pricing is a hardcoded estimate, not
+billing-accurate. Full walkthrough: `LOCAL_SETUP.md` → "Testing against real
+AI (optional)".
+
+Verified: `pnpm run typecheck` clean; api-server suite 76/76 (added a
+regression test for the new public status endpoint); mobile suite unchanged
+at 293/293; manually drove `aiBudget.ts`'s guard functions end-to-end
+(off-by-default throws before any call, usage accumulates correctly, cap
+trips and blocks further calls) since there's no local Postgres in this
+environment to exercise the full authenticated HTTP path.
+
 ## Open decisions (2026-08-10)
 
 - ~~**Home vs chat.**~~ **Decided 2026-08-10: chat is the landing tab, home is

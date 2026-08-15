@@ -9,6 +9,12 @@
 // Explicit extension: this module is loaded directly by node --test as well as
 // through esbuild, and Node's resolver does not guess extensions.
 import { verifyDerivative } from "./mathVerifierClient.ts";
+import {
+  assertBudgetAvailable,
+  assertLiveModeEnabled,
+  getAiModel,
+  recordUsage,
+} from "./aiBudget.ts";
 
 // The OpenAI client is imported lazily, inside callLlm. At module scope it
 // throws when no API key is configured, which made the whole file — including
@@ -190,9 +196,11 @@ type LlmContract = {
 };
 
 async function callLlm(): Promise<LlmContract> {
+  assertLiveModeEnabled();
+  assertBudgetAvailable();
   const { openai } = await import("@workspace/integrations-openai-ai-server");
   const completion = await openai.chat.completions.create({
-    model: "gpt-5.6-luna",
+    model: getAiModel(),
     max_completion_tokens: 400,
     messages: [
       { role: "system", content: SYSTEM },
@@ -203,6 +211,7 @@ async function callLlm(): Promise<LlmContract> {
       },
     ],
   });
+  recordUsage(completion.usage);
   const raw = completion.choices[0]?.message?.content ?? "{}";
   return extractJSON(raw) as LlmContract;
 }

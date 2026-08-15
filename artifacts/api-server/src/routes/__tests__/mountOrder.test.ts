@@ -93,6 +93,14 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.ok(["ok", "unreachable"].includes(body.verifier));
   });
 
+  it("keeps the AI test-budget status public", async () => {
+    const res = await fetch(`${base}/healthz/ai-budget`);
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as { liveMode: boolean; limitUsd: number };
+    assert.equal(typeof body.liveMode, "boolean");
+    assert.equal(typeof body.limitUsd, "number");
+  });
+
   it("guards the OpenAI-backed routes", async () => {
     for (const route of ["/chat", "/generate/lesson-plan", "/generate/classroom-activity"]) {
       const res = await fetch(`${base}${route}`, {

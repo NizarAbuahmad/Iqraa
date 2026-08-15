@@ -92,6 +92,33 @@ Without an OpenAI key, the API process will not start (AI client initializes at 
 | `EXPO_PUBLIC_DOMAIN` | unset | Hosted-style host; prefer `EXPO_PUBLIC_API_BASE_URL` locally |
 | `BASE_PATH` | `/` | Mobile static serve / mockup |
 | `MOCKUP_PORT` | `8082` | Design sandbox only |
+| `EXPO_PUBLIC_DEMO_MODE` | `true` (anything but literal `"false"`) | Set `false` to call the real API instead of mocked AI content — see "Testing against real AI" below |
+| `AI_LIVE_MODE` | `false` (anything but literal `"true"`) | Server-side counterpart to the above — must be exactly `true` to let chat/generate/derivativeVerified call OpenAI |
+| `AI_BUDGET_USD` | `2` | Hard USD cap on estimated spend while `AI_LIVE_MODE=true`. In-process only, resets on restart |
+| `AI_MODEL` | `gpt-4o-mini` | Model used by the live-AI routes; cheap by default |
+
+### Testing against real AI (optional)
+
+`DEMO_MODE`/`AI_LIVE_MODE` are **both** off by default — the app never calls
+OpenAI unless you deliberately flip both switches:
+
+1. Set a real `OPENAI_API_KEY` in `.env`.
+2. Set `AI_LIVE_MODE=true` (server) and `EXPO_PUBLIC_DEMO_MODE=false`
+   (mobile — copy into `artifacts/mobile/.env` too) and restart both dev
+   servers.
+3. Watch spend at any time: `GET http://localhost:8080/api/healthz/ai-budget`
+   → `{ liveMode, model, spentUsd, limitUsd, remainingUsd }`.
+4. Once `spentUsd` reaches `AI_BUDGET_USD`, the AI routes stop calling
+   OpenAI and return `429`; the mobile client falls back to mocked content
+   automatically (same path it uses for any AI-service error).
+5. To go back to demo content, set `EXPO_PUBLIC_DEMO_MODE` back to unset/true
+   (and `AI_LIVE_MODE` back to unset/false to stop the server from accepting
+   real calls at all) and restart.
+
+The budget counter is process-memory only — it resets on every server
+restart. For a cap that survives that (and covers you if this guard has a
+bug), also set a hard usage limit on the OpenAI account itself under
+Settings → Billing → Usage limits.
 
 ### Legacy / Replit-only (not required locally)
 
