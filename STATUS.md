@@ -553,12 +553,9 @@ which called `fetch()` directly with no auth header — invisible today because
 authenticated." Now routes through `apiFetch`, same as the rest of the app.
 
 **Not fixed — flagged for a decision, not mechanical:**
-- **No rate-limiting on `/auth/login`, `/auth/register`, or
+- ~~**No rate-limiting on `/auth/login`, `/auth/register`, or
   `/auth/forgot-password`**, combined with an 8-character password minimum and
-  no complexity requirement. Real MEDIUM finding; needs a call on a
-  rate-limiting library (and Render free-tier fit) and whether tightening
-  password rules is worth the friction for existing accounts. Listed under
-  Known landmines below rather than fixed blind.
+  no complexity requirement.~~ **Fixed 2026-08-15** — see below.
 - Five near-identical copies of status/level color-and-label maps across the
   evaluation screens, plus `PickerField` and `CheckboxRow` each duplicated
   3–5 times across `ai-tools/*` and `evaluations/new.tsx` — real duplication,
@@ -708,6 +705,42 @@ revealed answer for question 2 now matches `answerKey` item 2 exactly,
 where before the fix it would have shown whatever option happened to sit
 at index 0.
 
+## Auth hardening — rate limiting + password policy, 2026-08-15
+
+Closed the gap the 2026-08-15 security audit flagged and left as a
+landmine: `/auth/login`, `/auth/register`, and `/auth/forgot-password` had
+no rate limiting, and password strength was just "8 characters, anything
+goes" (`"12345678"` and `"password"` both passed).
+
+No rate-limiting library was in `api-server`'s dependencies, and the app's
+established pattern for this class of problem is already an in-memory,
+single-process guard (`aiBudget.ts`, `errorLog.ts`) — reasonable for a
+single-instance Render pilot, resets on restart. Followed the same pattern
+instead of adding a dependency: `lib/rateLimit.ts` is a small fixed-window
+limiter keyed by client IP, applied per-route —
+`login` (10 / 15 min, roomier since real users mistype passwords),
+`register` and `forgot-password` (5 / hour each). Exceeding the cap returns
+`429` with a `Retry-After` header.
+
+This depends on Express seeing the real client IP, not Render's proxy
+address — `app.set("trust proxy", 1)` added to `app.ts`; without it every
+request would report the same IP and all callers would share one bucket.
+
+Password policy: `lib/passwordPolicy.ts`'s `isStrongPassword` now requires
+8+ characters with at least one letter and one digit (Unicode-aware, so
+Arabic passwords work) — blocks all-digit and dictionary-word passwords
+without demanding a symbol, which would just push pilot teachers toward
+writing passwords down. Applied to `/register` and `/reset-password` only;
+existing accounts and `/login` are untouched, so nobody gets locked out by
+a policy that changed after they signed up.
+
+Verified: `pnpm run typecheck` clean; api-server suite 85/85 (new
+`rateLimit.test.ts`, `passwordPolicy.test.ts`); live against a running
+instance with real Postgres — confirmed a weak password is rejected on
+`/register` and a strong one succeeds, confirmed repeated failed logins
+past the 10-attempt cap return `429` with `Retry-After`, confirmed
+`/forgot-password` blocks at 6 rapid requests.
+
 ## Open decisions (2026-08-10)
 
 - ~~**Home vs chat.**~~ **Decided 2026-08-10: chat is the landing tab, home is
@@ -810,10 +843,11 @@ at index 0.
   `lib/integrations-openai-ai-server`.
 - `app/ai-tools/classroom/classroomRouting.ts` is a helper inside the routes
   dir — Expo Router registers it as a phantom route and warns on every boot.
-- **No rate-limiting on `/auth/login`, `/auth/register`, `/auth/forgot-password`**,
-  and only an 8-character password minimum with no complexity rule. Needs a
-  product/infra decision (library, Render free-tier fit, whether to tighten
-  password rules for existing accounts) — see the 2026-08-15 audit above.
+- ~~No rate-limiting on `/auth/login`, `/auth/register`,
+  `/auth/forgot-password`, and only an 8-character password minimum with no
+  complexity rule.~~ **Fixed 2026-08-15** — see "Auth hardening" above. In
+  memory only (per-process, resets on restart); revisit if Render ever moves
+  to multiple instances.
 
 ## Fixed 2026-08-10 — worth knowing about
 
