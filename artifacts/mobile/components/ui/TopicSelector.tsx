@@ -83,24 +83,6 @@ export function TopicSelector({
   const kbAvailable = hasKBContent(subjectId, gradeId);
   const unitGroups = useMemo(() => groupUnitsBySemester(units, t), [units, t]);
 
-  // Runtime proof for /ai-tools/* topic dropdown (reads KB, not curriculumData).
-  useEffect(() => {
-    const s1 = units.filter(u => u.bookId === 'kb-math-10-s1');
-    const u1 = s1.find(u => u.id === 'kbu-math-s1-nccd-u1');
-    const u1Lessons = u1 ? getLessonsForUnit(u1.id).map(l => l.titleAr) : [];
-    // eslint-disable-next-line no-console
-    console.log('[TopicSelector-PROOF]', {
-      subjectId,
-      gradeId,
-      source: 'knowledgeBase.getUnitsForSubjectGrade / getLessonsForUnit',
-      unitTitles: units.map(u => `${u.bookId}:${u.titleAr}`),
-      s1UnitTitles: s1.map(u => u.titleAr),
-      u1Title: u1?.titleAr ?? null,
-      u1Lessons,
-      hasLegacyEquations: units.some(u => u.id === 'kbu-math-s2-1' || u.titleAr === 'المعادلات'),
-    });
-  }, [subjectId, gradeId, units]);
-
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const [unitOpen, setUnitOpen] = useState(false);

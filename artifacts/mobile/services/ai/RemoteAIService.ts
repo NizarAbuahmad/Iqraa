@@ -14,20 +14,18 @@ import {
 } from './AIService';
 import { DEMO_MODE } from './demoMode';
 import { MockAIService } from './generators';
-import { getApiBaseUrl } from '../apiClient';
+import { apiFetch } from '../apiClient';
 
-function apiBase(): string {
-  return getApiBaseUrl();
-}
-
+// Routes under /generate/* and /chat require auth (routes/index.ts scopes
+// authMiddleware to those prefixes) — go through apiFetch, not a bare fetch(),
+// so the access token actually rides along and a 401 gets one refresh-and-retry
+// instead of silently falling through to the mock generator below.
 async function postJSON<T>(path: string, body: unknown, timeoutMs = 18_000): Promise<T> {
-  const url = `${apiBase()}${path}`;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetch(url, {
+    const res = await apiFetch(path, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
       signal: controller.signal,
     });

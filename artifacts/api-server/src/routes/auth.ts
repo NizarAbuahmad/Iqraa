@@ -10,6 +10,7 @@ import {
 } from "@workspace/db";
 import { eq, and, gt } from "drizzle-orm";
 import { authMiddleware, type AuthenticatedRequest } from "../middlewares/auth.js";
+import { logger } from "../lib/logger.js";
 
 const router = Router();
 
@@ -119,7 +120,7 @@ router.post("/register", async (req, res) => {
       res.status(409).json({ error: "An account with this email already exists" });
       return;
     }
-    console.error("Register error:", err);
+    logger.error({ err }, "register failed");
     res.status(500).json({ error: "Registration failed" });
   }
 });
@@ -175,7 +176,7 @@ router.post("/login", async (req, res) => {
       },
     });
   } catch (err) {
-    console.error("Login error:", err);
+    logger.error({ err }, "login failed");
     res.status(500).json({ error: "Login failed" });
   }
 });
@@ -193,7 +194,7 @@ router.post("/logout", authMiddleware, async (req: AuthenticatedRequest, res) =>
     }
     res.json({ ok: true });
   } catch (err) {
-    console.error("Logout error:", err);
+    logger.error({ err }, "logout failed");
     res.status(500).json({ error: "Logout failed" });
   }
 });
@@ -247,7 +248,7 @@ router.post("/refresh", async (req, res) => {
 
     res.json({ accessToken, refreshToken: refreshTokenValue });
   } catch (err) {
-    console.error("Refresh error:", err);
+    logger.error({ err }, "refresh failed");
     res.status(500).json({ error: "Token refresh failed" });
   }
 });
@@ -278,7 +279,7 @@ router.get("/me", authMiddleware, async (req: AuthenticatedRequest, res) => {
       lastLogin: user.lastLogin,
     });
   } catch (err) {
-    console.error("Me error:", err);
+    logger.error({ err }, "get profile failed");
     res.status(500).json({ error: "Failed to fetch user" });
   }
 });
@@ -333,7 +334,7 @@ router.post("/forgot-password", async (req, res) => {
 
     res.json({ ok: true });
   } catch (err) {
-    console.error("Forgot password error:", err);
+    logger.error({ err }, "forgot password failed");
     res.status(500).json({ error: "Failed to process request" });
   }
 });
@@ -400,7 +401,7 @@ router.post("/reset-password", async (req, res) => {
 
     res.json({ ok: true });
   } catch (err) {
-    console.error("Reset password error:", err);
+    logger.error({ err }, "reset password failed");
     res.status(500).json({ error: "Failed to reset password" });
   }
 });
@@ -440,7 +441,7 @@ router.patch("/users/profile", authMiddleware, async (req: AuthenticatedRequest,
       createdAt: updated.createdAt,
     });
   } catch (err) {
-    console.error("Update profile error:", err);
+    logger.error({ err }, "update profile failed");
     res.status(500).json({ error: "Failed to update profile" });
   }
 });

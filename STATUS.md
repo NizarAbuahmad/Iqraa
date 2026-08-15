@@ -494,6 +494,88 @@ real browser: picked "الاشتقاق" under "المشتقات," confirmed, and
 header ("المشتقات • الاشتقاق") and the assistant's reply ("...لدرس
 «الاشتقاق»؟") updated together.
 
+## Security & cleanliness audit — 2026-08-15
+
+Asked for a whole-app pass, not a diff review: three parallel audits (backend
+security, mobile security, code cleanliness) across every route and service,
+not just what changed on this branch.
+
+**Fixed — HIGH, unauthenticated OpenAI proxy.** `routes/generate.ts` registered
+`POST /classroom-activity` without the `/generate` prefix that
+`routes/index.ts` scopes `authMiddleware` to — the same mount-order bug class
+as the roster/evaluations incident, third time now. It sat outside every
+guard: reachable at `/api/classroom-activity` with no token, an unlimited free
+proxy onto the OpenAI account. It was also unreachable *correctly* — the
+mobile client (`RemoteAIService.ts`) already called the intended
+`/generate/classroom-activity`, so the feature was 404ing for real users while
+the bare path stayed open for anyone else. Moved it under `/generate`, which
+fixes both at once. `mountOrder.test.ts` — the suite this exact bug class put
+in place — now asserts the guarded path 401s and the old bare path 404s.
+
+**Fixed — HIGH, stored-XSS-to-token-theft chain.** `buildLessonFlowHTML` in
+`services/share.ts` was the one HTML-builder in the file that didn't run its
+fields through `esc()` — every other builder (lesson plan, worksheet, quiz,
+slides) already does. Lesson Flow content comes from a live model call, so a
+prompt-injected topic/step/question could land unescaped in the exported
+HTML. On web, `exportAsPDF` writes that HTML into an iframe via
+`document.write` — and access tokens live in `localStorage` on web
+(`secureStorage.ts`), so an injected `<script>` would have had a path to
+them. Escaped all interpolated fields to match the established pattern, and
+added `sandbox="allow-same-origin"` to the export iframe as a second layer —
+confirmed by isolated test that this blocks a `<script>` from executing while
+keeping `contentDocument`/`print()` working (plain `sandbox=""` looked
+stronger but silently breaks the export: it forces an opaque origin and
+`contentDocument` returns `null`).
+
+**Fixed — two real bugs, found but not yet applied by an earlier review pass:**
+- `ai-tools/quiz.tsx`: deleting a question spliced `result.questions` but left
+  the index-aligned `outcomes` array untouched, so every verification badge
+  after the deleted question pointed at the wrong question once presented to
+  class. `removeQuestion` now drops the same index from both.
+- `evaluations/[id]/answers/index.tsx`: attempt statuses loaded on a plain
+  `useEffect` keyed on `id`, unlike the sibling `results.tsx`. Submitting a
+  student's answers and navigating back to the picker showed a stale status
+  pill until the screen remounted. Switched to `useFocusEffect`, matching
+  `results.tsx`.
+
+**Cleanliness — mechanical fixes applied:** deleted two files with zero
+callers (`components/KeyboardAwareScrollViewCompat.tsx`,
+`services/validation.ts` + its test); removed two `console.log` debug probes
+left in production code, unguarded by `__DEV__`
+(`services/knowledgeBase.ts`'s `[KB-CATALOG-PROOF]` IIFE,
+`TopicSelector.tsx`'s `[TopicSelector-PROOF]` effect); brought `auth.ts` and
+`workspace.ts` onto the shared `logger` — they were the only two route files
+still using raw `console.error`. Also fixed `RemoteAIService.ts`'s `postJSON`,
+which called `fetch()` directly with no auth header — invisible today because
+`DEMO_MODE` short-circuits before it runs, but every real `/generate/*` and
+`/chat` call would have 401'd silently into the mock fallback the day
+`DEMO_MODE` flips off, reading as "flaky network" rather than "nobody is
+authenticated." Now routes through `apiFetch`, same as the rest of the app.
+
+**Not fixed — flagged for a decision, not mechanical:**
+- **No rate-limiting on `/auth/login`, `/auth/register`, or
+  `/auth/forgot-password`**, combined with an 8-character password minimum and
+  no complexity requirement. Real MEDIUM finding; needs a call on a
+  rate-limiting library (and Render free-tier fit) and whether tightening
+  password rules is worth the friction for existing accounts. Listed under
+  Known landmines below rather than fixed blind.
+- Five near-identical copies of status/level color-and-label maps across the
+  evaluation screens, plus `PickerField` and `CheckboxRow` each duplicated
+  3–5 times across `ai-tools/*` and `evaluations/new.tsx` — real duplication,
+  but which variant becomes canonical is a design call, not a paste-delete.
+- ~900 lines of `HARDCODED_KB_LESSONS` entries in `knowledgeBase.ts` are dead
+  at runtime (`_supersededUnitIds` filters them out; the file's own comments
+  call them "kept for reference") — worth pruning or archiving, not done here
+  since it's bulk curriculum content someone should confirm against first.
+- `iqra.tsx` is 2,389 lines with three presentational components defined
+  inline; lower priority, noted for a future extraction pass.
+
+Verified: `pnpm run typecheck` clean across all three workspace projects;
+mobile suite 293/293 passing (10 skipped, unrelated); api-server suite
+75/75 passing after `pnpm build` (added the two mount-order regression
+cases above); sandboxed-iframe behavior isolated-tested in a real browser
+before picking `allow-same-origin` over a bare `sandbox=""`.
+
 ## Open decisions (2026-08-10)
 
 - ~~**Home vs chat.**~~ **Decided 2026-08-10: chat is the landing tab, home is
@@ -591,6 +673,10 @@ header ("المشتقات • الاشتقاق") and the assistant's reply ("...
   `lib/integrations-openai-ai-server`.
 - `app/ai-tools/classroom/classroomRouting.ts` is a helper inside the routes
   dir — Expo Router registers it as a phantom route and warns on every boot.
+- **No rate-limiting on `/auth/login`, `/auth/register`, `/auth/forgot-password`**,
+  and only an 8-character password minimum with no complexity rule. Needs a
+  product/infra decision (library, Render free-tier fit, whether to tighten
+  password rules for existing accounts) — see the 2026-08-15 audit above.
 
 ## Fixed 2026-08-10 — worth knowing about
 

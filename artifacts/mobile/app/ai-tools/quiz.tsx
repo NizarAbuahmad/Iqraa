@@ -206,6 +206,9 @@ export default function QuizScreen() {
     });
     if (!ok) return;
     setResult(prev => (prev ? removeQuestionAt(prev, index) : prev));
+    // outcomes is index-aligned to result.questions — drop the same slot so
+    // verification badges don't shift onto the wrong question after a delete.
+    setOutcomes(prev => (prev ? prev.filter((_, i) => i !== index) : prev));
     setSaveLabel(savedId ? 'updated' : 'save');
   };
 

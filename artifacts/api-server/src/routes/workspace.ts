@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { savedMaterials } from "@workspace/db";
 import { eq, and, desc } from "drizzle-orm";
 import { authMiddleware, type AuthenticatedRequest } from "../middlewares/auth.js";
+import { logger } from "../lib/logger.js";
 
 const router = Router();
 
@@ -47,7 +48,7 @@ router.get("/items", async (req: AuthenticatedRequest, res) => {
 
     res.json(items.map(toClientItem));
   } catch (err) {
-    console.error("Get workspace items error:", err);
+    logger.error({ err }, "get workspace items failed");
     res.status(500).json({ error: "Failed to fetch workspace items" });
   }
 });
@@ -74,7 +75,7 @@ router.get("/items/:id", async (req: AuthenticatedRequest, res) => {
 
     res.json(toClientItem(item));
   } catch (err) {
-    console.error("Get workspace item error:", err);
+    logger.error({ err }, "get workspace item failed");
     res.status(500).json({ error: "Failed to fetch item" });
   }
 });
@@ -117,7 +118,7 @@ router.post("/items", async (req: AuthenticatedRequest, res) => {
 
     res.status(201).json(toClientItem(item));
   } catch (err) {
-    console.error("Create workspace item error:", err);
+    logger.error({ err }, "create workspace item failed");
     res.status(500).json({ error: "Failed to save item" });
   }
 });
@@ -166,7 +167,7 @@ router.patch("/items/:id", async (req: AuthenticatedRequest, res) => {
 
     res.json(toClientItem(item));
   } catch (err) {
-    console.error("Update workspace item error:", err);
+    logger.error({ err }, "update workspace item failed");
     res.status(500).json({ error: "Failed to update item" });
   }
 });
@@ -192,7 +193,7 @@ router.delete("/items/:id", async (req: AuthenticatedRequest, res) => {
 
     res.json({ ok: true });
   } catch (err) {
-    console.error("Delete workspace item error:", err);
+    logger.error({ err }, "delete workspace item failed");
     res.status(500).json({ error: "Failed to delete item" });
   }
 });
@@ -235,7 +236,7 @@ router.post("/items/:id/duplicate", async (req: AuthenticatedRequest, res) => {
 
     res.status(201).json(toClientItem(copy));
   } catch (err) {
-    console.error("Duplicate workspace item error:", err);
+    logger.error({ err }, "duplicate workspace item failed");
     res.status(500).json({ error: "Failed to duplicate item" });
   }
 });

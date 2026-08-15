@@ -367,7 +367,12 @@ Return JSON in this exact shape:
 }
 
 // ─── Classroom Activity route ─────────────────────────────────────────────────
-generateRouter.post('/classroom-activity', async (req, res) => {
+// Every other route in this file is under /generate/*, which is exactly the
+// prefix routes/index.ts scopes authMiddleware to. This one was registered
+// bare, at /classroom-activity, so it never went through the guard — an
+// unauthenticated, unlimited proxy onto the OpenAI account. Same failure
+// shape as the roster/evaluations mount-order incident; see routes/index.ts.
+generateRouter.post('/generate/classroom-activity', async (req, res) => {
   const body = req.body as Record<string, unknown>;
   const isAr = body.language === 'arabic';
   try {
