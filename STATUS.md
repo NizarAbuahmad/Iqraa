@@ -617,6 +617,52 @@ at 293/293; manually drove `aiBudget.ts`'s guard functions end-to-end
 trips and blocks further calls) since there's no local Postgres in this
 environment to exercise the full authenticated HTTP path.
 
+## Basic error visibility, 2026-08-15
+
+First real teachers are testing the app now — the only way to learn
+something broke was a teacher saying so. Added a way to check "what errored
+recently" without digging through Render's raw log stream, ahead of any
+proper log aggregation.
+
+`lib/logger.ts` hooks pino's `logMethod` (its documented interception point,
+not a monkey-patch) so every existing `logger.error(...)` call across the
+app — already the pattern in all ~30 route catch blocks — also lands in a
+new in-memory ring buffer (`lib/errorLog.ts`, last 50, no code changes needed
+at any of those call sites). `app.ts` also grew a catch-all Express error
+handler as a safety net for anything a route doesn't catch itself, feeding
+the same buffer. `GET /api/healthz/errors` returns the last 50, newest
+first, gated by an `ADMIN_DEBUG_KEY` env var sent back as the `x-admin-key`
+header; wrong key
+and no key both 404, so the endpoint's existence isn't itself a signal to
+anyone probing without the key. Chose a header-gated route over reusing
+teacher auth because a logged-in teacher could otherwise read errors
+referencing other users' data — there's no `admin` role yet to scope it to.
+
+Also fixed one real, formerly-silent gap this surfaced: `middlewares/auth.ts`
+caught *every* verification failure with a bare `catch {}` — both routine
+ones (expired token, every client eventually hits this) and genuine backend
+failures (the DB lookup after JWT verification throwing), with zero
+distinction and zero logging for either. Expired/malformed tokens stay
+silent (too routine to log); anything else — confirmed live against an
+unreachable Postgres — now logs via `logger.error` and shows up at
+`/healthz/errors`, which is exactly the case this feature exists for: a
+failure on the single most-hit path (every authenticated request) that
+previously had zero signal anywhere, not even in raw logs.
+
+**Known limits, by design:** in-memory only, resets on restart, single
+process — same tradeoff as the AI budget counter above. No stack traces or
+request bodies in the buffer (deliberately — this is meant to be safe to
+glance at, not a stand-in for real log aggregation once that's worth the
+investment).
+
+Verified: `pnpm run typecheck` clean; api-server suite 77/77 (added a
+regression test that `/healthz/errors` 404s with no key set); mobile suite
+unchanged at 293/293; drove the full path live against the built bundle —
+triggered the auth-middleware DB failure against an unreachable Postgres,
+confirmed it was silent before the fix and appeared in
+`GET /healthz/errors` (with the correct key; 404 with no key and with a
+wrong key) after it.
+
 ## Open decisions (2026-08-10)
 
 - ~~**Home vs chat.**~~ **Decided 2026-08-10: chat is the landing tab, home is

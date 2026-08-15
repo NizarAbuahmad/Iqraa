@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { db } from "@workspace/db";
 import { users } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { logger } from "../lib/logger.js";
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -65,7 +66,14 @@ export async function authMiddleware(
 
     req.user = user;
     next();
-  } catch {
+  } catch (err) {
+    // An expired/malformed/wrong-secret token is routine — every client with
+    // a stale token hits this, so it's not worth logging. Anything else here
+    // (the DB lookup above throwing, most often) is a real backend failure
+    // that was previously swallowed with zero signal anywhere.
+    if (!(err instanceof jwt.JsonWebTokenError)) {
+      logger.error({ err }, "auth middleware failed unexpectedly");
+    }
     res.status(401).json({ error: "Invalid or expired token" });
   }
 }

@@ -96,6 +96,7 @@ Without an OpenAI key, the API process will not start (AI client initializes at 
 | `AI_LIVE_MODE` | `false` (anything but literal `"true"`) | Server-side counterpart to the above — must be exactly `true` to let chat/generate/derivativeVerified call OpenAI |
 | `AI_BUDGET_USD` | `2` | Hard USD cap on estimated spend while `AI_LIVE_MODE=true`. In-process only, resets on restart |
 | `AI_MODEL` | `gpt-4o-mini` | Model used by the live-AI routes; cheap by default |
+| `ADMIN_DEBUG_KEY` | unset (endpoint 404s) | Set to see recent server errors at `GET /api/healthz/errors` (header `x-admin-key`) |
 
 ### Testing against real AI (optional)
 

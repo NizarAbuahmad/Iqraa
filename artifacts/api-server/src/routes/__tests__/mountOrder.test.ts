@@ -101,6 +101,11 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(typeof body.limitUsd, "number");
   });
 
+  it("hides the recent-errors endpoint without ADMIN_DEBUG_KEY set", async () => {
+    const res = await fetch(`${base}/healthz/errors`);
+    assert.equal(res.status, 404);
+  });
+
   it("guards the OpenAI-backed routes", async () => {
     for (const route of ["/chat", "/generate/lesson-plan", "/generate/classroom-activity"]) {
       const res = await fetch(`${base}${route}`, {
