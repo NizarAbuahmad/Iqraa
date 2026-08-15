@@ -36,8 +36,10 @@ import { resolveGeneratorGrounding } from '../kbContext.ts';
 const GROUNDED_TOPIC = 'حل المعادلة الأسية';
 
 describe('picker grade range', () => {
-  it('offers grades 7 through 12, in order', () => {
-    assert.deepEqual(getPickerGrades().map(g => g.level), [7, 8, 9, 10, 11, 12]);
+  it('offers grades 7–12 plus every KB-backed grade outside the range', () => {
+    // Grade 2 sits outside the 7–12 range but has the NCCD math books behind
+    // it, so it earns a row — that is the whole "books as they arrive" deal.
+    assert.deepEqual(getPickerGrades().map(g => g.level), [2, 7, 8, 9, 10, 11, 12]);
   });
 
   it('starts on Grade 10 — the grade with curriculum behind it', () => {

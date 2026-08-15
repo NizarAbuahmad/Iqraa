@@ -37,7 +37,7 @@ Vision screens (student/parent/school dashboards) are deprioritized.
 
 - `pnpm install` and full `pnpm run typecheck` pass clean (checked on Windows
   2026-08-06 and on Linux 2026-08-10).
-- Mobile test suite: 390 tests, 0 failures (10 skipped). The `test` script
+- Mobile test suite: 394 tests, 0 failures (10 skipped). The `test` script
   globs `services/__tests__/**/*.test.ts` — it used to be a hand-listed set of
   files that had drifted, so two suites never ran.
 - API test suite: 74 tests, 0 failures. Its `test` script globs
@@ -842,6 +842,44 @@ no gate and keeps its old behaviour.
 Adding a real new grade later = the G10 math S1 pipeline: NCCD book PDFs →
 transcribe units/lessons/النتاجات (from renders, not pdftotext — it mangles
 Arabic ligatures) → KB catalog module → everything above lights up.
+
+## Grade 2 mathematics — first grade added from real books, 2026-08-15
+
+`lib/curriculum/src/data/iqra_curriculum_g2_math.json` + `catalogs/g2Math.ts`:
+the full NCCD year (10 units, 61 lessons, 2nd edition 2022/منقحة 2026,
+ISBN 978-9923-41-346-3), wired into the KB as two semester books
+(`kb-math-2-s1/-s2`). Grade 2 now appears in the tool pickers (via
+`PICKER_EXTRA_GRADE_IDS`) with the full unit→lesson cascade and grounded
+generation — the first grade to arrive through the "books as they arrive"
+path. Source PDFs are NOT committed (the S2 student book alone is 94 MB;
+repo bloat is a known landmine): they live in the founder's
+`Raya studio/Iqraa/Calude app/Knowledge Base/2nd grade/Math/` folder.
+
+Provenance is per-unit via `data_tier`, and nothing was invented:
+
+- `teacher_guide` (units 7–10): per-lesson نتاجات/مصطلحات/حصص transcribed
+  from the دليل المعلم «مخطط الوحدة» tables — the G10 gold standard.
+- `student_book_lesson` (unit 6): outcomes from the أتعلم اليوم boxes in the
+  student book's lesson openers; no period counts exist there.
+- `title_only` (units 1–5): titles from the S1 TOC. **The guide for units
+  1–6 was not among the delivered files.** Next enrichment pass: either the
+  missing guide units, or transcribing أتعلم اليوم from S1 lesson pages
+  (~30 lessons, book pages 8–88).
+
+Recorded discrepancies (transcribed as printed, per the G10 rule):
+- Unit 10's مخطط prints المجموع 13 حصة while its own rows sum to 9 — the
+  guide disagrees with itself; see `meta.known_gaps`.
+
+Also delivered but NOT yet ingested (future exercise-bank material):
+teacher-authored تدريبات sheets (أ. نهاد حسن) for units 1, 2, الضرب،
+القسمة، الكسور، الجمع والطرح ضمن 999; MoE remedial/diagnostic packs
+(التدخلات العلاجية، اختبار تشخيصي، الفاقد التعليمي); exercise books S1+S2.
+
+Deliberately NOT done: the curriculum browse tab (المنهج) still shows G10
+only — G2 browse needs lib-catalog browser rows (`BOOKS/UNITS/LESSONS`)
+like `buildNccdSem1BrowserCatalog`, a separate pass. The tools cascade does
+not depend on it. Generators' wording for 7-year-olds also deserves a
+pedagogy review (`edu-expert-advisor`) before demoing G2 content widely.
 
 ## Open decisions (2026-08-10)
 

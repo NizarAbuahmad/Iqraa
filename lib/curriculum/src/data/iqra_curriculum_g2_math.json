@@ -1,0 +1,1048 @@
+{
+  "meta": {
+    "grade": "الصف الثاني",
+    "grade_en": "Grade 2",
+    "grade_id": "grade-2",
+    "subject": "الرياضيات",
+    "subject_en": "Mathematics",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "edition": "الطبعة الثانية 2022 (منقحة 2026)",
+    "isbn_student_book_s1": "978-9923-41-346-3",
+    "semesters_covered": [
+      1,
+      2
+    ],
+    "provenance_note": "بنية الوحدات والدروس منسوخة من قائمة المحتويات في كتابي الطالب (الفصلان الأول والثاني). نتاجات الوحدات 7-10 ومصطلحاتها وعدد حصصها منسوخة من جداول (مخطط الوحدة) في دليل المعلم. نتاجات الوحدة 6 منسوخة من صناديق (أتعلم اليوم) و(المصطلحات) في صفحات افتتاح الدروس في كتاب الطالب نفسه.",
+    "known_gaps": [
+      "الوحدات 1-5 (الفصل الأول): عناوين الدروس فقط دون نتاجات — دليل المعلم للوحدات 1-6 غير متوفر ضمن الملفات المسلَّمة، ونقل صناديق (أتعلم اليوم) من كتاب الطالب لهذه الوحدات مؤجل لجولة لاحقة.",
+      "الوحدة 6: النتاجات من صناديق (أتعلم اليوم) في كتاب الطالب لا من دليل المعلم، وعدد الحصص غير معروف.",
+      "صفوف التهيئة والمشروع واختبار الوحدة في مخطط دليل المعلم غير مدرجة كدروس؛ حصصها محسوبة ضمن total_periods.",
+      "الوحدة 10: مجموع الحصص المطبوع في مخطط الوحدة (13 حصة) لا يطابق مجموع صفوف المخطط نفسه (2+2+1+1 دروس + 3 تهيئة/مشروع/اختبار = 9). نُقلت القيم كما طُبعت دون تعديل."
+    ]
+  },
+  "units": [
+    {
+      "id": "g2u1",
+      "number": 1,
+      "semester": 1,
+      "title_ar": "الأعداد",
+      "title_en": "Numbers",
+      "general_idea_ar": "الأعداد ضمن ثلاث منازل: المئات، والقيمة المنزلية، وقراءة الأعداد وكتابتها. مشروع الوحدة: الأدوات المنزلية.",
+      "total_periods": null,
+      "data_tier": "title_only",
+      "lessons": [
+        {
+          "id": "g2u1l1",
+          "order": 1,
+          "title_ar": "المئات",
+          "title_en": "Hundreds",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            {
+              "ar": "المئة",
+              "en": "one hundred"
+            }
+          ]
+        },
+        {
+          "id": "g2u1l2",
+          "order": 2,
+          "title_ar": "الأعداد ضمن ثلاث منازل",
+          "title_en": "Three-Digit Numbers",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "g2u1l3",
+          "order": 3,
+          "title_ar": "القيمة المنزلية",
+          "title_en": "Place Value",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "g2u1l4",
+          "order": 4,
+          "title_ar": "قراءة الأعداد وكتابتها",
+          "title_en": "Reading and Writing Numbers",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "g2u2",
+      "number": 2,
+      "semester": 1,
+      "title_ar": "مقارنة الأعداد وترتيبها",
+      "title_en": "Comparing and Ordering Numbers",
+      "general_idea_ar": "العد والمقارنة والترتيب والتقريب ضمن ثلاث منازل. مشروع الوحدة: مقارنة الأعداد.",
+      "total_periods": null,
+      "data_tier": "title_only",
+      "lessons": [
+        {
+          "id": "g2u2l1",
+          "order": 1,
+          "title_ar": "العدّ بالواحدات والعشرات والمئات",
+          "title_en": "Counting by Ones, Tens, and Hundreds",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "g2u2l2",
+          "order": 2,
+          "title_ar": "الأعداد الزوجية والأعداد الفردية",
+          "title_en": "Even and Odd Numbers",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "g2u2l3",
+          "order": 3,
+          "title_ar": "العدد السابق والعدد التالي",
+          "title_en": "Before and After Numbers",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "g2u2l4",
+          "order": 4,
+          "title_ar": "مقارنة الأعداد",
+          "title_en": "Comparing Numbers",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "g2u2l5",
+          "order": 5,
+          "title_ar": "ترتيب الأعداد",
+          "title_en": "Ordering Numbers",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "g2u2l6",
+          "order": 6,
+          "title_ar": "تمثيل الأعداد على خط الأعداد",
+          "title_en": "Representing Numbers on the Number Line",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "g2u2l7",
+          "order": 7,
+          "title_ar": "تقريب الأعداد",
+          "title_en": "Rounding Numbers",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "g2u3",
+      "number": 3,
+      "semester": 1,
+      "title_ar": "الجمع",
+      "title_en": "Addition",
+      "general_idea_ar": "جمع الأعداد ضمن ثلاث منازل ذهنيًا وكتابيًا مع إعادة التجميع وتقدير الناتج وخصائص الجمع. مشروع الوحدة: فواتير الكهرباء المنزلية.",
+      "total_periods": null,
+      "data_tier": "title_only",
+      "lessons": [
+        {
+          "id": "g2u3l1",
+          "order": 1,
+          "title_ar": "جمع مضاعفات العشرة والمئة ذهنيًا",
+          "title_en": "Mentally Adding Multiples of Ten and One Hundred",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "g2u3l2",
+          "order": 2,
+          "title_ar": "تقدير ناتج الجمع",
+          "title_en": "Estimating Sums",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "g2u3l3",
+          "order": 3,
+          "title_ar": "الجمع",
+          "title_en": "Addition",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "g2u3l4",
+          "order": 4,
+          "title_ar": "الجمع مع إعادة التجميع (1)",
+          "title_en": "Addition with Regrouping (1)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "g2u3l5",
+          "order": 5,
+          "title_ar": "الجمع مع إعادة التجميع (2)",
+          "title_en": "Addition with Regrouping (2)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "g2u3l6",
+          "order": 6,
+          "title_ar": "خصائص الجمع",
+          "title_en": "Properties of Addition",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "g2u3l7",
+          "order": 7,
+          "title_ar": "خطة حل المسألة: التخمين والتحقق",
+          "title_en": "Problem-Solving Strategy: Guess and Check",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "g2u4",
+      "number": 4,
+      "semester": 1,
+      "title_ar": "الطرح",
+      "title_en": "Subtraction",
+      "general_idea_ar": "طرح الأعداد ضمن ثلاث منازل ذهنيًا وكتابيًا مع إعادة التجميع ومع وجود الأصفار وتقدير الناتج. مشروع الوحدة: الحيوانات.",
+      "total_periods": null,
+      "data_tier": "title_only",
+      "lessons": [
+        {
+          "id": "g2u4l1",
+          "order": 1,
+          "title_ar": "طرح مضاعفات العشرة والمئة ذهنيًا",
+          "title_en": "Mentally Subtracting Multiples of Ten and One Hundred",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "g2u4l2",
+          "order": 2,
+          "title_ar": "تقدير ناتج الطرح",
+          "title_en": "Estimating Differences",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "g2u4l3",
+          "order": 3,
+          "title_ar": "الطرح",
+          "title_en": "Subtraction",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "g2u4l4",
+          "order": 4,
+          "title_ar": "الطرح مع إعادة التجميع (1)",
+          "title_en": "Subtraction with Regrouping (1)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "g2u4l5",
+          "order": 5,
+          "title_ar": "الطرح مع إعادة التجميع (2)",
+          "title_en": "Subtraction with Regrouping (2)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "g2u4l6",
+          "order": 6,
+          "title_ar": "الطرح مع وجود أصفار",
+          "title_en": "Subtracting Across Zeros",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "g2u4l7",
+          "order": 7,
+          "title_ar": "خطة حل المسألة: الحل بأكثر من خطوة",
+          "title_en": "Problem-Solving Strategy: Multi-Step Problems",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "g2u5",
+      "number": 5,
+      "semester": 1,
+      "title_ar": "معالجة البيانات",
+      "title_en": "Data Handling",
+      "general_idea_ar": "تمثيل البيانات بالصور وجدول الإشارات وتفسيرها. مشروع الوحدة: رياضتي المفضلة.",
+      "total_periods": null,
+      "data_tier": "title_only",
+      "lessons": [
+        {
+          "id": "g2u5l1",
+          "order": 1,
+          "title_ar": "تمثيل البيانات بالصور",
+          "title_en": "Picture Graphs",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "g2u5l2",
+          "order": 2,
+          "title_ar": "تفسير البيانات الممثلة بالصور",
+          "title_en": "Interpreting Picture Graphs",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "g2u5l3",
+          "order": 3,
+          "title_ar": "جمع البيانات وتنظيمها",
+          "title_en": "Collecting and Organizing Data",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "g2u5l4",
+          "order": 4,
+          "title_ar": "تفسير البيانات الممثلة بجدول الإشارات",
+          "title_en": "Interpreting Tally Charts",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "g2u6",
+      "number": 6,
+      "semester": 2,
+      "title_ar": "الضرب",
+      "title_en": "Multiplication",
+      "general_idea_ar": "حقائق الضرب للأعداد 2، 3، 4، 5: المجموعات المتساوية، والضرب كجمع متكرر، والشبكات. مشروع الوحدة: مدينة الضرب.",
+      "total_periods": null,
+      "data_tier": "student_book_lesson",
+      "lessons": [
+        {
+          "id": "g2u6l1",
+          "order": 1,
+          "title_ar": "المجموعات المتساوية",
+          "title_en": "Equal Groups",
+          "main_idea_ar": "مفهوم المجموعات المتساوية.",
+          "periods": null,
+          "objectives": [
+            "يتعرف مفهوم المجموعات المتساوية."
+          ],
+          "vocabulary": [
+            {
+              "ar": "المجموعات المتساوية",
+              "en": "equal groups"
+            }
+          ]
+        },
+        {
+          "id": "g2u6l2",
+          "order": 2,
+          "title_ar": "الضرب كجمع متكرر",
+          "title_en": "Multiplication as Repeated Addition",
+          "main_idea_ar": "إيجاد ناتج الضرب باستعمال الجمع المتكرر.",
+          "periods": null,
+          "objectives": [
+            "يجد ناتج الضرب باستعمال الجمع المتكرر."
+          ],
+          "vocabulary": [
+            {
+              "ar": "الضرب",
+              "en": "multiplication"
+            },
+            {
+              "ar": "ناتج الضرب",
+              "en": "product"
+            },
+            {
+              "ar": "جملة الضرب",
+              "en": "multiplication sentence"
+            }
+          ]
+        },
+        {
+          "id": "g2u6l3",
+          "order": 3,
+          "title_ar": "الشبكات والضرب",
+          "title_en": "Arrays and Multiplication",
+          "main_idea_ar": "إيجاد ناتج الضرب باستعمال الشبكة.",
+          "periods": null,
+          "objectives": [
+            "يجد ناتج الضرب باستعمال الشبكة."
+          ],
+          "vocabulary": [
+            {
+              "ar": "الشبكة",
+              "en": "array"
+            }
+          ]
+        },
+        {
+          "id": "g2u6l4",
+          "order": 4,
+          "title_ar": "الضرب في 2",
+          "title_en": "Multiplying by 2",
+          "main_idea_ar": "حقائق الضرب للعدد 2.",
+          "periods": null,
+          "objectives": [
+            "يتعرف حقائق الضرب للعدد 2.",
+            "يجد ناتج الضرب في 2."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "g2u6l5",
+          "order": 5,
+          "title_ar": "الضرب في 5",
+          "title_en": "Multiplying by 5",
+          "main_idea_ar": "حقائق الضرب للعدد 5.",
+          "periods": null,
+          "objectives": [
+            "يتعرف حقائق الضرب للعدد 5.",
+            "يجد ناتج الضرب في 5."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "g2u6l6",
+          "order": 6,
+          "title_ar": "الضرب في 3",
+          "title_en": "Multiplying by 3",
+          "main_idea_ar": "حقائق الضرب للعدد 3.",
+          "periods": null,
+          "objectives": [
+            "يتعرف حقائق الضرب للعدد 3.",
+            "يجد ناتج الضرب في 3."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "g2u6l7",
+          "order": 7,
+          "title_ar": "الضرب في 4",
+          "title_en": "Multiplying by 4",
+          "main_idea_ar": "حقائق الضرب للعدد 4.",
+          "periods": null,
+          "objectives": [
+            "يتعرف حقائق الضرب للعدد 4.",
+            "يجد ناتج الضرب في 4."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "g2u6l8",
+          "order": 8,
+          "title_ar": "خطة حل المسألة: البحث عن نمط",
+          "title_en": "Problem-Solving Strategy: Look for a Pattern",
+          "main_idea_ar": "حل مسائل حياتية باستعمال خطة البحث عن نمط.",
+          "periods": null,
+          "objectives": [
+            "يحل مسائل حياتية باستعمال خطة البحث عن نمط."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "g2u7",
+      "number": 7,
+      "semester": 2,
+      "title_ar": "القسمة",
+      "title_en": "Division",
+      "general_idea_ar": "تكوين المجموعات المتساوية، والقسمة كطرح متكرر، وعلاقة القسمة بالضرب، وحقائق القسمة على 2، 3، 4، 5، واستراتيجية اختيار العملية. مشروع الوحدة: الزراعة.",
+      "total_periods": 19,
+      "data_tier": "teacher_guide",
+      "lessons": [
+        {
+          "id": "g2u7l1",
+          "order": 1,
+          "title_ar": "تكوين المجموعات المتساوية",
+          "title_en": "Making Equal Groups",
+          "main_idea_ar": "",
+          "periods": 2,
+          "objectives": [
+            "يتعرف مفهوم القسمة بوصفها تكوين مجموعات متساوية من الأشياء (يراعي أن تتوزع الأشياء على مجموعات بحيث لا يوجد باقٍ)."
+          ],
+          "vocabulary": [
+            {
+              "ar": "القسمة",
+              "en": "division"
+            }
+          ]
+        },
+        {
+          "id": "g2u7l2",
+          "order": 2,
+          "title_ar": "القسمة كطرح متكرر",
+          "title_en": "Division as Repeated Subtraction",
+          "main_idea_ar": "",
+          "periods": 2,
+          "objectives": [
+            "يتعرف القسمة بوصفها طرحًا متكررًا.",
+            "يتعرف مكونات جملة القسمة.",
+            "يكتب جملة القسمة."
+          ],
+          "vocabulary": [
+            {
+              "ar": "جملة القسمة",
+              "en": "division sentence"
+            },
+            {
+              "ar": "إشارة القسمة",
+              "en": "division sign"
+            },
+            {
+              "ar": "ناتج القسمة",
+              "en": "quotient"
+            }
+          ]
+        },
+        {
+          "id": "g2u7l3",
+          "order": 3,
+          "title_ar": "العلاقة بين القسمة والضرب",
+          "title_en": "Relating Division and Multiplication",
+          "main_idea_ar": "",
+          "periods": 2,
+          "objectives": [
+            "يتعرف العلاقة بين القسمة والضرب.",
+            "يستعمل العلاقة بين الضرب والقسمة لكتابة حقيقتي ضرب وقسمة مترابطتين."
+          ],
+          "vocabulary": [
+            {
+              "ar": "الحقائق المترابطة",
+              "en": "related facts"
+            }
+          ]
+        },
+        {
+          "id": "g2u7l4",
+          "order": 4,
+          "title_ar": "القسمة على 2",
+          "title_en": "Dividing by 2",
+          "main_idea_ar": "",
+          "periods": 2,
+          "objectives": [
+            "يتعرف حقائق القسمة على 2.",
+            "يجد ناتج القسمة على 2."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "g2u7l5",
+          "order": 5,
+          "title_ar": "القسمة على 5",
+          "title_en": "Dividing by 5",
+          "main_idea_ar": "",
+          "periods": 2,
+          "objectives": [
+            "يتعرف حقائق القسمة على 5.",
+            "يجد ناتج القسمة على 5."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "g2u7l6",
+          "order": 6,
+          "title_ar": "القسمة على 3",
+          "title_en": "Dividing by 3",
+          "main_idea_ar": "",
+          "periods": 2,
+          "objectives": [
+            "يتعرف حقائق القسمة على 3.",
+            "يجد ناتج القسمة على 3."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "g2u7l7",
+          "order": 7,
+          "title_ar": "القسمة على 4",
+          "title_en": "Dividing by 4",
+          "main_idea_ar": "",
+          "periods": 2,
+          "objectives": [
+            "يتعرف حقائق القسمة على 4.",
+            "يجد ناتج القسمة على 4."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "g2u7l8",
+          "order": 8,
+          "title_ar": "مهارة حل المسألة: اختيار العملية",
+          "title_en": "Problem-Solving Skill: Choose the Operation",
+          "main_idea_ar": "",
+          "periods": 2,
+          "objectives": [
+            "يحل مسائل حياتية باختيار العملية المناسبة."
+          ],
+          "vocabulary": [
+            {
+              "ar": "اختيار العملية",
+              "en": "choose the operation"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "g2u8",
+      "number": 8,
+      "semester": 2,
+      "title_ar": "الكسور والأشكال الهندسية",
+      "title_en": "Fractions and Geometric Shapes",
+      "general_idea_ar": "كسر الوحدة كجزء من كلٍّ وكجزء من مجموعة، والمجسمات والأشكال المستوية وخصائصها، والأنماط الهندسية. مشروع الوحدة: صاروخ الأشكال الهندسية.",
+      "total_periods": 15,
+      "data_tier": "teacher_guide",
+      "lessons": [
+        {
+          "id": "g2u8l1",
+          "order": 1,
+          "title_ar": "كسر الوحدة",
+          "title_en": "Unit Fractions",
+          "main_idea_ar": "",
+          "periods": 1,
+          "objectives": [
+            "يتعرف كسر الوحدة، ويقرؤه، ويمثله."
+          ],
+          "vocabulary": [
+            {
+              "ar": "كسر الوحدة",
+              "en": "unit fraction"
+            },
+            {
+              "ar": "المقام",
+              "en": "denominator"
+            },
+            {
+              "ar": "البسط",
+              "en": "numerator"
+            }
+          ]
+        },
+        {
+          "id": "g2u8l2",
+          "order": 2,
+          "title_ar": "كسر الوحدة كجزء من مجموعة",
+          "title_en": "Unit Fractions of a Set",
+          "main_idea_ar": "",
+          "periods": 1,
+          "objectives": [
+            "يتعرف كسر الوحدة كجزء من مجموعة أشياء متماثلة، ويقرؤه، ويمثله."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "g2u8l3",
+          "order": 3,
+          "title_ar": "المجسّمات",
+          "title_en": "Solid Figures",
+          "main_idea_ar": "",
+          "periods": 2,
+          "objectives": [
+            "يتعرف المجسمات."
+          ],
+          "vocabulary": [
+            {
+              "ar": "مجسمات",
+              "en": "solid figures"
+            },
+            {
+              "ar": "هرم",
+              "en": "pyramid"
+            },
+            {
+              "ar": "كرة",
+              "en": "sphere"
+            },
+            {
+              "ar": "متوازي مستطيلات",
+              "en": "rectangular prism"
+            },
+            {
+              "ar": "أسطوانة",
+              "en": "cylinder"
+            },
+            {
+              "ar": "مكعب",
+              "en": "cube"
+            }
+          ]
+        },
+        {
+          "id": "g2u8l4",
+          "order": 4,
+          "title_ar": "الأحرف والأوجه والرؤوس",
+          "title_en": "Edges, Faces, and Vertices",
+          "main_idea_ar": "",
+          "periods": 2,
+          "objectives": [
+            "يحدد عدد أوجه المجسم وأحرفه ورؤوسه."
+          ],
+          "vocabulary": [
+            {
+              "ar": "حرف",
+              "en": "edge"
+            },
+            {
+              "ar": "وجه",
+              "en": "face"
+            },
+            {
+              "ar": "رأس",
+              "en": "vertex"
+            }
+          ]
+        },
+        {
+          "id": "g2u8l5",
+          "order": 5,
+          "title_ar": "الأشكال المستوية",
+          "title_en": "Plane Shapes",
+          "main_idea_ar": "",
+          "periods": 2,
+          "objectives": [
+            "يتعرف الشكل المستوي، ويميزه."
+          ],
+          "vocabulary": [
+            {
+              "ar": "أشكال مستوية",
+              "en": "plane shapes"
+            },
+            {
+              "ar": "مثلث",
+              "en": "triangle"
+            },
+            {
+              "ar": "مربع",
+              "en": "square"
+            },
+            {
+              "ar": "مستطيل",
+              "en": "rectangle"
+            },
+            {
+              "ar": "دائرة",
+              "en": "circle"
+            },
+            {
+              "ar": "خماسي",
+              "en": "pentagon"
+            },
+            {
+              "ar": "سداسي",
+              "en": "hexagon"
+            }
+          ]
+        },
+        {
+          "id": "g2u8l6",
+          "order": 6,
+          "title_ar": "الأضلاع والرؤوس",
+          "title_en": "Sides and Vertices",
+          "main_idea_ar": "",
+          "periods": 2,
+          "objectives": [
+            "يصف الأشكال المستوية حسب عدد أضلاعها وعدد رؤوسها."
+          ],
+          "vocabulary": [
+            {
+              "ar": "ضلع",
+              "en": "side"
+            },
+            {
+              "ar": "رأس",
+              "en": "vertex"
+            }
+          ]
+        },
+        {
+          "id": "g2u8l7",
+          "order": 7,
+          "title_ar": "الأنماط الهندسية",
+          "title_en": "Geometric Patterns",
+          "main_idea_ar": "",
+          "periods": 2,
+          "objectives": [
+            "يكتشف أنماطًا هندسية مكونة من أشكال مستوية ومجسمات، ويكملها."
+          ],
+          "vocabulary": [
+            {
+              "ar": "نمط",
+              "en": "pattern"
+            },
+            {
+              "ar": "وحدة النمط",
+              "en": "pattern unit"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "g2u9",
+      "number": 9,
+      "semester": 2,
+      "title_ar": "الزمن والنقود",
+      "title_en": "Time and Money",
+      "general_idea_ar": "التقويم السنوي وأشهر السنة، وقراءة الساعة لأقرب خمس دقائق ولأقرب ربع ساعة، والدينار الأردني وفئات النقود الورقية. مشروع الوحدة: ساعة حائط.",
+      "total_periods": 13,
+      "data_tier": "teacher_guide",
+      "lessons": [
+        {
+          "id": "g2u9l1",
+          "order": 1,
+          "title_ar": "أشهر السنة",
+          "title_en": "Months of the Year",
+          "main_idea_ar": "",
+          "periods": 2,
+          "objectives": [
+            "يتعرف أشهر السنة."
+          ],
+          "vocabulary": [
+            {
+              "ar": "التقويم",
+              "en": "calendar"
+            },
+            {
+              "ar": "الشهر",
+              "en": "month"
+            },
+            {
+              "ar": "السنة",
+              "en": "year"
+            }
+          ]
+        },
+        {
+          "id": "g2u9l2",
+          "order": 2,
+          "title_ar": "الوقت لأقرب 5 دقائق",
+          "title_en": "Time to the Nearest 5 Minutes",
+          "main_idea_ar": "",
+          "periods": 2,
+          "objectives": [
+            "يقرأ الوقت لأقرب 5 دقائق."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "g2u9l3",
+          "order": 3,
+          "title_ar": "الوقت لأقرب ربع ساعة",
+          "title_en": "Time to the Nearest Quarter Hour",
+          "main_idea_ar": "",
+          "periods": 2,
+          "objectives": [
+            "يقرأ الوقت لأقرب ربع ساعة."
+          ],
+          "vocabulary": [
+            {
+              "ar": "ربع الساعة",
+              "en": "quarter hour"
+            }
+          ]
+        },
+        {
+          "id": "g2u9l4",
+          "order": 4,
+          "title_ar": "الدينار",
+          "title_en": "The Dinar",
+          "main_idea_ar": "",
+          "periods": 2,
+          "objectives": [
+            "يتعرف الدينار."
+          ],
+          "vocabulary": [
+            {
+              "ar": "الدينار",
+              "en": "dinar"
+            }
+          ]
+        },
+        {
+          "id": "g2u9l5",
+          "order": 5,
+          "title_ar": "فئات النقود الورقية",
+          "title_en": "Paper Money Denominations",
+          "main_idea_ar": "",
+          "periods": 2,
+          "objectives": [
+            "يتعرف فئات النقود الورقية."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "g2u10",
+      "number": 10,
+      "semester": 2,
+      "title_ar": "القياس",
+      "title_en": "Measurement",
+      "general_idea_ar": "وحدات القياس المعيارية للطول والكتلة والسعة، وتقدير الأطوال والكتل والسعات وقياسها، والتمييز بين الوحدات واختيار المناسب منها للموقف. مشروع الوحدة: نبتتي الجميلة.",
+      "total_periods": 13,
+      "data_tier": "teacher_guide",
+      "lessons": [
+        {
+          "id": "g2u10l1",
+          "order": 1,
+          "title_ar": "السنتيمتر",
+          "title_en": "The Centimetre",
+          "main_idea_ar": "",
+          "periods": 2,
+          "objectives": [
+            "يتعرف السنتيمتر ورمزه cm.",
+            "يقدر أطوال أشياء محسوسة.",
+            "يقيس الأطوال الصغيرة مستعملًا مسطرة السنتيمترات."
+          ],
+          "vocabulary": [
+            {
+              "ar": "السنتيمتر",
+              "en": "centimetre"
+            }
+          ]
+        },
+        {
+          "id": "g2u10l2",
+          "order": 2,
+          "title_ar": "المتر",
+          "title_en": "The Metre",
+          "main_idea_ar": "",
+          "periods": 2,
+          "objectives": [
+            "يتعرف المتر ورمزه m.",
+            "يقدر أطوال أشياء محسوسة.",
+            "يقيس الأطوال الكبيرة مستعملًا العصا المترية أو الشريط المتري.",
+            "يقارن بين أشياء ويرتبها تصاعديًا أو تنازليًا بحسب أطوالها.",
+            "يحل مسائل حياتية بسيطة تتضمن مقارنات وتقدير أطوال."
+          ],
+          "vocabulary": [
+            {
+              "ar": "المتر",
+              "en": "metre"
+            }
+          ]
+        },
+        {
+          "id": "g2u10l3",
+          "order": 3,
+          "title_ar": "الغرام والكيلوغرام",
+          "title_en": "The Gram and the Kilogram",
+          "main_idea_ar": "",
+          "periods": 1,
+          "objectives": [
+            "يميز وحدتي الكتلة: الغرام والكيلوغرام.",
+            "يختار وحدة القياس المناسبة للكتلة (الغرام أو الكيلوغرام).",
+            "يتعرف رمز الغرام (g) ورمز الكيلوغرام (kg).",
+            "يقارن بين أشياء ويرتبها تصاعديًا أو تنازليًا بحسب كتلها.",
+            "يحل مسائل حياتية بسيطة تتضمن مقارنات وتقدير كتل."
+          ],
+          "vocabulary": [
+            {
+              "ar": "غرام",
+              "en": "gram"
+            },
+            {
+              "ar": "كيلوغرام",
+              "en": "kilogram"
+            }
+          ]
+        },
+        {
+          "id": "g2u10l4",
+          "order": 4,
+          "title_ar": "اللتر والملّيلتر",
+          "title_en": "The Litre and the Millilitre",
+          "main_idea_ar": "",
+          "periods": 1,
+          "objectives": [
+            "يميز وحدتي قياس السعة (اللتر والملليلتر).",
+            "يحدد وحدة قياس السعة المناسبة.",
+            "يقارن أشياء ويرتبها تصاعديًا أو تنازليًا بحسب سعاتها.",
+            "يحل مسائل حياتية بسيطة تتضمن مقارنات وتقدير سعات."
+          ],
+          "vocabulary": [
+            {
+              "ar": "لتر",
+              "en": "litre"
+            },
+            {
+              "ar": "ملّيلتر",
+              "en": "millilitre"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

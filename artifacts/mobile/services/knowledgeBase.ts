@@ -26,6 +26,7 @@ import {
   CHEM_S1_BOOK_ID,
   buildChemSem1Catalog,
 } from './curriculumG10ChemSem1.ts';
+import { buildG2MathCatalog } from './curriculumG2Math.ts';
 import {
   FINLIT_S1_BOOK_ID,
   buildFinlitSem1Catalog,
@@ -115,6 +116,24 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Mathematics – Grade 10 – Semester 1',
     semester: 1,
     source: '10th_grade,_math,_1st_semester_1785071530816.pdf',
+  },
+  {
+    id: 'kb-math-2-s1',
+    gradeId: 'grade-2',
+    subjectId: 'mathematics',
+    titleAr: 'الرياضيات – الصف الثاني – الفصل الأول',
+    titleEn: 'Mathematics – Grade 2 – Semester 1',
+    semester: 1,
+    source: 'كتاب الطالب لمادة الرياضيات الصف الثاني الفصل الأول.pdf',
+  },
+  {
+    id: 'kb-math-2-s2',
+    gradeId: 'grade-2',
+    subjectId: 'mathematics',
+    titleAr: 'الرياضيات – الصف الثاني – الفصل الثاني',
+    titleEn: 'Mathematics – Grade 2 – Semester 2',
+    semester: 2,
+    source: 'كتاب الطالب لمادة الرياضيات الصف الثاني الفصل الثاني.pdf + دليل المعلم (الوحدات 7-10)',
   },
   {
     id: 'kb-math-10-s2',
@@ -1069,6 +1088,7 @@ const _nccdSem1 = buildNccdSem1Catalog();
 const _nccdSem2 = buildNccdSem2Catalog();
 const _chemSem1 = buildChemSem1Catalog();
 const _finlitSem1 = buildFinlitSem1Catalog();
+const _g2Math = buildG2MathCatalog();
 const _legacyS1UnitIds = new Set(
   HARDCODED_KB_UNITS.filter(u => u.bookId === NCCD_S1_BOOK_ID).map(u => u.id),
 );
@@ -1106,6 +1126,7 @@ export const KB_UNITS: KBUnit[] = [
   ..._finlitSem1.units,
   ..._nccdSem1.units,
   ..._nccdSem2.units,
+  ..._g2Math.units,
 ];
 
 /** Active lessons: NCCD Chem S1 + Chem S2 (hardcoded) + NCCD Math S1/S2. */
@@ -1117,6 +1138,7 @@ export const KB_LESSONS: KBLesson[] = [
   ..._finlitSem1.lessons,
   ..._nccdSem1.lessons,
   ..._nccdSem2.lessons,
+  ..._g2Math.lessons,
 ];
 
 // ─────────────────────────────────────────────────────

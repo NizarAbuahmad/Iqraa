@@ -162,10 +162,32 @@ export function getSubjectsForGrade(gradeId: string): Subject[] {
 export const PICKER_GRADE_MIN = 7;
 export const PICKER_GRADE_MAX = 12;
 
+/**
+ * Grades OUTSIDE the range that have a real curriculum book in the KB, so
+ * they earn a picker row regardless of the range. Grade 2 entered here
+ * 2026-08-15 with the NCCD math books (see data/iqra_curriculum_g2_math.json).
+ */
+export const PICKER_EXTRA_GRADE_IDS: readonly string[] = ['grade-2'];
+
+/**
+ * Grade/subject pairs whose KB content is browsable in the tools' unit→lesson
+ * cascade. A pair NOT listed here still works with free text; a pair listed
+ * here without KB books would silently degrade the same way — the KB layer
+ * checks actual book rows, so this list can only reveal, never invent.
+ */
+export const MVP_CURRICULUM_PAIRS: ReadonlyArray<readonly [string, string]> = [
+  ['mathematics', MVP_GRADE_ID],
+  ['chemistry', MVP_GRADE_ID],
+  ['financial-literacy', MVP_GRADE_ID],
+  ['mathematics', 'grade-2'],
+];
+
 /** Grades shown in AI tools, chat, and other curriculum pickers. */
 export function getPickerGrades(): Grade[] {
   if (!INVESTOR_MVP_CURRICULUM) return GRADES;
-  return GRADES.filter(g => g.level >= PICKER_GRADE_MIN && g.level <= PICKER_GRADE_MAX);
+  return GRADES.filter(g =>
+    (g.level >= PICKER_GRADE_MIN && g.level <= PICKER_GRADE_MAX)
+    || PICKER_EXTRA_GRADE_IDS.includes(g.id));
 }
 
 /**
@@ -245,8 +267,7 @@ export function resolvePickerIndex(
 /** True when a subject/grade pair is allowed in investor-facing pickers. */
 export function isPickerCurriculumVisible(subjectId: string, gradeId: string): boolean {
   if (!INVESTOR_MVP_CURRICULUM) return true;
-  return gradeId === MVP_GRADE_ID
-    && (MVP_SUBJECT_IDS as readonly string[]).includes(subjectId);
+  return MVP_CURRICULUM_PAIRS.some(([s, g]) => s === subjectId && g === gradeId);
 }
 
 // ─── Books ────────────────────────────────────────────────────────────────────
