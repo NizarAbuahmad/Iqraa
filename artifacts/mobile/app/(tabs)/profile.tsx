@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
+import { confirm } from '@/services/confirm';
 
 function InfoRow({ icon, label, value, color, isRTL }: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string; color: string; isRTL: boolean }) {
   const colors = useColors();
@@ -81,23 +82,21 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = () => {
-    // RN Alert.alert action buttons are unreliable on web — use window.confirm there.
-    if (Platform.OS === 'web') {
-      const ok =
-        typeof window !== 'undefined' &&
-        window.confirm(`${t('signOut')}\n\n${t('signOutConfirm')}`);
-      if (ok) void performLogout();
-      return;
-    }
-
-    Alert.alert(t('signOut'), t('signOutConfirm'), [
-      { text: t('cancel'), style: 'cancel' },
-      {
-        text: t('signOut'),
-        style: 'destructive',
-        onPress: () => { void performLogout(); },
-      },
-    ]);
+    // Only the question is passed, not a title as well. `signOut` ("تسجيل
+    // الخروج") and `signOutConfirm` ("هل تريد تسجيل الخروج؟") say the same
+    // thing, so sending both printed the request twice — once as a heading and
+    // again as the body — above a dialog that already names the site. The
+    // action lives on the confirm button instead, where it also replaces a
+    // bare "OK".
+    void (async () => {
+      const ok = await confirm({
+        title: t('signOutConfirm'),
+        confirmLabel: t('signOut'),
+        cancelLabel: t('cancel'),
+        destructive: true,
+      });
+      if (ok) await performLogout();
+    })();
   };
 
   return (

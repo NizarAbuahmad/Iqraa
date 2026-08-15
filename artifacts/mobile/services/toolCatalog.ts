@@ -49,7 +49,30 @@ export const BEFORE_CLASS: ToolDef[] = [
     route: '/ai-tools/lesson-plan',
     routeParams: { simplify: '1' },
   },
+  // Generates the whole lesson journey in one pass, so it belongs with prep
+  // rather than in a drawer of leftovers.
+  {
+    id: 'lesson-flow',
+    titleKey: 'toolLessonFlowTitle',
+    descKey: 'toolLessonFlowSub',
+    icon: 'git-branch-outline',
+    color: '#0EA5E9',
+    route: '/ai-tools/lesson-flow',
+  },
 ];
+
+// Overlaps with Slides Maker and Class Challenge — all three end in the same
+// presentation player. Kept because it carries activity formats the other two
+// do not (bingo, relay, gallery walk), but it is the obvious candidate if the
+// three entry points ever need collapsing into one.
+const CLASSROOM_HUB: ToolDef = {
+  id: 'classroom',
+  titleKey: 'toolClassroomTitle',
+  descKey: 'toolClassroomDesc',
+  icon: 'grid-outline',
+  color: '#4F46E5',
+  route: '/ai-tools/classroom',
+};
 
 export const DURING_CLASS: ToolDef[] = [
   {
@@ -94,6 +117,20 @@ export const DURING_CLASS: ToolDef[] = [
     color: '#0E8F86',
     route: '/ai-tools/worksheet',
   },
+  CLASSROOM_HUB,
+  // The retired home screen, now named for the only two things it still
+  // uniquely does: attaching media to the current lesson (which becomes deck
+  // slides in Class Mode) and Smart Templates. It used to hide behind a card
+  // labelled "أدوات إضافية / useful when you need them", which told a teacher
+  // nothing and quietly dropped them onto an old screen.
+  {
+    id: 'lesson-media',
+    titleKey: 'toolLessonMediaTitle',
+    descKey: 'toolLessonMediaDesc',
+    icon: 'images-outline',
+    color: '#6366F1',
+    route: '/home',
+  },
 ];
 
 export const AFTER_CLASS: ToolDef[] = [
@@ -114,36 +151,9 @@ export const AFTER_CLASS: ToolDef[] = [
     route: '/ai-tools/worksheet',
     routeParams: { isHomework: '1' },
   },
-];
-
-/** Secondary / specialized — available but not part of the core prep flow. */
-export const MORE_TOOLS: ToolDef[] = [
-  {
-    id: 'classroom',
-    titleKey: 'toolClassroomTitle',
-    descKey: 'toolClassroomDesc',
-    icon: 'tv-outline',
-    color: '#4F46E5',
-    route: '/ai-tools/classroom',
-  },
-  {
-    id: 'lesson-flow',
-    titleKey: 'toolLessonFlowTitle',
-    descKey: 'toolLessonFlowSub',
-    icon: 'git-branch-outline',
-    color: '#0EA5E9',
-    route: '/ai-tools/lesson-flow',
-  },
-  {
-    id: 'parent-msg',
-    titleKey: 'toolParentMsgTitle',
-    descKey: 'toolParentMsgDesc',
-    icon: 'mail-outline',
-    color: '#8B5CF6',
-    route: '/ai-tools/coming-soon',
-    routeParams: { tool: 'parent-msg' },
-    badgeKey: 'comingSoon',
-  },
+  // Assessment is after-class work, and it is a full feature — it spent its
+  // life collapsed inside a drawer labelled "extra", which is the opposite of
+  // where a teacher looks for it.
   {
     id: 'evaluations',
     titleKey: 'evaluations',
@@ -152,7 +162,20 @@ export const MORE_TOOLS: ToolDef[] = [
     color: '#64748B',
     route: '/evaluations',
   },
+  {
+    id: 'parent-msg',
+    titleKey: 'toolParentMsgTitle',
+    descKey: 'toolParentMsgDesc',
+    icon: 'mail-outline',
+    color: '#8B5CF6',
+    route: '/ai-tools/parent-message',
+  },
 ];
+
+// MORE_TOOLS is gone. It was a collapsed section holding four unrelated things
+// — a live feature (evaluations), two working tools, and one dead stub — behind
+// a disclosure a teacher had no reason to open. Everything moved into the stage
+// where it is actually used; the stub became a real screen.
 
 export const WORKFLOW: WorkflowSection[] = [
   { id: 'before', titleKey: 'toolsBeforeClass', tools: BEFORE_CLASS },
@@ -166,5 +189,4 @@ export const ALL_TOOLS: ToolDef[] = [
   ...BEFORE_CLASS,
   ...DURING_CLASS,
   ...AFTER_CLASS,
-  ...MORE_TOOLS,
 ];

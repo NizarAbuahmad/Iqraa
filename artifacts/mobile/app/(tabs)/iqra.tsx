@@ -81,7 +81,6 @@ import {
   AFTER_CLASS,
   BEFORE_CLASS,
   DURING_CLASS,
-  MORE_TOOLS,
   type ToolDef,
 } from '@/services/toolCatalog';
 import { openGeogebraGraphing } from '@/services/geogebra';
@@ -1748,7 +1747,6 @@ export default function IqraScreen() {
     { id: 'before', title: t('toolsBeforeClass'), tools: BEFORE_CLASS },
     { id: 'during', title: t('toolsDuringClass'), tools: DURING_CLASS },
     { id: 'after', title: t('toolsAfterClass'), tools: AFTER_CLASS },
-    { id: 'more', title: t('toolsMoreTitle'), tools: MORE_TOOLS },
   ];
 
   const toolsMenuActions: MenuAction[] = DOCUMENT_UPLOAD_ENABLED
