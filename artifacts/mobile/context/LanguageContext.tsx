@@ -42,6 +42,41 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       // On mobile the app must restart for I18nManager to take full effect.
       // We handle per-component RTL via `writingDirection` and `textAlign`.
       I18nManager.allowRTL(shouldBeRTL);
+      return;
+    }
+
+    // On web the document is pinned to LTR *on purpose*, even in Arabic.
+    //
+    // This app expresses direction per component: ~190 call sites write
+    // `flexDirection: isRTL ? 'row-reverse' : 'row'`. Those flips assume a
+    // neutral document. In a `dir="rtl"` document `flexDirection: 'row'` is
+    // already reversed, so `'row-reverse'` cancels back to visual LTR — icon
+    // and title render on the wrong side while `textAlign: 'right'` (a physical
+    // value, unaffected by direction) keeps the text right-aligned. That is a
+    // half-mirrored screen, and it is worse than either direction applied
+    // consistently.
+    //
+    // Measured on the deployed build, the children of one such row:
+    //   dir="rtl" → x = [913, 998]  (ascending  → visually LTR — the bug)
+    //   no dir    → x = [288, 211]  (descending → visually RTL — correct)
+    //
+    // The bug only ever appeared in production: `expo export` and the dev
+    // server both emit a shell with no `dir`, but the deployed HTML served
+    // `<html lang="ar" dir="rtl">`, which this repo cannot produce. Rather than
+    // depend on what the host happens to serve, the direction is asserted here
+    // at boot and on every language change, so dev and production cannot drift.
+    //
+    // `lang` still tracks the real language — it drives spellcheck and
+    // screen-reader voice selection, and neither is affected by `dir`.
+    //
+    // If the per-component flips are ever replaced by real document-level RTL,
+    // this is the code that must change with them: set `dir` from `shouldBeRTL`
+    // in the same commit that deletes the flips. One without the other brings
+    // the double-flip straight back.
+    const root = typeof document !== 'undefined' ? document.documentElement : null;
+    if (root) {
+      root.setAttribute('dir', 'ltr');
+      root.setAttribute('lang', l);
     }
   };
 

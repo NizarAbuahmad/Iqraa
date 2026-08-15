@@ -21,6 +21,10 @@ import { getPendingClassroomActivity, clearClassroomActivity } from '@/services/
 import { timerColor } from '@/services/presentationUtils';
 import { geogebraCommandUrl, openGeogebraWithCommands } from '@/services/geogebra';
 import { youtubeEmbedUrl } from '@/services/classMedia';
+import {
+  createGame, podium, resetScores, setAwards, toggleAward, type GameState,
+} from '@/services/classGame';
+import { AwardRow, PodiumView, ScoreStrip, ScoreboardView } from '@/components/classroom/GameBoard';
 
 /** Open a media URL outside the app (native fallback — no WebView dep). */
 async function openExternalMedia(url: string): Promise<void> {
@@ -56,6 +60,8 @@ function slideTypeAccent(type: ActivitySlide['type']): string {
   if (type === 'question') return '#3B82F6';
   if (type === 'graph') return '#0EA5E9';
   if (type === 'media') return '#B45309';
+  if (type === 'scoreboard') return '#F59E0B';
+  if (type === 'podium') return '#FBBF24';
   return '#8B8CA4';
 }
 
@@ -350,6 +356,8 @@ function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
             : slide.type === 'question' ? '🙋'
             : slide.type === 'graph' ? '📈'
             : slide.type === 'media' ? '🎬'
+            : slide.type === 'scoreboard' ? '📊'
+            : slide.type === 'podium' ? '🏆'
             : '🎉'}
           {'  '}{slide.title}
         </Text>
@@ -384,10 +392,15 @@ function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
 
 // ─── Main Presentation Screen ─────────────────────────────────────────────────
 export default function PresentationScreen() {
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, lang } = useLanguage();
   const insets = useSafeAreaInsets();
 
   const [activity, setActivity] = useState<ClassroomActivity | null>(null);
+  // Non-null only for Class Challenge decks (`activity.game` present). Kept
+  // here rather than in a store because a game is one run of one deck: leaving
+  // the presentation ends it, and resuming a half-scored game the teacher has
+  // already walked away from would be worse than starting clean.
+  const [game, setGame] = useState<GameState | null>(null);
   const [slideIndex, setSlideIndex] = useState(0);
   const [hintVisible, setHintVisible] = useState(false);
   const [answerVisible, setAnswerVisible] = useState(false);
@@ -408,6 +421,7 @@ export default function PresentationScreen() {
     const a = getPendingClassroomActivity();
     if (a) {
       setActivity(a);
+      if (a.game) setGame(createGame(a.game.teamCount, a.game.questionCount, lang === 'ar'));
       initSlide(a.slides[0]);
     } else {
       router.replace({
@@ -495,8 +509,8 @@ export default function PresentationScreen() {
       Animated.timing(fadeAnim, { toValue: 1, duration: 180, useNativeDriver: true }).start();
     });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    // Trigger celebration on summary slides
-    if (nextSlide.type === 'summary') {
+    // Trigger celebration on the slides that close a run
+    if (nextSlide.type === 'summary' || nextSlide.type === 'podium') {
       setTimeout(showCelebration, 350);
     }
   };
@@ -531,7 +545,8 @@ export default function PresentationScreen() {
       if (!activity || next < 0 || next >= activity.slides.length) return current;
       initSlide(activity.slides[next]!);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      if (activity.slides[next]!.type === 'summary') setTimeout(showCelebration, 350);
+      const nextType = activity.slides[next]!.type;
+      if (nextType === 'summary' || nextType === 'podium') setTimeout(showCelebration, 350);
       return next;
     });
   };
@@ -618,6 +633,9 @@ export default function PresentationScreen() {
         </View>
       )}
 
+      {/* ── Live scoreboard (Class Challenge only) ── */}
+      {game && <ScoreStrip state={game} isRTL={isRTL} isAr={lang === 'ar'} />}
+
       {/* ── Slide Content ── */}
       <Animated.View style={[styles.slideArea, { opacity: fadeAnim }]}>
         <ScrollView
@@ -641,6 +659,50 @@ export default function PresentationScreen() {
               onToggleReveal={() => {
                 setAnswerVisible(v => !v);
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              }}
+            />
+          )}
+
+          {/* Award control — after the reveal only, so the class cannot read
+              "who got it right?" as a signal while still deciding. */}
+          {game && slide.type === 'question' && slide.questionIndex !== undefined && answerVisible && (
+            <AwardRow
+              state={game}
+              questionIndex={slide.questionIndex}
+              isRTL={isRTL}
+              onToggle={teamId => setGame(g => (g ? toggleAward(g, slide.questionIndex!, teamId) : g))}
+              onAll={() => setGame(g => {
+                if (!g) return g;
+                const everyone = g.teams.every(team => (g.awards[slide.questionIndex!] ?? []).includes(team.id));
+                return setAwards(g, slide.questionIndex!, everyone ? [] : g.teams.map(team => team.id));
+              })}
+              labels={{ prompt: t('gameWhoScored'), all: t('gameAwardAll') }}
+            />
+          )}
+
+          {/* Standings break */}
+          {game && slide.type === 'scoreboard' && (
+            <ScoreboardView
+              state={game}
+              isRTL={isRTL}
+              isAr={lang === 'ar'}
+              labels={{ points: t('gamePoints'), streak: (n: number) => t('gameStreak', n) }}
+            />
+          )}
+
+          {/* Final podium */}
+          {game && slide.type === 'podium' && (
+            <PodiumView
+              groups={podium(game)}
+              isRTL={isRTL}
+              isAr={lang === 'ar'}
+              labels={{ points: t('gamePoints'), empty: t('gameNoScores'), playAgain: t('gamePlayAgain') }}
+              onPlayAgain={() => {
+                setGame(g => (g ? resetScores(g) : g));
+                // Jump back to the first question rather than slide 0: the
+                // rules slide has already been read to this class once.
+                const firstQuestion = activity.slides.findIndex(s => s.type === 'question');
+                goToSlide(firstQuestion >= 0 ? firstQuestion : 0);
               }}
             />
           )}

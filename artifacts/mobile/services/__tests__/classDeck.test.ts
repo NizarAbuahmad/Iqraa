@@ -26,6 +26,7 @@ import {
   assembleDeckSlides,
   buildDeckFromQuiz,
   buildDeckFromWorksheet,
+  buildGameDeckFromQuiz,
   objectivesSlide,
 } from '../classDeck.ts';
 import type { ActivitySlide, QuizOutput, WorksheetOutput } from '../ai/AIService.ts';
@@ -302,5 +303,72 @@ describe('assembleDeckSlides', () => {
 
   it('returns an empty deck rather than throwing when there is no intro', () => {
     assert.deepEqual(assembleDeckSlides({ activitySlides: [] }), []);
+  });
+});
+
+describe('buildGameDeckFromQuiz', () => {
+  const MCQ_ONLY: QuizOutput = {
+    ...QUIZ,
+    questions: Array.from({ length: 7 }, (_, i) => ({
+      id: `q${i}`,
+      type: 'multiple_choice' as const,
+      text: `سؤال ${i}`,
+      options: ['أ', 'ب', 'ج'],
+      correctAnswer: 'ب',
+      points: 1,
+      explanation: '',
+    })),
+  };
+
+  it('carries a game config that switches the presentation into game mode', () => {
+    const deck = buildGameDeckFromQuiz(MCQ_ONLY, 'الاقترانات', true, { teamCount: 4 });
+    assert.equal(deck.activityType, 'class-game');
+    assert.equal(deck.game?.teamCount, 4);
+    assert.equal(deck.game?.questionCount, 7);
+  });
+
+  it('drops open-ended questions — they cannot be adjudicated on a projector', () => {
+    // QUIZ has one MCQ and one short-answer question.
+    const deck = buildGameDeckFromQuiz(QUIZ, 'الاقترانات', true, { teamCount: 2 });
+    assert.equal(deck.game?.questionCount, 1);
+    assert.equal(deck.slides.filter(s => s.type === 'question').length, 1);
+  });
+
+  it('numbers questionIndex against the ledger, not the slide position', () => {
+    const deck = buildGameDeckFromQuiz(MCQ_ONLY, 'الاقترانات', true, { teamCount: 3 });
+    const questions = deck.slides.filter(s => s.type === 'question');
+    // Scoreboard slides sit between questions, so the two must diverge — if
+    // they did not, this test would not be protecting anything.
+    assert.deepEqual(questions.map(q => q.questionIndex), [0, 1, 2, 3, 4, 5, 6]);
+    assert.notDeepEqual(questions.map(q => q.slideNumber), questions.map(q => q.questionIndex));
+  });
+
+  it('interleaves scoreboards and ends on the podium', () => {
+    const deck = buildGameDeckFromQuiz(MCQ_ONLY, 'الاقترانات', true, { teamCount: 3 });
+    assert.equal(deck.slides[0].type, 'intro');
+    assert.equal(deck.slides[deck.slides.length - 1].type, 'podium');
+    assert.ok(deck.slides.some(s => s.type === 'scoreboard'));
+    // Never a scoreboard immediately before the podium — it would show the
+    // same standings twice in a row.
+    assert.notEqual(deck.slides[deck.slides.length - 2].type, 'scoreboard');
+    deck.slides.forEach((s, i) => assert.equal(s.slideNumber, i + 1, `slideNumber at ${i}`));
+  });
+
+  it('clamps the team count to what the game engine supports', () => {
+    assert.equal(buildGameDeckFromQuiz(MCQ_ONLY, 'x', true, { teamCount: 0 }).game?.teamCount, 2);
+    assert.equal(buildGameDeckFromQuiz(MCQ_ONLY, 'x', true, { teamCount: 99 }).game?.teamCount, 6);
+  });
+
+  it('maps each question to the correct option', () => {
+    const deck = buildGameDeckFromQuiz(MCQ_ONLY, 'الاقترانات', true, { teamCount: 2 });
+    for (const q of deck.slides.filter(s => s.type === 'question')) {
+      assert.equal(q.options![q.correctIndex!], 'ب');
+    }
+  });
+
+  it('reports zero scoreable questions rather than building an unplayable game', () => {
+    const openOnly: QuizOutput = { ...QUIZ, questions: [QUIZ.questions[1]] };
+    const deck = buildGameDeckFromQuiz(openOnly, 'الاقترانات', true, { teamCount: 3 });
+    assert.equal(deck.game?.questionCount, 0);
   });
 });
