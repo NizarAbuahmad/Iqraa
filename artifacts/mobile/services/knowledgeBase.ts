@@ -1119,27 +1119,6 @@ export const KB_LESSONS: KBLesson[] = [
   ..._nccdSem2.lessons,
 ];
 
-// Runtime proof: Sem1 JSON must be in the live KB (not curriculumData).
-// Look for this in Metro / browser console after a --clear restart.
-(() => {
-  const s1Units = KB_UNITS.filter(u => u.bookId === NCCD_S1_BOOK_ID);
-  const u1 = s1Units.find(u => u.id === 'kbu-math-s1-nccd-u1');
-  const u1Lessons = KB_LESSONS.filter(l => l.unitId === 'kbu-math-s1-nccd-u1')
-    .sort((a, b) => a.order - b.order)
-    .map(l => l.titleAr);
-  const legacyEquationsStillPresent = KB_UNITS.some(u => u.id === 'kbu-math-s2-1');
-  // eslint-disable-next-line no-console
-  console.log('[KB-CATALOG-PROOF]', {
-    sem1JsonUnitCount: _nccdSem1.units.length,
-    sem1JsonLessonCount: _nccdSem1.lessons.length,
-    s1UnitTitles: s1Units.map(u => u.titleAr),
-    u1Title: u1?.titleAr ?? null,
-    u1LessonCount: u1Lessons.length,
-    u1Lessons,
-    legacyEquationsUnitPresent: legacyEquationsStillPresent,
-  });
-})();
-
 // ─────────────────────────────────────────────────────
 // SEARCH UTILITIES
 // ─────────────────────────────────────────────────────

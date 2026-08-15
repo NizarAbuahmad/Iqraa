@@ -6,7 +6,7 @@
  * uses (`/classes` → `/classes/[id]`), reused here rather than reinvented,
  * with each student's attempt status overlaid from `listAttempts`.
  */
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -52,10 +52,12 @@ export default function PickStudentScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (!id) return;
-    listAttempts(id).then(setAttempts).catch(() => {});
-  }, [id]);
+  useFocusEffect(
+    useCallback(() => {
+      if (!id) return;
+      listAttempts(id).then(setAttempts).catch(() => {});
+    }, [id]),
+  );
 
   const loadClasses = useCallback(async () => {
     setError('');

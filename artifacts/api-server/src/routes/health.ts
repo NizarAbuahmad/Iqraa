@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { HealthCheckResponse } from "@workspace/api-zod";
 import { verifyDerivative } from "../lib/mathVerifierClient.ts";
 import { isVerifierUnreachable } from "../lib/derivativeVerified.ts";
+import { getBudgetStatus } from "../lib/aiBudget.ts";
 
 const router: IRouter = Router();
 
@@ -38,6 +39,17 @@ router.get("/healthz/verifier", async (_req, res) => {
     // louder way — surface it rather than reporting a bare "ok".
     selfTest: check.verified ? "pass" : "fail",
   });
+});
+
+/**
+ * Is real AI testing on, and how much of the test budget is left?
+ *
+ * Public and unauthenticated, same reasoning as /healthz/verifier above: no
+ * secrets in the response, and whether AI_LIVE_MODE is on is exactly the
+ * thing to check first when a test session isn't calling OpenAI as expected.
+ */
+router.get("/healthz/ai-budget", (_req, res) => {
+  res.json(getBudgetStatus());
 });
 
 export default router;

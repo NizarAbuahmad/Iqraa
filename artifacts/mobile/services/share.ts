@@ -1057,22 +1057,22 @@ export function buildLessonFlowHTML(flow: LessonFlowOutput, isAr: boolean): stri
      </div>`;
 
   const bulletList = (items: string[]) =>
-    `<ul class="bullets">${items.map(i => `<li>${i}</li>`).join('')}</ul>`;
+    `<ul class="bullets">${items.map(i => `<li>${esc(i)}</li>`).join('')}</ul>`;
 
   const stepCard = (step: { title: string; description: string }, idx: number) =>
     `<div class="step-card">
        <div class="step-num" style="background:${TEAL}">${idx + 1}</div>
        <div class="step-body">
-         <div class="step-title">${step.title}</div>
-         <div class="step-desc">${step.description}</div>
+         <div class="step-title">${esc(step.title)}</div>
+         <div class="step-desc">${esc(step.description)}</div>
        </div>
      </div>`;
 
   const questionBlock = (q: { text: string; options?: string[]; correctAnswer?: string; points: number }, idx: number) =>
     `<div class="q-block">
        <div class="q-top"><span class="q-num">${idx + 1}</span><span class="q-pts">${q.points} ${isAr ? 'نقطة' : 'pts'}</span></div>
-       <div class="q-text">${q.text}</div>
-       ${q.options ? `<div class="q-opts">${q.options.map(o => `<span class="q-opt">○ ${o}</span>`).join('')}</div>` : ''}
+       <div class="q-text">${esc(q.text)}</div>
+       ${q.options ? `<div class="q-opts">${q.options.map(o => `<span class="q-opt">○ ${esc(o)}</span>`).join('')}</div>` : ''}
      </div>`;
 
   /* ── Activity section body ── */
@@ -1139,8 +1139,8 @@ export function buildLessonFlowHTML(flow: LessonFlowOutput, isAr: boolean): stri
   <div class="cover">
     <div class="cover-icon">🎯</div>
     <div class="cover-title">${isAr ? 'مسار الدرس الكامل' : 'Complete Lesson Flow'}</div>
-    <div class="cover-topic">${flow.topic}</div>
-    <div class="cover-meta">${meta}</div>
+    <div class="cover-topic">${esc(flow.topic)}</div>
+    <div class="cover-meta">${esc(meta)}</div>
   </div>
 
   <!-- 1. Objectives -->
@@ -1149,19 +1149,19 @@ export function buildLessonFlowHTML(flow: LessonFlowOutput, isAr: boolean): stri
 
   <!-- 2. Warm-up -->
   ${secHeader(isAr ? 'النشاط التمهيدي' : 'Warm-up Activity', '🔥', '#E67E22')}
-  <div style="font-weight:600;font-size:12.5px;color:#1f2937;margin-bottom:6px">${flow.warmup.title}</div>
+  <div style="font-weight:600;font-size:12.5px;color:#1f2937;margin-bottom:6px">${esc(flow.warmup.title)}</div>
   ${activityBody(flow.warmup)}
 
   <!-- 3. Interactive Activity -->
   <div class="page-break">
   ${secHeader(isAr ? 'النشاط التفاعلي' : 'Interactive Activity', '⚡', '#4F46E5')}
-  <div style="font-weight:600;font-size:12.5px;color:#1f2937;margin-bottom:6px">${flow.activity.title}</div>
+  <div style="font-weight:600;font-size:12.5px;color:#1f2937;margin-bottom:6px">${esc(flow.activity.title)}</div>
   ${activityBody(flow.activity)}
   </div>
 
   <!-- 4. Guided Practice -->
   ${secHeader(isAr ? 'التدريب الموجّه' : 'Guided Practice', '✏️', TEAL)}
-  <div class="guided-text">${flow.guidedPractice}</div>
+  <div class="guided-text">${esc(flow.guidedPractice)}</div>
 
   <!-- 5. Worksheet -->
   <div class="page-break">
@@ -1173,7 +1173,7 @@ export function buildLessonFlowHTML(flow: LessonFlowOutput, isAr: boolean): stri
   ${secHeader(isAr ? 'بطاقة الخروج' : 'Exit Ticket', '🎫', '#F59E0B')}
   ${etBody}
 
-  <div class="footer">IQRA Teaching Assistant · ${flow.topic} · ${new Date().toLocaleDateString()}</div>
+  <div class="footer">IQRA Teaching Assistant · ${esc(flow.topic)} · ${new Date().toLocaleDateString()}</div>
 </div>
 </body>
 </html>`;
@@ -1188,6 +1188,13 @@ export async function exportAsPDF(html: string, filename: string): Promise<void>
     // so the browser print dialog shows the actual lesson content.
     const iframe = document.createElement('iframe');
     iframe.style.cssText = 'position:fixed;width:0;height:0;opacity:0;border:none;';
+    // Defense-in-depth: even though everything written below is escaped, deny
+    // the iframe document script execution outright, so an escaping gap here
+    // or in a future edit can't run script against our localStorage-held auth
+    // tokens. `allow-same-origin` (without `allow-scripts`) is required —
+    // without it the iframe gets an opaque origin and `contentDocument`
+    // below returns null, breaking the print entirely.
+    iframe.setAttribute('sandbox', 'allow-same-origin');
     document.body.appendChild(iframe);
     const doc = iframe.contentDocument!;
     doc.open();

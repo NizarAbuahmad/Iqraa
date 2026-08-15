@@ -494,6 +494,129 @@ real browser: picked "الاشتقاق" under "المشتقات," confirmed, and
 header ("المشتقات • الاشتقاق") and the assistant's reply ("...لدرس
 «الاشتقاق»؟") updated together.
 
+## Security & cleanliness audit — 2026-08-15
+
+Asked for a whole-app pass, not a diff review: three parallel audits (backend
+security, mobile security, code cleanliness) across every route and service,
+not just what changed on this branch.
+
+**Fixed — HIGH, unauthenticated OpenAI proxy.** `routes/generate.ts` registered
+`POST /classroom-activity` without the `/generate` prefix that
+`routes/index.ts` scopes `authMiddleware` to — the same mount-order bug class
+as the roster/evaluations incident, third time now. It sat outside every
+guard: reachable at `/api/classroom-activity` with no token, an unlimited free
+proxy onto the OpenAI account. It was also unreachable *correctly* — the
+mobile client (`RemoteAIService.ts`) already called the intended
+`/generate/classroom-activity`, so the feature was 404ing for real users while
+the bare path stayed open for anyone else. Moved it under `/generate`, which
+fixes both at once. `mountOrder.test.ts` — the suite this exact bug class put
+in place — now asserts the guarded path 401s and the old bare path 404s.
+
+**Fixed — HIGH, stored-XSS-to-token-theft chain.** `buildLessonFlowHTML` in
+`services/share.ts` was the one HTML-builder in the file that didn't run its
+fields through `esc()` — every other builder (lesson plan, worksheet, quiz,
+slides) already does. Lesson Flow content comes from a live model call, so a
+prompt-injected topic/step/question could land unescaped in the exported
+HTML. On web, `exportAsPDF` writes that HTML into an iframe via
+`document.write` — and access tokens live in `localStorage` on web
+(`secureStorage.ts`), so an injected `<script>` would have had a path to
+them. Escaped all interpolated fields to match the established pattern, and
+added `sandbox="allow-same-origin"` to the export iframe as a second layer —
+confirmed by isolated test that this blocks a `<script>` from executing while
+keeping `contentDocument`/`print()` working (plain `sandbox=""` looked
+stronger but silently breaks the export: it forces an opaque origin and
+`contentDocument` returns `null`).
+
+**Fixed — two real bugs, found but not yet applied by an earlier review pass:**
+- `ai-tools/quiz.tsx`: deleting a question spliced `result.questions` but left
+  the index-aligned `outcomes` array untouched, so every verification badge
+  after the deleted question pointed at the wrong question once presented to
+  class. `removeQuestion` now drops the same index from both.
+- `evaluations/[id]/answers/index.tsx`: attempt statuses loaded on a plain
+  `useEffect` keyed on `id`, unlike the sibling `results.tsx`. Submitting a
+  student's answers and navigating back to the picker showed a stale status
+  pill until the screen remounted. Switched to `useFocusEffect`, matching
+  `results.tsx`.
+
+**Cleanliness — mechanical fixes applied:** deleted two files with zero
+callers (`components/KeyboardAwareScrollViewCompat.tsx`,
+`services/validation.ts` + its test); removed two `console.log` debug probes
+left in production code, unguarded by `__DEV__`
+(`services/knowledgeBase.ts`'s `[KB-CATALOG-PROOF]` IIFE,
+`TopicSelector.tsx`'s `[TopicSelector-PROOF]` effect); brought `auth.ts` and
+`workspace.ts` onto the shared `logger` — they were the only two route files
+still using raw `console.error`. Also fixed `RemoteAIService.ts`'s `postJSON`,
+which called `fetch()` directly with no auth header — invisible today because
+`DEMO_MODE` short-circuits before it runs, but every real `/generate/*` and
+`/chat` call would have 401'd silently into the mock fallback the day
+`DEMO_MODE` flips off, reading as "flaky network" rather than "nobody is
+authenticated." Now routes through `apiFetch`, same as the rest of the app.
+
+**Not fixed — flagged for a decision, not mechanical:**
+- **No rate-limiting on `/auth/login`, `/auth/register`, or
+  `/auth/forgot-password`**, combined with an 8-character password minimum and
+  no complexity requirement. Real MEDIUM finding; needs a call on a
+  rate-limiting library (and Render free-tier fit) and whether tightening
+  password rules is worth the friction for existing accounts. Listed under
+  Known landmines below rather than fixed blind.
+- Five near-identical copies of status/level color-and-label maps across the
+  evaluation screens, plus `PickerField` and `CheckboxRow` each duplicated
+  3–5 times across `ai-tools/*` and `evaluations/new.tsx` — real duplication,
+  but which variant becomes canonical is a design call, not a paste-delete.
+- ~900 lines of `HARDCODED_KB_LESSONS` entries in `knowledgeBase.ts` are dead
+  at runtime (`_supersededUnitIds` filters them out; the file's own comments
+  call them "kept for reference") — worth pruning or archiving, not done here
+  since it's bulk curriculum content someone should confirm against first.
+- `iqra.tsx` is 2,389 lines with three presentational components defined
+  inline; lower priority, noted for a future extraction pass.
+
+Verified: `pnpm run typecheck` clean across all three workspace projects;
+mobile suite 293/293 passing (10 skipped, unrelated); api-server suite
+75/75 passing after `pnpm build` (added the two mount-order regression
+cases above); sandboxed-iframe behavior isolated-tested in a real browser
+before picking `allow-same-origin` over a bare `sandbox=""`.
+
+## Live-AI test mode with a budget cap, 2026-08-15
+
+Wanted a way to test real OpenAI output — instead of `DEMO_MODE`'s mocks —
+without risking an open-ended bill, plus an explicit on/off switch rather than
+editing source. Two flags, both default to the safe (mocked) state:
+
+- **`AI_LIVE_MODE`** (api-server, must be exactly `"true"`) gates every
+  OpenAI-backed route (`chat.ts`, `generate.ts`, `derivativeVerified.ts`) —
+  off by default, checked *before* the network call.
+- **`EXPO_PUBLIC_DEMO_MODE`** (mobile) now reads from env instead of being
+  hardcoded — `demoMode.ts`'s `DEMO_MODE` const is `true` unless the var is
+  literally `"false"`. Same safe-by-default shape, client side.
+
+A new `artifacts/api-server/src/lib/aiBudget.ts` tracks estimated USD spend
+in-process (token counts from each completion × a hardcoded per-model
+pricing table) and throws before the next OpenAI call once `AI_BUDGET_USD`
+(default `$2`) is reached — the routes turn that into a `429` with a clear
+message, which the mobile client's existing AI-error handling already
+catches and falls back to mocked content for, no new client code needed.
+`GET /api/healthz/ai-budget` (public, same reasoning as `/healthz/verifier`)
+reports `{ liveMode, model, spentUsd, limitUsd, remainingUsd }` for checking
+spend without digging through logs.
+
+Also fixed while wiring this: the hardcoded, likely-invalid `gpt-5.6-luna`
+model id across all three OpenAI call sites (the landmine this file already
+flagged) — now `AI_MODEL`, default `gpt-4o-mini` for affordable testing.
+
+**Known limits, by design:** the budget counter is process-memory only —
+resets on restart, not shared across instances, not a substitute for the
+hard usage limit that should also be set on the OpenAI account itself
+(Settings → Billing → Usage limits). Pricing is a hardcoded estimate, not
+billing-accurate. Full walkthrough: `LOCAL_SETUP.md` → "Testing against real
+AI (optional)".
+
+Verified: `pnpm run typecheck` clean; api-server suite 76/76 (added a
+regression test for the new public status endpoint); mobile suite unchanged
+at 293/293; manually drove `aiBudget.ts`'s guard functions end-to-end
+(off-by-default throws before any call, usage accumulates correctly, cap
+trips and blocks further calls) since there's no local Postgres in this
+environment to exercise the full authenticated HTTP path.
+
 ## Open decisions (2026-08-10)
 
 - ~~**Home vs chat.**~~ **Decided 2026-08-10: chat is the landing tab, home is
@@ -591,6 +714,10 @@ header ("المشتقات • الاشتقاق") and the assistant's reply ("...
   `lib/integrations-openai-ai-server`.
 - `app/ai-tools/classroom/classroomRouting.ts` is a helper inside the routes
   dir — Expo Router registers it as a phantom route and warns on every boot.
+- **No rate-limiting on `/auth/login`, `/auth/register`, `/auth/forgot-password`**,
+  and only an 8-character password minimum with no complexity rule. Needs a
+  product/infra decision (library, Render free-tier fit, whether to tighten
+  password rules for existing accounts) — see the 2026-08-15 audit above.
 
 ## Fixed 2026-08-10 — worth knowing about
 

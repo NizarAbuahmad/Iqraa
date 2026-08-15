@@ -1,6 +1,14 @@
 import { Router } from "express";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { logger } from "../lib/logger";
+import {
+  AiBudgetExceededError,
+  AiLiveModeOffError,
+  assertBudgetAvailable,
+  assertLiveModeEnabled,
+  getAiModel,
+  recordUsage,
+} from "../lib/aiBudget.ts";
 
 const chatRouter = Router();
 
@@ -39,15 +47,27 @@ chatRouter.post("/chat", async (req, res) => {
       })),
     ];
 
+    assertLiveModeEnabled();
+    assertBudgetAvailable();
+
     const completion = await openai.chat.completions.create({
-      model: "gpt-5.6-luna",
+      model: getAiModel(),
       max_completion_tokens: 1200,
       messages: chatMessages,
     });
+    recordUsage(completion.usage);
 
     const answer = completion.choices[0]?.message?.content ?? "";
     res.json({ content: answer });
   } catch (err) {
+    if (err instanceof AiLiveModeOffError) {
+      res.status(503).json({ error: err.message });
+      return;
+    }
+    if (err instanceof AiBudgetExceededError) {
+      res.status(429).json({ error: err.message });
+      return;
+    }
     logger.error({ err }, "chat error");
     res.status(500).json({ error: "AI service error. Please try again." });
   }

@@ -93,8 +93,16 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.ok(["ok", "unreachable"].includes(body.verifier));
   });
 
+  it("keeps the AI test-budget status public", async () => {
+    const res = await fetch(`${base}/healthz/ai-budget`);
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as { liveMode: boolean; limitUsd: number };
+    assert.equal(typeof body.liveMode, "boolean");
+    assert.equal(typeof body.limitUsd, "number");
+  });
+
   it("guards the OpenAI-backed routes", async () => {
-    for (const route of ["/chat", "/generate/lesson-plan"]) {
+    for (const route of ["/chat", "/generate/lesson-plan", "/generate/classroom-activity"]) {
       const res = await fetch(`${base}${route}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -115,6 +123,20 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     // The tell for the original bug: a path no router owns came back 401,
     // because a root-mounted guard replied before routing finished.
     const res = await fetch(`${base}/no-such-route`);
+    assert.equal(res.status, 404);
+  });
+
+  it("no longer serves classroom-activity at its old unguarded path", async () => {
+    // Regression: this route was once registered without the /generate
+    // prefix, so it sat outside authMiddleware's scope entirely — reachable,
+    // unauthenticated, at /api/classroom-activity. It now only exists at
+    // /generate/classroom-activity (covered above). 404 here, not 401 or 200,
+    // confirms the stray route isn't still reachable under its old name.
+    const res = await fetch(`${base}/classroom-activity`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}",
+    });
     assert.equal(res.status, 404);
   });
 });

@@ -1,8 +1,51 @@
-import { Router } from "express";
+import { Router, type Response } from "express";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { logger } from "../lib/logger";
+import {
+  AiBudgetExceededError,
+  AiLiveModeOffError,
+  assertBudgetAvailable,
+  assertLiveModeEnabled,
+  getAiModel,
+  recordUsage,
+} from "../lib/aiBudget.ts";
 
 const generateRouter = Router();
+
+/** Shared by every route below: gate on AI_LIVE_MODE + budget, call OpenAI, parse JSON out. */
+async function generateContent(
+  systemPrompt: string,
+  userPrompt: string,
+  maxCompletionTokens: number,
+): Promise<unknown> {
+  assertLiveModeEnabled();
+  assertBudgetAvailable();
+  const completion = await openai.chat.completions.create({
+    model: getAiModel(),
+    max_completion_tokens: maxCompletionTokens,
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ],
+  });
+  recordUsage(completion.usage);
+  const raw = completion.choices[0]?.message?.content ?? "{}";
+  return extractJSON(raw);
+}
+
+/** AI live-mode-off and budget-exceeded are expected, user-facing states — not server errors. */
+function respondAiError(err: unknown, res: Response, label: string): void {
+  if (err instanceof AiLiveModeOffError) {
+    res.status(503).json({ error: err.message });
+    return;
+  }
+  if (err instanceof AiBudgetExceededError) {
+    res.status(429).json({ error: err.message });
+    return;
+  }
+  logger.error({ err }, `${label} error`);
+  res.status(500).json({ error: "AI generation failed. Please try again." });
+}
 
 // ─── Lesson Plan ─────────────────────────────────────────────────────────────
 generateRouter.post("/generate/lesson-plan", async (req, res) => {
@@ -10,22 +53,10 @@ generateRouter.post("/generate/lesson-plan", async (req, res) => {
     const body = req.body;
     const isAr = body.language !== "english";
     const prompt = isAr ? lessonPlanPromptAr(body) : lessonPlanPromptEn(body);
-
-    const completion = await openai.chat.completions.create({
-      model: "gpt-5.6-luna",
-      max_completion_tokens: 2000,
-      messages: [
-        { role: "system", content: isAr ? SYSTEM_AR : SYSTEM_EN },
-        { role: "user", content: prompt },
-      ],
-    });
-
-    const raw = completion.choices[0]?.message?.content ?? "{}";
-    const parsed = extractJSON(raw);
+    const parsed = await generateContent(isAr ? SYSTEM_AR : SYSTEM_EN, prompt, 2000);
     res.json(parsed);
   } catch (err) {
-    logger.error({ err }, "generate lesson-plan error");
-    res.status(500).json({ error: "AI generation failed. Please try again." });
+    respondAiError(err, res, "generate lesson-plan");
   }
 });
 
@@ -35,22 +66,10 @@ generateRouter.post("/generate/worksheet", async (req, res) => {
     const body = req.body;
     const isAr = body.language !== "english";
     const prompt = isAr ? worksheetPromptAr(body) : worksheetPromptEn(body);
-
-    const completion = await openai.chat.completions.create({
-      model: "gpt-5.6-luna",
-      max_completion_tokens: 2000,
-      messages: [
-        { role: "system", content: isAr ? SYSTEM_AR : SYSTEM_EN },
-        { role: "user", content: prompt },
-      ],
-    });
-
-    const raw = completion.choices[0]?.message?.content ?? "{}";
-    const parsed = extractJSON(raw);
+    const parsed = await generateContent(isAr ? SYSTEM_AR : SYSTEM_EN, prompt, 2000);
     res.json(parsed);
   } catch (err) {
-    logger.error({ err }, "generate worksheet error");
-    res.status(500).json({ error: "AI generation failed. Please try again." });
+    respondAiError(err, res, "generate worksheet");
   }
 });
 
@@ -60,22 +79,10 @@ generateRouter.post("/generate/quiz", async (req, res) => {
     const body = req.body;
     const isAr = body.language !== "english";
     const prompt = isAr ? quizPromptAr(body) : quizPromptEn(body);
-
-    const completion = await openai.chat.completions.create({
-      model: "gpt-5.6-luna",
-      max_completion_tokens: 2000,
-      messages: [
-        { role: "system", content: isAr ? SYSTEM_AR : SYSTEM_EN },
-        { role: "user", content: prompt },
-      ],
-    });
-
-    const raw = completion.choices[0]?.message?.content ?? "{}";
-    const parsed = extractJSON(raw);
+    const parsed = await generateContent(isAr ? SYSTEM_AR : SYSTEM_EN, prompt, 2000);
     res.json(parsed);
   } catch (err) {
-    logger.error({ err }, "generate quiz error");
-    res.status(500).json({ error: "AI generation failed. Please try again." });
+    respondAiError(err, res, "generate quiz");
   }
 });
 
@@ -85,22 +92,10 @@ generateRouter.post("/generate/homework", async (req, res) => {
     const body = req.body;
     const isAr = body.language !== "english";
     const prompt = isAr ? worksheetPromptAr({ ...body, homework: true }) : worksheetPromptEn({ ...body, homework: true });
-
-    const completion = await openai.chat.completions.create({
-      model: "gpt-5.6-luna",
-      max_completion_tokens: 1500,
-      messages: [
-        { role: "system", content: isAr ? SYSTEM_AR : SYSTEM_EN },
-        { role: "user", content: prompt },
-      ],
-    });
-
-    const raw = completion.choices[0]?.message?.content ?? "{}";
-    const parsed = extractJSON(raw);
+    const parsed = await generateContent(isAr ? SYSTEM_AR : SYSTEM_EN, prompt, 1500);
     res.json(parsed);
   } catch (err) {
-    logger.error({ err }, "generate homework error");
-    res.status(500).json({ error: "AI generation failed. Please try again." });
+    respondAiError(err, res, "generate homework");
   }
 });
 
@@ -110,22 +105,10 @@ generateRouter.post("/generate/activity", async (req, res) => {
     const body = req.body;
     const isAr = body.language !== "english";
     const prompt = isAr ? activityPromptAr(body) : activityPromptEn(body);
-
-    const completion = await openai.chat.completions.create({
-      model: "gpt-5.6-luna",
-      max_completion_tokens: 2000,
-      messages: [
-        { role: "system", content: isAr ? SYSTEM_AR : SYSTEM_EN },
-        { role: "user", content: prompt },
-      ],
-    });
-
-    const raw = completion.choices[0]?.message?.content ?? "{}";
-    const parsed = extractJSON(raw);
+    const parsed = await generateContent(isAr ? SYSTEM_AR : SYSTEM_EN, prompt, 2000);
     res.json(parsed);
   } catch (err) {
-    logger.error({ err }, "generate activity error");
-    res.status(500).json({ error: "AI generation failed. Please try again." });
+    respondAiError(err, res, "generate activity");
   }
 });
 
@@ -367,24 +350,20 @@ Return JSON in this exact shape:
 }
 
 // ─── Classroom Activity route ─────────────────────────────────────────────────
-generateRouter.post('/classroom-activity', async (req, res) => {
+// Every other route in this file is under /generate/*, which is exactly the
+// prefix routes/index.ts scopes authMiddleware to. This one was registered
+// bare, at /classroom-activity, so it never went through the guard — an
+// unauthenticated, unlimited proxy onto the OpenAI account. Same failure
+// shape as the roster/evaluations mount-order incident; see routes/index.ts.
+generateRouter.post('/generate/classroom-activity', async (req, res) => {
   const body = req.body as Record<string, unknown>;
   const isAr = body.language === 'arabic';
   try {
     const prompt = isAr ? classroomPromptAr(body) : classroomPromptEn(body);
-    const completion = await openai.chat.completions.create({
-      model: "gpt-5.6-luna",
-      max_completion_tokens: 2000,
-      messages: [
-        { role: "system", content: isAr ? SYSTEM_AR : SYSTEM_EN },
-        { role: "user", content: prompt },
-      ],
-    });
-    const raw = completion.choices[0]?.message?.content ?? "{}";
-    const data = extractJSON(raw);
+    const data = await generateContent(isAr ? SYSTEM_AR : SYSTEM_EN, prompt, 2000);
     res.json(data);
   } catch (err) {
-    res.status(500).json({ error: String(err) });
+    respondAiError(err, res, "generate classroom-activity");
   }
 });
 
