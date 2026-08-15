@@ -29,7 +29,7 @@ import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { saveItem } from '@/services/workspace';
 import { buildLessonPlanSlidesHTML, exportAsPDF } from '@/services/share';
 import {
-  getPickerGrades, getPickerSubjects, resolvePickerIndex,
+  getDefaultPickerGradeIndex, getPickerGrades, getPickerSubjects, resolvePickerIndex,
 } from '@/services/curriculumData';
 
 const ACCENT = '#0EA5E9';
@@ -43,10 +43,16 @@ export default function SlidesScreen() {
   const topPad = insets.top + (insets.top === 0 ? 67 : 0);
 
   const grades = getPickerGrades();
-  const subjects = getPickerSubjects();
 
-  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(undefined, grades.length));
+  const [gradeIdx, setGradeIdx] = useState(getDefaultPickerGradeIndex);
+  // Subjects follow the selected grade; KB-backed subjects lead the list so
+  // legacy saved subjectIdx values (written against [math, chem, finlit])
+  // still restore to the right subject.
+  const subjects = getPickerSubjects(grades[gradeIdx].id);
   const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(undefined, subjects.length));
+  // Changing grade swaps the subject list, so the subject resets in the same
+  // event — an out-of-range subjectIdx must never survive to the next render.
+  const pickGrade = (i: number) => { setGradeIdx(i); setSubjectIdx(0); };
   const [topic, setTopic] = useState('');
   const [includeExamples, setIncludeExamples] = useState(true);
   const [includePractice, setIncludePractice] = useState(true);
@@ -77,7 +83,7 @@ export default function SlidesScreen() {
     setError(''); setLoading(true); setDeck(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    const grounding = resolveGeneratorGrounding(trimmed, lang as 'ar' | 'en');
+    const grounding = resolveGeneratorGrounding(trimmed, lang as 'ar' | 'en', { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id });
     setGrounded(grounding.grounded);
     setGroundedLesson(grounding.lesson ? (isAr ? grounding.lesson.titleAr : grounding.lesson.titleEn) : '');
 
@@ -92,7 +98,7 @@ export default function SlidesScreen() {
           subject: subjects[subjectIdx].name,
           topic: trimmed,
           language: isAr ? 'arabic' : 'english',
-          additionalContext: buildGeneratorContext(trimmed, lang as 'ar' | 'en') || undefined,
+          additionalContext: buildGeneratorContext(trimmed, lang as 'ar' | 'en', { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id }) || undefined,
         });
       } catch {
         lessonPlan = null;
@@ -136,7 +142,7 @@ export default function SlidesScreen() {
       topic: topic.trim(),
       language: isAr ? 'ar' : 'en',
       content: JSON.stringify(deck),
-      formState: { gradeIdx, subjectIdx, topic: topic.trim(), includeExamples, includePractice },
+      formState: { gradeId: grades[gradeIdx].id, gradeIdx, subjectIdx, topic: topic.trim(), includeExamples, includePractice },
     });
     showToast(t('slidesSaved'));
   };
@@ -212,7 +218,7 @@ export default function SlidesScreen() {
             label={t('grade')}
             items={grades.map(g => (isAr ? g.nameAr : g.name))}
             index={gradeIdx}
-            onChange={setGradeIdx}
+            onChange={pickGrade}
             colors={colors}
             isRTL={isRTL}
           />

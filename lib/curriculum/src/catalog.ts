@@ -147,17 +147,87 @@ export function getSubjectsForGrade(gradeId: string): Subject[] {
   return subjects.filter(s => (MVP_SUBJECT_IDS as readonly string[]).includes(s.id));
 }
 
+/**
+ * Grade range offered in the AI-tool pickers — deliberately WIDER than the
+ * browsable curriculum. The two surfaces fail differently on a bookless
+ * grade: the curriculum tab dead-ends on an empty shelf (the finlit bug),
+ * while the tools degrade honestly — TopicSelector falls back to free text
+ * and every generator states «غير مستند إلى المنهاج». So the tools can open
+ * grades the curriculum tab must not.
+ *
+ * 7–12 rather than 1–12 because the generators' wording targets upper-basic
+ * and secondary students; opening primary is a product decision about
+ * pedagogy, not a range tweak.
+ */
+export const PICKER_GRADE_MIN = 7;
+export const PICKER_GRADE_MAX = 12;
+
 /** Grades shown in AI tools, chat, and other curriculum pickers. */
 export function getPickerGrades(): Grade[] {
-  return getVisibleGrades();
+  if (!INVESTOR_MVP_CURRICULUM) return GRADES;
+  return GRADES.filter(g => g.level >= PICKER_GRADE_MIN && g.level <= PICKER_GRADE_MAX);
 }
 
-/** Subjects shown in AI tools, chat, and other curriculum pickers. */
+/**
+ * Index of the grade a picker should START on — the one with real curriculum
+ * behind it, not merely the first row. Also the restore target for legacy
+ * saved materials: every formState written before the pickers widened has
+ * `gradeIdx: 0` from a single-entry `[G10]` list, so a raw index restore
+ * would silently turn those materials into Grade 7.
+ */
+export function getDefaultPickerGradeIndex(): number {
+  const i = getPickerGrades().findIndex(g => g.id === MVP_GRADE_ID);
+  return i >= 0 ? i : 0;
+}
+
+/**
+ * Restore a grade selection from saved state / route params.
+ *
+ * Restores go through the grade's *id*, never its index: workspace Edit
+ * spreads `formState` into route params, and every formState written before
+ * the pickers widened carries `gradeIdx: 0` from a single-entry `[G10]` list.
+ * Reading that as an index into the new list would silently turn a teacher's
+ * saved G10 material into Grade 7 — so an absent/unknown id means "legacy
+ * save", which is always Grade 10.
+ */
+export function resolveSavedGradeIndex(gradeId: string | undefined): number {
+  if (gradeId) {
+    const i = getPickerGrades().findIndex(g => g.id === gradeId);
+    if (i >= 0) return i;
+  }
+  return getDefaultPickerGradeIndex();
+}
+
+/**
+ * Subjects shown in AI tools, chat, and other curriculum pickers.
+ *
+ * With a gradeId: that grade's subjects, KB-backed ones first. The ordering is
+ * load-bearing, not cosmetic — legacy saved materials store `subjectIdx`
+ * against the old three-entry list, so for Grade 10 the list MUST begin
+ * [mathematics, chemistry, financial-literacy] in that order or every old
+ * save restores to the wrong subject.
+ *
+ * Without a gradeId: the legacy MVP three, for call sites that predate
+ * grade-aware pickers (e.g. mapping a lesson pick back to an index).
+ */
 export function getPickerSubjects(gradeId?: string): Subject[] {
   if (!INVESTOR_MVP_CURRICULUM) {
     return gradeId ? getSubjectsForGrade(gradeId) : [...SUBJECTS];
   }
-  return SUBJECTS.filter(s => (MVP_SUBJECT_IDS as readonly string[]).includes(s.id));
+  if (!gradeId) {
+    return SUBJECTS.filter(s => (MVP_SUBJECT_IDS as readonly string[]).includes(s.id));
+  }
+  const forGrade = SUBJECTS.filter(s => s.grades.includes(gradeId));
+  const mvpRank = (s: Subject) => {
+    const i = (MVP_SUBJECT_IDS as readonly string[]).indexOf(s.id);
+    return i === -1 ? MVP_SUBJECT_IDS.length : i;
+  };
+  // Stable sort: KB-backed subjects keep MVP order at the front, the rest
+  // keep their SUBJECTS-array order behind them.
+  return forGrade
+    .map((s, i) => ({ s, i }))
+    .sort((a, b) => mvpRank(a.s) - mvpRank(b.s) || a.i - b.i)
+    .map(x => x.s);
 }
 
 /** Clamp a saved/route picker index into the current picker list. */

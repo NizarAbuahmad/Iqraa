@@ -13,7 +13,7 @@ import { buildDeckFromWorksheet } from '@/services/classDeck';
 import { summarizeVerification, type VerifyOutcome } from '@/services/quizVerification';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import {
-  getPickerGrades, getPickerSubjects, resolvePickerIndex,
+  getPickerGrades, getPickerSubjects, resolvePickerIndex, resolveSavedGradeIndex,
 } from '@/services/curriculumData';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { Button } from '@/components/ui/Button';
@@ -48,16 +48,14 @@ export default function WorksheetScreen() {
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
   const params = useLocalSearchParams<{
-    savedId?: string; gradeIdx?: string; subjectIdx?: string;
+    savedId?: string; gradeIdx?: string; gradeId?: string; subjectIdx?: string;
     topic?: string; diffIdx?: string; numQIdx?: string; selectedTypes?: string;
     isHomework?: string;
   }>();
   const scrollRef = useRef<ScrollView>(null);
 
   const grades = getPickerGrades();
-  const subjects = getPickerSubjects();
   const gradeNames = grades.map(g => lang === 'ar' ? g.nameAr : g.name);
-  const subjectNames = subjects.map(s => lang === 'ar' ? s.nameAr : s.name);
   const diffLabels = [t('difficultyNormal'), t('difficultyHigh'), t('difficultyDifficult')];
   const numQLabels = NUM_Q_OPTIONS.map(n => String(n));
 
@@ -66,8 +64,16 @@ export default function WorksheetScreen() {
     try { return new Set(JSON.parse(raw) as QType[]); } catch { return new Set(['multiple_choice', 'short_answer']); }
   };
 
-  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(params.gradeIdx, grades.length));
+  const [gradeIdx, setGradeIdx] = useState(() => resolveSavedGradeIndex(params.gradeId));
+  // Subjects follow the selected grade; KB-backed subjects lead the list so
+  // legacy saved subjectIdx values (written against [math, chem, finlit])
+  // still restore to the right subject.
+  const subjects = getPickerSubjects(grades[gradeIdx].id);
+  const subjectNames = subjects.map(s => lang === 'ar' ? s.nameAr : s.name);
   const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx, subjects.length));
+  // Changing grade swaps the subject list, so the subject resets in the same
+  // event — an out-of-range subjectIdx must never survive to the next render.
+  const pickGrade = (i: number) => { setGradeIdx(i); setSubjectIdx(0); };
   const [topic, setTopic] = useState(params.topic ?? '');
   const [diffIdx, setDiffIdx] = useState(params.diffIdx ? parseInt(params.diffIdx, 10) : 0);
 
@@ -107,7 +113,7 @@ export default function WorksheetScreen() {
   // Prior-knowledge availability for the currently selected lesson (no fabrication)
   const priorKnowledge = (() => {
     if (!topic.trim()) return [] as string[];
-    const g = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en');
+    const g = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en', { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id });
     if (!g.lesson) return [] as string[];
     return getUnitPriorKnowledge(g.lesson.id);
   })();
@@ -155,7 +161,7 @@ export default function WorksheetScreen() {
     setSaveLabel('save');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
-      const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en');
+      const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en', { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id });
       const unitPrior = grounding.lesson ? getUnitPriorKnowledge(grounding.lesson.id) : [];
       const usePrior = includePriorReview && unitPrior.length > 0;
       const additionalContext = (
@@ -207,7 +213,7 @@ export default function WorksheetScreen() {
       ? (lang === 'ar' ? `واجب منزلي: ${topic.trim()}` : `Homework: ${topic.trim()}`)
       : (lang === 'ar' ? `ورقة عمل: ${topic.trim()}` : `Worksheet: ${topic.trim()}`);
     const formState = {
-      gradeIdx, subjectIdx, topic: topic.trim(),
+      gradeId: grades[gradeIdx].id, gradeIdx, subjectIdx, topic: topic.trim(),
       diffIdx, numQIdx, selectedTypes: JSON.stringify(Array.from(selectedTypes)),
       materialKind: isHomework ? 'homework' : 'worksheet',
       isHomework,
@@ -331,7 +337,7 @@ export default function WorksheetScreen() {
 
       {/* Form */}
       <View style={{ padding: 20 }}>
-        <PickerField label={t('grade')} value={gradeNames[gradeIdx]} options={gradeNames} onChange={setGradeIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
+        <PickerField label={t('grade')} value={gradeNames[gradeIdx]} options={gradeNames} onChange={pickGrade} colors={colors} isRTL={isRTL} accent={ACCENT} />
         <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
 
         <TopicSelector
@@ -456,7 +462,7 @@ export default function WorksheetScreen() {
           <Pressable
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en');
+              const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en', { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id });
               setPendingClassroomActivity(
                 buildDeckFromWorksheet(result, topic.trim(), lang === 'ar', {
                   lesson: grounding.lesson,

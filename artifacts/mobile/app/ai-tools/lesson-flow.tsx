@@ -37,7 +37,7 @@ import {
   type StepKey,
 } from '@/services/ai/lessonFlowRunner';
 import {
-  getPickerGrades, getPickerSubjects, resolvePickerIndex,
+  getDefaultPickerGradeIndex, getPickerGrades, getPickerSubjects, resolvePickerIndex,
 } from '@/services/curriculumData';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { Button } from '@/components/ui/Button';
@@ -84,12 +84,18 @@ export default function LessonFlowScreen() {
   const params = useLocalSearchParams<{ topic?: string }>();
 
   const grades = getPickerGrades();
-  const subjects = getPickerSubjects();
 
   // Form state
   const [topic, setTopic] = useState(params.topic ?? '');
-  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(undefined, grades.length));
+  const [gradeIdx, setGradeIdx] = useState(getDefaultPickerGradeIndex);
+  // Subjects follow the selected grade; KB-backed subjects lead the list so
+  // legacy saved subjectIdx values (written against [math, chem, finlit])
+  // still restore to the right subject.
+  const subjects = getPickerSubjects(grades[gradeIdx].id);
   const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(undefined, subjects.length));
+  // Changing grade swaps the subject list, so the subject resets in the same
+  // event — an out-of-range subjectIdx must never survive to the next render.
+  const pickGrade = (i: number) => { setGradeIdx(i); setSubjectIdx(0); };
   const [durationIdx, setDurationIdx] = useState(0);
 
   // Generation state
@@ -175,7 +181,7 @@ export default function LessonFlowScreen() {
     const duration = DURATION_VALUES[durationIdx];
 
     try {
-      const kbCtx = await buildGeneratorContext(topic, lang === 'ar' ? 'ar' : 'en');
+      const kbCtx = await buildGeneratorContext(topic, lang === 'ar' ? 'ar' : 'en', { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id });
       const req = { grade, subject, topic, language, duration, additionalContext: kbCtx };
 
       await runLessonFlowFrom(startKey, req, aiService, prior, {
@@ -286,8 +292,8 @@ export default function LessonFlowScreen() {
       pathname: '/ai-tools/classroom',
       params: {
         topic,
-        gradeIdx: String(gradeIdx),
-        subjectIdx: String(subjectIdx),
+        gradeId: grades[gradeIdx].id,
+        subjectId: subjects[subjectIdx].id,
       },
     } as any);
   };
@@ -388,7 +394,7 @@ export default function LessonFlowScreen() {
             </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', gap: 8 }}>
               {gradeNames.map((g, i) => (
-                <Pressable key={i} onPress={() => setGradeIdx(i)}
+                <Pressable key={i} onPress={() => pickGrade(i)}
                   style={[styles.chip, { flexShrink: 0, backgroundColor: gradeIdx === i ? colors.primary : colors.muted, borderColor: gradeIdx === i ? colors.primary : colors.border }]}>
                   <Text style={[styles.chipText, { color: gradeIdx === i ? colors.primaryForeground : colors.foreground, fontFamily: 'Cairo_500Medium' }]}>{g}</Text>
                 </Pressable>

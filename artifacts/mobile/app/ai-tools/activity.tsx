@@ -10,7 +10,7 @@ import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { buildGeneratorContext, resolveGeneratorGrounding } from '@/services/kbContext';
 import { ActivityOutput, ActivityStep } from '@/services/ai/AIService';
 import {
-  getPickerGrades, getPickerSubjects, resolvePickerIndex,
+  getPickerGrades, getPickerSubjects, resolvePickerIndex, resolveSavedGradeIndex,
 } from '@/services/curriculumData';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
@@ -41,22 +41,28 @@ export default function ActivityScreen() {
   const { t, isRTL, lang } = useLanguage();
   const params = useLocalSearchParams<{
     savedId?: string; topic?: string;
-    gradeIdx?: string; subjectIdx?: string; activityTypeIdx?: string; durationIdx?: string; objective?: string;
+    gradeIdx?: string; gradeId?: string; subjectIdx?: string; activityTypeIdx?: string; durationIdx?: string; objective?: string;
   }>();
   const scrollRef = useRef<ScrollView>(null);
 
   const grades = getPickerGrades();
-  const subjects = getPickerSubjects();
   const gradeNames = grades.map(g => lang === 'ar' ? g.nameAr : g.name);
-  const subjectNames = subjects.map(s => lang === 'ar' ? s.nameAr : s.name);
   const durationLabels = DURATION_VALUES.map(d => `${d} ${t('min')}`);
   const activityTypeLabels = [
     t('activityTypeIndividual'), t('activityTypeGroup'), t('activityTypeDiscussion'),
     t('activityTypeHandsOn'), t('activityTypeGame'),
   ];
 
-  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(params.gradeIdx, grades.length));
+  const [gradeIdx, setGradeIdx] = useState(() => resolveSavedGradeIndex(params.gradeId));
+  // Subjects follow the selected grade; KB-backed subjects lead the list so
+  // legacy saved subjectIdx values (written against [math, chem, finlit])
+  // still restore to the right subject.
+  const subjects = getPickerSubjects(grades[gradeIdx].id);
+  const subjectNames = subjects.map(s => lang === 'ar' ? s.nameAr : s.name);
   const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx, subjects.length));
+  // Changing grade swaps the subject list, so the subject resets in the same
+  // event — an out-of-range subjectIdx must never survive to the next render.
+  const pickGrade = (i: number) => { setGradeIdx(i); setSubjectIdx(0); };
   const [topic, setTopic] = useState(params.topic ?? '');
   const [activityTypeIdx, setActivityTypeIdx] = useState(params.activityTypeIdx ? parseInt(params.activityTypeIdx, 10) : 1);
   const [durationIdx, setDurationIdx] = useState(params.durationIdx ? parseInt(params.durationIdx, 10) : 1);
@@ -108,12 +114,12 @@ export default function ActivityScreen() {
     setError(''); setLoading(true); setResult(null); setSaveLabel('save');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
-      const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en');
+      const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en', { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id });
       setCurriculumGrounded(grounding.grounded);
       setGroundedLesson(
         grounding.lesson ? (lang === 'ar' ? grounding.lesson.titleAr : grounding.lesson.titleEn) : null,
       );
-      const additionalContext = buildGeneratorContext(topic.trim(), lang as 'ar' | 'en') || undefined;
+      const additionalContext = buildGeneratorContext(topic.trim(), lang as 'ar' | 'en', { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id }) || undefined;
       const out = await aiService.generateActivity({
         grade: grades[gradeIdx].name,
         subject: subjects[subjectIdx].name,
@@ -146,7 +152,7 @@ export default function ActivityScreen() {
   const handleSave = async () => {
     if (!result) return;
     const title = getExportTitle();
-    const formState = { gradeIdx, subjectIdx, topic: topic.trim(), activityTypeIdx, durationIdx, objective };
+    const formState = { gradeId: grades[gradeIdx].id, gradeIdx, subjectIdx, topic: topic.trim(), activityTypeIdx, durationIdx, objective };
 
     if (savedId) {
       await updateItem(savedId, {
@@ -263,7 +269,7 @@ export default function ActivityScreen() {
 
       {/* Form */}
       <View style={styles.form}>
-        <PickerField label={t('grade')} value={gradeNames[gradeIdx]} options={gradeNames} onChange={setGradeIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
+        <PickerField label={t('grade')} value={gradeNames[gradeIdx]} options={gradeNames} onChange={pickGrade} colors={colors} isRTL={isRTL} accent={ACCENT} />
         <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
 
         <TopicSelector

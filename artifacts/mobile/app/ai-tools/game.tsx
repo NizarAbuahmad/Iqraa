@@ -32,7 +32,7 @@ import { buildGameDeckFromQuiz } from '@/services/classDeck';
 import { createGame, MAX_TEAMS, MIN_TEAMS } from '@/services/classGame';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import {
-  getPickerGrades, getPickerSubjects, resolvePickerIndex,
+  getDefaultPickerGradeIndex, getPickerGrades, getPickerSubjects, resolvePickerIndex,
 } from '@/services/curriculumData';
 
 const ACCENT = '#F59E0B';
@@ -47,10 +47,16 @@ export default function ClassGameScreen() {
   const topPad = insets.top + (insets.top === 0 ? 67 : 0);
 
   const grades = getPickerGrades();
-  const subjects = getPickerSubjects();
 
-  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(undefined, grades.length));
+  const [gradeIdx, setGradeIdx] = useState(getDefaultPickerGradeIndex);
+  // Subjects follow the selected grade; KB-backed subjects lead the list so
+  // legacy saved subjectIdx values (written against [math, chem, finlit])
+  // still restore to the right subject.
+  const subjects = getPickerSubjects(grades[gradeIdx].id);
   const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(undefined, subjects.length));
+  // Changing grade swaps the subject list, so the subject resets in the same
+  // event — an out-of-range subjectIdx must never survive to the next render.
+  const pickGrade = (i: number) => { setGradeIdx(i); setSubjectIdx(0); };
   const [topic, setTopic] = useState('');
   const [teamCount, setTeamCount] = useState(4);
   const [questionCount, setQuestionCount] = useState(8);
@@ -81,7 +87,7 @@ export default function ClassGameScreen() {
     setError(''); setLoading(true); setDeck(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    const grounding = resolveGeneratorGrounding(trimmed, lang as 'ar' | 'en');
+    const grounding = resolveGeneratorGrounding(trimmed, lang as 'ar' | 'en', { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id });
     setGrounded(grounding.grounded);
     setGroundedLesson(grounding.lesson ? (isAr ? grounding.lesson.titleAr : grounding.lesson.titleEn) : '');
 
@@ -93,7 +99,7 @@ export default function ClassGameScreen() {
         numQuestions: questionCount,
         questionTypes: ['multiple_choice'],
         language: isAr ? 'arabic' : 'english',
-        additionalContext: buildGeneratorContext(trimmed, lang as 'ar' | 'en') || undefined,
+        additionalContext: buildGeneratorContext(trimmed, lang as 'ar' | 'en', { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id }) || undefined,
       });
 
       const built = buildGameDeckFromQuiz(quiz, trimmed, isAr, {
@@ -174,7 +180,7 @@ export default function ClassGameScreen() {
             label={t('grade')}
             items={grades.map(g => (isAr ? g.nameAr : g.name))}
             index={gradeIdx}
-            onChange={setGradeIdx}
+            onChange={pickGrade}
             colors={colors}
             isRTL={isRTL}
           />

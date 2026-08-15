@@ -10,7 +10,7 @@ import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { resolveGeneratorGrounding } from '@/services/kbContext';
 import { LessonPlanOutput } from '@/services/ai/AIService';
 import {
-  getPickerGrades, getPickerSubjects, resolvePickerIndex,
+  getPickerGrades, getPickerSubjects, resolvePickerIndex, resolveSavedGradeIndex,
 } from '@/services/curriculumData';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { Button } from '@/components/ui/Button';
@@ -42,21 +42,27 @@ export default function LessonPlanScreen() {
   const { t, isRTL, lang } = useLanguage();
   const params = useLocalSearchParams<{
     topic?: string; savedId?: string;
-    gradeIdx?: string; subjectIdx?: string; durationIdx?: string; styleIdx?: string; objectives?: string;
+    gradeIdx?: string; gradeId?: string; subjectIdx?: string; durationIdx?: string; styleIdx?: string; objectives?: string;
     simplify?: string;
   }>();
   const isSimplify = params.simplify === '1';
   const scrollRef = useRef<ScrollView>(null);
 
   const grades = getPickerGrades();
-  const subjects = getPickerSubjects();
   const gradeNames = grades.map(g => lang === 'ar' ? g.nameAr : g.name);
-  const subjectNames = subjects.map(s => lang === 'ar' ? s.nameAr : s.name);
   const durationLabels = DURATION_VALUES.map(d => `${d} ${t('min')}`);
   const styleLabels = [t('teachingStyleDirect'), t('teachingStyleInquiry'), t('teachingStyleCollaborative')];
 
-  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(params.gradeIdx, grades.length));
+  const [gradeIdx, setGradeIdx] = useState(() => resolveSavedGradeIndex(params.gradeId));
+  // Subjects follow the selected grade; KB-backed subjects lead the list so
+  // legacy saved subjectIdx values (written against [math, chem, finlit])
+  // still restore to the right subject.
+  const subjects = getPickerSubjects(grades[gradeIdx].id);
+  const subjectNames = subjects.map(s => lang === 'ar' ? s.nameAr : s.name);
   const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx, subjects.length));
+  // Changing grade swaps the subject list, so the subject resets in the same
+  // event — an out-of-range subjectIdx must never survive to the next render.
+  const pickGrade = (i: number) => { setGradeIdx(i); setSubjectIdx(0); };
   const [topic, setTopic] = useState(params.topic ?? '');
 
   // Reset topic when grade or subject changes so stale KB selections are cleared
@@ -136,6 +142,7 @@ export default function LessonPlanScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
       const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en', {
+        gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id,
         teacherObjectives: objectives.trim() || undefined,
       });
       const additionalContext = [
@@ -175,7 +182,7 @@ export default function LessonPlanScreen() {
     const title = lang === 'ar'
       ? `خطة درس: ${topic.trim()}`
       : `Lesson Plan: ${topic.trim()}`;
-    const formState = { gradeIdx, subjectIdx, topic: topic.trim(), durationIdx, styleIdx, objectives };
+    const formState = { gradeId: grades[gradeIdx].id, gradeIdx, subjectIdx, topic: topic.trim(), durationIdx, styleIdx, objectives };
 
     if (savedId) {
       await updateItem(savedId, {
@@ -327,7 +334,7 @@ export default function LessonPlanScreen() {
 
       {/* Form */}
       <View style={styles.form}>
-        <PickerField label={t('grade')} value={gradeNames[gradeIdx]} options={gradeNames} onChange={setGradeIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
+        <PickerField label={t('grade')} value={gradeNames[gradeIdx]} options={gradeNames} onChange={pickGrade} colors={colors} isRTL={isRTL} accent={ACCENT} />
         <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
 
         {/* Topic / lesson selector */}

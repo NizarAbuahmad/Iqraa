@@ -9,6 +9,7 @@ import type { KBLesson } from './knowledgeBase.ts';
 import {
   getBookForLesson,
   getUnitForLesson,
+  hasKBContent,
   resolveGroundedKbLesson,
   searchKBRanked,
   searchKBSemantic,
@@ -32,6 +33,18 @@ export type BuildGeneratorContextOptions = {
    * When non-empty, these replace curriculum نتاجات in the context block.
    */
   teacherObjectives?: string;
+  /**
+   * The teacher's selected grade + subject. When set, grounding is attempted
+   * only if the KB actually has books for that pair.
+   *
+   * Without this gate, KB search matches on title alone: a Grade 9 teacher
+   * typing «المعادلات» would get grounded to the Grade 10 lesson, and the tool
+   * would then *claim* the material is anchored to the G9 curriculum book —
+   * the one kind of lie this product is built to never tell. Omitting both
+   * fields keeps the old behaviour for callers that have no picker (chat).
+   */
+  gradeId?: string;
+  subjectId?: string;
 };
 
 export type GeneratorGrounding = {
@@ -140,7 +153,14 @@ export function resolveGeneratorGrounding(
   lang: 'ar' | 'en',
   options?: BuildGeneratorContextOptions,
 ): GeneratorGrounding {
-  const lesson = resolveGroundedKbLesson(topic, lang);
+  // A grade/subject pair the KB has no books for can never be grounded —
+  // don't even search, or a same-titled lesson from another grade's book
+  // would be claimed as this grade's curriculum.
+  const gated =
+    options?.gradeId !== undefined &&
+    options?.subjectId !== undefined &&
+    !hasKBContent(options.subjectId, options.gradeId);
+  const lesson = gated ? null : resolveGroundedKbLesson(topic, lang);
   if (!lesson) {
     const isAr = lang === 'ar';
     return {

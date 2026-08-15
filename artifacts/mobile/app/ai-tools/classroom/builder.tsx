@@ -9,7 +9,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { Button } from '@/components/ui/Button';
 import {
-  getPickerGrades, getPickerSubjects, resolvePickerIndex,
+  getDefaultPickerGradeIndex, getPickerGrades, getPickerSubjects, resolvePickerIndex,
 } from '@/services/curriculumData';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { ClassroomActivity } from '@/services/ai/AIService';
@@ -36,10 +36,16 @@ export default function ClassroomBuilderScreen() {
   const topPad = insets.top + (insets.top === 0 ? 67 : 0);
 
   const grades = getPickerGrades();
-  const subjects = getPickerSubjects();
 
-  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(undefined, grades.length));
+  const [gradeIdx, setGradeIdx] = useState(getDefaultPickerGradeIndex);
+  // Subjects follow the selected grade; KB-backed subjects lead the list so
+  // legacy saved subjectIdx values (written against [math, chem, finlit])
+  // still restore to the right subject.
+  const subjects = getPickerSubjects(grades[gradeIdx].id);
   const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(undefined, subjects.length));
+  // Changing grade swaps the subject list, so the subject resets in the same
+  // event — an out-of-range subjectIdx must never survive to the next render.
+  const pickGrade = (i: number) => { setGradeIdx(i); setSubjectIdx(0); };
   const [topic, setTopic] = useState('');
   const [durationIdx, setDurationIdx] = useState(1); // 20 min default
   const [difficulty, setDifficulty] = useState<Difficulty>('standard');
@@ -64,7 +70,7 @@ export default function ClassroomBuilderScreen() {
     setError(''); setLoading(true); setResult(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
-      const additionalContext = buildGeneratorContext(topic.trim(), lang as 'ar' | 'en') || undefined;
+      const additionalContext = buildGeneratorContext(topic.trim(), lang as 'ar' | 'en', { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id }) || undefined;
       const out = await aiService.generateClassroomActivity({
         grade: grades[gradeIdx].name,
         subject: subjects[subjectIdx].name,
@@ -174,7 +180,7 @@ export default function ClassroomBuilderScreen() {
               const active = gradeIdx === idx;
               const label = lang === 'ar' ? g.nameAr : g.name;
               return (
-                <Pressable key={g.id} onPress={() => setGradeIdx(idx)} style={[styles.pill, { backgroundColor: active ? ACCENT : colors.card, borderColor: active ? ACCENT : colors.border, borderRadius: colors.radius }]}>
+                <Pressable key={g.id} onPress={() => pickGrade(idx)} style={[styles.pill, { backgroundColor: active ? ACCENT : colors.card, borderColor: active ? ACCENT : colors.border, borderRadius: colors.radius }]}>
                   <Text style={[styles.pillText, { color: active ? '#fff' : colors.mutedForeground, fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular' }]}>
                     {label}
                   </Text>

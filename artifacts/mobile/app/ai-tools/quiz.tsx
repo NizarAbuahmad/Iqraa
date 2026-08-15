@@ -13,7 +13,7 @@ import { buildDeckFromQuiz } from '@/services/classDeck';
 import { summarizeVerification, type VerifyOutcome } from '@/services/quizVerification';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import {
-  getPickerGrades, getPickerSubjects, resolvePickerIndex,
+  getPickerGrades, getPickerSubjects, resolvePickerIndex, resolveSavedGradeIndex,
 } from '@/services/curriculumData';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
@@ -57,15 +57,13 @@ export default function QuizScreen() {
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
   const params = useLocalSearchParams<{
-    savedId?: string; gradeIdx?: string; subjectIdx?: string;
+    savedId?: string; gradeIdx?: string; gradeId?: string; subjectIdx?: string;
     topic?: string; durationIdx?: string; marksIdx?: string; selectedTypes?: string;
   }>();
   const scrollRef = useRef<ScrollView>(null);
 
   const grades = getPickerGrades();
-  const subjects = getPickerSubjects();
   const gradeNames = grades.map(g => lang === 'ar' ? g.nameAr : g.name);
-  const subjectNames = subjects.map(s => lang === 'ar' ? s.nameAr : s.name);
   const durationLabels = DURATION_OPTIONS.map(d => `${d} ${t('min')}`);
   const marksLabels = MARKS_OPTIONS.map(m => String(m));
   const diffLabels = [t('difficultyNormal'), t('difficultyHigh'), t('difficultyDifficult')];
@@ -75,8 +73,16 @@ export default function QuizScreen() {
     try { return new Set(JSON.parse(raw) as QType[]); } catch { return new Set(['multiple_choice', 'true_false', 'short_answer']); }
   };
 
-  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(params.gradeIdx, grades.length));
+  const [gradeIdx, setGradeIdx] = useState(() => resolveSavedGradeIndex(params.gradeId));
+  // Subjects follow the selected grade; KB-backed subjects lead the list so
+  // legacy saved subjectIdx values (written against [math, chem, finlit])
+  // still restore to the right subject.
+  const subjects = getPickerSubjects(grades[gradeIdx].id);
+  const subjectNames = subjects.map(s => lang === 'ar' ? s.nameAr : s.name);
   const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx, subjects.length));
+  // Changing grade swaps the subject list, so the subject resets in the same
+  // event — an out-of-range subjectIdx must never survive to the next render.
+  const pickGrade = (i: number) => { setGradeIdx(i); setSubjectIdx(0); };
   const [topic, setTopic] = useState(params.topic ?? '');
   const [diffIdx, setDiffIdx] = useState(0);
 
@@ -217,12 +223,12 @@ export default function QuizScreen() {
     setError(''); setLoading(true); setResult(null); setOutcomes(null); setEditedQuestions(new Set()); setShowAnswers(false); setSaveLabel('save');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
-      const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en');
+      const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en', { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id });
       setCurriculumGrounded(grounding.grounded);
       setGroundedLesson(
         grounding.lesson ? (lang === 'ar' ? grounding.lesson.titleAr : grounding.lesson.titleEn) : null,
       );
-      const additionalContext = buildGeneratorContext(topic.trim(), lang as 'ar' | 'en') || undefined;
+      const additionalContext = buildGeneratorContext(topic.trim(), lang as 'ar' | 'en', { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id }) || undefined;
       const out = await aiService.generateQuiz({
         grade: grades[gradeIdx].name,
         subject: subjects[subjectIdx].name,
@@ -264,7 +270,7 @@ export default function QuizScreen() {
       ? `اختبار: ${topic.trim()}`
       : `Quiz: ${topic.trim()}`;
     const formState = {
-      gradeIdx, subjectIdx, topic: topic.trim(),
+      gradeId: grades[gradeIdx].id, gradeIdx, subjectIdx, topic: topic.trim(),
       durationIdx, marksIdx, selectedTypes: JSON.stringify(Array.from(selectedTypes)),
     };
     if (savedId) {
@@ -378,7 +384,7 @@ export default function QuizScreen() {
 
       {/* Form */}
       <View style={{ padding: 20 }}>
-        <PickerField label={t('grade')} value={gradeNames[gradeIdx]} options={gradeNames} onChange={setGradeIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
+        <PickerField label={t('grade')} value={gradeNames[gradeIdx]} options={gradeNames} onChange={pickGrade} colors={colors} isRTL={isRTL} accent={ACCENT} />
         <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
 
         <TopicSelector
@@ -480,7 +486,7 @@ export default function QuizScreen() {
           <Pressable
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en');
+              const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en', { gradeId: grades[gradeIdx].id, subjectId: subjects[subjectIdx].id });
               setPendingClassroomActivity(
                 buildDeckFromQuiz(result, topic.trim(), lang === 'ar', {
                   lesson: grounding.lesson,

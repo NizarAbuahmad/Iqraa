@@ -37,7 +37,7 @@ Vision screens (student/parent/school dashboards) are deprioritized.
 
 - `pnpm install` and full `pnpm run typecheck` pass clean (checked on Windows
   2026-08-06 and on Linux 2026-08-10).
-- Mobile test suite: 376 tests, 0 failures (10 skipped). The `test` script
+- Mobile test suite: 390 tests, 0 failures (10 skipped). The `test` script
   globs `services/__tests__/**/*.test.ts` — it used to be a hand-listed set of
   files that had drifted, so two suites never ran.
 - API test suite: 74 tests, 0 failures. Its `test` script globs
@@ -803,6 +803,45 @@ must start following the language in the same commit that deletes them.
   - The helper itself was left alone deliberately: `quiz.tsx` passes the
     question text as `message` and needs its `title` to say what is happening to
     it, so suppressing titles globally would have broken that caller.
+
+## Grades 7–12 open in the AI tools, 2026-08-15
+
+The tool pickers now offer الصف السابع → الثاني عشر (G10 pre-selected);
+subjects follow the chosen grade (science ≤9, physics/chem/bio/finlit ≥10).
+**No curriculum was invented for the new grades**: they get free-text topics
+and the honest «غير مستند إلى المنهاج» notice. The day a grade's NCCD book is
+added to the KB, `hasKBContent` flips that grade/subject to the grounded
+unit→lesson cascade with no further code change.
+
+Deliberate asymmetry: the curriculum tab (المنهج) **stays G10-only** —
+`getVisibleGrades` is untouched. The two surfaces fail differently on a
+bookless grade: tools degrade honestly to free text; the browse tab dead-ends
+on an empty shelf (the old finlit bug). Range is 7–12, not 1–12, because the
+generators' wording targets upper-basic/secondary; primary is a pedagogy
+decision, not a range tweak (`PICKER_GRADE_MIN/MAX`).
+
+Two index-shaped traps this migration had to defuse (both under test in
+`pickerGrades.test.ts`):
+
+- **Legacy `gradeIdx: 0` means G10, not row zero.** Workspace Edit spreads
+  formState into route params, and every save before the widening was written
+  against a single-entry `[G10]` list. Restores now go through
+  `resolveSavedGradeIndex(gradeId)` — absent/unknown id ⇒ G10. New saves
+  carry `gradeId` in formState.
+- **Legacy `subjectIdx` 0/1/2 = math/chem/finlit.** `getPickerSubjects(gradeId)`
+  keeps exactly that prefix for G10 (KB-backed subjects lead, rest follow in
+  SUBJECTS order), so old saves restore to the right subject.
+
+Also closed while in there: **cross-grade/cross-subject false grounding.**
+KB search matches on title alone, so a G9 teacher typing «المعادلات» would
+have been grounded to the G10 lesson — and the tool would claim G9-curriculum
+anchoring. `resolveGeneratorGrounding` now takes `{ gradeId, subjectId }` and
+refuses to search when `hasKBContent` says the pair has no books. Chat passes
+no gate and keeps its old behaviour.
+
+Adding a real new grade later = the G10 math S1 pipeline: NCCD book PDFs →
+transcribe units/lessons/النتاجات (from renders, not pdftotext — it mangles
+Arabic ligatures) → KB catalog module → everything above lights up.
 
 ## Open decisions (2026-08-10)
 
