@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,7 +15,6 @@ import {
   AFTER_CLASS,
   BEFORE_CLASS,
   DURING_CLASS,
-  MORE_TOOLS,
   WORKFLOW,
   type ToolDef,
 } from '@/services/toolCatalog';
@@ -114,7 +113,6 @@ export default function AIToolsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL } = useLanguage();
-  const [moreOpen, setMoreOpen] = useState(false);
   const topPad = insets.top + (insets.top === 0 ? 67 : 0);
 
   return (
@@ -154,72 +152,6 @@ export default function AIToolsScreen() {
           </View>
         </View>
       ))}
-
-      {/* More tools — secondary, collapsed by default */}
-      <View style={styles.section}>
-        <Pressable
-          onPress={() => {
-            Haptics.selectionAsync();
-            setMoreOpen(v => !v);
-          }}
-          style={[styles.moreHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-        >
-          <Text style={[styles.sectionTitle, { color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', marginBottom: 0 }]}>
-            {t('toolsMoreTitle')}
-          </Text>
-          <Ionicons
-            name={moreOpen ? 'chevron-up' : 'chevron-down'}
-            size={18}
-            color={colors.mutedForeground}
-          />
-        </Pressable>
-        {moreOpen && (
-          <>
-            <Text style={[styles.moreHint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
-              {t('toolsMoreHint')}
-            </Text>
-            <View style={styles.list}>
-              {MORE_TOOLS.map(tool => (
-                <ToolCard key={tool.id} tool={tool} isRTL={isRTL} colors={colors} t={t} compact />
-              ))}
-            </View>
-          </>
-        )}
-      </View>
-
-      {/*
-        The retired home screen. It is still the only way to attach media to a
-        lesson and to reach Smart Templates, so it stays reachable — here, among
-        the tools, rather than in the account settings where it used to sit.
-      */}
-      <Pressable
-        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/home'); }}
-        style={({ pressed }) => [
-          styles.workspaceCard,
-          {
-            backgroundColor: colors.card,
-            borderColor: colors.border,
-            borderRadius: colors.radius,
-            marginHorizontal: 20,
-            marginBottom: 12,
-            opacity: pressed ? 0.8 : 1,
-            flexDirection: isRTL ? 'row-reverse' : 'row',
-          },
-        ]}
-      >
-        <View style={[styles.workspaceIcon, { backgroundColor: '#6366F1' + '18', borderRadius: 12 }]}>
-          <Ionicons name="grid-outline" size={22} color="#6366F1" />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={[{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 15, textAlign: isRTL ? 'right' : 'left' }]}>
-            {t('moreTools')}
-          </Text>
-          <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: isRTL ? 'right' : 'left' }]}>
-            {t('toolsMoreHint')}
-          </Text>
-        </View>
-        <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
-      </Pressable>
 
       <Pressable
         onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/workspace'); }}
@@ -276,14 +208,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     paddingHorizontal: 20,
   },
-  moreHeader: {
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    marginBottom: 4,
-  },
-  moreHint: { fontSize: 12, lineHeight: 17, paddingHorizontal: 20, marginBottom: 8 },
   list: { paddingHorizontal: 20, gap: 10, paddingBottom: 8 },
   card: { alignItems: 'center', padding: 16, borderWidth: 1, gap: 14 },
   cardCompact: { padding: 14 },
