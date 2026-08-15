@@ -37,7 +37,7 @@ Vision screens (student/parent/school dashboards) are deprioritized.
 
 - `pnpm install` and full `pnpm run typecheck` pass clean (checked on Windows
   2026-08-06 and on Linux 2026-08-10).
-- Mobile test suite: 311 tests, 0 failures (10 skipped). The `test` script
+- Mobile test suite: 376 tests, 0 failures (10 skipped). The `test` script
   globs `services/__tests__/**/*.test.ts` — it used to be a hand-listed set of
   files that had drifted, so two suites never ran.
 - API test suite: 74 tests, 0 failures. Its `test` script globs
@@ -740,6 +740,102 @@ instance with real Postgres — confirmed a weak password is rejected on
 `/register` and a strong one succeeds, confirmed repeated failed logins
 past the 10-attempt cap return `429` with `Retry-After`, confirmed
 `/forgot-password` blocks at 6 rapid requests.
+
+## Class-time tools: Slides Maker + Class Challenge, 2026-08-15
+
+Two tools, both projecting through the existing `presentation.tsx` player
+rather than a second one.
+
+- **Slides Maker** (`🖥️ شرائح الدرس`, `app/ai-tools/slides.tsx` →
+  `services/lessonSlides.ts`). Builds a *teaching* deck — outcomes, vocabulary,
+  concepts, worked examples, closure — as against `classDeck.ts`, which
+  projects questions. The curriculum book wins over the generated plan for
+  every field it carries; the plan fills only hook/practice/closure, so a
+  grounded topic still yields a deck when generation fails. `teacherPreparation`
+  states which of the two the deck came from. Adds `MaterialType 'slides'`:
+  saved decks are viewable and re-projectable from the workspace. PDF reuses
+  `buildLessonPlanSlidesHTML`, so it needs a plan.
+- **Class Challenge** (`🏆 تحدي الصف`, `app/ai-tools/game.tsx` →
+  `services/classGame.ts` + `buildGameDeckFromQuiz`). Kahoot-style team game
+  for a room where **students have no phones**: projector is the board,
+  students answer on the printed أ ب ج د cards `classDeck.ts` already
+  prescribes, teacher taps which teams were right. Scores are *derived* by
+  re-folding an award ledger, never accumulated — that is what makes a mis-tap
+  exactly reversible including its streak bonus, which an incremental score
+  cannot undo. Only MCQ items are scoreable, so `game.questionCount` counts
+  survivors, not the quiz's questions.
+  - **Per-student scoring is the intended next step.** The ledger is keyed by
+    responder id so printed-card camera capture (Plickers-style, against
+    `roster.ts` ids) can replace team ids with no change to the engine.
+    `expo-camera` is not a dependency yet.
+
+### Web RTL was broken in production only — fixed
+
+Arabic screens rendered half-mirrored on the deployed site (tool-card icon and
+title on the left, description on the right) while looking correct in dev.
+
+Cause: the app expresses direction *per component* — ~190 sites write
+`flexDirection: isRTL ? 'row-reverse' : 'row'` — which assumes a
+direction-neutral document. `expo export` and the dev server both emit a shell
+with no `dir`, but the deployed HTML served `<html lang="ar" dir="rtl">`, which
+this repo cannot produce. In an RTL document `flexDirection: 'row'` is already
+reversed, so `'row-reverse'` cancels back to visual LTR, while
+`textAlign: 'right'` (a physical value) stays put.
+
+Measured on the deployed page, children of one such row:
+`dir="rtl"` → x = `[913, 998]` (ascending → visually LTR, the bug);
+no `dir` → x = `[288, 211]` (descending → visually RTL, correct).
+
+`LanguageContext.applyRTL` now asserts `dir="ltr"` on web at boot and on every
+language change, so the host cannot reintroduce it. `app/+html.tsx` does *not*
+work here — `web.output` is unset, which means `single`, and Expo ignores the
+custom shell in that mode.
+
+If the per-component flips are ever replaced by real document-level RTL, `dir`
+must start following the language in the same commit that deletes them.
+
+## Tools flattened + parent messages, 2026-08-15
+
+- **«أدوات إضافية» is gone — twice.** The name covered two different things: a
+  collapsed `MORE_TOOLS` section, *and* a card that pushed `/home`, the retired
+  home screen. Both are removed; everything now sits in قبل/أثناء/بعد الحصة.
+  - مسار الدرس → قبل الحصة. الفصل التفاعلي → أثناء الحصة. التقييمات and
+    رسالة لولي الأمر → بعد الحصة.
+  - `/home` is still the only route to lesson media and Smart Templates, so it
+    is now a named tool (**وسائط الدرس والقوالب**) rather than an unlabelled
+    card. Deleting the card outright would have orphaned both.
+  - `MORE_TOOLS` fed **two** surfaces — the tools tab and the chat `+` sheet in
+    `iqra.tsx`. Removing it required editing both; the catalog exists precisely
+    because those two drift.
+  - **الفصل التفاعلي now overlaps Slides Maker and Class Challenge** — all three
+    end in the same presentation player. Kept for its activity formats (bingo,
+    relay, gallery walk) and flagged in `toolCatalog.ts` as the candidate if the
+    three entry points are ever collapsed.
+
+- **رسالة لولي الأمر is real** (`app/ai-tools/parent-message.tsx` →
+  `services/parentMessage.ts`), replacing the coming-soon stub.
+  - **It does not generate.** The message is about a named child and goes to a
+    parent under the teacher's name, usually via WhatsApp. A model that invents
+    "لم يسلّم ثلاثة واجبات" when it was one produces something the teacher signs
+    and cannot retract, and nothing downstream would catch it. So the teacher
+    supplies every fact and the composer supplies the register — greeting,
+    honorific, closing. A test asserts the output contains **no digit** the
+    teacher did not type.
+  - Consequence worth keeping: it works with `DEMO_MODE` on, offline, with no
+    API key. That is why it shipped working instead of as another stub.
+  - Student *and* teacher gender are inputs because Arabic inflects for both
+    (ابنكم/ابنتكم، أظهر/أظهرت، معلّم/معلّمة). A slashed either/or form is what
+    makes a message read as a circular; tests guard against one reappearing.
+
+- **Logout asked twice.** `profile.tsx` never adopted `services/confirm.ts` —
+  the helper written to replace exactly its inline `Platform` workaround, and
+  whose header names that file. It also passed both `signOut` ("تسجيل الخروج")
+  and `signOutConfirm` ("هل تريد تسجيل الخروج؟"), which say the same thing, so
+  the browser stacked them above its own origin line: three lines for one
+  question. Now one line, with the action on the confirm button.
+  - The helper itself was left alone deliberately: `quiz.tsx` passes the
+    question text as `message` and needs its `title` to say what is happening to
+    it, so suppressing titles globally would have broken that caller.
 
 ## Open decisions (2026-08-10)
 

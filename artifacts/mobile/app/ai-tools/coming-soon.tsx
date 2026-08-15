@@ -10,7 +10,6 @@ import { TranslationKey } from '@/services/i18n';
 const TOOL_TITLE_KEYS: Record<string, TranslationKey> = {
   homework: 'toolHomeworkTitle',
   exam: 'toolExamTitle',
-  'parent-msg': 'toolParentMsgTitle',
 };
 
 export default function ComingSoonScreen() {

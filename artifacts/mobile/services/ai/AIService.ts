@@ -122,7 +122,7 @@ export interface TeacherCompanion {
 
 export interface ActivitySlide {
   slideNumber: number;
-  type: 'intro' | 'challenge' | 'reveal' | 'summary' | 'bingo-call' | 'relay-problem' | 'question' | 'graph' | 'media';
+  type: 'intro' | 'challenge' | 'reveal' | 'summary' | 'bingo-call' | 'relay-problem' | 'question' | 'graph' | 'media' | 'scoreboard' | 'podium';
   title: string;
   content: string;
   hint?: string;
@@ -162,6 +162,15 @@ export interface ActivitySlide {
   /** Image URL / data URI, or a YouTube watch/share link. */
   mediaUrl?: string;
   mediaCaption?: string;
+  /**
+   * Position of this question in the game's scoring ledger (Class Challenge).
+   *
+   * Deliberately NOT the same as slideNumber: intro, scoreboard and podium
+   * slides sit between questions, so "question 3" and "slide 3" diverge
+   * immediately. Awarding points keys off this, so a wrong value credits the
+   * wrong question and corrupts every streak after it.
+   */
+  questionIndex?: number;
 }
 
 export interface ClassroomActivity {
@@ -182,6 +191,18 @@ export interface ClassroomActivity {
   printables: string[];
   assessment: string;
   extensionChallenge: string;
+  /**
+   * Present only on Class Challenge decks. Its presence is what switches the
+   * presentation screen into game mode (scoreboard strip, award row on reveal,
+   * podium), so a normal deck can never accidentally start scoring.
+   */
+  game?: ClassGameConfig;
+}
+
+export interface ClassGameConfig {
+  teamCount: number;
+  /** Scoreable questions in the deck — the ledger's upper bound. */
+  questionCount: number;
 }
 
 export interface ClassroomActivityRequest {
