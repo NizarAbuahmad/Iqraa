@@ -184,11 +184,33 @@ export function buildDeckFromWorksheet(
   ws: WorksheetOutput,
   lessonTitle: string,
   isAr: boolean,
-  opts?: { lesson?: KBLesson | null; verified?: boolean },
+  opts?: {
+    lesson?: KBLesson | null;
+    /**
+     * Whole-deck claim. Kept for callers that genuinely vouch for every key.
+     * Prefer `outcomes` — see buildDeckFromQuiz's doc for why a single
+     * boolean is wrong in one direction or the other.
+     */
+    verified?: boolean;
+    /**
+     * Per-question provenance, positionally aligned with the flattened
+     * `sections[].questions[]` list — the same order `verifyWorksheetAnswers`
+     * returns and the answer key below already uses.
+     */
+    outcomes?: (
+      | { verifiedBy: 'symbolic' | 'bank'; computedAnswer?: string }
+      | undefined
+    )[];
+  },
 ): ClassroomActivity {
   const slides: ActivitySlide[] = [introSlide(ws.title, lessonTitle, isAr)];
   const objSlide = objectivesSlide(opts?.lesson ?? null, lessonTitle, isAr, slides.length + 1);
   if (objSlide) slides.push(objSlide);
+
+  // A worksheet question carries no answer of its own — the generator only
+  // ever fills in the top-level answerKey, keyed by 1-based position across
+  // this same flattened section/question order.
+  const answerByPosition = new Map(ws.answerKey.map(a => [a.num, a.answer]));
 
   let qNum = 0;
   const answers: string[] = [];
@@ -196,7 +218,7 @@ export function buildDeckFromWorksheet(
     for (const q of section.questions ?? []) {
       qNum += 1;
       const hasOptions = Array.isArray(q.options) && q.options.length >= 2;
-      const answer = q.answer ?? '';
+      const answer = answerByPosition.get(qNum) ?? '';
       answers.push(isAr ? `سؤال ${qNum}: ${answer}` : `Q${qNum}: ${answer}`);
       slides.push({
         slideNumber: slides.length + 1,
@@ -207,7 +229,13 @@ export function buildDeckFromWorksheet(
           ? {
               options: q.options,
               correctIndex: indexOfAnswer(q.options!, answer),
-              verified: opts?.verified === true,
+              // Per-question outcome wins when supplied — same rule as
+              // buildDeckFromQuiz: 'bank' still shows a badge, since that's a
+              // claim about provenance (came from the reviewed bank), not a
+              // claim that anything checked it.
+              ...(opts?.outcomes
+                ? outcomeFields(opts.outcomes[qNum - 1])
+                : { verified: opts?.verified === true }),
             }
           : answer
             ? { answer }
