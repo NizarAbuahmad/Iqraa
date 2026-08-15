@@ -32,6 +32,18 @@ export type WorkflowSection = {
 
 /** Core teaching jobs — ordered by when teachers use them. */
 export const BEFORE_CLASS: ToolDef[] = [
+  // Pinned first: teachers build slides as prep, even though they're
+  // projected during class — leading with it surfaces the newest tool on
+  // both the tools tab and the chat "+" menu, which render sections in
+  // WORKFLOW order.
+  {
+    id: 'slides',
+    titleKey: 'toolSlidesTitle',
+    descKey: 'toolSlidesDesc',
+    icon: 'tv-outline',
+    color: '#0EA5E9',
+    route: '/ai-tools/slides',
+  },
   {
     id: 'lesson-plan',
     titleKey: 'toolLessonPlanTitle',
@@ -75,14 +87,6 @@ const CLASSROOM_HUB: ToolDef = {
 };
 
 export const DURING_CLASS: ToolDef[] = [
-  {
-    id: 'slides',
-    titleKey: 'toolSlidesTitle',
-    descKey: 'toolSlidesDesc',
-    icon: 'tv-outline',
-    color: '#0EA5E9',
-    route: '/ai-tools/slides',
-  },
   {
     id: 'game',
     titleKey: 'toolGameTitle',

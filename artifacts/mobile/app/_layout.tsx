@@ -27,6 +27,7 @@ import { router, Stack, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { LanguageProvider } from '@/context/LanguageContext';
+import { hasSeenAppIntro } from '@/services/appIntro';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -59,6 +60,15 @@ function RootLayoutNav() {
     if (finishedBoot || authChanged) {
       if (signedIn) {
         router.replace('/(tabs)');
+      } else if (finishedBoot) {
+        // Cold boot, signed out: a brand-new install sees the product intro
+        // once; a device that just signed out goes straight back to login.
+        hasSeenAppIntro().then(seen => {
+          // '/onboarding' isn't in the generated typed-routes union until the
+          // dev server regenerates it — same reason other routes in this app
+          // are cast, e.g. '/ai-tools/classroom/presentation' throughout.
+          router.replace((seen ? '/(auth)/login' : '/onboarding') as any);
+        });
       } else {
         router.replace('/(auth)/login');
       }
@@ -70,6 +80,7 @@ function RootLayoutNav() {
 
   return (
     <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
+      <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="curriculum/subjects" options={{ headerShown: false }} />

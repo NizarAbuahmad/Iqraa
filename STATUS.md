@@ -741,6 +741,33 @@ instance with real Postgres — confirmed a weak password is rejected on
 past the 10-attempt cap return `429` with `Retry-After`, confirmed
 `/forgot-password` blocks at 6 rapid requests.
 
+## First-run onboarding + Slides Maker promoted, 2026-08-15
+
+A teacher used to land straight on login with nothing explaining what
+Iqraa does. Added a 4-slide product-intro carousel
+(`app/onboarding.tsx`) shown once per install before the first login:
+what Iqraa is, the full lesson-journey flow, real math verification, and
+the class-time tools. Deliberately not swipe-driven — this app expresses
+RTL per-component rather than via OS layout direction (see the web-RTL
+writeup below), so a horizontal ScrollView's physical scroll axis
+wouldn't reliably follow the reading direction. Paging is Next/Skip/dot
+driven instead, which behaves identically in both languages.
+
+- `services/appIntro.ts` tracks the "seen" flag globally (AsyncStorage,
+  not user-scoped — the carousel runs before anyone is signed in, unlike
+  `lessonContext.ts`'s per-user "onboarded" flag, which gates the
+  first-lesson picker and is a different concept).
+- `app/_layout.tsx`'s root redirect now checks it only on cold boot while
+  signed out — an explicit logout goes straight back to login, not the
+  intro again.
+- Verified live: fresh install shows the carousel, `تخطي`/`ابدأ الآن`
+  both land on login, the flag survives a reload so it doesn't repeat.
+
+**Slides Maker promoted to the top tool** on both the tools tab and the
+chat "+" menu — moved from `DURING_CLASS` to the front of `BEFORE_CLASS`
+in `toolCatalog.ts`, the single list both surfaces render from in
+`WORKFLOW` order. Verified live in both places.
+
 ## Class-time tools: Slides Maker + Class Challenge, 2026-08-15
 
 Two tools, both projecting through the existing `presentation.tsx` player

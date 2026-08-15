@@ -862,6 +862,19 @@ const translations = {
     gradedCountLabel: (n: number, total: number) => `قُيِّم ${n} من ${total} طالبًا`,
     noAttemptsYet: 'لا محاولات بعد',
     noAttemptsYetDesc: 'لم تُدخَل إجابات أي طالب لهذا التقييم بعد',
+
+    // Onboarding carousel — first-run intro, before login
+    onboardingSkip: 'تخطي',
+    onboardingNext: 'التالي',
+    onboardingGetStarted: 'ابدأ الآن',
+    onboardingSlide1Title: 'مساعدك الذكي لتحضير الحصص',
+    onboardingSlide1Desc: 'اقرأ يساعدك على تحضير حصص الرياضيات والكيمياء للصف العاشر وفق المنهاج الأردني، بالعربية بالكامل.',
+    onboardingSlide2Title: 'رحلة حصة كاملة بضغطة واحدة',
+    onboardingSlide2Desc: 'من الأهداف والتمهيد، إلى النشاط والتدريب وورقة العمل وبطاقة الخروج — كل ذلك في تدفق واحد مترابط.',
+    onboardingSlide3Title: 'تحقق رياضي حقيقي، لا تخمين',
+    onboardingSlide3Desc: 'إجابات الرياضيات يتحقق منها محرك رمزي بدلاً من الاكتفاء بثقة النموذج، وتظهر شارة توضح ما تم إثباته فعليًا.',
+    onboardingSlide4Title: 'أدوات لكل لحظة في الحصة',
+    onboardingSlide4Desc: 'شرائح للعرض، تحدٍّ جماعي بلا هواتف، اختبارات وأوراق عمل — جاهزة قبل الحصة وأثناءها وبعدها.',
   },
 
   en: {
@@ -1662,6 +1675,19 @@ const translations = {
     gradedCountLabel: (n: number, total: number) => `${n} of ${total} students graded`,
     noAttemptsYet: 'No attempts yet',
     noAttemptsYetDesc: "No student's answers have been entered for this evaluation yet",
+
+    // Onboarding carousel — first-run intro, before login
+    onboardingSkip: 'Skip',
+    onboardingNext: 'Next',
+    onboardingGetStarted: 'Get started',
+    onboardingSlide1Title: 'Your AI teaching assistant',
+    onboardingSlide1Desc: 'Iqraa helps you prepare Grade 10 math and chemistry lessons for the Jordanian curriculum — fully in Arabic.',
+    onboardingSlide2Title: 'A full lesson journey, one pass',
+    onboardingSlide2Desc: 'Objectives, warmup, activity, practice, worksheet, exit ticket — one connected flow, not scattered pieces.',
+    onboardingSlide3Title: 'Real math verification, not a guess',
+    onboardingSlide3Desc: "Math answer keys are checked by a symbolic engine instead of just trusting the model, and a badge shows what was actually proven.",
+    onboardingSlide4Title: 'Tools for every moment in class',
+    onboardingSlide4Desc: 'Projectable slides, a phone-free team challenge, quizzes and worksheets — ready before, during, and after class.',
   },
 } as const;
 
