@@ -37,7 +37,7 @@ Vision screens (student/parent/school dashboards) are deprioritized.
 
 - `pnpm install` and full `pnpm run typecheck` pass clean (checked on Windows
   2026-08-06 and on Linux 2026-08-10).
-- Mobile test suite: 311 tests, 0 failures (10 skipped). The `test` script
+- Mobile test suite: 356 tests, 0 failures (10 skipped). The `test` script
   globs `services/__tests__/**/*.test.ts` — it used to be a hand-listed set of
   files that had drifted, so two suites never ran.
 - API test suite: 74 tests, 0 failures. Its `test` script globs
@@ -707,6 +707,59 @@ for this system-of-equations content; opened Class Mode and confirmed the
 revealed answer for question 2 now matches `answerKey` item 2 exactly,
 where before the fix it would have shown whatever option happened to sit
 at index 0.
+
+## Class-time tools: Slides Maker + Class Challenge, 2026-08-15
+
+Two tools, both projecting through the existing `presentation.tsx` player
+rather than a second one.
+
+- **Slides Maker** (`🖥️ شرائح الدرس`, `app/ai-tools/slides.tsx` →
+  `services/lessonSlides.ts`). Builds a *teaching* deck — outcomes, vocabulary,
+  concepts, worked examples, closure — as against `classDeck.ts`, which
+  projects questions. The curriculum book wins over the generated plan for
+  every field it carries; the plan fills only hook/practice/closure, so a
+  grounded topic still yields a deck when generation fails. `teacherPreparation`
+  states which of the two the deck came from. Adds `MaterialType 'slides'`:
+  saved decks are viewable and re-projectable from the workspace. PDF reuses
+  `buildLessonPlanSlidesHTML`, so it needs a plan.
+- **Class Challenge** (`🏆 تحدي الصف`, `app/ai-tools/game.tsx` →
+  `services/classGame.ts` + `buildGameDeckFromQuiz`). Kahoot-style team game
+  for a room where **students have no phones**: projector is the board,
+  students answer on the printed أ ب ج د cards `classDeck.ts` already
+  prescribes, teacher taps which teams were right. Scores are *derived* by
+  re-folding an award ledger, never accumulated — that is what makes a mis-tap
+  exactly reversible including its streak bonus, which an incremental score
+  cannot undo. Only MCQ items are scoreable, so `game.questionCount` counts
+  survivors, not the quiz's questions.
+  - **Per-student scoring is the intended next step.** The ledger is keyed by
+    responder id so printed-card camera capture (Plickers-style, against
+    `roster.ts` ids) can replace team ids with no change to the engine.
+    `expo-camera` is not a dependency yet.
+
+### Web RTL was broken in production only — fixed
+
+Arabic screens rendered half-mirrored on the deployed site (tool-card icon and
+title on the left, description on the right) while looking correct in dev.
+
+Cause: the app expresses direction *per component* — ~190 sites write
+`flexDirection: isRTL ? 'row-reverse' : 'row'` — which assumes a
+direction-neutral document. `expo export` and the dev server both emit a shell
+with no `dir`, but the deployed HTML served `<html lang="ar" dir="rtl">`, which
+this repo cannot produce. In an RTL document `flexDirection: 'row'` is already
+reversed, so `'row-reverse'` cancels back to visual LTR, while
+`textAlign: 'right'` (a physical value) stays put.
+
+Measured on the deployed page, children of one such row:
+`dir="rtl"` → x = `[913, 998]` (ascending → visually LTR, the bug);
+no `dir` → x = `[288, 211]` (descending → visually RTL, correct).
+
+`LanguageContext.applyRTL` now asserts `dir="ltr"` on web at boot and on every
+language change, so the host cannot reintroduce it. `app/+html.tsx` does *not*
+work here — `web.output` is unset, which means `single`, and Expo ignores the
+custom shell in that mode.
+
+If the per-component flips are ever replaced by real document-level RTL, `dir`
+must start following the language in the same commit that deletes them.
 
 ## Open decisions (2026-08-10)
 

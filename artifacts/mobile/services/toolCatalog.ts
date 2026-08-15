@@ -53,6 +53,22 @@ export const BEFORE_CLASS: ToolDef[] = [
 
 export const DURING_CLASS: ToolDef[] = [
   {
+    id: 'slides',
+    titleKey: 'toolSlidesTitle',
+    descKey: 'toolSlidesDesc',
+    icon: 'tv-outline',
+    color: '#0EA5E9',
+    route: '/ai-tools/slides',
+  },
+  {
+    id: 'game',
+    titleKey: 'toolGameTitle',
+    descKey: 'toolGameDesc',
+    icon: 'trophy-outline',
+    color: '#F59E0B',
+    route: '/ai-tools/game',
+  },
+  {
     id: 'activity',
     titleKey: 'toolActivityTitle',
     descKey: 'toolActivityDesc',

@@ -14,7 +14,7 @@ import { apiFetch, getAccessToken } from './apiClient';
 // label and a ContinueMaterialKind member. It was missing here, which made the
 // `item.type === 'activity'` branch in continueTeaching.ts provably dead — so a
 // saved activity arriving without formState was silently labelled a lesson.
-export type MaterialType = 'lesson' | 'worksheet' | 'quiz' | 'flow' | 'activity';
+export type MaterialType = 'lesson' | 'worksheet' | 'quiz' | 'flow' | 'activity' | 'slides';
 
 export interface SavedMaterial {
   id: string;

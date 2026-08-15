@@ -9,7 +9,10 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { SavedMaterial, getItem, toggleFavorite } from '@/services/workspace';
-import { LessonFlowOutput, LessonPlanOutput, QuizOutput, WorksheetOutput } from '@/services/ai/AIService';
+import {
+  ClassroomActivity, LessonFlowOutput, LessonPlanOutput, QuizOutput, WorksheetOutput,
+} from '@/services/ai/AIService';
+import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import {
@@ -24,6 +27,7 @@ const TYPE_COLOR: Record<string, string> = {
   worksheet: '#8B5CF6',
   quiz: '#F59E0B',
   flow: '#00A99D',
+  slides: '#0EA5E9',
 };
 
 export default function WorkspaceViewScreen() {
@@ -85,14 +89,15 @@ export default function WorkspaceViewScreen() {
   }
 
   const accent = TYPE_COLOR[item.type] ?? colors.primary;
-  let content: LessonPlanOutput | WorksheetOutput | QuizOutput | null = null;
+  let content: LessonPlanOutput | WorksheetOutput | QuizOutput | ClassroomActivity | null = null;
   try { content = JSON.parse(item.content); } catch { /* noop */ }
 
   const editRoute =
     item.type === 'lesson' ? '/ai-tools/lesson-plan'
       : item.type === 'worksheet' ? '/ai-tools/worksheet'
         : item.type === 'flow' ? '/ai-tools/lesson-flow'
-          : '/ai-tools/quiz';
+          : item.type === 'slides' ? '/ai-tools/slides'
+            : '/ai-tools/quiz';
 
   const isAr = lang === 'ar';
   const getPlainText = () => {
@@ -100,6 +105,7 @@ export default function WorkspaceViewScreen() {
     if (item.type === 'lesson') return formatLessonPlanText(content as LessonPlanOutput, item.title, { subject: item.subject, grade: item.grade }, isAr);
     if (item.type === 'worksheet') return formatWorksheetText(content as WorksheetOutput, item.title, { subject: item.subject, grade: item.grade }, isAr);
     if (item.type === 'flow') return item.title; // flow exports as PDF only
+    if (item.type === 'slides') return formatDeckOutline(content as ClassroomActivity, isAr);
     return formatQuizText(content as QuizOutput, item.title, { subject: item.subject, grade: item.grade }, isAr);
   };
   const getHTML = () => {
@@ -108,6 +114,7 @@ export default function WorkspaceViewScreen() {
     if (item.type === 'lesson') return buildLessonPlanHTML(content as LessonPlanOutput, item.title, meta, isAr);
     if (item.type === 'worksheet') return buildWorksheetHTML(content as WorksheetOutput, item.title, meta, isAr);
     if (item.type === 'flow') return buildLessonFlowHTML(content as unknown as LessonFlowOutput, isAr);
+    if (item.type === 'slides') return buildDeckHTML(content as ClassroomActivity, isAr);
     return buildQuizHTML(content as QuizOutput, item.title, meta, isAr);
   };
 
@@ -190,6 +197,23 @@ export default function WorkspaceViewScreen() {
           <Ionicons name="share-outline" size={16} color={colors.mutedForeground} />
           <Text style={[{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 13 }]}>{t('exportBtn')}</Text>
         </Pressable>
+        {/* A saved deck's whole point is being projected again — the workspace
+            is where a teacher returns to it the morning of the lesson. */}
+        {item.type === 'slides' && content && (
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              setPendingClassroomActivity(content as ClassroomActivity);
+              router.push('/ai-tools/classroom/presentation' as any);
+            }}
+            style={[styles.actionBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+          >
+            <Ionicons name="tv-outline" size={16} color="#0EA5E9" />
+            <Text style={[{ color: '#0EA5E9', fontFamily: 'Cairo_500Medium', fontSize: 13 }]}>
+              {t('presentOnScreen')}
+            </Text>
+          </Pressable>
+        )}
         {item.type === 'flow' && content && (
           <Pressable
             onPress={() => {
@@ -222,6 +246,8 @@ export default function WorkspaceViewScreen() {
           <WorksheetView ws={content as WorksheetOutput} colors={colors} isRTL={isRTL} t={t} accent={accent} />
         ) : item.type === 'flow' ? (
           <FlowView flow={content as unknown as LessonFlowOutput} colors={colors} isRTL={isRTL} lang={lang} accent={accent} />
+        ) : item.type === 'slides' ? (
+          <SlidesDeckView deck={content as ClassroomActivity} colors={colors} isRTL={isRTL} isAr={isAr} accent={accent} />
         ) : (
           <QuizView quiz={content as QuizOutput} colors={colors} isRTL={isRTL} t={t} accent={accent} lang={lang} />
         )}
@@ -386,6 +412,79 @@ function QuizView({ quiz, colors, isRTL, t, accent, lang }: {
 
 const FLOW_TEAL = '#00A99D';
 const FLOW_NAVY = '#081B3A';
+
+/** Plain-text outline of a saved deck — what share/copy hands over. */
+function formatDeckOutline(deck: ClassroomActivity, isAr: boolean): string {
+  const lines = [
+    deck.activityName,
+    deck.lesson,
+    '',
+    ...deck.slides.map(s => `${s.slideNumber}. ${s.title}\n${s.content}`),
+  ];
+  if (deck.answerKey.length > 0) {
+    lines.push('', isAr ? 'مفتاح الإجابات:' : 'Answer key:', ...deck.answerKey);
+  }
+  return lines.join('\n');
+}
+
+/** Print/PDF form of a saved deck: one slide per page, so it projects or prints
+ *  the same way the presentation screen shows it. */
+function buildDeckHTML(deck: ClassroomActivity, isAr: boolean): string {
+  const e = (s: string) => (s ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const dir = isAr ? 'rtl' : 'ltr';
+  const slides = deck.slides.map(s => `
+    <section class="slide">
+      <h2>${e(s.title)}</h2>
+      ${s.content.split('\n').filter(Boolean).map(line => `<p>${e(line)}</p>`).join('')}
+      ${s.answer ? `<p class="answer">${isAr ? 'الإجابة' : 'Answer'}: ${e(s.answer)}</p>` : ''}
+    </section>`).join('');
+
+  return `<!DOCTYPE html><html dir="${dir}" lang="${isAr ? 'ar' : 'en'}"><head>
+    <meta charset="utf-8" />
+    <style>
+      @page { size: A4 landscape; margin: 0; }
+      body { margin: 0; font-family: 'Segoe UI', Tahoma, Arial, sans-serif; direction: ${dir}; }
+      .slide { page-break-after: always; box-sizing: border-box; width: 100%; min-height: 96vh;
+               padding: 48px 56px; border-bottom: 1px solid #e5e7eb; }
+      h2 { font-size: 34px; color: #0EA5E9; margin: 0 0 24px; }
+      p { font-size: 22px; line-height: 1.7; color: #111827; margin: 0 0 12px; }
+      .answer { color: #16a34a; font-weight: 700; }
+    </style></head><body>${slides}</body></html>`;
+}
+
+function SlidesDeckView({ deck, colors, isRTL, isAr, accent }: {
+  deck: ClassroomActivity; colors: any; isRTL: boolean; isAr: boolean; accent: string;
+}) {
+  return (
+    <View style={{ gap: 10 }}>
+      <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 12, textAlign: isRTL ? 'right' : 'left' }}>
+        {isAr ? `${deck.slides.length} شريحة` : `${deck.slides.length} slides`}
+      </Text>
+      {deck.slides.map(s => (
+        <View
+          key={s.slideNumber}
+          style={{ backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1, borderRadius: colors.radius, padding: 14 }}
+        >
+          <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+            <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: accent + '18', alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ color: accent, fontFamily: 'Cairo_700Bold', fontSize: 11 }}>{s.slideNumber}</Text>
+            </View>
+            <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 14, textAlign: isRTL ? 'right' : 'left' }}>
+              {s.title}
+            </Text>
+            {s.durationSeconds > 0 && (
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 11 }}>{s.durationSeconds}s</Text>
+            )}
+          </View>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }}>
+            {s.content}
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
+}
 
 function FlowView({ flow, colors, isRTL, lang, accent }: {
   flow: LessonFlowOutput; colors: any; isRTL: boolean; lang: string; accent: string;
