@@ -3,6 +3,7 @@ import { HealthCheckResponse } from "@workspace/api-zod";
 import { verifyDerivative } from "../lib/mathVerifierClient.ts";
 import { isVerifierUnreachable } from "../lib/derivativeVerified.ts";
 import { getBudgetStatus } from "../lib/aiBudget.ts";
+import { getRecentErrors } from "../lib/errorLog.ts";
 
 const router: IRouter = Router();
 
@@ -50,6 +51,26 @@ router.get("/healthz/verifier", async (_req, res) => {
  */
 router.get("/healthz/ai-budget", (_req, res) => {
   res.json(getBudgetStatus());
+});
+
+/**
+ * The last 50 server errors (message + err name/message, no stack, no
+ * request bodies), newest first — a GET request instead of scrolling raw
+ * Render logs to see what broke recently.
+ *
+ * Gated by ADMIN_DEBUG_KEY rather than regular auth: any logged-in teacher
+ * could otherwise read errors that may reference other users' data. Responds
+ * 404 — not 401/403 — for both a missing key and a wrong one, so the route's
+ * existence isn't itself a signal to anyone probing without the key. If
+ * ADMIN_DEBUG_KEY isn't set, this endpoint is unreachable, full stop.
+ */
+router.get("/healthz/errors", (req, res) => {
+  const adminKey = process.env.ADMIN_DEBUG_KEY;
+  if (!adminKey || req.headers["x-admin-key"] !== adminKey) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  res.json({ errors: getRecentErrors() });
 });
 
 export default router;

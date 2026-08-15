@@ -56,6 +56,10 @@ const QUIZ: QuizOutput = {
   ],
 };
 
+// The generator never actually fills in a question's own `answer` field —
+// only the top-level `answerKey`, keyed by 1-based position across the
+// flattened section/question list. Match that shape exactly: a fixture with
+// answers on both would hide the real bug of the wrong one being read.
 const WORKSHEET: WorksheetOutput = {
   title: 'ورقة عمل',
   instructions: 'أجب عن الأسئلة',
@@ -64,19 +68,23 @@ const WORKSHEET: WorksheetOutput = {
       type: 'multiple_choice',
       title: 'القسم الأول',
       questions: [
-        { text: 'س1', options: ['أ', 'ب'], answer: 'ب', points: 1 },
+        { text: 'س1', options: ['أ', 'ب'], points: 1 },
       ],
     },
     {
       type: 'short_answer',
       title: 'القسم الثاني',
       questions: [
-        { text: 'س2', answer: 'إجابة', points: 1 },
-        { text: 'س3', answer: 'إجابة أخرى', points: 1 },
+        { text: 'س2', points: 1 },
+        { text: 'س3', points: 1 },
       ],
     },
   ],
-  answerKey: [],
+  answerKey: [
+    { num: 1, answer: 'ب' },
+    { num: 2, answer: 'إجابة' },
+    { num: 3, answer: 'إجابة أخرى' },
+  ],
 };
 
 function structural(slides: { slideNumber: number; type: string }[]) {
@@ -138,6 +146,43 @@ describe('buildDeckFromWorksheet', () => {
     const deck = buildDeckFromWorksheet(WORKSHEET, 'الاقترانات', true);
     const q = deck.slides.find(s => s.type === 'question');
     assert.equal(q!.options![q!.correctIndex!], 'ب');
+  });
+
+  it('reads the answer from answerKey, not a per-question field', () => {
+    // Regression: this used to read q.answer, which the generator never
+    // populates — every worksheet's Class Mode answers/correctIndex were
+    // silently wrong (defaulting to option 0) until this was fixed.
+    const deck = buildDeckFromWorksheet(WORKSHEET, 'الاقترانات', true);
+    const open = deck.slides.find(s => s.type === 'challenge');
+    assert.equal(open!.answer, 'إجابة');
+    assert.equal(deck.answerKey[1], 'سؤال 2: إجابة');
+  });
+});
+
+describe('buildDeckFromWorksheet — per-question provenance', () => {
+  // WORKSHEET's first question (q1, "س1") is the only MCQ, so it's the only
+  // 'question' slide — same alignment rule as buildDeckFromQuiz: outcomes[]
+  // is indexed by flattened question position, not by slide.
+  it('badges a question from its own outcome', () => {
+    const deck = buildDeckFromWorksheet(WORKSHEET, 'الاقترانات', true, {
+      outcomes: [{ verifiedBy: 'symbolic', computedAnswer: '2x' }, undefined, undefined],
+    });
+    const q = deck.slides.find(s => s.type === 'question');
+    assert.equal(q?.verified, true);
+    assert.equal(q?.verifiedBy, 'symbolic');
+    assert.equal(q?.computedAnswer, '2x');
+  });
+
+  it('shows no badge for a question with no outcome', () => {
+    const deck = buildDeckFromWorksheet(WORKSHEET, 'الاقترانات', true, { outcomes: [] });
+    const q = deck.slides.find(s => s.type === 'question');
+    assert.equal(q?.verified, false);
+    assert.equal(q?.verifiedBy, undefined);
+  });
+
+  it('still honours the whole-deck flag when no outcomes are given', () => {
+    const deck = buildDeckFromWorksheet(WORKSHEET, 'الاقترانات', true, { verified: true });
+    assert.ok(deck.slides.filter(s => s.type === 'question').every(s => s.verified === true));
   });
 });
 

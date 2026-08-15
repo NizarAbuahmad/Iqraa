@@ -617,6 +617,97 @@ at 293/293; manually drove `aiBudget.ts`'s guard functions end-to-end
 trips and blocks further calls) since there's no local Postgres in this
 environment to exercise the full authenticated HTTP path.
 
+## Basic error visibility, 2026-08-15
+
+First real teachers are testing the app now — the only way to learn
+something broke was a teacher saying so. Added a way to check "what errored
+recently" without digging through Render's raw log stream, ahead of any
+proper log aggregation.
+
+`lib/logger.ts` hooks pino's `logMethod` (its documented interception point,
+not a monkey-patch) so every existing `logger.error(...)` call across the
+app — already the pattern in all ~30 route catch blocks — also lands in a
+new in-memory ring buffer (`lib/errorLog.ts`, last 50, no code changes needed
+at any of those call sites). `app.ts` also grew a catch-all Express error
+handler as a safety net for anything a route doesn't catch itself, feeding
+the same buffer. `GET /api/healthz/errors` returns the last 50, newest
+first, gated by an `ADMIN_DEBUG_KEY` env var sent back as the `x-admin-key`
+header; wrong key
+and no key both 404, so the endpoint's existence isn't itself a signal to
+anyone probing without the key. Chose a header-gated route over reusing
+teacher auth because a logged-in teacher could otherwise read errors
+referencing other users' data — there's no `admin` role yet to scope it to.
+
+Also fixed one real, formerly-silent gap this surfaced: `middlewares/auth.ts`
+caught *every* verification failure with a bare `catch {}` — both routine
+ones (expired token, every client eventually hits this) and genuine backend
+failures (the DB lookup after JWT verification throwing), with zero
+distinction and zero logging for either. Expired/malformed tokens stay
+silent (too routine to log); anything else — confirmed live against an
+unreachable Postgres — now logs via `logger.error` and shows up at
+`/healthz/errors`, which is exactly the case this feature exists for: a
+failure on the single most-hit path (every authenticated request) that
+previously had zero signal anywhere, not even in raw logs.
+
+**Known limits, by design:** in-memory only, resets on restart, single
+process — same tradeoff as the AI budget counter above. No stack traces or
+request bodies in the buffer (deliberately — this is meant to be safe to
+glance at, not a stand-in for real log aggregation once that's worth the
+investment).
+
+Verified: `pnpm run typecheck` clean; api-server suite 77/77 (added a
+regression test that `/healthz/errors` 404s with no key set); mobile suite
+unchanged at 293/293; drove the full path live against the built bundle —
+triggered the auth-middleware DB failure against an unreachable Postgres,
+confirmed it was silent before the fix and appeared in
+`GET /healthz/errors` (with the correct key; 404 with no key and with a
+wrong key) after it.
+
+## Worksheet verification badges, 2026-08-15
+
+Quiz has shown a per-question verification badge since PR #28; worksheet
+(and homework, which reuses the same screen) never did — Class Mode passed
+a blanket `verified: false` and the form screen showed nothing at all. Same
+gap `STATUS.md`'s top-blockers list has been tracking since PR #28 landed.
+
+`services/quizVerification.ts` gained `verifyWorksheetAnswers`, sharing the
+same per-item verify/degrade-to-bank helper `verifyQuizAnswers` already
+used (refactored the duplicated logic into one `verifyItems` — behavior for
+quiz is unchanged, covered by the existing tests). Wired into
+`app/ai-tools/worksheet.tsx` exactly like quiz: verification runs after the
+worksheet is on screen (never blocks generation), the same badge component
+appears once it resolves, and Class Mode now passes per-question `outcomes`
+instead of the old blanket `verified: false`.
+
+**Found and fixed a real, dormant bug while wiring this up.** A worksheet
+question doesn't carry its own answer — the generator only ever fills in
+the top-level `answerKey`, keyed by 1-based position across the flattened
+`sections[].questions[]` list (confirmed against `routes/generate.ts`'s
+actual prompt schema). `classDeck.ts`'s `buildDeckFromWorksheet` read
+`q.answer` instead, which is never populated — so every worksheet's Class
+Mode `correctIndex` silently defaulted to option 0 (`indexOfAnswer` finds
+nothing, falls back to index 0) and the open-ended "expected answer" panel
+was always blank. This has presumably been wrong since worksheets got a
+Class Mode. Fixed to read from `answerKey` by position, matching how
+`services/share.ts`'s PDF/Word export already did it correctly — the
+verification work needed the same lookup anyway, so fixing this was free.
+The existing `classDeck.test.ts` fixture had `answer` set directly on each
+question (not matching the generator's real shape), which is exactly why
+this wasn't caught earlier; rebuilt the fixture to match reality.
+
+Verified: `pnpm run typecheck` clean; mobile suite 301/301 (up from 293 —
+added tests for `verifyWorksheetAnswers` and the `buildDeckFromWorksheet`
+provenance/answer-key-position fix); live end-to-end against the built app
+with a real Postgres and a fresh teacher account (no shortcuts — full
+signup → login → AI Tools → Worksheet → generate → Class Mode): generated a
+real worksheet on "حل نظام مكوّن من معادلة خطية ومعادلة تربيعية", confirmed
+the verifier was actually called (`/api/verify/derivative` hit once per
+question) and the badge correctly showed the honest "nothing proved" state
+for this system-of-equations content; opened Class Mode and confirmed the
+revealed answer for question 2 now matches `answerKey` item 2 exactly,
+where before the fix it would have shown whatever option happened to sit
+at index 0.
+
 ## Open decisions (2026-08-10)
 
 - ~~**Home vs chat.**~~ **Decided 2026-08-10: chat is the landing tab, home is
@@ -668,16 +759,21 @@ environment to exercise the full authenticated HTTP path.
 
 ## Top blockers (in priority order)
 
-1. **No external validation.** Zero real teachers have used the product.
-   Getting 3–5 Jordanian teachers on it beats any further polish. Now the top
-   blocker outright: the verification story works, and nothing else on this list
-   is worth more than putting it in front of a teacher.
-2. **Verification is live but barely visible.** The projector screen has had a
-   good badge all along — green shield for `symbolic`, muted library icon for
-   the reviewed bank, plus the independently computed answer — but *only* for
-   quick-check decks. The quiz and worksheet tools passed `verified: false` for
-   the whole deck and showed nothing. `claude/verification-badge` (PR #28) fixes
-   the quiz side with per-question outcomes; **worksheet is still untouched**.
+1. ~~**No external validation.**~~ **In progress 2026-08-15: shared with real
+   Jordanian teachers, awaiting feedback.** Given the app is now genuinely
+   in front of them, priority shifted to landing fixes on `main` promptly
+   (they're testing whatever's deployed) and to basic operational visibility
+   (see the AI test-budget and error-visibility entries above) rather than
+   further build-ahead-of-feedback work.
+2. ~~**Verification is live but barely visible.**~~ **Fixed 2026-08-15: quiz
+   and worksheet both badge per-question now.** The projector screen has had
+   a good badge all along — green shield for `symbolic`, muted library icon
+   for the reviewed bank, plus the independently computed answer — but only
+   quick-check decks showed it; quiz and worksheet passed `verified: false`
+   for the whole deck. `claude/verification-badge` (PR #28) fixed quiz with
+   per-question outcomes; worksheet gets the same treatment now (see below) —
+   `verifyWorksheetAnswers` in `services/quizVerification.ts`, wired into
+   both the on-screen badge and Class Mode's per-question outcomes.
    - Earlier versions of this file said "the app doesn't surface verification".
      That was wrong too — it surfaced it in exactly one place, which is why
      nobody noticed the other places were silent.

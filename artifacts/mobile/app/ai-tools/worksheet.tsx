@@ -10,6 +10,7 @@ import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { getUnitPriorKnowledge, resolveGeneratorGrounding } from '@/services/kbContext';
 import { WorksheetOutput } from '@/services/ai/AIService';
 import { buildDeckFromWorksheet } from '@/services/classDeck';
+import { summarizeVerification, type VerifyOutcome } from '@/services/quizVerification';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
@@ -85,6 +86,8 @@ export default function WorksheetScreen() {
   const [includePriorReview, setIncludePriorReview] = useState(false);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<WorksheetOutput | null>(null);
+  /** null = not checked yet (or the check failed); [] onwards = per question. */
+  const [outcomes, setOutcomes] = useState<VerifyOutcome[] | null>(null);
   /** null until first generate; then whether the worksheet used a confident KB lesson. */
   const [curriculumGrounded, setCurriculumGrounded] = useState<boolean | null>(null);
   /** Title of the curriculum lesson the output was anchored to, when grounded. */
@@ -144,9 +147,11 @@ export default function WorksheetScreen() {
 
   const isHomework = params.isHomework === '1';
 
+  const verification = summarizeVerification(outcomes ?? []);
+
   const generate = async () => {
     if (!topic.trim()) { setError(t('topicRequired')); return; }
-    setError(''); setLoading(true); setResult(null); setCurriculumGrounded(null); setGroundedLesson(null);
+    setError(''); setLoading(true); setResult(null); setOutcomes(null); setCurriculumGrounded(null); setGroundedLesson(null);
     setSaveLabel('save');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
@@ -179,6 +184,16 @@ export default function WorksheetScreen() {
       );
       setResult(out);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
+
+      // Same pattern as the quiz tool: verification runs after the worksheet
+      // is on screen, against a service that may be asleep or absent. The
+      // summary appears when it resolves; until then the screen makes no claim.
+      setOutcomes(null);
+      void (async () => {
+        const { verifyWorksheetAnswers } = await import('@/services/quizVerification');
+        const { verifyMathItem } = await import('@/services/ai/verifyMath');
+        setOutcomes(await verifyWorksheetAnswers(out, verifyMathItem));
+      })().catch(() => setOutcomes(null));
     } catch {
       setError(t('generationFailed'));
     } finally {
@@ -393,6 +408,33 @@ export default function WorksheetScreen() {
               genericHint: t('notGroundedHint'),
             }}
           />
+          {/* Whether anything actually checked the answer keys. Silent until
+              the check resolves: saying nothing is honest, saying "not
+              verified" while a request is still in flight is not. */}
+          {outcomes && verification.total > 0 && (
+            <View
+              style={[styles.verifyRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+            >
+              <Ionicons
+                name={verification.anySymbolic ? 'shield-checkmark' : 'library-outline'}
+                size={14}
+                color={verification.anySymbolic ? '#10B981' : colors.mutedForeground}
+              />
+              <Text
+                style={[
+                  styles.verifyText,
+                  {
+                    color: verification.anySymbolic ? '#10B981' : colors.mutedForeground,
+                    textAlign: isRTL ? 'right' : 'left',
+                  },
+                ]}
+              >
+                {verification.anySymbolic
+                  ? t('quizVerifiedCount', verification.symbolic, verification.total)
+                  : t('quizVerifiedNone')}
+              </Text>
+            </View>
+          )}
         </View>
       )}
 
@@ -418,7 +460,10 @@ export default function WorksheetScreen() {
               setPendingClassroomActivity(
                 buildDeckFromWorksheet(result, topic.trim(), lang === 'ar', {
                   lesson: grounding.lesson,
-                  verified: false,
+                  // Was a blanket verified: false, which hid the keys the
+                  // verifier had actually proved. Per question now, so the
+                  // projector badges exactly what was checked.
+                  outcomes: outcomes ?? undefined,
                 }),
               );
               router.push('/ai-tools/classroom/presentation' as any);
@@ -607,6 +652,8 @@ function PickerField({ label, value, options, onChange, colors, isRTL, accent }:
 }
 
 const styles = StyleSheet.create({
+  verifyRow: { alignItems: 'center', gap: 6, marginTop: 8 },
+  verifyText: { fontFamily: 'Cairo_600SemiBold', fontSize: 12, flex: 1 },
   header: { paddingHorizontal: 20, paddingBottom: 24 },
   backBtn: { width: 40, height: 40, justifyContent: 'center', marginBottom: 8 },
   headerTitle: { fontSize: 26 },
