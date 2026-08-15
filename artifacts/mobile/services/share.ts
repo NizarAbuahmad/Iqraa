@@ -1193,8 +1193,11 @@ export async function exportAsPDF(html: string, filename: string): Promise<void>
     // or in a future edit can't run script against our localStorage-held auth
     // tokens. `allow-same-origin` (without `allow-scripts`) is required —
     // without it the iframe gets an opaque origin and `contentDocument`
-    // below returns null, breaking the print entirely.
-    iframe.setAttribute('sandbox', 'allow-same-origin');
+    // below returns null, breaking the print entirely. `allow-modals` is
+    // required too: Chromium silently ignores `contentWindow.print()` from a
+    // sandboxed frame without it — no exception, no dialog, nothing — which
+    // is why this shipped looking like it worked and did nothing.
+    iframe.setAttribute('sandbox', 'allow-same-origin allow-modals');
     document.body.appendChild(iframe);
     const doc = iframe.contentDocument!;
     doc.open();

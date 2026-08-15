@@ -741,6 +741,32 @@ instance with real Postgres — confirmed a weak password is rejected on
 past the 10-attempt cap return `429` with `Retry-After`, confirmed
 `/forgot-password` blocks at 6 rapid requests.
 
+## Fixed 2026-08-15 — PDF export silently did nothing, everywhere
+
+Reported against the hosted demo: Slides Maker's PDF button produced no
+file, no dialog, no error — nothing observably happened.
+
+**Root cause:** `exportAsPDF`'s web path (`services/share.ts`) writes the
+export HTML into a hidden, sandboxed iframe and calls
+`iframe.contentWindow.print()`. The sandbox was `allow-same-origin` only.
+Chromium requires `allow-modals` in the sandbox token list for a
+sandboxed frame to open `print()`/`alert()`/`confirm()` — without it the
+call is silently ignored: no exception (so the `catch` never fires and no
+error toast shows), just a console warning
+(`Ignored call to 'print()'. The document is sandboxed, and the
+'allow-modals' keyword is not set.`) nobody was looking at. Reproduced
+directly against Chromium before touching the fix, to confirm this was
+the actual mechanism and not a guess.
+
+**This one function is shared by every PDF export button in the app** —
+slides, worksheet, quiz, lesson plan, lesson flow, activity, and the
+workspace saved-item view all call `exportAsPDF`. All were silently
+broken on web, not just Slides Maker; the fix (adding `allow-modals` to
+the sandbox attribute) repairs all of them at once. Verified live: built
+a real curriculum-grounded deck end to end (login → Tools → Slides Maker
+→ pick a Math S1 lesson → generate → PDF), confirmed the sandbox console
+warning is gone after the fix where it reliably appeared before it.
+
 ## First-run onboarding + Slides Maker promoted, 2026-08-15
 
 A teacher used to land straight on login with nothing explaining what
