@@ -25,6 +25,8 @@ import {
   createGame, podium, resetScores, setAwards, toggleAward, type GameState,
 } from '@/services/classGame';
 import { AwardRow, PodiumView, ScoreStrip, ScoreboardView } from '@/components/classroom/GameBoard';
+import { MathText } from '@/components/classroom/MathText';
+import { hasRenderableMath } from '@/services/mathRender';
 
 /** Open a media URL outside the app (native fallback — no WebView dep). */
 async function openExternalMedia(url: string): Promise<void> {
@@ -365,7 +367,24 @@ function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
 
       {/* Content lines */}
       {lines.map((line, i) => {
-        const isEquation = /[=²³√±×÷]/.test(line) || /\d+x/.test(line);
+        const isEquation = /[=²³√±×÷^]/.test(line) || /\d+x/.test(line) || /\/[0-9٠-٩]/.test(line);
+        // Structured math layout (stacked fractions, raised exponents, real
+        // radicals) only when the parser actually found a construct — plain
+        // text keeps the exact rendering it has always had.
+        if (isEquation && hasRenderableMath(line)) {
+          return (
+            <View key={i} style={{ marginVertical: 20 }}>
+              <MathText
+                text={line}
+                fontSize={30}
+                color={TEXT_PRIMARY}
+                fontFamily="Cairo_700Bold"
+                isRTL={isRTL}
+                centered
+              />
+            </View>
+          );
+        }
         return (
           <Text
             key={i}
@@ -743,9 +762,19 @@ export default function PresentationScreen() {
               </Pressable>
               {answerVisible && (
                 <View style={[styles.revealContent, { borderColor: TIMER_GREEN + '40', backgroundColor: TIMER_GREEN + '10' }]}>
-                  <Text style={[styles.revealText, { textAlign: isRTL ? 'right' : 'left', fontFamily: 'Cairo_700Bold' }]}>
-                    {slide.answer}
-                  </Text>
+                  {hasRenderableMath(slide.answer) ? (
+                    <MathText
+                      text={slide.answer}
+                      fontSize={18}
+                      color={TEXT_PRIMARY}
+                      fontFamily="Cairo_700Bold"
+                      isRTL={isRTL}
+                    />
+                  ) : (
+                    <Text style={[styles.revealText, { textAlign: isRTL ? 'right' : 'left', fontFamily: 'Cairo_700Bold' }]}>
+                      {slide.answer}
+                    </Text>
+                  )}
                 </View>
               )}
             </View>

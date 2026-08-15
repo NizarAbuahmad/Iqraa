@@ -741,6 +741,42 @@ instance with real Postgres — confirmed a weak password is rejected on
 past the 10-attempt cap return `429` with `Retry-After`, confirmed
 `/forgot-password` blocks at 6 rapid requests.
 
+## Slides Maker: real math rendering + per-slide editing, 2026-08-15
+
+Two upgrades to the deck the projector shows:
+
+**Real math layout.** Equation lines used to project as flat strings —
+`3x^4` with a caret, `(x^2+1)/(x-1)` with a slash — which reads as typing,
+not mathematics, in exactly the grade where fractions, powers and roots
+are the whole lesson. `services/mathRender.ts` is a deliberately
+conservative parser (superscripts incl. parenthesized bases/exponents and
+Arabic letters س ص ع ن, fractions both `(A)/(B)` and simple `3/4`, roots
+`√(...)`/`sqrt(...)`/bare `√25`, all recursive so `√(x^2+16)` nests);
+`components/classroom/MathText.tsx` renders the tree with pure
+Views/Texts — stacked fraction bars, raised exponents, a radical with an
+overline — no math library, no WebView, identical on native and web.
+Anything the parser doesn't confidently recognize stays plain text
+rendered exactly as before: the failure mode is "looks like today",
+never "looks mangled" — guarded by a round-trip test asserting no input
+ever loses characters. Wired into `presentation.tsx` for equation lines
+and the answer reveal; 14 parser tests in `mathRender.test.ts`.
+
+**Per-slide editing.** The generated deck is a draft the teacher owns,
+not a fixed output. Every outline row in Slides Maker now opens an editor
+(title, content, and — on example slides — the answer), and each row has
+a delete with confirm (via `services/confirm.ts`, so it works on web).
+Edits and deletions land in the same deck state that Present / Save / PDF
+read, and `rebuildAnswerKey` in `lessonSlides.ts` recomputes the printable
+answer key from the slides themselves so an edited answer prints as
+edited and a deleted example drops out of the key instead of drifting.
+
+Verified live end to end: generated a deck for «تبسيط المقادير الأسية»,
+edited a slide to carry `(x^2+1)/(x-1)`, `3x^4 - 2x + 7` and
+`√(x^2 + 16)`, deleted the homework slide (9 → 8, outline renumbered),
+presented — the projector showed a real stacked fraction (numerator's
+superscript intact), raised exponents, and a radical overline, with the
+Arabic lead-in «بسّط:» correctly on the right. No console errors.
+
 ## Fixed 2026-08-15 — PDF export silently did nothing, everywhere
 
 Reported against the hosted demo: Slides Maker's PDF button produced no

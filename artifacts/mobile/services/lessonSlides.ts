@@ -278,6 +278,22 @@ export function buildLessonDeck(
 }
 
 /**
+ * Recompute the printable answer key from the slides themselves.
+ *
+ * The deck's answerKey is derived at build time from the book's examples;
+ * once the teacher can edit or delete slides, the stored key would drift
+ * from what is actually projected. Rebuilding from the challenge slides
+ * keeps the two honest — an edited answer prints as edited, a deleted
+ * example drops out of the key.
+ */
+export function rebuildAnswerKey(slides: readonly ActivitySlide[], isAr: boolean): string[] {
+  const L = (ar: string, en: string) => (isAr ? ar : en);
+  return slides
+    .filter(s => s.type === 'challenge' && nonEmpty(s.answer))
+    .map((s, i) => L(`مثال ${i + 1}: ${s.answer}`, `Example ${i + 1}: ${s.answer}`));
+}
+
+/**
  * Split a stored example into problem and answer.
  *
  * Book examples arrive as a single string; when they carry their answer it is

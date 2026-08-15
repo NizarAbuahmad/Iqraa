@@ -863,6 +863,15 @@ const translations = {
     noAttemptsYet: 'لا محاولات بعد',
     noAttemptsYetDesc: 'لم تُدخَل إجابات أي طالب لهذا التقييم بعد',
 
+    // Slides Maker — per-slide editing
+    editSlide: 'تعديل الشريحة',
+    slideTitleField: 'عنوان الشريحة',
+    slideContentField: 'محتوى الشريحة',
+    slideAnswerField: 'الإجابة (تُعرض بعد الكشف)',
+    deleteSlideTitle: 'حذف الشريحة؟',
+    deleteLabel: 'حذف',
+    slideUpdated: 'تم تعديل الشريحة',
+
     // Onboarding carousel — first-run intro, before login
     onboardingSkip: 'تخطي',
     onboardingNext: 'التالي',
@@ -1675,6 +1684,15 @@ const translations = {
     gradedCountLabel: (n: number, total: number) => `${n} of ${total} students graded`,
     noAttemptsYet: 'No attempts yet',
     noAttemptsYetDesc: "No student's answers have been entered for this evaluation yet",
+
+    // Slides Maker — per-slide editing
+    editSlide: 'Edit slide',
+    slideTitleField: 'Slide title',
+    slideContentField: 'Slide content',
+    slideAnswerField: 'Answer (shown on reveal)',
+    deleteSlideTitle: 'Delete slide?',
+    deleteLabel: 'Delete',
+    slideUpdated: 'Slide updated',
 
     // Onboarding carousel — first-run intro, before login
     onboardingSkip: 'Skip',
