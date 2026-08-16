@@ -25,6 +25,8 @@ import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import type { ClassroomActivity, LessonPlanOutput } from '@/services/ai/AIService';
 import { buildGeneratorContext, resolveGeneratorGrounding } from '@/services/kbContext';
 import { buildLessonDeck, rebuildAnswerKey } from '@/services/lessonSlides';
+import { extractGraphCommands } from '@/services/classMedia';
+import { summarizeVerification } from '@/services/quizVerification';
 import { confirm } from '@/services/confirm';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { saveItem } from '@/services/workspace';
@@ -68,6 +70,9 @@ export default function SlidesScreen() {
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
   const [editAnswer, setEditAnswer] = useState('');
+  /** True once the example-verification pass has resolved — the summary row
+      stays silent while a check is still in flight. */
+  const [verifyDone, setVerifyDone] = useState(false);
 
   const openEdit = (i: number) => {
     if (!deck) return;
@@ -87,6 +92,14 @@ export default function SlidesScreen() {
       // An emptied answer removes the reveal button rather than revealing "".
       if (s.answer !== undefined || answer) {
         if (answer) next.answer = answer; else delete next.answer;
+      }
+      // Changing the question or the answer invalidates whatever proof the
+      // verifier gave the ORIGINAL pair — carrying the badge over would vouch
+      // for text nobody checked. Title edits keep it; the math is untouched.
+      if (next.content !== s.content || next.answer !== s.answer) {
+        delete next.verified;
+        delete next.verifiedBy;
+        delete next.computedAnswer;
       }
       return next;
     });
@@ -155,16 +168,63 @@ export default function SlidesScreen() {
       }
 
       setPlan(lessonPlan);
-      setDeck(buildLessonDeck(trimmed, isAr, {
+      // A live graph slide when the lesson's own text carries plottable
+      // functions — same conservative extractor Start Class already uses.
+      const graphCommands = subjects[subjectIdx].id === 'mathematics'
+        ? extractGraphCommands([
+            trimmed,
+            ...(grounding.lesson?.examplesAr ?? []),
+            ...(grounding.lesson?.examplesEn ?? []),
+            ...(grounding.lesson?.rulesAr ?? []),
+            ...(grounding.lesson?.rulesEn ?? []),
+            lessonPlan?.mainActivity ?? '',
+          ].join(' \n '))
+        : [];
+      const built = buildLessonDeck(trimmed, isAr, {
         lesson: grounding.lesson,
         plan: lessonPlan,
         subject: isAr ? subjects[subjectIdx].nameAr : subjects[subjectIdx].name,
         grade: isAr ? grades[gradeIdx].nameAr : grades[gradeIdx].name,
         includeExamples,
         includePractice,
-      }));
+        graphCommands,
+      });
+      setDeck(built);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
+
+      // Verify the worked examples' answers after the deck is on screen —
+      // never blocks generation. Outcomes are matched back by slide object
+      // identity, so a slide the teacher edited or deleted while the check
+      // was in flight simply keeps no badge: a stale ✓ is worse than none.
+      setVerifyDone(false);
+      void (async () => {
+        try {
+          const { verifyDeckExamples } = await import('@/services/quizVerification');
+          const { verifyMathItem } = await import('@/services/ai/verifyMath');
+          const outcomes = await verifyDeckExamples(built.slides, verifyMathItem);
+          setDeck(cur => {
+            if (!cur) return cur;
+            return {
+              ...cur,
+              slides: cur.slides.map(s => {
+                const idx = built.slides.indexOf(s);
+                const o = idx >= 0 ? outcomes[idx] : undefined;
+                if (!o) return s;
+                return {
+                  ...s,
+                  verified: true,
+                  verifiedBy: o.verifiedBy,
+                  ...(o.computedAnswer ? { computedAnswer: o.computedAnswer } : {}),
+                };
+              }),
+            };
+          });
+          setVerifyDone(true);
+        } catch {
+          // Verification is a bonus, never a failure state for the deck.
+        }
+      })();
     } finally {
       setLoading(false);
     }
@@ -340,6 +400,37 @@ export default function SlidesScreen() {
               <Text style={[styles.previewMeta, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
                 {t('slideCount', deck.slides.length)}
               </Text>
+
+              {/* Whether anything actually checked the example answers.
+                  Silent until the verification pass resolves — saying nothing
+                  is honest, "not verified" mid-flight is not. Derived from the
+                  slides themselves so edits/deletions keep the count true. */}
+              {(() => {
+                const examples = deck.slides.filter(s => s.type === 'challenge' && s.answer);
+                if (!verifyDone || examples.length === 0) return null;
+                const v = summarizeVerification(
+                  examples
+                    .filter(s => s.verified && s.verifiedBy)
+                    .map(s => ({ verifiedBy: s.verifiedBy!, computedAnswer: s.computedAnswer })),
+                );
+                return (
+                  <View style={[styles.verifyRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                    <Ionicons
+                      name={v.anySymbolic ? 'shield-checkmark' : 'library-outline'}
+                      size={14}
+                      color={v.anySymbolic ? '#10B981' : colors.mutedForeground}
+                    />
+                    <Text style={[styles.verifyText, {
+                      color: v.anySymbolic ? '#10B981' : colors.mutedForeground,
+                      textAlign: isRTL ? 'right' : 'left',
+                    }]}>
+                      {v.anySymbolic
+                        ? t('quizVerifiedCount', v.symbolic, examples.length)
+                        : t('quizVerifiedNone')}
+                    </Text>
+                  </View>
+                );
+              })()}
 
               {/* The outline is the product: a teacher decides whether to use
                   this deck by scanning slide titles, not by opening it. Each
@@ -550,4 +641,6 @@ const styles = StyleSheet.create({
   modalLabel: { fontSize: 12, marginBottom: 6, marginTop: 8 },
   modalInput: { borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14 },
   modalInputMultiline: { minHeight: 110, textAlignVertical: 'top' },
+  verifyRow: { alignItems: 'center', gap: 6, marginTop: 8 },
+  verifyText: { fontSize: 12, fontFamily: 'Almarai_400Regular', flex: 1 },
 });

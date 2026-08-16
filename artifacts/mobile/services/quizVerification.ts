@@ -12,7 +12,7 @@
  * single whole-deck boolean can only be wrong in one direction or the other:
  * `true` vouches for keys nobody checked, `false` hides the ones that were.
  */
-import type { QuizOutput, WorksheetOutput } from './ai/AIService.ts';
+import type { ActivitySlide, QuizOutput, WorksheetOutput } from './ai/AIService.ts';
 
 export type VerifyOutcome = { verifiedBy: 'symbolic' | 'bank'; computedAnswer?: string };
 
@@ -93,6 +93,60 @@ export async function verifyWorksheetAnswers(
       options: q.options,
     })),
     verify,
+  );
+}
+
+/** Typographic math → the ASCII the verifier parses. */
+function latinizeMath(s: string): string {
+  return s.replace(/²/g, '^2').replace(/³/g, '^3').replace(/[−–—]/g, '-').replace(/×/g, '*').trim();
+}
+
+/**
+ * Book examples state derivatives as a pair — `f(x) = 4x² + 3x − 1` with the
+ * answer `f'(x) = 8x + 3`. The derivative marker sits in the ANSWER, but the
+ * topic classifier only ever reads the question, so verbatim these examples
+ * all degrade to 'bank' even though they are exactly what the prover exists
+ * for. Rephrase the pair into the form the classifier understands; anything
+ * that doesn't match this shape passes through untouched.
+ */
+export function toVerifiablePair(
+  content: string,
+  answer: string,
+): { question: string; answer: string } {
+  const derived = answer.match(/^f\s*[′']\s*\(\s*x\s*\)\s*=\s*(.+)$/u);
+  if (derived && /f\s*\(\s*x\s*\)\s*=/.test(content)) {
+    return {
+      question: `${content} → f'(x) = ?`,
+      answer: latinizeMath(derived[1]!),
+    };
+  }
+  return { question: content, answer };
+}
+
+/**
+ * One outcome per slide, positionally aligned with the deck's slide array.
+ *
+ * Only worked-example slides ('challenge' with an answer) are verifiable —
+ * every other slot is `undefined`, which downstream reads as "no badge",
+ * not "unverified pending". Alignment is the contract here exactly as it is
+ * for quizzes: never filter the result.
+ */
+export async function verifyDeckExamples(
+  slides: readonly ActivitySlide[],
+  verify: VerifyFn,
+): Promise<(VerifyOutcome | undefined)[]> {
+  return Promise.all(
+    slides.map(async slide => {
+      const rawAnswer = slide.answer?.trim();
+      if (slide.type !== 'challenge' || !rawAnswer) return undefined;
+      const { question, answer } = toVerifiablePair(slide.content, rawAnswer);
+      try {
+        return await verify(question, answer, []);
+      } catch {
+        // The verifier being down is not evidence about the answer.
+        return BANK_OUTCOME;
+      }
+    }),
   );
 }
 

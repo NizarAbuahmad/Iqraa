@@ -741,6 +741,58 @@ instance with real Postgres — confirmed a weak password is rejected on
 past the 10-attempt cap return `429` with `Retry-After`, confirmed
 `/forgot-password` blocks at 6 rapid requests.
 
+## Slides Maker: verified examples, live graphs, NCCD enrichment, 2026-08-16
+
+Three additions that make a Slides Maker deck something no generic AI
+slides tool produces:
+
+**Verified example slides.** After a deck builds, its worked examples run
+through the same verifier quiz/worksheet use (`verifyDeckExamples` in
+`quizVerification.ts`). The book states derivatives as a pair —
+`f(x) = 4x² + 3x − 1` with answer `f'(x) = 8x + 3` — with the derivative
+marker in the ANSWER, which the topic classifier (which only reads
+questions) could never route to the prover; `toVerifiablePair` rephrases
+that shape so it classifies, and latinizes the typographic ²/− the book
+uses. The screen shows a summary row («تحقّق المُحقِّق الرمزي من ٢ من
+أصل ٣ إجابة»), and the projector's answer reveal now carries the same
+shield + SymPy-evidence line question slides have. Outcomes attach by
+slide object identity, so a slide edited or deleted while verification
+was in flight keeps no badge — and editing an example's content or
+answer strips its badge, since the proof applied to the original pair.
+`prettifySymPy` turns the evidence line's raw `3*x**2` into `3x^2`.
+
+**Live graph slide.** When the lesson's own text carries plottable
+functions (same conservative `extractGraphCommands` Start Class uses), a
+GeoGebra slide lands between the rule and the examples. Unlike the
+quick-check deck it is NOT always added for math — this deck's rule is
+omit-rather-than-pad, so no plottables means no slide.
+
+**NCCD lessons enriched from the hand-authored bank.** The reason none
+of this fired at first: live NCCD lessons carry only what the Ministry's
+planning tables state (titles, objectives, vocabulary, periods) — no
+summaries, concepts, rules, or examples. That content exists, hand-
+authored against the same book, in the superseded hardcoded lessons that
+were dropped from the catalog for duplicating the NCCD *listing* — never
+because the content was wrong (`NccdUnit.prior_knowledge`'s comment
+explicitly reserves a slot for "follow-up data enrichment").
+`knowledgeBase.ts` now merges them by diacritics-insensitive title match
+(«مكوَّن» = «مكون», prefix tolerated for clarifying suffixes like
+«الضرب القياسي (الداخلي)»): NCCD stays authoritative for identity,
+objectives and periods; enrichment fills summaries, concepts, defined
+terms, rules, examples, and real English titles. Result: 20 live math
+lessons gain worked examples, 23 gain rules, 43 gain real EN titles —
+this feeds every consumer of the KB, not just slides.
+
+Verified live end to end with the real SymPy verifier running locally:
+«الاشتقاق» deck went from 11 content-thin slides to 18 — real تمهيد,
+5 concept slides, a القاعدة slide, a graph slide preloaded with
+`f(x)=x^3` / `f(x)=4x^2`, and 3 worked examples. The summary badge
+correctly read 2-of-3 symbolically proved (the third, `f(x)=5 → 0`, has
+no variable and honestly degrades), and the projected reveal showed the
+green SymPy shield with the prettified independent derivation `3x^2`.
+407 mobile tests (397 passing + 10 pre-existing skips), monorepo
+typecheck clean.
+
 ## Slides Maker: real math rendering + per-slide editing, 2026-08-15
 
 Two upgrades to the deck the projector shows:

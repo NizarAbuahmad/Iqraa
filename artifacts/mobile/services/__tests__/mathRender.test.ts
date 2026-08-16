@@ -6,7 +6,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { hasRenderableMath, parseMathLine, type MathNode } from '../mathRender.ts';
+import { hasRenderableMath, parseMathLine, prettifySymPy, type MathNode } from '../mathRender.ts';
 
 /** Reassemble text nodes to check nothing was dropped. */
 function flat(nodes: MathNode[]): string {
@@ -132,5 +132,21 @@ describe('hasRenderableMath', () => {
     assert.equal(hasRenderableMath('12x^3 - 2'), true);
     assert.equal(hasRenderableMath('√(x+1)'), true);
     assert.equal(hasRenderableMath('اليوم سنتعلم درسًا جديدًا'), false);
+  });
+});
+
+describe('prettifySymPy', () => {
+  it('turns the verifier syntax into renderable notation', () => {
+    // The exact string SymPy sends back for d/dx(x^3).
+    assert.equal(prettifySymPy('3*x**2'), '3x^2');
+    assert.equal(prettifySymPy('12*x**3 - 2'), '12x^3 - 2');
+  });
+
+  it('keeps real numeric multiplication visible', () => {
+    assert.equal(prettifySymPy('2*3'), '2×3');
+  });
+
+  it('drops the star before a parenthesized factor', () => {
+    assert.equal(prettifySymPy('2*(x + 1)'), '2(x + 1)');
   });
 });

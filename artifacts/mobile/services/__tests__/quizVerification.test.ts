@@ -16,11 +16,13 @@ import assert from 'node:assert/strict';
 import {
   BANK_OUTCOME,
   summarizeVerification,
+  toVerifiablePair,
+  verifyDeckExamples,
   verifyQuizAnswers,
   verifyWorksheetAnswers,
   type VerifyOutcome,
 } from '../quizVerification.ts';
-import type { QuizOutput, WorksheetOutput } from '../ai/AIService.ts';
+import type { ActivitySlide, QuizOutput, WorksheetOutput } from '../ai/AIService.ts';
 
 const quiz = (answers: string[]): QuizOutput => ({
   title: 'اختبار',
@@ -143,6 +145,71 @@ describe('verifyWorksheetAnswers', () => {
     const seen: string[] = [];
     await verifyWorksheetAnswers(ws, async (_q, a) => { seen.push(a); return proves; });
     assert.deepEqual(seen, ['a', 'b']);
+  });
+});
+
+describe('verifyDeckExamples', () => {
+  const slide = (type: ActivitySlide['type'], answer?: string): ActivitySlide => ({
+    slideNumber: 1,
+    type,
+    title: 'شريحة',
+    content: 'اشتق: 3x^4',
+    durationSeconds: 0,
+    ...(answer !== undefined ? { answer } : {}),
+  });
+
+  it('returns outcomes aligned to the slide array, undefined for non-examples', async () => {
+    const deck = [slide('intro'), slide('challenge', '12x^3'), slide('summary')];
+    const out = await verifyDeckExamples(deck, async () => proves);
+    assert.equal(out.length, 3);
+    assert.equal(out[0], undefined);
+    assert.deepEqual(out[1], proves);
+    assert.equal(out[2], undefined);
+  });
+
+  it('skips a challenge slide with no answer — nothing to prove a key against', async () => {
+    let called = false;
+    const out = await verifyDeckExamples([slide('challenge')], async () => {
+      called = true;
+      return proves;
+    });
+    assert.equal(called, false);
+    assert.equal(out[0], undefined);
+  });
+
+  it('degrades to bank when the verifier throws', async () => {
+    const out = await verifyDeckExamples([slide('challenge', '12x^3')], async () => {
+      throw new Error('ECONNREFUSED');
+    });
+    assert.deepEqual(out, [BANK_OUTCOME]);
+  });
+
+  it("rephrases a book-style f(x)/f'(x) pair so the classifier sees a derivative", async () => {
+    // The exact shape the curriculum stores: typographic ² and −, marker in
+    // the answer. Verbatim this classifies as an equation and can never be
+    // proved; rephrased it is exactly what the derivative prover supports.
+    const seen: string[] = [];
+    const ex: ActivitySlide = {
+      slideNumber: 1, type: 'challenge', title: 'مثال',
+      content: 'f(x) = 4x² + 3x − 1', answer: "f'(x) = 8x + 3", durationSeconds: 60,
+    };
+    await verifyDeckExamples([ex], async (q, a) => { seen.push(q, a); return proves; });
+    assert.match(seen[0]!, /f'\(x\) = \?/);
+    assert.equal(seen[1], '8x + 3');
+  });
+});
+
+describe('toVerifiablePair', () => {
+  it('latinizes typographic math in the derived answer', () => {
+    const p = toVerifiablePair('f(x) = x³', "f'(x) = 3x²");
+    assert.equal(p.answer, '3x^2');
+    assert.match(p.question, /→ f'\(x\) = \?$/);
+  });
+
+  it('leaves non-derivative pairs untouched', () => {
+    const p = toVerifiablePair('حل: x² - 5x + 6 = 0', 'x = 2 أو x = 3');
+    assert.equal(p.question, 'حل: x² - 5x + 6 = 0');
+    assert.equal(p.answer, 'x = 2 أو x = 3');
   });
 });
 

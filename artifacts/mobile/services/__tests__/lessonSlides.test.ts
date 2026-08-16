@@ -177,6 +177,41 @@ describe('language', () => {
   });
 });
 
+describe('graph slide', () => {
+  it('lands between the rule and the first worked example when commands exist', () => {
+    const deck = buildLessonDeck('الدرس', true, {
+      lesson: LESSON,
+      plan: PLAN,
+      graphCommands: ['f(x)=x^2-5x+6'],
+    });
+    const graphIdx = deck.slides.findIndex(s => s.type === 'graph');
+    const firstExample = deck.slides.findIndex(s => s.type === 'challenge');
+    assert.ok(graphIdx > 0, 'graph slide exists');
+    assert.ok(firstExample > graphIdx, 'graph precedes the examples');
+    assert.deepEqual(deck.slides[graphIdx]!.graphCommands, ['f(x)=x^2-5x+6']);
+  });
+
+  it('is omitted entirely when no commands were found — omit, never pad', () => {
+    for (const commands of [undefined, [], ['']]) {
+      const deck = buildLessonDeck('الدرس', true, {
+        lesson: LESSON,
+        plan: PLAN,
+        graphCommands: commands,
+      });
+      assert.equal(deck.slides.some(s => s.type === 'graph'), false);
+    }
+  });
+
+  it('keeps slide numbering consecutive with the graph slide inserted', () => {
+    const deck = buildLessonDeck('الدرس', true, {
+      lesson: LESSON,
+      plan: PLAN,
+      graphCommands: ['y=x^2'],
+    });
+    assert.deepEqual(numbersOf(deck), deck.slides.map((_, i) => i + 1));
+  });
+});
+
 describe('splitExample', () => {
   it('splits on the last arrow, keeping equations intact', () => {
     assert.deepEqual(splitExample('2x + 3 = 11 → x = 4'), ['2x + 3 = 11', 'x = 4']);

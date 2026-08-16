@@ -224,3 +224,52 @@ describe('resolveGroundedKbLesson — confidence gate', () => {
     assert.ok(lesson!.objectives.some(o => o.includes('الوتر')));
   });
 });
+
+// ─── NCCD enrichment from the hand-authored lessons ──────────────────────────
+//
+// The NCCD JSON carries only what the Ministry's planning tables state; the
+// superseded hardcoded lessons carry the teaching content (summaries, rules,
+// worked examples). These guard the merge: content flows in, but identity —
+// ids, objectives, periods — stays the Ministry's.
+describe('NCCD lesson enrichment', () => {
+  const live = (titleAr: string) =>
+    KB_LESSONS.find(l => l.titleAr === titleAr && l.id.includes('nccd'));
+
+  it('fills worked examples and rules into the live الاشتقاق lesson', () => {
+    const lesson = live('الاشتقاق');
+    assert.ok(lesson, 'live NCCD lesson exists');
+    assert.ok((lesson!.examplesAr?.length ?? 0) > 0, 'examples merged in');
+    assert.ok((lesson!.rulesAr?.length ?? 0) > 0, 'rules merged in');
+    // The derivative pair the projector's verification depends on.
+    assert.ok(lesson!.examplesAr!.some(e => e.includes("f'(x)")));
+  });
+
+  it('keeps the NCCD objectives, not the hand-authored ones', () => {
+    const lesson = live('الاشتقاق')!;
+    // The Ministry's four outcomes for u6_l2 — enrichment must not touch them.
+    assert.equal(lesson.objectives.length, 4);
+    assert.ok(lesson.objectives.some(o => o.includes('مشتقة كثير الحدود')));
+  });
+
+  it('matches titles across Arabic diacritics', () => {
+    // NCCD writes «مكوَّن» with shadda+fatha; the hardcoded lesson writes
+    // «مكون» bare. The pair must still merge.
+    const lesson = KB_LESSONS.find(
+      l => l.id.includes('nccd') && l.titleAr.includes('حل نظام مكو'),
+    );
+    assert.ok(lesson, 'lesson found');
+    assert.ok((lesson!.examplesAr?.length ?? 0) > 0, 'diacritic-differing titles merged');
+  });
+
+  it('gives enriched lessons a real English title', () => {
+    const lesson = live('الاشتقاق')!;
+    assert.equal(lesson.titleEn, 'Differentiation');
+  });
+
+  it('leaves lessons with no counterpart untouched', () => {
+    // Financial literacy has no hand-authored twin — placeholder shape stays.
+    const finlit = KB_LESSONS.filter(l => l.id.includes('finlit'));
+    assert.ok(finlit.length > 0);
+    assert.ok(finlit.every(l => !l.examplesAr?.length));
+  });
+});

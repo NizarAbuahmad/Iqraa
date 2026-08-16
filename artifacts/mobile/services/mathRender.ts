@@ -201,3 +201,18 @@ function readExponent(s: string, i: number): { text: string; end: number } | nul
 export function hasRenderableMath(line: string): boolean {
   return parseMathLine(line).some(n => n.kind !== 'text');
 }
+
+/**
+ * SymPy prints `3*x**2`; a projector should show `3x²`-style math. Turn the
+ * verifier's raw syntax into the notation the parser above renders: `**`
+ * becomes `^`, and the explicit `*` between a coefficient and a variable (or
+ * a closing paren and an opening one) disappears. A `*` between two numbers
+ * is real multiplication and is kept as ×.
+ */
+export function prettifySymPy(s: string): string {
+  return (s ?? '')
+    .replace(/\*\*/g, '^')
+    .replace(new RegExp(`([${DIGIT}${VAR})])\\s*\\*\\s*(?=[${VAR}(√])`, 'gu'), '$1')
+    .replace(/\*/g, '×')
+    .trim();
+}
