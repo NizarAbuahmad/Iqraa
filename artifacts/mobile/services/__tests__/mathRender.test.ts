@@ -6,7 +6,14 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { hasRenderableMath, parseMathLine, type MathNode } from '../mathRender.ts';
+import {
+  hasRenderableMath,
+  mathLineToHtml,
+  mathLineToUnicode,
+  parseMathLine,
+  prettifySymPy,
+  type MathNode,
+} from '../mathRender.ts';
 
 /** Reassemble text nodes to check nothing was dropped. */
 function flat(nodes: MathNode[]): string {
@@ -132,5 +139,62 @@ describe('hasRenderableMath', () => {
     assert.equal(hasRenderableMath('12x^3 - 2'), true);
     assert.equal(hasRenderableMath('√(x+1)'), true);
     assert.equal(hasRenderableMath('اليوم سنتعلم درسًا جديدًا'), false);
+  });
+});
+
+describe('prettifySymPy', () => {
+  it('turns the verifier syntax into renderable notation', () => {
+    // The exact string SymPy sends back for d/dx(x^3).
+    assert.equal(prettifySymPy('3*x**2'), '3x^2');
+    assert.equal(prettifySymPy('12*x**3 - 2'), '12x^3 - 2');
+  });
+
+  it('keeps real numeric multiplication visible', () => {
+    assert.equal(prettifySymPy('2*3'), '2×3');
+  });
+
+  it('drops the star before a parenthesized factor', () => {
+    assert.equal(prettifySymPy('2*(x + 1)'), '2(x + 1)');
+  });
+});
+
+describe('mathLineToHtml', () => {
+  it('renders a superscript with a <sup> tag', () => {
+    assert.equal(mathLineToHtml('x^2'), 'x<sup>2</sup>');
+  });
+
+  it('renders a fraction as nested spans, recursively', () => {
+    const html = mathLineToHtml('(x^2+1)/(x-1)');
+    assert.match(html, /class="mfrac"/);
+    assert.match(html, /<sup>2<\/sup>/, 'numerator keeps its own superscript');
+  });
+
+  it('escapes HTML-significant characters in plain text', () => {
+    assert.equal(mathLineToHtml('a < b & c > d'), 'a &lt; b &amp; c &gt; d');
+  });
+
+  it('leaves prose as escaped plain text, no markup', () => {
+    assert.equal(mathLineToHtml('اشرح الفكرة'), 'اشرح الفكرة');
+  });
+});
+
+describe('mathLineToUnicode', () => {
+  it('turns a numeric exponent into a real Unicode superscript', () => {
+    assert.equal(mathLineToUnicode('12x^3 - 2'), '12x³ - 2');
+  });
+
+  it('falls back to ^exp notation for exponents with no superscript coverage', () => {
+    // 'k' has no Unicode superscript in this map — must not silently drop it.
+    assert.equal(mathLineToUnicode('x^k'), 'x^k');
+  });
+
+  it('prints fractions and roots in parenthesized plain-text form', () => {
+    assert.equal(mathLineToUnicode('3/4'), '(3)/(4)');
+    assert.equal(mathLineToUnicode('√25'), '√(25)');
+  });
+
+  it('round-trips prose untouched', () => {
+    const line = 'اليوم سنتعلم درسًا جديدًا';
+    assert.equal(mathLineToUnicode(line), line);
   });
 });

@@ -21,7 +21,8 @@
       "package": "com.iqra.teachingassistant",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#081B3A"
+        "backgroundColor": "#081B3A",
+        "monochromeImage": "./assets/images/adaptive-icon.png"
       }
     },
     "web": {

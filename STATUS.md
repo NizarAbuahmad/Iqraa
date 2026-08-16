@@ -741,6 +741,129 @@ instance with real Postgres — confirmed a weak password is rejected on
 past the 10-attempt cap return `429` with `Retry-After`, confirmed
 `/forgot-password` blocks at 6 rapid requests.
 
+## App icon reported washed-out on a real device, 2026-08-16
+
+A teacher's home screen showed the Iqra icon nearly invisible (white on
+white) inside a folder, while other apps kept full colour. Checked the
+committed source assets: `icon.png` and `adaptive-icon.png` are both
+correctly branded (navy `#081B3A` background, white+teal "اقرأ / IQRA"
+mark — confirmed by pixel sampling, not assumption), and `app.json`
+already sets `android.adaptiveIcon.backgroundColor` to the same navy.
+
+Added `android.adaptiveIcon.monochromeImage` (same asset — its alpha
+shape is already correct) so Android 13+ "Themed icons" renders a real
+Iqra silhouette instead of auto-deriving one, which is the standard,
+documented fix for icons looking wrong/pale specifically under Material
+You theming. **Unverified on-device** — this needs a fresh EAS build and
+reinstall to actually see, which this sandbox cannot do (no Android
+SDK/device/EAS credentials here). If the teacher's install predates the
+icon work merged 2026-08-13 (`STATUS.md`'s "Logo, flag, installability"
+entry), a stale build is the more likely cause than a rendering bug, and
+no code change fixes that short of reinstalling from a current build.
+
+## Fixed 2026-08-16 — Slides Maker's PDF export ignored the actual deck; added real PPTX
+
+A teacher's screenshot of the PDF export showed near-empty pages with tiny
+grey text — not what the deck actually looked like. Root cause: the
+"PDF" button called `buildLessonPlanSlidesHTML(plan, ...)`, which
+re-derives a generic fixed 6-slide outline from the lesson plan fields
+alone. It never read `deck.slides` — so the export ignored the graph
+slide, the verification badges, and any per-slide edit, and (since it
+keyed on `plan`, which can be null for a purely curriculum-grounded
+deck) sometimes had no PDF button at all despite a full deck on screen.
+
+**Deck-accurate PDF.** New `services/deckSlidesHtml.ts` (`buildDeckSlidesHTML`)
+renders the actual `ClassroomActivity` — same dark background, same
+per-type accent colour, same math layout, same verification badge the
+presenter shows. A deck that looked different exported than it did on
+the projector would just be a second, wrong deck. Both `slides.tsx`'s
+PDF button and `save`/PDF/PPTX row now key off `deck`, not `plan`.
+
+**New: real PPTX export.** `services/exportPptx.ts` (`pptxgenjs`) builds
+an actual `.pptx` — one slide per deck slide, editable in PowerPoint —
+following the same web-Blob-download / native-base64-Sharing pattern
+`exportAsWord` already established for `.docx`. PPTX text runs can't
+lay out a stacked fraction or a raised exponent, so `mathLineToUnicode`
+(new, `mathRender.ts`) degrades to real Unicode superscripts where one
+exists (covers every exponent this curriculum uses) and `(a)/(b)` /
+`√(...)` otherwise.
+
+**Found while building this:** `share.ts` imports `react-native` at
+module scope, which `node:test` cannot parse — so nothing in that
+1400-line file was ever actually reachable by the test suite, alias
+imports included (`@/services/...` also silently never worked under
+plain node). `buildDeckSlidesHTML` and its math-HTML helpers
+(`mathLineToHtml`, `MATH_HTML_STYLES` in `mathRender.ts`) are pure and
+now live outside that boundary, re-exported from `share.ts` for
+existing callers. Caught a real bug this way: the verified-example
+evidence line was rendering SymPy's raw `3*x**2` (missing
+`prettifySymPy`) and, separately, double-escaping `mathLineToHtml`'s
+already-escaped output — which would have printed literal `&lt;sup&gt;`
+tags instead of a superscript. Both fixed before shipping; a test
+pinned each.
+
+Verified live: generated the «الاشتقاق» deck, exported PDF (screenshotted
+the generated HTML directly — real title slide with brand identity,
+answer card with the green SymPy shield, graph slide with plotted
+commands, one-idea-per-slide pacing matching the projector) and PPTX
+(downloaded and unzipped the actual file — 18 slides, correct Arabic
+text, real Unicode superscripts `xⁿ`/`x³` in the XML, verification
+badge honestly reading "bank" since the verifier wasn't running for
+that pass). Zero console errors on either export. 423 mobile tests
+(413 passing + 10 pre-existing skips, 15 new), monorepo typecheck clean.
+
+## Slides Maker: verified examples, live graphs, NCCD enrichment, 2026-08-16
+
+Three additions that make a Slides Maker deck something no generic AI
+slides tool produces:
+
+**Verified example slides.** After a deck builds, its worked examples run
+through the same verifier quiz/worksheet use (`verifyDeckExamples` in
+`quizVerification.ts`). The book states derivatives as a pair —
+`f(x) = 4x² + 3x − 1` with answer `f'(x) = 8x + 3` — with the derivative
+marker in the ANSWER, which the topic classifier (which only reads
+questions) could never route to the prover; `toVerifiablePair` rephrases
+that shape so it classifies, and latinizes the typographic ²/− the book
+uses. The screen shows a summary row («تحقّق المُحقِّق الرمزي من ٢ من
+أصل ٣ إجابة»), and the projector's answer reveal now carries the same
+shield + SymPy-evidence line question slides have. Outcomes attach by
+slide object identity, so a slide edited or deleted while verification
+was in flight keeps no badge — and editing an example's content or
+answer strips its badge, since the proof applied to the original pair.
+`prettifySymPy` turns the evidence line's raw `3*x**2` into `3x^2`.
+
+**Live graph slide.** When the lesson's own text carries plottable
+functions (same conservative `extractGraphCommands` Start Class uses), a
+GeoGebra slide lands between the rule and the examples. Unlike the
+quick-check deck it is NOT always added for math — this deck's rule is
+omit-rather-than-pad, so no plottables means no slide.
+
+**NCCD lessons enriched from the hand-authored bank.** The reason none
+of this fired at first: live NCCD lessons carry only what the Ministry's
+planning tables state (titles, objectives, vocabulary, periods) — no
+summaries, concepts, rules, or examples. That content exists, hand-
+authored against the same book, in the superseded hardcoded lessons that
+were dropped from the catalog for duplicating the NCCD *listing* — never
+because the content was wrong (`NccdUnit.prior_knowledge`'s comment
+explicitly reserves a slot for "follow-up data enrichment").
+`knowledgeBase.ts` now merges them by diacritics-insensitive title match
+(«مكوَّن» = «مكون», prefix tolerated for clarifying suffixes like
+«الضرب القياسي (الداخلي)»): NCCD stays authoritative for identity,
+objectives and periods; enrichment fills summaries, concepts, defined
+terms, rules, examples, and real English titles. Result: 20 live math
+lessons gain worked examples, 23 gain rules, 43 gain real EN titles —
+this feeds every consumer of the KB, not just slides.
+
+Verified live end to end with the real SymPy verifier running locally:
+«الاشتقاق» deck went from 11 content-thin slides to 18 — real تمهيد,
+5 concept slides, a القاعدة slide, a graph slide preloaded with
+`f(x)=x^3` / `f(x)=4x^2`, and 3 worked examples. The summary badge
+correctly read 2-of-3 symbolically proved (the third, `f(x)=5 → 0`, has
+no variable and honestly degrades), and the projected reveal showed the
+green SymPy shield with the prettified independent derivation `3x^2`.
+407 mobile tests (397 passing + 10 pre-existing skips), monorepo
+typecheck clean.
+
 ## Slides Maker: real math rendering + per-slide editing, 2026-08-15
 
 Two upgrades to the deck the projector shows:

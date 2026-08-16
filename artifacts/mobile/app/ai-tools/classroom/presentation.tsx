@@ -26,7 +26,7 @@ import {
 } from '@/services/classGame';
 import { AwardRow, PodiumView, ScoreStrip, ScoreboardView } from '@/components/classroom/GameBoard';
 import { MathText } from '@/components/classroom/MathText';
-import { hasRenderableMath } from '@/services/mathRender';
+import { hasRenderableMath, prettifySymPy } from '@/services/mathRender';
 
 /** Open a media URL outside the app (native fallback — no WebView dep). */
 async function openExternalMedia(url: string): Promise<void> {
@@ -331,7 +331,7 @@ function QuestionOptions({
                 { fontFamily: 'Almarai_400Regular', color: TEXT_MUTED, textAlign: 'center' },
               ]}
             >
-              {t('verifiedComputed', slide.computedAnswer)}
+              {t('verifiedComputed', prettifySymPy(slide.computedAnswer))}
             </Text>
           )}
         </View>
@@ -774,6 +774,33 @@ export default function PresentationScreen() {
                     <Text style={[styles.revealText, { textAlign: isRTL ? 'right' : 'left', fontFamily: 'Cairo_700Bold' }]}>
                       {slide.answer}
                     </Text>
+                  )}
+                  {/* Same trust moment as question slides: state only what
+                      actually happened. 'symbolic' = SymPy re-derived and
+                      agreed; 'bank' = reviewed by a human, not a machine. */}
+                  {slide.verified && (
+                    <View style={{ gap: 4, marginTop: 10 }}>
+                      <View style={[qStyles.verifiedBadge, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                        <Ionicons
+                          name={slide.verifiedBy === 'symbolic' ? 'shield-checkmark' : 'library-outline'}
+                          size={15}
+                          color={slide.verifiedBy === 'symbolic' ? TIMER_GREEN : TEXT_MUTED}
+                        />
+                        <Text style={[qStyles.verifiedText, {
+                          fontFamily: 'Cairo_600SemiBold',
+                          color: slide.verifiedBy === 'symbolic' ? TIMER_GREEN : TEXT_MUTED,
+                        }]}>
+                          {slide.verifiedBy === 'symbolic' ? t('verifiedBySymbolic') : t('verifiedByBank')}
+                        </Text>
+                      </View>
+                      {slide.verifiedBy === 'symbolic' && slide.computedAnswer && (
+                        <Text style={[qStyles.verifiedText, {
+                          fontFamily: 'Almarai_400Regular', color: TEXT_MUTED, textAlign: 'center',
+                        }]}>
+                          {t('verifiedComputed', prettifySymPy(slide.computedAnswer))}
+                        </Text>
+                      )}
+                    </View>
                   )}
                 </View>
               )}

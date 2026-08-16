@@ -22,6 +22,7 @@ import type {
   LessonPlanOutput,
 } from './ai/AIService.ts';
 import type { KBLesson } from './knowledgeBase.ts';
+import { buildGraphSlide } from './classMedia.ts';
 
 /** Seconds a class gets to attempt a worked example before the reveal. */
 const EXAMPLE_THINK_SECONDS = 60;
@@ -37,6 +38,14 @@ export interface LessonDeckOptions {
   includeExamples?: boolean;
   /** Include a practice + homework closing sequence. */
   includePractice?: boolean;
+  /**
+   * GeoGebra commands extracted from the lesson's own text (see
+   * `extractGraphCommands`). Non-empty → a live graph slide lands between
+   * the rule and the worked examples. Unlike the quick-check deck, which
+   * always adds a (possibly blank) calculator for math, this deck follows
+   * its own rule — omit rather than pad — so no commands means no slide.
+   */
+  graphCommands?: string[];
 }
 
 /** Trim, drop empties, and cap — projected bullets stop being readable past 6. */
@@ -170,6 +179,16 @@ export function buildLessonDeck(
       content: rules.map(r => `• ${r}`).join('\n'),
       durationSeconds: 0,
     });
+  }
+
+  // ── 6b. Live graph — the concept made draggable ─────────────────────────
+  // Between the rule and the examples: the class sees the curve respond to a
+  // coefficient change before attempting problems about it. Only when the
+  // lesson's own text yielded plottable functions — a blank calculator here
+  // would violate this deck's omit-rather-than-pad rule.
+  const graphCommands = (opts.graphCommands ?? []).filter(Boolean);
+  if (graphCommands.length > 0) {
+    push(buildGraphSlide(graphCommands, title, isAr, 0));
   }
 
   // ── 7. Worked examples — attempted before they are shown ────────────────

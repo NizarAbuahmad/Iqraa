@@ -1095,6 +1095,81 @@ function normalizeHardcodedLesson(lesson: HardcodedKBLesson): KBLesson {
   };
 }
 
+// ─── Enrichment from the superseded hand-authored lessons ────────────────────
+//
+// The NCCD JSON carries what the Ministry's planning tables state — titles,
+// objectives, vocabulary, periods — and nothing else. The superseded hardcoded
+// lessons carry the rest: real summaries, key concepts, defined terms, rules
+// and worked examples, hand-authored against the same book. Dropping their
+// UNITS from the catalog (they duplicated the NCCD listing) never meant the
+// CONTENT was wrong — `NccdUnit.prior_knowledge`'s own comment reserves a slot
+// for exactly this "follow-up data enrichment".
+//
+// Merge rule: NCCD is authoritative for identity (ids, order, titles-as-shown,
+// objectives, periods); enrichment fills only what NCCD leaves empty or
+// carries as a placeholder (summary = objectives re-joined, concepts = the
+// vocabulary list verbatim, terms with empty definitions, titleEn = titleAr).
+
+/** Diacritics-insensitive Arabic title key — «مكوَّن» and «مكون» must match. */
+function titleKey(s: string): string {
+  // U+064B–U+065F harakat/tanween/shadda/sukun, U+0670 dagger alef, U+0640 tatweel.
+  return s.replace(/[\u064B-\u065F\u0670\u0640]/g, '').replace(/\s+/g, ' ').trim();
+}
+
+const _enrichmentByTitle: Map<string, HardcodedKBLesson> = (() => {
+  const map = new Map<string, HardcodedKBLesson>();
+  for (const lesson of HARDCODED_KB_LESSONS) {
+    if (!_supersededUnitIds.has(lesson.unitId)) continue;
+    const key = titleKey(lesson.titleAr);
+    if (!map.has(key)) map.set(key, lesson);
+  }
+  return map;
+})();
+
+function enrichmentFor(titleAr: string): HardcodedKBLesson | undefined {
+  const key = titleKey(titleAr);
+  const exact = _enrichmentByTitle.get(key);
+  if (exact) return exact;
+  // A few pairs differ by a clarifying suffix only — «الضرب القياسي» vs
+  // «الضرب القياسي (الداخلي)». Accept a prefix match in either direction,
+  // but only for titles long enough that a prefix identifies one lesson.
+  if (key.length < 10) return undefined;
+  for (const [k, lesson] of _enrichmentByTitle) {
+    if (k.length >= 10 && (k.startsWith(key) || key.startsWith(k))) return lesson;
+  }
+  return undefined;
+}
+
+/** Fill an NCCD skeleton lesson from its hand-authored counterpart. */
+function enrichLesson(lesson: KBLesson): KBLesson {
+  const rich = enrichmentFor(lesson.titleAr);
+  if (!rich) return lesson;
+  const summaryIsPlaceholder =
+    !lesson.summaryAr
+    || lesson.summaryAr === lesson.objectives.join('؛ ')
+    || lesson.summaryAr.startsWith('درس «');
+  const conceptsArePlaceholder =
+    lesson.keyConceptsAr.length === 0
+    || lesson.keyConceptsAr.every(c => lesson.keyTerms.some(t => t.ar === c));
+  const termsArePlaceholder =
+    lesson.keyTerms.length === 0 || lesson.keyTerms.every(t => !t.definitionAr);
+  return {
+    ...lesson,
+    titleEn: lesson.titleEn === lesson.titleAr && rich.titleEn ? rich.titleEn : lesson.titleEn,
+    summaryAr: summaryIsPlaceholder && rich.summaryAr ? rich.summaryAr : lesson.summaryAr,
+    summaryEn: summaryIsPlaceholder && rich.summaryEn ? rich.summaryEn : lesson.summaryEn,
+    keyConceptsAr: conceptsArePlaceholder && rich.keyConceptsAr.length > 0
+      ? rich.keyConceptsAr : lesson.keyConceptsAr,
+    keyConceptsEn: conceptsArePlaceholder && rich.keyConceptsEn.length > 0
+      ? rich.keyConceptsEn : lesson.keyConceptsEn,
+    keyTerms: termsArePlaceholder && rich.keyTerms.length > 0 ? rich.keyTerms : lesson.keyTerms,
+    ...(lesson.examplesAr?.length ? {} : rich.examplesAr?.length ? { examplesAr: rich.examplesAr } : {}),
+    ...(lesson.examplesEn?.length ? {} : rich.examplesEn?.length ? { examplesEn: rich.examplesEn } : {}),
+    ...(lesson.rulesAr?.length ? {} : rich.rulesAr?.length ? { rulesAr: rich.rulesAr } : {}),
+    ...(lesson.rulesEn?.length ? {} : rich.rulesEn?.length ? { rulesEn: rich.rulesEn } : {}),
+  };
+}
+
 /** Active units: NCCD Chem S1 + Chem S2 (hardcoded) + NCCD Math S1/S2. */
 export const KB_UNITS: KBUnit[] = [
   ...HARDCODED_KB_UNITS.filter(
@@ -1113,10 +1188,10 @@ export const KB_LESSONS: KBLesson[] = [
   ...HARDCODED_KB_LESSONS
     .filter(l => !_supersededUnitIds.has(l.unitId))
     .map(normalizeHardcodedLesson),
-  ..._chemSem1.lessons,
-  ..._finlitSem1.lessons,
-  ..._nccdSem1.lessons,
-  ..._nccdSem2.lessons,
+  ..._chemSem1.lessons.map(enrichLesson),
+  ..._finlitSem1.lessons.map(enrichLesson),
+  ..._nccdSem1.lessons.map(enrichLesson),
+  ..._nccdSem2.lessons.map(enrichLesson),
 ];
 
 // ─────────────────────────────────────────────────────
