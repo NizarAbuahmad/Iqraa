@@ -9,7 +9,7 @@
  * and the screen says which of the two the deck came from.
  */
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,7 +24,8 @@ import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import type { ClassroomActivity, LessonPlanOutput } from '@/services/ai/AIService';
 import { buildGeneratorContext, resolveGeneratorGrounding } from '@/services/kbContext';
-import { buildLessonDeck } from '@/services/lessonSlides';
+import { buildLessonDeck, rebuildAnswerKey } from '@/services/lessonSlides';
+import { confirm } from '@/services/confirm';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { saveItem } from '@/services/workspace';
 import { buildLessonPlanSlidesHTML, exportAsPDF } from '@/services/share';
@@ -59,6 +60,56 @@ export default function SlidesScreen() {
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
+
+  // Per-slide editing — the deck is a draft the teacher owns, not a fixed
+  // output. Edits live in the same deck state that Present/Save/PDF read, so
+  // whatever the teacher fixed is what every downstream surface gets.
+  const [editIdx, setEditIdx] = useState<number | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editContent, setEditContent] = useState('');
+  const [editAnswer, setEditAnswer] = useState('');
+
+  const openEdit = (i: number) => {
+    if (!deck) return;
+    const s = deck.slides[i];
+    setEditTitle(s.title);
+    setEditContent(s.content);
+    setEditAnswer(s.answer ?? '');
+    setEditIdx(i);
+  };
+
+  const applyEdit = () => {
+    if (editIdx === null || !deck) return;
+    const slides = deck.slides.map((s, i) => {
+      if (i !== editIdx) return s;
+      const answer = editAnswer.trim();
+      const next = { ...s, title: editTitle.trim() || s.title, content: editContent };
+      // An emptied answer removes the reveal button rather than revealing "".
+      if (s.answer !== undefined || answer) {
+        if (answer) next.answer = answer; else delete next.answer;
+      }
+      return next;
+    });
+    setDeck({ ...deck, slides, answerKey: rebuildAnswerKey(slides, isAr) });
+    setEditIdx(null);
+    showToast(t('slideUpdated'));
+  };
+
+  const removeSlide = async (i: number) => {
+    if (!deck) return;
+    const ok = await confirm({
+      title: t('deleteSlideTitle'),
+      message: deck.slides[i].title,
+      confirmLabel: t('deleteLabel'),
+      cancelLabel: t('cancel'),
+      destructive: true,
+    });
+    if (!ok) return;
+    const slides = deck.slides
+      .filter((_, idx) => idx !== i)
+      .map((s, idx) => ({ ...s, slideNumber: idx + 1 }));
+    setDeck({ ...deck, slides, answerKey: rebuildAnswerKey(slides, isAr) });
+  };
 
   const prevGradeRef = useRef(gradeIdx);
   const prevSubjectRef = useRef(subjectIdx);
@@ -291,10 +342,19 @@ export default function SlidesScreen() {
               </Text>
 
               {/* The outline is the product: a teacher decides whether to use
-                  this deck by scanning slide titles, not by opening it. */}
+                  this deck by scanning slide titles, not by opening it. Each
+                  row opens the editor — the deck is theirs to adjust. */}
               <View style={{ marginTop: 12, gap: 6 }}>
                 {deck.slides.map((s, i) => (
-                  <View key={i} style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 10 }}>
+                  <Pressable
+                    key={i}
+                    onPress={() => { Haptics.selectionAsync(); openEdit(i); }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${t('editSlide')}: ${s.title}`}
+                    style={({ pressed }) => [
+                      { flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 10, opacity: pressed ? 0.7 : 1 },
+                    ]}
+                  >
                     <View style={[styles.slideNum, { backgroundColor: ACCENT + '18' }]}>
                       <Text style={{ color: ACCENT, fontFamily: 'Cairo_700Bold', fontSize: 11 }}>{i + 1}</Text>
                     </View>
@@ -309,7 +369,16 @@ export default function SlidesScreen() {
                         {s.durationSeconds}s
                       </Text>
                     )}
-                  </View>
+                    <Ionicons name="create-outline" size={16} color={colors.mutedForeground} />
+                    <Pressable
+                      onPress={() => { Haptics.selectionAsync(); void removeSlide(i); }}
+                      hitSlop={8}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${t('deleteLabel')}: ${s.title}`}
+                    >
+                      <Ionicons name="trash-outline" size={16} color={colors.mutedForeground} />
+                    </Pressable>
+                  </Pressable>
                 ))}
               </View>
             </View>
@@ -343,6 +412,73 @@ export default function SlidesScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Per-slide editor */}
+      <Modal visible={editIdx !== null} transparent animationType="fade" onRequestClose={() => setEditIdx(null)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { backgroundColor: colors.card, borderRadius: colors.radius }]}>
+            <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
+              {t('editSlide')}
+            </Text>
+
+            <Text style={[styles.modalLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+              {t('slideTitleField')}
+            </Text>
+            <TextInput
+              value={editTitle}
+              onChangeText={setEditTitle}
+              style={[styles.modalInput, {
+                color: colors.foreground, borderColor: colors.border, borderRadius: colors.radius,
+                fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left',
+              }]}
+            />
+
+            <Text style={[styles.modalLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+              {t('slideContentField')}
+            </Text>
+            <TextInput
+              value={editContent}
+              onChangeText={setEditContent}
+              multiline
+              style={[styles.modalInput, styles.modalInputMultiline, {
+                color: colors.foreground, borderColor: colors.border, borderRadius: colors.radius,
+                fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left',
+              }]}
+            />
+
+            {editIdx !== null && deck?.slides[editIdx]?.type === 'challenge' && (
+              <>
+                <Text style={[styles.modalLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+                  {t('slideAnswerField')}
+                </Text>
+                <TextInput
+                  value={editAnswer}
+                  onChangeText={setEditAnswer}
+                  style={[styles.modalInput, {
+                    color: colors.foreground, borderColor: colors.border, borderRadius: colors.radius,
+                    fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left',
+                  }]}
+                />
+              </>
+            )}
+
+            <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 10, marginTop: 16 }}>
+              <Pressable
+                onPress={() => setEditIdx(null)}
+                style={[styles.secondaryBtn, { borderColor: colors.border, borderRadius: colors.radius }]}
+              >
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>{t('cancel')}</Text>
+              </Pressable>
+              <Pressable
+                onPress={applyEdit}
+                style={[styles.secondaryBtn, { borderColor: ACCENT, backgroundColor: ACCENT, borderRadius: colors.radius }]}
+              >
+                <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>{t('save')}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
     </View>
@@ -408,4 +544,10 @@ const styles = StyleSheet.create({
   slideNum: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
   ctaBtn: { alignItems: 'center', justifyContent: 'center', gap: 10, padding: 16, marginBottom: 10 },
   secondaryBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, padding: 13, borderWidth: 1.5 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', padding: 24 },
+  modalCard: { padding: 20, maxHeight: '85%' },
+  modalTitle: { fontSize: 17, marginBottom: 12 },
+  modalLabel: { fontSize: 12, marginBottom: 6, marginTop: 8 },
+  modalInput: { borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14 },
+  modalInputMultiline: { minHeight: 110, textAlignVertical: 'top' },
 });

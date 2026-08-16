@@ -553,12 +553,9 @@ which called `fetch()` directly with no auth header — invisible today because
 authenticated." Now routes through `apiFetch`, same as the rest of the app.
 
 **Not fixed — flagged for a decision, not mechanical:**
-- **No rate-limiting on `/auth/login`, `/auth/register`, or
+- ~~**No rate-limiting on `/auth/login`, `/auth/register`, or
   `/auth/forgot-password`**, combined with an 8-character password minimum and
-  no complexity requirement. Real MEDIUM finding; needs a call on a
-  rate-limiting library (and Render free-tier fit) and whether tightening
-  password rules is worth the friction for existing accounts. Listed under
-  Known landmines below rather than fixed blind.
+  no complexity requirement.~~ **Fixed 2026-08-15** — see below.
 - Five near-identical copies of status/level color-and-label maps across the
   evaluation screens, plus `PickerField` and `CheckboxRow` each duplicated
   3–5 times across `ai-tools/*` and `evaluations/new.tsx` — real duplication,
@@ -707,6 +704,131 @@ for this system-of-equations content; opened Class Mode and confirmed the
 revealed answer for question 2 now matches `answerKey` item 2 exactly,
 where before the fix it would have shown whatever option happened to sit
 at index 0.
+
+## Auth hardening — rate limiting + password policy, 2026-08-15
+
+Closed the gap the 2026-08-15 security audit flagged and left as a
+landmine: `/auth/login`, `/auth/register`, and `/auth/forgot-password` had
+no rate limiting, and password strength was just "8 characters, anything
+goes" (`"12345678"` and `"password"` both passed).
+
+No rate-limiting library was in `api-server`'s dependencies, and the app's
+established pattern for this class of problem is already an in-memory,
+single-process guard (`aiBudget.ts`, `errorLog.ts`) — reasonable for a
+single-instance Render pilot, resets on restart. Followed the same pattern
+instead of adding a dependency: `lib/rateLimit.ts` is a small fixed-window
+limiter keyed by client IP, applied per-route —
+`login` (10 / 15 min, roomier since real users mistype passwords),
+`register` and `forgot-password` (5 / hour each). Exceeding the cap returns
+`429` with a `Retry-After` header.
+
+This depends on Express seeing the real client IP, not Render's proxy
+address — `app.set("trust proxy", 1)` added to `app.ts`; without it every
+request would report the same IP and all callers would share one bucket.
+
+Password policy: `lib/passwordPolicy.ts`'s `isStrongPassword` now requires
+8+ characters with at least one letter and one digit (Unicode-aware, so
+Arabic passwords work) — blocks all-digit and dictionary-word passwords
+without demanding a symbol, which would just push pilot teachers toward
+writing passwords down. Applied to `/register` and `/reset-password` only;
+existing accounts and `/login` are untouched, so nobody gets locked out by
+a policy that changed after they signed up.
+
+Verified: `pnpm run typecheck` clean; api-server suite 85/85 (new
+`rateLimit.test.ts`, `passwordPolicy.test.ts`); live against a running
+instance with real Postgres — confirmed a weak password is rejected on
+`/register` and a strong one succeeds, confirmed repeated failed logins
+past the 10-attempt cap return `429` with `Retry-After`, confirmed
+`/forgot-password` blocks at 6 rapid requests.
+
+## Slides Maker: real math rendering + per-slide editing, 2026-08-15
+
+Two upgrades to the deck the projector shows:
+
+**Real math layout.** Equation lines used to project as flat strings —
+`3x^4` with a caret, `(x^2+1)/(x-1)` with a slash — which reads as typing,
+not mathematics, in exactly the grade where fractions, powers and roots
+are the whole lesson. `services/mathRender.ts` is a deliberately
+conservative parser (superscripts incl. parenthesized bases/exponents and
+Arabic letters س ص ع ن, fractions both `(A)/(B)` and simple `3/4`, roots
+`√(...)`/`sqrt(...)`/bare `√25`, all recursive so `√(x^2+16)` nests);
+`components/classroom/MathText.tsx` renders the tree with pure
+Views/Texts — stacked fraction bars, raised exponents, a radical with an
+overline — no math library, no WebView, identical on native and web.
+Anything the parser doesn't confidently recognize stays plain text
+rendered exactly as before: the failure mode is "looks like today",
+never "looks mangled" — guarded by a round-trip test asserting no input
+ever loses characters. Wired into `presentation.tsx` for equation lines
+and the answer reveal; 14 parser tests in `mathRender.test.ts`.
+
+**Per-slide editing.** The generated deck is a draft the teacher owns,
+not a fixed output. Every outline row in Slides Maker now opens an editor
+(title, content, and — on example slides — the answer), and each row has
+a delete with confirm (via `services/confirm.ts`, so it works on web).
+Edits and deletions land in the same deck state that Present / Save / PDF
+read, and `rebuildAnswerKey` in `lessonSlides.ts` recomputes the printable
+answer key from the slides themselves so an edited answer prints as
+edited and a deleted example drops out of the key instead of drifting.
+
+Verified live end to end: generated a deck for «تبسيط المقادير الأسية»,
+edited a slide to carry `(x^2+1)/(x-1)`, `3x^4 - 2x + 7` and
+`√(x^2 + 16)`, deleted the homework slide (9 → 8, outline renumbered),
+presented — the projector showed a real stacked fraction (numerator's
+superscript intact), raised exponents, and a radical overline, with the
+Arabic lead-in «بسّط:» correctly on the right. No console errors.
+
+## Fixed 2026-08-15 — PDF export silently did nothing, everywhere
+
+Reported against the hosted demo: Slides Maker's PDF button produced no
+file, no dialog, no error — nothing observably happened.
+
+**Root cause:** `exportAsPDF`'s web path (`services/share.ts`) writes the
+export HTML into a hidden, sandboxed iframe and calls
+`iframe.contentWindow.print()`. The sandbox was `allow-same-origin` only.
+Chromium requires `allow-modals` in the sandbox token list for a
+sandboxed frame to open `print()`/`alert()`/`confirm()` — without it the
+call is silently ignored: no exception (so the `catch` never fires and no
+error toast shows), just a console warning
+(`Ignored call to 'print()'. The document is sandboxed, and the
+'allow-modals' keyword is not set.`) nobody was looking at. Reproduced
+directly against Chromium before touching the fix, to confirm this was
+the actual mechanism and not a guess.
+
+**This one function is shared by every PDF export button in the app** —
+slides, worksheet, quiz, lesson plan, lesson flow, activity, and the
+workspace saved-item view all call `exportAsPDF`. All were silently
+broken on web, not just Slides Maker; the fix (adding `allow-modals` to
+the sandbox attribute) repairs all of them at once. Verified live: built
+a real curriculum-grounded deck end to end (login → Tools → Slides Maker
+→ pick a Math S1 lesson → generate → PDF), confirmed the sandbox console
+warning is gone after the fix where it reliably appeared before it.
+
+## First-run onboarding + Slides Maker promoted, 2026-08-15
+
+A teacher used to land straight on login with nothing explaining what
+Iqraa does. Added a 4-slide product-intro carousel
+(`app/onboarding.tsx`) shown once per install before the first login:
+what Iqraa is, the full lesson-journey flow, real math verification, and
+the class-time tools. Deliberately not swipe-driven — this app expresses
+RTL per-component rather than via OS layout direction (see the web-RTL
+writeup below), so a horizontal ScrollView's physical scroll axis
+wouldn't reliably follow the reading direction. Paging is Next/Skip/dot
+driven instead, which behaves identically in both languages.
+
+- `services/appIntro.ts` tracks the "seen" flag globally (AsyncStorage,
+  not user-scoped — the carousel runs before anyone is signed in, unlike
+  `lessonContext.ts`'s per-user "onboarded" flag, which gates the
+  first-lesson picker and is a different concept).
+- `app/_layout.tsx`'s root redirect now checks it only on cold boot while
+  signed out — an explicit logout goes straight back to login, not the
+  intro again.
+- Verified live: fresh install shows the carousel, `تخطي`/`ابدأ الآن`
+  both land on login, the flag survives a reload so it doesn't repeat.
+
+**Slides Maker promoted to the top tool** on both the tools tab and the
+chat "+" menu — moved from `DURING_CLASS` to the front of `BEFORE_CLASS`
+in `toolCatalog.ts`, the single list both surfaces render from in
+`WORKFLOW` order. Verified live in both places.
 
 ## Class-time tools: Slides Maker + Class Challenge, 2026-08-15
 
@@ -906,10 +1028,11 @@ must start following the language in the same commit that deletes them.
   `lib/integrations-openai-ai-server`.
 - `app/ai-tools/classroom/classroomRouting.ts` is a helper inside the routes
   dir — Expo Router registers it as a phantom route and warns on every boot.
-- **No rate-limiting on `/auth/login`, `/auth/register`, `/auth/forgot-password`**,
-  and only an 8-character password minimum with no complexity rule. Needs a
-  product/infra decision (library, Render free-tier fit, whether to tighten
-  password rules for existing accounts) — see the 2026-08-15 audit above.
+- ~~No rate-limiting on `/auth/login`, `/auth/register`,
+  `/auth/forgot-password`, and only an 8-character password minimum with no
+  complexity rule.~~ **Fixed 2026-08-15** — see "Auth hardening" above. In
+  memory only (per-process, resets on restart); revisit if Render ever moves
+  to multiple instances.
 
 ## Fixed 2026-08-10 — worth knowing about
 

@@ -6,6 +6,11 @@ import { logger } from "./lib/logger";
 
 const app: Express = express();
 
+// Render sits in front of this app behind a proxy; without this, req.ip
+// (used by the auth rate limiters) returns the proxy's address for every
+// request instead of the real client, collapsing all callers into one bucket.
+app.set("trust proxy", 1);
+
 app.use(
   pinoHttp({
     logger,

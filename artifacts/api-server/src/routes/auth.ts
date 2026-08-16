@@ -11,8 +11,20 @@ import {
 import { eq, and, gt } from "drizzle-orm";
 import { authMiddleware, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { logger } from "../lib/logger.js";
+import { createRateLimiter } from "../lib/rateLimit.js";
+import { isStrongPassword, PASSWORD_POLICY_MESSAGE } from "../lib/passwordPolicy.js";
 
 const router = Router();
+
+// Login gets more headroom than register/forgot-password since real users
+// mistype passwords; the other two are rarely legitimate at any volume.
+const loginLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, name: "login" });
+const registerLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5, name: "register" });
+const forgotPasswordLimiter = createRateLimiter({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  name: "forgot-password",
+});
 
 function getSecret(): string {
   const secret = process.env.SESSION_SECRET;
@@ -41,7 +53,7 @@ async function storeRefreshToken(userId: string, tokenValue: string): Promise<vo
 }
 
 // POST /auth/register
-router.post("/register", async (req, res) => {
+router.post("/register", registerLimiter, async (req, res) => {
   try {
     const { firstName, lastName, email, password, confirmPassword } = req.body as {
       firstName?: string;
@@ -63,8 +75,8 @@ router.post("/register", async (req, res) => {
       res.status(400).json({ error: "Valid email is required" });
       return;
     }
-    if (!password || password.length < 8) {
-      res.status(400).json({ error: "Password must be at least 8 characters" });
+    if (!password || !isStrongPassword(password)) {
+      res.status(400).json({ error: PASSWORD_POLICY_MESSAGE });
       return;
     }
     if (confirmPassword !== undefined && confirmPassword !== password) {
@@ -126,7 +138,7 @@ router.post("/register", async (req, res) => {
 });
 
 // POST /auth/login
-router.post("/login", async (req, res) => {
+router.post("/login", loginLimiter, async (req, res) => {
   try {
     const { email, password } = req.body as { email?: string; password?: string };
 
@@ -285,7 +297,7 @@ router.get("/me", authMiddleware, async (req: AuthenticatedRequest, res) => {
 });
 
 // POST /auth/forgot-password
-router.post("/forgot-password", async (req, res) => {
+router.post("/forgot-password", forgotPasswordLimiter, async (req, res) => {
   try {
     const { email } = req.body as { email?: string };
     if (!email?.includes("@")) {
@@ -352,8 +364,8 @@ router.post("/reset-password", async (req, res) => {
       res.status(400).json({ error: "Reset token is required" });
       return;
     }
-    if (!password || password.length < 8) {
-      res.status(400).json({ error: "Password must be at least 8 characters" });
+    if (!password || !isStrongPassword(password)) {
+      res.status(400).json({ error: PASSWORD_POLICY_MESSAGE });
       return;
     }
     if (confirmPassword !== undefined && confirmPassword !== password) {
