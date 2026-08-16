@@ -30,7 +30,7 @@ import { summarizeVerification } from '@/services/quizVerification';
 import { confirm } from '@/services/confirm';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { saveItem } from '@/services/workspace';
-import { buildLessonPlanSlidesHTML, exportAsPDF } from '@/services/share';
+import { buildDeckSlidesHTML, exportAsPDF } from '@/services/share';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
 } from '@/services/curriculumData';
@@ -252,21 +252,32 @@ export default function SlidesScreen() {
     showToast(t('slidesSaved'));
   };
 
-  // PDF reuses the lesson-plan slide layout, which is already RTL-correct and
-  // print-tested. Without a plan there is nothing that layout can render, so
-  // the button only appears when one came back.
+  // Exports the DECK — same slides, same accents, same verification badges
+  // the teacher just saw and edited on screen. This used to re-derive a
+  // generic 6-slide summary from the lesson plan alone (buildLessonPlanSlidesHTML),
+  // which meant a teacher exporting a curriculum-grounded deck with no plan
+  // got no PDF at all, and one who edited a slide got a PDF that didn't
+  // reflect the edit. Both buttons key off `deck`, not `plan`.
   const exportPdf = async () => {
-    if (!plan) return;
+    if (!deck) return;
     try {
-      await exportAsPDF(
-        buildLessonPlanSlidesHTML(plan, topic.trim(), {
-          subject: isAr ? subjects[subjectIdx].nameAr : subjects[subjectIdx].name,
-          grade: isAr ? grades[gradeIdx].nameAr : grades[gradeIdx].name,
-        }, isAr),
-        `${topic.trim() || 'slides'}.pdf`,
-      );
+      await exportAsPDF(buildDeckSlidesHTML(deck, isAr), `${topic.trim() || 'slides'}.pdf`);
     } catch {
       showToast(t('generationFailed'));
+    }
+  };
+
+  const [exportingPptx, setExportingPptx] = useState(false);
+  const exportPptx = async () => {
+    if (!deck || exportingPptx) return;
+    setExportingPptx(true);
+    try {
+      const { exportDeckAsPptx } = await import('@/services/exportPptx');
+      await exportDeckAsPptx(deck, isAr, topic.trim() || 'slides');
+    } catch {
+      showToast(t('generationFailed'));
+    } finally {
+      setExportingPptx(false);
     }
   };
 
@@ -490,15 +501,23 @@ export default function SlidesScreen() {
                 <Ionicons name="bookmark-outline" size={16} color={ACCENT} />
                 <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>{t('save')}</Text>
               </Pressable>
-              {plan && (
-                <Pressable
-                  onPress={exportPdf}
-                  style={[styles.secondaryBtn, { borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-                >
-                  <Ionicons name="document-outline" size={16} color={colors.mutedForeground} />
-                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>PDF</Text>
-                </Pressable>
-              )}
+              <Pressable
+                onPress={exportPdf}
+                style={[styles.secondaryBtn, { borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+              >
+                <Ionicons name="document-outline" size={16} color={colors.mutedForeground} />
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>PDF</Text>
+              </Pressable>
+              <Pressable
+                onPress={exportPptx}
+                disabled={exportingPptx}
+                style={[styles.secondaryBtn, { borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: exportingPptx ? 0.6 : 1 }]}
+              >
+                {exportingPptx
+                  ? <ActivityIndicator size="small" color={colors.mutedForeground} />
+                  : <Ionicons name="easel-outline" size={16} color={colors.mutedForeground} />}
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>PPTX</Text>
+              </Pressable>
             </View>
           </View>
         )}

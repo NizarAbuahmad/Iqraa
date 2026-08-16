@@ -12,6 +12,11 @@ import { File, Paths } from 'expo-file-system';
 import { ActivityOutput, LessonFlowOutput, LessonPlanOutput, QuizOutput, WorksheetOutput } from '@/services/ai/AIService';
 import type { AttemptResult, CompetencyKey, LevelKey } from '@/services/evaluations';
 
+// Re-exported here so existing callers (`import { buildDeckSlidesHTML } from
+// '@/services/share'`) don't need to know it actually lives in its own pure
+// module — see deckSlidesHtml.ts for why it's split out.
+export { buildDeckSlidesHTML } from './deckSlidesHtml.ts';
+
 // ─── Plain-text formatters ────────────────────────────────────────────────────
 
 export function formatLessonPlanText(

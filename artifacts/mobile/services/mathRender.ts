@@ -216,3 +216,72 @@ export function prettifySymPy(s: string): string {
     .replace(/\*/g, '×')
     .trim();
 }
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/**
+ * Render a math line as static HTML/CSS — same AST as MathText.tsx, but for
+ * contexts with no React tree: the printed/PDF export. CSS handles the
+ * fraction bar and raised exponent natively, so this needs no measurement
+ * tricks the RN version does.
+ */
+export function mathLineToHtml(line: string): string {
+  return parseMathLine(line).map(nodeToHtml).join('');
+}
+
+function nodeToHtml(node: MathNode): string {
+  if (node.kind === 'text') return escapeHtml(node.text);
+  if (node.kind === 'sup') {
+    return `${escapeHtml(node.base)}<sup>${escapeHtml(node.exp)}</sup>`;
+  }
+  if (node.kind === 'frac') {
+    const num = node.num.map(nodeToHtml).join('');
+    const den = node.den.map(nodeToHtml).join('');
+    return `<span class="mfrac"><span class="mfrac-n">${num}</span><span class="mfrac-d">${den}</span></span>`;
+  }
+  // root
+  const body = node.body.map(nodeToHtml).join('');
+  return `<span class="mroot">√<span class="mroot-body">${body}</span></span>`;
+}
+
+/** Shared with every HTML export that calls mathLineToHtml. */
+export const MATH_HTML_STYLES = `
+.mfrac { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; margin: 0 2px; font-size: 0.85em; }
+.mfrac-n, .mfrac-d { line-height: 1.3; }
+.mfrac-n { border-bottom: 1.5px solid currentColor; padding: 0 3px 1px; }
+.mfrac-d { padding: 1px 3px 0; }
+.mroot-body { border-top: 1.5px solid currentColor; padding: 0 2px; margin-inline-start: 1px; }
+sup { font-size: 0.62em; }
+`;
+
+/** Unicode superscript digits/signs — covers every exponent this curriculum actually uses. */
+const SUP_MAP: Record<string, string> = {
+  '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹',
+  '+': '⁺', '-': '⁻', 'n': 'ⁿ',
+};
+
+/**
+ * Plain-text fallback for surfaces with no rich layout at all (PPTX text
+ * runs). Numeric/`n` exponents become real Unicode superscripts; anything
+ * else keeps its `^exp` notation rather than guess at a shape. Fractions and
+ * roots print as `(a)/(b)` and `√(...)` — readable, and the teacher can
+ * still reformat it once the file is open in PowerPoint.
+ */
+export function mathLineToUnicode(line: string): string {
+  return parseMathLine(line).map(nodeToUnicode).join('');
+}
+
+function nodeToUnicode(node: MathNode): string {
+  if (node.kind === 'text') return node.text;
+  if (node.kind === 'sup') {
+    const supers = [...node.exp].map(c => SUP_MAP[c]);
+    const exp = supers.every(Boolean) ? supers.join('') : `^${node.exp}`;
+    return `${node.base}${exp}`;
+  }
+  if (node.kind === 'frac') {
+    return `(${node.num.map(nodeToUnicode).join('')})/(${node.den.map(nodeToUnicode).join('')})`;
+  }
+  return `√(${node.body.map(nodeToUnicode).join('')})`;
+}
