@@ -71,6 +71,8 @@ import { classifyChatIntent } from '@/services/ai/intentRouter';
 import { IqraaMark } from '@/components/ui/IqraaMark';
 import { CHAT_MAX_WIDTH } from '@/constants/layout';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
+import { MathParagraph } from '@/components/ui/MathParagraph';
+import { hasRenderableMath } from '@/services/mathRender';
 import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
 import { CurrentLessonCard } from '@/components/ui/CurrentLessonCard';
 import { DocumentAttachmentBar } from '@/components/ui/DocumentAttachmentBar';
@@ -770,6 +772,25 @@ function MessageBubble({
             if (line.startsWith('•')) {
               const text = line.substring(1).trim();
               const parts = text.split('**');
+              // A bullet mixing **bold** spans with math is rare enough that
+              // falling back to plain inline text (as before) beats trying to
+              // nest MathText's Views inside a Text run, which RN doesn't
+              // support. Math-only bullets (the common case — a rule or a
+              // worked step) get the real layout.
+              if (parts.length === 1 && hasRenderableMath(text)) {
+                return (
+                  <View key={i} style={[styles.bulletRow, isRTL && { flexDirection: 'row-reverse' }]}>
+                    <Text style={[{ color: colors.primary, marginTop: 2 }, isRTL ? { marginLeft: 6 } : { marginRight: 6 }]}>•</Text>
+                    <View style={{ flex: 1 }}>
+                      <MathParagraph
+                        text={text}
+                        style={{ fontSize: styles.bubbleText.fontSize, lineHeight: styles.bubbleText.lineHeight, color: colors.foreground, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}
+                        isRTL={isRTL}
+                      />
+                    </View>
+                  </View>
+                );
+              }
               return (
                 <View key={i} style={[styles.bulletRow, isRTL && { flexDirection: 'row-reverse' }]}>
                   <Text style={[{ color: colors.primary, marginTop: 2 }, isRTL ? { marginLeft: 6 } : { marginRight: 6 }]}>•</Text>
@@ -791,9 +812,12 @@ function MessageBubble({
               );
             }
             return (
-              <Text key={i} style={[styles.bubbleText, { color: colors.foreground, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>
-                {line}
-              </Text>
+              <MathParagraph
+                key={i}
+                text={line}
+                style={{ fontSize: styles.bubbleText.fontSize, lineHeight: styles.bubbleText.lineHeight, color: colors.foreground, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}
+                isRTL={isRTL}
+              />
             );
           })}
           <Text style={[styles.timestamp, { color: colors.mutedForeground, textAlign: isRTL ? 'left' : 'right' }]}>

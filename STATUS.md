@@ -761,6 +761,55 @@ icon work merged 2026-08-13 (`STATUS.md`'s "Logo, flag, installability"
 entry), a stale build is the more likely cause than a rendering bug, and
 no code change fixes that short of reinstalling from a current build.
 
+## Math rendering extended to worksheet, quiz, lesson plan, and chat, 2026-08-16
+
+The math renderer built for the projector (`mathRender.ts`/`MathText`)
+was wired into exactly two places: the presenter and Slides Maker's PDF
+export. Everywhere else a teacher sees generated content — worksheet
+questions, quiz options/answers, lesson-plan sections, chat replies —
+still showed `x^2` and `3/4` as typed-looking flat strings.
+
+New `components/ui/MathParagraph.tsx` is a drop-in replacement for
+`<Text style={style}>{text}</Text>`: splits on `\n` (a no-op for
+single-line content) and renders each line through the same
+MathText/`hasRenderableMath` decision the projector already uses — a
+line the parser doesn't recognise renders exactly as the plain `Text`
+did, so prose is never at risk. Its `alignItems` wrapper keeps a bare
+equation with no Arabic lead-in on the correct margin regardless of
+MathText's own per-line reading-order heuristic, which only governs
+word order *within* a mixed prose+equation line.
+
+One shared fix does most of the work: `EditableText`'s read branch in
+`Editable.tsx` is what quiz.tsx (question text, options, answers,
+explanations), `LessonPlanView.tsx`'s editable path (used by both
+`lesson-plan.tsx` and chat's lesson-plan bubbles), and any other
+`EditableText` consumer all render through — fixing it once fixed all
+of them. `LessonPlanView.tsx`'s read-only fallback (reachable if a
+future caller omits `onEdit`) got the same treatment for consistency.
+`worksheet.tsx` has no shared component to lean on, so its question
+text, options, and answer-key entries were edited directly. Chat's
+generic message-bubble loop (`iqra.tsx`) already splits on `\n` with
+lightweight bold/bullet markdown handling — the plain-line fallback
+and math-only bullets (no `**bold**` spans) now route through
+`MathParagraph`; a bullet mixing bold and math falls back to the
+existing inline-text rendering, since MathText's View-based layout
+can't nest inside a `Text` run the way inline bold spans do.
+
+Verified live: worksheet's answer key showed a real overlined radical
+(`x = 2 ± √3`) where the string was a bare `√3` — definitive proof the
+renderer is active, not just theoretically wired, since a plain-Unicode
+`√` has no built-in vinculum. Chat walked through a full multi-turn
+"explain الاشتقاق" exchange (clarifying questions, subject picker,
+final explanation with `d/dx(xⁿ) = nxⁿ⁻¹`-style bullets) with zero
+console errors and no visual regressions. Most existing curriculum and
+mock-generated content already uses pre-formatted Unicode superscripts
+(`²`, `³`, `ⁿ`) rather than caret notation, so the renderer stays
+correctly inactive there — its clearest wins are fractions, roots, and
+anywhere `^`-notation genuinely appears (e.g. `prettifySymPy`'d
+verifier output). 423 mobile tests (413 passing + 10 pre-existing
+skips, unchanged — `MathParagraph` has no dedicated test file, same as
+`MathText`; verified live instead), monorepo typecheck clean.
+
 ## Fixed 2026-08-16 — Slides Maker's PDF export ignored the actual deck; added real PPTX
 
 A teacher's screenshot of the PDF export showed near-empty pages with tiny

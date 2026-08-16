@@ -23,6 +23,7 @@ import { Toast } from '@/components/ui/Toast';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
 import { RelatedResourcesPanel } from '@/components/ui/RelatedResourcesPanel';
+import { MathParagraph } from '@/components/ui/MathParagraph';
 import {
   buildWorksheetHTML, buildWorksheetSlidesHTML, copyToClipboard, exportAsPDF, exportAsWord,
   formatWorksheetText, shareAsText,
@@ -492,11 +493,20 @@ export default function WorksheetScreen() {
                 <View key={i} style={[styles.qCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                   <Text style={[styles.qNum, { color: ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>{i + 1}.</Text>
                   <View style={{ flex: 1 }}>
-                    <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 19, textAlign: isRTL ? 'right' : 'left' }]}>{q.text}</Text>
+                    <MathParagraph
+                      text={q.text}
+                      style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 19, textAlign: isRTL ? 'right' : 'left' }}
+                      isRTL={isRTL}
+                    />
                     {q.options?.map(o => (
                       <View key={o} style={[styles.optionRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                         <View style={[styles.optionDot, { borderColor: colors.border }]} />
-                        <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, flex: 1 }]}>{o}</Text>
+                        <MathParagraph
+                          text={o}
+                          style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12 }}
+                          containerStyle={{ flex: 1 }}
+                          isRTL={isRTL}
+                        />
                       </View>
                     ))}
                     <Text style={[styles.pts, { color: ACCENT, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{q.points} {t('pts')}</Text>
@@ -516,7 +526,12 @@ export default function WorksheetScreen() {
                 {result.answerKey.map(item => (
                   <View key={item.num} style={[styles.akRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                     <Text style={[styles.akNum, { color: ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>{item.num}.</Text>
-                    <Text style={[styles.akAnswer, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{item.answer}</Text>
+                    <MathParagraph
+                      text={item.answer}
+                      style={{ fontSize: styles.akAnswer.fontSize, lineHeight: styles.akAnswer.lineHeight, color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }}
+                      containerStyle={{ flex: 1 }}
+                      isRTL={isRTL}
+                    />
                   </View>
                 ))}
               </View>
