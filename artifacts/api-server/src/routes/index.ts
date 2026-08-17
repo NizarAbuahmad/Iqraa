@@ -10,6 +10,7 @@ import curriculumRouter from "./curriculum";
 import rosterRouter from "./roster";
 import evaluationsRouter from "./evaluations";
 import attemptsRouter from "./attempts";
+import mediaRouter from "./media";
 
 const router: IRouter = Router();
 
@@ -33,13 +34,17 @@ router.use(evaluationsRouter);
 router.use(attemptsRouter);
 // Path-scoped, not `router.use(authMiddleware, chatRouter)` — that form mounts
 // the middleware at "/" and reproduces the original bug, answering 401 for
-// paths no router owns. The prefixes below cover every route these three
-// declare: /chat, /generate/*, and /verify/*.
+// paths no router owns. The prefixes below cover every route these four
+// declare: /chat, /generate/*, /verify/*, and /media/*.
 router.use("/chat", authMiddleware);
 router.use("/generate", authMiddleware);
 router.use("/verify", authMiddleware);
+// Unsplash lookup shares one server-side access key across every teacher —
+// unauthenticated callers could otherwise exhaust the whole app's rate limit.
+router.use("/media", authMiddleware);
 router.use(chatRouter);
 router.use(generateRouter);
 router.use(verifiedMathRouter);
+router.use(mediaRouter);
 
 export default router;

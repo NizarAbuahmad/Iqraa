@@ -119,6 +119,18 @@ export async function exportDeckAsPptx(
       return;
     }
 
+    if (slide.type === 'media' && slide.mediaKind === 'image' && slide.mediaUrl) {
+      s.addImage({
+        path: slide.mediaUrl, x: 2.0, y: 1.2, w: 6.0, h: 3.4, sizing: { type: 'cover', w: 6.0, h: 3.4 },
+      });
+      if (slide.mediaCaption) {
+        s.addText(slide.mediaCaption, {
+          x: 0.8, y: 4.75, w: 8.4, h: 0.4, align: 'center', fontSize: 10, color: DECK_MUTED,
+        });
+      }
+      return;
+    }
+
     if (slide.type === 'challenge') {
       s.addText(pptxLine(slide.content, true), {
         x: 0.6, y: 1.2, w: 8.8, h: 1.0, align: 'center', valign: 'middle',

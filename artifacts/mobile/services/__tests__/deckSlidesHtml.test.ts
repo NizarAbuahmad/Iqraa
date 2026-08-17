@@ -111,6 +111,33 @@ describe('buildDeckSlidesHTML — verification badge', () => {
   });
 });
 
+describe('buildDeckSlidesHTML — media slide', () => {
+  it('renders the image and caption for an image media slide', () => {
+    const html = buildDeckSlidesHTML(deck([
+      titleSlide,
+      {
+        slideNumber: 2, type: 'media', title: '🖼️ صورة', content: 'caption',
+        mediaKind: 'image', mediaUrl: 'https://images.unsplash.com/photo-1.jpg',
+        mediaCaption: '📷 A. Photographer · Unsplash', durationSeconds: 0,
+      },
+    ]), true);
+    assert.match(html, /src="https:\/\/images\.unsplash\.com\/photo-1\.jpg"/);
+    assert.match(html, /📷 A\. Photographer · Unsplash/);
+  });
+
+  it('falls back to a text slide for a video media slide (no img tag to render)', () => {
+    const html = buildDeckSlidesHTML(deck([
+      titleSlide,
+      {
+        slideNumber: 2, type: 'media', title: '🎬 فيديو', content: 'شاهدوا هذا',
+        mediaKind: 'video', mediaUrl: 'https://youtu.be/dQw4w9WgXcQ', durationSeconds: 0,
+      },
+    ]), true);
+    assert.doesNotMatch(html, /<img/);
+    assert.match(html, /شاهدوا هذا/);
+  });
+});
+
 describe('buildDeckSlidesHTML — graph slide', () => {
   it('lists the plotted commands and notes the export is not interactive', () => {
     const html = buildDeckSlidesHTML(deck([

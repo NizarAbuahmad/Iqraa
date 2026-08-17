@@ -118,6 +118,20 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
       ${footer(num)}</div>`;
   };
 
+  const mediaSlide = (slide: ActivitySlide, num: number) => {
+    const accent = deckSlideAccent(slide.type);
+    return `<div class="deck-slide">
+      <div class="deck-header" style="border-color:${accent}44">
+        <span class="deck-emoji">🖼️</span>
+        <span class="deck-eyebrow" style="color:${accent}">${esc(slide.title)}</span>
+      </div>
+      <div class="deck-body deck-body-center deck-body-media">
+        <img class="deck-media-img" src="${esc(slide.mediaUrl ?? '')}" alt="${esc(slide.mediaCaption ?? '')}" />
+        ${slide.mediaCaption ? `<div class="deck-media-caption">${esc(slide.mediaCaption)}</div>` : ''}
+      </div>
+      ${footer(num)}</div>`;
+  };
+
   const contentSlide = (slide: ActivitySlide, num: number) => {
     const accent = deckSlideAccent(slide.type);
     const lines = slide.content.split('\n').filter(Boolean);
@@ -137,6 +151,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
     if (i === 0) return titleSlide(slide, num);
     if (slide.type === 'graph') return graphSlide(slide, num);
     if (slide.type === 'challenge') return challengeSlide(slide, num);
+    if (slide.type === 'media' && slide.mediaKind === 'image') return mediaSlide(slide, num);
     return contentSlide(slide, num);
   }).join('\n');
 
@@ -169,6 +184,9 @@ body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','
 .deck-chip-row { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-bottom:18px; }
 .deck-chip { border:1.5px solid; border-radius:8px; padding:5px 12px; font-size:13px; font-weight:700; }
 .deck-graph-note { font-size:11px; color:${DECK_MUTED}; max-width:420px; line-height:1.7; }
+.deck-body-media { gap:16px; }
+.deck-media-img { max-width:80%; max-height:130mm; object-fit:cover; border-radius:12px; box-shadow:0 8px 30px rgba(0,0,0,0.4); }
+.deck-media-caption { font-size:11px; color:${DECK_MUTED}; }
 .deck-footer { height:30px; border-top:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:space-between; padding:0 32px; flex-shrink:0; }
 .deck-footer span { font-size:9px; color:${DECK_MUTED}; }
 ${MATH_HTML_STYLES}

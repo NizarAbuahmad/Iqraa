@@ -18,10 +18,12 @@ import {
   classifyMediaUrl,
   extractGraphCommands,
   geogebraCommandUrl,
+  insertImageAfterTitle,
   isLikelyImageUrl,
   youtubeEmbedUrl,
   youtubeIdFrom,
 } from '../classMedia.ts';
+import type { ActivitySlide } from '../ai/AIService.ts';
 
 describe('youtubeIdFrom', () => {
   it('reads watch, short, embed and shorts links', () => {
@@ -102,5 +104,29 @@ describe('geogebraCommandUrl', () => {
   it('falls back to the blank graphing app when there is nothing to plot', () => {
     assert.equal(geogebraCommandUrl([]), 'https://www.geogebra.org/graphing');
     assert.equal(geogebraCommandUrl(['  ']), 'https://www.geogebra.org/graphing');
+  });
+});
+
+describe('insertImageAfterTitle', () => {
+  const titleSlide: ActivitySlide = {
+    slideNumber: 1, type: 'intro', title: 'الاشتقاق', content: 'مقدمة', durationSeconds: 0,
+  };
+  const secondSlide: ActivitySlide = {
+    slideNumber: 2, type: 'intro', title: 'الفكرة 1', content: 'نص', durationSeconds: 0,
+  };
+
+  it('inserts a media slide right after the title and renumbers', () => {
+    const out = insertImageAfterTitle([titleSlide, secondSlide], 'https://x.com/a.jpg', 'caption', true);
+    assert.equal(out.length, 3);
+    assert.equal(out[0].title, 'الاشتقاق');
+    assert.equal(out[1].type, 'media');
+    assert.equal(out[1].mediaUrl, 'https://x.com/a.jpg');
+    assert.equal(out[1].mediaCaption, 'caption');
+    assert.equal(out[2].title, 'الفكرة 1');
+    assert.deepEqual(out.map(s => s.slideNumber), [1, 2, 3]);
+  });
+
+  it('is a no-op on an empty deck', () => {
+    assert.deepEqual(insertImageAfterTitle([], 'https://x.com/a.jpg', 'caption', true), []);
   });
 });

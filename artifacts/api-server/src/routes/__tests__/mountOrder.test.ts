@@ -124,6 +124,13 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     }
   });
 
+  it("guards the Unsplash lookup route", async () => {
+    // Shares one server-side access key across every teacher — an
+    // unauthenticated caller could otherwise exhaust the app's whole rate limit.
+    const res = await fetch(`${base}/media/unsplash-photo?query=math`);
+    assert.equal(res.status, 401);
+  });
+
   it("answers unknown paths with 404, not with another router's 401", async () => {
     // The tell for the original bug: a path no router owns came back 401,
     // because a root-mounted guard replied before routing finished.

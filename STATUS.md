@@ -741,6 +741,54 @@ instance with real Postgres — confirmed a weak password is rejected on
 past the 10-attempt cap return `429` with `Retry-After`, confirmed
 `/forgot-password` blocks at 6 rapid requests.
 
+## Slides Maker: auto-fetched Unsplash photo per deck, 2026-08-17
+
+Every generated deck was text-only slide after text-only slide. Slides
+Maker now fetches one topic-relevant photo per deck and drops it in as a
+slide right after the title, using the existing `type: 'media'` slide
+shape (`buildMediaSlide`/`MediaView`) that Class Mode's manually-pasted
+image slides already render live — nothing new to build for the
+projector view.
+
+The Unsplash access key is server-side only: `GET /api/media/unsplash-photo`
+(new `media.ts`, mounted and auth-gated the same way as `/chat`,
+`/generate`, `/verify` — one shared key across every teacher, so an
+unauthenticated caller can't burn the whole app's rate limit) calls
+Unsplash's Search Photos endpoint, pings `download_location` per their
+API guidelines when a result is used, and always answers `200
+{ photo: null }` — never an error — when the key is unset, the query is
+empty, or nothing relevant comes back. The mobile client
+(`services/unsplashImage.ts`) never throws either. `slides.tsx` fires the
+lookup after the deck is already on screen (same non-blocking,
+identity-guarded pattern the verify-example pass already uses — a stale
+fetch landing after the teacher regenerated is a silent no-op, not a
+stomp), and `classMedia.ts` gained `insertImageAfterTitle` to splice the
+result in and renumber.
+
+PDF (`deckSlidesHtml.ts`) and PPTX (`exportPptx.ts`) export previously had
+no handling for `type: 'media'` slides at all — they'd have fallen
+through to the generic text-only renderer and silently dropped the image
+from anything exported. Both gained an image-slide renderer (`<img>` for
+HTML, `addImage` for pptxgenjs) so the photo survives into both exports,
+not just the live projector.
+
+Verified live: registered a real test user against local Postgres,
+confirmed `GET /api/media/unsplash-photo` returns `401` unauthenticated
+and `200 { photo: null }` authenticated-but-unconfigured (this repo's
+actual default `.env` state — no `UNSPLASH_ACCESS_KEY` set) — the
+critical property is that a deck generates and displays identically
+whether or not the key is ever configured. No real Unsplash key was
+available in this sandbox to verify the photo-present path live; that
+path is covered by unit tests instead — `insertImageAfterTitle`'s
+splicing/renumbering, and the PDF exporter's `<img>` rendering for an
+image media slide (with a video media slide pinned to keep falling back
+to text, since there's no `<img>` to render there). The PPTX exporter's
+`addImage` call has no dedicated test — same as `exportPptx.ts`'s
+existing coverage gap, since pptxgenjs isn't mocked in this suite — and
+was checked by typecheck + code review only. 427 mobile tests (417
+passing + 10 pre-existing skips) / 86 api-server tests passing, monorepo
+typecheck clean.
+
 ## App icon reported washed-out on a real device, 2026-08-16
 
 A teacher's home screen showed the Iqra icon nearly invisible (white on
