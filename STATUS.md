@@ -741,6 +741,63 @@ instance with real Postgres — confirmed a weak password is rejected on
 past the 10-attempt cap return `429` with `Retry-After`, confirmed
 `/forgot-password` blocks at 6 rapid requests.
 
+## Teacher-pilot usage analytics wired (PostHog), 2026-08-17
+
+Asked how to see what tools teachers actually use/visit/keep during
+testing. Hotjar and Microsoft Clarity were both ruled out before writing
+any code: they inject into a DOM, so they'd only ever see the Expo
+**web** build, not the native app most pilot teachers would install.
+PostHog's SDK covers native and web with one integration, so it's the
+one that can actually see the whole pilot, not just the web slice of it.
+
+New `services/analytics.ts` wraps `posthog-react-native` behind
+`initAnalytics`/`trackEvent`/`trackScreen`/`identifyUser`/
+`resetAnalyticsIdentity`. Disabled by default — with no
+`EXPO_PUBLIC_POSTHOG_API_KEY` every call is a silent no-op, same shape as
+Unsplash's "no server key" path a day earlier. The client loads lazily
+inside the functions that use it, never at module scope: `posthog-react-native`
+pulls in `react-native`, and importing it at module scope here would have
+made every file that imports this module (`workspace.ts`, `share.ts`,
+`exportPptx.ts`) untestable under plain `node --test` — the exact trap
+the OpenAI client hit (see "Things that have bitten before" at the top
+of this file).
+
+Instrumented at existing shared choke points rather than per-screen, so
+one fix covers every tool:
+- **Screens visited** — `app/_layout.tsx` fires `trackScreen(pathname)`
+  on every route change, one line covering the entire app, not just AI
+  tools.
+- **Tools opened** — `runToolAction` (Tools tab) and `handleToolSelect`
+  (chat's `+` menu) are the only two places a tool ever gets navigated
+  to; both now fire `tool_opened` with `{ toolId, source }`.
+- **Materials kept** — `saveItem` (`workspace.ts`) is what every tool's
+  Save button calls; fires `material_saved` once, keyed by
+  `payload.type`, regardless of which storage path (API vs local
+  fallback) actually lands it.
+- **Materials exported** — `exportAsPDF`/`exportAsWord` (`share.ts`) and
+  `exportDeckAsPptx` (`exportPptx.ts`) fire `material_exported` keyed by
+  format.
+- **Identity** — `identifyUser(user.id, { role })` on sign-in,
+  `resetAnalyticsIdentity()` on sign-out, both gated on the same
+  `authChanged`/`finishedBoot` transition the existing navigation effect
+  already computes. No email/name sent, by design.
+
+"Liked" has no dedicated event yet — there's no thumbs-up affordance in
+the product to hang it on. Save/export/re-open are the proxy signals
+this pass gives you; a real like/dislike signal would need a UI
+decision first, not just an analytics one.
+
+Verified live: registered a real user against local Postgres, confirmed
+`pnpm run typecheck` and the full mobile suite (427 tests, unchanged —
+none of the four touched files are in the test net) stay clean, then
+loaded the app in a real browser with analytics unconfigured (this
+repo's actual default `.env` state) and navigated multiple screens with
+zero console errors — the property that matters most: the app behaves
+identically whether or not a PostHog key is ever set. No PostHog project
+was available in this sandbox to verify an event actually lands
+server-side; that requires a real `EXPO_PUBLIC_POSTHOG_API_KEY` (free
+tier, 1M events/month) in a deployed environment.
+
 ## Slides Maker: auto-fetched Unsplash photo per deck, 2026-08-17
 
 Every generated deck was text-only slide after text-only slide. Slides

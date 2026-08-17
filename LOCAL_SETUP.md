@@ -93,6 +93,8 @@ Without an OpenAI key, the API process will not start (AI client initializes at 
 | `BASE_PATH` | `/` | Mobile static serve / mockup |
 | `MOCKUP_PORT` | `8082` | Design sandbox only |
 | `EXPO_PUBLIC_DEMO_MODE` | `true` (anything but literal `"false"`) | Set `false` to call the real API instead of mocked AI content — see "Testing against real AI" below |
+| `EXPO_PUBLIC_POSTHOG_API_KEY` | unset (analytics calls are no-ops) | PostHog project key for teacher-pilot usage tracking (screens, tool opens, saves/exports) |
+| `EXPO_PUBLIC_POSTHOG_HOST` | `https://us.i.posthog.com` | PostHog Cloud region — use the EU host if the project is EU-hosted |
 | `AI_LIVE_MODE` | `false` (anything but literal `"true"`) | Server-side counterpart to the above — must be exactly `true` to let chat/generate/derivativeVerified call OpenAI |
 | `AI_BUDGET_USD` | `2` | Hard USD cap on estimated spend while `AI_LIVE_MODE=true`. In-process only, resets on restart |
 | `AI_MODEL` | `gpt-4o-mini` | Model used by the live-AI routes; cheap by default |

@@ -11,6 +11,7 @@ import { File, Paths } from 'expo-file-system';
 
 import { ActivityOutput, LessonFlowOutput, LessonPlanOutput, QuizOutput, WorksheetOutput } from '@/services/ai/AIService';
 import type { AttemptResult, CompetencyKey, LevelKey } from '@/services/evaluations';
+import { trackEvent } from '@/services/analytics';
 
 // Re-exported here so existing callers (`import { buildDeckSlidesHTML } from
 // '@/services/share'`) don't need to know it actually lives in its own pure
@@ -1187,6 +1188,7 @@ export function buildLessonFlowHTML(flow: LessonFlowOutput, isAr: boolean): stri
 // ─── PDF export ───────────────────────────────────────────────────────────────
 
 export async function exportAsPDF(html: string, filename: string): Promise<void> {
+  trackEvent('material_exported', { format: 'pdf' });
   if (Platform.OS === 'web') {
     // expo-print's web implementation ignores the html arg and calls window.print()
     // on the current page → blank result.  Instead, inject an iframe with our HTML
@@ -1227,6 +1229,7 @@ export async function exportAsWord(
   filename: string,
   isAr: boolean,
 ): Promise<void> {
+  trackEvent('material_exported', { format: 'word' });
   // Dynamic import to avoid startup cost
   const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = await import('docx');
 

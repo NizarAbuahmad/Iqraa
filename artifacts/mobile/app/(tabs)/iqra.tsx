@@ -86,6 +86,7 @@ import {
   type ToolDef,
 } from '@/services/toolCatalog';
 import { openGeogebraGraphing } from '@/services/geogebra';
+import { trackEvent } from '@/services/analytics';
 import {
   addAndProcessFiles,
   clearSessionDocuments,
@@ -1805,6 +1806,7 @@ export default function IqraScreen() {
   const handleToolSelect = useCallback((tool: ToolDef) => {
     setToolsMenuOpen(false);
     void Haptics.selectionAsync().catch(() => {});
+    trackEvent('tool_opened', { toolId: tool.id, source: 'chat_menu' });
 
     const topic =
       (lang === 'ar' ? sessionMemory.activeTopicAr : sessionMemory.activeTopicEn) ?? '';
@@ -1861,6 +1863,7 @@ export default function IqraScreen() {
     try {
       const activity = await buildClassDeck({ topic, lang: lang as 'ar' | 'en' });
       setPendingClassroomActivity(activity);
+      trackEvent('class_started', { source: 'chat' });
       router.push('/ai-tools/classroom/presentation' as any);
     } catch {
       // Surfacing this as a chat message would be wrong — the teacher pressed a

@@ -21,6 +21,7 @@ import { File, Paths } from 'expo-file-system';
 
 import type { ActivitySlide, ClassroomActivity } from '@/services/ai/AIService';
 import { mathLineToUnicode, prettifySymPy } from '@/services/mathRender';
+import { trackEvent } from '@/services/analytics';
 
 const DECK_BG = '0D0D14';
 const DECK_TEXT = 'F2F2F6';
@@ -44,6 +45,7 @@ export async function exportDeckAsPptx(
   isAr: boolean,
   filename: string,
 ): Promise<void> {
+  trackEvent('material_exported', { format: 'pptx' });
   // Dynamic import: pptxgenjs is a meaningfully sized dependency, loaded only
   // when a teacher actually exports — same reasoning as docx in share.ts.
   const PptxGenJS = (await import('pptxgenjs')).default;
