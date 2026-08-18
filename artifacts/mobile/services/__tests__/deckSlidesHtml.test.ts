@@ -160,6 +160,18 @@ describe('buildDeckSlidesHTML — graph slide', () => {
   });
 });
 
+describe('buildDeckSlidesHTML — typography', () => {
+  it('loads the app’s real typefaces and uses them, with Arial only as fallback', () => {
+    const html = buildDeckSlidesHTML(deck([titleSlide]), true);
+    assert.match(html, /fonts\.googleapis\.com\/css2\?family=Almarai[^"]*Cairo/);
+    // Body copy in Almarai, headings in Cairo — the split the on-screen UI makes.
+    assert.match(html, /body \{ font-family: 'Almarai'/);
+    assert.match(html, /\.deck-title-main[^}]*\{ font-family: 'Cairo'|font-family: 'Cairo'[^}]*\}/);
+    // Arial must survive as the offline fallback, not disappear entirely.
+    assert.match(html, /'Almarai','Arial'/);
+  });
+});
+
 describe('buildDeckSlidesHTML — hero backgrounds (title + divider)', () => {
   it('renders the title slide as a flat gradient when no photo was fetched', () => {
     const html = buildDeckSlidesHTML(deck([titleSlide]), true);

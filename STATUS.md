@@ -741,6 +741,57 @@ instance with real Postgres — confirmed a weak password is rejected on
 past the 10-attempt cap return `429` with `Retry-After`, confirmed
 `/forgot-password` blocks at 6 rapid requests.
 
+## Exports now print in the app's own typefaces, 2026-08-18
+
+Last item from the "theme, design, font" list: PDF and PPTX both rendered
+in generic Arial while the app itself uses Almarai for body copy and
+Cairo for every heavier weight. Nothing was needed from the user for
+this — the `.ttf` files already ship inside `@expo-google-fonts/almarai`
+and `/cairo`, openly licensed, no key or account involved.
+
+**PDF** links the two families from Google Fonts rather than
+base64-embedding them. The four faces are ~440KB; inlined they would sit
+in the repo *and* in every user's JS bundle, including the majority who
+never export. This export already fetches remote images, so it already
+assumes network, and the CSS stack keeps Arial as the fallback — with no
+network it prints exactly what it printed before, so offline is no worse
+than today. `share.ts` gained `waitForFonts` alongside the existing
+`waitForImages`, because a webfont is the same race the images were: a
+`print()` that fires early doesn't error, it just quietly produces an
+Arial PDF.
+
+**PPTX** names the fonts via `pptx.theme` rather than per-run, so no
+`addText` call can be missed. PowerPoint cannot embed a font from
+pptxgenjs, so this renders correctly wherever Cairo/Almarai are
+installed and falls back to a system Arabic face otherwise — again no
+worse than the Arial before it.
+
+**Why this also answers "wouldn't Google Slides be easier?"** The Slides
+API would be a step *up* in cost, not down: full OAuth 2.0, per-teacher
+account connection, token refresh, and Google's app-verification review
+for Drive scopes — a real feature, unlike the API-key-in-an-env-var
+pattern Unsplash and YouTube use. But Google Slides imports `.pptx`
+natively, and Cairo/Almarai *are* Google Fonts, so naming them should be
+enough for an uploaded deck to resolve them from Google's own catalogue.
+The cheap change plausibly buys the Google Slides path for free; the API
+would only add "appears in Drive without uploading," which is
+convenience, not capability. **Unverified** — this sandbox cannot upload
+to Google Slides, so that one hop needs a human to try a file.
+
+Verified by inspecting the actual shipped artifact rather than trusting
+the code read correct: generated a real deck through the UI, downloaded
+the `.pptx`, unzipped it, and confirmed `theme1.xml` carries
+`majorFont = Cairo` / `minorFont = Almarai`, that the 19 explicit
+heading runs (one per slide) name Cairo, that every other run carries no
+typeface and so inherits Almarai from the theme, and that **zero** slides
+still contain Arial. There is no unit test on the PPTX side because
+`exportPptx.ts` imports `react-native` at module scope and `node:test`
+cannot parse it — the same trap `share.ts` hit — and inventing an
+abstraction purely to make it testable would be worse than the real-file
+check, which is stronger evidence anyway. The PDF side is pinned by a new
+`deckSlidesHtml.test.ts` case asserting the font link, both families in
+use, and Arial surviving as fallback. 437 mobile tests, typecheck clean.
+
 ## Video slide polish after seeing it live, 2026-08-18
 
 The YouTube integration went live with a real API key and worked first

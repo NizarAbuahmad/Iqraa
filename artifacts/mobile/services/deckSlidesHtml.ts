@@ -204,10 +204,30 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
 <html dir="${dir}" lang="${isAr ? 'ar' : 'en'}">
 <head>
 <meta charset="utf-8"/>
+<!--
+  The app's real typefaces, rather than the generic Arial this used to print
+  in. Linked from Google Fonts instead of base64-embedded: the four faces are
+  ~440KB, which would sit in the repo AND in every user's JS bundle including
+  those who never export. This export already fetches remote images, so it
+  already assumes network; with none, the stack below falls back to Arial —
+  exactly what it printed before, so offline is no worse than today.
+
+  These being Google Fonts is also what makes a .pptx uploaded to Google
+  Slides resolve them (see exportPptx.ts).
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700&family=Cairo:wght@500;600;700&display=swap" rel="stylesheet"/>
 <style>
 @page { size: A4 landscape; margin: 0; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','Arial',sans-serif"}; background:#1a1a1a; }
+/* Almarai carries body copy, Cairo every heavier weight — the same split
+   app/_layout.tsx makes for the on-screen UI, so an exported deck reads as
+   the same product as the projector. Arial stays as the offline fallback. */
+body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:#1a1a1a; }
+.deck-title-badge, .deck-title-main, .deck-divider-title, .deck-eyebrow,
+.deck-eq, .deck-answer-label, .deck-chip, .deck-video-link,
+.deck-title-meta { font-family: 'Cairo','Arial','Tahoma',sans-serif; }
 .deck-slide { width:297mm; height:210mm; background:${DECK_BG}; color:${DECK_TEXT}; position:relative; overflow:hidden; page-break-after:always; display:flex; flex-direction:column; }
 .deck-title-slide { background:radial-gradient(circle at 30% 20%, ${DECK_ACCENT}33, transparent 55%), ${DECK_BG}; }
 .deck-hero-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
