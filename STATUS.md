@@ -741,6 +741,76 @@ instance with real Postgres — confirmed a weak password is rejected on
 past the 10-attempt cap return `429` with `Retry-After`, confirmed
 `/forgot-password` blocks at 6 rapid requests.
 
+## Verification audit: the badge was understating itself, 2026-08-18
+
+Tier 1 testing found no crashes, so the next question was whether the
+verification badge tells the truth. Rather than eyeball it, every question the
+concrete math bank can render — 86 items × 5 question types = **430** — was
+replayed through the real SymPy verifier offline.
+
+**Baseline: 55 of 430 earned the symbolic badge, and 3 of those 55 were false.**
+
+### The false one
+
+`P = 1/6` is the "equation" behind *«عند رمي حجر نرد عادل، ما احتمال ظهور 5؟»*.
+The classifier saw a well-formed linear equation, SymPy solved it to `1/6`, and
+it matched the key **by construction** — the equation *is* the answer. A
+probability item nothing had reasoned about carried a green
+*«تم التحقق من الإجابة رياضيًا (SymPy)»*. `latinEquationFrom` now refuses a
+bare unknown against a constant: solving that proves nothing. This also stops
+`r = 5` (circle items) from burning a round trip on a guaranteed mismatch.
+
+### Four ways a real proof was being thrown away
+
+All failed *closed* — no wrong key was ever vouched for — but each one made the
+product's core claim look weaker than it is.
+
+| Defect | Effect |
+| --- | --- |
+| `{}` outside the math-safe character class | `2^{x+1} = 32` extracted as `4^x=2^` — a truncated fragment that syntax-errors |
+| `.` inside it (decimals need it) | `f(x) = x².` extracted as `x^2.`, rejected by SymPy |
+| `toVerifiablePair` wired only into the deck path | quiz/worksheet sent `f'(x) = 2x` verbatim; unparseable, so **every** derivative item degraded to 'bank' while the identical item in a class deck verified |
+| SymPy solves over ℂ | `4^x = 64` → `[3, (log(8) + I*pi)/log(2)]`; set comparison failed on size alone and the correct key lost its badge |
+
+Fixes, in order: fold `^{…}` into `^(…)` before extraction; trim trailing
+sentence punctuation; apply `toVerifiablePair` inside `verifyItems` so both
+paths agree; accept the real subset of a solution set as well as the full one.
+
+The last one widened acceptance, so it widened **rejection** too — a distractor
+matching the real-root set is secretly correct and must still be thrown out.
+And the evidence line now shows the set the key actually matched, so a Grade-10
+wall never displays `3, (log(8) + I*pi)/log(2)` as the verifier's working.
+
+Fixing derivatives then exposed one more: distractors arrive as a teacher reads
+them (`3x²`, `x² − 4`) while the answer had already been latinised upstream, so
+every derivative multiple-choice item failed its distractor check with
+`parse_or_compare_error`. Expression parsing now normalises the same typography
+the solution-set parser always did.
+
+### Result
+
+**55 → 100 items symbolically verified, and the false badge is gone.** Every
+one of the 100 was checked by hand against its key: `4^x = 2^(x+3) → x = 3`,
+`8^x = 4^(x+1) → x = 2`, `2^(x+2) = 2^x + 12 → x = 2`, `x² − 4x + 1 = 0 →
+2 ± √3`, all three derivative families. No family that the verifier cannot
+actually reason about (stats, circle, trig, vectors, functions) claims a badge
+any more.
+
+Round trips also dropped — 223 questions were being sent to the verifier, now
+209, with the removed ones being the guaranteed-mismatch tautologies.
+
+**Verified:** `pnpm run typecheck` clean; mobile 449 tests, 0 failures (10
+pre-existing skips); `test_equations.py` 29/29. The audit harness is
+throwaway — what it found is pinned by unit tests instead: brace exponents,
+trailing punctuation, tautology refusal, the pair rewrite on both quiz and
+worksheet paths, real-root acceptance, wrong roots still refused, typographic
+distractors, and a disguised-correct distractor still rejected.
+
+**Still unverified by the prover** (honest 'bank' label, correctly): systems of
+equations, graphical intersections, circle geometry, trigonometry, vectors,
+statistics, and every word problem. That is a coverage boundary, not a bug —
+the badge now states it accurately.
+
 ## Tool catalog narrowed to five for the pilot, 2026-08-18
 
 Audited all 14 tools and tiered them, then parked everything outside the

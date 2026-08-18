@@ -109,3 +109,43 @@ describe('classifyVerifiableTopic', () => {
     assert.equal(classifyVerifiableTopic(''), null);
   });
 });
+
+/**
+ * Extraction defects found by replaying every question the concrete math bank
+ * can render (430 of them) through the real SymPy verifier. Each one lost a
+ * provable item to the 'bank' label — the badge understated what the product
+ * had actually checked.
+ */
+describe('extraction defects that silently cost real verifications', () => {
+  it('keeps brace exponents instead of truncating the equation', () => {
+    // Was: '4^x=2^' — the run stopped at the '{', and the fragment that
+    // reached SymPy was a syntax error, so the item degraded to 'bank'.
+    assert.equal(latinEquationFrom('ما ناتج / حل: 4^x = 2^{x+3}؟'), '4^x=2^(x+3)');
+    assert.equal(latinEquationFrom('ما ناتج / حل: 2^{x+1} = 32؟'), '2^(x+1)=32');
+    assert.equal(latinEquationFrom('ما ناتج / حل: 5^{x-1} = 25؟'), '5^(x-1)=25');
+  });
+
+  it('drops the sentence full stop from an extracted expression', () => {
+    // '.' is math-safe because decimals need it, so 'x^2.' reached SymPy.
+    assert.equal(latinExpressionFrom('أوجد مشتقة f(x) = x².'), 'x^2');
+    assert.equal(latinExpressionFrom('أوجد مشتقة f(x) = 5x.'), '5x');
+  });
+
+  it('still accepts a genuine decimal point', () => {
+    assert.equal(latinEquationFrom('حل: 2x = 1.5'), '2x=1.5');
+  });
+
+  it('refuses an equation that merely restates its own answer', () => {
+    // 'P = 1/6' is the answer, not a question. SymPy solved it to 1/6 and
+    // matched by construction, putting a green symbolic badge on a
+    // probability item nothing had reasoned about.
+    assert.equal(latinEquationFrom('ما ناتج / حل: P = 1/6؟'), null);
+    assert.equal(latinEquationFrom('دائرة نصف قطرها r = 5. أوجد محيطها.'), null);
+    assert.equal(classifyVerifiableTopic('ما ناتج / حل: P = 1/6؟'), null);
+  });
+
+  it('still accepts an equation with the unknown on both sides', () => {
+    // Bare-symbol LHS is only a tautology when the other side has no unknown.
+    assert.equal(latinEquationFrom('حل: n = 3n - 1'), 'n=3n-1');
+  });
+});

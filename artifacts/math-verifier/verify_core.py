@@ -18,10 +18,37 @@ TRANSFORMATIONS = standard_transformations + (
 )
 
 
+# Typographic characters a teacher-facing option or key can carry. Only the
+# character swaps belong here — the word-level rewrites in
+# _normalise_answer_text ("أو" → ";") are for solution SETS and would break an
+# expression parse.
+_EXPR_TYPOGRAPHY = (
+    ("²", "**2"), ("³", "**3"),
+    ("−", "-"), ("–", "-"), ("—", "-"),
+    ("×", "*"), ("÷", "/"),
+)
+
+
+def normalise_expr_text(expr: str) -> str:
+    """
+    Typographic maths → parseable ASCII, for expression comparison.
+
+    Distractors reach us exactly as a teacher reads them on screen — `3x²`,
+    `x² − 4` — while the answer has already been latinised upstream. Parsing
+    only the answer meant every derivative multiple-choice item failed its
+    distractor check with parse_or_compare_error and lost its badge, even
+    though the key itself had just been proved correct.
+    """
+    out = expr.strip()
+    for src, dst in _EXPR_TYPOGRAPHY:
+        out = out.replace(src, dst)
+    return out
+
+
 def parse_latin(expr: str) -> Any:
     x = Symbol("x")
     return parse_expr(
-        expr.strip(),
+        normalise_expr_text(expr),
         transformations=TRANSFORMATIONS,
         local_dict={"x": x},
         evaluate=True,
@@ -179,6 +206,28 @@ def parse_solution_set(answer: str) -> list[Any]:
     return values
 
 
+def real_solutions(values: list[Any]) -> list[Any]:
+    """
+    The real subset of a solution list.
+
+    SymPy solves over the complex field, so a Grade-10 exponential like
+    4^x = 64 comes back as [3, (log(8) + I*pi)/log(2)] — one intended root
+    plus a complex branch. Set comparison then failed on size alone and the
+    item degraded to the 'bank' label despite the key being right. Keep the
+    full set too: matching either one is enough, and neither can turn a wrong
+    answer into a verified one, since both require exact set equality against
+    a genuine solution set.
+    """
+    out: list[Any] = []
+    for v in values:
+        try:
+            if v.is_real:
+                out.append(v)
+        except AttributeError:
+            continue
+    return out
+
+
 def solution_sets_match(expected: list[Any], claimed: list[Any]) -> bool:
     """Fail-closed set equality up to symbolic simplification."""
     if len(expected) != len(claimed):
@@ -246,7 +295,9 @@ def _verify_equation(
             "rejected": [],
         }
 
-    if not solution_sets_match(expected, claimed):
+    reals = real_solutions(expected)
+    matched_reals = bool(reals) and solution_sets_match(reals, claimed)
+    if not (solution_sets_match(expected, claimed) or matched_reals):
         return {
             "verified": False,
             "computed_answer": pretty,
@@ -261,7 +312,13 @@ def _verify_equation(
             rejected.append({"value": "", "reason": "empty_distractor"})
             continue
         try:
-            if solution_sets_match(expected, parse_solution_set(value)):
+            parsed = parse_solution_set(value)
+            # Widened acceptance above must widen rejection here too, or a
+            # distractor equal to the real-root set would slip through as a
+            # legitimate wrong option while being secretly correct.
+            if solution_sets_match(expected, parsed) or (
+                reals and solution_sets_match(reals, parsed)
+            ):
                 rejected.append({"value": value, "reason": "equivalent_to_answer"})
         except Exception:  # noqa: BLE001
             # Unparseable distractor is fine: it is plainly not the answer,
@@ -275,7 +332,11 @@ def _verify_equation(
             "rejected": rejected,
         }
 
-    return {"verified": True, "computed_answer": pretty, "error": None, "rejected": []}
+    # Report the set the claim actually matched. Echoing the complex branches
+    # back would put "3, (log(8) + I*pi)/log(2)" on a Grade-10 classroom wall
+    # as the verifier's own working.
+    shown = ", ".join(str(v) for v in reals) if matched_reals else pretty
+    return {"verified": True, "computed_answer": shown, "error": None, "rejected": []}
 
 
 def verify_item(
