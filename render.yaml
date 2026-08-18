@@ -67,6 +67,22 @@ services:
     # runaway SymPy job can be killed on timeout.
     startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT --workers 1
     healthCheckPath: /healthz
+    envVars:
+      # This service was the only one of the three pinning no runtime version —
+      # both Node services pin NODE_VERSION, this pinned nothing, so Render
+      # chose its own Python and was free to change that choice under us.
+      #
+      # That matters more here than it looks. `uvicorn[standard]` pulls uvloop,
+      # httptools and watchfiles (C extensions) and pydantic-core (Rust). On a
+      # Python version with prebuilt wheels those are downloads; on one without,
+      # pip falls back to compiling from source, which needs a toolchain the
+      # free-tier builder does not have and fails with exactly the "Exited with
+      # status 1" this service started reporting.
+      #
+      # 3.12.13 is the version CI resolves against, so a green `math verifier`
+      # job now means the deploy has been exercised on the same interpreter.
+      - key: PYTHON_VERSION
+        value: 3.12.13
 
   - type: web
     name: iqraa-web

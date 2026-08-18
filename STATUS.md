@@ -741,6 +741,48 @@ instance with real Postgres — confirmed a weak password is rejected on
 past the 10-attempt cap return `429` with `Retry-After`, confirmed
 `/forgot-password` blocks at 6 rapid requests.
 
+## Render: the verifier build failed, and it was never pinned, 2026-08-18
+
+`iqraa-verifier` failed to build on the merge of PR #55 — "Exited with status
+1". PR #55 did change that service's `verify_core.py`, so the change was the
+first suspect. It is not the cause:
+
+- The build command is `pip install -r requirements.txt`, which never reads
+  `verify_core.py`.
+- CI ran the **identical** install and the full verifier suite on the **exact
+  merge commit** `1cce560` and passed — 29/29, install in 11s.
+- Every module in the service imports cleanly, and `compileall` is silent.
+
+**What is actually wrong: the verifier pinned no runtime version.** Both Node
+services pin `NODE_VERSION`; this one pinned nothing, so Render picked its own
+Python and was free to change that pick with no commit behind it.
+
+That matters more than it looks here. `uvicorn[standard]` pulls uvloop,
+httptools and watchfiles (C extensions) plus pydantic-core (Rust). On a Python
+with prebuilt wheels those are downloads; on one without, pip compiles from
+source, needing a toolchain the free-tier builder does not have — and fails
+with exactly this error. CI's install log shows every one of those arriving as
+a `cp312` wheel, which is the case that works.
+
+Two changes: `PYTHON_VERSION: 3.12.13` on the verifier, matching CI exactly, so
+a green `math verifier` job now means the deploy has been exercised on the same
+interpreter; and upper bounds in `requirements.txt`, which were all open `>=`
+— every build resolved against whatever PyPI had published that morning, so a
+deploy could break with no commit behind it. Bad property for the one service
+the verification claim depends on.
+
+**Still not a confirmed root cause.** `onrender.com` is unreachable from this
+environment, so the build log has not been read — this is deduced from what the
+build command does and from CI passing on the same commit. The log would
+settle it in one line. Worth noting this is the **second** unexplained Render
+build failure in two days on a merge to `main` (the first was `iqraa-api` on
+#53, also on a commit that could not have caused it), so a builder-side
+flake remains a live alternative.
+
+**Verified:** the capped requirement set resolves to the same versions CI
+installed (sympy 1.14.0, fastapi 0.141.1, uvicorn 0.52.3, pydantic 2.13.4) in
+a clean venv, and `test_equations.py` passes 29/29 against it.
+
 ## Lesson Plan tested; the Word export was mangling Arabic, 2026-08-18
 
 Lesson Plan was the one pilot tool of the five never exercised in the Tier 1
