@@ -227,24 +227,36 @@ export default function SlidesScreen() {
         }
       })();
 
-      // Two topic-relevant photos — a hero background for the title slide and
-      // one for the section divider — fetched after the deck is already
-      // usable. Never blocks generation, and silently does nothing when no
-      // server key is configured or nothing relevant turns up.
+      // External media, all fetched after the deck is already usable: two
+      // topic-relevant photos (a hero background for the title slide and one
+      // for the section divider) plus one real explainer video. Never blocks
+      // generation, and silently does nothing for whichever server key is
+      // unconfigured or turns up nothing. All three land in one state update
+      // so they share a single staleness guard rather than racing each other.
       void (async () => {
         try {
           const { searchDeckPhoto } = await import('@/services/unsplashImage');
-          const { attachBackgroundImage, deckPhotoQueries } = await import('@/services/classMedia');
+          const { searchDeckVideo } = await import('@/services/youtubeVideo');
+          const { attachBackgroundImage, buildMediaSlide, deckPhotoQueries, insertVideoSlide } =
+            await import('@/services/classMedia');
           const [titleQuery, dividerQuery] = deckPhotoQueries(subjects[subjectIdx].id, subjects[subjectIdx].name);
           const captionFor = (photographer: string) => (isAr
             ? `📷 ${photographer} · Unsplash`
             : `📷 Photo by ${photographer} on Unsplash`);
 
-          const [titlePhoto, dividerPhoto] = await Promise.all([
+          // The video query uses the lesson topic, not the subject: a generic
+          // "mathematics" video is no use mid-lesson, where the point is to
+          // explain THIS concept.
+          const videoQuery = isAr
+            ? `شرح ${trimmed} ${subjects[subjectIdx].nameAr} للصف العاشر`
+            : `${trimmed} ${subjects[subjectIdx].name} grade 10 explained`;
+
+          const [titlePhoto, dividerPhoto, video] = await Promise.all([
             searchDeckPhoto(titleQuery),
             searchDeckPhoto(dividerQuery),
+            searchDeckVideo(videoQuery, isAr ? 'ar' : 'en'),
           ]);
-          if (!titlePhoto && !dividerPhoto) return;
+          if (!titlePhoto && !dividerPhoto && !video) return;
 
           setDeck(cur => {
             // Guard against a stale fetch landing on a deck the teacher has
@@ -256,10 +268,19 @@ export default function SlidesScreen() {
             if (dividerPhoto && dividerIdx >= 0) {
               slides = attachBackgroundImage(slides, dividerIdx, dividerPhoto.url, captionFor(dividerPhoto.photographer));
             }
+            if (video) {
+              // Names the channel and flags it as outside material: this is a
+              // search result, not curriculum-grounded content the app stands
+              // behind, and the teacher is the one who has to preview it.
+              const caption = isAr
+                ? `${video.title} — ${video.channelTitle} (فيديو خارجي، راجعه قبل العرض)`
+                : `${video.title} — ${video.channelTitle} (external video, preview before class)`;
+              slides = insertVideoSlide(slides, buildMediaSlide('video', video.url, caption, isAr, 0));
+            }
             return { ...cur, slides };
           });
         } catch {
-          // A missing photo is a normal outcome, never a failure state for the deck.
+          // Missing media is a normal outcome, never a failure state for the deck.
         }
       })();
     } finally {

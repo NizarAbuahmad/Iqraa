@@ -202,6 +202,28 @@ export async function exportDeckAsPptx(
       continue;
     }
 
+    if (slide.type === 'media' && slide.mediaKind === 'video' && slide.mediaUrl) {
+      // PowerPoint can embed an online video, but only via a player shim that
+      // varies by PowerPoint version and often fails offline or on mobile —
+      // an inert placeholder in front of a class. A real hyperlink always
+      // works, in every version, and matches what the PDF export does.
+      if (slide.mediaCaption) {
+        s.addText(slide.mediaCaption, {
+          x: 0.8, y: 1.5, w: 8.4, h: 1.2, align: 'center', valign: 'middle',
+          fontSize: 15, color: DECK_TEXT,
+        });
+      }
+      s.addText(`▶ ${L('شاهد الفيديو', 'Watch the video')}`, {
+        x: 3.0, y: 2.9, w: 4.0, h: 0.5, align: 'center', valign: 'middle',
+        fontSize: 16, color: 'B45309', bold: true,
+        hyperlink: { url: slide.mediaUrl },
+      });
+      s.addText(slide.mediaUrl, {
+        x: 1.2, y: 3.6, w: 7.6, h: 0.4, align: 'center', fontSize: 9, color: DECK_MUTED,
+      });
+      continue;
+    }
+
     if (slide.type === 'challenge') {
       s.addText(pptxLine(slide.content, true), {
         x: 0.6, y: 1.2, w: 8.8, h: 1.0, align: 'center', valign: 'middle',

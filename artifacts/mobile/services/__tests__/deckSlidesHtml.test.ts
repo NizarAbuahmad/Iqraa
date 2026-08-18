@@ -125,16 +125,23 @@ describe('buildDeckSlidesHTML — media slide', () => {
     assert.match(html, /📷 A\. Photographer · Unsplash/);
   });
 
-  it('falls back to a text slide for a video media slide (no img tag to render)', () => {
+  it('renders a video media slide as a real clickable link, not an image', () => {
+    // A video can't play in a PDF — the link is the deliverable, and it has
+    // to survive both on screen (clickable) and on paper (readable URL).
     const html = buildDeckSlidesHTML(deck([
       titleSlide,
       {
         slideNumber: 2, type: 'media', title: '🎬 فيديو', content: 'شاهدوا هذا',
-        mediaKind: 'video', mediaUrl: 'https://youtu.be/dQw4w9WgXcQ', durationSeconds: 0,
+        mediaKind: 'video', mediaUrl: 'https://youtu.be/dQw4w9WgXcQ',
+        mediaCaption: 'شرح الاشتقاق — قناة الرياضيات', durationSeconds: 0,
       },
     ]), true);
     assert.doesNotMatch(html, /<img/);
-    assert.match(html, /شاهدوا هذا/);
+    assert.match(html, /<a class="deck-video-link"[^>]*href="https:\/\/youtu\.be\/dQw4w9WgXcQ"/);
+    assert.match(html, /شرح الاشتقاق — قناة الرياضيات/);
+    assert.match(html, /شاهد الفيديو/);
+    // The bare URL prints too, for the paper case where a link can't be clicked.
+    assert.match(html, /deck-video-url">https:\/\/youtu\.be\/dQw4w9WgXcQ/);
   });
 });
 

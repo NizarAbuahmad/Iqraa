@@ -100,6 +100,7 @@ Without an OpenAI key, the API process will not start (AI client initializes at 
 | `AI_MODEL` | `gpt-4o-mini` | Model used by the live-AI routes; cheap by default |
 | `ADMIN_DEBUG_KEY` | unset (endpoint 404s) | Set to see recent server errors at `GET /api/healthz/errors` (header `x-admin-key`) |
 | `UNSPLASH_ACCESS_KEY` | unset (Slides Maker skips the image slide) | Free Unsplash "Demo" key — Slides Maker fetches one topic photo per deck when set |
+| `YOUTUBE_API_KEY` | unset (Slides Maker skips the video slide) | Free YouTube Data API key — Slides Maker searches for one real explainer video per lesson when set |
 
 ### Testing against real AI (optional)
 

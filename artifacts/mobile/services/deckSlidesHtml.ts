@@ -152,6 +152,28 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
       ${footer(num)}</div>`;
   };
 
+  /**
+   * A video can't play in a PDF. Rather than dropping the slide (the teacher
+   * would lose the link entirely) or faking a player, this prints the link
+   * as a real clickable anchor plus the URL in plain text — so it works both
+   * on screen and on paper, where a printed page can only be typed back in.
+   */
+  const videoSlide = (slide: ActivitySlide, num: number) => {
+    const accent = '#B45309';
+    const url = slide.mediaUrl ?? '';
+    return `<div class="deck-slide">
+      <div class="deck-header" style="border-color:${accent}44">
+        <span class="deck-emoji">🎬</span>
+        <span class="deck-eyebrow" style="color:${accent}">${esc(slide.title)}</span>
+      </div>
+      <div class="deck-body deck-body-center">
+        ${slide.mediaCaption ? `<div class="deck-video-title">${esc(slide.mediaCaption)}</div>` : ''}
+        <a class="deck-video-link" style="border-color:${accent}66;color:${accent}" href="${esc(url)}">▶ ${L('شاهد الفيديو', 'Watch the video')}</a>
+        <div class="deck-video-url">${esc(url)}</div>
+      </div>
+      ${footer(num)}</div>`;
+  };
+
   const contentSlide = (slide: ActivitySlide, num: number) => {
     const accent = deckSlideAccent(slide.type);
     const lines = slide.content.split('\n').filter(Boolean);
@@ -172,6 +194,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
     if (slide.type === 'graph') return graphSlide(slide, num);
     if (slide.type === 'challenge') return challengeSlide(slide, num);
     if (slide.type === 'media' && slide.mediaKind === 'image') return mediaSlide(slide, num);
+    if (slide.type === 'media' && slide.mediaKind === 'video') return videoSlide(slide, num);
     if (slide.type === 'divider') return dividerSlide(slide, num);
     return contentSlide(slide, num);
   }).join('\n');
@@ -214,6 +237,9 @@ body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','
 .deck-body-media { gap:16px; }
 .deck-media-img { max-width:80%; max-height:130mm; object-fit:cover; border-radius:12px; box-shadow:0 8px 30px rgba(0,0,0,0.4); }
 .deck-media-caption { font-size:11px; color:${DECK_MUTED}; }
+.deck-video-title { font-size:15px; color:${DECK_TEXT}; max-width:520px; line-height:1.6; margin-bottom:20px; }
+.deck-video-link { display:inline-block; border:1.5px solid; border-radius:10px; padding:10px 22px; font-size:15px; font-weight:700; text-decoration:none; }
+.deck-video-url { font-size:10px; color:${DECK_MUTED}; margin-top:14px; word-break:break-all; max-width:420px; }
 .deck-footer { position:relative; z-index:2; height:30px; border-top:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:space-between; padding:0 32px; flex-shrink:0; }
 .deck-footer span { font-size:9px; color:${DECK_MUTED}; }
 ${MATH_HTML_STYLES}

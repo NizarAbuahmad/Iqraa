@@ -91,9 +91,13 @@ export function buildMediaSlide(
   return {
     slideNumber,
     type: 'media',
+    // No emoji in the title: every surface that renders a media slide
+    // (presentation.tsx's badge, deckSlidesHtml's header, the PPTX header
+    // bar) prepends its own type emoji, so carrying one here printed it
+    // twice — "🎬  🎬 فيديو".
     title: kind === 'video'
-      ? (isAr ? '🎬 فيديو' : '🎬 Video')
-      : (isAr ? '🖼️ صورة' : '🖼️ Image'),
+      ? (isAr ? 'فيديو' : 'Video')
+      : (isAr ? 'صورة' : 'Image'),
     content: caption,
     mediaKind: kind,
     mediaUrl: url,
@@ -135,6 +139,27 @@ const SUBJECT_PHOTO_QUERIES: Record<string, [title: string, divider: string]> = 
 
 export function deckPhotoQueries(subjectId: string, subjectName: string): [title: string, divider: string] {
   return SUBJECT_PHOTO_QUERIES[subjectId] ?? [`${subjectName} education`, `${subjectName} classroom students`];
+}
+
+/**
+ * Inserts a video media slide right before the first worked example — the
+ * class has just met the concept and is about to attempt problems on it, so
+ * a short explainer lands between "here's the idea" and "now try it
+ * yourself" rather than after the deck has moved on. Falls back to right
+ * before the summary, or the very end, for a deck with no examples at all.
+ * Unlike `attachBackgroundImage`, a video can't double as another slide's
+ * background — it needs its own slide, the same shape `buildMediaSlide`
+ * already produces for a teacher's manually pasted video.
+ */
+export function insertVideoSlide(
+  slides: readonly ActivitySlide[],
+  mediaSlide: ActivitySlide,
+): ActivitySlide[] {
+  const beforeExamples = slides.findIndex(s => s.type === 'challenge');
+  const beforeSummary = slides.findIndex(s => s.type === 'summary');
+  const insertAt = beforeExamples >= 0 ? beforeExamples : beforeSummary >= 0 ? beforeSummary : slides.length;
+  const next = [...slides.slice(0, insertAt), mediaSlide, ...slides.slice(insertAt)];
+  return next.map((s, i) => ({ ...s, slideNumber: i + 1 }));
 }
 
 /**

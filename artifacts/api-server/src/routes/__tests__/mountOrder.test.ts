@@ -131,6 +131,11 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(res.status, 401);
   });
 
+  it("guards the YouTube lookup route", async () => {
+    const res = await fetch(`${base}/media/youtube-video?query=math`);
+    assert.equal(res.status, 401);
+  });
+
   it("guards feedback and admin-usage-summary routes", async () => {
     const postRes = await fetch(`${base}/feedback`, {
       method: "POST",
