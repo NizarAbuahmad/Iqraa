@@ -9,3 +9,4 @@ export * from "./students";
 export * from "./assessmentConfig";
 export * from "./evaluations";
 export * from "./attempts";
+export * from "./feedback";

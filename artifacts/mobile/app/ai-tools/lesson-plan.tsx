@@ -21,6 +21,7 @@ import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
 import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
 import { RelatedResourcesPanel } from '@/components/ui/RelatedResourcesPanel';
+import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
 import {
   buildLessonPlanHTML,
   buildLessonPlanSlidesHTML,
@@ -416,11 +417,14 @@ export default function LessonPlanScreen() {
       )}
 
       {result && !loading && (
-        <RelatedResourcesPanel
-          toolId={isSimplify ? 'simplify' : 'lesson-plan'}
-          topic={topic.trim()}
-          isRTL={isRTL}
-        />
+        <>
+          <FeedbackWidget materialType="lesson" toolId={isSimplify ? 'simplify' : 'lesson-plan'} />
+          <RelatedResourcesPanel
+            toolId={isSimplify ? 'simplify' : 'lesson-plan'}
+            topic={topic.trim()}
+            isRTL={isRTL}
+          />
+        </>
       )}
 
       {/* Save + Regenerate */}

@@ -8,6 +8,7 @@
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiFetch, getAccessToken } from './apiClient';
+import { trackEvent } from './analytics';
 
 // 'activity' is a first-class kind: it is stage 3 of the lesson flow, a CQV
 // artifact type ('classroom-activity'), and already has a `materialActivity`
@@ -110,6 +111,10 @@ async function apiGet<T>(path: string): Promise<T | null> {
 export async function saveItem(
   payload: Omit<SavedMaterial, 'id' | 'savedAt' | 'isFavorite'>,
 ): Promise<SavedMaterial> {
+  // Fired on the attempt, not gated on which storage path succeeds — the
+  // teacher choosing to keep this material is the signal, not where it landed.
+  trackEvent('material_saved', { type: payload.type });
+
   if (await isAuthenticated()) {
     try {
       const res = await apiFetch('/workspace/items', {

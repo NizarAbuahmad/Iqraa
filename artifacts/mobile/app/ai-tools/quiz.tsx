@@ -31,6 +31,7 @@ import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
 import { RelatedResourcesPanel } from '@/components/ui/RelatedResourcesPanel';
+import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
 import {
   buildQuizHTML, buildQuizSlidesHTML, copyToClipboard, exportAsPDF, exportAsWord,
   formatQuizText, shareAsText,
@@ -649,7 +650,10 @@ export default function QuizScreen() {
       )}
 
       {result && !loading && (
-        <RelatedResourcesPanel toolId="quiz" topic={topic.trim()} isRTL={isRTL} />
+        <>
+          <FeedbackWidget materialType="quiz" toolId="quiz" />
+          <RelatedResourcesPanel toolId="quiz" topic={topic.trim()} isRTL={isRTL} />
+        </>
       )}
 
       {/* Save + Regenerate */}

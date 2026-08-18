@@ -19,6 +19,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { MathParagraph } from './MathParagraph';
 
 type Colors = {
   foreground: string;
@@ -106,14 +107,12 @@ export function EditableText({
       accessibilityHint={placeholder}
       style={styles.readRow}
     >
-      <Text
-        style={[
-          styles.body,
-          { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: align },
-        ]}
-      >
-        {value || placeholder}
-      </Text>
+      <MathParagraph
+        text={value || placeholder || ''}
+        style={{ fontSize: styles.body.fontSize, lineHeight: styles.body.lineHeight, color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: align }}
+        containerStyle={{ flex: 1 }}
+        isRTL={isRTL}
+      />
       <EditAffordance colors={colors} edited={edited} />
     </Pressable>
   );

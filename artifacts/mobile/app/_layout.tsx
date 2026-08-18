@@ -28,6 +28,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { hasSeenAppIntro } from '@/services/appIntro';
+import { identifyUser, initAnalytics, resetAnalyticsIdentity, trackScreen } from '@/services/analytics';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -59,10 +60,14 @@ function RootLayoutNav() {
 
     if (finishedBoot || authChanged) {
       if (signedIn) {
+        // Ties every subsequent event to this teacher — no-op if analytics
+        // is unconfigured, same as everything else in services/analytics.ts.
+        if (user) identifyUser(user.id, { role: user.role });
         router.replace('/(tabs)');
       } else if (finishedBoot) {
         // Cold boot, signed out: a brand-new install sees the product intro
         // once; a device that just signed out goes straight back to login.
+        if (authChanged) resetAnalyticsIdentity();
         hasSeenAppIntro().then(seen => {
           // '/onboarding' isn't in the generated typed-routes union until the
           // dev server regenerates it — same reason other routes in this app
@@ -70,6 +75,7 @@ function RootLayoutNav() {
           router.replace((seen ? '/(auth)/login' : '/onboarding') as any);
         });
       } else {
+        if (authChanged) resetAnalyticsIdentity();
         router.replace('/(auth)/login');
       }
     }
@@ -77,6 +83,12 @@ function RootLayoutNav() {
     wasLoading.current = false;
     wasSignedIn.current = signedIn;
   }, [user, isLoading, pathname]);
+
+  // One screen-view event per route change — covers every screen in the app
+  // (not just AI tools) without instrumenting each one individually.
+  useEffect(() => {
+    if (pathname) trackScreen(pathname);
+  }, [pathname]);
 
   return (
     <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
@@ -92,6 +104,7 @@ function RootLayoutNav() {
       <Stack.Screen name="ai-tools/quiz" options={{ headerShown: false }} />
       <Stack.Screen name="ai-tools/activity" options={{ headerShown: false }} />
       <Stack.Screen name="ai-tools/lesson-flow" options={{ headerShown: false }} />
+      <Stack.Screen name="admin/dashboard" options={{ headerShown: false }} />
       <Stack.Screen name="classes/index" options={{ headerShown: false }} />
       <Stack.Screen name="classes/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="evaluations/index" options={{ headerShown: false }} />
@@ -117,6 +130,10 @@ export default function RootLayout() {
     // non-iOS tab bar icons and in-app icons on Android / web.
     ...Ionicons.font,
   });
+
+  useEffect(() => {
+    initAnalytics();
+  }, []);
 
   useEffect(() => {
     if (fontsLoaded || fontError) {

@@ -15,6 +15,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { LessonPlanOutput } from '@/services/ai/AIService';
 import { EditableList, EditableText } from '@/components/ui/Editable';
+import { MathParagraph } from '@/components/ui/MathParagraph';
 
 type Colors = {
   foreground: string;
@@ -76,14 +77,12 @@ export function LessonPlanView({
         {plan[field].map((item, i) => (
           <View key={i} style={[styles.bulletRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <View style={[styles.bulletDot, { backgroundColor: accent }]} />
-            <Text
-              style={[
-                styles.bulletText,
-                { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: align },
-              ]}
-            >
-              {item}
-            </Text>
+            <MathParagraph
+              text={item}
+              style={{ fontSize: styles.bulletText.fontSize, lineHeight: styles.bulletText.lineHeight, color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: align }}
+              containerStyle={{ flex: 1 }}
+              isRTL={isRTL}
+            />
           </View>
         ))}
       </>
@@ -100,14 +99,11 @@ export function LessonPlanView({
         edited={edited.has(field as string)}
       />
     ) : (
-      <Text
-        style={[
-          styles.bodyText,
-          { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: align },
-        ]}
-      >
-        {String(plan[field] ?? '')}
-      </Text>
+      <MathParagraph
+        text={String(plan[field] ?? '')}
+        style={{ fontSize: styles.bodyText.fontSize, lineHeight: styles.bodyText.lineHeight, color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: align }}
+        isRTL={isRTL}
+      />
     );
 
   return (

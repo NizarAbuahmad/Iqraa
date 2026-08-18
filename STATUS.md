@@ -741,6 +741,192 @@ instance with real Postgres — confirmed a weak password is rejected on
 past the 10-attempt cap return `429` with `Retry-After`, confirmed
 `/forgot-password` blocks at 6 rapid requests.
 
+## Thumbs up/down feedback + admin dashboard, 2026-08-18
+
+Follow-up to the PostHog pass: asked for a way for teachers to say whether
+generated content was actually good, and an admin view to see it plus
+usage. Decided not to duplicate PostHog's own analytics UI in-house —
+that's already free and working. The split: **feedback** is real product
+data (own table, own admin API, since you'll want to query/filter it
+inside the app), **usage numbers** on the dashboard come from data
+already durably stored (materials saved, users, evaluations — real
+counts, no new event pipeline), with a link out to PostHog for the
+deeper screen-by-screen trace data it already captures.
+
+**New `feedback` table** (`lib/db/src/schema/feedback.ts`) — same
+conventions as `savedMaterials`: uuid id, `userId` FK cascading on
+delete, `materialType`/`toolId`/`rating`/`comment` as plain `text`
+columns (rating is `'up' | 'down'`, comment defaults to `''`, capped at
+2000 chars server-side against one runaway paste). Pushed live via
+`pnpm --filter @workspace/db run push`.
+
+**New `requireRole` middleware** (`middlewares/auth.ts`) — nothing like
+it existed before this; the only prior "admin" gate anywhere was
+`/healthz/errors`'s static `ADMIN_DEBUG_KEY` header check, not
+role-based. `authMiddleware` already re-fetches `role` fresh from the DB
+on every request (confirmed live: promoting a user's role mid-session
+and re-using their existing JWT immediately unlocked the admin routes,
+no re-login needed), so `requireRole(...roles)` just reads `req.user.role`
+— 401 with no token, 403 (not 404 — a signed-in non-admin knowing the
+route exists isn't worth hiding, unlike the debug-key route) if the role
+doesn't match.
+
+**New routes**: `POST /feedback` (any signed-in teacher), `GET /feedback`
+(admin-only, paginated, filterable by rating/materialType, joined with
+the submitter's name/email), `GET /admin/usage-summary` (admin-only —
+total users, total evaluations, saved materials grouped by type,
+feedback grouped by rating). Both files declare `authMiddleware`/
+`requireRole` per-route rather than a router-wide guard, since `POST
+/feedback` and `GET /feedback` need different permission levels in the
+same file.
+
+**`components/ui/FeedbackWidget.tsx`** — thumbs up/down plus an optional
+comment. Deliberately doesn't fire on tap: a bare thumb can't distinguish
+"wrong on purpose" from "wrong, here's why," and firing immediately would
+need either a second PATCH request to attach a comment afterward (an
+endpoint that doesn't otherwise need to exist) or losing the comment
+entirely. Tapping a thumb only selects it; one explicit Submit sends
+rating and comment together in a single row. Wired into the six
+generator screens that produce a result a teacher would judge —
+`lesson-plan.tsx` (covers `simplify` too, same screen), `worksheet.tsx`
+(covers `homework`), `quiz.tsx`, `activity.tsx`, `slides.tsx`,
+`lesson-flow.tsx`. There's no shared result-action component across
+these screens (confirmed by reading all six — each builds its own
+Save/Export row independently), so each got the widget added at its own
+existing `result && !loading` guard, next to `RelatedResourcesPanel`
+where that already exists.
+
+**`app/admin/dashboard.tsx`** — role-gated client-side (redirects/shows
+an "admins only" message for non-admins; the real enforcement is
+server-side, both admin routes 403 for anything but
+`school_admin`/`system_admin`), reachable from a new "Admin dashboard"
+row in Profile that only renders for those two roles. Shows the usage
+counts, a feedback list with rating filter chips and pagination, and a
+link out to PostHog for deep trace data.
+
+**Verified live, full stack, real Postgres**: registered a teacher via
+the API, submitted two feedback rows, confirmed `GET /feedback` and `GET
+/admin/usage-summary` both 403 for that teacher; promoted the same user
+to `school_admin` via SQL and confirmed both now return 200 with correct
+data using the *same* still-valid JWT (proving the fresh-role-lookup
+claim above, not just asserting it); loaded the admin dashboard in a
+real browser as that admin and confirmed the counts and both feedback
+rows render correctly with zero console errors. Separately, as a plain
+teacher, generated a real lesson plan through the actual UI (Tools tab →
+lesson plan → derivatives), tapped 👍 on the `FeedbackWidget`, added a
+comment, hit Send, watched the network panel show `POST /api/feedback →
+201`, saw the "🙏 شكرًا لملاحظتك" confirmation replace the widget, and
+confirmed that exact row showed up moments later in the admin feedback
+list. Typecheck clean; mobile suite unchanged at 427 tests (417 passing
++ 10 pre-existing skips — none of the touched files are in the test
+net); api-server suite at 87 (was 86; added a mount-order guard test for
+the two new routes).
+
+## Teacher-pilot usage analytics wired (PostHog), 2026-08-17
+
+Asked how to see what tools teachers actually use/visit/keep during
+testing. Hotjar and Microsoft Clarity were both ruled out before writing
+any code: they inject into a DOM, so they'd only ever see the Expo
+**web** build, not the native app most pilot teachers would install.
+PostHog's SDK covers native and web with one integration, so it's the
+one that can actually see the whole pilot, not just the web slice of it.
+
+New `services/analytics.ts` wraps `posthog-react-native` behind
+`initAnalytics`/`trackEvent`/`trackScreen`/`identifyUser`/
+`resetAnalyticsIdentity`. Disabled by default — with no
+`EXPO_PUBLIC_POSTHOG_API_KEY` every call is a silent no-op, same shape as
+Unsplash's "no server key" path a day earlier. The client loads lazily
+inside the functions that use it, never at module scope: `posthog-react-native`
+pulls in `react-native`, and importing it at module scope here would have
+made every file that imports this module (`workspace.ts`, `share.ts`,
+`exportPptx.ts`) untestable under plain `node --test` — the exact trap
+the OpenAI client hit (see "Things that have bitten before" at the top
+of this file).
+
+Instrumented at existing shared choke points rather than per-screen, so
+one fix covers every tool:
+- **Screens visited** — `app/_layout.tsx` fires `trackScreen(pathname)`
+  on every route change, one line covering the entire app, not just AI
+  tools.
+- **Tools opened** — `runToolAction` (Tools tab) and `handleToolSelect`
+  (chat's `+` menu) are the only two places a tool ever gets navigated
+  to; both now fire `tool_opened` with `{ toolId, source }`.
+- **Materials kept** — `saveItem` (`workspace.ts`) is what every tool's
+  Save button calls; fires `material_saved` once, keyed by
+  `payload.type`, regardless of which storage path (API vs local
+  fallback) actually lands it.
+- **Materials exported** — `exportAsPDF`/`exportAsWord` (`share.ts`) and
+  `exportDeckAsPptx` (`exportPptx.ts`) fire `material_exported` keyed by
+  format.
+- **Identity** — `identifyUser(user.id, { role })` on sign-in,
+  `resetAnalyticsIdentity()` on sign-out, both gated on the same
+  `authChanged`/`finishedBoot` transition the existing navigation effect
+  already computes. No email/name sent, by design.
+
+"Liked" has no dedicated event yet — there's no thumbs-up affordance in
+the product to hang it on. Save/export/re-open are the proxy signals
+this pass gives you; a real like/dislike signal would need a UI
+decision first, not just an analytics one.
+
+Verified live: registered a real user against local Postgres, confirmed
+`pnpm run typecheck` and the full mobile suite (427 tests, unchanged —
+none of the four touched files are in the test net) stay clean, then
+loaded the app in a real browser with analytics unconfigured (this
+repo's actual default `.env` state) and navigated multiple screens with
+zero console errors — the property that matters most: the app behaves
+identically whether or not a PostHog key is ever set. No PostHog project
+was available in this sandbox to verify an event actually lands
+server-side; that requires a real `EXPO_PUBLIC_POSTHOG_API_KEY` (free
+tier, 1M events/month) in a deployed environment.
+
+## Slides Maker: auto-fetched Unsplash photo per deck, 2026-08-17
+
+Every generated deck was text-only slide after text-only slide. Slides
+Maker now fetches one topic-relevant photo per deck and drops it in as a
+slide right after the title, using the existing `type: 'media'` slide
+shape (`buildMediaSlide`/`MediaView`) that Class Mode's manually-pasted
+image slides already render live — nothing new to build for the
+projector view.
+
+The Unsplash access key is server-side only: `GET /api/media/unsplash-photo`
+(new `media.ts`, mounted and auth-gated the same way as `/chat`,
+`/generate`, `/verify` — one shared key across every teacher, so an
+unauthenticated caller can't burn the whole app's rate limit) calls
+Unsplash's Search Photos endpoint, pings `download_location` per their
+API guidelines when a result is used, and always answers `200
+{ photo: null }` — never an error — when the key is unset, the query is
+empty, or nothing relevant comes back. The mobile client
+(`services/unsplashImage.ts`) never throws either. `slides.tsx` fires the
+lookup after the deck is already on screen (same non-blocking,
+identity-guarded pattern the verify-example pass already uses — a stale
+fetch landing after the teacher regenerated is a silent no-op, not a
+stomp), and `classMedia.ts` gained `insertImageAfterTitle` to splice the
+result in and renumber.
+
+PDF (`deckSlidesHtml.ts`) and PPTX (`exportPptx.ts`) export previously had
+no handling for `type: 'media'` slides at all — they'd have fallen
+through to the generic text-only renderer and silently dropped the image
+from anything exported. Both gained an image-slide renderer (`<img>` for
+HTML, `addImage` for pptxgenjs) so the photo survives into both exports,
+not just the live projector.
+
+Verified live: registered a real test user against local Postgres,
+confirmed `GET /api/media/unsplash-photo` returns `401` unauthenticated
+and `200 { photo: null }` authenticated-but-unconfigured (this repo's
+actual default `.env` state — no `UNSPLASH_ACCESS_KEY` set) — the
+critical property is that a deck generates and displays identically
+whether or not the key is ever configured. No real Unsplash key was
+available in this sandbox to verify the photo-present path live; that
+path is covered by unit tests instead — `insertImageAfterTitle`'s
+splicing/renumbering, and the PDF exporter's `<img>` rendering for an
+image media slide (with a video media slide pinned to keep falling back
+to text, since there's no `<img>` to render there). The PPTX exporter's
+`addImage` call has no dedicated test — same as `exportPptx.ts`'s
+existing coverage gap, since pptxgenjs isn't mocked in this suite — and
+was checked by typecheck + code review only. 427 mobile tests (417
+passing + 10 pre-existing skips) / 86 api-server tests passing, monorepo
+typecheck clean.
+
 ## App icon reported washed-out on a real device, 2026-08-16
 
 A teacher's home screen showed the Iqra icon nearly invisible (white on
@@ -760,6 +946,55 @@ SDK/device/EAS credentials here). If the teacher's install predates the
 icon work merged 2026-08-13 (`STATUS.md`'s "Logo, flag, installability"
 entry), a stale build is the more likely cause than a rendering bug, and
 no code change fixes that short of reinstalling from a current build.
+
+## Math rendering extended to worksheet, quiz, lesson plan, and chat, 2026-08-16
+
+The math renderer built for the projector (`mathRender.ts`/`MathText`)
+was wired into exactly two places: the presenter and Slides Maker's PDF
+export. Everywhere else a teacher sees generated content — worksheet
+questions, quiz options/answers, lesson-plan sections, chat replies —
+still showed `x^2` and `3/4` as typed-looking flat strings.
+
+New `components/ui/MathParagraph.tsx` is a drop-in replacement for
+`<Text style={style}>{text}</Text>`: splits on `\n` (a no-op for
+single-line content) and renders each line through the same
+MathText/`hasRenderableMath` decision the projector already uses — a
+line the parser doesn't recognise renders exactly as the plain `Text`
+did, so prose is never at risk. Its `alignItems` wrapper keeps a bare
+equation with no Arabic lead-in on the correct margin regardless of
+MathText's own per-line reading-order heuristic, which only governs
+word order *within* a mixed prose+equation line.
+
+One shared fix does most of the work: `EditableText`'s read branch in
+`Editable.tsx` is what quiz.tsx (question text, options, answers,
+explanations), `LessonPlanView.tsx`'s editable path (used by both
+`lesson-plan.tsx` and chat's lesson-plan bubbles), and any other
+`EditableText` consumer all render through — fixing it once fixed all
+of them. `LessonPlanView.tsx`'s read-only fallback (reachable if a
+future caller omits `onEdit`) got the same treatment for consistency.
+`worksheet.tsx` has no shared component to lean on, so its question
+text, options, and answer-key entries were edited directly. Chat's
+generic message-bubble loop (`iqra.tsx`) already splits on `\n` with
+lightweight bold/bullet markdown handling — the plain-line fallback
+and math-only bullets (no `**bold**` spans) now route through
+`MathParagraph`; a bullet mixing bold and math falls back to the
+existing inline-text rendering, since MathText's View-based layout
+can't nest inside a `Text` run the way inline bold spans do.
+
+Verified live: worksheet's answer key showed a real overlined radical
+(`x = 2 ± √3`) where the string was a bare `√3` — definitive proof the
+renderer is active, not just theoretically wired, since a plain-Unicode
+`√` has no built-in vinculum. Chat walked through a full multi-turn
+"explain الاشتقاق" exchange (clarifying questions, subject picker,
+final explanation with `d/dx(xⁿ) = nxⁿ⁻¹`-style bullets) with zero
+console errors and no visual regressions. Most existing curriculum and
+mock-generated content already uses pre-formatted Unicode superscripts
+(`²`, `³`, `ⁿ`) rather than caret notation, so the renderer stays
+correctly inactive there — its clearest wins are fractions, roots, and
+anywhere `^`-notation genuinely appears (e.g. `prettifySymPy`'d
+verifier output). 423 mobile tests (413 passing + 10 pre-existing
+skips, unchanged — `MathParagraph` has no dedicated test file, same as
+`MathText`; verified live instead), monorepo typecheck clean.
 
 ## Fixed 2026-08-16 — Slides Maker's PDF export ignored the actual deck; added real PPTX
 

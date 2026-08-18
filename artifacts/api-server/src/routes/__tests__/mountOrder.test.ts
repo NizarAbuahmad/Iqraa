@@ -124,6 +124,27 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     }
   });
 
+  it("guards the Unsplash lookup route", async () => {
+    // Shares one server-side access key across every teacher — an
+    // unauthenticated caller could otherwise exhaust the app's whole rate limit.
+    const res = await fetch(`${base}/media/unsplash-photo?query=math`);
+    assert.equal(res.status, 401);
+  });
+
+  it("guards feedback and admin-usage-summary routes", async () => {
+    const postRes = await fetch(`${base}/feedback`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}",
+    });
+    assert.equal(postRes.status, 401, "POST /feedback must require a token");
+
+    for (const route of ["/feedback", "/admin/usage-summary"]) {
+      const res = await fetch(`${base}${route}`);
+      assert.equal(res.status, 401, `${route} must require a token`);
+    }
+  });
+
   it("answers unknown paths with 404, not with another router's 401", async () => {
     // The tell for the original bug: a path no router owns came back 401,
     // because a root-mounted guard replied before routing finished.

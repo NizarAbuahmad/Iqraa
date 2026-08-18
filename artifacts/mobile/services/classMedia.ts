@@ -103,6 +103,24 @@ export function buildMediaSlide(
 }
 
 /**
+ * Insert a media slide right after the title slide (index 0) and renumber.
+ * Used to drop an auto-fetched topic photo into a freshly built deck — after
+ * the title so the deck opens on the lesson name, not a stock photo, but
+ * before anything the teacher would rather see first.
+ */
+export function insertImageAfterTitle(
+  slides: readonly ActivitySlide[],
+  url: string,
+  caption: string,
+  isAr: boolean,
+): ActivitySlide[] {
+  if (slides.length === 0) return [...slides];
+  const [titleSlide, ...rest] = slides;
+  const imageSlide = buildMediaSlide('image', url, caption, isAr, 0);
+  return [titleSlide, imageSlide, ...rest].map((s, i) => ({ ...s, slideNumber: i + 1 }));
+}
+
+/**
  * Pull plottable expressions out of lesson text so the graph slide opens on
  * something real. Conservative on purpose: only well-formed function
  * definitions (f(x)=…) and simple y=… equations, so we never feed GeoGebra

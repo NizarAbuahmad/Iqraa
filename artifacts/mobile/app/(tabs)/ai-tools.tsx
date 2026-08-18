@@ -9,6 +9,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { DEMO_MODE } from '@/services/ai/demoMode';
 import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
 import { openGeogebraGraphing } from '@/services/geogebra';
+import { trackEvent } from '@/services/analytics';
 import { getPickerSubjects } from '@/services/curriculumData';
 import { loadLessonPick } from '@/services/lessonContext';
 import {
@@ -22,6 +23,7 @@ import {
 
 async function runToolAction(tool: ToolDef) {
   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  trackEvent('tool_opened', { toolId: tool.id, source: 'tools_tab' });
   if (tool.externalAction === 'geogebra-graphing') {
     await openGeogebraGraphing();
     return;

@@ -44,6 +44,7 @@ import { Button } from '@/components/ui/Button';
 import { saveItem } from '@/services/workspace';
 import { Toast } from '@/components/ui/Toast';
 import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
+import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
 import { buildLessonFlowHTML, exportAsPDF } from '@/services/share';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -534,6 +535,8 @@ export default function LessonFlowScreen() {
             </Pressable>
           </View>
         )}
+
+        {isDone && <FeedbackWidget materialType="flow" toolId="lesson-flow" />}
       </ScrollView>
 
       <Toast

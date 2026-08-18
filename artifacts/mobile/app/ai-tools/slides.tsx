@@ -21,6 +21,7 @@ import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { Button } from '@/components/ui/Button';
 import { Toast } from '@/components/ui/Toast';
 import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
+import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import type { ClassroomActivity, LessonPlanOutput } from '@/services/ai/AIService';
 import { buildGeneratorContext, resolveGeneratorGrounding } from '@/services/kbContext';
@@ -223,6 +224,30 @@ export default function SlidesScreen() {
           setVerifyDone(true);
         } catch {
           // Verification is a bonus, never a failure state for the deck.
+        }
+      })();
+
+      // A topic-relevant photo, fetched after the deck is already usable —
+      // never blocks generation, and silently does nothing when no server
+      // key is configured or nothing relevant turns up.
+      void (async () => {
+        try {
+          const { searchDeckPhoto } = await import('@/services/unsplashImage');
+          const { insertImageAfterTitle } = await import('@/services/classMedia');
+          const query = `${subjects[subjectIdx].name} education`;
+          const photo = await searchDeckPhoto(query);
+          if (!photo) return;
+          const caption = isAr
+            ? `📷 ${photo.photographer} · Unsplash`
+            : `📷 Photo by ${photo.photographer} on Unsplash`;
+          setDeck(cur => {
+            // Guard against a stale fetch landing on a deck the teacher has
+            // since regenerated — same identity check the verify pass uses.
+            if (!cur || cur.slides[0] !== built.slides[0]) return cur;
+            return { ...cur, slides: insertImageAfterTitle(cur.slides, photo.url, caption, isAr) };
+          });
+        } catch {
+          // A missing photo is a normal outcome, never a failure state for the deck.
         }
       })();
     } finally {
@@ -521,6 +546,8 @@ export default function SlidesScreen() {
             </View>
           </View>
         )}
+
+        {deck && !loading && <FeedbackWidget materialType="slides" toolId="slides" />}
       </ScrollView>
 
       {/* Per-slide editor */}

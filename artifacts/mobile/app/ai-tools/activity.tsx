@@ -20,6 +20,7 @@ import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
 import { RelatedResourcesPanel } from '@/components/ui/RelatedResourcesPanel';
+import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
 import {
   buildActivityHTML,
   buildActivitySlidesHTML,
@@ -338,7 +339,10 @@ export default function ActivityScreen() {
       {result && <ActivityResult activity={result} colors={colors} isRTL={isRTL} t={t} lang={lang} />}
 
       {result && !loading && (
-        <RelatedResourcesPanel toolId="activity" topic={topic.trim()} isRTL={isRTL} />
+        <>
+          <FeedbackWidget materialType="activity" toolId="activity" />
+          <RelatedResourcesPanel toolId="activity" topic={topic.trim()} isRTL={isRTL} />
+        </>
       )}
 
       {/* Actions */}
