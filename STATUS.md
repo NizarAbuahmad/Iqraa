@@ -741,6 +741,69 @@ instance with real Postgres — confirmed a weak password is rejected on
 past the 10-attempt cap return `429` with `Retry-After`, confirmed
 `/forgot-password` blocks at 6 rapid requests.
 
+## Tool catalog narrowed to five for the pilot, 2026-08-18
+
+Audited all 14 tools and tiered them, then parked everything outside the
+core. What a teacher is now offered, on both surfaces:
+
+**slides · lesson-plan · worksheet · quiz · evaluations**
+
+Parked (kept, not deleted): `simplify`, `lesson-flow`, `game`,
+`activity`, `geogebra`, `classroom`, `lesson-media`, `homework`,
+`parent-msg`.
+
+**Why these five.** Slides Maker is the only tool that is genuinely
+differentiated — built from the curriculum book, SymPy-verified worked
+examples, projected live; the rest generate text a generic model could
+produce. Lesson plan and worksheet are the bread-and-butter artifacts.
+Quiz and evaluations are assessment, and evaluations is the largest
+non-slides feature in the codebase (author → answers → results, all
+DB-backed). Everything else was either a duplicate entry point, a
+mislabelled tool, or a second-order convenience.
+
+**The audit findings behind the parking**, worth keeping because they
+are still true and will need deciding eventually:
+- `simplify` is not a tool. It routes to `lesson-plan` with a flag,
+  produces the identical `LessonPlanOutput`, and its description promises
+  "examples and misconceptions" that do not exist in that type.
+- `activity`'s description is **backwards**. It says "an in-class
+  experience… not a printable worksheet"; the code generates a printable
+  PDF/Word document with no live-presentation capability at all.
+  Meanwhile `classroom`'s description ("live experiences on screen") is
+  the one that actually fits `activity`'s claim.
+- `slides`, `game` and `classroom` all build a `ClassroomActivity` and
+  land on the same presenter — three doors to one room. Deliberately not
+  resolved: PostHog is now instrumented, so which door teachers actually
+  use is a question answerable with evidence in a few weeks rather than
+  guessed today.
+- `lesson-media` routes to `/home`, a legacy dashboard that *also*
+  re-exposes six other tools through a second, undocumented navigation
+  path.
+
+**Two catalogs, not one — the trap this pass had to avoid.**
+`toolCatalog.ts` drives the tools tab and the chat "+" menu, but
+`homeAiTools.ts` is a separate list driving the "قد يفيدك أيضاً"
+related-tools panel, the hero chips and Smart Templates — and it
+referenced `simplify`, `activity` and `homework` independently. Hiding in
+`toolCatalog.ts` alone would have left a teacher generating a lesson plan
+and being offered parked tools immediately afterwards. Both are now
+filtered: a `hidden` flag whose filtering happens at the export boundary
+in `toolCatalog.ts` (so neither screen needed editing and neither can
+drift), and `enabled: false` in `homeAiTools.ts`, which the existing
+`isToolEnabled` filters already respected. `PROMPT_CHIPS` still lists
+`simplify` but has no consumers anywhere — dead code, left alone.
+
+Nothing was deleted: routes still resolve, so saved materials and deep
+links keep working, and unparking a tool is deleting one line.
+
+Verified live on both surfaces and the related panel: the tools tab and
+chat menu each render exactly the five, and the panel after a lesson-plan
+generation dropped from five suggestions to the two pilot tools that
+remain. New `toolCatalog.test.ts` pins the visible set and asserts no
+parked tool can reach either menu — the failure mode is easy to
+reintroduce, since adding a tool to those arrays is how you add one at
+all. 440 mobile tests, typecheck clean.
+
 ## Exports now print in the app's own typefaces, 2026-08-18
 
 Last item from the "theme, design, font" list: PDF and PPTX both rendered
