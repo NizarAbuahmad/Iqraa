@@ -30,7 +30,12 @@ services:
     name: iqraa-api
     runtime: node
     plan: free
-    buildCommand: corepack enable && corepack prepare pnpm@11.18.0 --activate && pnpm install --frozen-lockfile && pnpm --filter @workspace/api-server run build
+    # `--filter @workspace/api-server...` (trailing dots = "and its workspace
+    # dependencies") installs 5 of the 11 projects instead of all of them. The
+    # unfiltered form pulled the entire Expo/React Native/pptxgenjs tree —
+    # ~665MB of node_modules the API never imports — into a free-tier builder,
+    # which is slow and a plausible OOM/timeout source on a constrained box.
+    buildCommand: corepack enable && corepack prepare pnpm@11.18.0 --activate && pnpm install --frozen-lockfile --filter @workspace/api-server... && pnpm --filter @workspace/api-server run build
     startCommand: pnpm --filter @workspace/api-server run start
     healthCheckPath: /api/healthz
     envVars:
