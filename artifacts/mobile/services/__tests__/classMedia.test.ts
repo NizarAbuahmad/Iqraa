@@ -16,10 +16,12 @@ import assert from 'node:assert/strict';
 
 import {
   attachBackgroundImage,
+  buildMediaSlide,
   classifyMediaUrl,
   deckPhotoQueries,
   extractGraphCommands,
   geogebraCommandUrl,
+  insertVideoSlide,
   isLikelyImageUrl,
   youtubeEmbedUrl,
   youtubeIdFrom,
@@ -143,5 +145,29 @@ describe('deckPhotoQueries', () => {
     assert.match(title, /Islamic Studies/);
     assert.match(divider, /Islamic Studies/);
     assert.notEqual(title, divider);
+  });
+});
+
+describe('insertVideoSlide', () => {
+  const intro: ActivitySlide = { slideNumber: 1, type: 'intro', title: 'مقدمة', content: '', durationSeconds: 0 };
+  const rule: ActivitySlide = { slideNumber: 2, type: 'intro', title: 'القاعدة', content: '', durationSeconds: 0 };
+  const example: ActivitySlide = { slideNumber: 3, type: 'challenge', title: 'مثال 1', content: '', durationSeconds: 60 };
+  const summary: ActivitySlide = { slideNumber: 4, type: 'summary', title: 'ملخص', content: '', durationSeconds: 0 };
+  const video = buildMediaSlide('video', 'https://youtube.com/watch?v=abc', 'caption', true, 0);
+
+  it('inserts right before the first worked example when one exists', () => {
+    const out = insertVideoSlide([intro, rule, example, summary], video);
+    assert.deepEqual(out.map(s => s.type), ['intro', 'intro', 'media', 'challenge', 'summary']);
+    assert.deepEqual(out.map(s => s.slideNumber), [1, 2, 3, 4, 5]);
+  });
+
+  it('falls back to right before the summary when there are no examples', () => {
+    const out = insertVideoSlide([intro, rule, summary], video);
+    assert.deepEqual(out.map(s => s.type), ['intro', 'intro', 'media', 'summary']);
+  });
+
+  it('appends at the end when there is neither an example nor a summary', () => {
+    const out = insertVideoSlide([intro, rule], video);
+    assert.deepEqual(out.map(s => s.type), ['intro', 'intro', 'media']);
   });
 });

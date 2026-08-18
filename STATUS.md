@@ -741,6 +741,71 @@ instance with real Postgres — confirmed a weak password is rejected on
 past the 10-attempt cap return `429` with `Retry-After`, confirmed
 `/forgot-password` blocks at 6 rapid requests.
 
+## Slides Maker: auto-found explainer video per lesson, 2026-08-18
+
+Asked about integrating chat.z.ai for slide video. Steered away from it
+deliberately: their relevant model (CogVideoX) *generates* synthetic
+video from a prompt, with no way to fact-check the result. For math and
+chemistry, a generated video could show a wrong derivative or a
+mislabeled diagram with total confidence, and unlike the SymPy-verified
+answer keys there is no mechanism to catch it — the opposite of this
+product's whole verification posture. It is also metered, not free, at
+any real scale.
+
+Built the honest version instead: search for a **real, existing** video
+(YouTube Data API) rather than generating one. Free quota is 10,000
+units/day (~100 searches), and most of the plumbing already existed —
+`ActivitySlide` has had `mediaKind: 'video'` with YouTube-embed support
+since Class Mode's teacher-pasted videos, so this is an automatic
+*search* wired into deck generation, not new video infrastructure.
+
+`GET /api/media/youtube-video` (new, in the same `media.ts` as the
+Unsplash route, and covered by the same `/media` auth guard) searches
+with `safeSearch=strict` (non-negotiable for a K-12 app),
+`videoEmbeddable=true` (a match the app cannot play is useless),
+`videoDuration=medium` (4-20 min — a real explainer, not a full recorded
+lecture), and `relevanceLanguage` from the client. Unset `YOUTUBE_API_KEY`
+answers `200 { video: null }`, same never-an-error shape as Unsplash.
+
+`slides.tsx` now fetches all three pieces of external media in one
+`Promise.all` and applies them in a single state update, so they share
+one staleness guard instead of racing each other. The video query uses
+the **lesson topic**, not the subject — a generic "mathematics" video is
+no use mid-lesson, where the point is explaining *this* concept.
+`classMedia.ts`'s new `insertVideoSlide` places it right before the first
+worked example (concept met, about to attempt problems), falling back to
+before the summary, then the end. The caption names the channel and says
+plainly that this is outside material the teacher should preview —
+nothing here is curriculum-grounded or verified, and the deck should not
+imply otherwise.
+
+Exports can't play video, so both degrade to a real link rather than
+faking a player or dropping the slide: the PDF prints a clickable anchor
+**and** the bare URL (a printed page can't be clicked), and the PPTX uses
+a genuine `hyperlink` run — chosen over PowerPoint's online-video embed,
+which depends on a player shim that varies by version and commonly fails
+offline or on mobile, i.e. an inert box in front of a class.
+
+Also fixed a doubled emoji this surfaced: `buildMediaSlide` put "🎬" in
+the slide title while every renderer prepends its own type emoji, so
+media slides read "🎬  🎬 فيديو". Pre-existing for teacher-pasted media,
+but newly visible on every generated deck.
+
+**Verified live against a mock YouTube API** (the sandbox's egress policy
+blocks `googleapis.com`/`unsplash.com`/`onrender.com` outright — confirmed
+via the proxy status endpoint, not assumed): asserted on the query
+parameters this server actually put on the wire — `safeSearch=strict`,
+`videoEmbeddable=true`, `videoDuration=medium`, `relevanceLanguage=ar`,
+Arabic query correctly percent-encoded — rather than trusting the code
+read correct. Then generated a real deck through the UI: 19 slides became
+20, the video landed at 13/20 exactly before "مثال 1" as designed, and
+the live presenter rendered a real `youtube-nocookie.com/embed/...`
+iframe. One earlier run showed the fallback "افتح الوسائط" button instead
+of the embed — traced to the mock returning a 9-character video id where
+`youtubeIdFrom`'s regex correctly requires YouTube's real 11, i.e. a
+defect in the test double, not the app. 436 mobile tests / 88 api-server
+tests passing, monorepo typecheck clean.
+
 ## Fixed 2026-08-18 — deck hero photos silently missing from PDF/PPTX exports
 
 Reported after setting a real `UNSPLASH_ACCESS_KEY` in production: the

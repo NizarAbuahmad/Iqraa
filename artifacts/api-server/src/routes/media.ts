@@ -1,9 +1,10 @@
 /**
- * Stock-photo lookup for the deck builder — a free, appropriately licensed
- * image so a generated deck isn't all text. Proxied through here rather than
- * called from the mobile client directly so the Unsplash access key never
- * ships in the client bundle and the whole app shares one rate limit instead
- * of every device burning its own.
+ * External-media lookups for the deck builder — a free, appropriately
+ * licensed photo (Unsplash) and a real existing explainer video (YouTube
+ * search, not generated) so a deck isn't all text. Both proxied through here
+ * rather than called from the mobile client directly, so the access keys
+ * never ship in the client bundle and the whole app shares one rate limit
+ * instead of every device burning its own.
  */
 import { Router } from "express";
 import { logger } from "../lib/logger";
@@ -11,6 +12,7 @@ import { logger } from "../lib/logger";
 const mediaRouter = Router();
 
 const UNSPLASH_SEARCH_URL = "https://api.unsplash.com/search/photos";
+const YOUTUBE_SEARCH_URL = "https://www.googleapis.com/youtube/v3/search";
 
 interface UnsplashSearchResponse {
   results?: Array<{
@@ -76,6 +78,63 @@ mediaRouter.get("/media/unsplash-photo", async (req, res) => {
   } catch (err) {
     logger.error({ err }, "unsplash-photo lookup failed");
     res.json({ photo: null });
+  }
+});
+
+interface YouTubeSearchResponse {
+  items?: Array<{
+    id: { videoId: string };
+    snippet: { title: string; channelTitle: string };
+  }>;
+}
+
+mediaRouter.get("/media/youtube-video", async (req, res) => {
+  const apiKey = process.env.YOUTUBE_API_KEY;
+  if (!apiKey) {
+    // Unconfigured is a normal deployment state, not an error — the deck
+    // builder treats a null video as "skip the video slide".
+    res.json({ video: null });
+    return;
+  }
+
+  const query = String(req.query.query ?? "").trim().slice(0, 150);
+  if (!query) {
+    res.json({ video: null });
+    return;
+  }
+  const lang = req.query.lang === "ar" ? "ar" : "en";
+
+  try {
+    const url = `${YOUTUBE_SEARCH_URL}?part=snippet&type=video&maxResults=1`
+      + `&q=${encodeURIComponent(query)}&key=${apiKey}`
+      // safeSearch=strict: this is a K-12 classroom app, not optional.
+      // videoEmbeddable: a match the app can't actually play is useless.
+      // videoDuration=medium: 4-20 min — long enough to be a real explainer,
+      // short enough to not be a full recorded lecture or multi-hour stream.
+      + `&safeSearch=strict&videoEmbeddable=true&videoDuration=medium&relevanceLanguage=${lang}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      res.json({ video: null });
+      return;
+    }
+    const data = (await response.json()) as YouTubeSearchResponse;
+    const result = data.items?.[0];
+    if (!result) {
+      res.json({ video: null });
+      return;
+    }
+
+    res.json({
+      video: {
+        videoId: result.id.videoId,
+        title: result.snippet.title,
+        channelTitle: result.snippet.channelTitle,
+        url: `https://www.youtube.com/watch?v=${result.id.videoId}`,
+      },
+    });
+  } catch (err) {
+    logger.error({ err }, "youtube-video lookup failed");
+    res.json({ video: null });
   }
 });
 
