@@ -424,7 +424,13 @@ function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
             key={i}
             style={[
               isEquation ? slideStyles.equation : slideStyles.bodyLine,
-              { textAlign: isRTL ? 'right' : 'left', fontFamily: isEquation ? 'Cairo_700Bold' : 'Almarai_400Regular' },
+              {
+                // Media slides centre their content: the image/player below is
+                // itself centred and width-capped, so a margin-aligned caption
+                // floats away from the thing it describes.
+                textAlign: slide.type === 'media' ? 'center' : isRTL ? 'right' : 'left',
+                fontFamily: isEquation ? 'Cairo_700Bold' : 'Almarai_400Regular',
+              },
             ]}
           >
             {line}
@@ -995,7 +1001,13 @@ const mediaStyles = StyleSheet.create({
   emptyHint: { fontSize: 14, color: TEXT_MUTED, lineHeight: 22 },
   frame: {
     width: '100%',
-    height: 460,
+    // 16:9, not a fixed height: a YouTube embed letterboxes itself inside
+    // whatever box it is given, so a fixed 460px on a wide projector left a
+    // band of dead black under the video. maxWidth keeps it from growing
+    // taller than the slide area on very wide screens.
+    maxWidth: 900,
+    aspectRatio: 16 / 9,
+    alignSelf: 'center',
     borderRadius: 14,
     overflow: 'hidden',
     backgroundColor: '#fff',

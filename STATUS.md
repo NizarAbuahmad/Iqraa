@@ -741,6 +741,47 @@ instance with real Postgres — confirmed a weak password is rejected on
 past the 10-attempt cap return `429` with `Retry-After`, confirmed
 `/forgot-password` blocks at 6 rapid requests.
 
+## Video slide polish after seeing it live, 2026-08-18
+
+The YouTube integration went live with a real API key and worked first
+try — an Arabic تنجيهي explainer for الاشتقاق, correctly placed at 13/20
+right before the worked examples. Two presentation problems were only
+visible once a real embed was on screen:
+
+**The caption said everything twice.** It was one string —
+`{title} — {channel} (فيديو خارجي، راجعه قبل العرض)` — printed above a
+player that already displays the title and channel in its own chrome.
+The fix is not to shorten it: `mediaCaption` is what the PDF and PPTX
+exports print, and they have no player to read a title off, so dropping
+the title there would lose the only record of *which* video it is. So
+the two fields now do two jobs — `mediaCaption` keeps `{title} —
+{channel}` for the exports, `content` carries just the preview warning
+for the presenter. Both exports render `content` as an extra note line
+so the warning survives there too; before the split it rode along inside
+`mediaCaption`, and dropping it silently would have been a regression.
+
+**The player letterboxed itself.** `mediaStyles.frame` was `width: 100%,
+height: 460` — a fixed height regardless of width, so a 16:9 embed on a
+wide projector fit itself to the width and left a band of dead black
+underneath. Now `aspectRatio: 16/9` with `maxWidth: 900` and
+`alignSelf: center`. Measured on a 1600px viewport: 898×504, ratio
+**1.781** against 16:9's 1.778.
+
+That change then exposed a third thing it had been hiding: with the
+player narrowed and centred, the RTL-margin-aligned caption floated off
+to the far right, disconnected from the thing it describes. Media slides
+now centre their content lines, so badge, caption and player share one
+axis.
+
+Verified live end to end on a wide viewport against the mock search API,
+measuring the real bounding boxes rather than eyeballing: caption block
+centred on x≈800, iframe centred at 351+898/2 = 800. The grey placeholder
+inside the frame during this check is YouTube being unreachable from this
+sandbox (egress policy), not a rendering fault — the box geometry was the
+thing under test. 436 mobile / 88 api-server tests pass; the PDF video
+test now pins both fields separately so a future re-merge of the caption
+fails loudly.
+
 ## Slides Maker: auto-found explainer video per lesson, 2026-08-18
 
 Asked about integrating chat.z.ai for slide video. Steered away from it

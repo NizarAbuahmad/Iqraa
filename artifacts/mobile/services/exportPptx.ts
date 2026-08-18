@@ -221,6 +221,11 @@ export async function exportDeckAsPptx(
       s.addText(slide.mediaUrl, {
         x: 1.2, y: 3.6, w: 7.6, h: 0.4, align: 'center', fontSize: 9, color: DECK_MUTED,
       });
+      if (slide.content) {
+        s.addText(slide.content, {
+          x: 1.2, y: 4.05, w: 7.6, h: 0.4, align: 'center', fontSize: 10, color: DECK_MUTED,
+        });
+      }
       continue;
     }
 

@@ -269,13 +269,25 @@ export default function SlidesScreen() {
               slides = attachBackgroundImage(slides, dividerIdx, dividerPhoto.url, captionFor(dividerPhoto.photographer));
             }
             if (video) {
-              // Names the channel and flags it as outside material: this is a
-              // search result, not curriculum-grounded content the app stands
-              // behind, and the teacher is the one who has to preview it.
-              const caption = isAr
-                ? `${video.title} — ${video.channelTitle} (فيديو خارجي، راجعه قبل العرض)`
-                : `${video.title} — ${video.channelTitle} (external video, preview before class)`;
-              slides = insertVideoSlide(slides, buildMediaSlide('video', video.url, caption, isAr, 0));
+              // Two different jobs, so two different fields. `mediaCaption`
+              // says what the video IS — the exports have no player to read a
+              // title off, so they need it. `content` is the line shown above
+              // the embed in the presenter, where repeating the title and
+              // channel just duplicates YouTube's own chrome; there it only
+              // needs to carry the warning. Either way the deck says plainly
+              // that this is a search result, not curriculum-grounded content
+              // the app stands behind — the teacher has to preview it.
+              const videoSlide = buildMediaSlide(
+                'video',
+                video.url,
+                `${video.title} — ${video.channelTitle}`,
+                isAr,
+                0,
+              );
+              slides = insertVideoSlide(slides, {
+                ...videoSlide,
+                content: isAr ? 'فيديو خارجي — راجعه قبل العرض' : 'External video — preview before class',
+              });
             }
             return { ...cur, slides };
           });

@@ -170,6 +170,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
         ${slide.mediaCaption ? `<div class="deck-video-title">${esc(slide.mediaCaption)}</div>` : ''}
         <a class="deck-video-link" style="border-color:${accent}66;color:${accent}" href="${esc(url)}">▶ ${L('شاهد الفيديو', 'Watch the video')}</a>
         <div class="deck-video-url">${esc(url)}</div>
+        ${slide.content ? `<div class="deck-video-note">${esc(slide.content)}</div>` : ''}
       </div>
       ${footer(num)}</div>`;
   };
@@ -240,6 +241,7 @@ body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','
 .deck-video-title { font-size:15px; color:${DECK_TEXT}; max-width:520px; line-height:1.6; margin-bottom:20px; }
 .deck-video-link { display:inline-block; border:1.5px solid; border-radius:10px; padding:10px 22px; font-size:15px; font-weight:700; text-decoration:none; }
 .deck-video-url { font-size:10px; color:${DECK_MUTED}; margin-top:14px; word-break:break-all; max-width:420px; }
+.deck-video-note { font-size:11px; color:${DECK_MUTED}; margin-top:12px; }
 .deck-footer { position:relative; z-index:2; height:30px; border-top:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:space-between; padding:0 32px; flex-shrink:0; }
 .deck-footer span { font-size:9px; color:${DECK_MUTED}; }
 ${MATH_HTML_STYLES}

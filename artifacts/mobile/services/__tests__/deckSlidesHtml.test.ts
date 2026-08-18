@@ -131,15 +131,19 @@ describe('buildDeckSlidesHTML — media slide', () => {
     const html = buildDeckSlidesHTML(deck([
       titleSlide,
       {
-        slideNumber: 2, type: 'media', title: '🎬 فيديو', content: 'شاهدوا هذا',
+        slideNumber: 2, type: 'media', title: 'فيديو', content: 'فيديو خارجي — راجعه قبل العرض',
         mediaKind: 'video', mediaUrl: 'https://youtu.be/dQw4w9WgXcQ',
         mediaCaption: 'شرح الاشتقاق — قناة الرياضيات', durationSeconds: 0,
       },
     ]), true);
     assert.doesNotMatch(html, /<img/);
     assert.match(html, /<a class="deck-video-link"[^>]*href="https:\/\/youtu\.be\/dQw4w9WgXcQ"/);
-    assert.match(html, /شرح الاشتقاق — قناة الرياضيات/);
     assert.match(html, /شاهد الفيديو/);
+    // The export has no player to read a title off, so mediaCaption (what the
+    // video IS) and content (the preview warning) must BOTH survive — the
+    // presenter can drop the title because the embed shows it, this can't.
+    assert.match(html, /شرح الاشتقاق — قناة الرياضيات/);
+    assert.match(html, /deck-video-note">فيديو خارجي — راجعه قبل العرض/);
     // The bare URL prints too, for the paper case where a link can't be clicked.
     assert.match(html, /deck-video-url">https:\/\/youtu\.be\/dQw4w9WgXcQ/);
   });
