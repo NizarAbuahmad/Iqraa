@@ -153,7 +153,12 @@ export default function SlidesScreen() {
       let lessonPlan: LessonPlanOutput | null = null;
       try {
         lessonPlan = await aiService.generateLessonPlan({
-          grade: grades[gradeIdx].name,
+          // Localised: this string is carried into generated content verbatim —
+          // the Arabic worksheet header printed «الصف: Grade 10». `grade` is never
+          // compared anywhere, only displayed and passed through, so translating it
+          // is safe. `subject` is deliberately left in English: it feeds
+          // isMathContext and ~30 other call sites.
+          grade: isAr ? grades[gradeIdx]!.nameAr : grades[gradeIdx]!.name,
           subject: subjects[subjectIdx].name,
           topic: trimmed,
           language: isAr ? 'arabic' : 'english',

@@ -3,6 +3,7 @@
  * Handles: plain-text share, clipboard copy, PDF (expo-print), Word (.docx).
  */
 
+import { classifyDocLines, docLineText } from './docxOutline.ts';
 import { Platform, Share } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import * as Print from 'expo-print';
@@ -1278,48 +1279,43 @@ export async function exportAsWord(
 
   const align = isAr ? AlignmentType.RIGHT : AlignmentType.LEFT;
   const lines = text.split('\n');
+  const kinds = classifyDocLines(lines);
 
-  const children = lines.map(line => {
-    const trimmed = line.trim();
-    if (!trimmed) return new Paragraph({ children: [new TextRun('')] });
+  const children = lines.map((line, i) => {
+    const kind = kinds[i]!;
+    const content = docLineText(line, kind);
 
-    // Section headings (all-caps lines with dash-underline next)
-    const isHeading = /^[═─]{5,}$/.test(trimmed);
-    if (isHeading) return new Paragraph({ children: [new TextRun({ text: '', break: 1 })] });
-
-    const isSectionHeader = trimmed === trimmed.toUpperCase() && trimmed.length > 3 && !/^[•○]/.test(trimmed) && !/^\d/.test(trimmed);
-
-    if (isSectionHeader && !trimmed.startsWith('═') && !trimmed.startsWith('─')) {
-      return new Paragraph({
-        heading: HeadingLevel.HEADING_2,
-        alignment: align,
-        children: [new TextRun({ text: trimmed, bold: true, size: 24 })],
-      });
+    switch (kind) {
+      case 'blank':
+        return new Paragraph({ children: [new TextRun('')] });
+      // The underline belonging to the heading above has already done its
+      // job by marking it; printing it would just draw dashes in the doc.
+      case 'rule':
+        return new Paragraph({ children: [new TextRun({ text: '', break: 1 })] });
+      case 'title':
+        return new Paragraph({
+          heading: HeadingLevel.HEADING_1,
+          alignment: align,
+          children: [new TextRun({ text: content, bold: true, size: 32 })],
+        });
+      case 'heading':
+        return new Paragraph({
+          heading: HeadingLevel.HEADING_2,
+          alignment: align,
+          children: [new TextRun({ text: content, bold: true, size: 24 })],
+        });
+      case 'bullet':
+        return new Paragraph({
+          alignment: align,
+          bullet: { level: 0 },
+          children: [new TextRun({ text: content, size: 22 })],
+        });
+      default:
+        return new Paragraph({
+          alignment: align,
+          children: [new TextRun({ text: content, size: 22 })],
+        });
     }
-
-    const isBullet = trimmed.startsWith('•') || trimmed.startsWith('○');
-    if (isBullet) {
-      return new Paragraph({
-        alignment: align,
-        bullet: { level: 0 },
-        children: [new TextRun({ text: trimmed.replace(/^[•○]\s*/, ''), size: 22 })],
-      });
-    }
-
-    // First line = title
-    const lineIdx = lines.indexOf(line);
-    if (lineIdx === 0) {
-      return new Paragraph({
-        heading: HeadingLevel.HEADING_1,
-        alignment: align,
-        children: [new TextRun({ text: trimmed, bold: true, size: 32 })],
-      });
-    }
-
-    return new Paragraph({
-      alignment: align,
-      children: [new TextRun({ text: trimmed, size: 22 })],
-    });
   });
 
   const doc = new Document({

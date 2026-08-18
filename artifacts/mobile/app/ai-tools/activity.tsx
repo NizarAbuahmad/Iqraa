@@ -140,8 +140,11 @@ export default function ActivityScreen() {
     : `Activity: ${topic.trim()}`;
 
   const getExportMeta = () => ({
-    subject: subjects[subjectIdx].name,
-    grade: grades[gradeIdx].name,
+    // Localised, like the picker above it. Taking `.name` straight off the
+    // catalog put "Mathematics | Grade 10" at the top of an otherwise Arabic
+    // plan — the screen showed الرياضيات and the exported file disagreed.
+    subject: subjectNames[subjectIdx]!,
+    grade: gradeNames[gradeIdx]!,
   });
 
   const handleSave = async () => {
