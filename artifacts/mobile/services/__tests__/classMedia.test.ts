@@ -15,10 +15,11 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  attachBackgroundImage,
   classifyMediaUrl,
+  deckPhotoQueries,
   extractGraphCommands,
   geogebraCommandUrl,
-  insertImageAfterTitle,
   isLikelyImageUrl,
   youtubeEmbedUrl,
   youtubeIdFrom,
@@ -107,26 +108,40 @@ describe('geogebraCommandUrl', () => {
   });
 });
 
-describe('insertImageAfterTitle', () => {
+describe('attachBackgroundImage', () => {
   const titleSlide: ActivitySlide = {
     slideNumber: 1, type: 'intro', title: 'الاشتقاق', content: 'مقدمة', durationSeconds: 0,
   };
-  const secondSlide: ActivitySlide = {
-    slideNumber: 2, type: 'intro', title: 'الفكرة 1', content: 'نص', durationSeconds: 0,
+  const dividerSlide: ActivitySlide = {
+    slideNumber: 2, type: 'divider', title: 'الاشتقاق', content: "Let's dig in", durationSeconds: 0,
   };
 
-  it('inserts a media slide right after the title and renumbers', () => {
-    const out = insertImageAfterTitle([titleSlide, secondSlide], 'https://x.com/a.jpg', 'caption', true);
-    assert.equal(out.length, 3);
-    assert.equal(out[0].title, 'الاشتقاق');
-    assert.equal(out[1].type, 'media');
-    assert.equal(out[1].mediaUrl, 'https://x.com/a.jpg');
-    assert.equal(out[1].mediaCaption, 'caption');
-    assert.equal(out[2].title, 'الفكرة 1');
-    assert.deepEqual(out.map(s => s.slideNumber), [1, 2, 3]);
+  it('sets mediaUrl/mediaCaption on the slide at the given index only', () => {
+    const out = attachBackgroundImage([titleSlide, dividerSlide], 0, 'https://x.com/a.jpg', 'caption');
+    assert.equal(out.length, 2);
+    assert.equal(out[0].mediaUrl, 'https://x.com/a.jpg');
+    assert.equal(out[0].mediaCaption, 'caption');
+    assert.equal(out[0].type, 'intro', 'attaching a background does not change the slide type');
+    assert.equal(out[1].mediaUrl, undefined, 'only the targeted slide is touched');
   });
 
-  it('is a no-op on an empty deck', () => {
-    assert.deepEqual(insertImageAfterTitle([], 'https://x.com/a.jpg', 'caption', true), []);
+  it('is a no-op for an out-of-range index — no divider slide in this deck', () => {
+    const out = attachBackgroundImage([titleSlide], 1, 'https://x.com/a.jpg', 'caption');
+    assert.deepEqual(out, [titleSlide]);
+  });
+});
+
+describe('deckPhotoQueries', () => {
+  it('returns curated queries for the Grade 10 subjects this app teaches', () => {
+    const [title, divider] = deckPhotoQueries('mathematics', 'Mathematics');
+    assert.match(title, /mathematics/i);
+    assert.notEqual(title, divider, 'title and divider queries must differ to fetch two distinct photos');
+  });
+
+  it('falls back to a generic subject query for anything not curated', () => {
+    const [title, divider] = deckPhotoQueries('islamic', 'Islamic Studies');
+    assert.match(title, /Islamic Studies/);
+    assert.match(divider, /Islamic Studies/);
+    assert.notEqual(title, divider);
   });
 });

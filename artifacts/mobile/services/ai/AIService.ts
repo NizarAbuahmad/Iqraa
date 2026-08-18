@@ -122,7 +122,7 @@ export interface TeacherCompanion {
 
 export interface ActivitySlide {
   slideNumber: number;
-  type: 'intro' | 'challenge' | 'reveal' | 'summary' | 'bingo-call' | 'relay-problem' | 'question' | 'graph' | 'media' | 'scoreboard' | 'podium';
+  type: 'intro' | 'challenge' | 'reveal' | 'summary' | 'bingo-call' | 'relay-problem' | 'question' | 'graph' | 'media' | 'scoreboard' | 'podium' | 'divider';
   title: string;
   content: string;
   hint?: string;
@@ -159,7 +159,13 @@ export interface ActivitySlide {
   graphCommands?: string[];
   /** Media payload for type 'media' — projected image or video. */
   mediaKind?: 'image' | 'video';
-  /** Image URL / data URI, or a YouTube watch/share link. */
+  /**
+   * Image URL / data URI, or a YouTube watch/share link.
+   * Also doubles as a full-bleed background photo on the title slide
+   * (index 0) and on 'divider' slides — those types render `content` as
+   * a big centered label over the image with a dark gradient, not as a
+   * dedicated media slide.
+   */
   mediaUrl?: string;
   mediaCaption?: string;
   /**

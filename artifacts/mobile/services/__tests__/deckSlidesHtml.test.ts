@@ -148,3 +148,38 @@ describe('buildDeckSlidesHTML — graph slide', () => {
     assert.match(html, /الرسم البياني تفاعلي داخل التطبيق/);
   });
 });
+
+describe('buildDeckSlidesHTML — hero backgrounds (title + divider)', () => {
+  it('renders the title slide as a flat gradient when no photo was fetched', () => {
+    const html = buildDeckSlidesHTML(deck([titleSlide]), true);
+    assert.doesNotMatch(html, /<img class="deck-hero-img"/);
+  });
+
+  it('renders a full-bleed photo behind the title when mediaUrl is set', () => {
+    const withPhoto: ActivitySlide = { ...titleSlide, mediaUrl: 'https://images.unsplash.com/photo-1.jpg' };
+    const html = buildDeckSlidesHTML(deck([withPhoto]), true);
+    assert.match(html, /class="deck-hero-img" src="https:\/\/images\.unsplash\.com\/photo-1\.jpg"/);
+    assert.match(html, /deck-hero-gradient/);
+  });
+
+  it('renders a divider slide as a flat accent panel with no photo', () => {
+    const html = buildDeckSlidesHTML(deck([
+      titleSlide,
+      { slideNumber: 2, type: 'divider', title: 'الاشتقاق', content: 'لنبدأ الشرح', durationSeconds: 0 },
+    ]), true);
+    assert.match(html, /deck-divider-slide/);
+    assert.match(html, /لنبدأ الشرح/);
+    assert.doesNotMatch(html, /<img class="deck-hero-img"/);
+  });
+
+  it('renders a divider slide with a background photo when mediaUrl is set', () => {
+    const html = buildDeckSlidesHTML(deck([
+      titleSlide,
+      {
+        slideNumber: 2, type: 'divider', title: 'الاشتقاق', content: 'لنبدأ الشرح', durationSeconds: 0,
+        mediaUrl: 'https://images.unsplash.com/photo-2.jpg',
+      },
+    ]), true);
+    assert.match(html, /class="deck-hero-img" src="https:\/\/images\.unsplash\.com\/photo-2\.jpg"/);
+  });
+});

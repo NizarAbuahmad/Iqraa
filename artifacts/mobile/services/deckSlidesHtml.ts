@@ -28,6 +28,7 @@ function deckSlideAccent(type: ActivitySlide['type']): string {
   if (type === 'challenge') return '#E67E22';
   if (type === 'summary') return DECK_ACCENT;
   if (type === 'graph') return '#0EA5E9';
+  if (type === 'divider') return DECK_ACCENT;
   return DECK_MUTED;
 }
 
@@ -36,6 +37,13 @@ function deckSlideEmoji(type: ActivitySlide['type']): string {
   if (type === 'summary') return '🎉';
   if (type === 'graph') return '📈';
   return '🎯';
+}
+
+/** Full-bleed photo + dark gradient, or a flat accent panel with no photo — used by both the title and divider slides. */
+function deckHeroLayer(mediaUrl: string | undefined): string {
+  if (!mediaUrl) return '';
+  return `<img class="deck-hero-img" src="${mediaUrl.replace(/"/g, '&quot;')}" alt="" />
+      <div class="deck-hero-gradient"></div>`;
 }
 
 /** One content line, math-aware — mirrors MathText.tsx's decision on native. */
@@ -62,11 +70,23 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
   const titleSlide = (slide: ActivitySlide, num: number) => {
     const [meta, ...rest] = slide.content.split('\n\n');
     return `<div class="deck-slide deck-title-slide">
+      ${deckHeroLayer(slide.mediaUrl)}
       <div class="deck-title-content">
         <div class="deck-title-badge">IQRA</div>
         <h1 class="deck-title-main">${esc(slide.title)}</h1>
         ${meta ? `<div class="deck-title-meta">${esc(meta)}</div>` : ''}
         ${rest.length ? `<div class="deck-title-summary">${esc(rest.join(' '))}</div>` : ''}
+      </div>
+      ${footer(num)}</div>`;
+  };
+
+  const dividerSlide = (slide: ActivitySlide, num: number) => {
+    const accent = deckSlideAccent('divider');
+    return `<div class="deck-slide deck-divider-slide" style="${slide.mediaUrl ? '' : `background:${accent}`}">
+      ${deckHeroLayer(slide.mediaUrl)}
+      <div class="deck-divider-content">
+        <h1 class="deck-divider-title">${esc(slide.title)}</h1>
+        ${slide.content ? `<div class="deck-divider-subtitle">${esc(slide.content)}</div>` : ''}
       </div>
       ${footer(num)}</div>`;
   };
@@ -152,6 +172,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
     if (slide.type === 'graph') return graphSlide(slide, num);
     if (slide.type === 'challenge') return challengeSlide(slide, num);
     if (slide.type === 'media' && slide.mediaKind === 'image') return mediaSlide(slide, num);
+    if (slide.type === 'divider') return dividerSlide(slide, num);
     return contentSlide(slide, num);
   }).join('\n');
 
@@ -165,7 +186,13 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
 body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','Arial',sans-serif"}; background:#1a1a1a; }
 .deck-slide { width:297mm; height:210mm; background:${DECK_BG}; color:${DECK_TEXT}; position:relative; overflow:hidden; page-break-after:always; display:flex; flex-direction:column; }
 .deck-title-slide { background:radial-gradient(circle at 30% 20%, ${DECK_ACCENT}33, transparent 55%), ${DECK_BG}; }
-.deck-title-content { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:50px; text-align:center; }
+.deck-hero-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
+.deck-hero-gradient { position:absolute; inset:0; z-index:1; background:linear-gradient(180deg, rgba(13,13,20,0.35), rgba(13,13,20,0.92)); }
+.deck-title-content { position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:50px; text-align:center; }
+.deck-divider-slide { display:flex; flex-direction:column; }
+.deck-divider-content { position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:50px; text-align:center; }
+.deck-divider-title { font-size:44px; font-weight:700; color:#fff; line-height:1.35; max-width:640px; }
+.deck-divider-subtitle { font-size:16px; color:rgba(255,255,255,0.85); margin-top:14px; }
 .deck-title-badge { background:${DECK_ACCENT}22; color:#a5b4fc; font-size:12px; letter-spacing:3px; font-weight:700; padding:5px 18px; border-radius:20px; margin-bottom:24px; }
 .deck-title-main { font-size:40px; font-weight:700; color:#fff; line-height:1.35; margin-bottom:18px; max-width:560px; }
 .deck-title-meta { font-size:15px; color:${DECK_MUTED}; margin-bottom:12px; }
@@ -187,7 +214,7 @@ body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','
 .deck-body-media { gap:16px; }
 .deck-media-img { max-width:80%; max-height:130mm; object-fit:cover; border-radius:12px; box-shadow:0 8px 30px rgba(0,0,0,0.4); }
 .deck-media-caption { font-size:11px; color:${DECK_MUTED}; }
-.deck-footer { height:30px; border-top:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:space-between; padding:0 32px; flex-shrink:0; }
+.deck-footer { position:relative; z-index:2; height:30px; border-top:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:space-between; padding:0 32px; flex-shrink:0; }
 .deck-footer span { font-size:9px; color:${DECK_MUTED}; }
 ${MATH_HTML_STYLES}
 </style>

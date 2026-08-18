@@ -32,7 +32,20 @@ function deckSlideAccent(type: ActivitySlide['type']): string {
   if (type === 'challenge') return 'E67E22';
   if (type === 'summary') return DECK_ACCENT;
   if (type === 'graph') return '0EA5E9';
+  if (type === 'divider') return DECK_ACCENT;
   return DECK_MUTED;
+}
+
+/**
+ * Full-bleed cover image plus a dark scrim, for the title slide and dividers.
+ * pptxgenjs has no gradient fill, so the scrim is one flat semi-transparent
+ * rectangle rather than the top-to-bottom fade the HTML/native versions use.
+ */
+type PptxSlide = ReturnType<InstanceType<typeof import('pptxgenjs').default>['addSlide']>;
+
+function addHeroBackground(s: PptxSlide, url: string): void {
+  s.addImage({ path: url, x: 0, y: 0, w: 10, h: 5.63, sizing: { type: 'cover', w: 10, h: 5.63 } });
+  s.addShape('rect', { x: 0, y: 0, w: 10, h: 5.63, fill: { color: DECK_BG, transparency: 25 } });
 }
 
 /** A line rendered for a PowerPoint text run: math-aware, HTML-safe is moot (no HTML here). */
@@ -64,6 +77,7 @@ export async function exportDeckAsPptx(
 
     if (i === 0) {
       // Title slide.
+      if (slide.mediaUrl) addHeroBackground(s, slide.mediaUrl);
       const [meta, ...rest] = slide.content.split('\n\n');
       s.addText('IQRA', {
         x: 0, y: 0.5, w: '100%', h: 0.4, align: 'center',
@@ -83,6 +97,27 @@ export async function exportDeckAsPptx(
         s.addText(rest.join(' '), {
           x: 1.2, y: 3.6, w: 7.6, h: 1.2, align: 'center',
           fontSize: 11, color: DECK_MUTED,
+        });
+      }
+      return;
+    }
+
+    if (slide.type === 'divider') {
+      // Full-bleed, like the title slide — a pacing break, not another
+      // header-bar-and-bullets content slide.
+      if (slide.mediaUrl) {
+        addHeroBackground(s, slide.mediaUrl);
+      } else {
+        s.background = { color: deckSlideAccent('divider') };
+      }
+      s.addText(slide.title, {
+        x: 0.6, y: 2.1, w: 8.8, h: 1.2, align: 'center', valign: 'middle',
+        fontSize: 36, color: 'FFFFFF', bold: true, fontFace: 'Arial',
+      });
+      if (slide.content) {
+        s.addText(slide.content, {
+          x: 1.2, y: 3.3, w: 7.6, h: 0.6, align: 'center',
+          fontSize: 14, color: 'FFFFFF',
         });
       }
       return;

@@ -11,6 +11,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -64,6 +65,7 @@ function slideTypeAccent(type: ActivitySlide['type']): string {
   if (type === 'media') return '#B45309';
   if (type === 'scoreboard') return '#F59E0B';
   if (type === 'podium') return '#FBBF24';
+  if (type === 'divider') return ACCENT;
   return '#8B8CA4';
 }
 
@@ -156,6 +158,38 @@ function MediaView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; 
           </Text>
         </Pressable>
       )}
+    </View>
+  );
+}
+
+// ─── Hero slide (title background + section dividers) ────────────────────────
+// Full-bleed instead of the generic badge+content layout SlideView gives every
+// other slide type — a pacing break for dividers, a real opener for the title.
+// Falls back to a flat accent panel (no Image/gradient) when there's no photo
+// to show, e.g. Unsplash unconfigured — never a blank or broken slide.
+function HeroSlideView({ slide, accent }: { slide: ActivitySlide; accent: string }) {
+  const hasPhoto = !!slide.mediaUrl;
+  const body = (
+    <View style={heroStyles.textWrap}>
+      <Text style={[heroStyles.title, { fontFamily: 'Cairo_700Bold' }]}>{slide.title}</Text>
+      {!!slide.content && (
+        <Text style={[heroStyles.subtitle, { fontFamily: 'Almarai_400Regular' }]}>{slide.content}</Text>
+      )}
+    </View>
+  );
+
+  if (!hasPhoto) {
+    return <View style={[heroStyles.wrap, { backgroundColor: accent }]}>{body}</View>;
+  }
+
+  return (
+    <View style={heroStyles.wrap}>
+      <Image source={{ uri: slide.mediaUrl }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+      <LinearGradient
+        colors={['rgba(13,13,20,0.35)', 'rgba(13,13,20,0.92)']}
+        style={StyleSheet.absoluteFill}
+      />
+      {body}
     </View>
   );
 }
@@ -662,7 +696,9 @@ export default function PresentationScreen() {
           showsVerticalScrollIndicator={false}
           bounces={false}
         >
-          <SlideView slide={slide} isRTL={isRTL} />
+          {slide.type === 'divider' || (isFirst && slide.mediaUrl)
+            ? <HeroSlideView slide={slide} accent={slideTypeAccent(slide.type)} />
+            : <SlideView slide={slide} isRTL={isRTL} />}
 
           {/* Graph (GeoGebra) and media (image / YouTube) slides */}
           {slide.type === 'graph' && <GraphView slide={slide} isRTL={isRTL} t={t} />}
@@ -934,6 +970,13 @@ const slideStyles = StyleSheet.create({
   codeBadge: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, marginTop: 28, backgroundColor: TIMER_GREEN + '15', borderRadius: 14, borderWidth: 1, borderColor: TIMER_GREEN + '40', padding: 20 },
   codeLabel: { fontSize: 28 },
   codeValue: { fontSize: 48, color: TIMER_GREEN },
+});
+
+const heroStyles = StyleSheet.create({
+  wrap: { flex: 1, minHeight: 420, borderRadius: 20, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', padding: 32 },
+  textWrap: { alignItems: 'center', maxWidth: 560 },
+  title: { fontSize: 34, color: '#fff', textAlign: 'center', lineHeight: 46 },
+  subtitle: { fontSize: 16, color: 'rgba(255,255,255,0.85)', textAlign: 'center', marginTop: 12, lineHeight: 24 },
 });
 
 // Graph + media slides: the frame is the star, sized for a projector.

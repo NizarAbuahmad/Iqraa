@@ -741,6 +741,72 @@ instance with real Postgres — confirmed a weak password is rejected on
 past the 10-attempt cap return `429` with `Retry-After`, confirmed
 `/forgot-password` blocks at 6 rapid requests.
 
+## Slides Maker: full-bleed hero images + section dividers, 2026-08-18
+
+Follow-up to the Unsplash pass: asked for more visual variety per slide
+plus better use of photos, not just one generic image sandwiched after
+the title. Decided against fetching a photo per slide (fragile to lay
+out well across three renderers, and burns the free Unsplash rate limit
+fast) in favor of two targeted moments: the title slide gets a full-bleed
+photo background, and a new `'divider'` slide type — a full-bleed
+"chapter title" the deck inserts before the dense explanation section —
+optionally gets one too.
+
+`ActivitySlide.type` gained `'divider'`. `mediaUrl`/`mediaCaption`
+(already on every slide, previously only meaningful for `type: 'media'`)
+now double as a background photo on the title slide and on dividers —
+attached directly via `classMedia.ts`'s new `attachBackgroundImage`,
+replacing the previous `insertImageAfterTitle` (deleted along with its
+tests), which spliced a whole extra slide into the deck instead. Fewer
+slides for the same visual payoff, and no renumbering to get right.
+
+`buildLessonDeck` (`lessonSlides.ts`) inserts one divider — topic name as
+title, "لنبدأ الشرح" / "Let's dig in" as subtitle — right before the
+concept slides, only when there are concepts to introduce (omit rather
+than pad, same rule the rest of this deck follows). `slides.tsx` now
+fetches two photos in parallel instead of one, using `classMedia.ts`'s
+new `deckPhotoQueries(subjectId, subjectName)` — curated query pairs for
+the three subjects this app actually teaches (mathematics, chemistry,
+financial-literacy), generic `"{subject} education"`/`"{subject}
+classroom students"` fallback otherwise — attaching the first to the
+title and the second to the divider (found by `type === 'divider'`, a
+no-op if the deck has none). Same identity-guarded, try/catch-wrapped,
+never-blocks-generation pattern as the single-photo version it replaced.
+
+All three render surfaces gained the same two things — a `HeroSlideView`
+in the live presenter (`presentation.tsx`, full-bleed `<Image>` +
+`expo-linear-gradient` scrim, or a flat accent panel when there's no
+photo), a `dividerSlide()`/`deckHeroLayer()` pair in the PDF exporter
+(`deckSlidesHtml.ts`, `<img>` + a CSS gradient div, both explicitly
+z-indexed above the title/divider text so painting order can't flip
+them), and an `addHeroBackground()` helper in the PPTX exporter
+(`exportPptx.ts`, `addImage` + a semi-transparent `addShape('rect')`
+scrim — pptxgenjs has no gradient fill, so it's one flat dark layer
+rather than the top-to-bottom fade the other two use).
+
+**Verified live, full stack, real Postgres, no Unsplash key configured**
+(this sandbox's — and this repo's default — actual state, so the
+no-photo fallback path is the one that matters most): generated a real
+derivatives deck through the actual UI, confirmed both curated
+`GET /api/media/unsplash-photo` calls fired with the right per-subject
+queries (`mathematics equations chalkboard`, `geometry classroom
+students`), watched the title slide render unchanged (no photo → the
+same layout it always had, no regression) and the divider slide render
+as a full-bleed indigo panel with centered title/subtitle exactly as
+designed, with zero *new* console errors (one pre-existing, unrelated
+`<button>`-nesting hydration warning from the slide-outline edit/delete
+row predates this work). Exported the real deck to `.pptx`, unzipped it,
+and confirmed `slide5.xml` (the divider) actually contains the `4F46E5`
+background fill and both text runs — proof against the shipped file, not
+just the generator code. The with-photo path on all three surfaces is
+covered by unit tests (`deckSlidesHtml.test.ts`'s four new hero-layer
+cases) and typecheck/code-pattern consistency (`exportPptx.ts`'s
+`addHeroBackground` reuses the same `addImage`/`addShape` calls the file
+already made for the existing media-slide and header-bar code) rather
+than a live screenshot — no real Unsplash key was available in this
+sandbox to see an actual photo land. 433 mobile tests (423 passing + 10
+pre-existing skips), monorepo typecheck clean.
+
 ## Thumbs up/down feedback + admin dashboard, 2026-08-18
 
 Follow-up to the PostHog pass: asked for a way for teachers to say whether

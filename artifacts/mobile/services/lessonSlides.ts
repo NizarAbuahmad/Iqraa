@@ -156,11 +156,26 @@ export function buildLessonDeck(
     });
   }
 
+  // ── 4b. Section divider — a pacing break before the dense part starts ────
+  // Everything so far has been short orientation slides; the explanation
+  // that follows is where the deck gets read-heavy. A full-bleed "chapter
+  // title" moment here is cheap (no content to author, just the topic name)
+  // and breaks up what would otherwise be one visually uniform deck from
+  // start to finish.
+  const concepts = bullets(pickLang(lesson?.keyConceptsAr, lesson?.keyConceptsEn, isAr), 8);
+  if (concepts.length > 0) {
+    push({
+      type: 'divider',
+      title,
+      content: L('لنبدأ الشرح', "Let's dig in"),
+      durationSeconds: 0,
+    });
+  }
+
   // ── 5. The explanation, one concept per slide ───────────────────────────
   // One concept per slide rather than a single dense slide: the deck is read
   // from the back row, and it is also the teacher's pacing device — advancing
   // is what marks "this idea is finished".
-  const concepts = bullets(pickLang(lesson?.keyConceptsAr, lesson?.keyConceptsEn, isAr), 8);
   concepts.forEach((concept, i) => {
     push({
       type: 'intro',
