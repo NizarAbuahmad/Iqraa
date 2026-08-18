@@ -1187,6 +1187,29 @@ export function buildLessonFlowHTML(flow: LessonFlowOutput, isAr: boolean): stri
 
 // ─── PDF export ───────────────────────────────────────────────────────────────
 
+/**
+ * Resolves once every `<img>` in `doc` has either loaded or failed, or after
+ * `maxWaitMs` — whichever comes first, so one slow/broken photo (offline,
+ * hotlink blocked, whatever) can never hang the export indefinitely. An
+ * already-complete image (cached, or a data: URI) resolves immediately.
+ */
+function waitForImages(doc: Document, maxWaitMs: number): Promise<void> {
+  const images = Array.from(doc.images);
+  if (images.length === 0) return Promise.resolve();
+  const pending = images.filter(img => !img.complete);
+  if (pending.length === 0) return Promise.resolve();
+
+  return new Promise<void>(resolve => {
+    let remaining = pending.length;
+    const done = () => { if (--remaining <= 0) resolve(); };
+    pending.forEach(img => {
+      img.addEventListener('load', done, { once: true });
+      img.addEventListener('error', done, { once: true });
+    });
+    setTimeout(resolve, maxWaitMs);
+  });
+}
+
 export async function exportAsPDF(html: string, filename: string): Promise<void> {
   trackEvent('material_exported', { format: 'pdf' });
   if (Platform.OS === 'web') {
@@ -1210,8 +1233,12 @@ export async function exportAsPDF(html: string, filename: string): Promise<void>
     doc.open();
     doc.write(html);
     doc.close();
-    // Give the browser a tick to render before opening the print dialog.
-    await new Promise<void>(resolve => setTimeout(resolve, 300));
+    // Wait for any images (deck hero/media photos) to actually finish
+    // loading before printing — a flat delay was enough when this HTML was
+    // pure inline text, but an external photo is a real network fetch and a
+    // fixed wait can't know how long that takes. Printing before it resolves
+    // doesn't error, it just silently prints the page without the photo.
+    await waitForImages(doc, 2500);
     iframe.contentWindow!.print();
     // Remove the iframe after the dialog has had time to open.
     setTimeout(() => document.body.removeChild(iframe), 3000);

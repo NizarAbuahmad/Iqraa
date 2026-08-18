@@ -37,15 +37,45 @@ function deckSlideAccent(type: ActivitySlide['type']): string {
 }
 
 /**
+ * Fetches an image URL ourselves and hands pptxgenjs the raw bytes (`data:`)
+ * instead of a remote `path`. pptxgenjs's own remote-image path does an
+ * internal XHR/https fetch with no error boundary the caller can react to —
+ * if that fetch fails (offline, a CORS-restrictive host, a dead link), the
+ * whole `pptx.write()` call rejects and the export fails outright. Fetching
+ * up front means a failed photo degrades to "no photo on this slide",
+ * matching the unconfigured-key fallback, rather than losing the export.
+ */
+async function fetchAsDataUrl(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Full-bleed cover image plus a dark scrim, for the title slide and dividers.
  * pptxgenjs has no gradient fill, so the scrim is one flat semi-transparent
  * rectangle rather than the top-to-bottom fade the HTML/native versions use.
+ * Returns whether a photo was actually placed, so the caller can fall back
+ * to a flat accent panel when the fetch above came back empty.
  */
 type PptxSlide = ReturnType<InstanceType<typeof import('pptxgenjs').default>['addSlide']>;
 
-function addHeroBackground(s: PptxSlide, url: string): void {
-  s.addImage({ path: url, x: 0, y: 0, w: 10, h: 5.63, sizing: { type: 'cover', w: 10, h: 5.63 } });
+async function addHeroBackground(s: PptxSlide, url: string): Promise<boolean> {
+  const dataUrl = await fetchAsDataUrl(url);
+  if (!dataUrl) return false;
+  s.addImage({ data: dataUrl, x: 0, y: 0, w: 10, h: 5.63, sizing: { type: 'cover', w: 10, h: 5.63 } });
   s.addShape('rect', { x: 0, y: 0, w: 10, h: 5.63, fill: { color: DECK_BG, transparency: 25 } });
+  return true;
 }
 
 /** A line rendered for a PowerPoint text run: math-aware, HTML-safe is moot (no HTML here). */
@@ -71,13 +101,17 @@ export async function exportDeckAsPptx(
 
   const rtlAlign: 'right' | 'left' = isAr ? 'right' : 'left';
 
-  deck.slides.forEach((slide, i) => {
+  // A for-of loop, not forEach, because addHeroBackground fetches the photo
+  // itself now (see its comment) — forEach can't be awaited, so the fetch
+  // would still be in flight when pptx.write() below runs and the image
+  // would silently never make it into the file.
+  for (const [i, slide] of deck.slides.entries()) {
     const s = pptx.addSlide();
     s.background = { color: DECK_BG };
 
     if (i === 0) {
       // Title slide.
-      if (slide.mediaUrl) addHeroBackground(s, slide.mediaUrl);
+      if (slide.mediaUrl) await addHeroBackground(s, slide.mediaUrl);
       const [meta, ...rest] = slide.content.split('\n\n');
       s.addText('IQRA', {
         x: 0, y: 0.5, w: '100%', h: 0.4, align: 'center',
@@ -99,17 +133,14 @@ export async function exportDeckAsPptx(
           fontSize: 11, color: DECK_MUTED,
         });
       }
-      return;
+      continue;
     }
 
     if (slide.type === 'divider') {
       // Full-bleed, like the title slide — a pacing break, not another
       // header-bar-and-bullets content slide.
-      if (slide.mediaUrl) {
-        addHeroBackground(s, slide.mediaUrl);
-      } else {
-        s.background = { color: deckSlideAccent('divider') };
-      }
+      const gotPhoto = slide.mediaUrl ? await addHeroBackground(s, slide.mediaUrl) : false;
+      if (!gotPhoto) s.background = { color: deckSlideAccent('divider') };
       s.addText(slide.title, {
         x: 0.6, y: 2.1, w: 8.8, h: 1.2, align: 'center', valign: 'middle',
         fontSize: 36, color: 'FFFFFF', bold: true, fontFace: 'Arial',
@@ -120,7 +151,7 @@ export async function exportDeckAsPptx(
           fontSize: 14, color: 'FFFFFF',
         });
       }
-      return;
+      continue;
     }
 
     const accent = deckSlideAccent(slide.type);
@@ -153,19 +184,22 @@ export async function exportDeckAsPptx(
         ),
         { x: 1.2, y, w: 7.6, h: 0.8, align: 'center', fontSize: 10, color: DECK_MUTED },
       );
-      return;
+      continue;
     }
 
     if (slide.type === 'media' && slide.mediaKind === 'image' && slide.mediaUrl) {
-      s.addImage({
-        path: slide.mediaUrl, x: 2.0, y: 1.2, w: 6.0, h: 3.4, sizing: { type: 'cover', w: 6.0, h: 3.4 },
-      });
+      const dataUrl = await fetchAsDataUrl(slide.mediaUrl);
+      if (dataUrl) {
+        s.addImage({
+          data: dataUrl, x: 2.0, y: 1.2, w: 6.0, h: 3.4, sizing: { type: 'cover', w: 6.0, h: 3.4 },
+        });
+      }
       if (slide.mediaCaption) {
         s.addText(slide.mediaCaption, {
           x: 0.8, y: 4.75, w: 8.4, h: 0.4, align: 'center', fontSize: 10, color: DECK_MUTED,
         });
       }
-      return;
+      continue;
     }
 
     if (slide.type === 'challenge') {
@@ -200,7 +234,7 @@ export async function exportDeckAsPptx(
           }
         }
       }
-      return;
+      continue;
     }
 
     // Generic content slide: one text block per line, matching how the
@@ -213,7 +247,7 @@ export async function exportDeckAsPptx(
       })),
       { x: 0.8, y: 1.15, w: 8.4, h: 4.0, align: rtlAlign, valign: 'top' },
     );
-  });
+  }
 
   const outFilename = `${filename}.pptx`;
 

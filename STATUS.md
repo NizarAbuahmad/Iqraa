@@ -741,6 +741,66 @@ instance with real Postgres — confirmed a weak password is rejected on
 past the 10-attempt cap return `429` with `Retry-After`, confirmed
 `/forgot-password` blocks at 6 rapid requests.
 
+## Fixed 2026-08-18 — deck hero photos silently missing from PDF/PPTX exports
+
+Reported after setting a real `UNSPLASH_ACCESS_KEY` in production: the
+title photo showed up live but not in either export. Two independent
+bugs, both introduced the moment a real external image entered these
+exports for the first time (before this, both HTML and PPTX exports were
+pure inline text/shapes with zero network dependencies).
+
+**PDF (web):** `exportAsPDF` (`share.ts`) injects the deck HTML into a
+hidden iframe, waits a flat `300ms`, then calls `iframe.contentWindow.print()`.
+That was plenty when there was nothing to load — now there can be a real
+`<img src="https://images.unsplash.com/...">`, a genuine network fetch
+that doesn't reliably finish in 300ms. `print()` doesn't error when it
+fires early, it just captures whatever had painted by then — silently
+missing the photo, no console error, exactly the reported symptom. Fixed
+with a new `waitForImages(doc, maxWaitMs)`: resolves once every `<img>`
+in the iframe has fired `load` or `error`, capped at 2500ms so one
+slow/broken photo can never hang the export. **Verified against a real
+timing race**, not just reasoned about: a local test image server with
+an artificial 1.5s network delay confirmed the old code would have fired
+`print()` at 300ms — 1.2s before the image finished — while the fixed
+version correctly waited the full ~1510ms and confirmed `img.complete`
++ real pixel data before printing.
+
+**PPTX:** `addHeroBackground` called pptxgenjs's `addImage({ path: url })`,
+which — read straight from the installed package's source — fetches
+remote images in the browser via a bare `XMLHttpRequest` with no error
+boundary the caller can react to; if that request fails for any reason
+(a CORS-restrictive response, offline, a dead link), the whole
+`pptx.write()` call rejects and the entire export fails, not just the
+photo. Fixed by fetching the image ourselves first (`fetchAsDataUrl`:
+`fetch` → `blob` → `FileReader.readAsDataURL`) and handing pptxgenjs the
+raw `data:` bytes instead of a remote `path` — a failed fetch now just
+means no photo on that slide (same flat accent-panel fallback as an
+unconfigured key), not a failed export. Also applied to the pre-existing
+`type: 'media'` slide image (Class Mode's teacher-pasted images), same
+underlying risk. **Verified live in a real browser**, since this
+sandbox's network policy blocks `unsplash.com`/`onrender.com` outright
+(confirmed via the proxy status, not assumed): a local CORS-enabled test
+image server proved the fetch→blob→dataURL path succeeds correctly even
+under load delay, and a non-CORS server proved a failure is caught and
+degrades gracefully (`null`, not a thrown error) — the two real
+behaviors this fix depends on, not simulated.
+
+`deck.slides.forEach(...)` in `exportPptx.ts` had to become a `for...of`
+loop (with every early `return` inside it changed to `continue`) since
+`forEach` can't be awaited — the async image fetch needs to actually
+finish before `pptx.write()` runs, not fire-and-forget mid-loop.
+
+Also answered: "images only showed up on the cover, what about other
+subjects" — the fetch/attach code treats all three curated subjects
+(mathematics, chemistry, financial-literacy) identically, no subject
+gating exists. The much more likely explanation is per-lesson: the
+divider slide (the second photo) only exists when that lesson's curriculum
+data actually lists key concepts — a lesson with none gets no divider at
+all, by the same "omit rather than pad" rule every other optional section
+in this deck already follows, so it will only ever show the one title
+photo regardless of subject. Free-tier Unsplash's 50 req/hour cap is a
+secondary possibility worth ruling out during heavy back-to-back testing.
+
 ## Slides Maker: full-bleed hero images + section dividers, 2026-08-18
 
 Follow-up to the Unsplash pass: asked for more visual variety per slide
