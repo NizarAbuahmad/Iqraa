@@ -227,24 +227,36 @@ export default function SlidesScreen() {
         }
       })();
 
-      // A topic-relevant photo, fetched after the deck is already usable —
-      // never blocks generation, and silently does nothing when no server
-      // key is configured or nothing relevant turns up.
+      // Two topic-relevant photos — a hero background for the title slide and
+      // one for the section divider — fetched after the deck is already
+      // usable. Never blocks generation, and silently does nothing when no
+      // server key is configured or nothing relevant turns up.
       void (async () => {
         try {
           const { searchDeckPhoto } = await import('@/services/unsplashImage');
-          const { insertImageAfterTitle } = await import('@/services/classMedia');
-          const query = `${subjects[subjectIdx].name} education`;
-          const photo = await searchDeckPhoto(query);
-          if (!photo) return;
-          const caption = isAr
-            ? `📷 ${photo.photographer} · Unsplash`
-            : `📷 Photo by ${photo.photographer} on Unsplash`;
+          const { attachBackgroundImage, deckPhotoQueries } = await import('@/services/classMedia');
+          const [titleQuery, dividerQuery] = deckPhotoQueries(subjects[subjectIdx].id, subjects[subjectIdx].name);
+          const captionFor = (photographer: string) => (isAr
+            ? `📷 ${photographer} · Unsplash`
+            : `📷 Photo by ${photographer} on Unsplash`);
+
+          const [titlePhoto, dividerPhoto] = await Promise.all([
+            searchDeckPhoto(titleQuery),
+            searchDeckPhoto(dividerQuery),
+          ]);
+          if (!titlePhoto && !dividerPhoto) return;
+
           setDeck(cur => {
             // Guard against a stale fetch landing on a deck the teacher has
             // since regenerated — same identity check the verify pass uses.
             if (!cur || cur.slides[0] !== built.slides[0]) return cur;
-            return { ...cur, slides: insertImageAfterTitle(cur.slides, photo.url, caption, isAr) };
+            let slides = cur.slides;
+            if (titlePhoto) slides = attachBackgroundImage(slides, 0, titlePhoto.url, captionFor(titlePhoto.photographer));
+            const dividerIdx = slides.findIndex(s => s.type === 'divider');
+            if (dividerPhoto && dividerIdx >= 0) {
+              slides = attachBackgroundImage(slides, dividerIdx, dividerPhoto.url, captionFor(dividerPhoto.photographer));
+            }
+            return { ...cur, slides };
           });
         } catch {
           // A missing photo is a normal outcome, never a failure state for the deck.

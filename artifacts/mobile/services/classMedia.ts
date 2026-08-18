@@ -103,21 +103,38 @@ export function buildMediaSlide(
 }
 
 /**
- * Insert a media slide right after the title slide (index 0) and renumber.
- * Used to drop an auto-fetched topic photo into a freshly built deck — after
- * the title so the deck opens on the lesson name, not a stock photo, but
- * before anything the teacher would rather see first.
+ * Attach an auto-fetched photo as a slide's full-bleed background rather than
+ * inserting a whole extra slide — the title slide and 'divider' slides both
+ * know how to render `mediaUrl` this way (see presentation.tsx / deckSlidesHtml.ts
+ * / exportPptx.ts). A no-op past the slide array's length, so a caller can
+ * pass a divider index that turned out not to exist without checking first.
  */
-export function insertImageAfterTitle(
+export function attachBackgroundImage(
   slides: readonly ActivitySlide[],
+  index: number,
   url: string,
   caption: string,
-  isAr: boolean,
 ): ActivitySlide[] {
-  if (slides.length === 0) return [...slides];
-  const [titleSlide, ...rest] = slides;
-  const imageSlide = buildMediaSlide('image', url, caption, isAr, 0);
-  return [titleSlide, imageSlide, ...rest].map((s, i) => ({ ...s, slideNumber: i + 1 }));
+  if (index < 0 || index >= slides.length) return [...slides];
+  return slides.map((s, i) => (i === index ? { ...s, mediaUrl: url, mediaCaption: caption } : s));
+}
+
+/**
+ * Curated, subject-specific Unsplash queries for the two auto-fetched deck
+ * photos (title background, divider background) — a generic "{subject}
+ * education" search returns usable but bland stock photography; these read
+ * as if someone chose the picture on purpose. Falls back to the generic form
+ * for any subject not in the Grade 10 math/chemistry/finlit set this app
+ * actually teaches today.
+ */
+const SUBJECT_PHOTO_QUERIES: Record<string, [title: string, divider: string]> = {
+  mathematics: ['mathematics equations chalkboard', 'geometry classroom students'],
+  chemistry: ['chemistry laboratory experiment', 'science classroom students'],
+  'financial-literacy': ['personal finance budgeting', 'financial education students'],
+};
+
+export function deckPhotoQueries(subjectId: string, subjectName: string): [title: string, divider: string] {
+  return SUBJECT_PHOTO_QUERIES[subjectId] ?? [`${subjectName} education`, `${subjectName} classroom students`];
 }
 
 /**
