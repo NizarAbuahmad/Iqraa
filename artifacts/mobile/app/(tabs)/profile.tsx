@@ -193,6 +193,15 @@ export default function ProfileScreen() {
         <View style={{ gap: 8 }}>
           <SettingRow icon="folder-outline" label={t('myWorkspace')} onPress={() => router.push('/workspace')} isRTL={isRTL} colors={colors} />
           <SettingRow icon="people-outline" label={t('myClasses')} onPress={() => router.push('/classes')} isRTL={isRTL} colors={colors} />
+          {(user?.role === 'school_admin' || user?.role === 'system_admin') && (
+            <SettingRow
+              icon="bar-chart-outline"
+              label={isRTL ? 'لوحة الإدارة' : 'Admin dashboard'}
+              onPress={() => router.push('/admin/dashboard' as any)}
+              isRTL={isRTL}
+              colors={colors}
+            />
+          )}
           <SettingRow icon="settings-outline" label={t('settings')} onPress={() => router.push('/settings')} isRTL={isRTL} colors={colors} />
           <SettingRow
             icon="help-circle-outline"

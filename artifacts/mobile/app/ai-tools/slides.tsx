@@ -21,6 +21,7 @@ import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { Button } from '@/components/ui/Button';
 import { Toast } from '@/components/ui/Toast';
 import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
+import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import type { ClassroomActivity, LessonPlanOutput } from '@/services/ai/AIService';
 import { buildGeneratorContext, resolveGeneratorGrounding } from '@/services/kbContext';
@@ -545,6 +546,8 @@ export default function SlidesScreen() {
             </View>
           </View>
         )}
+
+        {deck && !loading && <FeedbackWidget materialType="slides" toolId="slides" />}
       </ScrollView>
 
       {/* Per-slide editor */}

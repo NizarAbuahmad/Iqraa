@@ -23,6 +23,7 @@ import { Toast } from '@/components/ui/Toast';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
 import { RelatedResourcesPanel } from '@/components/ui/RelatedResourcesPanel';
+import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
 import { MathParagraph } from '@/components/ui/MathParagraph';
 import {
   buildWorksheetHTML, buildWorksheetSlidesHTML, copyToClipboard, exportAsPDF, exportAsWord,
@@ -541,11 +542,14 @@ export default function WorksheetScreen() {
       )}
 
       {result && !loading && (
-        <RelatedResourcesPanel
-          toolId={isHomework ? 'homework' : 'worksheet'}
-          topic={topic.trim()}
-          isRTL={isRTL}
-        />
+        <>
+          <FeedbackWidget materialType="worksheet" toolId={isHomework ? 'homework' : 'worksheet'} />
+          <RelatedResourcesPanel
+            toolId={isHomework ? 'homework' : 'worksheet'}
+            topic={topic.trim()}
+            isRTL={isRTL}
+          />
+        </>
       )}
 
       {/* Save + Regenerate */}

@@ -741,6 +741,87 @@ instance with real Postgres — confirmed a weak password is rejected on
 past the 10-attempt cap return `429` with `Retry-After`, confirmed
 `/forgot-password` blocks at 6 rapid requests.
 
+## Thumbs up/down feedback + admin dashboard, 2026-08-18
+
+Follow-up to the PostHog pass: asked for a way for teachers to say whether
+generated content was actually good, and an admin view to see it plus
+usage. Decided not to duplicate PostHog's own analytics UI in-house —
+that's already free and working. The split: **feedback** is real product
+data (own table, own admin API, since you'll want to query/filter it
+inside the app), **usage numbers** on the dashboard come from data
+already durably stored (materials saved, users, evaluations — real
+counts, no new event pipeline), with a link out to PostHog for the
+deeper screen-by-screen trace data it already captures.
+
+**New `feedback` table** (`lib/db/src/schema/feedback.ts`) — same
+conventions as `savedMaterials`: uuid id, `userId` FK cascading on
+delete, `materialType`/`toolId`/`rating`/`comment` as plain `text`
+columns (rating is `'up' | 'down'`, comment defaults to `''`, capped at
+2000 chars server-side against one runaway paste). Pushed live via
+`pnpm --filter @workspace/db run push`.
+
+**New `requireRole` middleware** (`middlewares/auth.ts`) — nothing like
+it existed before this; the only prior "admin" gate anywhere was
+`/healthz/errors`'s static `ADMIN_DEBUG_KEY` header check, not
+role-based. `authMiddleware` already re-fetches `role` fresh from the DB
+on every request (confirmed live: promoting a user's role mid-session
+and re-using their existing JWT immediately unlocked the admin routes,
+no re-login needed), so `requireRole(...roles)` just reads `req.user.role`
+— 401 with no token, 403 (not 404 — a signed-in non-admin knowing the
+route exists isn't worth hiding, unlike the debug-key route) if the role
+doesn't match.
+
+**New routes**: `POST /feedback` (any signed-in teacher), `GET /feedback`
+(admin-only, paginated, filterable by rating/materialType, joined with
+the submitter's name/email), `GET /admin/usage-summary` (admin-only —
+total users, total evaluations, saved materials grouped by type,
+feedback grouped by rating). Both files declare `authMiddleware`/
+`requireRole` per-route rather than a router-wide guard, since `POST
+/feedback` and `GET /feedback` need different permission levels in the
+same file.
+
+**`components/ui/FeedbackWidget.tsx`** — thumbs up/down plus an optional
+comment. Deliberately doesn't fire on tap: a bare thumb can't distinguish
+"wrong on purpose" from "wrong, here's why," and firing immediately would
+need either a second PATCH request to attach a comment afterward (an
+endpoint that doesn't otherwise need to exist) or losing the comment
+entirely. Tapping a thumb only selects it; one explicit Submit sends
+rating and comment together in a single row. Wired into the six
+generator screens that produce a result a teacher would judge —
+`lesson-plan.tsx` (covers `simplify` too, same screen), `worksheet.tsx`
+(covers `homework`), `quiz.tsx`, `activity.tsx`, `slides.tsx`,
+`lesson-flow.tsx`. There's no shared result-action component across
+these screens (confirmed by reading all six — each builds its own
+Save/Export row independently), so each got the widget added at its own
+existing `result && !loading` guard, next to `RelatedResourcesPanel`
+where that already exists.
+
+**`app/admin/dashboard.tsx`** — role-gated client-side (redirects/shows
+an "admins only" message for non-admins; the real enforcement is
+server-side, both admin routes 403 for anything but
+`school_admin`/`system_admin`), reachable from a new "Admin dashboard"
+row in Profile that only renders for those two roles. Shows the usage
+counts, a feedback list with rating filter chips and pagination, and a
+link out to PostHog for deep trace data.
+
+**Verified live, full stack, real Postgres**: registered a teacher via
+the API, submitted two feedback rows, confirmed `GET /feedback` and `GET
+/admin/usage-summary` both 403 for that teacher; promoted the same user
+to `school_admin` via SQL and confirmed both now return 200 with correct
+data using the *same* still-valid JWT (proving the fresh-role-lookup
+claim above, not just asserting it); loaded the admin dashboard in a
+real browser as that admin and confirmed the counts and both feedback
+rows render correctly with zero console errors. Separately, as a plain
+teacher, generated a real lesson plan through the actual UI (Tools tab →
+lesson plan → derivatives), tapped 👍 on the `FeedbackWidget`, added a
+comment, hit Send, watched the network panel show `POST /api/feedback →
+201`, saw the "🙏 شكرًا لملاحظتك" confirmation replace the widget, and
+confirmed that exact row showed up moments later in the admin feedback
+list. Typecheck clean; mobile suite unchanged at 427 tests (417 passing
++ 10 pre-existing skips — none of the touched files are in the test
+net); api-server suite at 87 (was 86; added a mount-order guard test for
+the two new routes).
+
 ## Teacher-pilot usage analytics wired (PostHog), 2026-08-17
 
 Asked how to see what tools teachers actually use/visit/keep during

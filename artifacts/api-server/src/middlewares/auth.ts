@@ -77,3 +77,23 @@ export async function authMiddleware(
     res.status(401).json({ error: "Invalid or expired token" });
   }
 }
+
+/**
+ * Gate a route to specific roles. Must run after `authMiddleware` — it only
+ * reads `req.user`, never verifies the token itself. 403 (not 404): unlike
+ * the debug-key admin route, a signed-in non-admin knowing this route exists
+ * isn't a secret worth hiding.
+ */
+export function requireRole(...roles: string[]) {
+  return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
+    if (!req.user) {
+      res.status(401).json({ error: "No token provided" });
+      return;
+    }
+    if (!roles.includes(req.user.role)) {
+      res.status(403).json({ error: "Insufficient permissions" });
+      return;
+    }
+    next();
+  };
+}

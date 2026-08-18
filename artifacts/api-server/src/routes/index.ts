@@ -11,6 +11,8 @@ import rosterRouter from "./roster";
 import evaluationsRouter from "./evaluations";
 import attemptsRouter from "./attempts";
 import mediaRouter from "./media";
+import feedbackRouter from "./feedback";
+import adminRouter from "./admin";
 
 const router: IRouter = Router();
 
@@ -46,5 +48,10 @@ router.use(chatRouter);
 router.use(generateRouter);
 router.use(verifiedMathRouter);
 router.use(mediaRouter);
+// feedback.ts and admin.ts declare authMiddleware/requireRole per-route
+// themselves (a mix of any-signed-in-user and admin-only routes lives in the
+// same file), so no blanket guard is needed at this mount site.
+router.use(feedbackRouter);
+router.use(adminRouter);
 
 export default router;
