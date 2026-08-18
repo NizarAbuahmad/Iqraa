@@ -233,3 +233,53 @@ describe('summarizeVerification', () => {
     });
   });
 });
+
+describe('derivative pairs reach the verifier in the form it can parse', () => {
+  /** Records exactly what the verifier was asked, not just how many times. */
+  const recorder = () => {
+    const calls: { question: string; answer: string; distractors: string[] }[] = [];
+    const fn = async (question: string, answer: string, distractors: string[]) => {
+      calls.push({ question, answer, distractors });
+      return BANK_OUTCOME;
+    };
+    return { calls, fn };
+  };
+
+  it('strips the f′(x) prefix for a quiz, as the deck path already did', async () => {
+    // Verbatim, the verifier received answer "f'(x) = 2x" — unparseable — so
+    // every derivative item in a quiz degraded to 'bank' while the identical
+    // item inside a class deck verified. Same maths, two different stories.
+    const { calls, fn } = recorder();
+    const q = quiz(["f'(x) = 2x"]);
+    q.questions[0]!.text = 'أوجد مشتقة f(x) = x².';
+    await verifyQuizAnswers(q, fn);
+    assert.equal(calls[0]!.answer, '2x');
+    assert.match(calls[0]!.question, /f'\(x\) = \?$/);
+  });
+
+  it('does the same for a worksheet', async () => {
+    const { calls, fn } = recorder();
+    const w = worksheet(["f'(x) = 3x² - 4"]);
+    w.sections[0]!.questions[0]!.text = 'أوجد f′(x) إذا كان f(x) = x³ − 4x.';
+    await verifyWorksheetAnswers(w, fn);
+    assert.equal(calls[0]!.answer, '3x^2 - 4');
+  });
+
+  it('leaves a non-derivative pair untouched', async () => {
+    const { calls, fn } = recorder();
+    const q = quiz(['x = 6']);
+    q.questions[0]!.text = 'ما ناتج / حل: 2x + 5 = 17؟';
+    await verifyQuizAnswers(q, fn);
+    assert.equal(calls[0]!.answer, 'x = 6');
+    assert.equal(calls[0]!.question, 'ما ناتج / حل: 2x + 5 = 17؟');
+  });
+
+  it('keeps passing the distractors alongside the rewritten pair', async () => {
+    const { calls, fn } = recorder();
+    const q = quiz(["f'(x) = 2x"]);
+    q.questions[0]!.text = 'أوجد مشتقة f(x) = x².';
+    q.questions[0]!.options = ["f'(x) = 2x", 'x²', '2'];
+    await verifyQuizAnswers(q, fn);
+    assert.deepEqual(calls[0]!.distractors, ['x²', '2']);
+  });
+});

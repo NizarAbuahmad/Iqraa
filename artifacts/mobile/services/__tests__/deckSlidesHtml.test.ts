@@ -131,15 +131,19 @@ describe('buildDeckSlidesHTML — media slide', () => {
     const html = buildDeckSlidesHTML(deck([
       titleSlide,
       {
-        slideNumber: 2, type: 'media', title: '🎬 فيديو', content: 'شاهدوا هذا',
+        slideNumber: 2, type: 'media', title: 'فيديو', content: 'فيديو خارجي — راجعه قبل العرض',
         mediaKind: 'video', mediaUrl: 'https://youtu.be/dQw4w9WgXcQ',
         mediaCaption: 'شرح الاشتقاق — قناة الرياضيات', durationSeconds: 0,
       },
     ]), true);
     assert.doesNotMatch(html, /<img/);
     assert.match(html, /<a class="deck-video-link"[^>]*href="https:\/\/youtu\.be\/dQw4w9WgXcQ"/);
-    assert.match(html, /شرح الاشتقاق — قناة الرياضيات/);
     assert.match(html, /شاهد الفيديو/);
+    // The export has no player to read a title off, so mediaCaption (what the
+    // video IS) and content (the preview warning) must BOTH survive — the
+    // presenter can drop the title because the embed shows it, this can't.
+    assert.match(html, /شرح الاشتقاق — قناة الرياضيات/);
+    assert.match(html, /deck-video-note">فيديو خارجي — راجعه قبل العرض/);
     // The bare URL prints too, for the paper case where a link can't be clicked.
     assert.match(html, /deck-video-url">https:\/\/youtu\.be\/dQw4w9WgXcQ/);
   });
@@ -153,6 +157,18 @@ describe('buildDeckSlidesHTML — graph slide', () => {
     ]), true);
     assert.match(html, /f\(x\)=x\^2/);
     assert.match(html, /الرسم البياني تفاعلي داخل التطبيق/);
+  });
+});
+
+describe('buildDeckSlidesHTML — typography', () => {
+  it('loads the app’s real typefaces and uses them, with Arial only as fallback', () => {
+    const html = buildDeckSlidesHTML(deck([titleSlide]), true);
+    assert.match(html, /fonts\.googleapis\.com\/css2\?family=Almarai[^"]*Cairo/);
+    // Body copy in Almarai, headings in Cairo — the split the on-screen UI makes.
+    assert.match(html, /body \{ font-family: 'Almarai'/);
+    assert.match(html, /\.deck-title-main[^}]*\{ font-family: 'Cairo'|font-family: 'Cairo'[^}]*\}/);
+    // Arial must survive as the offline fallback, not disappear entirely.
+    assert.match(html, /'Almarai','Arial'/);
   });
 });
 

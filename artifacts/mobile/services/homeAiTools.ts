@@ -67,7 +67,7 @@ export const HOME_AI_TOOLS: HomeToolDef[] = [
   },
   {
     id: 'simplify', emoji: '💡', labelAr: 'تبسيط الشرح', labelEn: 'Simplify explanation',
-    route: '/ai-tools/lesson-plan', status: 'enabled', enabled: true,
+    route: '/ai-tools/lesson-plan', status: 'enabled', enabled: false,
     simplify: true,
     topicHintAr: 'تبسيط الشرح',
     topicHintEn: 'Simplify explanation',
@@ -75,7 +75,7 @@ export const HOME_AI_TOOLS: HomeToolDef[] = [
   // ── During class ────────────────────────────────────────────────────────
   {
     id: 'activity', emoji: '🎯', labelAr: 'نشاط صفي', labelEn: 'Class activity',
-    route: '/ai-tools/activity', status: 'enabled', enabled: true,
+    route: '/ai-tools/activity', status: 'enabled', enabled: false,
   },
   {
     id: 'worksheet', emoji: '📝', labelAr: 'ورقة عمل', labelEn: 'Worksheet',
@@ -88,7 +88,7 @@ export const HOME_AI_TOOLS: HomeToolDef[] = [
   },
   {
     id: 'homework', emoji: '🏠', labelAr: 'واجب منزلي', labelEn: 'Homework',
-    route: '/ai-tools/worksheet', status: 'enabled', enabled: true, homework: true,
+    route: '/ai-tools/worksheet', status: 'enabled', enabled: false, homework: true,
   },
 
   // ── Coming soon (hidden — do not delete) ────────────────────────────────

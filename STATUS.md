@@ -741,6 +741,231 @@ instance with real Postgres — confirmed a weak password is rejected on
 past the 10-attempt cap return `429` with `Retry-After`, confirmed
 `/forgot-password` blocks at 6 rapid requests.
 
+## Verification audit: the badge was understating itself, 2026-08-18
+
+Tier 1 testing found no crashes, so the next question was whether the
+verification badge tells the truth. Rather than eyeball it, every question the
+concrete math bank can render — 86 items × 5 question types = **430** — was
+replayed through the real SymPy verifier offline.
+
+**Baseline: 55 of 430 earned the symbolic badge, and 3 of those 55 were false.**
+
+### The false one
+
+`P = 1/6` is the "equation" behind *«عند رمي حجر نرد عادل، ما احتمال ظهور 5؟»*.
+The classifier saw a well-formed linear equation, SymPy solved it to `1/6`, and
+it matched the key **by construction** — the equation *is* the answer. A
+probability item nothing had reasoned about carried a green
+*«تم التحقق من الإجابة رياضيًا (SymPy)»*. `latinEquationFrom` now refuses a
+bare unknown against a constant: solving that proves nothing. This also stops
+`r = 5` (circle items) from burning a round trip on a guaranteed mismatch.
+
+### Four ways a real proof was being thrown away
+
+All failed *closed* — no wrong key was ever vouched for — but each one made the
+product's core claim look weaker than it is.
+
+| Defect | Effect |
+| --- | --- |
+| `{}` outside the math-safe character class | `2^{x+1} = 32` extracted as `4^x=2^` — a truncated fragment that syntax-errors |
+| `.` inside it (decimals need it) | `f(x) = x².` extracted as `x^2.`, rejected by SymPy |
+| `toVerifiablePair` wired only into the deck path | quiz/worksheet sent `f'(x) = 2x` verbatim; unparseable, so **every** derivative item degraded to 'bank' while the identical item in a class deck verified |
+| SymPy solves over ℂ | `4^x = 64` → `[3, (log(8) + I*pi)/log(2)]`; set comparison failed on size alone and the correct key lost its badge |
+
+Fixes, in order: fold `^{…}` into `^(…)` before extraction; trim trailing
+sentence punctuation; apply `toVerifiablePair` inside `verifyItems` so both
+paths agree; accept the real subset of a solution set as well as the full one.
+
+The last one widened acceptance, so it widened **rejection** too — a distractor
+matching the real-root set is secretly correct and must still be thrown out.
+And the evidence line now shows the set the key actually matched, so a Grade-10
+wall never displays `3, (log(8) + I*pi)/log(2)` as the verifier's working.
+
+Fixing derivatives then exposed one more: distractors arrive as a teacher reads
+them (`3x²`, `x² − 4`) while the answer had already been latinised upstream, so
+every derivative multiple-choice item failed its distractor check with
+`parse_or_compare_error`. Expression parsing now normalises the same typography
+the solution-set parser always did.
+
+### Result
+
+**55 → 100 items symbolically verified, and the false badge is gone.** Every
+one of the 100 was checked by hand against its key: `4^x = 2^(x+3) → x = 3`,
+`8^x = 4^(x+1) → x = 2`, `2^(x+2) = 2^x + 12 → x = 2`, `x² − 4x + 1 = 0 →
+2 ± √3`, all three derivative families. No family that the verifier cannot
+actually reason about (stats, circle, trig, vectors, functions) claims a badge
+any more.
+
+Round trips also dropped — 223 questions were being sent to the verifier, now
+209, with the removed ones being the guaranteed-mismatch tautologies.
+
+**Verified:** `pnpm run typecheck` clean; mobile 449 tests, 0 failures (10
+pre-existing skips); `test_equations.py` 29/29. The audit harness is
+throwaway — what it found is pinned by unit tests instead: brace exponents,
+trailing punctuation, tautology refusal, the pair rewrite on both quiz and
+worksheet paths, real-root acceptance, wrong roots still refused, typographic
+distractors, and a disguised-correct distractor still rejected.
+
+**Still unverified by the prover** (honest 'bank' label, correctly): systems of
+equations, graphical intersections, circle geometry, trigonometry, vectors,
+statistics, and every word problem. That is a coverage boundary, not a bug —
+the badge now states it accurately.
+
+## Tool catalog narrowed to five for the pilot, 2026-08-18
+
+Audited all 14 tools and tiered them, then parked everything outside the
+core. What a teacher is now offered, on both surfaces:
+
+**slides · lesson-plan · worksheet · quiz · evaluations**
+
+Parked (kept, not deleted): `simplify`, `lesson-flow`, `game`,
+`activity`, `geogebra`, `classroom`, `lesson-media`, `homework`,
+`parent-msg`.
+
+**Why these five.** Slides Maker is the only tool that is genuinely
+differentiated — built from the curriculum book, SymPy-verified worked
+examples, projected live; the rest generate text a generic model could
+produce. Lesson plan and worksheet are the bread-and-butter artifacts.
+Quiz and evaluations are assessment, and evaluations is the largest
+non-slides feature in the codebase (author → answers → results, all
+DB-backed). Everything else was either a duplicate entry point, a
+mislabelled tool, or a second-order convenience.
+
+**The audit findings behind the parking**, worth keeping because they
+are still true and will need deciding eventually:
+- `simplify` is not a tool. It routes to `lesson-plan` with a flag,
+  produces the identical `LessonPlanOutput`, and its description promises
+  "examples and misconceptions" that do not exist in that type.
+- `activity`'s description is **backwards**. It says "an in-class
+  experience… not a printable worksheet"; the code generates a printable
+  PDF/Word document with no live-presentation capability at all.
+  Meanwhile `classroom`'s description ("live experiences on screen") is
+  the one that actually fits `activity`'s claim.
+- `slides`, `game` and `classroom` all build a `ClassroomActivity` and
+  land on the same presenter — three doors to one room. Deliberately not
+  resolved: PostHog is now instrumented, so which door teachers actually
+  use is a question answerable with evidence in a few weeks rather than
+  guessed today.
+- `lesson-media` routes to `/home`, a legacy dashboard that *also*
+  re-exposes six other tools through a second, undocumented navigation
+  path.
+
+**Two catalogs, not one — the trap this pass had to avoid.**
+`toolCatalog.ts` drives the tools tab and the chat "+" menu, but
+`homeAiTools.ts` is a separate list driving the "قد يفيدك أيضاً"
+related-tools panel, the hero chips and Smart Templates — and it
+referenced `simplify`, `activity` and `homework` independently. Hiding in
+`toolCatalog.ts` alone would have left a teacher generating a lesson plan
+and being offered parked tools immediately afterwards. Both are now
+filtered: a `hidden` flag whose filtering happens at the export boundary
+in `toolCatalog.ts` (so neither screen needed editing and neither can
+drift), and `enabled: false` in `homeAiTools.ts`, which the existing
+`isToolEnabled` filters already respected. `PROMPT_CHIPS` still lists
+`simplify` but has no consumers anywhere — dead code, left alone.
+
+Nothing was deleted: routes still resolve, so saved materials and deep
+links keep working, and unparking a tool is deleting one line.
+
+Verified live on both surfaces and the related panel: the tools tab and
+chat menu each render exactly the five, and the panel after a lesson-plan
+generation dropped from five suggestions to the two pilot tools that
+remain. New `toolCatalog.test.ts` pins the visible set and asserts no
+parked tool can reach either menu — the failure mode is easy to
+reintroduce, since adding a tool to those arrays is how you add one at
+all. 440 mobile tests, typecheck clean.
+
+## Exports now print in the app's own typefaces, 2026-08-18
+
+Last item from the "theme, design, font" list: PDF and PPTX both rendered
+in generic Arial while the app itself uses Almarai for body copy and
+Cairo for every heavier weight. Nothing was needed from the user for
+this — the `.ttf` files already ship inside `@expo-google-fonts/almarai`
+and `/cairo`, openly licensed, no key or account involved.
+
+**PDF** links the two families from Google Fonts rather than
+base64-embedding them. The four faces are ~440KB; inlined they would sit
+in the repo *and* in every user's JS bundle, including the majority who
+never export. This export already fetches remote images, so it already
+assumes network, and the CSS stack keeps Arial as the fallback — with no
+network it prints exactly what it printed before, so offline is no worse
+than today. `share.ts` gained `waitForFonts` alongside the existing
+`waitForImages`, because a webfont is the same race the images were: a
+`print()` that fires early doesn't error, it just quietly produces an
+Arial PDF.
+
+**PPTX** names the fonts via `pptx.theme` rather than per-run, so no
+`addText` call can be missed. PowerPoint cannot embed a font from
+pptxgenjs, so this renders correctly wherever Cairo/Almarai are
+installed and falls back to a system Arabic face otherwise — again no
+worse than the Arial before it.
+
+**Why this also answers "wouldn't Google Slides be easier?"** The Slides
+API would be a step *up* in cost, not down: full OAuth 2.0, per-teacher
+account connection, token refresh, and Google's app-verification review
+for Drive scopes — a real feature, unlike the API-key-in-an-env-var
+pattern Unsplash and YouTube use. But Google Slides imports `.pptx`
+natively, and Cairo/Almarai *are* Google Fonts, so naming them should be
+enough for an uploaded deck to resolve them from Google's own catalogue.
+The cheap change plausibly buys the Google Slides path for free; the API
+would only add "appears in Drive without uploading," which is
+convenience, not capability. **Unverified** — this sandbox cannot upload
+to Google Slides, so that one hop needs a human to try a file.
+
+Verified by inspecting the actual shipped artifact rather than trusting
+the code read correct: generated a real deck through the UI, downloaded
+the `.pptx`, unzipped it, and confirmed `theme1.xml` carries
+`majorFont = Cairo` / `minorFont = Almarai`, that the 19 explicit
+heading runs (one per slide) name Cairo, that every other run carries no
+typeface and so inherits Almarai from the theme, and that **zero** slides
+still contain Arial. There is no unit test on the PPTX side because
+`exportPptx.ts` imports `react-native` at module scope and `node:test`
+cannot parse it — the same trap `share.ts` hit — and inventing an
+abstraction purely to make it testable would be worse than the real-file
+check, which is stronger evidence anyway. The PDF side is pinned by a new
+`deckSlidesHtml.test.ts` case asserting the font link, both families in
+use, and Arial surviving as fallback. 437 mobile tests, typecheck clean.
+
+## Video slide polish after seeing it live, 2026-08-18
+
+The YouTube integration went live with a real API key and worked first
+try — an Arabic تنجيهي explainer for الاشتقاق, correctly placed at 13/20
+right before the worked examples. Two presentation problems were only
+visible once a real embed was on screen:
+
+**The caption said everything twice.** It was one string —
+`{title} — {channel} (فيديو خارجي، راجعه قبل العرض)` — printed above a
+player that already displays the title and channel in its own chrome.
+The fix is not to shorten it: `mediaCaption` is what the PDF and PPTX
+exports print, and they have no player to read a title off, so dropping
+the title there would lose the only record of *which* video it is. So
+the two fields now do two jobs — `mediaCaption` keeps `{title} —
+{channel}` for the exports, `content` carries just the preview warning
+for the presenter. Both exports render `content` as an extra note line
+so the warning survives there too; before the split it rode along inside
+`mediaCaption`, and dropping it silently would have been a regression.
+
+**The player letterboxed itself.** `mediaStyles.frame` was `width: 100%,
+height: 460` — a fixed height regardless of width, so a 16:9 embed on a
+wide projector fit itself to the width and left a band of dead black
+underneath. Now `aspectRatio: 16/9` with `maxWidth: 900` and
+`alignSelf: center`. Measured on a 1600px viewport: 898×504, ratio
+**1.781** against 16:9's 1.778.
+
+That change then exposed a third thing it had been hiding: with the
+player narrowed and centred, the RTL-margin-aligned caption floated off
+to the far right, disconnected from the thing it describes. Media slides
+now centre their content lines, so badge, caption and player share one
+axis.
+
+Verified live end to end on a wide viewport against the mock search API,
+measuring the real bounding boxes rather than eyeballing: caption block
+centred on x≈800, iframe centred at 351+898/2 = 800. The grey placeholder
+inside the frame during this check is YouTube being unreachable from this
+sandbox (egress policy), not a rendering fault — the box geometry was the
+thing under test. 436 mobile / 88 api-server tests pass; the PDF video
+test now pins both fields separately so a future re-merge of the caption
+fails loudly.
+
 ## Slides Maker: auto-found explainer video per lesson, 2026-08-18
 
 Asked about integrating chat.z.ai for slide video. Steered away from it

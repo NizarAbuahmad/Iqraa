@@ -1210,6 +1210,22 @@ function waitForImages(doc: Document, maxWaitMs: number): Promise<void> {
   });
 }
 
+/**
+ * Resolves once the document's webfonts have loaded, or after `maxWaitMs`.
+ * Same failure shape as the images above: the deck HTML links Almarai/Cairo
+ * from Google Fonts, and printing before they arrive silently produces an
+ * Arial PDF rather than erroring. `document.fonts` is absent in older
+ * engines, so a missing API resolves immediately rather than blocking.
+ */
+function waitForFonts(doc: Document, maxWaitMs: number): Promise<void> {
+  const fonts = (doc as Document & { fonts?: { ready: Promise<unknown> } }).fonts;
+  if (!fonts?.ready) return Promise.resolve();
+  return Promise.race([
+    fonts.ready.then(() => undefined).catch(() => undefined),
+    new Promise<void>(resolve => setTimeout(resolve, maxWaitMs)),
+  ]);
+}
+
 export async function exportAsPDF(html: string, filename: string): Promise<void> {
   trackEvent('material_exported', { format: 'pdf' });
   if (Platform.OS === 'web') {
@@ -1238,7 +1254,7 @@ export async function exportAsPDF(html: string, filename: string): Promise<void>
     // pure inline text, but an external photo is a real network fetch and a
     // fixed wait can't know how long that takes. Printing before it resolves
     // doesn't error, it just silently prints the page without the photo.
-    await waitForImages(doc, 2500);
+    await Promise.all([waitForImages(doc, 2500), waitForFonts(doc, 2500)]);
     iframe.contentWindow!.print();
     // Remove the iframe after the dialog has had time to open.
     setTimeout(() => document.body.removeChild(iframe), 3000);

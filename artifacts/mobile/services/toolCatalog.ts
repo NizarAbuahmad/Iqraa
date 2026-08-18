@@ -22,6 +22,18 @@ export interface ToolDef {
   externalAction?: 'geogebra-graphing';
   /** Hide from non-math surfaces when we add subject filtering later. */
   mathOnly?: boolean;
+  /**
+   * Kept in the catalog but off both menus (2026-08-18). The pilot is
+   * focusing on the five tools that carry the product — slides, lesson plan,
+   * worksheet, quiz, evaluations — so the rest are parked rather than
+   * deleted: their routes still resolve, so saved materials and deep links
+   * keep working, and unhiding is deleting one line.
+   *
+   * The mirror of this lives in `homeAiTools.ts` (`enabled: false`), which
+   * drives the related-tools panel and hero chips. Hiding here alone would
+   * leave those still pointing teachers at parked tools.
+   */
+  hidden?: boolean;
 }
 
 export type WorkflowSection = {
@@ -31,7 +43,7 @@ export type WorkflowSection = {
 };
 
 /** Core teaching jobs — ordered by when teachers use them. */
-export const BEFORE_CLASS: ToolDef[] = [
+const BEFORE_CLASS_ALL: ToolDef[] = [
   // Pinned first: teachers build slides as prep, even though they're
   // projected during class — leading with it surfaces the newest tool on
   // both the tools tab and the chat "+" menu, which render sections in
@@ -54,6 +66,7 @@ export const BEFORE_CLASS: ToolDef[] = [
   },
   {
     id: 'simplify',
+    hidden: true,
     titleKey: 'simplifyExplanationTitle',
     descKey: 'simplifyExplanationSubtitle',
     icon: 'bulb-outline',
@@ -65,6 +78,7 @@ export const BEFORE_CLASS: ToolDef[] = [
   // rather than in a drawer of leftovers.
   {
     id: 'lesson-flow',
+    hidden: true,
     titleKey: 'toolLessonFlowTitle',
     descKey: 'toolLessonFlowSub',
     icon: 'git-branch-outline',
@@ -79,6 +93,7 @@ export const BEFORE_CLASS: ToolDef[] = [
 // three entry points ever need collapsing into one.
 const CLASSROOM_HUB: ToolDef = {
   id: 'classroom',
+  hidden: true,
   titleKey: 'toolClassroomTitle',
   descKey: 'toolClassroomDesc',
   icon: 'grid-outline',
@@ -86,9 +101,10 @@ const CLASSROOM_HUB: ToolDef = {
   route: '/ai-tools/classroom',
 };
 
-export const DURING_CLASS: ToolDef[] = [
+const DURING_CLASS_ALL: ToolDef[] = [
   {
     id: 'game',
+    hidden: true,
     titleKey: 'toolGameTitle',
     descKey: 'toolGameDesc',
     icon: 'trophy-outline',
@@ -97,6 +113,7 @@ export const DURING_CLASS: ToolDef[] = [
   },
   {
     id: 'activity',
+    hidden: true,
     titleKey: 'toolActivityTitle',
     descKey: 'toolActivityDesc',
     icon: 'people-outline',
@@ -105,6 +122,7 @@ export const DURING_CLASS: ToolDef[] = [
   },
   {
     id: 'geogebra',
+    hidden: true,
     titleKey: 'toolGeogebraTitle',
     descKey: 'toolGeogebraDesc',
     icon: 'analytics-outline',
@@ -129,6 +147,7 @@ export const DURING_CLASS: ToolDef[] = [
   // nothing and quietly dropped them onto an old screen.
   {
     id: 'lesson-media',
+    hidden: true,
     titleKey: 'toolLessonMediaTitle',
     descKey: 'toolLessonMediaDesc',
     icon: 'images-outline',
@@ -137,7 +156,7 @@ export const DURING_CLASS: ToolDef[] = [
   },
 ];
 
-export const AFTER_CLASS: ToolDef[] = [
+const AFTER_CLASS_ALL: ToolDef[] = [
   {
     id: 'quiz',
     titleKey: 'toolQuizTitle',
@@ -148,6 +167,7 @@ export const AFTER_CLASS: ToolDef[] = [
   },
   {
     id: 'homework',
+    hidden: true,
     titleKey: 'toolHomeworkTitle',
     descKey: 'toolHomeworkDesc',
     icon: 'home-outline',
@@ -168,6 +188,7 @@ export const AFTER_CLASS: ToolDef[] = [
   },
   {
     id: 'parent-msg',
+    hidden: true,
     titleKey: 'toolParentMsgTitle',
     descKey: 'toolParentMsgDesc',
     icon: 'mail-outline',
@@ -175,6 +196,18 @@ export const AFTER_CLASS: ToolDef[] = [
     route: '/ai-tools/parent-message',
   },
 ];
+
+/**
+ * Both menus render the filtered lists, so parking a tool is one `hidden`
+ * flag rather than an edit in every consuming screen. The unfiltered arrays
+ * stay private — nothing should be iterating parked tools, and a screen that
+ * wants one by id should route to it directly.
+ */
+const visible = (tools: ToolDef[]): ToolDef[] => tools.filter(t => !t.hidden);
+
+export const BEFORE_CLASS: ToolDef[] = visible(BEFORE_CLASS_ALL);
+export const DURING_CLASS: ToolDef[] = visible(DURING_CLASS_ALL);
+export const AFTER_CLASS: ToolDef[] = visible(AFTER_CLASS_ALL);
 
 // MORE_TOOLS is gone. It was a collapsed section holding four unrelated things
 // — a live feature (evaluations), two working tools, and one dead stub — behind

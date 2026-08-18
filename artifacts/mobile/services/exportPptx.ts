@@ -23,6 +23,10 @@ import type { ActivitySlide, ClassroomActivity } from '@/services/ai/AIService';
 import { mathLineToUnicode, prettifySymPy } from '@/services/mathRender';
 import { trackEvent } from '@/services/analytics';
 
+/** Cairo carries headings, Almarai body copy — the same split app/_layout.tsx makes on screen. */
+const HEAD_FONT = 'Cairo';
+const BODY_FONT = 'Almarai';
+
 const DECK_BG = '0D0D14';
 const DECK_TEXT = 'F2F2F6';
 const DECK_MUTED = '8B8CA4';
@@ -98,6 +102,14 @@ export async function exportDeckAsPptx(
   pptx.defineLayout({ name: 'IQRA_16x9', width: 10, height: 5.63 });
   pptx.layout = 'IQRA_16x9';
   pptx.rtlMode = isAr;
+  // The app's real typefaces instead of Arial. PowerPoint cannot embed a font
+  // from pptxgenjs — this NAMES them, so the deck renders correctly wherever
+  // Cairo/Almarai are installed and falls back to a system Arabic face
+  // otherwise, which is no worse than the Arial it printed before. It also
+  // covers the Google Slides route: both are Google Fonts, so a .pptx
+  // uploaded there resolves them from Google's own catalogue.
+  // Set on the theme rather than per-run so no addText call can be missed.
+  pptx.theme = { headFontFace: HEAD_FONT, bodyFontFace: BODY_FONT };
 
   const rtlAlign: 'right' | 'left' = isAr ? 'right' : 'left';
 
@@ -119,7 +131,7 @@ export async function exportDeckAsPptx(
       });
       s.addText(slide.title, {
         x: 0.6, y: 1.6, w: 8.8, h: 1.4, align: 'center',
-        fontSize: 32, color: 'FFFFFF', bold: true, fontFace: 'Arial', valign: 'middle',
+        fontSize: 32, color: 'FFFFFF', bold: true, fontFace: HEAD_FONT, valign: 'middle',
       });
       if (meta) {
         s.addText(meta, {
@@ -143,7 +155,7 @@ export async function exportDeckAsPptx(
       if (!gotPhoto) s.background = { color: deckSlideAccent('divider') };
       s.addText(slide.title, {
         x: 0.6, y: 2.1, w: 8.8, h: 1.2, align: 'center', valign: 'middle',
-        fontSize: 36, color: 'FFFFFF', bold: true, fontFace: 'Arial',
+        fontSize: 36, color: 'FFFFFF', bold: true, fontFace: HEAD_FONT,
       });
       if (slide.content) {
         s.addText(slide.content, {
@@ -160,7 +172,7 @@ export async function exportDeckAsPptx(
     s.addShape('rect', { x: 0, y: 0, w: 0.06, h: 0.75, fill: { color: accent } });
     s.addText(slide.title, {
       x: 0.35, y: 0.12, w: 9.3, h: 0.55, align: rtlAlign, valign: 'middle',
-      fontSize: 18, color: accent, bold: true, fontFace: 'Arial',
+      fontSize: 18, color: accent, bold: true, fontFace: HEAD_FONT,
     });
 
     if (slide.type === 'graph') {
@@ -221,6 +233,11 @@ export async function exportDeckAsPptx(
       s.addText(slide.mediaUrl, {
         x: 1.2, y: 3.6, w: 7.6, h: 0.4, align: 'center', fontSize: 9, color: DECK_MUTED,
       });
+      if (slide.content) {
+        s.addText(slide.content, {
+          x: 1.2, y: 4.05, w: 7.6, h: 0.4, align: 'center', fontSize: 10, color: DECK_MUTED,
+        });
+      }
       continue;
     }
 

@@ -44,8 +44,14 @@ async function verifyItems(items: VerifiableItem[], verify: VerifyFn): Promise<V
       const distractors = Array.isArray(item.options)
         ? item.options.filter(o => o !== item.answer)
         : [];
+      // Same rewrite the deck path already applies. Without it a worksheet's
+      // "أوجد مشتقة f(x) = x²." / "f'(x) = 2x" pair reached the verifier with
+      // the prefix still on the answer, which SymPy cannot parse — so every
+      // derivative item in a quiz or worksheet degraded to 'bank' while the
+      // identical item inside a class deck verified.
+      const pair = toVerifiablePair(item.text, answer);
       try {
-        return await verify(item.text, answer, distractors);
+        return await verify(pair.question, pair.answer, distractors);
       } catch {
         // A verifier that is down must never downgrade into a claim. Falling
         // back to 'bank' says where the answer came from without asserting
