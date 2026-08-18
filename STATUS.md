@@ -741,47 +741,57 @@ instance with real Postgres — confirmed a weak password is rejected on
 past the 10-attempt cap return `429` with `Retry-After`, confirmed
 `/forgot-password` blocks at 6 rapid requests.
 
-## Render: the verifier build failed, and it was never pinned, 2026-08-18
+## Render: the verifier build failed on a PyPI 502, 2026-08-18
 
 `iqraa-verifier` failed to build on the merge of PR #55 — "Exited with status
-1". PR #55 did change that service's `verify_core.py`, so the change was the
-first suspect. It is not the cause:
+1". The build log names the cause exactly:
 
-- The build command is `pip install -r requirements.txt`, which never reads
-  `verify_core.py`.
-- CI ran the **identical** install and the full verifier suite on the **exact
-  merge commit** `1cce560` and passed — 29/29, install in 11s.
-- Every module in the service imports cleanly, and `compileall` is silent.
+```
+ERROR: Could not install packages due to an OSError:
+HTTPSConnectionPool(host='files.pythonhosted.org', port=443):
+Max retries exceeded with url: .../uvicorn-0.52.3-py3-none-any.whl.metadata
+(Caused by ResponseError('too many 502 error responses'))
+```
 
-**What is actually wrong: the verifier pinned no runtime version.** Both Node
-services pin `NODE_VERSION`; this one pinned nothing, so Render picked its own
-Python and was free to change that pick with no commit behind it.
+**PyPI's CDN returned 502s.** Not the code, not the Python version, not the
+dependency ranges. sympy and fastapi had already resolved; uvicorn's metadata
+fetch is where it died. A redeploy is the fix, and the deploy that followed
+succeeded.
 
-That matters more than it looks here. `uvicorn[standard]` pulls uvloop,
-httptools and watchfiles (C extensions) plus pydantic-core (Rust). On a Python
-with prebuilt wheels those are downloads; on one without, pip compiles from
-source, needing a toolchain the free-tier builder does not have — and fails
-with exactly this error. CI's install log shows every one of those arriving as
-a `cp312` wheel, which is the case that works.
+The build command now passes `--retries 10 --timeout 30`, so the next blip of
+this shape gets ridden out instead of failing a deploy.
 
-Two changes: `PYTHON_VERSION: 3.12.13` on the verifier, matching CI exactly, so
-a green `math verifier` job now means the deploy has been exercised on the same
-interpreter; and upper bounds in `requirements.txt`, which were all open `>=`
-— every build resolved against whatever PyPI had published that morning, so a
-deploy could break with no commit behind it. Bad property for the one service
-the verification claim depends on.
+### The wrong diagnosis, recorded on purpose
 
-**Still not a confirmed root cause.** `onrender.com` is unreachable from this
-environment, so the build log has not been read — this is deduced from what the
-build command does and from CI passing on the same commit. The log would
-settle it in one line. Worth noting this is the **second** unexplained Render
-build failure in two days on a merge to `main` (the first was `iqraa-api` on
-#53, also on a commit that could not have caused it), so a builder-side
-flake remains a live alternative.
+Before the log was read, the reasoning was: #55 changed `verify_core.py`, but
+`pip install -r requirements.txt` never reads that file, CI ran the identical
+install and suite on the exact merge commit and passed 29/29, and every module
+imports cleanly — so the diff could not be the cause. **That part held up.**
 
-**Verified:** the capped requirement set resolves to the same versions CI
-installed (sympy 1.14.0, fastapi 0.141.1, uvicorn 0.52.3, pydantic 2.13.4) in
-a clean venv, and `test_equations.py` passes 29/29 against it.
+The proposed cause did not. The theory was that the verifier pinned no Python
+version, so Render might have picked one without wheels for `uvicorn[standard]`'s
+C and Rust dependencies, forcing a source build the free-tier builder cannot do.
+Plausible, and wrong — it never got as far as building anything.
+
+Worth keeping as a reminder: "CI passes on the same commit, so it is
+environmental" was sound, and everything after it was invention. The log was
+one click away the whole time and settled it in a line.
+
+### Two hardening changes kept anyway
+
+- **`PYTHON_VERSION: 3.12.13`.** The log shows Render was on **3.14.3
+  (default)** — a version nothing in CI has ever exercised, chosen for us and
+  changeable without a commit. This service was the only one of the three
+  pinning no runtime; both Node services pin `NODE_VERSION`. Pinning to what CI
+  resolves against means a green `math verifier` job implies the deploy ran on
+  the same interpreter. **This did not fix the 502.**
+- **Upper bounds in `requirements.txt`.** All four were open `>=`, so every
+  build resolved against whatever PyPI published that morning. Also not the
+  cause here.
+
+**Verified:** the capped set resolves to the same versions CI installed (sympy
+1.14.0, fastapi 0.141.1, uvicorn 0.52.3, pydantic 2.13.4) in a clean venv, and
+`test_equations.py` passes 29/29 against it.
 
 ## Lesson Plan tested; the Word export was mangling Arabic, 2026-08-18
 
