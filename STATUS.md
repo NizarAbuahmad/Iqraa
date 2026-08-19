@@ -793,6 +793,83 @@ one click away the whole time and settled it in a line.
 1.14.0, fastapi 0.141.1, uvicorn 0.52.3, pydantic 2.13.4) in a clean venv, and
 `test_equations.py` passes 29/29 against it.
 
+## Deck visuals: one spec, three renderers, 2026-08-19
+
+The deck had three renderers and only one of them could show a graph.
+`type: 'graph'` slides carry GeoGebra commands — an iframe — so **both exports
+printed `f(x)=x^2` as a text chip beside a note apologising that the graph was
+interactive inside the app.** The most valuable picture in a maths deck was
+missing from the file that actually goes on the projector.
+
+Worse, `startClass.ts` gated the whole thing on
+`subjectId === 'mathematics'`, so **chemistry and financial-literacy decks got
+no functional visual at all** — for months, silently, because nothing fails
+when a branch simply never runs.
+
+### The rule
+
+A visual is **data, never a live embed**. Data can be drawn as SVG, as a native
+PowerPoint chart, or as react-native-svg. An iframe can only be one of those,
+which is exactly why it died at the export boundary.
+
+`services/deckVisuals.ts` holds the spec, a tiny fail-closed expression
+sampler, and the shared geometry, so the three surfaces cannot drift into
+drawing different pictures of the same data:
+
+- **PDF/HTML** — inline SVG (vector-sharp in print, no asset to fetch and race)
+- **PPTX** — `addChart`, a *native* chart the teacher can restyle
+- **Presenter** — react-native-svg, except on graph slides, which keep
+  GeoGebra: live, a curve the teacher can drag beats a static drawing
+
+`visualForSlide` derives the plot at render time rather than at generation
+time, so **decks teachers saved before today gain their graphs too.**
+
+### The union is open on purpose
+
+`plot` and `chart` cover maths, financial literacy, statistics and physics.
+Chemistry needs `flow` and `figure`; Arabic and English need annotated text
+(إعراب over a sentence, tense highlighting) which none of the current
+primitives express; art needs an exemplar set, where the image *is* the
+content. Those are not designed here — guessing at them from subjects that
+don't exist yet would be wrong in expensive ways.
+
+Adding a kind stays additive because **every renderer skips kinds it doesn't
+know rather than throwing.** A deck generated next year has to open in an
+export path written today.
+
+### Fail closed, like the verifier
+
+The sampler handles `+ - * / ^`, parentheses, unary minus and the implicit
+multiplication school notation uses (`3x`, `2(x+1)`). Anything else —
+`sin(x)`, `Circle((0,0),3)`, a second unknown — produces **no picture rather
+than a wrong one**, and the slide keeps its honest note. A wrong curve on a
+classroom wall is worse than no curve, and unlike an answer key there is no
+SymPy to catch it.
+
+### Verified
+
+- 27 new unit tests. The load-bearing one asserts the on-screen minimum of
+  `x²−5x+6` sits at its vertex — SVG's y-axis grows downward, and getting that
+  backwards projects an upside-down parabola that looks plausible enough that
+  nobody would question it.
+- **Against a real `.pptx`**: generated one, unzipped it, confirmed
+  `ppt/charts/chart1.xml` carries all 80 sampled points with a minimum y of
+  −0.249 — the true vertex.
+- Typecheck clean; mobile 480 tests, 0 failures.
+- One existing test asserted the old behaviour (that the apology note was
+  present). It was updated to assert the drawing instead, plus a new case
+  proving the note *survives* for an unplottable command.
+
+### Not done
+
+**Nothing generates `chart` blocks yet.** The renderers draw them and the tests
+cover them, but no generator emits one, so financial literacy benefits only
+where a lesson states a plottable function. Extracting a budget breakdown from
+prose reliably is the next piece, and it has to fail closed the same way.
+
+Not verified in a live browser — the sampler, geometry and PPTX output are
+covered by tests and file inspection, but nobody has watched a deck render.
+
 ## Provider evaluation harness, 2026-08-19
 
 Before turning real AI on, the question of *which* provider — OpenAI, Claude,

@@ -53,20 +53,30 @@ export async function buildClassDeck({
   // Plot what the class is actually about: the lesson's own examples AND the
   // functions inside the generated questions. Curriculum objectives are prose
   // and rarely contain a plottable definition, so they alone are not enough.
+  // Key the visual off what the LESSON CONTAINS, not off its subject id.
+  //
+  // This used to read `subjectId === 'mathematics'`, which meant chemistry and
+  // financial-literacy decks got no functional visual at all — for months,
+  // silently, because nothing fails when a branch simply never runs. Any
+  // lesson whose text carries a plottable function now gets its curve,
+  // whatever subject it belongs to, and every subject added later inherits
+  // that instead of needing another branch here.
+  const graphCommands = extractGraphCommands(
+    [
+      topic,
+      ...(grounding.lesson?.examplesAr ?? []),
+      ...(grounding.lesson?.objectives ?? []),
+      ...activity.slides.map(s => s.content),
+    ].join(' \n '),
+  );
+  // Maths keeps its blank-calculator affordance when nothing was found — a
+  // teacher typing a function live in front of the class is the point of the
+  // slide. Other subjects get a graph only when there is something to graph;
+  // an empty calculator on a chemistry deck is clutter, not a tool.
   const isMath = subjectId === 'mathematics';
-  const graphCommands = isMath
-    ? extractGraphCommands(
-        [
-          topic,
-          ...(grounding.lesson?.examplesAr ?? []),
-          ...(grounding.lesson?.objectives ?? []),
-          ...activity.slides.map(s => s.content),
-        ].join(' \n '),
-      )
-    : [];
-  // Math lessons always get a graph slide — with the lesson's functions
-  // preloaded when we found any, otherwise a blank calculator to type into live.
-  const graphSlide = isMath ? buildGraphSlide(graphCommands, topic, isAr, 0) : null;
+  const graphSlide = graphCommands.length > 0 || isMath
+    ? buildGraphSlide(graphCommands, topic, isAr, 0)
+    : null;
 
   const media = await getLessonMedia(topic);
   const mediaSlides = media.map(m => buildMediaSlide(m.kind, m.url, m.caption, isAr, 0));

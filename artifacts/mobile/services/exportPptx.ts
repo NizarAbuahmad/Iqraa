@@ -19,6 +19,7 @@ import { Platform } from 'react-native';
 import * as Sharing from 'expo-sharing';
 import { File, Paths } from 'expo-file-system';
 
+import { visualForSlide } from './deckVisuals.ts';
 import type { ActivitySlide, ClassroomActivity } from '@/services/ai/AIService';
 import { mathLineToUnicode, prettifySymPy } from '@/services/mathRender';
 import { trackEvent } from '@/services/analytics';
@@ -178,6 +179,36 @@ export async function exportDeckAsPptx(
     if (slide.type === 'graph') {
       const [context] = slide.content.split('\n\n');
       const commands = slide.graphCommands ?? [];
+      // A NATIVE PowerPoint chart, not a picture of one. The teacher can
+      // restyle it, and it stays sharp at any projector resolution. Until this
+      // existed the slide printed the equation as text beside a note saying
+      // the graph was interactive inside the app — an apology where the
+      // mathematics should have been.
+      const visual = visualForSlide(slide);
+      if (visual?.kind === 'plot' && visual.series.length) {
+        if (context) {
+          s.addText(context, { x: 0.8, y: 1.25, w: 8.4, h: 0.5, align: 'center', fontSize: 13, color: DECK_TEXT });
+        }
+        s.addChart(
+          'line',
+          visual.series.map(series => ({
+            name: series.label,
+            labels: series.points.map(p => p.x.toFixed(2)),
+            values: series.points.map(p => p.y),
+          })),
+          {
+            x: 1.0, y: 1.85, w: 8.0, h: 3.2,
+            showLegend: visual.series.length > 1,
+            legendPos: 'b',
+            lineSmooth: true,
+            lineDataSymbol: 'none',
+            // Sampled at 80 points — every category label would be an
+            // unreadable smear along the axis.
+            catAxisHidden: true,
+          },
+        );
+        continue;
+      }
       let y = 1.3;
       if (context) {
         s.addText(context, { x: 0.8, y, w: 8.4, h: 0.6, align: 'center', fontSize: 13, color: DECK_TEXT });

@@ -20,6 +20,8 @@ import { useLanguage } from '@/context/LanguageContext';
 import { ActivitySlide, ClassroomActivity } from '@/services/ai/AIService';
 import { getPendingClassroomActivity, clearClassroomActivity } from '@/services/classroomStore';
 import { timerColor } from '@/services/presentationUtils';
+import Svg, { Line, Polyline, Rect } from 'react-native-svg';
+import { plotGeometry, visualForSlide } from '@/services/deckVisuals';
 import { geogebraCommandUrl, openGeogebraWithCommands } from '@/services/geogebra';
 import { youtubeEmbedUrl } from '@/services/classMedia';
 import {
@@ -68,6 +70,72 @@ function slideTypeAccent(type: ActivitySlide['type']): string {
   if (type === 'divider') return ACCENT;
   return '#8B8CA4';
 }
+
+// ─── Visual block (plot / chart) ──────────────────────────────────────────────
+// Draws the same spec the PDF and PPTX draw, via react-native-svg, so the three
+// surfaces cannot drift into showing different pictures of the same data.
+function VisualView({ slide }: { slide: ActivitySlide }) {
+  const visual = visualForSlide(slide);
+  if (!visual) return null;
+
+  const W = 640;
+  const H = 320;
+
+  if (visual.kind === 'chart') {
+    const { categories, values } = visual;
+    const max = Math.max(...values, 0);
+    if (!categories.length || max <= 0) return null;
+    const pad = 30;
+    const w = W - pad * 2;
+    const h = H - pad * 2;
+    const slot = w / categories.length;
+    const barW = slot * 0.6;
+    return (
+      <View style={styles.visualWrap}>
+        <Svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H}>
+          {values.map((v, i) => {
+            const bh = (Math.max(0, v) / max) * h;
+            return (
+              <Rect
+                key={i}
+                x={pad + i * slot + (slot - barW) / 2}
+                y={pad + h - bh}
+                width={barW}
+                height={bh}
+                rx={3}
+                fill={VISUAL_COLORS[i % VISUAL_COLORS.length]}
+              />
+            );
+          })}
+        </Svg>
+      </View>
+    );
+  }
+
+  const g = plotGeometry(visual, W, H);
+  if (!g) return null;
+  return (
+    <View style={styles.visualWrap}>
+      <Svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H}>
+        {g.axisX !== null && <Line x1={0} y1={g.axisX} x2={W} y2={g.axisX} stroke="#9CA3AF" strokeWidth={1} />}
+        {g.axisY !== null && <Line x1={g.axisY} y1={0} x2={g.axisY} y2={H} stroke="#9CA3AF" strokeWidth={1} />}
+        {g.series.map((sr, i) => (
+          <Polyline
+            key={i}
+            points={sr.points.map(pt => `${pt.x},${pt.y}`).join(' ')}
+            fill="none"
+            stroke={VISUAL_COLORS[i % VISUAL_COLORS.length]}
+            strokeWidth={2.5}
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+        ))}
+      </Svg>
+    </View>
+  );
+}
+
+const VISUAL_COLORS = ['#1B6B62', '#C2410C', '#4F46E5', '#B91C1C'];
 
 // ─── Graph slide (GeoGebra) ───────────────────────────────────────────────────
 // On web (the projector case) the calculator is embedded so the class sees the
@@ -708,6 +776,10 @@ export default function PresentationScreen() {
 
           {/* Graph (GeoGebra) and media (image / YouTube) slides */}
           {slide.type === 'graph' && <GraphView slide={slide} isRTL={isRTL} t={t} />}
+          {/* An explicit visual — a finance chart, a stats bar. Graph slides
+              keep GeoGebra above instead: live, a curve the teacher can drag
+              beats a static drawing, and only the exports need the static one. */}
+          {slide.type !== 'graph' && <VisualView slide={slide} />}
           {slide.type === 'media' && <MediaView slide={slide} isRTL={isRTL} t={t} />}
 
           {/* Whole-class ABCD options (question slides own their reveal) */}
@@ -933,6 +1005,7 @@ export default function PresentationScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
+  visualWrap: { width: '100%', maxWidth: 900, alignSelf: 'center', marginTop: 12 },
   container: { flex: 1, backgroundColor: BG },
   centered: { alignItems: 'center', justifyContent: 'center' },
   noActivity: { color: TEXT_MUTED, fontSize: 14, marginBottom: 16 },
