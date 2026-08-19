@@ -157,6 +157,17 @@ export interface ActivitySlide {
    * the teacher can drag/zoom the curve live in front of the class.
    */
   graphCommands?: string[];
+  /**
+   * A drawable visual — a plot, a chart, and later flows and figures.
+   *
+   * Data rather than an embed on purpose: the deck has three renderers and
+   * only data survives all three. `graphCommands` predates this and is a
+   * GeoGebra iframe, which is why both exports could only print the equation
+   * as text. `visualForSlide` in services/deckVisuals.ts derives a plot from
+   * those commands when no explicit visual is set, so older saved decks gain
+   * the picture too.
+   */
+  visual?: import('../deckVisuals.ts').VisualBlock;
   /** Media payload for type 'media' — projected image or video. */
   mediaKind?: 'image' | 'video';
   /**

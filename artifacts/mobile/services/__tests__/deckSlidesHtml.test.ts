@@ -150,13 +150,30 @@ describe('buildDeckSlidesHTML — media slide', () => {
 });
 
 describe('buildDeckSlidesHTML — graph slide', () => {
-  it('lists the plotted commands and notes the export is not interactive', () => {
+  it('draws the curve instead of apologising for it', () => {
+    // This used to assert the opposite: that the export printed the equation
+    // as text beside a note saying the graph was interactive inside the app.
+    // That note WAS the bug — the most valuable picture in a maths deck was
+    // missing from the file that goes on the projector.
     const html = buildDeckSlidesHTML(deck([
       titleSlide,
       { slideNumber: 2, type: 'graph', title: '📈 الرسم البياني', content: 'الاشتقاق', graphCommands: ['f(x)=x^2'], durationSeconds: 0 },
     ]), true);
     assert.match(html, /f\(x\)=x\^2/);
+    assert.match(html, /<svg/);
+    assert.match(html, /<polyline/);
+    assert.doesNotMatch(html, /الرسم البياني تفاعلي داخل التطبيق/);
+  });
+
+  it('keeps the note when the command is outside the plottable subset', () => {
+    // Circle(...) is a real GeoGebra command this build cannot sample. The
+    // honest output is the equation plus the note — never a guessed curve.
+    const html = buildDeckSlidesHTML(deck([
+      titleSlide,
+      { slideNumber: 2, type: 'graph', title: '📈 الرسم البياني', content: 'الدائرة', graphCommands: ['Circle((0,0),3)'], durationSeconds: 0 },
+    ]), true);
     assert.match(html, /الرسم البياني تفاعلي داخل التطبيق/);
+    assert.doesNotMatch(html, /<polyline/);
   });
 });
 

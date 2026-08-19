@@ -16,6 +16,7 @@
  * node:test cannot parse. Everything here only imports other pure modules,
  * so it's directly testable.
  */
+import { visualForSlide, visualToSvg } from './deckVisuals.ts';
 import type { ActivitySlide, ClassroomActivity } from './ai/AIService.ts';
 import { hasRenderableMath, mathLineToHtml, MATH_HTML_STYLES, prettifySymPy } from './mathRender.ts';
 
@@ -95,6 +96,16 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
     const accent = deckSlideAccent('graph');
     const commands = slide.graphCommands ?? [];
     const [context] = slide.content.split('\n\n');
+    // The curve itself, drawn as inline SVG. Until this existed the export
+    // printed `f(x)=x^2` as a text chip beside a note saying the graph was
+    // interactive inside the app — so the most valuable picture in a maths
+    // deck was absent from the file that goes on the projector. Inline rather
+    // than an <img> so it is vector-sharp in print and there is no asset to
+    // fetch and race.
+    const svg = (() => {
+      const visual = visualForSlide(slide);
+      return visual ? visualToSvg(visual, 640, 320) : '';
+    })();
     return `<div class="deck-slide">
       <div class="deck-header" style="border-color:${accent}44">
         <span class="deck-emoji">📈</span>
@@ -105,10 +116,11 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
         <div class="deck-chip-row">
           ${commands.map(c => `<span class="deck-chip" style="border-color:${accent}66;color:${accent}">${esc(c)}</span>`).join('')}
         </div>
-        <div class="deck-graph-note">${L(
+        ${svg ? `<div class="deck-plot">${svg}</div>` : ''}
+        ${svg ? '' : `<div class="deck-graph-note">${L(
           'الرسم البياني تفاعلي داخل التطبيق — افتح الشرائح على الشاشة لتحريك المنحنى مباشرة أمام الصف.',
           'The graph is interactive inside the app — open the deck on screen to drag the curve live in front of the class.',
-        )}</div>
+        )}</div>`}
       </div>
       ${footer(num)}</div>`;
   };
@@ -250,6 +262,7 @@ body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:#1a1a1a; }
 .deck-eq { font-size:26px; font-weight:700; color:#fff; text-align:center; line-height:1.6; }
 .deck-answer { margin-top:22px; border:1.5px solid; border-radius:12px; padding:16px 24px; background:rgba(255,255,255,0.03); min-width:320px; }
 .deck-answer-label { font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; margin-bottom:8px; }
+.deck-plot { margin:14px auto 0; max-width:660px; }
 .deck-verified { margin-top:12px; font-size:11px; font-weight:600; display:flex; flex-direction:column; align-items:center; gap:4px; }
 .deck-evidence { font-size:10px; color:${DECK_MUTED}; font-weight:400; }
 .deck-chip-row { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-bottom:18px; }
