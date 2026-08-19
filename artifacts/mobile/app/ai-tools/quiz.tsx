@@ -225,7 +225,12 @@ export default function QuizScreen() {
       );
       const additionalContext = buildGeneratorContext(topic.trim(), lang as 'ar' | 'en') || undefined;
       const out = await aiService.generateQuiz({
-        grade: grades[gradeIdx].name,
+        // Localised: this string is carried into generated content verbatim —
+        // the Arabic worksheet header printed «الصف: Grade 10». `grade` is never
+        // compared anywhere, only displayed and passed through, so translating it
+        // is safe. `subject` is deliberately left in English: it feeds
+        // isMathContext and ~30 other call sites.
+        grade: gradeNames[gradeIdx]!,
         subject: subjects[subjectIdx].name,
         topic: topic.trim(),
         language: lang === 'ar' ? 'arabic' : 'english',
@@ -309,7 +314,10 @@ export default function QuizScreen() {
   const saveDone = saveLabel === 'saved' || saveLabel === 'updated';
 
   const getExportTitle = () => lang === 'ar' ? `اختبار: ${topic.trim()}` : `Quiz: ${topic.trim()}`;
-  const getExportMeta = () => ({ subject: subjects[subjectIdx].name, grade: grades[gradeIdx].name });
+  // Localised, like the picker above it. Taking `.name` straight off the
+  // catalog put "Mathematics | Grade 10" at the top of an otherwise Arabic
+  // material — the screen showed الرياضيات and the exported file disagreed.
+  const getExportMeta = () => ({ subject: subjectNames[subjectIdx]!, grade: gradeNames[gradeIdx]! });
 
   const handleShareText = async () => {
     if (!result) return;

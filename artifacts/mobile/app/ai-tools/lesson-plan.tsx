@@ -144,7 +144,12 @@ export default function LessonPlanScreen() {
         grounding.grounded ? grounding.context : grounding.ungroundedNote,
       ].filter(Boolean).join('\n') || undefined;
       const out = await aiService.generateLessonPlan({
-        grade: grades[gradeIdx].name,
+        // Localised: this string is carried into generated content verbatim —
+        // the Arabic worksheet header printed «الصف: Grade 10». `grade` is never
+        // compared anywhere, only displayed and passed through, so translating it
+        // is safe. `subject` is deliberately left in English: it feeds
+        // isMathContext and ~30 other call sites.
+        grade: gradeNames[gradeIdx]!,
         subject: subjects[subjectIdx].name,
         topic: isSimplify && !/تبسيط|simplify/i.test(topic)
           ? (lang === 'ar' ? `تبسيط الشرح: ${topic.trim()}` : `Simplify explanation: ${topic.trim()}`)
@@ -182,7 +187,12 @@ export default function LessonPlanScreen() {
       await updateItem(savedId, {
         title,
         subject: subjects[subjectIdx].name,
-        grade: grades[gradeIdx].name,
+        // Localised: this string is carried into generated content verbatim —
+        // the Arabic worksheet header printed «الصف: Grade 10». `grade` is never
+        // compared anywhere, only displayed and passed through, so translating it
+        // is safe. `subject` is deliberately left in English: it feeds
+        // isMathContext and ~30 other call sites.
+        grade: gradeNames[gradeIdx]!,
         topic: topic.trim(),
         language: lang,
         content: JSON.stringify(result),
@@ -194,7 +204,12 @@ export default function LessonPlanScreen() {
         type: 'lesson',
         title,
         subject: subjects[subjectIdx].name,
-        grade: grades[gradeIdx].name,
+        // Localised: this string is carried into generated content verbatim —
+        // the Arabic worksheet header printed «الصف: Grade 10». `grade` is never
+        // compared anywhere, only displayed and passed through, so translating it
+        // is safe. `subject` is deliberately left in English: it feeds
+        // isMathContext and ~30 other call sites.
+        grade: gradeNames[gradeIdx]!,
         topic: topic.trim(),
         language: lang,
         content: JSON.stringify(result),
@@ -220,8 +235,11 @@ export default function LessonPlanScreen() {
   };
 
   const getExportMeta = () => ({
-    subject: subjects[subjectIdx].name,
-    grade: grades[gradeIdx].name,
+    // Localised, like the picker above it. Taking `.name` straight off the
+    // catalog put "Mathematics | Grade 10" at the top of an otherwise Arabic
+    // plan — the screen showed الرياضيات and the exported file disagreed.
+    subject: subjectNames[subjectIdx]!,
+    grade: gradeNames[gradeIdx]!,
     duration: DURATION_VALUES[durationIdx],
   });
 

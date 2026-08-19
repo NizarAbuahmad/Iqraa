@@ -1,6 +1,16 @@
+# Upper bounds are deliberate. Every bound here was open (`>=` with no cap), so
+# each Render build resolved against whatever PyPI had published that morning —
+# a deploy could break with no commit behind it, which is a bad property for the
+# one service the product's verification claim depends on. The caps below are
+# the next major of each, so patches and minors still flow.
+#
 # Core (prove_slice.py): sympy only.
-sympy>=1.12
+sympy>=1.12,<2
 # HTTP microservice (uvicorn app:app):
-fastapi>=0.115
-uvicorn[standard]>=0.34
-pydantic>=2.10
+fastapi>=0.115,<1
+# `[standard]` pulls uvloop, httptools and watchfiles — all C extensions. They
+# install as wheels on a supported Python and compile from source on one
+# without, which the free-tier builder cannot do. See PYTHON_VERSION in
+# render.yaml.
+uvicorn[standard]>=0.34,<1
+pydantic>=2.10,<3

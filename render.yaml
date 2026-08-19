@@ -62,11 +62,33 @@ services:
     runtime: python
     plan: free
     rootDir: artifacts/math-verifier
-    buildCommand: pip install -r requirements.txt
+    # `--retries`/`--timeout` are the point of this line. A deploy failed with
+    # "too many 502 error responses" fetching uvicorn's wheel metadata from
+    # files.pythonhosted.org — PyPI's CDN, not this repo. pip's defaults gave
+    # up too early on a blip that a few more attempts would have ridden out.
+    buildCommand: pip install --retries 10 --timeout 30 -r requirements.txt
     # Single worker: the service forks a ProcessPoolExecutor per request so a
     # runaway SymPy job can be killed on timeout.
     startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT --workers 1
     healthCheckPath: /healthz
+    envVars:
+      # This service was the only one of the three pinning no runtime version —
+      # both Node services pin NODE_VERSION, this pinned nothing. The build log
+      # shows what that meant in practice: "Using Python version 3.14.3
+      # (default)", a version nothing in CI has ever exercised.
+      #
+      # `uvicorn[standard]` pulls uvloop, httptools and watchfiles (C
+      # extensions) plus pydantic-core (Rust). Those install as wheels on a
+      # supported Python and compile from source on one without — which the
+      # free-tier builder cannot do. Whether 3.14 has wheels for all of them is
+      # exactly the question nobody should have to ask on a deploy.
+      #
+      # To be clear about what this did NOT fix: the 2026-08-18 failure was a
+      # PyPI 502, not an interpreter problem. This pin is hardening, chosen
+      # because 3.12.13 is what CI resolves against — so a green `math
+      # verifier` job means the deploy ran on the same interpreter.
+      - key: PYTHON_VERSION
+        value: 3.12.13
 
   - type: web
     name: iqraa-web

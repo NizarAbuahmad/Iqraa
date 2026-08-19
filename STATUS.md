@@ -741,6 +741,125 @@ instance with real Postgres — confirmed a weak password is rejected on
 past the 10-attempt cap return `429` with `Retry-After`, confirmed
 `/forgot-password` blocks at 6 rapid requests.
 
+## Render: the verifier build failed on a PyPI 502, 2026-08-18
+
+`iqraa-verifier` failed to build on the merge of PR #55 — "Exited with status
+1". The build log names the cause exactly:
+
+```
+ERROR: Could not install packages due to an OSError:
+HTTPSConnectionPool(host='files.pythonhosted.org', port=443):
+Max retries exceeded with url: .../uvicorn-0.52.3-py3-none-any.whl.metadata
+(Caused by ResponseError('too many 502 error responses'))
+```
+
+**PyPI's CDN returned 502s.** Not the code, not the Python version, not the
+dependency ranges. sympy and fastapi had already resolved; uvicorn's metadata
+fetch is where it died. A redeploy is the fix, and the deploy that followed
+succeeded.
+
+The build command now passes `--retries 10 --timeout 30`, so the next blip of
+this shape gets ridden out instead of failing a deploy.
+
+### The wrong diagnosis, recorded on purpose
+
+Before the log was read, the reasoning was: #55 changed `verify_core.py`, but
+`pip install -r requirements.txt` never reads that file, CI ran the identical
+install and suite on the exact merge commit and passed 29/29, and every module
+imports cleanly — so the diff could not be the cause. **That part held up.**
+
+The proposed cause did not. The theory was that the verifier pinned no Python
+version, so Render might have picked one without wheels for `uvicorn[standard]`'s
+C and Rust dependencies, forcing a source build the free-tier builder cannot do.
+Plausible, and wrong — it never got as far as building anything.
+
+Worth keeping as a reminder: "CI passes on the same commit, so it is
+environmental" was sound, and everything after it was invention. The log was
+one click away the whole time and settled it in a line.
+
+### Two hardening changes kept anyway
+
+- **`PYTHON_VERSION: 3.12.13`.** The log shows Render was on **3.14.3
+  (default)** — a version nothing in CI has ever exercised, chosen for us and
+  changeable without a commit. This service was the only one of the three
+  pinning no runtime; both Node services pin `NODE_VERSION`. Pinning to what CI
+  resolves against means a green `math verifier` job implies the deploy ran on
+  the same interpreter. **This did not fix the 502.**
+- **Upper bounds in `requirements.txt`.** All four were open `>=`, so every
+  build resolved against whatever PyPI published that morning. Also not the
+  cause here.
+
+**Verified:** the capped set resolves to the same versions CI installed (sympy
+1.14.0, fastapi 0.141.1, uvicorn 0.52.3, pydantic 2.13.4) in a clean venv, and
+`test_equations.py` passes 29/29 against it.
+
+## Lesson Plan tested; the Word export was mangling Arabic, 2026-08-18
+
+Lesson Plan was the one pilot tool of the five never exercised in the Tier 1
+round — Slides, Worksheet, Quiz and Evaluations were, it was not. Closing that
+gap found three real bugs, none of them in Lesson Plan itself.
+
+**13/13 on the happy path.** Generates from a curriculum lesson, honours a
+non-default duration and teaching style, produces ten named sections rather
+than one blob, grounds in the chosen lesson, offers feedback, and its related
+panel shows only pilot tools. Two initial failures were **my test, not the
+app**: duration and teaching style are dropdown pickers showing their current
+value (`45 دقيقة`, `التعليم المباشر`), not chip rows, so the options do not
+exist in the DOM until the picker opens.
+
+### 1. The Word export promoted almost everything to a heading
+
+`exportAsWord` decided headings with `line === line.toUpperCase()`. **Arabic is
+caseless, so that predicate is `true` for every Arabic line.** Proven by
+unzipping a generated `.docx`: 23 `Heading2` paragraphs, of which only 10 were
+section labels. A 145-character paragraph of teacher instructions, the
+assessment notes, the differentiation notes, the homework and the
+«أُنشئ بواسطة إقرأ» footer were all bold headings; just 4 paragraphs survived as
+body text. The heuristic did nothing useful in English either — these
+formatters never upper-case their labels.
+
+The formatters already declare their headings structurally: `H(label)` writes
+the label and then a `─` rule as long as it. That signal is now what is read.
+After the fix, on a freshly generated file: **exactly the 10 section labels are
+`Heading2`**, one `Heading1` title, body text 4 → 17, and no stray rules
+printed.
+
+Six tools share `exportAsWord` — lesson-plan, worksheet, quiz, activity,
+workspace view and chat — so all of them were affected and all are fixed.
+Confirmed separately on a worksheet, whose headings come from a different
+formatter: exactly its three section titles.
+
+The decision is now a pure module, `services/docxOutline.ts`, unit-tested —
+`share.ts` imports `react-native` at module scope and cannot be loaded by
+`node:test`, the same trap that produced `deckSlidesHtml.ts`. Previously this
+could only be checked by unzipping a `.docx` by hand.
+
+### 2. Arabic materials carried English subject and grade
+
+Every screen already computes localised `subjectNames`/`gradeNames` for its
+pickers, then `getExportMeta` bypassed them and read `.name` off the catalog
+directly. An Arabic lesson plan opened in Word led with
+`Mathematics | Grade 10 | 45 دقيقة` while the screen above it said الرياضيات.
+Fixed in lesson-plan, worksheet, quiz and activity.
+
+### 3. …and the grade leaked into generated Arabic prose
+
+The worksheet's student header printed «الصف: Grade 10», because the AI request
+carries `grade` verbatim into generated content. Localised at the four pilot
+generation sites. **`subject` was deliberately left in English**: it feeds
+`isMathContext` and ~30 other call sites, and its display-facing use was
+already fixed above. `grade` is never compared anywhere — only displayed and
+passed through — so translating it is safe.
+
+**Verified:** typecheck clean; mobile 457 tests, 0 failures (10 pre-existing
+skips). Each fix was confirmed against a **real generated file**, not asserted:
+the `.docx` was unzipped and its `document.xml` outline counted before and
+after, for both a lesson plan and a worksheet.
+
+**Not verified:** PDF and Slides exports were confirmed to run without error,
+but a web print dialog cannot be inspected headlessly, so their visual output
+is still unchecked.
+
 ## Verification audit: the badge was understating itself, 2026-08-18
 
 Tier 1 testing found no crashes, so the next question was whether the
