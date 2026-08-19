@@ -793,6 +793,64 @@ one click away the whole time and settled it in a line.
 1.14.0, fastapi 0.141.1, uvicorn 0.52.3, pydantic 2.13.4) in a clean venv, and
 `test_equations.py` passes 29/29 against it.
 
+## The feedback table never existed in production, 2026-08-19
+
+Every thumbs-up and thumbs-down teachers submitted since the widget shipped
+was lost. `SELECT COUNT(*) FROM feedback` in the live Neon database returned
+`ERROR: relation "feedback" does not exist`. The table was created by hand
+today; before that, every write 500'd.
+
+### Two silent failures, one on each side
+
+**The widget reported success for a rejected request.** `apiFetch` resolves
+for *any* HTTP status — it only rejects on a network failure; `apiJson` is the
+wrapper that checks `res.ok`. `FeedbackWidget` awaited `apiFetch` and never
+looked at the status, so a 500 fell straight through to `setSubmitted(true)`
+and the teacher saw «🙏 شكرًا لملاحظتك». The `catch` that was supposed to
+handle this could only ever fire when the network itself was down.
+
+An audit of all 29 `apiFetch` call sites found this was the **only** one that
+ignored the status: `workspace.ts` checks inline, and `roster.ts` and
+`evaluations.ts` funnel everything through a `readJson` helper that checks
+once. Bounded problem, now fixed — and the widget shows a real error and keeps
+the form so the comment can be re-sent rather than discarded.
+
+**The dashboard threw the reason away.** `.catch(() => setError('تعذّر تحميل
+البيانات.'))` discarded the error object. The message it swallowed said
+exactly what was wrong. It now shows it.
+
+### And STATUS.md asserted the opposite
+
+This file claimed the table was "Pushed live via `pnpm --filter @workspace/db
+run push`". Nothing had verified that. This is the failure mode CLAUDE.md
+opens with — *"Verify claims against the running system. Several past bugs
+were things a doc asserted and the running system contradicted. This file
+included."* The claim is now corrected in place.
+
+### Also fixed: no deep link survived a page load
+
+The boot effect in `_layout.tsx` ran `router.replace('/(tabs)')` on **every**
+signed-in cold boot. On web a reload *is* a cold boot, so opening
+`/admin/dashboard`, refreshing a worksheet, or sharing an evaluation link all
+landed on the home tab. It now only redirects from an entry route
+(`/login`, `/register`, `/forgot-password`, `/onboarding`, `/`) or on a fresh
+sign-in. The rule is a pure `isEntryRoute` in `services/routeGating.ts` with
+unit tests, since `_layout.tsx` cannot be loaded by `node:test`.
+
+The admin dashboard's own entry point is **حسابي → لوحة الإدارة**, rendered
+only for `school_admin` / `system_admin`.
+
+### Worth doing, not done
+
+Nothing detects schema drift. The push is manual, no build step touches the
+database, and a missing table surfaces as a 500 at whatever moment a teacher
+happens to trigger it. A `/api/healthz/schema` check listing expected-but-
+absent tables would have caught this the day it shipped, in one request.
+
+**Verified:** typecheck clean; mobile 462 tests, 0 failures (10 pre-existing
+skips). Table creation and the resulting empty `COUNT(*) = 0` confirmed
+against the live Neon database.
+
 ## Lesson Plan tested; the Word export was mangling Arabic, 2026-08-18
 
 Lesson Plan was the one pilot tool of the five never exercised in the Tier 1
@@ -1292,8 +1350,11 @@ deeper screen-by-screen trace data it already captures.
 conventions as `savedMaterials`: uuid id, `userId` FK cascading on
 delete, `materialType`/`toolId`/`rating`/`comment` as plain `text`
 columns (rating is `'up' | 'down'`, comment defaults to `''`, capped at
-2000 chars server-side against one runaway paste). Pushed live via
-`pnpm --filter @workspace/db run push`.
+2000 chars server-side against one runaway paste). **This paragraph used to
+claim the table was "pushed live via `pnpm --filter @workspace/db run push`".
+It was not** — see the 2026-08-19 entry. The table did not exist in production
+until it was created by hand on 2026-08-19, and every submission until then
+failed.
 
 **New `requireRole` middleware** (`middlewares/auth.ts`) — nothing like
 it existed before this; the only prior "admin" gate anywhere was
