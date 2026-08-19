@@ -71,6 +71,28 @@ describe('classifyMediaUrl', () => {
 });
 
 describe('extractGraphCommands', () => {
+  it('keeps every term, not just the first', () => {
+    // The body used to be matched as a run of characters that excluded
+    // spaces, so it stopped at the first one: `x^3 - 4x` became `x^3` and
+    // `2x + 1` became `2x`. GeoGebra drew a different curve from the one
+    // written on the slide, quietly, for every multi-term function.
+    assert.deepEqual(extractGraphCommands('أوجد f′(x) إذا كان f(x) = x³ − 4x.'), ['f(x)=x^3 - 4x']);
+    assert.deepEqual(extractGraphCommands('y = 2x + 1'), ['y=2x + 1']);
+  });
+
+  it('still stops at prose rather than swallowing it', () => {
+    // Allowing spaces in a flat run would have eaten the words after the
+    // formula. Requiring an operator between terms ends the match naturally.
+    assert.deepEqual(
+      extractGraphCommands('y = 2x + 1 and then some english prose follows'),
+      ['y=2x + 1'],
+    );
+  });
+
+  it('drops a trailing full stop, which is punctuation not maths', () => {
+    assert.deepEqual(extractGraphCommands('أوجد مشتقة f(x) = x².'), ['f(x)=x^2']);
+  });
+
   it('extracts function definitions', () => {
     const cmds = extractGraphCommands('ارسم f(x)=x^2 ثم g(x)=x+1');
     assert.deepEqual(cmds, ['f(x)=x^2', 'g(x)=x+1']);

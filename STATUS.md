@@ -793,6 +793,90 @@ one click away the whole time and settled it in a line.
 1.14.0, fastapi 0.141.1, uvicorn 0.52.3, pydantic 2.13.4) in a clean venv, and
 `test_equations.py` passes 29/29 against it.
 
+## Charts: generated from lesson text, refused by default, 2026-08-19
+
+The visual mechanism shipped with nothing producing `chart` blocks. This wires
+that up, and fixes a gap the first pass left behind.
+
+### The gap: visuals only drew on graph slides
+
+Both exports called `visualForSlide` **inside the graph branch only**, so a
+chart attached to any other slide rendered nowhere. Any slide can carry a
+visual now, in HTML and PPTX alike.
+
+### Extraction refuses far more than it accepts
+
+`extractChartData` reads labelled quantities out of lesson prose — a budget
+split, a set of shares. The hard part is not finding numbers, it is **refusing
+them**:
+
+| Input | Result |
+| --- | --- |
+| «السكن 200 دينار، الطعام 150 دينار، النقل 50 دينار» | 3 bars |
+| «السكن 40%، الطعام 30%، النقل 10%، الادخار 20%» | pie (sums to 100) |
+| «أوجد المتوسط الحسابي للبيانات: 2، 4، 6، 8» | **null** |
+| «بعد 3 سنوات يصبح المبلغ 1200 دينار» | **null** |
+| «س 5، ص 10، ع 15» | **null** |
+
+A statistics mean exercise is a list of bare numbers; charting it would give
+four unlabelled bars that mean nothing. Single-character labels are algebraic
+variables, not categories. Every value must carry its own text label, there
+must be at least three, and repeated labels void the whole match.
+
+Percentages summing to ~100 become a pie because they are parts of a whole;
+everything else becomes bars. Unrelated rates («نمو 5%، تضخم 3%، فائدة 7%»)
+stay bars — three rates are not one pie.
+
+There is deliberately **no chart equivalent of the blank calculator**. Maths
+gets an empty GeoGebra slide to type into live because that is a teaching
+tool; an empty chart asserts nothing.
+
+### Verified
+
+- 42 tests on the visual module, 15 of them on extraction, most asserting a
+  refusal rather than an acceptance.
+- **Against a real `.pptx`**: generated bar and pie slides, unzipped, and
+  confirmed `chart1.xml` is a `barChart` and `chart2.xml` a `pieChart`, both
+  carrying the Arabic category names and correct values.
+- Two new HTML tests: a chart on a *content* slide draws, and an unknown block
+  kind is omitted rather than throwing — the open-union contract exercised
+  through the real renderer.
+- Typecheck clean; mobile 495 tests, 0 failures.
+
+### Running it over the real corpus found a worse bug
+
+Rather than assume the extractor fires, it was run over the actual knowledge
+base — the same shape `startClass.ts` reads. **Charts: 0 of 57 lessons.** The
+NCCD lesson text states concepts and outcomes, not datasets; budgets live in
+the exercises, not the lesson body. So charts currently only appear if
+generated activity content states one.
+
+Checking the plot path the same way surfaced a **pre-existing bug in
+`extractGraphCommands`**: its body pattern excluded spaces, so it stopped at
+the first one. `f(x) = x³ − 4x` became `f(x)=x^3`, and `y = 2x + 1` became
+`y=2x`. **GeoGebra has been drawing a different curve from the one written on
+the slide, quietly, for every multi-term function in the corpus.** Nobody
+noticed because a parabola still looks like a parabola.
+
+Simply allowing spaces would have swallowed the prose after the formula, which
+is why they were excluded. The body is now matched as a real expression — a
+term, then any number of (operator, term) pairs — which keeps `x^3 - 4x` whole
+and still stops at `1 and then…`. Trailing full stops are dropped as
+punctuation.
+
+`expressionFromCommand` also only accepted `f` and `y`, while
+`extractGraphCommands` emits `f`, `g`, `h` and `y` — so a second curve beside
+the first never plotted. Widened to all four.
+
+My own fix made that truncation more dangerous, not less: the wrong curve was
+previously confined to GeoGebra, where a teacher might catch it. Rendering it
+into the PDF and PPTX would have printed it.
+
+### Still not done
+
+Not verified in a live browser. And the chart path, though correct, has nothing
+in the current corpus to act on — it is waiting on content, not on code.
+
 ## Deck visuals: one spec, three renderers, 2026-08-19
 
 The deck had three renderers and only one of them could show a graph.

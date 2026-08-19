@@ -231,7 +231,10 @@ export function expressionFromCommand(command: string): string | null {
     .replace(/[−–—]/g, '-')
     .replace(/×/g, '*')
     .trim();
-  const m = normalised.match(/^(?:f\s*\(\s*x\s*\)|y)\s*=\s*(.+)$/i);
+  // f, g and h as well as y: extractGraphCommands emits all four, and a
+  // second curve on the same axes (`g(x)=x+1` beside `f(x)=x^2`) is exactly
+  // the comparison a teacher draws by hand.
+  const m = normalised.match(/^(?:[fgh]\s*\(\s*x\s*\)|y)\s*=\s*(.+)$/i);
   const body = (m?.[1] ?? '').trim();
   if (!body || !/x/i.test(body)) return null;
   return compileExpression(body) ? body : null;
@@ -437,4 +440,89 @@ export function visualForSlide(slide: VisualSource): VisualBlock | null {
     if (points) series.push({ label: command, points });
   }
   return series.length ? { kind: 'plot', series } : null;
+}
+
+// ─── Chart extraction ────────────────────────────────────────────────────────
+
+/** More than this and the bars are too thin to read from the back row. */
+const MAX_CATEGORIES = 8;
+/** Fewer than this is a sentence containing a number, not a dataset. */
+const MIN_CATEGORIES = 3;
+
+/**
+ * Pull labelled quantities out of lesson prose — a budget split, a set of
+ * percentages — so financial-literacy and statistics lessons get a chart.
+ *
+ * **The hard part is not finding numbers, it is refusing them.** A statistics
+ * lesson says «أوجد المتوسط الحسابي للبيانات: 2، 4، 6، 8»; charting that would
+ * produce four unlabelled bars that mean nothing. A worked example says «بعد 3
+ * سنوات». Both contain numbers and neither is a dataset.
+ *
+ * So every value must carry its own text label, and there must be at least
+ * three of them. Everything else returns null and the deck simply has no
+ * chart — the same fail-closed posture the sampler and the verifier take. A
+ * chart is a claim about data; an invented one is worse than none.
+ */
+export function extractChartData(
+  text: string,
+): { categories: string[]; values: number[] } | null {
+  if (!text) return null;
+
+  const categories: string[] = [];
+  const values: number[] = [];
+  const seen = new Set<string>();
+
+  // Arabic comma, Latin comma, newline and bullets all separate items in the
+  // books; '.' does not, because it ends sentences and appears in decimals.
+  for (const raw of text.split(/[،,\n•]/)) {
+    // Drop an intro phrase: «وزّع الدخل كالآتي: السكن 200» carries its first
+    // item behind a colon, and without this that item is silently lost —
+    // which also skews a percentage split away from summing to 100.
+    const segment = raw.replace(/^[^:：]*[:：]\s*/, '').trim();
+    if (!segment) continue;
+
+    // label  then  number  then an optional unit (%, دينار, JD).
+    const m = segment.match(
+      /^(?:[-–—]\s*)?([\p{L}][\p{L}\sً-ْ]{1,29}?)\s*[:：]?\s*(\d+(?:[.,]\d+)?)\s*(?:%|٪|دينار|د\.?أ\.?|JOD|JD)?\.?$/u,
+    );
+    if (!m) continue;
+
+    const label = m[1]!.trim();
+    const value = Number(m[2]!.replace(',', '.'));
+    // A label that is itself a number word would come through the letter class
+    // above; a non-finite or non-positive value has nothing to draw.
+    if (!Number.isFinite(value) || value <= 0) continue;
+    if (label.length < 2) continue;
+    // Repeated labels mean the pattern matched something that is not a
+    // breakdown — two bars called the same thing cannot both be right.
+    const key = label.replace(/\s+/g, ' ');
+    if (seen.has(key)) return null;
+    seen.add(key);
+
+    categories.push(label);
+    values.push(value);
+    if (categories.length > MAX_CATEGORIES) return null;
+  }
+
+  return categories.length >= MIN_CATEGORIES ? { categories, values } : null;
+}
+
+/**
+ * A chart block for a lesson, when its text unambiguously contains one.
+ *
+ * Percentages become a pie because they are parts of a whole; anything else
+ * becomes bars. Returns null far more often than not, which is the point.
+ */
+export function chartForLesson(text: string, caption?: string): VisualBlock | null {
+  const data = extractChartData(text);
+  if (!data) return null;
+  const looksLikeShares =
+    /[%٪]/.test(text) && Math.abs(data.values.reduce((s, v) => s + v, 0) - 100) < 2;
+  return {
+    kind: 'chart',
+    chartType: looksLikeShares ? 'pie' : 'bar',
+    categories: data.categories,
+    values: data.values,
+    ...(caption ? { caption } : {}),
+  };
 }

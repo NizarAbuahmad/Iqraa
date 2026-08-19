@@ -5,6 +5,7 @@
  * large video FILES needs server storage (phase 2); YouTube covers the
  * overwhelming majority of what science teachers actually project.
  */
+import type { VisualBlock } from './deckVisuals.ts';
 import type { ActivitySlide } from './ai/AIService.ts';
 
 /** Blank GeoGebra Graphing app — used when there is nothing to plot. */
@@ -77,6 +78,33 @@ export function buildGraphSlide(
       ? `${titleAr}\n\nجرّب مع الطلاب: غيّر المعامل وشاهد أثره على المنحنى قبل أن تشرح السبب.`
       : `${titleAr}\n\nTry with the class: change a coefficient and watch the curve move before explaining why.`,
     graphCommands: commands,
+    durationSeconds: 0,
+  };
+}
+
+/**
+ * A chart slide, when the lesson's own text carried a dataset.
+ *
+ * Financial-literacy and statistics lessons state their numbers in prose — a
+ * budget split, a set of shares. `chartForLesson` refuses everything it is not
+ * sure of, so this slide only appears when the text unambiguously contained
+ * labelled quantities; there is no "chart placeholder" equivalent of the blank
+ * calculator, because an empty chart asserts nothing and teaches nothing.
+ */
+export function buildChartSlide(
+  visual: VisualBlock,
+  titleAr: string,
+  isAr: boolean,
+  slideNumber: number,
+): ActivitySlide {
+  return {
+    slideNumber,
+    type: 'intro',
+    title: isAr ? '📊 البيانات' : '📊 The data',
+    content: isAr
+      ? `${titleAr}\n\nاقرأ الرسم مع الطلاب قبل الشرح: أيّ بند الأكبر؟ ولماذا؟`
+      : `${titleAr}\n\nRead the chart with the class first: which item is largest, and why?`,
+    visual,
     durationSeconds: 0,
   };
 }
@@ -177,15 +205,27 @@ export function extractGraphCommands(text: string, max = 3): string[] {
     .replace(/³/g, '^3')
     .replace(/[−–—]/g, '-');
   const out: string[] = [];
-  // The body is captured as math-safe characters ONLY, so the match stops at
-  // the first non-math character (e.g. the Arabic word after the formula)
-  // instead of swallowing prose and being rejected later.
-  const re = /([fghy])\s*(\([a-z]\))?\s*=\s*([0-9a-z+\-*/^().√π]{1,40})/gi;
+  // The body is matched as a real expression — a term, then any number of
+  // (operator, term) pairs — rather than a flat run of math-safe characters.
+  //
+  // The flat version excluded spaces, so it stopped at the first one: `x^3 -
+  // 4x` became `x^3` and `2x + 1` became `2x`. GeoGebra was drawing a
+  // different curve from the one on the slide, quietly, for every
+  // multi-term function in the corpus. Allowing spaces inside a flat run
+  // would have been worse — it would swallow the English prose after the
+  // formula — but requiring an operator between terms stops naturally at
+  // `1 and then…` while keeping `x^3 - 4x` whole.
+  const term = '[0-9a-z^().√π]+';
+  const re = new RegExp(
+    `([fghy])\\s*(\\([a-z]\\))?\\s*=\\s*(${term}(?:\\s*[+\\-*/]\\s*${term})*)`,
+    'gi',
+  );
   let m: RegExpExecArray | null;
   while ((m = re.exec(text)) && out.length < max) {
     const name = m[1]!;
     const arg = m[2] ?? (name.toLowerCase() === 'y' ? '' : '(x)');
-    const body = m[3]!.trim();
+    // A trailing full stop is sentence punctuation, never part of the maths.
+    const body = m[3]!.trim().replace(/[.\s]+$/, '');
     // A constant is not a curve worth projecting — require a variable.
     if (!/[a-z]/i.test(body)) continue;
     const cmd = `${name}${arg}=${body}`;

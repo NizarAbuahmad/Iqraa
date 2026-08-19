@@ -9,7 +9,8 @@
  */
 import { remoteAIService as aiService } from './ai/RemoteAIService.ts';
 import { assembleDeckSlides, objectivesSlide } from './classDeck.ts';
-import { buildGraphSlide, buildMediaSlide, extractGraphCommands } from './classMedia.ts';
+import { buildChartSlide, buildGraphSlide, buildMediaSlide, extractGraphCommands } from './classMedia.ts';
+import { chartForLesson } from './deckVisuals.ts';
 import { getLessonMedia } from './lessonMedia.ts';
 import { resolveGeneratorGrounding } from './kbContext.ts';
 import type { ClassroomActivity } from './ai/AIService.ts';
@@ -78,6 +79,19 @@ export async function buildClassDeck({
     ? buildGraphSlide(graphCommands, topic, isAr, 0)
     : null;
 
+  // A chart when the lesson's own text states a dataset — a budget split, a
+  // set of shares. `chartForLesson` refuses everything it is not certain of
+  // (a statistics mean exercise is a list of bare numbers, not a dataset), so
+  // most lessons get nothing here and that is the intended outcome.
+  const chartVisual = chartForLesson(
+    [
+      ...(grounding.lesson?.examplesAr ?? []),
+      ...(grounding.lesson?.keyConceptsAr ?? []),
+      ...activity.slides.map(s => s.content),
+    ].join('\n'),
+  );
+  const chartSlide = chartVisual ? buildChartSlide(chartVisual, topic, isAr, 0) : null;
+
   const media = await getLessonMedia(topic);
   const mediaSlides = media.map(m => buildMediaSlide(m.kind, m.url, m.caption, isAr, 0));
 
@@ -87,6 +101,7 @@ export async function buildClassDeck({
       activitySlides: activity.slides,
       objectives: objSlide,
       graph: graphSlide,
+      chart: chartSlide,
       media: mediaSlides,
     }),
   };

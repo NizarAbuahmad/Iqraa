@@ -223,3 +223,36 @@ describe('buildDeckSlidesHTML — hero backgrounds (title + divider)', () => {
     assert.match(html, /class="deck-hero-img" src="https:\/\/images\.unsplash\.com\/photo-2\.jpg"/);
   });
 });
+
+describe('buildDeckSlidesHTML — a visual on a non-graph slide', () => {
+  it('draws a chart attached to a content slide', () => {
+    // Visuals were only ever wired into the graph branch, so a chart on a
+    // content slide reached neither export. Any slide may carry one.
+    const html = buildDeckSlidesHTML(deck([
+      titleSlide,
+      {
+        slideNumber: 2, type: 'intro', title: '📊 البيانات', content: 'الميزانية',
+        durationSeconds: 0,
+        visual: {
+          kind: 'chart', chartType: 'bar',
+          categories: ['السكن', 'الطعام', 'النقل'], values: [200, 150, 50],
+        },
+      },
+    ]), true);
+    assert.match(html, /<svg/);
+    assert.equal((html.match(/<rect/g) ?? []).length, 3);
+    assert.match(html, /السكن/);
+  });
+
+  it('omits a block kind it does not know rather than throwing', () => {
+    // The open-union contract, exercised through the real renderer.
+    const html = buildDeckSlidesHTML(deck([
+      titleSlide,
+      {
+        slideNumber: 2, type: 'intro', title: 'x', content: 'y', durationSeconds: 0,
+        visual: { kind: 'flow' } as never,
+      },
+    ]), true);
+    assert.doesNotMatch(html, /<svg/);
+  });
+});
