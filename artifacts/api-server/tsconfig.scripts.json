@@ -1,0 +1,12 @@
+{
+  // Dev scripts live outside `src` because they are not part of the bundle,
+  // but they import from it — so they need typechecking or they rot silently
+  // the next time a signature in src changes. The main tsconfig pins
+  // `rootDir` to src for the build output layout and cannot include them.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": "."
+  },
+  "include": ["scripts", "src"]
+}

@@ -793,6 +793,58 @@ one click away the whole time and settled it in a line.
 1.14.0, fastapi 0.141.1, uvicorn 0.52.3, pydantic 2.13.4) in a clean venv, and
 `test_equations.py` passes 29/29 against it.
 
+## Provider evaluation harness, 2026-08-19
+
+Before turning real AI on, the question of *which* provider — OpenAI, Claude,
+DeepSeek — needs answering. It cannot be answered from benchmarks: what matters
+here is Arabic educational register in the Jordanian curriculum, which
+published evals do not cover.
+
+`artifacts/api-server/scripts/provider-eval.ts` runs the **shipped prompts**
+over a fixed set of real NCCD lessons through every provider whose key is
+present, and records latency, token usage and cost. `score-math.py` then puts
+every generated quiz answer key through the app's own verification pipeline —
+`toVerifiablePair` → `classifyVerifiableTopic` → SymPy — and reports a
+per-provider pass rate.
+
+**That scoring is the point.** Having a symbolic verifier means model choice
+can be settled with a number on the one axis that matters most, instead of
+vibes. Nobody else evaluating Arabic content generation has that.
+
+Three decisions worth keeping:
+
+- **Offline, not wired into the app.** Building a provider abstraction into the
+  request path first would be weeks of plumbing before learning anything, and
+  would leave three integrations to maintain to settle a question that only
+  needs settling once. Wire in the winner afterwards.
+- **The prompts are imported, not re-written.** `src/lib/prompts.ts` was split
+  out of `routes/generate.ts` (which constructs the OpenAI client at module
+  scope and cannot be imported without a key) so the harness measures what the
+  product actually ships. Comparing models on a prompt written for the
+  comparison measures the wrong thing.
+- **Arabic rating is blind.** Outputs are written under anonymised ids with the
+  mapping held back in `key.json`. A model that reads better because you knew
+  which one it was is not evidence.
+
+The eval set is fixed and checked in: an eval whose inputs drift cannot be
+compared across runs.
+
+**Verified:** the scorer was smoke-tested end-to-end against synthetic output
+containing a deliberately wrong key — it caught `x = 7` for `2x + 5 = 17`
+(SymPy: 6), correctly counted an Arabic word problem as unprovable rather than
+wrong, and verified a `2^{x+1} = 32` item. That test also caught a real bug in
+the scorer: without `toVerifiablePair` it rejected every correct derivative
+key, which would have systematically under-scored all providers on the family
+the verifier handles best. Typecheck clean, api-server 88 tests passing.
+
+`scripts/` had no typechecking at all — it is outside the main tsconfig's
+`rootDir`. Added `tsconfig.scripts.json` and chained it into the api-server's
+typecheck, so a script importing from `src` can no longer rot silently.
+
+**Not run against real providers.** No Anthropic or DeepSeek key is available
+in this environment. Cost, latency and pass-rate numbers do not exist yet —
+the harness is ready, the run is not done.
+
 ## The feedback table never existed in production, 2026-08-19
 
 Every thumbs-up and thumbs-down teachers submitted since the widget shipped
