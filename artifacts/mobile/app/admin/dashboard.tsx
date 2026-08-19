@@ -76,7 +76,13 @@ export default function AdminDashboardScreen() {
     setLoading(true);
     setError('');
     load(filter, 0)
-      .catch(() => setError(lang === 'ar' ? 'تعذّر تحميل البيانات.' : 'Failed to load dashboard data.'))
+      // Show what actually failed. A bare "couldn't load" sent this screen's
+      // first real user hunting through browser devtools for a 500 that turned
+      // out to be a missing table — the message was already in the error.
+      .catch((e: unknown) => setError(
+        (lang === 'ar' ? 'تعذّر تحميل البيانات: ' : 'Failed to load dashboard data: ')
+        + (e instanceof Error ? e.message : String(e)),
+      ))
       .finally(() => setLoading(false));
   }, [isAdmin, filter, load, lang]);
 

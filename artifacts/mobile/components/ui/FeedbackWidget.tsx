@@ -32,6 +32,7 @@ export function FeedbackWidget({ materialType, toolId }: Props) {
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   const pick = (next: Rating) => {
     Haptics.selectionAsync();
@@ -41,18 +42,28 @@ export function FeedbackWidget({ materialType, toolId }: Props) {
   const submit = async () => {
     if (!rating || submitting) return;
     setSubmitting(true);
+    setFailed(false);
     try {
-      await apiFetch('/feedback', {
+      const res = await apiFetch('/feedback', {
         method: 'POST',
         body: JSON.stringify({ materialType, toolId, rating, comment: comment.trim() }),
       });
+      // `apiFetch` resolves for any HTTP status — it only rejects on a
+      // network failure. Awaiting it without reading `res.ok` meant a 500
+      // fell straight through to the thank-you card, so this widget spent
+      // its whole life telling teachers their feedback was saved while the
+      // server was rejecting every write (the `feedback` table did not
+      // exist in production). Never treat a resolved fetch as a success.
+      if (!res.ok) throw new Error(`feedback failed: ${res.status}`);
       trackEvent('feedback_submitted', { rating, materialType, toolId });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setSubmitted(true);
     } catch {
-      // A signed-out or offline teacher just doesn't get to leave feedback
-      // right now — never block or error the screen they're actually using.
+      // Say so. A teacher who typed a comment deserves to know it did not
+      // send — silently discarding it is worse than an error, because they
+      // believe the product heard them.
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setFailed(true);
     } finally {
       setSubmitting(false);
     }
@@ -116,6 +127,19 @@ export function FeedbackWidget({ materialType, toolId }: Props) {
               textAlign: isRTL ? 'right' : 'left',
             }]}
           />
+          {failed && (
+            <Text
+              style={[styles.failed, {
+                color: colors.destructive,
+                fontFamily: 'Almarai_400Regular',
+                textAlign: isRTL ? 'right' : 'left',
+              }]}
+            >
+              {lang === 'ar'
+                ? 'تعذّر إرسال ملاحظتك. تحقّق من اتصالك وحاول مرة أخرى.'
+                : "Couldn't send your feedback. Check your connection and try again."}
+            </Text>
+          )}
           <Pressable
             onPress={submit}
             disabled={submitting}
@@ -151,4 +175,5 @@ const styles = StyleSheet.create({
   submitBtn: { alignSelf: 'flex-start', paddingHorizontal: 18, paddingVertical: 9 },
   submitText: { color: '#fff', fontSize: 13 },
   thanks: { fontSize: 13.5 },
+  failed: { fontSize: 12.5, lineHeight: 18 },
 });

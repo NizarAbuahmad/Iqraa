@@ -28,6 +28,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { hasSeenAppIntro } from '@/services/appIntro';
+import { isEntryRoute } from '@/services/routeGating';
 import { identifyUser, initAnalytics, resetAnalyticsIdentity, trackScreen } from '@/services/analytics';
 
 SplashScreen.preventAutoHideAsync();
@@ -63,7 +64,12 @@ function RootLayoutNav() {
         // Ties every subsequent event to this teacher — no-op if analytics
         // is unconfigured, same as everything else in services/analytics.ts.
         if (user) identifyUser(user.id, { role: user.role });
-        router.replace('/(tabs)');
+        // Only bounce to the tabs from an entry route, or on a fresh sign-in.
+        // This used to fire on every cold boot, which meant no link into the
+        // app survived arriving at it: on web every reload IS a cold boot, so
+        // opening /admin/dashboard, refreshing a worksheet, or sharing an
+        // evaluation link all landed the recipient on the home tab instead.
+        if (authChanged || isEntryRoute(pathname)) router.replace('/(tabs)');
       } else if (finishedBoot) {
         // Cold boot, signed out: a brand-new install sees the product intro
         // once; a device that just signed out goes straight back to login.
