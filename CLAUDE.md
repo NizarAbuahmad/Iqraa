@@ -71,5 +71,22 @@ Before a live demo: [`docs/demo-checklist.md`](./docs/demo-checklist.md).
 - **The OpenAI client throws at module scope without a key**, which makes
   importing pure helpers in the same file impossible. Import it lazily inside
   the function that calls a model.
-- The `gpt-5.6-luna` model id is hardcoded in three api-server files and is
-  likely invalid. Harmless while DEMO_MODE is on; blocking the day it is off.
+- ~~The `gpt-5.6-luna` model id is hardcoded in three api-server files.~~
+  **No longer true (checked 2026-08-19):** that string appears nowhere. The
+  model comes from `getAiModel()` in `lib/aiBudget.ts` — `AI_MODEL`, defaulting
+  to `gpt-4o-mini`. Live generation is gated by `AI_LIVE_MODE=true` and capped
+  by `AI_BUDGET_USD`, with `EXPO_PUBLIC_DEMO_MODE=false` on the client. So
+  turning real AI on is env vars, not a code change.
+- **A missing `EXPO_PUBLIC_*` key is a silent no-op, not an error.** Analytics
+  ran for weeks collecting nothing because `EXPO_PUBLIC_POSTHOG_API_KEY` was
+  never declared anywhere, and `analytics.ts` degrades to `client = null` by
+  design. Same shape as the Unsplash and YouTube "no key" paths. If a
+  feature's data is mysteriously absent, check the key is set *and* that the
+  build which inlined it has actually deployed — these are baked in at build
+  time, so an env change without a rebuild changes nothing.
+- **The production schema is not deployed by anything.** `pnpm --filter
+  @workspace/db run push` is manual. On 2026-08-19, 14 of 24 expected tables
+  were missing from production, including the entire evaluations subsystem —
+  a whole pilot tool that had never been able to function there. Verify with
+  `to_regclass` against every table in `lib/db/src/schema` before trusting
+  that a feature works in production because it works locally.
