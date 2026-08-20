@@ -9,6 +9,7 @@
   },
   "scripts": {
     "push": "node ./scripts/push.mjs",
+    "verify-schema": "node ./scripts/verify-schema.mjs",
     "push-force": "node ./scripts/push.mjs --force",
     "seed:assessment": "node ./scripts/seed-assessment.mjs"
   },
