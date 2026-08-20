@@ -1,0 +1,140 @@
+# Which model should this product use?
+#
+# Runs the shipped prompts through every provider whose key is present, over a
+# fixed set of real NCCD lessons, then scores what can be scored objectively:
+# schema conformance, cost, latency, and — via SymPy — whether the generated
+# maths answer keys are actually correct.
+#
+# It lives in CI rather than on a laptop because the decision has to be made
+# from a browser, and because a run anyone can reproduce beats a number someone
+# remembers. It is `workflow_dispatch` ONLY: this spends real money on the
+# provider keys, so it never fires on a push, a PR, or a schedule. Nothing here
+# runs unless a human presses Run.
+name: Provider evaluation
+
+on:
+  workflow_dispatch:
+    inputs:
+      openai_model:
+        description: "OpenAI model (blank = gpt-4o-mini)"
+        required: false
+        default: ""
+      anthropic_model:
+        description: "Anthropic model (blank = claude-opus-5)"
+        required: false
+        default: ""
+      anthropic_effort:
+        description: "Anthropic effort: low | medium | high | xhigh | max"
+        required: false
+        default: "medium"
+      deepseek_model:
+        description: "DeepSeek model (blank = deepseek-chat)"
+        required: false
+        default: ""
+
+# One evaluation at a time. Two concurrent runs would double the spend for a
+# result neither of them makes more reliable.
+concurrency:
+  group: provider-eval
+  cancel-in-progress: false
+
+jobs:
+  evaluate:
+    name: run + score
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.18.0 --activate
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # SymPy scoring imports verify_core directly from the verifier service,
+      # so it needs the same dependencies the verifier itself installs.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install sympy
+        working-directory: artifacts/math-verifier
+        run: pip install -r requirements.txt
+
+      # Fails the run early and readably rather than after a checkout, an
+      # install and a pip install, with a stack trace from the harness.
+      - name: Check at least one provider key is set
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: |
+          if [ -z "$OPENAI_API_KEY" ] && [ -z "$ANTHROPIC_API_KEY" ] && [ -z "$DEEPSEEK_API_KEY" ]; then
+            echo "::error::No provider key found. Add at least one of OPENAI_API_KEY," \
+                 "ANTHROPIC_API_KEY or DEEPSEEK_API_KEY under Settings → Secrets and" \
+                 "variables → Actions."
+            exit 1
+          fi
+
+      - name: Run the evaluation
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          OPENAI_EVAL_MODEL: ${{ inputs.openai_model }}
+          ANTHROPIC_EVAL_MODEL: ${{ inputs.anthropic_model }}
+          ANTHROPIC_EVAL_EFFORT: ${{ inputs.anthropic_effort }}
+          DEEPSEEK_EVAL_MODEL: ${{ inputs.deepseek_model }}
+          # A stable id so the artifact and the summary agree on a name.
+          EVAL_RUN_ID: run-${{ github.run_id }}
+        run: node --experimental-strip-types artifacts/api-server/scripts/provider-eval.ts
+
+      # The objective half. Kept separate so a scoring failure still leaves the
+      # generations downloadable — they cost money and must not be lost to a
+      # crash in the scorer.
+      - name: Score the maths with SymPy
+        if: always()
+        env:
+          PYTHONIOENCODING: utf-8
+        run: |
+          out="eval-out/run-${{ github.run_id }}"
+          # The scorer prints; capture it so it lands in the artifact and the
+          # summary rather than only in the log, which expires.
+          python -X utf8 artifacts/api-server/scripts/score-math.py "$out" \
+            2>&1 | tee "$out/sympy-score.txt" || true
+
+      - name: Put the results in the run summary
+        if: always()
+        run: |
+          out="eval-out/run-${{ github.run_id }}"
+          if [ -f "$out/results.md" ]; then
+            cat "$out/results.md" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -f "$out/sympy-score.txt" ]; then
+            {
+              echo
+              echo '## Symbolic scoring'
+              echo
+              echo '```'
+              cat "$out/sympy-score.txt"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      # key.json maps anonymised ids back to providers. It ships in the
+      # artifact because the run is over — but rate the Arabic from raw/
+      # BEFORE opening it, or the comparison is no longer blind.
+      - name: Upload the outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: provider-eval-${{ github.run_id }}
+          path: eval-out/run-${{ github.run_id }}
+          retention-days: 30
