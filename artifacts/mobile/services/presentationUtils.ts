@@ -6,9 +6,9 @@
  */
 
 // ─── Color constants (mirrored from presentation.tsx) ─────────────────────────
-const TIMER_GREEN = '#22C55E';
-const TIMER_AMBER = '#F59E0B';
-const TIMER_RED   = '#EF4444';
+const TIMER_GREEN = '#16A34A';
+const TIMER_AMBER = '#D97706';
+const TIMER_RED   = '#DC2626';
 
 /**
  * Returns the appropriate timer colour based on the fraction of time remaining.

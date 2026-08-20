@@ -139,21 +139,21 @@ function makeMockActivity(): ClassroomActivity {
 
 describe('timerColor()', () => {
   it('returns green when pct > 0.5 (majority of time remaining)', () => {
-    assert.equal(timerColor(1.0), '#22C55E');
-    assert.equal(timerColor(0.75), '#22C55E');
-    assert.equal(timerColor(0.51), '#22C55E');
+    assert.equal(timerColor(1.0), '#16A34A');
+    assert.equal(timerColor(0.75), '#16A34A');
+    assert.equal(timerColor(0.51), '#16A34A');
   });
 
   it('returns amber when pct is between 0.2 and 0.5 (10–50% bracket)', () => {
-    assert.equal(timerColor(0.5),  '#F59E0B');
-    assert.equal(timerColor(0.35), '#F59E0B');
-    assert.equal(timerColor(0.21), '#F59E0B');
+    assert.equal(timerColor(0.5),  '#D97706');
+    assert.equal(timerColor(0.35), '#D97706');
+    assert.equal(timerColor(0.21), '#D97706');
   });
 
   it('returns red when pct ≤ 0.2 (less than 20% remaining)', () => {
-    assert.equal(timerColor(0.2),  '#EF4444');
-    assert.equal(timerColor(0.1),  '#EF4444');
-    assert.equal(timerColor(0.0),  '#EF4444');
+    assert.equal(timerColor(0.2),  '#DC2626');
+    assert.equal(timerColor(0.1),  '#DC2626');
+    assert.equal(timerColor(0.0),  '#DC2626');
   });
 });
 

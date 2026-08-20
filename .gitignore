@@ -66,3 +66,6 @@ knowledge-base/**/*.pdf
 
 # Provider-evaluation output (generated content + raw model responses)
 eval-out/
+
+# Claude Code local state
+.claude/

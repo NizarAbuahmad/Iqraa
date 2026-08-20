@@ -970,6 +970,9 @@ export default function IqraScreen() {
   const listRef = useRef<FlatList>(null);
   /** Guards duplicate sends without relying on a stale useCallback closure. */
   const thinkingRef = useRef(false);
+  // True while the last thing IQRA said was the clarify question. Answering it
+  // with something the router still cannot classify must not re-ask it.
+  const awaitingClarifyRef = useRef(false);
 
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
 
@@ -1177,7 +1180,8 @@ export default function IqraScreen() {
 
       // 0. Intent Router — BEFORE curriculum context / Teaching Assistant.
       //    Greetings & small talk must never trigger lesson generation.
-      const route = classifyChatIntent(q, lang as 'ar' | 'en');
+      const route = classifyChatIntent(q, lang as 'ar' | 'en', awaitingClarifyRef.current);
+      awaitingClarifyRef.current = route.intent === 'ambiguous';
       if (route.intent === 'artifact') {
         setThinkingLabel(
           /خطة|lesson\s*plan/i.test(q) ? t('iqraGeneratingLessonPlan') : t('iqraGeneratingArtifact'),
