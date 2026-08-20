@@ -3,7 +3,7 @@
  *
  * Phase-1 classroom model: student phones are banned in Jordanian schools,
  * so the projector IS the interactive surface. Every question slide is
- * answered from the seat (printed أ ب ج د letter cards or mini whiteboards),
+ * answered from the seat (fingers held up, or mini whiteboards),
  * and the teacher reveals on the screen.
  *
  * Reuses the existing ActivitySlide contract so the presentation screen
@@ -59,8 +59,8 @@ function introSlide(titleAr: string, lessonTitle: string, isAr: boolean): Activi
     type: 'intro',
     title: isAr ? `📚 ${titleAr}` : `📚 ${titleAr}`,
     content: isAr
-      ? `${lessonTitle}\n\nالقواعد:\n• يظهر السؤال ويبدأ المؤقت\n• الجميع يفكر بصمت — لا أيدي مرفوعة\n• عند انتهاء الوقت: الكل يرفع بطاقة الحرف معًا\n• ثم نكشف الإجابة ونناقش`
-      : `${lessonTitle}\n\nRules:\n• The question appears and the timer starts\n• Everyone thinks silently — no hands up\n• When time ends: everyone raises a letter card together\n• Then we reveal and discuss`,
+      ? `${lessonTitle}\n\nالقواعد:\n• يظهر السؤال ويبدأ المؤقت\n• الجميع يفكر بصمت — لا أيدي مرفوعة\n• عند انتهاء الوقت: الكل يرفع أصابعه معًا (إصبع = أ، إصبعان = ب، ...)\n• ثم نكشف الإجابة ونناقش`
+      : `${lessonTitle}\n\nRules:\n• The question appears and the timer starts\n• Everyone thinks silently — no hands up\n• When time ends: everyone holds up fingers together (1 = A, 2 = B, …)\n• Then we reveal and discuss`,
     durationSeconds: 0,
   };
 }
@@ -168,8 +168,8 @@ export function buildDeckFromQuiz(
       ? `مراجعة «${lessonTitle}» بإجابة كل الطلاب على كل سؤال`
       : `Review “${lessonTitle}” with every student answering every question`,
     materials: isAr
-      ? ['بطاقات الحروف أ ب ج د (أو ألواح صغيرة)', 'شاشة عرض']
-      : ['A B C D letter cards (or mini whiteboards)', 'Projector'],
+      ? ['شاشة عرض', 'ألواح صغيرة (اختياري)']
+      : ['Projector', 'Mini whiteboards (optional)'],
     teacherPreparation: isAr
       ? 'اعرض الشاشة، شغّل المؤقت، والجميع يجيب من مقاعدهم.'
       : 'Project the screen, run the timer, everyone answers from their seat.',
@@ -277,8 +277,8 @@ export function buildDeckFromWorksheet(
       ? `حل تمارين «${lessonTitle}» جماعيًا على الشاشة`
       : `Work through “${lessonTitle}” exercises together on screen`,
     materials: isAr
-      ? ['بطاقات الحروف أ ب ج د (أو ألواح صغيرة)', 'شاشة عرض']
-      : ['A B C D letter cards (or mini whiteboards)', 'Projector'],
+      ? ['شاشة عرض', 'ألواح صغيرة (اختياري)']
+      : ['Projector', 'Mini whiteboards (optional)'],
     teacherPreparation: isAr
       ? 'يمكن عرض الورقة نفسها التي وزّعتها على الطلاب.'
       : 'Project the same worksheet you handed out.',
@@ -357,8 +357,8 @@ export function buildGameDeckFromQuiz(
     type: 'intro',
     title: isAr ? `🏆 تحدي الصف — ${quiz.title}` : `🏆 Class Challenge — ${quiz.title}`,
     content: isAr
-      ? `${lessonTitle}\n\nالقواعد:\n• الصف مقسوم إلى ${teamCount} فرق\n• يظهر السؤال ويبدأ المؤقت\n• الجميع يفكر بصمت — لا أيدي مرفوعة\n• عند انتهاء الوقت: كل فريق يرفع بطاقة الحرف معًا\n• الفريق المصيب يأخذ ١٠٠ نقطة — والإجابات المتتالية تعطي نقاطًا إضافية`
-      : `${lessonTitle}\n\nRules:\n• The class is split into ${teamCount} teams\n• The question appears and the timer starts\n• Everyone thinks silently — no hands up\n• When time ends: each team raises its letter card together\n• A correct team scores 100 points — consecutive answers earn a bonus`,
+      ? `${lessonTitle}\n\nالقواعد:\n• الصف مقسوم إلى ${teamCount} فرق\n• يظهر السؤال ويبدأ المؤقت\n• الجميع يفكر بصمت — لا أيدي مرفوعة\n• عند انتهاء الوقت: كل فريق يرفع أصابعه معًا (إصبع = أ، إصبعان = ب، ...)\n• الفريق المصيب يأخذ ١٠٠ نقطة — والإجابات المتتالية تعطي نقاطًا إضافية`
+      : `${lessonTitle}\n\nRules:\n• The class is split into ${teamCount} teams\n• The question appears and the timer starts\n• Everyone thinks silently — no hands up\n• When time ends: each team holds up fingers together (1 = A, 2 = B, …)\n• A correct team scores 100 points — consecutive answers earn a bonus`,
     durationSeconds: 0,
   }];
 
@@ -422,11 +422,11 @@ export function buildGameDeckFromQuiz(
       ? `مراجعة «${lessonTitle}» كمنافسة بين الفرق مع إجابة كل الطلاب`
       : `Review “${lessonTitle}” as a team contest with every student answering`,
     materials: isAr
-      ? ['بطاقات الحروف أ ب ج د لكل طالب', 'شاشة عرض', 'تقسيم الصف إلى فرق']
-      : ['A B C D letter cards for every student', 'Projector', 'Class split into teams'],
+      ? ['شاشة عرض', 'تقسيم الصف إلى فرق']
+      : ['Projector', 'Class split into teams'],
     teacherPreparation: isAr
-      ? `قسّم الصف إلى ${teamCount} فرق قبل البدء، ووزّع بطاقات الحروف.`
-      : `Split the class into ${teamCount} teams before starting and hand out the letter cards.`,
+      ? `قسّم الصف إلى ${teamCount} فرق قبل البدء.`
+      : `Split the class into ${teamCount} teams before starting.`,
     teacherNotes: [],
     answerKey: scoreable.map((q, i) =>
       isAr ? `سؤال ${i + 1}: ${q.correctAnswer}` : `Q${i + 1}: ${q.correctAnswer}`,

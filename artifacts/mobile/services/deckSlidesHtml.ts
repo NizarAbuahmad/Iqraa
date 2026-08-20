@@ -192,8 +192,8 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
   /**
    * Whole-class MCQ. Until this existed the exports had no `question` branch
    * at all, so these fell through to the generic content slide and printed as
-   * a bare stem: the projected deck asked the class to raise a letter card
-   * and the PDF showed no letters to raise.
+   * a bare stem: the projected deck asked the class to answer by letter and
+   * the PDF showed no letters to answer with.
    *
    * The correct option is marked, matching what `challengeSlide` already does
    * with worked-example answers — the exported file is the teacher's copy,

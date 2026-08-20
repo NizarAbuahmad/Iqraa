@@ -344,7 +344,8 @@ function QuestionOptions({
 }) {
   const options = slide.options ?? [];
   if (options.length === 0) return null;
-  // Arabic response letters mirror the printed أ ب ج د cards students hold up.
+  // Response letters students answer with by holding up that many fingers
+  // (أ = 1, ب = 2, …). No printed cards — the app never had a way to make them.
   const letters = isRTL ? ['أ', 'ب', 'ج', 'د', 'هـ'] : ['A', 'B', 'C', 'D', 'E'];
 
   return (

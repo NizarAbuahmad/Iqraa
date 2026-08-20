@@ -1064,7 +1064,7 @@ export class MockAIService extends AIService {
       : [];
 
     // ── Quick Check (whole-class ABCD response) ────────────────────────────────
-    // Every student answers every question (mini-whiteboards / letter cards) —
+    // Every student answers every question (fingers held up / mini-whiteboards) —
     // formative assessment, not a quiz show. Wrong options are misconception
     // distractors from the concrete bank, so the show of hands tells the
     // teacher WHICH mistake the class is making.
@@ -1115,8 +1115,8 @@ export class MockAIService extends AIService {
                 .map(o => (isAr ? `«${o}» — خطأ شائع مقصود` : `“${o}” — a deliberate common error`))
                 .join('\n'),
               teachingTips: isAr
-                ? 'الكل يجيب معًا: ارفعوا بطاقة الحرف عند انتهاء المؤقت. اقرأ توزيع الأيدي قبل الكشف — كل خيار خاطئ يكشف خطأً شائعًا محددًا.'
-                : 'All students answer together: hold up your letter card when the timer ends. Read the spread of hands before revealing — each wrong option maps to a specific misconception.',
+                ? 'الكل يجيب معًا: ارفعوا أصابعكم عند انتهاء المؤقت (إصبع = أ، إصبعان = ب، ...). اقرأ توزيع الأيدي قبل الكشف — كل خيار خاطئ يكشف خطأً شائعًا محددًا.'
+                : 'All students answer together: hold up fingers when the timer ends (1 = A, 2 = B, …). Read the spread of hands before revealing — each wrong option maps to a specific misconception.',
             },
           };
         });
@@ -1133,16 +1133,16 @@ export class MockAIService extends AIService {
             ? `تشخيص فهم الصف كاملًا في ${topic} عبر أسئلة يجيب عنها كل طالب`
             : `Diagnose whole-class understanding of ${topic} — every student answers every question`,
           materials: isAr
-            ? ['بطاقات الحروف أ ب ج د (أو ألواح صغيرة)', 'شاشة عرض']
-            : ['A B C D letter cards (or mini whiteboards)', 'Projector'],
+            ? ['شاشة عرض', 'ألواح صغيرة (اختياري)']
+            : ['Projector', 'Mini whiteboards (optional)'],
           teacherPreparation: isAr
-            ? 'اطبع بطاقات الحروف مرة واحدة وتُعاد في كل حصة. اعرض السؤال، شغّل المؤقت، والجميع يرفع إجابته معًا.'
-            : 'Print the letter cards once — reuse every lesson. Show the question, run the timer, everyone answers at once.',
+            ? 'لا تحتاج تحضيرًا مسبقًا. اعرض السؤال، شغّل المؤقت، والجميع يرفع أصابعه معًا عند انتهاء الوقت.'
+            : 'No prep needed. Show the question, run the timer, everyone answers at once with fingers.',
           teacherNotes: isAr
             ? ['لا تكشف الإجابة قبل أن يجيب الجميع', 'إن انقسم الصف بين خيارين، اطلب من الطرفين التبرير ثم أعد التصويت']
             : ['Never reveal before everyone has answered', 'If the class splits between two options, have each side argue, then re-vote'],
           answerKey: mcqs.map((q, i) => (isAr ? `سؤال ${i + 1}: ${q.answer}` : `Q${i + 1}: ${q.answer}`)),
-          printables: isAr ? ['بطاقات الحروف أ ب ج د'] : ['A B C D letter cards'],
+          printables: [],
           assessment: isAr
             ? 'توزيع الإجابات نفسه هو التقييم: أي خيار خاطئ يرتفع كثيرًا يحدد الخطأ الشائع الذي يجب إعادة شرحه.'
             : 'The spread of answers IS the assessment: a frequently raised wrong option pinpoints the misconception to re-teach.',
@@ -1155,8 +1155,8 @@ export class MockAIService extends AIService {
               type: 'intro',
               title: isAr ? '🙋 تحقق سريع' : '🙋 Quick Check',
               content: isAr
-                ? `${topic}\n\nالقواعد:\n• يظهر السؤال ويبدأ المؤقت\n• الجميع يفكر بصمت — لا أيدي مرفوعة\n• عند انتهاء الوقت: الكل يرفع بطاقة الحرف معًا\n• ثم نكشف الإجابة الصحيحة ونناقش`
-                : `${topic}\n\nRules:\n• The question appears and the timer starts\n• Everyone thinks silently — no hands up\n• When time ends: everyone raises a letter card together\n• Then we reveal and discuss`,
+                ? `${topic}\n\nالقواعد:\n• يظهر السؤال ويبدأ المؤقت\n• الجميع يفكر بصمت — لا أيدي مرفوعة\n• عند انتهاء الوقت: الكل يرفع أصابعه معًا (إصبع = أ، إصبعان = ب، ...)\n• ثم نكشف الإجابة الصحيحة ونناقش`
+                : `${topic}\n\nRules:\n• The question appears and the timer starts\n• Everyone thinks silently — no hands up\n• When time ends: everyone holds up fingers together (1 = A, 2 = B, …)\n• Then we reveal and discuss`,
               durationSeconds: 0,
             },
             ...qSlides,
