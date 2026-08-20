@@ -29,8 +29,11 @@ import {
   buildLessonDeck, EXIT_TICKET_MAX, MID_LESSON_CHECK_MAX, rebuildAnswerKey,
 } from '@/services/lessonSlides';
 import {
-  applyMediaEdit, extractGraphCommands, nextVideoSuggestion, videoCaption,
+  applyMediaEdit, extractGraphCommands, insertLessonResources, nextVideoSuggestion,
+  shouldSearchForVideo, videoCaption,
 } from '@/services/classMedia';
+import { LessonResources } from '@/components/ui/LessonResources';
+import type { LessonMediaItem } from '@/services/lessonMedia';
 import type { DeckVideo } from '@/services/youtubeVideo';
 import { summarizeVerification } from '@/services/quizVerification';
 import { confirm } from '@/services/confirm';
@@ -87,6 +90,8 @@ export default function SlidesScreen() {
    */
   const [videoOptions, setVideoOptions] = useState<DeckVideo[]>([]);
   const [loadingSuggestion, setLoadingSuggestion] = useState(false);
+  /** What the teacher has pinned to this lesson, kept in sync by the picker. */
+  const [attached, setAttached] = useState<LessonMediaItem[]>([]);
   /** True once the example-verification pass has resolved — the summary row
       stays silent while a check is still in flight. */
   const [verifyDone, setVerifyDone] = useState(false);
@@ -280,7 +285,7 @@ export default function SlidesScreen() {
           ].join(' \n '))
         : [];
       const checks = await checksPromise;
-      const built = buildLessonDeck(trimmed, isAr, {
+      const builtBase = buildLessonDeck(trimmed, isAr, {
         lesson: grounding.lesson,
         plan: lessonPlan,
         subject: isAr ? subjects[subjectIdx].nameAr : subjects[subjectIdx].name,
@@ -290,6 +295,13 @@ export default function SlidesScreen() {
         graphCommands,
         checks,
       });
+      // The teacher's own resources go in before anything is shown, unlike
+      // the searched media which arrives later — they are local, so there is
+      // nothing to wait for and no reason to make the deck flicker.
+      const built = {
+        ...builtBase,
+        slides: insertLessonResources(builtBase.slides, attached, isAr),
+      };
       setDeck(built);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
@@ -351,10 +363,14 @@ export default function SlidesScreen() {
             ? `شرح ${trimmed} ${subjects[subjectIdx].nameAr} للصف العاشر`
             : `${trimmed} ${subjects[subjectIdx].name} grade 10 explained`;
 
+          // The search fills a gap, it does not compete with the teacher. A
+          // pinned video means no call at all — one fewer thing on the
+          // projector, and 100 units of a 10,000/day quota unspent.
+          const wantVideo = shouldSearchForVideo(attached);
           const [titlePhoto, dividerPhoto, videos] = await Promise.all([
             searchDeckPhoto(titleQuery),
             searchDeckPhoto(dividerQuery),
-            searchDeckVideos(videoQuery, isAr ? 'ar' : 'en'),
+            wantVideo ? searchDeckVideos(videoQuery, isAr ? 'ar' : 'en') : Promise.resolve([]),
           ]);
           const video = videos[0] ?? null;
           // Keep the rest for the editor's "another suggestion" control. They
@@ -533,6 +549,12 @@ export default function SlidesScreen() {
             hasError={!!error && !topic}
             t={t}
           />
+
+          {/* Directly under the lesson picker, because that is what these
+              attach to: pin a video to «الاشتقاق» once and every future deck
+              for that lesson carries it — and so does Class Mode, which has
+              read this store all along. */}
+          <LessonResources topic={topic.trim()} onChange={setAttached} />
 
           <View style={{ gap: 10, marginBottom: 18 }}>
             <Toggle label={t('slidesIncludeExamples')} value={includeExamples} onChange={setIncludeExamples} />

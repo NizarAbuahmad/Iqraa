@@ -24,6 +24,8 @@ import {
   insertVideoSlide,
   isLikelyImageUrl,
   applyMediaEdit,
+  insertLessonResources,
+  shouldSearchForVideo,
   nextVideoSuggestion,
   videoCaption,
   youtubeEmbedUrl,
@@ -341,5 +343,79 @@ describe('videoCaption', () => {
       videoCaption({ url: 'x', title: 'شرح الاشتقاق', channelTitle: 'قناة المعلم' }),
       'شرح الاشتقاق — قناة المعلم',
     );
+  });
+});
+
+// ── Lesson resources ─────────────────────────────────────────────────────────
+//
+// What the teacher pinned to the lesson, as opposed to what a search found.
+// The store behind these predates the retirement of the home screen, which is
+// where its only UI lived — Class Mode has been reading it ever since with
+// nothing able to write to it.
+
+describe('insertLessonResources', () => {
+  const deck = [
+    { slideNumber: 1, type: 'intro' as const, title: 'الدرس', content: '', durationSeconds: 0 },
+    { slideNumber: 2, type: 'intro' as const, title: '📐 القاعدة', content: 'القاعدة', durationSeconds: 0 },
+    { slideNumber: 3, type: 'challenge' as const, title: 'مثال 1', content: 'س', durationSeconds: 60 },
+    { slideNumber: 4, type: 'summary' as const, title: 'ملخص', content: '', durationSeconds: 0 },
+  ];
+  const items = [
+    { kind: 'video' as const, url: 'https://youtu.be/dQw4w9WgXcQ', caption: 'فيديو المعلم' },
+    { kind: 'image' as const, url: 'https://example.com/diagram.png', caption: 'مخطط' },
+  ];
+
+  it('lands after the teaching and before the worked examples', () => {
+    const out = insertLessonResources(deck, items, true);
+    const firstExample = out.findIndex(s => s.title.startsWith('مثال'));
+    const firstResource = out.findIndex(s => s.type === 'media');
+    assert.ok(firstResource > 1, 'after the rule');
+    assert.ok(firstResource < firstExample, 'before the examples');
+  });
+
+  it('keeps the order the teacher attached them in', () => {
+    // Inserting one at a time would reverse them: each lands before the same
+    // first `challenge` slide.
+    const out = insertLessonResources(deck, items, true);
+    const kinds = out.filter(s => s.type === 'media').map(s => s.mediaKind);
+    assert.deepEqual(kinds, ['video', 'image']);
+  });
+
+  it('renumbers so the deck stays consecutive', () => {
+    const out = insertLessonResources(deck, items, true);
+    out.forEach((s, i) => assert.equal(s.slideNumber, i + 1));
+  });
+
+  it('falls back to before the summary when there are no examples', () => {
+    const noExamples = deck.filter(s => s.type !== 'challenge');
+    const out = insertLessonResources(noExamples, [items[0]!], true);
+    const at = out.findIndex(s => s.type === 'media');
+    const summary = out.findIndex(s => s.type === 'summary');
+    assert.ok(at >= 0 && at < summary);
+  });
+
+  it('changes nothing when nothing is attached', () => {
+    assert.deepEqual(insertLessonResources(deck, [], true), deck);
+  });
+});
+
+describe('shouldSearchForVideo', () => {
+  it('searches when the teacher pinned nothing', () => {
+    assert.equal(shouldSearchForVideo([]), true);
+  });
+
+  it('searches when the teacher pinned only images', () => {
+    assert.equal(shouldSearchForVideo([
+      { kind: 'image', url: 'https://example.com/a.png', caption: '' },
+    ]), true);
+  });
+
+  it('stands down when the teacher pinned their own video', () => {
+    // Their video beats a search result on the projector, and skipping the
+    // call saves 100 units of a 10,000/day quota per generation.
+    assert.equal(shouldSearchForVideo([
+      { kind: 'video', url: 'https://youtu.be/dQw4w9WgXcQ', caption: '' },
+      { kind: 'image', url: 'https://example.com/a.png', caption: '' },
+    ]), false);
   });
 });

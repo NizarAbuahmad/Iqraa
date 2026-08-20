@@ -793,6 +793,59 @@ one click away the whole time and settled it in a line.
 1.14.0, fastapi 0.141.1, uvicorn 0.52.3, pydantic 2.13.4) in a clean venv, and
 `test_equations.py` passes 29/29 against it.
 
+## The lesson library could be read but never written, 2026-08-20
+
+Asked for a way to add a teacher's own video, image or other resource to a
+deck. Went looking for where that would live and found it already built —
+and orphaned.
+
+`services/lessonMedia.ts` is complete: per user, per lesson, add / get /
+remove, URL classification, duplicate rejection. Its only UI lived on the
+home screen, which was retired when chat became the landing tab. Nothing
+routes to `/home` and its tab is `display: none`, so:
+
+| | writes | reads |
+| --- | --- | --- |
+| `app/home.tsx` | ✅ — unreachable | ✅ |
+| Class Mode (`startClass.ts`) | — | ✅ **a store nothing can write** |
+| Slides Maker | — | ❌ did not know it existed |
+
+Class Mode has been asking every lesson for teacher-attached media that no
+teacher could attach. Not a crash, not an error — a feature that quietly
+stopped having an input.
+
+**The UI now lives in `components/ui/LessonResources.tsx`**, under the lesson
+picker in Slides Maker, as a component rather than a fourth copy of the same
+form. Pin a video to «الاشتقاق» once and it lands in every future deck for
+that lesson *and* in Class Mode, which was already reading for it.
+
+**The search stands down when the teacher has spoken.** `shouldSearchForVideo`
+returns false when a video is pinned, so a curated lesson makes no YouTube
+call at all: one fewer thing on the projector, and 100 units of a 10,000/day
+quota unspent per generation. The search fills a gap; it does not compete.
+
+`insertLessonResources` puts the batch in together, at the same slot the
+auto-found video uses — after the teaching, before the worked examples.
+Inserting one at a time would have reversed them, since each lands before the
+same first `challenge` slide.
+
+**Verified in a real browser** end to end: pinned «فيديو المعلم نفسه» to
+الاشتقاق, generated, and counted the calls to `/media/youtube-video`.
+
+| | searches during generation |
+| --- | --- |
+| Nothing pinned | 1 |
+| Teacher's video pinned | **0** |
+
+The deck read …📐 القاعدة → **فيديو** → مثال 1–3 → 🎉 ملخص, with the search
+result absent.
+
+**Still to do in this direction:** insert-a-resource at a chosen position in
+an existing deck, and a `link` kind with a QR code so articles, PhET and
+GeoGebra applets can be projected and scanned. The dead `app/home.tsx` is
+untouched — it is unreachable either way, and deleting a whole screen is its
+own decision.
+
 ## "Suggest another video" — free, because the search already paid, 2026-08-20
 
 The swap field let a teacher replace the video with one they had in mind. This

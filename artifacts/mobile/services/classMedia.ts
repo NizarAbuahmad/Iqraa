@@ -275,6 +275,44 @@ export function insertVideoSlide(
   return next.map((s, i) => ({ ...s, slideNumber: i + 1 }));
 }
 
+/** What a teacher pinned to a lesson — the shape `lessonMedia` stores. */
+export type AttachedResource = { kind: 'image' | 'video'; url: string; caption: string };
+
+/**
+ * Put the teacher's own resources into a generated deck.
+ *
+ * Same slot the auto-found video uses — after the teaching, before the worked
+ * examples — and the batch goes in together so a teacher who attached three
+ * things sees them in the order they attached them. Inserting one at a time
+ * would reverse them, because each insert lands before the same first
+ * `challenge` slide.
+ */
+export function insertLessonResources(
+  slides: readonly ActivitySlide[],
+  items: readonly AttachedResource[],
+  isAr: boolean,
+): ActivitySlide[] {
+  if (items.length === 0) return [...slides];
+  const beforeExamples = slides.findIndex(s => s.type === 'challenge');
+  const beforeSummary = slides.findIndex(s => s.type === 'summary');
+  const at = beforeExamples >= 0 ? beforeExamples : beforeSummary >= 0 ? beforeSummary : slides.length;
+  const built = items.map(m => buildMediaSlide(m.kind, m.url, m.caption, isAr, 0));
+  return [...slides.slice(0, at), ...built, ...slides.slice(at)]
+    .map((s, i) => ({ ...s, slideNumber: i + 1 }));
+}
+
+/**
+ * Whether to go looking for a video at all.
+ *
+ * The search exists to fill a gap, not to compete with the teacher. If they
+ * pinned their own video to this lesson, a second one from a search is noise
+ * on the projector — and skipping the call also saves 100 units of a
+ * 10,000/day YouTube quota every time a curated lesson is generated.
+ */
+export function shouldSearchForVideo(items: readonly AttachedResource[]): boolean {
+  return !items.some(i => i.kind === 'video');
+}
+
 /**
  * Pull plottable expressions out of lesson text so the graph slide opens on
  * something real. Conservative on purpose: only well-formed function
