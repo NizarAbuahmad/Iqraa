@@ -149,3 +149,26 @@ describe('extraction defects that silently cost real verifications', () => {
     assert.equal(latinEquationFrom('حل: n = 3n - 1'), 'n=3n-1');
   });
 });
+
+describe('equations with more than one unknown', () => {
+  it('refuses a circle equation', () => {
+    // «معادلة الدائرة (x-4)² + (y+1)² = 9» has one '=', a '^2' and Latin
+    // letters, so it classified as a quadratic — and the prover then refused
+    // it for having two unknowns. Fail-closed, so no badge was ever wrong,
+    // but the item was reported as a key the verifier rejected, which reads
+    // exactly like a wrong answer. It is simply not a question this verifier
+    // can judge.
+    assert.equal(latinEquationFrom('ما مركز الدائرة (x-4)² + (y+1)² = 9؟'), null);
+    assert.equal(classifyVerifiableTopic('ما مركز الدائرة (x-4)² + (y+1)² = 9؟'), null);
+    assert.equal(latinEquationFrom('حل: x + y = 10'), null);
+  });
+
+  it('still accepts single-unknown equations, including through a function call', () => {
+    assert.equal(latinEquationFrom('ما ناتج / حل: 2x + 5 = 17؟'), '2x+5=17');
+    assert.equal(latinEquationFrom('حل: x^2 - 5x + 6 = 0'), 'x^2-5x+6=0');
+    assert.equal(latinEquationFrom('حل: 2^{x+1} = 32'), '2^(x+1)=32');
+    // `sin` is a function, not a second unknown — counting it would reject a
+    // perfectly ordinary single-unknown equation.
+    assert.equal(latinEquationFrom('حل: sin(x) = 0.5'), 'sin(x)=0.5');
+  });
+});

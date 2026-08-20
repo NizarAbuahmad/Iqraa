@@ -61,8 +61,17 @@ The run summary carries two tables, and the artifact carries everything.
 - **Symbolic scoring** — every generated maths answer key through the same
   classifier the app uses and then through SymPy. Read it as a floor, not a
   grade: only derivatives and single-unknown equations are provable, so
-  trigonometry and word problems are excluded rather than counted wrong. A
-  model is not worse for writing a good trigonometry question.
+  trigonometry, circle geometry, صح/خطأ items and word problems are excluded
+  rather than counted wrong. A model is not worse for writing a good
+  trigonometry question.
+
+  The table reports `provable` next to `verified` for exactly this reason.
+  **`provable` is the denominator — check it before reading the pass rate.**
+  The first successful run of this harness reported openai at 0%, which was
+  the scorer, not the model: it fed SymPy `«أ) 15x²»` with the option label
+  the shipped prompt asks for still attached, and compared «صحيح» against a
+  derivative. If `provable` is 0, the run measured nothing and the script now
+  says so instead of printing a rate.
 
 **Subjective — yours, and blind.**
 

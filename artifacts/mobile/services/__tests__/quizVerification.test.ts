@@ -15,6 +15,8 @@ import assert from 'node:assert/strict';
 
 import {
   BANK_OUTCOME,
+  isTrueFalseAnswer,
+  stripOptionLabel,
   summarizeVerification,
   toVerifiablePair,
   verifyDeckExamples,
@@ -281,5 +283,87 @@ describe('derivative pairs reach the verifier in the form it can parse', () => {
     q.questions[0]!.options = ["f'(x) = 2x", 'x²', '2'];
     await verifyQuizAnswers(q, fn);
     assert.deepEqual(calls[0]!.distractors, ['x²', '2']);
+  });
+});
+
+describe('option labels on generated multiple-choice keys', () => {
+  // `quizPromptAr` asks the model for `"options": ["أ) خيار", …]` and
+  // `"correctAnswer": "أ) الخيار الصحيح"`, so every generated MCQ arrives
+  // labelled. SymPy cannot parse «أ) 15x²»: the key failed to parse and every
+  // distractor came back parse_or_compare_error, so the item was rejected as
+  // bad_distractors. No generated multiple-choice derivative had ever earned
+  // a symbolic badge — on the one family the verifier is best at. It failed
+  // closed, so the badge was never wrong, just never shown.
+  const recorder = () => {
+    const calls: { question: string; answer: string; distractors: string[] }[] = [];
+    const fn = async (question: string, answer: string, distractors: string[]) => {
+      calls.push({ question, answer, distractors });
+      return BANK_OUTCOME;
+    };
+    return { calls, fn };
+  };
+
+  it('strips the label from the key and from every distractor', async () => {
+    const { calls, fn } = recorder();
+    const q = quiz(['أ) 15x²']);
+    q.questions[0]!.text = 'ما مشتقة الدالة f(x) = 5x³؟';
+    q.questions[0]!.options = ['أ) 15x²', 'ب) 5x²', 'ج) 15x³', 'د) 3x²'];
+    await verifyQuizAnswers(q, fn);
+    assert.equal(calls[0]!.answer, '15x²');
+    assert.deepEqual(calls[0]!.distractors, ['5x²', '15x³', '3x²']);
+  });
+
+  it('does not leave the correct option in its own distractor list', async () => {
+    // The filter compares option to key. Strip one side only and «أ) 15x²»
+    // no longer equals '15x²', so the right answer rides along as a
+    // distractor and check_distractors rejects it as equivalent_to_answer —
+    // turning a correct key into a failed verification.
+    const { calls, fn } = recorder();
+    const q = quiz(['أ) 15x²']);
+    q.questions[0]!.options = ['أ) 15x²', 'ب) 5x²'];
+    await verifyQuizAnswers(q, fn);
+    assert.deepEqual(calls[0]!.distractors, ['5x²']);
+  });
+
+  it('leaves an unlabelled answer alone', () => {
+    assert.equal(stripOptionLabel('15x²'), '15x²');
+    assert.equal(stripOptionLabel('(x-2)(x+3)'), '(x-2)(x+3)');
+    assert.equal(stripOptionLabel('x = 5'), 'x = 5');
+  });
+
+  it('never eats a decimal point', () => {
+    // Accepting `1.` as a label would rewrite the decimal key '2. 5' to '5'.
+    assert.equal(stripOptionLabel('2.5'), '2.5');
+    assert.equal(stripOptionLabel('2. 5'), '2. 5');
+  });
+});
+
+describe('صح/خطأ questions', () => {
+  it('never asks the verifier to prove a verdict', async () => {
+    // A true/false statement about a derivative still reads as a derivative
+    // question, so the classifier claims it and the verifier is asked whether
+    // «صحيح» equals 2x. It never can. Worse, the item is then reported as a
+    // key SymPy rejected — indistinguishable from the model getting the maths
+    // wrong, when it answered exactly the question it was asked.
+    let called = false;
+    const q = quiz(['صحيح']);
+    q.questions[0]!.type = 'true_false';
+    q.questions[0]!.text = 'مشتقة الدالة f(x) = x² هي 2x. صح أم خطأ؟';
+    q.questions[0]!.options = ['صحيح', 'خطأ'];
+    const out = await verifyQuizAnswers(q, async () => {
+      called = true;
+      return proves;
+    });
+    assert.equal(called, false);
+    assert.equal(out[0]!.verifiedBy, 'bank');
+  });
+
+  it('recognises both spellings, both languages, labelled or not', () => {
+    for (const a of ['صحيح', 'صح', 'خطأ', 'خاطئ', 'true', 'False', 'ج) صحيح']) {
+      assert.equal(isTrueFalseAnswer(a), true, a);
+    }
+    for (const a of ['15x²', 'x = 5', '']) {
+      assert.equal(isTrueFalseAnswer(a), false, a);
+    }
   });
 });

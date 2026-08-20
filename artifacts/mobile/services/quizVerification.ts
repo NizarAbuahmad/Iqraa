@@ -37,12 +37,19 @@ type VerifiableItem = { text: string; answer: string; options?: string[] | undef
 async function verifyItems(items: VerifiableItem[], verify: VerifyFn): Promise<VerifyOutcome[]> {
   return Promise.all(
     items.map(async item => {
-      const answer = item.answer.trim();
+      const answer = stripOptionLabel(item.answer);
       // Nothing to prove a key against — asking would waste a round trip and
       // the honest answer is already known.
       if (!answer) return BANK_OUTCOME;
+      // A صح/خطأ verdict is not a mathematical answer, so no verifier can
+      // ever confirm it. Say "from the bank" without asking.
+      if (isTrueFalseAnswer(answer)) return BANK_OUTCOME;
+      // Strip both sides before comparing: the label is part of the option
+      // string, so an unstripped `options` entry never equals a stripped key
+      // and the correct answer would ride along as its own distractor —
+      // which check_distractors rejects as equivalent_to_answer.
       const distractors = Array.isArray(item.options)
-        ? item.options.filter(o => o !== item.answer)
+        ? item.options.map(stripOptionLabel).filter(o => o !== '' && o !== answer)
         : [];
       // Same rewrite the deck path already applies. Without it a worksheet's
       // "أوجد مشتقة f(x) = x²." / "f'(x) = 2x" pair reached the verifier with
@@ -100,6 +107,45 @@ export async function verifyWorksheetAnswers(
     })),
     verify,
   );
+}
+
+/**
+ * Strip a multiple-choice option label — «أ) 15x²» → «15x²».
+ *
+ * Not cosmetic. `quizPromptAr` literally instructs the model to return
+ * `"options": ["أ) خيار", …]` and `"correctAnswer": "أ) الخيار الصحيح"`, so
+ * every generated multiple-choice item arrives labelled. SymPy cannot parse
+ * the label: the key failed to parse, and each distractor came back
+ * `parse_or_compare_error`, so the item was rejected as `bad_distractors`.
+ * Net effect — no generated multiple-choice derivative has ever earned a
+ * symbolic badge, on precisely the family the verifier is best at. It failed
+ * closed, so nothing false was ever claimed; the claim was just silently
+ * never made.
+ *
+ * Deliberately narrow: bracket-style labels only. Accepting `1.` as a label
+ * would let a decimal key like `2. 5` be mangled into `5`.
+ */
+const OPTION_LABEL = /^\s*(?:[\u0621-\u064A]|[A-Za-z]|\d{1,2})\s*[)\]]\s*(?=\S)/u;
+
+export function stripOptionLabel(value: string): string {
+  return value.replace(OPTION_LABEL, '').trim();
+}
+
+/** صح/خطأ verdicts, in both languages and both common Arabic spellings. */
+const TRUE_FALSE_ANSWERS = new Set(['صحيح', 'صح', 'خطأ', 'خاطئ', 'true', 'false']);
+
+/**
+ * True when the key is a صح/خطأ verdict rather than a mathematical answer.
+ *
+ * A true/false item still *reads* as a derivative question — «مشتقة الدالة
+ * f(x) = x² هي 2x. صح أم خطأ؟» — so `classifyVerifiableTopic` claims it and
+ * the verifier is asked whether «صحيح» equals 2x. It never can. Beyond the
+ * wasted round trip, the item is then reported as a key SymPy rejected,
+ * which reads as "the model got the maths wrong" when the model answered
+ * exactly the question it was asked.
+ */
+export function isTrueFalseAnswer(answer: string): boolean {
+  return TRUE_FALSE_ANSWERS.has(stripOptionLabel(answer).toLowerCase());
 }
 
 /** Typographic math → the ASCII the verifier parses. */
