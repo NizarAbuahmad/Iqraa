@@ -17,7 +17,9 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  circleEquationFrom,
   classifyVerifiableTopic,
+  derivativePointFrom,
   isDerivativeQuestion,
   latinEquationFrom,
   latinExpressionFrom,
@@ -151,16 +153,16 @@ describe('extraction defects that silently cost real verifications', () => {
 });
 
 describe('equations with more than one unknown', () => {
-  it('refuses a circle equation', () => {
-    // «معادلة الدائرة (x-4)² + (y+1)² = 9» has one '=', a '^2' and Latin
-    // letters, so it classified as a quadratic — and the prover then refused
-    // it for having two unknowns. Fail-closed, so no badge was ever wrong,
-    // but the item was reported as a key the verifier rejected, which reads
-    // exactly like a wrong answer. It is simply not a question this verifier
-    // can judge.
-    assert.equal(latinEquationFrom('ما مركز الدائرة (x-4)² + (y+1)² = 9؟'), null);
-    assert.equal(classifyVerifiableTopic('ما مركز الدائرة (x-4)² + (y+1)² = 9؟'), null);
+  it('refuses a two-unknown equation that is not a circle', () => {
+    // «(x-4)² + (y+1)² = 9» has one '=', a '^2' and Latin letters, so it
+    // classified as a single-unknown quadratic and solve_equation then refused
+    // it for having two unknowns. Fail-closed, so no badge was ever wrong, but
+    // the item was reported as a key the verifier rejected, which reads exactly
+    // like a wrong answer. Circles now have their own topics; a plain
+    // two-unknown equation still has none.
     assert.equal(latinEquationFrom('حل: x + y = 10'), null);
+    assert.equal(classifyVerifiableTopic('حل: x + y = 10'), null);
+    assert.equal(latinEquationFrom('ما مركز الدائرة (x-4)² + (y+1)² = 9؟'), null);
   });
 
   it('still accepts single-unknown equations, including through a function call', () => {
@@ -170,5 +172,89 @@ describe('equations with more than one unknown', () => {
     // `sin` is a function, not a second unknown — counting it would reject a
     // perfectly ordinary single-unknown equation.
     assert.equal(latinEquationFrom('حل: sin(x) = 0.5'), 'sin(x)=0.5');
+  });
+});
+
+describe('superscripts beyond ² and ³', () => {
+  it('keeps the exponent on x⁴', () => {
+    // `⁴` is outside the math-safe class, so extraction stopped at `x` and the
+    // verifier was asked to differentiate the wrong function. It failed closed
+    // against the real key, but silently — and x⁴ is ordinary Grade-10
+    // material, not an edge case.
+    assert.equal(latinExpressionFrom('أوجد مشتقة f(x) = x⁴'), 'x^4');
+    assert.equal(latinExpressionFrom('أوجد مشتقة f(x) = 2x⁵ - x⁴'), '2x^5-x^4');
+    assert.equal(latinExpressionFrom('أوجد مشتقة f(x) = x¹⁰'), 'x^10');
+  });
+});
+
+describe('derivative evaluated at a point', () => {
+  it('carries the point in the payload', () => {
+    // The extractor returned only `x^4`, the verifier computed `4x^3`, and the
+    // key `32` was rejected: a correct answer reported as a wrong one.
+    assert.deepEqual(classifyVerifiableTopic('ما قيمة مشتقة f(x) = x⁴ عند x = 2؟'), {
+      topic: 'derivative_at_point',
+      payload: 'x^4@2',
+    });
+    assert.deepEqual(
+      classifyVerifiableTopic('أوجد قيمة f′(x) للدالة f(x) = 3x² - 5x عندما x = 1.'),
+      { topic: 'derivative_at_point', payload: '3x^2-5x@1' },
+    );
+  });
+
+  it('reads negative and decimal points', () => {
+    assert.equal(derivativePointFrom('أوجد مشتقة f(x) = x³ عند x = -2'), '-2');
+    assert.equal(derivativePointFrom('find f(x) = x^2 at x = 0.5'), '0.5');
+  });
+
+  it('leaves a plain derivative question as a plain derivative', () => {
+    assert.equal(derivativePointFrom('ما مشتقة الدالة f(x) = 5x³؟'), null);
+    assert.deepEqual(classifyVerifiableTopic('ما مشتقة الدالة f(x) = 5x³؟'), {
+      topic: 'derivative_polynomial',
+      payload: '5x^3',
+    });
+  });
+});
+
+describe('circles', () => {
+  it('classifies centre and radius separately', () => {
+    assert.deepEqual(classifyVerifiableTopic('ما مركز الدائرة (x-4)² + (y+1)² = 9؟'), {
+      topic: 'circle_center',
+      payload: '(x-4)^2+(y+1)^2=9',
+    });
+    assert.deepEqual(
+      classifyVerifiableTopic('ما نصف قطر الدائرة (x-5)² + (y-1)² = 81؟'),
+      { topic: 'circle_radius', payload: '(x-5)^2+(y-1)^2=81' },
+    );
+    // General form is the same circle written differently.
+    assert.deepEqual(
+      classifyVerifiableTopic('ما نصف القطر للدائرة x² + y² - 6x + 4y - 12 = 0؟'),
+      { topic: 'circle_radius', payload: 'x^2+y^2-6x+4y-12=0' },
+    );
+  });
+
+  it('refuses a question asking for both at once', () => {
+    // A compound answer — «المركز (4,-1) ونصف القطر 3» — is not something a
+    // single comparison can judge, so nothing may be claimed.
+    assert.equal(
+      classifyVerifiableTopic('أوجد مركز الدائرة ونصف قطرها: (x-4)² + (y+1)² = 9'),
+      null,
+    );
+  });
+
+  it('does not mistake the diameter for the radius', () => {
+    // «قطر» is the diameter; only «نصف القطر» is the radius.
+    assert.equal(classifyVerifiableTopic('ما قطر الدائرة (x-5)² + (y-1)² = 81؟'), null);
+  });
+
+  it('refuses a circle question with no circle equation to read', () => {
+    assert.equal(
+      classifyVerifiableTopic('ما معادلة الدائرة التي مركزها (0,0) ونصف قطرها 5؟'),
+      null,
+    );
+    assert.equal(classifyVerifiableTopic('ما مركز الدائرة في الشكل المجاور؟'), null);
+  });
+
+  it('needs two squares, not merely two unknowns', () => {
+    assert.equal(circleEquationFrom('ما مركز الدائرة x + y = 10؟'), null);
   });
 });

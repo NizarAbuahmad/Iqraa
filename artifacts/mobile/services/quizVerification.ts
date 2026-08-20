@@ -165,7 +165,10 @@ export function toVerifiablePair(
   content: string,
   answer: string,
 ): { question: string; answer: string } {
-  const derived = answer.match(/^f\s*[′']\s*\(\s*x\s*\)\s*=\s*(.+)$/u);
+  // The argument is `x` for the derivative itself and a number when the
+  // question asks for its value at a point — «f′(2) = 32». Both are the same
+  // rewrite: the key is what follows the '='.
+  const derived = answer.match(/^f\s*[′'’]\s*\(\s*[^)]*\s*\)\s*=\s*(.+)$/u);
   if (derived && /f\s*\(\s*x\s*\)\s*=/.test(content)) {
     return {
       question: `${content} → f'(x) = ?`,

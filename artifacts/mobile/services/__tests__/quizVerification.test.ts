@@ -367,3 +367,21 @@ describe('صح/خطأ questions', () => {
     }
   });
 });
+
+describe('answers stated as f′(point)', () => {
+  it('reduces «f′(2) = 32» to the value, as it already did for f′(x)', async () => {
+    // The rewrite existed only for `f'(x) = …`. A key naming the point —
+    // «f′(2) = 32», the ordinary phrasing for a derivative evaluated at a
+    // point — reached SymPy whole and could not parse, so the item lost its
+    // badge on a correct answer.
+    const calls: string[] = [];
+    const q = quiz(['ب) f′(2) = 32']);
+    q.questions[0]!.text = 'أوجد f′(2) إذا كانت f(x) = x⁴.';
+    q.questions[0]!.options = ['ب) f′(2) = 32'];
+    await verifyQuizAnswers(q, async (_question, answer) => {
+      calls.push(answer);
+      return BANK_OUTCOME;
+    });
+    assert.deepEqual(calls, ['32']);
+  });
+});

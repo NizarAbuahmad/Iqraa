@@ -8,9 +8,9 @@ verify_core. So a provider's score here is not a proxy for correctness; it is
 the product's own definition of it.
 
 Read the numbers as a floor, not a grade. Only some families are provable
-(derivatives and single-unknown equations); trigonometry, circle geometry and
-word problems classify as unverifiable and are excluded rather than counted
-wrong. A provider is not worse for writing a good trigonometry question — it
+(derivatives, derivatives at a point, single-unknown equations, and a circle's
+centre or radius); trigonometry and word problems classify as unverifiable and
+are excluded rather than counted wrong. A provider is not worse for writing a good trigonometry question — it
 just cannot be scored on one. صح/خطأ items are excluded for the same reason:
 the statement may be about a derivative, but «صحيح» is a verdict, not an
 expression, and no symbolic prover can confirm it.

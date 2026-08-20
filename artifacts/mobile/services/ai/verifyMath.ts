@@ -2,9 +2,11 @@
  * Symbolic verification for generated math questions.
  *
  * Calls the API's /verify/derivative, which proxies the SymPy microservice
- * (artifacts/math-verifier). Today the verifier proves the DERIVATIVE slice
- * only — everything else stays labelled as a reviewed bank item rather than
- * claiming machine verification.
+ * (artifacts/math-verifier). The endpoint is named for the slice it started
+ * as; `classifyVerifiableTopic` now routes derivatives, derivatives evaluated
+ * at a point, single-unknown equations, and a circle's centre or radius.
+ * Everything else stays labelled as a reviewed bank item rather than claiming
+ * machine verification.
  *
  * Design rules:
  *  • Never block lesson prep. Short timeout, and any failure degrades to the

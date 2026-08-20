@@ -60,10 +60,11 @@ The run summary carries two tables, and the artifact carries everything.
 - Median latency, tokens, estimated cost.
 - **Symbolic scoring** — every generated maths answer key through the same
   classifier the app uses and then through SymPy. Read it as a floor, not a
-  grade: only derivatives and single-unknown equations are provable, so
-  trigonometry, circle geometry, صح/خطأ items and word problems are excluded
-  rather than counted wrong. A model is not worse for writing a good
-  trigonometry question.
+  grade: only some families are provable — derivatives, derivatives evaluated
+  at a point, single-unknown equations, and a circle's centre or radius — so
+  trigonometry, صح/خطأ items and word problems are excluded rather than
+  counted wrong. A model is not worse for writing a good trigonometry
+  question.
 
   The table reports `provable` next to `verified` for exactly this reason.
   **`provable` is the denominator — check it before reading the pass rate.**
