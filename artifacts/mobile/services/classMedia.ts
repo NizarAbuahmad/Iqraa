@@ -64,6 +64,47 @@ export function classifyMediaUrl(url: string): 'image' | 'video' | null {
   return null;
 }
 
+/**
+ * Swap the media on a slide — the teacher's override of what the search found.
+ *
+ * Three things have to move together, and the caption is the one that bites.
+ * `mediaCaption` holds «{title} — {channel}» for the video the *search*
+ * returned; it is projected on the slide and printed into the PDF and PPTX.
+ * Leave it in place over a new URL and the deck confidently labels one video
+ * with another video's name — wrong in the file the teacher hands out, which
+ * is worse than wrong on screen where they'd notice.
+ *
+ * So: an untouched auto-generated caption is dropped when the URL changes,
+ * while a caption the teacher actually wrote is kept. `mediaKind` follows the
+ * URL rather than the slide's previous kind, so pasting an image onto a video
+ * slide converts it instead of handing the video renderer a picture.
+ *
+ * Refuses anything it cannot classify. A URL the app can't embed projects as
+ * a blank frame in front of a class, and the exports would print a dead link.
+ */
+export type MediaEditResult =
+  | { ok: true; slide: ActivitySlide }
+  | { ok: false; reason: 'unsupported-url' };
+
+export function applyMediaEdit(
+  slide: ActivitySlide,
+  edit: { url: string; caption: string },
+): MediaEditResult {
+  const url = edit.url.trim();
+  const kind = classifyMediaUrl(url);
+  if (!kind) return { ok: false, reason: 'unsupported-url' };
+
+  const urlChanged = url !== (slide.mediaUrl ?? '').trim();
+  const caption = edit.caption.trim();
+  // "Untouched" means still byte-identical to what generation put there.
+  const captionIsStale = urlChanged && caption === (slide.mediaCaption ?? '').trim();
+
+  const next: ActivitySlide = { ...slide, type: 'media', mediaKind: kind, mediaUrl: url };
+  if (captionIsStale || !caption) delete next.mediaCaption;
+  else next.mediaCaption = caption;
+  return { ok: true, slide: next };
+}
+
 export function buildGraphSlide(
   commands: string[],
   titleAr: string,

@@ -23,6 +23,7 @@ import {
   geogebraCommandUrl,
   insertVideoSlide,
   isLikelyImageUrl,
+  applyMediaEdit,
   youtubeEmbedUrl,
   youtubeIdFrom,
 } from '../classMedia.ts';
@@ -191,5 +192,92 @@ describe('insertVideoSlide', () => {
   it('appends at the end when there is neither an example nor a summary', () => {
     const out = insertVideoSlide([intro, rule], video);
     assert.deepEqual(out.map(s => s.type), ['intro', 'intro', 'media']);
+  });
+});
+
+// ── applyMediaEdit ───────────────────────────────────────────────────────────
+//
+// The teacher's override of whatever the auto-search found. The caption is the
+// dangerous field: it names the video the SEARCH returned, and it is printed
+// into the PDF and PPTX, so carrying it across a URL change mislabels a video
+// in the file that leaves the room.
+
+describe('applyMediaEdit', () => {
+  const videoSlide = {
+    slideNumber: 9,
+    type: 'media' as const,
+    title: '🎬 فيديو',
+    content: 'فيديو خارجي — راجعه قبل العرض',
+    mediaKind: 'video' as const,
+    mediaUrl: 'https://www.youtube.com/watch?v=aaaaaaaaaaa',
+    mediaCaption: 'شرح الاشتقاق — أستاذ عمر الوحيدي',
+    durationSeconds: 0,
+  };
+
+  it('swaps the video and drops a caption naming the old one', () => {
+    const out = applyMediaEdit(videoSlide, {
+      url: 'https://youtu.be/dQw4w9WgXcQ',
+      caption: videoSlide.mediaCaption,
+    });
+    assert.ok(out.ok);
+    assert.equal(out.slide.mediaUrl, 'https://youtu.be/dQw4w9WgXcQ');
+    assert.equal(out.slide.mediaCaption, undefined,
+      'the old title/channel must not survive onto a different video');
+  });
+
+  it('keeps a caption the teacher actually wrote', () => {
+    const out = applyMediaEdit(videoSlide, {
+      url: 'https://youtu.be/dQw4w9WgXcQ',
+      caption: 'شرح من قناة المعلم نفسه',
+    });
+    assert.ok(out.ok);
+    assert.equal(out.slide.mediaCaption, 'شرح من قناة المعلم نفسه');
+  });
+
+  it('keeps the auto caption when only the caption is being edited', () => {
+    const out = applyMediaEdit(videoSlide, {
+      url: videoSlide.mediaUrl,
+      caption: videoSlide.mediaCaption,
+    });
+    assert.ok(out.ok);
+    assert.equal(out.slide.mediaCaption, videoSlide.mediaCaption);
+  });
+
+  it('follows the URL when the kind changes', () => {
+    // Pasting a picture onto a video slide converts it, rather than handing
+    // the video renderer an image and printing a dead "watch" link.
+    const out = applyMediaEdit(videoSlide, {
+      url: 'https://images.unsplash.com/photo-1.jpg',
+      caption: '',
+    });
+    assert.ok(out.ok);
+    assert.equal(out.slide.mediaKind, 'image');
+  });
+
+  it('reads every YouTube link shape a teacher might paste', () => {
+    for (const url of [
+      'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      'https://youtu.be/dQw4w9WgXcQ',
+      'https://www.youtube.com/embed/dQw4w9WgXcQ',
+      'https://www.youtube.com/shorts/dQw4w9WgXcQ',
+      'https://www.youtube.com/watch?list=PL123&v=dQw4w9WgXcQ',
+    ]) {
+      const out = applyMediaEdit(videoSlide, { url, caption: '' });
+      assert.ok(out.ok, url);
+      assert.equal(out.slide.mediaKind, 'video', url);
+    }
+  });
+
+  it('refuses what it cannot embed, and changes nothing', () => {
+    for (const url of ['', '   ', 'not a url', 'https://example.com/page', 'javascript:alert(1)']) {
+      const out = applyMediaEdit(videoSlide, { url, caption: 'x' });
+      assert.equal(out.ok, false, url);
+    }
+  });
+
+  it('leaves the original slide untouched — it returns a new one', () => {
+    const before = JSON.stringify(videoSlide);
+    applyMediaEdit(videoSlide, { url: 'https://youtu.be/dQw4w9WgXcQ', caption: '' });
+    assert.equal(JSON.stringify(videoSlide), before);
   });
 });

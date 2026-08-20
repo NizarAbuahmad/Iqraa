@@ -28,7 +28,7 @@ import { buildGeneratorContext, resolveGeneratorGrounding } from '@/services/kbC
 import {
   buildLessonDeck, EXIT_TICKET_MAX, MID_LESSON_CHECK_MAX, rebuildAnswerKey,
 } from '@/services/lessonSlides';
-import { extractGraphCommands } from '@/services/classMedia';
+import { applyMediaEdit, extractGraphCommands } from '@/services/classMedia';
 import { summarizeVerification } from '@/services/quizVerification';
 import { confirm } from '@/services/confirm';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
@@ -73,6 +73,9 @@ export default function SlidesScreen() {
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
   const [editAnswer, setEditAnswer] = useState('');
+  const [editMediaUrl, setEditMediaUrl] = useState('');
+  const [editMediaCaption, setEditMediaCaption] = useState('');
+  const [editMediaError, setEditMediaError] = useState('');
   /** True once the example-verification pass has resolved — the summary row
       stays silent while a check is still in flight. */
   const [verifyDone, setVerifyDone] = useState(false);
@@ -83,13 +86,31 @@ export default function SlidesScreen() {
     setEditTitle(s.title);
     setEditContent(s.content);
     setEditAnswer(s.answer ?? '');
+    setEditMediaUrl(s.mediaUrl ?? '');
+    setEditMediaCaption(s.mediaCaption ?? '');
+    setEditMediaError('');
     setEditIdx(i);
   };
 
   const applyEdit = () => {
     if (editIdx === null || !deck) return;
+
+    // Media is validated before anything is written: a URL the app cannot
+    // embed would project as a blank frame in front of a class and print as a
+    // dead link. Refuse it here rather than storing it and finding out live.
+    const editing = deck.slides[editIdx];
+    let swapped: ActivitySlide | null = null;
+    if (editing?.type === 'media') {
+      const result = applyMediaEdit(editing, { url: editMediaUrl, caption: editMediaCaption });
+      if (!result.ok) { setEditMediaError(t('mediaUrlUnsupported')); return; }
+      swapped = result.slide;
+    }
+
     const slides = deck.slides.map((s, i) => {
       if (i !== editIdx) return s;
+      if (swapped) {
+        return { ...swapped, title: editTitle.trim() || s.title, content: editContent };
+      }
       const answer = editAnswer.trim();
       const next = { ...s, title: editTitle.trim() || s.title, content: editContent };
       // An emptied answer removes the reveal button rather than revealing "".
@@ -636,6 +657,11 @@ export default function SlidesScreen() {
               {t('editSlide')}
             </Text>
 
+            {/* The card is capped at 85% of the screen and the field list is
+                type-dependent — a media slide adds two more. Without a scroll
+                view the extra height clips silently and takes the Save button
+                with it, which is unrecoverable for the teacher. */}
+            <ScrollView style={{ flexShrink: 1 }} keyboardShouldPersistTaps="handled">
             <Text style={[styles.modalLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
               {t('slideTitleField')}
             </Text>
@@ -661,6 +687,51 @@ export default function SlidesScreen() {
               }]}
             />
 
+            {editIdx !== null && deck?.slides[editIdx]?.type === 'media' && (
+              <>
+                <Text style={[styles.modalLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+                  {t('slideMediaUrlField')}
+                </Text>
+                <TextInput
+                  value={editMediaUrl}
+                  onChangeText={v => { setEditMediaUrl(v); setEditMediaError(''); }}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  placeholderTextColor={colors.mutedForeground}
+                  // A URL is latin text: left-aligned even in the RTL layout,
+                  // or it renders with the scheme at the wrong end.
+                  style={[styles.modalInput, {
+                    color: colors.foreground, borderColor: editMediaError ? '#D97706' : colors.border,
+                    borderRadius: colors.radius, fontFamily: 'Almarai_400Regular', textAlign: 'left',
+                  }]}
+                />
+                {editMediaError ? (
+                  <Text style={[styles.modalHint, { color: '#B25E02', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+                    {editMediaError}
+                  </Text>
+                ) : (
+                  <Text style={[styles.modalHint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+                    {t('slideMediaUrlHint')}
+                  </Text>
+                )}
+
+                <Text style={[styles.modalLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+                  {t('slideMediaCaptionField')}
+                </Text>
+                <TextInput
+                  value={editMediaCaption}
+                  onChangeText={setEditMediaCaption}
+                  placeholder={t('slideMediaCaptionPlaceholder')}
+                  placeholderTextColor={colors.mutedForeground}
+                  style={[styles.modalInput, {
+                    color: colors.foreground, borderColor: colors.border, borderRadius: colors.radius,
+                    fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left',
+                  }]}
+                />
+              </>
+            )}
+
             {editIdx !== null && deck?.slides[editIdx]?.type === 'challenge' && (
               <>
                 <Text style={[styles.modalLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
@@ -676,6 +747,8 @@ export default function SlidesScreen() {
                 />
               </>
             )}
+
+            </ScrollView>
 
             <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 10, marginTop: 16 }}>
               <Pressable
@@ -764,6 +837,7 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 17, marginBottom: 12 },
   modalLabel: { fontSize: 12, marginBottom: 6, marginTop: 8 },
   modalInput: { borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14 },
+  modalHint: { fontSize: 11, lineHeight: 17, marginTop: -4, marginBottom: 2 },
   modalInputMultiline: { minHeight: 110, textAlignVertical: 'top' },
   verifyRow: { alignItems: 'center', gap: 6, marginTop: 8 },
   verifyText: { fontSize: 12, fontFamily: 'Almarai_400Regular', flex: 1 },

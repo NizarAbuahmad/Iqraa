@@ -793,6 +793,53 @@ one click away the whole time and settled it in a line.
 1.14.0, fastapi 0.141.1, uvicorn 0.52.3, pydantic 2.13.4) in a clean venv, and
 `test_equations.py` passes 29/29 against it.
 
+## Teachers can swap the deck's video, 2026-08-20
+
+Reported straight after the auto-found video started working: the slide editor
+offered عنوان الشريحة and محتوى الشريحة and nothing else, so a teacher who
+didn't want the video the search picked could delete the slide or keep it.
+No way to substitute their own.
+
+Media slides now carry two more fields — **رابط الفيديو أو الصورة** and
+**وصف الوسائط**. Paste a YouTube link (watch / youtu.be / embed / shorts) or
+a direct image URL.
+
+**The caption is the part that had to be got right.** `mediaCaption` holds
+«{title} — {channel}» for the video the *search* returned, and it is projected
+on the slide and printed into the PDF and the PPTX. Left in place over a new
+URL, the deck confidently labels one video with a different video's name —
+wrong in the file the teacher hands out, where nobody is watching to catch it.
+So an untouched auto-generated caption is dropped when the URL changes, while
+a caption the teacher actually wrote is kept.
+
+`mediaKind` follows the URL rather than the slide's previous kind, so pasting
+a picture onto a video slide converts it instead of handing the video renderer
+an image and printing a dead "watch" link.
+
+**Unsupported links are refused, not stored.** A URL the app cannot embed
+projects as a blank frame in front of a class and exports as a dead link, so
+`applyMediaEdit` returns a refusal and the dialog stays open with the field
+outlined and the reason under it. `classifyMediaUrl` was already there and
+already tested — this is the first thing to use it on the edit path.
+
+The edit dialog also got a `ScrollView`. It is capped at 85% of the screen
+with a type-dependent field list; two more fields would have clipped the
+bottom on a short viewport and taken the احفظ button with it.
+
+**Verified in a real browser** against a stubbed search (no `YOUTUBE_API_KEY`
+locally):
+
+- pasting `https://example.com/not-a-video` → refused, dialog stays open, the
+  field turns amber with «رابط غير مدعوم…», nothing written;
+- pasting `https://youtu.be/dQw4w9WgXcQ` → reopening the editor reads back the
+  new URL and an **empty** caption, the old video's title and channel gone.
+
+**Not done:** no "suggest another video" button. That needs the API to return
+more than `maxResults=1`, and cycling suggestions one search at a time would
+burn the YouTube quota (100 units per search against a 10,000/day default).
+The right shape is to fetch several in the one call the deck already makes and
+cycle locally — worth doing, but it is an API change, not this one.
+
 ## Fixed 2026-08-20 — the celebration overlay followed you off its slide
 
 Reported from a real deck: «🎉 أحسنتم! اكتمل النشاط» sitting on top of the
