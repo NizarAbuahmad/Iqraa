@@ -15,7 +15,7 @@
  */
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -49,9 +49,15 @@ export default function ClassGameScreen() {
   const grades = getPickerGrades();
   const subjects = getPickerSubjects();
 
-  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(undefined, grades.length));
-  const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(undefined, subjects.length));
-  const [topic, setTopic] = useState('');
+  // Opened from the tools tab, a Smart Template, or a curriculum lesson, this
+  // screen arrives with the teacher's context in the route. It used to discard
+  // all three and default to grade 10 / mathematics / no topic.
+  const params = useLocalSearchParams<{
+    gradeIdx?: string; subjectIdx?: string; topic?: string;
+  }>();
+  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(params.gradeIdx, grades.length));
+  const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx, subjects.length));
+  const [topic, setTopic] = useState(params.topic ?? '');
   const [teamCount, setTeamCount] = useState(4);
   const [questionCount, setQuestionCount] = useState(8);
   const [loading, setLoading] = useState(false);

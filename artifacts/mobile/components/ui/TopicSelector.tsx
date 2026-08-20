@@ -83,6 +83,10 @@ export function TopicSelector({
   const kbAvailable = hasKBContent(subjectId, gradeId);
   const unitGroups = useMemo(() => groupUnitsBySemester(units, t), [units, t]);
 
+  // Whether the teacher has picked anything in *this* component yet. On mount
+  // nothing is selected, which is not the same as a selection being cleared —
+  // and only the second should reach back and clear the parent's topic.
+  const touched = React.useRef(false);
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const [unitOpen, setUnitOpen] = useState(false);
@@ -110,6 +114,7 @@ export function TopicSelector({
     if (prevSubjectId.current === subjectId && prevGradeId.current === gradeId) return;
     prevSubjectId.current = subjectId;
     prevGradeId.current = gradeId;
+    touched.current = false;
     setSelectedUnitId(null);
     setSelectedLessonId(null);
     onChange('');
@@ -121,7 +126,14 @@ export function TopicSelector({
   useEffect(() => {
     const noDetail: TopicSelectionDetail = { unitOrder: null, unitTitle: null, lessonTitle: null };
     if (!kbAvailable) return;
-    if (!selectedUnitId) { onChange(''); onSelectionDetail?.(noDetail); return; }
+    if (!selectedUnitId) {
+      // Mount with a topic already passed in: leave it alone. Only a selection
+      // the teacher actually made and then cleared should empty the field.
+      if (!touched.current) return;
+      onChange('');
+      onSelectionDetail?.(noDetail);
+      return;
+    }
 
     if (selectedUnitId === ENTIRE_BOOK) {
       onChange(t('entireBook'));
@@ -157,6 +169,7 @@ export function TopicSelector({
   }, [selectedUnitId, selectedLessonId, lang]);
 
   const handleUnitSelect = (id: string) => {
+    touched.current = true;
     setSelectedUnitId(id);
     setSelectedLessonId(null);
     setUnitOpen(false);
