@@ -10,6 +10,9 @@
  *
  * Investor MVP: helper lookups hide Chemistry and non-Math books from UI surfaces.
  */
+// Value import, not just the re-export below: `export ... from` creates no local
+// binding, and resolveGroundedKbLesson calls this directly.
+import { isConfidentKbHit } from './kbSuggestion.ts';
 import {
   INVESTOR_MVP_CURRICULUM,
   isPickerCurriculumVisible,
@@ -1319,17 +1322,18 @@ export function searchKB(query: string, lang: 'ar' | 'en' = 'ar'): KBLesson[] {
   return searchKBRanked(query, lang).map(s => s.lesson);
 }
 
-/** Minimum lexical score to treat a KB hit as confident for grounding. */
-export const KB_CONFIDENT_SCORE = 10;
-
-/** True when the top ranked hit clears the confidence bar vs the runner-up. */
-export function isConfidentKbHit(ranked: KBScoredLesson[]): boolean {
-  const top = ranked[0];
-  if (!top || top.score < KB_CONFIDENT_SCORE) return false;
-  const second = ranked[1];
-  if (!second) return true;
-  return top.score >= second.score * 1.2;
-}
+/**
+ * Confidence gating lives in `kbSuggestion.ts` — pure, and importable by tests
+ * without dragging the curriculum data in this module along with it. Re-exported
+ * here so existing callers keep their import path.
+ */
+export {
+  isConfidentKbHit,
+  KB_CONFIDENT_SCORE,
+  KB_SUGGEST_SCORE,
+  resolveKbCandidates,
+} from './kbSuggestion.ts';
+export type { KbCandidateResolution } from './kbSuggestion.ts';
 
 /**
  * Normalize Arabic text for fuzzy matching:

@@ -2707,6 +2707,51 @@ imports `react-native` at module scope, so `node:test` cannot load it — the
 same constraint that split out `deckSlidesHtml.ts`. The pure logic lives in
 `optionLabels.ts` and is tested there; the CSS is not.
 
+## KB retrieval was a cliff — added a "did you mean?" tier, 2026-08-20
+
+`isConfidentKbHit` was the only gate on grounding, so a top hit scoring 9
+was discarded exactly like a top hit scoring 0. The system had a good
+candidate in hand, threw it away, and asked the teacher to supply the lesson
+from scratch — which is what made chat feel like it demanded a lesson it
+could have guessed.
+
+Retrieval now resolves three ways instead of two (`services/kbSuggestion.ts`):
+
+| outcome | when | what the teacher sees |
+| --- | --- | --- |
+| `confident` | clears `KB_CONFIDENT_SCORE` (10) **and** beats the runner-up by 1.2× | nothing — grounds silently, unchanged |
+| `ambiguous` | clears `KB_SUGGEST_SCORE` (5) but not the above | «أيّ درس تقصد؟» + up to 3 lesson chips |
+| `none` | below the suggest bar | the existing fallback, unchanged |
+
+`ambiguous` covers two shapes of doubt that get the same question: `weak`
+(plausible but under the bar) and `contested` (strong hit, near-equal rival).
+The `reason` is carried for tuning — they are different retrieval problems.
+
+**Applied to artifact intent only.** An artifact is where being wrong is
+expensive: a weak fuzzy match still produces a full worksheet claiming NCCD
+grounding, and the teacher finds out in front of a class. For a teaching
+answer a near-miss costs a sentence they can correct next turn, so the
+question would cost more than the mistake. Same principle as `verified` —
+guess loudly, never silently.
+
+Tapping a chip re-sends the original query with `pinnedLessonId` set, which is
+the door the lesson suggestion chips already used. That also empties `ranked`,
+so a confirmed pin cannot re-trigger the ask — no loop.
+
+`KB_CONFIDENT_SCORE` and `isConfidentKbHit` **moved** out of
+`knowledgeBase.ts` into `kbSuggestion.ts`, which imports only types.
+`knowledgeBase.ts` re-exports them, so every existing import path still works.
+The point of the move is testability: `knowledgeBase.ts` pulls the curriculum
+data, so anything importing it cannot be tested without that dep built —
+which is exactly why `kbContext.test.ts` and `kbAmbiguity.test.ts` are among
+the 10 suites that abort on a fresh checkout. `kbSuggestion.test.ts` (17
+tests) runs anywhere.
+
+**Not done:** the two thresholds are hand-picked, not measured. There is no
+corpus of real teacher queries to tune them against, so `KB_SUGGEST_SCORE = 5`
+is a guess at where "plausible" starts. If chat starts asking too often, that
+constant is the one knob to turn.
+
 ## The letter-card routine asked teachers to print something the app can't make, 2026-08-20
 
 The whole-class response routine told teachers to hand out أ ب ج د cards
