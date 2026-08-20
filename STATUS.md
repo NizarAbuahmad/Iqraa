@@ -793,6 +793,38 @@ one click away the whole time and settled it in a line.
 1.14.0, fastapi 0.141.1, uvicorn 0.52.3, pydantic 2.13.4) in a clean venv, and
 `test_equations.py` passes 29/29 against it.
 
+## Fixed 2026-08-20 — the celebration overlay followed you off its slide
+
+Reported from a real deck: «🎉 أحسنتم! اكتمل النشاط» sitting on top of the
+تدريب موجّه slide, and again on the تذكرة الخروج divider — slides that have
+nothing to celebrate.
+
+**Cause.** The overlay was fired imperatively from *both* navigation paths
+(`goToSlide` and the keyboard handler), each scheduling a fire-and-forget
+2.8-second timeout with nothing cancelling it. Advance before it faded and it
+rode along onto whatever came next. Two copies of the same trigger, neither
+tied to the slide that earned it.
+
+**Pre-existing, and made reachable by the exit ticket.** While the summary was
+the last slide there was nowhere to advance to, so the window never opened.
+Putting the exit ticket after the summary made passing through those 2.8
+seconds the normal case — the same shape as `extractGraphCommands`, where a
+latent bug only became visible once something started depending on it.
+
+**Fix:** one `useEffect` keyed on the current slide. If the slide closes a run
+(`summary` / `podium`) it plays; otherwise it hides, and leaving cancels both
+the entry and exit timers. The overlay can no longer outlive its slide, and
+the duplicated trigger is gone.
+
+**Verified in a real browser, both ways.** Walked to the summary (20/25),
+confirmed the overlay appears, then advanced twice inside the old 2.8s window
+and checked slide 22/25:
+
+| | overlay still on screen at 22/25 |
+| --- | --- |
+| Before | **yes** — the reported bug, reproduced |
+| After | **no** — and it still fires on the summary itself |
+
 ## Question stems, and the verification they were blocking, 2026-08-20
 
 Putting checks in the lesson deck made the wording visible on a projector,

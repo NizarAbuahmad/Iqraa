@@ -539,6 +539,7 @@ export default function PresentationScreen() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const celebrationAnim = useRef(new Animated.Value(0)).current;
   const celebrationScale = useRef(new Animated.Value(0.5)).current;
+  const celebrationExit = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Slide fade animation
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -620,12 +621,44 @@ export default function PresentationScreen() {
       Animated.spring(celebrationScale, { toValue: 1, useNativeDriver: true, damping: 14, stiffness: 180 }),
     ]).start();
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setTimeout(() => {
+    // Held in a ref so leaving the slide can cancel it — see the effect below.
+    celebrationExit.current = setTimeout(() => {
       Animated.timing(celebrationAnim, { toValue: 0, duration: 400, useNativeDriver: true }).start(() => {
         setCelebrationVisible(false);
       });
     }, 2800);
   };
+
+  /**
+   * The celebration belongs to the slide that earned it.
+   *
+   * It used to be fired imperatively from both navigation paths — `goToSlide`
+   * and the keyboard handler — each scheduling a fire-and-forget 2.8s
+   * timeout with nothing cancelling it. Advance before it faded and the
+   * overlay rode along onto the next slide: «أحسنتم! اكتمل النشاط» sitting
+   * on top of the exit ticket.
+   *
+   * That was harmless while the summary was the last slide, because there was
+   * nowhere to advance to. Putting the exit ticket after the summary made
+   * passing through that 2.8s window the normal case. Driving the overlay off
+   * the current slide instead of off the transition means it cannot outlive
+   * the slide it belongs to, and it removes the duplicated trigger.
+   */
+  useEffect(() => {
+    const current = activity?.slides[slideIndex];
+    const closesARun = current?.type === 'summary' || current?.type === 'podium';
+    if (!closesARun) {
+      setCelebrationVisible(false);
+      return;
+    }
+    const enter = setTimeout(showCelebration, 350);
+    return () => {
+      clearTimeout(enter);
+      if (celebrationExit.current) clearTimeout(celebrationExit.current);
+      setCelebrationVisible(false);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slideIndex, activity]);
 
   const goToSlide = (idx: number) => {
     if (!activity || idx < 0 || idx >= activity.slides.length) return;
@@ -636,10 +669,6 @@ export default function PresentationScreen() {
       Animated.timing(fadeAnim, { toValue: 1, duration: 180, useNativeDriver: true }).start();
     });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    // Trigger celebration on the slides that close a run
-    if (nextSlide.type === 'summary' || nextSlide.type === 'podium') {
-      setTimeout(showCelebration, 350);
-    }
   };
 
   // Keyboard + presentation-clicker control (web/projector). A teacher runs
@@ -672,8 +701,6 @@ export default function PresentationScreen() {
       if (!activity || next < 0 || next >= activity.slides.length) return current;
       initSlide(activity.slides[next]!);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      const nextType = activity.slides[next]!.type;
-      if (nextType === 'summary' || nextType === 'podium') setTimeout(showCelebration, 350);
       return next;
     });
   };
