@@ -73,7 +73,7 @@ import { CHAT_MAX_WIDTH } from '@/constants/layout';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
 import { MathParagraph } from '@/components/ui/MathParagraph';
 import { hasRenderableMath } from '@/services/mathRender';
-import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
+import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { CurrentLessonCard } from '@/components/ui/CurrentLessonCard';
 import { DocumentAttachmentBar } from '@/components/ui/DocumentAttachmentBar';
 import { DOCUMENT_UPLOAD_ENABLED } from '@/services/features';
@@ -1983,7 +1983,7 @@ export default function IqraScreen() {
               {t('appName')}
             </Text>
           </View>
-          <DemoModeBanner isRTL={isRTL} />
+          <AiSourceBadge isRTL={isRTL} />
         </View>
       </View>
 

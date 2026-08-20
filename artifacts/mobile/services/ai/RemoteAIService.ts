@@ -4,8 +4,12 @@
  * Investor Demo Mode (DEMO_MODE=true): always uses MockAIService locally.
  * No OpenAI / network calls.
  *
- * When DEMO_MODE is flipped off post-funding, this resumes remote API calls
- * with mock fallback on failure.
+ * With DEMO_MODE off it calls the API and falls back to the mock generator on
+ * failure — but never silently. Every call records where its content came from
+ * in `aiProvenance`, which the UI badge reads, because mock output is
+ * indistinguishable from a real answer by inspection: it is a well-formed
+ * Arabic lesson plan either way. A `console.warn` is not a disclosure to a
+ * teacher holding the result.
  */
 import {
   ActivityOutput, AIRequest, AIService,
@@ -15,6 +19,7 @@ import {
 import { DEMO_MODE } from './demoMode';
 import { MockAIService } from './generators';
 import { apiFetch } from '../apiClient';
+import { describeAiError, generateWithProvenance, recordGeneration } from './aiProvenance.ts';
 
 // Routes under /generate/* and /chat require auth (routes/index.ts scopes
 // authMiddleware to those prefixes) — go through apiFetch, not a bare fetch(),
@@ -43,67 +48,59 @@ export class RemoteAIService extends AIService {
   private fallback = new MockAIService();
 
   async generateLessonPlan(req: AIRequest): Promise<LessonPlanOutput> {
-    if (DEMO_MODE) return this.fallback.generateLessonPlan(req);
-    try {
-      return await postJSON<LessonPlanOutput>('/generate/lesson-plan', req);
-    } catch (e) {
-      console.warn('[RemoteAIService] lesson-plan fallback:', e);
-      return this.fallback.generateLessonPlan(req);
-    }
+    return generateWithProvenance(
+      'lesson-plan',
+      () => postJSON<LessonPlanOutput>('/generate/lesson-plan', req),
+      () => this.fallback.generateLessonPlan(req),
+    );
   }
 
   async generateWorksheet(req: AIRequest): Promise<WorksheetOutput> {
-    if (DEMO_MODE) return this.fallback.generateWorksheet(req);
-    try {
-      return await postJSON<WorksheetOutput>('/generate/worksheet', req);
-    } catch (e) {
-      console.warn('[RemoteAIService] worksheet fallback:', e);
-      return this.fallback.generateWorksheet(req);
-    }
+    return generateWithProvenance(
+      'worksheet',
+      () => postJSON<WorksheetOutput>('/generate/worksheet', req),
+      () => this.fallback.generateWorksheet(req),
+    );
   }
 
   async generateQuiz(req: AIRequest): Promise<QuizOutput> {
-    if (DEMO_MODE) return this.fallback.generateQuiz(req);
-    try {
-      return await postJSON<QuizOutput>('/generate/quiz', req);
-    } catch (e) {
-      console.warn('[RemoteAIService] quiz fallback:', e);
-      return this.fallback.generateQuiz(req);
-    }
+    return generateWithProvenance(
+      'quiz',
+      () => postJSON<QuizOutput>('/generate/quiz', req),
+      () => this.fallback.generateQuiz(req),
+    );
   }
 
   async generateActivity(req: AIRequest): Promise<ActivityOutput> {
-    if (DEMO_MODE) return this.fallback.generateActivity(req);
-    try {
-      return await postJSON<ActivityOutput>('/generate/activity', req);
-    } catch (e) {
-      console.warn('[RemoteAIService] activity fallback:', e);
-      return this.fallback.generateActivity(req);
-    }
+    return generateWithProvenance(
+      'activity',
+      () => postJSON<ActivityOutput>('/generate/activity', req),
+      () => this.fallback.generateActivity(req),
+    );
   }
 
   async generateHomework(req: AIRequest): Promise<WorksheetOutput> {
-    if (DEMO_MODE) return this.fallback.generateHomework(req);
-    try {
-      return await postJSON<WorksheetOutput>('/generate/homework', req);
-    } catch (e) {
-      console.warn('[RemoteAIService] homework fallback:', e);
-      return this.fallback.generateHomework(req);
-    }
+    return generateWithProvenance(
+      'homework',
+      () => postJSON<WorksheetOutput>('/generate/homework', req),
+      () => this.fallback.generateHomework(req),
+    );
   }
 
   async generateClassroomActivity(req: ClassroomActivityRequest): Promise<ClassroomActivity> {
-    if (DEMO_MODE) return this.fallback.generateClassroomActivity(req);
-    try {
-      return await postJSON<ClassroomActivity>('/generate/classroom-activity', req);
-    } catch (e) {
-      console.warn('[RemoteAIService] classroom-activity fallback:', e);
-      return this.fallback.generateClassroomActivity(req);
-    }
+    return generateWithProvenance(
+      'classroom-activity',
+      () => postJSON<ClassroomActivity>('/generate/classroom-activity', req),
+      () => this.fallback.generateClassroomActivity(req),
+    );
   }
 
   /**
    * Chat with iQra. In Demo Mode this throws so callers use local KB text.
+   *
+   * No mock fallback here — the chat screen has its own local answer path and
+   * catches. It still records the failure, so the badge reports it: a
+   * knowledge-base answer and a model answer read alike to a teacher.
    */
   async chat(params: {
     messages: { role: string; content: string }[];
@@ -112,12 +109,22 @@ export class RemoteAIService extends AIService {
     language: 'ar' | 'en';
   }): Promise<string> {
     if (DEMO_MODE) {
+      recordGeneration({ kind: 'chat', source: 'mock', reason: 'demo-mode', at: Date.now() });
       // Prefer grounding text already built by the chat screen.
       if (params.context?.trim()) return params.context.trim();
       throw new Error('Demo Mode: local KB only');
     }
-    const res = await postJSON<{ content: string }>('/chat', params);
-    return res.content ?? '';
+    try {
+      const res = await postJSON<{ content: string }>('/chat', params);
+      recordGeneration({ kind: 'chat', source: 'live', reason: 'live', at: Date.now() });
+      return res.content ?? '';
+    } catch (e) {
+      recordGeneration({
+        kind: 'chat', source: 'none', reason: 'failed',
+        error: describeAiError(e), at: Date.now(),
+      });
+      throw e;
+    }
   }
 }
 

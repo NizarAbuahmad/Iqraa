@@ -43,7 +43,7 @@ import { TopicSelector } from '@/components/ui/TopicSelector';
 import { Button } from '@/components/ui/Button';
 import { saveItem } from '@/services/workspace';
 import { Toast } from '@/components/ui/Toast';
-import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
+import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
 import { buildLessonFlowHTML, exportAsPDF } from '@/services/share';
 
@@ -342,7 +342,7 @@ export default function LessonFlowScreen() {
               <Text style={[styles.headerSub, { color: '#94A3B8', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
                 {t('toolLessonFlowSub')}
               </Text>
-              <DemoModeBanner onDark isRTL={isRTL} />
+              <AiSourceBadge onDark isRTL={isRTL} />
             </View>
           </View>
 

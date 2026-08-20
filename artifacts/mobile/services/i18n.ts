@@ -82,6 +82,8 @@ const translations = {
     memberSince: 'معنا منذ',
     demoModeBadge: 'وضع العرض · محتوى تجريبي',
     demoModeHint: 'محتوى تجريبي للعرض — دون اتصال بنموذج خارجي',
+    aiLiveBadge: 'ذكاء اصطناعي مباشر',
+    aiFallbackBadge: 'تعذّر الاتصال · محتوى تجريبي',
 
     // Forgot password
     resetPassword: 'إعادة تعيين كلمة المرور',
@@ -929,6 +931,8 @@ const translations = {
     memberSince: 'Member since',
     demoModeBadge: 'Demo Mode · Sample AI output',
     demoModeHint: 'Sample output for demonstration — no external model call',
+    aiLiveBadge: 'Live AI',
+    aiFallbackBadge: 'Connection failed · sample content',
 
     resetPassword: 'Reset password',
     resetSubtitle: 'Enter your email and we will send you a reset link',

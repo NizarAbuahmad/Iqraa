@@ -93,6 +93,7 @@ Without an OpenAI key, the API process will not start (AI client initializes at 
 | `BASE_PATH` | `/` | Mobile static serve / mockup |
 | `MOCKUP_PORT` | `8082` | Design sandbox only |
 | `EXPO_PUBLIC_DEMO_MODE` | `true` (anything but literal `"false"`) | Set `false` to call the real API instead of mocked AI content — see "Testing against real AI" below |
+| `EXPO_PUBLIC_AI_STRICT_LIVE` | `false` | Set `true` to make a failed live AI call surface as an error instead of silently serving mock content — use while verifying live mode is really wired up |
 | `EXPO_PUBLIC_POSTHOG_API_KEY` | unset (analytics calls are no-ops) | PostHog project key for teacher-pilot usage tracking (screens, tool opens, saves/exports) |
 | `EXPO_PUBLIC_POSTHOG_HOST` | `https://us.i.posthog.com` | PostHog Cloud region — use the EU host if the project is EU-hosted |
 | `AI_LIVE_MODE` | `false` (anything but literal `"true"`) | Server-side counterpart to the above — must be exactly `true` to let chat/generate/derivativeVerified call OpenAI |
@@ -115,7 +116,13 @@ OpenAI unless you deliberately flip both switches:
    → `{ liveMode, model, spentUsd, limitUsd, remainingUsd }`.
 4. Once `spentUsd` reaches `AI_BUDGET_USD`, the AI routes stop calling
    OpenAI and return `429`; the mobile client falls back to mocked content
-   automatically (same path it uses for any AI-service error).
+   automatically (same path it uses for any AI-service error). It says so:
+   the badge under the screen title turns amber and reads
+   **تعذّر الاتصال · محتوى تجريبي**. A successful live call reads
+   **ذكاء اصطناعي مباشر** instead — that badge is how you tell a real answer
+   from a mock one, because the content itself looks the same either way.
+   Set `EXPO_PUBLIC_AI_STRICT_LIVE=true` to have failures raise instead of
+   falling back at all.
 5. To go back to demo content, set `EXPO_PUBLIC_DEMO_MODE` back to unset/true
    (and `AI_LIVE_MODE` back to unset/false to stop the server from accepting
    real calls at all) and restart.

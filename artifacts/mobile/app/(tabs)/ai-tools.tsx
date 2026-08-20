@@ -7,7 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { DEMO_MODE } from '@/services/ai/demoMode';
-import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
+import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { openGeogebraGraphing } from '@/services/geogebra';
 import { trackEvent } from '@/services/analytics';
 import { getPickerSubjects } from '@/services/curriculumData';
@@ -128,7 +128,7 @@ export default function AIToolsScreen() {
           {t('aiTools')}
         </Text>
         {DEMO_MODE ? (
-          <DemoModeBanner isRTL={isRTL} />
+          <AiSourceBadge isRTL={isRTL} />
         ) : (
           <View style={[styles.aiBadge, { backgroundColor: colors.primary + '18', borderRadius: 20, alignSelf: isRTL ? 'flex-end' : 'flex-start', flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Ionicons name="sparkles-outline" size={14} color={colors.primary} />

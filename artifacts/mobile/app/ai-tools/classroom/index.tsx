@@ -8,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
+import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { buildBuilderRoute } from './classroomRouting';
 
 const ACCENT = '#4F46E5';
@@ -145,7 +145,7 @@ export default function ClassroomHubScreen() {
             <Ionicons name="storefront-outline" size={16} color="rgba(255,255,255,0.8)" />
             <Text style={[styles.headerBadge, { fontFamily: 'Cairo_500Medium' }]}>{t('classroomBadge')}</Text>
           </View>
-          <DemoModeBanner onDark isRTL={isRTL} />
+          <AiSourceBadge onDark isRTL={isRTL} />
           <Text style={[styles.headerTitle, { fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
             {lang === 'ar' ? 'أنشطة الحصة' : 'Activity Marketplace'}
           </Text>
