@@ -63,3 +63,6 @@ knowledge-base/**/*.pdf
 .cache/
 .local/
 .config/
+
+# Claude Code local state
+.claude/
