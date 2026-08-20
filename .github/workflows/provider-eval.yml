@@ -83,6 +83,10 @@ jobs:
             exit 1
           fi
 
+      # The harness exits non-zero when nothing generated, so a total failure
+      # shows as a red run rather than a green one over a table of zeros.
+      # Every step after this uses `if: always()`, so the outputs — which cost
+      # money — still upload when it does.
       - name: Run the evaluation
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

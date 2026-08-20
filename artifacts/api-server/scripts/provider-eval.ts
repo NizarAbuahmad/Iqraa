@@ -362,3 +362,28 @@ writeFileSync(join(outDir, "results.md"), lines.join("\n"));
 
 console.log(`\n${lines.slice(2).join("\n")}`);
 console.log(`\nWritten to ${outDir}/`);
+
+/**
+ * A run where nothing generated is a failed run, and must exit non-zero.
+ *
+ * The first real run proved the point: all twelve calls came back `429 You
+ * exceeded your current quota`, every column read 0, and the job still
+ * reported success — because the harness catches each error per row and then
+ * exits cleanly. A green tick over a table of zeros is worse than a red one,
+ * because the zeros look like a verdict on the model rather than on the
+ * account's billing.
+ *
+ * Only a TOTAL failure fails the run. One provider being down must not throw
+ * away the others' results, which cost real money to produce.
+ */
+const succeeded = rows.filter((r) => !r.error);
+if (rows.length > 0 && succeeded.length === 0) {
+  const reasons = [...new Set(rows.map((r) => r.error ?? "unknown"))];
+  console.error(
+    `\nEvery generation failed — nothing was produced.\n`
+      + reasons.map((r) => `  • ${r}`).join("\n")
+      + `\n\nA 429 quota message means the account has no credit, not that the`
+      + ` model is unavailable. A 401 means the key; a 404 means the model id.\n`,
+  );
+  process.exitCode = 1;
+}

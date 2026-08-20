@@ -32,6 +32,21 @@ A full run is 4 lessons × 3 tasks × N providers — 12 generations per
 provider, comfortably under $2 even at the top of the range. Cost is not a
 reason to cut the eval short.
 
+## When a run fails
+
+The harness exits non-zero if **nothing** generated, so a total failure is a
+red run rather than a green one over a table of zeros. Each row prints its own
+error; the three you are most likely to see:
+
+| Error | Means | Fix |
+| --- | --- | --- |
+| `429 You exceeded your current quota` | The account has no credit or no payment method. **Not** a rate limit. | Add billing at the provider |
+| `401` | The key is wrong or revoked | Re-add the repo secret |
+| `404` on the model | That model id is not available to the account | Check the id, or enable it |
+
+A partial failure does **not** fail the run — one provider being down must not
+throw away results the others already paid for.
+
 ## Reading the result
 
 The run summary carries two tables, and the artifact carries everything.
