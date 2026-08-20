@@ -46,6 +46,7 @@ import {
   detectSubjectAmbiguity,
   filterResultsBySubject,
 } from '@/services/kbContext';
+import { resolveKbCandidates } from '@/services/kbSuggestion';
 import { Toast } from '@/components/ui/Toast';
 import { remoteAIService } from '@/services/ai/RemoteAIService';
 import { DEMO_MODE } from '@/services/ai/demoMode';
@@ -207,6 +208,12 @@ interface Message {
   /** Out-of-scope topic suggestions (ephemeral — only last assistant uses them via composer). */
   suggestions?: { text: string; lessonId: string }[];
   clarificationSubjects?: string[];
+  /**
+   * Lesson candidates offered when retrieval was plausible but not certain.
+   * Picking one re-sends the original query hard-pinned to that lesson, so the
+   * teacher confirms a guess instead of supplying the topic from scratch.
+   */
+  clarificationLessons?: { id: string; title: string }[];
   pedagogicalClarification?: ClarificationOption[];
   clarificationQuery?: string;
   showLessonPrep?: boolean;
@@ -617,13 +624,14 @@ const prepStyles = StyleSheet.create({
 });
 
 function MessageBubble({
-  message, colors, isRTL, onLongPress, onClarifySubject, onPedagogicalClarify, prepProgress,
+  message, colors, isRTL, onLongPress, onClarifySubject, onClarifyLesson, onPedagogicalClarify, prepProgress,
   introName, introPitch, introActions, onEditArtifact, onCopy, onExport,
   copyLabel, exportLabel, t,
 }: {
   message: Message; colors: any; isRTL: boolean;
   onLongPress?: (text: string) => void;
   onClarifySubject?: (originalQuery: string, subjectId: string) => void;
+  onClarifyLesson?: (originalQuery: string, lessonId: string) => void;
   onPedagogicalClarify?: (originalQuery: string, option: ClarificationOption) => void;
   /** Live session prep progress — shown under the latest meaningful reply. */
   prepProgress?: PrepProgressView | null;
@@ -885,6 +893,30 @@ function MessageBubble({
                 </Pressable>
               );
             })}
+          </View>
+        )}
+        {message.clarificationLessons && message.clarificationLessons.length > 0 && (
+          <View style={[styles.suggestionChipsRow, isRTL && { flexDirection: 'row-reverse' }]}>
+            {message.clarificationLessons.map(candidate => (
+              <Pressable
+                key={candidate.id}
+                onPress={() => onClarifyLesson?.(message.clarificationQuery ?? '', candidate.id)}
+                style={({ pressed }) => [
+                  styles.suggestionChip,
+                  {
+                    backgroundColor: colors.primary + '18',
+                    borderColor: colors.primary + '70',
+                    opacity: pressed ? 0.7 : 1,
+                    paddingHorizontal: 14,
+                    paddingVertical: 8,
+                  },
+                ]}
+              >
+                <Text style={[styles.suggestionChipText, { color: colors.primary, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }]}>
+                  {candidate.title}
+                </Text>
+              </Pressable>
+            ))}
           </View>
         )}
         {message.pedagogicalClarification && message.pedagogicalClarification.length > 0 && (
@@ -1385,6 +1417,44 @@ export default function IqraScreen() {
         && !confidentHit
         && !hasDocs;
 
+      // Guessed lesson → confirm before building on it.
+      //
+      // An artifact is where being wrong is expensive: a weak fuzzy match still
+      // produces a full worksheet that claims NCCD grounding, and the teacher
+      // finds out in front of a class. Retrieval below the confidence bar used
+      // to be discarded outright, which is what made chat feel like it demanded
+      // a lesson it could have guessed — so instead of dropping the candidates,
+      // offer them. One tap re-runs the same ask, hard-pinned.
+      //
+      // Deliberately not applied to teaching answers: there, a near-miss costs a
+      // sentence the teacher can correct in the next turn, and the question
+      // would cost more than the mistake.
+      if (
+        route.intent === 'artifact'
+        && !hasHardContext
+        && !hasDocs
+        && !softBareArtifact
+      ) {
+        const guess = resolveKbCandidates(ranked);
+        if (guess.kind === 'ambiguous') {
+          const clarifyMsg: Message = {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant',
+            text: guess.candidates.length === 1 ? t('iqraDidYouMean') : t('iqraWhichLesson'),
+            clarificationLessons: guess.candidates.map(c => ({
+              id: c.id,
+              title: lang === 'ar' ? c.titleAr : c.titleEn,
+            })),
+            clarificationQuery: q,
+            timestamp: new Date(),
+          };
+          // The `finally` on the enclosing try clears the thinking state, the
+          // same way the subject-clarification branch above relies on it.
+          setMessages(prev => [...prev, clarifyMsg]);
+          return;
+        }
+      }
+
       if (!hasKBMatch && !hasDocs && !(softBareArtifact && artifactType)) {
         // Artifact shortcuts like "خطة" must not die silently — ask for the lesson topic.
         if (route.intent === 'artifact') {
@@ -1674,6 +1744,17 @@ export default function IqraScreen() {
     (originalQuery: string, subjectId: string) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       sendMessage(originalQuery, undefined, subjectId);
+    },
+    [sendMessage],
+  );
+
+  // Confirming a guessed lesson re-runs the original ask against that lesson —
+  // `pinnedLessonId` is the same door the lesson suggestion chips already use,
+  // so the confirmed turn is grounded exactly as a confident hit would be.
+  const handleClarifyLesson = useCallback(
+    (originalQuery: string, lessonId: string) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      sendMessage(originalQuery, lessonId);
     },
     [sendMessage],
   );
@@ -2082,6 +2163,7 @@ export default function IqraScreen() {
             copyLabel={t('iqraCopyMessage')}
             exportLabel={t('iqraExportMessage')}
             onClarifySubject={handleClarifySubject}
+            onClarifyLesson={handleClarifyLesson}
             onPedagogicalClarify={handlePedagogicalClarify}
             introName={t('iqraAgentName')}
             introPitch={t('iqraAgentPitch')}
