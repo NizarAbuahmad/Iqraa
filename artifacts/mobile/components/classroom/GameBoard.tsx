@@ -18,11 +18,11 @@ import * as Haptics from 'expo-haptics';
 import type { GameState, TeamStanding } from '@/services/classGame';
 import { isAwarded, standings } from '@/services/classGame';
 
-const CARD_BG = '#16171F';
-const BORDER = '#2A2B38';
-const TEXT_PRIMARY = '#F2F2F6';
-const TEXT_MUTED = '#8B8CA4';
-const GREEN = '#22C55E';
+const CARD_BG = '#FFFFFF';
+const BORDER = '#EFDCD4';
+const TEXT_PRIMARY = '#22303C';
+const TEXT_MUTED = '#7C6A65';
+const GREEN = '#16A34A';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 

@@ -46,27 +46,35 @@ async function openExternalMedia(url: string): Promise<void> {
 }
 
 // ─── Color constants ──────────────────────────────────────────────────────────
-const BG = '#0D0D14';
-const CARD_BG = '#16171F';
-const BORDER = '#2A2B38';
-const TEXT_PRIMARY = '#F2F2F6';
-const TEXT_MUTED = '#8B8CA4';
-const ACCENT = '#4F46E5';
-const TIMER_GREEN = '#22C55E';
-const TIMER_AMBER = '#F59E0B';
-const TIMER_RED = '#EF4444';
+// Light, warm, print-like. A projected deck sits next to a whiteboard in a lit
+// room, where a near-black background washes out and reads as "a screen someone
+// forgot to close". Cream + teal + magenta is the deck palette; the chrome
+// borrows the same tokens so nothing looks bolted on.
+const BG = '#FDF1EC';
+const CARD_BG = '#FFFFFF';
+const BORDER = '#EFDCD4';
+const TEXT_PRIMARY = '#22303C';
+const TEXT_MUTED = '#7C6A65';
+const ACCENT = '#1E8E8E';
+/** Second accent — section rules, kickers, the "look here" mark. */
+const PINK = '#D6206B';
+/** The soft shapes behind the slide. Low-contrast on purpose. */
+const BLOB = '#F8DCD2';
+const TIMER_GREEN = '#16A34A';
+const TIMER_AMBER = '#D97706';
+const TIMER_RED = '#DC2626';
 
 function slideTypeAccent(type: ActivitySlide['type']): string {
-  if (type === 'challenge') return '#E67E22';
-  if (type === 'reveal') return '#22C55E';
-  if (type === 'summary') return ACCENT;
-  if (type === 'bingo-call') return '#A855F7';
-  if (type === 'relay-problem') return '#F43F5E';
-  if (type === 'question') return '#3B82F6';
-  if (type === 'graph') return '#0EA5E9';
+  if (type === 'challenge') return '#C2410C';
+  if (type === 'reveal') return TIMER_GREEN;
+  if (type === 'summary') return PINK;
+  if (type === 'bingo-call') return '#7E22CE';
+  if (type === 'relay-problem') return '#BE123C';
+  if (type === 'question') return '#1D4ED8';
+  if (type === 'graph') return '#0E7490';
   if (type === 'media') return '#B45309';
-  if (type === 'scoreboard') return '#F59E0B';
-  if (type === 'podium') return '#FBBF24';
+  if (type === 'scoreboard') return '#B45309';
+  if (type === 'podium') return '#A16207';
   if (type === 'divider') return ACCENT;
   return '#8B8CA4';
 }
@@ -443,68 +451,138 @@ function QuestionOptions({
 }
 
 // ─── Slide Content ────────────────────────────────────────────────────────────
+/**
+ * Pull a leading emoji off a deck heading.
+ *
+ * The builders write titles like "🎯 نتاجات التعلم" — the glyph is a section
+ * marker, not part of the sentence, so it belongs in a chip beside the heading
+ * rather than inline, where it sets the line height for the whole title.
+ * Codepoint ranges rather than \p{Extended_Pictographic}: unicode property
+ * escapes are not safe to assume across Hermes versions.
+ */
+function splitEmoji(title: string): [glyph: string, heading: string] {
+  const text = (title ?? '').trim();
+  const cp = text.codePointAt(0) ?? 0;
+  const isEmoji = cp >= 0x1f300 || (cp >= 0x2190 && cp <= 0x27bf);
+  if (!isEmoji) return ['', text];
+  const glyph = String.fromCodePoint(cp);
+  return [glyph, text.slice(glyph.length).replace(/^\uFE0F/, '').trim()];
+}
+
 function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
   const accent = slideTypeAccent(slide.type);
-  const lines = slide.content.split('\n');
+  const align = isRTL ? ('right' as const) : ('left' as const);
+  const edge = isRTL ? ('flex-end' as const) : ('flex-start' as const);
+  const lines = slide.content.split('\n').map(l => l.trim()).filter(Boolean);
+  const [glyph, heading] = splitEmoji(slide.title);
 
-  return (
-    <View style={slideStyles.container}>
-      {/* Slide type badge */}
-      <View style={[slideStyles.badge, { backgroundColor: accent + '22', borderColor: accent + '44' }]}>
-        <Text style={[slideStyles.badgeText, { color: accent, fontFamily: 'Cairo_600SemiBold' }]}>
-          {slide.type === 'intro' ? '🎯'
-            : slide.type === 'challenge' ? '🔐'
-            : slide.type === 'reveal' ? '🔓'
-            : slide.type === 'bingo-call' ? '🎱'
-            : slide.type === 'relay-problem' ? '🏃'
-            : slide.type === 'question' ? '🙋'
-            : slide.type === 'graph' ? '📈'
-            : slide.type === 'media' ? '🎬'
-            : slide.type === 'scoreboard' ? '📊'
-            : slide.type === 'podium' ? '🏆'
-            : '🎉'}
-          {'  '}{slide.title}
+  // Slide 1 is the deck's cover: the title *is* the slide, so it gets a display
+  // treatment instead of the heading-plus-body grid every other slide uses.
+  // (A first slide carrying a photo goes to HeroSlideView instead and never
+  // reaches here.) Without this every slide in the deck looks identical, which
+  // is the actual complaint about the old renderer.
+  if (slide.slideNumber === 1 && slide.type === 'intro') {
+    return (
+      <View style={slideStyles.cover}>
+        <Text style={[slideStyles.coverTitle, { textAlign: align, fontFamily: 'Cairo_700Bold' }]}>
+          {heading}
         </Text>
-      </View>
-
-      {/* Content lines */}
-      {lines.map((line, i) => {
-        const isEquation = /[=²³√±×÷^]/.test(line) || /\d+x/.test(line) || /\/[0-9٠-٩]/.test(line);
-        // Structured math layout (stacked fractions, raised exponents, real
-        // radicals) only when the parser actually found a construct — plain
-        // text keeps the exact rendering it has always had.
-        if (isEquation && hasRenderableMath(line)) {
-          return (
-            <View key={i} style={{ marginVertical: 20 }}>
-              <MathText
-                text={line}
-                fontSize={30}
-                color={TEXT_PRIMARY}
-                fontFamily="Cairo_700Bold"
-                isRTL={isRTL}
-                centered
-              />
-            </View>
-          );
-        }
-        return (
+        <View style={[slideStyles.rule, { alignSelf: edge }]} />
+        {lines.map((line, i) => (
           <Text
             key={i}
-            style={[
-              isEquation ? slideStyles.equation : slideStyles.bodyLine,
-              {
-                // Media slides centre their content: the image/player below is
-                // itself centred and width-capped, so a margin-aligned caption
-                // floats away from the thing it describes.
-                textAlign: slide.type === 'media' ? 'center' : isRTL ? 'right' : 'left',
-                fontFamily: isEquation ? 'Cairo_700Bold' : 'Almarai_400Regular',
-              },
-            ]}
+            style={[slideStyles.coverSub, { textAlign: align, fontFamily: 'Almarai_400Regular' }]}
           >
             {line}
           </Text>
-        );
-      })}
+        ))}
+      </View>
+    );
+  }
+
+  return (
+    <View style={slideStyles.container}>
+      {/* Heading — on the reading edge, not centred. A centred pill gives the
+          eye no starting point in a room reading right-to-left. */}
+      <View style={[slideStyles.headRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+        {!!glyph && (
+          <View style={[slideStyles.glyphChip, { backgroundColor: accent + '18', borderColor: accent + '33' }]}>
+            <Text style={slideStyles.glyph}>{glyph}</Text>
+          </View>
+        )}
+        <Text style={[slideStyles.title, { color: accent, textAlign: align, fontFamily: 'Cairo_700Bold' }]}>
+          {heading}
+        </Text>
+      </View>
+      <View style={[slideStyles.rule, { alignSelf: edge }]} />
+
+      {/* Body. Bullets become cards and equations become a boxed formula: the
+          content already carries that structure as "• " prefixes and maths
+          glyphs, it was just being flattened into identical paragraphs. */}
+      <View style={slideStyles.body}>
+        {lines.map((line, i) => {
+          const isBullet = /^[•\-–]\s+/.test(line);
+          const text = isBullet ? line.replace(/^[•\-–]\s+/, '') : line;
+          const isEquation =
+            !isBullet
+            && (/[=²³√±×÷^]/.test(text) || /\d+x/.test(text) || /\/[0-9٠-٩]/.test(text));
+
+          if (isBullet) {
+            return (
+              <View key={i} style={[slideStyles.card, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                <View style={[slideStyles.cardBar, { backgroundColor: accent }]} />
+                <Text style={[slideStyles.cardText, { textAlign: align, fontFamily: 'Almarai_400Regular' }]}>
+                  {text}
+                </Text>
+              </View>
+            );
+          }
+
+          // Structured math layout (stacked fractions, raised exponents, real
+          // radicals) only when the parser actually found a construct. It keeps
+          // its own renderer — the box around it is the only thing that changed.
+          if (isEquation && hasRenderableMath(text)) {
+            return (
+              <View key={i} style={slideStyles.formulaBox}>
+                <MathText
+                  text={text}
+                  fontSize={30}
+                  color={TEXT_PRIMARY}
+                  fontFamily="Cairo_700Bold"
+                  isRTL={isRTL}
+                  centered
+                />
+              </View>
+            );
+          }
+
+          if (isEquation) {
+            return (
+              <View key={i} style={slideStyles.formulaBox}>
+                <Text style={[slideStyles.formula, { fontFamily: 'Cairo_700Bold' }]}>{text}</Text>
+              </View>
+            );
+          }
+
+          return (
+            <Text
+              key={i}
+              style={[
+                slideStyles.bodyLine,
+                {
+                  // Media slides centre their content: the image/player below is
+                  // itself centred and width-capped, so a margin-aligned caption
+                  // floats away from the thing it describes.
+                  textAlign: slide.type === 'media' ? 'center' : align,
+                  fontFamily: 'Almarai_400Regular',
+                },
+              ]}
+            >
+              {text}
+            </Text>
+          );
+        })}
+      </View>
 
       {/* Unlock code badge */}
       {slide.unlockCode && slide.type === 'reveal' && (
@@ -737,6 +815,11 @@ export default function PresentationScreen() {
   return (
     <View style={styles.container}>
       <StatusBar hidden />
+
+      {/* Soft background shapes. First in the tree so they sit behind
+          everything, and non-interactive so they never eat a tap. */}
+      <View pointerEvents="none" style={[styles.blob, styles.blobTop]} />
+      <View pointerEvents="none" style={[styles.blob, styles.blobBottom]} />
 
       {/* ── Top Bar ── */}
       <View style={[styles.topBar, { paddingTop: insets.top + 8, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -1037,7 +1120,7 @@ const styles = StyleSheet.create({
   centered: { alignItems: 'center', justifyContent: 'center' },
   noActivity: { color: TEXT_MUTED, fontSize: 14, marginBottom: 16 },
   celebrationOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', zIndex: 20, pointerEvents: 'none' },
-  celebrationCard: { alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(22,23,31,0.92)', borderRadius: 24, paddingHorizontal: 40, paddingVertical: 32, borderWidth: 1, borderColor: TIMER_GREEN + '60', gap: 12 },
+  celebrationCard: { alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.96)', borderRadius: 24, paddingHorizontal: 40, paddingVertical: 32, borderWidth: 1, borderColor: TIMER_GREEN + '60', gap: 12 },
   celebrationEmoji: { fontSize: 64 },
   celebrationTitle: { fontSize: 22, color: TEXT_PRIMARY, textAlign: 'center', lineHeight: 30 },
   topBar: { alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 10 },
@@ -1049,6 +1132,9 @@ const styles = StyleSheet.create({
   timerBarTrack: { height: 3, backgroundColor: BORDER, marginHorizontal: 0 },
   timerBarFill: { height: 3 },
   slideArea: { flex: 1 },
+  blob: { position: 'absolute', borderRadius: 999, backgroundColor: BLOB },
+  blobTop: { width: 260, height: 260, top: -96, left: -84 },
+  blobBottom: { width: 330, height: 330, bottom: -132, right: -116 },
   slideScroll: { paddingHorizontal: 24, paddingBottom: 20 },
   revealSection: { marginTop: 12, gap: 8 },
   revealBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 10, borderWidth: 1 },
@@ -1068,12 +1154,23 @@ const styles = StyleSheet.create({
 });
 
 const slideStyles = StyleSheet.create({
-  container: { flex: 1, paddingTop: 20 },
-  badge: { alignSelf: 'center', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1, marginBottom: 28 },
-  badgeText: { fontSize: 14 },
-  bodyLine: { fontSize: 20, color: TEXT_PRIMARY, lineHeight: 32, marginBottom: 8 },
-  equation: { fontSize: 30, color: TEXT_PRIMARY, textAlign: 'center', marginVertical: 20, lineHeight: 42 },
-  codeBadge: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, marginTop: 28, backgroundColor: TIMER_GREEN + '15', borderRadius: 14, borderWidth: 1, borderColor: TIMER_GREEN + '40', padding: 20 },
+  container: { paddingTop: 8 },
+  cover: { paddingTop: 48, paddingBottom: 32 },
+  coverTitle: { fontSize: 40, lineHeight: 62, color: ACCENT },
+  coverSub: { fontSize: 20, lineHeight: 34, color: TEXT_MUTED, marginBottom: 6 },
+  rule: { width: 64, height: 5, borderRadius: 3, backgroundColor: PINK, marginTop: 14, marginBottom: 24 },
+  headRow: { alignItems: 'center', gap: 12 },
+  glyphChip: { width: 44, height: 44, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  glyph: { fontSize: 21 },
+  title: { flex: 1, fontSize: 31, lineHeight: 48 },
+  body: { gap: 12 },
+  bodyLine: { fontSize: 21, color: TEXT_PRIMARY, lineHeight: 36 },
+  card: { alignItems: 'center', gap: 14, backgroundColor: CARD_BG, borderRadius: 14, borderWidth: 1, borderColor: BORDER, paddingVertical: 15, paddingHorizontal: 16 },
+  cardBar: { width: 5, alignSelf: 'stretch', borderRadius: 3 },
+  cardText: { flex: 1, fontSize: 21, color: TEXT_PRIMARY, lineHeight: 34 },
+  formulaBox: { backgroundColor: CARD_BG, borderRadius: 16, borderWidth: 1, borderColor: BORDER, paddingVertical: 22, paddingHorizontal: 18, alignItems: 'center' },
+  formula: { fontSize: 30, color: TEXT_PRIMARY, textAlign: 'center', lineHeight: 46 },
+  codeBadge: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, marginTop: 28, backgroundColor: TIMER_GREEN + '12', borderRadius: 14, borderWidth: 1, borderColor: TIMER_GREEN + '40', padding: 20 },
   codeLabel: { fontSize: 28 },
   codeValue: { fontSize: 48, color: TIMER_GREEN },
 });
@@ -1144,7 +1241,7 @@ const qStyles = StyleSheet.create({
 
 const panelStyles = StyleSheet.create({
   overlay: { position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10 },
-  panel: { backgroundColor: '#1A1B26', borderTopLeftRadius: 20, borderTopRightRadius: 20, borderTopWidth: 1, borderColor: BORDER, paddingHorizontal: 20, paddingTop: 12, maxHeight: 480 },
+  panel: { backgroundColor: CARD_BG, borderTopLeftRadius: 20, borderTopRightRadius: 20, borderTopWidth: 1, borderColor: BORDER, paddingHorizontal: 20, paddingTop: 12, maxHeight: 480 },
   handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: BORDER, alignSelf: 'center', marginBottom: 16 },
   header: { alignItems: 'center', gap: 8, marginBottom: 16 },
   headerText: { flex: 1, fontSize: 16, color: TEXT_PRIMARY },
