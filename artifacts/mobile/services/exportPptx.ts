@@ -230,6 +230,32 @@ export async function exportDeckAsPptx(
       continue;
     }
 
+    // Any slide may carry a visual, not just graph slides. A chart attached to
+    // a content slide reached neither export until this existed — the drawing
+    // was only ever wired into the graph branch above.
+    const slideVisual = visualForSlide(slide);
+    if (slideVisual?.kind === 'chart' && slideVisual.categories.length) {
+      const [context] = slide.content.split('\n\n');
+      if (context) {
+        s.addText(context, { x: 0.8, y: 1.25, w: 8.4, h: 0.5, align: 'center', fontSize: 13, color: DECK_TEXT });
+      }
+      s.addChart(
+        slideVisual.chartType === 'pie' ? 'pie' : 'bar',
+        [{
+          name: slide.title,
+          labels: slideVisual.categories,
+          values: slideVisual.values,
+        }],
+        {
+          x: 1.4, y: 1.85, w: 7.2, h: 3.2,
+          showLegend: slideVisual.chartType === 'pie',
+          legendPos: 'r',
+          showValue: slideVisual.chartType !== 'pie',
+        },
+      );
+      continue;
+    }
+
     if (slide.type === 'media' && slide.mediaKind === 'image' && slide.mediaUrl) {
       const dataUrl = await fetchAsDataUrl(slide.mediaUrl);
       if (dataUrl) {

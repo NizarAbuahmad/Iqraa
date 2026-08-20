@@ -10,7 +10,9 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  chartForLesson,
   compileExpression,
+  extractChartData,
   expressionFromCommand,
   isRenderableVisual,
   plotGeometry,
@@ -105,6 +107,14 @@ describe('expressionFromCommand', () => {
 
   it('normalises the typography the books use', () => {
     assert.equal(expressionFromCommand('f(x)=x²−4'), 'x^2-4');
+  });
+
+  it('accepts f, g and h as well as y', () => {
+    // extractGraphCommands emits all four. A second curve on the same axes
+    // (g(x)=x+1 beside f(x)=x^2) is exactly the comparison a teacher draws.
+    assert.equal(expressionFromCommand('g(x)=x + 1'), 'x + 1');
+    assert.equal(expressionFromCommand('h(x)=2x'), '2x');
+    assert.equal(expressionFromCommand('k(x)=x'), null);
   });
 
   it('returns null for commands it cannot plot', () => {
@@ -216,5 +226,90 @@ describe('visualToSvg', () => {
     assert.equal(visualToSvg({ kind: 'plot', series: [] }), '');
     assert.equal(visualToSvg({ kind: 'chart', chartType: 'bar', categories: [], values: [] }), '');
     assert.equal(visualToSvg({ kind: 'chart', chartType: 'bar', categories: ['a'], values: [0] }), '');
+  });
+});
+
+describe('extractChartData — what it accepts', () => {
+  it('reads a labelled budget split', () => {
+    const d = extractChartData(
+      'وزّع الدخل الشهري كالآتي: السكن 200 دينار، الطعام 150 دينار، النقل 50 دينار، الادخار 100 دينار',
+    );
+    assert.deepEqual(d?.categories, ['السكن', 'الطعام', 'النقل', 'الادخار']);
+    assert.deepEqual(d?.values, [200, 150, 50, 100]);
+  });
+
+  it('drops an intro phrase so the first item is not lost', () => {
+    // Without this the leading item hides behind the colon, which also skews
+    // a percentage split away from summing to 100 and picks the wrong chart.
+    const d = extractChartData('التوزيع: السكن 10، الطعام 20، النقل 30');
+    assert.equal(d?.categories.length, 3);
+    assert.equal(d?.categories[0], 'السكن');
+  });
+
+  it('reads percentages and English labels', () => {
+    assert.equal(extractChartData('Housing 40%, Food 30%, Transport 30%')?.values.length, 3);
+  });
+});
+
+describe('extractChartData — what it refuses', () => {
+  it('refuses a bare number list', () => {
+    // A statistics mean exercise. Charting it gives unlabelled bars that mean
+    // nothing — this is the rejection the whole extractor exists for.
+    assert.equal(extractChartData('أوجد المتوسط الحسابي للبيانات: 2، 4، 6، 8'), null);
+    assert.equal(extractChartData('1، 3، 3، 5، 8'), null);
+  });
+
+  it('refuses prose that merely contains numbers', () => {
+    assert.equal(extractChartData('بعد 3 سنوات يصبح المبلغ 1200 دينار'), null);
+    assert.equal(extractChartData('أوجد مشتقة f(x) = x^2 عند x = 3'), null);
+  });
+
+  it('refuses fewer than three items — a sentence, not a dataset', () => {
+    assert.equal(extractChartData('السكن 200، الطعام 150'), null);
+  });
+
+  it('refuses a repeated label — two bars cannot both be right', () => {
+    assert.equal(extractChartData('السكن 200، السكن 150، الطعام 100'), null);
+  });
+
+  it('refuses more categories than can be read from the back row', () => {
+    const many = Array.from({ length: 9 }, (_, i) => `البند ${'أ'.repeat(1)}${i} ${i + 1}`).join('، ');
+    assert.equal(extractChartData(many), null);
+  });
+
+  it('refuses zero and negative quantities', () => {
+    assert.equal(extractChartData('السكن 0، الطعام 0، النقل 0'), null);
+  });
+
+  it('refuses single-character labels — those are variables, not categories', () => {
+    // «س 5، ص 10، ع 15» is algebra, not a dataset.
+    assert.equal(extractChartData('س 5، ص 10، ع 15'), null);
+  });
+
+  it('refuses empty input', () => {
+    assert.equal(extractChartData(''), null);
+  });
+});
+
+describe('chartForLesson', () => {
+  it('uses a pie when the values are shares of a whole', () => {
+    const c = chartForLesson('النسب: السكن 40%، الطعام 30%، النقل 10%، الادخار 20%');
+    assert.equal(c?.kind, 'chart');
+    assert.equal(c && c.kind === 'chart' ? c.chartType : null, 'pie');
+  });
+
+  it('uses bars for amounts that are not shares', () => {
+    const c = chartForLesson('السكن 200 دينار، الطعام 150 دينار، النقل 50 دينار');
+    assert.equal(c && c.kind === 'chart' ? c.chartType : null, 'bar');
+  });
+
+  it('uses bars for percentages that do not sum to a whole', () => {
+    // Three unrelated rates are not parts of one pie.
+    const c = chartForLesson('نمو 5%، تضخم 3%، فائدة 7%');
+    assert.equal(c && c.kind === 'chart' ? c.chartType : null, 'bar');
+  });
+
+  it('returns null when there is no dataset', () => {
+    assert.equal(chartForLesson('أوجد المتوسط الحسابي للبيانات: 2، 4، 6'), null);
   });
 });

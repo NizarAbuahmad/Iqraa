@@ -304,6 +304,7 @@ export function assembleDeckSlides(parts: {
   activitySlides: ActivitySlide[];
   objectives?: ActivitySlide | null;
   graph?: ActivitySlide | null;
+  chart?: ActivitySlide | null;
   media?: ActivitySlide[];
 }): ActivitySlide[] {
   const [intro, ...rest] = parts.activitySlides;
@@ -320,6 +321,7 @@ export function assembleDeckSlides(parts: {
     intro,
     ...(parts.objectives ? [parts.objectives] : []),
     ...(parts.graph ? [parts.graph] : []),
+    ...(parts.chart ? [parts.chart] : []),
     ...tail,
     ...(parts.media ?? []),
     ...(summary ? [summary] : []),

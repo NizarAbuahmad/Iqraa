@@ -197,6 +197,15 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
       </div>
       <div class="deck-body">
         ${lines.map(l => deckContentLine(l, slide.type === 'challenge')).join('')}
+        ${(() => {
+          // Any slide may carry a visual, not just graph slides. A chart
+          // attached to a content slide rendered nowhere in the exports until
+          // this existed — the drawing was only ever wired into the graph
+          // branch.
+          const visual = visualForSlide(slide);
+          const svg = visual ? visualToSvg(visual, 640, 320) : '';
+          return svg ? `<div class="deck-plot">${svg}</div>` : '';
+        })()}
       </div>
       ${footer(num)}</div>`;
   };
