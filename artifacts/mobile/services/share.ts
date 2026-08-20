@@ -4,6 +4,7 @@
  */
 
 import { classifyDocLines, docLineText } from './docxOutline.ts';
+import { labelAnswer, labelOption, labelOptionLine } from './optionLabels.ts';
 import { Platform, Share } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import * as Print from 'expo-print';
@@ -128,13 +129,13 @@ export function formatQuizText(
         ? (isAr ? 'صح/خطأ' : 'T/F')
         : (isAr ? 'قصير' : 'Short');
     lines.push(`\n${i + 1}. [${typeLabel}] ${q.text} (${q.points} ${isAr ? 'نقطة' : 'pts'})`);
-    q.options?.forEach((opt, oi) => lines.push(`   ${String.fromCharCode(65 + oi)}. ${opt}`));
+    q.options?.forEach((opt, oi) => lines.push(`   ${labelOptionLine(opt, oi, isAr)}`));
   });
 
   lines.push(`\n${SEP}`);
   lines.push(isAr ? 'مفتاح الإجابات' : 'ANSWER KEY');
   quiz.questions.forEach((q, i) => {
-    lines.push(`${i + 1}. ${q.correctAnswer}${q.explanation ? ` — ${q.explanation}` : ''}`);
+    lines.push(`${i + 1}. ${labelAnswer(q.options, q.correctAnswer, isAr)}${q.explanation ? ` — ${q.explanation}` : ''}`);
   });
 
   lines.push('\n' + SEP);
@@ -234,6 +235,15 @@ export async function shareAsText(text: string, title: string): Promise<'shared'
 
 // ─── HTML templates for PDF ──────────────────────────────────────────────────
 
+/**
+ * Every export below sets `direction` on `<body>`, which already lays flex
+ * items right-to-left in Arabic. Adding `flex-direction: row-reverse` on top of
+ * that reverses a reversal: main-start moves back to the left edge, so the row
+ * packs against the left of a right-aligned page. That is what put the option
+ * letter on the wrong side of its own option, and the school block opposite the
+ * date, in every Arabic PDF. Rows are plain `row` now and let `direction` do
+ * the work — never re-reverse a row inside an already-RTL document.
+ */
 function htmlBase(content: string, isRTL: boolean, title: string): string {
   const dir = isRTL ? 'rtl' : 'ltr';
   const align = isRTL ? 'right' : 'left';
@@ -254,7 +264,7 @@ function htmlBase(content: string, isRTL: boolean, title: string): string {
     .school-header {
       border-bottom: 2px solid #1B6B62; padding-bottom: 16px; margin-bottom: 24px;
       display: flex; justify-content: space-between; align-items: flex-start;
-      flex-direction: ${isRTL ? 'row-reverse' : 'row'};
+      flex-direction: row;
     }
     .school-name { font-size: 13px; color: #666; }
     .school-placeholder { font-weight: bold; color: #1B6B62; font-size: 15px; }
@@ -271,11 +281,11 @@ function htmlBase(content: string, isRTL: boolean, title: string): string {
     li { margin-bottom: 4px; font-size: 13px; color: #333; }
     .answer-key { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 14px; margin-top: 24px; }
     .answer-key .section-title { color: #15803d; border-color: #bbf7d0; }
-    .answer-row { display: flex; flex-direction: ${isRTL ? 'row-reverse' : 'row'}; gap: 8px; margin-bottom: 4px; font-size: 12px; }
+    .answer-row { display: flex; flex-direction: row; gap: 8px; margin-bottom: 4px; font-size: 12px; }
     .answer-num { font-weight: 600; color: #15803d; min-width: 24px; }
     .q-card { border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; margin-bottom: 8px; }
     .q-num { font-weight: 700; color: #1B6B62; }
-    .q-option { display: flex; flex-direction: ${isRTL ? 'row-reverse' : 'row'}; gap: 8px; align-items: flex-start; margin-top: 4px; font-size: 12px; color: #555; }
+    .q-option { display: flex; flex-direction: row; gap: 8px; align-items: flex-start; margin-top: 4px; font-size: 12px; color: #555; }
     .q-pts { font-size: 11px; color: #999; margin-top: 4px; }
     .footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #e5e7eb; font-size: 11px; color: #aaa; text-align: center; }
   </style>
@@ -296,6 +306,16 @@ function htmlBase(content: string, isRTL: boolean, title: string): string {
 
 function esc(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+/**
+ * One `.q-option` row. Shared by the worksheet and quiz builders, which had
+ * byte-identical copies of this line — the kind of duplication that lets one
+ * export get fixed and the other keep printing A/B/C/D.
+ */
+function optionRowHTML(text: string, index: number, isAr: boolean): string {
+  const { letter, text: body } = labelOption(text, index, isAr);
+  return `<div class="q-option"><span>${esc(letter)}</span> <span>${esc(body)}</span></div>`;
 }
 
 export function buildLessonPlanHTML(
@@ -339,7 +359,7 @@ export function buildWorksheetHTML(
   const sections = ws.sections.map(sec => {
     const questions = sec.questions.map(q => {
       const options = q.options
-        ? q.options.map((o, oi) => `<div class="q-option"><span>${String.fromCharCode(65 + oi)}.</span> <span>${esc(o)}</span></div>`).join('')
+        ? q.options.map((o, oi) => optionRowHTML(o, oi, isAr)).join('')
         : '';
       const html = `<div class="q-card"><span class="q-num">${qNum}.</span> ${esc(q.text)}${options}<div class="q-pts">${q.points} ${L('نقطة', 'pts')}</div></div>`;
       qNum++;
@@ -380,7 +400,7 @@ export function buildQuizHTML(
 
   const questions = quiz.questions.map((q, i) => {
     const options = q.options
-      ? q.options.map((o, oi) => `<div class="q-option"><span>${String.fromCharCode(65 + oi)}.</span> <span>${esc(o)}</span></div>`).join('')
+      ? q.options.map((o, oi) => optionRowHTML(o, oi, isAr)).join('')
       : '';
     return `<div class="q-card">
       <span class="q-num">${i + 1}.</span>
@@ -392,7 +412,7 @@ export function buildQuizHTML(
   }).join('');
 
   const akRows = quiz.questions.map((q, i) =>
-    `<div class="answer-row"><span class="answer-num">${i + 1}.</span><span>${esc(q.correctAnswer)}</span></div>`
+    `<div class="answer-row"><span class="answer-num">${i + 1}.</span><span>${esc(labelAnswer(q.options, q.correctAnswer, isAr))}</span></div>`
   ).join('');
 
   const content = `
@@ -462,7 +482,7 @@ export function buildActivityHTML(
 
   const stepsHtml = activity.steps.map(s => `
     <div style="border:1px solid #e5e7eb;border-radius:8px;padding:14px;margin-bottom:10px;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-direction:${isAr ? 'row-reverse' : 'row'}">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-direction:row">
         <span style="background:${ACCENT};color:#fff;width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">${s.stepNumber}</span>
         <span style="font-weight:600;font-size:13px;flex:1;text-align:${align}">${e(s.title)}</span>
         <span style="font-size:11px;color:#9ca3af">${s.durationMin} ${L('د', 'min')}</span>
@@ -489,7 +509,7 @@ export function buildActivityHTML(
   </style>
 </head>
 <body>
-  <div style="border-bottom:2px solid ${ACCENT};padding-bottom:16px;margin-bottom:24px;display:flex;justify-content:space-between;flex-direction:${isAr ? 'row-reverse' : 'row'}">
+  <div style="border-bottom:2px solid ${ACCENT};padding-bottom:16px;margin-bottom:24px;display:flex;justify-content:space-between;flex-direction:row">
     <div>
       <div style="font-weight:bold;color:${ACCENT};font-size:15px">${L('إقرأ — مساعد التدريس الذكي', 'Iqra — AI Teaching Assistant')}</div>
       <div style="font-size:13px;color:#666">${L('اسم المدرسة', 'School Name')}</div>
@@ -843,7 +863,7 @@ export function buildWorksheetSlidesHTML(
   const sectionSlides = ws.sections.map(sec => {
     const questionsHtml = sec.questions.map(q => {
       const opts = q.options
-        ? `<div class="q-opts">${q.options.map((o, oi) => `<div class="q-opt">${String.fromCharCode(65 + oi)}. ${e(o)}</div>`).join('')}</div>`
+        ? `<div class="q-opts">${q.options.map((o, oi) => `<div class="q-opt">${e(labelOptionLine(o, oi, isAr))}</div>`).join('')}</div>`
         : '';
       const html = `<div class="q-card"><span class="q-num">${qCounter}.</span> <span class="q-text">${e(q.text)}</span>${opts}<span class="q-pts">${q.points} ${L('نقطة', 'pts')}</span></div>`;
       qCounter++;
@@ -972,7 +992,7 @@ export function buildQuizSlidesHTML(
     const questionsHtml = group.map((q, qi) => {
       const idx = startIdx + qi + 1;
       const opts = q.options
-        ? `<div class="q-opts">${q.options.map((o, oi) => `<div class="q-opt">${String.fromCharCode(65 + oi)}. ${e(o)}</div>`).join('')}</div>`
+        ? `<div class="q-opts">${q.options.map((o, oi) => `<div class="q-opt">${e(labelOptionLine(o, oi, isAr))}</div>`).join('')}</div>`
         : '';
       return `<div class="q-card">
         <div class="q-top">

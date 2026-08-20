@@ -32,7 +32,7 @@ pnpm run typecheck                     # whole monorepo
 pnpm run dev:api                       # Express on :8080
 pnpm run dev:mobile:web                # Expo web on :8083
 
-cd artifacts/mobile     && pnpm test   # 287 tests
+cd artifacts/mobile     && pnpm test   # 480 tests
 cd artifacts/api-server && pnpm build && pnpm test   # build first — see below
 ```
 

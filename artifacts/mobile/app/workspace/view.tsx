@@ -13,6 +13,7 @@ import {
   ClassroomActivity, LessonFlowOutput, LessonPlanOutput, QuizOutput, WorksheetOutput,
 } from '@/services/ai/AIService';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
+import { normalizeQuestionOptions, optionLetter } from '@/services/optionLabels';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import {
@@ -380,7 +381,10 @@ function QuizView({ quiz, colors, isRTL, t, accent, lang }: {
           </View>
         </View>
       </View>
-      {quiz.questions.map((q, i) => (
+      {/* Normalised on read, not just on generation: quizzes saved before the
+          renderer owned the lettering still carry the model's "أ)" in their
+          stored option text, and this screen is where a teacher reviews them. */}
+      {quiz.questions.map(normalizeQuestionOptions).map((q, i) => (
         <View key={q.id} style={[{ backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1, borderRadius: colors.radius, padding: 16, marginBottom: 12 }]}>
           <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginBottom: 10 }]}>
             <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: accent, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -394,7 +398,7 @@ function QuizView({ quiz, colors, isRTL, t, accent, lang }: {
           <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 20, marginBottom: 10, textAlign: isRTL ? 'right' : 'left' }]}>{q.text}</Text>
           {q.options?.map((opt, oi) => (
             <View key={oi} style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, padding: 10, marginBottom: 6, backgroundColor: colors.muted, borderRadius: 8 }]}>
-              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, width: 20 }}>{String.fromCharCode(65 + oi)}.</Text>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, width: 20 }}>{optionLetter(oi, lang === 'ar')}.</Text>
               <Text style={[{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }]}>{opt}</Text>
             </View>
           ))}
