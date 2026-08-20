@@ -217,7 +217,7 @@ function prepStepLabel(step: PrepStepId, isAr: boolean): string {
     explanation: 'شرح الفكرة',
     'lesson-plan': 'خطة درس',
     worksheet: 'ورقة عمل',
-    quiz: 'أداة تقييم',
+    quiz: 'اختبار قصير',
     activity: 'نشاط صفي',
     homework: 'واجب منزلي',
   };
@@ -266,7 +266,7 @@ export function nextPrepRecommendation(
 
   if (isAr) {
     if (next === 'worksheet') return 'لنجهّز الآن ورقة عمل.';
-    if (next === 'quiz') return 'أنصح بأداة تقييم قبل أن نغلق تحضير الدرس.';
+    if (next === 'quiz') return 'أنصح باختبار قصير قبل أن نغلق تحضير الدرس.';
     if (next === 'lesson-plan') return 'أقترح الآن: حضّر خطة الدرس.';
     if (next === 'activity') return 'لنصمّم نشاطاً صفياً قصيراً.';
     if (next === 'homework') return 'أضف واجباً منزلياً خفيفاً لتثبيت الفكرة.';
@@ -450,7 +450,7 @@ function pickAck(isAr: boolean, intent: Intent, seed: string): string {
     ],
     quiz: [
       'حسناً، نجهّز تقويماً سريعاً يقيس الفهم.',
-      'تمام، أداة تقييم تساعدنا على معرفة أين وصل الطلاب.',
+      'تمام، اختبار قصير يساعدنا على معرفة أين وصل الطلاب.',
     ],
     homework: [
       'حاضر، واجب قصير ومركّز خير من واجب طويل.',
@@ -528,7 +528,7 @@ function actionMenu(isAr: boolean, omitted?: TeachingActionType): string {
         'أستطيع أيضاً أن أجهّز لك:',
         '• خطة درس',
         '• ورقة عمل',
-        '• أداة تقييم',
+        '• اختبار قصير',
         '• واجب منزلي',
         '• نشاط صفي تعاوني',
       ]
@@ -555,7 +555,7 @@ export function defaultTeachingActions(): TeachingAction[] {
   return [
     { type: 'lesson-plan', labelAr: 'خطة درس', labelEn: 'Create lesson plan', emoji: '📄' },
     { type: 'worksheet', labelAr: 'ورقة عمل', labelEn: 'Create worksheet', emoji: '📝' },
-    { type: 'quiz', labelAr: 'أداة تقييم', labelEn: 'Create quiz', emoji: '❓' },
+    { type: 'quiz', labelAr: 'اختبار قصير', labelEn: 'Create quiz', emoji: '❓' },
     { type: 'homework', labelAr: 'واجب منزلي', labelEn: 'Create homework', emoji: '🏠' },
     { type: 'activity', labelAr: 'نشاط صفي', labelEn: 'Classroom activity', emoji: '🎯' },
   ];
@@ -803,7 +803,7 @@ function buildDocumentGroundedReply(
       ? `${lead}\n\n**واجب منزلي مستقل** (~25 دقيقة)\n1) تدريب مستقل · 2) سؤال تحدٍّ · 3) تأمل قصير.\nمصمم للإنجاز في المنزل اعتمادًا على ${files}.`
       : `${lead}\n\n**Independent homework** (~25 min)\n1) Independent practice · 2) Challenge · 3) Short reflection.\nDesigned for home completion using ${files}.`,
     quiz: isAr
-      ? `${lead}\n\n**أداة تقييم**\n• اختيار من متعدد · صح/خطأ · سؤال قصير.\nمبني على الأهداف والمفاهيم المستخرجة من الملفات.\nهل أضيف أسئلة بلوم أعلى؟`
+      ? `${lead}\n\n**اختبار قصير**\n• اختيار من متعدد · صح/خطأ · سؤال قصير.\nمبني على الأهداف والمفاهيم المستخرجة من الملفات.\nهل أضيف أسئلة بلوم أعلى؟`
       : `${lead}\n\n**Short quiz**\n• Multiple choice · True/False · Short answer.\nGrounded in objectives/concepts from the files.\nAdd higher Bloom items?`,
     activity: isAr
       ? `${lead}\n\n**نشاط صفي**\nعمل ثنائي 3–5 دقائق: يشرح كل طالب مفهومًا من الملف لزميله ثم يتبادلان.\nبديل: معرض سريع لأمثلة من المحتوى.`

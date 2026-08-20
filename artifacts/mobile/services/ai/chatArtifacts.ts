@@ -171,7 +171,7 @@ export async function generateChatArtifact(opts: {
     'lesson-plan': { ar: 'خطة درس', en: 'Lesson plan' },
     worksheet: { ar: 'ورقة عمل', en: 'Worksheet' },
     homework: { ar: 'واجب منزلي', en: 'Homework' },
-    quiz: { ar: 'أداة تقييم', en: 'Short quiz' },
+    quiz: { ar: 'اختبار قصير', en: 'Short quiz' },
     activity: { ar: 'نشاط صفي', en: 'Class activity' },
   };
   const artifactTitle = `${isAr ? TITLES[artifact].ar : TITLES[artifact].en}: ${titleBase}`;

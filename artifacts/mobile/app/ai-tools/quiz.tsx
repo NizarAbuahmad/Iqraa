@@ -11,6 +11,7 @@ import { buildGeneratorContext, resolveGeneratorGrounding } from '@/services/kbC
 import { QuizOutput, QuizQuestion } from '@/services/ai/AIService';
 import { buildDeckFromQuiz } from '@/services/classDeck';
 import { summarizeVerification, type VerifyOutcome } from '@/services/quizVerification';
+import { normalizeQuestionOptions, optionLetter } from '@/services/optionLabels';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
@@ -241,7 +242,11 @@ export default function QuizScreen() {
         additionalContext,
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setResult(out);
+      // Options are lettered by the renderer, once, in the display language.
+      // Models routinely bake their own "أ)" into the option text as well, and
+      // leaving it there prints "أ. أ) الوقت" on the paper — so it is dropped
+      // on the way in, before this ever reaches the editor or the exporter.
+      setResult({ ...out, questions: out.questions.map(normalizeQuestionOptions) });
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
 
       /*
@@ -581,7 +586,7 @@ export default function QuizScreen() {
                   return (
                     <View key={oi} style={[styles.optRow, { backgroundColor: isCorrect ? '#10B981' + '15' : colors.muted, borderRadius: 8, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                       <Text style={[styles.optLabel, { color: isCorrect ? '#10B981' : colors.mutedForeground, fontFamily: isCorrect ? 'Cairo_600SemiBold' : 'Almarai_400Regular' }]}>
-                        {String.fromCharCode(65 + oi)}.
+                        {optionLetter(oi, lang === 'ar')}.
                       </Text>
                       <View style={{ flex: 1 }}>
                         <EditableText

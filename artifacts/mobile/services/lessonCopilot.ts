@@ -99,7 +99,7 @@ export function seedDefaultLessonMemory(base?: ChatSessionMemory): ChatSessionMe
   };
 }
 
-/** Bare tool shortcut with little/no topic signal (e.g. "خطة", "أداة تقييم"). */
+/** Bare tool shortcut with little/no topic signal (e.g. "خطة", "اختبار قصير"). */
 export function isBareArtifactShortcut(query: string): boolean {
   const q = query.trim();
   return /^(إعداد\s*)?(خطة(\s*درس)?|ورقة(\s*عمل)?|اختبار(\s*قصير)?|واجب(\s*منزلي)?|نشاط(\s*صفي)?|homework|quiz|worksheet|lesson\s*plan|activity)$/i.test(q);

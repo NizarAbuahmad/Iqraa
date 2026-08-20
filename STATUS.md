@@ -37,9 +37,15 @@ Vision screens (student/parent/school dashboards) are deprioritized.
 
 - `pnpm install` and full `pnpm run typecheck` pass clean (checked on Windows
   2026-08-06 and on Linux 2026-08-10).
-- Mobile test suite: 376 tests, 0 failures (10 skipped). The `test` script
-  globs `services/__tests__/**/*.test.ts` — it used to be a hand-listed set of
-  files that had drifted, so two suites never ran.
+- Mobile test suite: 480 tests (re-counted 2026-08-20; the 376 here was stale).
+  The `test` script globs `services/__tests__/**/*.test.ts` — it used to be a
+  hand-listed set of files that had drifted, so two suites never ran.
+  - In a container where `@workspace/curriculum` has not been installed/built,
+    10 suites abort with `Cannot find module '@workspace/curriculum'` before
+    running a single assertion. That is the workspace dep missing, not a
+    regression — but it means "10 failures" is the *expected* reading of a
+    fresh checkout, and a real regression hides in that noise. Check the
+    failing names against that list before assuming your branch broke them.
 - API test suite: 74 tests, 0 failures. Its `test` script globs
   `src/**/__tests__/**/*.test.ts`; it was scoped to `src/modules/**` and so
   never ran anything under `src/lib` or `src/routes`. The mount-order suite
@@ -2648,6 +2654,58 @@ must start following the language in the same commit that deletes them.
   - The helper itself was left alone deliberately: `quiz.tsx` passes the
     question text as `message` and needs its `title` to say what is happening to
     it, so suppressing titles globally would have broken that caller.
+
+## Exported PDFs were laid out left-to-right, 2026-08-20
+
+Reported from a print preview of an Arabic quiz: option letters sat on the
+wrong side of their own options, and every option carried two markers —
+`أ) الوقت A.`
+
+Three separate faults, all in `services/share.ts`:
+
+1. **The same `row-reverse` cancellation as the web-RTL bug above, inverted.**
+   That incident was per-component flips assuming a direction-neutral document.
+   The export HTML is the one place that *is* direction-aware — `htmlBase`
+   writes `<html dir="rtl">` and `direction: rtl` on body — and it *also* wrote
+   `flex-direction: row-reverse`. Under `direction: rtl`, plain `row` already
+   runs right-to-left; reversing it moves main-start back to the left edge, so
+   `.q-option`, `.answer-row` and `.school-header` packed against the left of a
+   right-aligned page. Rows are plain `row` now. **The rule cuts both ways: in
+   this repo, `row-reverse` is right in React Native components and wrong in
+   exported HTML.**
+2. **Options were lettered `String.fromCharCode(65 + i)`** — A/B/C/D on an
+   Arabic paper, at five call sites. Now `أ/ب/ج/د` in abjad order (not the
+   alphabetical `أ ب ت ث`, which is the tell that a list was lettered by
+   someone who does not read the language).
+3. **The model letters options itself.** The mock generator returns bare option
+   text, so this never showed in `DEMO_MODE` — it needs live AI to reproduce,
+   which is why a printed paper was the first sighting. Markers are stripped on
+   receipt (`normalizeQuestionOptions`) so exactly one marker exists, added by
+   the renderer.
+
+New `services/optionLabels.ts` + 27 tests. Marker punctuation is `.`, never
+`)` — a closing paren is bidi-mirrored inside an RTL run and prints as `(`.
+
+Answer keys are now lettered from the option's **position**, not from whatever
+marker the model wrote into `correctAnswer`: since options are re-lettered by
+index, a model that emitted its choices out of order previously left a key
+pointing at the wrong line. Fails honest — an answer matching no option prints
+verbatim rather than being relabelled to fit.
+
+Also renamed **`أداة تقييم` → `اختبار قصير`**. It sat next to `التقييمات` under
+بعد الحصة and both read as "assessment", but they are unrelated systems: the
+first generates a paper artifact and stores nothing, the second is the
+DB-backed subsystem with students, attempts and marks. The quiz tool no longer
+contains the word تقييم at all. Two deliberate exceptions: the intent regex in
+`teachingAssistant.ts` still matches `أداة تقييم` so teachers who type the old
+name are still understood, and `التقييمات` is untouched (route, API, schema and
+this file all name it).
+
+Verified by rendering `buildQuizHTML`'s real output in Chromium, before and
+after, against the reported quiz. Not verifiable by unit test: `share.ts`
+imports `react-native` at module scope, so `node:test` cannot load it — the
+same constraint that split out `deckSlidesHtml.ts`. The pure logic lives in
+`optionLabels.ts` and is tested there; the CSS is not.
 
 ## Open decisions (2026-08-10)
 

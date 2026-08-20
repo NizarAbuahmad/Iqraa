@@ -36,7 +36,7 @@ export const DOCUMENT_QUICK_ACTIONS: DocQuickAction[] = [
     toolId: 'homework',
   },
   {
-    id: 'quiz', emoji: '✅', labelAr: 'أداة تقييم', labelEn: 'Quiz',
+    id: 'quiz', emoji: '✅', labelAr: 'اختبار قصير', labelEn: 'Quiz',
     promptAr: 'جهّز اختباراً قصيراً من محتوى الملفات',
     promptEn: 'Generate a short quiz grounded in the files',
     toolId: 'quiz',
