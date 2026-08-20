@@ -92,8 +92,24 @@ export function TopicSelector({
     ? getLessonsForUnit(selectedUnitId)
     : [];
 
-  // Reset selections when subject/grade changes
+  // Reset selections when subject/grade changes.
+  //
+  // The guard is the point: a bare effect on [subjectId, gradeId] also runs on
+  // mount, and `onChange('')` then wiped any topic the screen was opened with.
+  // Every prefill path fed this — the AI Tools tab's `pick.topic`, «خطة درس
+  // لهذا الدرس» from a curriculum lesson, the Smart Templates — so a tool
+  // opened with a topic always came up empty. Only an actual change resets.
+  //
+  // ponytail: the pickers still show their placeholder when a topic arrives
+  // as a prop; resolving one back to unit + lesson needs a by-title KB lookup,
+  // and the derive effect below would then rewrite the topic into its own
+  // format. Worth doing when a teacher asks why the dropdowns look empty.
+  const prevSubjectId = React.useRef(subjectId);
+  const prevGradeId = React.useRef(gradeId);
   useEffect(() => {
+    if (prevSubjectId.current === subjectId && prevGradeId.current === gradeId) return;
+    prevSubjectId.current = subjectId;
+    prevGradeId.current = gradeId;
     setSelectedUnitId(null);
     setSelectedLessonId(null);
     onChange('');
