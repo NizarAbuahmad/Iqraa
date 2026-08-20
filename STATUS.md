@@ -793,6 +793,78 @@ one click away the whole time and settled it in a line.
 1.14.0, fastapi 0.141.1, uvicorn 0.52.3, pydantic 2.13.4) in a clean venv, and
 `test_equations.py` passes 29/29 against it.
 
+## Slides Maker: the deck now checks, not just teaches, 2026-08-20
+
+The education review's top recommendation. A Slides Maker deck went title →
+outcomes → vocabulary → hook → concepts → rule → examples → practice →
+summary and never once asked the class a question. Forty-five minutes of
+projection with no point at which a teacher finds out whether any of it
+landed.
+
+**Two mid-lesson checks and an exit ticket, placed rather than appended.**
+
+| Where | Why there |
+| --- | --- |
+| After the rule, **before** the worked examples | The last moment a wrong answer is cheap. The show of hands decides whether the examples are a demonstration or a re-teach; after them it would only measure copying. |
+| After the worked examples | "Can you do one" — a different question from "did you follow me". |
+| After the summary, behind its own divider | The exit ticket leaves the room. Its own divider because it is a change of mode: the deck stops teaching and starts measuring. |
+
+Questions come from the existing quick-check generator — the deck places
+them, it never invents one. `ClassroomActivityRequest.numQuestions` is new so
+Slides Maker can ask for the five it places instead of taking the four a
+standalone Quick Check happens to make; the concrete bank tracks used items,
+so five requests give five distinct questions and no mid-lesson question can
+reappear at the door.
+
+`splitChecks` drops nothing and pads nothing. Five → 2 mid + 3 exit. Four →
+2 + 2. Three → three mid-lesson checks and no exit ticket at all, because a
+one-question exit ticket is not one and that question is worth more where the
+answer can still change the teaching.
+
+**Not gated on subject.** The generator returns open write-on-your-board
+questions when it has no verified bank to draw from, and those are accepted
+as checks. Gating this on `subject === 'mathematics'` is precisely the bug
+the visuals work had to undo, and chemistry and financial literacy would have
+silently got nothing again.
+
+`verified` / `verifiedBy` / `computedAnswer` ride through untouched — claims
+about an answer key only the verifier may make. `questionIndex` is stripped:
+it indexes a Class Challenge scoring ledger and this deck has none.
+
+**The exports had no `question` branch at all.** Both fell through to the
+generic content renderer, so an MCQ printed as a bare stem: the slide asked
+the class to raise a letter card and the file showed no letters to raise.
+This was already true for the Class Challenge and Quick Check decks — adding
+checks to lesson decks would have spread it. Both exports now render the
+option rows with أ/ب/ج/د, mark the correct one (matching what the challenge
+branch already did with worked-example answers — the exported file is the
+teacher's copy) and carry the verification line.
+
+The printable answer key is now rebuilt from the slides rather than from the
+book's example list, which never knew about any slide added after it. Checks
+are keyed by their own title, not renumbered into one sequence: "تذكرة
+الخروج 1" is the first exit-ticket question, not the first question in the
+deck.
+
+**Verified in a real browser, all three surfaces.** Local Postgres + API +
+Expo web, generated الاشتقاق → a 25-slide deck reading …القاعدة (11) →
+الرسم البياني (12) → **✋ تحقّق سريع 1 (13)** → مثال 1–3 (14–16) → **✋ تحقّق
+سريع 2 (17)** → تدريب (18–19) → ملخص (20) → divider (21) → **🎫 تذكرة الخروج
+1–3 (22–24)** → الواجب (25).
+
+- **Presenter:** slide 13 shows the timer, «الكل يجيب: ارفعوا بطاقة الحرف!»,
+  four unrevealed options and the reveal control.
+- **PPTX:** exported the real file and unzipped it — `slide13.xml` carries
+  the stem, أ/ب/ج/د, all four options, the ✓ on the correct one, and
+  «من بنك الأسئلة المُراجَع».
+- **PDF:** captured the print iframe's HTML — 22 option rows across the five
+  checks, each marked exactly once.
+
+**Known content gap, not introduced here:** the bank's generic stem reads
+«ما ناتج / حل: f(x)=x³ − 4x؟», which is clumsy Arabic. It affects the
+standalone Quick Check identically; putting checks in the lesson deck only
+makes it more visible.
+
 ## Mock AI content was indistinguishable from real, 2026-08-20
 
 `RemoteAIService` falls back to `MockAIService` whenever a live call fails.

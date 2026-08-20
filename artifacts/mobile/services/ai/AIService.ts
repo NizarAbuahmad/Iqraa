@@ -233,6 +233,14 @@ export interface ClassroomActivityRequest {
   teachingGoal: 'warm-up' | 'practice' | 'revision' | 'assessment' | 'critical-thinking';
   language: 'arabic' | 'english';
   additionalContext?: string;
+  /**
+   * How many questions to generate. Honoured by 'quick-check', which defaults
+   * to 4 — the size of a standalone whole-class check. Slides Maker asks for
+   * more because it splits them across the lesson: two checks mid-lesson and
+   * a three-question exit ticket need five distinct items, and reusing a
+   * mid-lesson question as an exit-ticket question would measure nothing.
+   */
+  numQuestions?: number;
 }
 
 // ─── Lesson Flow Engine ──────────────────────────────────────────────────────

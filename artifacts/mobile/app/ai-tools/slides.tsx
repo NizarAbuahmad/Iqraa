@@ -23,9 +23,11 @@ import { Toast } from '@/components/ui/Toast';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
-import type { ClassroomActivity, LessonPlanOutput } from '@/services/ai/AIService';
+import type { ActivitySlide, ClassroomActivity, LessonPlanOutput } from '@/services/ai/AIService';
 import { buildGeneratorContext, resolveGeneratorGrounding } from '@/services/kbContext';
-import { buildLessonDeck, rebuildAnswerKey } from '@/services/lessonSlides';
+import {
+  buildLessonDeck, EXIT_TICKET_MAX, MID_LESSON_CHECK_MAX, rebuildAnswerKey,
+} from '@/services/lessonSlides';
 import { extractGraphCommands } from '@/services/classMedia';
 import { summarizeVerification } from '@/services/quizVerification';
 import { confirm } from '@/services/confirm';
@@ -150,6 +152,30 @@ export default function SlidesScreen() {
       // The plan supplies only the connective tissue. If it fails we still have
       // a usable deck from the book, so a generation error must not throw away
       // curriculum content the teacher can already project.
+      // Formative checks, generated alongside the plan rather than after it:
+      // they are structural (the deck is assembled around them), so they have
+      // to be in hand before `buildLessonDeck` runs. Requested in parallel so
+      // adding them costs no extra wall-clock, and failing independently so a
+      // check-generation error costs the deck nothing.
+      const checksPromise = aiService
+        .generateClassroomActivity({
+          grade: isAr ? grades[gradeIdx]!.nameAr : grades[gradeIdx]!.name,
+          subject: subjects[subjectIdx].name,
+          topic: trimmed,
+          activityType: 'quick-check',
+          duration: 10,
+          difficulty: 'standard',
+          groupType: 'whole-class',
+          teachingGoal: 'assessment',
+          language: isAr ? 'arabic' : 'english',
+          // Two mid-lesson checks plus a three-question exit ticket. Asking
+          // for exactly what the deck places means no question is generated
+          // and then thrown away.
+          numQuestions: MID_LESSON_CHECK_MAX + EXIT_TICKET_MAX,
+        })
+        .then(a => a.slides)
+        .catch((): ActivitySlide[] => []);
+
       let lessonPlan: LessonPlanOutput | null = null;
       try {
         lessonPlan = await aiService.generateLessonPlan({
@@ -186,6 +212,7 @@ export default function SlidesScreen() {
             lessonPlan?.mainActivity ?? '',
           ].join(' \n '))
         : [];
+      const checks = await checksPromise;
       const built = buildLessonDeck(trimmed, isAr, {
         lesson: grounding.lesson,
         plan: lessonPlan,
@@ -194,6 +221,7 @@ export default function SlidesScreen() {
         includeExamples,
         includePractice,
         graphCommands,
+        checks,
       });
       setDeck(built);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
