@@ -48,6 +48,34 @@ CASES: list[tuple[str, str, str, bool, str]] = [
     # ── fail closed ──
     ("equation_linear", "2x + y = 7", "x = 2 ، y = 3", False, "system refused"),
     ("equation_linear", "2x + 5 = 17", "ست", False, "prose answer refused"),
+    # ── derivative evaluated at a point ──
+    # The payload carries the point after '@'. Asking for the derivative
+    # itself and asking for its value at a point are different questions, and
+    # the second used to be scored against the answer to the first.
+    ("derivative_at_point", "x^4@2", "32", True, "value at a point"),
+    ("derivative_at_point", "x^4@2", "4x^3", False, "the derivative, not its value"),
+    ("derivative_at_point", "3x^2 - 5x@1", "1", True, "point evaluation, several terms"),
+    ("derivative_at_point", "x^3@-2", "12", True, "negative point"),
+    ("derivative_at_point", "x^4", "32", False, "no point in the payload"),
+    # ── circles ──
+    # Two unknowns, so solve_equation refuses the equation outright — but the
+    # centre and the radius are both exactly computable from it.
+    ("circle_center", "(x-4)^2+(y+1)^2=9", "(4, -1)", True, "centre, standard form"),
+    ("circle_center", "(x-4)^2+(y+1)^2=9", "(-4, 1)", False, "centre, signs flipped"),
+    ("circle_center", "x^2+y^2=25", "(0, 0)", True, "centre at the origin"),
+    ("circle_center", "x^2+y^2-6x+4y-12=0", "(3, -2)", True, "centre, general form"),
+    ("circle_center", "(x-4)^2+(y+1)^2=9", "صحيح", False, "verdict is not a point"),
+    ("circle_center", "(x-4)^2+(y+1)^2=9", "4", False, "one coordinate is not a point"),
+    ("circle_radius", "(x-5)^2+(y-1)^2=81", "9", True, "radius, standard form"),
+    ("circle_radius", "(x-5)^2+(y-1)^2=81", "81", False, "r² mistaken for r"),
+    ("circle_radius", "x^2+y^2-6x+4y-12=0", "5", True, "radius, general form"),
+    ("circle_radius", "x^2+y^2=10", "sqrt(10)", True, "irrational radius"),
+    ("circle_radius", "4x^2+9y^2=36", "3", False, "an ellipse is not a circle"),
+    ("circle_radius", "(x-1)^2+(y-5)^2=0", "0", False, "a point is not a circle"),
+    ("circle_radius", "x^2+y^2+4=0", "2", False, "no real circle"),
+    # ── superscripts beyond ² and ³ ──
+    ("derivative_polynomial", "x^4", "4x³", True, "superscript in the key"),
+    ("derivative_polynomial", "x^5", "5x⁴", True, "⁴ in the key parses"),
 ]
 
 
@@ -113,6 +141,30 @@ def main() -> int:
         failures += 1
         print(f"FAIL  disguised correct distractor not rejected: {disguised}")
 
+    # A circle distractor that names the same centre in a different notation
+    # is secretly correct and must be rejected, exactly as for equations.
+    same_point = verify_item(
+        "circle_center",
+        "(x-4)^2+(y+1)^2=9",
+        "(4, -1)",
+        [{"value": "4، -1"}, {"value": "(-4, 1)"}],
+    )
+    if same_point["verified"] or not same_point["rejected"]:
+        failures += 1
+        print(f"FAIL  duplicate centre distractor not rejected: {same_point}")
+
+    # A distractor that is not a coordinate pair at all is plainly not this
+    # answer, and must not cost the item its badge.
+    prose_distractor = verify_item(
+        "circle_center",
+        "(x-4)^2+(y+1)^2=9",
+        "(4, -1)",
+        [{"value": "لا يمكن تحديده"}, {"value": "(0, 0)"}],
+    )
+    if not prose_distractor["verified"]:
+        failures += 1
+        print(f"FAIL  unparseable distractor blocked a correct centre: {prose_distractor}")
+
     # The evidence shown to the class must be the set the key matched, not the
     # complex branches SymPy carried along.
     shown = verify_item("equation_exponential", "4^x = 64", "x = 3")
@@ -120,7 +172,7 @@ def main() -> int:
         failures += 1
         print(f"FAIL  complex branch leaked into the classroom evidence: {shown}")
 
-    total = len(CASES) + 7
+    total = len(CASES) + 9
     print(f"{total - failures}/{total} checks passed")
     return 1 if failures else 0
 

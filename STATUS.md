@@ -793,6 +793,57 @@ one click away the whole time and settled it in a line.
 1.14.0, fastapi 0.141.1, uvicorn 0.52.3, pydantic 2.13.4) in a clean venv, and
 `test_equations.py` passes 29/29 against it.
 
+## Widened what the verifier can prove, 2026-08-20
+
+With the scoring fixed, the eval's objective half became trustworthy but not
+informative: **4 provable questions out of 40.** 18 were صح/خطأ and the other
+18 were families the verifier cannot judge. A pass rate over four items is not
+a result, so the fix is coverage, not another run.
+
+Three new topics, each a question shape the NCCD Grade 10 curriculum uses
+constantly and each previously reported as a key SymPy rejected — which reads
+identically to the model getting the maths wrong:
+
+| Topic | Question | Payload | Compared as |
+| --- | --- | --- | --- |
+| `derivative_at_point` | «ما قيمة مشتقة f(x) = x⁴ عند x = 2؟» | `x^4@2` | expression |
+| `circle_center` | «ما مركز الدائرة (x-4)² + (y+1)² = 9؟» | the equation | ordered pair |
+| `circle_radius` | «ما نصف قطر الدائرة …؟» | the equation | expression |
+
+`@` is the point separator because no expression can contain it. Circle
+payloads accept standard *or* general form (`x²+y²-6x+4y-12=0` → centre
+(3,-2), radius 5); an ellipse, a degenerate point, and an imaginary circle are
+each refused rather than answered.
+
+**Two silent extraction bugs surfaced while testing this, both older than
+today's work:**
+
+- **`x⁴` lost its exponent.** `normaliseMath` rewrote only `²` and `³`. Every
+  other superscript is outside the math-safe character class, so
+  `latinExpressionFrom('أوجد مشتقة f(x) = x⁴')` returned **`x`** — the verifier
+  was asked to differentiate the wrong function. Fail-closed against the real
+  key, so no false badge, but silently, and x⁴ is ordinary Grade-10 material.
+  Both sides now handle ⁰–⁹, TS and Python.
+- **«f′(2) = 32» could not parse.** The `f'(x) = …` answer rewrite required a
+  literal `x`, so a key naming the point — the ordinary phrasing for this
+  question — reached SymPy whole and failed. Both argument forms now reduce to
+  the value.
+
+**Fail-closed choices worth knowing.** A question asking for centre *and*
+radius has a compound answer no single comparison can judge, so it stays
+unclaimed. «قطر» is the diameter and deliberately does not match the radius
+marker. A circle question with no readable equation («ما مركز الدائرة في الشكل
+المجاور؟») claims nothing. An ellipse passes the TS gate and is then refused by
+the verifier's own coefficient test — that costs a badge, not a wrong one.
+
+**Verified** by replaying the real rejections from run-32383174183 and
+run-32391665608 through the whole chain — `stripOptionLabel` →
+`toVerifiablePair` → `classifyVerifiableTopic` → the real `verify_core` — and
+all four now verify with SymPy's own value. On a scorer fixture mixing the new
+shapes with a deliberately wrong radius key and a trigonometry item: 5 provable
+of 7, 4 verified, the wrong key caught, trig and صح/خطأ excluded. Python suite
+51/51; mobile 609 tests, 0 failures.
+
 ## Fixed 2026-08-20 — generated multiple-choice keys could never verify
 
 The provider evaluation's first successful run reported the objective half as:

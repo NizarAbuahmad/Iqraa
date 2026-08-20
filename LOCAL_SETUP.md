@@ -144,7 +144,7 @@ Original Replit mobile script (optional): `pnpm --filter @workspace/mobile run d
 
 ---
 
-## Math verifier (derivative slice)
+## Math verifier
 
 Optional SymPy microservice used by verified derivative generation:
 

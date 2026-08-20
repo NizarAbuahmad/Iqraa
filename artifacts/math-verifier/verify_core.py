@@ -4,7 +4,7 @@ from __future__ import annotations
 import re
 from typing import Any, Callable
 
-from sympy import Eq, Symbol, diff, simplify, solve
+from sympy import Eq, Symbol, Tuple, diff, simplify, solve, sqrt
 from sympy.parsing.sympy_parser import (
     convert_xor,
     implicit_multiplication_application,
@@ -22,8 +22,9 @@ TRANSFORMATIONS = standard_transformations + (
 # character swaps belong here — the word-level rewrites in
 # _normalise_answer_text ("أو" → ";") are for solution SETS and would break an
 # expression parse.
+_SUPERSCRIPTS = "\u2070\u00b9\u00b2\u00b3\u2074\u2075\u2076\u2077\u2078\u2079"
+
 _EXPR_TYPOGRAPHY = (
-    ("²", "**2"), ("³", "**3"),
     ("−", "-"), ("–", "-"), ("—", "-"),
     ("×", "*"), ("÷", "/"),
 )
@@ -42,7 +43,15 @@ def normalise_expr_text(expr: str) -> str:
     out = expr.strip()
     for src, dst in _EXPR_TYPOGRAPHY:
         out = out.replace(src, dst)
-    return out
+    # Every superscript digit, not only ² and ³. A distractor written `x⁴`
+    # used to reach the parser with the character intact, where it is a
+    # syntax error — so the item was rejected as bad_distractors and lost a
+    # badge its key had already earned.
+    return re.sub(
+        f"[{_SUPERSCRIPTS}]+",
+        lambda m: "**" + "".join(str(_SUPERSCRIPTS.index(c)) for c in m.group()),
+        out,
+    )
 
 
 def parse_latin(expr: str) -> Any:
@@ -248,12 +257,78 @@ def solution_sets_match(expected: list[Any], claimed: list[Any]) -> bool:
     return not remaining
 
 
+# ── Derivative evaluated at a point ──────────────────────────────────────────
+# «ما قيمة مشتقة f(x) = x⁴ عند x = 2؟» → 32. The classifier used to extract
+# only `x^4` and hand it to the plain derivative solver, which computed 4x³ and
+# rejected the key 32 — a correct answer reported as a wrong one. The payload
+# carries the point after an '@', a character no expression can contain, so the
+# two halves can never be confused for one expression.
+
+def _diff_at_point(payload: str) -> Any:
+    expr_s, _, point_s = payload.partition("@")
+    if not point_s.strip():
+        raise ValueError("expected 'expression@point'")
+    derivative = diff(parse_latin(expr_s), Symbol("x"))
+    return simplify(derivative.subs(Symbol("x"), parse_latin(point_s)))
+
+
+# ── Circles in standard form ─────────────────────────────────────────────────
+# (x - h)² + (y - k)² = r². Two unknowns, so solve_equation refuses it and the
+# item degraded to 'bank'; centre and radius are nonetheless exactly computable.
+
+def _circle(payload: str) -> tuple[Any, Any, Any]:
+    """(x-h)² + (y-k)² = r² → (h, k, r). Raises when it is not that shape."""
+    text = normalise_expr_text(payload)
+    if text.count("=") != 1:
+        raise ValueError("expected exactly one '='")
+    lhs_s, rhs_s = text.split("=")
+    x, y = Symbol("x"), Symbol("y")
+    lhs = parse_expr(lhs_s, transformations=TRANSFORMATIONS, local_dict={"x": x, "y": y})
+    rhs = parse_expr(rhs_s, transformations=TRANSFORMATIONS, local_dict={"x": x, "y": y})
+    poly = (lhs - rhs).expand()
+    if poly.free_symbols != {x, y}:
+        raise ValueError("expected exactly the unknowns x and y")
+    # Match a*x² + a*y² + b*x + c*y + d with equal square coefficients — the
+    # only family that is a circle. An ellipse or hyperbola must not qualify.
+    ax, ay = poly.coeff(x, 2), poly.coeff(y, 2)
+    if ax == 0 or ax != ay:
+        raise ValueError("not a circle")
+    if poly.coeff(x, 1).has(y) or poly.coeff(y, 1).has(x):
+        raise ValueError("cross term present")
+    b, c = poly.coeff(x, 1) / ax, poly.coeff(y, 1) / ay
+    d = simplify(poly.subs({x: 0, y: 0}) / ax)
+    h, k = simplify(-b / 2), simplify(-c / 2)
+    r_squared = simplify(h**2 + k**2 - d)
+    # A degenerate "circle" of radius 0 or an imaginary one is not a question
+    # with a centre and a radius, so it never qualifies.
+    if not r_squared.is_positive:
+        raise ValueError("non-positive radius")
+    return h, k, simplify(sqrt(r_squared))
+
+
+def _circle_center(payload: str) -> Any:
+    h, k, _ = _circle(payload)
+    return Tuple(h, k)
+
+
+def _circle_radius(payload: str) -> Any:
+    return _circle(payload)[2]
+
+
 # Topic-pluggable solvers — add a topic later = one entry here.
 SOLVERS: dict[str, Callable[[str], Any]] = {
     "derivative_polynomial": _diff_x,
     # Stub registry entry (same diff solver) for fractional / negative exponents.
     "derivative_frac_neg_exp": _diff_x,
+    "derivative_at_point": _diff_at_point,
+    "circle_radius": _circle_radius,
+    "circle_center": _circle_center,
 }
+
+# Topics whose answer is an ordered PAIR, not an expression. «(4, -1)» cannot
+# go through expr_equiv — subtracting two tuples raises — so these compare
+# coordinate by coordinate.
+POINT_TOPICS: frozenset[str] = frozenset({"circle_center"})
 
 # Topics compared as SOLUTION SETS rather than by expression equivalence.
 EQUATION_TOPICS: frozenset[str] = frozenset(
@@ -339,6 +414,87 @@ def _verify_equation(
     return {"verified": True, "computed_answer": shown, "error": None, "rejected": []}
 
 
+def parse_point(text: str) -> tuple[Any, ...]:
+    """
+    «(4, -1)» → (4, -1). Also accepts the Arabic comma and a bare `4, -1`.
+
+    Raises on anything that is not an ordered pair, so a key like «صحيح» or
+    «المركز (4,-1) ونصف القطر 3» fails closed rather than half-matching.
+    """
+    body = normalise_expr_text(text).replace("،", ",").strip()
+    if body.startswith("(") and body.endswith(")"):
+        body = body[1:-1]
+    parts = [pp.strip() for pp in body.split(",")]
+    if len(parts) != 2 or not all(parts):
+        raise ValueError("expected an ordered pair")
+    return tuple(
+        parse_expr(pp, transformations=TRANSFORMATIONS, evaluate=True) for pp in parts
+    )
+
+
+def points_match(expected: tuple[Any, ...], claimed: tuple[Any, ...]) -> bool:
+    """Fail-closed coordinate-wise equality, up to symbolic simplification."""
+    if len(expected) != len(claimed):
+        return False
+    for e, c in zip(expected, claimed):
+        try:
+            if simplify(e - c) != 0:
+                return False
+        except Exception:  # noqa: BLE001
+            return False
+    return True
+
+
+def _verify_point(
+    solver: Callable[[str], Any],
+    question: str,
+    answer: str,
+    distractors: list[dict] | None = None,
+) -> dict[str, Any]:
+    """Verify a topic whose answer is an ordered pair, e.g. a circle's centre."""
+    expected = solver(question)
+    pretty = f"({expected[0]}, {expected[1]})"
+    try:
+        claimed = parse_point(answer)
+    except Exception as exc:  # noqa: BLE001
+        return {
+            "verified": False,
+            "computed_answer": pretty,
+            "error": f"answer_parse_error: {type(exc).__name__}: {exc}",
+            "rejected": [],
+        }
+    if not points_match(tuple(expected), claimed):
+        return {
+            "verified": False,
+            "computed_answer": pretty,
+            "error": "answer_mismatch",
+            "rejected": [],
+        }
+
+    rejected: list[dict[str, str]] = []
+    for d in distractors or []:
+        value = str((d or {}).get("value", "")).strip()
+        if not value:
+            rejected.append({"value": "", "reason": "empty_distractor"})
+            continue
+        try:
+            if points_match(tuple(expected), parse_point(value)):
+                rejected.append({"value": value, "reason": "equivalent_to_answer"})
+        except Exception:  # noqa: BLE001
+            # Not a coordinate pair at all, so plainly not this answer. Same
+            # judgement the equation path makes, and the opposite of the
+            # expression path, which cannot tell "unparseable" from "equal".
+            continue
+    if rejected:
+        return {
+            "verified": False,
+            "computed_answer": pretty,
+            "error": "bad_distractors",
+            "rejected": rejected,
+        }
+    return {"verified": True, "computed_answer": pretty, "error": None, "rejected": []}
+
+
 def verify_item(
     topic: str,
     question: str,
@@ -358,6 +514,8 @@ def verify_item(
             "rejected": [],
         }
     try:
+        if topic in POINT_TOPICS:
+            return _verify_point(solver, question, answer, distractors)
         expected = str(solver(question))
         if not expr_equiv(expected, answer):
             return {

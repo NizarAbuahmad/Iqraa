@@ -17,6 +17,22 @@ SymPy microservice that **guarantees answer keys** for Grade 10 المشتقات
 - ProcessPool + terminate on timeout (2s) so workers are not orphaned
 - Batch API returns `attempts_per_ai_item` / `avg_ai_attempts` (regen cost signal)
 
+## Topics
+
+`GET /healthz` reports the live list. Today:
+
+| Topic | Question payload | Answer compared as |
+| --- | --- | --- |
+| `derivative_polynomial` | `3x^4 - 2x + 7` | expression equivalence |
+| `derivative_at_point` | `x^4@2` — expression, `@`, the point | expression equivalence |
+| `equation_linear` / `_quadratic` / `_exponential` | `2x + 5 = 17` | solution **set** |
+| `circle_center` | `(x-4)^2+(y+1)^2=9` | ordered **pair**, coordinate-wise |
+| `circle_radius` | same equation | expression equivalence |
+
+Circle payloads accept standard or general form; an ellipse, a degenerate
+point, or an imaginary circle is refused rather than answered. `@` is the
+point separator because no expression can contain it.
+
 ## Contract (latin `x` only)
 
 ```json
