@@ -11,7 +11,9 @@ Read the numbers as a floor, not a grade. Only some families are provable
 (derivatives and single-unknown equations); trigonometry, circle geometry and
 word problems classify as unverifiable and are excluded rather than counted
 wrong. A provider is not worse for writing a good trigonometry question — it
-just cannot be scored on one.
+just cannot be scored on one. صح/خطأ items are excluded for the same reason:
+the statement may be about a derivative, but «صحيح» is a verdict, not an
+expression, and no symbolic prover can confirm it.
 
 Run:  python3 artifacts/api-server/scripts/score-math.py eval-out/<runId>
 """
@@ -43,12 +45,22 @@ def classify(items: list[dict]) -> list[dict]:
     # the family the verifier is best at.
     script = f"""
 import {{ classifyVerifiableTopic }} from {json.dumps(str(GUARDS))};
-import {{ toVerifiablePair }} from {json.dumps(str(PAIR))};
+import {{ toVerifiablePair, stripOptionLabel, isTrueFalseAnswer }} from {json.dumps(str(PAIR))};
 const items = JSON.parse(process.argv[2]);
 console.log(JSON.stringify(items.map(i => {{
-  const pair = toVerifiablePair(i.text, i.answer);
+  // `quizPromptAr` asks for «أ) الخيار الصحيح», so the key and every option
+  // arrive carrying an option label. Unstripped, SymPy cannot parse either —
+  // the key is rejected and the distractors all come back
+  // parse_or_compare_error, so a correct answer scores as a wrong one.
+  const answer = stripOptionLabel(i.answer);
+  const options = i.options.map(stripOptionLabel);
+  const pair = toVerifiablePair(i.text, answer);
   const c = classifyVerifiableTopic(pair.question);
-  return {{ ...i, answer: pair.answer, topic: c?.topic ?? null, payload: c?.payload ?? null }};
+  return {{
+    ...i, answer: pair.answer, options,
+    trueFalse: isTrueFalseAnswer(answer),
+    topic: c?.topic ?? null, payload: c?.payload ?? null,
+  }};
 }})));
 """
     tmp = REPO / "eval-classify.mjs"
@@ -74,13 +86,22 @@ def main() -> int:
         return 0
 
     classified = classify(items)
-    stats: dict[str, dict[str, int]] = defaultdict(lambda: {"total": 0, "classified": 0, "verified": 0})
+    stats: dict[str, dict[str, int]] = defaultdict(
+        lambda: {"total": 0, "true_false": 0, "classified": 0, "verified": 0}
+    )
     failures: list[tuple[str, str, str, str]] = []
 
     for item in classified:
         provider = key[item["anonId"]]["provider"]
         s = stats[provider]
         s["total"] += 1
+        # A صح/خطأ statement about a derivative still classifies as one, so it
+        # must be dropped here rather than counted wrong: comparing «صحيح» to
+        # 2*x can only ever fail, and reporting that as a rejected key blames
+        # the model for answering the question it was asked.
+        if item["trueFalse"]:
+            s["true_false"] += 1
+            continue
         if not item["topic"]:
             continue
         s["classified"] += 1
@@ -94,10 +115,15 @@ def main() -> int:
             failures.append((provider, item["payload"], item["answer"], str(res.get("computed_answer"))))
 
     print(f"\nSymbolic scoring — {run_dir}\n")
-    print(f"{'provider':<12} {'questions':>10} {'provable':>9} {'verified':>9}  {'pass rate':>9}")
+    print(f"{'provider':<12} {'questions':>10} {'صح/خطأ':>9} {'provable':>9} {'verified':>9}  {'pass rate':>9}")
     for provider, s in sorted(stats.items()):
         rate = f"{100 * s['verified'] / s['classified']:.0f}%" if s["classified"] else "n/a"
-        print(f"{provider:<12} {s['total']:>10} {s['classified']:>9} {s['verified']:>9}  {rate:>9}")
+        print(f"{provider:<12} {s['total']:>10} {s['true_false']:>9} {s['classified']:>9}"
+              f" {s['verified']:>9}  {rate:>9}")
+    # "provable" is the denominator. A run where it is 0 is not a pass or a
+    # fail — it measured nothing, and saying so beats printing n/a and moving on.
+    if all(s["classified"] == 0 for s in stats.values()):
+        print("\nNothing was provable in this run — the pass rate above is not a result.")
 
     if failures:
         # These are the ones that matter: a provable question whose key SymPy

@@ -74,6 +74,21 @@ function isTautology(lhs: string, rhs: string): boolean {
 }
 
 /**
+ * The distinct unknowns in an equation body.
+ *
+ * `f(x)`-style calls and named functions are not unknowns, so an identifier
+ * immediately followed by '(' is dropped — otherwise `sin(x) = 0.5` would
+ * count `sin` and `x` and be rejected as a two-unknown equation.
+ */
+function unknownsIn(body: string): Set<string> {
+  const found = new Set<string>();
+  for (const m of body.matchAll(/([A-Za-z]\w*)\s*(\()?/g)) {
+    if (!m[2]) found.add(m[1]!);
+  }
+  return found;
+}
+
+/**
  * Pull a single-unknown equation out of question text, e.g.
  * "ما ناتج / حل: 2x + 5 = 17؟" → "2x+5=17".
  *
@@ -96,6 +111,13 @@ export function latinEquationFrom(text: string): string | null {
     if (!lhs || !rhs) continue;
     // Needs an unknown on one side, and both sides must be real content.
     if (!/[a-zA-Z]/.test(lhs) && !/[a-zA-Z]/.test(rhs)) continue;
+    // Exactly one unknown. «معادلة الدائرة (x-4)² + (y+1)² = 9» has one '=',
+    // a '^2' and Latin letters, so it used to classify as a quadratic — and
+    // the prover then refused it for having two unknowns. It failed closed,
+    // so no false badge was ever shown, but the item was reported as a key
+    // the verifier rejected, which is indistinguishable from a wrong answer.
+    // A circle equation is not a thing this verifier can judge; say so here.
+    if (unknownsIn(body).size !== 1) continue;
     if (isTautology(lhs, rhs)) continue;
     return body.replace(/\s+/g, '');
   }

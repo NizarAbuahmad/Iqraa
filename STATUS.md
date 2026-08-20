@@ -793,6 +793,64 @@ one click away the whole time and settled it in a line.
 1.14.0, fastapi 0.141.1, uvicorn 0.52.3, pydantic 2.13.4) in a clean venv, and
 `test_equations.py` passes 29/29 against it.
 
+## Fixed 2026-08-20 — generated multiple-choice keys could never verify
+
+The provider evaluation's first successful run reported the objective half as:
+
+```
+provider   questions  provable  verified  pass rate
+openai            40        14         0        0%
+```
+
+**That 0% was the scoring, not the model.** All 14 rejections were artifacts,
+and two of the three causes are in the shipped app, not in the eval harness.
+
+1. **Option labels.** `quizPromptAr` literally instructs the model to return
+   `"options": ["أ) خيار", …]` and `"correctAnswer": "أ) الخيار الصحيح"`, so
+   every generated multiple-choice item arrives labelled — and the label went
+   to SymPy verbatim. The key failed to parse, and each distractor came back
+   `parse_or_compare_error`, so the item was rejected as `bad_distractors`.
+   Reproduced directly against `verify_core`: `verify_item('derivative_polynomial',
+   '5x^3', 'أ) 15x²', …)` → `verified: False, computed_answer: None`; the same
+   call with the label stripped → `verified: True, computed_answer: 15*x**2`.
+   Net effect: **no generated multiple-choice derivative had ever earned a
+   symbolic badge**, on precisely the family the verifier is best at. Fail-closed,
+   so the badge was never wrong — it was silently never shown.
+2. **صح/خطأ items.** «مشتقة الدالة f(x) = x² هي 2x. صح أم خطأ؟» still reads as
+   a derivative question, so the classifier claimed it and the verifier was
+   asked whether «صحيح» equals `2x`. It never can. Beyond the wasted round
+   trip, the item was then reported as a key SymPy rejected — indistinguishable
+   from the model getting the maths wrong, when it answered exactly the
+   question it was asked.
+3. **Circle equations.** «(x-4)² + (y+1)² = 9» has one `=`, a `^2` and Latin
+   letters, so `latinEquationFrom` classified it as a single-unknown quadratic.
+   `solve_equation` then refused it for having two unknowns. Fail-closed again,
+   but again reported as a rejected key.
+
+**Fixes**, all in the shared pipeline so production and the scorer inherit the
+same behaviour rather than the eval carrying its own copy:
+
+- `quizVerification.ts` gained `stripOptionLabel` (bracket-style labels only —
+  accepting `1.` would rewrite the decimal key `2. 5` to `5`) and
+  `isTrueFalseAnswer`. `verifyItems` strips the label from the key **and every
+  distractor** — stripping one side only would leave the correct option in its
+  own distractor list, where `check_distractors` rejects it as
+  `equivalent_to_answer` — and short-circuits صح/خطأ items to `BANK_OUTCOME`
+  without asking.
+- `verifyMathGuards.ts`: an equation must contain exactly one unknown.
+  Identifiers followed by `(` are functions, not unknowns, so `sin(x) = 0.5`
+  still classifies.
+- `score-math.py` mirrors the app's full pipeline again, counts صح/خطأ in its
+  own column, and prints an explicit "this run measured nothing" line when
+  `provable` is 0 rather than an `n/a` that reads like a result.
+
+Replayed the real failure shapes through the fixed scorer: 2/3 provable, with
+the one deliberately wrong key (`6x²` for `3x³`) still caught and reported —
+the fix removes false rejections without blunting real ones.
+
+**Do not read the 0% from that run as a model result.** The eval needs re-running
+before any provider decision is made from its objective half.
+
 ## Fixed 2026-08-20 — the spend guard undercounted, and 2000 tokens is not a lesson plan
 
 Asked to plan which model to use for what. Checking the current model facts
