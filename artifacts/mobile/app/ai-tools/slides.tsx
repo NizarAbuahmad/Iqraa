@@ -28,7 +28,13 @@ import { buildGeneratorContext, resolveGeneratorGrounding } from '@/services/kbC
 import {
   buildLessonDeck, EXIT_TICKET_MAX, MID_LESSON_CHECK_MAX, rebuildAnswerKey,
 } from '@/services/lessonSlides';
-import { extractGraphCommands } from '@/services/classMedia';
+import {
+  applyMediaEdit, extractGraphCommands, insertLessonResources, nextVideoSuggestion,
+  shouldSearchForVideo, videoCaption,
+} from '@/services/classMedia';
+import { LessonResources } from '@/components/ui/LessonResources';
+import type { LessonMediaItem } from '@/services/lessonMedia';
+import type { DeckVideo } from '@/services/youtubeVideo';
 import { summarizeVerification } from '@/services/quizVerification';
 import { confirm } from '@/services/confirm';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
@@ -73,6 +79,19 @@ export default function SlidesScreen() {
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
   const [editAnswer, setEditAnswer] = useState('');
+  const [editMediaUrl, setEditMediaUrl] = useState('');
+  const [editMediaCaption, setEditMediaCaption] = useState('');
+  const [editMediaError, setEditMediaError] = useState('');
+  /**
+   * Alternative videos from the same search that produced the deck's pick.
+   * Held on the screen rather than on the slide: they are a browsing aid, not
+   * deck content, and putting them in the slide would carry them into every
+   * save and export for nothing.
+   */
+  const [videoOptions, setVideoOptions] = useState<DeckVideo[]>([]);
+  const [loadingSuggestion, setLoadingSuggestion] = useState(false);
+  /** What the teacher has pinned to this lesson, kept in sync by the picker. */
+  const [attached, setAttached] = useState<LessonMediaItem[]>([]);
   /** True once the example-verification pass has resolved — the summary row
       stays silent while a check is still in flight. */
   const [verifyDone, setVerifyDone] = useState(false);
@@ -83,13 +102,66 @@ export default function SlidesScreen() {
     setEditTitle(s.title);
     setEditContent(s.content);
     setEditAnswer(s.answer ?? '');
+    setEditMediaUrl(s.mediaUrl ?? '');
+    setEditMediaCaption(s.mediaCaption ?? '');
+    setEditMediaError('');
     setEditIdx(i);
+  };
+
+  /**
+   * Put the next search candidate into the fields — it does not save.
+   *
+   * Filling the form rather than applying straight to the deck lets the
+   * teacher read the title before committing, and keep pressing for another.
+   * The caption is rewritten too, because a suggestion the teacher chose is
+   * theirs: `applyMediaEdit` will see a caption that differs from the slide's
+   * and keep it, which is right — it describes the video now on the slide.
+   *
+   * A deck reopened from the workspace has no candidates in memory, so the
+   * first press fetches them. That is one search, then free cycling.
+   */
+  const suggestAnotherVideo = async () => {
+    if (editIdx === null || !deck) return;
+    let options = videoOptions;
+    if (options.length === 0) {
+      setLoadingSuggestion(true);
+      try {
+        const { searchDeckVideos } = await import('@/services/youtubeVideo');
+        const query = isAr
+          ? `شرح ${deck.lesson} ${subjects[subjectIdx].nameAr} للصف العاشر`
+          : `${deck.lesson} ${subjects[subjectIdx].name} grade 10 explained`;
+        options = await searchDeckVideos(query, isAr ? 'ar' : 'en');
+        setVideoOptions(options);
+      } finally {
+        setLoadingSuggestion(false);
+      }
+    }
+    const next = nextVideoSuggestion(options, editMediaUrl);
+    if (!next) { setEditMediaError(t('noOtherVideo')); return; }
+    setEditMediaUrl(next.url);
+    setEditMediaCaption(videoCaption(next));
+    setEditMediaError('');
   };
 
   const applyEdit = () => {
     if (editIdx === null || !deck) return;
+
+    // Media is validated before anything is written: a URL the app cannot
+    // embed would project as a blank frame in front of a class and print as a
+    // dead link. Refuse it here rather than storing it and finding out live.
+    const editing = deck.slides[editIdx];
+    let swapped: ActivitySlide | null = null;
+    if (editing?.type === 'media') {
+      const result = applyMediaEdit(editing, { url: editMediaUrl, caption: editMediaCaption });
+      if (!result.ok) { setEditMediaError(t('mediaUrlUnsupported')); return; }
+      swapped = result.slide;
+    }
+
     const slides = deck.slides.map((s, i) => {
       if (i !== editIdx) return s;
+      if (swapped) {
+        return { ...swapped, title: editTitle.trim() || s.title, content: editContent };
+      }
       const answer = editAnswer.trim();
       const next = { ...s, title: editTitle.trim() || s.title, content: editContent };
       // An emptied answer removes the reveal button rather than revealing "".
@@ -213,7 +285,7 @@ export default function SlidesScreen() {
           ].join(' \n '))
         : [];
       const checks = await checksPromise;
-      const built = buildLessonDeck(trimmed, isAr, {
+      const builtBase = buildLessonDeck(trimmed, isAr, {
         lesson: grounding.lesson,
         plan: lessonPlan,
         subject: isAr ? subjects[subjectIdx].nameAr : subjects[subjectIdx].name,
@@ -223,6 +295,13 @@ export default function SlidesScreen() {
         graphCommands,
         checks,
       });
+      // The teacher's own resources go in before anything is shown, unlike
+      // the searched media which arrives later — they are local, so there is
+      // nothing to wait for and no reason to make the deck flicker.
+      const built = {
+        ...builtBase,
+        slides: insertLessonResources(builtBase.slides, attached, isAr),
+      };
       setDeck(built);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
@@ -269,7 +348,7 @@ export default function SlidesScreen() {
       void (async () => {
         try {
           const { searchDeckPhoto } = await import('@/services/unsplashImage');
-          const { searchDeckVideo } = await import('@/services/youtubeVideo');
+          const { searchDeckVideos } = await import('@/services/youtubeVideo');
           const { attachBackgroundImage, buildMediaSlide, deckPhotoQueries, insertVideoSlide } =
             await import('@/services/classMedia');
           const [titleQuery, dividerQuery] = deckPhotoQueries(subjects[subjectIdx].id, subjects[subjectIdx].name);
@@ -284,11 +363,19 @@ export default function SlidesScreen() {
             ? `شرح ${trimmed} ${subjects[subjectIdx].nameAr} للصف العاشر`
             : `${trimmed} ${subjects[subjectIdx].name} grade 10 explained`;
 
-          const [titlePhoto, dividerPhoto, video] = await Promise.all([
+          // The search fills a gap, it does not compete with the teacher. A
+          // pinned video means no call at all — one fewer thing on the
+          // projector, and 100 units of a 10,000/day quota unspent.
+          const wantVideo = shouldSearchForVideo(attached);
+          const [titlePhoto, dividerPhoto, videos] = await Promise.all([
             searchDeckPhoto(titleQuery),
             searchDeckPhoto(dividerQuery),
-            searchDeckVideo(videoQuery, isAr ? 'ar' : 'en'),
+            wantVideo ? searchDeckVideos(videoQuery, isAr ? 'ar' : 'en') : Promise.resolve([]),
           ]);
+          const video = videos[0] ?? null;
+          // Keep the rest for the editor's "another suggestion" control. They
+          // cost nothing extra — one search returned all of them.
+          setVideoOptions(videos);
           if (!titlePhoto && !dividerPhoto && !video) return;
 
           setDeck(cur => {
@@ -313,7 +400,7 @@ export default function SlidesScreen() {
               const videoSlide = buildMediaSlide(
                 'video',
                 video.url,
-                `${video.title} — ${video.channelTitle}`,
+                videoCaption(video),
                 isAr,
                 0,
               );
@@ -462,6 +549,12 @@ export default function SlidesScreen() {
             hasError={!!error && !topic}
             t={t}
           />
+
+          {/* Directly under the lesson picker, because that is what these
+              attach to: pin a video to «الاشتقاق» once and every future deck
+              for that lesson carries it — and so does Class Mode, which has
+              read this store all along. */}
+          <LessonResources topic={topic.trim()} onChange={setAttached} />
 
           <View style={{ gap: 10, marginBottom: 18 }}>
             <Toggle label={t('slidesIncludeExamples')} value={includeExamples} onChange={setIncludeExamples} />
@@ -636,6 +729,11 @@ export default function SlidesScreen() {
               {t('editSlide')}
             </Text>
 
+            {/* The card is capped at 85% of the screen and the field list is
+                type-dependent — a media slide adds two more. Without a scroll
+                view the extra height clips silently and takes the Save button
+                with it, which is unrecoverable for the teacher. */}
+            <ScrollView style={{ flexShrink: 1 }} keyboardShouldPersistTaps="handled">
             <Text style={[styles.modalLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
               {t('slideTitleField')}
             </Text>
@@ -661,6 +759,71 @@ export default function SlidesScreen() {
               }]}
             />
 
+            {editIdx !== null && deck?.slides[editIdx]?.type === 'media' && (
+              <>
+                <Text style={[styles.modalLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+                  {t('slideMediaUrlField')}
+                </Text>
+                <TextInput
+                  value={editMediaUrl}
+                  onChangeText={v => { setEditMediaUrl(v); setEditMediaError(''); }}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  placeholderTextColor={colors.mutedForeground}
+                  // A URL is latin text: left-aligned even in the RTL layout,
+                  // or it renders with the scheme at the wrong end.
+                  style={[styles.modalInput, {
+                    color: colors.foreground, borderColor: editMediaError ? '#D97706' : colors.border,
+                    borderRadius: colors.radius, fontFamily: 'Almarai_400Regular', textAlign: 'left',
+                  }]}
+                />
+                {editMediaError ? (
+                  <Text style={[styles.modalHint, { color: '#B25E02', fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+                    {editMediaError}
+                  </Text>
+                ) : (
+                  <Text style={[styles.modalHint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+                    {t('slideMediaUrlHint')}
+                  </Text>
+                )}
+
+                {deck?.slides[editIdx]?.mediaKind === 'video' && (
+                  <Pressable
+                    onPress={suggestAnotherVideo}
+                    disabled={loadingSuggestion}
+                    style={[styles.suggestBtn, {
+                      borderColor: colors.border, borderRadius: colors.radius,
+                      flexDirection: isRTL ? 'row-reverse' : 'row',
+                      opacity: loadingSuggestion ? 0.6 : 1,
+                    }]}
+                    accessibilityRole="button"
+                  >
+                    {loadingSuggestion
+                      ? <ActivityIndicator size="small" color={ACCENT} />
+                      : <Ionicons name="shuffle-outline" size={16} color={ACCENT} />}
+                    <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+                      {t('suggestAnotherVideo')}
+                    </Text>
+                  </Pressable>
+                )}
+
+                <Text style={[styles.modalLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+                  {t('slideMediaCaptionField')}
+                </Text>
+                <TextInput
+                  value={editMediaCaption}
+                  onChangeText={setEditMediaCaption}
+                  placeholder={t('slideMediaCaptionPlaceholder')}
+                  placeholderTextColor={colors.mutedForeground}
+                  style={[styles.modalInput, {
+                    color: colors.foreground, borderColor: colors.border, borderRadius: colors.radius,
+                    fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left',
+                  }]}
+                />
+              </>
+            )}
+
             {editIdx !== null && deck?.slides[editIdx]?.type === 'challenge' && (
               <>
                 <Text style={[styles.modalLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
@@ -676,6 +839,8 @@ export default function SlidesScreen() {
                 />
               </>
             )}
+
+            </ScrollView>
 
             <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 10, marginTop: 16 }}>
               <Pressable
@@ -764,6 +929,8 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 17, marginBottom: 12 },
   modalLabel: { fontSize: 12, marginBottom: 6, marginTop: 8 },
   modalInput: { borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14 },
+  suggestBtn: { alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, paddingVertical: 9, paddingHorizontal: 14, marginTop: 8, marginBottom: 4 },
+  modalHint: { fontSize: 11, lineHeight: 17, marginTop: -4, marginBottom: 2 },
   modalInputMultiline: { minHeight: 110, textAlignVertical: 'top' },
   verifyRow: { alignItems: 'center', gap: 6, marginTop: 8 },
   verifyText: { fontSize: 12, fontFamily: 'Almarai_400Regular', flex: 1 },

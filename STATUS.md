@@ -793,6 +793,209 @@ one click away the whole time and settled it in a line.
 1.14.0, fastapi 0.141.1, uvicorn 0.52.3, pydantic 2.13.4) in a clean venv, and
 `test_equations.py` passes 29/29 against it.
 
+## Fixed 2026-08-20 — the spend guard undercounted, and 2000 tokens is not a lesson plan
+
+Asked to plan which model to use for what. Checking the current model facts
+before recommending anything turned up three live problems, all of which would
+have made the answer wrong.
+
+### The "conservative" fallback was cheaper than a real model
+
+`aiBudget.ts` prices models to estimate spend against `AI_BUDGET_USD`, and
+falls back to a deliberately expensive rate for anything it does not
+recognise — the comment says so. The fallback was **$5/$15 per million**.
+Claude Opus 5 output is **$25**. So pointing `AI_MODEL` at a Claude model
+would have made the guard undercount output by 40% and let a run sail past
+its cap while the log reported it was under.
+
+A default that undercuts a model you might actually select is not
+conservative. The table now prices the Claude models explicitly, the fallback
+is **$10/$50** (the most expensive current model, so an unknown id can only
+trip the cap early), and a test pins the invariant: *the fallback is never
+cheaper than anything the table knows*.
+
+Claude Sonnet 5 is priced at its standard $3/$15, **not** the $2/$10
+introductory rate that ends 2026-08-31 — a guard that assumes a promotional
+price stops guarding when the promotion does.
+
+### 2000 output tokens breaks a reasoning model, silently
+
+`/generate/*` capped completions at 1500–2000 tokens. That is tight for a
+full Arabic lesson plan and outright broken for a reasoning model: thinking
+tokens are billed as output and count against the same ceiling, so the model
+can spend most of the budget reasoning and return a truncated object.
+
+The failure is invisible. `extractJSON` on a truncated response yields a
+partial object or `{}`, the route answers **200**, and the client renders an
+empty lesson plan — with the provenance badge reporting **live**, because the
+API did answer. A precondition for using any thinking model here, not a
+tuning preference. Now one `GENERATION_TOKENS = 8000` for every route.
+
+### The eval would have measured itself
+
+`provider-eval.ts` had the same 2000–2500 ceilings. A reasoning model would
+have been truncated, scored as malformed, and read as *"bad at Arabic lesson
+plans"* when it was never given room to answer. Raised to 16000 — an eval
+that penalises a model for the harness's configuration measures the harness.
+
+It also scored only whether the response **parsed**. A model can return
+well-formed JSON with none of the fields the app reads and score as a
+success, then render as an empty lesson plan. The report now has two columns,
+`parsed` and `complete`, and `complete` checks the fields each artifact type
+actually requires, treating empty strings and empty arrays as missing.
+
+### Still to decide
+
+One `AI_MODEL` covers generation and chat alike, though they want opposite
+things — prep is low-volume and quality-critical, chat is high-volume and
+latency-sensitive. Splitting it into `AI_MODEL_GENERATE` / `AI_MODEL_CHAT`
+should land before the eval, so the thing measured is the thing shipped.
+
+And `/generate/*` does no shape validation at all: `extractJSON` → `res.json`.
+The 200-with-`{}` path above is the same hole. Fixing it properly means
+deciding what the route does when the shape is wrong — fail closed with a
+5xx, or return a labelled partial — which is a product decision, not a
+refactor.
+
+## The lesson library could be read but never written, 2026-08-20
+
+Asked for a way to add a teacher's own video, image or other resource to a
+deck. Went looking for where that would live and found it already built —
+and orphaned.
+
+`services/lessonMedia.ts` is complete: per user, per lesson, add / get /
+remove, URL classification, duplicate rejection. Its only UI lived on the
+home screen, which was retired when chat became the landing tab. Nothing
+routes to `/home` and its tab is `display: none`, so:
+
+| | writes | reads |
+| --- | --- | --- |
+| `app/home.tsx` | ✅ — unreachable | ✅ |
+| Class Mode (`startClass.ts`) | — | ✅ **a store nothing can write** |
+| Slides Maker | — | ❌ did not know it existed |
+
+Class Mode has been asking every lesson for teacher-attached media that no
+teacher could attach. Not a crash, not an error — a feature that quietly
+stopped having an input.
+
+**The UI now lives in `components/ui/LessonResources.tsx`**, under the lesson
+picker in Slides Maker, as a component rather than a fourth copy of the same
+form. Pin a video to «الاشتقاق» once and it lands in every future deck for
+that lesson *and* in Class Mode, which was already reading for it.
+
+**The search stands down when the teacher has spoken.** `shouldSearchForVideo`
+returns false when a video is pinned, so a curated lesson makes no YouTube
+call at all: one fewer thing on the projector, and 100 units of a 10,000/day
+quota unspent per generation. The search fills a gap; it does not compete.
+
+`insertLessonResources` puts the batch in together, at the same slot the
+auto-found video uses — after the teaching, before the worked examples.
+Inserting one at a time would have reversed them, since each lands before the
+same first `challenge` slide.
+
+**Verified in a real browser** end to end: pinned «فيديو المعلم نفسه» to
+الاشتقاق, generated, and counted the calls to `/media/youtube-video`.
+
+| | searches during generation |
+| --- | --- |
+| Nothing pinned | 1 |
+| Teacher's video pinned | **0** |
+
+The deck read …📐 القاعدة → **فيديو** → مثال 1–3 → 🎉 ملخص, with the search
+result absent.
+
+**Still to do in this direction:** insert-a-resource at a chosen position in
+an existing deck, and a `link` kind with a QR code so articles, PhET and
+GeoGebra applets can be projected and scanned. The dead `app/home.tsx` is
+untouched — it is unreachable either way, and deleting a whole screen is its
+own decision.
+
+## "Suggest another video" — free, because the search already paid, 2026-08-20
+
+The swap field let a teacher replace the video with one they had in mind. This
+covers the other half: they don't like the pick and want a different
+suggestion without leaving the app.
+
+**The quota is what shaped the design.** A YouTube `search.list` costs 100
+units against a 10,000/day default — 100 searches for the entire product, per
+day. Re-searching each time a teacher rejected a suggestion would have made
+the button a quota bomb. But `maxResults` does not change the price: one
+search returns five candidates for the same 100 units. So the API now asks
+for five, hands back `videos` alongside the unchanged `video`, and the editor
+cycles the list locally.
+
+**Measured, not assumed:** the browser check counts the calls to
+`/media/youtube-video`. One at generation, and **still one after three
+presses** of اقترح فيديو آخر.
+
+The candidates live in screen state, not on the slide: they are a browsing
+aid, and putting them in the deck would carry them into every save and every
+export for nothing. A deck reopened from the workspace therefore has none —
+the first press fetches once, then cycles free.
+
+`nextVideoSuggestion` compares by **video id, not URL string**. The slide may
+hold a `youtu.be` short link for a candidate the search returned as a
+`watch?v=` link; offering a teacher the video they are already looking at
+reads as a broken button. It returns null when there is genuinely nothing new,
+so the control says «لا توجد اقتراحات أخرى» rather than cycling to itself.
+
+Pressing the button fills the fields rather than saving — the teacher reads
+the title first, and can keep pressing. The caption is rewritten with it, and
+`videoCaption()` is now the single definition of «{title} — {channel}» shared
+by the deck builder and the cycler, so a caption chosen here is
+indistinguishable from one written at generation time.
+
+**Verified in a real browser** against a stubbed three-candidate response:
+pressing cycles 1 → 2 → 3 → back to 1, with the caption tracking the URL at
+every step, and the search count never leaving 1.
+
+## Teachers can swap the deck's video, 2026-08-20
+
+Reported straight after the auto-found video started working: the slide editor
+offered عنوان الشريحة and محتوى الشريحة and nothing else, so a teacher who
+didn't want the video the search picked could delete the slide or keep it.
+No way to substitute their own.
+
+Media slides now carry two more fields — **رابط الفيديو أو الصورة** and
+**وصف الوسائط**. Paste a YouTube link (watch / youtu.be / embed / shorts) or
+a direct image URL.
+
+**The caption is the part that had to be got right.** `mediaCaption` holds
+«{title} — {channel}» for the video the *search* returned, and it is projected
+on the slide and printed into the PDF and the PPTX. Left in place over a new
+URL, the deck confidently labels one video with a different video's name —
+wrong in the file the teacher hands out, where nobody is watching to catch it.
+So an untouched auto-generated caption is dropped when the URL changes, while
+a caption the teacher actually wrote is kept.
+
+`mediaKind` follows the URL rather than the slide's previous kind, so pasting
+a picture onto a video slide converts it instead of handing the video renderer
+an image and printing a dead "watch" link.
+
+**Unsupported links are refused, not stored.** A URL the app cannot embed
+projects as a blank frame in front of a class and exports as a dead link, so
+`applyMediaEdit` returns a refusal and the dialog stays open with the field
+outlined and the reason under it. `classifyMediaUrl` was already there and
+already tested — this is the first thing to use it on the edit path.
+
+The edit dialog also got a `ScrollView`. It is capped at 85% of the screen
+with a type-dependent field list; two more fields would have clipped the
+bottom on a short viewport and taken the احفظ button with it.
+
+**Verified in a real browser** against a stubbed search (no `YOUTUBE_API_KEY`
+locally):
+
+- pasting `https://example.com/not-a-video` → refused, dialog stays open, the
+  field turns amber with «رابط غير مدعوم…», nothing written;
+- pasting `https://youtu.be/dQw4w9WgXcQ` → reopening the editor reads back the
+  new URL and an **empty** caption, the old video's title and channel gone.
+
+**Not done:** no "suggest another video" button. That needs the API to return
+more than `maxResults=1`, and cycling suggestions one search at a time would
+burn the YouTube quota (100 units per search against a 10,000/day default).
+The right shape is to fetch several in the one call the deck already makes and
+cycle locally — worth doing, but it is an API change, not this one.
+
 ## Fixed 2026-08-20 — the celebration overlay followed you off its slide
 
 Reported from a real deck: «🎉 أحسنتم! اكتمل النشاط» sitting on top of the

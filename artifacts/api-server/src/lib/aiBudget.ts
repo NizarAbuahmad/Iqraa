@@ -34,15 +34,56 @@ export class AiBudgetExceededError extends Error {
 // guard below — not billing-accurate. A model not in this table falls back to
 // a deliberately conservative (expensive) estimate, so an unrecognized model
 // stops the budget early rather than silently overspending.
+//
+// The fallback only works if it is genuinely the ceiling. It was $5/$15 —
+// under Claude Opus 5's real $5/$25 — so pointing AI_MODEL at a Claude model
+// without touching this table would have made the guard undercount output by
+// 40% and let a run sail past its cap. A "conservative" default that is
+// cheaper than a model you might actually use is not conservative.
 const PRICING_PER_MILLION_USD: Record<string, { input: number; output: number }> = {
+  // OpenAI
   "gpt-4o-mini": { input: 0.15, output: 0.6 },
   "gpt-4.1-mini": { input: 0.4, output: 1.6 },
   "gpt-4o": { input: 2.5, output: 10 },
+  // Anthropic. Claude Sonnet 5 is listed at its standard rate, not the
+  // $2/$10 introductory rate that ends 2026-08-31 — a budget guard that
+  // assumes a promotional price stops guarding when the promotion does.
+  "claude-opus-5": { input: 5, output: 25 },
+  "claude-sonnet-5": { input: 3, output: 15 },
+  "claude-haiku-4-5": { input: 1, output: 5 },
+  "claude-fable-5": { input: 10, output: 50 },
 };
-const FALLBACK_PRICING_PER_MILLION_USD = { input: 5, output: 15 };
+// The most expensive model above, so an unrecognised id can only ever
+// over-estimate spend and trip the cap early.
+const FALLBACK_PRICING_PER_MILLION_USD = { input: 10, output: 50 };
 
-function getPricing(model: string): { input: number; output: number } {
-  return PRICING_PER_MILLION_USD[model] ?? FALLBACK_PRICING_PER_MILLION_USD;
+/** Warn once per unpriced model, not once per request. */
+const warnedUnpriced = new Set<string>();
+
+/** Exported so the "fallback is the ceiling" invariant can be tested. */
+export function getPricing(model: string): { input: number; output: number } {
+  const known = PRICING_PER_MILLION_USD[model];
+  if (known) return known;
+  // Say so. The fallback is the most expensive model there is, which is the
+  // right default for safety and a terrible one for accuracy: point AI_MODEL
+  // at a cheap model this table has never heard of and the guard can bill it
+  // at many times its real rate, tripping AI_BUDGET_USD long before the money
+  // is spent. That reads as a broken budget unless something says why.
+  if (!warnedUnpriced.has(model)) {
+    warnedUnpriced.add(model);
+    logger.warn(
+      { model, assumed: FALLBACK_PRICING_PER_MILLION_USD },
+      "ai model is not in the pricing table — spend is estimated at the most "
+        + "expensive known rate, so the budget will trip early. Add it to "
+        + "PRICING_PER_MILLION_USD in aiBudget.ts for an accurate cap.",
+    );
+  }
+  return FALLBACK_PRICING_PER_MILLION_USD;
+}
+
+/** Every model the guard prices, for the same test. */
+export function pricedModels(): string[] {
+  return Object.keys(PRICING_PER_MILLION_USD);
 }
 
 let spentUsd = 0;

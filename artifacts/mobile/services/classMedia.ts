@@ -64,6 +64,91 @@ export function classifyMediaUrl(url: string): 'image' | 'video' | null {
   return null;
 }
 
+/**
+ * Swap the media on a slide — the teacher's override of what the search found.
+ *
+ * Three things have to move together, and the caption is the one that bites.
+ * `mediaCaption` holds «{title} — {channel}» for the video the *search*
+ * returned; it is projected on the slide and printed into the PDF and PPTX.
+ * Leave it in place over a new URL and the deck confidently labels one video
+ * with another video's name — wrong in the file the teacher hands out, which
+ * is worse than wrong on screen where they'd notice.
+ *
+ * So: an untouched auto-generated caption is dropped when the URL changes,
+ * while a caption the teacher actually wrote is kept. `mediaKind` follows the
+ * URL rather than the slide's previous kind, so pasting an image onto a video
+ * slide converts it instead of handing the video renderer a picture.
+ *
+ * Refuses anything it cannot classify. A URL the app can't embed projects as
+ * a blank frame in front of a class, and the exports would print a dead link.
+ */
+/**
+ * A search candidate, structurally — deliberately not importing `DeckVideo`,
+ * which lives behind `apiClient` and therefore behind react-native, so this
+ * stays loadable by `node --test`.
+ */
+export type VideoSuggestion = { url: string; title: string; channelTitle: string };
+
+/**
+ * How a video is labelled on the slide and in the exports.
+ *
+ * One definition, used by both the deck builder and the editor's suggestion
+ * cycler, so a caption written by "another suggestion" is indistinguishable
+ * from one written at generation time.
+ */
+export function videoCaption(v: VideoSuggestion): string {
+  return `${v.title} — ${v.channelTitle}`;
+}
+
+/**
+ * The next candidate to offer, given what is on the slide now.
+ *
+ * Compares by YouTube id rather than by URL string: the current value may be
+ * a `youtu.be` short link for a candidate the search returned as a `watch?v=`
+ * link, and offering a teacher the video they are already looking at reads as
+ * a broken button.
+ *
+ * Returns null when there is nothing new to show — no candidates, or the only
+ * one is already in place — so the control can be hidden rather than cycling
+ * to itself.
+ */
+export function nextVideoSuggestion(
+  candidates: readonly VideoSuggestion[],
+  currentUrl: string,
+): VideoSuggestion | null {
+  if (candidates.length === 0) return null;
+  const currentId = youtubeIdFrom(currentUrl);
+  const at = currentId
+    ? candidates.findIndex(c => youtubeIdFrom(c.url) === currentId)
+    : -1;
+  if (at === -1) return candidates[0] ?? null;
+  if (candidates.length === 1) return null;
+  return candidates[(at + 1) % candidates.length] ?? null;
+}
+
+export type MediaEditResult =
+  | { ok: true; slide: ActivitySlide }
+  | { ok: false; reason: 'unsupported-url' };
+
+export function applyMediaEdit(
+  slide: ActivitySlide,
+  edit: { url: string; caption: string },
+): MediaEditResult {
+  const url = edit.url.trim();
+  const kind = classifyMediaUrl(url);
+  if (!kind) return { ok: false, reason: 'unsupported-url' };
+
+  const urlChanged = url !== (slide.mediaUrl ?? '').trim();
+  const caption = edit.caption.trim();
+  // "Untouched" means still byte-identical to what generation put there.
+  const captionIsStale = urlChanged && caption === (slide.mediaCaption ?? '').trim();
+
+  const next: ActivitySlide = { ...slide, type: 'media', mediaKind: kind, mediaUrl: url };
+  if (captionIsStale || !caption) delete next.mediaCaption;
+  else next.mediaCaption = caption;
+  return { ok: true, slide: next };
+}
+
 export function buildGraphSlide(
   commands: string[],
   titleAr: string,
@@ -188,6 +273,44 @@ export function insertVideoSlide(
   const insertAt = beforeExamples >= 0 ? beforeExamples : beforeSummary >= 0 ? beforeSummary : slides.length;
   const next = [...slides.slice(0, insertAt), mediaSlide, ...slides.slice(insertAt)];
   return next.map((s, i) => ({ ...s, slideNumber: i + 1 }));
+}
+
+/** What a teacher pinned to a lesson — the shape `lessonMedia` stores. */
+export type AttachedResource = { kind: 'image' | 'video'; url: string; caption: string };
+
+/**
+ * Put the teacher's own resources into a generated deck.
+ *
+ * Same slot the auto-found video uses — after the teaching, before the worked
+ * examples — and the batch goes in together so a teacher who attached three
+ * things sees them in the order they attached them. Inserting one at a time
+ * would reverse them, because each insert lands before the same first
+ * `challenge` slide.
+ */
+export function insertLessonResources(
+  slides: readonly ActivitySlide[],
+  items: readonly AttachedResource[],
+  isAr: boolean,
+): ActivitySlide[] {
+  if (items.length === 0) return [...slides];
+  const beforeExamples = slides.findIndex(s => s.type === 'challenge');
+  const beforeSummary = slides.findIndex(s => s.type === 'summary');
+  const at = beforeExamples >= 0 ? beforeExamples : beforeSummary >= 0 ? beforeSummary : slides.length;
+  const built = items.map(m => buildMediaSlide(m.kind, m.url, m.caption, isAr, 0));
+  return [...slides.slice(0, at), ...built, ...slides.slice(at)]
+    .map((s, i) => ({ ...s, slideNumber: i + 1 }));
+}
+
+/**
+ * Whether to go looking for a video at all.
+ *
+ * The search exists to fill a gap, not to compete with the teacher. If they
+ * pinned their own video to this lesson, a second one from a search is noise
+ * on the projector — and skipping the call also saves 100 units of a
+ * 10,000/day YouTube quota every time a curated lesson is generated.
+ */
+export function shouldSearchForVideo(items: readonly AttachedResource[]): boolean {
+  return !items.some(i => i.kind === 'video');
 }
 
 /**

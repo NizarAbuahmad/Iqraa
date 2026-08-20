@@ -23,6 +23,11 @@ import {
   geogebraCommandUrl,
   insertVideoSlide,
   isLikelyImageUrl,
+  applyMediaEdit,
+  insertLessonResources,
+  shouldSearchForVideo,
+  nextVideoSuggestion,
+  videoCaption,
   youtubeEmbedUrl,
   youtubeIdFrom,
 } from '../classMedia.ts';
@@ -191,5 +196,226 @@ describe('insertVideoSlide', () => {
   it('appends at the end when there is neither an example nor a summary', () => {
     const out = insertVideoSlide([intro, rule], video);
     assert.deepEqual(out.map(s => s.type), ['intro', 'intro', 'media']);
+  });
+});
+
+// ── applyMediaEdit ───────────────────────────────────────────────────────────
+//
+// The teacher's override of whatever the auto-search found. The caption is the
+// dangerous field: it names the video the SEARCH returned, and it is printed
+// into the PDF and PPTX, so carrying it across a URL change mislabels a video
+// in the file that leaves the room.
+
+describe('applyMediaEdit', () => {
+  const videoSlide = {
+    slideNumber: 9,
+    type: 'media' as const,
+    title: '🎬 فيديو',
+    content: 'فيديو خارجي — راجعه قبل العرض',
+    mediaKind: 'video' as const,
+    mediaUrl: 'https://www.youtube.com/watch?v=aaaaaaaaaaa',
+    mediaCaption: 'شرح الاشتقاق — أستاذ عمر الوحيدي',
+    durationSeconds: 0,
+  };
+
+  it('swaps the video and drops a caption naming the old one', () => {
+    const out = applyMediaEdit(videoSlide, {
+      url: 'https://youtu.be/dQw4w9WgXcQ',
+      caption: videoSlide.mediaCaption,
+    });
+    assert.ok(out.ok);
+    assert.equal(out.slide.mediaUrl, 'https://youtu.be/dQw4w9WgXcQ');
+    assert.equal(out.slide.mediaCaption, undefined,
+      'the old title/channel must not survive onto a different video');
+  });
+
+  it('keeps a caption the teacher actually wrote', () => {
+    const out = applyMediaEdit(videoSlide, {
+      url: 'https://youtu.be/dQw4w9WgXcQ',
+      caption: 'شرح من قناة المعلم نفسه',
+    });
+    assert.ok(out.ok);
+    assert.equal(out.slide.mediaCaption, 'شرح من قناة المعلم نفسه');
+  });
+
+  it('keeps the auto caption when only the caption is being edited', () => {
+    const out = applyMediaEdit(videoSlide, {
+      url: videoSlide.mediaUrl,
+      caption: videoSlide.mediaCaption,
+    });
+    assert.ok(out.ok);
+    assert.equal(out.slide.mediaCaption, videoSlide.mediaCaption);
+  });
+
+  it('follows the URL when the kind changes', () => {
+    // Pasting a picture onto a video slide converts it, rather than handing
+    // the video renderer an image and printing a dead "watch" link.
+    const out = applyMediaEdit(videoSlide, {
+      url: 'https://images.unsplash.com/photo-1.jpg',
+      caption: '',
+    });
+    assert.ok(out.ok);
+    assert.equal(out.slide.mediaKind, 'image');
+  });
+
+  it('reads every YouTube link shape a teacher might paste', () => {
+    for (const url of [
+      'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      'https://youtu.be/dQw4w9WgXcQ',
+      'https://www.youtube.com/embed/dQw4w9WgXcQ',
+      'https://www.youtube.com/shorts/dQw4w9WgXcQ',
+      'https://www.youtube.com/watch?list=PL123&v=dQw4w9WgXcQ',
+    ]) {
+      const out = applyMediaEdit(videoSlide, { url, caption: '' });
+      assert.ok(out.ok, url);
+      assert.equal(out.slide.mediaKind, 'video', url);
+    }
+  });
+
+  it('refuses what it cannot embed, and changes nothing', () => {
+    for (const url of ['', '   ', 'not a url', 'https://example.com/page', 'javascript:alert(1)']) {
+      const out = applyMediaEdit(videoSlide, { url, caption: 'x' });
+      assert.equal(out.ok, false, url);
+    }
+  });
+
+  it('leaves the original slide untouched — it returns a new one', () => {
+    const before = JSON.stringify(videoSlide);
+    applyMediaEdit(videoSlide, { url: 'https://youtu.be/dQw4w9WgXcQ', caption: '' });
+    assert.equal(JSON.stringify(videoSlide), before);
+  });
+});
+
+// ── nextVideoSuggestion ──────────────────────────────────────────────────────
+//
+// The alternatives come from the same search that produced the first pick, so
+// cycling costs no extra YouTube quota. What matters here is never offering
+// the teacher the video they are already looking at.
+
+describe('nextVideoSuggestion', () => {
+  const v = (id: string, title = `عنوان ${id}`) => ({
+    url: `https://www.youtube.com/watch?v=${id}`,
+    title,
+    channelTitle: 'قناة',
+  });
+  const candidates = [v('aaaaaaaaaaa'), v('bbbbbbbbbbb'), v('ccccccccccc')];
+
+  it('offers the first candidate when the slide holds something else', () => {
+    const next = nextVideoSuggestion(candidates, 'https://youtu.be/zzzzzzzzzzz');
+    assert.equal(next?.url, candidates[0]!.url);
+  });
+
+  it('advances from whichever candidate is currently in place', () => {
+    assert.equal(nextVideoSuggestion(candidates, candidates[0]!.url)?.url, candidates[1]!.url);
+    assert.equal(nextVideoSuggestion(candidates, candidates[1]!.url)?.url, candidates[2]!.url);
+  });
+
+  it('wraps around rather than dead-ending on the last one', () => {
+    assert.equal(nextVideoSuggestion(candidates, candidates[2]!.url)?.url, candidates[0]!.url);
+  });
+
+  it('matches by video id, not by URL string', () => {
+    // The slide may hold a youtu.be link for a candidate the search returned
+    // as watch?v= — offering it back reads as a broken button.
+    const next = nextVideoSuggestion(candidates, 'https://youtu.be/bbbbbbbbbbb');
+    assert.equal(next?.url, candidates[2]!.url);
+  });
+
+  it('has nothing to offer when the only candidate is already in place', () => {
+    assert.equal(nextVideoSuggestion([candidates[0]!], candidates[0]!.url), null);
+  });
+
+  it('has nothing to offer with no candidates', () => {
+    assert.equal(nextVideoSuggestion([], 'https://youtu.be/aaaaaaaaaaa'), null);
+  });
+
+  it('still offers the single candidate when the slide holds a different video', () => {
+    assert.equal(
+      nextVideoSuggestion([candidates[0]!], 'https://youtu.be/zzzzzzzzzzz')?.url,
+      candidates[0]!.url,
+    );
+  });
+});
+
+describe('videoCaption', () => {
+  it('is the one definition the deck builder and the cycler share', () => {
+    assert.equal(
+      videoCaption({ url: 'x', title: 'شرح الاشتقاق', channelTitle: 'قناة المعلم' }),
+      'شرح الاشتقاق — قناة المعلم',
+    );
+  });
+});
+
+// ── Lesson resources ─────────────────────────────────────────────────────────
+//
+// What the teacher pinned to the lesson, as opposed to what a search found.
+// The store behind these predates the retirement of the home screen, which is
+// where its only UI lived — Class Mode has been reading it ever since with
+// nothing able to write to it.
+
+describe('insertLessonResources', () => {
+  const deck = [
+    { slideNumber: 1, type: 'intro' as const, title: 'الدرس', content: '', durationSeconds: 0 },
+    { slideNumber: 2, type: 'intro' as const, title: '📐 القاعدة', content: 'القاعدة', durationSeconds: 0 },
+    { slideNumber: 3, type: 'challenge' as const, title: 'مثال 1', content: 'س', durationSeconds: 60 },
+    { slideNumber: 4, type: 'summary' as const, title: 'ملخص', content: '', durationSeconds: 0 },
+  ];
+  const items = [
+    { kind: 'video' as const, url: 'https://youtu.be/dQw4w9WgXcQ', caption: 'فيديو المعلم' },
+    { kind: 'image' as const, url: 'https://example.com/diagram.png', caption: 'مخطط' },
+  ];
+
+  it('lands after the teaching and before the worked examples', () => {
+    const out = insertLessonResources(deck, items, true);
+    const firstExample = out.findIndex(s => s.title.startsWith('مثال'));
+    const firstResource = out.findIndex(s => s.type === 'media');
+    assert.ok(firstResource > 1, 'after the rule');
+    assert.ok(firstResource < firstExample, 'before the examples');
+  });
+
+  it('keeps the order the teacher attached them in', () => {
+    // Inserting one at a time would reverse them: each lands before the same
+    // first `challenge` slide.
+    const out = insertLessonResources(deck, items, true);
+    const kinds = out.filter(s => s.type === 'media').map(s => s.mediaKind);
+    assert.deepEqual(kinds, ['video', 'image']);
+  });
+
+  it('renumbers so the deck stays consecutive', () => {
+    const out = insertLessonResources(deck, items, true);
+    out.forEach((s, i) => assert.equal(s.slideNumber, i + 1));
+  });
+
+  it('falls back to before the summary when there are no examples', () => {
+    const noExamples = deck.filter(s => s.type !== 'challenge');
+    const out = insertLessonResources(noExamples, [items[0]!], true);
+    const at = out.findIndex(s => s.type === 'media');
+    const summary = out.findIndex(s => s.type === 'summary');
+    assert.ok(at >= 0 && at < summary);
+  });
+
+  it('changes nothing when nothing is attached', () => {
+    assert.deepEqual(insertLessonResources(deck, [], true), deck);
+  });
+});
+
+describe('shouldSearchForVideo', () => {
+  it('searches when the teacher pinned nothing', () => {
+    assert.equal(shouldSearchForVideo([]), true);
+  });
+
+  it('searches when the teacher pinned only images', () => {
+    assert.equal(shouldSearchForVideo([
+      { kind: 'image', url: 'https://example.com/a.png', caption: '' },
+    ]), true);
+  });
+
+  it('stands down when the teacher pinned their own video', () => {
+    // Their video beats a search result on the projector, and skipping the
+    // call saves 100 units of a 10,000/day quota per generation.
+    assert.equal(shouldSearchForVideo([
+      { kind: 'video', url: 'https://youtu.be/dQw4w9WgXcQ', caption: '' },
+      { kind: 'image', url: 'https://example.com/a.png', caption: '' },
+    ]), false);
   });
 });
