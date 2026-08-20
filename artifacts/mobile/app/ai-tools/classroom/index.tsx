@@ -9,7 +9,7 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
-import { buildBuilderRoute } from './classroomRouting';
+import { buildBuilderRoute } from '@/services/classroomRouting';
 
 const ACCENT = '#4F46E5';
 
