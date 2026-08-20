@@ -9,6 +9,8 @@ export type GeneratorRoute =
   | '/ai-tools/quiz'
   | '/ai-tools/activity'
   | '/ai-tools/lesson-flow'
+  | '/ai-tools/slides'
+  | '/ai-tools/game'
   | '/ai-tools/classroom';
 
 export type HomeToolId =
@@ -17,6 +19,7 @@ export type HomeToolId =
   | 'quiz'
   | 'homework'
   | 'activity'
+  | 'slides'
   | 'simplify'
   | 'bloom'
   | 'formative'
@@ -52,8 +55,10 @@ export type HomeToolDef = {
 /** Primary tools in teaching-workflow order (before → during → after). */
 export const PRIMARY_TOOL_ORDER: HomeToolId[] = [
   'lesson-plan',
+  'slides',
   'simplify',
   'activity',
+  'game',
   'worksheet',
   'quiz',
   'homework',
@@ -72,10 +77,18 @@ export const HOME_AI_TOOLS: HomeToolDef[] = [
     topicHintAr: 'تبسيط الشرح',
     topicHintEn: 'Simplify explanation',
   },
+  {
+    id: 'slides', emoji: '🖥️', labelAr: 'شرائح الدرس', labelEn: 'Lesson slides',
+    route: '/ai-tools/slides', status: 'enabled', enabled: true,
+  },
   // ── During class ────────────────────────────────────────────────────────
   {
     id: 'activity', emoji: '🎯', labelAr: 'نشاط صفي', labelEn: 'Class activity',
     route: '/ai-tools/activity', status: 'enabled', enabled: true,
+  },
+  {
+    id: 'game', emoji: '🏆', labelAr: 'تحدي الصف', labelEn: 'Class challenge',
+    route: '/ai-tools/game', status: 'enabled', enabled: true,
   },
   {
     id: 'worksheet', emoji: '📝', labelAr: 'ورقة عمل', labelEn: 'Worksheet',
@@ -123,10 +136,6 @@ export const HOME_AI_TOOLS: HomeToolDef[] = [
     topicHintAr: 'ملخص الدرس', topicHintEn: 'Lesson summary',
   },
   {
-    id: 'game', emoji: '🎮', labelAr: 'لعبة تعليمية', labelEn: 'Learning game',
-    route: '/ai-tools/classroom', status: 'coming_soon', enabled: false,
-  },
-  {
     id: 'video', emoji: '🎥', labelAr: 'فكرة فيديو', labelEn: 'Video idea',
     route: '/ai-tools/activity', status: 'coming_soon', enabled: false,
     topicHintAr: 'فكرة فيديو تعليمي', topicHintEn: 'Educational video idea',
@@ -168,8 +177,10 @@ export function getVisibleHomeTools(): HomeToolDef[] {
 /** Compact suggestion chips under the hero prompt — workflow order. */
 export const HERO_SUGGESTIONS: { id: HomeToolId; emoji: string; labelAr: string; labelEn: string; enabled: boolean }[] = [
   { id: 'lesson-plan', emoji: '📘', labelAr: 'خطة درس', labelEn: 'Lesson plan', enabled: true },
+  { id: 'slides', emoji: '🖥️', labelAr: 'شرائح الدرس', labelEn: 'Lesson slides', enabled: true },
   { id: 'simplify', emoji: '💡', labelAr: 'تبسيط الشرح', labelEn: 'Simplify explanation', enabled: true },
   { id: 'activity', emoji: '🎯', labelAr: 'نشاط صفي', labelEn: 'Class activity', enabled: true },
+  { id: 'game', emoji: '🏆', labelAr: 'تحدي الصف', labelEn: 'Class challenge', enabled: true },
   { id: 'worksheet', emoji: '📝', labelAr: 'ورقة عمل', labelEn: 'Worksheet', enabled: true },
   { id: 'quiz', emoji: '✅', labelAr: 'أداة تقييم', labelEn: 'Short quiz', enabled: true },
   { id: 'homework', emoji: '🏠', labelAr: 'واجب منزلي', labelEn: 'Homework', enabled: true },
@@ -237,13 +248,17 @@ export function getVisibleSmartTemplates() {
 
 /** Related resources shown after a successful generation (enabled tools only). */
 export const RELATED_BY_TOOL: Record<string, HomeToolId[]> = {
-  'lesson-plan': ['simplify', 'activity', 'worksheet', 'quiz', 'homework'],
-  simplify: ['lesson-plan', 'activity', 'worksheet'],
-  activity: ['worksheet', 'quiz', 'homework'],
-  worksheet: ['activity', 'quiz', 'homework'],
-  quiz: ['homework', 'worksheet', 'activity'],
+  'lesson-plan': ['slides', 'simplify', 'activity', 'worksheet', 'quiz', 'homework'],
+  slides: ['lesson-plan', 'game', 'activity', 'worksheet'],
+  simplify: ['lesson-plan', 'slides', 'activity', 'worksheet'],
+  activity: ['worksheet', 'quiz', 'game', 'homework'],
+  // A quiz is the input a Class Challenge is built from, so the game is the
+  // most useful next step from either a quiz or a worksheet.
+  game: ['quiz', 'slides', 'activity'],
+  worksheet: ['activity', 'quiz', 'game', 'homework'],
+  quiz: ['game', 'homework', 'worksheet', 'activity'],
   homework: ['quiz', 'worksheet'],
-  default: ['lesson-plan', 'simplify', 'activity', 'worksheet', 'quiz', 'homework'],
+  default: ['lesson-plan', 'slides', 'simplify', 'activity', 'game', 'worksheet', 'quiz', 'homework'],
 };
 
 export function getRelatedToolIds(toolId: string): HomeToolId[] {
@@ -275,30 +290,11 @@ export function buildTopicForTool(
   return `${hint}: ${base}`;
 }
 
-export function inferToolFromPrompt(prompt: string): HomeToolId {
-  const p = prompt.toLowerCase();
-  if (/واجب|homework|hw/.test(p)) return 'homework';
-  if (/ورقة|worksheet/.test(p)) return 'worksheet';
-  if (/اختبار|quiz|test|exam/.test(p)) return 'quiz';
-  if (/بسّط|بسط|simplify|تبسيط/.test(p)) return 'simplify';
-  if (/نشاط|activity|افتتاح/.test(p)) return 'activity';
-  // Coming-soon intents fall back to closest enabled tool
-  if (/بلوم|bloom/.test(p)) return 'quiz';
-  if (/stem/.test(p)) return 'activity';
-  if (/rubric|سلم/.test(p)) return 'activity';
-  if (/exit|خروج/.test(p)) return 'quiz';
-  if (/أهداف|اهداف|objectives/.test(p)) return 'lesson-plan';
-  if (/خطة|lesson\s*plan|خطة درس/.test(p)) return 'lesson-plan';
-  return 'lesson-plan';
-}
-
-export function extractLessonTopic(prompt: string, fallback: string): string {
-  const cleaned = prompt
-    .replace(/^(أنشئ|انشئ|اصنع|اعمل|create|make|generate|build)\s+/i, '')
-    .replace(/^(خطة\s*درس|ورقة\s*عمل|اختبار(?:اً|ا)?\s*قصيرا?|واجبا?(?:\s*منزليا?)?|نشاطا?(?:\s*صفيا?)?|تبسيط\s*الشرح|بسّط\s*الشرح|lesson\s*plan|worksheet|quiz|homework|activity|simplify(\s+explanation)?)\s*(عن|حول|on|about|for)?\s*/i, '')
-    .trim();
-  return cleaned || fallback;
-}
+// inferToolFromPrompt / extractLessonTopic lived here to power the home
+// screen's text box. That box keyword-matched واجب/ورقة/اختبار/نشاط/خطة and
+// silently fell back to a lesson plan for everything else — an assistant in
+// appearance only. The home tab is gone and iqra.tsx calls the real agent,
+// so both are deleted rather than left for something to pick up again.
 
 export type GeneratorNav = {
   pathname: GeneratorRoute;

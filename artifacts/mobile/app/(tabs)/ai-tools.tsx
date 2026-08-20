@@ -33,7 +33,15 @@ type WorkflowSection = {
   tools: ToolDef[];
 };
 
-/** Core teaching jobs — ordered by when teachers use them. */
+/**
+ * Core teaching jobs — ordered by when teachers use them.
+ *
+ * NOTE: this is a SECOND tool list. `services/homeAiTools.ts` holds another
+ * one, feeding the chat composer's tools sheet. They are not connected: a tool
+ * registered there does not appear here, which is exactly how Slides Maker and
+ * Class Challenge were registered once and still missing from this screen.
+ * Add a new tool to BOTH, or collapse the two into one registry.
+ */
 const BEFORE_CLASS: ToolDef[] = [
   {
     id: 'lesson-plan',
@@ -55,6 +63,22 @@ const BEFORE_CLASS: ToolDef[] = [
 ];
 
 const DURING_CLASS: ToolDef[] = [
+  {
+    id: 'slides',
+    titleKey: 'toolSlidesTitle',
+    descKey: 'toolSlidesDesc',
+    icon: 'tv-outline',
+    color: '#0EA5E9',
+    route: '/ai-tools/slides',
+  },
+  {
+    id: 'game',
+    titleKey: 'toolGameTitle',
+    descKey: 'toolGameDesc',
+    icon: 'trophy-outline',
+    color: '#F59E0B',
+    route: '/ai-tools/game',
+  },
   {
     id: 'activity',
     titleKey: 'toolActivityTitle',

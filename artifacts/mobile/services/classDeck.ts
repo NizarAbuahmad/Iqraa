@@ -20,6 +20,13 @@ import type { KBLesson } from './knowledgeBase.ts';
 
 const THINK_SECONDS = 45;
 
+/** Class Challenge gives less thinking time — the timer is part of the game. */
+const GAME_THINK_SECONDS = 30;
+
+/** Questions between scoreboard breaks. Every question kills the pace; only at
+ *  the end removes the comeback tension that makes the format work. */
+const SCOREBOARD_EVERY = 3;
+
 /** Options are stored display-ready; find the correct one by exact text. */
 function indexOfAnswer(options: string[], answer: string): number {
   const i = options.indexOf(answer);
@@ -215,6 +222,119 @@ export function buildDeckFromWorksheet(
     printables: [],
     assessment: isAr ? 'راقب توزيع الإجابات عند كل كشف.' : 'Watch the spread of answers at each reveal.',
     extensionChallenge: '',
+    slides,
+  };
+}
+
+/**
+ * Quiz → Class Challenge deck (the team game).
+ *
+ * Same phone-free answering routine as `buildDeckFromQuiz` — every student
+ * answers on their أ ب ج د card — but the reveal is followed by the teacher
+ * awarding teams, and the deck carries scoreboard breaks and a podium.
+ *
+ * Only multiple-choice questions become scoreable. An open-ended question has
+ * no whole-class response a teacher can adjudicate at a glance, so scoring it
+ * would mean judging 30 written answers mid-game; those questions are dropped
+ * from a game deck rather than becoming un-scoreable slides that break the
+ * rhythm. `questionCount` therefore counts the surviving questions, not the
+ * quiz's — the ledger and the deck must agree or every streak after the first
+ * dropped question is credited to the wrong slide.
+ */
+export function buildGameDeckFromQuiz(
+  quiz: QuizOutput,
+  lessonTitle: string,
+  isAr: boolean,
+  opts: { teamCount: number; lesson?: KBLesson | null; verified?: boolean },
+): ClassroomActivity {
+  const teamCount = Math.max(2, Math.min(6, Math.floor(opts.teamCount) || 2));
+  const scoreable = quiz.questions.filter(q => Array.isArray(q.options) && q.options.length >= 2);
+
+  const slides: ActivitySlide[] = [{
+    slideNumber: 1,
+    type: 'intro',
+    title: isAr ? `🏆 تحدي الصف — ${quiz.title}` : `🏆 Class Challenge — ${quiz.title}`,
+    content: isAr
+      ? `${lessonTitle}\n\nالقواعد:\n• الصف مقسوم إلى ${teamCount} فرق\n• يظهر السؤال ويبدأ المؤقت\n• الجميع يفكر بصمت — لا أيدي مرفوعة\n• عند انتهاء الوقت: كل فريق يرفع بطاقة الحرف معًا\n• الفريق المصيب يأخذ ١٠٠ نقطة — والإجابات المتتالية تعطي نقاطًا إضافية`
+      : `${lessonTitle}\n\nRules:\n• The class is split into ${teamCount} teams\n• The question appears and the timer starts\n• Everyone thinks silently — no hands up\n• When time ends: each team raises its letter card together\n• A correct team scores 100 points — consecutive answers earn a bonus`,
+    durationSeconds: 0,
+  }];
+
+  const objSlide = objectivesSlide(opts.lesson ?? null, lessonTitle, isAr, slides.length + 1);
+  if (objSlide) slides.push(objSlide);
+
+  scoreable.forEach((q, i) => {
+    slides.push({
+      slideNumber: slides.length + 1,
+      type: 'question',
+      title: isAr ? `سؤال ${i + 1}` : `Question ${i + 1}`,
+      content: q.text,
+      options: q.options,
+      correctIndex: indexOfAnswer(q.options!, q.correctAnswer),
+      verified: opts.verified === true,
+      questionIndex: i,
+      durationSeconds: GAME_THINK_SECONDS,
+      teacher: {
+        expectedAnswer: q.correctAnswer,
+        teachingTips: isAr
+          ? 'اكشف الإجابة أولًا، ثم اضغط على الفرق التي أصابت.'
+          : 'Reveal the answer first, then tap the teams that were right.',
+        ...(q.explanation ? { commonMisconceptions: q.explanation } : {}),
+      },
+    });
+
+    // Break for the board — but never immediately before the podium, which
+    // shows the same standings one slide later.
+    const isLast = i === scoreable.length - 1;
+    if (!isLast && (i + 1) % SCOREBOARD_EVERY === 0) {
+      slides.push({
+        slideNumber: slides.length + 1,
+        type: 'scoreboard',
+        title: isAr ? '📊 الترتيب الحالي' : '📊 Standings',
+        content: isAr
+          ? `بعد ${i + 1} من ${scoreable.length} أسئلة`
+          : `After ${i + 1} of ${scoreable.length} questions`,
+        durationSeconds: 0,
+      });
+    }
+  });
+
+  slides.push({
+    slideNumber: slides.length + 1,
+    type: 'podium',
+    title: isAr ? '🏆 النتيجة النهائية' : '🏆 Final Result',
+    content: isAr ? `تحدي «${lessonTitle}»` : `“${lessonTitle}” challenge`,
+    durationSeconds: 0,
+  });
+
+  return {
+    activityName: isAr ? `تحدي الصف — ${quiz.title}` : `Class Challenge — ${quiz.title}`,
+    activityType: 'class-game',
+    grade: isAr ? 'الصف العاشر' : 'Grade 10',
+    subject: '',
+    lesson: lessonTitle,
+    duration: Math.max(10, scoreable.length * 2),
+    difficulty: 'standard',
+    groupType: 'groups',
+    learningObjective: isAr
+      ? `مراجعة «${lessonTitle}» كمنافسة بين الفرق مع إجابة كل الطلاب`
+      : `Review “${lessonTitle}” as a team contest with every student answering`,
+    materials: isAr
+      ? ['بطاقات الحروف أ ب ج د لكل طالب', 'شاشة عرض', 'تقسيم الصف إلى فرق']
+      : ['A B C D letter cards for every student', 'Projector', 'Class split into teams'],
+    teacherPreparation: isAr
+      ? `قسّم الصف إلى ${teamCount} فرق قبل البدء، ووزّع بطاقات الحروف.`
+      : `Split the class into ${teamCount} teams before starting and hand out the letter cards.`,
+    teacherNotes: [],
+    answerKey: scoreable.map((q, i) =>
+      isAr ? `سؤال ${i + 1}: ${q.correctAnswer}` : `Q${i + 1}: ${q.correctAnswer}`,
+    ),
+    printables: [],
+    assessment: isAr
+      ? 'النتيجة تقيس الفريق، لكن توزيع البطاقات المرفوعة هو ما يكشف الخطأ الشائع — انظر إليه قبل الكشف.'
+      : 'The score measures the team, but the spread of raised cards is what exposes the common error — read it before revealing.',
+    extensionChallenge: '',
+    game: { teamCount, questionCount: scoreable.length },
     slides,
   };
 }
