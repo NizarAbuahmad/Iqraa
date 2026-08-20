@@ -270,8 +270,8 @@ describe('buildDeckSlidesHTML — whole-class MCQ slides', () => {
   };
 
   it('prints the options — before this they existed only on screen', () => {
-    // The slide asks the class to raise a letter card. Falling through to the
-    // generic content renderer printed the stem and no letters to raise.
+    // The slide asks the class to answer by letter. Falling through to the
+    // generic content renderer printed the stem and no letters to answer with.
     const html = buildDeckSlidesHTML(deck([titleSlide, question]), true);
     assert.match(html, /deck-option/);
     ['أ', 'ب', 'ج', 'د'].forEach(letter => {

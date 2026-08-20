@@ -338,7 +338,7 @@ export async function exportDeckAsPptx(
      * Whole-class MCQ. Like the HTML export, this had no branch at all until
      * now: a question slide fell through to the generic content block below
      * and printed its stem with no options, so the deck asked the class to
-     * raise a letter card and then showed no letters.
+     * answer by letter and then showed no letters to answer with.
      *
      * The correct option is marked, matching the challenge branch above —
      * the exported file is the teacher's copy.

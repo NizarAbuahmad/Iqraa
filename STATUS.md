@@ -2707,6 +2707,33 @@ imports `react-native` at module scope, so `node:test` cannot load it — the
 same constraint that split out `deckSlidesHtml.ts`. The pure logic lives in
 `optionLabels.ts` and is tested there; the CSS is not.
 
+## The letter-card routine asked teachers to print something the app can't make, 2026-08-20
+
+The whole-class response routine told teachers to hand out أ ب ج د cards
+(`اطبع بطاقات الحروف مرة واحدة وتُعاد في كل حصة`) and projected
+`ارفعوا بطاقة الحرف!` on every question slide.
+
+Nothing in the codebase produced those cards. `printables` is declared on
+`ActivityOutput`, populated by the generators, and **consumed by nothing** — no
+screen renders it, no exporter emits it. So the deck opened by asking for a
+prop the teacher had no way to obtain from the app.
+
+Students now hold up fingers instead (إصبع = أ، إصبعان = ب، …), which needs no
+prop at all. The technique is unchanged and is the part worth keeping: silent
+thinking, a timer, everyone answering at once, and the teacher reading the
+spread before revealing — `توزيع الإجابات نفسه هو التقييم`. Only the
+dependency on a printed card is gone. Mini whiteboards stay as an optional
+alternative in the materials list.
+
+Touched the projected banner, both intro rules slides (solo and team),
+materials, teacher prep, the Class Challenge how-it-works copy, and
+`printables` for quick-check (now `[]`). Bingo, station, exit-ticket and
+challenge cards are untouched — those are genuinely card-based activities.
+
+**`printables` is still dead data everywhere else.** The remaining entries name
+props no export produces. Either build the printables exporter or stop
+populating the field; a list a teacher cannot act on is worse than no list.
+
 ## Open decisions (2026-08-10)
 
 - ~~**Home vs chat.**~~ **Decided 2026-08-10: chat is the landing tab, home is
