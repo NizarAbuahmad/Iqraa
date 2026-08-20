@@ -11,7 +11,7 @@ import { useColors } from '@/hooks/useColors';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { SavedMaterial, getRecentItems } from '@/services/workspace';
-import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
+import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { DEMO_MODE } from '@/services/ai/demoMode';
 import {
   DEMO_CONTINUE,
@@ -372,7 +372,7 @@ export default function DashboardScreen() {
             {t('welcomeBackNamed', firstName)}
           </Text>
         </View>
-        {DEMO_MODE ? <DemoModeBanner isRTL={isRTL} /> : null}
+        <AiSourceBadge isRTL={isRTL} />
       </View>
 
       {/* 0 ── First-run coach: the three steps of a teacher's week */}

@@ -77,6 +77,11 @@ Before a live demo: [`docs/demo-checklist.md`](./docs/demo-checklist.md).
   to `gpt-4o-mini`. Live generation is gated by `AI_LIVE_MODE=true` and capped
   by `AI_BUDGET_USD`, with `EXPO_PUBLIC_DEMO_MODE=false` on the client. So
   turning real AI on is env vars, not a code change.
+- **Mock AI content looks exactly like real AI content.** `RemoteAIService`
+  falls back to `MockAIService` on any failure, so with `DEMO_MODE=false` a
+  bad key still renders a full lesson plan. Since 2026-08-20 every generation
+  is recorded in `services/ai/aiProvenance.ts` and the header badge says which
+  it was — check the badge, not the content, when asking "is live AI on?".
 - **A missing `EXPO_PUBLIC_*` key is a silent no-op, not an error.** Analytics
   ran for weeks collecting nothing because `EXPO_PUBLIC_POSTHOG_API_KEY` was
   never declared anywhere, and `analytics.ts` degrades to `client = null` by

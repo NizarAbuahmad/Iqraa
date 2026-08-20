@@ -21,7 +21,7 @@ import { getItem, saveItem, toggleFavorite, updateItem } from '@/services/worksp
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
-import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
+import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { RelatedResourcesPanel } from '@/components/ui/RelatedResourcesPanel';
 import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
 import { MathParagraph } from '@/components/ui/MathParagraph';
@@ -330,7 +330,7 @@ export default function WorksheetScreen() {
         <Pressable onPress={() => router.back()} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
         </Pressable>
-        <DemoModeBanner onDark isRTL={isRTL} />
+        <AiSourceBadge onDark isRTL={isRTL} />
         <Text style={[styles.headerTitle, { color: '#fff', fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {isHomework ? t('createHomework') : t('createWorksheetTitle')}
         </Text>

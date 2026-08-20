@@ -24,7 +24,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { Button } from '@/components/ui/Button';
-import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
+import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import type { ClassroomActivity } from '@/services/ai/AIService';
 import { buildGeneratorContext, resolveGeneratorGrounding } from '@/services/kbContext';
@@ -139,7 +139,7 @@ export default function ClassGameScreen() {
           <Pressable onPress={() => router.back()} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
           </Pressable>
-          <DemoModeBanner onDark isRTL={isRTL} />
+          <AiSourceBadge onDark isRTL={isRTL} />
           <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
             <Text style={{ fontSize: 22 }}>🏆</Text>
             <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 20, textAlign: isRTL ? 'right' : 'left' }}>

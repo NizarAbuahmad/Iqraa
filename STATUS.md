@@ -793,6 +793,63 @@ one click away the whole time and settled it in a line.
 1.14.0, fastapi 0.141.1, uvicorn 0.52.3, pydantic 2.13.4) in a clean venv, and
 `test_equations.py` passes 29/29 against it.
 
+## Mock AI content was indistinguishable from real, 2026-08-20
+
+`RemoteAIService` falls back to `MockAIService` whenever a live call fails.
+That fallback was a `console.warn` and nothing else. With
+`EXPO_PUBLIC_DEMO_MODE=false` the app rendered the same confident Arabic
+lesson plan either way, so a wrong `OPENAI_API_KEY`, an expired token, a
+server without `AI_LIVE_MODE`, or a 429 from the budget cap all looked
+exactly like working AI. There was no way to answer "is the real model
+actually on?" from inside the product — which is the first thing anyone
+asks after flipping the switch.
+
+**What now happens.** Every generation records where it came from
+(`services/ai/aiProvenance.ts`): `live`, `mock` via demo mode, `mock` via
+fallback, or `none` when a call failed and nothing was produced. The badge
+under each screen title — the one that used to be the demo-mode label, on
+all eleven generator screens already — reads that record:
+
+| Situation | Badge |
+| --- | --- |
+| `DEMO_MODE` on | `وضع العرض · محتوى تجريبي` (unchanged) |
+| Live, nothing generated yet | **nothing** |
+| Live call succeeded | `ذكاء اصطناعي مباشر` |
+| Live call failed, mock stood in | ⚠️ `تعذّر الاتصال · محتوى تجريبي`, amber |
+
+The empty state is deliberate. A badge saying "Live AI" before any call has
+been made would assert something nobody checked — the same mistake as
+setting `verified` from a code-computed fallback.
+
+`EXPO_PUBLIC_AI_STRICT_LIVE=true` goes further and refuses to substitute at
+all: the screen shows its error state instead of content nothing generated.
+Off by default, because a teacher mid-lesson is better served by a worksheet
+labelled as sample content than by an error. On while you are verifying that
+live mode is really wired up.
+
+The API's failure text (`HTTP 401`, `AI live mode is off…`) is diagnostic and
+usually English — it goes in the accessibility label, not the visible badge.
+`describeAiError` caps it at 120 characters and takes only the message, so a
+proxy's HTML error page can't end up rendered in a header.
+
+**Verified in a real browser, all three states.** Stood up a local Postgres,
+pushed the schema (24 tables), ran the API on :8080 and Expo web on :8083
+with `EXPO_PUBLIC_DEMO_MODE=false`, registered a teacher, and generated a
+lesson plan for المشتقات · الاشتقاق:
+
+- before generating — no badge, as designed;
+- with the server's `AI_LIVE_MODE` off — a full lesson plan rendered *and*
+  the amber `تعذّر الاتصال · محتوى تجريبي` badge appeared in the header.
+  This is the exact bug, reproduced and then labelled;
+- with a 200 stubbed at the network layer — the server's own text rendered
+  and the badge read `ذكاء اصطناعي مباشر`.
+
+**Not done:** the API still reports nothing about *its* own provenance —
+whether a 200 came from OpenAI or from a server-side default. Today the
+client's `live` badge means "the API answered", not "a model ran". That is
+the honest reading of what is checked, and `/api/healthz/ai-budget` already
+reports `liveMode` for the server side.
+
 ## Charts: generated from lesson text, refused by default, 2026-08-19
 
 The visual mechanism shipped with nothing producing `chart` blocks. This wires

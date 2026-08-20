@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/Button';
 import { getItem, saveItem, updateItem } from '@/services/workspace';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
-import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
+import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { RelatedResourcesPanel } from '@/components/ui/RelatedResourcesPanel';
 import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
 import {
@@ -259,7 +259,7 @@ export default function ActivityScreen() {
           <Ionicons name="flash" size={14} color="#fff" />
           <Text style={[styles.headerBadgeText, { color: '#fff', fontFamily: 'Cairo_500Medium' }]}>{t('activityBadge')}</Text>
         </View>
-        <DemoModeBanner onDark isRTL={isRTL} />
+        <AiSourceBadge onDark isRTL={isRTL} />
         <Text style={[styles.headerTitle, { color: '#fff', fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('createActivityTitle')}
         </Text>
