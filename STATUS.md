@@ -793,6 +793,70 @@ one click away the whole time and settled it in a line.
 1.14.0, fastapi 0.141.1, uvicorn 0.52.3, pydantic 2.13.4) in a clean venv, and
 `test_equations.py` passes 29/29 against it.
 
+## Fixed 2026-08-20 — the spend guard undercounted, and 2000 tokens is not a lesson plan
+
+Asked to plan which model to use for what. Checking the current model facts
+before recommending anything turned up three live problems, all of which would
+have made the answer wrong.
+
+### The "conservative" fallback was cheaper than a real model
+
+`aiBudget.ts` prices models to estimate spend against `AI_BUDGET_USD`, and
+falls back to a deliberately expensive rate for anything it does not
+recognise — the comment says so. The fallback was **$5/$15 per million**.
+Claude Opus 5 output is **$25**. So pointing `AI_MODEL` at a Claude model
+would have made the guard undercount output by 40% and let a run sail past
+its cap while the log reported it was under.
+
+A default that undercuts a model you might actually select is not
+conservative. The table now prices the Claude models explicitly, the fallback
+is **$10/$50** (the most expensive current model, so an unknown id can only
+trip the cap early), and a test pins the invariant: *the fallback is never
+cheaper than anything the table knows*.
+
+Claude Sonnet 5 is priced at its standard $3/$15, **not** the $2/$10
+introductory rate that ends 2026-08-31 — a guard that assumes a promotional
+price stops guarding when the promotion does.
+
+### 2000 output tokens breaks a reasoning model, silently
+
+`/generate/*` capped completions at 1500–2000 tokens. That is tight for a
+full Arabic lesson plan and outright broken for a reasoning model: thinking
+tokens are billed as output and count against the same ceiling, so the model
+can spend most of the budget reasoning and return a truncated object.
+
+The failure is invisible. `extractJSON` on a truncated response yields a
+partial object or `{}`, the route answers **200**, and the client renders an
+empty lesson plan — with the provenance badge reporting **live**, because the
+API did answer. A precondition for using any thinking model here, not a
+tuning preference. Now one `GENERATION_TOKENS = 8000` for every route.
+
+### The eval would have measured itself
+
+`provider-eval.ts` had the same 2000–2500 ceilings. A reasoning model would
+have been truncated, scored as malformed, and read as *"bad at Arabic lesson
+plans"* when it was never given room to answer. Raised to 16000 — an eval
+that penalises a model for the harness's configuration measures the harness.
+
+It also scored only whether the response **parsed**. A model can return
+well-formed JSON with none of the fields the app reads and score as a
+success, then render as an empty lesson plan. The report now has two columns,
+`parsed` and `complete`, and `complete` checks the fields each artifact type
+actually requires, treating empty strings and empty arrays as missing.
+
+### Still to decide
+
+One `AI_MODEL` covers generation and chat alike, though they want opposite
+things — prep is low-volume and quality-critical, chat is high-volume and
+latency-sensitive. Splitting it into `AI_MODEL_GENERATE` / `AI_MODEL_CHAT`
+should land before the eval, so the thing measured is the thing shipped.
+
+And `/generate/*` does no shape validation at all: `extractJSON` → `res.json`.
+The 200-with-`{}` path above is the same hole. Fixing it properly means
+deciding what the route does when the shape is wrong — fail closed with a
+5xx, or return a labelled partial — which is a product decision, not a
+refactor.
+
 ## The lesson library could be read but never written, 2026-08-20
 
 Asked for a way to add a teacher's own video, image or other resource to a

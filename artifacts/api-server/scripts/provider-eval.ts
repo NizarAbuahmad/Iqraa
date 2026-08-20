@@ -48,11 +48,54 @@ const LESSONS = [
   { topic: "التفاعلات الكيميائية", subject: "الكيمياء", grade: "الصف العاشر" },
 ];
 
+/**
+ * The ceiling is generous on purpose.
+ *
+ * These were 2000–2500, which would have quietly rigged the comparison: on a
+ * reasoning model, thinking tokens are billed as output and count against the
+ * same ceiling, so the model can spend most of the budget reasoning and return
+ * a truncated object. That scores as a malformed answer and reads as "this
+ * model is bad at Arabic lesson plans" when it was never given room to reply.
+ * An eval that penalises a model for the harness's configuration measures the
+ * harness.
+ */
+const TASK_TOKENS = 16000;
+
+/**
+ * The fields the app actually reads. `parsed` only asks whether the response
+ * was JSON at all — a model can return well-formed JSON with none of these and
+ * score as a success, then render as an empty lesson plan. Conformance is the
+ * objective half of "is this output usable".
+ */
+const REQUIRED_FIELDS: Record<string, string[]> = {
+  "lesson-plan": [
+    "title", "objectives", "materials", "introduction", "mainActivity",
+    "guidedPractice", "independentPractice", "closure", "assessment",
+    "differentiation", "homework",
+  ],
+  worksheet: ["title", "instructions", "sections", "answerKey"],
+  quiz: ["title", "duration", "totalPoints", "questions"],
+};
+
 const TASKS = [
-  { id: "lesson-plan", build: lessonPlanPromptAr, maxTokens: 2000 },
-  { id: "worksheet", build: worksheetPromptAr, maxTokens: 2500 },
-  { id: "quiz", build: quizPromptAr, maxTokens: 2500 },
+  { id: "lesson-plan", build: lessonPlanPromptAr, maxTokens: TASK_TOKENS },
+  { id: "worksheet", build: worksheetPromptAr, maxTokens: TASK_TOKENS },
+  { id: "quiz", build: quizPromptAr, maxTokens: TASK_TOKENS },
 ] as const;
+
+/** Which required fields are missing or empty — [] means fully conformant. */
+function missingFields(task: string, parsed: unknown): string[] {
+  const required = REQUIRED_FIELDS[task] ?? [];
+  if (parsed === null || typeof parsed !== "object") return [...required];
+  const obj = parsed as Record<string, unknown>;
+  return required.filter((f) => {
+    const v = obj[f];
+    if (v === undefined || v === null) return true;
+    if (typeof v === "string") return v.trim() === "";
+    if (Array.isArray(v)) return v.length === 0;
+    return false;
+  });
+}
 
 // ─── Providers ───────────────────────────────────────────────────────────────
 // USD per million tokens. `null` means "not priced here" — the run reports
@@ -78,6 +121,10 @@ const OPENAI_PRICING: Record<string, Pricing> = {
   "gpt-4o-mini": { input: 0.15, output: 0.6 },
   "gpt-4o": { input: 2.5, output: 10 },
 };
+// Standard rates. Claude Sonnet 5 also has a $2/$10 introductory rate through
+// 2026-08-31 — deliberately NOT used here: the decision this eval informs
+// outlives the promotion, so pricing it at the intro rate would compare a
+// temporary number against permanent ones.
 const ANTHROPIC_PRICING: Record<string, Pricing> = {
   "claude-opus-5": { input: 5, output: 25 },
   "claude-sonnet-5": { input: 3, output: 15 },
@@ -186,6 +233,8 @@ type Row = {
   outputTokens: number;
   usd: number | null;
   parsed: boolean;
+  /** Required fields absent or empty. [] is a fully usable artifact. */
+  missing: string[];
   error?: string;
 };
 
@@ -228,6 +277,7 @@ for (const lesson of LESSONS) {
           topic: lesson.topic, ms, inputTokens: c.inputTokens, outputTokens: c.outputTokens,
           usd: costUsd(provider.pricing, c.inputTokens, c.outputTokens),
           parsed: parsed !== null,
+          missing: missingFields(task.id, parsed),
         };
         writeFileSync(join(outDir, "raw", `${anonId}.json`),
           JSON.stringify({ anonId, task: task.id, topic: lesson.topic, output: parsed ?? c.text }, null, 2));
@@ -249,14 +299,22 @@ for (const lesson of LESSONS) {
         row = {
           anonId, provider: provider.id, model: provider.model, task: task.id,
           topic: lesson.topic, ms: Date.now() - started, inputTokens: 0, outputTokens: 0,
-          usd: null, parsed: false, error: e instanceof Error ? e.message : String(e),
+          usd: null, parsed: false, missing: REQUIRED_FIELDS[task.id] ?? [],
+          error: e instanceof Error ? e.message : String(e),
         };
       }
       rows.push(row);
       const { anonId: _drop, ...rest } = row;
       key[anonId] = rest;
       console.log(`${anonId} ${provider.id.padEnd(10)} ${task.id.padEnd(12)} ${lesson.topic.padEnd(22)}`
-        + ` ${String(row.ms).padStart(6)}ms ${row.error ? "ERROR: " + row.error.slice(0, 60) : row.parsed ? "ok" : "unparseable"}`);
+        + ` ${String(row.ms).padStart(6)}ms `
+        + (row.error
+          ? "ERROR: " + row.error.slice(0, 60)
+          : !row.parsed
+            ? "unparseable"
+            : row.missing.length > 0
+              ? `missing: ${row.missing.join(", ")}`
+              : "ok"));
     }
   }
 }
@@ -271,17 +329,21 @@ for (const r of rows) byProvider.set(r.provider, [...(byProvider.get(r.provider)
 const lines: string[] = [];
 lines.push(`# Provider evaluation — ${runId}\n`);
 lines.push(`${LESSONS.length} lessons × ${TASKS.length} tasks, Arabic, using the shipped prompts.\n`);
-lines.push("| provider | model | ok/total | median ms | total tokens | est. cost |");
-lines.push("|---|---|---|---|---|---|");
+// "parsed" and "complete" are different questions, so they get different
+// columns: a model can return well-formed JSON that the app renders as an
+// empty lesson plan.
+lines.push("| provider | model | parsed | complete | median ms | total tokens | est. cost |");
+lines.push("|---|---|---|---|---|---|---|");
 for (const [id, rs] of byProvider) {
   const ok = rs.filter((r) => r.parsed).length;
+  const complete = rs.filter((r) => r.parsed && r.missing.length === 0).length;
   const times = rs.map((r) => r.ms).sort((a, b) => a - b);
   const median = times[Math.floor(times.length / 2)] ?? 0;
   const tokens = rs.reduce((s, r) => s + r.inputTokens + r.outputTokens, 0);
   const usd = rs.every((r) => r.usd === null)
     ? "—"
     : `$${rs.reduce((s, r) => s + (r.usd ?? 0), 0).toFixed(4)}`;
-  lines.push(`| ${id} | ${rs[0]!.model} | ${ok}/${rs.length} | ${median} | ${tokens} | ${usd} |`);
+  lines.push(`| ${id} | ${rs[0]!.model} | ${ok}/${rs.length} | ${complete}/${rs.length} | ${median} | ${tokens} | ${usd} |`);
 }
 lines.push(`
 ## Next steps

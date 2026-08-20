@@ -25,7 +25,28 @@ import {
 
 const generateRouter = Router();
 
-/** Shared by every route below: gate on AI_LIVE_MODE + budget, call OpenAI, parse JSON out. */
+/**
+ * Output ceiling for a generated artifact.
+ *
+ * Generous on purpose: the cost of a ceiling that is too high is a few unused
+ * tokens; the cost of one that is too low is a truncated artifact that looks
+ * like a successful generation. The budget guard, not this number, is what
+ * limits spend.
+ */
+const GENERATION_TOKENS = 8000;
+
+/**
+ * Shared by every route below: gate on AI_LIVE_MODE + budget, call the model,
+ * parse JSON out.
+ *
+ * On the ceiling: these were 1500–2000, which is tight for a full Arabic
+ * lesson plan and outright breaks a reasoning model — reasoning tokens are
+ * billed as output and count against the same ceiling, so the model can spend
+ * the whole budget thinking and return a truncated object. The failure is
+ * silent: `extractJSON` on a truncated response yields a partial object or
+ * `{}`, the route answers 200, and the client renders an empty lesson plan.
+ * The ceiling is now set per task below with room for that.
+ */
 async function generateContent(
   systemPrompt: string,
   userPrompt: string,
@@ -66,7 +87,7 @@ generateRouter.post("/generate/lesson-plan", async (req, res) => {
     const body = req.body;
     const isAr = body.language !== "english";
     const prompt = isAr ? lessonPlanPromptAr(body) : lessonPlanPromptEn(body);
-    const parsed = await generateContent(isAr ? SYSTEM_AR : SYSTEM_EN, prompt, 2000);
+    const parsed = await generateContent(isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS);
     res.json(parsed);
   } catch (err) {
     respondAiError(err, res, "generate lesson-plan");
@@ -79,7 +100,7 @@ generateRouter.post("/generate/worksheet", async (req, res) => {
     const body = req.body;
     const isAr = body.language !== "english";
     const prompt = isAr ? worksheetPromptAr(body) : worksheetPromptEn(body);
-    const parsed = await generateContent(isAr ? SYSTEM_AR : SYSTEM_EN, prompt, 2000);
+    const parsed = await generateContent(isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS);
     res.json(parsed);
   } catch (err) {
     respondAiError(err, res, "generate worksheet");
@@ -92,7 +113,7 @@ generateRouter.post("/generate/quiz", async (req, res) => {
     const body = req.body;
     const isAr = body.language !== "english";
     const prompt = isAr ? quizPromptAr(body) : quizPromptEn(body);
-    const parsed = await generateContent(isAr ? SYSTEM_AR : SYSTEM_EN, prompt, 2000);
+    const parsed = await generateContent(isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS);
     res.json(parsed);
   } catch (err) {
     respondAiError(err, res, "generate quiz");
@@ -105,7 +126,7 @@ generateRouter.post("/generate/homework", async (req, res) => {
     const body = req.body;
     const isAr = body.language !== "english";
     const prompt = isAr ? worksheetPromptAr({ ...body, homework: true }) : worksheetPromptEn({ ...body, homework: true });
-    const parsed = await generateContent(isAr ? SYSTEM_AR : SYSTEM_EN, prompt, 1500);
+    const parsed = await generateContent(isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS);
     res.json(parsed);
   } catch (err) {
     respondAiError(err, res, "generate homework");
@@ -118,7 +139,7 @@ generateRouter.post("/generate/activity", async (req, res) => {
     const body = req.body;
     const isAr = body.language !== "english";
     const prompt = isAr ? activityPromptAr(body) : activityPromptEn(body);
-    const parsed = await generateContent(isAr ? SYSTEM_AR : SYSTEM_EN, prompt, 2000);
+    const parsed = await generateContent(isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS);
     res.json(parsed);
   } catch (err) {
     respondAiError(err, res, "generate activity");
@@ -137,7 +158,7 @@ generateRouter.post('/generate/classroom-activity', async (req, res) => {
   const isAr = body.language === 'arabic';
   try {
     const prompt = isAr ? classroomPromptAr(body) : classroomPromptEn(body);
-    const data = await generateContent(isAr ? SYSTEM_AR : SYSTEM_EN, prompt, 2000);
+    const data = await generateContent(isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS);
     res.json(data);
   } catch (err) {
     respondAiError(err, res, "generate classroom-activity");
