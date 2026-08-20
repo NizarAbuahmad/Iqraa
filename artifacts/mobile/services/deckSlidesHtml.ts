@@ -30,6 +30,7 @@ function deckSlideAccent(type: ActivitySlide['type']): string {
   if (type === 'summary') return DECK_ACCENT;
   if (type === 'graph') return '#0EA5E9';
   if (type === 'divider') return DECK_ACCENT;
+  if (type === 'question') return '#3B82F6';
   return DECK_MUTED;
 }
 
@@ -37,6 +38,7 @@ function deckSlideEmoji(type: ActivitySlide['type']): string {
   if (type === 'challenge') return '🔐';
   if (type === 'summary') return '🎉';
   if (type === 'graph') return '📈';
+  if (type === 'question') return '🙋';
   return '🎯';
 }
 
@@ -187,6 +189,47 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
       ${footer(num)}</div>`;
   };
 
+  /**
+   * Whole-class MCQ. Until this existed the exports had no `question` branch
+   * at all, so these fell through to the generic content slide and printed as
+   * a bare stem: the projected deck asked the class to raise a letter card
+   * and the PDF showed no letters to raise.
+   *
+   * The correct option is marked, matching what `challengeSlide` already does
+   * with worked-example answers — the exported file is the teacher's copy,
+   * and the live presenter is where the reveal is held back.
+   */
+  const questionSlide = (slide: ActivitySlide, num: number) => {
+    const accent = deckSlideAccent('question');
+    const options = slide.options ?? [];
+    const letters = isAr ? ['أ', 'ب', 'ج', 'د', 'هـ'] : ['A', 'B', 'C', 'D', 'E'];
+    const verifiedBadge = slide.verified ? `
+      <div class="deck-verified" style="color:${slide.verifiedBy === 'symbolic' ? '#22C55E' : DECK_MUTED}">
+        ${slide.verifiedBy === 'symbolic' ? '🛡️' : '📚'}
+        ${slide.verifiedBy === 'symbolic' ? L('تم التحقق من الإجابة رياضيًا (SymPy)', 'Answer symbolically verified (SymPy)') : L('من بنك الأسئلة المُراجَع', 'From the reviewed question bank')}
+      </div>` : '';
+    return `<div class="deck-slide">
+      <div class="deck-header" style="border-color:${accent}44">
+        <span class="deck-emoji">🙋</span>
+        <span class="deck-eyebrow" style="color:${accent}">${esc(slide.title)}</span>
+      </div>
+      <div class="deck-body deck-body-center">
+        ${deckContentLine(slide.content, true)}
+        <div class="deck-options">
+          ${options.map((opt, i) => {
+            const correct = i === slide.correctIndex;
+            return `<div class="deck-option${correct ? ' deck-option-correct' : ''}"${correct ? ` style="border-color:${accent};color:#fff"` : ''}>
+              <span class="deck-option-letter" style="color:${accent}">${letters[i] ?? String(i + 1)}</span>
+              <span class="deck-option-text">${mathLineToHtml(opt)}</span>
+              ${correct ? `<span class="deck-option-tick" style="color:${accent}">✓</span>` : ''}
+            </div>`;
+          }).join('')}
+        </div>
+        ${verifiedBadge}
+      </div>
+      ${footer(num)}</div>`;
+  };
+
   const contentSlide = (slide: ActivitySlide, num: number) => {
     const accent = deckSlideAccent(slide.type);
     const lines = slide.content.split('\n').filter(Boolean);
@@ -215,6 +258,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
     if (i === 0) return titleSlide(slide, num);
     if (slide.type === 'graph') return graphSlide(slide, num);
     if (slide.type === 'challenge') return challengeSlide(slide, num);
+    if (slide.type === 'question') return questionSlide(slide, num);
     if (slide.type === 'media' && slide.mediaKind === 'image') return mediaSlide(slide, num);
     if (slide.type === 'media' && slide.mediaKind === 'video') return videoSlide(slide, num);
     if (slide.type === 'divider') return dividerSlide(slide, num);
@@ -248,7 +292,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
 body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:#1a1a1a; }
 .deck-title-badge, .deck-title-main, .deck-divider-title, .deck-eyebrow,
 .deck-eq, .deck-answer-label, .deck-chip, .deck-video-link,
-.deck-title-meta { font-family: 'Cairo','Arial','Tahoma',sans-serif; }
+.deck-option-letter, .deck-title-meta { font-family: 'Cairo','Arial','Tahoma',sans-serif; }
 .deck-slide { width:297mm; height:210mm; background:${DECK_BG}; color:${DECK_TEXT}; position:relative; overflow:hidden; page-break-after:always; display:flex; flex-direction:column; }
 .deck-title-slide { background:radial-gradient(circle at 30% 20%, ${DECK_ACCENT}33, transparent 55%), ${DECK_BG}; }
 .deck-hero-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
@@ -274,6 +318,12 @@ body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:#1a1a1a; }
 .deck-plot { margin:14px auto 0; max-width:660px; }
 .deck-verified { margin-top:12px; font-size:11px; font-weight:600; display:flex; flex-direction:column; align-items:center; gap:4px; }
 .deck-evidence { font-size:10px; color:${DECK_MUTED}; font-weight:400; }
+.deck-options { display:flex; flex-direction:column; gap:10px; margin-top:22px; min-width:420px; }
+.deck-option { display:flex; align-items:center; gap:12px; border:1.5px solid rgba(255,255,255,0.14); border-radius:12px; padding:12px 18px; font-size:16px; color:${DECK_TEXT}; }
+.deck-option-correct { background:rgba(59,130,246,0.12); font-weight:700; }
+.deck-option-letter { font-size:14px; font-weight:700; min-width:20px; }
+.deck-option-text { flex:1; }
+.deck-option-tick { font-size:16px; font-weight:700; }
 .deck-chip-row { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-bottom:18px; }
 .deck-chip { border:1.5px solid; border-radius:8px; padding:5px 12px; font-size:13px; font-weight:700; }
 .deck-graph-note { font-size:11px; color:${DECK_MUTED}; max-width:420px; line-height:1.7; }

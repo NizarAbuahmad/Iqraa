@@ -46,6 +46,87 @@ export interface LessonDeckOptions {
    * its own rule — omit rather than pad — so no commands means no slide.
    */
   graphCommands?: string[];
+  /**
+   * Formative check questions, already generated (see the quick-check
+   * generator). The deck places them; it never invents them. Passing none
+   * leaves the deck exactly as it was before checks existed.
+   */
+  checks?: ActivitySlide[];
+}
+
+/** Mid-lesson checks, at most. Two interruptions in 45 minutes, not five. */
+export const MID_LESSON_CHECK_MAX = 2;
+/** Exit-ticket questions, at most. */
+export const EXIT_TICKET_MAX = 3;
+/**
+ * Below this an exit ticket is not one — a single question at the door reads
+ * as an afterthought, and that question is worth more mid-lesson where the
+ * answer can still change what the teacher does next.
+ */
+const EXIT_TICKET_MIN = 2;
+
+/**
+ * Split generated check questions between the two jobs they do.
+ *
+ * Mid-lesson checks are diagnostic: the teacher reads the room and decides
+ * whether to move on. The exit ticket is summative-ish: it leaves the room on
+ * paper and tells the teacher what tomorrow starts with. They must be
+ * *different* questions — reusing a mid-lesson question at the door measures
+ * whether the class remembers the reveal, not whether it learned.
+ *
+ * Nothing is padded and nothing is dropped below five: with too few for an
+ * exit ticket, the spare question becomes a third mid-lesson check rather
+ * than a one-question section pretending to be an exit ticket. At most five
+ * are used; a caller that hands over more gets the extras ignored.
+ */
+export function splitChecks(checks: readonly ActivitySlide[] | undefined): {
+  mid: ActivitySlide[];
+  exit: ActivitySlide[];
+} {
+  const usable = (checks ?? []).filter(isCheckSlide);
+  const exit = usable.length >= MID_LESSON_CHECK_MAX + EXIT_TICKET_MIN
+    ? usable.slice(MID_LESSON_CHECK_MAX, MID_LESSON_CHECK_MAX + EXIT_TICKET_MAX)
+    : [];
+  const mid = exit.length > 0
+    ? usable.slice(0, MID_LESSON_CHECK_MAX)
+    : usable.slice(0, MID_LESSON_CHECK_MAX + 1);
+  return { mid, exit };
+}
+
+/**
+ * A slide that can actually function as a check.
+ *
+ * An MCQ needs real options and a correct index inside them — a `question`
+ * slide without those projects four blank choices. An open `challenge` needs
+ * a stem. This is what keeps a non-math lesson honest: the generator returns
+ * open write-on-your-board questions when it has no verified bank to draw
+ * from, and those are real checks, so they are accepted here rather than the
+ * whole feature being gated behind `subject === 'mathematics'`.
+ */
+function isCheckSlide(s: ActivitySlide): boolean {
+  if (!nonEmpty(s.content)) return false;
+  if (s.type === 'question') {
+    const options = s.options ?? [];
+    return options.length >= 2
+      && typeof s.correctIndex === 'number'
+      && s.correctIndex >= 0
+      && s.correctIndex < options.length;
+  }
+  return s.type === 'challenge';
+}
+
+/**
+ * Re-badge a generated check for its place in this deck.
+ *
+ * `verified`, `verifiedBy` and `computedAnswer` ride along untouched — they
+ * are claims about the answer key that only the verifier may make, and
+ * re-deriving them here is exactly the mistake that once shipped items
+ * flagged verified that nothing had checked. `questionIndex` is dropped: it
+ * indexes a Class Challenge scoring ledger, and this deck has none.
+ */
+function asCheckSlide(slide: ActivitySlide, title: string): ActivitySlide {
+  const { questionIndex: _dropped, ...rest } = slide;
+  return { ...rest, title };
 }
 
 /** Trim, drop empties, and cap — projected bullets stop being readable past 6. */
@@ -91,6 +172,8 @@ export function buildLessonDeck(
   const push = (slide: Omit<ActivitySlide, 'slideNumber'>) => {
     slides.push({ ...slide, slideNumber: slides.length + 1 } as ActivitySlide);
   };
+
+  const { mid: midChecks, exit: exitChecks } = splitChecks(opts.checks);
 
   // ── 1. Title ────────────────────────────────────────────────────────────
   const summary = nonEmpty(pickLang(lesson?.summaryAr, lesson?.summaryEn, isAr));
@@ -206,6 +289,21 @@ export function buildLessonDeck(
     push(buildGraphSlide(graphCommands, title, isAr, 0));
   }
 
+  // ── 6c. First check — before anyone has seen a worked example ───────────
+  // Placed here on purpose: the class has been told the idea and the rule but
+  // has not yet watched the teacher do one. This is the last moment a wrong
+  // answer is cheap, and the show of hands decides whether the examples are a
+  // demonstration or a re-teach. After the examples it would only measure
+  // whether they can copy.
+  //
+  // With a single check available this point is skipped in favour of the one
+  // after the examples — one check is better spent on "can you do it" than on
+  // "did you follow me".
+  const firstCheckCount = Math.floor(midChecks.length / 2);
+  midChecks.slice(0, firstCheckCount).forEach((check, i) => {
+    push(asCheckSlide(check, L(`✋ تحقّق سريع ${i + 1}`, `✋ Quick Check ${i + 1}`)));
+  });
+
   // ── 7. Worked examples — attempted before they are shown ────────────────
   // A worked example projected already-solved is a slide students copy. Giving
   // it a timer first makes the same content an attempt, which is why these are
@@ -231,6 +329,15 @@ export function buildLessonDeck(
           'Let them attempt it first — reveal only after the timer ends.'),
       },
     });
+  });
+
+  // ── 7b. Second check — now that they have seen one done ─────────────────
+  const laterChecks = midChecks.slice(firstCheckCount);
+  laterChecks.forEach((check, i) => {
+    push(asCheckSlide(
+      check,
+      L(`✋ تحقّق سريع ${firstCheckCount + i + 1}`, `✋ Quick Check ${firstCheckCount + i + 1}`),
+    ));
   });
 
   // ── 8. Practice ─────────────────────────────────────────────────────────
@@ -267,6 +374,26 @@ export function buildLessonDeck(
     durationSeconds: 0,
   });
 
+  // ── 9b. Exit ticket — the last thing before they leave ──────────────────
+  // After the summary, not before: the summary is the teacher's closing
+  // statement, and the exit ticket is what the class hands back on the way
+  // out. Its own divider, because it is a change of mode — the deck stops
+  // teaching and starts measuring, and the class needs to be told that.
+  if (exitChecks.length > 0) {
+    push({
+      type: 'divider',
+      title,
+      content: L('🎫 تذكرة الخروج', '🎫 Exit Ticket'),
+      durationSeconds: 0,
+    });
+    exitChecks.forEach((check, i) => {
+      push(asCheckSlide(
+        check,
+        L(`🎫 تذكرة الخروج ${i + 1}`, `🎫 Exit Ticket ${i + 1}`),
+      ));
+    });
+  }
+
   // ── 10. Homework, only when there is one ────────────────────────────────
   const homework = includePractice ? nonEmpty(plan?.homework) : '';
   if (homework) {
@@ -300,10 +427,11 @@ export function buildLessonDeck(
       : L('الشرائح مولّدة وليست مأخوذة من كتاب المنهاج — راجع المحتوى قبل عرضه.',
           'Slides are generated, not taken from the curriculum book — review before projecting.'),
     teacherNotes: bullets(plan?.differentiation ? [plan.differentiation] : []),
-    answerKey: examples
-      .map(splitExample)
-      .map(([, answer], i) => (answer ? L(`مثال ${i + 1}: ${answer}`, `Example ${i + 1}: ${answer}`) : ''))
-      .filter(Boolean),
+    // Built from the slides rather than from `examples`, so the checks are in
+    // it too and there is one rule for what the key contains — the previous
+    // shape derived it from the book's example list, which never knew about
+    // any slide added after it.
+    answerKey: rebuildAnswerKey(slides, isAr),
     printables: [],
     assessment: nonEmpty(plan?.assessment),
     extensionChallenge: '',
@@ -316,15 +444,35 @@ export function buildLessonDeck(
  *
  * The deck's answerKey is derived at build time from the book's examples;
  * once the teacher can edit or delete slides, the stored key would drift
- * from what is actually projected. Rebuilding from the challenge slides
- * keeps the two honest — an edited answer prints as edited, a deleted
- * example drops out of the key.
+ * from what is actually projected. Rebuilding from the slides keeps the two
+ * honest — an edited answer prints as edited, a deleted example drops out.
+ *
+ * Two kinds of slide carry an answer. Worked examples are numbered as
+ * examples, the way they always were. Check questions are keyed by their own
+ * title instead, because their number is meaningful only within their section
+ * — "تذكرة الخروج 1" is the first exit-ticket question, not the first
+ * question in the deck, and renumbering them into one sequence would make the
+ * printed key impossible to line up with the projected slides.
+ *
+ * Open checks carry no `answer` and no options — the generator refuses to
+ * fabricate one — so they contribute nothing here rather than an empty row.
  */
 export function rebuildAnswerKey(slides: readonly ActivitySlide[], isAr: boolean): string[] {
   const L = (ar: string, en: string) => (isAr ? ar : en);
-  return slides
-    .filter(s => s.type === 'challenge' && nonEmpty(s.answer))
-    .map((s, i) => L(`مثال ${i + 1}: ${s.answer}`, `Example ${i + 1}: ${s.answer}`));
+  let exampleNum = 0;
+  const key: string[] = [];
+  for (const s of slides) {
+    if (s.type === 'challenge' && nonEmpty(s.answer)) {
+      exampleNum += 1;
+      key.push(L(`مثال ${exampleNum}: ${s.answer}`, `Example ${exampleNum}: ${s.answer}`));
+      continue;
+    }
+    if (s.type === 'question') {
+      const answer = (s.options ?? [])[s.correctIndex ?? -1];
+      if (nonEmpty(answer)) key.push(`${s.title}: ${answer}`);
+    }
+  }
+  return key;
 }
 
 /**

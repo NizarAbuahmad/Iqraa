@@ -256,3 +256,61 @@ describe('buildDeckSlidesHTML — a visual on a non-graph slide', () => {
     assert.doesNotMatch(html, /<svg/);
   });
 });
+
+describe('buildDeckSlidesHTML — whole-class MCQ slides', () => {
+  const question = {
+    slideNumber: 2, type: 'question' as const,
+    title: '✋ تحقّق سريع 1',
+    content: 'ما مشتقة الاقتران f(x) = x²؟',
+    options: ['x', '2x', 'x²', '2'],
+    correctIndex: 1,
+    verified: true,
+    verifiedBy: 'symbolic' as const,
+    durationSeconds: 45,
+  };
+
+  it('prints the options — before this they existed only on screen', () => {
+    // The slide asks the class to raise a letter card. Falling through to the
+    // generic content renderer printed the stem and no letters to raise.
+    const html = buildDeckSlidesHTML(deck([titleSlide, question]), true);
+    assert.match(html, /deck-option/);
+    ['أ', 'ب', 'ج', 'د'].forEach(letter => {
+      assert.match(html, new RegExp(`deck-option-letter[^>]*>${letter}<`));
+    });
+    assert.match(html, /2x/);
+  });
+
+  // The document carries a <style> block naming every class, so counting
+  // occurrences across the whole file counts the CSS rule too. Assertions
+  // about *how many* of something rendered have to look at the markup only.
+  const markup = (html: string) => html.slice(html.lastIndexOf('</style>'));
+
+  it('marks the correct option, and only that one', () => {
+    const html = markup(buildDeckSlidesHTML(deck([titleSlide, question]), true));
+    assert.equal((html.match(/deck-option-correct/g) ?? []).length, 1);
+    assert.equal((html.match(/deck-option-tick/g) ?? []).length, 1);
+    assert.equal((html.match(/deck-option-letter/g) ?? []).length, 4, 'one row per option');
+  });
+
+  it('uses Latin response letters in an English deck', () => {
+    const html = buildDeckSlidesHTML(deck([titleSlide, question]), false);
+    assert.match(html, /deck-option-letter[^>]*>A</);
+    assert.doesNotMatch(html, /deck-option-letter[^>]*>أ</);
+  });
+
+  it('reports how the key was checked, without overclaiming', () => {
+    const symbolic = buildDeckSlidesHTML(deck([titleSlide, question]), true);
+    assert.match(symbolic, /SymPy|رياضيًا/);
+
+    const bank = buildDeckSlidesHTML(
+      deck([titleSlide, { ...question, verifiedBy: 'bank' as const }]), true,
+    );
+    assert.match(bank, /بنك الأسئلة/);
+    assert.doesNotMatch(bank, /SymPy/);
+
+    const unverified = markup(buildDeckSlidesHTML(
+      deck([titleSlide, { ...question, verified: false, verifiedBy: undefined }]), true,
+    ));
+    assert.doesNotMatch(unverified, /deck-verified/);
+  });
+});

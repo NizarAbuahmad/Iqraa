@@ -38,6 +38,7 @@ function deckSlideAccent(type: ActivitySlide['type']): string {
   if (type === 'summary') return DECK_ACCENT;
   if (type === 'graph') return '0EA5E9';
   if (type === 'divider') return DECK_ACCENT;
+  if (type === 'question') return '3B82F6';
   return DECK_MUTED;
 }
 
@@ -329,6 +330,57 @@ export async function exportDeckAsPptx(
             );
           }
         }
+      }
+      continue;
+    }
+
+    /**
+     * Whole-class MCQ. Like the HTML export, this had no branch at all until
+     * now: a question slide fell through to the generic content block below
+     * and printed its stem with no options, so the deck asked the class to
+     * raise a letter card and then showed no letters.
+     *
+     * The correct option is marked, matching the challenge branch above —
+     * the exported file is the teacher's copy.
+     */
+    if (slide.type === 'question') {
+      const options = slide.options ?? [];
+      const letters = isAr ? ['أ', 'ب', 'ج', 'د', 'هـ'] : ['A', 'B', 'C', 'D', 'E'];
+      s.addText(pptxLine(slide.content, true), {
+        x: 0.6, y: 1.1, w: 8.8, h: 0.9, align: 'center', valign: 'middle',
+        fontSize: 20, color: 'FFFFFF', bold: true,
+      });
+      const rowH = 0.62;
+      const top = 2.15;
+      options.forEach((opt, i) => {
+        const correct = i === slide.correctIndex;
+        const y = top + i * (rowH + 0.12);
+        s.addShape('roundRect', {
+          x: 2.0, y, w: 6.0, h: rowH,
+          fill: { color: correct ? '132A4A' : '1A1B26' },
+          line: { color: correct ? accent : '2A2B3A', width: correct ? 1.5 : 1 },
+          rectRadius: 0.08,
+        });
+        s.addText(`${letters[i] ?? String(i + 1)}`, {
+          x: 2.15, y, w: 0.5, h: rowH, align: 'center', valign: 'middle',
+          fontSize: 12, color: accent, bold: true,
+        });
+        s.addText(`${pptxLine(opt, true)}${correct ? '   ✓' : ''}`, {
+          x: 2.65, y, w: 5.2, h: rowH, align: rtlAlign, valign: 'middle',
+          fontSize: 13, color: correct ? 'FFFFFF' : DECK_TEXT, bold: correct,
+        });
+      });
+      if (slide.verified) {
+        const verifiedColor = slide.verifiedBy === 'symbolic' ? '22C55E' : DECK_MUTED;
+        s.addText(
+          slide.verifiedBy === 'symbolic'
+            ? L('تم التحقق من الإجابة رياضيًا (SymPy)', 'Answer symbolically verified (SymPy)')
+            : L('من بنك الأسئلة المُراجَع', 'From the reviewed question bank'),
+          {
+            x: 2.0, y: top + options.length * (rowH + 0.12) + 0.08, w: 6.0, h: 0.3,
+            align: 'center', fontSize: 9, color: verifiedColor, bold: true,
+          },
+        );
       }
       continue;
     }

@@ -1072,9 +1072,13 @@ export class MockAIService extends AIService {
       const tier = req.difficulty === 'easy' ? 'easy' as const
         : req.difficulty === 'advanced' ? 'hard' as const
         : 'medium' as const;
+      // Default 4 — a standalone Quick Check's own size. Slides Maker asks
+      // for more because it splits them across a whole lesson. Clamped so a
+      // bad caller cannot drain the concrete bank in one call.
+      const wanted = Math.max(1, Math.min(8, Math.floor(req.numQuestions ?? 4) || 4));
       const mcqs: { text: string; options: string[]; answer: string }[] = [];
       if (math) {
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < wanted; i++) {
           const q = takeConcreteMath('multiple_choice', topic, kb, tier, isAr ? 'ar' : 'en', 0);
           if (q?.options?.length) mcqs.push({ text: q.text, options: q.options, answer: q.answer });
         }
@@ -1171,7 +1175,7 @@ export class MockAIService extends AIService {
 
       // Non-math (or exhausted bank): open questions from the lesson's
       // objectives — honest discussion prompts, no fabricated options.
-      const objectives = (kb?.objectives ?? []).slice(0, 3);
+      const objectives = (kb?.objectives ?? []).slice(0, wanted);
       const stems = objectives.length > 0 ? objectives : [topic];
       const openSlides = stems.map((obj, i) => ({
         slideNumber: i + 2,
