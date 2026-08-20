@@ -84,11 +84,21 @@ function serializeLessonContext(
       : [];
   const unitObjectives = nccdS1Unit?.unit_objectives ?? [];
 
+  // Teacher objectives are ADDITIVE, never a replacement.
+  //
+  // This used to be an `if/else if` against the curriculum outcomes, so typing
+  // anything at all into the optional objectives box silently deleted the
+  // official NCCD نتاجات from the prompt — while the screen still showed
+  // «مرتبط بالمنهاج الأردني». A teacher adding one line ended up with a plan
+  // that was *less* curriculum-grounded than if they had left the box empty,
+  // and nothing said so. Both belong in the prompt: the curriculum defines
+  // what must be taught, the teacher's line refines it.
   if (teacherObj) {
     lines.push('');
     lines.push(isAr ? 'النتاجات (من المعلم):' : 'Objectives (teacher):');
     teacherObj.split('\n').map(s => s.trim()).filter(Boolean).forEach(o => lines.push(`• ${o}`));
-  } else if (curriculumObjectives.length > 0) {
+  }
+  if (curriculumObjectives.length > 0) {
     lines.push('');
     lines.push(isAr ? 'النتاجات (من المنهج الرسمي):' : 'Official curriculum outcomes:');
     curriculumObjectives.forEach(o => lines.push(`• ${o}`));
@@ -129,6 +139,36 @@ function serializeLessonContext(
   }
 
   return lines.join('\n');
+}
+
+/**
+ * Turn a teacher's free-text adaptation request into a prompt directive.
+ *
+ * The objectives box is labelled «الأهداف التعليمية», so what a teacher types
+ * there is read by the prompt as «الأهداف المحددة» and comes back as the
+ * lesson's objective, verbatim. Typing "tailor this plan for a student with
+ * ADHD" produced a plan whose sole stated objective was that sentence, in
+ * English, with nothing in the body adapted — the request was obeyed to the
+ * letter and ignored in substance.
+ *
+ * An adaptation is an instruction about HOW to write every section, not a
+ * thing the students should be able to do by the end. It needs its own field
+ * and its own framing, pointed at the التمايز/differentiation slot the output
+ * schema already has.
+ *
+ * Returns '' for empty input so callers can `.filter(Boolean)` it away.
+ */
+export function buildAdaptationsDirective(text: string, lang: 'ar' | 'en'): string {
+  const body = text.trim();
+  if (!body) return '';
+  return lang === 'ar'
+    ? `تعليمات المعلّم — طبّقها في كل أقسام الخطة (التمهيد، النشاط، التدريب، الختام، التقييم)، `
+      + `وفصّلها صراحةً في حقل "التمايز". هذه تعليمات تنفيذ وليست نتاجات تعلّم، `
+      + `فلا تُدرجها ضمن الأهداف:\n${body}`
+    : `Teacher instructions — apply these across every section of the plan `
+      + `(introduction, activity, practice, closure, assessment) and spell them out `
+      + `in the "differentiation" field. These are delivery instructions, not learning `
+      + `outcomes, so do not list them among the objectives:\n${body}`;
 }
 
 /**

@@ -844,6 +844,52 @@ shapes with a deliberately wrong radius key and a trigonometry item: 5 provable
 of 7, 4 verified, the wrong key caught, trig and صح/خطأ excluded. Python suite
 51/51; mobile 609 tests, 0 failures.
 
+## Live AI is on, 2026-08-20
+
+`AI_LIVE_MODE=true`, `AI_MODEL=gpt-5.4-mini`, `AI_BUDGET_USD=5` on iqraa-api;
+`EXPO_PUBLIC_DEMO_MODE=false` on iqraa-web. Confirmed the way the badge exists
+to be confirmed: `/api/healthz/ai-budget` reported `spentUsd` moving 0.1375 →
+0.188 across one lesson-plan generation. That counter only advances on a real
+completion with token usage, so it is proof independent of anything the screen
+renders.
+
+**`gpt-5.4-mini` is not in `PRICING_PER_MILLION_USD`**, so the guard bills it at
+the $10/$50 fallback and warns once. Spend is over-counted and the cap trips
+early — safe, but `AI_BUDGET_USD=5` does not mean $5. Add the real prices.
+
+Note the endpoint is `/api/healthz/ai-budget` — everything is mounted under
+`/api` (`app.use("/api", router)`).
+
+## Fixed 2026-08-20 — the objectives box deleted the curriculum outcomes
+
+Reported as "I added an objective and the plan didn't take it into account."
+Two separate defects, both reproduced against the shipped code.
+
+**1. Teacher objectives replaced the curriculum, silently.**
+`serializeLessonContext` had `if (teacherObj) … else if (curriculumObjectives)`,
+so typing anything at all into «الأهداف التعليمية (اختياري)» dropped the
+official NCCD نتاجات from the prompt entirely. Verified for «المشروع وإدارته»:
+without a teacher objective the context carries three official outcomes; with
+one it carries only the teacher's line. The screen still displayed «مرتبط
+بالمنهاج الأردني» either way — so adding one line produced a plan that was
+*less* curriculum-grounded than leaving the field empty, while claiming
+otherwise. Now additive: both blocks go in, each labelled by source.
+
+**2. There was nowhere to put an instruction.** The field is labelled
+«الأهداف التعليمية», and `lessonPlanPromptAr` renders it as «الأهداف المحددة»,
+so "tailor this plan for student with adhd" came back as the lesson's sole
+stated objective — verbatim, in English, with nothing in the body adapted. The
+request was obeyed to the letter and ignored in substance. An adaptation is an
+instruction about how to write every section, not something a student can
+demonstrate, so it needed its own field: «تكييفات وتعليمات إضافية (اختياري)»,
+routed through `buildAdaptationsDirective` into `additionalContext` and pointed
+explicitly at the `differentiation` slot the output schema already has, with
+"do not list these among the objectives" stated in the directive.
+
+**Still open, found while reproducing:** `buildSupportResourcesContext` returned
+mathematics files (الأسس والمعادلات, أنظمة المعادلات) for a financial-literacy
+lesson. Cross-subject resource matching is wrong; not fixed here.
+
 ## Fixed 2026-08-20 — generated multiple-choice keys could never verify
 
 The provider evaluation's first successful run reported the objective half as:
