@@ -793,6 +793,89 @@ one click away the whole time and settled it in a line.
 1.14.0, fastapi 0.141.1, uvicorn 0.52.3, pydantic 2.13.4) in a clean venv, and
 `test_equations.py` passes 29/29 against it.
 
+## Question stems, and the verification they were blocking, 2026-08-20
+
+Putting checks in the lesson deck made the wording visible on a projector,
+and it did not survive the look: «ما ناتج / حل: f(x)=x³ − 4x؟» — a stem that
+asks neither for a result nor for a solution, and that no teacher would
+write.
+
+**The good Arabic already existed.** Every bank item that needs specific
+wording carries a hand-written `promptAr` — «أوجد مشتقة f(x) = x².»، «ما ميل
+مماس منحنى y = x² عند x = 3؟». Only `short_answer` read them. Multiple
+choice, true/false and fill-in-the-blank each rebuilt a stem from `item.eq`,
+so the same item that reads properly on a worksheet was projected as
+boilerplate. One stem now feeds every question type, and items with no
+prompt are worded by what they are — «أوجد حل المعادلة:» only when there is
+an `=`, «بسّط المقدار:» for a simplify item, «أوجد حل النظام الآتي:» for a
+system.
+
+True/false states the question, then the proposed answer, then asks — an
+error-analysis item. A prompt is an imperative and there is no mechanical
+way to turn one into a statement, which is why the old attempt produced
+«حل / ناتج «f(x)=x³ − 4x» هو …» for every family alike. The word-problem
+fallback no longer invents «مسألة: يحتاج طالب إلى حل … ضمن تمرين صفي» —
+a story about a student doing an exercise is the exercise with a sentence in
+front of it. It asks for the working instead.
+
+### The correct option was identifiable without doing any maths
+
+Visible the moment the stem stopped being boilerplate. The bank stores
+answers labelled and distractors bare:
+
+    أوجد f′(x) إذا كان f(x) = x³ − 4x.
+    أ) 3x²   ب) f'(x) = 3x² − 4   ج) x² − 4   د) 3x − 4
+
+One option carried a prefix. It was always the right one. The same tell ran
+through the vectors (`u+v = ⟨4 ، 1⟩` against bare pairs), statistics
+(`المتوسط = 5` against bare numbers) and functions items. Whatever else a
+distractor is for, it cannot be eliminable on sight.
+
+Options are now levelled to one shape, and only when they are actually
+mismatched: a set that is already uniformly labelled (`x = 6` against
+`x = 5`, `x = 11`) is left alone, because there the `x =` is what makes the
+answer readable. The label pattern requires a single token before the `=`,
+so «متعامدان (الضرب القياسي = 0)» and «قيم حرجة عند x = ±1» — where the `=`
+is part of the sentence — are not sliced in half.
+
+### It was also blocking symbolic verification, completely
+
+Chasing the wording found that **no quick-check derivative question has ever
+been symbolically verified.** Two independent causes:
+
+1. The old stem «ما ناتج / حل: f(x)=x³ − 4x؟» carries no derivative marker,
+   so `classifyVerifiableTopic` read `f(x)=…` as an *equation to solve* and
+   SymPy rejected it.
+2. Where classification did fire, the answer went over as `f'(x) = 2x`,
+   which SymPy cannot parse at all — the apostrophe opens a string literal.
+
+A third, smaller one: `isDerivativeQuestion` matched only the ASCII
+apostrophe, while the Arabic bank writes U+2032 — «أوجد f′(x) إذا كان
+f(x) = x³ − 4x.» has no «مشتق» in it either, so that character was the only
+marker there was, and the guard did not recognise it.
+
+Every one of these failed closed, so nothing false was ever claimed. The
+effect was subtler: the badge that proves the maths never appeared on the
+questions built to carry it, and «من بنك الأسئلة المُراجَع» looked like the
+honest ceiling when it was actually a bug.
+
+**Measured against the real SymPy service**, replaying the five derivative
+items a Quick Check draws, before and after:
+
+| | verified |
+| --- | --- |
+| Shipped | **0 of 5** |
+| After | **3 of 5** |
+
+The two that remain are correctly outside the prover's slice — a
+tangent-slope answer is a number and a critical-points answer is prose,
+neither of which the derivative comparison can check. They keep the honest
+bank label.
+
+**Verified in a real browser:** slide 13 of the الاشتقاق deck now reads
+«أوجد f′(x) إذا كان f(x) = x³ − 4x.» with four options of one shape —
+3x² · x² − 4 · 3x − 4 · 3x² − 4.
+
 ## Slides Maker: the deck now checks, not just teaches, 2026-08-20
 
 The education review's top recommendation. A Slides Maker deck went title →

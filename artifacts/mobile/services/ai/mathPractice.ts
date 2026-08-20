@@ -97,6 +97,40 @@ function placeCorrect(correct: string, wrongs: string[]): string[] {
   return [...wrongs.slice(0, pos), correct, ...wrongs.slice(pos)];
 }
 
+/**
+ * A leading `label = ` on an answer: `f'(x) = 2x`, `|v| = 5`, `الميل = 6`.
+ *
+ * The label must be a single token — no spaces — so this cannot mistake the
+ * `=` inside «متعامدان (الضرب القياسي = 0)» or «قيم حرجة عند x = ±1» for a
+ * prefix and slice the answer in half.
+ */
+const ANSWER_LABEL = /^([^\s=]{1,12})\s*=\s*(.+)$/u;
+
+/**
+ * Make all four options the same shape.
+ *
+ * The bank stores answers labelled and distractors bare — answer
+ * `f'(x) = 3x² − 4` against wrongs `3x²`, `x² − 4`, `3x − 4`. Projected, the
+ * correct option was the only one carrying a prefix, so a student could pick
+ * it without doing any maths, and the same tell ran through the vectors,
+ * statistics and functions items too. Whatever else a distractor is for, it
+ * cannot be eliminable on sight.
+ *
+ * Only strips when the distractors are bare. Where they carry their own
+ * labels (`x = 5`, `x = 11`) the set is already consistent and is left
+ * alone — stripping there would remove the `x =` that makes the answer
+ * readable.
+ */
+function levelOptionShape(
+  correct: string,
+  wrongs: string[],
+): { correct: string; wrongs: string[] } {
+  const labelled = correct.match(ANSWER_LABEL);
+  if (!labelled) return { correct, wrongs };
+  if (wrongs.some(w => w.includes('='))) return { correct, wrongs };
+  return { correct: labelled[2]!.trim(), wrongs };
+}
+
 // ─── Concrete banks (real solvable items — not meta prompts) ─────────────────
 
 const BANK: ConcreteItem[] = [
@@ -225,50 +259,88 @@ const BANK: ConcreteItem[] = [
   },
 ];
 
+/**
+ * The question as a teacher would write it.
+ *
+ * Every bank item that needs specific wording already carries a hand-written
+ * `promptAr` / `promptEn` — «أوجد مشتقة f(x) = x².», «ما ميل مماس منحنى
+ * y = x² عند x = 3؟». Only `short_answer` ever used them. Multiple choice,
+ * true/false and fill-in-the-blank each built their own stem out of
+ * `item.eq`, so the same derivative item that reads properly on a worksheet
+ * was projected to the class as «ما ناتج / حل: f(x)=x³ − 4x؟» — which asks
+ * neither for a result nor for a solution, and is not something a teacher
+ * would write. The good Arabic existed and was being thrown away.
+ *
+ * One stem, every type. Items with no prompt fall back to wording chosen by
+ * what the item actually is rather than one phrase covering everything.
+ */
+function itemStem(item: ConcreteItem, isAr: boolean): string {
+  if (item.kind === 'word' && (item.wordAr || item.wordEn)) {
+    return isAr ? (item.wordAr ?? item.eq) : (item.wordEn ?? item.eq);
+  }
+  if (item.promptAr || item.promptEn) {
+    return isAr ? (item.promptAr ?? item.eq) : (item.promptEn ?? item.eq);
+  }
+  if (item.kind === 'system' || item.eq2) {
+    return isAr
+      ? `أوجد حل النظام الآتي:\n${item.eq}\n${item.eq2}`
+      : `Solve the following system:\n${item.eq}\n${item.eq2}`;
+  }
+  if (item.kind === 'simplify') {
+    return isAr ? `بسّط المقدار: ${item.eq}` : `Simplify: ${item.eq}`;
+  }
+  // Everything left in the bank without a prompt is an equation to solve;
+  // check rather than assume, so an expression item never gets asked for a
+  // "solution" it does not have.
+  return item.eq.includes('=')
+    ? (isAr ? `أوجد حل المعادلة: ${item.eq}` : `Solve the equation: ${item.eq}`)
+    : (isAr ? `أوجد ناتج: ${item.eq}` : `Evaluate: ${item.eq}`);
+}
+
 function formatItem(item: ConcreteItem, lang: Lang, type: QType): { text: string; options?: string[]; answer: string } {
   const isAr = lang === 'ar';
-  const solveStem = (): string => {
-    if (item.kind === 'word') return isAr ? (item.wordAr ?? item.eq) : (item.wordEn ?? item.eq);
-    if (item.promptAr || item.promptEn) return isAr ? (item.promptAr ?? item.eq) : (item.promptEn ?? item.eq);
-    if (item.kind === 'system' || item.eq2) {
-      return isAr
-        ? `حل النظام:\n${item.eq}\n${item.eq2}`
-        : `Solve the system:\n${item.eq}\n${item.eq2}`;
-    }
-    if (item.kind === 'simplify') {
-      return isAr ? `بسّط: ${item.eq}` : `Simplify: ${item.eq}`;
-    }
-    return isAr ? `حل: ${item.eq}` : `Solve: ${item.eq}`;
-  };
+  const stem = itemStem(item, isAr);
 
   if (type === 'word_problem') {
     if (item.kind === 'word' && (item.wordAr || item.wordEn)) {
       return { text: isAr ? (item.wordAr as string) : (item.wordEn as string), answer: item.answer };
     }
-    // Concrete numeric scenario wrapping the equation
+    // No invented scenario. This used to wrap the equation in «يحتاج طالب
+    // إلى حل … ضمن تمرين صفي» — a story about a student doing an exercise,
+    // which is not a word problem, just the exercise with a sentence in
+    // front of it. An item with no real context asks for the working
+    // instead, which is what the marks are for anyway.
     return {
       text: isAr
-        ? `مسألة: يحتاج طالب إلى حل «${item.eq}» ضمن تمرين صفي. أوجد الحل مبيّنًا الخطوات.`
-        : `Problem: A student must solve “${item.eq}” in class. Find the solution and show steps.`,
+        ? `${stem}\n\nاكتب الحل موضّحًا الخطوات.`
+        : `${stem}\n\nWrite the solution, showing your steps.`,
       answer: item.answer,
     };
   }
 
   if (type === 'multiple_choice') {
+    const level = levelOptionShape(item.answer, item.wrongs);
     return {
-      text: isAr ? `ما ناتج / حل: ${item.eq}${item.eq2 ? ` ، ${item.eq2}` : ''}؟` : `What is the result/solution of: ${item.eq}${item.eq2 ? `, ${item.eq2}` : ''}?`,
-      options: placeCorrect(item.answer, item.wrongs),
-      answer: item.answer,
+      text: stem,
+      options: placeCorrect(level.correct, level.wrongs),
+      // The key must be the option as displayed: the teacher panel shows it
+      // as the expected answer and the reveal highlights it by value, so a
+      // key that still carried the prefix would disagree with the slide.
+      answer: level.correct,
     };
   }
 
   if (type === 'true_false') {
     const sayTrue = item.id.charCodeAt(item.id.length - 1) % 2 === 0;
     const value = sayTrue ? item.answer : item.wrongs[0];
+    // Question, then the claim, then the judgement — an error-analysis item.
+    // A prompt is an imperative («أوجد مشتقة…»); there is no mechanical way
+    // to turn one into a statement, and the old attempt produced «حل / ناتج
+    // «f(x)=x³ − 4x» هو …» for every family alike.
     return {
       text: isAr
-        ? `حل / ناتج «${item.eq}${item.eq2 ? ` و ${item.eq2}` : ''}» هو ${value}.`
-        : `The solution/result of “${item.eq}${item.eq2 ? ` and ${item.eq2}` : ''}” is ${value}.`,
+        ? `${stem}\n\nالإجابة المقترحة: ${value}\n\nهل الإجابة المقترحة صحيحة؟`
+        : `${stem}\n\nProposed answer: ${value}\n\nIs the proposed answer correct?`,
       options: isAr ? ['صح', 'خطأ'] : ['True', 'False'],
       answer: sayTrue ? (isAr ? 'صح' : 'True') : (isAr ? 'خطأ' : 'False'),
     };
@@ -277,14 +349,14 @@ function formatItem(item: ConcreteItem, lang: Lang, type: QType): { text: string
   if (type === 'fill_blank') {
     return {
       text: isAr
-        ? `إذا كان ${item.eq}${item.eq2 ? ` و ${item.eq2}` : ''} فإن الإجابة هي __________.`
-        : `If ${item.eq}${item.eq2 ? ` and ${item.eq2}` : ''}, then the answer is __________.`,
+        ? `${stem}\n\nالإجابة: __________`
+        : `${stem}\n\nAnswer: __________`,
       answer: item.answer,
     };
   }
 
   // short_answer default
-  return { text: solveStem(), answer: item.answer };
+  return { text: stem, answer: item.answer };
 }
 
 /**

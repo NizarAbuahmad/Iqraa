@@ -15,7 +15,13 @@ export type VerifiableTopic =
 
 /** True when the text looks like a derivative question the verifier supports. */
 export function isDerivativeQuestion(text: string): boolean {
-  return /مشتق|اشتقاق|derivative|d\/dx|f\s*'\s*\(/i.test(text);
+  // The prime is three different characters in practice: the ASCII apostrophe
+  // this used to accept, and U+2032/U+2019, which is what the Arabic question
+  // bank actually writes — «أوجد f′(x) إذا كان f(x) = x³ − 4x.». That item
+  // carries no «مشتق» either, so the sole marker that it is a derivative
+  // question was a character this guard did not recognise, and it classified
+  // as an equation instead.
+  return /مشتق|اشتقاق|derivative|d\/dx|f\s*['′’]\s*\(/i.test(text);
 }
 
 const MATH_SAFE = /^[0-9a-zA-Z+\-*/^(). =]+$/;
