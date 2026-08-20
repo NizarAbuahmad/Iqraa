@@ -57,9 +57,28 @@ const PRICING_PER_MILLION_USD: Record<string, { input: number; output: number }>
 // over-estimate spend and trip the cap early.
 const FALLBACK_PRICING_PER_MILLION_USD = { input: 10, output: 50 };
 
+/** Warn once per unpriced model, not once per request. */
+const warnedUnpriced = new Set<string>();
+
 /** Exported so the "fallback is the ceiling" invariant can be tested. */
 export function getPricing(model: string): { input: number; output: number } {
-  return PRICING_PER_MILLION_USD[model] ?? FALLBACK_PRICING_PER_MILLION_USD;
+  const known = PRICING_PER_MILLION_USD[model];
+  if (known) return known;
+  // Say so. The fallback is the most expensive model there is, which is the
+  // right default for safety and a terrible one for accuracy: point AI_MODEL
+  // at a cheap model this table has never heard of and the guard can bill it
+  // at many times its real rate, tripping AI_BUDGET_USD long before the money
+  // is spent. That reads as a broken budget unless something says why.
+  if (!warnedUnpriced.has(model)) {
+    warnedUnpriced.add(model);
+    logger.warn(
+      { model, assumed: FALLBACK_PRICING_PER_MILLION_USD },
+      "ai model is not in the pricing table — spend is estimated at the most "
+        + "expensive known rate, so the budget will trip early. Add it to "
+        + "PRICING_PER_MILLION_USD in aiBudget.ts for an accurate cap.",
+    );
+  }
+  return FALLBACK_PRICING_PER_MILLION_USD;
 }
 
 /** Every model the guard prices, for the same test. */
