@@ -10,7 +10,7 @@
  */
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -57,9 +57,15 @@ export default function SlidesScreen() {
   const grades = getPickerGrades();
   const subjects = getPickerSubjects();
 
-  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(undefined, grades.length));
-  const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(undefined, subjects.length));
-  const [topic, setTopic] = useState('');
+  // Opened from the tools tab, a Smart Template, or a curriculum lesson, this
+  // screen arrives with the teacher's context in the route. It used to discard
+  // all three and default to grade 10 / mathematics / no topic.
+  const params = useLocalSearchParams<{
+    gradeIdx?: string; subjectIdx?: string; topic?: string;
+  }>();
+  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(params.gradeIdx, grades.length));
+  const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx, subjects.length));
+  const [topic, setTopic] = useState(params.topic ?? '');
   const [includeExamples, setIncludeExamples] = useState(true);
   const [includePractice, setIncludePractice] = useState(true);
   const [loading, setLoading] = useState(false);
