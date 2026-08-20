@@ -15,7 +15,7 @@ import {
   ACTIVITY_CARDS,
   buildBuilderRoute,
   resolveActivityType,
-} from '../../app/ai-tools/classroom/classroomRouting.ts';
+} from '../classroomRouting.ts';
 
 // ─── 1. ACTIVITY_CARDS data integrity ────────────────────────────────────────
 

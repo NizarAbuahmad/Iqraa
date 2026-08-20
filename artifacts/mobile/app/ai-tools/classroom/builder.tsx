@@ -15,7 +15,7 @@ import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { ClassroomActivity } from '@/services/ai/AIService';
 import { buildGeneratorContext } from '@/services/kbContext';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
-import { ACTIVITY_CARDS, resolveActivityType } from './classroomRouting';
+import { ACTIVITY_CARDS, resolveActivityType } from '@/services/classroomRouting';
 
 const ACCENT = '#4F46E5';
 
