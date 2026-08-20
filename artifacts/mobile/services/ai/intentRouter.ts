@@ -94,7 +94,7 @@ function isArtifact(q: string): boolean {
 
 function isTeaching(q: string): boolean {
   return (
-    /كيف\s*أشرح|كيف\s*اشرح|كيف\s*أبسط|كيف\s*ابسط|اشرح|أشرح|ما\s*هو|ما\s*هي|ما\s*معنى|أعطني\s*مثالاً?|اعطني\s*مثال|وضح|وضّح|explain|what\s+is|what\s+are|how\s+(do|can|to)\s+i\s+(explain|teach|simplify)|give\s+me\s+an?\s+example|help\s+me\s+(explain|teach)/i.test(
+    /شرح|كيف\s*أبسط|كيف\s*ابسط|ما\s*هو|ما\s*هي|ما\s*معنى|أعطني\s*مثالاً?|اعطني\s*مثال|وضح|وضّح|explain|concept|what\s+is|what\s+are|how\s+(do|can|to)\s+i\s+(explain|teach|simplify)|give\s+me\s+an?\s+example|help\s+me\s+(explain|teach)/i.test(
       q,
     )
     || (/[؟?]/.test(q) && !isGreeting(q) && !isSmallTalk(normalizeQuery(q)))
@@ -168,13 +168,28 @@ function ambiguousReply(isAr: boolean): string {
 
 /**
  * Classify an incoming chat message before any curriculum context is applied.
+ *
+ * `afterClarify` is what keeps the clarify path from becoming a dead end. The
+ * question it asks ("شرح مفهوم، أم خطة درس؟") is answered in the teacher's own
+ * words, and no keyword list covers all of them — so when an answer still does
+ * not classify, the second turn goes to the teaching pipeline rather than
+ * repeating the identical question at someone who already answered it.
  */
 export function classifyChatIntent(
   query: string,
   lang: 'ar' | 'en' = 'ar',
+  afterClarify = false,
 ): IntentRouteResult {
   const isAr = lang === 'ar';
   const q = normalizeQuery(query);
+  const clarify = (): IntentRouteResult =>
+    afterClarify
+      ? { intent: 'teaching', useTeachingPipeline: true }
+      : {
+          intent: 'ambiguous',
+          useTeachingPipeline: false,
+          socialReply: ambiguousReply(isAr),
+        };
   if (!q) {
     return {
       intent: 'ambiguous',
@@ -213,11 +228,7 @@ export function classifyChatIntent(
   // Short unknown tokens → clarify, don't invent a lesson
   const words = q.split(/\s+/);
   if (words.length <= 2 && q.length <= 18) {
-    return {
-      intent: 'ambiguous',
-      useTeachingPipeline: false,
-      socialReply: ambiguousReply(isAr),
-    };
+    return clarify();
   }
 
   // Longer substantive text without clear markers — treat as teaching topic ask
@@ -225,9 +236,5 @@ export function classifyChatIntent(
     return { intent: 'teaching', useTeachingPipeline: true };
   }
 
-  return {
-    intent: 'ambiguous',
-    useTeachingPipeline: false,
-    socialReply: ambiguousReply(isAr),
-  };
+  return clarify();
 }
