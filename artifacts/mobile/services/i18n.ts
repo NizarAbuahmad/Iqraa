@@ -88,6 +88,8 @@ const translations = {
     slideMediaUrlHint: 'الصق رابط يوتيوب لاستبدال الفيديو المقترح، أو رابط صورة مباشرًا.',
     slideMediaCaptionField: 'وصف الوسائط (اختياري)',
     slideMediaCaptionPlaceholder: 'مثال: شرح الاشتقاق — قناة المعلم',
+    suggestAnotherVideo: 'اقترح فيديو آخر',
+    noOtherVideo: 'لا توجد اقتراحات أخرى لهذا الدرس.',
     mediaUrlUnsupported: 'رابط غير مدعوم. استخدم رابط يوتيوب أو رابط صورة مباشرًا (‎.jpg / .png).',
 
     // Forgot password
@@ -942,6 +944,8 @@ const translations = {
     slideMediaUrlHint: 'Paste a YouTube link to replace the suggested video, or a direct image URL.',
     slideMediaCaptionField: 'Media caption (optional)',
     slideMediaCaptionPlaceholder: 'e.g. Derivatives explained — teacher channel',
+    suggestAnotherVideo: 'Suggest another video',
+    noOtherVideo: 'No other suggestions for this lesson.',
     mediaUrlUnsupported: 'Unsupported link. Use a YouTube URL or a direct image URL (.jpg / .png).',
 
     resetPassword: 'Reset password',

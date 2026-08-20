@@ -24,6 +24,8 @@ import {
   insertVideoSlide,
   isLikelyImageUrl,
   applyMediaEdit,
+  nextVideoSuggestion,
+  videoCaption,
   youtubeEmbedUrl,
   youtubeIdFrom,
 } from '../classMedia.ts';
@@ -279,5 +281,65 @@ describe('applyMediaEdit', () => {
     const before = JSON.stringify(videoSlide);
     applyMediaEdit(videoSlide, { url: 'https://youtu.be/dQw4w9WgXcQ', caption: '' });
     assert.equal(JSON.stringify(videoSlide), before);
+  });
+});
+
+// ── nextVideoSuggestion ──────────────────────────────────────────────────────
+//
+// The alternatives come from the same search that produced the first pick, so
+// cycling costs no extra YouTube quota. What matters here is never offering
+// the teacher the video they are already looking at.
+
+describe('nextVideoSuggestion', () => {
+  const v = (id: string, title = `عنوان ${id}`) => ({
+    url: `https://www.youtube.com/watch?v=${id}`,
+    title,
+    channelTitle: 'قناة',
+  });
+  const candidates = [v('aaaaaaaaaaa'), v('bbbbbbbbbbb'), v('ccccccccccc')];
+
+  it('offers the first candidate when the slide holds something else', () => {
+    const next = nextVideoSuggestion(candidates, 'https://youtu.be/zzzzzzzzzzz');
+    assert.equal(next?.url, candidates[0]!.url);
+  });
+
+  it('advances from whichever candidate is currently in place', () => {
+    assert.equal(nextVideoSuggestion(candidates, candidates[0]!.url)?.url, candidates[1]!.url);
+    assert.equal(nextVideoSuggestion(candidates, candidates[1]!.url)?.url, candidates[2]!.url);
+  });
+
+  it('wraps around rather than dead-ending on the last one', () => {
+    assert.equal(nextVideoSuggestion(candidates, candidates[2]!.url)?.url, candidates[0]!.url);
+  });
+
+  it('matches by video id, not by URL string', () => {
+    // The slide may hold a youtu.be link for a candidate the search returned
+    // as watch?v= — offering it back reads as a broken button.
+    const next = nextVideoSuggestion(candidates, 'https://youtu.be/bbbbbbbbbbb');
+    assert.equal(next?.url, candidates[2]!.url);
+  });
+
+  it('has nothing to offer when the only candidate is already in place', () => {
+    assert.equal(nextVideoSuggestion([candidates[0]!], candidates[0]!.url), null);
+  });
+
+  it('has nothing to offer with no candidates', () => {
+    assert.equal(nextVideoSuggestion([], 'https://youtu.be/aaaaaaaaaaa'), null);
+  });
+
+  it('still offers the single candidate when the slide holds a different video', () => {
+    assert.equal(
+      nextVideoSuggestion([candidates[0]!], 'https://youtu.be/zzzzzzzzzzz')?.url,
+      candidates[0]!.url,
+    );
+  });
+});
+
+describe('videoCaption', () => {
+  it('is the one definition the deck builder and the cycler share', () => {
+    assert.equal(
+      videoCaption({ url: 'x', title: 'شرح الاشتقاق', channelTitle: 'قناة المعلم' }),
+      'شرح الاشتقاق — قناة المعلم',
+    );
   });
 });

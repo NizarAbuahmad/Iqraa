@@ -13,18 +13,32 @@ export interface DeckVideo {
 }
 
 /**
- * Never throws — no video (unset server key, no results, offline) is a
- * normal outcome the deck must not stall or error on.
+ * Every candidate the one search returned, best first.
+ *
+ * The API asks YouTube for five because a search costs the same quota whether
+ * it returns one or five — so the alternatives a teacher cycles through in the
+ * editor are already paid for, and rejecting a suggestion costs nothing.
+ *
+ * Never throws — no video (unset server key, no results, offline) is a normal
+ * outcome the deck must not stall or error on.
  */
-export async function searchDeckVideo(query: string, lang: 'ar' | 'en'): Promise<DeckVideo | null> {
+export async function searchDeckVideos(query: string, lang: 'ar' | 'en'): Promise<DeckVideo[]> {
   const q = query.trim();
-  if (!q) return null;
+  if (!q) return [];
   try {
-    const { video } = await apiJson<{ video: DeckVideo | null }>(
+    const { video, videos } = await apiJson<{ video: DeckVideo | null; videos?: DeckVideo[] }>(
       `/media/youtube-video?query=${encodeURIComponent(q)}&lang=${lang}`,
     );
-    return video;
+    // `videos` is the newer field; fall back to `video` so a mobile build
+    // newer than the deployed API still gets its one result rather than none.
+    if (videos?.length) return videos;
+    return video ? [video] : [];
   } catch {
-    return null;
+    return [];
   }
+}
+
+/** The single best match — what the deck builder attaches. */
+export async function searchDeckVideo(query: string, lang: 'ar' | 'en'): Promise<DeckVideo | null> {
+  return (await searchDeckVideos(query, lang))[0] ?? null;
 }

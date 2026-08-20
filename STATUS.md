@@ -793,6 +793,45 @@ one click away the whole time and settled it in a line.
 1.14.0, fastapi 0.141.1, uvicorn 0.52.3, pydantic 2.13.4) in a clean venv, and
 `test_equations.py` passes 29/29 against it.
 
+## "Suggest another video" — free, because the search already paid, 2026-08-20
+
+The swap field let a teacher replace the video with one they had in mind. This
+covers the other half: they don't like the pick and want a different
+suggestion without leaving the app.
+
+**The quota is what shaped the design.** A YouTube `search.list` costs 100
+units against a 10,000/day default — 100 searches for the entire product, per
+day. Re-searching each time a teacher rejected a suggestion would have made
+the button a quota bomb. But `maxResults` does not change the price: one
+search returns five candidates for the same 100 units. So the API now asks
+for five, hands back `videos` alongside the unchanged `video`, and the editor
+cycles the list locally.
+
+**Measured, not assumed:** the browser check counts the calls to
+`/media/youtube-video`. One at generation, and **still one after three
+presses** of اقترح فيديو آخر.
+
+The candidates live in screen state, not on the slide: they are a browsing
+aid, and putting them in the deck would carry them into every save and every
+export for nothing. A deck reopened from the workspace therefore has none —
+the first press fetches once, then cycles free.
+
+`nextVideoSuggestion` compares by **video id, not URL string**. The slide may
+hold a `youtu.be` short link for a candidate the search returned as a
+`watch?v=` link; offering a teacher the video they are already looking at
+reads as a broken button. It returns null when there is genuinely nothing new,
+so the control says «لا توجد اقتراحات أخرى» rather than cycling to itself.
+
+Pressing the button fills the fields rather than saving — the teacher reads
+the title first, and can keep pressing. The caption is rewritten with it, and
+`videoCaption()` is now the single definition of «{title} — {channel}» shared
+by the deck builder and the cycler, so a caption chosen here is
+indistinguishable from one written at generation time.
+
+**Verified in a real browser** against a stubbed three-candidate response:
+pressing cycles 1 → 2 → 3 → back to 1, with the caption tracking the URL at
+every step, and the search count never leaving 1.
+
 ## Teachers can swap the deck's video, 2026-08-20
 
 Reported straight after the auto-found video started working: the slide editor

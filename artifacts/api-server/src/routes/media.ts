@@ -93,19 +93,24 @@ mediaRouter.get("/media/youtube-video", async (req, res) => {
   if (!apiKey) {
     // Unconfigured is a normal deployment state, not an error — the deck
     // builder treats a null video as "skip the video slide".
-    res.json({ video: null });
+    res.json({ video: null, videos: [] });
     return;
   }
 
   const query = String(req.query.query ?? "").trim().slice(0, 150);
   if (!query) {
-    res.json({ video: null });
+    res.json({ video: null, videos: [] });
     return;
   }
   const lang = req.query.lang === "ar" ? "ar" : "en";
 
   try {
-    const url = `${YOUTUBE_SEARCH_URL}?part=snippet&type=video&maxResults=1`
+    // Five, not one. A search costs 100 quota units whatever maxResults is,
+    // so asking for alternatives here is free — and it is the difference
+    // between a teacher who dislikes the pick having to leave the app and
+    // having a second suggestion a tap away. Re-searching per rejection would
+    // have cost 100 units each against a 10,000/day default.
+    const url = `${YOUTUBE_SEARCH_URL}?part=snippet&type=video&maxResults=5`
       + `&q=${encodeURIComponent(query)}&key=${apiKey}`
       // safeSearch=strict: this is a K-12 classroom app, not optional.
       // videoEmbeddable: a match the app can't actually play is useless.
@@ -114,27 +119,29 @@ mediaRouter.get("/media/youtube-video", async (req, res) => {
       + `&safeSearch=strict&videoEmbeddable=true&videoDuration=medium&relevanceLanguage=${lang}`;
     const response = await fetch(url);
     if (!response.ok) {
-      res.json({ video: null });
+      res.json({ video: null, videos: [] });
       return;
     }
     const data = (await response.json()) as YouTubeSearchResponse;
-    const result = data.items?.[0];
-    if (!result) {
-      res.json({ video: null });
+    const videos = (data.items ?? [])
+      .filter(item => item?.id?.videoId)
+      .map(item => ({
+        videoId: item.id.videoId,
+        title: item.snippet.title,
+        channelTitle: item.snippet.channelTitle,
+        url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
+      }));
+    if (videos.length === 0) {
+      res.json({ video: null, videos: [] });
       return;
     }
 
-    res.json({
-      video: {
-        videoId: result.id.videoId,
-        title: result.snippet.title,
-        channelTitle: result.snippet.channelTitle,
-        url: `https://www.youtube.com/watch?v=${result.id.videoId}`,
-      },
-    });
+    // `video` stays exactly what it was — the first result — so nothing that
+    // reads this endpoint today has to change. `videos` is additive.
+    res.json({ video: videos[0], videos });
   } catch (err) {
     logger.error({ err }, "youtube-video lookup failed");
-    res.json({ video: null });
+    res.json({ video: null, videos: [] });
   }
 });
 

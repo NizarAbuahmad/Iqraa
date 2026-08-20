@@ -82,6 +82,50 @@ export function classifyMediaUrl(url: string): 'image' | 'video' | null {
  * Refuses anything it cannot classify. A URL the app can't embed projects as
  * a blank frame in front of a class, and the exports would print a dead link.
  */
+/**
+ * A search candidate, structurally — deliberately not importing `DeckVideo`,
+ * which lives behind `apiClient` and therefore behind react-native, so this
+ * stays loadable by `node --test`.
+ */
+export type VideoSuggestion = { url: string; title: string; channelTitle: string };
+
+/**
+ * How a video is labelled on the slide and in the exports.
+ *
+ * One definition, used by both the deck builder and the editor's suggestion
+ * cycler, so a caption written by "another suggestion" is indistinguishable
+ * from one written at generation time.
+ */
+export function videoCaption(v: VideoSuggestion): string {
+  return `${v.title} — ${v.channelTitle}`;
+}
+
+/**
+ * The next candidate to offer, given what is on the slide now.
+ *
+ * Compares by YouTube id rather than by URL string: the current value may be
+ * a `youtu.be` short link for a candidate the search returned as a `watch?v=`
+ * link, and offering a teacher the video they are already looking at reads as
+ * a broken button.
+ *
+ * Returns null when there is nothing new to show — no candidates, or the only
+ * one is already in place — so the control can be hidden rather than cycling
+ * to itself.
+ */
+export function nextVideoSuggestion(
+  candidates: readonly VideoSuggestion[],
+  currentUrl: string,
+): VideoSuggestion | null {
+  if (candidates.length === 0) return null;
+  const currentId = youtubeIdFrom(currentUrl);
+  const at = currentId
+    ? candidates.findIndex(c => youtubeIdFrom(c.url) === currentId)
+    : -1;
+  if (at === -1) return candidates[0] ?? null;
+  if (candidates.length === 1) return null;
+  return candidates[(at + 1) % candidates.length] ?? null;
+}
+
 export type MediaEditResult =
   | { ok: true; slide: ActivitySlide }
   | { ok: false; reason: 'unsupported-url' };

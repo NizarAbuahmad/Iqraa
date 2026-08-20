@@ -28,7 +28,10 @@ import { buildGeneratorContext, resolveGeneratorGrounding } from '@/services/kbC
 import {
   buildLessonDeck, EXIT_TICKET_MAX, MID_LESSON_CHECK_MAX, rebuildAnswerKey,
 } from '@/services/lessonSlides';
-import { applyMediaEdit, extractGraphCommands } from '@/services/classMedia';
+import {
+  applyMediaEdit, extractGraphCommands, nextVideoSuggestion, videoCaption,
+} from '@/services/classMedia';
+import type { DeckVideo } from '@/services/youtubeVideo';
 import { summarizeVerification } from '@/services/quizVerification';
 import { confirm } from '@/services/confirm';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
@@ -76,6 +79,14 @@ export default function SlidesScreen() {
   const [editMediaUrl, setEditMediaUrl] = useState('');
   const [editMediaCaption, setEditMediaCaption] = useState('');
   const [editMediaError, setEditMediaError] = useState('');
+  /**
+   * Alternative videos from the same search that produced the deck's pick.
+   * Held on the screen rather than on the slide: they are a browsing aid, not
+   * deck content, and putting them in the slide would carry them into every
+   * save and export for nothing.
+   */
+  const [videoOptions, setVideoOptions] = useState<DeckVideo[]>([]);
+  const [loadingSuggestion, setLoadingSuggestion] = useState(false);
   /** True once the example-verification pass has resolved — the summary row
       stays silent while a check is still in flight. */
   const [verifyDone, setVerifyDone] = useState(false);
@@ -90,6 +101,41 @@ export default function SlidesScreen() {
     setEditMediaCaption(s.mediaCaption ?? '');
     setEditMediaError('');
     setEditIdx(i);
+  };
+
+  /**
+   * Put the next search candidate into the fields — it does not save.
+   *
+   * Filling the form rather than applying straight to the deck lets the
+   * teacher read the title before committing, and keep pressing for another.
+   * The caption is rewritten too, because a suggestion the teacher chose is
+   * theirs: `applyMediaEdit` will see a caption that differs from the slide's
+   * and keep it, which is right — it describes the video now on the slide.
+   *
+   * A deck reopened from the workspace has no candidates in memory, so the
+   * first press fetches them. That is one search, then free cycling.
+   */
+  const suggestAnotherVideo = async () => {
+    if (editIdx === null || !deck) return;
+    let options = videoOptions;
+    if (options.length === 0) {
+      setLoadingSuggestion(true);
+      try {
+        const { searchDeckVideos } = await import('@/services/youtubeVideo');
+        const query = isAr
+          ? `شرح ${deck.lesson} ${subjects[subjectIdx].nameAr} للصف العاشر`
+          : `${deck.lesson} ${subjects[subjectIdx].name} grade 10 explained`;
+        options = await searchDeckVideos(query, isAr ? 'ar' : 'en');
+        setVideoOptions(options);
+      } finally {
+        setLoadingSuggestion(false);
+      }
+    }
+    const next = nextVideoSuggestion(options, editMediaUrl);
+    if (!next) { setEditMediaError(t('noOtherVideo')); return; }
+    setEditMediaUrl(next.url);
+    setEditMediaCaption(videoCaption(next));
+    setEditMediaError('');
   };
 
   const applyEdit = () => {
@@ -290,7 +336,7 @@ export default function SlidesScreen() {
       void (async () => {
         try {
           const { searchDeckPhoto } = await import('@/services/unsplashImage');
-          const { searchDeckVideo } = await import('@/services/youtubeVideo');
+          const { searchDeckVideos } = await import('@/services/youtubeVideo');
           const { attachBackgroundImage, buildMediaSlide, deckPhotoQueries, insertVideoSlide } =
             await import('@/services/classMedia');
           const [titleQuery, dividerQuery] = deckPhotoQueries(subjects[subjectIdx].id, subjects[subjectIdx].name);
@@ -305,11 +351,15 @@ export default function SlidesScreen() {
             ? `شرح ${trimmed} ${subjects[subjectIdx].nameAr} للصف العاشر`
             : `${trimmed} ${subjects[subjectIdx].name} grade 10 explained`;
 
-          const [titlePhoto, dividerPhoto, video] = await Promise.all([
+          const [titlePhoto, dividerPhoto, videos] = await Promise.all([
             searchDeckPhoto(titleQuery),
             searchDeckPhoto(dividerQuery),
-            searchDeckVideo(videoQuery, isAr ? 'ar' : 'en'),
+            searchDeckVideos(videoQuery, isAr ? 'ar' : 'en'),
           ]);
+          const video = videos[0] ?? null;
+          // Keep the rest for the editor's "another suggestion" control. They
+          // cost nothing extra — one search returned all of them.
+          setVideoOptions(videos);
           if (!titlePhoto && !dividerPhoto && !video) return;
 
           setDeck(cur => {
@@ -334,7 +384,7 @@ export default function SlidesScreen() {
               const videoSlide = buildMediaSlide(
                 'video',
                 video.url,
-                `${video.title} — ${video.channelTitle}`,
+                videoCaption(video),
                 isAr,
                 0,
               );
@@ -716,6 +766,26 @@ export default function SlidesScreen() {
                   </Text>
                 )}
 
+                {deck?.slides[editIdx]?.mediaKind === 'video' && (
+                  <Pressable
+                    onPress={suggestAnotherVideo}
+                    disabled={loadingSuggestion}
+                    style={[styles.suggestBtn, {
+                      borderColor: colors.border, borderRadius: colors.radius,
+                      flexDirection: isRTL ? 'row-reverse' : 'row',
+                      opacity: loadingSuggestion ? 0.6 : 1,
+                    }]}
+                    accessibilityRole="button"
+                  >
+                    {loadingSuggestion
+                      ? <ActivityIndicator size="small" color={ACCENT} />
+                      : <Ionicons name="shuffle-outline" size={16} color={ACCENT} />}
+                    <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+                      {t('suggestAnotherVideo')}
+                    </Text>
+                  </Pressable>
+                )}
+
                 <Text style={[styles.modalLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
                   {t('slideMediaCaptionField')}
                 </Text>
@@ -837,6 +907,7 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 17, marginBottom: 12 },
   modalLabel: { fontSize: 12, marginBottom: 6, marginTop: 8 },
   modalInput: { borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14 },
+  suggestBtn: { alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, paddingVertical: 9, paddingHorizontal: 14, marginTop: 8, marginBottom: 4 },
   modalHint: { fontSize: 11, lineHeight: 17, marginTop: -4, marginBottom: 2 },
   modalInputMultiline: { minHeight: 110, textAlignVertical: 'top' },
   verifyRow: { alignItems: 'center', gap: 6, marginTop: 8 },
