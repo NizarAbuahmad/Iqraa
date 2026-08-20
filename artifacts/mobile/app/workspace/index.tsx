@@ -20,6 +20,9 @@ const TYPE_COLOR: Record<MaterialType, string> = {
   quiz: '#F59E0B',
   flow: '#00A99D',
   activity: '#EC4899',
+  // Matches the Slides Maker screen's accent, so a saved deck is the same
+  // colour in the workspace as the tool that produced it.
+  slides: '#0EA5E9',
 };
 const TYPE_ICON: Record<MaterialType, keyof typeof Ionicons.glyphMap> = {
   lesson: 'document-text-outline',
@@ -27,6 +30,7 @@ const TYPE_ICON: Record<MaterialType, keyof typeof Ionicons.glyphMap> = {
   quiz: 'help-circle-outline',
   flow: 'git-branch-outline',
   activity: 'game-controller-outline',
+  slides: 'tv-outline',
 };
 
 const TABS: Array<{ key: MaterialType | 'all'; labelKey: string }> = [

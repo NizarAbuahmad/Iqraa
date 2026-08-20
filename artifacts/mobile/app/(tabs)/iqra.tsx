@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { router, useLocalSearchParams } from 'expo-router';
-import { TopicSelector } from '@/components/ui/TopicSelector';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
@@ -37,8 +36,7 @@ import {
   searchKBRanked,
   searchKBSemantic,
 } from '@/services/knowledgeBase';
-import { getPickerSubjects } from '@/services/curriculumData';
-import { loadLessonPick, saveLessonPick } from '@/services/lessonContext';
+import { loadLessonPick } from '@/services/lessonContext';
 import {
   buildResponse,
   deduplicateByUnit,
@@ -71,7 +69,7 @@ import { BrandLogo } from '@/components/ui/BrandLogo';
 import { IqraaMark } from '@/components/ui/IqraaMark';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
 import { DemoModeBanner } from '@/components/ui/DemoModeBanner';
-import { CurrentLessonCard } from '@/components/ui/CurrentLessonCard';
+import { LessonHeader } from '@/components/iqra/LessonHeader';
 import { DocumentAttachButtons, DocumentAttachmentBar } from '@/components/ui/DocumentAttachmentBar';
 import { DOCUMENT_UPLOAD_ENABLED } from '@/services/features';
 import { ExportMenu } from '@/components/ui/ExportMenu';
@@ -200,17 +198,6 @@ type EphemeralSuggestion = {
   toolType?: 'worksheet' | 'quiz' | 'lesson-plan' | 'activity' | 'homework';
 };
 
-// ─── Teaching-context subject options (investor MVP: Grade 10 Math only) ─────
-// All MVP subjects with KB content — kept in lockstep with the home picker
-// (was hardcoded to mathematics only, which is why the chat's change-lesson
-// sheet showed a single subject while home showed three).
-const CONTEXT_SUBJECTS = getPickerSubjects().map(s => ({
-  subjectId: s.id,
-  gradeId: 'grade-10',
-  labelAr: s.nameAr,
-  labelEn: s.name,
-}));
-
 // ─── Suggested questions per mode/language ───────────────────────────────────
 interface Suggestion {
   text: string;
@@ -238,210 +225,6 @@ const SUGGESTIONS: Record<Mode, Record<'ar' | 'en', Suggestion[]>> = {
     ],
   },
 };
-
-// ─── Context Banner ───────────────────────────────────────────────────────────
-function ContextBanner({
-  colors, isRTL, lang, t, onContextChange, onAsk, hidePill, externalOpen, onExternalOpenChange, onGlobalPick,
-}: {
-  colors: any; isRTL: boolean; lang: 'ar' | 'en';
-  t: (k: any) => string;
-  onContextChange: (ctx: string) => void;
-  onAsk: (topic: string) => void;
-  /** When true, only the change-lesson modal is rendered (card owns the chrome). */
-  hidePill?: boolean;
-  externalOpen?: boolean;
-  onExternalOpenChange?: (open: boolean) => void;
-  /** Confirmed picks propagate to the app-wide current-lesson context. */
-  onGlobalPick?: (pick: { topic: string; subjectId: string }) => void;
-}) {
-  const [modalOpen, setModalOpen] = useState(false);
-  const [subjIdx, setSubjIdx] = useState(0);
-  const [topic, setTopicInternal] = useState('');
-  // Draft topic while modal is open; only committed on confirm
-  const [draftTopic, setDraftTopic] = useState('');
-  const [draftSubjIdx, setDraftSubjIdx] = useState(0);
-
-  const subj = CONTEXT_SUBJECTS[draftSubjIdx];
-  const isOpen = externalOpen ?? modalOpen;
-  const setOpen = (v: boolean) => {
-    if (onExternalOpenChange) onExternalOpenChange(v);
-    else setModalOpen(v);
-  };
-
-  const openModal = () => {
-    setDraftTopic(topic);
-    setDraftSubjIdx(subjIdx);
-    setOpen(true);
-  };
-
-  useEffect(() => {
-    if (externalOpen) {
-      setDraftTopic(topic);
-      setDraftSubjIdx(subjIdx);
-    }
-  }, [externalOpen]);
-
-  const handleConfirm = () => {
-    setSubjIdx(draftSubjIdx);
-    setTopicInternal(draftTopic);
-    onContextChange(draftTopic);
-    setOpen(false);
-    if (draftTopic.trim()) {
-      onGlobalPick?.({ topic: draftTopic.trim(), subjectId: subj.subjectId });
-      onAsk(draftTopic.trim());
-    }
-  };
-
-  const handleCancel = () => {
-    setOpen(false);
-  };
-
-  const handleClear = () => {
-    setTopicInternal('');
-    setSubjIdx(0);
-    onContextChange('');
-  };
-
-  return (
-    <>
-      {/* ── Compact pill shown in header (optional — CurrentLessonCard replaces it) ── */}
-      {!hidePill ? (
-      <View style={[ctxStyles.container, { borderTopColor: colors.border, backgroundColor: colors.card }]}>
-        <View style={[ctxStyles.pillRow, { flexDirection: isRTL ? 'row-reverse' : 'row', paddingHorizontal: 16, paddingVertical: 8 }]}>
-          <Pressable
-            onPress={openModal}
-            style={[ctxStyles.pill, {
-              backgroundColor: topic ? colors.primary + '18' : colors.muted,
-              borderColor: topic ? colors.primary + '50' : colors.border,
-              flexDirection: isRTL ? 'row-reverse' : 'row',
-              flex: 1,
-            }]}
-          >
-            <Ionicons name="location-outline" size={13} color={topic ? colors.primary : colors.mutedForeground} />
-            <Text
-              numberOfLines={1}
-              style={[ctxStyles.pillText, {
-                color: topic ? colors.primary : colors.mutedForeground,
-                fontFamily: topic ? 'Cairo_500Medium' : 'Almarai_400Regular',
-                textAlign: isRTL ? 'right' : 'left',
-                flex: 1,
-              }]}
-            >
-              {topic ? `${t('currentlyTeaching')}: ${topic}` : t('setTeachingContext')}
-            </Text>
-            <Ionicons name="chevron-down" size={13} color={colors.mutedForeground} style={{ marginStart: 4 }} />
-          </Pressable>
-          {topic ? (
-            <Pressable onPress={handleClear} hitSlop={8} style={ctxStyles.clearBtn}>
-              <Ionicons name="close-circle" size={16} color={colors.mutedForeground} />
-            </Pressable>
-          ) : null}
-        </View>
-      </View>
-      ) : null}
-
-      {/* ── Full-screen Modal with scrollable picker + CTA ── */}
-      <Modal
-        visible={isOpen}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={handleCancel}
-      >
-        <View style={[ctxStyles.modal, { backgroundColor: colors.background }]}>
-          {/* Modal header */}
-          <View style={[ctxStyles.modalHeader, { borderBottomColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <Pressable onPress={handleCancel} hitSlop={10} style={ctxStyles.modalCancel}>
-              <Text style={[ctxStyles.modalCancelText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
-                {lang === 'ar' ? 'إلغاء' : 'Cancel'}
-              </Text>
-            </Pressable>
-            <Text style={[ctxStyles.modalTitle, { color: colors.foreground, fontFamily: 'Cairo_700Bold' }]}>
-              {t('setTeachingContext')}
-            </Text>
-            <View style={{ width: 60 }} />
-          </View>
-
-          {/* Scrollable body */}
-          <ScrollView
-            style={{ flex: 1 }}
-            contentContainerStyle={ctxStyles.modalBody}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            {/* Subject pills */}
-            <Text style={[ctxStyles.modalSectionLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
-              {lang === 'ar' ? 'المادة' : 'Subject'}
-            </Text>
-            <View style={[ctxStyles.subjRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-              {CONTEXT_SUBJECTS.map((s, i) => (
-                <Pressable
-                  key={s.subjectId}
-                  onPress={() => { setDraftSubjIdx(i); setDraftTopic(''); }}
-                  style={[ctxStyles.subjPill, {
-                    backgroundColor: draftSubjIdx === i ? colors.primary : colors.muted,
-                    borderRadius: 16,
-                    borderWidth: 1.5,
-                    borderColor: draftSubjIdx === i ? colors.primary : colors.border,
-                  }]}
-                >
-                  <Text style={[ctxStyles.subjText, {
-                    color: draftSubjIdx === i ? colors.primaryForeground : colors.mutedForeground,
-                    fontFamily: draftSubjIdx === i ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
-                  }]}>
-                    {lang === 'ar' ? s.labelAr : s.labelEn}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-
-            {/* Topic selector */}
-            <Text style={[ctxStyles.modalSectionLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left', marginTop: 18 }]}>
-              {lang === 'ar' ? 'الدرس' : 'Lesson'}
-            </Text>
-            <TopicSelector
-              subjectId={subj.subjectId}
-              gradeId={subj.gradeId}
-              value={draftTopic}
-              onChange={setDraftTopic}
-              lang={lang}
-              isRTL={isRTL}
-              colors={colors}
-              accent={colors.primary}
-              t={t}
-            />
-          </ScrollView>
-
-          {/* CTA at bottom */}
-          <View style={[ctxStyles.modalFooter, { borderTopColor: colors.border, backgroundColor: colors.card }]}>
-            <Pressable
-              onPress={handleConfirm}
-              disabled={!draftTopic.trim()}
-              style={({ pressed }) => [
-                ctxStyles.askBtn,
-                {
-                  backgroundColor: draftTopic.trim() ? colors.primary : colors.muted,
-                  borderRadius: colors.radius,
-                  opacity: pressed ? 0.85 : 1,
-                  flexDirection: isRTL ? 'row-reverse' : 'row',
-                },
-              ]}
-            >
-              <Ionicons name="chatbubble-ellipses-outline" size={18} color={draftTopic.trim() ? colors.primaryForeground : colors.mutedForeground} />
-              <Text style={[ctxStyles.askBtnText, {
-                color: draftTopic.trim() ? colors.primaryForeground : colors.mutedForeground,
-                fontFamily: 'Cairo_700Bold',
-              }]}>
-                {draftTopic.trim()
-                  ? (lang === 'ar' ? `ابدأ التحضير: ${draftTopic}` : `Ask IQRA about: ${draftTopic}`)
-                  : (lang === 'ar' ? 'اختر الدرس أولاً' : 'Select a lesson first')}
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-      </Modal>
-    </>
-  );
-}
 
 // ─── Message Bubble ───────────────────────────────────────────────────────────
 // Subject label map for clarification chips
@@ -858,8 +641,6 @@ export default function IqraScreen() {
   const [ephemeralSuggestions, setEphemeralSuggestions] = useState<EphemeralSuggestion[]>([]);
   /** Status line while the assistant is working (lesson plan vs generic). */
   const [thinkingLabel, setThinkingLabel] = useState('');
-  const [lessonCardCollapsed, setLessonCardCollapsed] = useState(false);
-  const [changeLessonOpen, setChangeLessonOpen] = useState(false);
   const [exportText, setExportText] = useState('');
   const [exportVisible, setExportVisible] = useState(false);
   const [loadingPDF, setLoadingPDF] = useState(false);
@@ -872,6 +653,9 @@ export default function IqraScreen() {
   const listRef = useRef<FlatList>(null);
   /** Guards duplicate sends without relying on a stale useCallback closure. */
   const thinkingRef = useRef(false);
+  // True while the last thing IQRA said was the clarify question. Answering it
+  // with something the router still cannot classify must not re-ask it.
+  const awaitingClarifyRef = useRef(false);
 
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
 
@@ -895,7 +679,6 @@ export default function IqraScreen() {
     setSessionMemory(seedDefaultLessonMemory(emptyChatSessionMemory()));
     clearSessionDocuments();
     setEphemeralSuggestions([]);
-    setLessonCardCollapsed(false);
     setMessages([
       {
         id: 'welcome',
@@ -1031,7 +814,8 @@ export default function IqraScreen() {
 
       // 0. Intent Router — BEFORE curriculum context / Teaching Assistant.
       //    Greetings & small talk must never trigger lesson generation.
-      const route = classifyChatIntent(q, lang as 'ar' | 'en');
+      const route = classifyChatIntent(q, lang as 'ar' | 'en', awaitingClarifyRef.current);
+      awaitingClarifyRef.current = route.intent === 'ambiguous';
       if (route.intent === 'artifact') {
         setThinkingLabel(
           /خطة|lesson\s*plan/i.test(q) ? t('iqraGeneratingLessonPlan') : t('iqraGeneratingArtifact'),
@@ -1684,60 +1468,20 @@ export default function IqraScreen() {
         </ScrollView>
       </View>
 
-      {/* ─── Current lesson (persistent, collapses on scroll) ───────── */}
+      {/* ─── Current lesson (one line, display only) ─────────────────
+           Selection lives in صفوفي — the teacher changes lesson by saying
+           so, not by opening a picker here. ─────────────────────────── */}
       {currentLessonView ? (
-        <CurrentLessonCard
+        <LessonHeader
           lesson={currentLessonView}
-          collapsed={lessonCardCollapsed}
           isRTL={isRTL}
           lang={lang as 'ar' | 'en'}
           colors={colors}
-          changeLabel={t('changeLesson')}
           uploadedLabel={(n) => t('lessonUploadedFiles', n)}
           generatedLabel={t('lessonGeneratedLabel')}
-          onChangeLesson={() => setChangeLessonOpen(true)}
-          onToggleCollapse={() => setLessonCardCollapsed(c => !c)}
           onResourcePress={handleResourcePress}
         />
       ) : null}
-
-      {(
-        <ContextBanner
-          colors={colors}
-          isRTL={isRTL}
-          lang={lang as 'ar' | 'en'}
-          t={t}
-          hidePill
-          externalOpen={changeLessonOpen}
-          onExternalOpenChange={setChangeLessonOpen}
-          onGlobalPick={(pick) => {
-            // Changing the lesson in chat updates the app-wide context too —
-            // home and the tools hub follow (one source of truth).
-            void saveLessonPick({ topic: pick.topic, unitOrder: null, subjectId: pick.subjectId });
-          }}
-          onContextChange={(ctx) => {
-            setTeachingCtx(ctx);
-            if (!ctx.trim()) return;
-            const hits = searchKBSemantic(ctx.trim(), lang as 'ar' | 'en');
-            if (hits[0]) {
-              setSessionMemory(prev => pinLesson(prev, hits[0]!, 'hard'));
-            } else {
-              setSessionMemory(prev => ({
-                ...prev,
-                activeTopicAr: lang === 'ar' ? ctx.trim() : prev.activeTopicAr,
-                activeTopicEn: lang === 'en' ? ctx.trim() : prev.activeTopicEn,
-                lessonPin: 'hard',
-              }));
-            }
-          }}
-          onAsk={(topic) => sendMessage(
-            lang === 'ar'
-              ? `أدرّس "${topic}" للصف العاشر. أعطني نظرة شاملة عن الموضوع مع أهم مفاهيمه.`
-              : `I'm teaching "${topic}" to Grade 10 students. Give me a comprehensive overview of this topic with key concepts.`,
-            sessionMemory.activeLessonId ?? undefined,
-          )}
-        />
-      )}
 
       {/* ─── Messages ──────────────────────────────────────────────── */}
       <FlatList
@@ -1747,11 +1491,6 @@ export default function IqraScreen() {
         style={{ flex: 1 }}
         contentContainerStyle={styles.messageList}
         showsVerticalScrollIndicator={false}
-        onScroll={(e) => {
-          const y = e.nativeEvent.contentOffset.y;
-          if (y > 48 && !lessonCardCollapsed) setLessonCardCollapsed(true);
-        }}
-        scrollEventThrottle={16}
         onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
         renderItem={({ item }) => (
           <MessageBubble
@@ -1999,27 +1738,4 @@ const styles = StyleSheet.create({
   inputWrap: { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 14, paddingVertical: 8, gap: 8 },
   input: { flex: 1, fontSize: 14, maxHeight: 100, paddingVertical: 0 },
   sendBtn: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-});
-
-// ─── Context-banner styles ────────────────────────────────────────────────────
-const ctxStyles = StyleSheet.create({
-  container:  { borderTopWidth: StyleSheet.hairlineWidth },
-  pillRow:    { alignItems: 'center', gap: 6 },
-  pill:       { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
-  pillText:   { fontSize: 12 },
-  clearBtn:   { padding: 4 },
-  subjRow:    { flexDirection: 'row', gap: 8, marginBottom: 4 },
-  subjPill:   { paddingHorizontal: 14, paddingVertical: 6 },
-  subjText:   { fontSize: 13 },
-  // Modal
-  modal:        { flex: 1 },
-  modalHeader:  { alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1 },
-  modalCancel:  { width: 60 },
-  modalCancelText: { fontSize: 14 },
-  modalTitle:   { fontSize: 16 },
-  modalBody:    { padding: 20, paddingBottom: 40 },
-  modalSectionLabel: { fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
-  modalFooter:  { padding: 16, borderTopWidth: 1 },
-  askBtn:       { alignItems: 'center', justifyContent: 'center', gap: 10, padding: 16 },
-  askBtnText:   { fontSize: 15, flexShrink: 1 },
 });

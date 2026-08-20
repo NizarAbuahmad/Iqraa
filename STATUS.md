@@ -24,7 +24,7 @@ Vision screens (student/parent/school dashboards) are deprioritized.
 ## What works today (verified, not assumed)
 
 - `pnpm install` and full `pnpm run typecheck` pass clean on Windows.
-- Mobile test suite: 219 tests, 0 failures (10 skipped). The `test` script now
+- Mobile test suite: 332 tests, 0 failures (10 skipped). The `test` script now
   globs `services/__tests__/**/*.test.ts` — it used to be a hand-listed set of
   files that had drifted, so two suites never ran.
 - Local dev runs end to end: Express API (:8080) + Postgres 17 (`iqraa` db,
@@ -109,6 +109,36 @@ Landed on that branch, in order:
   tools, then used to flatten the result to a string one line later.
   `ChatArtifactResult.data` now keeps the object; worksheet/quiz/activity carry
   it but still render as text until each gets a view.
+
+## Class-time tools (2026-08-15)
+
+Two tools added on `feat/tab-bar-classes-first`, both projecting through the
+existing `presentation.tsx` player rather than a second one.
+
+- **Slides Maker** (`🖥️ شرائح الدرس`, `app/ai-tools/slides.tsx` →
+  `services/lessonSlides.ts`). Builds a *teaching* deck — outcomes, vocabulary,
+  concepts, worked examples, closure — as against `classDeck.ts`, which
+  projects questions. The curriculum book wins over the generated plan for
+  every field it carries; the plan fills only the hook/practice/closure. A deck
+  survives a failed generation when the topic is grounded, and
+  `teacherPreparation` states which of the two sources it came from. Saved
+  material gains `MaterialType 'slides'`, viewable and re-projectable from the
+  workspace. PDF export reuses `buildLessonPlanSlidesHTML`, so it needs a plan.
+- **Class Challenge** (`🏆 تحدي الصف`, `app/ai-tools/game.tsx` →
+  `services/classGame.ts` + `buildGameDeckFromQuiz`). A Kahoot-style team game
+  for a room where **students have no phones**: the projector is the board,
+  students answer on the printed أ ب ج د cards `classDeck.ts` already
+  prescribes, and the teacher taps which teams were right. Scores are *derived*
+  by re-folding an award ledger rather than accumulated, which is what makes a
+  mis-tap exactly reversible including its streak bonus. Only MCQ questions
+  become scoreable — an open-ended item cannot be adjudicated at a glance — so
+  `game.questionCount` counts survivors, not the quiz's questions.
+  - **Per-student scoring is the deliberate next step, not an oversight.** The
+    ledger is keyed by responder id precisely so printed-card camera capture
+    (Plickers-style, against `roster.ts` student ids) can replace team ids with
+    no change to the engine. `expo-camera` is not a dependency yet.
+  - The old `game` tool entry was `coming_soon` and pointed at the activity
+    marketplace; it now points at a real screen.
 
 ## Open decisions (2026-08-10)
 

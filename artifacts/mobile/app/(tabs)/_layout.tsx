@@ -47,30 +47,16 @@ function ClassicTabLayout() {
         tabBarLabelStyle: { fontFamily: 'Cairo_500Medium', fontSize: 10 },
       }}
     >
-      {/* ── Home ──────────────────────────────────────────── */}
+      {/* ── Classes (صفوفي) — the screen the app opens on ─── */}
       <Tabs.Screen
         name="index"
         options={{
-          title: t('tabHome'),
+          title: t('tabClasses'),
           tabBarIcon: ({ color, focused }) =>
             isIOS ? (
-              <SymbolView name={focused ? 'house.fill' : 'house'} tintColor={color} size={22} />
+              <SymbolView name={focused ? 'person.3.fill' : 'person.3'} tintColor={color} size={22} />
             ) : (
-              <Ionicons name={focused ? 'home' : 'home-outline'} size={22} color={color} />
-            ),
-        }}
-      />
-
-      {/* ── Curriculum ────────────────────────────────────── */}
-      <Tabs.Screen
-        name="curriculum"
-        options={{
-          title: t('tabCurriculum'),
-          tabBarIcon: ({ color, focused }) =>
-            isIOS ? (
-              <SymbolView name={focused ? 'books.vertical.fill' : 'books.vertical'} tintColor={color} size={22} />
-            ) : (
-              <Ionicons name={focused ? 'library' : 'library-outline'} size={22} color={color} />
+              <Ionicons name={focused ? 'people' : 'people-outline'} size={22} color={color} />
             ),
         }}
       />
@@ -94,18 +80,20 @@ function ClassicTabLayout() {
         }}
       />
 
-      {/* ── Notifications ─────────────────────────────────── */}
+      {/* ── Alerts: no tab. A notification here is always about one
+             section or one class, so it belongs on the card it concerns,
+             not in a bucket. Route kept so existing links resolve. ──── */}
       <Tabs.Screen
         name="notifications"
-        options={{
-          title: t('tabAlerts'),
-          tabBarIcon: ({ color, focused }) =>
-            isIOS ? (
-              <SymbolView name={focused ? 'bell.fill' : 'bell'} tintColor={color} size={22} />
-            ) : (
-              <Ionicons name={focused ? 'notifications' : 'notifications-outline'} size={22} color={color} />
-            ),
-        }}
+        options={{ tabBarButton: () => null, tabBarItemStyle: { display: 'none' } }}
+      />
+
+      {/* ── Curriculum: no tab. Units are browsed when a lesson is being
+             chosen, not as a morning destination. Route kept — the lesson
+             picker and curriculum/* screens still navigate here. ─────── */}
+      <Tabs.Screen
+        name="curriculum"
+        options={{ tabBarButton: () => null, tabBarItemStyle: { display: 'none' } }}
       />
 
       {/* ── Profile ───────────────────────────────────────── */}
