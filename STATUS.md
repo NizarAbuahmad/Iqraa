@@ -2872,6 +2872,12 @@ populating the field; a list a teacher cannot act on is worse than no list.
   `DATABASE_URL`. A release that adds a table and skips that push produces
   endpoints that answer 503 on a database missing it — see the roster incident
   under "Chat + evaluation pass".
+  - **You can now ask:** `pnpm --filter @workspace/db run verify-schema` checks
+    every table in `lib/db/src/schema` with `to_regclass` and names the feature
+    each missing one takes down. Read-only, exits non-zero when anything is
+    absent. It does not fix the deploy gap — it makes the gap visible, which is
+    the part that was missing when 14 of 24 tables were absent from production
+    for an unknown length of time.
 - **`pnpm test` in api-server does not build.** Its mount-order suite boots
   `dist/index.mjs`, so a stale bundle reports on code nobody is looking at. CI
   now builds first; do the same locally.
