@@ -9,9 +9,10 @@ because the jobs differ:
 | Chat (`/chat`) | High — many turns per session | Sensitive; it is a chat | Fluency, grounding, speed, cost per turn |
 | Quick Check items | Low | Tolerant | Maths correctness — the one thing that can be verified |
 
-Today one `AI_MODEL` env var covers all three. Splitting it into
-`AI_MODEL_GENERATE` / `AI_MODEL_CHAT` should happen before the choice is
-made, so what gets measured is what gets shipped.
+**Split as of 2026-08-22:** `AI_MODEL_GENERATE` and `AI_MODEL_CHAT` each fall
+back to `AI_MODEL`, which still sets both if you leave them unset. Generation
+is settled (`gpt-5.4-mini` — see STATUS.md); chat is not, and `gpt-5.4-nano` is
+~3.7× cheaper on a workload where cost and latency dominate.
 
 ## Running the evaluation
 
