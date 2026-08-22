@@ -5,9 +5,16 @@
     "declarationMap": true,
     "emitDeclarationOnly": true,
     "outDir": "dist",
-    "rootDir": "src",
+    "rootDir": ".",
     "resolveJsonModule": true,
-    "allowImportingTsExtensions": true
+    "allowImportingTsExtensions": true,
+    "types": [
+      "node"
+    ]
   },
-  "include": ["src/**/*.ts", "src/**/*.json"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.json",
+    "scripts/**/*.ts"
+  ]
 }

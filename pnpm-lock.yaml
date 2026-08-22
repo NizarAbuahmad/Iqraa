@@ -319,7 +319,11 @@ importers:
         specifier: 'catalog:'
         version: 3.25.76
 
-  lib/curriculum: {}
+  lib/curriculum:
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.9.5
 
   lib/db:
     dependencies:

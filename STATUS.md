@@ -859,6 +859,54 @@ shapes with a deliberately wrong radius key and a trigonometry item: 5 provable
 of 7, 4 verified, the wrong key caught, trig and صح/خطأ excluded. Python suite
 51/51; mobile 609 tests, 0 failures.
 
+## Phase one is grades 1–10 — curriculum validation first, 2026-08-22
+
+Scope decided 2026-08-22: **grades 1 to 10**, all subjects. Grades 11–12
+(Tawjihi) are explicitly out of phase one — they need stream splits
+(علمي / أدبي / صناعي) and the stakes on a wrong answer key are far higher.
+
+**The grade model was never the blocker.** `GRADES` already covers 1–12 and
+`SUBJECTS` already maps subjects to the right grade ranges. What restricts the
+product to Grade 10 is `INVESTOR_MVP_CURRICULUM = true` plus
+`isPickerCurriculumVisible` — **six call sites, all in `knowledgeBase.ts`.**
+Unlocking a grade is small; having content worth unlocking is not.
+
+**Correction to an earlier note in this file: Grade 9 is العلوم, not الكيمياء.**
+The catalog already has this right — `science` is grades 1–9, and
+`chemistry`/`physics`/`biology` start at grade 10 — which matches the Jordanian
+system. Anyone sourcing Grade 9 books wants **الرياضيات + العلوم**.
+
+**What shipped:** `lib/curriculum/src/validateCurriculum.ts` plus
+`pnpm --filter @workspace/curriculum run verify`, wired into CI.
+
+Two severities, deliberately not conflated:
+
+- **errors** block — duplicate unit/lesson ids (a duplicate silently shadows
+  every lookup), a missing Arabic title (renders as a blank heading on an RTL
+  screen rather than falling back), missing required meta, no units.
+- **gaps** report and do not block — lessons with no objectives, units with no
+  `data_tier`, no `prior_knowledge`, no `source_books`. A subject can ship with
+  known thin spots; it cannot ship with unknown ones.
+
+First run over the four existing files:
+
+```
+file                                grade         subject          sem  units  lessons  objectives  tiered  errors  gaps
+iqra_curriculum_g10_chem_sem1.json  الصف العاشر   الكيمياء           1      3        9         6/9     0/3       0     9
+iqra_curriculum_g10_finlit_sem1.json الصف العاشر  الثقافة المالية    1      2       10       10/10     0/2       0     4
+iqra_curriculum_g10_math_sem1.json  الصف العاشر   الرياضيات          1      4       18       18/18     4/4       0     0
+iqra_curriculum_g10_math_sem2.json  الصف العاشر   الرياضيات          2      4       18       18/18     0/4       0     5
+```
+
+**Maths semester 1 is the only file with full provenance** (4/4 units carry a
+`data_tier`), and it is also the only subject whose lessons carry rules and
+worked examples. That is not a coincidence — it is the one built from a دليل
+المعلم. It is the template for everything that follows.
+
+**Chemistry semester 2 has no curriculum JSON at all.** Its two lessons are
+hardcoded in `knowledgeBase.ts` with no source file, which is why 55 lessons
+validate here against 57 in the KB. Not thin — absent.
+
 ## Chat is in the evaluation now, 2026-08-22
 
 The harness covered lesson-plan, worksheet and quiz. Chat — the tab teachers
