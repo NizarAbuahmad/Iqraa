@@ -57,6 +57,15 @@ jobs:
       - name: Test mobile
         run: pnpm --filter @workspace/mobile run test
 
+      - name: Test curriculum
+        run: pnpm --filter @workspace/curriculum run test
+
+      # Structural errors in curriculum data fail the build; content gaps are
+      # printed and do not. Phase one is grades 1-10, so this table is the only
+      # thing that will keep saying how much of it is actually grounded.
+      - name: Verify curriculum data
+        run: pnpm --filter @workspace/curriculum run verify
+
   verifier:
     name: math verifier
     runs-on: ubuntu-latest

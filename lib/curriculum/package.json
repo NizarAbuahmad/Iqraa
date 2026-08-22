@@ -11,9 +11,15 @@
     "./catalogs/g10MathSem1": "./src/catalogs/g10MathSem1.ts",
     "./catalogs/g10MathSem2": "./src/catalogs/g10MathSem2.ts",
     "./catalogs/g10ChemSem1": "./src/catalogs/g10ChemSem1.ts",
-    "./catalogs/g10FinlitSem1": "./src/catalogs/g10FinlitSem1.ts"
+    "./catalogs/g10FinlitSem1": "./src/catalogs/g10FinlitSem1.ts",
+    "./validateCurriculum": "./src/validateCurriculum.ts"
   },
   "scripts": {
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "verify": "node --experimental-strip-types scripts/verify-curriculum.ts",
+    "test": "node --experimental-strip-types --test \"src/**/__tests__/**/*.test.ts\""
+  },
+  "devDependencies": {
+    "@types/node": "catalog:"
   }
 }
