@@ -13,6 +13,13 @@ Older audits live in `docs/archive/` — historical snapshots, do not act on the
 `.agents/memory/` holds deeper notes: `iqra-architecture.md`,
 `ai-integration.md`, `auth-workspace-api.md`.
 
+This repo vendors the [Superpowers](https://github.com/obra/superpowers) skills
+in `.claude/skills/` (spec-before-code, TDD, systematic debugging, plan writing,
+verification-before-completion). They are project skills, invoked by bare name
+via the `Skill` tool, and a `SessionStart` hook loads `using-superpowers` for
+you. See [`.claude/SUPERPOWERS.md`](./.claude/SUPERPOWERS.md) for provenance and
+how to update them.
+
 ## Layout
 
 | Path | What |

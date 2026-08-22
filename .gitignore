@@ -67,5 +67,15 @@ knowledge-base/**/*.pdf
 # Provider-evaluation output (generated content + raw model responses)
 eval-out/
 
-# Claude Code local state
-.claude/
+# Claude Code — local state is ignored, checked-in shared config is not.
+# `.claude/skills/` holds the vendored Superpowers skills and
+# `.claude/hooks/` + `.claude/settings.json` wire them up; see
+# `.claude/SUPERPOWERS.md`. Everything else under `.claude/` is per-machine.
+.claude/*
+!.claude/settings.json
+!.claude/skills/
+!.claude/hooks/
+!.claude/scripts/
+!.claude/SUPERPOWERS.md
+!.claude/LICENSE-superpowers
+.claude/settings.local.json
