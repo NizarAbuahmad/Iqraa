@@ -14,7 +14,12 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-import { getPricing, pricedModels } from "../aiBudget.ts";
+import {
+  getChatModel,
+  getGenerationModel,
+  getPricing,
+  pricedModels,
+} from "../aiBudget.ts";
 
 describe("getPricing", () => {
   it("never falls back to a rate cheaper than a model it knows", () => {
@@ -47,5 +52,57 @@ describe("getPricing", () => {
       const { input, output } = getPricing(model);
       assert.ok(output > input, `${model} prices output at or below input`);
     }
+  });
+});
+
+describe("generation vs chat model", () => {
+  // One AI_MODEL drove both. A lesson plan is a single long structured
+  // document where quality is worth paying for; chat is many short turns where
+  // latency and cost dominate. Every choice was a compromise between two
+  // workloads that share nothing but a client.
+  const KEYS = ["AI_MODEL", "AI_MODEL_GENERATE", "AI_MODEL_CHAT"] as const;
+  const withEnv = (env: Partial<Record<(typeof KEYS)[number], string>>, fn: () => void) => {
+    const saved = Object.fromEntries(KEYS.map((k) => [k, process.env[k]]));
+    try {
+      for (const k of KEYS) delete process.env[k];
+      for (const [k, v] of Object.entries(env)) process.env[k] = v;
+      fn();
+    } finally {
+      for (const k of KEYS) {
+        if (saved[k] === undefined) delete process.env[k];
+        else process.env[k] = saved[k]!;
+      }
+    }
+  };
+
+  it("both fall back to the same cheap default when nothing is set", () => {
+    withEnv({}, () => {
+      assert.equal(getGenerationModel(), "gpt-4o-mini");
+      assert.equal(getChatModel(), "gpt-4o-mini");
+    });
+  });
+
+  it("AI_MODEL alone still sets both — no existing deployment has to change", () => {
+    withEnv({ AI_MODEL: "gpt-5.4-mini" }, () => {
+      assert.equal(getGenerationModel(), "gpt-5.4-mini");
+      assert.equal(getChatModel(), "gpt-5.4-mini");
+    });
+  });
+
+  it("the specific vars override AI_MODEL per workload", () => {
+    withEnv(
+      { AI_MODEL: "gpt-4o-mini", AI_MODEL_GENERATE: "gpt-5.4-mini", AI_MODEL_CHAT: "gpt-5.4-nano" },
+      () => {
+        assert.equal(getGenerationModel(), "gpt-5.4-mini");
+        assert.equal(getChatModel(), "gpt-5.4-nano");
+      },
+    );
+  });
+
+  it("one may be overridden without the other", () => {
+    withEnv({ AI_MODEL: "gpt-4o-mini", AI_MODEL_CHAT: "gpt-5.4-nano" }, () => {
+      assert.equal(getGenerationModel(), "gpt-4o-mini");
+      assert.equal(getChatModel(), "gpt-5.4-nano");
+    });
   });
 });

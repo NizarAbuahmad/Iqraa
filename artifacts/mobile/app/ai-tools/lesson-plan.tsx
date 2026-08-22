@@ -7,7 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
-import { resolveGeneratorGrounding } from '@/services/kbContext';
+import { buildAdaptationsDirective, resolveGeneratorGrounding } from '@/services/kbContext';
 import { LessonPlanOutput } from '@/services/ai/AIService';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
@@ -44,6 +44,7 @@ export default function LessonPlanScreen() {
   const params = useLocalSearchParams<{
     topic?: string; savedId?: string;
     gradeIdx?: string; subjectIdx?: string; durationIdx?: string; styleIdx?: string; objectives?: string;
+    adaptations?: string;
     simplify?: string;
   }>();
   const isSimplify = params.simplify === '1';
@@ -71,6 +72,7 @@ export default function LessonPlanScreen() {
     }
   }, [gradeIdx, subjectIdx]);
   const [objectives, setObjectives] = useState(params.objectives ?? '');
+  const [adaptations, setAdaptations] = useState(params.adaptations ?? '');
   const [durationIdx, setDurationIdx] = useState(params.durationIdx ? parseInt(params.durationIdx, 10) : 1);
   const [styleIdx, setStyleIdx] = useState(params.styleIdx ? parseInt(params.styleIdx, 10) : 0);
   const [loading, setLoading] = useState(false);
@@ -142,6 +144,7 @@ export default function LessonPlanScreen() {
       const additionalContext = [
         isSimplify ? 'mode:simplify' : '',
         grounding.grounded ? grounding.context : grounding.ungroundedNote,
+        buildAdaptationsDirective(adaptations, lang as 'ar' | 'en'),
       ].filter(Boolean).join('\n') || undefined;
       const out = await aiService.generateLessonPlan({
         // Localised: this string is carried into generated content verbatim —
@@ -181,7 +184,7 @@ export default function LessonPlanScreen() {
     const title = lang === 'ar'
       ? `خطة درس: ${topic.trim()}`
       : `Lesson Plan: ${topic.trim()}`;
-    const formState = { gradeIdx, subjectIdx, topic: topic.trim(), durationIdx, styleIdx, objectives };
+    const formState = { gradeIdx, subjectIdx, topic: topic.trim(), durationIdx, styleIdx, objectives, adaptations };
 
     if (savedId) {
       await updateItem(savedId, {
@@ -374,6 +377,25 @@ export default function LessonPlanScreen() {
             placeholderTextColor={colors.mutedForeground}
             value={objectives}
             onChangeText={setObjectives}
+            multiline
+          />
+        </View>
+
+        {/* Adaptations / extra instructions (optional).
+            Separate from objectives on purpose: "adapt this for a student with
+            ADHD" is an instruction about how to write the plan, not something
+            a student should be able to do by the end of it. Typed into the
+            objectives box it came back as the lesson's stated objective. */}
+        <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+          {t('adaptationsLabel')}
+        </Text>
+        <View style={[styles.inputBox, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
+          <TextInput
+            style={[styles.textInput, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left', minHeight: 60 }]}
+            placeholder={t('adaptationsPlaceholder')}
+            placeholderTextColor={colors.mutedForeground}
+            value={adaptations}
+            onChangeText={setAdaptations}
             multiline
           />
         </View>

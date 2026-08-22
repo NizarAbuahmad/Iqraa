@@ -12,7 +12,7 @@ import { verifyDerivative } from "./mathVerifierClient.ts";
 import {
   assertBudgetAvailable,
   assertLiveModeEnabled,
-  getAiModel,
+  getGenerationModel,
   recordUsage,
 } from "./aiBudget.ts";
 
@@ -200,7 +200,7 @@ async function callLlm(): Promise<LlmContract> {
   assertBudgetAvailable();
   const { openai } = await import("@workspace/integrations-openai-ai-server");
   const completion = await openai.chat.completions.create({
-    model: getAiModel(),
+    model: getGenerationModel(),
     max_completion_tokens: 400,
     messages: [
       { role: "system", content: SYSTEM },
@@ -211,7 +211,7 @@ async function callLlm(): Promise<LlmContract> {
       },
     ],
   });
-  recordUsage(completion.usage);
+  recordUsage(completion.usage, getGenerationModel());
   const raw = completion.choices[0]?.message?.content ?? "{}";
   return extractJSON(raw) as LlmContract;
 }

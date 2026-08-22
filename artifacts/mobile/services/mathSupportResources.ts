@@ -76,8 +76,15 @@ export function unitTagsForLesson(lesson: KBLesson | null | undefined): string[]
   const tags: string[] = [];
   if (!unit) return tags;
 
+  // `s1-u1` / `s2-u3` are MATHEMATICS catalog tags — the maths packs are the
+  // only ones that use the bare form. Every NCCD unit id matches
+  // /nccd-u\d+/ though, so a financial-literacy unit 1 emitted `s1-u1` and
+  // scored +8 against every maths unit-1 resource. Chemistry escaped this only
+  // because it carries explicit `chem-*` tags below. Emit the bare form only
+  // for the subject it actually belongs to; a subject with no packs in the
+  // catalog should match nothing, which is the honest answer.
   const m = unit.id.match(/nccd-(u\d+)/i);
-  if (m?.[1]) {
+  if (m?.[1] && book?.subjectId === 'mathematics') {
     const u = m[1].toLowerCase();
     if (book?.semester === 2 || /s2/i.test(unit.id)) tags.push(`s2-${u}`);
     else tags.push(`s1-${u}`);
@@ -121,10 +128,15 @@ function scoreResource(
   const q = query.trim().toLowerCase();
   const title = r.titleAr.toLowerCase();
 
-  if (subjectHint && r.subjectId && r.subjectId !== subjectHint) {
-    // Soft penalty — still allow cross-hits if title matches strongly
-    score -= 6;
-  }
+  // A declared subject mismatch disqualifies outright.
+  //
+  // This was a -6 soft penalty, on the theory that a strong title match should
+  // still be allowed through. It isn't: a Grade 10 maths worksheet is never the
+  // right attachment for a financial-literacy lesson, however the titles score.
+  // Worse, the unit-tag bonus below is +8, so a single colliding tag beat the
+  // penalty outright — «المشروع وإدارته» (financial literacy) came back with
+  // three mathematics files, and since 2026-08-20 those go into a live prompt.
+  if (subjectHint && r.subjectId && r.subjectId !== subjectHint) return 0;
 
   for (const tag of lessonTags) {
     if (r.unitTags.includes(tag)) score += tag.includes('-u') ? 8 : 3;
@@ -222,9 +234,15 @@ export function buildSupportResourcesContext(
 ): string {
   const lesson = lessons[0] ?? null;
   const hits = searchSupportResources({ query, lesson, limit });
+  // The widened retry drops the lesson to match on the query alone — but
+  // dropping the lesson also dropped the subject it implied, and
+  // `detectSubjectFromQuery` only knows maths and chemistry. A
+  // financial-literacy lesson therefore came back through this path with
+  // chemistry activity books attached. Widen the match, not the subject.
+  const subjectId = lesson ? getBookForLesson(lesson)?.subjectId ?? null : null;
   const resources = hits.length
     ? hits
-    : searchSupportResources({ query, limit });
+    : searchSupportResources({ query, limit, subjectId });
   return formatSupportResourcesBlock(resources, lang);
 }
 

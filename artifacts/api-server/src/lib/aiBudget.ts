@@ -88,9 +88,25 @@ export function pricedModels(): string[] {
 
 let spentUsd = 0;
 
-/** Cheap by default — this exists to make testing affordable, not to pick quality. */
-export function getAiModel(): string {
-  return process.env.AI_MODEL || "gpt-4o-mini";
+const DEFAULT_MODEL = "gpt-4o-mini";
+
+/**
+ * Generation and chat are different jobs and want different models.
+ *
+ * One `AI_MODEL` drove both. A lesson plan is a single long structured
+ * document where quality is worth paying for; chat is many short turns where
+ * latency and cost dominate. Tying them together means every choice is a
+ * compromise between two workloads that share nothing but a client.
+ *
+ * `AI_MODEL` still works and still sets both — nobody has to change anything.
+ * The specific vars override it per workload when you want them to differ.
+ */
+export function getGenerationModel(): string {
+  return process.env.AI_MODEL_GENERATE || process.env.AI_MODEL || DEFAULT_MODEL;
+}
+
+export function getChatModel(): string {
+  return process.env.AI_MODEL_CHAT || process.env.AI_MODEL || DEFAULT_MODEL;
 }
 
 export function isAiLiveModeOn(): boolean {
@@ -113,33 +129,47 @@ export function assertBudgetAvailable(): void {
   if (spentUsd >= limit) throw new AiBudgetExceededError(spentUsd, limit);
 }
 
-/** Call once per completion, after a successful response, to add its cost to the running total. */
+/**
+ * Call once per completion, after a successful response, to add its cost to
+ * the running total.
+ *
+ * `model` is required rather than looked up. Once generation and chat can run
+ * different models, pricing a completion by a single global would bill every
+ * chat turn at the generation model's rate — and the guard would be wrong in
+ * whichever direction the two prices differ.
+ */
 export function recordUsage(
   usage: { prompt_tokens?: number; completion_tokens?: number } | undefined | null,
+  model: string,
 ): void {
   if (!usage) return;
-  const { input, output } = getPricing(getAiModel());
+  const { input, output } = getPricing(model);
   const cost =
     ((usage.prompt_tokens ?? 0) / 1_000_000) * input +
     ((usage.completion_tokens ?? 0) / 1_000_000) * output;
   spentUsd += cost;
   logger.info(
-    { spentUsd: Number(spentUsd.toFixed(4)), limitUsd: getBudgetLimitUsd(), model: getAiModel() },
+    { spentUsd: Number(spentUsd.toFixed(4)), limitUsd: getBudgetLimitUsd(), model },
     "ai test budget updated",
   );
 }
 
 export function getBudgetStatus(): {
   liveMode: boolean;
-  model: string;
+  generationModel: string;
+  chatModel: string;
   spentUsd: number;
   limitUsd: number;
   remainingUsd: number;
 } {
   const limitUsd = getBudgetLimitUsd();
+  // Reports both, not one `model`. The single field was accurate only while
+  // the two workloads were guaranteed to share a model; naming them separately
+  // is what makes "which model answered that?" checkable from the endpoint.
   return {
     liveMode: isAiLiveModeOn(),
-    model: getAiModel(),
+    generationModel: getGenerationModel(),
+    chatModel: getChatModel(),
     spentUsd: Number(spentUsd.toFixed(4)),
     limitUsd,
     remainingUsd: Number(Math.max(0, limitUsd - spentUsd).toFixed(4)),

@@ -98,7 +98,9 @@ Without an OpenAI key, the API process will not start (AI client initializes at 
 | `EXPO_PUBLIC_POSTHOG_HOST` | `https://us.i.posthog.com` | PostHog Cloud region — use the EU host if the project is EU-hosted |
 | `AI_LIVE_MODE` | `false` (anything but literal `"true"`) | Server-side counterpart to the above — must be exactly `true` to let chat/generate/derivativeVerified call OpenAI |
 | `AI_BUDGET_USD` | `2` | Hard USD cap on estimated spend while `AI_LIVE_MODE=true`. In-process only, resets on restart |
-| `AI_MODEL` | `gpt-4o-mini` | Model used by the live-AI routes; cheap by default |
+| `AI_MODEL` | `gpt-4o-mini` | Model for the live-AI routes; cheap by default. Sets both workloads below unless one overrides it |
+| `AI_MODEL_GENERATE` | falls back to `AI_MODEL` | Lesson plans, worksheets, quizzes, activities — one long structured document per call |
+| `AI_MODEL_CHAT` | falls back to `AI_MODEL` | Chat turns — many short calls where latency and cost dominate |
 | `ADMIN_DEBUG_KEY` | unset (endpoint 404s) | Set to see recent server errors at `GET /api/healthz/errors` (header `x-admin-key`) |
 | `UNSPLASH_ACCESS_KEY` | unset (Slides Maker skips the image slide) | Free Unsplash "Demo" key — Slides Maker fetches one topic photo per deck when set |
 | `YOUTUBE_API_KEY` | unset (Slides Maker skips the video slide) | Free YouTube Data API key — Slides Maker searches for one real explainer video per lesson when set |

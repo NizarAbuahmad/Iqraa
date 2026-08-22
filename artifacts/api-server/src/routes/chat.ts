@@ -6,7 +6,7 @@ import {
   AiLiveModeOffError,
   assertBudgetAvailable,
   assertLiveModeEnabled,
-  getAiModel,
+  getChatModel,
   recordUsage,
 } from "../lib/aiBudget.ts";
 
@@ -51,11 +51,11 @@ chatRouter.post("/chat", async (req, res) => {
     assertBudgetAvailable();
 
     const completion = await openai.chat.completions.create({
-      model: getAiModel(),
+      model: getChatModel(),
       max_completion_tokens: 1200,
       messages: chatMessages,
     });
-    recordUsage(completion.usage);
+    recordUsage(completion.usage, getChatModel());
 
     const answer = completion.choices[0]?.message?.content ?? "";
     res.json({ content: answer });

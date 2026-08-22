@@ -18,6 +18,8 @@ import type { BlockOpts } from '../kbContext.ts';
 import {
   buildResponse,
   buildLessonBlock,
+  buildAdaptationsDirective,
+  resolveGeneratorGrounding,
   TRIM_TIERS,
   CONTEXT_CHAR_BUDGET,
   deduplicateByUnit,
@@ -290,5 +292,54 @@ describe('buildResponse — edge cases', () => {
     assert.ok(result.includes('**المفاهيم الأساسية:**') || result.length > 0,
       'Arabic output should use Arabic labels');
     assert.ok(result.includes('📖 المصدر:'), 'Arabic output should have Arabic source label');
+  });
+});
+
+describe('generator grounding: teacher objectives', () => {
+  const TOPIC = 'المشروع وإدارته';
+
+  it('keeps the official curriculum outcomes when the teacher adds their own', () => {
+    // This was an if/else: typing anything into the optional objectives box
+    // silently deleted the NCCD نتاجات from the prompt, while the screen still
+    // showed «مرتبط بالمنهاج الأردني». Adding one line made the plan LESS
+    // curriculum-grounded than leaving the box empty, and nothing said so.
+    const plain = resolveGeneratorGrounding(TOPIC, 'ar');
+    assert.equal(plain.grounded, true);
+    assert.match(plain.context, /النتاجات \(من المنهج الرسمي\)/);
+
+    const withTeacher = resolveGeneratorGrounding(TOPIC, 'ar', {
+      teacherObjectives: 'أن يخطط الطالب لمشروع صغير.',
+    });
+    assert.match(withTeacher.context, /النتاجات \(من المعلم\)/);
+    assert.match(withTeacher.context, /النتاجات \(من المنهج الرسمي\)/);
+    // Every official outcome that survived without the teacher line must still
+    // be there with it — the teacher adds, never replaces.
+    for (const line of plain.context.split('\n').filter(l => l.startsWith('• '))) {
+      assert.ok(withTeacher.context.includes(line), `dropped: ${line}`);
+    }
+  });
+});
+
+describe('buildAdaptationsDirective', () => {
+  it('frames the request as delivery instructions, not objectives', () => {
+    // "tailor this plan for a student with ADHD" typed into the objectives box
+    // came back as the lesson's sole stated objective, verbatim and in English,
+    // with nothing in the body adapted. An adaptation says how to write every
+    // section; it is not something a student can demonstrate.
+    const out = buildAdaptationsDirective('كيّف الخطة لطالب لديه فرط حركة', 'ar');
+    assert.match(out, /التمايز/);
+    assert.match(out, /لا تُدرجها ضمن الأهداف/);
+    assert.match(out, /كيّف الخطة لطالب لديه فرط حركة/);
+  });
+
+  it('is empty for blank input so callers can filter it away', () => {
+    assert.equal(buildAdaptationsDirective('', 'ar'), '');
+    assert.equal(buildAdaptationsDirective('   \n  ', 'en'), '');
+  });
+
+  it('speaks English when the teacher does', () => {
+    const out = buildAdaptationsDirective('adapt for a student with ADHD', 'en');
+    assert.match(out, /differentiation/);
+    assert.match(out, /not learning\s+outcomes/);
   });
 });
