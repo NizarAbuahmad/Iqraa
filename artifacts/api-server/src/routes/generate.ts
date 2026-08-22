@@ -22,6 +22,11 @@ import {
   getAiModel,
   recordUsage,
 } from "../lib/aiBudget.ts";
+import {
+  assertUsableGeneration,
+  UnusableGenerationError,
+  type GenerationKind,
+} from "../lib/generationShape.ts";
 
 const generateRouter = Router();
 
@@ -48,6 +53,7 @@ const GENERATION_TOKENS = 8000;
  * The ceiling is now set per task below with room for that.
  */
 async function generateContent(
+  kind: GenerationKind,
   systemPrompt: string,
   userPrompt: string,
   maxCompletionTokens: number,
@@ -64,7 +70,11 @@ async function generateContent(
   });
   recordUsage(completion.usage);
   const raw = completion.choices[0]?.message?.content ?? "{}";
-  return extractJSON(raw);
+  const parsed = extractJSON(raw);
+  // Valid JSON is not the same as a usable artifact. Without this the route
+  // answered 200 with `{}` and the screen rendered a blank lesson plan.
+  assertUsableGeneration(kind, parsed);
+  return parsed;
 }
 
 /** AI live-mode-off and budget-exceeded are expected, user-facing states — not server errors. */
@@ -77,6 +87,14 @@ function respondAiError(err: unknown, res: Response, label: string): void {
     res.status(429).json({ error: err.message });
     return;
   }
+  if (err instanceof UnusableGenerationError) {
+    // 502, not 500: the request was fine, the upstream reply was not. Naming
+    // the missing fields is the point — a bare "generation failed" is how this
+    // stayed invisible for as long as it did.
+    logger.error({ kind: err.kind, missing: err.missing }, `${label} returned an unusable shape`);
+    res.status(502).json({ error: err.message, missing: err.missing });
+    return;
+  }
   logger.error({ err }, `${label} error`);
   res.status(500).json({ error: "AI generation failed. Please try again." });
 }
@@ -87,7 +105,7 @@ generateRouter.post("/generate/lesson-plan", async (req, res) => {
     const body = req.body;
     const isAr = body.language !== "english";
     const prompt = isAr ? lessonPlanPromptAr(body) : lessonPlanPromptEn(body);
-    const parsed = await generateContent(isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS);
+    const parsed = await generateContent("lesson-plan", isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS);
     res.json(parsed);
   } catch (err) {
     respondAiError(err, res, "generate lesson-plan");
@@ -100,7 +118,7 @@ generateRouter.post("/generate/worksheet", async (req, res) => {
     const body = req.body;
     const isAr = body.language !== "english";
     const prompt = isAr ? worksheetPromptAr(body) : worksheetPromptEn(body);
-    const parsed = await generateContent(isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS);
+    const parsed = await generateContent("worksheet", isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS);
     res.json(parsed);
   } catch (err) {
     respondAiError(err, res, "generate worksheet");
@@ -113,7 +131,7 @@ generateRouter.post("/generate/quiz", async (req, res) => {
     const body = req.body;
     const isAr = body.language !== "english";
     const prompt = isAr ? quizPromptAr(body) : quizPromptEn(body);
-    const parsed = await generateContent(isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS);
+    const parsed = await generateContent("quiz", isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS);
     res.json(parsed);
   } catch (err) {
     respondAiError(err, res, "generate quiz");
@@ -126,7 +144,7 @@ generateRouter.post("/generate/homework", async (req, res) => {
     const body = req.body;
     const isAr = body.language !== "english";
     const prompt = isAr ? worksheetPromptAr({ ...body, homework: true }) : worksheetPromptEn({ ...body, homework: true });
-    const parsed = await generateContent(isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS);
+    const parsed = await generateContent("homework", isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS);
     res.json(parsed);
   } catch (err) {
     respondAiError(err, res, "generate homework");
@@ -139,7 +157,7 @@ generateRouter.post("/generate/activity", async (req, res) => {
     const body = req.body;
     const isAr = body.language !== "english";
     const prompt = isAr ? activityPromptAr(body) : activityPromptEn(body);
-    const parsed = await generateContent(isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS);
+    const parsed = await generateContent("activity", isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS);
     res.json(parsed);
   } catch (err) {
     respondAiError(err, res, "generate activity");
@@ -158,7 +176,7 @@ generateRouter.post('/generate/classroom-activity', async (req, res) => {
   const isAr = body.language === 'arabic';
   try {
     const prompt = isAr ? classroomPromptAr(body) : classroomPromptEn(body);
-    const data = await generateContent(isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS);
+    const data = await generateContent("classroom-activity", isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS);
     res.json(data);
   } catch (err) {
     respondAiError(err, res, "generate classroom-activity");

@@ -889,6 +889,42 @@ explicitly at the `differentiation` slot the output schema already has, with
 **Also found while reproducing, fixed below:** `buildSupportResourcesContext`
 returned mathematics files for a financial-literacy lesson.
 
+## Fixed 2026-08-22 — /generate/* answered 200 with an empty artifact
+
+`generateContent` ran `extractJSON` over the model's reply and handed the
+result straight to `res.json()`. Nothing checked the object had the fields the
+app reads. Two ways that goes wrong, both silent:
+
+- a truncated response — `extractJSON` recovers a partial object, or `{}`;
+- a well-formed object of the wrong shape.
+
+Either way the route answered **200** and the screen drew a blank lesson plan.
+No error in the logs, none in the UI, and the provenance badge said «ذكاء
+اصطناعي مباشر» because the call had genuinely succeeded. Same family as every
+other bug in this file: it failed without failing.
+
+`src/lib/generationShape.ts` now gates all six `/generate/*` routes on the
+fields the screens actually index into, and `respondAiError` maps the new
+`UnusableGenerationError` to **502** (the request was fine; the upstream reply
+was not) with the missing field names in the body and the log.
+
+Failing closed costs nothing here: `RemoteAIService` already falls back to
+`MockAIService` on any non-2xx, and `aiProvenance` labels the result «تعذّر
+الاتصال · محتوى تجريبي». Sample content that says it is sample content beats
+real-looking content that is empty.
+
+The bar is deliberately the app's own contract, matching `REQUIRED_FIELDS` in
+`scripts/provider-eval.ts` — which measured **12/12 conformance** for
+`gpt-5.4-mini`, so a working generation clears it comfortably. Cosmetic echoes
+of the request (a quiz's `duration`, a lesson plan's `grade`) are *not*
+required: discarding an otherwise complete artifact over those would turn
+usable output into mock content.
+
+**Watch this:** if the gate fires spuriously in production, teachers get mock
+content where they previously got a nearly-complete artifact. It logs the kind
+and the exact missing fields, so check `/api/healthz/errors` (needs
+`ADMIN_DEBUG_KEY`) before assuming a model problem.
+
 ## Fixed 2026-08-21 — support packs attached from the wrong subject
 
 «المشروع وإدارته» (financial literacy) came back with three **mathematics**
