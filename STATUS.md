@@ -1058,6 +1058,127 @@ against anything. Chat is many short turns where latency and cost dominate —
 That is an open question, and answering it needs chat coverage in the eval
 first.
 
+## Decided 2026-08-22 — how AI spend survives many teachers, one curriculum
+
+Iqraa serves a fixed national curriculum, so the request distribution has a
+brutal head: a few hundred teachers ask for the same lesson in the same week.
+Today every one of those is its own model call — there is **no cache anywhere**
+in `artifacts/api-server/src` or `lib/db` (the only `cache` matches in the tree
+are comments in `aiBudget.ts` about OpenAI's cached-input pricing tier).
+
+Plan and reasoning: [`docs/ai-cost-savings-plan.md`](./docs/ai-cost-savings-plan.md).
+Three product decisions taken:
+
+- **A pool of 3–5 variants per cache key**, not one shared artifact. Identical
+  output means two classes in the same school get the same worksheet and
+  students swap answers — a cost win that costs the product more.
+- **Global cache only for requests with no `additionalContext`.** That field is
+  free text teachers paste from their own material; serving an artifact derived
+  from it to a different teacher is a content leak. Requests carrying it are
+  cached per-user or not at all.
+- **Discrete form inputs** (durations, question counts) instead of free-form.
+  A free-form slider re-inflates the key space no matter how good the cache is.
+
+The load-bearing idea is not the cache itself — it is generating **one superset
+per (lesson × kind × language)** and applying difficulty, question count and
+duration by slicing the result. That takes math S1 from ~1,800 keys to ~90,
+which is small enough to pre-generate the whole semester for about $1 at
+gpt-5.4-mini's measured ~1,300 tokens per generation.
+
+**Phase 0 is built (2026-08-22)** — see the section below. What follows is why
+it came first.
+
+**The first code is not the cache.** Checking whether there was traffic to
+instrument turned up something that outranks it: `AI_BUDGET_USD=5` is enforced
+by a module-scope `let spentUsd = 0`, and the free-tier API sleeps after ~15
+minutes idle. Every wake resets the counter, so the cap is **"$5 per wake",
+not "$5 total"** — on a service built to sleep between uses. Live AI has been
+on since 2026-08-20, so this is a live gap, not a hypothetical one. Phase 0 is
+therefore a persistent spend total derived from per-generation rows; the
+hit-rate instrumentation falls out of the same table.
+
+**The account-level limits are set — checked in the OpenAI console 2026-08-22.**
+Project `Iqraa` spend limit $50/month, organization budget $100/month, both
+blocking, and the project's allowed-models list is `gpt-5.4-mini` and
+`gpt-5.4-nano` only, so no expensive model is reachable even by
+misconfiguration. Spend at the time of checking: $0.59 across 121 requests
+since 2026-08-07, ~$0.005/request. The money is genuinely bounded; the
+in-app counter is now a reporting mechanism, not the last line of defence.
+One gap left: when the project limit binds, OpenAI's rejection falls through
+`respondAiError` to a generic 500 "AI generation failed", so a teacher sees a
+vague error rather than "the month's budget is spent." Not urgent at $0.59.
+
+Phases 0 and 1 both add tables, so both need the manual
+`pnpm --filter @workspace/db run push` — see the landmine below.
+
+## AI spend is measured and survives a restart, 2026-08-22
+
+Phase 0 of `docs/ai-cost-savings-plan.md`. No teacher-visible behaviour
+changes; nothing is cached yet.
+
+- **New table `ai_generations`** (`lib/db/src/schema/aiGenerations.ts`), one row
+  per completed model call: kind, model, prompt version, token counts,
+  estimated cost, and the two cache keys the request *would* have had.
+- **The spend total is month-to-date, summed from those rows** and loaded at
+  startup, replacing the module-scope `let spentUsd = 0`. The window is the
+  current UTC month, matching how the OpenAI project limit resets — so the
+  app's number and the console's now measure the same thing and can be
+  compared. `AI_BUDGET_USD` is a cap again rather than a per-wake allowance.
+- **`/healthz/ai-budget` gained `periodStart`, `persisted` and
+  `persistenceFailure`.** Read `persisted` first: false means the total covers
+  this process only, so the figure beside it is a floor, not a total.
+
+### Two keys, because the plan's central claim was untested
+
+Each row records a **coarse** key and a **strict** key. The strict key includes
+every request parameter; the coarse key drops the ones the plan proposes to
+serve by slicing one superset artifact (difficulty, question count, duration).
+
+The gap between their repeat rates is the measurement. It answers "would a
+cache have helped, and is the superset design worth its complexity?" **from
+history, before any caching is written** — a question that was otherwise going
+to be settled by argument. `hasContext` is recorded alongside, because a
+request carrying teacher-pasted material can never enter a globally shared
+cache and would otherwise inflate the figure.
+
+**Chat and the derivative drill generator record no keys at all**, only their
+`kind`. Both are uncacheable — a chat turn never repeats, and the drill prompt
+takes no inputs and explicitly asks for a *fresh, varied* item. The first cut
+gave them keys computed from an empty body, which meant every such row shared
+one hash; the analysis would have read that as a perfect hit rate on exactly
+the workloads that can never hit. An empty key is obviously "no key"; a
+constant one silently reads as "the same request, every time". Their cost is
+still recorded, which is what separates chat's share of spend from
+generation's — the open `AI_MODEL_CHAT` question above.
+
+Normalisation is where a cache's hit rate is won, and Arabic makes it
+load-bearing rather than cosmetic: the same lesson title arrives with and
+without diacritics, with tatweel padding, and with any of أ إ آ for one alef.
+Left alone each variant is its own entry. Covered by 15 tests in
+`src/lib/__tests__/generationKey.test.ts`.
+
+### It fails soft, and says so
+
+The schema is not deployed by anything automatic, so this can ship before the
+table exists — the landmine below, which cost 14 tables in production once.
+Every read and write is wrapped: a failure logs and degrades the guard to the
+old per-process counting, rather than failing a generation the model was
+already paid for. Verified by booting the built bundle against an unreachable
+database — the server listens, generation is unaffected, and the endpoint
+reports `persisted: false`.
+
+`persistenceFailure` is the *operation* (`"read"` / `"insert"`), never the
+driver's message. `/healthz/ai-budget` is public and unauthenticated on the
+stated grounds that it carries no secrets, and a Drizzle error stringifies to
+the whole failing query, its parameters and the connection target — the first
+cut of this leaked exactly that, caught by reading the smoke-test response.
+
+### Needs a schema push
+
+`pnpm --filter @workspace/db run push` before this measures anything in
+production. Until then it runs in its degraded mode, which is the pre-existing
+behaviour, not a regression.
+
 ## Live AI is on, 2026-08-20
 
 `AI_LIVE_MODE=true`, `AI_MODEL=gpt-5.4-mini`, `AI_BUDGET_USD=5` on iqraa-api;
@@ -3276,6 +3397,24 @@ populating the field; a list a teacher cannot act on is worse than no list.
     each missing one takes down. Read-only, exits non-zero when anything is
     absent. It does not fix the deploy gap — it makes the gap visible, which is
     the part that was missing when 14 of 24 tables were absent from production.
+  - **It cuts the other way too, and that is the sharper edge.** `push`
+    reconciles the live database to *whatever schema files are checked out*, so
+    a stale checkout does not fail — it proposes **dropping** every table added
+    since. On 2026-08-22 a `push` from a checkout predating 2026-08-11 offered
+    to delete 8 tables including `students`, `evaluations` and
+    `evaluation_questions` with 54 rows in it. It was correctly aborted at the
+    prompt. Read the data-loss list, every time; "yes" is not a formality here.
+  - **Run `verify-schema` before `push`, always.** It is read-only and answers
+    the only question that matters first: what does this database have, and
+    what does this checkout think it should have. On the stale checkout it
+    would have shown 8 tables the checkout did not know about, before anything
+    was at risk.
+  - **`push.mjs` deletes `process.env.DATABASE_URL` and reloads the repo-root
+    `.env`.** A shell variable is therefore ignored — the `.env` file is the
+    only thing that decides which database you are about to modify, and local
+    and production `.env` values look nothing alike but produce identical
+    console output apart from one line. `verify-schema` prints the host it
+    checked (`Schema check against …`) as its first line. Read it.
   - **Production verified 24/24 on 2026-08-22**, via the same `to_regclass`
     check run in the Neon SQL console. The 2026-08-19 outage was fixed that
     same afternoon — Neon's query history shows "find missing tables" at

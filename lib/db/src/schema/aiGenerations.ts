@@ -1,0 +1,66 @@
+import { pgTable, text, integer, numeric, timestamp, uuid, index, boolean } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod/v4";
+import { users } from "./users";
+
+/**
+ * One row per completed model call — the measurement layer under
+ * `docs/ai-cost-savings-plan.md`.
+ *
+ * Two jobs, which is why it is one table and not two:
+ *
+ * 1. **A spend total that survives a restart.** `aiBudget.ts` kept the running
+ *    total in a module-scope variable, and the free-tier API sleeps after ~15
+ *    minutes idle, so every wake reset it. Summing `costUsd` over the current
+ *    month gives a figure that does not.
+ * 2. **Answering "would a cache have helped?" without building one.** Every
+ *    row carries the cache key the request *would* have had. Nothing reads
+ *    those keys yet; recording them now means the hit rate can be measured
+ *    from history rather than guessed at, before a line of caching is written.
+ *
+ * `coarseKey` and `strictKey` exist to measure one specific decision. The
+ * strict key includes every request parameter; the coarse key drops the ones
+ * the plan proposes to serve by slicing a superset (difficulty, question
+ * count, duration). Comparing the two repeat rates is what says whether the
+ * superset design earns its complexity — a question otherwise settled by
+ * argument.
+ */
+export const aiGenerations = pgTable(
+  "ai_generations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    // Nullable, and set null rather than cascade: a deleted teacher must not
+    // erase spend history, or the month's total silently drops.
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+    kind: text("kind").notNull(), // 'lesson-plan' | 'worksheet' | … | 'chat'
+    model: text("model").notNull(),
+    promptVersion: text("prompt_version").notNull().default(""),
+    coarseKey: text("coarse_key").notNull().default(""),
+    strictKey: text("strict_key").notNull().default(""),
+    /** Whether the request carried teacher-pasted `additionalContext`. Such a
+     * request can never enter a globally shared cache, so hit-rate maths has
+     * to be able to exclude it. */
+    hasContext: boolean("has_context").notNull().default(false),
+    /** 'miss' for every row until a cache exists — then 'hit' | 'miss'. */
+    cacheStatus: text("cache_status").notNull().default("miss"),
+    promptTokens: integer("prompt_tokens").notNull().default(0),
+    completionTokens: integer("completion_tokens").notNull().default(0),
+    /** Estimated, from aiBudget's pricing table — not billing-accurate. */
+    costUsd: numeric("cost_usd", { precision: 12, scale: 6 }).notNull().default("0"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    // The month-to-date spend sum runs on every process start.
+    index("ai_generations_created_at_idx").on(t.createdAt),
+    // Repeat-rate analysis groups by key.
+    index("ai_generations_coarse_key_idx").on(t.coarseKey),
+  ],
+);
+
+export const insertAiGenerationSchema = createInsertSchema(aiGenerations).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type AiGeneration = typeof aiGenerations.$inferSelect;
+export type InsertAiGeneration = z.infer<typeof insertAiGenerationSchema>;
