@@ -70,14 +70,39 @@ That makes the cap **"$5 per wake cycle", not "$5 total"**, on a service
 designed to sleep between uses. It is not a spend ceiling in any meaningful
 sense. Nothing in the repo is wrong about this — `aiBudget.ts` says plainly that
 it "is not a substitute for the hard usage limit you should also set on the
-OpenAI account itself" — but that account-level limit is outside this repo and
-**cannot be verified from here.** Confirming it is set is the single cheapest
-risk reduction available.
+OpenAI account itself."
 
-The in-app fix is a persistent counter, which is why the phase order below puts
-it first rather than in phase 4 where an earlier draft had it. It is also
-substantially the same work as the instrumentation: the rows that record spend
-per generation are the rows that give hit-rate measurement for free.
+**That account-level limit is set, checked 2026-08-22** in the OpenAI console
+(it is outside this repo, so it can only be confirmed by looking):
+
+| Layer | Limit | Behaviour |
+| --- | --- | --- |
+| Project `Iqraa` spend limit | $50 / month | Blocks requests once reached |
+| Organization monthly budget | $100 / month | Blocks requests once reached |
+| Allowed models on the project | `gpt-5.4-mini`, `gpt-5.4-nano` only | No expensive model is reachable, even by misconfiguration |
+
+Spend at the time of checking was $0.59 against the $50, across 121 requests
+and 88.7K input tokens since 2026-08-07 — about **$0.005 per request**, which
+independently corroborates the ~$0.0065/generation figure below.
+
+So the money is genuinely bounded, and the allowed-models list is a better
+guardrail than anything this plan proposes. Two caveats remain:
+
+- The console warns "your actual costs may exceed this based on usage" —
+  enforcement lags, so a burst can overshoot before it cuts off.
+- When the project limit *is* reached, OpenAI's rejection reaches
+  `respondAiError` in `routes/generate.ts`, which recognises only
+  `AiLiveModeOffError`, `AiBudgetExceededError` and `UnusableGenerationError`.
+  Everything else becomes a generic **500 "AI generation failed. Please try
+  again."** A teacher would see a vague failure rather than "the month's budget
+  is spent." Worth a mapped error before the limit is ever close to binding.
+
+The in-app counter is still worth making persistent — it is the only signal the
+*app* has, and per-user quotas need it — but it is now a reporting mechanism
+rather than the last line of defence. That is why the phase order below puts it
+first: it is substantially the same work as the instrumentation, since the rows
+that record spend per generation are the rows that give hit-rate measurement
+for free.
 
 ## Why a naive cache is not enough
 

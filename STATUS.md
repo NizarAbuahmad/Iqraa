@@ -1004,9 +1004,18 @@ minutes idle. Every wake resets the counter, so the cap is **"$5 per wake",
 not "$5 total"** — on a service built to sleep between uses. Live AI has been
 on since 2026-08-20, so this is a live gap, not a hypothetical one. Phase 0 is
 therefore a persistent spend total derived from per-generation rows; the
-hit-rate instrumentation falls out of the same table. The account-level OpenAI
-usage limit that `aiBudget.ts` tells you to set is outside this repo and has
-not been verified from here — worth confirming before anything else.
+hit-rate instrumentation falls out of the same table.
+
+**The account-level limits are set — checked in the OpenAI console 2026-08-22.**
+Project `Iqraa` spend limit $50/month, organization budget $100/month, both
+blocking, and the project's allowed-models list is `gpt-5.4-mini` and
+`gpt-5.4-nano` only, so no expensive model is reachable even by
+misconfiguration. Spend at the time of checking: $0.59 across 121 requests
+since 2026-08-07, ~$0.005/request. The money is genuinely bounded; the
+in-app counter is now a reporting mechanism, not the last line of defence.
+One gap left: when the project limit binds, OpenAI's rejection falls through
+`respondAiError` to a generic 500 "AI generation failed", so a teacher sees a
+vague error rather than "the month's budget is spent." Not urgent at $0.59.
 
 Phases 0 and 1 both add tables, so both need the manual
 `pnpm --filter @workspace/db run push` — see the landmine below.
