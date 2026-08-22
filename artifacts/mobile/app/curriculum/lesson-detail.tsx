@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,7 +10,7 @@ import {
   getLessonById,
   isBrowserLessonTitleOnly,
 } from '@/services/curriculumData';
-import { DEMO_MODE } from '@/services/ai/demoMode';
+import { LessonPrepPanel } from '@/components/ui/LessonPrepPanel';
 
 const BLOOMS_COLORS: Record<string, string> = {
   Remember: '#6366F1',
@@ -25,32 +25,30 @@ export default function LessonDetailScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
-  const { lessonId, subjectColor, openLessonPlan, topicOverride } = useLocalSearchParams<{
+  const { lessonId, subjectColor, openLessonPlan } = useLocalSearchParams<{
     lessonId: string;
     subjectColor: string;
     openLessonPlan?: string;
-    topicOverride?: string;
   }>();
   const lesson = getLessonById(lessonId);
   const color = subjectColor ?? colors.primary;
-  const openedLessonPlan = useRef(false);
   const showTitleOnly = lesson ? isBrowserLessonTitleOnly(lesson.id) : false;
+  /**
+   * Preparation happens on this page. Opening it is one tap and it generates
+   * straight away — the teacher has already told us the lesson by getting here.
+   */
+  const [prepOpen, setPrepOpen] = useState(false);
 
   const lessonTitle = lesson
     ? (lang === 'ar' ? (lesson.titleAr || lesson.title) : lesson.title)
     : '';
 
-  // Demo resume path: land on Lesson Overview, then open Lesson Plan as the default tool
+  // Resume path ("continue teaching"): land on the lesson with preparation
+  // already open. It used to push the AI Tools form on a timer, which took the
+  // teacher off the lesson they had just resumed.
   useEffect(() => {
-    if (!DEMO_MODE || openLessonPlan !== '1' || !lesson || openedLessonPlan.current) return;
-    openedLessonPlan.current = true;
-    const topic = (typeof topicOverride === 'string' && topicOverride.trim())
-      || (lang === 'ar' ? (lesson.titleAr || lesson.title) : lesson.title);
-    const timer = setTimeout(() => {
-      router.push({ pathname: '/ai-tools/lesson-plan', params: { topic } });
-    }, 350);
-    return () => clearTimeout(timer);
-  }, [openLessonPlan, lesson, lang, topicOverride]);
+    if (openLessonPlan === '1' && lesson) setPrepOpen(true);
+  }, [openLessonPlan, lesson]);
 
   if (!lesson) {
     return (
@@ -107,13 +105,13 @@ export default function LessonDetailScreen() {
           <Pressable
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              router.push({ pathname: '/ai-tools/lesson-plan', params: { topic: lesson.title } });
+              setPrepOpen(open => !open);
             }}
             style={[styles.aiBtn, { backgroundColor: color, borderRadius: colors.radius, flex: 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           >
-            <Ionicons name="sparkles" size={18} color="#fff" />
+            <Ionicons name={prepOpen ? 'chevron-up' : 'sparkles'} size={18} color="#fff" />
             <Text style={[styles.aiBtnText, { color: '#fff', fontFamily: 'Cairo_600SemiBold' }]}>
-              {t('generateAILesson')}
+              {prepOpen ? t('prepInlineHide') : t('generateAILesson')}
             </Text>
           </Pressable>
           <Pressable
@@ -135,6 +133,9 @@ export default function LessonDetailScreen() {
             </Text>
           </Pressable>
         </View>
+
+        {/* Preparation — in place, on the lesson it belongs to */}
+        {prepOpen ? <LessonPrepPanel lessonId={lesson.id} accent={color} /> : null}
 
         {/* Objectives */}
         <Section title={t('learningObjectives')} icon="checkmark-circle-outline" color={color} isRTL={isRTL}>
