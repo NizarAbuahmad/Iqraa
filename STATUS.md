@@ -37,6 +37,15 @@ Vision screens (student/parent/school dashboards) are deprioritized.
 
 - `pnpm install` and full `pnpm run typecheck` pass clean (checked on Windows
   2026-08-06 and on Linux 2026-08-10).
+  - **Without a complete `pnpm install`, `typecheck` reports 79 errors** and
+    every one is a missing dependency, not a type error: 44 in `lib/db`
+    (`drizzle-orm`, `pg`, `@types/node`), 19 in
+    `lib/integrations-openai-ai-server`, 14 in generated API clients, 2 at
+    tsconfig level. Same shape as the 10 aborting mobile suites noted below —
+    an uninstalled workspace, not a regression. Worth stating precisely
+    because the count was repeatedly described as "all in
+    `lib/integrations-openai-ai-server`", which is wrong by a factor of three
+    and would send someone looking in the wrong package.
 - Mobile test suite: 480 tests (re-counted 2026-08-20; the 376 here was stale).
   The `test` script globs `services/__tests__/**/*.test.ts` — it used to be a
   hand-listed set of files that had drifted, so two suites never ran.
@@ -849,6 +858,144 @@ all four now verify with SymPy's own value. On a scorer fixture mixing the new
 shapes with a deliberately wrong radius key and a trigonometry item: 5 provable
 of 7, 4 verified, the wrong key caught, trig and صح/خطأ excluded. Python suite
 51/51; mobile 609 tests, 0 failures.
+
+## Live AI is on, 2026-08-20
+
+`AI_LIVE_MODE=true`, `AI_MODEL=gpt-5.4-mini`, `AI_BUDGET_USD=5` on iqraa-api;
+`EXPO_PUBLIC_DEMO_MODE=false` on iqraa-web. Confirmed the way the badge exists
+to be confirmed: `/api/healthz/ai-budget` reported `spentUsd` moving 0.1375 →
+0.188 across one lesson-plan generation. That counter only advances on a real
+completion with token usage, so it is proof independent of anything the screen
+renders.
+
+**`gpt-5.4-mini` is not in `PRICING_PER_MILLION_USD`**, so the guard bills it at
+the $10/$50 fallback and warns once. Spend is over-counted and the cap trips
+early — safe, but `AI_BUDGET_USD=5` does not mean $5. Add the real prices.
+
+Note the endpoint is `/api/healthz/ai-budget` — everything is mounted under
+`/api` (`app.use("/api", router)`).
+
+## Fixed 2026-08-20 — the objectives box deleted the curriculum outcomes
+
+Reported as "I added an objective and the plan didn't take it into account."
+Two separate defects, both reproduced against the shipped code.
+
+**1. Teacher objectives replaced the curriculum, silently.**
+`serializeLessonContext` had `if (teacherObj) … else if (curriculumObjectives)`,
+so typing anything at all into «الأهداف التعليمية (اختياري)» dropped the
+official NCCD نتاجات from the prompt entirely. Verified for «المشروع وإدارته»:
+without a teacher objective the context carries three official outcomes; with
+one it carries only the teacher's line. The screen still displayed «مرتبط
+بالمنهاج الأردني» either way — so adding one line produced a plan that was
+*less* curriculum-grounded than leaving the field empty, while claiming
+otherwise. Now additive: both blocks go in, each labelled by source.
+
+**2. There was nowhere to put an instruction.** The field is labelled
+«الأهداف التعليمية», and `lessonPlanPromptAr` renders it as «الأهداف المحددة»,
+so "tailor this plan for student with adhd" came back as the lesson's sole
+stated objective — verbatim, in English, with nothing in the body adapted. The
+request was obeyed to the letter and ignored in substance. An adaptation is an
+instruction about how to write every section, not something a student can
+demonstrate, so it needed its own field: «تكييفات وتعليمات إضافية (اختياري)»,
+routed through `buildAdaptationsDirective` into `additionalContext` and pointed
+explicitly at the `differentiation` slot the output schema already has, with
+"do not list these among the objectives" stated in the directive.
+
+**Also found while reproducing, fixed below:** `buildSupportResourcesContext`
+returned mathematics files for a financial-literacy lesson.
+
+## Generation and chat can use different models, 2026-08-22
+
+One `AI_MODEL` drove both. They are different jobs: a lesson plan is a single
+long structured document where quality is worth paying for, chat is many short
+turns where latency and cost dominate. Tying them together made every choice a
+compromise between two workloads that share nothing but a client.
+
+`AI_MODEL_GENERATE` and `AI_MODEL_CHAT` each fall back to `AI_MODEL`, which
+still sets both — **no deployment has to change anything.** Set one to split
+the workloads.
+
+Two things had to move with it:
+
+- **`recordUsage(usage, model)` now takes the model.** It priced by a single
+  global; with two models that would bill every chat turn at the generation
+  model's rate, and the budget guard would be wrong in whichever direction the
+  prices differ.
+- **`/api/healthz/ai-budget` reports `generationModel` and `chatModel`** in
+  place of one `model`. The single field was only ever accurate while the two
+  were guaranteed to match; naming them separately is what makes "which model
+  answered that?" checkable from the endpoint. Nothing in the codebase read
+  the old field.
+
+## Fixed 2026-08-22 — /generate/* answered 200 with an empty artifact
+
+`generateContent` ran `extractJSON` over the model's reply and handed the
+result straight to `res.json()`. Nothing checked the object had the fields the
+app reads. Two ways that goes wrong, both silent:
+
+- a truncated response — `extractJSON` recovers a partial object, or `{}`;
+- a well-formed object of the wrong shape.
+
+Either way the route answered **200** and the screen drew a blank lesson plan.
+No error in the logs, none in the UI, and the provenance badge said «ذكاء
+اصطناعي مباشر» because the call had genuinely succeeded. Same family as every
+other bug in this file: it failed without failing.
+
+`src/lib/generationShape.ts` now gates all six `/generate/*` routes on the
+fields the screens actually index into, and `respondAiError` maps the new
+`UnusableGenerationError` to **502** (the request was fine; the upstream reply
+was not) with the missing field names in the body and the log.
+
+Failing closed costs nothing here: `RemoteAIService` already falls back to
+`MockAIService` on any non-2xx, and `aiProvenance` labels the result «تعذّر
+الاتصال · محتوى تجريبي». Sample content that says it is sample content beats
+real-looking content that is empty.
+
+The bar is deliberately the app's own contract, matching `REQUIRED_FIELDS` in
+`scripts/provider-eval.ts` — which measured **12/12 conformance** for
+`gpt-5.4-mini`, so a working generation clears it comfortably. Cosmetic echoes
+of the request (a quiz's `duration`, a lesson plan's `grade`) are *not*
+required: discarding an otherwise complete artifact over those would turn
+usable output into mock content.
+
+**Watch this:** if the gate fires spuriously in production, teachers get mock
+content where they previously got a nearly-complete artifact. It logs the kind
+and the exact missing fields, so check `/api/healthz/errors` (needs
+`ADMIN_DEBUG_KEY`) before assuming a model problem.
+
+## Fixed 2026-08-21 — support packs attached from the wrong subject
+
+«المشروع وإدارته» (financial literacy) came back with three **mathematics**
+files — «إجابات الوحدة الأولى (الأسس والمعادلات)» and friends. The support
+block goes into `additionalContext`, so since live AI was switched on those
+were being sent to the model on every generation for that lesson.
+
+Swept all 57 KB lessons: **30 cross-subject attachments, every one of them
+financial-literacy → mathematics.** Two independent causes.
+
+1. **The subject gate was advisory.** A declared mismatch scored `-6`, on the
+   theory that a strong title match should still be allowed through. But a
+   matching unit tag scores `+8`, so one colliding tag beat the penalty
+   outright. A Grade 10 maths worksheet is never the right attachment for a
+   financial-literacy lesson however the titles score, so a declared mismatch
+   now disqualifies.
+2. **The unit tags had no subject in them.** `s1-u1` / `s2-u3` are
+   *mathematics* catalog tags, but `unitTagsForLesson` emitted them for any
+   unit id matching `/nccd-u\d+/` — which every NCCD unit does. Financial
+   literacy unit 1 therefore emitted `s1-u1` and collided with every maths
+   unit-1 pack. Chemistry escaped only because it carries explicit `chem-*`
+   tags. The bare form is now emitted for mathematics alone.
+
+A third leak survived both fixes: `buildSupportResourcesContext` retries
+without the lesson when the scoped search finds nothing, and dropping the
+lesson dropped the subject with it (`detectSubjectFromQuery` knows only maths
+and chemistry). One financial-literacy lesson picked up **chemistry** activity
+books through that path. The retry now widens the match, not the subject.
+
+After: 0 cross-subject attachments; the only lessons whose results changed are
+the 10 financial-literacy ones, which now correctly attach nothing — the
+catalog holds no financial-literacy packs. All 36 mathematics and 11 chemistry
+lessons are byte-identical to before.
 
 ## Fixed 2026-08-20 — generated multiple-choice keys could never verify
 
@@ -2916,8 +3063,18 @@ populating the field; a list a teacher cannot act on is worse than no list.
     every table in `lib/db/src/schema` with `to_regclass` and names the feature
     each missing one takes down. Read-only, exits non-zero when anything is
     absent. It does not fix the deploy gap — it makes the gap visible, which is
-    the part that was missing when 14 of 24 tables were absent from production
-    for an unknown length of time.
+    the part that was missing when 14 of 24 tables were absent from production.
+  - **Production verified 24/24 on 2026-08-22**, via the same `to_regclass`
+    check run in the Neon SQL console. The 2026-08-19 outage was fixed that
+    same afternoon — Neon's query history shows "find missing tables" at
+    1:36pm, a schema migration at 1:41pm, and a re-check at 1:42pm. Both this
+    file and CLAUDE.md went on asserting the outage for three days afterwards,
+    because the fix was never written down. **The process gap is real and
+    still open; that particular outage is not.**
+  - **What the check does not prove:** `to_regclass` asks whether a table
+    *name* exists. A table with a stale column set — a migration that added
+    the table but not a later column — still reports `ok`. Column-level drift
+    needs a different check, which does not exist yet.
 - **`pnpm test` in api-server does not build.** Its mount-order suite boots
   `dist/index.mjs`, so a stale bundle reports on code nobody is looking at. CI
   now builds first; do the same locally.

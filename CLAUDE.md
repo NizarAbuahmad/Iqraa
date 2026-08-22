@@ -90,8 +90,15 @@ Before a live demo: [`docs/demo-checklist.md`](./docs/demo-checklist.md).
   build which inlined it has actually deployed — these are baked in at build
   time, so an env change without a rebuild changes nothing.
 - **The production schema is not deployed by anything.** `pnpm --filter
-  @workspace/db run push` is manual. On 2026-08-19, 14 of 24 expected tables
-  were missing from production, including the entire evaluations subsystem —
-  a whole pilot tool that had never been able to function there. Verify with
-  `to_regclass` against every table in `lib/db/src/schema` before trusting
-  that a feature works in production because it works locally.
+  @workspace/db run push` is manual, so a release that adds a table and skips
+  that push leaves endpoints answering 503. On 2026-08-19, 14 of 24 expected
+  tables were missing from production, including the entire evaluations
+  subsystem — **and it was fixed the same afternoon** (Neon query history:
+  found 1:36pm, migrated 1:41pm, re-checked 1:42pm). This entry went on
+  asserting the outage for three more days, because only the problem got
+  written down and not the fix.
+  **Verified 24/24 present on 2026-08-22.** The gap in the *process* is real
+  and still open; that particular outage is not. Re-check with
+  `pnpm --filter @workspace/db run verify-schema` rather than trusting this
+  line — and note it only asks whether each table *name* exists, so a table
+  with a stale column set still reports `ok`.
