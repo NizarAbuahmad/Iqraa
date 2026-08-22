@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Pull the few pages that matter out of a Jordanian دليل المعلم.
+Pull the few pages that matter out of Jordanian دليل المعلم guides.
 
 A teacher guide is ~45 MB and a few hundred pages, but the curriculum data
 comes from three page *types*, and everything else is the student book
@@ -18,6 +18,13 @@ extract is a few KB against a 45 MB binary that is gitignored anyway, and it
 travels through a chat window without any of this having to be uploaded.
 
     pip install pypdf
+    python scripts/extract_curriculum_pages.py \\
+        --root "C:\\...\\Iqraa\\Calude app\\Knowledge Base"
+
+`--root` walks `<grade folder>/<subject folder>/` itself (see `kb_layout.py`),
+so the whole knowledge base is one command and a grade added later is picked
+up by re-running it. One pack at a time still works:
+
     python scripts/extract_curriculum_pages.py --grade 9 --subject math \\
         --src "C:\\...\\9th grade\\Math"
 
@@ -43,6 +50,8 @@ import re
 import sys
 import unicodedata
 from pathlib import Path
+
+from kb_layout import discover, report_unrecognised
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -117,25 +126,15 @@ def classify_page(text: str) -> str | None:
     return None
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--grade", type=int, required=True, choices=range(1, 13))
-    ap.add_argument("--subject", required=True)
-    ap.add_argument("--src", required=True, type=Path, help="folder of teacher-guide PDFs, or one PDF")
-    ap.add_argument("--out", type=Path, default=None)
-    args = ap.parse_args()
-
-    pypdf = load_pypdf()
-    src: Path = args.src
+def extract_pack(pypdf, grade: int, subject: str, src: Path, out_dir: Path) -> int:
+    """Extract one `<grade>/<subject>` folder (or single PDF). Returns pages found."""
     pdfs = [src] if src.is_file() else sorted(f for f in src.iterdir() if f.suffix.lower() == ".pdf")
     if not pdfs:
-        print(f"No PDFs at {src}", file=sys.stderr)
-        return 2
+        print(f"  -- grade {grade} {subject}: no PDFs in {src}")
+        return 0
 
-    out_dir = args.out or (ROOT / "curriculum-extracts" / f"g{args.grade}-{args.subject}")
     out_dir.mkdir(parents=True, exist_ok=True)
-
-    total_hits = 0
+    hits = 0
     for pdf in pdfs:
         try:
             reader = pypdf.PdfReader(str(pdf))
@@ -165,7 +164,7 @@ def main() -> int:
 
         header = (
             f"# {pdf.name}\n\n"
-            f"- grade: {args.grade}\n- subject: {args.subject}\n"
+            f"- grade: {grade}\n- subject: {subject}\n"
             f"- pages in file: {len(reader.pages)}\n"
             f"- curriculum pages extracted: {len(sections)}\n"
         )
@@ -176,11 +175,57 @@ def main() -> int:
             )
         dest = out_dir / f"{pdf.stem}.md"
         dest.write_text(header + "".join(sections) + "\n", encoding="utf-8")
-        total_hits += len(sections)
+        hits += len(sections)
         flag = f"  ({broken_pages} broken)" if broken_pages else ""
         print(f"  ok {pdf.name}: {len(sections)} page(s) → {show(dest)}{flag}")
+    return hits
 
-    print(f"\n{total_hits} curriculum page(s) extracted from {len(pdfs)} PDF(s) → {show(out_dir)}")
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--root", type=Path, default=None,
+                    help="Knowledge Base root; walks <grade>/<subject>/ itself")
+    ap.add_argument("--grade", type=int, default=None, choices=range(1, 13))
+    ap.add_argument("--subject", default=None)
+    ap.add_argument("--src", type=Path, default=None,
+                    help="folder of teacher-guide PDFs, or one PDF")
+    ap.add_argument("--out", type=Path, default=None,
+                    help="output dir; with --root this is the parent of the g<n>-<subject> dirs")
+    args = ap.parse_args()
+
+    if args.root and (args.grade or args.subject or args.src):
+        print("Use --root, or --grade/--subject/--src — not both.", file=sys.stderr)
+        return 2
+
+    base = args.out or (ROOT / "curriculum-extracts")
+    packs: list[tuple[int, str, Path, Path]] = []
+    disc = None
+    if args.root:
+        disc = discover(args.root)
+        packs = [(p.grade, p.subject, p.path, base / f"g{p.grade}-{p.subject}") for p in disc.packs]
+        if not packs:
+            print(f"No grade/subject folders under {args.root}", file=sys.stderr)
+            report_unrecognised(disc)
+            return 2
+        print(f"{len(packs)} pack(s) under {args.root}\n")
+    else:
+        if not (args.grade and args.subject and args.src):
+            print("Give --root, or all of --grade, --subject and --src.", file=sys.stderr)
+            return 2
+        if not args.src.exists():
+            print(f"Source not found: {args.src}", file=sys.stderr)
+            return 2
+        out_dir = args.out or (base / f"g{args.grade}-{args.subject}")
+        packs = [(args.grade, args.subject, args.src, out_dir)]
+
+    pypdf = load_pypdf()
+    total_hits = 0
+    for grade, subject, src, out_dir in packs:
+        total_hits += extract_pack(pypdf, grade, subject, src, out_dir)
+
+    print(f"\n{total_hits} curriculum page(s) extracted from {len(packs)} pack(s) → {show(base)}")
+    if disc is not None:
+        report_unrecognised(disc)
     if total_hits == 0:
         # Silence here would read as "nothing to extract" rather than "the
         # matcher did not fire", which are very different problems.

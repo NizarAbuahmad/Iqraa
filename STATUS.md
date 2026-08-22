@@ -940,6 +940,74 @@ worked examples. That is not a coincidence — it is the one built from a دلي
 hardcoded in `knowledgeBase.ts` with no source file, which is why 55 lessons
 validate here against 57 in the KB. Not thin — absent.
 
+## One command over the whole Knowledge Base, 2026-08-22
+
+The books all live under one folder on the owner's machine, and it keeps
+growing:
+
+```
+Knowledge Base/
+  9th grade/   Math/  Science/
+  10th grade/  Math/  Chemistry/
+```
+
+Both PDF scripts previously took `--grade`, `--subject` and `--src`, so phase
+one — ten grades — meant being told "here is grade 9 maths" once per folder,
+roughly sixty invocations, each of which is a chance to mistype a grade and
+file a book under the wrong one. Both now also take `--root` and walk that
+tree themselves (`scripts/kb_layout.py`), so the whole knowledge base is one
+command and a grade added tomorrow is picked up by re-running it:
+
+```bash
+python scripts/import_support_pdfs.py --root ".../Knowledge Base" --dry-run
+python scripts/extract_curriculum_pages.py --root ".../Knowledge Base"
+```
+
+Verified against a fixture mirroring the real layout: 5 packs found, the
+Windows `(1)` duplicate collapsed, «الصف الثاني عشر/الرياضيات» read as grade
+12 maths, and the two junk folders named on screen. Then against real PDFs —
+the Grade 9 دليل المعلم yielded its 5 curriculum pages under `--root`, and the
+Grade 10 exercise book correctly matched none.
+
+**Folders it cannot place are reported, never skipped.** A subject folder
+whose name is unknown is precisely the case where a whole grade's material
+would otherwise go missing with nothing on screen to say so, which is the
+shape of most bugs in this file.
+
+**Grade 12 was being read as grade 2.** «الصف الثاني عشر» contains «الثاني»,
+so matching the Arabic ordinals in declaration order returned 2. Longest key
+first now. Caught by the fixture, not by reasoning about it.
+
+**The importer refuses to erase unit tags.** `g10_math_support_resources.json`
+carries 37 unit-tagged resources, and its rules lived *inside*
+`scripts/import_g10_math_support.py` rather than in `unit_rules/` — so a
+`--root` run over everything would have rewritten all 37 as
+`g10-math-general` and quietly dropped the whole subject out of unit-scoped
+search. Two things now prevent that: the rules were extracted to
+`scripts/unit_rules/g10-math.json` (replayed against the shipped catalog they
+reproduce all 38 types and all 38 tag sets exactly — the only differences are
+three titles, where the generic version is better, stripping a dangling
+«إعداد»), and the importer compares against the catalog on disk and **refuses
+to write one with fewer tagged resources than it replaces**, exiting non-zero.
+`--force` overrides it.
+
+**A catalog nothing imports is now called out.** Only `g10_math` and
+`g10_chem` are read by `mathSupportResources.ts`, both by hardcoded filename,
+so every new grade's catalog is currently a file that exists and does nothing.
+The importer says so after writing rather than leaving it to be discovered
+when a Grade 9 lesson shows no resources. **Still open:** wiring
+`mathSupportResources.ts` to load catalogs for all grades.
+
+**Also still open:** Grade 10 chemistry has not been folded into the generic
+importer. It writes `g10_chem_support_resources.json` — not the
+`g10_chemistry_…` the generic path would produce — with a different fallback
+tag, case-insensitive rules and a skip list. Two catalogs for one pack is its
+own quiet mess, so it keeps its own script until that is done deliberately.
+
+A `.pyc` from `scripts/` had been committed: `.gitignore` only ignored
+`__pycache__` under `artifacts/math-verifier`. Widened to all of it and the
+file untracked.
+
 ## Chat is in the evaluation now, 2026-08-22
 
 The harness covered lesson-plan, worksheet and quiz. Chat — the tab teachers
