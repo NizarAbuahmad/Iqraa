@@ -307,8 +307,10 @@ export default function DashboardScreen() {
       params: {
         lessonId: DEMO_CONTINUE.lessonId,
         subjectColor: TEAL,
+        // Opens the lesson's own preparation panel in place. It used to also
+        // pass a topic override, which could ask a lesson page to prepare a
+        // different topic than the lesson it was showing.
         openLessonPlan: DEMO_MODE ? '1' : '0',
-        topicOverride: lessonTopic,
       },
     });
   };
