@@ -36,6 +36,8 @@ import {
   quizPromptAr,
   worksheetPromptAr,
 } from "../src/lib/prompts.ts";
+import { buildSystemPromptAr, CHAT_MAX_TOKENS } from "../src/lib/chatPrompts.ts";
+import { answeredInArabic, arabicShare } from "../src/lib/languageCompliance.ts";
 
 // ─── The eval set ────────────────────────────────────────────────────────────
 // Fixed and checked in on purpose: an eval whose inputs drift cannot be
@@ -59,6 +61,64 @@ const LESSONS = [
  * An eval that penalises a model for the harness's configuration measures the
  * harness.
  */
+/**
+ * Chat scenarios — the tab teachers actually land on, and the one path the
+ * first three runs of this harness never measured.
+ *
+ * Multi-turn on purpose. A single question tests the system prompt; a
+ * follow-up tests whether the model keeps the lesson it was given, which is
+ * where a cheap model usually falls over first.
+ *
+ * The textbook context is hand-written and checked in rather than pulled from
+ * the mobile KB: same reasoning as LESSONS above — an eval whose inputs drift
+ * cannot be compared across runs — and it keeps this script free of a
+ * cross-package import into the Expo app.
+ */
+const CHAT_SCENARIOS = [
+  {
+    id: "derivative-help",
+    topic: "الاشتقاق",
+    context:
+      "الدرس: قواعد الاشتقاق. النتاجات: تطبيق قاعدة القوة على كثيرات الحدود؛ "
+      + "إيجاد مشتقة اقتران عند نقطة. القاعدة: إذا كان f(x) = x^n فإن f'(x) = n·x^(n-1).",
+    turns: [
+      "عندي حصة بعد نص ساعة عن قواعد الاشتقاق. اعطيني مثالين محلولين خطوة بخطوة أكتبهم على السبورة.",
+      "الطلاب ما فهموا الخطوة الثانية. كيف أشرحها بطريقة ثانية؟",
+    ],
+  },
+  {
+    id: "circle-misconception",
+    topic: "معادلة الدائرة",
+    context:
+      "الدرس: معادلة الدائرة. الصيغة القياسية: (x-h)² + (y-k)² = r² حيث (h, k) المركز و r نصف القطر.",
+    turns: [
+      "طلابي بيخلطوا بين المركز ونصف القطر في معادلة الدائرة. شو أكثر خطأ شائع وكيف أعالجه؟",
+      "اعطيني سؤال قصير أتأكد فيه إنهم فهموا قبل ما أنهي الحصة.",
+    ],
+  },
+  {
+    id: "out-of-scope",
+    topic: "خارج المنهج",
+    context: "",
+    turns: [
+      // The system prompt says: don't guess, say so, redirect. Whether a model
+      // holds that line is a product question, not a style question.
+      "اشرحلي التكامل بالتجزيء للصف العاشر.",
+    ],
+  },
+  {
+    id: "chemistry-plan",
+    topic: "التفاعلات الكيميائية",
+    context:
+      "الدرس: أنواع التفاعلات الكيميائية. النتاجات: التمييز بين تفاعل الاتحاد والتفكك والإحلال؛ "
+      + "وزن المعادلات الكيميائية البسيطة.",
+    turns: [
+      "بدي فكرة نشاط صفي لمدة ١٠ دقائق عن أنواع التفاعلات الكيميائية، بدون مختبر.",
+      "الصف عندي ٣٥ طالب والمقاعد ثابتة. عدّل الفكرة.",
+    ],
+  },
+] as const;
+
 const TASK_TOKENS = 16000;
 
 /**
@@ -107,9 +167,10 @@ type Provider = {
   model: string;
   pricing: Pricing;
   enabled: boolean;
-  run: (system: string, user: string, maxTokens: number) => Promise<Completion>;
+  run: (system: string, messages: Turn[], maxTokens: number) => Promise<Completion>;
 };
 
+type Turn = { role: "user" | "assistant"; content: string };
 type Completion = { text: string; inputTokens: number; outputTokens: number };
 
 const openaiModel = process.env.OPENAI_EVAL_MODEL || "gpt-4o-mini";
@@ -142,14 +203,11 @@ function openaiCompatible(id: string, model: string, apiKey: string, baseURL?: s
   const client = new OpenAI({ apiKey, ...(baseURL ? { baseURL } : {}) });
   return {
     id, model, pricing, enabled: true,
-    async run(system, user, maxTokens) {
+    async run(system, messages, maxTokens) {
       const c = await client.chat.completions.create({
         model,
         max_completion_tokens: maxTokens,
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: user },
-        ],
+        messages: [{ role: "system", content: system }, ...messages],
       });
       return {
         text: c.choices[0]?.message?.content ?? "",
@@ -167,7 +225,7 @@ function anthropicProvider(apiKey: string): Provider {
     model: anthropicModel,
     pricing: ANTHROPIC_PRICING[anthropicModel] ?? null,
     enabled: true,
-    async run(system, user, maxTokens) {
+    async run(system, messages, maxTokens) {
       // Adaptive thinking is the recommended default and is left on, so the
       // measured cost is the cost of using this model properly rather than a
       // flattering configuration. Thinking tokens are billed as output and
@@ -178,7 +236,7 @@ function anthropicProvider(apiKey: string): Provider {
         system,
         thinking: { type: "adaptive" },
         output_config: { effort: effort as "low" | "medium" | "high" },
-        messages: [{ role: "user", content: user }],
+        messages,
       });
       const text = msg.content
         .filter((b): b is Anthropic.TextBlock => b.type === "text")
@@ -245,6 +303,34 @@ type Row = {
   error?: string;
 };
 
+/**
+ * Chat rows carry different measures from generation rows, and forcing them
+ * into one table would be worse than having two.
+ *
+ * A chat reply is prose: there is no JSON to parse and no required fields, so
+ * `parsed` and `complete` have no meaning here. Reporting them as 0 would read
+ * as total failure; reporting them as N/N would be a lie. They are simply not
+ * asked.
+ *
+ * What replaces them is the one thing about a prose reply that can be scored
+ * rather than rated: did it answer in Arabic. See lib/languageCompliance.ts.
+ */
+type ChatRow = {
+  anonId: string;
+  provider: string;
+  model: string;
+  scenario: string;
+  ms: number;
+  inputTokens: number;
+  outputTokens: number;
+  usd: number | null;
+  /** 0–1 share of letters that are Arabic script. */
+  arabic: number;
+  /** Reply length in characters — a chat answer that runs to 1200 tokens is a UX problem. */
+  chars: number;
+  error?: string;
+};
+
 // ─── Run ─────────────────────────────────────────────────────────────────────
 const providers = buildProviders();
 if (providers.length === 0) {
@@ -260,12 +346,14 @@ mkdirSync(join(outDir, "raw"), { recursive: true });
 
 console.log(`Providers: ${providers.map((p) => `${p.id}(${p.model})`).join(", ")}`);
 console.log(`${LESSONS.length} lessons × ${TASKS.length} tasks × ${providers.length} providers`
-  + ` = ${LESSONS.length * TASKS.length * providers.length} generations\n`);
+  + ` = ${LESSONS.length * TASKS.length * providers.length} generations,`
+  + ` then ${CHAT_SCENARIOS.length} chat scenarios × ${providers.length} providers\n`);
 
 const rows: Row[] = [];
 const key: Record<string, Omit<Row, "anonId">> = {};
 const mathItems: { anonId: string; text: string; answer: string; options: string[] }[] = [];
 let n = 0;
+let c = 0;
 
 for (const lesson of LESSONS) {
   for (const task of TASKS) {
@@ -276,7 +364,7 @@ for (const lesson of LESSONS) {
       const started = Date.now();
       let row: Row;
       try {
-        const c = await provider.run(SYSTEM_AR, user, task.maxTokens);
+        const c = await provider.run(SYSTEM_AR, [{ role: "user", content: user }], task.maxTokens);
         const ms = Date.now() - started;
         const parsed = extractJSON(c.text);
         row = {
@@ -326,6 +414,72 @@ for (const lesson of LESSONS) {
   }
 }
 
+// ─── Chat ────────────────────────────────────────────────────────────────────
+// Runs the shipped chat system prompt over fixed multi-turn conversations.
+// Each turn is sent with the full history before it, exactly as routes/chat.ts
+// does, so a model is measured on holding context and not just on one reply.
+const chatRows: ChatRow[] = [];
+
+console.log(`\n${CHAT_SCENARIOS.length} chat scenarios × ${providers.length} providers\n`);
+
+for (const scenario of CHAT_SCENARIOS) {
+  for (const provider of providers) {
+    const anonId = `c${String(++c).padStart(3, "0")}`;
+    const system = buildSystemPromptAr(true, scenario.context || undefined);
+    const history: Turn[] = [];
+    const transcript: { role: string; content: string }[] = [];
+    const started = Date.now();
+    let inputTokens = 0;
+    let outputTokens = 0;
+    let lastReply = "";
+    let error: string | undefined;
+
+    try {
+      for (const turn of scenario.turns) {
+        history.push({ role: "user", content: turn });
+        transcript.push({ role: "user", content: turn });
+        const completion = await provider.run(system, history, CHAT_MAX_TOKENS);
+        history.push({ role: "assistant", content: completion.text });
+        transcript.push({ role: "assistant", content: completion.text });
+        inputTokens += completion.inputTokens;
+        outputTokens += completion.outputTokens;
+        lastReply = completion.text;
+      }
+    } catch (e) {
+      error = e instanceof Error ? e.message : String(e);
+    }
+
+    // Score the whole conversation's replies, not just the last: a model that
+    // answers turn 1 in Arabic and drifts to English on the follow-up has
+    // failed, and grading only the final reply would miss it in either
+    // direction.
+    const replies = transcript.filter((t) => t.role === "assistant").map((t) => t.content);
+    const joined = replies.join("\n");
+    const row: ChatRow = {
+      anonId, provider: provider.id, model: provider.model, scenario: scenario.id,
+      ms: Date.now() - started, inputTokens, outputTokens,
+      usd: costUsd(provider.pricing, inputTokens, outputTokens),
+      arabic: Number(arabicShare(joined).toFixed(3)),
+      chars: joined.length,
+      ...(error ? { error } : {}),
+    };
+    chatRows.push(row);
+    const { anonId: _drop, ...rest } = row;
+    key[anonId] = rest as unknown as Omit<Row, "anonId">;
+
+    writeFileSync(join(outDir, "raw", `${anonId}.json`),
+      JSON.stringify({ anonId, task: "chat", topic: scenario.topic, transcript }, null, 2));
+
+    console.log(`${anonId} ${provider.id.padEnd(10)} ${"chat".padEnd(12)} ${scenario.id.padEnd(22)}`
+      + ` ${String(row.ms).padStart(6)}ms `
+      + (error
+        ? "ERROR: " + error.slice(0, 60)
+        : answeredInArabic(joined)
+          ? `ok · ${row.chars} chars`
+          : `NOT ARABIC (${row.arabic}) · ${row.chars} chars`));
+  }
+}
+
 writeFileSync(join(outDir, "key.json"), JSON.stringify(key, null, 2));
 writeFileSync(join(outDir, "math-items.json"), JSON.stringify(mathItems, null, 2));
 
@@ -336,6 +490,7 @@ for (const r of rows) byProvider.set(r.provider, [...(byProvider.get(r.provider)
 const lines: string[] = [];
 lines.push(`# Provider evaluation — ${runId}\n`);
 lines.push(`${LESSONS.length} lessons × ${TASKS.length} tasks, Arabic, using the shipped prompts.\n`);
+lines.push("## Generated artifacts\n");
 // "parsed" and "complete" are different questions, so they get different
 // columns: a model can return well-formed JSON that the app renders as an
 // empty lesson plan.
@@ -352,6 +507,34 @@ for (const [id, rs] of byProvider) {
     : `$${rs.reduce((s, r) => s + (r.usd ?? 0), 0).toFixed(4)}`;
   lines.push(`| ${id} | ${rs[0]!.model} | ${ok}/${rs.length} | ${complete}/${rs.length} | ${median} | ${tokens} | ${usd} |`);
 }
+
+// Chat gets its own table. See the ChatRow comment: a prose reply has no
+// `parsed` or `complete` to report, and faking those columns would read as
+// either total failure or a lie.
+lines.push("\n## Chat\n");
+lines.push(`${CHAT_SCENARIOS.length} multi-turn scenarios, Arabic, using the shipped chat system prompt.\n`);
+lines.push("| provider | model | replied in Arabic | median ms | avg chars | total tokens | est. cost |");
+lines.push("|---|---|---|---|---|---|---|");
+const chatByProvider = new Map<string, ChatRow[]>();
+for (const r of chatRows) chatByProvider.set(r.provider, [...(chatByProvider.get(r.provider) ?? []), r]);
+for (const [id, rs] of chatByProvider) {
+  const inArabic = rs.filter((r) => !r.error && r.arabic >= 0.7).length;
+  const times = rs.map((r) => r.ms).sort((a, b) => a - b);
+  const median = times[Math.floor(times.length / 2)] ?? 0;
+  const avgChars = Math.round(rs.reduce((s2, r) => s2 + r.chars, 0) / (rs.length || 1));
+  const tokens = rs.reduce((s2, r) => s2 + r.inputTokens + r.outputTokens, 0);
+  const usd = rs.every((r) => r.usd === null)
+    ? "—"
+    : `$${rs.reduce((s2, r) => s2 + (r.usd ?? 0), 0).toFixed(4)}`;
+  lines.push(`| ${id} | ${rs[0]!.model} | ${inArabic}/${rs.length} | ${median} | ${avgChars} | ${tokens} | ${usd} |`);
+}
+lines.push(`
+**Chat is not scored beyond this.** Latency, cost and "did it answer in
+Arabic" are objective; whether the advice is any good is not, and belongs in
+the blind rating below alongside the generated artifacts. The \`c*.json\` files
+in \`raw/\` are full transcripts.
+`);
+
 lines.push(`
 ## Next steps
 
@@ -360,6 +543,9 @@ lines.push(`
    pass rate. That is the objective half.
 2. **Blind Arabic rating** — read \`raw/*.json\` without opening \`key.json\`,
    rank them, and only then un-blind. Ideally have a teacher do this too.
+   \`s*.json\` are generated artifacts; \`c*.json\` are chat transcripts.
+   With a single provider configured there is nothing to un-blind — the rating
+   is then a quality floor check, not a comparison.
 
 \`ok/total\` counts responses that parsed as JSON at all — a model that writes
 beautiful Arabic prose where the app expects JSON scores zero in production,
@@ -383,11 +569,12 @@ console.log(`\nWritten to ${outDir}/`);
  * Only a TOTAL failure fails the run. One provider being down must not throw
  * away the others' results, which cost real money to produce.
  */
-const succeeded = rows.filter((r) => !r.error);
-if (rows.length > 0 && succeeded.length === 0) {
-  const reasons = [...new Set(rows.map((r) => r.error ?? "unknown"))];
+const attempted = [...rows, ...chatRows];
+const succeeded = attempted.filter((r) => !r.error);
+if (attempted.length > 0 && succeeded.length === 0) {
+  const reasons = [...new Set(attempted.map((r) => r.error ?? "unknown"))];
   console.error(
-    `\nEvery generation failed — nothing was produced.\n`
+    `\nEvery call failed — nothing was produced.\n`
       + reasons.map((r) => `  • ${r}`).join("\n")
       + `\n\nA 429 quota message means the account has no credit, not that the`
       + ` model is unavailable. A 401 means the key; a 404 means the model id.\n`,
