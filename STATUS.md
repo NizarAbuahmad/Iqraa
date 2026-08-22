@@ -46,7 +46,8 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     because the count was repeatedly described as "all in
     `lib/integrations-openai-ai-server`", which is wrong by a factor of three
     and would send someone looking in the wrong package.
-- Mobile test suite: 480 tests (re-counted 2026-08-20; the 376 here was stale).
+- Mobile test suite: 708 tests, 698 pass / 10 skipped (re-counted 2026-08-22
+  on an installed workspace; the 480 here was stale, as the 376 before it was).
   The `test` script globs `services/__tests__/**/*.test.ts` — it used to be a
   hand-listed set of files that had drifted, so two suites never ran.
   - In a container where `@workspace/curriculum` has not been installed/built,
@@ -151,6 +152,51 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     deployed. The client's timeout is 2.5s, so the first call after idle fails.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
+
+## Preparing a lesson no longer leaves the lesson, 2026-08-22
+
+Curriculum → book → unit → lesson → **حضّر خطة درس** used to `router.push` the
+AI Tools lesson-plan screen. That screen is a blank generator form, so the
+teacher arrived at pickers asking for the grade, the subject and the topic they
+had just walked through four screens to choose, with the lesson's objectives,
+its period length and the lesson page itself left behind.
+
+It also lost information on the way. The button passed `lesson.title` — the
+**English** title — while the UI and the KB search were Arabic, so
+`resolveGeneratorGrounding` could not match it: `titleAr` is what
+`resolveGroundedKbLesson` compares against in `ar`. A chemistry lesson that is
+in the NCCD book came back badged "general content, not tied to a curriculum
+lesson". Checked against the catalog before the fix: `lesson-chem-1`,
+`lesson-chem-2` and `lesson-chem-s2-5` all ground on their Arabic title and all
+fail on their English one. Math S1/S2 was unaffected only because its NCCD
+titles are Arabic in both fields.
+
+**Now:** the button opens `components/ui/LessonPrepPanel.tsx` in place on the
+lesson page and generates immediately. Grade, subject, topic, objectives and
+duration come from the lesson itself via `services/lessonPrep.ts` (pure, tested
+in `services/__tests__/lessonPrep.test.ts`). Duration, teaching style and
+adaptations are still there, behind "خيارات التحضير", and the full tool is one
+link away for a topic that is *not* this lesson — pre-filled with the lesson's
+grade and subject instead of index 0. The plan renders through `LessonPlanView`,
+the same component the tool screen and chat use, so the three cannot drift.
+
+Verified on the running web build (Expo :8081, DEMO_MODE): tapping حضّر on
+`lesson-chem-1` renders the plan under the lesson with «مرتبط بالمنهاج الأردني —
+نظرية بور لذرة الهيدروجين», and save posts `subject: "Mathematics"`/
+`topic: "تركيب الاقترانات"` to `/workspace/items` from the math resume path.
+
+Two things deliberately not changed:
+- **English UI still labels these ungrounded.** The KB is Arabic-native, so an
+  English topic string matches nothing — the same behaviour as everywhere else
+  in the app. It is disclosed, not hidden.
+- **`TopicSelector` still shows its placeholder** when the full tool is opened
+  with a topic prop. Pre-existing and already noted in that file; the topic is
+  carried and generation uses it, only the dropdown looks empty.
+
+`app/home.tsx`'s "continue teaching" link keeps `openLessonPlan=1`, which now
+opens the panel in place instead of pushing the form on a 350ms timer. Its
+`topicOverride` param is gone: it could ask a lesson page to prepare a topic
+other than the lesson it was showing.
 
 ## Teacher UX pass — merged 2026-08-10
 

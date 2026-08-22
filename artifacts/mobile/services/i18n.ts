@@ -178,6 +178,10 @@ const translations = {
     keywords: 'الكلمات المفتاحية',
     teacherNotes: 'ملاحظات المعلم',
     generateAILesson: 'حضّر خطة درس',
+    prepInlineTitle: 'تحضير هذا الدرس',
+    prepInlineHide: 'إخفاء التحضير',
+    prepInlineOptions: 'خيارات التحضير',
+    prepInlineOpenFullTool: 'افتح أداة خطة الدرس لموضوع آخر',
 
     // Curriculum — subjects / semester screen
     booksAvailable: (n: number) => `${n} كتاب`,
@@ -1035,6 +1039,10 @@ const translations = {
     keywords: 'Keywords',
     teacherNotes: 'Teacher Notes',
     generateAILesson: 'Generate AI Lesson Plan',
+    prepInlineTitle: 'Prepare this lesson',
+    prepInlineHide: 'Hide preparation',
+    prepInlineOptions: 'Preparation options',
+    prepInlineOpenFullTool: 'Open the Lesson Plan tool for another topic',
 
     booksAvailable: (n: number) => `${n} book${n !== 1 ? 's' : ''} available`,
     noBooks: 'No books yet',
