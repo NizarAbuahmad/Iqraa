@@ -859,6 +859,36 @@ shapes with a deliberately wrong radius key and a trigonometry item: 5 provable
 of 7, 4 verified, the wrong key caught, trig and صح/خطأ excluded. Python suite
 51/51; mobile 609 tests, 0 failures.
 
+## Decided 2026-08-22 — gpt-5.4-mini for generation, and stop shopping
+
+Four independent readings, all on the same eval set (4 real NCCD lessons ×
+3 tasks):
+
+| Axis | Result |
+| --- | --- |
+| Schema conformance | 12/12 parsed, 12/12 complete |
+| Symbolic correctness | 6/6 provable answer keys verified by SymPy |
+| Latency | ~7s median per artifact |
+| Arabic quality | Read by Nizar across all 12 outputs — all good |
+
+Cost, now that it is priced: $0.75 / $4.50 per million. At ~1,300 tokens per
+generation that is fractions of a cent per lesson plan.
+
+**No comparison was run, and none is planned.** Only `OPENAI_API_KEY` is set
+as an Actions secret, so all three runs were single-provider. "Good enough on
+every axis we can measure" is not the same claim as "best available" — but the
+cost of finding out is a second provider key, another spend, and another blind
+rating, and nothing in the evidence suggests the current model is the
+constraint. Revisit if a real complaint appears, not on principle.
+
+**What this decision does NOT cover: chat.** The harness only exercises
+lesson-plan, worksheet and quiz. `AI_MODEL_CHAT` currently inherits
+`AI_MODEL`, so chat runs gpt-5.4-mini by default and has never been measured
+against anything. Chat is many short turns where latency and cost dominate —
+`gpt-5.4-nano` is ~3.7× cheaper on both axes and completely untested here.
+That is an open question, and answering it needs chat coverage in the eval
+first.
+
 ## Live AI is on, 2026-08-20
 
 `AI_LIVE_MODE=true`, `AI_MODEL=gpt-5.4-mini`, `AI_BUDGET_USD=5` on iqraa-api;
