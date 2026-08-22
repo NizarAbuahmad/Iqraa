@@ -970,6 +970,38 @@ against anything. Chat is many short turns where latency and cost dominate —
 That is an open question, and answering it needs chat coverage in the eval
 first.
 
+## Decided 2026-08-22 — how AI spend survives many teachers, one curriculum
+
+Iqraa serves a fixed national curriculum, so the request distribution has a
+brutal head: a few hundred teachers ask for the same lesson in the same week.
+Today every one of those is its own model call — there is **no cache anywhere**
+in `artifacts/api-server/src` or `lib/db` (the only `cache` matches in the tree
+are comments in `aiBudget.ts` about OpenAI's cached-input pricing tier).
+
+Plan and reasoning: [`docs/ai-cost-savings-plan.md`](./docs/ai-cost-savings-plan.md).
+Three product decisions taken:
+
+- **A pool of 3–5 variants per cache key**, not one shared artifact. Identical
+  output means two classes in the same school get the same worksheet and
+  students swap answers — a cost win that costs the product more.
+- **Global cache only for requests with no `additionalContext`.** That field is
+  free text teachers paste from their own material; serving an artifact derived
+  from it to a different teacher is a content leak. Requests carrying it are
+  cached per-user or not at all.
+- **Discrete form inputs** (durations, question counts) instead of free-form.
+  A free-form slider re-inflates the key space no matter how good the cache is.
+
+The load-bearing idea is not the cache itself — it is generating **one superset
+per (lesson × kind × language)** and applying difficulty, question count and
+duration by slicing the result. That takes math S1 from ~1,800 keys to ~90,
+which is small enough to pre-generate the whole semester for about $1 at
+gpt-5.4-mini's measured ~1,300 tokens per generation.
+
+**Nothing is implemented.** This is a decision record; phase 0 (instrumenting
+generations so hit rate is measured rather than assumed) is the first code.
+Both phase 0 and phase 1 add tables, so both need the manual
+`pnpm --filter @workspace/db run push` — see the landmine below.
+
 ## Live AI is on, 2026-08-20
 
 `AI_LIVE_MODE=true`, `AI_MODEL=gpt-5.4-mini`, `AI_BUDGET_USD=5` on iqraa-api;
