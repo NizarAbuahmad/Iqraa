@@ -92,9 +92,37 @@ cheaper model unless the stronger one wins by ≥1 point on curriculum fidelity
 or ≥15 points on symbolic pass rate.* Agreeing the rule in advance is what
 stops the numbers being rationalised afterwards.
 
+## Chat
+
+Chat is measured too, in its own pass and its own table. It runs the shipped
+chat system prompt (`src/lib/chatPrompts.ts`) over four fixed **multi-turn**
+Arabic scenarios — a follow-up turn is where a cheap model usually falls over
+first, so a single question would not have found it. One scenario is
+deliberately out of scope (`التكامل بالتجزيء` for Grade 10): the system prompt
+says *don't guess, say so, redirect*, and whether a model holds that line is a
+product question.
+
+Chat rows carry different columns from generation rows, and that is on
+purpose. A chat reply is prose — there is no JSON to parse and no required
+fields, so `parsed` and `complete` are not asked rather than reported as zeros
+that would read as total failure.
+
+What replaces them is the one thing about a prose reply that can be *scored*
+rather than rated: **did it answer in Arabic.** Arabic is the product
+language, a drift into English is a failure a teacher sees instantly, and it
+is invisible to latency, tokens and cost alike. `lib/languageCompliance.ts`
+measures the Arabic share of the reply's *letters* — symbols and digits are
+excluded, so `f(x) = 2x` inside a good Arabic answer does not score it as
+half-English.
+
+Everything else about a chat reply — whether the advice is any good — is
+subjective and belongs in the blind rating. Transcripts are written to
+`raw/c*.json`.
+
 ## What the harness will not tell you
 
-It measures one shot per lesson per task. It does not measure consistency
-across repeated runs, behaviour on long chat histories, or how any model
-handles the retrieval grounding the chat path adds. Those need their own
-passes if the first result is close.
+It measures one shot per lesson per task, and two turns per chat scenario. It
+does not measure consistency across repeated runs, behaviour on genuinely long
+chat histories, or how any model handles the retrieval grounding the live chat
+path adds on top of this prompt. Those need their own passes if the first
+result is close.

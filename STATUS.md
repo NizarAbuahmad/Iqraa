@@ -859,6 +859,39 @@ shapes with a deliberately wrong radius key and a trigonometry item: 5 provable
 of 7, 4 verified, the wrong key caught, trig and صح/خطأ excluded. Python suite
 51/51; mobile 609 tests, 0 failures.
 
+## Chat is in the evaluation now, 2026-08-22
+
+The harness covered lesson-plan, worksheet and quiz. Chat — the tab teachers
+land on — was never measured against any model, which mattered more once
+`AI_MODEL_CHAT` made it separately configurable.
+
+**The chat system prompts were unreachable.** They lived as private functions
+inside `routes/chat.ts`, so an eval could only have run a paraphrase, and a
+paraphrase measures the paraphrase. Extracted verbatim to
+`src/lib/chatPrompts.ts` — asserted byte-identical to the previous text — along
+with `CHAT_MAX_TOKENS` and `CHAT_HISTORY_TURNS`, so the harness issues the same
+request the product does.
+
+Four fixed **multi-turn** scenarios. The follow-up turn is the point: a single
+question tests the system prompt, a second tests whether the model still has
+the lesson it was given. One scenario is deliberately out of scope
+(`التكامل بالتجزيء` for Grade 10) because the system prompt says *don't guess,
+say so, redirect* and holding that line is a product behaviour worth measuring.
+
+**Chat gets its own table, not extra columns on the generation one.** A prose
+reply has no JSON to parse and no required fields; reporting `parsed`/
+`complete` as 0 would read as total failure and as N/N would be a lie, so they
+are not asked.
+
+What replaces them: `lib/languageCompliance.ts` scores the Arabic share of the
+reply's **letters**. Arabic is the product language and a drift into English is
+a failure a teacher sees instantly, yet it is invisible to latency, tokens and
+cost. Letters only, so `f(x) = 2x` and `NaCl` inside a good Arabic answer do
+not score it as half-English. The floor is 0.7, not 1.0, for the same reason.
+
+The total-failure guard now covers chat rows too — otherwise a run where every
+generation succeeded and every chat call failed would still have exited 0.
+
 ## Decided 2026-08-22 — gpt-5.4-mini for generation, and stop shopping
 
 Four independent readings, all on the same eval set (4 real NCCD lessons ×
