@@ -859,6 +859,36 @@ shapes with a deliberately wrong radius key and a trigonometry item: 5 provable
 of 7, 4 verified, the wrong key caught, trig and صح/خطأ excluded. Python suite
 51/51; mobile 609 tests, 0 failures.
 
+## Decided 2026-08-22 — gpt-5.4-mini for generation, and stop shopping
+
+Four independent readings, all on the same eval set (4 real NCCD lessons ×
+3 tasks):
+
+| Axis | Result |
+| --- | --- |
+| Schema conformance | 12/12 parsed, 12/12 complete |
+| Symbolic correctness | 6/6 provable answer keys verified by SymPy |
+| Latency | ~7s median per artifact |
+| Arabic quality | Read by Nizar across all 12 outputs — all good |
+
+Cost, now that it is priced: $0.75 / $4.50 per million. At ~1,300 tokens per
+generation that is fractions of a cent per lesson plan.
+
+**No comparison was run, and none is planned.** Only `OPENAI_API_KEY` is set
+as an Actions secret, so all three runs were single-provider. "Good enough on
+every axis we can measure" is not the same claim as "best available" — but the
+cost of finding out is a second provider key, another spend, and another blind
+rating, and nothing in the evidence suggests the current model is the
+constraint. Revisit if a real complaint appears, not on principle.
+
+**What this decision does NOT cover: chat.** The harness only exercises
+lesson-plan, worksheet and quiz. `AI_MODEL_CHAT` currently inherits
+`AI_MODEL`, so chat runs gpt-5.4-mini by default and has never been measured
+against anything. Chat is many short turns where latency and cost dominate —
+`gpt-5.4-nano` is ~3.7× cheaper on both axes and completely untested here.
+That is an open question, and answering it needs chat coverage in the eval
+first.
+
 ## Live AI is on, 2026-08-20
 
 `AI_LIVE_MODE=true`, `AI_MODEL=gpt-5.4-mini`, `AI_BUDGET_USD=5` on iqraa-api;
@@ -868,9 +898,13 @@ to be confirmed: `/api/healthz/ai-budget` reported `spentUsd` moving 0.1375 →
 completion with token usage, so it is proof independent of anything the screen
 renders.
 
-**`gpt-5.4-mini` is not in `PRICING_PER_MILLION_USD`**, so the guard bills it at
-the $10/$50 fallback and warns once. Spend is over-counted and the cap trips
-early — safe, but `AI_BUDGET_USD=5` does not mean $5. Add the real prices.
+~~**`gpt-5.4-mini` is not in `PRICING_PER_MILLION_USD`**~~ **Priced 2026-08-22**
+at the standard short-context rates ($0.75 / $4.50 per million), along with
+`gpt-5.4` ($2.50 / $15) and `gpt-5.4-nano` ($0.20 / $1.25), in both the budget
+guard and `scripts/provider-eval.ts`. Before this the guard billed at the
+$10/$50 fallback — roughly **11× the real output rate** — so `AI_BUDGET_USD=5`
+stopped somewhere near $0.45 of actual spend, and the eval reported cost as
+"—" for every run, missing the axis that usually decides a model choice.
 
 Note the endpoint is `/api/healthz/ai-budget` — everything is mounted under
 `/api` (`app.use("/api", router)`).

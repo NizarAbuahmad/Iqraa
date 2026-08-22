@@ -117,9 +117,16 @@ const anthropicModel = process.env.ANTHROPIC_EVAL_MODEL || "claude-opus-5";
 const deepseekModel = process.env.DEEPSEEK_EVAL_MODEL || "deepseek-chat";
 const effort = process.env.ANTHROPIC_EVAL_EFFORT || "medium";
 
+// Standard short-context rates, developers.openai.com/api/docs/pricing,
+// checked 2026-08-22. The first three runs of this harness reported cost as
+// "—" because the model under test was unpriced here — the comparison the
+// eval exists to inform was missing the axis that usually decides it.
 const OPENAI_PRICING: Record<string, Pricing> = {
   "gpt-4o-mini": { input: 0.15, output: 0.6 },
   "gpt-4o": { input: 2.5, output: 10 },
+  "gpt-5.4": { input: 2.5, output: 15 },
+  "gpt-5.4-mini": { input: 0.75, output: 4.5 },
+  "gpt-5.4-nano": { input: 0.2, output: 1.25 },
 };
 // Standard rates. Claude Sonnet 5 also has a $2/$10 introductory rate through
 // 2026-08-31 — deliberately NOT used here: the decision this eval informs

@@ -41,10 +41,16 @@ export class AiBudgetExceededError extends Error {
 // 40% and let a run sail past its cap. A "conservative" default that is
 // cheaper than a model you might actually use is not conservative.
 const PRICING_PER_MILLION_USD: Record<string, { input: number; output: number }> = {
-  // OpenAI
+  // OpenAI. Standard short-context rates from developers.openai.com/api/docs/pricing
+  // (checked 2026-08-22). Cached-input and long-context tiers are cheaper and
+  // dearer respectively; pricing at the standard rate keeps the guard simple
+  // and can only under-run the cap on cached traffic, never over-run it.
   "gpt-4o-mini": { input: 0.15, output: 0.6 },
   "gpt-4.1-mini": { input: 0.4, output: 1.6 },
   "gpt-4o": { input: 2.5, output: 10 },
+  "gpt-5.4": { input: 2.5, output: 15 },
+  "gpt-5.4-mini": { input: 0.75, output: 4.5 },
+  "gpt-5.4-nano": { input: 0.2, output: 1.25 },
   // Anthropic. Claude Sonnet 5 is listed at its standard rate, not the
   // $2/$10 introductory rate that ends 2026-08-31 — a budget guard that
   // assumes a promotional price stops guarding when the promotion does.
