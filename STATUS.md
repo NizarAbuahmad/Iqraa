@@ -886,9 +886,42 @@ routed through `buildAdaptationsDirective` into `additionalContext` and pointed
 explicitly at the `differentiation` slot the output schema already has, with
 "do not list these among the objectives" stated in the directive.
 
-**Still open, found while reproducing:** `buildSupportResourcesContext` returned
-mathematics files (الأسس والمعادلات, أنظمة المعادلات) for a financial-literacy
-lesson. Cross-subject resource matching is wrong; not fixed here.
+**Also found while reproducing, fixed below:** `buildSupportResourcesContext`
+returned mathematics files for a financial-literacy lesson.
+
+## Fixed 2026-08-21 — support packs attached from the wrong subject
+
+«المشروع وإدارته» (financial literacy) came back with three **mathematics**
+files — «إجابات الوحدة الأولى (الأسس والمعادلات)» and friends. The support
+block goes into `additionalContext`, so since live AI was switched on those
+were being sent to the model on every generation for that lesson.
+
+Swept all 57 KB lessons: **30 cross-subject attachments, every one of them
+financial-literacy → mathematics.** Two independent causes.
+
+1. **The subject gate was advisory.** A declared mismatch scored `-6`, on the
+   theory that a strong title match should still be allowed through. But a
+   matching unit tag scores `+8`, so one colliding tag beat the penalty
+   outright. A Grade 10 maths worksheet is never the right attachment for a
+   financial-literacy lesson however the titles score, so a declared mismatch
+   now disqualifies.
+2. **The unit tags had no subject in them.** `s1-u1` / `s2-u3` are
+   *mathematics* catalog tags, but `unitTagsForLesson` emitted them for any
+   unit id matching `/nccd-u\d+/` — which every NCCD unit does. Financial
+   literacy unit 1 therefore emitted `s1-u1` and collided with every maths
+   unit-1 pack. Chemistry escaped only because it carries explicit `chem-*`
+   tags. The bare form is now emitted for mathematics alone.
+
+A third leak survived both fixes: `buildSupportResourcesContext` retries
+without the lesson when the scoped search finds nothing, and dropping the
+lesson dropped the subject with it (`detectSubjectFromQuery` knows only maths
+and chemistry). One financial-literacy lesson picked up **chemistry** activity
+books through that path. The retry now widens the match, not the subject.
+
+After: 0 cross-subject attachments; the only lessons whose results changed are
+the 10 financial-literacy ones, which now correctly attach nothing — the
+catalog holds no financial-literacy packs. All 36 mathematics and 11 chemistry
+lessons are byte-identical to before.
 
 ## Fixed 2026-08-20 — generated multiple-choice keys could never verify
 
