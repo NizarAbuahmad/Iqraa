@@ -956,11 +956,38 @@ individual words need reading, but headings and outcome lists survive intact.
 **The read is truncated.** 151,727 characters covering 51 pages came back from
 a guide whose own table of contents runs past page 200 — the extract stops
 mid-sentence inside unit 1, lesson 4. Nothing announces this; the text just
-ends. So Drive is good for a book's front matter and whatever falls in the
-first ~50 pages, and **not** a substitute for running
-`scripts/extract_curriculum_pages.py` locally over the full PDF. Grade 2's
-guides are split per unit (9–33 MB each), which is the shape that reads
-whole.
+ends. Splitting a guide per unit does fix the truncation: Grade 2's unit-8
+guide (9.4 MB) returned all 33 pages with its «مخطط الوحدة» table intact.
+
+**But splitting does not make the text usable, because the corruption is not
+about size.** Drive's extractor transposes every lam-alef pair, and that is
+**not repairable after the fact.** In the raw stream a definite article «ال»
+and a ligature «لا» are byte-identical, so:
+
+- reverse each line naively → definite articles right, every ligature wrong
+  («مستطيلات» → «مستطيالت», and `لأ` occurs 0 times in 71 KB of Arabic);
+- treat the pair as atomic → ligatures right, all 1,838 definite articles
+  wrong.
+
+A positional rule ("mid-word «ال» is a ligature") looks tempting and breaks on
+every word ending in -aal — سؤال، مثال، جمال. The information needed to tell
+them apart is simply absent from what Drive returns.
+
+**pypdf does not have this problem.** The same class of PDF, read by
+`scripts/extract_curriculum_pages.py` locally, gives clean text with harakat
+intact — «المسافةُ بينَ نقطتَيْنِ», «الإحداثي» ×44, «الطلبة» ×7, zero broken
+forms. So the split is settled:
+
+| Use Drive for | Use the local script for |
+| --- | --- |
+| seeing what books exist, names, sizes, structure | any Arabic string that ships |
+| contents pages and unit/lesson **counts** | النتاجات, titles, vocabulary |
+| cross-checking a fact against clean data | anything written into a curriculum JSON |
+
+The `semester_covered: 1` above was established this way and is safe: the
+*fact* came from Drive (unit 4 appears in the الفصل الأول contents), and every
+Arabic string in the file came from pypdf. The committed file contains none of
+the broken forms.
 
 **What that already settled.** The semester-1 guide's contents page names all
 four units and seventeen lessons, and it lists **الوحدة 4: الهندسة الإحداثيّة**
