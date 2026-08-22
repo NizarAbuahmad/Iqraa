@@ -868,9 +868,13 @@ to be confirmed: `/api/healthz/ai-budget` reported `spentUsd` moving 0.1375 →
 completion with token usage, so it is proof independent of anything the screen
 renders.
 
-**`gpt-5.4-mini` is not in `PRICING_PER_MILLION_USD`**, so the guard bills it at
-the $10/$50 fallback and warns once. Spend is over-counted and the cap trips
-early — safe, but `AI_BUDGET_USD=5` does not mean $5. Add the real prices.
+~~**`gpt-5.4-mini` is not in `PRICING_PER_MILLION_USD`**~~ **Priced 2026-08-22**
+at the standard short-context rates ($0.75 / $4.50 per million), along with
+`gpt-5.4` ($2.50 / $15) and `gpt-5.4-nano` ($0.20 / $1.25), in both the budget
+guard and `scripts/provider-eval.ts`. Before this the guard billed at the
+$10/$50 fallback — roughly **11× the real output rate** — so `AI_BUDGET_USD=5`
+stopped somewhere near $0.45 of actual spend, and the eval reported cost as
+"—" for every run, missing the axis that usually decides a model choice.
 
 Note the endpoint is `/api/healthz/ai-budget` — everything is mounted under
 `/api` (`app.use("/api", router)`).
