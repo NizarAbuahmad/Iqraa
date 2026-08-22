@@ -45,8 +45,39 @@ never enter the global cache.
 - `saved_materials` (`lib/db/src/schema/savedMaterials.ts`) already stores
   `content` and `form_state` as jsonb per user. It is the right shape for a
   library but is private per teacher, so it does no deduplication work.
-- Live spend is currently ~$0: `DEMO_MODE = true` keeps these routes unreached.
-  That makes now the cheapest possible time to design this.
+- **Live AI is on in production, and spend is real.** An earlier draft of this
+  doc said the opposite, on the strength of `CLAUDE.md`'s note that
+  `DEMO_MODE = true` mocks generation. That is the *shipped code default*, not
+  the deployed configuration: STATUS.md (2026-08-20) records
+  `AI_LIVE_MODE=true`, `AI_MODEL=gpt-5.4-mini`, `AI_BUDGET_USD=5` on iqraa-api
+  and `EXPO_PUBLIC_DEMO_MODE=false` on iqraa-web, confirmed by watching
+  `/api/healthz/ai-budget` move 0.1375 → 0.188 across one generation. The
+  comment in `render.yaml` claiming "the AI endpoints are not exercised by the
+  demo" is stale for the same reason.
+
+## The urgent problem is not cost, it is the missing ceiling
+
+This came out of checking the above, and it outranks everything else in this
+document.
+
+`AI_BUDGET_USD=5` is enforced by `let spentUsd = 0` in module scope
+(`src/lib/aiBudget.ts`). The file's own header says the total is process memory
+and resets on restart. On Render's free tier **the API sleeps after ~15 minutes
+idle** (STATUS.md, hosted-demo section) — so the process restarts constantly,
+and every wake sets the counter back to zero.
+
+That makes the cap **"$5 per wake cycle", not "$5 total"**, on a service
+designed to sleep between uses. It is not a spend ceiling in any meaningful
+sense. Nothing in the repo is wrong about this — `aiBudget.ts` says plainly that
+it "is not a substitute for the hard usage limit you should also set on the
+OpenAI account itself" — but that account-level limit is outside this repo and
+**cannot be verified from here.** Confirming it is set is the single cheapest
+risk reduction available.
+
+The in-app fix is a persistent counter, which is why the phase order below puts
+it first rather than in phase 4 where an earlier draft had it. It is also
+substantially the same work as the instrumentation: the rows that record spend
+per generation are the rows that give hit-rate measurement for free.
 
 ## Why a naive cache is not enough
 
@@ -161,9 +192,11 @@ release checklist should say so.
 
 ## Phases
 
-**Phase 0 — instrument before optimising.** One row per generation: normalized
-key hash, kind, model, prompt version, prompt/completion tokens, estimated cost,
-and `cache: hit | miss | inflight`. Without it, every hit-rate claim in this
+**Phase 0 — a real ceiling, and the instrumentation that comes with it.** One
+row per generation: normalized key hash, kind, model, prompt version,
+prompt/completion tokens, estimated cost, and `cache: hit | miss | inflight`.
+Derive the running spend total from those rows instead of a module-scope
+variable, so it survives the restarts the free tier guarantees. Without it, every hit-rate claim in this
 document is a guess, and this repo's convention is to verify against the running
 system rather than trust a doc. Cheap, and it is what proves phase 1 worked.
 
@@ -181,11 +214,12 @@ savings.
 standard lesson is already a hit. This converts a variable per-request cost into
 a fixed one-off — see the numbers above.
 
-**Phase 4 — long tail and hard limits.** Embedding-based topic normalization
-(`text-embedding-3-small` at ~$0.02/M is effectively free) to map free-typed
-topics onto curriculum lesson ids, turning tail misses into head hits. Plus
-per-user daily quotas and a persistent spend counter to replace the in-memory
-one, so a single teacher looping "regenerate" cannot drain the shared budget.
+**Phase 4 — long tail and per-user quotas.** Embedding-based topic
+normalization (`text-embedding-3-small` at ~$0.02/M is effectively free) to map
+free-typed topics onto curriculum lesson ids, turning tail misses into head
+hits. Plus per-user daily quotas, so a single teacher looping "regenerate"
+cannot drain the shared budget. (The persistent counter moved to phase 0 — see
+the ceiling section above.)
 
 ## Deliberately not in this plan
 

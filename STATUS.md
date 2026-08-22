@@ -997,9 +997,18 @@ duration by slicing the result. That takes math S1 from ~1,800 keys to ~90,
 which is small enough to pre-generate the whole semester for about $1 at
 gpt-5.4-mini's measured ~1,300 tokens per generation.
 
-**Nothing is implemented.** This is a decision record; phase 0 (instrumenting
-generations so hit rate is measured rather than assumed) is the first code.
-Both phase 0 and phase 1 add tables, so both need the manual
+**The first code is not the cache.** Checking whether there was traffic to
+instrument turned up something that outranks it: `AI_BUDGET_USD=5` is enforced
+by a module-scope `let spentUsd = 0`, and the free-tier API sleeps after ~15
+minutes idle. Every wake resets the counter, so the cap is **"$5 per wake",
+not "$5 total"** — on a service built to sleep between uses. Live AI has been
+on since 2026-08-20, so this is a live gap, not a hypothetical one. Phase 0 is
+therefore a persistent spend total derived from per-generation rows; the
+hit-rate instrumentation falls out of the same table. The account-level OpenAI
+usage limit that `aiBudget.ts` tells you to set is outside this repo and has
+not been verified from here — worth confirming before anything else.
+
+Phases 0 and 1 both add tables, so both need the manual
 `pnpm --filter @workspace/db run push` — see the landmine below.
 
 ## Live AI is on, 2026-08-20
