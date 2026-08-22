@@ -19,7 +19,7 @@ import {
   AiLiveModeOffError,
   assertBudgetAvailable,
   assertLiveModeEnabled,
-  getAiModel,
+  getGenerationModel,
   recordUsage,
 } from "../lib/aiBudget.ts";
 import {
@@ -61,14 +61,14 @@ async function generateContent(
   assertLiveModeEnabled();
   assertBudgetAvailable();
   const completion = await openai.chat.completions.create({
-    model: getAiModel(),
+    model: getGenerationModel(),
     max_completion_tokens: maxCompletionTokens,
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },
     ],
   });
-  recordUsage(completion.usage);
+  recordUsage(completion.usage, getGenerationModel());
   const raw = completion.choices[0]?.message?.content ?? "{}";
   const parsed = extractJSON(raw);
   // Valid JSON is not the same as a usable artifact. Without this the route

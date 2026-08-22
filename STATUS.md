@@ -889,6 +889,29 @@ explicitly at the `differentiation` slot the output schema already has, with
 **Also found while reproducing, fixed below:** `buildSupportResourcesContext`
 returned mathematics files for a financial-literacy lesson.
 
+## Generation and chat can use different models, 2026-08-22
+
+One `AI_MODEL` drove both. They are different jobs: a lesson plan is a single
+long structured document where quality is worth paying for, chat is many short
+turns where latency and cost dominate. Tying them together made every choice a
+compromise between two workloads that share nothing but a client.
+
+`AI_MODEL_GENERATE` and `AI_MODEL_CHAT` each fall back to `AI_MODEL`, which
+still sets both — **no deployment has to change anything.** Set one to split
+the workloads.
+
+Two things had to move with it:
+
+- **`recordUsage(usage, model)` now takes the model.** It priced by a single
+  global; with two models that would bill every chat turn at the generation
+  model's rate, and the budget guard would be wrong in whichever direction the
+  prices differ.
+- **`/api/healthz/ai-budget` reports `generationModel` and `chatModel`** in
+  place of one `model`. The single field was only ever accurate while the two
+  were guaranteed to match; naming them separately is what makes "which model
+  answered that?" checkable from the endpoint. Nothing in the codebase read
+  the old field.
+
 ## Fixed 2026-08-22 — /generate/* answered 200 with an empty artifact
 
 `generateContent` ran `extractJSON` over the model's reply and handed the
