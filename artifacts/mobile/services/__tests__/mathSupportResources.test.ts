@@ -97,3 +97,32 @@ describe('subject isolation', () => {
     assert.ok(withHits('chemistry') > 0, 'no chemistry lesson matched any pack');
   });
 });
+
+describe('teacher guide as its own type', () => {
+  // It was lumped in with `official_book`, which buried the one document that
+  // matters most: the guide is where objectives, period counts and worked
+  // examples come from, and it is why Grade 10 maths is the only curriculum
+  // file with full provenance. A teacher searching for it saw «كتاب رسمي».
+  it('renders a label rather than the raw type string', () => {
+    const block = formatSupportResourcesBlock(
+      [{
+        id: 't1', titleAr: 'دليل المعلم لمادة الرياضيات الصف التاسع',
+        filename: 'x.pdf', type: 'teacher_guide', unitTags: [], subjectId: 'mathematics',
+      }],
+      'ar',
+    );
+    assert.match(block, /\[دليل المعلم\]/);
+    assert.ok(!block.includes('teacher_guide'), 'raw type leaked into the UI');
+  });
+
+  it('labels it in English too', () => {
+    const block = formatSupportResourcesBlock(
+      [{
+        id: 't1', titleAr: 'Teacher guide', filename: 'x.pdf',
+        type: 'teacher_guide', unitTags: [], subjectId: 'mathematics',
+      }],
+      'en',
+    );
+    assert.match(block, /\[Teacher guide\]/);
+  });
+});

@@ -15,6 +15,15 @@ export type SupportResourceType =
   | 'summary'
   | 'remedial'
   | 'official_book'
+  /**
+   * The teacher guide, separated from `official_book`.
+   *
+   * It was lumped in with the student book, which buried the single most
+   * useful document a teacher can attach: the guide is where objectives,
+   * period counts and worked examples come from, and it is the reason Grade
+   * 10 maths is the only curriculum file with full provenance.
+   */
+  | 'teacher_guide'
   | 'support';
 
 export type SupportResource = {
@@ -48,6 +57,7 @@ const TYPE_LABEL_AR: Record<string, string> = {
   summary: 'ملخص',
   remedial: 'مادة علاجية / تأسيس',
   official_book: 'كتاب رسمي',
+  teacher_guide: 'دليل المعلم',
   support: 'مادة مساندة',
 };
 
@@ -58,6 +68,7 @@ const TYPE_LABEL_EN: Record<string, string> = {
   summary: 'Summary',
   remedial: 'Remedial / foundations',
   official_book: 'Official book',
+  teacher_guide: 'Teacher guide',
   support: 'Support material',
 };
 

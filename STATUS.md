@@ -947,6 +947,39 @@ shapes with a deliberately wrong radius key and a trigonometry item: 5 provable
 of 7, 4 verified, the wrong key caught, trig and صح/خطأ excluded. Python suite
 51/51; mobile 609 tests, 0 failures.
 
+## First Grade 9 curriculum data, 2026-08-22
+
+`iqra_curriculum_g9_math_u4.json` — **الوحدة الرابعة: الهندسة الإحداثية**, from
+the NCCD Grade 9 mathematics **دليل المعلم**. 3 lessons, 3/3 with official
+outcomes, 1/1 units tiered, 0 errors.
+
+**Read the teacher guide's «مُخطَّط الوحدة» page, not the lesson pages.** That
+one table carries lesson names, النتاجات, المصطلحات, الأدوات اللازمة and
+عدد الحصص — the whole schema in one place — and it extracts cleanly. The
+per-lesson pages in this file extract with broken font encoding (`/uniXXXX`
+escapes) and were not used. Extraction on the unit plan also cross-checks:
+4+4+4 lesson periods + 1 project presentation + 1 end-of-unit test = the
+«المجموع 14 حصة» the page itself states.
+
+**The vertical-alignment page is `prior_knowledge`.** The guide's opener lists
+what الصف الثامن covered, what الصف التاسع covers, and what الصف العاشر will —
+so prior knowledge is transcribed rather than inferred. The Grade 10 column is
+kept as `next_grade_link`; it is the same coordinate-geometry thread that
+becomes معادلة الدائرة, which is already in the KB.
+
+**One gap, correctly reported: `semester_covered` is not stated.** The upload
+is a 63-page excerpt with no semester header, and unit 4 at book page 156 could
+plausibly close semester 1 — plausibly is not a source. The validator flags it
+rather than the file guessing.
+
+**A note on identifying these files.** A first pass at classifying the document
+counted student-book markers (مثال ×27, أتحقق ×12, أحل ×9) against teacher-guide
+markers (دليل المعلم ×0, إرشادات للمعلم ×0) and read as a student book. That is
+wrong: a Jordanian دليل المعلم **reproduces the student pages** with teacher
+notes around them, so student markers dominate by page count in a genuine
+guide. Identify by the presence of «مُخطَّط الوحدة» and «نتاجات الدرس», not by
+frequency.
+
 ## Phase one is grades 1–10 — curriculum validation first, 2026-08-22
 
 Scope decided 2026-08-22: **grades 1 to 10**, all subjects. Grades 11–12
@@ -994,6 +1027,152 @@ worked examples. That is not a coincidence — it is the one built from a دلي
 **Chemistry semester 2 has no curriculum JSON at all.** Its two lessons are
 hardcoded in `knowledgeBase.ts` with no source file, which is why 55 lessons
 validate here against 57 in the KB. Not thin — absent.
+
+## Google Drive reads the books directly, 2026-08-22
+
+The whole Knowledge Base is now in Drive and the connector reads it, so a
+45.9 MB teacher guide no longer has to be compressed and uploaded through a
+chat window. Two things about that text, both worth knowing before trusting
+any of it:
+
+**Every Arabic word comes out character-reversed.** «الوحدة» appears 0 times
+and «ةدحولا» 41 times. Reversing each line recovers it (re-flipping Latin and
+digit runs so numbers read forward). Confirmed on real prose, not a spot
+check. Some lam-alef pairs still come out mangled — «فضلاً» → «فضاًًلً» — so
+individual words need reading, but headings and outcome lists survive intact.
+
+**The read is truncated.** 151,727 characters covering 51 pages came back from
+a guide whose own table of contents runs past page 200 — the extract stops
+mid-sentence inside unit 1, lesson 4. Nothing announces this; the text just
+ends. Splitting a guide per unit does fix the truncation: Grade 2's unit-8
+guide (9.4 MB) returned all 33 pages with its «مخطط الوحدة» table intact.
+
+**But splitting does not make the text usable, because the corruption is not
+about size.** Drive's extractor transposes every lam-alef pair, and that is
+**not repairable after the fact.** In the raw stream a definite article «ال»
+and a ligature «لا» are byte-identical, so:
+
+- reverse each line naively → definite articles right, every ligature wrong
+  («مستطيلات» → «مستطيالت», and `لأ` occurs 0 times in 71 KB of Arabic);
+- treat the pair as atomic → ligatures right, all 1,838 definite articles
+  wrong.
+
+A positional rule ("mid-word «ال» is a ligature") looks tempting and breaks on
+every word ending in -aal — سؤال، مثال، جمال. The information needed to tell
+them apart is simply absent from what Drive returns.
+
+**pypdf does not have this problem.** The same class of PDF, read by
+`scripts/extract_curriculum_pages.py` locally, gives clean text with harakat
+intact — «المسافةُ بينَ نقطتَيْنِ», «الإحداثي» ×44, «الطلبة» ×7, zero broken
+forms. So the split is settled:
+
+| Use Drive for | Use the local script for |
+| --- | --- |
+| seeing what books exist, names, sizes, structure | any Arabic string that ships |
+| contents pages and unit/lesson **counts** | النتاجات, titles, vocabulary |
+| cross-checking a fact against clean data | anything written into a curriculum JSON |
+
+The `semester_covered: 1` above was established this way and is safe: the
+*fact* came from Drive (unit 4 appears in the الفصل الأول contents), and every
+Arabic string in the file came from pypdf. The committed file contains none of
+the broken forms.
+
+**What that already settled.** The semester-1 guide's contents page names all
+four units and seventeen lessons, and it lists **الوحدة 4: الهندسة الإحداثيّة**
+— with exactly the three lessons already in `iqra_curriculum_g9_math_u4.json`.
+That file's `semester_covered` had been left absent because the 63-page
+excerpt carried no semester header and guessing is not sourcing. It is now
+**1**, with `semester_source` naming the page that says so. The file reports 0
+errors and 0 gaps.
+
+Grade 9 maths semester 1, from the contents page:
+
+| Unit | Lessons |
+| --- | --- |
+| 1 المتباينات الخطيّة | 4 |
+| 2 العلاقات والاقترانات | 4 |
+| 3 حلّ المعادلات | 6 |
+| 4 الهندسة الإحداثيّة | 3 |
+
+Only unit 4 has curriculum data. The other three have names and lesson titles
+and nothing else — no النتاجات, which live on the «مخطط الوحدة» pages past the
+truncation point.
+
+**What is in Drive.** Grade 9 maths: 17 PDFs including both teacher guides
+(الفصل الأول 45.9 MB, الفصل الثاني 36.5 MB), both student books, both exercise
+books, answer keys, worksheets, remedial packs. Grade 10: maths and chemistry
+packs plus a financial-literacy book. Grades 1 and 2: maths only, and Grade 2
+ships per-unit guide splits. Grade 12 is two Tawjihi papers, out of phase-one
+scope. **No Grade 9 العلوم at all** — still the largest single gap in the
+grade.
+
+## One command over the whole Knowledge Base, 2026-08-22
+
+The books all live under one folder on the owner's machine, and it keeps
+growing:
+
+```
+Knowledge Base/
+  9th grade/   Math/  Science/
+  10th grade/  Math/  Chemistry/
+```
+
+Both PDF scripts previously took `--grade`, `--subject` and `--src`, so phase
+one — ten grades — meant being told "here is grade 9 maths" once per folder,
+roughly sixty invocations, each of which is a chance to mistype a grade and
+file a book under the wrong one. Both now also take `--root` and walk that
+tree themselves (`scripts/kb_layout.py`), so the whole knowledge base is one
+command and a grade added tomorrow is picked up by re-running it:
+
+```bash
+python scripts/import_support_pdfs.py --root ".../Knowledge Base" --dry-run
+python scripts/extract_curriculum_pages.py --root ".../Knowledge Base"
+```
+
+Verified against a fixture mirroring the real layout: 5 packs found, the
+Windows `(1)` duplicate collapsed, «الصف الثاني عشر/الرياضيات» read as grade
+12 maths, and the two junk folders named on screen. Then against real PDFs —
+the Grade 9 دليل المعلم yielded its 5 curriculum pages under `--root`, and the
+Grade 10 exercise book correctly matched none.
+
+**Folders it cannot place are reported, never skipped.** A subject folder
+whose name is unknown is precisely the case where a whole grade's material
+would otherwise go missing with nothing on screen to say so, which is the
+shape of most bugs in this file.
+
+**Grade 12 was being read as grade 2.** «الصف الثاني عشر» contains «الثاني»,
+so matching the Arabic ordinals in declaration order returned 2. Longest key
+first now. Caught by the fixture, not by reasoning about it.
+
+**The importer refuses to erase unit tags.** `g10_math_support_resources.json`
+carries 37 unit-tagged resources, and its rules lived *inside*
+`scripts/import_g10_math_support.py` rather than in `unit_rules/` — so a
+`--root` run over everything would have rewritten all 37 as
+`g10-math-general` and quietly dropped the whole subject out of unit-scoped
+search. Two things now prevent that: the rules were extracted to
+`scripts/unit_rules/g10-math.json` (replayed against the shipped catalog they
+reproduce all 38 types and all 38 tag sets exactly — the only differences are
+three titles, where the generic version is better, stripping a dangling
+«إعداد»), and the importer compares against the catalog on disk and **refuses
+to write one with fewer tagged resources than it replaces**, exiting non-zero.
+`--force` overrides it.
+
+**A catalog nothing imports is now called out.** Only `g10_math` and
+`g10_chem` are read by `mathSupportResources.ts`, both by hardcoded filename,
+so every new grade's catalog is currently a file that exists and does nothing.
+The importer says so after writing rather than leaving it to be discovered
+when a Grade 9 lesson shows no resources. **Still open:** wiring
+`mathSupportResources.ts` to load catalogs for all grades.
+
+**Also still open:** Grade 10 chemistry has not been folded into the generic
+importer. It writes `g10_chem_support_resources.json` — not the
+`g10_chemistry_…` the generic path would produce — with a different fallback
+tag, case-insensitive rules and a skip list. Two catalogs for one pack is its
+own quiet mess, so it keeps its own script until that is done deliberately.
+
+A `.pyc` from `scripts/` had been committed: `.gitignore` only ignored
+`__pycache__` under `artifacts/math-verifier`. Widened to all of it and the
+file untracked.
 
 ## Chat is in the evaluation now, 2026-08-22
 
