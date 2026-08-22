@@ -105,3 +105,40 @@ export function resolveKbCandidates(
     ? { kind: 'ambiguous', candidates, reason }
     : { kind: 'none' };
 }
+
+/**
+ * Should chat stop and ask which lesson the teacher meant?
+ *
+ * Lifted out of `iqra.tsx`'s `sendMessage` so it can be tested. The screen has
+ * no test coverage of any kind — which is how this branch shipped unexercised
+ * — and it cannot get any without a React renderer the repo does not have. The
+ * decision, though, is just data in and a verdict out.
+ *
+ * Getting the conditions wrong is expensive in both directions: too eager and
+ * the app interrogates a teacher who was perfectly clear, too shy and it builds
+ * a worksheet on a guess and stamps NCCD grounding on it.
+ *
+ * Only artifact intent asks. For a teaching answer a near-miss costs one
+ * sentence the teacher corrects on the next turn, so the question would cost
+ * more than the mistake.
+ */
+export function shouldAskWhichLesson(opts: {
+  intent: string;
+  /** A pinned lesson, an explicit subject scope, or a stated teaching context. */
+  hasHardContext: boolean;
+  /** Teacher-uploaded documents are the topic; do not second-guess them. */
+  hasDocuments: boolean;
+  /** A bare "خطة" riding on the soft-pinned default lesson — already resolved. */
+  isSoftBareArtifact: boolean;
+  ranked: KBScoredLesson[];
+}): { ask: false } | { ask: true; candidates: KBLesson[]; reason: 'weak' | 'contested' } {
+  if (opts.intent !== 'artifact') return { ask: false };
+  if (opts.hasHardContext) return { ask: false };
+  if (opts.hasDocuments) return { ask: false };
+  if (opts.isSoftBareArtifact) return { ask: false };
+
+  const guess = resolveKbCandidates(opts.ranked);
+  return guess.kind === 'ambiguous'
+    ? { ask: true, candidates: guess.candidates, reason: guess.reason }
+    : { ask: false };
+}

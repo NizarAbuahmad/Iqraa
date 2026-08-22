@@ -2925,8 +2925,17 @@ builders declare direction via `<html dir>` only, while the page builders also
 set `direction` in body CSS. Both are right — `direction` inherits — so the
 assertion checks `dir` on the root and not how each builder spells it.
 
-**Still untested:** `share.ts` itself (the IO), and `iqra.tsx` (no coverage at
-all, which is why the "did you mean?" chips shipped unexercised).
+**Still untested:** `share.ts` itself (the IO), and `iqra.tsx`.
+
+`iqra.tsx` has no coverage of any kind and cannot get any — there is no React
+renderer in the repo, no `@testing-library`, and no test imports anything from
+`app/`. Adding that stack is a real decision nobody has made. So the pattern
+used instead, twice now, is to lift the decision out of the component and test
+that: `shouldAskWhichLesson` in `kbSuggestion.ts` (2026-08-22) is the "did you
+mean?" branch's conditions as a pure function, covering the cases where being
+wrong is expensive in both directions — asking when the teacher was already
+clear, and staying silent when an artifact is about to be built on a guess.
+The chip *rendering* is still unexercised; only the decision to show it is.
 
 ## KB retrieval was a cliff — added a "did you mean?" tier, 2026-08-20
 
