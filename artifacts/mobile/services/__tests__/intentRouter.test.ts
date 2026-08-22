@@ -68,3 +68,61 @@ describe('social intents still bypass the teaching pipeline', () => {
     assert.equal(classifyChatIntent('شكراً', 'ar').intent, 'small_talk');
   });
 });
+
+describe('off-topic questions are declined, not taught', () => {
+  const offTopic: Array<[string, 'ar' | 'en']> = [
+    ['ما هي أخبار الحرب في إيران؟', 'ar'],
+    ['شو أخبار السياسة اليوم؟', 'ar'],
+    ["what's the news about the iran war?", 'en'],
+    ['who won the football match yesterday?', 'en'],
+    ['كم سعر الدولار اليوم؟', 'ar'],
+    ['what is the weather forecast tomorrow?', 'en'],
+    ['اقترح لي فيلماً جيداً', 'ar'],
+    ['give me a recipe for pasta', 'en'],
+  ];
+
+  for (const [q, lang] of offTopic) {
+    it(`declines "${q}"`, () => {
+      const route = classifyChatIntent(q, lang);
+      assert.equal(route.intent, 'off_topic');
+      assert.equal(route.useTeachingPipeline, false);
+      assert.ok(route.socialReply);
+    });
+  }
+
+  it('says what it is for and offers what it can do', () => {
+    const ar = classifyChatIntent('ما أخبار الحرب في إيران؟', 'ar').socialReply ?? '';
+    assert.match(ar, /مساعد تدريس/);
+    assert.match(ar, /خارج مجال عملي/);
+    assert.match(ar, /خطة درس/);
+
+    const en = classifyChatIntent('any news about the war?', 'en').socialReply ?? '';
+    assert.match(en, /teaching assistant/i);
+    assert.match(en, /outside what I do/i);
+    assert.match(en, /lesson plan/i);
+  });
+
+  it('declines even after a clarify — the answer is still not a teaching topic', () => {
+    assert.equal(classifyChatIntent('أخبار إيران', 'ar', true).intent, 'off_topic');
+  });
+});
+
+describe('teaching work that merely mentions the outside world still routes to teaching', () => {
+  const teaching: Array<[string, 'ar' | 'en']> = [
+    // A statistics worksheet about currency prices is a worksheet.
+    ['أنشئ ورقة عمل إحصاء عن أسعار الدولار', 'ar'],
+    ['اشرح لطلابي المتجهات بمثال عن مباراة كرة القدم', 'ar'],
+    ['make a quiz about probability using football scores', 'en'],
+    // The words the off-topic lists must never claim from the curriculum.
+    ['اشرح الجدول الدوري', 'ar'],
+    ['ما هي الفكرة الرئيسية في درس المشتقات؟', 'ar'],
+  ];
+
+  for (const [q, lang] of teaching) {
+    it(`keeps "${q}" in the teaching pipeline`, () => {
+      const route = classifyChatIntent(q, lang);
+      assert.notEqual(route.intent, 'off_topic');
+      assert.equal(route.useTeachingPipeline, true);
+    });
+  }
+});

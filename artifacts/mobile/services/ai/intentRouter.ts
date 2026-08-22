@@ -6,6 +6,7 @@
 export type ChatRouteIntent =
   | 'greeting'
   | 'small_talk'
+  | 'off_topic'
   | 'teaching'
   | 'artifact'
   | 'refinement'
@@ -61,6 +62,56 @@ function isSmallTalk(q: string): boolean {
   return false;
 }
 
+/**
+ * Subjects Iqraa does not answer at all — news, politics, sport, markets,
+ * entertainment, travel, health, and the rest of the open web.
+ *
+ * A general question used to fall through `isTeaching` (any message ending in
+ * "؟" counted as teaching), so "ما أخبار الحرب في إيران؟" entered the teaching
+ * pipeline and came back as a curriculum answer about something adjacent. It
+ * has to be caught here, before that.
+ */
+const OFF_TOPIC_PATTERNS: RegExp[] = [
+  // News, politics, conflict
+  /أخبار|اخبار|الحرب|حرب\s|حرب$|سياسة|سياسي|انتخابات|الرئيس(?![ء-ي])|رئيس\s*الوزراء|حكومة|برلمان|قصف|عسكري|جيش|صواريخ|هدنة|احتلال|إيران|ايران|غزة|أوكرانيا|اوكرانيا|روسيا|إسرائيل|اسرائيل/i,
+  /\bnews\b|\bwar\b|\bpolitic|\belection|\bpresident\b|\bceasefire\b|\bmilitary\b|\bmissile|\biran\b|\bgaza\b|\bukraine\b/i,
+  // Sport
+  /كرة\s*القدم|كرة\s*السلة|مباراة|المباراة|الدوري\s*(الإنجليزي|الاسباني|الإسباني|الأردني)|ريال\s*مدريد|برشلونة|منتخب|بطولة\s*العالم|كأس\s*العالم/i,
+  /\bfootball\b|\bsoccer\b|\bbasketball\b|\bworld\s*cup\b|\bpremier\s*league\b|\bnba\b/i,
+  // Markets, money, crypto
+  /سعر\s*(الدولار|الذهب|صرف)|أسعار\s*(العملات|النفط|الذهب)|البورصة|الأسهم|العملات\s*الرقمية|بيتكوين|عملة\s*رقمية/i,
+  /\bstock\s*market\b|\bbitcoin\b|\bcrypto|\bexchange\s*rate\b|\bgold\s*price\b|\boil\s*price/i,
+  // Weather
+  /حالة\s*الطقس|الطقس\s*(اليوم|غداً|غدا)|توقعات\s*الطقس/i,
+  /\bweather\b|\bforecast\b/i,
+  // Entertainment, celebrities, jokes
+  /فيلم|أفلام|مسلسل|مسلسلات|أغنية|اغنية|أغاني|ممثل|ممثلة|مغني|مشاهير|نكتة|نكت/i,
+  /\bmovie|\bfilm\b|\btv\s*show|\bnetflix\b|\bcelebrit|\bsong\b|\bjoke\b/i,
+  // Travel, shopping, food
+  /حجز\s*(طيران|تذاكر|فندق)|تذاكر\s*طيران|فيزا|تأشيرة|مطعم|وصفة\s*(طبخ|أكل)|طبخة|أفضل\s*مطعم/i,
+  /\bflight\b|\bhotel\b|\bvisa\b|\brestaurant\b|\brecipe\b|\bcook(ing)?\b/i,
+  // Personal health / medical advice
+  /علاج\s*(مرض|ألم)|دواء|أعراض\s*مرض|طبيب|وصفة\s*طبية/i,
+  /\bmedicine\b|\bsymptoms?\b|\bdoctor\b|\bdiagnos/i,
+];
+
+/**
+ * Curriculum / classroom markers. Any one of them means the message is teaching
+ * work that merely *mentions* an outside subject — "أنشئ مسألة إحصاء عن أسعار
+ * الذهب" is a statistics worksheet, not a markets question — so the off-topic
+ * patterns above must not claim it.
+ */
+const TEACHING_SIGNAL =
+  /منهج|درس|دروس|حصة|الصف|صف\s*عاشر|طلاب|طالب|طالبة|تلاميذ|خطة|ورقة\s*عمل|اختبار|امتحان|واجب|نشاط|تقييم|اشرح|أشرح|شرح|وضّح|وضح|مثال|مسألة|تمرين|سؤال\s*عن|رياضيات|كيمياء|معادلة|اقتران|اقترانات|مشتقة|المشتقات|متجه|متجهات|احتمال|إحصاء|احصاء|مثلثات|دائرة|الأسس|لوغاريتم|ذرة|الذرة|جدول\s*دوري|رابطة|تكافؤ|مول|تفاعل/i;
+
+const TEACHING_SIGNAL_EN =
+  /\blesson\b|\bteach|\bstudent|\bclassroom\b|\bcurriculum\b|\bworksheet\b|\bquiz\b|\bexam\b|\bhomework\b|\bactivity\b|\bexplain\b|\bexample\b|\bexercise\b|\bgrade\s*10\b|\bmath|\bchemistr|\bequation\b|\bfunction\b|\bderivative\b|\bvector\b|\bprobabilit|\bstatistic|\btrigonometr|\batom|\bbond(ing)?\b|\bmole\b/i;
+
+function isOffTopic(q: string): boolean {
+  if (TEACHING_SIGNAL.test(q) || TEACHING_SIGNAL_EN.test(q)) return false;
+  return OFF_TOPIC_PATTERNS.some(pattern => pattern.test(q));
+}
+
 function isRefinement(q: string): boolean {
   return (
     /اجعله\s*أبسط|أجعله\s*أبسط|ابسطه|أبسطه|بسّ?طه|اختصره|اختصار|أضف\s*مثالاً?|اضف\s*مثال|أضف\s*سؤال|اضف\s*سؤال|اجعله\s*أصعب|أجعله\s*أصعب|أصعب|اسهل|أسهل|للطلاب\s*الضعفاء|للطلاب\s*المتفوقين|للضعفاء|للمتفوقين|أكثر\s*تفصيلاً?|اقل\s*تفصيلاً?|نفس\s*(الخطة|الورقة|الاختبار|الواجب)|عدّل|عدل|حسّن|حسن|simplify|make\s*it\s*simpler|make\s*it\s*easier|make\s*it\s*harder|add\s*an?\s*example|add\s*\d*\s*questions?|shorten\s*it|for\s*struggling|for\s*advanced|too\s*long|too\s*short|another\s*quiz|same\s*lesson\s*plan/i.test(
@@ -101,6 +152,25 @@ function isTeaching(q: string): boolean {
   );
 }
 
+/** The one list of what Iqraa does — greeting and off-topic must not drift apart. */
+function capabilityLines(isAr: boolean): string[] {
+  return isAr
+    ? [
+        '• شرح مفهوم لطلابك',
+        '• تحضير خطة درس',
+        '• إعداد ورقة عمل',
+        '• بناء اختبار قصير',
+        '• تصميم نشاط صفي',
+      ]
+    : [
+        '• Explaining concepts',
+        '• Preparing a lesson plan',
+        '• Creating a worksheet',
+        '• Building a quiz',
+        '• Designing a classroom activity',
+      ];
+}
+
 function greetingReply(isAr: boolean): string {
   if (isAr) {
     return [
@@ -109,11 +179,7 @@ function greetingReply(isAr: boolean): string {
       'أنا اقرأ، رفيقك في تحضير الحصص.',
       '',
       'أستطيع أن أساعدك في:',
-      '• شرح مفهوم لطلابك',
-      '• تحضير خطة درس',
-      '• إعداد ورقة عمل',
-      '• بناء اختبار قصير',
-      '• تصميم نشاط صفي',
+      ...capabilityLines(true),
       '',
       'من أين نبدأ اليوم؟',
     ].join('\n');
@@ -124,13 +190,32 @@ function greetingReply(isAr: boolean): string {
     "I'm IQRA, your smart assistant for lesson preparation.",
     '',
     'I can help you with:',
-    '• Explaining concepts',
-    '• Preparing a lesson plan',
-    '• Creating a worksheet',
-    '• Building a quiz',
-    '• Designing a classroom activity',
+    ...capabilityLines(false),
     '',
     'What would you like to start with today?',
+  ].join('\n');
+}
+
+function offTopicReply(isAr: boolean): string {
+  if (isAr) {
+    return [
+      'أنا اقرأ، مساعد تدريس مختص بالمنهج الوطني الأردني — رياضيات وكيمياء الصف العاشر.',
+      'هذا السؤال خارج مجال عملي، فلا أتابع الأخبار أو المواضيع العامة.',
+      '',
+      'لكن يسعدني مساعدتك في:',
+      ...capabilityLines(true),
+      '',
+      'بماذا نبدأ؟',
+    ].join('\n');
+  }
+  return [
+    "I'm IQRA, a teaching assistant for the Jordanian national curriculum — Grade 10 Maths and Chemistry.",
+    "That question is outside what I do, so I don't cover news or general topics.",
+    '',
+    'I would be glad to help you with:',
+    ...capabilityLines(false),
+    '',
+    'What shall we start with?',
   ].join('\n');
 }
 
@@ -211,6 +296,17 @@ export function classifyChatIntent(
       intent: 'small_talk',
       useTeachingPipeline: false,
       socialReply: smallTalkReply(q, isAr),
+    };
+  }
+
+  // Off-topic subjects — answered with what Iqraa *is* for, never generated over.
+  // Checked before the teaching heuristics because those treat any question mark
+  // as a teaching ask.
+  if (isOffTopic(q)) {
+    return {
+      intent: 'off_topic',
+      useTeachingPipeline: false,
+      socialReply: offTopicReply(isAr),
     };
   }
 

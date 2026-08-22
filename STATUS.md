@@ -46,7 +46,10 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     because the count was repeatedly described as "all in
     `lib/integrations-openai-ai-server`", which is wrong by a factor of three
     and would send someone looking in the wrong package.
-- Mobile test suite: 480 tests (re-counted 2026-08-20; the 376 here was stale).
+- Mobile test suite: 714 tests, 0 failures, 10 skipped (re-counted 2026-08-22
+  on an installed workspace; the 480 here was stale, and the 376 before it).
+  The 10 skips are the chemistry KB-search cases, skipped by their own suite,
+  not by the runner.
   The `test` script globs `services/__tests__/**/*.test.ts` — it used to be a
   hand-listed set of files that had drifted, so two suites never ran.
   - In a container where `@workspace/curriculum` has not been installed/built,
@@ -151,6 +154,46 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     deployed. The client's timeout is 2.5s, so the first call after idle fails.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
+
+## Off-topic questions are declined, not answered, 2026-08-22
+
+"ما أخبار الحرب في إيران؟" used to reach the teaching pipeline. `isTeaching()`
+in `services/ai/intentRouter.ts` counts **any** message containing "؟" as a
+teaching ask, so a general-knowledge question was retrieved against the
+curriculum KB and answered from whichever lesson ranked highest — the assistant
+looked like it was answering the news, in curriculum voice.
+
+There is now an `off_topic` intent, checked after greeting/small talk and
+**before** the teaching heuristics, since those are what claim the question.
+It answers with what Iqraa is (a teaching assistant for the Jordanian Grade 10
+curriculum), that the question is outside that, and the same five capabilities
+the greeting offers — both read one `capabilityLines()` helper so they cannot
+drift apart.
+
+The detector is two lists, and the asymmetry is deliberate:
+
+- `OFF_TOPIC_PATTERNS` — news, politics, war, sport, markets, weather,
+  entertainment, travel, personal health. These must be **precise**: a false
+  positive refuses a teacher's real question. Two curriculum collisions were
+  found while writing them and are covered by tests — `الدوري` is also
+  **الجدول الدوري** (the periodic table) and `الرئيس` is a prefix of
+  **الفكرة الرئيسية**.
+- `TEACHING_SIGNAL` — curriculum and classroom words. Any hit vetoes the
+  off-topic verdict, because "أنشئ ورقة عمل إحصاء عن أسعار الدولار" is a
+  worksheet, not a markets question. Over-matching here is the safe direction:
+  it only restores the previous behaviour.
+
+**What this does not do:** it is keyword matching, so an off-topic question
+that uses none of the listed words still reaches the teaching pipeline. The
+router is the demo-mode path; the live path is covered by prompt instead —
+`api-server/src/lib/chatPrompts.ts` now carries an explicit scope-guard rule in
+both the Arabic and English system prompts, telling the model to decline
+non-teaching questions and offer what it can do rather than converting them
+into teaching material. `scripts/provider-eval.ts` imports the same functions
+the route does, so the eval measures the shipped guard.
+
+15 tests in `services/__tests__/intentRouter.test.ts`, both languages, both
+directions (declined, and not-declined).
 
 ## Teacher UX pass — merged 2026-08-10
 
