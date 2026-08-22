@@ -40,6 +40,23 @@ Grade 10 maths is the only subject where this was done from a teacher guide,
 and it is the only one whose lessons carry rules and worked examples. That is
 the whole difference. **Send the دليل المعلم first.**
 
+### Getting a teacher guide's content out of a 45 MB PDF
+
+Only three page *types* matter — «مُخطَّط الوحدة», the vertical-alignment page,
+and «نتاجات الدرس». Everything else in a guide is the student book reproduced
+with notes around it.
+
+```bash
+pip install pypdf
+python scripts/extract_curriculum_pages.py --grade 9 --subject math \
+    --src "C:\...\9th grade\Math"
+```
+
+Writes a few KB of markdown per guide to `curriculum-extracts/` — **committed**,
+unlike the PDFs. On the Grade 9 unit-4 guide that is 5 pages out of 63, 25 KB
+out of 25 MB. It also counts pages whose fonts do not map back to Unicode and
+says so in the header; those need a human to read the PDF, not a parser.
+
 ## Unit tags
 
 `scripts/unit_rules/g<n>-<subject>.json` maps a filename regex to unit tags:
