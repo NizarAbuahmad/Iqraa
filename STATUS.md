@@ -2702,10 +2702,50 @@ name are still understood, and `التقييمات` is untouched (route, API, sc
 this file all name it).
 
 Verified by rendering `buildQuizHTML`'s real output in Chromium, before and
-after, against the reported quiz. Not verifiable by unit test: `share.ts`
-imports `react-native` at module scope, so `node:test` cannot load it — the
-same constraint that split out `deckSlidesHtml.ts`. The pure logic lives in
-`optionLabels.ts` and is tested there; the CSS is not.
+after, against the reported quiz. ~~Not verifiable by unit test.~~
+**Verifiable since 2026-08-22** — the builders moved to `exportHtml.ts`, which
+imports no React Native, and `exportHtml.test.ts` now asserts the RTL rule
+across all nine of them. See "The export HTML is testable now" below.
+
+## The export HTML is testable now, 2026-08-22
+
+The RTL bug above shipped because nothing could see the markup. `share.ts`
+imports `react-native` at module scope for Platform/Share, so `node:test`
+cannot parse anything defined beside it — and every document builder lived in
+that file. The fix was verified by rendering in Chromium by hand, which is not
+a regression test.
+
+Split along the line that was already there: pure builders out, IO stays.
+
+| module | what | testable |
+| --- | --- | --- |
+| `exportHtml.ts` | 9 HTML builders + `htmlBase`/`esc` | yes |
+| `exportText.ts` | 5 plain-text formatters | yes |
+| `share.ts` | clipboard, share sheet, expo-print, docx | no, and does not need to be |
+
+`share.ts` re-exports both, so **no caller changed** — verified by comparing
+the exported symbol set against `main`: 19 before, 19 after, none lost, none
+added.
+
+`exportHtml.test.ts` (12 tests) asserts what actually broke, across every
+builder rather than the one that was reported:
+
+- **no `row-reverse` in any Arabic document** — the exact cancellation that put
+  option letters on the wrong side. This is the guard that would have caught it.
+- `dir="rtl"` on `<html>` for all nine builders
+- abjad option letters in Arabic, A/B/C/D in English, never a latin marker on
+  an Arabic paper
+- the model's own baked-in marker stripped rather than doubled
+- the answer key lettered to match the printed option
+- question text escaped, not interpolated raw
+
+One thing the tests corrected in me rather than in the code: the slide
+builders declare direction via `<html dir>` only, while the page builders also
+set `direction` in body CSS. Both are right — `direction` inherits — so the
+assertion checks `dir` on the root and not how each builder spells it.
+
+**Still untested:** `share.ts` itself (the IO), and `iqra.tsx` (no coverage at
+all, which is why the "did you mean?" chips shipped unexercised).
 
 ## KB retrieval was a cliff — added a "did you mean?" tier, 2026-08-20
 
