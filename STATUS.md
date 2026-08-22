@@ -940,6 +940,57 @@ worked examples. That is not a coincidence — it is the one built from a دلي
 hardcoded in `knowledgeBase.ts` with no source file, which is why 55 lessons
 validate here against 57 in the KB. Not thin — absent.
 
+## Google Drive reads the books directly, 2026-08-22
+
+The whole Knowledge Base is now in Drive and the connector reads it, so a
+45.9 MB teacher guide no longer has to be compressed and uploaded through a
+chat window. Two things about that text, both worth knowing before trusting
+any of it:
+
+**Every Arabic word comes out character-reversed.** «الوحدة» appears 0 times
+and «ةدحولا» 41 times. Reversing each line recovers it (re-flipping Latin and
+digit runs so numbers read forward). Confirmed on real prose, not a spot
+check. Some lam-alef pairs still come out mangled — «فضلاً» → «فضاًًلً» — so
+individual words need reading, but headings and outcome lists survive intact.
+
+**The read is truncated.** 151,727 characters covering 51 pages came back from
+a guide whose own table of contents runs past page 200 — the extract stops
+mid-sentence inside unit 1, lesson 4. Nothing announces this; the text just
+ends. So Drive is good for a book's front matter and whatever falls in the
+first ~50 pages, and **not** a substitute for running
+`scripts/extract_curriculum_pages.py` locally over the full PDF. Grade 2's
+guides are split per unit (9–33 MB each), which is the shape that reads
+whole.
+
+**What that already settled.** The semester-1 guide's contents page names all
+four units and seventeen lessons, and it lists **الوحدة 4: الهندسة الإحداثيّة**
+— with exactly the three lessons already in `iqra_curriculum_g9_math_u4.json`.
+That file's `semester_covered` had been left absent because the 63-page
+excerpt carried no semester header and guessing is not sourcing. It is now
+**1**, with `semester_source` naming the page that says so. The file reports 0
+errors and 0 gaps.
+
+Grade 9 maths semester 1, from the contents page:
+
+| Unit | Lessons |
+| --- | --- |
+| 1 المتباينات الخطيّة | 4 |
+| 2 العلاقات والاقترانات | 4 |
+| 3 حلّ المعادلات | 6 |
+| 4 الهندسة الإحداثيّة | 3 |
+
+Only unit 4 has curriculum data. The other three have names and lesson titles
+and nothing else — no النتاجات, which live on the «مخطط الوحدة» pages past the
+truncation point.
+
+**What is in Drive.** Grade 9 maths: 17 PDFs including both teacher guides
+(الفصل الأول 45.9 MB, الفصل الثاني 36.5 MB), both student books, both exercise
+books, answer keys, worksheets, remedial packs. Grade 10: maths and chemistry
+packs plus a financial-literacy book. Grades 1 and 2: maths only, and Grade 2
+ships per-unit guide splits. Grade 12 is two Tawjihi papers, out of phase-one
+scope. **No Grade 9 العلوم at all** — still the largest single gap in the
+grade.
+
 ## One command over the whole Knowledge Base, 2026-08-22
 
 The books all live under one folder on the owner's machine, and it keeps
