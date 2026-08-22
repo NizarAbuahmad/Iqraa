@@ -859,6 +859,39 @@ shapes with a deliberately wrong radius key and a trigonometry item: 5 provable
 of 7, 4 verified, the wrong key caught, trig and صح/خطأ excluded. Python suite
 51/51; mobile 609 tests, 0 failures.
 
+## First Grade 9 curriculum data, 2026-08-22
+
+`iqra_curriculum_g9_math_u4.json` — **الوحدة الرابعة: الهندسة الإحداثية**, from
+the NCCD Grade 9 mathematics **دليل المعلم**. 3 lessons, 3/3 with official
+outcomes, 1/1 units tiered, 0 errors.
+
+**Read the teacher guide's «مُخطَّط الوحدة» page, not the lesson pages.** That
+one table carries lesson names, النتاجات, المصطلحات, الأدوات اللازمة and
+عدد الحصص — the whole schema in one place — and it extracts cleanly. The
+per-lesson pages in this file extract with broken font encoding (`/uniXXXX`
+escapes) and were not used. Extraction on the unit plan also cross-checks:
+4+4+4 lesson periods + 1 project presentation + 1 end-of-unit test = the
+«المجموع 14 حصة» the page itself states.
+
+**The vertical-alignment page is `prior_knowledge`.** The guide's opener lists
+what الصف الثامن covered, what الصف التاسع covers, and what الصف العاشر will —
+so prior knowledge is transcribed rather than inferred. The Grade 10 column is
+kept as `next_grade_link`; it is the same coordinate-geometry thread that
+becomes معادلة الدائرة, which is already in the KB.
+
+**One gap, correctly reported: `semester_covered` is not stated.** The upload
+is a 63-page excerpt with no semester header, and unit 4 at book page 156 could
+plausibly close semester 1 — plausibly is not a source. The validator flags it
+rather than the file guessing.
+
+**A note on identifying these files.** A first pass at classifying the document
+counted student-book markers (مثال ×27, أتحقق ×12, أحل ×9) against teacher-guide
+markers (دليل المعلم ×0, إرشادات للمعلم ×0) and read as a student book. That is
+wrong: a Jordanian دليل المعلم **reproduces the student pages** with teacher
+notes around them, so student markers dominate by page count in a genuine
+guide. Identify by the presence of «مُخطَّط الوحدة» and «نتاجات الدرس», not by
+frequency.
+
 ## Phase one is grades 1–10 — curriculum validation first, 2026-08-22
 
 Scope decided 2026-08-22: **grades 1 to 10**, all subjects. Grades 11–12
