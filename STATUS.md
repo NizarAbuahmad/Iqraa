@@ -37,6 +37,15 @@ Vision screens (student/parent/school dashboards) are deprioritized.
 
 - `pnpm install` and full `pnpm run typecheck` pass clean (checked on Windows
   2026-08-06 and on Linux 2026-08-10).
+  - **Without a complete `pnpm install`, `typecheck` reports 79 errors** and
+    every one is a missing dependency, not a type error: 44 in `lib/db`
+    (`drizzle-orm`, `pg`, `@types/node`), 19 in
+    `lib/integrations-openai-ai-server`, 14 in generated API clients, 2 at
+    tsconfig level. Same shape as the 10 aborting mobile suites noted below —
+    an uninstalled workspace, not a regression. Worth stating precisely
+    because the count was repeatedly described as "all in
+    `lib/integrations-openai-ai-server`", which is wrong by a factor of three
+    and would send someone looking in the wrong package.
 - Mobile test suite: 480 tests (re-counted 2026-08-20; the 376 here was stale).
   The `test` script globs `services/__tests__/**/*.test.ts` — it used to be a
   hand-listed set of files that had drifted, so two suites never ran.
@@ -2876,8 +2885,18 @@ populating the field; a list a teacher cannot act on is worse than no list.
     every table in `lib/db/src/schema` with `to_regclass` and names the feature
     each missing one takes down. Read-only, exits non-zero when anything is
     absent. It does not fix the deploy gap — it makes the gap visible, which is
-    the part that was missing when 14 of 24 tables were absent from production
-    for an unknown length of time.
+    the part that was missing when 14 of 24 tables were absent from production.
+  - **Production verified 24/24 on 2026-08-22**, via the same `to_regclass`
+    check run in the Neon SQL console. The 2026-08-19 outage was fixed that
+    same afternoon — Neon's query history shows "find missing tables" at
+    1:36pm, a schema migration at 1:41pm, and a re-check at 1:42pm. Both this
+    file and CLAUDE.md went on asserting the outage for three days afterwards,
+    because the fix was never written down. **The process gap is real and
+    still open; that particular outage is not.**
+  - **What the check does not prove:** `to_regclass` asks whether a table
+    *name* exists. A table with a stale column set — a migration that added
+    the table but not a later column — still reports `ok`. Column-level drift
+    needs a different check, which does not exist yet.
 - **`pnpm test` in api-server does not build.** Its mount-order suite boots
   `dist/index.mjs`, so a stale bundle reports on code nobody is looking at. CI
   now builds first; do the same locally.
