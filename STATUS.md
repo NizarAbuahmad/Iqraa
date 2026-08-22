@@ -3397,6 +3397,24 @@ populating the field; a list a teacher cannot act on is worse than no list.
     each missing one takes down. Read-only, exits non-zero when anything is
     absent. It does not fix the deploy gap — it makes the gap visible, which is
     the part that was missing when 14 of 24 tables were absent from production.
+  - **It cuts the other way too, and that is the sharper edge.** `push`
+    reconciles the live database to *whatever schema files are checked out*, so
+    a stale checkout does not fail — it proposes **dropping** every table added
+    since. On 2026-08-22 a `push` from a checkout predating 2026-08-11 offered
+    to delete 8 tables including `students`, `evaluations` and
+    `evaluation_questions` with 54 rows in it. It was correctly aborted at the
+    prompt. Read the data-loss list, every time; "yes" is not a formality here.
+  - **Run `verify-schema` before `push`, always.** It is read-only and answers
+    the only question that matters first: what does this database have, and
+    what does this checkout think it should have. On the stale checkout it
+    would have shown 8 tables the checkout did not know about, before anything
+    was at risk.
+  - **`push.mjs` deletes `process.env.DATABASE_URL` and reloads the repo-root
+    `.env`.** A shell variable is therefore ignored — the `.env` file is the
+    only thing that decides which database you are about to modify, and local
+    and production `.env` values look nothing alike but produce identical
+    console output apart from one line. `verify-schema` prints the host it
+    checked (`Schema check against …`) as its first line. Read it.
   - **Production verified 24/24 on 2026-08-22**, via the same `to_regclass`
     check run in the Neon SQL console. The 2026-08-19 outage was fixed that
     same afternoon — Neon's query history shows "find missing tables" at
