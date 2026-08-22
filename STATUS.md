@@ -997,6 +997,9 @@ duration by slicing the result. That takes math S1 from ~1,800 keys to ~90,
 which is small enough to pre-generate the whole semester for about $1 at
 gpt-5.4-mini's measured ~1,300 tokens per generation.
 
+**Phase 0 is built (2026-08-22)** — see the section below. What follows is why
+it came first.
+
 **The first code is not the cache.** Checking whether there was traffic to
 instrument turned up something that outranks it: `AI_BUDGET_USD=5` is enforced
 by a module-scope `let spentUsd = 0`, and the free-tier API sleeps after ~15
@@ -1019,6 +1022,74 @@ vague error rather than "the month's budget is spent." Not urgent at $0.59.
 
 Phases 0 and 1 both add tables, so both need the manual
 `pnpm --filter @workspace/db run push` — see the landmine below.
+
+## AI spend is measured and survives a restart, 2026-08-22
+
+Phase 0 of `docs/ai-cost-savings-plan.md`. No teacher-visible behaviour
+changes; nothing is cached yet.
+
+- **New table `ai_generations`** (`lib/db/src/schema/aiGenerations.ts`), one row
+  per completed model call: kind, model, prompt version, token counts,
+  estimated cost, and the two cache keys the request *would* have had.
+- **The spend total is month-to-date, summed from those rows** and loaded at
+  startup, replacing the module-scope `let spentUsd = 0`. The window is the
+  current UTC month, matching how the OpenAI project limit resets — so the
+  app's number and the console's now measure the same thing and can be
+  compared. `AI_BUDGET_USD` is a cap again rather than a per-wake allowance.
+- **`/healthz/ai-budget` gained `periodStart`, `persisted` and
+  `persistenceFailure`.** Read `persisted` first: false means the total covers
+  this process only, so the figure beside it is a floor, not a total.
+
+### Two keys, because the plan's central claim was untested
+
+Each row records a **coarse** key and a **strict** key. The strict key includes
+every request parameter; the coarse key drops the ones the plan proposes to
+serve by slicing one superset artifact (difficulty, question count, duration).
+
+The gap between their repeat rates is the measurement. It answers "would a
+cache have helped, and is the superset design worth its complexity?" **from
+history, before any caching is written** — a question that was otherwise going
+to be settled by argument. `hasContext` is recorded alongside, because a
+request carrying teacher-pasted material can never enter a globally shared
+cache and would otherwise inflate the figure.
+
+**Chat and the derivative drill generator record no keys at all**, only their
+`kind`. Both are uncacheable — a chat turn never repeats, and the drill prompt
+takes no inputs and explicitly asks for a *fresh, varied* item. The first cut
+gave them keys computed from an empty body, which meant every such row shared
+one hash; the analysis would have read that as a perfect hit rate on exactly
+the workloads that can never hit. An empty key is obviously "no key"; a
+constant one silently reads as "the same request, every time". Their cost is
+still recorded, which is what separates chat's share of spend from
+generation's — the open `AI_MODEL_CHAT` question above.
+
+Normalisation is where a cache's hit rate is won, and Arabic makes it
+load-bearing rather than cosmetic: the same lesson title arrives with and
+without diacritics, with tatweel padding, and with any of أ إ آ for one alef.
+Left alone each variant is its own entry. Covered by 15 tests in
+`src/lib/__tests__/generationKey.test.ts`.
+
+### It fails soft, and says so
+
+The schema is not deployed by anything automatic, so this can ship before the
+table exists — the landmine below, which cost 14 tables in production once.
+Every read and write is wrapped: a failure logs and degrades the guard to the
+old per-process counting, rather than failing a generation the model was
+already paid for. Verified by booting the built bundle against an unreachable
+database — the server listens, generation is unaffected, and the endpoint
+reports `persisted: false`.
+
+`persistenceFailure` is the *operation* (`"read"` / `"insert"`), never the
+driver's message. `/healthz/ai-budget` is public and unauthenticated on the
+stated grounds that it carries no secrets, and a Drizzle error stringifies to
+the whole failing query, its parameters and the connection target — the first
+cut of this leaked exactly that, caught by reading the smoke-test response.
+
+### Needs a schema push
+
+`pnpm --filter @workspace/db run push` before this measures anything in
+production. Until then it runs in its degraded mode, which is the pre-existing
+behaviour, not a regression.
 
 ## Live AI is on, 2026-08-20
 

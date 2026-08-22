@@ -217,11 +217,30 @@ release checklist should say so.
 
 ## Phases
 
-**Phase 0 — a real ceiling, and the instrumentation that comes with it.** One
-row per generation: normalized key hash, kind, model, prompt version,
-prompt/completion tokens, estimated cost, and `cache: hit | miss | inflight`.
-Derive the running spend total from those rows instead of a module-scope
-variable, so it survives the restarts the free tier guarantees. Without it, every hit-rate claim in this
+**Phase 0 — a real ceiling, and the instrumentation that comes with it.**
+**Built 2026-08-22.** One row per generation in `ai_generations`: both cache
+keys, kind, model, prompt version, prompt/completion tokens, estimated cost,
+`cacheStatus`, and whether the request carried teacher-pasted context. The
+spend total is summed from those rows over the current UTC month — the same
+window OpenAI's project limit resets on — and loaded at startup, so it survives
+the restarts the free tier guarantees.
+
+Two properties worth stating, because both are load-bearing:
+
+- **It fails soft, visibly.** The schema is not deployed automatically, so this
+  can ship before the table exists. Every write and read is wrapped; a failure
+  degrades the guard to its old per-process counting rather than taking
+  generation down with it. `/healthz/ai-budget` reports `persisted` and which
+  operation failed, because degraded is acceptable and *undetectably* degraded
+  is not. Verified by booting the built bundle against an unreachable database:
+  the server listens, generation is unaffected, and the endpoint says so.
+- **`persistenceFailure` names the operation, never the driver message.**
+  `/healthz/ai-budget` is public and unauthenticated on the stated grounds that
+  it holds no secrets, and a Drizzle error stringifies to the entire failing
+  query, its parameters and the connection target.
+
+**This needs `pnpm --filter @workspace/db run push` before it does anything in
+production** — see the landmine above. Without it, every hit-rate claim in this
 document is a guess, and this repo's convention is to verify against the running
 system rather than trust a doc. Cheap, and it is what proves phase 1 worked.
 

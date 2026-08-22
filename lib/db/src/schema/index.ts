@@ -10,3 +10,6 @@ export * from "./assessmentConfig";
 export * from "./evaluations";
 export * from "./attempts";
 export * from "./feedback";
+
+// AI spend + cache-hit measurement — see docs/ai-cost-savings-plan.md
+export * from "./aiGenerations";

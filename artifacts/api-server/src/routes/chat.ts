@@ -9,6 +9,8 @@ import {
   getChatModel,
   recordUsage,
 } from "../lib/aiBudget.ts";
+import { PROMPT_VERSION } from "../lib/generationKey.ts";
+import type { AuthenticatedRequest } from "../middlewares/auth.ts";
 import {
   buildSystemPromptAr,
   buildSystemPromptEn,
@@ -24,7 +26,7 @@ const chatRouter = Router();
  * from the mobile client. Returns a plain JSON response (not SSE)
  * so React Native can consume it easily.
  */
-chatRouter.post("/chat", async (req, res) => {
+chatRouter.post("/chat", async (req: AuthenticatedRequest, res) => {
   try {
     const { messages, context, mode, language } = req.body as {
       messages: { role: string; content: string }[];
@@ -61,7 +63,17 @@ chatRouter.post("/chat", async (req, res) => {
       max_completion_tokens: CHAT_MAX_TOKENS,
       messages: chatMessages,
     });
-    recordUsage(completion.usage, getChatModel());
+    // No cache keys on purpose. A chat turn never repeats, so any key computed
+    // here would be the same for every turn and would show up in the repeat-rate
+    // analysis as a workload with a perfect hit rate — the opposite of the truth.
+    // The `kind` is what earns its place: it separates chat's share of spend
+    // from generation's, which is what decides whether AI_MODEL_CHAT is worth
+    // pointing at something cheaper (STATUS.md, 2026-08-22, still open).
+    recordUsage(completion.usage, getChatModel(), {
+      kind: isTeacher ? "chat-teacher" : "chat-student",
+      promptVersion: PROMPT_VERSION,
+      userId: req.user?.id,
+    });
 
     const answer = completion.choices[0]?.message?.content ?? "";
     res.json({ content: answer });

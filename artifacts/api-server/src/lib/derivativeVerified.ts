@@ -9,6 +9,7 @@
 // Explicit extension: this module is loaded directly by node --test as well as
 // through esbuild, and Node's resolver does not guess extensions.
 import { verifyDerivative } from "./mathVerifierClient.ts";
+import { PROMPT_VERSION } from "./generationKey.ts";
 import {
   assertBudgetAvailable,
   assertLiveModeEnabled,
@@ -211,7 +212,14 @@ async function callLlm(): Promise<LlmContract> {
       },
     ],
   });
-  recordUsage(completion.usage, getGenerationModel());
+  // No cache keys: this prompt takes no inputs and explicitly asks for a
+  // *fresh, varied* item, so it is uncacheable by design. Cost is still worth
+  // recording — see GenerationDetail on why a constant key would be worse than
+  // none at all.
+  recordUsage(completion.usage, getGenerationModel(), {
+    kind: "derivative-verified",
+    promptVersion: PROMPT_VERSION,
+  });
   const raw = completion.choices[0]?.message?.content ?? "{}";
   return extractJSON(raw) as LlmContract;
 }

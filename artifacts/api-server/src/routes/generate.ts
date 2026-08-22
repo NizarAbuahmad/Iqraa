@@ -1,4 +1,5 @@
 import { Router, type Response } from "express";
+import type { AuthenticatedRequest } from "../middlewares/auth.ts";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { logger } from "../lib/logger";
 import {
@@ -22,6 +23,7 @@ import {
   getGenerationModel,
   recordUsage,
 } from "../lib/aiBudget.ts";
+import { PROMPT_VERSION, generationKeys } from "../lib/generationKey.ts";
 import {
   assertUsableGeneration,
   UnusableGenerationError,
@@ -57,18 +59,29 @@ async function generateContent(
   systemPrompt: string,
   userPrompt: string,
   maxCompletionTokens: number,
+  body: Record<string, unknown> = {},
+  userId?: string | null,
 ): Promise<unknown> {
   assertLiveModeEnabled();
   assertBudgetAvailable();
+  const model = getGenerationModel();
   const completion = await openai.chat.completions.create({
-    model: getGenerationModel(),
+    model,
     max_completion_tokens: maxCompletionTokens,
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },
     ],
   });
-  recordUsage(completion.usage, getGenerationModel());
+  // The keys are recorded, not consulted — nothing caches yet. They are what
+  // lets the repeat rate be measured from history instead of estimated.
+  const keys = generationKeys(kind, model, body);
+  recordUsage(completion.usage, model, {
+    kind,
+    promptVersion: PROMPT_VERSION,
+    userId,
+    ...keys,
+  });
   const raw = completion.choices[0]?.message?.content ?? "{}";
   const parsed = extractJSON(raw);
   // Valid JSON is not the same as a usable artifact. Without this the route
@@ -100,12 +113,12 @@ function respondAiError(err: unknown, res: Response, label: string): void {
 }
 
 // ─── Lesson Plan ─────────────────────────────────────────────────────────────
-generateRouter.post("/generate/lesson-plan", async (req, res) => {
+generateRouter.post("/generate/lesson-plan", async (req: AuthenticatedRequest, res) => {
   try {
     const body = req.body;
     const isAr = body.language !== "english";
     const prompt = isAr ? lessonPlanPromptAr(body) : lessonPlanPromptEn(body);
-    const parsed = await generateContent("lesson-plan", isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS);
+    const parsed = await generateContent("lesson-plan", isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS, body, req.user?.id);
     res.json(parsed);
   } catch (err) {
     respondAiError(err, res, "generate lesson-plan");
@@ -113,12 +126,12 @@ generateRouter.post("/generate/lesson-plan", async (req, res) => {
 });
 
 // ─── Worksheet ────────────────────────────────────────────────────────────────
-generateRouter.post("/generate/worksheet", async (req, res) => {
+generateRouter.post("/generate/worksheet", async (req: AuthenticatedRequest, res) => {
   try {
     const body = req.body;
     const isAr = body.language !== "english";
     const prompt = isAr ? worksheetPromptAr(body) : worksheetPromptEn(body);
-    const parsed = await generateContent("worksheet", isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS);
+    const parsed = await generateContent("worksheet", isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS, body, req.user?.id);
     res.json(parsed);
   } catch (err) {
     respondAiError(err, res, "generate worksheet");
@@ -126,12 +139,12 @@ generateRouter.post("/generate/worksheet", async (req, res) => {
 });
 
 // ─── Quiz ─────────────────────────────────────────────────────────────────────
-generateRouter.post("/generate/quiz", async (req, res) => {
+generateRouter.post("/generate/quiz", async (req: AuthenticatedRequest, res) => {
   try {
     const body = req.body;
     const isAr = body.language !== "english";
     const prompt = isAr ? quizPromptAr(body) : quizPromptEn(body);
-    const parsed = await generateContent("quiz", isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS);
+    const parsed = await generateContent("quiz", isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS, body, req.user?.id);
     res.json(parsed);
   } catch (err) {
     respondAiError(err, res, "generate quiz");
@@ -139,12 +152,12 @@ generateRouter.post("/generate/quiz", async (req, res) => {
 });
 
 // ─── Homework ─────────────────────────────────────────────────────────────────
-generateRouter.post("/generate/homework", async (req, res) => {
+generateRouter.post("/generate/homework", async (req: AuthenticatedRequest, res) => {
   try {
     const body = req.body;
     const isAr = body.language !== "english";
     const prompt = isAr ? worksheetPromptAr({ ...body, homework: true }) : worksheetPromptEn({ ...body, homework: true });
-    const parsed = await generateContent("homework", isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS);
+    const parsed = await generateContent("homework", isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS, body, req.user?.id);
     res.json(parsed);
   } catch (err) {
     respondAiError(err, res, "generate homework");
@@ -152,12 +165,12 @@ generateRouter.post("/generate/homework", async (req, res) => {
 });
 
 // ─── Activity ─────────────────────────────────────────────────────────────────
-generateRouter.post("/generate/activity", async (req, res) => {
+generateRouter.post("/generate/activity", async (req: AuthenticatedRequest, res) => {
   try {
     const body = req.body;
     const isAr = body.language !== "english";
     const prompt = isAr ? activityPromptAr(body) : activityPromptEn(body);
-    const parsed = await generateContent("activity", isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS);
+    const parsed = await generateContent("activity", isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS, body, req.user?.id);
     res.json(parsed);
   } catch (err) {
     respondAiError(err, res, "generate activity");
@@ -171,12 +184,12 @@ generateRouter.post("/generate/activity", async (req, res) => {
 // bare, at /classroom-activity, so it never went through the guard — an
 // unauthenticated, unlimited proxy onto the OpenAI account. Same failure
 // shape as the roster/evaluations mount-order incident; see routes/index.ts.
-generateRouter.post('/generate/classroom-activity', async (req, res) => {
+generateRouter.post('/generate/classroom-activity', async (req: AuthenticatedRequest, res) => {
   const body = req.body as Record<string, unknown>;
   const isAr = body.language === 'arabic';
   try {
     const prompt = isAr ? classroomPromptAr(body) : classroomPromptEn(body);
-    const data = await generateContent("classroom-activity", isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS);
+    const data = await generateContent("classroom-activity", isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS, body, req.user?.id);
     res.json(data);
   } catch (err) {
     respondAiError(err, res, "generate classroom-activity");
