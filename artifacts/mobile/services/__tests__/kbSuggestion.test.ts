@@ -17,6 +17,7 @@ import {
   KB_SUGGEST_SCORE,
   isConfidentKbHit,
   resolveKbCandidates,
+  shouldAskWhichLesson,
 } from '../kbSuggestion.ts';
 import type { KBLesson } from '../knowledgeBase.ts';
 
@@ -124,5 +125,63 @@ describe('resolveKbCandidates', () => {
         `disagreement on ${JSON.stringify(scores)}`,
       );
     }
+  });
+});
+
+describe('shouldAskWhichLesson', () => {
+  const ambiguous = ranked(9, 8);      // plausible, under the confidence bar
+  const confident = ranked(30, 4);     // a clear winner
+  const noise = ranked(2);             // below the suggest bar
+
+  const base = {
+    intent: 'artifact',
+    hasHardContext: false,
+    hasDocuments: false,
+    isSoftBareArtifact: false,
+    ranked: ambiguous,
+  };
+
+  it('asks when an artifact would be built on a guess', () => {
+    const out = shouldAskWhichLesson(base);
+    assert.equal(out.ask, true);
+    assert.equal(out.ask === true && out.candidates.length, 2);
+    assert.equal(out.ask === true && out.reason, 'weak');
+  });
+
+  it('stays quiet for a teaching answer — the question costs more than the miss', () => {
+    assert.equal(shouldAskWhichLesson({ ...base, intent: 'teaching' }).ask, false);
+    assert.equal(shouldAskWhichLesson({ ...base, intent: 'refinement' }).ask, false);
+  });
+
+  it('does not second-guess a pinned lesson or an explicit scope', () => {
+    assert.equal(shouldAskWhichLesson({ ...base, hasHardContext: true }).ask, false);
+  });
+
+  it('does not second-guess uploaded documents — they are the topic', () => {
+    assert.equal(shouldAskWhichLesson({ ...base, hasDocuments: true }).ask, false);
+  });
+
+  it('does not re-ask a bare shortcut already riding the soft-pinned lesson', () => {
+    assert.equal(shouldAskWhichLesson({ ...base, isSoftBareArtifact: true }).ask, false);
+  });
+
+  it('stays quiet on a confident hit — that is what confidence is for', () => {
+    assert.equal(shouldAskWhichLesson({ ...base, ranked: confident }).ask, false);
+  });
+
+  it('stays quiet on noise rather than offering a lesson nobody meant', () => {
+    assert.equal(shouldAskWhichLesson({ ...base, ranked: noise }).ask, false);
+    assert.equal(shouldAskWhichLesson({ ...base, ranked: [] }).ask, false);
+  });
+
+  it('cannot loop: confirming a chip empties ranked, which silences the ask', () => {
+    // iqra.tsx sets `ranked = []` whenever pinnedLessonId is present, and
+    // tapping a chip re-sends with exactly that pin.
+    assert.equal(shouldAskWhichLesson({ ...base, ranked: [] }).ask, false);
+  });
+
+  it('passes the reason through so contested and weak can be told apart', () => {
+    const out = shouldAskWhichLesson({ ...base, ranked: ranked(20, 19) });
+    assert.equal(out.ask === true && out.reason, 'contested');
   });
 });

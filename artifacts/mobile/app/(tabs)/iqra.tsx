@@ -46,7 +46,7 @@ import {
   detectSubjectAmbiguity,
   filterResultsBySubject,
 } from '@/services/kbContext';
-import { resolveKbCandidates } from '@/services/kbSuggestion';
+import { shouldAskWhichLesson } from '@/services/kbSuggestion';
 import { Toast } from '@/components/ui/Toast';
 import { remoteAIService } from '@/services/ai/RemoteAIService';
 import { DEMO_MODE } from '@/services/ai/demoMode';
@@ -1429,30 +1429,29 @@ export default function IqraScreen() {
       // Deliberately not applied to teaching answers: there, a near-miss costs a
       // sentence the teacher can correct in the next turn, and the question
       // would cost more than the mistake.
-      if (
-        route.intent === 'artifact'
-        && !hasHardContext
-        && !hasDocs
-        && !softBareArtifact
-      ) {
-        const guess = resolveKbCandidates(ranked);
-        if (guess.kind === 'ambiguous') {
-          const clarifyMsg: Message = {
-            id: (Date.now() + 1).toString(),
-            role: 'assistant',
-            text: guess.candidates.length === 1 ? t('iqraDidYouMean') : t('iqraWhichLesson'),
-            clarificationLessons: guess.candidates.map(c => ({
-              id: c.id,
-              title: lang === 'ar' ? c.titleAr : c.titleEn,
-            })),
-            clarificationQuery: q,
-            timestamp: new Date(),
-          };
-          // The `finally` on the enclosing try clears the thinking state, the
-          // same way the subject-clarification branch above relies on it.
-          setMessages(prev => [...prev, clarifyMsg]);
-          return;
-        }
+      const lessonGuess = shouldAskWhichLesson({
+        intent: route.intent,
+        hasHardContext,
+        hasDocuments: hasDocs,
+        isSoftBareArtifact: softBareArtifact,
+        ranked,
+      });
+      if (lessonGuess.ask) {
+        const clarifyMsg: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          text: lessonGuess.candidates.length === 1 ? t('iqraDidYouMean') : t('iqraWhichLesson'),
+          clarificationLessons: lessonGuess.candidates.map(c => ({
+            id: c.id,
+            title: lang === 'ar' ? c.titleAr : c.titleEn,
+          })),
+          clarificationQuery: q,
+          timestamp: new Date(),
+        };
+        // The `finally` on the enclosing try clears the thinking state, the
+        // same way the subject-clarification branch above relies on it.
+        setMessages(prev => [...prev, clarifyMsg]);
+        return;
       }
 
       if (!hasKBMatch && !hasDocs && !(softBareArtifact && artifactType)) {
