@@ -190,6 +190,9 @@ const translations = {
     selectSemester: 'اختر الفصل',
     noSemesters: 'لا فصول دراسية بعد',
     unitsAndLessons: (units: number, lessons: number) => `${units} وحدات · ${lessons} دروس`,
+    downloadBook: 'تحميل الكتاب',
+    downloadTeacherGuide: 'دليل المعلم',
+    downloadSourceNccd: 'من موقع المركز الوطني لتطوير المناهج',
 
     // Curriculum — lessons screen
     unitLabel: 'الوحدة',
@@ -1051,6 +1054,9 @@ const translations = {
     noSemesters: 'No semesters yet',
     unitsAndLessons: (units: number, lessons: number) =>
       `${units} unit${units !== 1 ? 's' : ''} · ${lessons} lesson${lessons !== 1 ? 's' : ''}`,
+    downloadBook: 'Download book',
+    downloadTeacherGuide: 'Teacher guide',
+    downloadSourceNccd: 'From the National Center for Curriculum Development',
 
     unitLabel: 'Unit',
     unitsAvailable: (n: number) => `${n} unit${n !== 1 ? 's' : ''}`,
