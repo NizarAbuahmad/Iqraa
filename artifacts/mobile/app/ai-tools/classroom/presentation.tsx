@@ -344,7 +344,7 @@ function QuestionOptions({
 }) {
   const options = slide.options ?? [];
   if (options.length === 0) return null;
-  // Response letters students answer with by holding up that many fingers
+  // Response letters — students raise a hand and call out the letter
   // (أ = 1, ب = 2, …). No printed cards — the app never had a way to make them.
   const letters = isRTL ? ['أ', 'ب', 'ج', 'د', 'هـ'] : ['A', 'B', 'C', 'D', 'E'];
 
