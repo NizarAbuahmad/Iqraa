@@ -24,6 +24,24 @@ import type {
 import type { KBLesson } from './knowledgeBase.ts';
 import { buildGraphSlide } from './classMedia.ts';
 
+/**
+ * Split a generated warm-up into what the class sees and what only the
+ * teacher needs.
+ *
+ * Generated intros are written *at the teacher* — "ابدأ بطرح السؤال: «…»
+ * سجّل إجابات الطلاب على السبورة" — and this slide is projected on the class
+ * screen. Stage directions up there tell the room what the teacher is about
+ * to do instead of giving it something to think about, so the quoted
+ * question is projected alone and the full instruction moves to the teacher
+ * notes. No quoted question means nothing to lift out: the text projects as
+ * it always did rather than leaving the slide blank.
+ */
+export function splitWarmup(intro: string): { projected: string; notes: string } {
+  const quoted = intro.match(/[«"“]\s*([^»"”]*[?؟])\s*[»"”]/u);
+  const question = quoted?.[1]?.trim();
+  return question ? { projected: question, notes: intro } : { projected: intro, notes: '' };
+}
+
 /** Seconds a class gets to attempt a worked example before the reveal. */
 const EXAMPLE_THINK_SECONDS = 60;
 
@@ -225,16 +243,18 @@ export function buildLessonDeck(
   // ── 4. Hook / introduction ──────────────────────────────────────────────
   const intro = nonEmpty(plan?.introduction);
   if (intro) {
+    const warm = splitWarmup(intro);
+    const tip = L('اسأل ثم انتظر بصمت خمس ثوانٍ قبل استقبال أي إجابة.',
+      'Ask, then wait five silent seconds before taking any answer.');
     push({
       type: 'intro',
       title: L('✨ تمهيد', '✨ Warm-up'),
-      content: intro,
+      content: warm.projected,
       durationSeconds: 0,
       teacher: {
         expectedAnswer: L('لا توجد إجابة واحدة — الهدف تفعيل المعرفة السابقة.',
           'No single answer — the point is to activate prior knowledge.'),
-        teachingTips: L('اسأل ثم انتظر بصمت خمس ثوانٍ قبل استقبال أي إجابة.',
-          'Ask, then wait five silent seconds before taking any answer.'),
+        teachingTips: warm.notes ? `${warm.notes}\n\n${tip}` : tip,
       },
     });
   }

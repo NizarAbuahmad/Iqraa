@@ -22,7 +22,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildLessonDeck, splitChecks, splitExample } from '../lessonSlides.ts';
+import { buildLessonDeck, splitChecks, splitExample, splitWarmup } from '../lessonSlides.ts';
 import type { LessonPlanOutput } from '../ai/AIService.ts';
 import type { KBLesson } from '../knowledgeBase.ts';
 
@@ -444,5 +444,19 @@ describe('splitChecks', () => {
     assert.deepEqual([...mid, ...exit].map(s => s.content), [
       'سؤال رقم 1؟', 'سؤال رقم 2؟', 'سؤال رقم 3؟', 'سؤال رقم 4؟', 'سؤال رقم 5؟',
     ]);
+  });
+});
+
+describe('splitWarmup', () => {
+  it('projects only the question and keeps the stage directions for the teacher', () => {
+    const intro = `ابدأ بطرح السؤال: “أين نلتقي بالأقواس في حياتنا؟” سجّل إجابات الطلاب على السبورة.`;
+    const { projected, notes } = splitWarmup(intro);
+    assert.equal(projected, 'أين نلتقي بالأقواس في حياتنا؟');
+    assert.equal(notes, intro);
+  });
+
+  it('projects the text unchanged when there is no quoted question', () => {
+    const intro = 'لعبة ما أعرفه: يكتب الطلاب ما يعرفونه عن الدرس.';
+    assert.deepEqual(splitWarmup(intro), { projected: intro, notes: '' });
   });
 });

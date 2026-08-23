@@ -3295,6 +3295,15 @@ materials, teacher prep, the Class Challenge how-it-works copy, and
 `printables` for quick-check (now `[]`). Bingo, station, exit-ticket and
 challenge cards are untouched — those are genuinely card-based activities.
 
+**Superseded 2026-08-23: the signal is a raised hand, not fingers.** Product
+call — the projected banner now reads `ارفع يدك للإجابة!` and every rules
+slide, materials list and teacher tip says the same. What this gives up is
+real: fingers encoded *which* option each student picked, so the teacher read
+the distribution in one glance. A raised hand only says «I have an answer», so
+reading the spread per option now costs a poll. The prop-free property is
+kept. Reverse by restoring the (إصبع = أ، إصبعان = ب) mapping in the rules
+slides only — the banner wording was the part that was asked for.
+
 **`printables` is still dead data everywhere else.** The remaining entries name
 props no export produces. Either build the printables exporter or stop
 populating the field; a list a teacher cannot act on is worse than no list.
@@ -3489,3 +3498,13 @@ Both were silent: the system reported success while doing nothing.
 - `docs/demo-checklist.md` is the pre-demo runbook: warm the API *and* the
   verifier, confirm the verifier is real via `GET /api/healthz/verifier`, and
   prove it is checking with a wrong-answer control.
+
+## Warm-up slides projected the teacher's stage directions, 2026-08-23
+
+The generated intro is written *at the teacher* — `ابدأ بطرح السؤال: "…" سجّل
+إجابات الطلاب على السبورة` — and `lessonSlides.ts` projected it verbatim on the
+class screen, so the room read what the teacher was about to do instead of the
+question itself. `splitWarmup` now projects the quoted question alone and moves
+the full instruction into the slide's teacher notes. No quoted question means
+nothing to lift out and the text projects as before, so an AI-generated intro
+in another shape degrades to the old behaviour rather than to a blank slide.

@@ -3,7 +3,7 @@
  *
  * Phase-1 classroom model: student phones are banned in Jordanian schools,
  * so the projector IS the interactive surface. Every question slide is
- * answered from the seat (fingers held up, or mini whiteboards),
+ * answered from the seat (hands raised, or mini whiteboards),
  * and the teacher reveals on the screen.
  *
  * Reuses the existing ActivitySlide contract so the presentation screen
@@ -59,8 +59,8 @@ function introSlide(titleAr: string, lessonTitle: string, isAr: boolean): Activi
     type: 'intro',
     title: isAr ? `📚 ${titleAr}` : `📚 ${titleAr}`,
     content: isAr
-      ? `${lessonTitle}\n\nالقواعد:\n• يظهر السؤال ويبدأ المؤقت\n• الجميع يفكر بصمت — لا أيدي مرفوعة\n• عند انتهاء الوقت: الكل يرفع أصابعه معًا (إصبع = أ، إصبعان = ب، ...)\n• ثم نكشف الإجابة ونناقش`
-      : `${lessonTitle}\n\nRules:\n• The question appears and the timer starts\n• Everyone thinks silently — no hands up\n• When time ends: everyone holds up fingers together (1 = A, 2 = B, …)\n• Then we reveal and discuss`,
+      ? `${lessonTitle}\n\nالقواعد:\n• يظهر السؤال ويبدأ المؤقت\n• الجميع يفكر بصمت\n• عند انتهاء الوقت: ارفع يدك للإجابة\n• ثم نكشف الإجابة ونناقش`
+      : `${lessonTitle}\n\nRules:\n• The question appears and the timer starts\n• Everyone thinks silently\n• When time ends: raise your hand to answer\n• Then we reveal and discuss`,
     durationSeconds: 0,
   };
 }
@@ -357,8 +357,8 @@ export function buildGameDeckFromQuiz(
     type: 'intro',
     title: isAr ? `🏆 تحدي الصف — ${quiz.title}` : `🏆 Class Challenge — ${quiz.title}`,
     content: isAr
-      ? `${lessonTitle}\n\nالقواعد:\n• الصف مقسوم إلى ${teamCount} فرق\n• يظهر السؤال ويبدأ المؤقت\n• الجميع يفكر بصمت — لا أيدي مرفوعة\n• عند انتهاء الوقت: كل فريق يرفع أصابعه معًا (إصبع = أ، إصبعان = ب، ...)\n• الفريق المصيب يأخذ ١٠٠ نقطة — والإجابات المتتالية تعطي نقاطًا إضافية`
-      : `${lessonTitle}\n\nRules:\n• The class is split into ${teamCount} teams\n• The question appears and the timer starts\n• Everyone thinks silently — no hands up\n• When time ends: each team holds up fingers together (1 = A, 2 = B, …)\n• A correct team scores 100 points — consecutive answers earn a bonus`,
+      ? `${lessonTitle}\n\nالقواعد:\n• الصف مقسوم إلى ${teamCount} فرق\n• يظهر السؤال ويبدأ المؤقت\n• الجميع يفكر بصمت\n• عند انتهاء الوقت: كل فريق يرفع يده للإجابة\n• الفريق المصيب يأخذ ١٠٠ نقطة — والإجابات المتتالية تعطي نقاطًا إضافية`
+      : `${lessonTitle}\n\nRules:\n• The class is split into ${teamCount} teams\n• The question appears and the timer starts\n• Everyone thinks silently\n• When time ends: each team raises a hand to answer\n• A correct team scores 100 points — consecutive answers earn a bonus`,
     durationSeconds: 0,
   }];
 
