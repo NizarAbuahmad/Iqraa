@@ -16,6 +16,11 @@ import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import {
+  DECK_BG as BG, DECK_BLOB as BLOB, DECK_BORDER as BORDER, DECK_CARD_BG as CARD_BG,
+  DECK_MUTED as TEXT_MUTED, DECK_PINK as PINK, DECK_TEXT as TEXT_PRIMARY,
+  DECK_ACCENT as ACCENT, slideTypeAccent, TIMER_AMBER, TIMER_GREEN, TIMER_RED,
+} from '@/services/deckTheme';
 import { useLanguage } from '@/context/LanguageContext';
 import { ActivitySlide, ClassroomActivity } from '@/services/ai/AIService';
 import { getPendingClassroomActivity, clearClassroomActivity } from '@/services/classroomStore';
@@ -45,39 +50,9 @@ async function openExternalMedia(url: string): Promise<void> {
   }
 }
 
-// ─── Color constants ──────────────────────────────────────────────────────────
-// Light, warm, print-like. A projected deck sits next to a whiteboard in a lit
-// room, where a near-black background washes out and reads as "a screen someone
-// forgot to close". Cream + teal + magenta is the deck palette; the chrome
-// borrows the same tokens so nothing looks bolted on.
-const BG = '#FDF1EC';
-const CARD_BG = '#FFFFFF';
-const BORDER = '#EFDCD4';
-const TEXT_PRIMARY = '#22303C';
-const TEXT_MUTED = '#7C6A65';
-const ACCENT = '#1E8E8E';
-/** Second accent — section rules, kickers, the "look here" mark. */
-const PINK = '#D6206B';
-/** The soft shapes behind the slide. Low-contrast on purpose. */
-const BLOB = '#F8DCD2';
-const TIMER_GREEN = '#16A34A';
-const TIMER_AMBER = '#D97706';
-const TIMER_RED = '#DC2626';
+// The deck palette and slideTypeAccent live in services/deckTheme.ts — the PDF
+// and the PPTX import the same values, so the three renderings cannot drift.
 
-function slideTypeAccent(type: ActivitySlide['type']): string {
-  if (type === 'challenge') return '#C2410C';
-  if (type === 'reveal') return TIMER_GREEN;
-  if (type === 'summary') return PINK;
-  if (type === 'bingo-call') return '#7E22CE';
-  if (type === 'relay-problem') return '#BE123C';
-  if (type === 'question') return '#1D4ED8';
-  if (type === 'graph') return '#0E7490';
-  if (type === 'media') return '#B45309';
-  if (type === 'scoreboard') return '#B45309';
-  if (type === 'podium') return '#A16207';
-  if (type === 'divider') return ACCENT;
-  return '#8B8CA4';
-}
 
 // ─── Visual block (plot / chart) ──────────────────────────────────────────────
 // Draws the same spec the PDF and PPTX draw, via react-native-svg, so the three

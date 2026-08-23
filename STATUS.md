@@ -3633,3 +3633,26 @@ owns the drop-and-renumber, tested including the insert-ahead-of-it case.
 deck. A teacher who deletes a slide and changes their mind regenerates. If
 hiding is wanted, it is a per-slide flag the presenter and the exporters all
 have to honour, which is why it was not smuggled into a bug fix.
+
+## The exports were still the old dark deck, 2026-08-23
+
+Reported with two screenshots side by side: the projector showed cream, teal
+and magenta; the .pptx the teacher opened afterwards was near-black with an
+indigo accent. Same deck, two products — and the handout is the half that
+leaves the room.
+
+The palette existed three times: in `presentation.tsx`, in `deckSlidesHtml.ts`
+and in `exportPptx.ts`. The screen was restyled to the warm palette; the two
+exporters kept their private copy of the dark one, and nothing connected them,
+so the drift was invisible until someone put the two on one desk.
+
+`services/deckTheme.ts` now holds the palette and `slideTypeAccent`, and all
+three import it. The projected values won because that is what a room full of
+people looks at. Swapping the background also meant re-checking everything
+that assumed a dark one: white titles are kept only over a hero photo or the
+flat accent divider (`.deck-on-photo`), cards went from `rgba(255,255,255,.03)`
+to solid white, and the correct MCQ option lost its `color:#fff` — on the new
+light tint that was white-on-cream.
+
+**Not verified:** the .pptx was not opened in PowerPoint. The colour inputs are
+shared now and the file builds, but nobody has looked at a rendered slide.
