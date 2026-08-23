@@ -34,6 +34,22 @@ export function countStudents(n: number, lang: Lang): string {
   return lang === 'ar' ? arCountStudents(n) : enCountStudents(n);
 }
 
+/** Same four-case rule as arCountStudents, for materials attached to a class. */
+export function arCountMaterials(n: number): string {
+  if (n === 0) return 'لا موارد';
+  if (n === 1) return 'مورد واحد';
+  if (n === 2) return 'موردان';
+  if (n >= 3 && n <= 10) return `${n} موارد`;
+  return `${n} موردًا`;
+}
+
+/** Count materials in the active language. */
+export function countMaterials(n: number, lang: Lang): string {
+  if (lang === 'ar') return arCountMaterials(n);
+  if (n === 0) return 'No materials';
+  return `${n} ${n === 1 ? 'material' : 'materials'}`;
+}
+
 const translations = {
   ar: {
     // App
@@ -498,6 +514,9 @@ const translations = {
     lessonType: 'خطة درس',
     worksheetType: 'ورقة عمل',
     quizType: 'اختبار قصير',
+    flowType: 'مسار الدرس',
+    activityType: 'نشاط صفي',
+    slidesType: 'شرائح',
     viewSavedContent: 'عرض المادة',
     noContentAvailable: 'المحتوى غير متاح',
 
@@ -798,6 +817,19 @@ const translations = {
     rosterCreateFailed: 'تعذّر إنشاء الصف. حاول مرة أخرى.',
     rosterLoadFailed: 'تعذّر تحميل الصفوف.',
     remove: 'إزالة',
+
+    // Class ↔ materials
+    classTabStudents: 'الطلاب',
+    classTabMaterials: 'الموارد',
+    noMaterialsYet: 'لا موارد لهذا الصف',
+    noMaterialsDesc: 'أرفق درسًا أو ورقة عمل من مساحتك ليظهرا هنا',
+    attachMaterial: 'أرفق مورداً',
+    attachMaterialHint: 'اختر من موادك المحفوظة غير المرتبطة بصف',
+    noMaterialsToAttach: 'كل موادك المحفوظة مرتبطة بصفوف أخرى',
+    noSavedMaterials: 'لا مواد محفوظة بعد — أنشئ درسًا أو ورقة عمل أولاً',
+    detachMaterial: 'أزل من الصف',
+    detachMaterialConfirm: (title: string) =>
+      `إزالة «${title}» من هذا الصف؟ سيبقى محفوظًا في مساحتك.`,
 
     // Evaluations — authoring
     evaluations: 'التقييمات',
@@ -1346,6 +1378,9 @@ const translations = {
     lessonType: 'Lesson Plan',
     worksheetType: 'Worksheet',
     quizType: 'Quiz',
+    flowType: 'Lesson Flow',
+    activityType: 'Class activity',
+    slidesType: 'Slides',
     viewSavedContent: 'View Material',
     noContentAvailable: 'Content not available',
 
@@ -1640,6 +1675,19 @@ const translations = {
     rosterCreateFailed: 'Could not create the class. Please try again.',
     rosterLoadFailed: 'Could not load your classes.',
     remove: 'Remove',
+
+    // Class ↔ materials
+    classTabStudents: 'Students',
+    classTabMaterials: 'Materials',
+    noMaterialsYet: 'No materials for this class',
+    noMaterialsDesc: 'Attach a lesson or worksheet from your workspace and it will show up here',
+    attachMaterial: 'Attach material',
+    attachMaterialHint: 'Pick from your saved materials that are not in a class yet',
+    noMaterialsToAttach: 'All your saved materials are already in other classes',
+    noSavedMaterials: 'Nothing saved yet — create a lesson or worksheet first',
+    detachMaterial: 'Remove from class',
+    detachMaterialConfirm: (title: string) =>
+      `Remove "${title}" from this class? It stays saved in your workspace.`,
 
     // Evaluations — authoring
     evaluations: 'Evaluations',

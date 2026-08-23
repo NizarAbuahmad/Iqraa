@@ -16,6 +16,7 @@ import { classGroups, classMemberships, students } from "@workspace/db";
 import { and, asc, count, eq, inArray, isNull } from "drizzle-orm";
 import { authMiddleware, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { logger } from "../lib/logger";
+import { isSchemaMissing } from "../lib/schemaMissing.js";
 
 const router = Router();
 
@@ -29,27 +30,6 @@ const MAX_BULK_STUDENTS = 200;
 
 function trimmed(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
-}
-
-/**
- * The roster tables are created by `pnpm --filter @workspace/db run push`, which
- * is a manual step — no deploy runs it. When an environment is missing that
- * push, Postgres answers every roster query with 42P01 (undefined_table) or
- * 42703 (undefined_column), and the generic 500 below turned that into
- * "Failed to create class": true, useless, and indistinguishable from a bug in
- * the handler. Name the actual condition so the client can say something the
- * teacher can act on, and so the log points at the fix.
- */
-function isSchemaMissing(err: unknown): boolean {
-  // Drizzle wraps driver failures in _DrizzleQueryError and hangs the real pg
-  // error off `cause`, so the code is never on the object it hands back. Walk
-  // the chain; a check against the top level alone silently never matches.
-  for (let cur: unknown = err, depth = 0; cur && depth < 5; depth++) {
-    const code = (cur as { code?: unknown }).code;
-    if (code === "42P01" || code === "42703") return true;
-    cur = (cur as { cause?: unknown }).cause;
-  }
-  return false;
 }
 
 /** Single exit for every roster failure: 503 + a code when the schema is absent. */

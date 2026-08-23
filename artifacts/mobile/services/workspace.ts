@@ -31,6 +31,11 @@ export interface SavedMaterial {
   content: string;
   /** Form state so Edit can pre-fill the generator */
   formState: Record<string, any>;
+  /**
+   * The class this material is attached to, or null/undefined for none.
+   * Set from the class screen, not at save time — see `app/classes/[id].tsx`.
+   */
+  classGroupId?: string | null;
 }
 
 const LOCAL_KEY = '@iqra_workspace_v1';
@@ -76,12 +81,14 @@ type ApiItem = {
   content: string;
   formState: Record<string, any>;
   isFavorite: boolean;
+  classGroupId?: string | null;
   savedAt: string;
 };
 
 function apiToLocal(item: ApiItem): SavedMaterial {
   return {
     id: item.id,
+    classGroupId: item.classGroupId ?? null,
     type: item.type as MaterialType,
     title: item.title,
     subject: item.subject,
@@ -128,6 +135,7 @@ export async function saveItem(
           language: payload.language,
           content: payload.content,
           formState: payload.formState,
+          classGroupId: payload.classGroupId ?? null,
         }),
       });
       if (res.ok) {
@@ -170,6 +178,7 @@ export async function updateItem(
           content: updates.content,
           formState: updates.formState,
           isFavorite: updates.isFavorite,
+          classGroupId: updates.classGroupId,
         }),
       });
       if (res.ok) return;
@@ -275,12 +284,15 @@ export async function getItems(opts: {
   type?: MaterialType;
   query?: string;
   favoritesFirst?: boolean;
+  /** Only materials attached to this class. */
+  classId?: string;
 }): Promise<SavedMaterial[]> {
   if (await isAuthenticated()) {
     const params = new URLSearchParams();
     if (opts.type) params.set('type', opts.type);
     if (opts.query?.trim()) params.set('query', opts.query.trim());
     if (opts.favoritesFirst) params.set('favoritesFirst', 'true');
+    if (opts.classId) params.set('classId', opts.classId);
 
     const data = await apiGet<ApiItem[]>(`/workspace/items?${params.toString()}`);
     if (data !== null) {
@@ -291,6 +303,7 @@ export async function getItems(opts: {
 
   let items = await readLocal();
   if (opts.type) items = items.filter((i) => i.type === opts.type);
+  if (opts.classId) items = items.filter((i) => i.classGroupId === opts.classId);
   if (opts.query?.trim()) {
     const q = opts.query.trim().toLowerCase();
     items = items.filter(

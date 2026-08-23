@@ -46,8 +46,9 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     because the count was repeatedly described as "all in
     `lib/integrations-openai-ai-server`", which is wrong by a factor of three
     and would send someone looking in the wrong package.
-- Mobile test suite: 723 tests, 0 failures, 10 skipped (re-counted 2026-08-22
-  on an installed workspace; the 480 here was stale, and the 376 before it).
+- Mobile test suite: 725 tests, 0 failures, 10 skipped (re-counted 2026-08-23
+  on an installed workspace; 723 on 2026-08-22, the 480 here was stale before
+  that, and the 376 before it).
   The 10 skips are the chemistry KB-search cases, skipped by their own suite,
   not by the runner.
   The `test` script globs `services/__tests__/**/*.test.ts` — it used to be a
@@ -174,6 +175,71 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     deployed. The client's timeout is 2.5s, so the first call after idle fails.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
+
+## Materials belong to a class now, 2026-08-23
+
+صفوفي and مساحتي were two islands. `class_groups` held names; `saved_materials`
+held work; nothing joined them, so there was no answer to "what did I give
+صف أ". The join had been *designed* — `evaluation_assignments` has carried
+`studentId` XOR `classGroupId` plus a `dueAt` since Phase 4 — but nothing in the
+repo has ever written or read that table. It is still dead. This took the
+smaller path instead.
+
+**One nullable column.** `saved_materials.class_group_id`, `ON DELETE SET NULL`
+— archiving a class must not take the teacher's worksheets with it. One class
+per material; a worksheet used with two sections gets duplicated, which the
+existing `POST /workspace/items/:id/duplicate` already does (and the copy
+deliberately starts unattached, or both copies would land in the same class).
+Promote to a join table only if teachers ask for shared materials.
+
+**Attaching happens in the class, not at save time.** A class picker in the
+save flow would mean editing seven generator screens; `app/classes/[id].tsx` now
+has two tabs (الطلاب / الموارد) and the materials tab attaches from the
+teacher's unattached saved items. `GET /workspace/items?classId=` filters.
+
+**Three things fixed on the way, because they were in the path:**
+
+- `workspace.ts` had no equivalent of the roster's 42P01/42703 detection, so a
+  database missing this column would have answered "Failed to save item" —
+  exactly the useless 500 the [roster incident](#roster-storage--a-production-incident-worth-remembering)
+  was about. `isSchemaMissing` moved to `src/lib/schemaMissing.ts` and both
+  routers use it; workspace now answers 503 with
+  `code: "workspace_storage_unavailable"`.
+- The PATCH allowlist was nine hand-written `!== undefined` lines. Detach sends
+  `classGroupId: null`, and the next person to add a nullable field and reach
+  for truthiness makes attach work while detach silently does nothing. Replaced
+  with `pickDefined()` in `src/lib/pickDefined.ts` — five tests, one of which is
+  `null`. Still an allowlist, not a spread: `req.body` reaching `.set()` whole
+  would let a client rewrite `userId`.
+- `app/workspace/index.tsx`'s `typeLabel()` ended in `return t('quizType')` and
+  its edit route ended in `'/ai-tools/quiz'`, so a saved **activity** or **deck**
+  displayed as "اختبار قصير" and opened the quiz builder, which cannot rebuild
+  either. Colour/icon/label/route now come from `constants/materialKind.ts`,
+  shared with the new class tab; `slides` has no form-driven editor so it no
+  longer offers Edit at all.
+
+**Verified against the running system**, not asserted: local API on :8080
+against local Postgres, ten checks — save starts unattached, attach sets it,
+`?classId=` includes and excludes correctly, detach-with-null actually clears,
+a PATCH that omits the field leaves it alone, duplicate starts unattached, and
+the material outlives its class. `confdeltype = 'n'` confirmed on the FK.
+Typecheck clean across all three projects; api-server 139 tests, mobile 725.
+
+**Production has the column, 2026-08-23 8:13pm.** Applied by hand in the Neon
+SQL editor rather than by `pnpm --filter @workspace/db run push`, deliberately:
+`push` diffs the *whole* local schema against production and applies everything
+it finds, so an unrelated local drift rides along unseen. This was one additive
+change, so it went in as one explicit `ALTER TABLE` plus the FK. Verified in
+the same session — `is_nullable = YES`, `confdeltype = n`. Matches local.
+
+That leaves only the merge: `main` is the only branch that deploys, so the
+column is live and the code that uses it is not.
+
+**The process gap is still open.** Nothing about this deploys schema
+automatically; it was a human remembering. That is the same standing landmine
+recorded on 2026-08-19 and again here — and this entry is being written *with*
+its fix rather than three days later, which is the actual lesson from last
+time.
 
 ## Off-topic questions are declined, not answered, 2026-08-22
 

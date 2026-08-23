@@ -13,25 +13,12 @@ import {
   MaterialType, SavedMaterial,
   deleteItem, duplicateItem, getItems, toggleFavorite,
 } from '@/services/workspace';
-
-const TYPE_COLOR: Record<MaterialType, string> = {
-  lesson: '#1B6B62',
-  worksheet: '#8B5CF6',
-  quiz: '#F59E0B',
-  flow: '#00A99D',
-  activity: '#EC4899',
-  // Matches the Slides Maker screen's accent, so a saved deck is the same
-  // colour in the workspace as the tool that produced it.
-  slides: '#0EA5E9',
-};
-const TYPE_ICON: Record<MaterialType, keyof typeof Ionicons.glyphMap> = {
-  lesson: 'document-text-outline',
-  worksheet: 'list-outline',
-  quiz: 'help-circle-outline',
-  flow: 'git-branch-outline',
-  activity: 'game-controller-outline',
-  slides: 'tv-outline',
-};
+import {
+  MATERIAL_COLOR,
+  MATERIAL_EDIT_ROUTE,
+  MATERIAL_ICON,
+  MATERIAL_LABEL_KEY,
+} from '@/constants/materialKind';
 
 const TABS: Array<{ key: MaterialType | 'all'; labelKey: string }> = [
   { key: 'all', labelKey: 'allFilter' },
@@ -93,11 +80,10 @@ export default function WorkspaceScreen() {
   };
 
   const handleMenu = (item: SavedMaterial) => {
-    const editRoute =
-      item.type === 'lesson' ? '/ai-tools/lesson-plan'
-        : item.type === 'worksheet' ? '/ai-tools/worksheet'
-          : item.type === 'flow' ? '/ai-tools/lesson-flow'
-            : '/ai-tools/quiz';
+    // A chain of ternaries ending in `: '/ai-tools/quiz'` sent activities and
+    // decks to the quiz builder, which cannot rebuild either. Kinds with no
+    // form-driven editor simply do not offer Edit.
+    const editRoute = MATERIAL_EDIT_ROUTE[item.type];
 
     Alert.alert(
       item.title,
@@ -107,14 +93,16 @@ export default function WorkspaceScreen() {
           text: t('openItem'),
           onPress: () => router.push({ pathname: '/workspace/view', params: { id: item.id } }),
         },
-        {
-          text: t('editItem'),
-          onPress: () =>
-            router.push({
-              pathname: editRoute as any,
-              params: { savedId: item.id, ...item.formState },
-            }),
-        },
+        ...(editRoute
+          ? [{
+            text: t('editItem'),
+            onPress: () =>
+              router.push({
+                pathname: editRoute as any,
+                params: { savedId: item.id, ...item.formState },
+              }),
+          }]
+          : []),
         {
           text: t('duplicateItem'),
           onPress: () => handleDuplicate(item.id),
@@ -141,16 +129,11 @@ export default function WorkspaceScreen() {
     }
   };
 
-  const typeLabel = (type: MaterialType) => {
-    if (type === 'lesson') return t('lessonType');
-    if (type === 'worksheet') return t('worksheetType');
-    if (type === 'flow') return lang === 'ar' ? 'مسار الدرس' : 'Lesson Flow';
-    return t('quizType');
-  };
+  const typeLabel = (type: MaterialType) => t(MATERIAL_LABEL_KEY[type]);
 
   const renderItem = ({ item }: { item: SavedMaterial }) => {
-    const color = TYPE_COLOR[item.type];
-    const icon = TYPE_ICON[item.type];
+    const color = MATERIAL_COLOR[item.type];
+    const icon = MATERIAL_ICON[item.type];
     return (
       <Pressable
         onPress={() => router.push({ pathname: '/workspace/view', params: { id: item.id } })}
