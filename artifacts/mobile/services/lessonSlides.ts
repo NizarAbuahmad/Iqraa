@@ -42,6 +42,25 @@ export function splitWarmup(intro: string): { projected: string; notes: string }
   return question ? { projected: question, notes: intro } : { projected: intro, notes: '' };
 }
 
+/**
+ * Drop one slide from a deck and renumber what is left.
+ *
+ * Targets the slide *object*, not its position. Deck building is not
+ * finished when the outline first renders: photo, video and verification
+ * passes land seconds later and `insertVideoSlide` shifts every index after
+ * it, so a teacher who deletes slide 9 during that window deletes whatever
+ * moved into position 9. Identity survives those passes because they rebuild
+ * only the slides they touch.
+ */
+export function withoutSlide(
+  slides: readonly ActivitySlide[],
+  target: ActivitySlide,
+): ActivitySlide[] {
+  return slides
+    .filter(s => s !== target)
+    .map((s, i) => ({ ...s, slideNumber: i + 1 }));
+}
+
 /** Seconds a class gets to attempt a worked example before the reveal. */
 const EXAMPLE_THINK_SECONDS = 60;
 

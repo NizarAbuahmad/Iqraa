@@ -3540,3 +3540,30 @@ question itself. `splitWarmup` now projects the quoted question alone and moves
 the full instruction into the slide's teacher notes. No quoted question means
 nothing to lift out and the text projects as before, so an AI-generated intro
 in another shape degrades to the old behaviour rather than to a blank slide.
+
+## Deleting a slide before presenting did not stick, 2026-08-23
+
+Reported by a teacher: the trash icon on the slides outline appeared to do
+nothing. Reproduced on the deployed site — delete three slides and the
+outline kept two of them, then «اعرض على الشاشة» opened a deck with a
+*different* count from the outline the teacher had just approved (17 rows
+listed, 16 slides presented).
+
+`removeSlide` and the slide editor both rebuilt the deck from the `deck`
+captured at render time (`setDeck({ ...deck, slides })`) and targeted slides
+by index. Neither holds while a deck is still being built: the photo, video
+and verifier passes land seconds after the outline first renders and each
+replaces the deck object, so the captured `deck` is stale and
+`insertVideoSlide` shifts every index after the insert. Two edits in that
+window overwrite each other, and an index picked before the video landed
+deletes whatever moved into that position.
+
+Both now update functionally (`setDeck(cur => …)`) and target the slide
+*object*, not its position — identity survives the enrichment passes because
+they rebuild only the slides they touch. `withoutSlide` in `lessonSlides.ts`
+owns the drop-and-renumber, tested including the insert-ahead-of-it case.
+
+**Not done:** there is no *hide* — only delete, which is permanent for that
+deck. A teacher who deletes a slide and changes their mind regenerates. If
+hiding is wanted, it is a per-slide flag the presenter and the exporters all
+have to honour, which is why it was not smuggled into a bug fix.

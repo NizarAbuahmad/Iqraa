@@ -26,7 +26,7 @@ import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import type { ActivitySlide, ClassroomActivity, LessonPlanOutput } from '@/services/ai/AIService';
 import { buildGeneratorContext, resolveGeneratorGrounding } from '@/services/kbContext';
 import {
-  buildLessonDeck, EXIT_TICKET_MAX, MID_LESSON_CHECK_MAX, rebuildAnswerKey,
+  buildLessonDeck, EXIT_TICKET_MAX, MID_LESSON_CHECK_MAX, rebuildAnswerKey, withoutSlide,
 } from '@/services/lessonSlides';
 import {
   applyMediaEdit, extractGraphCommands, insertLessonResources, nextVideoSuggestion,
@@ -163,8 +163,7 @@ export default function SlidesScreen() {
       swapped = result.slide;
     }
 
-    const slides = deck.slides.map((s, i) => {
-      if (i !== editIdx) return s;
+    const applyToSlide = (s: ActivitySlide): ActivitySlide => {
       if (swapped) {
         return { ...swapped, title: editTitle.trim() || s.title, content: editContent };
       }
@@ -183,26 +182,37 @@ export default function SlidesScreen() {
         delete next.computedAnswer;
       }
       return next;
+    };
+    // By identity, not index — see removeSlide.
+    setDeck(cur => {
+      if (!cur) return cur;
+      const slides = cur.slides.map(s => (s === editing ? applyToSlide(s) : s));
+      return { ...cur, slides, answerKey: rebuildAnswerKey(slides, isAr) };
     });
-    setDeck({ ...deck, slides, answerKey: rebuildAnswerKey(slides, isAr) });
     setEditIdx(null);
     showToast(t('slideUpdated'));
   };
 
   const removeSlide = async (i: number) => {
     if (!deck) return;
+    // Hold the slide itself across the dialog. The media, video and verifier
+    // passes keep landing while the teacher reads it, and they replace the
+    // deck object — so `deck` here is stale by the time the answer comes back
+    // and `i` may no longer point at the slide the teacher chose.
+    const target = deck.slides[i];
     const ok = await confirm({
       title: t('deleteSlideTitle'),
-      message: deck.slides[i].title,
+      message: target.title,
       confirmLabel: t('deleteLabel'),
       cancelLabel: t('cancel'),
       destructive: true,
     });
     if (!ok) return;
-    const slides = deck.slides
-      .filter((_, idx) => idx !== i)
-      .map((s, idx) => ({ ...s, slideNumber: idx + 1 }));
-    setDeck({ ...deck, slides, answerKey: rebuildAnswerKey(slides, isAr) });
+    setDeck(cur => {
+      if (!cur) return cur;
+      const slides = withoutSlide(cur.slides, target);
+      return { ...cur, slides, answerKey: rebuildAnswerKey(slides, isAr) };
+    });
   };
 
   const prevGradeRef = useRef(gradeIdx);
