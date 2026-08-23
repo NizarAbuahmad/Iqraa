@@ -15,6 +15,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   LESSONS,
+  UNMATCHED_AUTHORED_LESSON_TITLES,
   bloomsCoverage,
   getAllObjectives,
   getEvaluableBookIds,
@@ -130,6 +131,32 @@ describe('objective index — blooms provenance', () => {
         .map(o => o.bloomsLevel),
     );
     assert.ok(levels.size > 1, `authored objectives collapsed to one level: ${[...levels]}`);
+  });
+
+  it('records every hand-authored lesson the NCCD swap could not carry over', () => {
+    // Swapping a hand-written lesson for its NCCD counterpart keeps the
+    // authored outcomes only when the two titles match. A title the book
+    // renamed drops real Bloom's levels on the floor, so the casualties are
+    // exported rather than lost. Pinned: this list must shrink, never grow.
+    assert.deepEqual(
+      [...UNMATCHED_AUTHORED_LESSON_TITLES],
+      ['الرابطة الأيونية والتساهمية'],
+      'NCCD enrichment dropped a different set of authored outcomes than expected',
+    );
+  });
+
+  it('keeps the authored chemistry outcomes attached to their NCCD lessons', () => {
+    // The merge remaps outcome.lessonId onto the NCCD lesson; if that broke,
+    // the outcomes would still exist but point at lessons no longer in the
+    // catalog, and getObjectivesForLesson would return nothing for them.
+    const authored = getAllObjectives().filter(o => o.bloomsSource === 'authored');
+    for (const o of authored) {
+      const viaLesson = getObjectivesForLesson(o.lessonId).map(x => x.id);
+      assert.ok(
+        viaLesson.includes(o.id),
+        `authored outcome "${o.id}" is not reachable through its own lesson "${o.lessonId}"`,
+      );
+    }
   });
 
   it('coverage totals add up', () => {

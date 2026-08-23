@@ -25,8 +25,13 @@ import {
 } from '../lessonPrep.ts';
 import { getPickerGrades, getPickerSubjects, getLessonById } from '../curriculumData.ts';
 
-/** Chemistry G10 S1 — has distinct Arabic and English titles, and is in the KB. */
-const CHEM_LESSON_ID = 'lesson-chem-1';
+/**
+ * Chemistry G10 S1 — has distinct Arabic and English titles, and is in the KB.
+ * Same lesson («نظرية بور لذرة الهيدروجين») the hand-written `lesson-chem-1`
+ * used to carry; it moved to its NCCD id when the browser catalog started
+ * reading the student-book JSON.
+ */
+const CHEM_LESSON_ID = 'kbl-chem-s1-nccd-u1_l1';
 /** Math G10 S1 NCCD — the main demo path. */
 const MATH_LESSON_ID = 'kbl-math-s1-nccd-u1_l1';
 
