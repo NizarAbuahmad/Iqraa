@@ -3415,6 +3415,9 @@ populating the field; a list a teacher cannot act on is worse than no list.
     and production `.env` values look nothing alike but produce identical
     console output apart from one line. `verify-schema` prints the host it
     checked (`Schema check against …`) as its first line. Read it.
+  - **Production is 25/25 as of 2026-08-23**, `ai_generations` included, run
+    against Neon with `verify-schema` before and after the push (24/25 → push →
+    25/25). Superseding the line below, which was correct when written.
   - **Production verified 24/24 on 2026-08-22**, via the same `to_regclass`
     check run in the Neon SQL console. The 2026-08-19 outage was fixed that
     same afternoon — Neon's query history shows "find missing tables" at
@@ -3422,6 +3425,15 @@ populating the field; a list a teacher cannot act on is worse than no list.
     file and CLAUDE.md went on asserting the outage for three days afterwards,
     because the fix was never written down. **The process gap is real and
     still open; that particular outage is not.**
+  - **Confirmed on 2026-08-23, by the push finding drift the check had
+    reported as clean.** Against a 24/24 production database, `push` still had
+    two changes to make: unique constraints on `class_groups.join_code` and on
+    `class_memberships` that the schema declares and production did not have.
+    Both were applied without truncating (the prompt offers truncation as the
+    safe-if-it-fails option; with one row in each table a unique constraint
+    cannot be violated, so it was declined). Nothing was wrong — but it is a
+    worked example of the gap the next line describes, found by accident rather
+    than by asking.
   - **What the check does not prove:** `to_regclass` asks whether a table
     *name* exists. A table with a stale column set — a migration that added
     the table but not a later column — still reports `ok`. Column-level drift
