@@ -30,6 +30,10 @@ import {
   buildChemSem1Catalog,
 } from './curriculumG10ChemSem1.ts';
 import {
+  CHEM_S2_BOOK_ID,
+  buildChemSem2Catalog,
+} from './curriculumG10ChemSem2.ts';
+import {
   FINLIT_S1_BOOK_ID,
   buildFinlitSem1Catalog,
 } from './curriculumG10FinlitSem1.ts';
@@ -1071,6 +1075,7 @@ const HARDCODED_KB_LESSONS: HardcodedKBLesson[] = [
 const _nccdSem1 = buildNccdSem1Catalog();
 const _nccdSem2 = buildNccdSem2Catalog();
 const _chemSem1 = buildChemSem1Catalog();
+const _chemSem2 = buildChemSem2Catalog();
 const _finlitSem1 = buildFinlitSem1Catalog();
 const _legacyS1UnitIds = new Set(
   HARDCODED_KB_UNITS.filter(u => u.bookId === NCCD_S1_BOOK_ID).map(u => u.id),
@@ -1084,10 +1089,18 @@ const _legacyS2UnitIds = new Set(
 const _legacyChemS1UnitIds = new Set(
   HARDCODED_KB_UNITS.filter(u => u.bookId === CHEM_S1_BOOK_ID).map(u => u.id),
 );
+// Chemistry S2 hardcoded rows are superseded by the student-book JSON — unit 4
+// had no real title («الوحدة الرابعة»; the book says «التفاعلات والحسابات
+// الكيميائية») and unit 5 was labelled «التفاعلات الكيميائية», which is unit
+// 4's subject — the book's unit 5 is «الطاقة الكيميائية».
+const _legacyChemS2UnitIds = new Set(
+  HARDCODED_KB_UNITS.filter(u => u.bookId === CHEM_S2_BOOK_ID).map(u => u.id),
+);
 const _supersededUnitIds = new Set([
   ..._legacyS1UnitIds,
   ..._legacyS2UnitIds,
   ..._legacyChemS1UnitIds,
+  ..._legacyChemS2UnitIds,
 ]);
 
 function normalizeHardcodedLesson(lesson: HardcodedKBLesson): KBLesson {
@@ -1173,25 +1186,28 @@ function enrichLesson(lesson: KBLesson): KBLesson {
   };
 }
 
-/** Active units: NCCD Chem S1 + Chem S2 (hardcoded) + NCCD Math S1/S2. */
+/** Active units: NCCD Chem S1/S2 + NCCD Math S1/S2 + NCCD FinLit S1. */
 export const KB_UNITS: KBUnit[] = [
   ...HARDCODED_KB_UNITS.filter(
     u => u.bookId !== NCCD_S1_BOOK_ID
       && u.bookId !== NCCD_S2_BOOK_ID
-      && u.bookId !== CHEM_S1_BOOK_ID,
+      && u.bookId !== CHEM_S1_BOOK_ID
+      && u.bookId !== CHEM_S2_BOOK_ID,
   ),
   ..._chemSem1.units,
+  ..._chemSem2.units,
   ..._finlitSem1.units,
   ..._nccdSem1.units,
   ..._nccdSem2.units,
 ];
 
-/** Active lessons: NCCD Chem S1 + Chem S2 (hardcoded) + NCCD Math S1/S2. */
+/** Active lessons: NCCD Chem S1/S2 + NCCD Math S1/S2 + NCCD FinLit S1. */
 export const KB_LESSONS: KBLesson[] = [
   ...HARDCODED_KB_LESSONS
     .filter(l => !_supersededUnitIds.has(l.unitId))
     .map(normalizeHardcodedLesson),
   ..._chemSem1.lessons.map(enrichLesson),
+  ..._chemSem2.lessons.map(enrichLesson),
   ..._finlitSem1.lessons.map(enrichLesson),
   ..._nccdSem1.lessons.map(enrichLesson),
   ..._nccdSem2.lessons.map(enrichLesson),

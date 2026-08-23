@@ -93,7 +93,8 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     file does not have. Not added — see `known_gaps` in the curriculum JSON.
 - Objective counts, NCCD data in `lib/curriculum/src/data/*.json`: math S1 59,
   math S2 61, financial literacy 40, chemistry S1 12 (across 3 units /
-  9 lessons, and 3 of those lessons still have none).
+  9 lessons, and 3 of those lessons still have none), chemistry S2 19 (2 units /
+  8 lessons, the 2 تجربة استهلالية carrying none — the book prints none for labs).
   - Separately, `lib/curriculum/src/catalog.ts` holds a small hand-authored
     catalog with real Bloom's levels — 4 of its objectives are chemistry S1.
     **These are two different datasets; do not read "chemistry 4" as the
@@ -107,8 +108,27 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     publish, validators), plus deterministic marking and level aggregation.
     What is missing is any evaluation UI, the attempts/answer-entry endpoints,
     and the dashboard.
-- Chemistry is thinner than "math + chemistry first" implies: 3 units /
-  9 lessons against math's 4 / 18 per semester.
+- Chemistry S2 is NCCD-sourced as of 2026-08-23 (2 units / 8 lessons, from the
+  student book, ISBN 978-9923-41-284-8). It replaced two stubs that named unit 4
+  «الوحدة الرابعة» and unit 5 «التفاعلات الكيميائية» — the latter is unit *4*'s
+  subject; the book's unit 5 is «الطاقة الكيميائية».
+- Chemistry S1's curriculum browser now serves its NCCD JSON too (2026-08-23).
+  It previously showed 3 units / 3 lessons against the book's 3 / 9, mislabelled
+  unit 2 as «الجدول الدوري وخواص العناصر» (the book says «التوزيع الإلكتروني
+  والدورية»), and rendered unit 2 as an empty unit with zero lessons.
+  - The swap would have deleted the last hand-authored Bloom's levels in the
+    active catalog, since every NCCD builder hardcodes `'Understand'`.
+    `catalog.ts::_mergeAuthoredOutcomes` carries them over by
+    diacritics-insensitive title match, remapping `lessonId` onto the NCCD
+    lesson and **appending** to the book's own نتاجات rather than replacing
+    them. 5 authored outcomes survive, spanning Understand + Apply.
+  - One casualty: «الرابطة الأيونية والتساهمية» has no NCCD counterpart — the
+    book splits that material into «الروابط الكيميائية وأنواعها» and «الصيغ
+    الكيميائية وخصائص المركبات» — so its Apply outcome is gone. Exported as
+    `UNMATCHED_AUTHORED_LESSON_TITLES` and pinned by a test, so the list can
+    shrink but never grow silently.
+- Chemistry is thinner than "math + chemistry first" implies: 3 + 2 units /
+  9 + 8 lessons against math's 4 / 18 per semester.
 - Financial Literacy G10 S1 is browsable (2 units / 10 lessons, NCCD-sourced).
   It was previously offered as a subject tile with no book behind it, so the
   subject dead-ended on the "no semesters" empty state.
