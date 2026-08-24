@@ -829,6 +829,7 @@ const translations = {
     attachMaterialHint: 'اختر من موادك المحفوظة غير المرتبطة بصف',
     noMaterialsToAttach: 'كل موادك المحفوظة مرتبطة بصفوف أخرى',
     noSavedMaterials: 'لا مواد محفوظة بعد — أنشئ درسًا أو ورقة عمل أولاً',
+    createNewMaterial: 'أنشئ مادة جديدة',
     detachMaterial: 'أزل من الصف',
     detachMaterialConfirm: (title: string) =>
       `إزالة «${title}» من هذا الصف؟ سيبقى محفوظًا في مساحتك.`,
@@ -1701,6 +1702,7 @@ const translations = {
     attachMaterialHint: 'Pick from your saved materials that are not in a class yet',
     noMaterialsToAttach: 'All your saved materials are already in other classes',
     noSavedMaterials: 'Nothing saved yet — create a lesson or worksheet first',
+    createNewMaterial: 'Create a new material',
     detachMaterial: 'Remove from class',
     detachMaterialConfirm: (title: string) =>
       `Remove "${title}" from this class? It stays saved in your workspace.`,

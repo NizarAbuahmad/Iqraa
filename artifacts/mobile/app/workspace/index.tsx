@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import {
-  Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View,
+  FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View,
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -37,6 +37,7 @@ export default function WorkspaceScreen() {
   const [activeTab, setActiveTab] = useState<MaterialType | 'all'>('all');
   const [query, setQuery] = useState('');
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [menuItem, setMenuItem] = useState<SavedMaterial | null>(null);
 
   const reload = useCallback(async () => {
     const type = activeTab === 'all' ? undefined : activeTab;
@@ -79,42 +80,53 @@ export default function WorkspaceScreen() {
     reload();
   };
 
-  const handleMenu = (item: SavedMaterial) => {
+  /**
+   * The row menu's actions.
+   *
+   * This used to be an `Alert.alert` with five buttons, which meant the "..."
+   * button did nothing at all in the browser — `Alert.alert`'s handlers never
+   * fire on react-native web, the same defect `services/confirm.ts` was written
+   * for. Teachers are demoed on the web build, so Open, Edit, Duplicate and
+   * Delete were all dead there while looking fine on a phone.
+   */
+  const menuActions = (item: SavedMaterial) => {
     // A chain of ternaries ending in `: '/ai-tools/quiz'` sent activities and
     // decks to the quiz builder, which cannot rebuild either. Kinds with no
     // form-driven editor simply do not offer Edit.
     const editRoute = MATERIAL_EDIT_ROUTE[item.type];
-
-    Alert.alert(
-      item.title,
-      undefined,
-      [
-        {
-          text: t('openItem'),
-          onPress: () => router.push({ pathname: '/workspace/view', params: { id: item.id } }),
-        },
-        ...(editRoute
-          ? [{
-            text: t('editItem'),
-            onPress: () =>
-              router.push({
-                pathname: editRoute as any,
-                params: { savedId: item.id, ...item.formState },
-              }),
-          }]
-          : []),
-        {
-          text: t('duplicateItem'),
-          onPress: () => handleDuplicate(item.id),
-        },
-        {
-          text: t('deleteItem'),
-          style: 'destructive',
-          onPress: () => { void handleDelete(item); },
-        },
-        { text: t('cancel'), style: 'cancel' },
-      ],
-    );
+    return [
+      {
+        key: 'open',
+        icon: 'open-outline' as const,
+        label: t('openItem'),
+        run: () => router.push({ pathname: '/workspace/view', params: { id: item.id } }),
+      },
+      ...(editRoute
+        ? [{
+          key: 'edit',
+          icon: 'create-outline' as const,
+          label: t('editItem'),
+          run: () =>
+            router.push({
+              pathname: editRoute as any,
+              params: { savedId: item.id, ...item.formState },
+            }),
+        }]
+        : []),
+      {
+        key: 'duplicate',
+        icon: 'copy-outline' as const,
+        label: t('duplicateItem'),
+        run: () => { void handleDuplicate(item.id); },
+      },
+      {
+        key: 'delete',
+        icon: 'trash-outline' as const,
+        label: t('deleteItem'),
+        destructive: true,
+        run: () => { void handleDelete(item); },
+      },
+    ];
   };
 
   const formatDate = (iso: string) => {
@@ -190,7 +202,7 @@ export default function WorkspaceScreen() {
             />
           </Pressable>
           <Pressable
-            onPress={() => handleMenu(item)}
+            onPress={() => setMenuItem(item)}
             hitSlop={8}
             style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, marginTop: 12 })}
           >
@@ -320,11 +332,93 @@ export default function WorkspaceScreen() {
           </View>
         }
       />
+
+      <Modal
+        visible={menuItem !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMenuItem(null)}
+      >
+        <Pressable style={styles.menuBackdrop} onPress={() => setMenuItem(null)}>
+          <Pressable
+            style={[styles.menuCard, { backgroundColor: colors.card }]}
+            onPress={e => e.stopPropagation()}
+          >
+            <Text
+              style={[
+                styles.menuTitle,
+                {
+                  color: colors.foreground,
+                  fontFamily: 'Cairo_600SemiBold',
+                  textAlign: isRTL ? 'right' : 'left',
+                },
+              ]}
+              numberOfLines={2}
+            >
+              {menuItem?.title}
+            </Text>
+            {(menuItem ? menuActions(menuItem) : []).map(action => (
+              <Pressable
+                key={action.key}
+                onPress={() => {
+                  // Close first: Edit and Open navigate away, and a modal still
+                  // mounted over the new screen is how a dialog gets stuck.
+                  setMenuItem(null);
+                  action.run();
+                }}
+                style={[
+                  styles.menuRow,
+                  { borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' },
+                ]}
+              >
+                <Ionicons
+                  name={action.icon}
+                  size={18}
+                  color={action.destructive ? colors.destructive : colors.primary}
+                />
+                <Text
+                  style={{
+                    color: action.destructive ? colors.destructive : colors.foreground,
+                    fontFamily: 'Cairo_500Medium',
+                    flex: 1,
+                    textAlign: isRTL ? 'right' : 'left',
+                  }}
+                >
+                  {action.label}
+                </Text>
+              </Pressable>
+            ))}
+            <Pressable onPress={() => setMenuItem(null)} style={styles.menuCancel}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }}>
+                {t('cancel')}
+              </Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  menuBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  menuCard: { width: '100%', maxWidth: 400, borderRadius: 16, padding: 20, gap: 8 },
+  menuTitle: { fontSize: 16, marginBottom: 4 },
+  menuRow: {
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 13,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  menuCancel: { alignSelf: 'flex-end', paddingHorizontal: 14, paddingVertical: 10, marginTop: 4 },
   header: { paddingHorizontal: 20, paddingBottom: 0, borderBottomWidth: 1 },
   backBtn: { width: 40, height: 40, justifyContent: 'center', marginBottom: 4 },
   headerTitle: { fontSize: 26, marginBottom: 2 },
