@@ -136,6 +136,31 @@ export async function generateEvaluation(id: string): Promise<GenerateResult> {
   return readJson(res, 'Generating questions');
 }
 
+/** One row of a paper exam: what the question is worth and what it measures. */
+export interface PaperQuestionInput {
+  marks: number | string;
+  objectiveId: string;
+  competencyKey: CompetencyKey;
+  difficulty?: Difficulty;
+}
+
+/**
+ * Replace a draft's questions with a paper-exam grid — an exam the teacher set
+ * themselves, so the app holds no question text, only what each one is worth
+ * and what it measures. Replaces rather than appends, so sending it twice does
+ * not double the paper.
+ */
+export async function setPaperQuestions(
+  evaluationId: string,
+  questions: PaperQuestionInput[],
+): Promise<{ questions: EvaluationQuestion[]; totalMarks: number }> {
+  const res = await apiFetch(`/evaluations/${evaluationId}/questions/paper`, {
+    method: 'PUT',
+    body: JSON.stringify({ questions }),
+  });
+  return readJson(res, 'Saving the paper');
+}
+
 export async function publishEvaluation(id: string): Promise<Evaluation> {
   const res = await apiFetch(`/evaluations/${id}/publish`, { method: 'POST' });
   const data = await readJson<{ evaluation: Evaluation }>(res, 'Publishing evaluation');
