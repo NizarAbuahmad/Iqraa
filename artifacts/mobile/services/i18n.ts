@@ -831,6 +831,17 @@ const translations = {
     detachMaterialConfirm: (title: string) =>
       `إزالة «${title}» من هذا الصف؟ سيبقى محفوظًا في مساحتك.`,
 
+    // Student notes
+    studentNoteHint: 'ملاحظتك عن هذا الطالب — تبقى معه عبر الفصل',
+    studentNotePlaceholder: 'مثال: يتحسّن في المسائل اللفظية، لكنه يستعجل',
+    saveNote: 'احفظ الملاحظة',
+
+    // Save a material into a class
+    saveToClassTitle: 'لأي صف هذه المادة؟',
+    saveToClassHint: 'ستجدها في تبويب «الموارد» داخل الصف',
+    notNow: 'ليس الآن',
+    savedToClass: (name: string) => `حُفظت في ${name}`,
+
     // Evaluations — authoring
     evaluations: 'التقييمات',
     myEvaluations: 'تقييماتي',
@@ -1688,6 +1699,17 @@ const translations = {
     detachMaterial: 'Remove from class',
     detachMaterialConfirm: (title: string) =>
       `Remove "${title}" from this class? It stays saved in your workspace.`,
+
+    // Student notes
+    studentNoteHint: 'Your note on this student — it stays with them all term',
+    studentNotePlaceholder: 'e.g. improving on word problems, but rushes',
+    saveNote: 'Save note',
+
+    // Save a material into a class
+    saveToClassTitle: 'Which class is this for?',
+    saveToClassHint: "You'll find it in the class's Materials tab",
+    notNow: 'Not now',
+    savedToClass: (name: string) => `Saved to ${name}`,
 
     // Evaluations — authoring
     evaluations: 'Evaluations',

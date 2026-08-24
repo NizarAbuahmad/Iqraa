@@ -38,6 +38,7 @@ import {
   getClass,
   parseStudentNames,
   removeStudentFromClass,
+  updateStudent,
   type ClassGroup,
   type RosterStudent,
 } from '@/services/roster';
@@ -72,6 +73,9 @@ export default function ClassDetailScreen() {
   const [showAttach, setShowAttach] = useState(false);
   const [attachable, setAttachable] = useState<SavedMaterial[]>([]);
   const [attachingId, setAttachingId] = useState<string | null>(null);
+  const [noteStudent, setNoteStudent] = useState<RosterStudent | null>(null);
+  const [noteText, setNoteText] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
 
   /** Server errors arrive in English; this screen is Arabic-first. */
   const describe = useCallback(
@@ -156,6 +160,30 @@ export default function ClassDetailScreen() {
       setStudents(prev => prev.filter(s => s.id !== student.id));
     } catch (err) {
       setError(describe(err));
+    }
+  };
+
+  const openNote = (student: RosterStudent) => {
+    setNoteStudent(student);
+    setNoteText(student.teacherNote);
+  };
+
+  const onSaveNote = async () => {
+    if (!noteStudent || savingNote) return;
+    setSavingNote(true);
+    setError('');
+    try {
+      const updated = await updateStudent(noteStudent.id, { teacherNote: noteText });
+      // Take the server's row rather than `noteText`: it trimmed the value, and
+      // showing something the database does not hold is how a note that looks
+      // saved turns out not to be.
+      setStudents(prev => prev.map(s => (s.id === updated.id ? updated : s)));
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setNoteStudent(null);
+    } catch (err) {
+      setError(describe(err));
+    } finally {
+      setSavingNote(false);
     }
   };
 
@@ -294,8 +322,16 @@ export default function ClassDetailScreen() {
             error ? null : empty('person-add-outline', 'noStudentsYet', 'noStudentsDesc')
           }
           renderItem={({ item }) => (
-            <View
-              style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}
+            <Pressable
+              onPress={() => openNote(item)}
+              style={[
+                styles.row,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  flexDirection: isRTL ? 'row-reverse' : 'row',
+                },
+              ]}
             >
               <View style={{ flex: 1 }}>
                 <Text
@@ -306,7 +342,24 @@ export default function ClassDetailScreen() {
                 >
                   {item.displayName}
                 </Text>
-                {item.externalRef ? (
+                {/* The note, when there is one, replaces the register number in
+                    the second line. Both at once makes a thirty-row list
+                    unreadable, and the note is the thing a teacher scans for. */}
+                {item.teacherNote ? (
+                  <Text
+                    style={[
+                      styles.rowRef,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: 'Almarai_400Regular',
+                        textAlign: align,
+                      },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {item.teacherNote}
+                  </Text>
+                ) : item.externalRef ? (
                   <Text
                     style={[
                       styles.rowRef,
@@ -321,10 +374,15 @@ export default function ClassDetailScreen() {
                   </Text>
                 ) : null}
               </View>
+              <Ionicons
+                name={item.teacherNote ? 'create' : 'create-outline'}
+                size={18}
+                color={item.teacherNote ? ACCENT : colors.mutedForeground}
+              />
               <Pressable onPress={() => { void onRemove(item); }} hitSlop={10}>
                 <Ionicons name="close" size={20} color={colors.mutedForeground} />
               </Pressable>
-            </View>
+            </Pressable>
           )}
         />
       ) : (
@@ -463,6 +521,76 @@ export default function ClassDetailScreen() {
                 ) : (
                   <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold' }}>
                     {t('addToClass')}
+                  </Text>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={noteStudent !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setNoteStudent(null)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
+            <Text
+              style={[
+                styles.modalTitle,
+                { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align },
+              ]}
+            >
+              {noteStudent?.displayName}
+            </Text>
+            <Text
+              style={[
+                styles.modalHint,
+                { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align },
+              ]}
+            >
+              {t('studentNoteHint')}
+            </Text>
+            <TextInput
+              value={noteText}
+              onChangeText={setNoteText}
+              placeholder={t('studentNotePlaceholder')}
+              placeholderTextColor={colors.mutedForeground}
+              multiline
+              autoFocus
+              style={[
+                styles.textarea,
+                {
+                  color: colors.foreground,
+                  borderColor: colors.border,
+                  fontFamily: 'Almarai_400Regular',
+                  textAlign: align,
+                  minHeight: 120,
+                },
+              ]}
+            />
+            <View style={styles.modalActions}>
+              <Pressable onPress={() => setNoteStudent(null)} style={styles.modalBtn}>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }}>
+                  {t('cancel')}
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => { void onSaveNote(); }}
+                disabled={savingNote}
+                style={[
+                  styles.modalBtn,
+                  styles.modalPrimary,
+                  { backgroundColor: ACCENT, opacity: savingNote ? 0.5 : 1 },
+                ]}
+              >
+                {savingNote ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={{ color: '#fff', fontFamily: 'Cairo_600SemiBold' }}>
+                    {t('saveNote')}
                   </Text>
                 )}
               </Pressable>

@@ -176,6 +176,61 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## A class remembers the child, and a lesson lands in the class, 2026-08-24
+
+Two small follow-ons to the class/materials join below.
+
+**Saving a lesson asks which class.** Attaching only from inside the class made
+it a chore after the fact, and chores do not happen. There are seven `saveItem`
+call sites with no shared funnel, so rather than adding a class field to seven
+crowded forms, `components/ui/ClassPickerSheet.tsx` opens on the id a save
+already returns. Wired into the two lesson-prep paths — `ai-tools/lesson-plan`
+and `LessonPrepPanel` (the **حضّر خطة درس** flow). The other five tools are the
+same six lines each now that the sheet exists; they were left out to keep the
+change small, not because they are different.
+
+The sheet has two silent exits, both deliberate: a teacher with **no classes**
+is never asked (it closes itself on an empty list, which is why loading lives
+inside the sheet rather than in each caller — otherwise all seven would have to
+count classes before deciding to open it), and an **offline** roster closes it
+too. The material is already saved by then; a failure dialog about a question
+the teacher did not ask is worse than not asking.
+
+**A note per student.** `students.teacher_note`, one running note, overwritten
+— not a history. What a teacher wants at a parent evening is the current
+picture, and a timeline of every edit is a bigger thing to build, read and
+delete from. Tap a name in الطلاب to write it; the note replaces the register
+number in the row's second line, because both at once makes a thirty-row list
+unreadable and the note is what a teacher scans for.
+
+`PATCH /students/:id` already existed and already scoped to the teacher, so
+this is three lines there. The client's `renameStudent` — exported, called by
+nothing — became `updateStudent`, which sends only what changed.
+
+Note the distinction from `attempts.teacherComment`, added the same week by
+separate work: that is a note about **one sitting**, this is a note about **a
+child**, and it outlives any test. Both are legitimate; they will look
+duplicative to whoever reads the schema next, hence this paragraph.
+
+**Verified against the running system**: local API on :8090 against local
+Postgres, nine checks — the note starts as `''` and never null, saves trimmed,
+comes back on the roster response the class screen actually reads, survives a
+PATCH that only renames, clears to `''` rather than null (the column is NOT
+NULL), and **another teacher gets 404 rather than a write or a leak**.
+Typecheck clean across three projects; api-server 139 tests, mobile 729.
+
+**Where the check is thin:** no committed unit test guards the "empty note
+means clear, absent means leave alone" branch — it lives in an Express handler
+and the coverage above came from a live run, not from CI. If someone adds
+`|| null` there the way `externalRef` has it, clearing a note will silently
+stop working and nothing will fail.
+
+**Production needs one column** before this ships:
+
+```sql
+ALTER TABLE students ADD COLUMN IF NOT EXISTS teacher_note text NOT NULL DEFAULT '';
+```
+
 ## Materials belong to a class now, 2026-08-23
 
 صفوفي and مساحتي were two islands. `class_groups` held names; `saved_materials`
