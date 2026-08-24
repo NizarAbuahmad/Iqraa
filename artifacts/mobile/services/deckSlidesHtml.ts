@@ -21,19 +21,10 @@ import { isBulletLine, looksLikeEquation, splitEmoji, stripBullet } from './deck
 import type { ActivitySlide, ClassroomActivity } from './ai/AIService.ts';
 import { hasRenderableMath, mathLineToHtml, MATH_HTML_STYLES, prettifySymPy } from './mathRender.ts';
 
-const DECK_BG = '#0D0D14';
-const DECK_TEXT = '#F2F2F6';
-const DECK_MUTED = '#8B8CA4';
-const DECK_ACCENT = '#4F46E5';
-
-function deckSlideAccent(type: ActivitySlide['type']): string {
-  if (type === 'challenge') return '#E67E22';
-  if (type === 'summary') return DECK_ACCENT;
-  if (type === 'graph') return '#0EA5E9';
-  if (type === 'divider') return DECK_ACCENT;
-  if (type === 'question') return '#3B82F6';
-  return DECK_MUTED;
-}
+import {
+  DECK_ACCENT, DECK_BG, DECK_BLOB, DECK_BORDER, DECK_CARD_BG, DECK_MUTED,
+  DECK_PINK, DECK_TEXT, slideTypeAccent as deckSlideAccent,
+} from './deckTheme.ts';
 
 function deckSlideEmoji(type: ActivitySlide['type']): string {
   if (type === 'challenge') return '🔐';
@@ -113,11 +104,12 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
 
   const titleSlide = (slide: ActivitySlide, num: number) => {
     const [meta, ...rest] = slide.content.split('\n\n');
-    return `<div class="deck-slide deck-title-slide">
+    return `<div class="deck-slide deck-title-slide${slide.mediaUrl ? ' deck-on-photo' : ''}">
       ${deckHeroLayer(slide.mediaUrl)}
       <div class="deck-title-content">
         <div class="deck-title-badge">IQRA</div>
         <h1 class="deck-title-main">${esc(slide.title)}</h1>
+        <div class="deck-title-rule"></div>
         ${meta ? `<div class="deck-title-meta">${esc(meta)}</div>` : ''}
         ${rest.length ? `<div class="deck-title-summary">${esc(rest.join(' '))}</div>` : ''}
       </div>
@@ -244,7 +236,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
         <div class="deck-options">
           ${options.map((opt, i) => {
             const correct = i === slide.correctIndex;
-            return `<div class="deck-option${correct ? ' deck-option-correct' : ''}"${correct ? ` style="border-color:${accent};color:#fff"` : ''}>
+            return `<div class="deck-option${correct ? ' deck-option-correct' : ''}"${correct ? ` style="border-color:${accent}"` : ''}>
               <span class="deck-option-letter" style="color:${accent}">${letters[i] ?? String(i + 1)}</span>
               <span class="deck-option-text">${mathLineToHtml(opt)}</span>
               ${correct ? `<span class="deck-option-tick" style="color:${accent}">✓</span>` : ''}
@@ -316,42 +308,50 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
 /* Almarai carries body copy, Cairo every heavier weight — the same split
    app/_layout.tsx makes for the on-screen UI, so an exported deck reads as
    the same product as the projector. Arial stays as the offline fallback. */
-body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:#1a1a1a; }
+body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${DECK_BORDER}; }
 .deck-title-badge, .deck-title-main, .deck-divider-title, .deck-eyebrow,
 .deck-eq, .deck-answer-label, .deck-chip, .deck-video-link,
 .deck-option-letter, .deck-title-meta { font-family: 'Cairo','Arial','Tahoma',sans-serif; }
 .deck-slide { width:297mm; height:210mm; background:${DECK_BG}; color:${DECK_TEXT}; position:relative; overflow:hidden; page-break-after:always; display:flex; flex-direction:column; }
-.deck-title-slide { background:radial-gradient(circle at 30% 20%, ${DECK_ACCENT}33, transparent 55%), ${DECK_BG}; }
+.deck-title-slide { background:radial-gradient(circle at 30% 20%, ${DECK_BLOB}, transparent 60%), ${DECK_BG}; }
 .deck-hero-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
 .deck-hero-gradient { position:absolute; inset:0; z-index:1; background:linear-gradient(180deg, rgba(13,13,20,0.35), rgba(13,13,20,0.92)); }
 .deck-title-content { position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:50px; text-align:center; }
 .deck-divider-slide { display:flex; flex-direction:column; }
+/* The projected deck sits on two low-contrast circles; pseudo-elements keep
+   them out of the markup. Not on title or divider slides — those carry a photo
+   or a flat accent panel and the circles would muddy both. */
+.deck-slide:not(.deck-title-slide):not(.deck-divider-slide)::before { content:''; position:absolute; top:-95px; inset-inline-start:-70px; width:300px; height:300px; border-radius:50%; background:${DECK_BLOB}; z-index:0; }
+.deck-slide:not(.deck-title-slide):not(.deck-divider-slide)::after { content:''; position:absolute; bottom:-130px; inset-inline-end:-90px; width:340px; height:340px; border-radius:50%; background:${DECK_BLOB}; z-index:0; }
 .deck-divider-content { position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:50px; text-align:center; }
 .deck-divider-title { font-size:44px; font-weight:700; color:#fff; line-height:1.35; max-width:640px; }
+.deck-title-rule { width:74px; height:5px; border-radius:3px; background:${DECK_PINK}; margin:0 0 18px; }
+.deck-on-photo .deck-title-main, .deck-on-photo .deck-title-meta, .deck-on-photo .deck-title-summary { color:#fff; }
+.deck-on-photo .deck-title-badge { background:rgba(255,255,255,0.16); color:#fff; }
 .deck-divider-subtitle { font-size:16px; color:rgba(255,255,255,0.85); margin-top:14px; }
-.deck-title-badge { background:${DECK_ACCENT}22; color:#a5b4fc; font-size:12px; letter-spacing:3px; font-weight:700; padding:5px 18px; border-radius:20px; margin-bottom:24px; }
-.deck-title-main { font-size:40px; font-weight:700; color:#fff; line-height:1.35; margin-bottom:18px; max-width:560px; }
+.deck-title-badge { background:${DECK_ACCENT}1F; color:${DECK_ACCENT}; font-size:12px; letter-spacing:3px; font-weight:700; padding:5px 18px; border-radius:20px; margin-bottom:24px; }
+.deck-title-main { font-size:40px; font-weight:700; color:${DECK_TEXT}; line-height:1.35; margin-bottom:18px; max-width:560px; }
 .deck-title-meta { font-size:15px; color:${DECK_MUTED}; margin-bottom:12px; }
 .deck-title-summary { font-size:13px; color:${DECK_MUTED}; max-width:480px; line-height:1.7; }
-.deck-header { display:flex; align-items:center; gap:10px; height:64px; flex-shrink:0; padding:0 32px; border-bottom:1.5px solid; }
+.deck-header { position:relative; z-index:2; display:flex; align-items:center; gap:10px; height:64px; flex-shrink:0; padding:0 32px; border-bottom:1.5px solid; }
 .deck-emoji { font-size:20px; }
 .deck-eyebrow { font-size:16px; font-weight:700; }
-.deck-body { flex:1; padding:28px 40px; overflow:hidden; display:flex; flex-direction:column; justify-content:center; gap:10px; }
+.deck-body { position:relative; z-index:2; flex:1; padding:28px 40px; overflow:hidden; display:flex; flex-direction:column; justify-content:center; gap:10px; }
 .deck-body-center { align-items:center; text-align:center; }
 .deck-line { font-size:17px; line-height:1.8; color:${DECK_TEXT}; }
-.deck-card { display:flex; align-items:center; gap:14px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.10); border-radius:14px; padding:14px 18px; }
+.deck-card { display:flex; align-items:center; gap:14px; background:${DECK_CARD_BG}; border:1px solid ${DECK_BORDER}; border-radius:14px; padding:14px 18px; }
 .deck-card-bar { width:5px; align-self:stretch; border-radius:3px; flex-shrink:0; }
 .deck-card-text { flex:1; font-size:17px; line-height:1.7; }
-.deck-formula { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.10); border-radius:16px; padding:18px 20px; text-align:center; font-size:26px; font-weight:700; color:#fff; font-family:'Cairo','Arial','Tahoma',sans-serif; }
-.deck-eq { font-size:26px; font-weight:700; color:#fff; text-align:center; line-height:1.6; }
-.deck-answer { margin-top:22px; border:1.5px solid; border-radius:12px; padding:16px 24px; background:rgba(255,255,255,0.03); min-width:320px; }
+.deck-formula { background:${DECK_CARD_BG}; border:1px solid ${DECK_BORDER}; border-radius:16px; padding:18px 20px; text-align:center; font-size:26px; font-weight:700; color:#fff; font-family:'Cairo','Arial','Tahoma',sans-serif; }
+.deck-eq { font-size:26px; font-weight:700; color:${DECK_TEXT}; text-align:center; line-height:1.6; }
+.deck-answer { margin-top:22px; border:1.5px solid; border-radius:12px; padding:16px 24px; background:${DECK_CARD_BG}; min-width:320px; }
 .deck-answer-label { font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; margin-bottom:8px; }
 .deck-plot { margin:14px auto 0; max-width:660px; }
 .deck-verified { margin-top:12px; font-size:11px; font-weight:600; display:flex; flex-direction:column; align-items:center; gap:4px; }
 .deck-evidence { font-size:10px; color:${DECK_MUTED}; font-weight:400; }
 .deck-options { display:flex; flex-direction:column; gap:10px; margin-top:22px; min-width:420px; }
-.deck-option { display:flex; align-items:center; gap:12px; border:1.5px solid rgba(255,255,255,0.14); border-radius:12px; padding:12px 18px; font-size:16px; color:${DECK_TEXT}; }
-.deck-option-correct { background:rgba(59,130,246,0.12); font-weight:700; }
+.deck-option { display:flex; align-items:center; gap:12px; border:1.5px solid ${DECK_BORDER}; border-radius:12px; padding:12px 18px; font-size:16px; color:${DECK_TEXT}; background:${DECK_CARD_BG}; }
+.deck-option-correct { background:${DECK_ACCENT}14; border-color:${DECK_ACCENT}; font-weight:700; }
 .deck-option-letter { font-size:14px; font-weight:700; min-width:20px; }
 .deck-option-text { flex:1; }
 .deck-option-tick { font-size:16px; font-weight:700; }
@@ -359,13 +359,13 @@ body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:#1a1a1a; }
 .deck-chip { border:1.5px solid; border-radius:8px; padding:5px 12px; font-size:13px; font-weight:700; }
 .deck-graph-note { font-size:11px; color:${DECK_MUTED}; max-width:420px; line-height:1.7; }
 .deck-body-media { gap:16px; }
-.deck-media-img { max-width:80%; max-height:130mm; object-fit:cover; border-radius:12px; box-shadow:0 8px 30px rgba(0,0,0,0.4); }
+.deck-media-img { max-width:80%; max-height:130mm; object-fit:cover; border-radius:12px; box-shadow:0 8px 24px rgba(34,48,60,0.18); }
 .deck-media-caption { font-size:11px; color:${DECK_MUTED}; }
 .deck-video-title { font-size:15px; color:${DECK_TEXT}; max-width:520px; line-height:1.6; margin-bottom:20px; }
 .deck-video-link { display:inline-block; border:1.5px solid; border-radius:10px; padding:10px 22px; font-size:15px; font-weight:700; text-decoration:none; }
 .deck-video-url { font-size:10px; color:${DECK_MUTED}; margin-top:14px; word-break:break-all; max-width:420px; }
 .deck-video-note { font-size:11px; color:${DECK_MUTED}; margin-top:12px; }
-.deck-footer { position:relative; z-index:2; height:30px; border-top:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:space-between; padding:0 32px; flex-shrink:0; }
+.deck-footer { position:relative; z-index:2; height:30px; border-top:1px solid ${DECK_BORDER}; display:flex; align-items:center; justify-content:space-between; padding:0 32px; flex-shrink:0; }
 .deck-footer span { font-size:9px; color:${DECK_MUTED}; }
 ${MATH_HTML_STYLES}
 </style>

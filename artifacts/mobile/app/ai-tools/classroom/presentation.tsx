@@ -16,6 +16,11 @@ import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import {
+  DECK_BG as BG, DECK_BLOB as BLOB, DECK_BORDER as BORDER, DECK_CARD_BG as CARD_BG,
+  DECK_MUTED as TEXT_MUTED, DECK_PINK as PINK, DECK_TEXT as TEXT_PRIMARY,
+  DECK_ACCENT as ACCENT, slideTypeAccent, TIMER_AMBER, TIMER_GREEN, TIMER_RED,
+} from '@/services/deckTheme';
 import { useLanguage } from '@/context/LanguageContext';
 import { ActivitySlide, ClassroomActivity } from '@/services/ai/AIService';
 import { getPendingClassroomActivity, clearClassroomActivity } from '@/services/classroomStore';
@@ -48,38 +53,26 @@ async function openExternalMedia(url: string): Promise<void> {
   }
 }
 
-// ─── Color constants ──────────────────────────────────────────────────────────
-// Light, warm, print-like. A projected deck sits next to a whiteboard in a lit
-// room, where a near-black background washes out and reads as "a screen someone
-// forgot to close". Cream + teal + magenta is the deck palette; the chrome
-// borrows the same tokens so nothing looks bolted on.
-const BG = '#FDF1EC';
-const CARD_BG = '#FFFFFF';
-const BORDER = '#EFDCD4';
-const TEXT_PRIMARY = '#22303C';
-const TEXT_MUTED = '#7C6A65';
-const ACCENT = '#1E8E8E';
-/** Second accent — section rules, kickers, the "look here" mark. */
-const PINK = '#D6206B';
-/** The soft shapes behind the slide. Low-contrast on purpose. */
-const BLOB = '#F8DCD2';
-const TIMER_GREEN = '#16A34A';
-const TIMER_AMBER = '#D97706';
-const TIMER_RED = '#DC2626';
+// The deck palette and slideTypeAccent live in services/deckTheme.ts — the PDF
+// and the PPTX import the same values, so the three renderings cannot drift.
 
-function slideTypeAccent(type: ActivitySlide['type']): string {
-  if (type === 'challenge') return '#C2410C';
-  if (type === 'reveal') return TIMER_GREEN;
-  if (type === 'summary') return PINK;
-  if (type === 'bingo-call') return '#7E22CE';
-  if (type === 'relay-problem') return '#BE123C';
-  if (type === 'question') return '#1D4ED8';
-  if (type === 'graph') return '#0E7490';
-  if (type === 'media') return '#B45309';
-  if (type === 'scoreboard') return '#B45309';
-  if (type === 'podium') return '#A16207';
-  if (type === 'divider') return ACCENT;
-  return '#8B8CA4';
+/**
+ * Projector fullscreen (web only — a native app is already fullscreen).
+ * Without this the browser chrome stays on the projector until the teacher
+ * finds F11, which is the first thing every classroom test noticed.
+ */
+const canFullscreen = Platform.OS === 'web' && typeof document !== 'undefined';
+
+function toggleFullscreen(): void {
+  if (!canFullscreen) return;
+  const el = document.documentElement;
+  // Older Safari only has the webkit-prefixed pair; if neither exists there is
+  // nothing to do but stay windowed.
+  const req = el.requestFullscreen ?? (el as any).webkitRequestFullscreen;
+  const exit = document.exitFullscreen ?? (document as any).webkitExitFullscreen;
+  const isFull = document.fullscreenElement ?? (document as any).webkitFullscreenElement;
+  const run = isFull ? exit?.call(document) : req?.call(el);
+  if (run && typeof run.catch === 'function') run.catch(() => {});
 }
 
 // ─── Visual block (plot / chart) ──────────────────────────────────────────────
@@ -347,7 +340,7 @@ function QuestionOptions({
 }) {
   const options = slide.options ?? [];
   if (options.length === 0) return null;
-  // Response letters students answer with by holding up that many fingers
+  // Response letters — students raise a hand and call out the letter
   // (أ = 1, ب = 2, …). No printed cards — the app never had a way to make them.
   const letters = isRTL ? ['أ', 'ب', 'ج', 'د', 'هـ'] : ['A', 'B', 'C', 'D', 'E'];
 
@@ -598,6 +591,7 @@ export default function PresentationScreen() {
   const [timerRunning, setTimerRunning] = useState(false);
   const [timerTotal, setTimerTotal] = useState(0);
   const [celebrationVisible, setCelebrationVisible] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const celebrationAnim = useRef(new Animated.Value(0)).current;
   const celebrationScale = useRef(new Animated.Value(0.5)).current;
@@ -733,6 +727,15 @@ export default function PresentationScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
+  // The browser can leave fullscreen without us (Esc, F11), so read the state
+  // back rather than tracking our own toggles.
+  useEffect(() => {
+    if (!canFullscreen) return;
+    const sync = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', sync);
+    return () => document.removeEventListener('fullscreenchange', sync);
+  }, []);
+
   // Keyboard + presentation-clicker control (web/projector). A teacher runs
   // the class from the front of the room, not from the laptop: clickers send
   // PageDown/PageUp or arrows, and Space is the universal "advance".
@@ -748,8 +751,15 @@ export default function PresentationScreen() {
       } else if (backKeys.includes(e.key)) {
         e.preventDefault();
         setSlideIndexSafely(-1);
+      } else if (e.code === 'KeyF') {
+        // e.code, not e.key — an Arabic layout reports 'ب' for this key.
+        e.preventDefault();
+        toggleFullscreen();
       } else if (e.key === 'Escape') {
-        router.back();
+        // Esc mid-class must not dump the deck just because the teacher wanted
+        // the browser chrome back.
+        if (document.fullscreenElement) toggleFullscreen();
+        else router.back();
       }
     };
     window.addEventListener('keydown', onKey);
@@ -811,6 +821,18 @@ export default function PresentationScreen() {
         <Pressable onPress={() => router.back()} style={styles.exitBtn} hitSlop={12}>
           <Ionicons name="close" size={22} color={TEXT_MUTED} />
         </Pressable>
+
+        {/* Fullscreen — the projector's own control, so the teacher never has
+            to go hunting for F11 in front of the class. */}
+        {canFullscreen && (
+          <Pressable onPress={toggleFullscreen} style={styles.exitBtn} hitSlop={12}>
+            <Ionicons
+              name={isFullscreen ? 'contract-outline' : 'expand-outline'}
+              size={20}
+              color={TEXT_MUTED}
+            />
+          </Pressable>
+        )}
 
         {/* Progress dots — each wrapped in a real touch target (the bare 6px
             dots were unhittable, which stranded teachers on slide 1). */}

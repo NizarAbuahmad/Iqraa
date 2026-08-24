@@ -1089,10 +1089,10 @@ const _legacyS2UnitIds = new Set(
 const _legacyChemS1UnitIds = new Set(
   HARDCODED_KB_UNITS.filter(u => u.bookId === CHEM_S1_BOOK_ID).map(u => u.id),
 );
-// Chemistry S2's hardcoded rows were placeholders: one unit titled «الوحدة
-// الرابعة» with no subject at all, and one calling unit 5 «التفاعلات
-// الكيميائية» — which is unit 4's subject. The S2 student book and teacher
-// guide now supply both units properly.
+// Chemistry S2 hardcoded rows are superseded by the student-book JSON — unit 4
+// had no real title («الوحدة الرابعة»; the book says «التفاعلات والحسابات
+// الكيميائية») and unit 5 was labelled «التفاعلات الكيميائية», which is unit
+// 4's subject — the book's unit 5 is «الطاقة الكيميائية».
 const _legacyChemS2UnitIds = new Set(
   HARDCODED_KB_UNITS.filter(u => u.bookId === CHEM_S2_BOOK_ID).map(u => u.id),
 );
@@ -1186,7 +1186,7 @@ function enrichLesson(lesson: KBLesson): KBLesson {
   };
 }
 
-/** Active units: NCCD Chem S1/S2 + NCCD Math S1/S2 + financial literacy. */
+/** Active units: NCCD Chem S1/S2 + NCCD Math S1/S2 + NCCD FinLit S1. */
 export const KB_UNITS: KBUnit[] = [
   ...HARDCODED_KB_UNITS.filter(
     u => u.bookId !== NCCD_S1_BOOK_ID
@@ -1201,7 +1201,7 @@ export const KB_UNITS: KBUnit[] = [
   ..._nccdSem2.units,
 ];
 
-/** Active lessons: NCCD Chem S1/S2 + NCCD Math S1/S2 + financial literacy. */
+/** Active lessons: NCCD Chem S1/S2 + NCCD Math S1/S2 + NCCD FinLit S1. */
 export const KB_LESSONS: KBLesson[] = [
   ...HARDCODED_KB_LESSONS
     .filter(l => !_supersededUnitIds.has(l.unitId))

@@ -34,6 +34,22 @@ export function countStudents(n: number, lang: Lang): string {
   return lang === 'ar' ? arCountStudents(n) : enCountStudents(n);
 }
 
+/** Same four-case rule as arCountStudents, for materials attached to a class. */
+export function arCountMaterials(n: number): string {
+  if (n === 0) return 'لا موارد';
+  if (n === 1) return 'مورد واحد';
+  if (n === 2) return 'موردان';
+  if (n >= 3 && n <= 10) return `${n} موارد`;
+  return `${n} موردًا`;
+}
+
+/** Count materials in the active language. */
+export function countMaterials(n: number, lang: Lang): string {
+  if (lang === 'ar') return arCountMaterials(n);
+  if (n === 0) return 'No materials';
+  return `${n} ${n === 1 ? 'material' : 'materials'}`;
+}
+
 const translations = {
   ar: {
     // App
@@ -190,6 +206,9 @@ const translations = {
     selectSemester: 'اختر الفصل',
     noSemesters: 'لا فصول دراسية بعد',
     unitsAndLessons: (units: number, lessons: number) => `${units} وحدات · ${lessons} دروس`,
+    downloadBook: 'تحميل الكتاب',
+    downloadTeacherGuide: 'دليل المعلم',
+    downloadSourceNccd: 'من موقع المركز الوطني لتطوير المناهج',
 
     // Curriculum — lessons screen
     unitLabel: 'الوحدة',
@@ -226,7 +245,7 @@ const translations = {
     toolSlidesTitle: 'شرائح الدرس',
     toolSlidesDesc: 'حوّل الدرس إلى عرض للشاشة: نتاجات، مفردات، شرح، وأمثلة محلولة.',
     toolGameTitle: 'تحدي الصف',
-    toolGameDesc: 'لعبة أسئلة بين فرق الصف — بلا هواتف وبلا تحضير: الطلاب يرفعون أصابعهم وأنت تسجّل النقاط.',
+    toolGameDesc: 'لعبة أسئلة بين فرق الصف — بلا هواتف وبلا تحضير: الطلاب يرفعون أيديهم للإجابة وأنت تسجّل النقاط.',
     toolLessonMediaTitle: 'وسائط الدرس والقوالب',
     toolLessonMediaDesc: 'أرفق صورة أو فيديو للدرس الحالي ليظهر ضمن شرائح الحصة، واستخدم القوالب السريعة.',
     parentMsgTitle: 'رسالة لولي الأمر',
@@ -495,6 +514,9 @@ const translations = {
     lessonType: 'خطة درس',
     worksheetType: 'ورقة عمل',
     quizType: 'اختبار قصير',
+    flowType: 'مسار الدرس',
+    activityType: 'نشاط صفي',
+    slidesType: 'شرائح',
     viewSavedContent: 'عرض المادة',
     noContentAvailable: 'المحتوى غير متاح',
 
@@ -662,7 +684,7 @@ const translations = {
     quizVerifiedCount: (n: number, total: number) =>
       `تحقّق المُحقِّق الرمزي من ${n} من أصل ${total} إجابة`,
     quizVerifiedNone: 'لم يتحقّق المُحقِّق الرمزي من أي إجابة — الإجابات من بنك الأسئلة المُراجَع',
-    allStudentsAnswer: 'ارفع يدك للإجابة',
+    allStudentsAnswer: 'ارفع يدك للإجابة!',
     activityEscapeTitle: 'تحدي الهروب',
     activityEscapeDesc: 'مجموعات تحل تحديات رياضية للهروب من المختبر بأكواد سرية',
     activityBingoTitle: 'بنغو الرياضيات',
@@ -727,7 +749,7 @@ const translations = {
     gameHowTitle: 'كيف تعمل؟',
     gameHow1: 'قسّم الصف إلى فرق — لا تحتاج أي أدوات.',
     gameHow2: 'يظهر السؤال على الشاشة ويبدأ المؤقت — الجميع يفكر بصمت.',
-    gameHow3: 'عند انتهاء الوقت يرفع كل فريق أصابعه معًا (إصبع = أ، إصبعان = ب، ...)، ثم تكشف الإجابة.',
+    gameHow3: 'عند انتهاء الوقت يرفع كل فريق يده للإجابة، ثم تكشف الإجابة.',
     gameHow4: 'اضغط على الفرق التي أصابت — النقاط تُحتسب على الشاشة مباشرة.',
     gameTeamCount: 'عدد الفرق',
     gameQuestionCount: 'عدد الأسئلة',
@@ -795,6 +817,32 @@ const translations = {
     rosterCreateFailed: 'تعذّر إنشاء الصف. حاول مرة أخرى.',
     rosterLoadFailed: 'تعذّر تحميل الصفوف.',
     remove: 'إزالة',
+
+    // Class ↔ materials
+    classTabStudents: 'الطلاب',
+    classTabMaterials: 'الموارد',
+    noMaterialsYet: 'لا موارد لهذا الصف',
+    noMaterialsDesc: 'أرفق درسًا أو ورقة عمل من مساحتك ليظهرا هنا',
+    attachMaterial: 'أرفق مورداً',
+    attachMaterialHint: 'اختر من موادك المحفوظة غير المرتبطة بصف',
+    noMaterialsToAttach: 'كل موادك المحفوظة مرتبطة بصفوف أخرى',
+    noSavedMaterials: 'لا مواد محفوظة بعد — أنشئ درسًا أو ورقة عمل أولاً',
+    createNewMaterial: 'أنشئ مادة جديدة',
+    detachMaterial: 'أزل من الصف',
+    detachMaterialConfirm: (title: string) =>
+      `إزالة «${title}» من هذا الصف؟ سيبقى محفوظًا في مساحتك.`,
+
+    // Student notes
+    studentNoteHint: 'ملاحظتك عن هذا الطالب — تبقى معه عبر الفصل',
+    studentNotePlaceholder: 'مثال: يتحسّن في المسائل اللفظية، لكنه يستعجل',
+    saveNote: 'احفظ الملاحظة',
+
+    // Save a material into a class
+    pickFromMyClasses: 'اختر من صفوفي',
+    saveToClassTitle: 'لأي صف هذه المادة؟',
+    saveToClassHint: 'ستجدها في تبويب «الموارد» داخل الصف',
+    notNow: 'ليس الآن',
+    savedToClass: (name: string) => `حُفظت في ${name}`,
 
     // Evaluations — authoring
     evaluations: 'التقييمات',
@@ -1062,6 +1110,9 @@ const translations = {
     noSemesters: 'No semesters yet',
     unitsAndLessons: (units: number, lessons: number) =>
       `${units} unit${units !== 1 ? 's' : ''} · ${lessons} lesson${lessons !== 1 ? 's' : ''}`,
+    downloadBook: 'Download book',
+    downloadTeacherGuide: 'Teacher guide',
+    downloadSourceNccd: 'From the National Center for Curriculum Development',
 
     unitLabel: 'Unit',
     unitsAvailable: (n: number) => `${n} unit${n !== 1 ? 's' : ''}`,
@@ -1094,7 +1145,7 @@ const translations = {
     toolSlidesTitle: 'Lesson slides',
     toolSlidesDesc: 'Turn the lesson into a deck for the screen: outcomes, vocabulary, explanation, worked examples.',
     toolGameTitle: 'Class challenge',
-    toolGameDesc: 'A team quiz game with no phones and no prep — students hold up fingers and you score it on screen.',
+    toolGameDesc: 'A team quiz game with no phones and no prep — students raise their hands to answer and you score it on screen.',
     toolLessonMediaTitle: 'Lesson media & templates',
     toolLessonMediaDesc: 'Attach an image or video to the current lesson so it appears in the class deck, and use quick templates.',
     parentMsgTitle: 'Message to parent',
@@ -1351,6 +1402,9 @@ const translations = {
     lessonType: 'Lesson Plan',
     worksheetType: 'Worksheet',
     quizType: 'Quiz',
+    flowType: 'Lesson Flow',
+    activityType: 'Class activity',
+    slidesType: 'Slides',
     viewSavedContent: 'View Material',
     noContentAvailable: 'Content not available',
 
@@ -1515,7 +1569,7 @@ const translations = {
     quizVerifiedCount: (n: number, total: number) =>
       `${n} of ${total} answers symbolically verified`,
     quizVerifiedNone: 'No answer was symbolically verified — keys come from the reviewed bank',
-    allStudentsAnswer: 'Raise your hand to answer',
+    allStudentsAnswer: 'Raise your hand to answer!',
     activityEscapeTitle: 'Escape Challenge',
     activityEscapeDesc: 'Groups solve math challenges to escape the lab using secret codes',
     activityBingoTitle: 'Math Bingo',
@@ -1580,7 +1634,7 @@ const translations = {
     gameHowTitle: 'How it works',
     gameHow1: 'Split the class into teams — no materials needed.',
     gameHow2: 'The question appears on screen and the timer starts — everyone thinks silently.',
-    gameHow3: 'When time ends each team holds up fingers together (1 = A, 2 = B, …), then you reveal the answer.',
+    gameHow3: 'When time ends each team raises a hand to answer, then you reveal the answer.',
     gameHow4: 'Tap the teams that were right — scores update on screen instantly.',
     gameTeamCount: 'Number of teams',
     gameQuestionCount: 'Number of questions',
@@ -1645,6 +1699,32 @@ const translations = {
     rosterCreateFailed: 'Could not create the class. Please try again.',
     rosterLoadFailed: 'Could not load your classes.',
     remove: 'Remove',
+
+    // Class ↔ materials
+    classTabStudents: 'Students',
+    classTabMaterials: 'Materials',
+    noMaterialsYet: 'No materials for this class',
+    noMaterialsDesc: 'Attach a lesson or worksheet from your workspace and it will show up here',
+    attachMaterial: 'Attach material',
+    attachMaterialHint: 'Pick from your saved materials that are not in a class yet',
+    noMaterialsToAttach: 'All your saved materials are already in other classes',
+    noSavedMaterials: 'Nothing saved yet — create a lesson or worksheet first',
+    createNewMaterial: 'Create a new material',
+    detachMaterial: 'Remove from class',
+    detachMaterialConfirm: (title: string) =>
+      `Remove "${title}" from this class? It stays saved in your workspace.`,
+
+    // Student notes
+    studentNoteHint: 'Your note on this student — it stays with them all term',
+    studentNotePlaceholder: 'e.g. improving on word problems, but rushes',
+    saveNote: 'Save note',
+
+    // Save a material into a class
+    pickFromMyClasses: 'Pick from my classes',
+    saveToClassTitle: 'Which class is this for?',
+    saveToClassHint: "You'll find it in the class's Materials tab",
+    notNow: 'Not now',
+    savedToClass: (name: string) => `Saved to ${name}`,
 
     // Evaluations — authoring
     evaluations: 'Evaluations',

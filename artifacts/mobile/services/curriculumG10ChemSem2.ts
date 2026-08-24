@@ -1,6 +1,5 @@
 /**
- * Re-export shim for the Grade 10 Chemistry Semester 2 catalog.
- * Kept so app imports of `@/services/curriculumG10ChemSem2` keep working —
- * the data itself lives in `@workspace/curriculum`, shared with the API.
+ * Re-export shim — the real module now lives in `@workspace/curriculum`.
+ * Kept so existing imports of `@/services/curriculumG10ChemSem2` keep working.
  */
 export * from '@workspace/curriculum/catalogs/g10ChemSem2';
