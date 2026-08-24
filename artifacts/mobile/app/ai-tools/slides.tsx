@@ -40,6 +40,7 @@ import { confirm } from '@/services/confirm';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { saveItem } from '@/services/workspace';
 import { buildDeckSlidesHTML, exportAsPDF } from '@/services/share';
+import { NOTEBOOKLM_URL, openExternal } from '@/services/externalLinks';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
 } from '@/services/curriculumData';
@@ -731,6 +732,14 @@ export default function SlidesScreen() {
                 <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>PPTX</Text>
               </Pressable>
             </View>
+
+            <Pressable
+              onPress={() => { void openExternal(NOTEBOOKLM_URL); }}
+              style={[styles.secondaryBtn, { borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+            >
+              <Ionicons name="headset-outline" size={16} color="#F97316" />
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>{t('exportNotebook')}</Text>
+            </Pressable>
           </View>
         )}
 
