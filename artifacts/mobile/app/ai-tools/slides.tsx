@@ -38,7 +38,7 @@ import type { DeckVideo } from '@/services/youtubeVideo';
 import { summarizeVerification } from '@/services/quizVerification';
 import { confirm } from '@/services/confirm';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
-import { saveItem } from '@/services/workspace';
+import { deleteItem, saveItem, updateItem } from '@/services/workspace';
 import { buildDeckSlidesHTML, exportAsPDF } from '@/services/share';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
@@ -70,6 +70,22 @@ export default function SlidesScreen() {
   const [includePractice, setIncludePractice] = useState(true);
   const [loading, setLoading] = useState(false);
   const [deck, setDeck] = useState<ClassroomActivity | null>(null);
+  /**
+   * The workspace item this deck is stored as, or null when it is not stored.
+   * The save button is a toggle over exactly this: pressing it once saves and
+   * lights the button up, pressing it again deletes that item and puts the
+   * button back. Holding the id (rather than a boolean) is what makes the
+   * second press able to remove the right material instead of leaving a copy
+   * behind.
+   */
+  const [savedId, setSavedId] = useState<string | null>(null);
+  const [savingBusy, setSavingBusy] = useState(false);
+  /**
+   * What the workspace copy currently holds, so an edit made after saving is
+   * pushed to that item. Without it the button would keep claiming "saved"
+   * over a stored deck that no longer matches what is on screen.
+   */
+  const savedContentRef = useRef('');
   const [plan, setPlan] = useState<LessonPlanOutput | null>(null);
   const [grounded, setGrounded] = useState(false);
   const [groundedLesson, setGroundedLesson] = useState('');
@@ -221,6 +237,7 @@ export default function SlidesScreen() {
     if (prevGradeRef.current !== gradeIdx || prevSubjectRef.current !== subjectIdx) {
       setTopic('');
       setDeck(null);
+      forgetSaved();
       prevGradeRef.current = gradeIdx;
       prevSubjectRef.current = subjectIdx;
     }
@@ -230,6 +247,8 @@ export default function SlidesScreen() {
     const trimmed = topic.trim();
     if (!trimmed) { setError(t('topicRequired')); return; }
     setError(''); setLoading(true); setDeck(null);
+    // A new deck is a different material: it is not the one that was saved.
+    forgetSaved();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     const grounding = resolveGeneratorGrounding(trimmed, lang as 'ar' | 'en');
@@ -443,20 +462,59 @@ export default function SlidesScreen() {
     router.push('/ai-tools/classroom/presentation' as any);
   };
 
-  const save = async () => {
-    if (!deck) return;
-    await saveItem({
-      type: 'slides',
-      title: deck.activityName,
-      subject: isAr ? subjects[subjectIdx].nameAr : subjects[subjectIdx].name,
-      grade: isAr ? grades[gradeIdx].nameAr : grades[gradeIdx].name,
-      topic: topic.trim(),
-      language: isAr ? 'ar' : 'en',
-      content: JSON.stringify(deck),
-      formState: { gradeIdx, subjectIdx, topic: topic.trim(), includeExamples, includePractice },
-    });
-    showToast(t('slidesSaved'));
+  /** Drop the link to a workspace item without touching the item itself. */
+  const forgetSaved = () => {
+    setSavedId(null);
+    savedContentRef.current = '';
   };
+
+  /**
+   * Save, or un-save. The button reads as a bookmark, so it behaves like one:
+   * the second press removes the material it created rather than storing the
+   * same deck twice.
+   */
+  const toggleSave = async () => {
+    if (!deck || savingBusy) return;
+    setSavingBusy(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      if (savedId) {
+        await deleteItem(savedId);
+        forgetSaved();
+        showToast(t('slidesUnsaved'));
+        return;
+      }
+      const content = JSON.stringify(deck);
+      const item = await saveItem({
+        type: 'slides',
+        title: deck.activityName,
+        subject: isAr ? subjects[subjectIdx].nameAr : subjects[subjectIdx].name,
+        grade: isAr ? grades[gradeIdx].nameAr : grades[gradeIdx].name,
+        topic: topic.trim(),
+        language: isAr ? 'ar' : 'en',
+        content,
+        formState: { gradeIdx, subjectIdx, topic: topic.trim(), includeExamples, includePractice },
+      });
+      savedContentRef.current = content;
+      setSavedId(item.id);
+      showToast(t('slidesSaved'));
+    } finally {
+      setSavingBusy(false);
+    }
+  };
+
+  // Slide edits, and the media/video passes that land after generation, both
+  // replace the deck. While it is saved, the stored copy follows.
+  useEffect(() => {
+    if (!savedId || !deck) return;
+    const content = JSON.stringify(deck);
+    if (content === savedContentRef.current) return;
+    savedContentRef.current = content;
+    void updateItem(savedId, { title: deck.activityName, content }).catch(() => {
+      // The deck on screen is the source of truth; a failed sync is not worth
+      // interrupting the teacher over.
+    });
+  }, [deck, savedId]);
 
   // Exports the DECK — same slides, same accents, same verification badges
   // the teacher just saw and edited on screen. This used to re-derive a
@@ -707,11 +765,26 @@ export default function SlidesScreen() {
 
             <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 10 }}>
               <Pressable
-                onPress={save}
-                style={[styles.secondaryBtn, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+                onPress={toggleSave}
+                disabled={savingBusy}
+                accessibilityRole="button"
+                accessibilityState={{ selected: !!savedId, disabled: savingBusy }}
+                accessibilityLabel={savedId ? t('savedLabel') : t('save')}
+                style={({ pressed }) => [
+                  styles.secondaryBtn,
+                  {
+                    backgroundColor: savedId ? ACCENT : 'transparent',
+                    borderColor: ACCENT,
+                    borderRadius: colors.radius,
+                    flexDirection: isRTL ? 'row-reverse' : 'row',
+                    opacity: pressed || savingBusy ? 0.75 : 1,
+                  },
+                ]}
               >
-                <Ionicons name="bookmark-outline" size={16} color={ACCENT} />
-                <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>{t('save')}</Text>
+                <Ionicons name={savedId ? 'bookmark' : 'bookmark-outline'} size={16} color={savedId ? '#fff' : ACCENT} />
+                <Text style={{ color: savedId ? '#fff' : ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+                  {savedId ? t('savedLabel') : t('save')}
+                </Text>
               </Pressable>
               <Pressable
                 onPress={exportPdf}
