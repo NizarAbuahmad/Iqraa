@@ -26,7 +26,13 @@ const here = dirname(fileURLToPath(import.meta.url));
 const dataDir = join(here, "..", "src", "data");
 const showGaps = process.argv.includes("--gaps");
 
-const files = readdirSync(dataDir).filter((f) => f.endsWith(".json")).sort();
+// Only the curriculum books. `src/data` also holds g10_sources.json — the
+// inventory of which PDFs the books were read out of — which has no units and
+// would be reported as two structural errors by a validator that assumes every
+// JSON in here is a curriculum.
+const files = readdirSync(dataDir)
+  .filter((f) => f.startsWith("iqra_curriculum_") && f.endsWith(".json"))
+  .sort();
 if (files.length === 0) {
   console.error(`No curriculum JSON found in ${dataDir}`);
   process.exit(1);

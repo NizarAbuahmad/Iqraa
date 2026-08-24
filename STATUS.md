@@ -121,7 +121,10 @@ Vision screens (student/parent/school dashboards) are deprioritized.
 - **Every Grade 10 source PDF is now inventoried** in
   `lib/curriculum/src/data/g10_sources.json`, read through
   `lib/curriculum/src/sources.ts` (`usableSources()`, `pendingSources()`,
-  `conflicts()`). It records, per file, its Drive id, what kind of document it
+  `conflicts()`). `scripts/verify-curriculum.ts` only scans
+  `iqra_curriculum_*.json`, since the manifest lives in the same folder and has
+  no units — without that filter it reported two structural errors and exited
+  non-zero. It records, per file, its Drive id, what kind of document it
   is, whether NCCD or a named teacher wrote it, and whether anything has been
   extracted from it. Written from a Drive listing taken 2026-08-24; nothing at
   runtime reads it, so a stale entry costs a wrong answer to "what do we have",
@@ -149,8 +152,20 @@ Vision screens (student/parent/school dashboards) are deprioritized.
   - Teacher-made material is a large share of the Drive (worksheets, answer
     keys, دوسيات, past papers by named Jordanian teachers). `authority:
     'teacher'` marks it: usable to inform generation, not to be reproduced.
+- **Chemistry S2 now exists** (2026-08-24): 2 units / 6 taught lessons + 2
+  labs, in `iqra_curriculum_g10_chem_sem2.json` and
+  `catalogs/g10ChemSem2.ts`, wired into `knowledgeBase.ts`. Outcomes, main
+  ideas and bilingual vocabulary come from the student book's lesson openers;
+  periods (2-4 per lesson, 9 per unit), prior knowledge and activities from
+  the teacher guide's مخطط الوحدة.
+  - It replaces two hand-authored placeholders that were actively wrong: a unit
+    titled «الوحدة الرابعة» with no subject at all, and a unit 5 titled
+    «التفاعلات الكيميائية» — which is unit 4's subject; unit 5 is الطاقة
+    الكيميائية. `services/__tests__/chemSem2Catalog.test.ts` asserts both are
+    gone, against KB_UNITS/KB_LESSONS rather than the JSON, so the wiring is
+    covered too.
 - Chemistry is thinner than "math + chemistry first" implies: 3 units /
-  9 lessons against math's 4 / 18 per semester.
+  9 lessons in S1 and 2 / 8 in S2, against math's 4 / 18 per semester.
 - Financial Literacy G10 S1 is browsable (2 units / 10 lessons, NCCD-sourced).
   It was previously offered as a subject tile with no book behind it, so the
   subject dead-ended on the "no semesters" empty state.
