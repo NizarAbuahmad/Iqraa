@@ -176,6 +176,73 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Exams the app never wrote, 2026-08-24
+
+Hand-marking (below) only reached exams Iqraa generated. A teacher's own paper
+— the one they set, photocopied and handed out last week — could not be entered
+at all, because an evaluation's questions could only come from the generator.
+This adds the other source.
+
+**No question text.** The paper has it. What the app takes is one row per
+question: marks, objective, competency. That is the minimum needed to mark it,
+score it, and afterwards say which objectives the class is weak on — and asking
+a teacher to retype thirty questions the app will never display would be the
+fastest way to make sure nobody uses this.
+
+`PUT /evaluations/:id/questions/paper` replaces a draft's questions with the
+grid. Rows land as `open_ended` with an empty body and `gradingMode: 'manual'`
+— the honest type, since nothing here can be marked automatically and the
+deterministic pass therefore leaves every question alone for the teacher.
+
+**Three things are rejected rather than smoothed over**, each with the row
+index so a thirty-row grid does not send the teacher hunting:
+
+- **A zero-mark question.** It can never move the score, so it would sit in the
+  paper looking like evidence of something.
+- **An objective outside the evaluation's scope.** Every downstream answer to
+  "what should I reteach" keys off the objective.
+- **A missing competency.** `competency.ts` is explicit that a question's
+  cognitive demand is *not* its objective's, and that inheriting it yields an
+  evaluation which is half Understanding, half Application and nothing else.
+  The form defaults the field so a long grid stays fast to fill; the server
+  will not invent it. Deriving it here would have removed the choice and
+  quietly flattened every breakdown.
+
+**Publishing had to learn about this.** The publish check validates each
+question's body against its type — a prompt, options, an answer key — so a
+paper exam was unpublishable for failing to contain content it was never given
+(four `Question N: Prompt is empty` blockers). `isPaperQuestion` now exempts it,
+keyed on **the body being empty**, not on `source === 'teacher'`: a hand-written
+question that does carry its own text is still validated like any other. The
+exemption is "there is nothing here to check", not "a teacher wrote it".
+
+The answer sheet drops the student-answer box for these questions too. There is
+no prompt to show and nothing to transcribe — the paper is the answer — so the
+card is the mark and the comment.
+
+**Verified end to end** against a running API and Postgres: all four rejection
+cases return 400 with `invalid_paper_grid` and the offending row; a 4-question,
+12-mark paper saves as `open_ended/manual/teacher`; sending the grid twice
+leaves four questions, not eight; editing after publish is 409; and marking it
+runs `2.00/2.00` → `3.50/5.00` → `6.50/8.00` → `7.50/12.00 (62.50%)
+provisional=false status=graded`, with per-objective scores of 70% and 57.14%.
+
+**The competency breakdown reported "not enough evidence" for all four** — one
+question each, and `MIN_QUESTIONS_PER_COMPETENCY` is 2. That is the sufficiency
+rule working, not a bug: a four-question paper cannot support a competency
+picture, and saying so is better than printing four percentages off one
+question apiece. Worth knowing before anyone reads a short paper's blank bars
+as a fault.
+
+161 api-server tests, 733 mobile, 0 failures.
+
+**Typecheck is not clean, and not because of this branch.** `main` references
+`exportNotebook` / `exportNotebookSub` in `ExportMenu.tsx`, `slides.tsx` and
+`lesson-flow.tsx` while `i18n.ts` defines neither, so `pnpm run typecheck`
+fails with four errors on `main` itself and on anything branched from it. A
+revert exists on `feat/exports-and-chemistry-s2` (`9f680b5`) and has not
+landed. Nothing on this branch touches those files.
+
 ## A teacher can mark a paper exam by hand, 2026-08-24
 
 Grading was deterministic-only. Four of the eight question types mark
