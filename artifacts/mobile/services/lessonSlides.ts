@@ -22,7 +22,8 @@ import type {
   LessonPlanOutput,
 } from './ai/AIService.ts';
 import type { KBLesson } from './knowledgeBase.ts';
-import { buildGraphSlide } from './classMedia.ts';
+import { buildGraphSlide, extractGraphCommands, referencesShownVisual } from './classMedia.ts';
+import { isRenderableVisual } from './deckVisuals.ts';
 
 /**
  * Split a generated warm-up into what the class sees and what only the
@@ -120,7 +121,7 @@ export function splitChecks(checks: readonly ActivitySlide[] | undefined): {
   mid: ActivitySlide[];
   exit: ActivitySlide[];
 } {
-  const usable = (checks ?? []).filter(isCheckSlide);
+  const usable = (checks ?? []).map(withOwnVisual).filter(isCheckSlide);
   const exit = usable.length >= MID_LESSON_CHECK_MAX + EXIT_TICKET_MIN
     ? usable.slice(MID_LESSON_CHECK_MAX, MID_LESSON_CHECK_MAX + EXIT_TICKET_MAX)
     : [];
@@ -142,6 +143,13 @@ export function splitChecks(checks: readonly ActivitySlide[] | undefined): {
  */
 function isCheckSlide(s: ActivitySlide): boolean {
   if (!nonEmpty(s.content)) return false;
+  // A question that says «في الرسم البياني الظاهر…» and carries no picture is
+  // not a hard check, it is an impossible one: the class is asked to read
+  // coordinates off something the slide never draws. `withOwnVisual` has
+  // already had its chance to plot the question's own equations, so anything
+  // still pointing at an absent figure here cannot be rescued and is dropped
+  // — the same omit-rather-than-pad rule the rest of this deck follows.
+  if (referencesShownVisual(s.content) && !slideShowsVisual(s)) return false;
   if (s.type === 'question') {
     const options = s.options ?? [];
     return options.length >= 2
@@ -150,6 +158,33 @@ function isCheckSlide(s: ActivitySlide): boolean {
       && s.correctIndex < options.length;
   }
   return s.type === 'challenge';
+}
+
+/** Whether this slide already draws something — a chart, or a plotted curve. */
+function slideShowsVisual(s: ActivitySlide): boolean {
+  return isRenderableVisual(s.visual) || (s.graphCommands ?? []).length > 0;
+}
+
+/**
+ * Draw the graph a check refers to, when the check itself says what it is.
+ *
+ * Generated checks are written as if the deck had already put a figure on the
+ * slide — «في الرسم البياني الظاهر، يلتقي المستقيمان…» — but a check is a
+ * `question` or `challenge` slide, and only a `graph` slide ever carried
+ * `graphCommands`, so the picture was never drawn and the sentence was simply
+ * false in front of a class.
+ *
+ * The commands are taken from the check's OWN text and nowhere else. The
+ * deck's `graphCommands` come from the lesson's rule and examples, and
+ * projecting those beside a question about different lines would put a
+ * confident, wrong picture under a sentence claiming it is the right one —
+ * worse than the blank slide this is fixing. A check whose text names no
+ * plottable function keeps nothing here and `isCheckSlide` drops it.
+ */
+function withOwnVisual(slide: ActivitySlide): ActivitySlide {
+  if (slideShowsVisual(slide) || !referencesShownVisual(slide.content)) return slide;
+  const commands = extractGraphCommands(slide.content);
+  return commands.length > 0 ? { ...slide, graphCommands: commands } : slide;
 }
 
 /**

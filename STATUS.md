@@ -221,6 +221,61 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## A check that says «في الرسم البياني الظاهر» now has one, 2026-08-24
+
+Reported from a live deck: slide 5 of a Slides Maker lesson read «في الرسم
+البياني الظاهر، يلتقي المستقيمان عند النقطة التي تمثل حل النظام. حدّدوا
+إحداثيات نقطة التقاطع…» — and there was no graph on the slide. The class is
+told to read coordinates off a picture that is not there.
+
+**Why the picture was missing.** `graphCommands` is the only thing that draws
+a curve, and until now only `buildGraphSlide` ever set it — on a dedicated
+`type: 'graph'` slide. A formative check is a `question` or `challenge`
+slide, so a check could talk about a figure but structurally could not carry
+one. The generator writes those stems anyway: it is asked for questions about
+a lesson, not told what the slide will render.
+
+**Two rules, in this order** (`lessonSlides.ts`, applied inside
+`splitChecks` before `isCheckSlide` runs):
+
+1. **Plot what the check itself names.** If the stem references a shown
+   figure and its own text carries plottable functions, `extractGraphCommands`
+   attaches them to that slide. `visualForSlide` was already type-agnostic, so
+   the presenter draws the curves with no renderer change.
+2. **Drop what cannot be rescued.** A check still pointing at an absent figure
+   is not a hard question, it is an impossible one, so it never reaches the
+   deck. The generator is asked for five and the deck places at most five, so
+   in practice a dropped check costs a slide, not a section.
+
+**The deck's own graph is deliberately not borrowed.** `opts.graphCommands`
+comes from the lesson's rule and examples. Projecting that parabola under a
+question about two intersecting lines would put a confident, wrong picture
+beneath a sentence claiming it is the right one — worse than the blank slide
+being fixed. Commands come from the check's own text or from nowhere.
+
+**What the deixis test is for.** `referencesShownVisual` (classMedia.ts)
+requires a noun *and* a pointing word — «الشكل **الظاهر**», «الرسم البياني
+**أعلاه**», "the graph **shown**". Matching «الرسم البياني» alone would have
+deleted every graphing exercise in the corpus, since «ارسم الرسم البياني
+للاقتران» is an instruction to draw one, not a claim that one is on screen.
+
+**Two adjacent gaps closed on the way:**
+
+- `extractGraphCommands` could not match a leading unary minus, so
+  `y = -x + 3` extracted nothing. Any two-line system with a negative slope
+  was projected with one line silently missing — the same shape as the
+  spaces-in-the-body bug found on 2026-08-19 ("Charts: generated from lesson
+  text, refused by default").
+- Neither export drew a plotted curve on a `question` or `challenge` slide,
+  so a check carrying a figure would have printed without it. Both now do,
+  with the option rows and answer card laid out around the plot. **Still
+  open:** in PPTX a *plot* reaches only `graph`, `question` and `challenge`
+  slides — a curve attached to a content slide draws in the PDF and on
+  screen but not in the .pptx. Charts reach every slide type in both.
+
+Verified: `pnpm run typecheck` clean; `artifacts/mobile` 765 tests / 0 fail
+(12 new), `artifacts/api-server` 151 / 0 fail.
+
 ## A teacher can mark a paper exam by hand, 2026-08-24
 
 Grading was deterministic-only. Four of the eight question types mark

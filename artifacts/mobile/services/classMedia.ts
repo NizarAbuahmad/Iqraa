@@ -339,8 +339,12 @@ export function extractGraphCommands(text: string, max = 3): string[] {
   // formula — but requiring an operator between terms stops naturally at
   // `1 and then…` while keeping `x^3 - 4x` whole.
   const term = '[0-9a-z^().√π]+';
+  // A leading unary minus is part of the first term, not an operator between
+  // two of them. Without this `y = -x + 3` matched nothing at all — an
+  // ordinary line with a negative slope, so a two-line system was projected
+  // with one line missing and no error anywhere.
   const re = new RegExp(
-    `([fghy])\\s*(\\([a-z]\\))?\\s*=\\s*(${term}(?:\\s*[+\\-*/]\\s*${term})*)`,
+    `([fghy])\\s*(\\([a-z]\\))?\\s*=\\s*(-?\\s*${term}(?:\\s*[+\\-*/]\\s*${term})*)`,
     'gi',
   );
   let m: RegExpExecArray | null;
@@ -348,11 +352,52 @@ export function extractGraphCommands(text: string, max = 3): string[] {
     const name = m[1]!;
     const arg = m[2] ?? (name.toLowerCase() === 'y' ? '' : '(x)');
     // A trailing full stop is sentence punctuation, never part of the maths.
-    const body = m[3]!.trim().replace(/[.\s]+$/, '');
+    const body = m[3]!.trim().replace(/[.\s]+$/, '').replace(/^-\s*/, '-');
     // A constant is not a curve worth projecting — require a variable.
     if (!/[a-z]/i.test(body)) continue;
     const cmd = `${name}${arg}=${body}`;
     if (!out.includes(cmd)) out.push(cmd);
   }
   return out;
+}
+
+/**
+ * Words that make a slide's text point AT a picture — «الشكل الظاهر»,
+ * «الرسم البياني أعلاه», "the graph shown".
+ *
+ * The deixis is the whole test, and it is why this is two halves rather than
+ * a list of nouns. «ارسم الرسم البياني للاقتران» is an instruction to draw
+ * one; «في الرسم البياني الظاهر» is a claim that one is already on the
+ * screen. Only the second can be wrong, and only the second is what this
+ * looks for — matching the noun alone would flag every graphing exercise in
+ * the corpus.
+ */
+const SHOWN_VISUAL_AR = new RegExp(
+  '(?:الرسم\\s*البياني|التمثيل\\s*البياني|المنحنى|الرسمة|الشكل|المخطط|الرسم)'
+  + '\\s*(?:ال(?:ظاهر|مجاور|موضّح|موضح|مرفق|معروض|آتي|تالي|سابق)[\\u0600-\\u06FF]*'
+  + '|أعلاه|أدناه|أمامكم|أمامك)',
+  'u',
+);
+
+const VISUAL_NOUN_EN = '(?:graph|figure|diagram|chart|plot|curve|sketch|image|picture)';
+const SHOWN_VISUAL_EN = new RegExp(
+  `\\b${VISUAL_NOUN_EN}\\s+(?:shown|above|below|opposite|attached|displayed|here`
+  + `|on\\s+(?:the\\s+)?(?:screen|slide|board))\\b`
+  + `|\\b(?:above|below|shown|attached|adjacent|following)\\s+${VISUAL_NOUN_EN}\\b`,
+  'i',
+);
+
+/**
+ * Whether a slide's text asserts that a picture is already on screen.
+ *
+ * A question that opens «في الرسم البياني الظاهر…» is unanswerable when the
+ * slide shows no graph — the class is told to read coordinates off something
+ * that is not there. Generated checks make that claim on their own, so the
+ * deck has to notice it: either the picture gets drawn (the question's own
+ * equations are plottable) or the question does not project at all.
+ */
+export function referencesShownVisual(text: string): boolean {
+  const s = (text ?? '').trim();
+  if (!s) return false;
+  return SHOWN_VISUAL_AR.test(s) || SHOWN_VISUAL_EN.test(s);
 }

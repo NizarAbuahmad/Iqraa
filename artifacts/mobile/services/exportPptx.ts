@@ -89,6 +89,40 @@ function addBlobs(s: PptxSlide): void {
   s.addShape('ellipse', { x: 7.9, y: 3.7, w: 3.4, h: 3.4, fill: blob, line: blob });
 }
 
+/**
+ * The plotted curves as a NATIVE PowerPoint line chart, not a picture of one.
+ * The teacher can restyle it and it stays sharp at any projector resolution.
+ *
+ * One definition for all three slide kinds that draw a curve — the graph
+ * slide, and a check that carries the figure its stem refers to. Only the box
+ * differs, so only the box is a parameter; the styling drifting between them
+ * is how one export ends up looking like a different product from the other.
+ */
+function addPlotChart(
+  s: PptxSlide,
+  plot: { series: { label: string; points: { x: number; y: number }[] }[] },
+  box: { x: number; y: number; w: number; h: number },
+): void {
+  s.addChart(
+    'line',
+    plot.series.map(series => ({
+      name: series.label,
+      labels: series.points.map(pt => pt.x.toFixed(2)),
+      values: series.points.map(pt => pt.y),
+    })),
+    {
+      ...box,
+      showLegend: plot.series.length > 1,
+      legendPos: 'b',
+      lineSmooth: true,
+      lineDataSymbol: 'none',
+      // Sampled at 80 points — every category label would be an unreadable
+      // smear along the axis.
+      catAxisHidden: true,
+    },
+  );
+}
+
 async function addHeroBackground(s: PptxSlide, url: string): Promise<boolean> {
   const dataUrl = await fetchAsDataUrl(url);
   if (!dataUrl) return false;
@@ -203,34 +237,15 @@ export async function exportDeckAsPptx(
     if (slide.type === 'graph') {
       const [context] = slide.content.split('\n\n');
       const commands = slide.graphCommands ?? [];
-      // A NATIVE PowerPoint chart, not a picture of one. The teacher can
-      // restyle it, and it stays sharp at any projector resolution. Until this
-      // existed the slide printed the equation as text beside a note saying
-      // the graph was interactive inside the app — an apology where the
-      // mathematics should have been.
+      // Until `addPlotChart` existed the slide printed the equation as text
+      // beside a note saying the graph was interactive inside the app — an
+      // apology where the mathematics should have been.
       const visual = visualForSlide(slide);
       if (visual?.kind === 'plot' && visual.series.length) {
         if (context) {
           s.addText(context, { x: 0.8, y: 1.25, w: 8.4, h: 0.5, align: 'center', fontSize: 13, color: DECK_TEXT });
         }
-        s.addChart(
-          'line',
-          visual.series.map(series => ({
-            name: series.label,
-            labels: series.points.map(p => p.x.toFixed(2)),
-            values: series.points.map(p => p.y),
-          })),
-          {
-            x: 1.0, y: 1.85, w: 8.0, h: 3.2,
-            showLegend: visual.series.length > 1,
-            legendPos: 'b',
-            lineSmooth: true,
-            lineDataSymbol: 'none',
-            // Sampled at 80 points — every category label would be an
-            // unreadable smear along the axis.
-            catAxisHidden: true,
-          },
-        );
+        addPlotChart(s, visual, { x: 1.0, y: 1.85, w: 8.0, h: 3.2 });
         continue;
       }
       let y = 1.3;
@@ -258,6 +273,13 @@ export async function exportDeckAsPptx(
     // a content slide reached neither export until this existed — the drawing
     // was only ever wired into the graph branch above.
     const slideVisual = visualForSlide(slide);
+    // A plotted curve on a question or challenge slide: a check whose stem
+    // says «في الرسم البياني الظاهر…» carries the commands for that figure
+    // (see lessonSlides.ts), and those branches lay themselves out around it
+    // below rather than falling through to the chart block here.
+    const slidePlot = slideVisual?.kind === 'plot' && slideVisual.series.length
+      ? slideVisual
+      : null;
     if (slideVisual?.kind === 'chart' && slideVisual.categories.length) {
       const [context] = slide.content.split('\n\n');
       if (context) {
@@ -323,20 +345,26 @@ export async function exportDeckAsPptx(
     }
 
     if (slide.type === 'challenge') {
+      // The stem gives up height to the curve when there is one — the figure
+      // is part of the question, so a layout that pushed the answer card off
+      // the bottom edge would be no better than not drawing it at all.
       s.addText(pptxLine(slide.content, true), {
-        x: 0.6, y: 1.2, w: 8.8, h: 1.0, align: 'center', valign: 'middle',
-        fontSize: 22, color: DECK_TEXT, bold: true,
+        x: 0.6, y: slidePlot ? 1.05 : 1.2, w: 8.8, h: slidePlot ? 0.75 : 1.0,
+        align: 'center', valign: 'middle',
+        fontSize: slidePlot ? 18 : 22, color: DECK_TEXT, bold: true,
       });
+      if (slidePlot) addPlotChart(s, slidePlot, { x: 2.4, y: 1.85, w: 5.2, h: 1.7 });
+      const answerTop = slidePlot ? 3.65 : 2.4;
       if (slide.answer) {
         s.addShape('roundRect', {
-          x: 2.0, y: 2.4, w: 6.0, h: slide.verified ? 1.6 : 1.1,
+          x: 2.0, y: answerTop, w: 6.0, h: slide.verified ? 1.6 : 1.1,
           fill: { color: DECK_CARD }, line: { color: accent, width: 1.5 }, rectRadius: 0.08,
         });
         s.addText(L('الإجابة', 'Answer'), {
-          x: 2.0, y: 2.5, w: 6.0, h: 0.3, align: 'center', fontSize: 9, color: accent, bold: true,
+          x: 2.0, y: answerTop + 0.1, w: 6.0, h: 0.3, align: 'center', fontSize: 9, color: accent, bold: true,
         });
         s.addText(pptxLine(slide.answer, true), {
-          x: 2.0, y: 2.8, w: 6.0, h: 0.5, align: 'center', fontSize: 16, color: DECK_TEXT, bold: true,
+          x: 2.0, y: answerTop + 0.4, w: 6.0, h: 0.5, align: 'center', fontSize: 16, color: DECK_TEXT, bold: true,
         });
         if (slide.verified) {
           const verifiedColor = slide.verifiedBy === 'symbolic' ? '22C55E' : DECK_MUTED;
@@ -344,12 +372,12 @@ export async function exportDeckAsPptx(
             ? L('تم التحقق من الإجابة رياضيًا (SymPy)', 'Answer symbolically verified (SymPy)')
             : L('من بنك الأسئلة المُراجَع', 'From the reviewed question bank');
           s.addText(label, {
-            x: 2.0, y: 3.35, w: 6.0, h: 0.3, align: 'center', fontSize: 9, color: verifiedColor, bold: true,
+            x: 2.0, y: answerTop + 0.95, w: 6.0, h: 0.3, align: 'center', fontSize: 9, color: verifiedColor, bold: true,
           });
           if (slide.verifiedBy === 'symbolic' && slide.computedAnswer) {
             s.addText(
               `${L('حسبها المُحقِّق مستقلًّا', 'Verifier computed independently')}: ${mathLineToUnicode(prettifySymPy(slide.computedAnswer))}`,
-              { x: 2.0, y: 3.62, w: 6.0, h: 0.3, align: 'center', fontSize: 8, color: DECK_MUTED },
+              { x: 2.0, y: answerTop + 1.22, w: 6.0, h: 0.3, align: 'center', fontSize: 8, color: DECK_MUTED },
             );
           }
         }
@@ -370,14 +398,19 @@ export async function exportDeckAsPptx(
       const options = slide.options ?? [];
       const letters = isAr ? ['أ', 'ب', 'ج', 'د', 'هـ'] : ['A', 'B', 'C', 'D', 'E'];
       s.addText(pptxLine(slide.content, true), {
-        x: 0.6, y: 1.1, w: 8.8, h: 0.9, align: 'center', valign: 'middle',
-        fontSize: 20, color: DECK_TEXT, bold: true,
+        x: 0.6, y: slidePlot ? 1.0 : 1.1, w: 8.8, h: slidePlot ? 0.7 : 0.9,
+        align: 'center', valign: 'middle',
+        fontSize: slidePlot ? 17 : 20, color: DECK_TEXT, bold: true,
       });
-      const rowH = 0.62;
-      const top = 2.15;
+      if (slidePlot) addPlotChart(s, slidePlot, { x: 2.6, y: 1.65, w: 4.8, h: 1.5 });
+      // Option rows shrink to make room for the curve. Five short rows still
+      // clear the bottom edge; four is the usual case.
+      const rowH = slidePlot ? (options.length > 4 ? 0.36 : 0.44) : 0.62;
+      const rowGap = slidePlot ? 0.07 : 0.12;
+      const top = slidePlot ? 3.3 : 2.15;
       options.forEach((opt, i) => {
         const correct = i === slide.correctIndex;
-        const y = top + i * (rowH + 0.12);
+        const y = top + i * (rowH + rowGap);
         s.addShape('roundRect', {
           x: 2.0, y, w: 6.0, h: rowH,
           fill: { color: correct ? `${DECK_ACCENT}` : DECK_CARD },
@@ -400,7 +433,7 @@ export async function exportDeckAsPptx(
             ? L('تم التحقق من الإجابة رياضيًا (SymPy)', 'Answer symbolically verified (SymPy)')
             : L('من بنك الأسئلة المُراجَع', 'From the reviewed question bank'),
           {
-            x: 2.0, y: top + options.length * (rowH + 0.12) + 0.08, w: 6.0, h: 0.3,
+            x: 2.0, y: top + options.length * (rowH + rowGap) + 0.08, w: 6.0, h: 0.3,
             align: 'center', fontSize: 9, color: verifiedColor, bold: true,
           },
         );

@@ -177,6 +177,36 @@ describe('buildDeckSlidesHTML — graph slide', () => {
   });
 });
 
+describe('buildDeckSlidesHTML — a check that carries its own figure', () => {
+  it('draws the curves on a challenge slide, not only on graph slides', () => {
+    // A check whose stem says «في الرسم البياني الظاهر…» now carries the
+    // commands for that figure. The printed deck has to draw it for the same
+    // reason the projected one does: without it the question is unanswerable.
+    const html = buildDeckSlidesHTML(deck([
+      titleSlide,
+      {
+        slideNumber: 2, type: 'challenge', title: '✋ تحقّق سريع 1',
+        content: 'في الرسم البياني الظاهر: y = x + 1 و y = -x + 3. أوجدوا نقطة التقاطع.',
+        answer: '(1 ، 2)', graphCommands: ['y=x + 1', 'y=-x + 3'], durationSeconds: 60,
+      },
+    ]), true);
+    assert.match(html, /<polyline/);
+  });
+
+  it('draws them on a question slide too', () => {
+    const html = buildDeckSlidesHTML(deck([
+      titleSlide,
+      {
+        slideNumber: 2, type: 'question', title: '✋ تحقّق سريع 1',
+        content: 'من الرسم البياني الظاهر y = 2x - 3، ما قيمة الميل؟',
+        options: ['2', '-3', '3', '-2'], correctIndex: 0,
+        graphCommands: ['y=2x-3'], durationSeconds: 45,
+      },
+    ]), true);
+    assert.match(html, /<polyline/);
+  });
+});
+
 describe('buildDeckSlidesHTML — typography', () => {
   it('loads the app’s real typefaces and uses them, with Arial only as fallback', () => {
     const html = buildDeckSlidesHTML(deck([titleSlide]), true);
