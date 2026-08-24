@@ -53,6 +53,19 @@ export const students = pgTable(
     /** School register number or similar. Optional, teacher's own reference. */
     externalRef: text("external_ref"),
     gradeId: text("grade_id").notNull().default(""),
+    /**
+     * The teacher's running note on this child — one field, overwritten, not a
+     * history. What a teacher wants at a parent evening is the current picture
+     * ("improving on word problems, still rushes"), and a timeline of every
+     * edit is a bigger thing to build, read, and delete from.
+     *
+     * Distinct from `attempts.teacherComment`, which is about one sitting.
+     * This one outlives any single test.
+     *
+     * ponytail: no history. Add a notes table if a teacher asks to see how a
+     * child changed across the term.
+     */
+    teacherNote: text("teacher_note").notNull().default(""),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),

@@ -135,6 +135,7 @@ router.get("/classes/:id", async (req: AuthenticatedRequest, res) => {
         displayName: students.displayName,
         externalRef: students.externalRef,
         gradeId: students.gradeId,
+        teacherNote: students.teacherNote,
         createdAt: students.createdAt,
       })
       .from(classMemberships)
@@ -240,6 +241,7 @@ router.get("/students", async (req: AuthenticatedRequest, res) => {
         displayName: students.displayName,
         externalRef: students.externalRef,
         gradeId: students.gradeId,
+        teacherNote: students.teacherNote,
         createdAt: students.createdAt,
       })
       .from(students)
@@ -443,6 +445,11 @@ router.patch("/students/:id", async (req: AuthenticatedRequest, res) => {
     }
     if (req.body?.externalRef !== undefined) {
       patch["externalRef"] = trimmed(req.body.externalRef) || null;
+    }
+    // Not `|| null` like externalRef above: an empty note is the teacher
+    // clearing it, and the column is NOT NULL. Only surrounding whitespace goes.
+    if (req.body?.teacherNote !== undefined) {
+      patch["teacherNote"] = trimmed(req.body.teacherNote);
     }
 
     const [row] = await db

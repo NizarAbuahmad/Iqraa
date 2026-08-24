@@ -15,6 +15,7 @@ import {
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { Button } from '@/components/ui/Button';
 import { getItem, saveItem, toggleFavorite, updateItem } from '@/services/workspace';
+import { ClassPickerSheet } from '@/components/ui/ClassPickerSheet';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
@@ -99,6 +100,10 @@ export default function LessonPlanScreen() {
   const [loadingSlides, setLoadingSlides] = useState(false);
 
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
+  // Set to the new material's id after a first save, which is what opens the
+  // "which class?" sheet. Only on a first save — re-saving an edit should not
+  // re-ask, and an update already carries whatever class it was given.
+  const [classPromptFor, setClassPromptFor] = useState<string | null>(null);
 
   // If editing a saved item, load it and restore its result
   useEffect(() => {
@@ -220,8 +225,17 @@ export default function LessonPlanScreen() {
       });
       setSavedId(saved.id);
       setSaveLabel('saved');
+      setClassPromptFor(saved.id);
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const attachToClass = async (classId: string, className: string) => {
+    const materialId = classPromptFor;
+    setClassPromptFor(null);
+    if (!materialId) return;
+    await updateItem(materialId, { classGroupId: classId });
+    showToast(t('savedToClass', className));
   };
 
   const handleToggleFavorite = async () => {
@@ -550,6 +564,11 @@ export default function LessonPlanScreen() {
       loadingWord={loadingWord}
       loadingSlides={loadingSlides}
       labels={exportLabels}
+    />
+    <ClassPickerSheet
+      visible={classPromptFor !== null}
+      onClose={() => setClassPromptFor(null)}
+      onPick={(classId, className) => { void attachToClass(classId, className); }}
     />
     <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
     </View>
