@@ -602,6 +602,11 @@ const translations = {
     // Slides export
     exportSlides: 'تصدير شرائح',
     exportSlidesSub: 'ملف PDF كشرائح عرض',
+    // The NotebookLM hand-off row in ExportMenu. Added here because the feature
+    // shipped calling t() for keys that were never defined, which broke
+    // `pnpm run typecheck` on main.
+    exportNotebook: 'افتح NotebookLM',
+    exportNotebookSub: 'ارفع ملف PDF لتحصل على ملخّص صوتي',
 
     // Lesson Flow Engine
     toolLessonFlowTitle: 'مسار الدرس الكامل',
@@ -844,6 +849,7 @@ const translations = {
     saveToClassHint: 'ستجدها في تبويب «الموارد» داخل الصف',
     notNow: 'ليس الآن',
     savedToClass: (name: string) => `حُفظت في ${name}`,
+    saveToClassFailed: 'تعذّر ربطها بالصف — المادة محفوظة، حاول الإرفاق من داخل الصف',
 
     // Evaluations — authoring
     evaluations: 'التقييمات',
@@ -920,6 +926,17 @@ const translations = {
     insufficientEvidence: 'بيانات غير كافية',
     provisionalResultNote: 'نتيجة أولية — بقيت أسئلة بلا علامة. أدخل علاماتها لتصبح النتيجة نهائية.',
     noGradedQuestionsYet: 'لا توجد علامة بعد — أدخل علامة كل سؤال لتظهر النتيجة.',
+    evalModeGenerate: 'ولّد الأسئلة',
+    evalModePaper: 'امتحان ورقي',
+    evalModeGenerateHint: 'يبني اقرأ الأسئلة من نتاجات المنهاج.',
+    evalModePaperHint: 'امتحان أعددته بنفسك على الورق. لا يحتاج اقرأ نص الأسئلة — فقط علامة كل سؤال وما يقيسه، لتُدخل العلامات وتظهر النتيجة.',
+    paperGridLabel: 'أسئلة الورقة',
+    paperGridHint: 'حدّد لكل سؤال علامته والمهارة التي يقيسها. المهارة تُحدّد توزيع النتيجة، فغيّرها إن لم تكن دقيقة.',
+    paperMarksLabel: 'العلامة',
+    paperObjectiveLabel: 'النتاج',
+    paperMarksInvalid: (n: string) => `علامة السؤال ${n} يجب أن تكون أكبر من صفر.`,
+    createPaperExamBtn: 'أنشئ الامتحان',
+    paperQuestionOnSheet: 'سؤال من الورقة — أدخل علامته فقط.',
     markLabel: 'العلامة',
     markOutOf: (max: string) => `من ${max}`,
     markOutOfRange: (max: string) => `أدخل علامة بين 0 و ${max}`,
@@ -1488,6 +1505,8 @@ const translations = {
     // Slides export
     exportSlides: 'Export Slides',
     exportSlidesSub: 'PDF slide deck (not PowerPoint)',
+    exportNotebook: 'Open NotebookLM',
+    exportNotebookSub: 'Upload the PDF there for an audio overview',
 
     // Lesson Flow Engine
     toolLessonFlowTitle: 'Full lesson path',
@@ -1727,6 +1746,7 @@ const translations = {
     saveToClassHint: "You'll find it in the class's Materials tab",
     notNow: 'Not now',
     savedToClass: (name: string) => `Saved to ${name}`,
+    saveToClassFailed: "Couldn't add it to the class — the material is saved, try attaching from the class",
 
     // Evaluations — authoring
     evaluations: 'Evaluations',
@@ -1803,6 +1823,17 @@ const translations = {
     insufficientEvidence: 'Not enough evidence',
     provisionalResultNote: 'Provisional result — some questions are still unmarked. Enter their marks to finalise it.',
     noGradedQuestionsYet: 'No score yet — enter a mark for each question to see the result.',
+    evalModeGenerate: 'Generate questions',
+    evalModePaper: 'Paper exam',
+    evalModeGenerateHint: 'Iqraa writes the questions from the curriculum objectives.',
+    evalModePaperHint: "An exam you set yourself on paper. Iqraa doesn't need the question text — only what each question is worth and what it measures, so you can enter marks and get a result.",
+    paperGridLabel: 'Questions on the paper',
+    paperGridHint: "Set each question's marks and the skill it measures. The skill decides how the result breaks down, so change it where it isn't right.",
+    paperMarksLabel: 'Marks',
+    paperObjectiveLabel: 'Objective',
+    paperMarksInvalid: (n: string) => `Question ${n} needs marks greater than zero.`,
+    createPaperExamBtn: 'Create the exam',
+    paperQuestionOnSheet: 'A question on the paper — just enter its mark.',
     markLabel: 'Mark',
     markOutOf: (max: string) => `of ${max}`,
     markOutOfRange: (max: string) => `Enter a mark between 0 and ${max}`,

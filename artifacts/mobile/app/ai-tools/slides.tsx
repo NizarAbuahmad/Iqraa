@@ -39,6 +39,7 @@ import { summarizeVerification } from '@/services/quizVerification';
 import { confirm } from '@/services/confirm';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { deleteItem, saveItem, updateItem } from '@/services/workspace';
+import { ClassPickerSheet } from '@/components/ui/ClassPickerSheet';
 import { buildDeckSlidesHTML, exportAsPDF } from '@/services/share';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
@@ -93,6 +94,8 @@ export default function SlidesScreen() {
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
+  // Holds the new deck's id after saving — that opens the "which class?" sheet.
+  const [classPromptFor, setClassPromptFor] = useState<string | null>(null);
 
   // Per-slide editing — the deck is a draft the teacher owns, not a fixed
   // output. Edits live in the same deck state that Present/Save/PDF read, so
@@ -462,10 +465,23 @@ export default function SlidesScreen() {
     router.push('/ai-tools/classroom/presentation' as any);
   };
 
-  /** Drop the link to a workspace item without touching the item itself. */
+  /**
+   * Drop the link to a workspace item without touching the item itself. The
+   * class prompt goes with it: it names a material this screen is no longer
+   * tracking, and on an un-save that material no longer exists.
+   */
   const forgetSaved = () => {
     setSavedId(null);
     savedContentRef.current = '';
+    setClassPromptFor(null);
+  };
+
+  const attachToClass = async (classId: string, className: string) => {
+    const materialId = classPromptFor;
+    setClassPromptFor(null);
+    if (!materialId) return;
+    const ok = await updateItem(materialId, { classGroupId: classId });
+    showToast(ok ? t('savedToClass', className) : t('saveToClassFailed'));
   };
 
   /**
@@ -498,6 +514,9 @@ export default function SlidesScreen() {
       savedContentRef.current = content;
       setSavedId(item.id);
       showToast(t('slidesSaved'));
+      // Every save creates a new workspace item — including a re-save after an
+      // un-save — so every save asks which class that item belongs to.
+      setClassPromptFor(item.id);
     } finally {
       setSavingBusy(false);
     }
@@ -949,6 +968,11 @@ export default function SlidesScreen() {
         </View>
       </Modal>
 
+      <ClassPickerSheet
+        visible={classPromptFor !== null}
+        onClose={() => setClassPromptFor(null)}
+        onPick={(classId, className) => { void attachToClass(classId, className); }}
+      />
       <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
     </View>
   );

@@ -32,6 +32,7 @@ import { generateMockEvaluation } from "../modules/assessment/mockGenerator";
 import { validateGenerated } from "../modules/assessment/validator";
 import { QUESTION_TYPES } from "../modules/assessment/questionTypes";
 import { COMPETENCY_KEYS, type CompetencyKey } from "../modules/assessment/competency";
+import { isPaperQuestion, parsePaperRows } from "../modules/assessment/paperExam";
 
 const router = Router();
 // Path-scoped — see the note in roster.ts. Unscoped, this swallowed every
@@ -292,6 +293,82 @@ router.post("/evaluations/:id/generate", async (req: AuthenticatedRequest, res) 
   }
 });
 
+/**
+ * Replace this evaluation's questions with a paper-exam grid.
+ *
+ * For an exam the teacher set themselves: no question text, because the paper
+ * has it — just marks, objective and competency per question. That is the
+ * minimum the app needs to mark the paper, score it, and afterwards say which
+ * objectives the class is weak on.
+ *
+ * Questions land as `open_ended` with an empty body and `gradingMode: 'manual'`.
+ * The type is the honest one available: nothing here can be marked
+ * automatically, so the deterministic pass leaves every question alone and the
+ * teacher marks each by hand. An empty `body` is also what tells the answer
+ * screen there is no prompt to show and no student answer to transcribe.
+ *
+ * Replace, not append — same as generate. Sending the grid twice must not
+ * double the length of the paper.
+ */
+router.put("/evaluations/:id/questions/paper", async (req: AuthenticatedRequest, res) => {
+  try {
+    const evaluation = await ownedEvaluation(req.params["id"] as string, req.user!.id);
+    if (!evaluation) {
+      res.status(404).json({ error: "Evaluation not found" });
+      return;
+    }
+    if (evaluation.status !== "draft") {
+      res.status(409).json({ error: "Only a draft can be edited" });
+      return;
+    }
+
+    const parsed = parsePaperRows(req.body?.questions, {
+      allowedObjectiveIds: evaluation.objectiveIds,
+      maxQuestions: MAX_QUESTIONS,
+    });
+    if (!parsed.ok) {
+      res.status(400).json({
+        error: parsed.error,
+        code: "invalid_paper_grid",
+        ...(parsed.index === undefined ? {} : { questionIndex: parsed.index }),
+      });
+      return;
+    }
+
+    await db
+      .update(evaluationQuestions)
+      .set({ deletedAt: new Date() })
+      .where(
+        and(
+          eq(evaluationQuestions.evaluationId, evaluation.id),
+          isNull(evaluationQuestions.deletedAt),
+        ),
+      );
+
+    await db.insert(evaluationQuestions).values(
+      parsed.rows.map((q, i) => ({
+        evaluationId: evaluation.id,
+        orderIndex: i,
+        type: "open_ended" as QuestionType,
+        body: {},
+        expectedAnswer: {},
+        objectiveId: q.objectiveId,
+        competencyKey: q.competencyKey,
+        difficulty: q.difficulty,
+        marks: q.marks.toFixed(2),
+        gradingMode: "manual" as const,
+        source: "teacher" as const,
+      })),
+    );
+
+    const totalMarks = await recomputeTotal(evaluation.id);
+    res.json({ questions: await liveQuestions(evaluation.id), totalMarks });
+  } catch (err) {
+    logger.error({ err }, "save paper questions failed");
+    res.status(500).json({ error: "Failed to save the paper" });
+  }
+});
+
 // ─── Question editing ────────────────────────────────────────────────────────
 
 router.patch(
@@ -517,6 +594,9 @@ router.post("/evaluations/:id/publish", async (req: AuthenticatedRequest, res) =
     if (questions.length === 0) blockers.push("Add at least one question before publishing");
     if (total <= 0) blockers.push("Total marks must be greater than zero");
     for (const q of questions) {
+      // A paper exam's questions are on paper. There is no body to validate,
+      // and demanding one would make a paper exam unpublishable.
+      if (isPaperQuestion(q)) continue;
       const problems = QUESTION_TYPES[q.type].validate({
         type: q.type,
         body: q.body,

@@ -234,8 +234,8 @@ export default function LessonPlanScreen() {
     const materialId = classPromptFor;
     setClassPromptFor(null);
     if (!materialId) return;
-    await updateItem(materialId, { classGroupId: classId });
-    showToast(t('savedToClass', className));
+    const ok = await updateItem(materialId, { classGroupId: classId });
+    showToast(ok ? t('savedToClass', className) : t('saveToClassFailed'));
   };
 
   const handleToggleFavorite = async () => {

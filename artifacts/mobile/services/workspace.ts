@@ -160,11 +160,20 @@ export async function saveItem(
   return item;
 }
 
-/** Update an existing item. */
+/**
+ * Update an existing item. **Returns whether the change actually persisted.**
+ *
+ * It used to return `void` and swallow every failure, which was fine while the
+ * only callers were favourite toggles that re-read the list afterwards. Then
+ * "attach this material to a class" started reporting «حُفظت في العاشر أ» from
+ * a toast that fired no matter what — so an offline teacher, or one on a server
+ * that has not had the schema push, was told the material was filed when it was
+ * not. Callers that tell the teacher something worked have to be able to ask.
+ */
 export async function updateItem(
   id: string,
   updates: Partial<Omit<SavedMaterial, 'id'>>,
-): Promise<void> {
+): Promise<boolean> {
   if (await isAuthenticated()) {
     try {
       const res = await apiFetch(`/workspace/items/${id}`, {
@@ -181,13 +190,16 @@ export async function updateItem(
           classGroupId: updates.classGroupId,
         }),
       });
-      if (res.ok) return;
+      if (res.ok) return true;
     } catch {
       // fall through to local
     }
   }
 
-  // Local fallback
+  // Local fallback. For a signed-out teacher this *is* the store, so landing
+  // here is a real save. For a signed-in one whose request just failed, the
+  // item usually is not in local storage at all — and that is the case worth
+  // reporting, because nothing was written anywhere.
   const items = await readLocal();
   const idx = items.findIndex((i) => i.id === id);
   if (idx !== -1) {
@@ -195,7 +207,9 @@ export async function updateItem(
     const [updated] = items.splice(idx, 1);
     items.unshift(updated);
     await writeLocal(items);
+    return true;
   }
+  return false;
 }
 
 /** Delete an item by id. */

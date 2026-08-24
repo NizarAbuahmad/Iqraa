@@ -207,7 +207,12 @@ export default function ClassDetailScreen() {
     if (!id || attachingId) return;
     setAttachingId(material.id);
     try {
-      await updateItem(material.id, { classGroupId: id });
+      // Say so when it did not stick, rather than closing the sheet on a
+      // success buzz and letting the reload quietly show the same list.
+      if (!(await updateItem(material.id, { classGroupId: id }))) {
+        setError(t('saveToClassFailed'));
+        return;
+      }
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setShowAttach(false);
       await load();
@@ -225,7 +230,13 @@ export default function ClassDetailScreen() {
       destructive: true,
     });
     if (!ok) return;
-    await updateItem(material.id, { classGroupId: null });
+    // Only drop it from the list once the detach actually persisted. Removing
+    // it optimistically made a failed detach look done until the next load put
+    // the material straight back.
+    if (!(await updateItem(material.id, { classGroupId: null }))) {
+      setError(t('saveToClassFailed'));
+      return;
+    }
     setMaterials(prev => prev.filter(m => m.id !== material.id));
   };
 
