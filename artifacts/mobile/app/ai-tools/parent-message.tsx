@@ -18,8 +18,10 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { Toast } from '@/components/ui/Toast';
 import { copyToClipboard, shareAsText } from '@/services/share';
+import { StudentPickerSheet } from '@/components/ui/StudentPickerSheet';
+import type { RosterStudent } from '@/services/roster';
 import {
-  composeParentMessage, kindEmoji, kindLabel, MESSAGE_KINDS, needsDetails,
+  composeParentMessage, kindEmoji, kindLabel, MESSAGE_KINDS, needsDetails, seedDetailsFromNote,
   type Gender, type MessageKind, type Tone,
 } from '@/services/parentMessage';
 
@@ -43,7 +45,31 @@ export default function ParentMessageScreen() {
   const [subject, setSubject] = useState('');
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
+  const [pickingStudent, setPickingStudent] = useState(false);
   const showToast = (m: string) => { setToastMsg(m); setToastVisible(true); };
+
+  /**
+   * Fill in the name, and offer the note as a starting point for the details.
+   *
+   * The note is used because the teacher wrote it — this file's rule is that
+   * every fact comes from the teacher, and a sentence they typed about this
+   * child last week still qualifies. It goes into the editable details box, not
+   * into the message, so nothing reaches a parent without being read again.
+   *
+   * Marks are deliberately NOT pulled in. They are computed, partly by AI, and
+   * `attempt_results.isProvisional` marks the ones still awaiting the teacher's
+   * review — a number that lands in a parent's WhatsApp cannot be one the
+   * teacher has not confirmed.
+   *
+   * Gender is not touched: the roster does not record it, and guessing it from
+   * a name would misgender a real child in Arabic, which inflects for it in
+   * almost every clause.
+   */
+  const onPickStudent = (student: RosterStudent) => {
+    setPickingStudent(false);
+    setStudentName(student.displayName);
+    setDetails(seedDetailsFromNote(details, student.teacherNote));
+  };
 
   const message = useMemo(
     () => composeParentMessage(
@@ -147,6 +173,18 @@ export default function ParentMessageScreen() {
               placeholderTextColor={colors.mutedForeground}
               style={input()}
             />
+            {/* Typing the name still works — this only saves the typing, and
+                spares the spelling mistake that reaches a parent. */}
+            <Pressable
+              onPress={() => setPickingStudent(true)}
+              style={[styles.pickLink, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+              hitSlop={6}
+            >
+              <Ionicons name="people-outline" size={15} color={ACCENT} />
+              <Text style={[styles.pickLinkText, { color: ACCENT, fontFamily: 'Cairo_500Medium' }]}>
+                {t('pickFromMyClasses')}
+              </Text>
+            </Pressable>
           </Field>
 
           <Field label={t('parentMsgStudentGender')}>
@@ -294,6 +332,11 @@ export default function ParentMessageScreen() {
         </View>
       </ScrollView>
 
+      <StudentPickerSheet
+        visible={pickingStudent}
+        onClose={() => setPickingStudent(false)}
+        onPick={onPickStudent}
+      />
       <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
     </View>
   );
@@ -304,6 +347,8 @@ const styles = StyleSheet.create({
   backBtn: { width: 40, height: 40, justifyContent: 'center', marginBottom: 8 },
   label: { fontSize: 13, marginBottom: 8 },
   pillRow: { flexWrap: 'wrap', gap: 8 },
+  pickLink: { alignItems: 'center', gap: 6, marginTop: 8 },
+  pickLinkText: { fontSize: 13 },
   pill: { alignItems: 'center', paddingHorizontal: 13, paddingVertical: 8, borderWidth: 1.5 },
   pillText: { fontSize: 13 },
   input: { borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14 },
