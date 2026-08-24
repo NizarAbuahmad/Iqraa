@@ -988,6 +988,7 @@ export default function IqraScreen() {
    */
   const [lessonCardCollapsed, setLessonCardCollapsed] = useState(true);
   const [startingClass, setStartingClass] = useState(false);
+  const [startClassError, setStartClassError] = useState('');
   const [changeLessonOpen, setChangeLessonOpen] = useState(false);
   const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
   const [exportText, setExportText] = useState('');
@@ -1943,6 +1944,7 @@ export default function IqraScreen() {
     const topic = currentLessonView?.topic?.trim();
     if (!topic) return;
     setStartingClass(true);
+    setStartClassError('');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
       const activity = await buildClassDeck({ topic, lang: lang as 'ar' | 'en' });
@@ -1950,14 +1952,17 @@ export default function IqraScreen() {
       trackEvent('class_started', { source: 'chat' });
       router.push('/ai-tools/classroom/presentation' as any);
     } catch {
-      // Surfacing this as a chat message would be wrong — the teacher pressed a
-      // button on a card, not asked a question. Leave the card as it was so the
-      // press reads as "did not take" and can simply be repeated.
+      // Surfacing this as a chat message would still be wrong — the teacher
+      // pressed a button on a card, they did not ask a question. But saying
+      // nothing at all was worse: `Haptics` is a no-op on web, so the whole
+      // failure signal was a buzz that platform never plays, and the press
+      // vanished. The card says what happened instead, and stays the retry.
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setStartClassError(t('startClassFailed'));
     } finally {
       setStartingClass(false);
     }
-  }, [startingClass, currentLessonView?.topic, lang]);
+  }, [startingClass, currentLessonView?.topic, lang, t]);
   const lessonSuggestions = buildLessonSuggestions(
       sessionMemory,
       lang as 'ar' | 'en',
@@ -2081,6 +2086,7 @@ export default function IqraScreen() {
           colors={colors}
           startClassLabel={t('startClass')}
           startClassBusy={startingClass}
+          startClassError={startClassError}
           onStartClass={handleStartClass}
           changeLabel={t('changeLesson')}
           uploadedLabel={(n) => t('lessonUploadedFiles', n)}
@@ -2302,6 +2308,12 @@ export default function IqraScreen() {
             ]}
             placeholder={t(DOCUMENT_UPLOAD_ENABLED ? 'iqraPlaceholderDocs' : 'iqraPlaceholder')}
             placeholderTextColor={colors.mutedForeground}
+            // A placeholder is not a label: it is the first thing a screen
+            // reader skips and the first thing sighted users lose, the moment
+            // they start typing. The name and the instructions have to outlive
+            // the empty field.
+            accessibilityLabel={t('iqraInputLabel')}
+            accessibilityHint={t('iqraInputHint')}
             value={input}
             onChangeText={setInput}
             multiline
