@@ -237,7 +237,13 @@ export default function WorkspaceViewScreen() {
 
       {/* Content */}
       <View style={{ padding: 20 }}>
-        {!content ? (
+        {/* `{}` is truthy, so a material saved with empty content passed this
+            guard and then died inside whichever view mapped over an array that
+            was not there — a full-screen error boundary for one unreadable row.
+            ponytail: only catches *empty* content. Content of the wrong shape
+            for its type still crashes; validate per type if that ever happens
+            from something other than a hand-written fixture. */}
+        {!content || Object.keys(content).length === 0 ? (
           <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }}>
             {t('noContentAvailable')}
           </Text>

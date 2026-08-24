@@ -527,7 +527,7 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
           setClassPromptFor(null);
           if (!materialId) return;
           void updateItem(materialId, { classGroupId: classId })
-            .then(() => showToast(t('savedToClass', className)));
+            .then(ok => showToast(ok ? t('savedToClass', className) : t('saveToClassFailed')));
         }}
       />
       <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />

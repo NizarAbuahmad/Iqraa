@@ -401,6 +401,51 @@ without the AI half — the review queue, rubric prompts and confidence policy
 are untouched, and `grader: 'ai'` still has no writer.
 
 
+## Every tool asks which class, and the toast stopped lying, 2026-08-24
+
+**All seven save paths now offer the class sheet.** Previously only the two
+lesson ones did. Same six lines each — `ClassPickerSheet` on the id `saveItem`
+already returns — now in worksheet, quiz, activity, lesson-flow and slides too.
+`slides` had no `savedId` of its own (saving a deck always creates a new one),
+so the id is captured purely to ask the question.
+
+**`updateItem` returns whether the change persisted, and callers check it.** It
+returned `void` and swallowed every failure, which was harmless while the only
+callers were favourite toggles that re-read the list afterwards. Attaching to a
+class then started showing «حُفظت في العاشر أ» from a toast that fired no matter
+what. Caught by the browser check below, which reported success against a
+database where the material stayed unattached — the same shape as the `verified`
+lesson this file already records: **fail closed, or label honestly, never
+both.** All seven toasts, plus attach and detach inside the class screen, now
+report what actually happened. Detach in particular no longer removes the row
+optimistically, which made a failed detach look done until the next load put the
+material back.
+
+**A material with empty content no longer takes down the whole view.** `{}` is
+truthy, so it slipped past the `!content` guard in `workspace/view.tsx` and died
+inside whichever view mapped over an array that was not there. ponytail: this
+only catches *empty* content; wrong-shaped content for its type still crashes.
+
+### main was red when this started
+
+`pnpm run typecheck` failed on `main` with four errors, none of them from this
+work: the NotebookLM hand-off (PR #100) shipped `t('exportNotebook')` and
+`t('exportNotebookSub')` calls for keys that were never added to `i18n.ts`.
+Confirmed by stashing everything local and typechecking a clean tree. Both keys
+are added here. **The Arabic copy is a guess at the original intent** — the row
+opens NotebookLM so the teacher can upload the exported PDF for an audio
+overview — so whoever wrote that feature should check the wording.
+
+### Verified by driving the real UI
+
+Generated a worksheet on معادلة الدائرة, saved it, and watched the sheet appear
+(«لأي صف هذه المادة؟» listing العاشر أ · طالبان), picked the class, and got
+«حُفظت في العاشر أ» — then checked the database, where `class_group_id` was
+still null. That is what exposed the lying toast. The cause was a **stale API
+process on :8080** started by another session before `class_group_id` existed,
+which silently dropped the field; the current server on :8090 handles it. The
+product bug was the toast, not the drop.
+
 ## The "..." menu in موادي never worked in a browser, 2026-08-24
 
 Reported by the user, and true since the workspace screen was written: the
