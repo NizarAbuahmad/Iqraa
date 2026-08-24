@@ -33,6 +33,8 @@ export type ChemSem2Lesson = {
   main_idea_ar: string;
   periods: number | null;
   objectives: string[];
+  /** Experiments/activities the teacher guide's planner names for this lesson. */
+  activities?: string[];
   vocabulary: ChemSem2Vocab[];
 };
 
@@ -45,6 +47,8 @@ export type ChemSem2Unit = {
   data_tier?: string;
   general_idea_ar: string;
   total_periods: number | null;
+  /** What the guide says students met in earlier grades, tagged with the grade. */
+  prior_knowledge?: string[];
   lessons: ChemSem2Lesson[];
 };
 

@@ -15,7 +15,7 @@ import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { ClassroomActivity } from '@/services/ai/AIService';
 import { buildGeneratorContext } from '@/services/kbContext';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
-import { ACTIVITY_CARDS, resolveActivityType } from '@/services/classroomRouting';
+import { ACTIVITY_CARDS, ClassroomSetup, resolveActivityType } from '@/services/classroomRouting';
 
 const ACCENT = '#4F46E5';
 
@@ -45,6 +45,9 @@ export default function ClassroomBuilderScreen() {
   const [difficulty, setDifficulty] = useState<Difficulty>('standard');
   const [groupType, setGroupType] = useState<GroupType>('groups');
   const [teachingGoal, setTeachingGoal] = useState<TeachingGoal>('practice');
+  // Defaults to the projector because that is what the app's own deck assumes;
+  // a board-only room is the choice that changes what gets printed.
+  const [classroomSetup, setClassroomSetup] = useState<ClassroomSetup>('screen');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ClassroomActivity | null>(null);
   const [error, setError] = useState('');
@@ -74,6 +77,7 @@ export default function ClassroomBuilderScreen() {
         difficulty,
         groupType,
         teachingGoal,
+        classroomSetup,
         language: lang === 'ar' ? 'arabic' : 'english',
         additionalContext,
       });
@@ -131,6 +135,10 @@ export default function ClassroomBuilderScreen() {
     { value: 'pairs', label: lang === 'ar' ? 'ثنائي' : 'Pairs' },
     { value: 'groups', label: lang === 'ar' ? 'مجموعات' : 'Groups' },
     { value: 'whole-class', label: lang === 'ar' ? 'الصف' : 'Whole Class' },
+  ];
+  const setupOpts: { value: ClassroomSetup; label: string }[] = [
+    { value: 'screen', label: lang === 'ar' ? 'شاشة عرض' : 'Projector' },
+    { value: 'board', label: lang === 'ar' ? 'سبورة فقط' : 'Board only' },
   ];
   const goalOpts: { value: TeachingGoal; label: string }[] = [
     { value: 'warm-up', label: t('teachingGoalWarmup') },
@@ -235,6 +243,12 @@ export default function ClassroomBuilderScreen() {
         <PillGroup label={t('difficultyLabel')} options={difficultyOpts} value={difficulty} onChange={setDifficulty} />
         <PillGroup label={lang === 'ar' ? 'نوع المجموعة' : 'Class type'} options={groupOpts} value={groupType} onChange={setGroupType} />
         <PillGroup label={t('teachingGoalLabel')} options={goalOpts} value={teachingGoal} onChange={setTeachingGoal} />
+        <PillGroup
+          label={lang === 'ar' ? 'تجهيزات الصف' : 'Classroom setup'}
+          options={setupOpts}
+          value={classroomSetup}
+          onChange={setClassroomSetup}
+        />
 
         {error ? <Text style={[{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
 

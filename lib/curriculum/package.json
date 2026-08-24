@@ -8,6 +8,7 @@
     "./catalog": "./src/catalog.ts",
     "./objectives": "./src/objectives.ts",
     "./blooms": "./src/blooms.ts",
+    "./sources": "./src/sources.ts",
     "./catalogs/g10MathSem1": "./src/catalogs/g10MathSem1.ts",
     "./catalogs/g10MathSem2": "./src/catalogs/g10MathSem2.ts",
     "./catalogs/g10ChemSem1": "./src/catalogs/g10ChemSem1.ts",

@@ -46,7 +46,6 @@ import { Toast } from '@/components/ui/Toast';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
 import { buildLessonFlowHTML, exportAsPDF } from '@/services/share';
-import { NOTEBOOKLM_URL, openExternal } from '@/services/externalLinks';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -533,15 +532,6 @@ export default function LessonFlowScreen() {
                 size={18}
                 color={ACCENT}
               />
-            </Pressable>
-
-            {/* NotebookLM hand-off */}
-            <Pressable
-              onPress={() => { void openExternal(NOTEBOOKLM_URL); }}
-              accessibilityLabel={t('exportNotebook')}
-              style={({ pressed }) => [styles.actionBtnSave, { backgroundColor: '#F9731618', borderColor: '#F97316', opacity: pressed ? 0.75 : 1 }]}
-            >
-              <Ionicons name="headset-outline" size={18} color="#F97316" />
             </Pressable>
           </View>
         )}

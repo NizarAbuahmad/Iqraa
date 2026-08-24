@@ -189,6 +189,17 @@ describe('buildDeckSlidesHTML — typography', () => {
   });
 });
 
+describe('buildDeckSlidesHTML — print fidelity', () => {
+  it('keeps backgrounds when printed', () => {
+    // Chrome/Safari drop every background colour and image in print unless
+    // this is set, which turned the dark deck into white pages with white
+    // text on them. The whole export is a dark deck, so this is not optional.
+    const html = buildDeckSlidesHTML(deck([titleSlide]), true);
+    assert.match(html, /print-color-adjust: exact/);
+    assert.match(html, /-webkit-print-color-adjust: exact/);
+  });
+});
+
 describe('buildDeckSlidesHTML — hero backgrounds (title + divider)', () => {
   it('renders the title slide as a flat gradient when no photo was fetched', () => {
     const html = buildDeckSlidesHTML(deck([titleSlide]), true);

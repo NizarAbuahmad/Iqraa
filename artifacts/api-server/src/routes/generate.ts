@@ -188,13 +188,37 @@ generateRouter.post('/generate/classroom-activity', async (req: AuthenticatedReq
   const body = req.body as Record<string, unknown>;
   const isAr = body.language === 'arabic';
   try {
-    const prompt = isAr ? classroomPromptAr(body) : classroomPromptEn(body);
+    const prompt = (isAr ? classroomPromptAr(body) : classroomPromptEn(body))
+      + classroomSetupClause(body, isAr);
     const data = await generateContent("classroom-activity", isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS, body, req.user?.id);
     res.json(data);
   } catch (err) {
     respondAiError(err, res, "generate classroom-activity");
   }
 });
+
+/**
+ * One line telling the model what the room actually has.
+ *
+ * Appended at the single dispatch point rather than threaded through the eight
+ * per-activity prompt builders below — every one of them ends with the same
+ * JSON shape, and every one of them would need the same sentence.
+ *
+ * The client applies its own materials override on top (see
+ * applyClassroomSetup), so a model that ignores this still cannot tell a
+ * teacher with a projector to print the slides.
+ */
+function classroomSetupClause(b: any, isAr: boolean): string {
+  const board = b.classroomSetup === 'board';
+  if (isAr) {
+    return board
+      ? '\n\nمهم: لا يوجد جهاز عرض في هذه الحصة. صمّم النشاط ليُدار على السبورة وبأوراق مطبوعة، واذكر في materials أدوات السبورة والمطبوعات التي يحتاجها المعلّم فعلًا.'
+      : '\n\nمهم: الشرائح ستُعرض على شاشة/جهاز عرض. لا تطلب طباعة ما تعرضه الشرائح نفسها؛ اذكر في materials جهاز العرض وما يحتاجه الطلاب فقط (دفتر، قلم، ورقة عمل إن لزمت).';
+  }
+  return board
+    ? '\n\nImportant: there is no projector in this room. Design the activity to run on the board with printed handouts, and list in materials only the board tools and printouts the teacher genuinely needs.'
+    : '\n\nImportant: the slides are shown on a projector. Do not ask the teacher to print what the slides themselves display; list in materials the projector plus only what students need (notebook, pen, worksheet if truly required).';
+}
 
 function classroomPromptAr(b: any): string {
   const goals: Record<string, string> = {

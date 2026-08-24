@@ -13,6 +13,7 @@ import assert from 'node:assert/strict';
 
 import {
   ACTIVITY_CARDS,
+  applyClassroomSetup,
   buildBuilderRoute,
   resolveActivityType,
 } from '../classroomRouting.ts';
@@ -127,5 +128,50 @@ describe('resolveActivityType() — builder forwards activityType to AI service'
     const fallback = resolveActivityType({});
     const firstAvailable = ACTIVITY_CARDS.find(c => c.available)!;
     assert.equal(fallback, firstAvailable.id);
+  });
+});
+
+// ─── 4. Screen vs board setup ────────────────────────────────────────────────
+
+describe('applyClassroomSetup', () => {
+  const boardActivity = {
+    activityType: 'error-detective',
+    materials: ['السبورة', 'بطاقات الحلول الخاطئة المطبوعة', 'أقلام تصحيح حمراء'],
+    teacherPreparation: 'اطبع 3 حلول خاطئة مسبقًا. اطلب من الطلاب العمل في ثنائيات.',
+  };
+
+  it('leaves a board-only room exactly as the generator wrote it', () => {
+    // Board is what these activities were authored for, so "no screen" must
+    // never quietly drop something the teacher is about to need.
+    assert.deepEqual(applyClassroomSetup(boardActivity, 'board', true), boardActivity);
+  });
+
+  it('stops asking a projector room to print what the slides already show', () => {
+    const out = applyClassroomSetup(boardActivity, 'screen', true);
+    assert.ok(!out.materials.some(m => m.includes('المطبوعة')));
+    assert.ok(out.materials.some(m => m.includes('بروجكتر')));
+    assert.ok(!out.teacherPreparation.startsWith('اطبع'));
+  });
+
+  it('adds the projector to an activity it has no override for', () => {
+    const bingo = {
+      activityType: 'bingo',
+      materials: ['بطاقات بينجو مطبوعة (بطاقة لكل طالب)', 'مؤقت'],
+      teacherPreparation: 'اطبع بطاقات بينجو مختلفة لكل طالب.',
+    };
+    const out = applyClassroomSetup(bingo, 'screen', true);
+    // The per-student card is not something a screen replaces — it stays.
+    assert.ok(out.materials.some(m => m.includes('بينجو')));
+    assert.equal(out.materials.length, 3);
+    assert.equal(out.teacherPreparation, bingo.teacherPreparation);
+  });
+
+  it('does not add a second projector line to a list that names one', () => {
+    const quick = {
+      activityType: 'quick-check',
+      materials: ['ألواح صغيرة وأقلام', 'شاشة عرض'],
+      teacherPreparation: '',
+    };
+    assert.deepEqual(applyClassroomSetup(quick, 'screen', true).materials, quick.materials);
   });
 });

@@ -27,6 +27,9 @@ import { getPendingClassroomActivity, clearClassroomActivity } from '@/services/
 import { timerColor } from '@/services/presentationUtils';
 import Svg, { Line, Polyline, Rect } from 'react-native-svg';
 import { plotGeometry, visualForSlide } from '@/services/deckVisuals';
+// Shared with both exports so the projected slide and the exported one cannot
+// disagree about what a bullet, an equation or a section glyph is.
+import { isBulletLine, looksLikeEquation, splitEmoji, stripBullet } from '@/services/deckText';
 import { geogebraCommandUrl, openGeogebraWithCommands } from '@/services/geogebra';
 import { youtubeEmbedUrl } from '@/services/classMedia';
 import {
@@ -445,24 +448,6 @@ function QuestionOptions({
 }
 
 // ─── Slide Content ────────────────────────────────────────────────────────────
-/**
- * Pull a leading emoji off a deck heading.
- *
- * The builders write titles like "🎯 نتاجات التعلم" — the glyph is a section
- * marker, not part of the sentence, so it belongs in a chip beside the heading
- * rather than inline, where it sets the line height for the whole title.
- * Codepoint ranges rather than \p{Extended_Pictographic}: unicode property
- * escapes are not safe to assume across Hermes versions.
- */
-function splitEmoji(title: string): [glyph: string, heading: string] {
-  const text = (title ?? '').trim();
-  const cp = text.codePointAt(0) ?? 0;
-  const isEmoji = cp >= 0x1f300 || (cp >= 0x2190 && cp <= 0x27bf);
-  if (!isEmoji) return ['', text];
-  const glyph = String.fromCodePoint(cp);
-  return [glyph, text.slice(glyph.length).replace(/^\uFE0F/, '').trim()];
-}
-
 function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
   const accent = slideTypeAccent(slide.type);
   const align = isRTL ? ('right' as const) : ('left' as const);
@@ -515,11 +500,9 @@ function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
           glyphs, it was just being flattened into identical paragraphs. */}
       <View style={slideStyles.body}>
         {lines.map((line, i) => {
-          const isBullet = /^[•\-–]\s+/.test(line);
-          const text = isBullet ? line.replace(/^[•\-–]\s+/, '') : line;
-          const isEquation =
-            !isBullet
-            && (/[=²³√±×÷^]/.test(text) || /\d+x/.test(text) || /\/[0-9٠-٩]/.test(text));
+          const isBullet = isBulletLine(line);
+          const text = isBullet ? stripBullet(line) : line;
+          const isEquation = looksLikeEquation(line);
 
           if (isBullet) {
             return (

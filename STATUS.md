@@ -109,10 +109,55 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     publish, validators), plus deterministic marking and level aggregation.
     What is missing is any evaluation UI, the attempts/answer-entry endpoints,
     and the dashboard.
+- **Every Grade 10 source PDF is now inventoried** in
+  `lib/curriculum/src/data/g10_sources.json`, read through
+  `lib/curriculum/src/sources.ts` (`usableSources()`, `pendingSources()`,
+  `conflicts()`). It records, per file, its Drive id, what kind of document it
+  is, whether NCCD or a named teacher wrote it, and whether anything has been
+  extracted from it. Written from a Drive listing taken 2026-08-24; nothing at
+  runtime reads it, so a stale entry costs a wrong answer to "what do we have",
+  never a broken app. `scripts/verify-curriculum.ts` only scans
+  `iqra_curriculum_*.json`, since the manifest lives in the same folder and has
+  no units — without that filter it reported two structural errors and exited
+  non-zero.
+  - What it surfaced immediately: chemistry S1 **and** S2 each had two files
+    claiming to be the same student book with different byte counts (an
+    Arabic-titled and an English-titled copy). **Resolved 2026-08-24 — not an
+    edition split:** each pair has an identical page count (76 / 84) and an
+    identical PDF `CreationDate`; the Arabic-titled copies are iLovePDF
+    re-compressions of the Adobe originals. The originals are canonical
+    because these books are extracted from page renders and the compressed
+    copies have downsampled images. Six teacher-made files are exact
+    duplicates. The financial-literacy split is the one real conflict left.
+  - Chemistry unit structure, read off the two student books: S1 carries units
+    1–3 (بنية الذرة وتركيبها / التوزيع الإلكتروني والدورية / المركبات والروابط
+    الكيميائية) with two lessons each; S2 carries units 4–5 (التفاعلات
+    والحسابات الكيميائية / الطاقة الكيميائية) with three lessons each. Unit
+    numbering runs continuously across the two semesters, so they are one
+    course. Each unit also has a تجربة استهلالية, an إثراء وتوسع and a
+    مراجعة — which is where the catalog's "9 lessons" for S1 comes from,
+    against the 6 taught lessons the book names.
+  - The Drive tree is mirrored on disk (`localRoot` in the manifest), so
+    extraction reads local files rather than re-downloading ~300MB.
+  - Teacher-made material is a large share of the Drive (worksheets, answer
+    keys, دوسيات, past papers by named Jordanian teachers). `authority:
+    'teacher'` marks it: usable to inform generation, not to be reproduced.
 - Chemistry S2 is NCCD-sourced as of 2026-08-23 (2 units / 8 lessons, from the
   student book, ISBN 978-9923-41-284-8). It replaced two stubs that named unit 4
   «الوحدة الرابعة» and unit 5 «التفاعلات الكيميائية» — the latter is unit *4*'s
   subject; the book's unit 5 is «الطاقة الكيميائية».
+  - **Enriched from the S2 teacher guide on 2026-08-24**: عدد الحصص per lesson
+    (2–4, nine per unit — `periods` was null everywhere), per-unit
+    `prior_knowledge` tagged with the grade each outcome was taught in, and the
+    activities the guide's مخطط الوحدة names (guide pages 7A / 41A).
+  - One correction from the same pass: the file's `known_gaps` said the S2 book
+    prints no «فكرة عامة» for a unit, so the أتأمل الصورة box was stored as the
+    unit's general idea. The book does print one, on the page facing each unit
+    opener (book pages 8 and 42); `general_idea_ar` now carries it, and
+    `meta.corrections_note` records the swap.
+  - `services/__tests__/chemSem2Catalog.test.ts` asserts the placeholders are
+    gone and the periods are present, against KB_UNITS/KB_LESSONS rather than
+    the JSON, so the wiring is covered and not just the data.
 - Chemistry S1's curriculum browser now serves its NCCD JSON too (2026-08-23).
   It previously showed 3 units / 3 lessons against the book's 3 / 9, mislabelled
   unit 2 as «الجدول الدوري وخواص العناصر» (the book says «التوزيع الإلكتروني
