@@ -221,6 +221,65 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## What the class missed, 2026-08-24
+
+The results dashboard showed a class average and a level distribution. Nothing
+anywhere aggregated objectives across students, so after marking thirty papers
+the app could say what each individual was weak at — thirty times — and could
+not answer the question the teacher actually has: **what is this class weak
+at.** That is the one that changes what happens in the room tomorrow.
+
+`GET /evaluations/:id/insights` sums `attempt_results.objectiveScores` across
+every marked attempt.
+
+**Marks-weighted, not a mean of percentages**, and this is the whole point.
+Twenty students who each lost 1 of 2 marks and one who lost 9 of 10 are not the
+same picture; averaging their percentages ranks the class's real problem below
+a rounding error. Summing earned over available keeps the objective that
+actually cost the class the most at the top — the same rule `scoring.ts`
+applies inside one attempt, applied a level up. Pinned by a test where the two
+orderings **disagree**: 55% costing 12 marks must lead 20% costing 2, because
+ordering by percentage would send the teacher to reteach the cheaper one.
+
+**Two numbers per objective, deliberately.** The class percentage, and how many
+students were below the line on it. They diverge exactly where it matters —
+"62%, 14 of 26 students below" is a reteach for the room, "62%, 3 students
+below" is three conversations — and showing only the first hides which.
+
+**Only marked attempts count.** An unmarked attempt carries an empty objective
+breakdown; letting those in would drag every class percentage down as the
+roster grows, and "the class is at 31%" would silently mean "you have not
+finished marking".
+
+**No rule was restated to build this.** `splitGapsAndStrengths` was extracted
+from `scoreAttempt` and is now shared, and `recommendationsFor` was narrowed to
+the three fields it actually reads (`Scored`) so the class aggregate — which
+has no level, no competencies and no single student — runs the same rules
+rather than a parallel copy. A second copy of either would drift, and then one
+student's gap and their class's gap would be decided by different rules.
+
+Class recommendations are **computed per request, not stored**: the
+`recommendations` table is keyed by attempt, a class has no attempt to hang
+them off, and they change the moment one more paper is marked.
+
+**Verified end to end** against a running API, Postgres and the web build.
+Three students, two objectives: a 2-mark objective everyone half-missed (50%,
+3 marks lost) and a 10-mark one everyone lost 6 on (40%, 18 marks lost). The
+class view returns `15/36 = 41.67%` and leads with the 18-mark loss. Before any
+marking it returns zero students, zero objectives and no recommendations rather
+than a zeroed-out class. The dashboard renders «ما الذي فات الصف» with both
+numbers per objective and a «جهّز ورقة عمل للصف» button — whose presence is
+itself proof the grade/subject scope resolved, since it is hidden rather than
+shown-and-wrong when it does not.
+
+175 api-server tests, 758 mobile, 0 failures; typecheck clean across all three.
+
+**One flake worth knowing:** an api-server run taken immediately after
+`pnpm build` reported 164 tests and one failure, then 175/0 on two consecutive
+re-runs. The lower *count* is the tell — suites had not loaded yet. The
+existing "run build before test" caveat is about `dist` being stale; this is
+the narrower race of testing while it is still being written.
+
 ## Marking now says what to teach next, 2026-08-24
 
 `recommendations` has been a table since Phase 4 with nothing ever writing to
