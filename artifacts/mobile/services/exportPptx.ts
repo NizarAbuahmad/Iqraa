@@ -381,7 +381,7 @@ export async function exportDeckAsPptx(
         s.addShape('roundRect', {
           x: 2.0, y, w: 6.0, h: rowH,
           fill: { color: correct ? `${DECK_ACCENT}` : DECK_CARD },
-          line: { color: correct ? accent : '2A2B3A', width: correct ? 1.5 : 1 },
+          line: { color: correct ? accent : DECK_BORDER, width: correct ? 1.5 : 1 },
           rectRadius: 0.08,
         });
         s.addText(`${letters[i] ?? String(i + 1)}`, {
@@ -450,16 +450,16 @@ export async function exportDeckAsPptx(
       if (looksLikeEquation(line)) {
         s.addShape('roundRect', {
           x: 1.4, y, w: 7.2, h,
-          fill: { color: '1A1B26' }, line: { color: '2A2B3A', width: 1 }, rectRadius: 0.1,
+          fill: { color: DECK_CARD }, line: { color: DECK_BORDER, width: 1 }, rectRadius: 0.1,
         });
         s.addText(pptxLine(line, true), {
           x: 1.4, y, w: 7.2, h, align: 'center', valign: 'middle',
-          fontSize: 20, color: 'FFFFFF', bold: true, fontFace: HEAD_FONT,
+          fontSize: 20, color: DECK_TEXT, bold: true, fontFace: HEAD_FONT,
         });
       } else if (isBulletLine(line)) {
         s.addShape('roundRect', {
           x: 0.8, y, w: 8.4, h,
-          fill: { color: '15161F' }, line: { color: '2A2B3A', width: 1 }, rectRadius: 0.08,
+          fill: { color: DECK_CARD }, line: { color: DECK_BORDER, width: 1 }, rectRadius: 0.08,
         });
         // Accent bar on the reading edge: right in Arabic, left in English.
         s.addShape('rect', {
