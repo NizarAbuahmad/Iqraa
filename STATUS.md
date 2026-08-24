@@ -221,6 +221,73 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Marking is reachable from the class, 2026-08-24
+
+Everything built today — hand marking, paper exams, next steps, class gaps —
+was reachable **only** through the tool catalog. A teacher standing on
+«Grade 10 - A», looking at their own three students, had no path to "mark their
+paper" at all. Found by opening production and looking: the class screen offers
+the note pencil and the remove ✕, and nothing else.
+
+**A third tab: الامتحانات**, beside الطلاب and الموارد. Each row is an exam with
+«صُحّح 12 من 26», or «مسودّة — انشره قبل إدخال العلامات» when it has not been
+published. Tapping a published exam goes straight to its student list — the
+marking screen; tapping a draft goes to the editor, because there is nothing to
+mark yet.
+
+**`markedCount` counts `attempt_results`, not attempt status.** An attempt sits
+in `needs_review` while it carries real marks — status answers "is it
+finished", and the question on this row is "how many are done".
+
+**Attaching is the teacher's decision, and happens in the class.** The `+`
+opens a sheet of the teacher's exams that are in no class. Same reasoning as
+materials: nobody knows which section a paper is for while writing it, and a
+class picker in the authoring flow would demand that answer too early.
+
+**The unattached list is filtered server-side** (`?classId=none`), not by
+fetching everything and filtering in the client. Client-side filtering is what
+would let an exam already attached to *another* class look attachable here,
+turning a silent move into what reads as an add.
+
+**One nullable column, `evaluations.class_group_id`**, `ON DELETE SET NULL` —
+archiving a class must not delete the exam record. Same shape and same
+reasoning as `saved_materials.class_group_id`, rather than a second pattern for
+the same relationship. `evaluation_assignments` is still untouched: it has
+carried this shape since Phase 4 with no writer and supports many classes per
+exam, which is more than anyone has asked for. The accepted cost, as with
+materials, is that a paper used with two sections gets duplicated.
+
+**Detach distinguishes "not provided" from "null".** `PATCH /evaluations/:id`
+checks `=== undefined`, not truthiness — treating null as absent is exactly the
+bug that made attach work and detach silently do nothing before `pickDefined`
+existed. Verified: `{}` → 400, `{classGroupId: null}` → 200 and the column
+actually clears.
+
+**Verified end to end** against a running API, Postgres and the web build:
+`?classId=` and `?classId=none` include and exclude correctly and move together
+when an exam is attached; attaching to a class the teacher does not own is 404,
+not 403, so it never distinguishes "not yours" from "not there"; the exam
+outlives its detach; `confdeltype = 'n'` confirmed on the foreign key. The tab
+renders «الامتحانات — 2 امتحانات» and both row states: «صُحّح 1 من 1» for a
+published exam and the draft notice for an unpublished one.
+
+175 api-server tests, 758 mobile, 0 failures; typecheck clean across all three.
+
+**Needs one migration before it works anywhere.** Applied to local dev already;
+production needs it after this merges:
+
+```sql
+ALTER TABLE evaluations ADD COLUMN class_group_id uuid
+  REFERENCES class_groups(id) ON DELETE SET NULL;
+```
+
+**Deliberately not built:** a per-student exam history. Tapping a student still
+only edits their note. That is the natural home for a sitting's comment as
+history, and the answer to the two-notes overlap — `students.teacher_note` (the
+running note on the child) and `attempts.teacher_comment` (one paper) now both
+exist and a teacher meets two boxes that look alike. Worth a decision, not a
+silent merge of the two.
+
 ## What the class missed, 2026-08-24
 
 The results dashboard showed a class average and a level distribution. Nothing

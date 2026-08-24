@@ -23,6 +23,10 @@ export type EvaluationStatus = 'draft' | 'published' | 'closed';
 
 export interface Evaluation {
   id: string;
+  /** The class the teacher attached this exam to, or null. */
+  classGroupId?: string | null;
+  /** Papers with marks on them. Only meaningful for a class-scoped list. */
+  markedCount?: number;
   title: string;
   titleAr: string;
   gradeId: string;
@@ -105,10 +109,30 @@ export async function listEvaluableBooks(): Promise<{
   return readJson(res, 'Loading evaluable books');
 }
 
-export async function listEvaluations(): Promise<Evaluation[]> {
-  const res = await apiFetch('/evaluations');
+/**
+ * `classId` scopes the list to one class. Pass `'none'` for the exams that
+ * belong to no class yet — what the attach sheet needs, and asking the server
+ * rather than filtering client-side is what keeps an exam already attached
+ * elsewhere from looking attachable here.
+ */
+export async function listEvaluations(opts: { classId?: string } = {}): Promise<Evaluation[]> {
+  const query = opts.classId ? `?classId=${encodeURIComponent(opts.classId)}` : '';
+  const res = await apiFetch(`/evaluations${query}`);
   const data = await readJson<{ evaluations: Evaluation[] }>(res, 'Loading evaluations');
   return data.evaluations;
+}
+
+/** Attach an exam to a class, or pass null to detach it. */
+export async function setEvaluationClass(
+  evaluationId: string,
+  classGroupId: string | null,
+): Promise<Evaluation> {
+  const res = await apiFetch(`/evaluations/${evaluationId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ classGroupId }),
+  });
+  const data = await readJson<{ evaluation: Evaluation }>(res, 'Attaching the exam');
+  return data.evaluation;
 }
 
 export async function createEvaluation(input: {

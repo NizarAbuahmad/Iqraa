@@ -16,6 +16,7 @@ import {
   evaluationQuestions,
   levelBands,
   levelScales,
+  classGroups,
   students,
 } from "@workspace/db";
 import type { Difficulty, QuestionType } from "@workspace/db";
@@ -167,9 +168,11 @@ router.post("/evaluations", async (req: AuthenticatedRequest, res) => {
 
 router.get("/evaluations", async (req: AuthenticatedRequest, res) => {
   try {
+    const classId = trimmed(req.query["classId"]);
     const rows = await db
       .select({
         id: evaluations.id,
+        classGroupId: evaluations.classGroupId,
         title: evaluations.title,
         titleAr: evaluations.titleAr,
         subjectId: evaluations.subjectId,
@@ -182,9 +185,35 @@ router.get("/evaluations", async (req: AuthenticatedRequest, res) => {
           SELECT count(*)::int FROM evaluation_questions eq
           WHERE eq.evaluation_id = evaluations.id AND eq.deleted_at IS NULL
         )`,
+        /**
+         * How many papers are actually marked. Counted from `attempt_results`
+         * rather than from attempt status, because an attempt can sit in
+         * `needs_review` with real marks on it — status answers "is it
+         * finished", and the teacher's question here is "how many are done".
+         */
+        markedCount: sql<number>`(
+          SELECT count(*)::int FROM attempt_results ar
+          JOIN attempts a ON a.id = ar.attempt_id
+          WHERE a.evaluation_id = evaluations.id
+            AND ar.total_marks > 0
+        )`,
       })
       .from(evaluations)
-      .where(eq(evaluations.teacherId, req.user!.id))
+      .where(
+        and(
+          eq(evaluations.teacherId, req.user!.id),
+          // `?classId=` filters to one class; `?classId=none` is how the attach
+          // sheet asks for exams that belong to no class yet. Without the
+          // second form the sheet would have to fetch everything and filter
+          // client-side, which is the shape that made "already attached
+          // elsewhere" look attachable in the materials sheet.
+          classId === "none"
+            ? isNull(evaluations.classGroupId)
+            : classId
+              ? eq(evaluations.classGroupId, classId)
+              : undefined,
+        ),
+      )
       .orderBy(asc(evaluations.createdAt));
     res.json({ evaluations: rows });
   } catch (err) {
@@ -210,6 +239,57 @@ router.get("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
 });
 
 // ─── Generation ──────────────────────────────────────────────────────────────
+
+/**
+ * Attach this exam to a class, or detach it.
+ *
+ * Attaching happens here rather than at authoring time for the same reason it
+ * does for materials: a teacher does not know which section a paper is for
+ * while they are writing it, and putting a class picker in the authoring flow
+ * would mean answering that question before it can be answered.
+ *
+ * `classGroupId: null` detaches. The check is `!== undefined`, not truthiness —
+ * treating null as "not provided" would make attach work and detach silently
+ * do nothing, which is exactly the bug `pickDefined` was extracted to prevent.
+ */
+router.patch("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
+  try {
+    const evaluation = await ownedEvaluation(req.params["id"] as string, req.user!.id);
+    if (!evaluation) {
+      res.status(404).json({ error: "Evaluation not found" });
+      return;
+    }
+
+    const raw = req.body?.classGroupId;
+    if (raw === undefined) {
+      res.status(400).json({ error: "classGroupId is required" });
+      return;
+    }
+    const classGroupId = raw === null ? null : trimmed(raw);
+    if (classGroupId) {
+      const [group] = await db
+        .select({ id: classGroups.id })
+        .from(classGroups)
+        .where(and(eq(classGroups.id, classGroupId), eq(classGroups.teacherId, req.user!.id)))
+        .limit(1);
+      if (!group) {
+        res.status(404).json({ error: "Class not found" });
+        return;
+      }
+    }
+
+    const [updated] = await db
+      .update(evaluations)
+      .set({ classGroupId: classGroupId || null, updatedAt: new Date() })
+      .where(eq(evaluations.id, evaluation.id))
+      .returning();
+
+    res.json({ evaluation: updated });
+  } catch (err) {
+    logger.error({ err }, "attach evaluation to class failed");
+    res.status(500).json({ error: "Failed to update the evaluation" });
+  }
+});
 
 router.post("/evaluations/:id/generate", async (req: AuthenticatedRequest, res) => {
   try {
