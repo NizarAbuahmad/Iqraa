@@ -1,10 +1,14 @@
 /**
  * Results dashboard — every student's attempt at this evaluation, at a glance.
  *
- * Reuses `listAttempts`, the same endpoint the answer-entry picker already
- * calls — no new backend work. The class summary (level distribution, mean
- * percent) is computed client-side from that same list, over graded attempts
- * only: a student still `not_started` or mid-entry has no percent to average
+ * The level distribution and mean percent come from `listAttempts`, computed
+ * client-side. **What the class missed** does not: `getClassInsights` sums
+ * marks per objective across every marked attempt server-side, because a mean
+ * of per-student percentages ranks the class's real problem below a rounding
+ * error — twenty students losing 1 of 2 marks is not the same picture as one
+ * losing 9 of 10.
+ *
+ * The client-side summary is over graded attempts only: a student still `not_started` or mid-entry has no percent to average
  * in, and folding them in as zeros would understate the class rather than
  * honestly say fewer students have been assessed than are on the roster.
  */
@@ -17,13 +21,17 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import {
   EvaluationError,
+  getClassInsights,
   getEvaluation,
   listAttempts,
   type AttemptListRow,
   type AttemptStatus,
+  type ClassInsights,
   type Evaluation,
   type LevelKey,
+  type Recommendation,
 } from '@/services/evaluations';
+import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import type { TranslationKey } from '@/services/i18n';
 
 const ACCENT = '#1B6B62';
@@ -69,6 +77,9 @@ export default function ResultsDashboardScreen() {
 
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
   const [attempts, setAttempts] = useState<AttemptListRow[]>([]);
+  const [insights, setInsights] = useState<ClassInsights | null>(null);
+  const [nextSteps, setNextSteps] = useState<Recommendation[]>([]);
+  const [scope, setScope] = useState<{ gradeId: string; subjectId: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -76,9 +87,16 @@ export default function ResultsDashboardScreen() {
     if (!id) return;
     setError('');
     try {
-      const [{ evaluation: ev }, rows] = await Promise.all([getEvaluation(id), listAttempts(id)]);
+      const [{ evaluation: ev }, rows, classView] = await Promise.all([
+        getEvaluation(id),
+        listAttempts(id),
+        getClassInsights(id),
+      ]);
       setEvaluation(ev);
       setAttempts(rows);
+      setInsights(classView.insights);
+      setNextSteps(classView.recommendations);
+      setScope(classView.scope);
     } catch (err) {
       setError(err instanceof EvaluationError ? err.message : t('evaluationLoadFailed'));
     } finally {
@@ -177,6 +195,19 @@ export default function ResultsDashboardScreen() {
                   })}
                 </View>
               )}
+
+              {insights && insights.objectiveScores.length > 0 && (
+                <ClassGaps
+                  insights={insights}
+                  recommendations={nextSteps}
+                  scope={scope}
+                  colors={colors}
+                  isRTL={isRTL}
+                  align={align}
+                  lang={lang}
+                  t={t}
+                />
+              )}
             </View>
           )
         }
@@ -227,6 +258,92 @@ export default function ResultsDashboardScreen() {
   );
 }
 
+/** Beyond this a teacher is reading an inventory, not a plan. */
+const MAX_CLASS_GAPS = 4;
+
+/**
+ * What the class as a whole missed.
+ *
+ * Two numbers per objective, and they are not redundant. The percentage is the
+ * class's marks on that objective; the count is how many students were under
+ * water on it. They disagree in the case that matters most — "62%, 14 of 26
+ * students below" is a reteach for the room, "62%, 3 students below" is three
+ * conversations — and showing only the first would hide which one it is.
+ */
+function ClassGaps({
+  insights, recommendations, scope, colors, isRTL, align, lang, t,
+}: {
+  insights: ClassInsights;
+  recommendations: Recommendation[];
+  scope: { gradeId: string; subjectId: string } | null;
+  colors: ReturnType<typeof useColors>;
+  isRTL: boolean;
+  align: 'left' | 'right';
+  lang: string;
+  t: (key: TranslationKey, ...args: any[]) => string;
+}) {
+  const gradeIdx = scope ? getPickerGrades().findIndex(g => g.id === scope.gradeId) : -1;
+  const subjectIdx = scope
+    ? getPickerSubjects(scope.gradeId).findIndex(x => x.id === scope.subjectId)
+    : -1;
+  const canGenerate = gradeIdx >= 0 && subjectIdx >= 0;
+
+  const worst = insights.objectiveScores.slice(0, MAX_CLASS_GAPS);
+  const top = recommendations.find(r => r.kind !== 'reassess');
+  const topTitle = top
+    ? (lang === 'ar' ? top.payload.objectiveTitleAr : top.payload.objectiveTitle) ||
+      top.payload.objectiveTitleAr
+    : '';
+
+  return (
+    <View style={{ marginTop: 18, gap: 10 }}>
+      <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 13, textAlign: align }}>
+        {t('classGapsTitle')}
+      </Text>
+      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, textAlign: align }}>
+        {t('classGapsHint', String(insights.studentCount))}
+      </Text>
+
+      {worst.map(o => {
+        const title = (lang === 'ar' ? o.titleAr : o.title) || o.titleAr || o.objectiveId;
+        const weak = o.percent < 60;
+        return (
+          <View key={o.objectiveId} style={{ gap: 4 }}>
+            <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
+              <Text style={{ color: weak ? '#EF4444' : colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 12 }}>
+                {t('resultPercentLabel', String(o.percent))}
+              </Text>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11 }}>
+                {t('classBelowLine', String(o.studentsBelowGap), String(o.studentCount))}
+              </Text>
+            </View>
+            <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: align }}>
+              {title}
+            </Text>
+          </View>
+        );
+      })}
+
+      {canGenerate && topTitle ? (
+        <Pressable
+          onPress={() =>
+            router.push({
+              pathname: '/ai-tools/worksheet',
+              params: { topic: topTitle, gradeIdx: String(gradeIdx), subjectIdx: String(subjectIdx) },
+            })
+          }
+          style={[styles.classGapBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+        >
+          <Ionicons name="document-text-outline" size={14} color={ACCENT} />
+          <Text style={{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 12 }}>
+            {t('classGapWorksheet')}
+          </Text>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: { paddingHorizontal: 20, paddingBottom: 20, gap: 8 },
@@ -235,6 +352,7 @@ const styles = StyleSheet.create({
   errorBox: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 12, borderWidth: 1 },
   summaryCard: { borderWidth: 1, borderRadius: 14, padding: 16 },
   summaryTop: { alignItems: 'center' },
+  classGapBtn: { alignSelf: 'flex-start', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, marginTop: 4 },
   levelBarRow: { alignItems: 'center', gap: 8 },
   barTrack: { flex: 1, height: 10, borderRadius: 5, overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: 5 },

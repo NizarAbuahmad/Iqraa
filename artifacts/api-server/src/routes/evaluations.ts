@@ -33,6 +33,9 @@ import { validateGenerated } from "../modules/assessment/validator";
 import { QUESTION_TYPES } from "../modules/assessment/questionTypes";
 import { COMPETENCY_KEYS, type CompetencyKey } from "../modules/assessment/competency";
 import { isPaperQuestion, parsePaperRows } from "../modules/assessment/paperExam";
+import { aggregateClass } from "../modules/assessment/classInsights";
+import { recommendationsFor } from "../modules/assessment/recommend";
+import type { ObjectiveScore } from "../modules/assessment/scoring";
 
 const router = Router();
 // Path-scoped — see the note in roster.ts. Unscoped, this swallowed every
@@ -771,6 +774,76 @@ router.post("/evaluations/:id/attempts", async (req: AuthenticatedRequest, res) 
  * a teacher in front of a generator with no curriculum behind it. Better to say
  * the unit is not ready than to invent questions for it.
  */
+/**
+ * What the class as a whole missed, and what to do about it.
+ *
+ * The per-student view answers "how did Sara do". After marking thirty papers
+ * a teacher has one question, not thirty: what do I go back over tomorrow.
+ *
+ * Only marked attempts count. An attempt nobody has entered marks for carries
+ * an empty objective breakdown, and letting those into the aggregate would
+ * quietly drag every class percentage toward zero as the roster grows —
+ * "the class is at 31%" would mean "you have not finished marking".
+ */
+router.get("/evaluations/:id/insights", async (req: AuthenticatedRequest, res) => {
+  try {
+    const evaluation = await ownedEvaluation(req.params["id"] as string, req.user!.id);
+    if (!evaluation) {
+      res.status(404).json({ error: "Evaluation not found" });
+      return;
+    }
+
+    const rows = await db
+      .select({ objectiveScores: attemptResults.objectiveScores })
+      .from(attemptResults)
+      .innerJoin(attempts, eq(attempts.id, attemptResults.attemptId))
+      .where(eq(attempts.evaluationId, evaluation.id));
+
+    const marked = rows
+      .map(r => ({ objectiveScores: (r.objectiveScores as ObjectiveScore[]) ?? [] }))
+      .filter(a => a.objectiveScores.length > 0);
+
+    const insights = aggregateClass(marked);
+
+    const { found } = resolveObjectiveIds(insights.objectiveScores.map(o => o.objectiveId));
+    const byId = new Map(found.map(o => [o.id, o]));
+    const nextSteps = recommendationsFor(insights, id => {
+      const objective = byId.get(id);
+      if (!objective) return undefined;
+      return {
+        title: objective.description ?? "",
+        titleAr: objective.descriptionAr || objective.description || "",
+      };
+    });
+
+    res.json({
+      insights: {
+        ...insights,
+        objectiveScores: insights.objectiveScores.map(o => ({
+          ...o,
+          title: byId.get(o.objectiveId)?.description ?? "",
+          titleAr:
+            byId.get(o.objectiveId)?.descriptionAr ||
+            byId.get(o.objectiveId)?.description ||
+            "",
+        })),
+      },
+      // Computed per request, not stored: `recommendations` is keyed by
+      // attempt, and a class has no attempt to hang these off. They are also
+      // cheap and change the moment one more paper is marked.
+      recommendations: nextSteps,
+      scope: {
+        gradeId: evaluation.gradeId,
+        subjectId: evaluation.subjectId,
+        bookId: evaluation.bookId,
+      },
+    });
+  } catch (err) {
+    logger.error({ err }, "class insights failed");
+    res.status(500).json({ error: "Failed to load class insights" });
+  }
+});
+
 router.get("/evaluations/meta/evaluable", async (_req: AuthenticatedRequest, res) => {
   try {
     const books = ["book-math-10", "book-math-10-s2", "book-chem-10", "book-finlit-10"]

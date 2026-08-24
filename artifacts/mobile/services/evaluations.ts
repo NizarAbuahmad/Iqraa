@@ -275,6 +275,42 @@ export interface AttemptEvaluationSummary {
   bookId: string;
 }
 
+/** One objective, summed across every student who has been marked. */
+export interface ClassObjectiveScore {
+  objectiveId: string;
+  title: string;
+  titleAr: string;
+  earned: number;
+  total: number;
+  percent: number;
+  marksLost: number;
+  /** How many marked students fell below the gap line on this objective. */
+  studentsBelowGap: number;
+  studentCount: number;
+}
+
+export interface ClassInsights {
+  studentCount: number;
+  earnedMarks: number;
+  totalMarks: number;
+  percent: number;
+  objectiveScores: ClassObjectiveScore[];
+}
+
+/**
+ * What the class as a whole missed. Only marked attempts are counted — an
+ * unmarked one would drag the class percentage down and read as a bad cohort
+ * rather than as unfinished marking.
+ */
+export async function getClassInsights(evaluationId: string): Promise<{
+  insights: ClassInsights;
+  recommendations: Recommendation[];
+  scope: { gradeId: string; subjectId: string; bookId: string };
+}> {
+  const res = await apiFetch(`/evaluations/${evaluationId}/insights`);
+  return readJson(res, 'Loading class insights');
+}
+
 export async function listAttempts(evaluationId: string): Promise<AttemptListRow[]> {
   const res = await apiFetch(`/evaluations/${evaluationId}/attempts`);
   const data = await readJson<{ attempts: AttemptListRow[] }>(res, 'Loading attempts');

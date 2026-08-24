@@ -69,8 +69,16 @@ function draft(
   };
 }
 
+/**
+ * Deliberately narrower than `AttemptScore`: these are the only three fields
+ * the rules read, and taking just them is what lets the class-level aggregate
+ * — which has no level, no competencies and no single student — run the same
+ * rules rather than a parallel copy of them.
+ */
+export type Scored = Pick<AttemptScore, "objectiveScores" | "gaps" | "strengths">;
+
 export function recommendationsFor(
-  score: AttemptScore,
+  score: Scored,
   resolve: ObjectiveTitleResolver,
 ): RecommendationDraft[] {
   // Nothing has been marked yet. Advice off zero evidence is not a floor, it

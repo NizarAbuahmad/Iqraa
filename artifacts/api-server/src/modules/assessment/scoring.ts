@@ -103,6 +103,33 @@ export function resolveLevel(percent: number, bands: readonly LevelBandInput[]):
   return hit?.key ?? null;
 }
 
+/**
+ * Split objectives into what needs work and what is holding up.
+ *
+ * Exported because the class-level view aggregates the same `ObjectiveScore`
+ * shape across a whole roster and has to answer the same question about it. A
+ * second copy of these thresholds and this ordering would drift, and then one
+ * student's gap and their class's gap would be decided by different rules.
+ *
+ * Gaps lead with the most marks actually lost, not the lowest percentage: a
+ * 55% objective worth 12 marks costs more than a 20% one worth 2. Ties break
+ * toward foundational Bloom's levels, because fixing those moves the rest.
+ */
+export function splitGapsAndStrengths(objectiveScores: readonly ObjectiveScore[]): {
+  gaps: ObjectiveScore[];
+  strengths: ObjectiveScore[];
+} {
+  const gaps = objectiveScores
+    .filter(o => o.percent < GAP_PERCENT)
+    .sort((a, b) => b.marksLost - a.marksLost || a.bloomsRank - b.bloomsRank);
+
+  const strengths = objectiveScores
+    .filter(o => o.percent >= STRENGTH_PERCENT && o.questionCount >= 2)
+    .sort((a, b) => b.percent - a.percent);
+
+  return { gaps, strengths };
+}
+
 export function scoreAttempt(
   questions: readonly GradedQuestion[],
   bands: readonly LevelBandInput[],
@@ -190,16 +217,7 @@ export function scoreAttempt(
     }
   }
 
-  // Gaps lead with the most marks actually lost, not the lowest percentage: a
-  // 55% objective worth 12 marks costs more than a 20% one worth 2. Ties break
-  // toward foundational Bloom's levels, because fixing those moves the rest.
-  const gaps = objectiveScores
-    .filter(o => o.percent < GAP_PERCENT)
-    .sort((a, b) => b.marksLost - a.marksLost || a.bloomsRank - b.bloomsRank);
-
-  const strengths = objectiveScores
-    .filter(o => o.percent >= STRENGTH_PERCENT && o.questionCount >= 2)
-    .sort((a, b) => b.percent - a.percent);
+  const { gaps, strengths } = splitGapsAndStrengths(objectiveScores);
 
   return {
     earnedMarks,
