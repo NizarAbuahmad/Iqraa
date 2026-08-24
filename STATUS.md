@@ -3621,10 +3621,8 @@ title on the left, description on the right) while looking correct in dev.
 
 Cause: the app expresses direction *per component* — ~190 sites write
 `flexDirection: isRTL ? 'row-reverse' : 'row'` — which assumes a
-direction-neutral document. `expo export` and the dev server both emit a shell
-with no `dir`, but the deployed HTML served `<html lang="ar" dir="rtl">`, which
-this repo cannot produce. In an RTL document `flexDirection: 'row'` is already
-reversed, so `'row-reverse'` cancels back to visual LTR, while
+direction-neutral document. In an RTL document `flexDirection: 'row'` is
+already reversed, so `'row-reverse'` cancels back to visual LTR, while
 `textAlign: 'right'` (a physical value) stays put.
 
 Measured on the deployed page, children of one such row:
@@ -3632,9 +3630,49 @@ Measured on the deployed page, children of one such row:
 no `dir` → x = `[288, 211]` (descending → visually RTL, correct).
 
 `LanguageContext.applyRTL` now asserts `dir="ltr"` on web at boot and on every
-language change, so the host cannot reintroduce it. `app/+html.tsx` does *not*
-work here — `web.output` is unset, which means `single`, and Expo ignores the
-custom shell in that mode.
+language change. `app/+html.tsx` does *not* work here — `web.output` is unset,
+which means `single`, and Expo ignores the custom shell in that mode.
+
+**Where the `dir="rtl"` actually came from (corrected 2026-08-24).** This entry
+and the comment in `LanguageContext` both said the deployed
+`<html lang="ar" dir="rtl">` was something "this repo cannot produce", and
+blamed the host. It is ours. `scripts/inject-pwa.mjs:39` rewrites the tag after
+`expo export`:
+
+```js
+html = html.replace(/<html lang="en">/, '<html lang="ar" dir="rtl">');
+```
+
+`render.yaml:100` runs `build:web`, which is `expo export && inject-pwa`, so
+every deploy ships that tag. `expo export` alone really does emit a bare shell —
+which is why dev never reproduced it — but the deploy does not stop there.
+
+So the build asserts `dir="rtl"` and the runtime asserts `dir="ltr"` about four
+hundred milliseconds later, on every cold load. Nothing is "reintroducing" the
+attribute; two parts of this repo disagree, and the later one wins.
+
+Re-measured 2026-08-24 against a local `pnpm run build:web` (identical to what
+Render runs), driving the real bundle in Chromium:
+
+| | login-screen row `x` | reading |
+| --- | --- | --- |
+| as shipped (`dir="ltr"`) | `[578, 0]` | descending → visually RTL, correct |
+| forced `dir="rtl"` | `[0, 702]` | ascending → visually LTR, the bug |
+
+The August finding still holds exactly. Forcing `dir="rtl"` swaps the login
+page's two halves and moves the envelope and lock icons to the far left of
+right-aligned Arabic fields — the half-mirrored signature, reproduced on
+current `main`.
+
+No flash: the served `dir="rtl"` is replaced before any text paints (measured
+both unthrottled and at 6× CPU throttling with a slow-network profile), so the
+disagreement costs nothing visually today. It is a correctness and maintenance
+problem, not a rendering one — but it is why nobody could say where the
+attribute came from.
+
+If the per-component flips are ever replaced by real document-level RTL, the
+injector and `applyRTL` have to change in the same commit that deletes them —
+all three, not two.
 
 If the per-component flips are ever replaced by real document-level RTL, `dir`
 must start following the language in the same commit that deletes them.

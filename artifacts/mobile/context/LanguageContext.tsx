@@ -60,19 +60,26 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     //   dir="rtl" → x = [913, 998]  (ascending  → visually LTR — the bug)
     //   no dir    → x = [288, 211]  (descending → visually RTL — correct)
     //
-    // The bug only ever appeared in production: `expo export` and the dev
-    // server both emit a shell with no `dir`, but the deployed HTML served
-    // `<html lang="ar" dir="rtl">`, which this repo cannot produce. Rather than
-    // depend on what the host happens to serve, the direction is asserted here
-    // at boot and on every language change, so dev and production cannot drift.
+    // The bug only ever appeared in production, and for a while nobody could
+    // say why: `expo export` and the dev server both emit a shell with no
+    // `dir`, while the deployed HTML served `<html lang="ar" dir="rtl">`. This
+    // comment used to call that something "this repo cannot produce" and blame
+    // the host. It is ours — `scripts/inject-pwa.mjs:39` rewrites the tag after
+    // the export, and `render.yaml` runs that script on every deploy.
+    //
+    // So this line is not defending against a host; it is overruling our own
+    // build about four hundred milliseconds after it loads. That is worth
+    // knowing before touching either side: the two disagree by construction,
+    // and the later one silently wins.
     //
     // `lang` still tracks the real language — it drives spellcheck and
     // screen-reader voice selection, and neither is affected by `dir`.
     //
     // If the per-component flips are ever replaced by real document-level RTL,
-    // this is the code that must change with them: set `dir` from `shouldBeRTL`
-    // in the same commit that deletes the flips. One without the other brings
-    // the double-flip straight back.
+    // this is one of three places that must change together: set `dir` from
+    // `shouldBeRTL` here, stop the injector hard-coding it, and delete the
+    // flips — all in the same commit. Any two without the third brings the
+    // double-flip straight back.
     const root = typeof document !== 'undefined' ? document.documentElement : null;
     if (root) {
       root.setAttribute('dir', 'ltr');
