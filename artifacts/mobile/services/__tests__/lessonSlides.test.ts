@@ -22,8 +22,10 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildLessonDeck, splitChecks, splitExample } from '../lessonSlides.ts';
-import type { LessonPlanOutput } from '../ai/AIService.ts';
+import {
+  buildLessonDeck, splitChecks, splitExample, splitWarmup, withoutSlide,
+} from '../lessonSlides.ts';
+import type { ActivitySlide, LessonPlanOutput } from '../ai/AIService.ts';
 import type { KBLesson } from '../knowledgeBase.ts';
 
 const LESSON: KBLesson = {
@@ -444,5 +446,39 @@ describe('splitChecks', () => {
     assert.deepEqual([...mid, ...exit].map(s => s.content), [
       'سؤال رقم 1؟', 'سؤال رقم 2؟', 'سؤال رقم 3؟', 'سؤال رقم 4؟', 'سؤال رقم 5؟',
     ]);
+  });
+});
+
+describe('splitWarmup', () => {
+  it('projects only the question and keeps the stage directions for the teacher', () => {
+    const intro = `ابدأ بطرح السؤال: “أين نلتقي بالأقواس في حياتنا؟” سجّل إجابات الطلاب على السبورة.`;
+    const { projected, notes } = splitWarmup(intro);
+    assert.equal(projected, 'أين نلتقي بالأقواس في حياتنا؟');
+    assert.equal(notes, intro);
+  });
+
+  it('projects the text unchanged when there is no quoted question', () => {
+    const intro = 'لعبة ما أعرفه: يكتب الطلاب ما يعرفونه عن الدرس.';
+    assert.deepEqual(splitWarmup(intro), { projected: intro, notes: '' });
+  });
+});
+
+describe('withoutSlide', () => {
+  const slide = (title: string): ActivitySlide =>
+    ({ slideNumber: 0, type: 'intro', title, content: title, durationSeconds: 0 });
+
+  it('drops the slide it was handed and renumbers the rest', () => {
+    const [a, b, c] = [slide('a'), slide('b'), slide('c')];
+    const left = withoutSlide([a, b, c], b);
+    assert.deepEqual(left.map(s => s.title), ['a', 'c']);
+    assert.deepEqual(left.map(s => s.slideNumber), [1, 2]);
+  });
+
+  it('still drops the right slide after one was inserted ahead of it', () => {
+    // What the index-based version got wrong: the video pass lands late and
+    // everything after the insert shifts by one.
+    const [a, b, video] = [slide('a'), slide('b'), slide('video')];
+    const left = withoutSlide([a, video, b], b);
+    assert.deepEqual(left.map(s => s.title), ['a', 'video']);
   });
 });

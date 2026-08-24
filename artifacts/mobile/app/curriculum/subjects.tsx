@@ -1,5 +1,5 @@
 import React from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,6 +14,29 @@ import {
   getSemesterLabel,
   getUnitsForBook,
 } from '@/services/curriculumData';
+
+function DownloadChip({ label, url, icon, color }: {
+  label: string; url: string; icon: 'download-outline' | 'school-outline'; color: string;
+}) {
+  const colors = useColors();
+  return (
+    <Pressable
+      onPress={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        Linking.openURL(url);
+      }}
+      style={({ pressed }) => [
+        styles.downloadChip,
+        { borderColor: colors.border, backgroundColor: colors.card, opacity: pressed ? 0.7 : 1 },
+      ]}
+    >
+      <Ionicons name={icon} size={15} color={color} />
+      <Text style={[styles.downloadChipText, { color: colors.foreground, fontFamily: 'Almarai_400Regular' }]} numberOfLines={1}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
 
 export default function SubjectsScreen() {
   const colors = useColors();
@@ -75,6 +98,7 @@ export default function SubjectsScreen() {
           const semesterNum = book.semester;
 
           return (
+            <View style={{ gap: 8 }}>
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -115,6 +139,24 @@ export default function SubjectsScreen() {
               </View>
               <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
             </Pressable>
+
+            {/* Official NCCD PDFs — the printed book teachers actually hold. */}
+            {(book.pdfUrl || book.guidePdfUrl) && (
+              <View style={{ gap: 4, alignItems: isRTL ? 'flex-end' : 'flex-start' }}>
+                <View style={[styles.downloadRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                  {book.pdfUrl && (
+                    <DownloadChip label={t('downloadBook')} url={book.pdfUrl} icon="download-outline" color={color} />
+                  )}
+                  {book.guidePdfUrl && (
+                    <DownloadChip label={t('downloadTeacherGuide')} url={book.guidePdfUrl} icon="school-outline" color={color} />
+                  )}
+                </View>
+                <Text style={[styles.downloadNote, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+                  {t('downloadSourceNccd')}
+                </Text>
+              </View>
+            )}
+            </View>
           );
         }}
       />
@@ -141,6 +183,14 @@ const styles = StyleSheet.create({
   semesterBadgeText: { fontSize: 20, color: '#fff' },
   semesterTitle: { fontSize: 17, marginBottom: 4 },
   semesterMeta: { fontSize: 13 },
+  downloadRow: { gap: 8, flexWrap: 'wrap' },
+  downloadChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 12, paddingVertical: 7,
+    borderWidth: 1, borderRadius: 20,
+  },
+  downloadChipText: { fontSize: 12 },
+  downloadNote: { fontSize: 11, paddingHorizontal: 2 },
   empty: { alignItems: 'center', paddingTop: 60, gap: 10 },
   emptyTitle: { fontSize: 18 },
   emptyText: { fontSize: 14 },

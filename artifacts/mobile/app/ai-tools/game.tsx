@@ -333,7 +333,7 @@ export default function ClassGameScreen() {
               </View>
             </View>
 
-            {/* Materials — the printed letter cards are the one thing that must
+            {/* Materials — the one thing that must
                 exist in the room before the game starts. */}
             <View style={[styles.materialsCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
               <Text style={[styles.sectionLabel, { color: ACCENT, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>

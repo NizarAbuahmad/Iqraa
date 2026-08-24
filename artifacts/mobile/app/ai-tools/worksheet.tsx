@@ -461,7 +461,7 @@ export default function WorksheetScreen() {
           </Text>
 
           {/* Class Mode: project the same worksheet the class is holding.
-              Students answer from their seats (letter cards / whiteboards);
+              Students answer from their seats (hands raised / whiteboards);
               the teacher reveals each answer on screen. */}
           <Pressable
             onPress={() => {

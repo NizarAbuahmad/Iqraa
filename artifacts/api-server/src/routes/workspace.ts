@@ -4,8 +4,37 @@ import { savedMaterials } from "@workspace/db";
 import { eq, and, desc } from "drizzle-orm";
 import { authMiddleware, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { logger } from "../lib/logger.js";
+import { isSchemaMissing } from "../lib/schemaMissing.js";
+import { pickDefined } from "../lib/pickDefined.js";
 
 const router = Router();
+
+/**
+ * Single exit for every workspace failure: 503 + a code when the schema is
+ * absent, so a database that never got `class_group_id` says so instead of
+ * reporting a generic "Failed to save item". Mirrors `failRoster`.
+ */
+function failWorkspace(
+  res: Parameters<Parameters<typeof router.get>[1]>[1],
+  err: unknown,
+  action: string,
+  message: string,
+): void {
+  if (isSchemaMissing(err)) {
+    logger.error(
+      { err },
+      `${action} failed — the saved_materials schema on this database is out of date. ` +
+        "Run `pnpm --filter @workspace/db run push` against DATABASE_URL.",
+    );
+    res.status(503).json({
+      code: "workspace_storage_unavailable",
+      error: "Workspace storage is not set up on this server yet.",
+    });
+    return;
+  }
+  logger.error({ err }, `${action} failed`);
+  res.status(500).json({ error: message });
+}
 
 // All workspace routes require auth
 router.use(authMiddleware);
@@ -13,10 +42,11 @@ router.use(authMiddleware);
 // GET /workspace/items
 router.get("/items", async (req: AuthenticatedRequest, res) => {
   try {
-    const { type, query, favoritesFirst } = req.query as {
+    const { type, query, favoritesFirst, classId } = req.query as {
       type?: string;
       query?: string;
       favoritesFirst?: string;
+      classId?: string;
     };
 
     let items = await db
@@ -27,6 +57,14 @@ router.get("/items", async (req: AuthenticatedRequest, res) => {
 
     if (type) {
       items = items.filter((i) => i.type === type);
+    }
+
+    // Filtered here rather than in the WHERE clause to sit alongside the
+    // filters above, which already load the teacher's own rows and narrow in
+    // memory. A teacher has tens of materials, not thousands.
+    // ponytail: move all four into the query if that ever stops being true.
+    if (classId) {
+      items = items.filter((i) => i.classGroupId === classId);
     }
 
     if (query?.trim()) {
@@ -48,8 +86,7 @@ router.get("/items", async (req: AuthenticatedRequest, res) => {
 
     res.json(items.map(toClientItem));
   } catch (err) {
-    logger.error({ err }, "get workspace items failed");
-    res.status(500).json({ error: "Failed to fetch workspace items" });
+    failWorkspace(res, err, "get workspace items", "Failed to fetch workspace items");
   }
 });
 
@@ -75,25 +112,34 @@ router.get("/items/:id", async (req: AuthenticatedRequest, res) => {
 
     res.json(toClientItem(item));
   } catch (err) {
-    logger.error({ err }, "get workspace item failed");
-    res.status(500).json({ error: "Failed to fetch item" });
+    failWorkspace(res, err, "get workspace item", "Failed to fetch item");
   }
 });
 
 // POST /workspace/items
 router.post("/items", async (req: AuthenticatedRequest, res) => {
   try {
-    const { type, title, subject, grade, topic, language, content, formState } =
-      req.body as {
-        type?: string;
-        title?: string;
-        subject?: string;
-        grade?: string;
-        topic?: string;
-        language?: string;
-        content?: unknown;
-        formState?: unknown;
-      };
+    const {
+      type,
+      title,
+      subject,
+      grade,
+      topic,
+      language,
+      content,
+      formState,
+      classGroupId,
+    } = req.body as {
+      type?: string;
+      title?: string;
+      subject?: string;
+      grade?: string;
+      topic?: string;
+      language?: string;
+      content?: unknown;
+      formState?: unknown;
+      classGroupId?: string | null;
+    };
 
     if (!type || !title) {
       res.status(400).json({ error: "type and title are required" });
@@ -113,13 +159,13 @@ router.post("/items", async (req: AuthenticatedRequest, res) => {
         content: content ?? {},
         formState: formState ?? {},
         isFavorite: false,
+        classGroupId: classGroupId ?? null,
       })
       .returning();
 
     res.status(201).json(toClientItem(item));
   } catch (err) {
-    logger.error({ err }, "create workspace item failed");
-    res.status(500).json({ error: "Failed to save item" });
+    failWorkspace(res, err, "create workspace item", "Failed to save item");
   }
 });
 
@@ -136,18 +182,27 @@ router.patch("/items/:id", async (req: AuthenticatedRequest, res) => {
       content?: unknown;
       formState?: unknown;
       isFavorite?: boolean;
+      classGroupId?: string | null;
     };
 
-    const allowedFields: Record<string, unknown> = {};
-    if (updates.title !== undefined) allowedFields.title = updates.title;
-    if (updates.subject !== undefined) allowedFields.subject = updates.subject;
-    if (updates.grade !== undefined) allowedFields.grade = updates.grade;
-    if (updates.topic !== undefined) allowedFields.topic = updates.topic;
-    if (updates.language !== undefined) allowedFields.language = updates.language;
-    if (updates.content !== undefined) allowedFields.content = updates.content;
-    if (updates.formState !== undefined) allowedFields.formState = updates.formState;
-    if (updates.isFavorite !== undefined) allowedFields.isFavorite = updates.isFavorite;
-    allowedFields.updatedAt = new Date();
+    // An allowlist, not a spread: `req.body` is user input, and passing it
+    // whole to `.set()` would let a client write `userId` and hand its
+    // materials to another teacher. `classGroupId` is nullable, and `null` is
+    // the detach — see pickDefined for why that is not a truthiness check.
+    const allowedFields: Record<string, unknown> = {
+      ...pickDefined(updates, [
+        "title",
+        "subject",
+        "grade",
+        "topic",
+        "language",
+        "content",
+        "formState",
+        "isFavorite",
+        "classGroupId",
+      ]),
+      updatedAt: new Date(),
+    };
 
     const [item] = await db
       .update(savedMaterials)
@@ -167,8 +222,7 @@ router.patch("/items/:id", async (req: AuthenticatedRequest, res) => {
 
     res.json(toClientItem(item));
   } catch (err) {
-    logger.error({ err }, "update workspace item failed");
-    res.status(500).json({ error: "Failed to update item" });
+    failWorkspace(res, err, "update workspace item", "Failed to update item");
   }
 });
 
@@ -193,8 +247,7 @@ router.delete("/items/:id", async (req: AuthenticatedRequest, res) => {
 
     res.json({ ok: true });
   } catch (err) {
-    logger.error({ err }, "delete workspace item failed");
-    res.status(500).json({ error: "Failed to delete item" });
+    failWorkspace(res, err, "delete workspace item", "Failed to delete item");
   }
 });
 
@@ -231,13 +284,16 @@ router.post("/items/:id/duplicate", async (req: AuthenticatedRequest, res) => {
         content: original.content,
         formState: original.formState,
         isFavorite: false,
+        // The copy starts unattached on purpose: duplicating is how one
+        // worksheet reaches a second section, so inheriting the first
+        // section's class would put both copies in the same place.
+        classGroupId: null,
       })
       .returning();
 
     res.status(201).json(toClientItem(copy));
   } catch (err) {
-    logger.error({ err }, "duplicate workspace item failed");
-    res.status(500).json({ error: "Failed to duplicate item" });
+    failWorkspace(res, err, "duplicate workspace item", "Failed to duplicate item");
   }
 });
 
@@ -253,6 +309,7 @@ function toClientItem(item: typeof savedMaterials.$inferSelect) {
     content: typeof item.content === "string" ? item.content : JSON.stringify(item.content),
     formState: typeof item.formState === "object" ? item.formState : {},
     isFavorite: item.isFavorite,
+    classGroupId: item.classGroupId,
     savedAt: item.updatedAt.toISOString(),
     createdAt: item.createdAt.toISOString(),
   };

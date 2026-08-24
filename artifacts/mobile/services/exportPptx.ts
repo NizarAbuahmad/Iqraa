@@ -28,19 +28,20 @@ import { trackEvent } from '@/services/analytics';
 const HEAD_FONT = 'Cairo';
 const BODY_FONT = 'Almarai';
 
-const DECK_BG = '0D0D14';
-const DECK_TEXT = 'F2F2F6';
-const DECK_MUTED = '8B8CA4';
-const DECK_ACCENT = '4F46E5';
+import * as theme from './deckTheme.ts';
 
-function deckSlideAccent(type: ActivitySlide['type']): string {
-  if (type === 'challenge') return 'E67E22';
-  if (type === 'summary') return DECK_ACCENT;
-  if (type === 'graph') return '0EA5E9';
-  if (type === 'divider') return DECK_ACCENT;
-  if (type === 'question') return '3B82F6';
-  return DECK_MUTED;
-}
+// pptxgenjs takes hex without the leading '#'; deckTheme stores it with one.
+const DECK_BG = theme.pptxHex(theme.DECK_BG);
+const DECK_CARD = theme.pptxHex(theme.DECK_CARD_BG);
+const DECK_BORDER = theme.pptxHex(theme.DECK_BORDER);
+const DECK_TEXT = theme.pptxHex(theme.DECK_TEXT);
+const DECK_MUTED = theme.pptxHex(theme.DECK_MUTED);
+const DECK_ACCENT = theme.pptxHex(theme.DECK_ACCENT);
+const DECK_PINK = theme.pptxHex(theme.DECK_PINK);
+const DECK_BLOB = theme.pptxHex(theme.DECK_BLOB);
+
+const deckSlideAccent = (type: ActivitySlide['type']): string =>
+  theme.pptxHex(theme.slideTypeAccent(type));
 
 /**
  * Fetches an image URL ourselves and hands pptxgenjs the raw bytes (`data:`)
@@ -75,6 +76,17 @@ async function fetchAsDataUrl(url: string): Promise<string | null> {
  * to a flat accent panel when the fetch above came back empty.
  */
 type PptxSlide = ReturnType<InstanceType<typeof import('pptxgenjs').default>['addSlide']>;
+
+/**
+ * The two soft circles the projected slide sits on. Drawn first so every
+ * later shape and text box stacks above them — pptxgenjs has no z-index, add
+ * order is the whole story.
+ */
+function addBlobs(s: PptxSlide): void {
+  const blob = { color: DECK_BLOB };
+  s.addShape('ellipse', { x: -1.0, y: -1.1, w: 3.2, h: 3.2, fill: blob, line: blob });
+  s.addShape('ellipse', { x: 7.9, y: 3.7, w: 3.4, h: 3.4, fill: blob, line: blob });
+}
 
 async function addHeroBackground(s: PptxSlide, url: string): Promise<boolean> {
   const dataUrl = await fetchAsDataUrl(url);
@@ -125,26 +137,30 @@ export async function exportDeckAsPptx(
 
     if (i === 0) {
       // Title slide.
-      if (slide.mediaUrl) await addHeroBackground(s, slide.mediaUrl);
+      const onPhoto = slide.mediaUrl ? await addHeroBackground(s, slide.mediaUrl) : false;
+      if (!onPhoto) addBlobs(s);
       const [meta, ...rest] = slide.content.split('\n\n');
       s.addText('IQRA', {
         x: 0, y: 0.5, w: '100%', h: 0.4, align: 'center',
-        fontSize: 12, color: 'A5B4FC', bold: true, charSpacing: 4,
+        fontSize: 12, color: onPhoto ? 'FFFFFF' : DECK_ACCENT, bold: true, charSpacing: 4,
       });
       s.addText(slide.title, {
         x: 0.6, y: 1.6, w: 8.8, h: 1.4, align: 'center',
-        fontSize: 32, color: 'FFFFFF', bold: true, fontFace: HEAD_FONT, valign: 'middle',
+        fontSize: 32, color: onPhoto ? 'FFFFFF' : DECK_TEXT, bold: true, fontFace: HEAD_FONT, valign: 'middle',
       });
+      // The pink rule under the title — the projector's one flash of the
+      // second accent, and the quickest tell that this is the same deck.
+      s.addShape('rect', { x: 4.4, y: 3.0, w: 1.2, h: 0.06, fill: { color: DECK_PINK } });
       if (meta) {
         s.addText(meta, {
-          x: 0.6, y: 3.0, w: 8.8, h: 0.5, align: 'center',
-          fontSize: 14, color: DECK_MUTED,
+          x: 0.6, y: 3.2, w: 8.8, h: 0.5, align: 'center',
+          fontSize: 14, color: onPhoto ? 'FFFFFF' : DECK_MUTED,
         });
       }
       if (rest.length) {
         s.addText(rest.join(' '), {
-          x: 1.2, y: 3.6, w: 7.6, h: 1.2, align: 'center',
-          fontSize: 11, color: DECK_MUTED,
+          x: 1.2, y: 3.8, w: 7.6, h: 1.2, align: 'center',
+          fontSize: 11, color: onPhoto ? 'FFFFFF' : DECK_MUTED,
         });
       }
       continue;
@@ -169,6 +185,7 @@ export async function exportDeckAsPptx(
     }
 
     const accent = deckSlideAccent(slide.type);
+    addBlobs(s);
 
     // Header bar: accent-coloured left rule + title.
     s.addShape('rect', { x: 0, y: 0, w: 0.06, h: 0.75, fill: { color: accent } });
@@ -302,18 +319,18 @@ export async function exportDeckAsPptx(
     if (slide.type === 'challenge') {
       s.addText(pptxLine(slide.content, true), {
         x: 0.6, y: 1.2, w: 8.8, h: 1.0, align: 'center', valign: 'middle',
-        fontSize: 22, color: 'FFFFFF', bold: true,
+        fontSize: 22, color: DECK_TEXT, bold: true,
       });
       if (slide.answer) {
         s.addShape('roundRect', {
           x: 2.0, y: 2.4, w: 6.0, h: slide.verified ? 1.6 : 1.1,
-          fill: { color: '1A1B26' }, line: { color: accent, width: 1.5 }, rectRadius: 0.08,
+          fill: { color: DECK_CARD }, line: { color: accent, width: 1.5 }, rectRadius: 0.08,
         });
         s.addText(L('الإجابة', 'Answer'), {
           x: 2.0, y: 2.5, w: 6.0, h: 0.3, align: 'center', fontSize: 9, color: accent, bold: true,
         });
         s.addText(pptxLine(slide.answer, true), {
-          x: 2.0, y: 2.8, w: 6.0, h: 0.5, align: 'center', fontSize: 16, color: 'FFFFFF', bold: true,
+          x: 2.0, y: 2.8, w: 6.0, h: 0.5, align: 'center', fontSize: 16, color: DECK_TEXT, bold: true,
         });
         if (slide.verified) {
           const verifiedColor = slide.verifiedBy === 'symbolic' ? '22C55E' : DECK_MUTED;
@@ -348,7 +365,7 @@ export async function exportDeckAsPptx(
       const letters = isAr ? ['أ', 'ب', 'ج', 'د', 'هـ'] : ['A', 'B', 'C', 'D', 'E'];
       s.addText(pptxLine(slide.content, true), {
         x: 0.6, y: 1.1, w: 8.8, h: 0.9, align: 'center', valign: 'middle',
-        fontSize: 20, color: 'FFFFFF', bold: true,
+        fontSize: 20, color: DECK_TEXT, bold: true,
       });
       const rowH = 0.62;
       const top = 2.15;
@@ -357,7 +374,7 @@ export async function exportDeckAsPptx(
         const y = top + i * (rowH + 0.12);
         s.addShape('roundRect', {
           x: 2.0, y, w: 6.0, h: rowH,
-          fill: { color: correct ? '132A4A' : '1A1B26' },
+          fill: { color: correct ? `${DECK_ACCENT}` : DECK_CARD },
           line: { color: correct ? accent : '2A2B3A', width: correct ? 1.5 : 1 },
           rectRadius: 0.08,
         });

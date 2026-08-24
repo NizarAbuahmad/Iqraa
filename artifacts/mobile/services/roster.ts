@@ -25,6 +25,8 @@ export interface RosterStudent {
   displayName: string;
   externalRef: string | null;
   gradeId: string;
+  /** The teacher's running note on this child. Empty string, never null. */
+  teacherNote: string;
   createdAt: string;
 }
 
@@ -140,15 +142,22 @@ export async function removeStudentFromClass(
   await readJson(res, 'Removing student');
 }
 
-export async function renameStudent(
+/**
+ * Edit a student. Replaces `renameStudent`, which took only a name and which
+ * no screen ever called — one PATCH endpoint, one client function.
+ *
+ * Send only what changed: the handler distinguishes an absent field from an
+ * empty one, so `teacherNote: ''` clears the note while omitting it leaves it.
+ */
+export async function updateStudent(
   studentId: string,
-  displayName: string,
+  changes: { displayName?: string; externalRef?: string; teacherNote?: string },
 ): Promise<RosterStudent> {
   const res = await apiFetch(`/students/${studentId}`, {
     method: 'PATCH',
-    body: JSON.stringify({ displayName }),
+    body: JSON.stringify(changes),
   });
-  const data = await readJson<{ student: RosterStudent }>(res, 'Renaming student');
+  const data = await readJson<{ student: RosterStudent }>(res, 'Updating student');
   return data.student;
 }
 

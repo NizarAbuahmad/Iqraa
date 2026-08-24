@@ -14,6 +14,14 @@ import {
   isNccdSem1TitleOnlyLesson,
   isNccdSem1TitleOnlyUnit,
 } from './catalogs/g10MathSem1.ts';
+import {
+  CHEM_S1_CURRICULUM_BOOK_ID,
+  buildChemSem1BrowserCatalog,
+} from './catalogs/g10ChemSem1.ts';
+import {
+  CHEM_S2_CURRICULUM_BOOK_ID,
+  buildChemSem2BrowserCatalog,
+} from './catalogs/g10ChemSem2.ts';
 import { buildNccdSem2BrowserCatalog } from './catalogs/g10MathSem2.ts';
 import {
   FINLIT_S1_CURRICULUM_BOOK_ID,
@@ -50,6 +58,10 @@ export interface Book {
   audience?: 'teacher' | 'student' | 'all';
   /** Semester number when this book represents a semester (investor demo path). */
   semester?: 1 | 2;
+  /** Official NCCD student-book PDF. Links verified 2026-08-23. */
+  pdfUrl?: string;
+  /** Official NCCD teacher-guide PDF. Hidden from students. */
+  guidePdfUrl?: string;
 }
 
 export interface Unit {
@@ -194,6 +206,8 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/sciences/G10/1/%D9%83%D9%8A%D9%85%D9%8A%D8%A7%D8%A1%2010%20%D8%B7%D8%A7%D9%84%D8%A8%20%D9%811.pdf',
+    guidePdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/Science%20date%2010.9.2023/%D8%A7%D9%84%D8%B9%D8%A7%D8%B4%D8%B1/%D9%83%D9%8A%D9%85%D9%8A%D8%A7%D8%A1/%D8%AF%D9%84%D9%8A%D9%84%20%D8%A7%D9%84%D9%85%D8%B9%D9%84%D9%85%20%D8%A7%D9%84%D9%83%D9%8A%D9%85%D9%8A%D8%A7%D8%A1%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D9%811%20.pdf',
   },
   {
     id: 'book-chem-10-s2',
@@ -207,6 +221,8 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/New%20folder/%D8%B9%D9%84%D9%88%D9%85%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D9%812%20Pdf/%D9%83%D9%8A%D9%85%D9%8A%D8%A7%D8%A1%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D9%812%20Pdf/%D9%83%D9%8A%D9%85%D9%8A%D8%A7%D8%A1%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D8%A7%D9%84%D8%AC%D8%B2%D8%A1%20%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A%20.pdf',
+    guidePdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/%D8%A7%D8%AF%D9%84%D8%A9%20%D8%A7%D9%84%D8%B9%D9%84%D9%88%D9%85%20%D9%85%D9%86%201-10/%D8%A7%D8%AF%D9%84%D8%A9%20%D8%A7%D9%84%D9%85%D8%B9%D9%84%D9%85%20%D8%B9%D9%84%D9%88%D9%85%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D8%AC%D8%B2%D8%A1%20%D8%AB%D8%A7%D9%86%D9%8A/%282025%29%20%D8%AF%D9%84%D9%8A%D9%84%20%D9%83%D9%8A%D9%85%D9%8A%D8%A7%D8%A1%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D8%AC%D9%802%20.pdf',
   },
   // ── Math Grade 10 – Semester 1 ─────────────────────────────────────────────
   {
@@ -221,6 +237,8 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Math/G10/1/ST/2026_MT10_SE1.pdf',
+    guidePdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Math/7.12.2023/action%20pack/TE010_Book.pdf',
   },
   {
     id: 'book-math-10-guide',
@@ -259,6 +277,8 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Math/2025/G10/2/MT10/SE/MT_10_SE2_web.pdf',
+    guidePdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Math/2024/%D8%A7%D9%84%D8%A7%D8%AF%D9%84%D8%A9/Grade%2010/Book10_2_Proof3_WEB.pdf',
   },
   {
     id: 'book-math-10-s2-guide',
@@ -297,6 +317,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Financial%20culture/G10/1/%D8%A7%D9%84%D8%AB%D9%82%D8%A7%D9%81%D8%A9%20%D8%A7%D9%84%D9%85%D8%A7%D9%84%D9%8A%D8%A9%2010%20%D9%811%20small%20.pdf',
   },
   // ── Other grades ───────────────────────────────────────────────────────────
   {
@@ -1128,28 +1149,134 @@ const _HARDCODED_LESSONS: Lesson[] = [
   },
 ];
 
-// ─── Active catalog: hide legacy Math G10 S1/S2, inject NCCD catalogs ─────────
+// ─── Active catalog: hide legacy Math/Chem G10 rows, inject NCCD catalogs ────
 const _MATH_G10_S1_BOOK_ID = 'book-math-10';
 const _MATH_G10_S2_BOOK_ID = 'book-math-10-s2';
 const _nccdSem1Browser = buildNccdSem1BrowserCatalog();
 const _nccdSem2Browser = buildNccdSem2BrowserCatalog();
 const _finlitSem1Browser = buildFinlitSem1BrowserCatalog();
-const _legacyMathBookIds = new Set([_MATH_G10_S1_BOOK_ID, _MATH_G10_S2_BOOK_ID]);
-const _legacyMathUnitIds = new Set(
-  _HARDCODED_UNITS.filter(u => _legacyMathBookIds.has(u.bookId)).map(u => u.id),
+const _chemSem1Browser = buildChemSem1BrowserCatalog();
+const _chemSem2Browser = buildChemSem2BrowserCatalog();
+
+// ─── Authored-Bloom's enrichment for NCCD browser rows ───────────────────────
+//
+// NCCD is authoritative for identity: ids, order, titles-as-printed, and the
+// book's نتاجات التعلم. But its builders hardcode `bloomsLevel: 'Understand'`,
+// so swapping a hand-written lesson for its NCCD counterpart would delete a
+// real human classification and replace it with a default that merely looks
+// like one. objectives.ts stamps `bloomsSource` off the outcome-id prefix, so
+// the loss is silent in the data and only visible in Bloom's coverage.
+//
+// Merge rule: the NCCD lesson keeps its own defaulted outcomes AND inherits the
+// authored outcomes of the hand-written lesson with the same title, with
+// `lessonId` remapped onto the NCCD lesson. The two sets say different things —
+// the book's outcomes are نتاجات, the authored ones are extra teacher-written
+// outcomes — so this appends rather than replaces.
+
+/** Diacritics-insensitive Arabic title key — «مكوَّن» and «مكون» must match. */
+function _titleKey(s: string): string {
+  // U+064B–U+065F harakat/tanween/shadda/sukun, U+0670 dagger alef, U+0640 tatweel.
+  return s.replace(/[ً-ٰٟـ]/g, '').replace(/\s+/g, ' ').trim();
+}
+
+function _mergeAuthoredOutcomes(
+  nccdLessons: Lesson[],
+  supersededLessons: Lesson[],
+): { lessons: Lesson[]; unmatchedTitles: string[] } {
+  const byTitle = new Map<string, Lesson>();
+  for (const l of supersededLessons) {
+    const key = _titleKey(l.titleAr);
+    if (!byTitle.has(key)) byTitle.set(key, l);
+  }
+  const matched = new Set<string>();
+  const lessons = nccdLessons.map(lesson => {
+    const key = _titleKey(lesson.titleAr);
+    const authored = byTitle.get(key);
+    if (!authored || authored.outcomes.length === 0) return lesson;
+    matched.add(key);
+    return {
+      ...lesson,
+      outcomes: [
+        ...lesson.outcomes,
+        ...authored.outcomes.map(o => ({ ...o, lessonId: lesson.id })),
+      ],
+    };
+  });
+  const unmatchedTitles = [...byTitle.entries()]
+    .filter(([key, l]) => !matched.has(key) && l.outcomes.length > 0)
+    .map(([, l]) => l.titleAr);
+  return { lessons, unmatchedTitles };
+}
+// Chemistry hardcoded rows are superseded by the student-book JSON. S1 served
+// 3 units / 3 lessons against the book's 3 / 9, mislabelled unit 2 as «الجدول
+// الدوري وخواص العناصر» (the book says «التوزيع الإلكتروني والدورية») and left
+// unit 2 with zero lessons; S2's unit 4 had no real title and its unit 5 was
+// labelled «التفاعلات الكيميائية», which is unit *4*'s subject — the book's
+// unit 5 is «الطاقة الكيميائية». Their authored Bloom's levels survive via
+// _mergeAuthoredOutcomes above.
+const _legacyBookIds = new Set([
+  _MATH_G10_S1_BOOK_ID,
+  _MATH_G10_S2_BOOK_ID,
+  CHEM_S1_CURRICULUM_BOOK_ID,
+  CHEM_S2_CURRICULUM_BOOK_ID,
+]);
+const _legacyUnitIds = new Set(
+  _HARDCODED_UNITS.filter(u => _legacyBookIds.has(u.bookId)).map(u => u.id),
 );
 
-/** Active units — legacy Math G10 S1/S2 replaced by NCCD-sourced browser rows. */
+/**
+ * Hand-authored lessons displaced from one book — the source of that book's
+ * authored Bloom's levels. Scoped per book so an unmatched title is reported
+ * against the book it belongs to, not against every other NCCD swap. The
+ * legacy Math rows are deliberately not merged: those browser rows never
+ * carried authored outcomes, so there is nothing to carry over.
+ */
+function _supersededLessonsForBook(bookId: string): Lesson[] {
+  const unitIds = new Set(
+    _HARDCODED_UNITS.filter(u => u.bookId === bookId).map(u => u.id),
+  );
+  return _HARDCODED_LESSONS.filter(l => unitIds.has(l.unitId));
+}
+
+const _chemSem1Merged = _mergeAuthoredOutcomes(
+  _chemSem1Browser.lessons,
+  _supersededLessonsForBook(CHEM_S1_CURRICULUM_BOOK_ID),
+);
+const _chemSem2Merged = _mergeAuthoredOutcomes(
+  _chemSem2Browser.lessons,
+  _supersededLessonsForBook(CHEM_S2_CURRICULUM_BOOK_ID),
+);
+
+/**
+ * Hand-authored lesson titles whose Bloom's-classified outcomes found no NCCD
+ * lesson to attach to, so their levels are absent from the active catalog.
+ *
+ * Currently «الرابطة الأيونية والتساهمية» — the book splits and renames that
+ * material into «الروابط الكيميائية وأنواعها» and «الصيغ الكيميائية وخصائص
+ * المركبات», and its outcome (draw Lewis structures) fits neither cleanly
+ * enough to alias by hand. Exported so the loss is countable rather than
+ * silent; `curriculumObjectives.test.ts` pins the list.
+ */
+export const UNMATCHED_AUTHORED_LESSON_TITLES: readonly string[] = [
+  ..._chemSem1Merged.unmatchedTitles,
+  ..._chemSem2Merged.unmatchedTitles,
+];
+
+/** Active units — legacy Math/Chem G10 rows replaced by NCCD-sourced browser rows. */
 export const UNITS: Unit[] = [
-  ..._HARDCODED_UNITS.filter(u => !_legacyMathBookIds.has(u.bookId)),
+  ..._HARDCODED_UNITS.filter(u => !_legacyBookIds.has(u.bookId)),
+  ..._chemSem1Browser.units,
+  ..._chemSem2Browser.units,
   ..._nccdSem1Browser.units,
   ..._nccdSem2Browser.units,
   ..._finlitSem1Browser.units,
 ];
 
-/** Active lessons — legacy Math G10 S1/S2 replaced by NCCD-sourced browser rows. */
+/** Active lessons — legacy Math/Chem G10 rows replaced by NCCD-sourced browser rows. */
 export const LESSONS: Lesson[] = [
-  ..._HARDCODED_LESSONS.filter(l => !_legacyMathUnitIds.has(l.unitId)),
+  ..._HARDCODED_LESSONS.filter(l => !_legacyUnitIds.has(l.unitId)),
+  ..._chemSem1Merged.lessons,
+  ..._chemSem2Merged.lessons,
   ..._nccdSem1Browser.lessons,
   ..._nccdSem2Browser.lessons,
   ..._finlitSem1Browser.lessons,

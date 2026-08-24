@@ -69,7 +69,13 @@ export interface CurriculumObjective extends LearningOutcome {
  * hardcode `bloomsLevel: 'Understand'`. Kept in sync with:
  *   catalogs/g10MathSem1.ts   → `o-nccd-s1-…`
  *   catalogs/g10MathSem2.ts   → `o-nccd-…`
+ *   catalogs/g10ChemSem2.ts   → `o-nccd-chem-s2-…`
  *   catalogs/g10FinlitSem1.ts → `o-finlit-s1-…`
+ *
+ * A builder whose prefix is missing here silently claims `authored` for a
+ * level no human ever chose. Chemistry S2 first shipped as `o-chem-s2-…`,
+ * which both missed this list and collided with the hand-authored
+ * `o-chem-s2-5-1`; hence the `o-nccd-` prefix on every generated id.
  */
 const DERIVED_OUTCOME_PREFIXES = ['o-nccd-', 'o-finlit-'] as const;
 

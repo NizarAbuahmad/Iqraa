@@ -46,8 +46,9 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     because the count was repeatedly described as "all in
     `lib/integrations-openai-ai-server`", which is wrong by a factor of three
     and would send someone looking in the wrong package.
-- Mobile test suite: 723 tests, 0 failures, 10 skipped (re-counted 2026-08-22
-  on an installed workspace; the 480 here was stale, and the 376 before it).
+- Mobile test suite: 725 tests, 0 failures, 10 skipped (re-counted 2026-08-23
+  on an installed workspace; 723 on 2026-08-22, the 480 here was stale before
+  that, and the 376 before it).
   The 10 skips are the chemistry KB-search cases, skipped by their own suite,
   not by the runner.
   The `test` script globs `services/__tests__/**/*.test.ts` — it used to be a
@@ -92,19 +93,9 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     lesson (الدوائر المتماسة, 3 حصص) plus a توسُّع item that the student book on
     file does not have. Not added — see `known_gaps` in the curriculum JSON.
 - Objective counts, NCCD data in `lib/curriculum/src/data/*.json`: math S1 59,
-  math S2 61, financial literacy 40, chemistry S1 12.
-  - **"3 chemistry lessons have no objectives" was a misreading** (corrected
-    2026-08-24): the 9 entries are 6 taught lessons plus 3 تجربة استهلالية
-    labs, and the book prints no outcomes for a lab. Nothing is missing there.
-    What *was* missing: unit 3's two lessons carry 1 and 2 outcomes in the
-    student book while the teacher guide's مخطط الوحدة lists 6 and 5 for the
-    same lessons. Those are now captured per lesson as `guide_objectives`,
-    alongside the book's own — **no generator reads that field yet**, so the
-    objective index is still the book's 12.
-  - Chemistry S1 also gained, from the guide's مخطط الوحدة (guide pages 7A /
-    29A / 59A): 3 حصص per lesson (`periods` was null everywhere and is now a
-    closed gap), per-unit `prior_knowledge` tagged with the grade each outcome
-    was taught in, and the activities the table names.
+  math S2 61, financial literacy 40, chemistry S1 12 (across 3 units /
+  9 lessons, and 3 of those lessons still have none), chemistry S2 19 (2 units /
+  8 lessons, the 2 تجربة استهلالية carrying none — the book prints none for labs).
   - Separately, `lib/curriculum/src/catalog.ts` holds a small hand-authored
     catalog with real Bloom's levels — 4 of its objectives are chemistry S1.
     **These are two different datasets; do not read "chemistry 4" as the
@@ -118,39 +109,27 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     publish, validators), plus deterministic marking and level aggregation.
     What is missing is any evaluation UI, the attempts/answer-entry endpoints,
     and the dashboard.
-- **Every Grade 10 source PDF is now inventoried** in
-  `lib/curriculum/src/data/g10_sources.json`, read through
-  `lib/curriculum/src/sources.ts` (`usableSources()`, `pendingSources()`,
-  `conflicts()`). It records, per file, its Drive id, what kind of document it
-  is, whether NCCD or a named teacher wrote it, and whether anything has been
-  extracted from it. Written from a Drive listing taken 2026-08-24; nothing at
-  runtime reads it, so a stale entry costs a wrong answer to "what do we have",
-  never a broken app.
-  - What it surfaced immediately: chemistry S1 **and** S2 each had two files
-    claiming to be the same student book with different byte counts (an
-    Arabic-titled and an English-titled copy). **Resolved 2026-08-24 — not an
-    edition split:** each pair has an identical page count (76 / 84) and an
-    identical PDF `CreationDate`; the Arabic-titled copies are iLovePDF
-    re-compressions of the Adobe originals. The originals are canonical
-    because these books are extracted from page renders and the compressed
-    copies have downsampled images. Four teacher-made files are exact
-    duplicates. Chemistry S2 has a student book, a teacher guide and an
-    activity book on file and no catalog entry at all.
-  - Chemistry unit structure, read off the two student books: S1 carries units
-    1–3 (بنية الذرة وتركيبها / التوزيع الإلكتروني والدورية / المركبات والروابط
-    الكيميائية) with two lessons each; S2 carries units 4–5 (التفاعلات
-    والحسابات الكيميائية / الطاقة الكيميائية) with three lessons each. Unit
-    numbering runs continuously across the two semesters, so they are one
-    course. Each unit also has a تجربة استهلالية, an إثراء وتوسع and a
-    مراجعة — which is where the catalog's "9 lessons" for S1 comes from, and
-    it does not match the 6 taught lessons the book actually names.
-  - The Drive tree is mirrored on disk (`localRoot` in the manifest), so
-    extraction reads local files rather than re-downloading ~300MB.
-  - Teacher-made material is a large share of the Drive (worksheets, answer
-    keys, دوسيات, past papers by named Jordanian teachers). `authority:
-    'teacher'` marks it: usable to inform generation, not to be reproduced.
-- Chemistry is thinner than "math + chemistry first" implies: 3 units /
-  9 lessons against math's 4 / 18 per semester.
+- Chemistry S2 is NCCD-sourced as of 2026-08-23 (2 units / 8 lessons, from the
+  student book, ISBN 978-9923-41-284-8). It replaced two stubs that named unit 4
+  «الوحدة الرابعة» and unit 5 «التفاعلات الكيميائية» — the latter is unit *4*'s
+  subject; the book's unit 5 is «الطاقة الكيميائية».
+- Chemistry S1's curriculum browser now serves its NCCD JSON too (2026-08-23).
+  It previously showed 3 units / 3 lessons against the book's 3 / 9, mislabelled
+  unit 2 as «الجدول الدوري وخواص العناصر» (the book says «التوزيع الإلكتروني
+  والدورية»), and rendered unit 2 as an empty unit with zero lessons.
+  - The swap would have deleted the last hand-authored Bloom's levels in the
+    active catalog, since every NCCD builder hardcodes `'Understand'`.
+    `catalog.ts::_mergeAuthoredOutcomes` carries them over by
+    diacritics-insensitive title match, remapping `lessonId` onto the NCCD
+    lesson and **appending** to the book's own نتاجات rather than replacing
+    them. 5 authored outcomes survive, spanning Understand + Apply.
+  - One casualty: «الرابطة الأيونية والتساهمية» has no NCCD counterpart — the
+    book splits that material into «الروابط الكيميائية وأنواعها» and «الصيغ
+    الكيميائية وخصائص المركبات» — so its Apply outcome is gone. Exported as
+    `UNMATCHED_AUTHORED_LESSON_TITLES` and pinned by a test, so the list can
+    shrink but never grow silently.
+- Chemistry is thinner than "math + chemistry first" implies: 3 + 2 units /
+  9 + 8 lessons against math's 4 / 18 per semester.
 - Financial Literacy G10 S1 is browsable (2 units / 10 lessons, NCCD-sourced).
   It was previously offered as a subject tile with no book behind it, so the
   subject dead-ended on the "no semesters" empty state.
@@ -308,6 +287,211 @@ that was refused.
 manual marking inside Phase 7 alongside AI grading. This is the manual half
 without the AI half — the review queue, rubric prompts and confidence policy
 are untouched, and `grader: 'ai'` still has no writer.
+
+
+## The "..." menu in موادي never worked in a browser, 2026-08-24
+
+Reported by the user, and true since the workspace screen was written: the
+row menu was an `Alert.alert` with five buttons, and **`Alert.alert`'s handlers
+never fire on react-native web**. Open, Edit, Duplicate and Delete were all
+dead in the browser — which is the build teachers are demoed on — while looking
+correct on a phone.
+
+`services/confirm.ts` documents this exact defect and was written for it, but
+it only covers two-button confirms; a five-action menu had nowhere to go. The
+menu is now a `Modal`, inline in `app/workspace/index.tsx` rather than a shared
+component, because it is the only multi-action `Alert.alert` left in shipping
+code (the others are dev-only screens under `app/dev/`, plus one message-only
+notice, which is fine — a plain `Alert.alert` with no buttons still displays).
+
+**Verified by clicking it**, which is the point: menu opens, and عدّل actually
+navigates to the worksheet editor.
+
+### Attaching a material said the wrong thing when there was nothing to attach
+
+Also reported. The sheet always read «كل موادك المحفوظة مرتبطة بصفوف أخرى» —
+"they are all in other classes" — even for a teacher with nothing saved at all.
+A `noSavedMaterials` string was written for that case and then never wired up.
+`openAttach` now keeps the total count so the two cases can be told apart; they
+look identical as a blank list and mean opposite things.
+
+The sheet also offered exactly one way out — pick something that already
+exists — so a teacher with nothing saved hit a dead end and a Cancel button. It
+now offers **أنشئ مادة جديدة**, which goes to the tools tab.
+
+### Two notes on how this was verified, because both cost time
+
+- **`computer` clicks did nothing.** Browser input injection needs the pane
+  displayed, and it was not, so every automated click silently fired zero DOM
+  events. Real presses had to be dispatched from `javascript_tool`. Screenshots
+  fail loudly in this state; clicks fail silently.
+- **Reading the DOM immediately after a press shows the state before React
+  re-renders.** This produced a confident wrong diagnosis — that the modal was
+  opening and closing within one gesture — and a "fix" changing the backdrop
+  from tap-to-dismiss to a plain `View`. Re-tested with a delay: the original
+  backdrop was fine, and the change was reverted. Wait a tick before asserting
+  a press did nothing.
+
+## The parent message knows who the student is, 2026-08-24
+
+`ai-tools/parent-message` composed a letter about a named child to their
+guardian, and had no idea who the teacher's students were: you typed the name,
+you typed the facts. It now offers **اختر من صفوفي** — class, then student —
+via `components/ui/StudentPickerSheet.tsx`.
+
+**What it fills in, and what it deliberately does not.** `parentMessage.ts`
+carries a rule in its header worth honouring exactly: *the teacher supplies
+every fact, this file supplies the register.*
+
+- **Name** — filled from the roster. Saves the typing and the misspelling that
+  reaches a parent. Typing it by hand still works.
+- **The teacher's note** — offered into the *editable details box*, never into
+  the message. It qualifies under the rule because the teacher wrote it; a
+  sentence they typed last week is still theirs. Putting it in the box rather
+  than the letter means nothing reaches a parent unread.
+- **Marks — not pulled in, on purpose.** They are computed, partly by AI, and
+  `attempt_results.isProvisional` exists precisely to mark the ones still
+  awaiting teacher review. A number that lands in a parent's WhatsApp cannot be
+  one the teacher has not confirmed. This is a decision, not an omission.
+- **Gender — untouched.** The roster does not record it, and inferring it from
+  a name would misgender a real child in a language that inflects for gender in
+  almost every clause. The two toggles stay manual.
+
+**The silent failure got a test.** Prefilling the details box can destroy work:
+a teacher types three sentences about an incident, then picks the student to
+attach the right name, and a naive prefill replaces what they wrote with last
+term's note. Nothing errors and they may well send it. `seedDetailsFromNote()`
+in `parentMessage.ts` is the rule — current text wins, whitespace counts as
+empty — with four cases in `parentMessage.test.ts`, the overwrite one first.
+
+`StudentPickerSheet` is deliberately **not** built on `ClassPickerSheet`, which
+looks similar. That one closes itself when a teacher has no classes, because it
+appears uninvited after a save. Here the teacher asked, so an empty roster has
+to be said out loud. Same list, opposite behaviour on empty — sharing it would
+need a prop that inverts the component's whole point.
+
+Typecheck clean across three projects; mobile 733 tests, 0 failures.
+No schema change, so nothing to run against production.
+
+## A class remembers the child, and a lesson lands in the class, 2026-08-24
+
+Two small follow-ons to the class/materials join below.
+
+**Saving a lesson asks which class.** Attaching only from inside the class made
+it a chore after the fact, and chores do not happen. There are seven `saveItem`
+call sites with no shared funnel, so rather than adding a class field to seven
+crowded forms, `components/ui/ClassPickerSheet.tsx` opens on the id a save
+already returns. Wired into the two lesson-prep paths — `ai-tools/lesson-plan`
+and `LessonPrepPanel` (the **حضّر خطة درس** flow). The other five tools are the
+same six lines each now that the sheet exists; they were left out to keep the
+change small, not because they are different.
+
+The sheet has two silent exits, both deliberate: a teacher with **no classes**
+is never asked (it closes itself on an empty list, which is why loading lives
+inside the sheet rather than in each caller — otherwise all seven would have to
+count classes before deciding to open it), and an **offline** roster closes it
+too. The material is already saved by then; a failure dialog about a question
+the teacher did not ask is worse than not asking.
+
+**A note per student.** `students.teacher_note`, one running note, overwritten
+— not a history. What a teacher wants at a parent evening is the current
+picture, and a timeline of every edit is a bigger thing to build, read and
+delete from. Tap a name in الطلاب to write it; the note replaces the register
+number in the row's second line, because both at once makes a thirty-row list
+unreadable and the note is what a teacher scans for.
+
+`PATCH /students/:id` already existed and already scoped to the teacher, so
+this is three lines there. The client's `renameStudent` — exported, called by
+nothing — became `updateStudent`, which sends only what changed.
+
+Note the distinction from `attempts.teacherComment`, added the same week by
+separate work: that is a note about **one sitting**, this is a note about **a
+child**, and it outlives any test. Both are legitimate; they will look
+duplicative to whoever reads the schema next, hence this paragraph.
+
+**Verified against the running system**: local API on :8090 against local
+Postgres, nine checks — the note starts as `''` and never null, saves trimmed,
+comes back on the roster response the class screen actually reads, survives a
+PATCH that only renames, clears to `''` rather than null (the column is NOT
+NULL), and **another teacher gets 404 rather than a write or a leak**.
+Typecheck clean across three projects; api-server 139 tests, mobile 729.
+
+**Where the check is thin:** no committed unit test guards the "empty note
+means clear, absent means leave alone" branch — it lives in an Express handler
+and the coverage above came from a live run, not from CI. If someone adds
+`|| null` there the way `externalRef` has it, clearing a note will silently
+stop working and nothing will fail.
+
+**Production needs one column** before this ships:
+
+```sql
+ALTER TABLE students ADD COLUMN IF NOT EXISTS teacher_note text NOT NULL DEFAULT '';
+```
+
+## Materials belong to a class now, 2026-08-23
+
+صفوفي and مساحتي were two islands. `class_groups` held names; `saved_materials`
+held work; nothing joined them, so there was no answer to "what did I give
+صف أ". The join had been *designed* — `evaluation_assignments` has carried
+`studentId` XOR `classGroupId` plus a `dueAt` since Phase 4 — but nothing in the
+repo has ever written or read that table. It is still dead. This took the
+smaller path instead.
+
+**One nullable column.** `saved_materials.class_group_id`, `ON DELETE SET NULL`
+— archiving a class must not take the teacher's worksheets with it. One class
+per material; a worksheet used with two sections gets duplicated, which the
+existing `POST /workspace/items/:id/duplicate` already does (and the copy
+deliberately starts unattached, or both copies would land in the same class).
+Promote to a join table only if teachers ask for shared materials.
+
+**Attaching happens in the class, not at save time.** A class picker in the
+save flow would mean editing seven generator screens; `app/classes/[id].tsx` now
+has two tabs (الطلاب / الموارد) and the materials tab attaches from the
+teacher's unattached saved items. `GET /workspace/items?classId=` filters.
+
+**Three things fixed on the way, because they were in the path:**
+
+- `workspace.ts` had no equivalent of the roster's 42P01/42703 detection, so a
+  database missing this column would have answered "Failed to save item" —
+  exactly the useless 500 the [roster incident](#roster-storage--a-production-incident-worth-remembering)
+  was about. `isSchemaMissing` moved to `src/lib/schemaMissing.ts` and both
+  routers use it; workspace now answers 503 with
+  `code: "workspace_storage_unavailable"`.
+- The PATCH allowlist was nine hand-written `!== undefined` lines. Detach sends
+  `classGroupId: null`, and the next person to add a nullable field and reach
+  for truthiness makes attach work while detach silently does nothing. Replaced
+  with `pickDefined()` in `src/lib/pickDefined.ts` — five tests, one of which is
+  `null`. Still an allowlist, not a spread: `req.body` reaching `.set()` whole
+  would let a client rewrite `userId`.
+- `app/workspace/index.tsx`'s `typeLabel()` ended in `return t('quizType')` and
+  its edit route ended in `'/ai-tools/quiz'`, so a saved **activity** or **deck**
+  displayed as "اختبار قصير" and opened the quiz builder, which cannot rebuild
+  either. Colour/icon/label/route now come from `constants/materialKind.ts`,
+  shared with the new class tab; `slides` has no form-driven editor so it no
+  longer offers Edit at all.
+
+**Verified against the running system**, not asserted: local API on :8080
+against local Postgres, ten checks — save starts unattached, attach sets it,
+`?classId=` includes and excludes correctly, detach-with-null actually clears,
+a PATCH that omits the field leaves it alone, duplicate starts unattached, and
+the material outlives its class. `confdeltype = 'n'` confirmed on the FK.
+Typecheck clean across all three projects; api-server 139 tests, mobile 725.
+
+**Production has the column, 2026-08-23 8:13pm.** Applied by hand in the Neon
+SQL editor rather than by `pnpm --filter @workspace/db run push`, deliberately:
+`push` diffs the *whole* local schema against production and applies everything
+it finds, so an unrelated local drift rides along unseen. This was one additive
+change, so it went in as one explicit `ALTER TABLE` plus the FK. Verified in
+the same session — `is_nullable = YES`, `confdeltype = n`. Matches local.
+
+That leaves only the merge: `main` is the only branch that deploys, so the
+column is live and the code that uses it is not.
+
+**The process gap is still open.** Nothing about this deploys schema
+automatically; it was a human remembering. That is the same standing landmine
+recorded on 2026-08-19 and again here — and this entry is being written *with*
+its fix rather than three days later, which is the actual lesson from last
+time.
 
 ## Off-topic questions are declined, not answered, 2026-08-22
 
@@ -3449,6 +3633,15 @@ materials, teacher prep, the Class Challenge how-it-works copy, and
 `printables` for quick-check (now `[]`). Bingo, station, exit-ticket and
 challenge cards are untouched — those are genuinely card-based activities.
 
+**Superseded 2026-08-23: the signal is a raised hand, not fingers.** Product
+call — the projected banner now reads `ارفع يدك للإجابة!` and every rules
+slide, materials list and teacher tip says the same. What this gives up is
+real: fingers encoded *which* option each student picked, so the teacher read
+the distribution in one glance. A raised hand only says «I have an answer», so
+reading the spread per option now costs a poll. The prop-free property is
+kept. Reverse by restoring the (إصبع = أ، إصبعان = ب) mapping in the rules
+slides only — the banner wording was the part that was asked for.
+
 **`printables` is still dead data everywhere else.** The remaining entries name
 props no export produces. Either build the printables exporter or stop
 populating the field; a list a teacher cannot act on is worse than no list.
@@ -3569,6 +3762,9 @@ populating the field; a list a teacher cannot act on is worse than no list.
     and production `.env` values look nothing alike but produce identical
     console output apart from one line. `verify-schema` prints the host it
     checked (`Schema check against …`) as its first line. Read it.
+  - **Production is 25/25 as of 2026-08-23**, `ai_generations` included, run
+    against Neon with `verify-schema` before and after the push (24/25 → push →
+    25/25). Superseding the line below, which was correct when written.
   - **Production verified 24/24 on 2026-08-22**, via the same `to_regclass`
     check run in the Neon SQL console. The 2026-08-19 outage was fixed that
     same afternoon — Neon's query history shows "find missing tables" at
@@ -3576,6 +3772,15 @@ populating the field; a list a teacher cannot act on is worse than no list.
     file and CLAUDE.md went on asserting the outage for three days afterwards,
     because the fix was never written down. **The process gap is real and
     still open; that particular outage is not.**
+  - **Confirmed on 2026-08-23, by the push finding drift the check had
+    reported as clean.** Against a 24/24 production database, `push` still had
+    two changes to make: unique constraints on `class_groups.join_code` and on
+    `class_memberships` that the schema declares and production did not have.
+    Both were applied without truncating (the prompt offers truncation as the
+    safe-if-it-fails option; with one row in each table a unique constraint
+    cannot be violated, so it was declined). Nothing was wrong — but it is a
+    worked example of the gap the next line describes, found by accident rather
+    than by asking.
   - **What the check does not prove:** `to_regclass` asks whether a table
     *name* exists. A table with a stale column set — a migration that added
     the table but not a later column — still reports `ok`. Column-level drift
@@ -3643,3 +3848,63 @@ Both were silent: the system reported success while doing nothing.
 - `docs/demo-checklist.md` is the pre-demo runbook: warm the API *and* the
   verifier, confirm the verifier is real via `GET /api/healthz/verifier`, and
   prove it is checking with a wrong-answer control.
+
+## Warm-up slides projected the teacher's stage directions, 2026-08-23
+
+The generated intro is written *at the teacher* — `ابدأ بطرح السؤال: "…" سجّل
+إجابات الطلاب على السبورة` — and `lessonSlides.ts` projected it verbatim on the
+class screen, so the room read what the teacher was about to do instead of the
+question itself. `splitWarmup` now projects the quoted question alone and moves
+the full instruction into the slide's teacher notes. No quoted question means
+nothing to lift out and the text projects as before, so an AI-generated intro
+in another shape degrades to the old behaviour rather than to a blank slide.
+
+## Deleting a slide before presenting did not stick, 2026-08-23
+
+Reported by a teacher: the trash icon on the slides outline appeared to do
+nothing. Reproduced on the deployed site — delete three slides and the
+outline kept two of them, then «اعرض على الشاشة» opened a deck with a
+*different* count from the outline the teacher had just approved (17 rows
+listed, 16 slides presented).
+
+`removeSlide` and the slide editor both rebuilt the deck from the `deck`
+captured at render time (`setDeck({ ...deck, slides })`) and targeted slides
+by index. Neither holds while a deck is still being built: the photo, video
+and verifier passes land seconds after the outline first renders and each
+replaces the deck object, so the captured `deck` is stale and
+`insertVideoSlide` shifts every index after the insert. Two edits in that
+window overwrite each other, and an index picked before the video landed
+deletes whatever moved into that position.
+
+Both now update functionally (`setDeck(cur => …)`) and target the slide
+*object*, not its position — identity survives the enrichment passes because
+they rebuild only the slides they touch. `withoutSlide` in `lessonSlides.ts`
+owns the drop-and-renumber, tested including the insert-ahead-of-it case.
+
+**Not done:** there is no *hide* — only delete, which is permanent for that
+deck. A teacher who deletes a slide and changes their mind regenerates. If
+hiding is wanted, it is a per-slide flag the presenter and the exporters all
+have to honour, which is why it was not smuggled into a bug fix.
+
+## The exports were still the old dark deck, 2026-08-23
+
+Reported with two screenshots side by side: the projector showed cream, teal
+and magenta; the .pptx the teacher opened afterwards was near-black with an
+indigo accent. Same deck, two products — and the handout is the half that
+leaves the room.
+
+The palette existed three times: in `presentation.tsx`, in `deckSlidesHtml.ts`
+and in `exportPptx.ts`. The screen was restyled to the warm palette; the two
+exporters kept their private copy of the dark one, and nothing connected them,
+so the drift was invisible until someone put the two on one desk.
+
+`services/deckTheme.ts` now holds the palette and `slideTypeAccent`, and all
+three import it. The projected values won because that is what a room full of
+people looks at. Swapping the background also meant re-checking everything
+that assumed a dark one: white titles are kept only over a hero photo or the
+flat accent divider (`.deck-on-photo`), cards went from `rgba(255,255,255,.03)`
+to solid white, and the correct MCQ option lost its `color:#fff` — on the new
+light tint that was white-on-cream.
+
+**Not verified:** the .pptx was not opened in PowerPoint. The colour inputs are
+shared now and the file builds, but nobody has looked at a rendered slide.
