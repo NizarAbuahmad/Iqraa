@@ -221,6 +221,67 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Marking now says what to teach next, 2026-08-24
+
+`recommendations` has been a table since Phase 4 with nothing ever writing to
+it. Marking produced a percentage, a level and a per-objective breakdown, and
+then stopped — at exactly the moment the teacher is asking "so what do I do
+tomorrow". This writes it.
+
+**Rule-based only, and that is the floor rather than a placeholder.** Every
+recommendation here is arithmetic over marks the teacher entered, so none of
+them carries a `confidence`: a number there would imply it might be wrong the
+way an AI judgement can be. When AI enrichment lands it writes rows with
+`generatedBy: 'ai'` beside these and the two stay distinguishable — the same
+reason `grader` exists on a mark.
+
+**Gaps are not re-derived.** `scoring.ts` already decides what counts as a gap
+and orders them by *marks lost* rather than percentage — a 55% objective worth
+12 marks costs more than a 20% one worth 2 — so `recommend.ts` consumes
+`score.gaps` instead of restating the threshold. Two copies of that rule would
+drift and then disagree about the same attempt. Measured on a real attempt: a
+20%/8-marks-lost objective leads a 50%/2-marks-lost one, which is the ordering
+a teacher's evening actually needs.
+
+Below 30% an objective is not weak, it is untaught, so it comes back as
+**reteach** rather than as more drilling. Every set with a gap also gets one
+**reassess** on the costliest one: without it the loop never closes — the gap
+gets taught and nothing ever checks whether the teaching worked.
+
+**The panel is never empty for a marked attempt.** A student who did well gets
+extension work on their strongest objective. "Nothing to do" is not useful to
+tell a teacher, and a blank panel reads as broken rather than as praise. The
+one case that needed care is the middling attempt — everything between the gap
+line and the strength line clears neither list — which falls back to the best
+objective on the paper. An attempt nobody has marked yet gets nothing at all:
+advice off zero evidence is noise sitting where a real answer will go.
+
+**Recommendations are rewritten on every recompute, not appended.** They are a
+statement about the marks as they now stand, so yesterday's "reteach this"
+must not survive beside a mark the teacher has since corrected. Verified: a
+question corrected from 2/10 to 10/10 dropped its two rows and re-pointed the
+reassessment at the remaining gap, leaving two rows stored, not five. Only
+`generatedBy: 'rule'` rows are cleared, so future AI rows will not be lost
+every time one mark is edited.
+
+**"Build a worksheet" opens the generator already scoped to the exam's grade
+and subject**, resolved from the evaluation — `GET /attempts/:id` now carries
+`gradeId`/`subjectId`/`bookId` for exactly this. When either cannot be resolved
+the button is not rendered at all, because a tool that opens offering grade-1
+material for a grade-10 gap is worse than one that does not open. Reassessment
+items carry no button: the answer to "re-test this" is another evaluation, not
+a worksheet.
+
+**Verified end to end** against a running API, Postgres and the web build.
+Before marking: no recommendations. After four marks: `review(20%, -8)`,
+`practice(50%, -2)`, `reassess(20%, -8)`, costliest first. The panel renders in
+Arabic with the objective text, the evidence line («50٪ — خسر 2 علامة») and the
+worksheet button — whose presence is itself the proof that the scope resolved.
+
+169 api-server tests, 753 mobile, 0 failures. Typecheck clean across all three
+projects — `main`'s `exportNotebook` breakage was fixed by `9f680b5` landing in
+PR #103, so that entry below is now historical.
+
 ## Exams the app never wrote, 2026-08-24
 
 Hand-marking (below) only reached exams Iqraa generated. A teacher's own paper

@@ -25,6 +25,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { copyToClipboard, formatAttemptResultText, shareAsText } from '@/services/share';
+import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { Toast } from '@/components/ui/Toast';
 import {
   EvaluationError,
@@ -34,12 +35,15 @@ import {
   setTeacherComment,
   startAttempt,
   submitAttempt,
+  type AttemptEvaluationSummary,
   type AttemptQuestionGrade,
   type AttemptResult,
   type CompetencyKey,
   type EvaluationQuestion,
   type Grader,
   type LevelKey,
+  type Recommendation,
+  type RecommendationKind,
 } from '@/services/evaluations';
 import type { TranslationKey } from '@/services/i18n';
 
@@ -122,6 +126,8 @@ export default function AnswerEntryScreen() {
   const [grades, setGrades] = useState<Record<string, GradeDraft>>({});
   const [comment, setComment] = useState('');
   const [result, setResult] = useState<AttemptResult | null>(null);
+  const [nextSteps, setNextSteps] = useState<Recommendation[]>([]);
+  const [scope, setScope] = useState<AttemptEvaluationSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -139,6 +145,8 @@ export default function AnswerEntryScreen() {
         setQuestions(data.questions);
         setStudentName(data.student.displayName);
         setEvaluationTitle(lang === 'ar' ? data.evaluation.titleAr : data.evaluation.title);
+        setScope(data.evaluation);
+        setNextSteps(data.recommendations ?? []);
         setAnswers(Object.fromEntries(data.answers.map(a => [a.questionId, a.response])));
         setGrades(gradeDrafts(data.grades));
         setComment(data.attempt.teacherComment ?? '');
@@ -193,6 +201,7 @@ export default function AnswerEntryScreen() {
         const res = await setQuestionGrade(attemptId, question.id, { awardedMarks: value, note });
         setGradeField(question.id, { grader: 'teacher', saved: String(value) });
         setResult(res.result);
+        setNextSteps(res.recommendations ?? []);
       } catch {
         showToast(t('markSaveFailed'));
       }
@@ -226,6 +235,7 @@ export default function AnswerEntryScreen() {
       const data = await getAttempt(attemptId);
       setGrades(gradeDrafts(data.grades));
       setResult(data.result);
+      setNextSteps(data.recommendations ?? []);
     } catch (err) {
       setError(err instanceof EvaluationError ? err.message : t('attemptSubmitFailed'));
     } finally {
@@ -286,6 +296,18 @@ export default function AnswerEntryScreen() {
             t={t}
             onCopy={onCopy}
             onShare={onShare}
+          />
+        )}
+
+        {nextSteps.length > 0 && (
+          <NextStepsCard
+            recommendations={nextSteps}
+            scope={scope}
+            colors={colors}
+            isRTL={isRTL}
+            align={align}
+            lang={lang}
+            t={t}
           />
         )}
 
@@ -419,6 +441,102 @@ function ResultCard({
             </View>
           </>
         )}
+      </View>
+    </View>
+  );
+}
+
+const KIND_LABEL: Record<RecommendationKind, TranslationKey> = {
+  review: 'recKindReview',
+  practice: 'recKindPractice',
+  activity: 'recKindActivity',
+  reassess: 'recKindReassess',
+};
+const KIND_ICON: Record<RecommendationKind, keyof typeof Ionicons.glyphMap> = {
+  review: 'refresh-outline',
+  practice: 'create-outline',
+  activity: 'bulb-outline',
+  reassess: 'repeat-outline',
+};
+
+/**
+ * What to teach next, from the marks just entered.
+ *
+ * The generator opens **scoped to this exam's grade and subject**, resolved
+ * from the evaluation rather than left at the picker's first entry — a tool
+ * that opens offering grade-1 material for a grade-10 gap is worse than one
+ * that does not open at all. When the scope cannot be resolved the button is
+ * not shown, rather than shown and wrong.
+ */
+function NextStepsCard({
+  recommendations, scope, colors, isRTL, align, lang, t,
+}: {
+  recommendations: Recommendation[];
+  scope: AttemptEvaluationSummary | null;
+  colors: ReturnType<typeof useColors>;
+  isRTL: boolean;
+  align: 'left' | 'right';
+  lang: string;
+  t: (key: TranslationKey, ...args: any[]) => string;
+}) {
+  const gradeIdx = scope ? getPickerGrades().findIndex(g => g.id === scope.gradeId) : -1;
+  const subjectIdx = scope
+    ? getPickerSubjects(scope.gradeId).findIndex(s => s.id === scope.subjectId)
+    : -1;
+  const canGenerate = gradeIdx >= 0 && subjectIdx >= 0;
+
+  const openWorksheet = (topic: string) => {
+    router.push({
+      pathname: '/ai-tools/worksheet',
+      params: { topic, gradeIdx: String(gradeIdx), subjectIdx: String(subjectIdx) },
+    });
+  };
+
+  return (
+    <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
+      <View style={[styles.resultCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 16, textAlign: align }}>
+          {t('nextStepsTitle')}
+        </Text>
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, marginTop: 4, textAlign: align }}>
+          {t('nextStepsSubtitle')}
+        </Text>
+
+        <View style={{ marginTop: 12, gap: 12 }}>
+          {recommendations.map(rec => {
+            const title =
+              (lang === 'ar' ? rec.payload.objectiveTitleAr : rec.payload.objectiveTitle) ||
+              rec.payload.objectiveTitleAr ||
+              rec.payload.objectiveTitle;
+            return (
+              <View key={rec.id} style={{ gap: 6 }}>
+                <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }}>
+                  <Ionicons name={KIND_ICON[rec.kind]} size={15} color={ACCENT} />
+                  <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+                    {t(KIND_LABEL[rec.kind])}
+                  </Text>
+                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12 }}>
+                    {t('recEvidence', String(rec.payload.percent), String(rec.payload.marksLost))}
+                  </Text>
+                </View>
+                <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align }}>
+                  {title}
+                </Text>
+                {canGenerate && rec.kind !== 'reassess' && title ? (
+                  <Pressable
+                    onPress={() => openWorksheet(title)}
+                    style={[styles.recBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+                  >
+                    <Ionicons name="document-text-outline" size={14} color={ACCENT} />
+                    <Text style={{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 12 }}>
+                      {t('recBuildWorksheet')}
+                    </Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            );
+          })}
+        </View>
       </View>
     </View>
   );
@@ -755,6 +873,7 @@ const styles = StyleSheet.create({
   competencyRow: { alignItems: 'center' },
   qCard: { borderWidth: 1, borderRadius: 12, padding: 14 },
   qTop: { alignItems: 'center', gap: 8, marginBottom: 10 },
+  recBtn: { alignSelf: 'flex-start', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
   gradeRow: { borderTopWidth: 1, marginTop: 12, paddingTop: 10, gap: 8 },
   markInput: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, minWidth: 64, textAlign: 'center', fontSize: 14 },
   noteInput: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, minHeight: 44, fontSize: 13 },

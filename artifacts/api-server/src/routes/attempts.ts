@@ -15,6 +15,7 @@ import {
   attempts,
   evaluations,
   gradeOverrides,
+  recommendations,
   students,
 } from "@workspace/db";
 import type { Attempt, EvaluationQuestion } from "@workspace/db";
@@ -26,12 +27,15 @@ import {
   scorePersistedGrades,
   type AttemptQuestionInput,
 } from "../modules/assessment/gradeAttempt";
+import type { AttemptScore } from "../modules/assessment/scoring";
 import {
   deriveVerdict,
   isVerdict,
   normalizeManualMarks,
 } from "../modules/assessment/manualGrade";
+import { recommendationsFor } from "../modules/assessment/recommend";
 import type { LevelBandInput } from "../modules/assessment/scoring";
+import { resolveObjectiveIds } from "@workspace/curriculum";
 
 const router = Router();
 // Path-scoped — see the note in roster.ts and evaluations.ts. This router
@@ -127,11 +131,62 @@ async function recomputeResult(attempt: Attempt) {
     .where(eq(attempts.id, attempt.id))
     .returning();
 
+  const nextSteps = await refreshRecommendations(attempt.id, score);
+
   return {
     attempt: updatedAttempt!,
     ungradedQuestionIds,
+    recommendations: nextSteps,
     result: { ...resultValues, computedAt: resultValues.computedAt.toISOString() },
   };
+}
+
+/**
+ * Rewrite this attempt's next steps from the marks as they now stand.
+ *
+ * Replaced rather than appended on every recompute, because a recommendation
+ * is a statement about the current marks — leaving yesterday's "reteach this"
+ * beside a mark the teacher has since corrected would be advice about a result
+ * that no longer exists.
+ *
+ * Only rule-based rows are cleared. AI enrichment does not exist yet, but when
+ * it does it must not lose its work every time a teacher edits one mark.
+ */
+async function refreshRecommendations(attemptId: string, score: AttemptScore) {
+  const objectiveIds = score.objectiveScores.map(o => o.objectiveId);
+  const { found } = resolveObjectiveIds(objectiveIds);
+  const byId = new Map(found.map(o => [o.id, o]));
+  const drafts = recommendationsFor(score, id => {
+    const objective = byId.get(id);
+    if (!objective) return undefined;
+    return {
+      title: objective.description ?? "",
+      titleAr: objective.descriptionAr || objective.description || "",
+    };
+  });
+
+  await db
+    .delete(recommendations)
+    .where(
+      and(eq(recommendations.attemptId, attemptId), eq(recommendations.generatedBy, "rule")),
+    );
+  if (drafts.length === 0) return [];
+
+  return db
+    .insert(recommendations)
+    .values(
+      drafts.map(d => ({
+        attemptId,
+        kind: d.kind,
+        objectiveId: d.objectiveId,
+        payload: d.payload,
+        generatedBy: "rule" as const,
+        // Arithmetic over the teacher's own marks is not a guess. A confidence
+        // number here would imply it might be wrong the way an AI call can be.
+        confidence: null,
+      })),
+    )
+    .returning();
 }
 
 router.get("/attempts/:id", async (req: AuthenticatedRequest, res) => {
@@ -160,6 +215,10 @@ router.get("/attempts/:id", async (req: AuthenticatedRequest, res) => {
       .from(attemptResults)
       .where(eq(attemptResults.attemptId, owned.attempt.id))
       .limit(1);
+    const nextSteps = await db
+      .select()
+      .from(recommendations)
+      .where(eq(recommendations.attemptId, owned.attempt.id));
 
     res.json({
       attempt: owned.attempt,
@@ -167,12 +226,19 @@ router.get("/attempts/:id", async (req: AuthenticatedRequest, res) => {
         id: owned.evaluation.id,
         title: owned.evaluation.title,
         titleAr: owned.evaluation.titleAr,
+        // Carried so the app can open a generator already scoped to this
+        // exam's grade and subject. Without them the tool opens at index 0 and
+        // offers to build grade-1 material for a grade-10 gap.
+        gradeId: owned.evaluation.gradeId,
+        subjectId: owned.evaluation.subjectId,
+        bookId: owned.evaluation.bookId,
       },
       student,
       questions: owned.attempt.questionSnapshot,
       answers,
       grades,
       result: result ?? null,
+      recommendations: nextSteps,
     });
   } catch (err) {
     logger.error({ err }, "get attempt failed");
@@ -317,6 +383,7 @@ router.post("/attempts/:id/submit", async (req: AuthenticatedRequest, res) => {
       grades: machineGrades,
       ungradedQuestionIds: recomputed.ungradedQuestionIds,
       result: recomputed.result,
+      recommendations: recomputed.recommendations,
     });
   } catch (err) {
     logger.error({ err }, "submit attempt failed");
@@ -419,7 +486,12 @@ router.put("/attempts/:id/grades/:questionId", async (req: AuthenticatedRequest,
     }
 
     const recomputed = await recomputeResult(owned.attempt);
-    res.json({ grade, attempt: recomputed.attempt, result: recomputed.result });
+    res.json({
+      grade,
+      attempt: recomputed.attempt,
+      result: recomputed.result,
+      recommendations: recomputed.recommendations,
+    });
   } catch (err) {
     logger.error({ err }, "manual grade failed");
     res.status(500).json({ error: "Failed to save the mark" });

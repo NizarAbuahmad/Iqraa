@@ -244,6 +244,37 @@ export interface AttemptResult {
   isProvisional: boolean;
 }
 
+export type RecommendationKind = 'review' | 'practice' | 'activity' | 'reassess';
+
+/**
+ * What to do next about one objective, derived from the marks. `generatedBy`
+ * says whether a rule or a model produced it — the same reason a mark carries
+ * `grader`, and the reason the two must never be rendered identically.
+ */
+export interface Recommendation {
+  id: string;
+  kind: RecommendationKind;
+  objectiveId: string | null;
+  generatedBy: 'rule' | 'ai';
+  payload: {
+    objectiveTitle: string;
+    objectiveTitleAr: string;
+    percent: number;
+    marksLost: number;
+    questionCount: number;
+  };
+}
+
+/** The exam's curriculum scope, so a generator can open already pointed at it. */
+export interface AttemptEvaluationSummary {
+  id: string;
+  title: string;
+  titleAr: string;
+  gradeId: string;
+  subjectId: string;
+  bookId: string;
+}
+
 export async function listAttempts(evaluationId: string): Promise<AttemptListRow[]> {
   const res = await apiFetch(`/evaluations/${evaluationId}/attempts`);
   const data = await readJson<{ attempts: AttemptListRow[] }>(res, 'Loading attempts');
@@ -262,12 +293,13 @@ export async function startAttempt(evaluationId: string, studentId: string): Pro
 
 export async function getAttempt(attemptId: string): Promise<{
   attempt: Attempt;
-  evaluation: { id: string; title: string; titleAr: string };
+  evaluation: AttemptEvaluationSummary;
   student: { id: string; displayName: string };
   questions: EvaluationQuestion[];
   answers: AttemptAnswer[];
   grades: AttemptQuestionGrade[];
   result: AttemptResult | null;
+  recommendations: Recommendation[];
 }> {
   const res = await apiFetch(`/attempts/${attemptId}`);
   return readJson(res, 'Loading attempt');
@@ -294,7 +326,12 @@ export async function setQuestionGrade(
   attemptId: string,
   questionId: string,
   input: { awardedMarks: number | string; note?: string; verdict?: Verdict },
-): Promise<{ grade: AttemptQuestionGrade; attempt: Attempt; result: AttemptResult }> {
+): Promise<{
+  grade: AttemptQuestionGrade;
+  attempt: Attempt;
+  result: AttemptResult;
+  recommendations: Recommendation[];
+}> {
   const res = await apiFetch(`/attempts/${attemptId}/grades/${questionId}`, {
     method: 'PUT',
     body: JSON.stringify(input),
@@ -316,6 +353,7 @@ export async function submitAttempt(attemptId: string): Promise<{
   grades: AttemptQuestionGrade[];
   ungradedQuestionIds: string[];
   result: AttemptResult;
+  recommendations: Recommendation[];
 }> {
   const res = await apiFetch(`/attempts/${attemptId}/submit`, { method: 'POST' });
   return readJson(res, 'Submitting attempt');
