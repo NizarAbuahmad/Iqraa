@@ -18,6 +18,7 @@ import {
 } from './AIService';
 import { DEMO_MODE } from './demoMode';
 import { MockAIService } from './generators';
+import { applyClassroomSetup } from '@/services/classroomRouting';
 import { apiFetch } from '../apiClient';
 import { describeAiError, generateWithProvenance, recordGeneration } from './aiProvenance.ts';
 
@@ -88,10 +89,19 @@ export class RemoteAIService extends AIService {
   }
 
   async generateClassroomActivity(req: ClassroomActivityRequest): Promise<ClassroomActivity> {
-    return generateWithProvenance(
+    const activity = await generateWithProvenance(
       'classroom-activity',
       () => postJSON<ClassroomActivity>('/generate/classroom-activity', req),
       () => this.fallback.generateClassroomActivity(req),
+    );
+    // Applied here rather than inside the generators: the mock deck, the live
+    // deck and any future source all pass through this method, and a model
+    // that ignored the prompt's "there is a projector" line would otherwise
+    // still tell the teacher to print the slides.
+    return applyClassroomSetup(
+      activity,
+      req.classroomSetup ?? 'screen',
+      req.language === 'arabic',
     );
   }
 

@@ -232,6 +232,12 @@ export interface ClassroomActivityRequest {
   groupType: 'individual' | 'pairs' | 'groups' | 'whole-class';
   teachingGoal: 'warm-up' | 'practice' | 'revision' | 'assessment' | 'critical-thinking';
   language: 'arabic' | 'english';
+  /**
+   * Whether the room has a projector for the deck, or only a board. Decides
+   * whether the activity asks the teacher to print what the slides already
+   * show — see applyClassroomSetup in classroomRouting.ts.
+   */
+  classroomSetup?: 'screen' | 'board';
   additionalContext?: string;
   /**
    * How many questions to generate. Honoured by 'quick-check', which defaults
