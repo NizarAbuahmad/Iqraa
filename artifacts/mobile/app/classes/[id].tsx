@@ -73,6 +73,7 @@ export default function ClassDetailScreen() {
   const [showAttach, setShowAttach] = useState(false);
   const [attachable, setAttachable] = useState<SavedMaterial[]>([]);
   const [attachingId, setAttachingId] = useState<string | null>(null);
+  const [savedCount, setSavedCount] = useState(0);
   const [noteStudent, setNoteStudent] = useState<RosterStudent | null>(null);
   const [noteText, setNoteText] = useState('');
   const [savingNote, setSavingNote] = useState(false);
@@ -194,6 +195,11 @@ export default function ClassDetailScreen() {
   const openAttach = async () => {
     setShowAttach(true);
     const all = await getItems({});
+    // Kept so the empty state can tell the two cases apart. They read
+    // identically as a blank list and mean opposite things: "you have not made
+    // anything yet" needs a way to go make something, "they are all in other
+    // classes" does not.
+    setSavedCount(all.length);
     setAttachable(all.filter(m => !m.classGroupId));
   };
 
@@ -640,7 +646,7 @@ export default function ClassDetailScreen() {
                     },
                   ]}
                 >
-                  {t('noMaterialsToAttach')}
+                  {savedCount === 0 ? t('noSavedMaterials') : t('noMaterialsToAttach')}
                 </Text>
               }
               renderItem={({ item }) => (
@@ -676,6 +682,32 @@ export default function ClassDetailScreen() {
                 </Pressable>
               )}
             />
+            {/* The sheet offered one way out — pick something that exists.
+                A teacher with nothing saved, or nothing left to attach, was
+                shown a dead end and a Cancel button. */}
+            <Pressable
+              onPress={() => {
+                setShowAttach(false);
+                router.push('/(tabs)/ai-tools');
+              }}
+              style={[
+                styles.createRow,
+                { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' },
+              ]}
+            >
+              <Ionicons name="add-circle-outline" size={18} color={ACCENT} />
+              <Text
+                style={{
+                  color: ACCENT,
+                  fontFamily: 'Cairo_600SemiBold',
+                  flex: 1,
+                  textAlign: align,
+                }}
+              >
+                {t('createNewMaterial')}
+              </Text>
+            </Pressable>
+
             <View style={styles.modalActions}>
               <Pressable onPress={() => setShowAttach(false)} style={styles.modalBtn}>
                 <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }}>
@@ -747,6 +779,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 10,
     borderWidth: 1,
+  },
+  createRow: {
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 13,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
   },
   textarea: {
     borderWidth: 1,

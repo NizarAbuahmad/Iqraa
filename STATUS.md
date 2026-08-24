@@ -176,6 +176,49 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The "..." menu in موادي never worked in a browser, 2026-08-24
+
+Reported by the user, and true since the workspace screen was written: the
+row menu was an `Alert.alert` with five buttons, and **`Alert.alert`'s handlers
+never fire on react-native web**. Open, Edit, Duplicate and Delete were all
+dead in the browser — which is the build teachers are demoed on — while looking
+correct on a phone.
+
+`services/confirm.ts` documents this exact defect and was written for it, but
+it only covers two-button confirms; a five-action menu had nowhere to go. The
+menu is now a `Modal`, inline in `app/workspace/index.tsx` rather than a shared
+component, because it is the only multi-action `Alert.alert` left in shipping
+code (the others are dev-only screens under `app/dev/`, plus one message-only
+notice, which is fine — a plain `Alert.alert` with no buttons still displays).
+
+**Verified by clicking it**, which is the point: menu opens, and عدّل actually
+navigates to the worksheet editor.
+
+### Attaching a material said the wrong thing when there was nothing to attach
+
+Also reported. The sheet always read «كل موادك المحفوظة مرتبطة بصفوف أخرى» —
+"they are all in other classes" — even for a teacher with nothing saved at all.
+A `noSavedMaterials` string was written for that case and then never wired up.
+`openAttach` now keeps the total count so the two cases can be told apart; they
+look identical as a blank list and mean opposite things.
+
+The sheet also offered exactly one way out — pick something that already
+exists — so a teacher with nothing saved hit a dead end and a Cancel button. It
+now offers **أنشئ مادة جديدة**, which goes to the tools tab.
+
+### Two notes on how this was verified, because both cost time
+
+- **`computer` clicks did nothing.** Browser input injection needs the pane
+  displayed, and it was not, so every automated click silently fired zero DOM
+  events. Real presses had to be dispatched from `javascript_tool`. Screenshots
+  fail loudly in this state; clicks fail silently.
+- **Reading the DOM immediately after a press shows the state before React
+  re-renders.** This produced a confident wrong diagnosis — that the modal was
+  opening and closing within one gesture — and a "fix" changing the backdrop
+  from tap-to-dismiss to a plain `View`. Re-tested with a delay: the original
+  backdrop was fine, and the change was reverted. Wait a tick before asserting
+  a press did nothing.
+
 ## The parent message knows who the student is, 2026-08-24
 
 `ai-tools/parent-message` composed a letter about a named child to their
