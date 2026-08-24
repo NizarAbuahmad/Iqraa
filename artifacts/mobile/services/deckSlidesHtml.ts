@@ -353,7 +353,7 @@ body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${DECK_BOR
 .deck-card { display:flex; align-items:center; gap:14px; background:${DECK_CARD_BG}; border:1px solid ${DECK_BORDER}; border-radius:14px; padding:14px 18px; }
 .deck-card-bar { width:5px; align-self:stretch; border-radius:3px; flex-shrink:0; }
 .deck-card-text { flex:1; font-size:17px; line-height:1.7; }
-.deck-formula { background:${DECK_CARD_BG}; border:1px solid ${DECK_BORDER}; border-radius:16px; padding:18px 20px; text-align:center; font-size:26px; font-weight:700; color:#fff; font-family:'Cairo','Arial','Tahoma',sans-serif; }
+.deck-formula { background:${DECK_CARD_BG}; border:1px solid ${DECK_BORDER}; border-radius:16px; padding:18px 20px; text-align:center; font-size:26px; font-weight:700; color:${DECK_TEXT}; font-family:'Cairo','Arial','Tahoma',sans-serif; }
 .deck-eq { font-size:26px; font-weight:700; color:${DECK_TEXT}; text-align:center; line-height:1.6; }
 .deck-answer { margin-top:22px; border:1.5px solid; border-radius:12px; padding:16px 24px; background:${DECK_CARD_BG}; min-width:320px; }
 .deck-answer-label { font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; margin-bottom:8px; }

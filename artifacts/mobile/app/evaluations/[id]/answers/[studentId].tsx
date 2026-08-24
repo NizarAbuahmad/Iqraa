@@ -68,6 +68,15 @@ const COMPETENCY_KEY: Record<CompetencyKey, TranslationKey> = {
 type Response = Record<string, unknown>;
 
 /**
+ * A question from an exam the app never wrote: no prompt, nothing to
+ * transcribe. Tested on the body rather than on `gradingMode`, so a manually
+ * graded question that *does* carry its own text still renders it.
+ */
+function isPaperQuestion(question: EvaluationQuestion): boolean {
+  return !((question.body?.['prompt'] as string) ?? '').trim();
+}
+
+/**
  * The mark and comment as they sit in the boxes, before they're saved.
  * `saved` is the last value the server accepted — a rejected edit reverts to
  * it, so the box can never sit there showing a mark that was refused.
@@ -456,8 +465,16 @@ function QuestionInput({
       {question.type === 'fill_blank' && (
         <FillBlankInput body={body} response={response} onChange={onChange} onCommit={onCommit} colors={colors} isRTL={isRTL} align={align} t={t} />
       )}
-      {(question.type === 'short_answer' || question.type === 'open_ended' || question.type === 'problem_solving' || question.type === 'practical_task') && (
-        <OpenTextInput body={body} response={response} onChange={onChange} onCommit={onCommit} colors={colors} align={align} t={t} />
+      {isPaperQuestion(question) ? (
+        // A paper exam holds no question text and no answer to transcribe —
+        // the paper has both. Only the mark and the comment below apply.
+        <Text style={[styles.qText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+          {t('paperQuestionOnSheet')}
+        </Text>
+      ) : (
+        (question.type === 'short_answer' || question.type === 'open_ended' || question.type === 'problem_solving' || question.type === 'practical_task') && (
+          <OpenTextInput body={body} response={response} onChange={onChange} onCommit={onCommit} colors={colors} align={align} t={t} />
+        )
       )}
 
       <GradeRow

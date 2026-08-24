@@ -38,7 +38,8 @@ import type { DeckVideo } from '@/services/youtubeVideo';
 import { summarizeVerification } from '@/services/quizVerification';
 import { confirm } from '@/services/confirm';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
-import { saveItem } from '@/services/workspace';
+import { saveItem, updateItem } from '@/services/workspace';
+import { ClassPickerSheet } from '@/components/ui/ClassPickerSheet';
 import { buildDeckSlidesHTML, exportAsPDF } from '@/services/share';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
@@ -77,6 +78,8 @@ export default function SlidesScreen() {
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
+  // Holds the new deck's id after saving — that opens the "which class?" sheet.
+  const [classPromptFor, setClassPromptFor] = useState<string | null>(null);
 
   // Per-slide editing — the deck is a draft the teacher owns, not a fixed
   // output. Edits live in the same deck state that Present/Save/PDF read, so
@@ -445,7 +448,7 @@ export default function SlidesScreen() {
 
   const save = async () => {
     if (!deck) return;
-    await saveItem({
+    const saved = await saveItem({
       type: 'slides',
       title: deck.activityName,
       subject: isAr ? subjects[subjectIdx].nameAr : subjects[subjectIdx].name,
@@ -456,6 +459,17 @@ export default function SlidesScreen() {
       formState: { gradeIdx, subjectIdx, topic: topic.trim(), includeExamples, includePractice },
     });
     showToast(t('slidesSaved'));
+    // This screen has no savedId of its own — saving a deck always creates a
+    // new one — so the id is captured purely to ask which class it belongs to.
+    setClassPromptFor(saved.id);
+  };
+
+  const attachToClass = async (classId: string, className: string) => {
+    const materialId = classPromptFor;
+    setClassPromptFor(null);
+    if (!materialId) return;
+    const ok = await updateItem(materialId, { classGroupId: classId });
+    showToast(ok ? t('savedToClass', className) : t('saveToClassFailed'));
   };
 
   // Exports the DECK — same slides, same accents, same verification badges
@@ -876,6 +890,11 @@ export default function SlidesScreen() {
         </View>
       </Modal>
 
+      <ClassPickerSheet
+        visible={classPromptFor !== null}
+        onClose={() => setClassPromptFor(null)}
+        onPick={(classId, className) => { void attachToClass(classId, className); }}
+      />
       <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
     </View>
   );

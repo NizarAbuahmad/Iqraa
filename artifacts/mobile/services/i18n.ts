@@ -358,6 +358,12 @@ const translations = {
     iqraWelcomeDocs: 'أنا اقرأ، رفيقك في تحضير الحصص.\n\nارفع خطة درس أو عرضاً أو ورقة عمل أو صورة من الكتاب — ونحضّر معاً التلخيص والشرح وخطط الدرس وأوراق العمل والواجبات والاختبارات من موادك.',
     iqraPlaceholder: 'اكتب ما تحتاجه...',
     iqraPlaceholderDocs: 'اسأل عن ملفاتك… أو اكتب: لخّص الدرس',
+    iqraInputLabel: 'رسالتك إلى اقرأ',
+    iqraInputHint: 'اكتب ما تحتاجه بلغتك — مثل: حضّر خطة درس عن تركيب الاقترانات.',
+    notFoundTitle: 'لم نجد هذه الصفحة',
+    notFoundBody: 'قد يكون الرابط قديمًا أو مكتوبًا بشكل غير صحيح. تابع من إحدى هذه الوجهات:',
+    notFoundHome: 'العودة إلى الرئيسية',
+    notFoundCurriculum: 'تصفّح المنهاج',
     docUpload: 'ارفع ملفاً',
     docUploadImage: 'ارفع صورة',
     docRemove: 'أزل الملف',
@@ -602,6 +608,11 @@ const translations = {
     // Slides export
     exportSlides: 'تصدير شرائح',
     exportSlidesSub: 'ملف PDF كشرائح عرض',
+    // The NotebookLM hand-off row in ExportMenu. Added here because the feature
+    // shipped calling t() for keys that were never defined, which broke
+    // `pnpm run typecheck` on main.
+    exportNotebook: 'افتح NotebookLM',
+    exportNotebookSub: 'ارفع ملف PDF لتحصل على ملخّص صوتي',
 
     // Lesson Flow Engine
     toolLessonFlowTitle: 'مسار الدرس الكامل',
@@ -630,6 +641,7 @@ const translations = {
     classroomHubDesc: 'شغّل تجارب تفاعلية مباشرة في الفصل',
     activityComingSoon: 'قريبًا',
     startClass: 'ابدأ الحصة',
+    startClassFailed: 'تعذّر تجهيز العرض. اضغط «ابدأ الحصة» للمحاولة مرة أخرى.',
     presentOnScreen: 'اعرض على الشاشة',
     nextSlide: 'التالي',
     prevSlide: 'السابق',
@@ -843,6 +855,7 @@ const translations = {
     saveToClassHint: 'ستجدها في تبويب «الموارد» داخل الصف',
     notNow: 'ليس الآن',
     savedToClass: (name: string) => `حُفظت في ${name}`,
+    saveToClassFailed: 'تعذّر ربطها بالصف — المادة محفوظة، حاول الإرفاق من داخل الصف',
 
     // Evaluations — authoring
     evaluations: 'التقييمات',
@@ -919,6 +932,17 @@ const translations = {
     insufficientEvidence: 'بيانات غير كافية',
     provisionalResultNote: 'نتيجة أولية — بقيت أسئلة بلا علامة. أدخل علاماتها لتصبح النتيجة نهائية.',
     noGradedQuestionsYet: 'لا توجد علامة بعد — أدخل علامة كل سؤال لتظهر النتيجة.',
+    evalModeGenerate: 'ولّد الأسئلة',
+    evalModePaper: 'امتحان ورقي',
+    evalModeGenerateHint: 'يبني اقرأ الأسئلة من نتاجات المنهاج.',
+    evalModePaperHint: 'امتحان أعددته بنفسك على الورق. لا يحتاج اقرأ نص الأسئلة — فقط علامة كل سؤال وما يقيسه، لتُدخل العلامات وتظهر النتيجة.',
+    paperGridLabel: 'أسئلة الورقة',
+    paperGridHint: 'حدّد لكل سؤال علامته والمهارة التي يقيسها. المهارة تُحدّد توزيع النتيجة، فغيّرها إن لم تكن دقيقة.',
+    paperMarksLabel: 'العلامة',
+    paperObjectiveLabel: 'النتاج',
+    paperMarksInvalid: (n: string) => `علامة السؤال ${n} يجب أن تكون أكبر من صفر.`,
+    createPaperExamBtn: 'أنشئ الامتحان',
+    paperQuestionOnSheet: 'سؤال من الورقة — أدخل علامته فقط.',
     markLabel: 'العلامة',
     markOutOf: (max: string) => `من ${max}`,
     markOutOfRange: (max: string) => `أدخل علامة بين 0 و ${max}`,
@@ -1249,6 +1273,12 @@ const translations = {
     iqraWelcomeDocs: 'I’m IQRA’s AI Teaching Assistant.\n\nUpload a lesson plan, PowerPoint, worksheet, or a photo of a textbook page — and I’ll help you summarize, explain, build lesson plans, worksheets, homework, and quizzes from your own materials.',
     iqraPlaceholder: 'Ask IQRA anything...',
     iqraPlaceholderDocs: 'Ask about your files… or type: Summarize this lesson',
+    iqraInputLabel: 'Your message to IQRA',
+    iqraInputHint: 'Type what you need in your own words — for example: prepare a lesson plan on composing functions.',
+    notFoundTitle: 'We could not find that page',
+    notFoundBody: 'The link may be out of date or mistyped. Carry on from one of these:',
+    notFoundHome: 'Back to home',
+    notFoundCurriculum: 'Browse the curriculum',
     docUpload: 'Upload file',
     docUploadImage: 'Upload image',
     docRemove: 'Remove file',
@@ -1487,6 +1517,8 @@ const translations = {
     // Slides export
     exportSlides: 'Export Slides',
     exportSlidesSub: 'PDF slide deck (not PowerPoint)',
+    exportNotebook: 'Open NotebookLM',
+    exportNotebookSub: 'Upload the PDF there for an audio overview',
 
     // Lesson Flow Engine
     toolLessonFlowTitle: 'Full lesson path',
@@ -1515,6 +1547,7 @@ const translations = {
     classroomHubDesc: 'Run interactive experiences live in class',
     activityComingSoon: 'Coming soon',
     startClass: 'Start class',
+    startClassFailed: 'Could not build the deck. Tap "Start class" to try again.',
     presentOnScreen: 'Present on screen',
     nextSlide: 'Next',
     prevSlide: 'Back',
@@ -1725,6 +1758,7 @@ const translations = {
     saveToClassHint: "You'll find it in the class's Materials tab",
     notNow: 'Not now',
     savedToClass: (name: string) => `Saved to ${name}`,
+    saveToClassFailed: "Couldn't add it to the class — the material is saved, try attaching from the class",
 
     // Evaluations — authoring
     evaluations: 'Evaluations',
@@ -1801,6 +1835,17 @@ const translations = {
     insufficientEvidence: 'Not enough evidence',
     provisionalResultNote: 'Provisional result — some questions are still unmarked. Enter their marks to finalise it.',
     noGradedQuestionsYet: 'No score yet — enter a mark for each question to see the result.',
+    evalModeGenerate: 'Generate questions',
+    evalModePaper: 'Paper exam',
+    evalModeGenerateHint: 'Iqraa writes the questions from the curriculum objectives.',
+    evalModePaperHint: "An exam you set yourself on paper. Iqraa doesn't need the question text — only what each question is worth and what it measures, so you can enter marks and get a result.",
+    paperGridLabel: 'Questions on the paper',
+    paperGridHint: "Set each question's marks and the skill it measures. The skill decides how the result breaks down, so change it where it isn't right.",
+    paperMarksLabel: 'Marks',
+    paperObjectiveLabel: 'Objective',
+    paperMarksInvalid: (n: string) => `Question ${n} needs marks greater than zero.`,
+    createPaperExamBtn: 'Create the exam',
+    paperQuestionOnSheet: 'A question on the paper — just enter its mark.',
     markLabel: 'Mark',
     markOutOf: (max: string) => `of ${max}`,
     markOutOfRange: (max: string) => `Enter a mark between 0 and ${max}`,

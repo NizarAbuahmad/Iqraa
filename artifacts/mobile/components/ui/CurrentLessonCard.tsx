@@ -37,6 +37,13 @@ type Props = {
   onStartClass?: () => void;
   /** Disables the Start button while its deck is being built. */
   startClassBusy?: boolean;
+  /**
+   * Shown under the card when a deck build failed. The card is the only place
+   * this can go: the teacher pressed a button, they did not ask a question, so
+   * the answer does not belong in the conversation. Empty when there is
+   * nothing to report.
+   */
+  startClassError?: string;
   uploadedLabel: (n: number) => string;
   onChangeLesson: () => void;
   onToggleCollapse: () => void;
@@ -52,6 +59,7 @@ export function CurrentLessonCard({
   startClassLabel,
   onStartClass,
   startClassBusy = false,
+  startClassError = '',
   uploadedLabel,
   onChangeLesson,
   onToggleCollapse,
@@ -61,6 +69,28 @@ export function CurrentLessonCard({
 
   const doneCount = lesson.resources.filter(r => r.done).length;
   const totalCount = lesson.resources.length;
+
+  /*
+    A failed Start Class used to render nothing at all, on the reasoning that a
+    press which visibly "did not take" invites a second press. On web that
+    reasoning does not hold: the haptic buzz standing in for the feedback is a
+    no-op there, so the button swallowed the press in silence and the teacher
+    had no way to tell a broken deck from a dead button. It says what happened,
+    in Arabic, next to the control that failed — and the control itself is the
+    retry, so it needs no button of its own.
+  */
+  const errorStrip = startClassError ? (
+    <View
+      style={[styles.errorRow, { flexDirection: rowDir, backgroundColor: START_CLASS_COLOR + '14' }]}
+      accessibilityRole="alert"
+      accessibilityLiveRegion="polite"
+    >
+      <Ionicons name="alert-circle-outline" size={14} color={START_CLASS_COLOR} />
+      <Text style={[styles.errorText, { color: START_CLASS_COLOR, textAlign: align, flex: 1 }]}>
+        {startClassError}
+      </Text>
+    </View>
+  ) : null;
 
   if (collapsed) {
     /*
@@ -165,6 +195,7 @@ export function CurrentLessonCard({
             <Ionicons name="chevron-down" size={16} color={colors.mutedForeground} />
           </Pressable>
         </View>
+        {errorStrip}
       </View>
     );
   }
@@ -253,6 +284,8 @@ export function CurrentLessonCard({
             </Text>
           </Pressable>
         </View>
+
+        {errorStrip}
       </View>
 
       {/*
@@ -329,6 +362,27 @@ const styles = StyleSheet.create({
   collapsedTitle: {
     fontFamily: 'Cairo_600SemiBold',
     fontSize: 13,
+  },
+  errorRow: {
+    alignItems: 'center',
+    gap: 6,
+    // Full width in the expanded card too, where the parent aligns its
+    // children to one edge and would otherwise shrink this to its text.
+    width: '100%',
+    // Collapsed, the strip is a sibling of `inner` rather than a child, so it
+    // has to repeat that column cap itself or it outruns the row it belongs to
+    // on a desktop window.
+    maxWidth: 760,
+    alignSelf: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  errorText: {
+    fontFamily: 'Cairo_500Medium',
+    fontSize: 12,
+    lineHeight: 18,
   },
   headerRow: {
     alignItems: 'flex-start',
