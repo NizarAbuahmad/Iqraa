@@ -20,6 +20,7 @@ import * as Sharing from 'expo-sharing';
 import { File, Paths } from 'expo-file-system';
 
 import { visualForSlide } from './deckVisuals.ts';
+import { isBulletLine, looksLikeEquation, stripBullet } from './deckText.ts';
 import type { ActivitySlide, ClassroomActivity } from '@/services/ai/AIService';
 import { mathLineToUnicode, prettifySymPy } from '@/services/mathRender';
 import { trackEvent } from '@/services/analytics';
@@ -170,11 +171,16 @@ export async function exportDeckAsPptx(
 
     const accent = deckSlideAccent(slide.type);
 
-    // Header bar: accent-coloured left rule + title.
-    s.addShape('rect', { x: 0, y: 0, w: 0.06, h: 0.75, fill: { color: accent } });
+    // Header: title on the reading edge with a short accent rule under it —
+    // the same shape SlideView draws on screen. It used to be a sliver of
+    // accent in the top-left corner, which in an Arabic deck sat on the wrong
+    // edge entirely and read as a rendering artefact.
     s.addText(slide.title, {
-      x: 0.35, y: 0.12, w: 9.3, h: 0.55, align: rtlAlign, valign: 'middle',
-      fontSize: 18, color: accent, bold: true, fontFace: HEAD_FONT,
+      x: 0.55, y: 0.22, w: 8.9, h: 0.5, align: rtlAlign, valign: 'middle',
+      fontSize: 20, color: accent, bold: true, fontFace: HEAD_FONT,
+    });
+    s.addShape('rect', {
+      x: isAr ? 8.55 : 0.55, y: 0.78, w: 0.9, h: 0.05, fill: { color: accent },
     });
 
     if (slide.type === 'graph') {
@@ -385,16 +391,75 @@ export async function exportDeckAsPptx(
       continue;
     }
 
-    // Generic content slide: one text block per line, matching how the
-    // projector reads them — a short list, not a paragraph.
-    const lines = slide.content.split('\n').filter(Boolean);
-    s.addText(
-      lines.map(l => ({
-        text: pptxLine(l, false),
-        options: { fontSize: 14, color: DECK_TEXT, breakLine: true, paraSpaceAfter: 10 },
-      })),
-      { x: 0.8, y: 1.15, w: 8.4, h: 4.0, align: rtlAlign, valign: 'top' },
-    );
+    /**
+     * Generic content slide. On screen (presentation.tsx `SlideView`) a bullet
+     * is a bordered card with an accent bar and an equation sits in its own
+     * box; this printed every line as one identical 14pt paragraph pinned to
+     * the top of the slide, which is the bulk of "the exported deck doesn't
+     * look like the projected one".
+     *
+     * Falls back to that plain block when the copy is too long to lay out as
+     * cards — better a dense slide than one that runs off the bottom edge.
+     */
+    const lines = slide.content.split('\n').map(l => l.trim()).filter(Boolean);
+    const BODY_TOP = 1.05;
+    const BODY_BOTTOM = 5.2;
+    // ponytail: character count, not text metrics — pptxgenjs exposes no way to
+    // measure a run, and ~64 characters is what one 15pt line fits across a
+    // card this wide. The overflow fallback below is what makes it safe.
+    const rowsFor = (l: string) => Math.max(1, Math.ceil(l.length / 64));
+    const heightFor = (l: string) =>
+      looksLikeEquation(l) ? 0.95 : isBulletLine(l) ? 0.3 + rowsFor(l) * 0.32 : rowsFor(l) * 0.34;
+    const GAP = 0.14;
+    const stackH = lines.reduce((sum, l) => sum + heightFor(l), 0)
+      + GAP * Math.max(0, lines.length - 1);
+
+    if (!lines.length || stackH > BODY_BOTTOM - BODY_TOP) {
+      s.addText(
+        lines.map(l => ({
+          text: pptxLine(l, false),
+          options: { fontSize: 14, color: DECK_TEXT, breakLine: true, paraSpaceAfter: 10 },
+        })),
+        { x: 0.8, y: 1.15, w: 8.4, h: 4.0, align: rtlAlign, valign: 'top' },
+      );
+      continue;
+    }
+
+    // Centred in the body area, like the on-screen slide, rather than hugging
+    // the header with four inches of empty deck underneath.
+    let y = BODY_TOP + (BODY_BOTTOM - BODY_TOP - stackH) / 2;
+    for (const line of lines) {
+      const h = heightFor(line);
+      if (looksLikeEquation(line)) {
+        s.addShape('roundRect', {
+          x: 1.4, y, w: 7.2, h,
+          fill: { color: '1A1B26' }, line: { color: '2A2B3A', width: 1 }, rectRadius: 0.1,
+        });
+        s.addText(pptxLine(line, true), {
+          x: 1.4, y, w: 7.2, h, align: 'center', valign: 'middle',
+          fontSize: 20, color: 'FFFFFF', bold: true, fontFace: HEAD_FONT,
+        });
+      } else if (isBulletLine(line)) {
+        s.addShape('roundRect', {
+          x: 0.8, y, w: 8.4, h,
+          fill: { color: '15161F' }, line: { color: '2A2B3A', width: 1 }, rectRadius: 0.08,
+        });
+        // Accent bar on the reading edge: right in Arabic, left in English.
+        s.addShape('rect', {
+          x: isAr ? 9.06 : 0.86, y: y + 0.07, w: 0.07, h: h - 0.14, fill: { color: accent },
+        });
+        s.addText(stripBullet(line), {
+          x: 1.05, y, w: 7.9, h, align: rtlAlign, valign: 'middle',
+          fontSize: 15, color: DECK_TEXT,
+        });
+      } else {
+        s.addText(pptxLine(line, false), {
+          x: 0.9, y, w: 8.2, h, align: rtlAlign, valign: 'middle',
+          fontSize: 15, color: DECK_TEXT,
+        });
+      }
+      y += h + GAP;
+    }
   }
 
   const outFilename = `${filename}.pptx`;

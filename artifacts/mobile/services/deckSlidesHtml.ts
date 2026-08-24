@@ -17,6 +17,7 @@
  * so it's directly testable.
  */
 import { visualForSlide, visualToSvg } from './deckVisuals.ts';
+import { isBulletLine, looksLikeEquation, splitEmoji, stripBullet } from './deckText.ts';
 import type { ActivitySlide, ClassroomActivity } from './ai/AIService.ts';
 import { hasRenderableMath, mathLineToHtml, MATH_HTML_STYLES, prettifySymPy } from './mathRender.ts';
 
@@ -42,11 +43,52 @@ function deckSlideEmoji(type: ActivitySlide['type']): string {
   return '🎯';
 }
 
+const esc = (s: string) => (s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+/**
+ * The slide header: section glyph in a chip, title on the reading edge, accent
+ * rule under it — the row `SlideView` draws on screen.
+ *
+ * The glyph comes off the title itself when there is one. Every branch used to
+ * hard-code an emoji AND print the untouched title next to it, so a heading
+ * like "🎯 نتاجات التعلم" reached the PDF with its target twice.
+ */
+function deckHeader(title: string, accent: string, fallbackGlyph: string): string {
+  const [glyph, heading] = splitEmoji(title);
+  return `<div class="deck-header" style="border-color:${accent}44">
+        <span class="deck-emoji">${glyph || fallbackGlyph}</span>
+        <span class="deck-eyebrow" style="color:${accent}">${esc(heading)}</span>
+      </div>`;
+}
+
 /** Full-bleed photo + dark gradient, or a flat accent panel with no photo — used by both the title and divider slides. */
 function deckHeroLayer(mediaUrl: string | undefined): string {
   if (!mediaUrl) return '';
   return `<img class="deck-hero-img" src="${mediaUrl.replace(/"/g, '&quot;')}" alt="" />
       <div class="deck-hero-gradient"></div>`;
+}
+
+/**
+ * One body line of a content slide, laid out the way the projector lays it
+ * out: a bullet becomes a bordered card with an accent bar, an equation gets
+ * its own box, everything else is a plain line. The export used to print all
+ * three as identical small paragraphs, which is most of what "the PDF doesn't
+ * look like the deck" meant.
+ */
+function deckBodyLine(line: string, accent: string): string {
+  if (!line.trim()) return '';
+  if (isBulletLine(line)) {
+    return `<div class="deck-card">
+          <span class="deck-card-bar" style="background:${accent}"></span>
+          <span class="deck-card-text">${esc(stripBullet(line))}</span>
+        </div>`;
+  }
+  if (looksLikeEquation(line)) {
+    return `<div class="deck-formula">${
+      hasRenderableMath(line) ? mathLineToHtml(line) : esc(line)
+    }</div>`;
+  }
+  return `<div class="deck-line">${esc(line)}</div>`;
 }
 
 /** One content line, math-aware — mirrors MathText.tsx's decision on native. */
@@ -61,7 +103,6 @@ function deckContentLine(line: string, isEquation: boolean): string {
 export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): string {
   const dir = isAr ? 'rtl' : 'ltr';
   const L = (ar: string, en: string) => (isAr ? ar : en);
-  const esc = (s: string) => (s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const total = deck.slides.length;
 
   const footer = (num: number) => `
@@ -109,10 +150,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
       return visual ? visualToSvg(visual, 640, 320) : '';
     })();
     return `<div class="deck-slide">
-      <div class="deck-header" style="border-color:${accent}44">
-        <span class="deck-emoji">📈</span>
-        <span class="deck-eyebrow" style="color:${accent}">${esc(slide.title)}</span>
-      </div>
+      ${deckHeader(slide.title, accent, '📈')}
       <div class="deck-body deck-body-center">
         ${context ? `<div class="deck-line" style="text-align:center;margin-bottom:18px">${esc(context)}</div>` : ''}
         <div class="deck-chip-row">
@@ -136,10 +174,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
         ${slide.verifiedBy === 'symbolic' && slide.computedAnswer ? `<div class="deck-evidence">${L('حسبها المُحقِّق مستقلًّا', 'Verifier computed independently')}: ${mathLineToHtml(prettifySymPy(slide.computedAnswer))}</div>` : ''}
       </div>` : '';
     return `<div class="deck-slide">
-      <div class="deck-header" style="border-color:${accent}44">
-        <span class="deck-emoji">🔐</span>
-        <span class="deck-eyebrow" style="color:${accent}">${esc(slide.title)}</span>
-      </div>
+      ${deckHeader(slide.title, accent, '🔐')}
       <div class="deck-body deck-body-center">
         ${deckContentLine(slide.content, true)}
         ${slide.answer ? `
@@ -155,10 +190,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
   const mediaSlide = (slide: ActivitySlide, num: number) => {
     const accent = deckSlideAccent(slide.type);
     return `<div class="deck-slide">
-      <div class="deck-header" style="border-color:${accent}44">
-        <span class="deck-emoji">🖼️</span>
-        <span class="deck-eyebrow" style="color:${accent}">${esc(slide.title)}</span>
-      </div>
+      ${deckHeader(slide.title, accent, '🖼️')}
       <div class="deck-body deck-body-center deck-body-media">
         <img class="deck-media-img" src="${esc(slide.mediaUrl ?? '')}" alt="${esc(slide.mediaCaption ?? '')}" />
         ${slide.mediaCaption ? `<div class="deck-media-caption">${esc(slide.mediaCaption)}</div>` : ''}
@@ -176,10 +208,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
     const accent = '#B45309';
     const url = slide.mediaUrl ?? '';
     return `<div class="deck-slide">
-      <div class="deck-header" style="border-color:${accent}44">
-        <span class="deck-emoji">🎬</span>
-        <span class="deck-eyebrow" style="color:${accent}">${esc(slide.title)}</span>
-      </div>
+      ${deckHeader(slide.title, accent, '🎬')}
       <div class="deck-body deck-body-center">
         ${slide.mediaCaption ? `<div class="deck-video-title">${esc(slide.mediaCaption)}</div>` : ''}
         <a class="deck-video-link" style="border-color:${accent}66;color:${accent}" href="${esc(url)}">▶ ${L('شاهد الفيديو', 'Watch the video')}</a>
@@ -209,10 +238,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
         ${slide.verifiedBy === 'symbolic' ? L('تم التحقق من الإجابة رياضيًا (SymPy)', 'Answer symbolically verified (SymPy)') : L('من بنك الأسئلة المُراجَع', 'From the reviewed question bank')}
       </div>` : '';
     return `<div class="deck-slide">
-      <div class="deck-header" style="border-color:${accent}44">
-        <span class="deck-emoji">🙋</span>
-        <span class="deck-eyebrow" style="color:${accent}">${esc(slide.title)}</span>
-      </div>
+      ${deckHeader(slide.title, accent, '🙋')}
       <div class="deck-body deck-body-center">
         ${deckContentLine(slide.content, true)}
         <div class="deck-options">
@@ -234,12 +260,9 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
     const accent = deckSlideAccent(slide.type);
     const lines = slide.content.split('\n').filter(Boolean);
     return `<div class="deck-slide">
-      <div class="deck-header" style="border-color:${accent}44">
-        <span class="deck-emoji">${deckSlideEmoji(slide.type)}</span>
-        <span class="deck-eyebrow" style="color:${accent}">${esc(slide.title)}</span>
-      </div>
+      ${deckHeader(slide.title, accent, deckSlideEmoji(slide.type))}
       <div class="deck-body">
-        ${lines.map(l => deckContentLine(l, slide.type === 'challenge')).join('')}
+        ${lines.map(l => deckBodyLine(l, accent)).join('')}
         ${(() => {
           // Any slide may carry a visual, not just graph slides. A chart
           // attached to a content slide rendered nowhere in the exports until
@@ -285,7 +308,11 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
 <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700&family=Cairo:wght@500;600;700&display=swap" rel="stylesheet"/>
 <style>
 @page { size: A4 landscape; margin: 0; }
-* { box-sizing: border-box; margin: 0; padding: 0; }
+/* Chrome and Safari drop every background colour, gradient and background
+   image when printing unless this is set. Without it the dark projector deck
+   printed as white pages with near-invisible white text on them — the export
+   looked nothing like what the teacher saw on screen. */
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 /* Almarai carries body copy, Cairo every heavier weight — the same split
    app/_layout.tsx makes for the on-screen UI, so an exported deck reads as
    the same product as the projector. Arial stays as the offline fallback. */
@@ -311,7 +338,11 @@ body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:#1a1a1a; }
 .deck-eyebrow { font-size:16px; font-weight:700; }
 .deck-body { flex:1; padding:28px 40px; overflow:hidden; display:flex; flex-direction:column; justify-content:center; gap:10px; }
 .deck-body-center { align-items:center; text-align:center; }
-.deck-line { font-size:14px; line-height:1.8; color:${DECK_TEXT}; }
+.deck-line { font-size:17px; line-height:1.8; color:${DECK_TEXT}; }
+.deck-card { display:flex; align-items:center; gap:14px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.10); border-radius:14px; padding:14px 18px; }
+.deck-card-bar { width:5px; align-self:stretch; border-radius:3px; flex-shrink:0; }
+.deck-card-text { flex:1; font-size:17px; line-height:1.7; }
+.deck-formula { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.10); border-radius:16px; padding:18px 20px; text-align:center; font-size:26px; font-weight:700; color:#fff; font-family:'Cairo','Arial','Tahoma',sans-serif; }
 .deck-eq { font-size:26px; font-weight:700; color:#fff; text-align:center; line-height:1.6; }
 .deck-answer { margin-top:22px; border:1.5px solid; border-radius:12px; padding:16px 24px; background:rgba(255,255,255,0.03); min-width:320px; }
 .deck-answer-label { font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; margin-bottom:8px; }

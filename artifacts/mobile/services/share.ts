@@ -122,7 +122,11 @@ export async function exportAsPDF(html: string, filename: string): Promise<void>
     // on the current page → blank result.  Instead, inject an iframe with our HTML
     // so the browser print dialog shows the actual lesson content.
     const iframe = document.createElement('iframe');
-    iframe.style.cssText = 'position:fixed;width:0;height:0;opacity:0;border:none;';
+    // Off-screen at a real slide-sized viewport rather than 0x0: a zero-sized
+    // frame lays out at zero, and images that never get a box are deprioritised
+    // or skipped entirely by the engine — which is why the deck's hero photo
+    // was missing from printed decks that showed it fine on screen.
+    iframe.style.cssText = 'position:fixed;left:-10000px;top:0;width:1123px;height:794px;border:none;';
     // Defense-in-depth: even though everything written below is escaped, deny
     // the iframe document script execution outright, so an escaping gap here
     // or in a future edit can't run script against our localStorage-held auth
@@ -143,7 +147,10 @@ export async function exportAsPDF(html: string, filename: string): Promise<void>
     // pure inline text, but an external photo is a real network fetch and a
     // fixed wait can't know how long that takes. Printing before it resolves
     // doesn't error, it just silently prints the page without the photo.
-    await Promise.all([waitForImages(doc, 2500), waitForFonts(doc, 2500)]);
+    // ponytail: 5s ceiling on the photo fetch — long enough for an Unsplash
+    // hero over a school connection, short enough that a dead link doesn't
+    // look like a hung export. Raise it if teachers report missing photos.
+    await Promise.all([waitForImages(doc, 5000), waitForFonts(doc, 2500)]);
     iframe.contentWindow!.print();
     // Remove the iframe after the dialog has had time to open.
     setTimeout(() => document.body.removeChild(iframe), 3000);
