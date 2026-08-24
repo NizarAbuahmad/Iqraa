@@ -16,6 +16,7 @@ import { TopicSelector } from '@/components/ui/TopicSelector';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { Button } from '@/components/ui/Button';
 import { getItem, saveItem, updateItem } from '@/services/workspace';
+import { ClassPickerSheet } from '@/components/ui/ClassPickerSheet';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
@@ -78,6 +79,9 @@ export default function ActivityScreen() {
   const [loadingSlides, setLoadingSlides] = useState(false);
 
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
+  // Holds the new material's id after a first save — that opens the "which
+  // class?" sheet. Re-saving an edit does not re-ask.
+  const [classPromptFor, setClassPromptFor] = useState<string | null>(null);
 
   // Reset topic when grade or subject changes
   const prevGradeRef = React.useRef(gradeIdx);
@@ -176,8 +180,17 @@ export default function ActivityScreen() {
       });
       setSavedId(saved.id);
       setSaveLabel('saved');
+      setClassPromptFor(saved.id);
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const attachToClass = async (classId: string, className: string) => {
+    const materialId = classPromptFor;
+    setClassPromptFor(null);
+    if (!materialId) return;
+    const ok = await updateItem(materialId, { classGroupId: classId });
+    showToast(ok ? t('savedToClass', className) : t('saveToClassFailed'));
   };
 
   const handleShareText = async () => {
@@ -399,6 +412,11 @@ export default function ActivityScreen() {
       loadingWord={loadingWord}
       loadingSlides={loadingSlides}
       labels={exportLabels}
+    />
+    <ClassPickerSheet
+      visible={classPromptFor !== null}
+      onClose={() => setClassPromptFor(null)}
+      onPick={(classId, className) => { void attachToClass(classId, className); }}
     />
     <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
     </View>

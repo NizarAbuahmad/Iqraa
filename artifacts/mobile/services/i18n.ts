@@ -602,6 +602,11 @@ const translations = {
     // Slides export
     exportSlides: 'تصدير شرائح',
     exportSlidesSub: 'ملف PDF كشرائح عرض',
+    // The NotebookLM hand-off row in ExportMenu. Added here because the feature
+    // shipped calling t() for keys that were never defined, which broke
+    // `pnpm run typecheck` on main.
+    exportNotebook: 'افتح NotebookLM',
+    exportNotebookSub: 'ارفع ملف PDF لتحصل على ملخّص صوتي',
 
     // Lesson Flow Engine
     toolLessonFlowTitle: 'مسار الدرس الكامل',
@@ -843,6 +848,7 @@ const translations = {
     saveToClassHint: 'ستجدها في تبويب «الموارد» داخل الصف',
     notNow: 'ليس الآن',
     savedToClass: (name: string) => `حُفظت في ${name}`,
+    saveToClassFailed: 'تعذّر ربطها بالصف — المادة محفوظة، حاول الإرفاق من داخل الصف',
 
     // Evaluations — authoring
     evaluations: 'التقييمات',
@@ -1487,6 +1493,8 @@ const translations = {
     // Slides export
     exportSlides: 'Export Slides',
     exportSlidesSub: 'PDF slide deck (not PowerPoint)',
+    exportNotebook: 'Open NotebookLM',
+    exportNotebookSub: 'Upload the PDF there for an audio overview',
 
     // Lesson Flow Engine
     toolLessonFlowTitle: 'Full lesson path',
@@ -1725,6 +1733,7 @@ const translations = {
     saveToClassHint: "You'll find it in the class's Materials tab",
     notNow: 'Not now',
     savedToClass: (name: string) => `Saved to ${name}`,
+    saveToClassFailed: "Couldn't add it to the class — the material is saved, try attaching from the class",
 
     // Evaluations — authoring
     evaluations: 'Evaluations',
