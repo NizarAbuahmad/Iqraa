@@ -95,6 +95,14 @@ export const attempts = pgTable(
     /** Level scale frozen at start — see assessmentConfig.ts for why. */
     levelScaleSnapshot: jsonb("level_scale_snapshot").$type<Record<string, unknown>>().notNull().default({}),
 
+    /**
+     * The teacher's note on this sitting as a whole — how the student did, not
+     * how one answer did. Per-answer comments live on the grade row's
+     * `rationaleAr`, because a comment about an answer belongs next to that
+     * answer's mark and has to survive being re-marked with it.
+     */
+    teacherComment: text("teacher_comment").notNull().default(""),
+
     startedAt: timestamp("started_at", { withTimezone: true }),
     submittedAt: timestamp("submitted_at", { withTimezone: true }),
     gradedAt: timestamp("graded_at", { withTimezone: true }),

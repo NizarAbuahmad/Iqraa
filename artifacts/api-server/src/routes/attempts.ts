@@ -14,13 +14,23 @@ import {
   attemptResults,
   attempts,
   evaluations,
+  gradeOverrides,
   students,
 } from "@workspace/db";
-import type { EvaluationQuestion } from "@workspace/db";
-import { and, eq } from "drizzle-orm";
+import type { Attempt, EvaluationQuestion } from "@workspace/db";
+import { and, eq, ne } from "drizzle-orm";
 import { authMiddleware, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { logger } from "../lib/logger";
-import { gradeAttempt, type AttemptQuestionInput } from "../modules/assessment/gradeAttempt";
+import {
+  gradeAttempt,
+  scorePersistedGrades,
+  type AttemptQuestionInput,
+} from "../modules/assessment/gradeAttempt";
+import {
+  deriveVerdict,
+  isVerdict,
+  normalizeManualMarks,
+} from "../modules/assessment/manualGrade";
 import type { LevelBandInput } from "../modules/assessment/scoring";
 
 const router = Router();
@@ -37,6 +47,91 @@ async function ownedAttempt(attemptId: string, teacherId: string) {
     .where(and(eq(attempts.id, attemptId), eq(evaluations.teacherId, teacherId)))
     .limit(1);
   return row;
+}
+
+/** The snapshot, in the shape the scoring modules take. */
+function snapshotQuestions(attempt: Attempt): AttemptQuestionInput[] {
+  const snapshot = (attempt.questionSnapshot as EvaluationQuestion[]) ?? [];
+  return snapshot.map(q => ({
+    questionId: q.id,
+    type: q.type,
+    body: q.body,
+    expectedAnswer: q.expectedAnswer,
+    competencyKey: q.competencyKey,
+    objectiveId: q.objectiveId,
+    marks: Number(q.marks),
+    difficulty: q.difficulty,
+  }));
+}
+
+function snapshotBands(attempt: Attempt): LevelBandInput[] {
+  const scale = attempt.levelScaleSnapshot as { scaleId?: string | null; bands?: LevelBandInput[] } | null;
+  return scale?.bands ?? [];
+}
+
+/**
+ * Rebuild the stored result from every grade currently on record, and move the
+ * attempt's status to match.
+ *
+ * Both submitting and marking a single question by hand end here, so there is
+ * one place that decides what a result says. The status follows from the same
+ * count: while any question is unmarked the result is provisional and the
+ * attempt `needs_review`; marking the last one flips both — which is the whole
+ * point of teacher marking existing.
+ */
+async function recomputeResult(attempt: Attempt) {
+  const questions = snapshotQuestions(attempt);
+  const bands = snapshotBands(attempt);
+  const gradeRows = await db
+    .select()
+    .from(attemptQuestionGrades)
+    .where(eq(attemptQuestionGrades.attemptId, attempt.id));
+
+  const { score, ungradedQuestionIds } = scorePersistedGrades(
+    questions,
+    gradeRows.map(g => ({
+      questionId: g.questionId,
+      awardedMarks: Number(g.awardedMarks),
+      maxMarks: Number(g.maxMarks),
+      verdict: g.verdict,
+    })),
+    bands,
+  );
+
+  const isProvisional = ungradedQuestionIds.length > 0;
+  const scaleId = (attempt.levelScaleSnapshot as { scaleId?: string | null } | null)?.scaleId ?? null;
+  const resultValues = {
+    attemptId: attempt.id,
+    earnedMarks: score.earnedMarks.toFixed(2),
+    totalMarks: score.totalMarks.toFixed(2),
+    percent: score.percent.toFixed(2),
+    competencyScores: score.competencyScores,
+    objectiveScores: score.objectiveScores,
+    levelKey: score.levelKey,
+    levelScaleId: scaleId,
+    isProvisional,
+    computedAt: new Date(),
+  };
+  await db
+    .insert(attemptResults)
+    .values(resultValues)
+    .onConflictDoUpdate({ target: attemptResults.attemptId, set: resultValues });
+
+  const [updatedAttempt] = await db
+    .update(attempts)
+    .set({
+      status: isProvisional ? "needs_review" : "graded",
+      gradedAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(eq(attempts.id, attempt.id))
+    .returning();
+
+  return {
+    attempt: updatedAttempt!,
+    ungradedQuestionIds,
+    result: { ...resultValues, computedAt: resultValues.computedAt.toISOString() },
+  };
 }
 
 router.get("/attempts/:id", async (req: AuthenticatedRequest, res) => {
@@ -137,9 +232,14 @@ router.put("/attempts/:id/answers/:questionId", async (req: AuthenticatedRequest
  * and stores both. Questions with no deterministic grader (open_ended,
  * short_answer, problem_solving, practical_task) are left ungraded — Tier 2
  * (math equivalence) and Tier 3 (AI rubric grading) do not exist yet — and the
- * result is marked provisional so the dashboard cannot present it as final.
+ * result is marked provisional until a teacher marks them by hand below.
  * Re-submitting recomputes cleanly: existing grades and the result are
  * replaced, not appended to.
+ *
+ * **A teacher's mark survives a re-submit.** Only machine grades are cleared
+ * and recomputed. Re-submitting is the normal way to pick up a corrected
+ * answer, and if it wiped hand marks a teacher would lose an evening's
+ * marking to a button they had every reason to press.
  */
 router.post("/attempts/:id/submit", async (req: AuthenticatedRequest, res) => {
   try {
@@ -149,16 +249,13 @@ router.post("/attempts/:id/submit", async (req: AuthenticatedRequest, res) => {
       return;
     }
 
-    const snapshot = (owned.attempt.questionSnapshot as EvaluationQuestion[]) ?? [];
-    if (snapshot.length === 0) {
+    const questions = snapshotQuestions(owned.attempt);
+    if (questions.length === 0) {
       res.status(409).json({ error: "This attempt has no questions" });
       return;
     }
 
-    const scaleSnapshot = owned.attempt.levelScaleSnapshot as
-      | { scaleId?: string | null; bands?: LevelBandInput[] }
-      | null;
-    const bands = scaleSnapshot?.bands ?? [];
+    const bands = snapshotBands(owned.attempt);
     if (bands.length === 0) {
       res.status(409).json({ error: "No level scale was captured for this attempt" });
       return;
@@ -170,23 +267,31 @@ router.post("/attempts/:id/submit", async (req: AuthenticatedRequest, res) => {
       .where(eq(attemptAnswers.attemptId, owned.attempt.id));
     const answerMap = new Map(answerRows.map(a => [a.questionId, a.response]));
 
-    const questions: AttemptQuestionInput[] = snapshot.map(q => ({
-      questionId: q.id,
-      type: q.type,
-      body: q.body,
-      expectedAnswer: q.expectedAnswer,
-      competencyKey: q.competencyKey,
-      objectiveId: q.objectiveId,
-      marks: Number(q.marks),
-      difficulty: q.difficulty,
-    }));
+    const existingGrades = await db
+      .select({ questionId: attemptQuestionGrades.questionId })
+      .from(attemptQuestionGrades)
+      .where(
+        and(
+          eq(attemptQuestionGrades.attemptId, owned.attempt.id),
+          eq(attemptQuestionGrades.grader, "teacher"),
+        ),
+      );
+    const handMarked = new Set(existingGrades.map(g => g.questionId));
 
     const outcome = gradeAttempt(questions, answerMap, bands);
+    const machineGrades = outcome.graded.filter(g => !handMarked.has(g.questionId));
 
-    await db.delete(attemptQuestionGrades).where(eq(attemptQuestionGrades.attemptId, owned.attempt.id));
-    if (outcome.graded.length > 0) {
+    await db
+      .delete(attemptQuestionGrades)
+      .where(
+        and(
+          eq(attemptQuestionGrades.attemptId, owned.attempt.id),
+          ne(attemptQuestionGrades.grader, "teacher"),
+        ),
+      );
+    if (machineGrades.length > 0) {
       await db.insert(attemptQuestionGrades).values(
-        outcome.graded.map(g => ({
+        machineGrades.map(g => ({
           attemptId: owned.attempt.id,
           questionId: g.questionId,
           awardedMarks: g.awardedMarks.toFixed(2),
@@ -199,45 +304,151 @@ router.post("/attempts/:id/submit", async (req: AuthenticatedRequest, res) => {
       );
     }
 
-    const isProvisional = outcome.ungradedQuestionIds.length > 0;
-    const resultValues = {
-      attemptId: owned.attempt.id,
-      earnedMarks: outcome.score.earnedMarks.toFixed(2),
-      totalMarks: outcome.score.totalMarks.toFixed(2),
-      percent: outcome.score.percent.toFixed(2),
-      competencyScores: outcome.score.competencyScores,
-      objectiveScores: outcome.score.objectiveScores,
-      levelKey: outcome.score.levelKey,
-      levelScaleId: scaleSnapshot?.scaleId ?? null,
-      isProvisional,
-      computedAt: new Date(),
-    };
-    await db
-      .insert(attemptResults)
-      .values(resultValues)
-      .onConflictDoUpdate({ target: attemptResults.attemptId, set: resultValues });
-
     const now = new Date();
-    const [updatedAttempt] = await db
+    await db
       .update(attempts)
-      .set({
-        status: isProvisional ? "needs_review" : "graded",
-        submittedAt: owned.attempt.submittedAt ?? now,
-        gradedAt: now,
-        updatedAt: now,
-      })
-      .where(eq(attempts.id, owned.attempt.id))
-      .returning();
+      .set({ submittedAt: owned.attempt.submittedAt ?? now, updatedAt: now })
+      .where(eq(attempts.id, owned.attempt.id));
+
+    const recomputed = await recomputeResult(owned.attempt);
 
     res.json({
-      attempt: updatedAttempt,
-      grades: outcome.graded,
-      ungradedQuestionIds: outcome.ungradedQuestionIds,
-      result: { ...resultValues, computedAt: resultValues.computedAt.toISOString() },
+      attempt: recomputed.attempt,
+      grades: machineGrades,
+      ungradedQuestionIds: recomputed.ungradedQuestionIds,
+      result: recomputed.result,
     });
   } catch (err) {
     logger.error({ err }, "submit attempt failed");
     res.status(500).json({ error: "Failed to submit the attempt" });
+  }
+});
+
+/**
+ * A teacher marks one question by hand — the only way an open-ended answer
+ * gets a mark, and the way a machine mark gets corrected.
+ *
+ * The mark is written as a normal grade row with `grader: 'teacher'`, so
+ * everything downstream (scoring, the result, the dashboard) treats it like
+ * any other mark and the badge still says who produced it. Correcting a mark
+ * that already existed also appends to `grade_overrides` — that table is the
+ * evidence for "the machine said 2, the teacher said 3", and it is the only
+ * thing that can ever show whether the automatic grader is worth trusting.
+ *
+ * A *first* mark on a previously unmarked question writes no override row:
+ * nothing was overridden, and recording an invented "was 0, unanswered" as the
+ * prior state would put a claim about the student into an audit trail.
+ */
+router.put("/attempts/:id/grades/:questionId", async (req: AuthenticatedRequest, res) => {
+  try {
+    const owned = await ownedAttempt(req.params["id"] as string, req.user!.id);
+    if (!owned) {
+      res.status(404).json({ error: "Attempt not found" });
+      return;
+    }
+
+    const questionId = req.params["questionId"] as string;
+    const snapshot = (owned.attempt.questionSnapshot as EvaluationQuestion[]) ?? [];
+    const question = snapshot.find(q => q.id === questionId);
+    if (!question) {
+      res.status(404).json({ error: "Question not found in this attempt" });
+      return;
+    }
+
+    const maxMarks = Number(question.marks);
+    const awardedMarks = normalizeManualMarks(req.body?.awardedMarks, maxMarks);
+    if (awardedMarks === null) {
+      res.status(400).json({
+        error: `awardedMarks must be a number between 0 and ${maxMarks}`,
+        code: "marks_out_of_range",
+      });
+      return;
+    }
+    const verdict = isVerdict(req.body?.verdict)
+      ? req.body.verdict
+      : deriveVerdict(awardedMarks, maxMarks);
+    const note = typeof req.body?.note === "string" ? req.body.note.trim().slice(0, 2000) : "";
+
+    const [previous] = await db
+      .select()
+      .from(attemptQuestionGrades)
+      .where(
+        and(
+          eq(attemptQuestionGrades.attemptId, owned.attempt.id),
+          eq(attemptQuestionGrades.questionId, questionId),
+        ),
+      )
+      .limit(1);
+
+    const values = {
+      attemptId: owned.attempt.id,
+      questionId,
+      awardedMarks: awardedMarks.toFixed(2),
+      maxMarks: maxMarks.toFixed(2),
+      verdict,
+      grader: "teacher" as const,
+      // A teacher's mark is not a guess, so it carries no confidence and never
+      // queues for review — it *is* the review.
+      confidence: null,
+      needsReview: false,
+      // The teacher's comment on this answer replaces the machine's rationale,
+      // because the machine's verdict no longer stands.
+      rationaleAr: note,
+      gradedAt: new Date(),
+    };
+    const [grade] = await db
+      .insert(attemptQuestionGrades)
+      .values(values)
+      .onConflictDoUpdate({
+        target: [attemptQuestionGrades.attemptId, attemptQuestionGrades.questionId],
+        set: values,
+      })
+      .returning();
+
+    if (previous) {
+      await db.insert(gradeOverrides).values({
+        attemptId: owned.attempt.id,
+        questionId,
+        teacherId: req.user!.id,
+        oldMarks: previous.awardedMarks,
+        newMarks: values.awardedMarks,
+        oldVerdict: previous.verdict,
+        newVerdict: verdict,
+        note,
+      });
+    }
+
+    const recomputed = await recomputeResult(owned.attempt);
+    res.json({ grade, attempt: recomputed.attempt, result: recomputed.result });
+  } catch (err) {
+    logger.error({ err }, "manual grade failed");
+    res.status(500).json({ error: "Failed to save the mark" });
+  }
+});
+
+/** The teacher's note on the sitting as a whole. */
+router.patch("/attempts/:id", async (req: AuthenticatedRequest, res) => {
+  try {
+    const owned = await ownedAttempt(req.params["id"] as string, req.user!.id);
+    if (!owned) {
+      res.status(404).json({ error: "Attempt not found" });
+      return;
+    }
+    if (typeof req.body?.teacherComment !== "string") {
+      res.status(400).json({ error: "teacherComment is required" });
+      return;
+    }
+
+    const [attempt] = await db
+      .update(attempts)
+      .set({ teacherComment: req.body.teacherComment.trim().slice(0, 4000), updatedAt: new Date() })
+      .where(eq(attempts.id, owned.attempt.id))
+      .returning();
+
+    res.json({ attempt });
+  } catch (err) {
+    logger.error({ err }, "save teacher comment failed");
+    res.status(500).json({ error: "Failed to save the comment" });
   }
 });
 

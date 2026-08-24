@@ -92,8 +92,19 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     lesson (الدوائر المتماسة, 3 حصص) plus a توسُّع item that the student book on
     file does not have. Not added — see `known_gaps` in the curriculum JSON.
 - Objective counts, NCCD data in `lib/curriculum/src/data/*.json`: math S1 59,
-  math S2 61, financial literacy 40, chemistry S1 12 (across 3 units /
-  9 lessons, and 3 of those lessons still have none).
+  math S2 61, financial literacy 40, chemistry S1 12.
+  - **"3 chemistry lessons have no objectives" was a misreading** (corrected
+    2026-08-24): the 9 entries are 6 taught lessons plus 3 تجربة استهلالية
+    labs, and the book prints no outcomes for a lab. Nothing is missing there.
+    What *was* missing: unit 3's two lessons carry 1 and 2 outcomes in the
+    student book while the teacher guide's مخطط الوحدة lists 6 and 5 for the
+    same lessons. Those are now captured per lesson as `guide_objectives`,
+    alongside the book's own — **no generator reads that field yet**, so the
+    objective index is still the book's 12.
+  - Chemistry S1 also gained, from the guide's مخطط الوحدة (guide pages 7A /
+    29A / 59A): 3 حصص per lesson (`periods` was null everywhere and is now a
+    closed gap), per-unit `prior_knowledge` tagged with the grade each outcome
+    was taught in, and the activities the table names.
   - Separately, `lib/curriculum/src/catalog.ts` holds a small hand-authored
     catalog with real Bloom's levels — 4 of its objectives are chemistry S1.
     **These are two different datasets; do not read "chemistry 4" as the
@@ -107,6 +118,37 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     publish, validators), plus deterministic marking and level aggregation.
     What is missing is any evaluation UI, the attempts/answer-entry endpoints,
     and the dashboard.
+- **Every Grade 10 source PDF is now inventoried** in
+  `lib/curriculum/src/data/g10_sources.json`, read through
+  `lib/curriculum/src/sources.ts` (`usableSources()`, `pendingSources()`,
+  `conflicts()`). It records, per file, its Drive id, what kind of document it
+  is, whether NCCD or a named teacher wrote it, and whether anything has been
+  extracted from it. Written from a Drive listing taken 2026-08-24; nothing at
+  runtime reads it, so a stale entry costs a wrong answer to "what do we have",
+  never a broken app.
+  - What it surfaced immediately: chemistry S1 **and** S2 each had two files
+    claiming to be the same student book with different byte counts (an
+    Arabic-titled and an English-titled copy). **Resolved 2026-08-24 — not an
+    edition split:** each pair has an identical page count (76 / 84) and an
+    identical PDF `CreationDate`; the Arabic-titled copies are iLovePDF
+    re-compressions of the Adobe originals. The originals are canonical
+    because these books are extracted from page renders and the compressed
+    copies have downsampled images. Four teacher-made files are exact
+    duplicates. Chemistry S2 has a student book, a teacher guide and an
+    activity book on file and no catalog entry at all.
+  - Chemistry unit structure, read off the two student books: S1 carries units
+    1–3 (بنية الذرة وتركيبها / التوزيع الإلكتروني والدورية / المركبات والروابط
+    الكيميائية) with two lessons each; S2 carries units 4–5 (التفاعلات
+    والحسابات الكيميائية / الطاقة الكيميائية) with three lessons each. Unit
+    numbering runs continuously across the two semesters, so they are one
+    course. Each unit also has a تجربة استهلالية, an إثراء وتوسع and a
+    مراجعة — which is where the catalog's "9 lessons" for S1 comes from, and
+    it does not match the 6 taught lessons the book actually names.
+  - The Drive tree is mirrored on disk (`localRoot` in the manifest), so
+    extraction reads local files rather than re-downloading ~300MB.
+  - Teacher-made material is a large share of the Drive (worksheets, answer
+    keys, دوسيات, past papers by named Jordanian teachers). `authority:
+    'teacher'` marks it: usable to inform generation, not to be reproduced.
 - Chemistry is thinner than "math + chemistry first" implies: 3 units /
   9 lessons against math's 4 / 18 per semester.
 - Financial Literacy G10 S1 is browsable (2 units / 10 lessons, NCCD-sourced).
@@ -154,6 +196,118 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     deployed. The client's timeout is 2.5s, so the first call after idle fails.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
+
+## A teacher can mark a paper exam by hand, 2026-08-24
+
+Grading was deterministic-only. Four of the eight question types mark
+themselves; the other four (short answer, open-ended, problem solving,
+practical task) had no grader at all, so an evaluation made of them scored
+nothing and the app told the teacher so — "manual grading, which isn't built
+yet". This builds it. It is the smallest slice that makes an exam on paper
+markable in the app; uploading the paper itself is not in it.
+
+**One column, two routes, no new tables.** Everything the marking needs was
+already in the schema and unused:
+
+- `PUT /attempts/:id/grades/:questionId` writes a normal grade row with
+  `grader: 'teacher'`. Correcting a mark that already existed also appends to
+  `grade_overrides` — the table that has existed since Phase 4 with nothing
+  ever writing to it. A **first** mark on an unmarked question writes no
+  override row: nothing was overridden, and recording an invented "was 0,
+  unanswered" would put a claim about the student into an audit trail.
+- `PATCH /attempts/:id` saves `attempts.teacher_comment`, the note on the
+  sitting as a whole. Per-answer comments needed no column — they go in the
+  grade row's `rationaleAr`, next to the mark they are about.
+
+**Submit and hand-marking now compute the result through one function.**
+`scorePersistedGrades` scores whatever grades are on record rather than only
+what the caller just produced, so a teacher marking the last open-ended
+question moves the percentage exactly as submit would have. `isProvisional`
+and the attempt status both follow from the same count, which means marking
+the last question is what flips a result from provisional to final — the
+point of the feature.
+
+**A teacher's mark survives a re-submit.** Submitting used to delete every
+grade for the attempt and re-grade from scratch. Re-submitting is the normal
+way to pick up a corrected answer, so that would have lost an evening's
+marking to a button there was every reason to press. Only machine grades are
+cleared now, and the deterministic pass skips a question the teacher has
+already marked by hand.
+
+**Two things deliberately not inferred:**
+
+- **`unanswered` is never derived from a zero.** A zero can equally mean
+  "answered, wrong". A teacher can send that verdict explicitly; nothing
+  guesses it.
+- **The badge under each mark reads the server's `grader` field**, not whether
+  the box has a number in it. An automatic mark and a hand mark look identical
+  once both are numbers in a box, and telling them apart is the entire reason
+  the override trail exists. For the same reason the comment box loads back
+  only a teacher's own comment — a machine rationale ("إجابة صحيحة") shown in
+  the teacher's box would make them the author of a line they never wrote.
+
+An out-of-range mark is **rejected, not clamped** — silently turning a typed
+`50` into the question's max of `5` shows a mark nobody entered.
+
+12 tests in `modules/assessment/__tests__/manualGrade.test.ts` (the mark
+parser, the verdict derivation, and scoring from persisted grades). Typecheck
+clean across all three projects; api-server 146 tests, mobile 723, 0 failures.
+
+**The local column was applied 2026-08-24** as one explicit statement rather
+than `pnpm --filter @workspace/db run push`, which diffs the whole local schema
+and carries unrelated drift along with it — same reasoning as `class_group_id`:
+
+```sql
+ALTER TABLE attempts ADD COLUMN IF NOT EXISTS teacher_comment text NOT NULL DEFAULT '';
+```
+
+Confirmed `text | nullable=NO | default=''::text`. **Production has not had it
+yet** — this is not on `main`.
+
+**Verified against the running system, not asserted.** A fresh API build on a
+spare port, against the local Postgres, driven end to end: create class →
+student → evaluation → generate (3 questions, 6 marks, all open-ended, so the
+deterministic pass marks nothing) → publish → attempt → submit →
+`provisional true, 0.00/0.00, 3 unmarked`. Then marking by hand, one question
+at a time: `1.00/1.00 (100%)` still provisional → `2.00/3.00 (66.67%)` still
+provisional → `3.50/6.00 (58.33%) provisional=false status=graded` on the
+third. The flip happens on the last mark, which is the behaviour the whole
+change exists for. Also checked: `awardedMarks: 999` → 400 `marks_out_of_range`;
+`awardedMarks: ""` → 400, not a silent zero; correcting a mark recomputes; the
+overall comment round-trips; and **re-submitting kept the hand marks**
+(`3.50/6.00`, still final). `grade_overrides` holds exactly **one** row for
+three marks entered — the one correction, `1.00->1.00 correct->correct` with
+the teacher's note. First marks wrote none, as intended.
+
+**The screen was checked in a browser** (Expo web against that API): it renders
+the mark box, the "من X" max, the «تصحيح المعلّم» badge and the performance
+comment box, and it loads the saved marks (`1`, `1`, `1.5`), the per-answer
+comments and the overall comment back into the right fields — with the machine
+rationale correctly *absent* from the teacher's comment box.
+
+**The full round trip was then confirmed in the browser by hand**: changing
+question 2's mark from `1` to `2` and clicking away moved the card from
+`3.50 / 6.00 · 58.33٪ · نامٍ` to `4.50 / 6.00 · 75.00٪ · متمكّن` — the level
+crossing bands as a side effect of one mark, which is the behaviour a teacher
+will actually rely on. The out-of-range guard was seen firing in the UI too
+(«أدخل علامة بين 0 و 1» for a `2` on a one-mark question).
+
+Automated browser drivers could not do this — typed characters append to these
+React-Native-Web inputs instead of replacing, Backspace and select-all never
+arrive, and synthetic `input`/`blur` events do not reach the handlers. Worth
+knowing before anyone tries to write an e2e test for this screen: the commit
+path is real, the automation is what cannot reach it.
+
+**One thing that hand-test caught:** a refused mark stayed in the box after the
+toast faded, so the field showed `6` while the record said `1`. `GradeDraft`
+now carries `saved` — the last value the server accepted — and a rejected edit
+reverts the box to it. A marking screen must never sit there displaying a mark
+that was refused.
+
+**Where this sits in the plan:** `docs/student-evaluation-module-plan.md` puts
+manual marking inside Phase 7 alongside AI grading. This is the manual half
+without the AI half — the review queue, rubric prompts and confidence policy
+are untouched, and `grader: 'ai'` still has no writer.
 
 ## Off-topic questions are declined, not answered, 2026-08-22
 

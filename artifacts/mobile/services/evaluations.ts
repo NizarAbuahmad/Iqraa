@@ -157,11 +157,15 @@ export type Verdict = 'correct' | 'partial' | 'incorrect' | 'unanswered';
 export type LevelKey = 'beginner' | 'developing' | 'proficient' | 'advanced';
 export type CompetencyKey = 'knowledge' | 'understanding' | 'application' | 'critical_thinking';
 
+export type Grader = 'deterministic' | 'math_verifier' | 'ai' | 'teacher';
+
 export interface Attempt {
   id: string;
   evaluationId: string;
   studentId: string;
   status: AttemptStatus;
+  /** The teacher's note on the sitting as a whole. */
+  teacherComment: string;
   questionSnapshot: EvaluationQuestion[];
   startedAt: string | null;
   submittedAt: string | null;
@@ -191,6 +195,9 @@ export interface AttemptQuestionGrade {
   awardedMarks: string | number;
   maxMarks: string | number;
   verdict: Verdict;
+  /** Who produced this mark — drives the badge next to it. Never inferred. */
+  grader: Grader;
+  /** The teacher's comment on this answer, or the grader's rationale. */
   rationaleAr?: string;
 }
 
@@ -252,6 +259,31 @@ export async function saveAnswer(
   });
   const data = await readJson<{ answer: AttemptAnswer }>(res, 'Saving answer');
   return data.answer;
+}
+
+/**
+ * Mark one question by hand. `note` is the teacher's comment on that answer;
+ * the verdict is derived from the mark unless one is passed.
+ */
+export async function setQuestionGrade(
+  attemptId: string,
+  questionId: string,
+  input: { awardedMarks: number | string; note?: string; verdict?: Verdict },
+): Promise<{ grade: AttemptQuestionGrade; attempt: Attempt; result: AttemptResult }> {
+  const res = await apiFetch(`/attempts/${attemptId}/grades/${questionId}`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  });
+  return readJson(res, 'Saving the mark');
+}
+
+export async function setTeacherComment(attemptId: string, teacherComment: string): Promise<Attempt> {
+  const res = await apiFetch(`/attempts/${attemptId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ teacherComment }),
+  });
+  const data = await readJson<{ attempt: Attempt }>(res, 'Saving the comment');
+  return data.attempt;
 }
 
 export async function submitAttempt(attemptId: string): Promise<{

@@ -7,12 +7,15 @@
  * it's entered rather than in one batch at the end, so a dropped connection
  * loses at most the field being edited, not the whole sitting.
  *
- * Every question type renders here, but only four of the eight (multiple
- * choice, true/false, matching, fill-blank) can actually be graded today —
- * `gradeAttempt` on the server leaves the rest ungraded rather than scoring
- * them zero. An evaluation built entirely from the mock generator is entirely
- * open-ended, so submitting it today honestly reports "no score yet" — that
- * is not a bug in this screen, it is Tier 3 (AI rubric grading) not existing.
+ * Four of the eight types (multiple choice, true/false, matching, fill-blank)
+ * mark themselves on submit. The other four have no automatic grader — Tier 3
+ * (AI rubric grading) does not exist — so the teacher marks them here: a mark
+ * box and a comment box under every question. The server never guesses a mark
+ * from a blank, so a question left unmarked keeps the result provisional
+ * rather than scoring the student zero.
+ *
+ * A mark the teacher types wins over the machine's, and re-submitting does not
+ * wipe it — see the note on the submit route.
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -27,11 +30,15 @@ import {
   EvaluationError,
   getAttempt,
   saveAnswer,
+  setQuestionGrade,
+  setTeacherComment,
   startAttempt,
   submitAttempt,
+  type AttemptQuestionGrade,
   type AttemptResult,
   type CompetencyKey,
   type EvaluationQuestion,
+  type Grader,
   type LevelKey,
 } from '@/services/evaluations';
 import type { TranslationKey } from '@/services/i18n';
@@ -60,6 +67,33 @@ const COMPETENCY_KEY: Record<CompetencyKey, TranslationKey> = {
 
 type Response = Record<string, unknown>;
 
+/**
+ * The mark and comment as they sit in the boxes, before they're saved.
+ * `saved` is the last value the server accepted — a rejected edit reverts to
+ * it, so the box can never sit there showing a mark that was refused.
+ */
+type GradeDraft = { marks: string; note: string; saved: string; grader?: Grader };
+
+/**
+ * Only a teacher's own comment is loaded back into the comment box. A machine
+ * grade's `rationaleAr` is the grader's sentence ("إجابة صحيحة"), and putting
+ * that in the teacher's box would make them the author of a line they never
+ * wrote the moment they saved anything else on that question.
+ */
+function gradeDrafts(rows: AttemptQuestionGrade[]): Record<string, GradeDraft> {
+  return Object.fromEntries(
+    rows.map(g => [
+      g.questionId,
+      {
+        marks: String(Number(g.awardedMarks)),
+        note: g.grader === 'teacher' ? g.rationaleAr ?? '' : '',
+        saved: String(Number(g.awardedMarks)),
+        grader: g.grader,
+      },
+    ]),
+  );
+}
+
 function fillBlankCount(template: string): number {
   return (template.match(/\{\{\d+\}\}/g) ?? []).length;
 }
@@ -76,6 +110,8 @@ export default function AnswerEntryScreen() {
   const [studentName, setStudentName] = useState('');
   const [evaluationTitle, setEvaluationTitle] = useState('');
   const [answers, setAnswers] = useState<Record<string, Response>>({});
+  const [grades, setGrades] = useState<Record<string, GradeDraft>>({});
+  const [comment, setComment] = useState('');
   const [result, setResult] = useState<AttemptResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -95,6 +131,8 @@ export default function AnswerEntryScreen() {
         setStudentName(data.student.displayName);
         setEvaluationTitle(lang === 'ar' ? data.evaluation.titleAr : data.evaluation.title);
         setAnswers(Object.fromEntries(data.answers.map(a => [a.questionId, a.response])));
+        setGrades(gradeDrafts(data.grades));
+        setComment(data.attempt.teacherComment ?? '');
         setResult(data.result);
       } catch (err) {
         setError(err instanceof EvaluationError ? err.message : t('attemptLoadFailed'));
@@ -115,13 +153,70 @@ export default function AnswerEntryScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attemptId]);
 
+  const setGradeField = useCallback((questionId: string, patch: Partial<GradeDraft>) => {
+    setGrades(prev => {
+      const current: GradeDraft = prev[questionId] ?? { marks: '', note: '', saved: '' };
+      return { ...prev, [questionId]: { ...current, ...patch } };
+    });
+  }, []);
+
+  /**
+   * Saves on blur, not on every keystroke: a mark is one short field and a
+   * half-typed "1" out of "12" is a mark the server would accept as real.
+   */
+  const commitGrade = useCallback(
+    async (question: EvaluationQuestion, marks: string, note: string) => {
+      if (!attemptId) return;
+      if (marks.trim() === '') return;
+      const max = Number(question.marks);
+      const value = Number(marks.trim());
+      if (!Number.isFinite(value) || value < 0 || value > max) {
+        showToast(t('markOutOfRange', String(max)));
+        // Put the accepted mark back in the box. Leaving the refused one on
+        // screen reads as saved once the toast fades.
+        setGrades(prev => {
+          const current = prev[question.id];
+          return current ? { ...prev, [question.id]: { ...current, marks: current.saved } } : prev;
+        });
+        return;
+      }
+      try {
+        const res = await setQuestionGrade(attemptId, question.id, { awardedMarks: value, note });
+        setGradeField(question.id, { grader: 'teacher', saved: String(value) });
+        setResult(res.result);
+      } catch {
+        showToast(t('markSaveFailed'));
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [attemptId, setGradeField],
+  );
+
+  const commitComment = useCallback(
+    async (value: string) => {
+      if (!attemptId) return;
+      try {
+        await setTeacherComment(attemptId, value);
+      } catch {
+        showToast(t('commentSaveFailed'));
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [attemptId],
+  );
+
   const onSubmit = async () => {
     if (!attemptId || submitting) return;
     setSubmitting(true);
     setError('');
     try {
-      const res = await submitAttempt(attemptId);
-      setResult(res.result);
+      await submitAttempt(attemptId);
+      // Re-read rather than patching state from the response: submit returns
+      // only the marks it produced, and the machine may have just replaced a
+      // rationale on a question the teacher had already looked at.
+      const data = await getAttempt(attemptId);
+      setGrades(gradeDrafts(data.grades));
+      setResult(data.result);
     } catch (err) {
       setError(err instanceof EvaluationError ? err.message : t('attemptSubmitFailed'));
     } finally {
@@ -194,12 +289,30 @@ export default function AnswerEntryScreen() {
               response={answers[q.id] ?? {}}
               onChange={r => setAnswer(q.id, r)}
               onCommit={r => persist(q.id, r)}
+              grade={grades[q.id]}
+              onGradeChange={patch => setGradeField(q.id, patch)}
+              onGradeCommit={(marks, note) => commitGrade(q, marks, note)}
               colors={colors}
               isRTL={isRTL}
               align={align}
               t={t}
             />
           ))}
+        </View>
+
+        <View style={{ paddingHorizontal: 20, paddingBottom: 16 }}>
+          <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 14, textAlign: align, marginBottom: 8 }}>
+            {t('performanceCommentLabel')}
+          </Text>
+          <TextInput
+            value={comment}
+            onChangeText={setComment}
+            onBlur={() => commitComment(comment)}
+            placeholder={t('performanceCommentPlaceholder')}
+            placeholderTextColor={colors.mutedForeground}
+            multiline
+            style={[styles.commentBox, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.card, textAlign: align, fontFamily: 'Almarai_400Regular' }]}
+          />
         </View>
 
         <View style={{ paddingHorizontal: 20 }}>
@@ -303,13 +416,16 @@ function ResultCard({
 }
 
 function QuestionInput({
-  index, question, response, onChange, onCommit, colors, isRTL, align, t,
+  index, question, response, onChange, onCommit, grade, onGradeChange, onGradeCommit, colors, isRTL, align, t,
 }: {
   index: number;
   question: EvaluationQuestion;
   response: Response;
   onChange: (r: Response) => void;
   onCommit: (r: Response) => void;
+  grade: GradeDraft | undefined;
+  onGradeChange: (patch: Partial<GradeDraft>) => void;
+  onGradeCommit: (marks: string, note: string) => void;
   colors: ReturnType<typeof useColors>;
   isRTL: boolean;
   align: 'left' | 'right';
@@ -343,6 +459,76 @@ function QuestionInput({
       {(question.type === 'short_answer' || question.type === 'open_ended' || question.type === 'problem_solving' || question.type === 'practical_task') && (
         <OpenTextInput body={body} response={response} onChange={onChange} onCommit={onCommit} colors={colors} align={align} t={t} />
       )}
+
+      <GradeRow
+        question={question}
+        grade={grade}
+        onChange={onGradeChange}
+        onCommit={onGradeCommit}
+        colors={colors}
+        isRTL={isRTL}
+        align={align}
+        t={t}
+      />
+    </View>
+  );
+}
+
+/**
+ * The mark and the comment for one answer.
+ *
+ * The badge says who produced the mark and is read from the server's `grader`,
+ * never inferred from whether the box has a value — an automatic mark and a
+ * teacher's mark look identical once they are both numbers in a box, and the
+ * difference is the whole reason the override trail exists.
+ */
+function GradeRow({
+  question, grade, onChange, onCommit, colors, isRTL, align, t,
+}: {
+  question: EvaluationQuestion;
+  grade: GradeDraft | undefined;
+  onChange: (patch: Partial<GradeDraft>) => void;
+  onCommit: (marks: string, note: string) => void;
+  colors: ReturnType<typeof useColors>;
+  isRTL: boolean;
+  align: 'left' | 'right';
+  t: (key: TranslationKey, ...args: any[]) => string;
+}) {
+  const marks = grade?.marks ?? '';
+  const note = grade?.note ?? '';
+  const byTeacher = grade?.grader === 'teacher';
+
+  return (
+    <View style={[styles.gradeRow, { borderTopColor: colors.border }]}>
+      <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
+        <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+          {t('markLabel')}
+        </Text>
+        <TextInput
+          value={marks}
+          onChangeText={v => onChange({ marks: v })}
+          onBlur={() => onCommit(marks, note)}
+          keyboardType="decimal-pad"
+          style={[styles.markInput, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]}
+        />
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12 }}>
+          {t('markOutOf', question.marks)}
+        </Text>
+        {grade?.grader ? (
+          <Text style={{ color: byTeacher ? ACCENT : colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }}>
+            {t(byTeacher ? 'markedByTeacher' : 'markedAutomatically')}
+          </Text>
+        ) : null}
+      </View>
+      <TextInput
+        value={note}
+        onChangeText={v => onChange({ note: v })}
+        onBlur={() => onCommit(marks, note)}
+        placeholder={t('answerCommentPlaceholder')}
+        placeholderTextColor={colors.mutedForeground}
+        multiline
+        style={[styles.noteInput, { color: colors.foreground, borderColor: colors.border, textAlign: align, fontFamily: 'Almarai_400Regular' }]}
+      />
     </View>
   );
 }
@@ -552,6 +738,10 @@ const styles = StyleSheet.create({
   competencyRow: { alignItems: 'center' },
   qCard: { borderWidth: 1, borderRadius: 12, padding: 14 },
   qTop: { alignItems: 'center', gap: 8, marginBottom: 10 },
+  gradeRow: { borderTopWidth: 1, marginTop: 12, paddingTop: 10, gap: 8 },
+  markInput: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, minWidth: 64, textAlign: 'center', fontSize: 14 },
+  noteInput: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, minHeight: 44, fontSize: 13 },
+  commentBox: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, minHeight: 76, fontSize: 14 },
   qNum: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   qText: { fontSize: 14, lineHeight: 20 },
   optRow: { alignItems: 'center', gap: 10, borderWidth: 1.5, borderRadius: 10, padding: 12 },
