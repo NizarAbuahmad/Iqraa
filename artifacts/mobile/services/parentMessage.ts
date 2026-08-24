@@ -241,6 +241,22 @@ function composeEnglish(input: ParentMessageInput): string {
 }
 
 /**
+ * What the details box should hold after the teacher picks a student off the
+ * roster: their standing note on that child, unless they are already writing.
+ *
+ * Separate from the screen because the losing case is silent. A teacher types
+ * three sentences about a specific incident, realises they should attach the
+ * right student, picks them from the class — and a naive prefill replaces what
+ * they wrote with last term's note. Nothing errors, and they may well send it.
+ *
+ * Whitespace-only counts as empty: a stray newline in the box is not writing.
+ */
+export function seedDetailsFromNote(currentDetails: string, teacherNote: string): string {
+  if (currentDetails.trim()) return currentDetails;
+  return teacherNote.trim() ? teacherNote : currentDetails;
+}
+
+/**
  * Compose the message. Returns '' when there is no student name — the caller
  * shows a validation hint rather than a letter addressed to nobody.
  */

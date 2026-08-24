@@ -22,6 +22,7 @@ import {
   kindLabel,
   MESSAGE_KINDS,
   needsDetails,
+  seedDetailsFromNote,
   type MessageKind,
   type ParentMessageInput,
 } from '../parentMessage.ts';
@@ -191,5 +192,30 @@ describe('kind metadata', () => {
       'academic-concern', 'absence', 'behaviour', 'meeting',
     ];
     assert.deepEqual([...MESSAGE_KINDS].sort(), all.sort());
+  });
+});
+
+describe('seedDetailsFromNote', () => {
+  // Picking a student off the roster offers the teacher's standing note on
+  // that child as a starting point. The failure that matters is silent, so it
+  // is the first case here.
+  it('never overwrites details the teacher is already writing', () => {
+    assert.equal(
+      seedDetailsFromNote('لم يسلّم واجب الأربعاء', 'يتحسّن في المسائل اللفظية'),
+      'لم يسلّم واجب الأربعاء',
+    );
+  });
+
+  it('offers the note when the box is empty', () => {
+    assert.equal(seedDetailsFromNote('', 'يتحسّن في المسائل اللفظية'), 'يتحسّن في المسائل اللفظية');
+  });
+
+  it('treats whitespace as empty — a stray newline is not writing', () => {
+    assert.equal(seedDetailsFromNote('  \n ', 'يتحسّن'), 'يتحسّن');
+  });
+
+  it('leaves the box alone when the student has no note', () => {
+    assert.equal(seedDetailsFromNote('', ''), '');
+    assert.equal(seedDetailsFromNote('', '   '), '');
   });
 });

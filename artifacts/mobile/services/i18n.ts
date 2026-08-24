@@ -837,6 +837,7 @@ const translations = {
     saveNote: 'احفظ الملاحظة',
 
     // Save a material into a class
+    pickFromMyClasses: 'اختر من صفوفي',
     saveToClassTitle: 'لأي صف هذه المادة؟',
     saveToClassHint: 'ستجدها في تبويب «الموارد» داخل الصف',
     notNow: 'ليس الآن',
@@ -1706,6 +1707,7 @@ const translations = {
     saveNote: 'Save note',
 
     // Save a material into a class
+    pickFromMyClasses: 'Pick from my classes',
     saveToClassTitle: 'Which class is this for?',
     saveToClassHint: "You'll find it in the class's Materials tab",
     notNow: 'Not now',

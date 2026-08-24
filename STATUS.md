@@ -176,6 +176,47 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The parent message knows who the student is, 2026-08-24
+
+`ai-tools/parent-message` composed a letter about a named child to their
+guardian, and had no idea who the teacher's students were: you typed the name,
+you typed the facts. It now offers **اختر من صفوفي** — class, then student —
+via `components/ui/StudentPickerSheet.tsx`.
+
+**What it fills in, and what it deliberately does not.** `parentMessage.ts`
+carries a rule in its header worth honouring exactly: *the teacher supplies
+every fact, this file supplies the register.*
+
+- **Name** — filled from the roster. Saves the typing and the misspelling that
+  reaches a parent. Typing it by hand still works.
+- **The teacher's note** — offered into the *editable details box*, never into
+  the message. It qualifies under the rule because the teacher wrote it; a
+  sentence they typed last week is still theirs. Putting it in the box rather
+  than the letter means nothing reaches a parent unread.
+- **Marks — not pulled in, on purpose.** They are computed, partly by AI, and
+  `attempt_results.isProvisional` exists precisely to mark the ones still
+  awaiting teacher review. A number that lands in a parent's WhatsApp cannot be
+  one the teacher has not confirmed. This is a decision, not an omission.
+- **Gender — untouched.** The roster does not record it, and inferring it from
+  a name would misgender a real child in a language that inflects for gender in
+  almost every clause. The two toggles stay manual.
+
+**The silent failure got a test.** Prefilling the details box can destroy work:
+a teacher types three sentences about an incident, then picks the student to
+attach the right name, and a naive prefill replaces what they wrote with last
+term's note. Nothing errors and they may well send it. `seedDetailsFromNote()`
+in `parentMessage.ts` is the rule — current text wins, whitespace counts as
+empty — with four cases in `parentMessage.test.ts`, the overwrite one first.
+
+`StudentPickerSheet` is deliberately **not** built on `ClassPickerSheet`, which
+looks similar. That one closes itself when a teacher has no classes, because it
+appears uninvited after a save. Here the teacher asked, so an empty roster has
+to be said out loud. Same list, opposite behaviour on empty — sharing it would
+need a prop that inverts the component's whole point.
+
+Typecheck clean across three projects; mobile 733 tests, 0 failures.
+No schema change, so nothing to run against production.
+
 ## A class remembers the child, and a lesson lands in the class, 2026-08-24
 
 Two small follow-ons to the class/materials join below.
