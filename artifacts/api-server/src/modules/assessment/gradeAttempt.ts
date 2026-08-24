@@ -94,3 +94,55 @@ export function gradeAttempt(
 
   return { graded, ungradedQuestionIds, score: scoreAttempt(gradedQuestions, bands) };
 }
+
+/** One already-stored mark, whoever produced it. */
+export interface PersistedGrade {
+  questionId: string;
+  awardedMarks: number;
+  maxMarks: number;
+  verdict: Verdict;
+}
+
+/**
+ * Score an attempt from the grades already persisted for it — deterministic,
+ * teacher-entered, or a mix of both.
+ *
+ * `gradeAttempt` above scores what it just marked; this scores what is on
+ * record. Both submit and manual marking route their result through here so
+ * the two cannot compute a percentage differently — a teacher marking the last
+ * open-ended question has to move the same number submit would have.
+ *
+ * A question with no grade row is reported in `ungradedQuestionIds` and left
+ * out of the score entirely, for the same reason `gradeAttempt` does it: an
+ * unmarked question is not evidence of a wrong answer.
+ */
+export function scorePersistedGrades(
+  questions: readonly AttemptQuestionInput[],
+  grades: readonly PersistedGrade[],
+  bands: readonly LevelBandInput[],
+): { score: AttemptScore; gradedQuestionIds: string[]; ungradedQuestionIds: string[] } {
+  const byQuestion = new Map(grades.map(g => [g.questionId, g]));
+  const gradedQuestions: GradedQuestion[] = [];
+  const gradedQuestionIds: string[] = [];
+  const ungradedQuestionIds: string[] = [];
+
+  for (const q of questions) {
+    const grade = byQuestion.get(q.questionId);
+    if (!grade) {
+      ungradedQuestionIds.push(q.questionId);
+      continue;
+    }
+    gradedQuestionIds.push(q.questionId);
+    gradedQuestions.push({
+      questionId: q.questionId,
+      competency: q.competencyKey,
+      objectiveId: q.objectiveId,
+      awardedMarks: grade.awardedMarks,
+      maxMarks: grade.maxMarks,
+      verdict: grade.verdict,
+      bloomsRank: BLOOMS_RANK[q.difficulty],
+    });
+  }
+
+  return { score: scoreAttempt(gradedQuestions, bands), gradedQuestionIds, ungradedQuestionIds };
+}

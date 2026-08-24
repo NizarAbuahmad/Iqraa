@@ -176,6 +176,119 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## A teacher can mark a paper exam by hand, 2026-08-24
+
+Grading was deterministic-only. Four of the eight question types mark
+themselves; the other four (short answer, open-ended, problem solving,
+practical task) had no grader at all, so an evaluation made of them scored
+nothing and the app told the teacher so — "manual grading, which isn't built
+yet". This builds it. It is the smallest slice that makes an exam on paper
+markable in the app; uploading the paper itself is not in it.
+
+**One column, two routes, no new tables.** Everything the marking needs was
+already in the schema and unused:
+
+- `PUT /attempts/:id/grades/:questionId` writes a normal grade row with
+  `grader: 'teacher'`. Correcting a mark that already existed also appends to
+  `grade_overrides` — the table that has existed since Phase 4 with nothing
+  ever writing to it. A **first** mark on an unmarked question writes no
+  override row: nothing was overridden, and recording an invented "was 0,
+  unanswered" would put a claim about the student into an audit trail.
+- `PATCH /attempts/:id` saves `attempts.teacher_comment`, the note on the
+  sitting as a whole. Per-answer comments needed no column — they go in the
+  grade row's `rationaleAr`, next to the mark they are about.
+
+**Submit and hand-marking now compute the result through one function.**
+`scorePersistedGrades` scores whatever grades are on record rather than only
+what the caller just produced, so a teacher marking the last open-ended
+question moves the percentage exactly as submit would have. `isProvisional`
+and the attempt status both follow from the same count, which means marking
+the last question is what flips a result from provisional to final — the
+point of the feature.
+
+**A teacher's mark survives a re-submit.** Submitting used to delete every
+grade for the attempt and re-grade from scratch. Re-submitting is the normal
+way to pick up a corrected answer, so that would have lost an evening's
+marking to a button there was every reason to press. Only machine grades are
+cleared now, and the deterministic pass skips a question the teacher has
+already marked by hand.
+
+**Two things deliberately not inferred:**
+
+- **`unanswered` is never derived from a zero.** A zero can equally mean
+  "answered, wrong". A teacher can send that verdict explicitly; nothing
+  guesses it.
+- **The badge under each mark reads the server's `grader` field**, not whether
+  the box has a number in it. An automatic mark and a hand mark look identical
+  once both are numbers in a box, and telling them apart is the entire reason
+  the override trail exists. For the same reason the comment box loads back
+  only a teacher's own comment — a machine rationale ("إجابة صحيحة") shown in
+  the teacher's box would make them the author of a line they never wrote.
+
+An out-of-range mark is **rejected, not clamped** — silently turning a typed
+`50` into the question's max of `5` shows a mark nobody entered.
+
+12 tests in `modules/assessment/__tests__/manualGrade.test.ts` (the mark
+parser, the verdict derivation, and scoring from persisted grades). Typecheck
+clean across all three projects; api-server 146 tests, mobile 723, 0 failures.
+
+**The local column was applied 2026-08-24** as one explicit statement rather
+than `pnpm --filter @workspace/db run push`, which diffs the whole local schema
+and carries unrelated drift along with it — same reasoning as `class_group_id`:
+
+```sql
+ALTER TABLE attempts ADD COLUMN IF NOT EXISTS teacher_comment text NOT NULL DEFAULT '';
+```
+
+Confirmed `text | nullable=NO | default=''::text`. **Production has not had it
+yet** — this is not on `main`.
+
+**Verified against the running system, not asserted.** A fresh API build on a
+spare port, against the local Postgres, driven end to end: create class →
+student → evaluation → generate (3 questions, 6 marks, all open-ended, so the
+deterministic pass marks nothing) → publish → attempt → submit →
+`provisional true, 0.00/0.00, 3 unmarked`. Then marking by hand, one question
+at a time: `1.00/1.00 (100%)` still provisional → `2.00/3.00 (66.67%)` still
+provisional → `3.50/6.00 (58.33%) provisional=false status=graded` on the
+third. The flip happens on the last mark, which is the behaviour the whole
+change exists for. Also checked: `awardedMarks: 999` → 400 `marks_out_of_range`;
+`awardedMarks: ""` → 400, not a silent zero; correcting a mark recomputes; the
+overall comment round-trips; and **re-submitting kept the hand marks**
+(`3.50/6.00`, still final). `grade_overrides` holds exactly **one** row for
+three marks entered — the one correction, `1.00->1.00 correct->correct` with
+the teacher's note. First marks wrote none, as intended.
+
+**The screen was checked in a browser** (Expo web against that API): it renders
+the mark box, the "من X" max, the «تصحيح المعلّم» badge and the performance
+comment box, and it loads the saved marks (`1`, `1`, `1.5`), the per-answer
+comments and the overall comment back into the right fields — with the machine
+rationale correctly *absent* from the teacher's comment box.
+
+**The full round trip was then confirmed in the browser by hand**: changing
+question 2's mark from `1` to `2` and clicking away moved the card from
+`3.50 / 6.00 · 58.33٪ · نامٍ` to `4.50 / 6.00 · 75.00٪ · متمكّن` — the level
+crossing bands as a side effect of one mark, which is the behaviour a teacher
+will actually rely on. The out-of-range guard was seen firing in the UI too
+(«أدخل علامة بين 0 و 1» for a `2` on a one-mark question).
+
+Automated browser drivers could not do this — typed characters append to these
+React-Native-Web inputs instead of replacing, Backspace and select-all never
+arrive, and synthetic `input`/`blur` events do not reach the handlers. Worth
+knowing before anyone tries to write an e2e test for this screen: the commit
+path is real, the automation is what cannot reach it.
+
+**One thing that hand-test caught:** a refused mark stayed in the box after the
+toast faded, so the field showed `6` while the record said `1`. `GradeDraft`
+now carries `saved` — the last value the server accepted — and a rejected edit
+reverts the box to it. A marking screen must never sit there displaying a mark
+that was refused.
+
+**Where this sits in the plan:** `docs/student-evaluation-module-plan.md` puts
+manual marking inside Phase 7 alongside AI grading. This is the manual half
+without the AI half — the review queue, rubric prompts and confidence policy
+are untouched, and `grader: 'ai'` still has no writer.
+
+
 ## The "..." menu in موادي never worked in a browser, 2026-08-24
 
 Reported by the user, and true since the workspace screen was written: the
