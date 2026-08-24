@@ -53,6 +53,24 @@ async function openExternalMedia(url: string): Promise<void> {
 // The deck palette and slideTypeAccent live in services/deckTheme.ts — the PDF
 // and the PPTX import the same values, so the three renderings cannot drift.
 
+/**
+ * Projector fullscreen (web only — a native app is already fullscreen).
+ * Without this the browser chrome stays on the projector until the teacher
+ * finds F11, which is the first thing every classroom test noticed.
+ */
+const canFullscreen = Platform.OS === 'web' && typeof document !== 'undefined';
+
+function toggleFullscreen(): void {
+  if (!canFullscreen) return;
+  const el = document.documentElement;
+  // Older Safari only has the webkit-prefixed pair; if neither exists there is
+  // nothing to do but stay windowed.
+  const req = el.requestFullscreen ?? (el as any).webkitRequestFullscreen;
+  const exit = document.exitFullscreen ?? (document as any).webkitExitFullscreen;
+  const isFull = document.fullscreenElement ?? (document as any).webkitFullscreenElement;
+  const run = isFull ? exit?.call(document) : req?.call(el);
+  if (run && typeof run.catch === 'function') run.catch(() => {});
+}
 
 // ─── Visual block (plot / chart) ──────────────────────────────────────────────
 // Draws the same spec the PDF and PPTX draw, via react-native-svg, so the three
@@ -590,6 +608,7 @@ export default function PresentationScreen() {
   const [timerRunning, setTimerRunning] = useState(false);
   const [timerTotal, setTimerTotal] = useState(0);
   const [celebrationVisible, setCelebrationVisible] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const celebrationAnim = useRef(new Animated.Value(0)).current;
   const celebrationScale = useRef(new Animated.Value(0.5)).current;
@@ -725,6 +744,15 @@ export default function PresentationScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
+  // The browser can leave fullscreen without us (Esc, F11), so read the state
+  // back rather than tracking our own toggles.
+  useEffect(() => {
+    if (!canFullscreen) return;
+    const sync = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', sync);
+    return () => document.removeEventListener('fullscreenchange', sync);
+  }, []);
+
   // Keyboard + presentation-clicker control (web/projector). A teacher runs
   // the class from the front of the room, not from the laptop: clickers send
   // PageDown/PageUp or arrows, and Space is the universal "advance".
@@ -740,8 +768,15 @@ export default function PresentationScreen() {
       } else if (backKeys.includes(e.key)) {
         e.preventDefault();
         setSlideIndexSafely(-1);
+      } else if (e.code === 'KeyF') {
+        // e.code, not e.key — an Arabic layout reports 'ب' for this key.
+        e.preventDefault();
+        toggleFullscreen();
       } else if (e.key === 'Escape') {
-        router.back();
+        // Esc mid-class must not dump the deck just because the teacher wanted
+        // the browser chrome back.
+        if (document.fullscreenElement) toggleFullscreen();
+        else router.back();
       }
     };
     window.addEventListener('keydown', onKey);
@@ -803,6 +838,18 @@ export default function PresentationScreen() {
         <Pressable onPress={() => router.back()} style={styles.exitBtn} hitSlop={12}>
           <Ionicons name="close" size={22} color={TEXT_MUTED} />
         </Pressable>
+
+        {/* Fullscreen — the projector's own control, so the teacher never has
+            to go hunting for F11 in front of the class. */}
+        {canFullscreen && (
+          <Pressable onPress={toggleFullscreen} style={styles.exitBtn} hitSlop={12}>
+            <Ionicons
+              name={isFullscreen ? 'contract-outline' : 'expand-outline'}
+              size={20}
+              color={TEXT_MUTED}
+            />
+          </Pressable>
+        )}
 
         {/* Progress dots — each wrapped in a real touch target (the bare 6px
             dots were unhittable, which stranded teachers on slide 1). */}
