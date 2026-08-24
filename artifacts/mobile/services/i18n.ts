@@ -662,7 +662,7 @@ const translations = {
     quizVerifiedCount: (n: number, total: number) =>
       `تحقّق المُحقِّق الرمزي من ${n} من أصل ${total} إجابة`,
     quizVerifiedNone: 'لم يتحقّق المُحقِّق الرمزي من أي إجابة — الإجابات من بنك الأسئلة المُراجَع',
-    allStudentsAnswer: 'الكل يجيب: ارفعوا أصابعكم معًا!',
+    allStudentsAnswer: 'ارفع يدك للإجابة',
     activityEscapeTitle: 'تحدي الهروب',
     activityEscapeDesc: 'مجموعات تحل تحديات رياضية للهروب من المختبر بأكواد سرية',
     activityBingoTitle: 'بنغو الرياضيات',
@@ -1515,7 +1515,7 @@ const translations = {
     quizVerifiedCount: (n: number, total: number) =>
       `${n} of ${total} answers symbolically verified`,
     quizVerifiedNone: 'No answer was symbolically verified — keys come from the reviewed bank',
-    allStudentsAnswer: 'Everyone answers: fingers up together!',
+    allStudentsAnswer: 'Raise your hand to answer',
     activityEscapeTitle: 'Escape Challenge',
     activityEscapeDesc: 'Groups solve math challenges to escape the lab using secret codes',
     activityBingoTitle: 'Math Bingo',

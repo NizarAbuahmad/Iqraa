@@ -10,7 +10,6 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { NOTEBOOKLM_URL, openExternal } from '@/services/externalLinks';
 
 interface ExportOption {
   id: string;
@@ -115,19 +114,6 @@ export function ExportMenu({
       loading: loadingSlides,
       onPress: onSlides,
     }] : []),
-    // Not an injected handler like the rows above: the NotebookLM hand-off is
-    // byte-identical on all seven screens that mount this menu, so passing it
-    // in would be six copies of the same two lines. There is no public
-    // NotebookLM API — the teacher exports a PDF above and uploads it — so
-    // there is nothing screen-specific to inject. See services/externalLinks.ts.
-    {
-      id: 'notebook',
-      icon: 'headset-outline' as keyof typeof Ionicons.glyphMap,
-      label: t('exportNotebook'),
-      sublabel: t('exportNotebookSub'),
-      color: '#F97316',
-      onPress: () => { void openExternal(NOTEBOOKLM_URL); },
-    },
   ];
 
   return (

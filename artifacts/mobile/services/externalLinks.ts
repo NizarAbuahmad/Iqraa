@@ -4,8 +4,7 @@
  * This dance lived twice inside `geogebra.ts`, in two copies that had already
  * drifted apart (one guarded `typeof window` in the same condition, the other
  * in a nested `if` that fell through to WebBrowser on a web build with no
- * window). A third copy was about to land for the NotebookLM hand-off, so it
- * moved here instead.
+ * window). A third copy was about to land, so it moved here instead.
  *
  * `window.open` on web, never `Linking.openURL`: on react-native-web the
  * latter replaces the running app in the same tab, which throws away whatever
@@ -14,11 +13,6 @@
  */
 import * as WebBrowser from 'expo-web-browser';
 import { Linking, Platform } from 'react-native';
-
-/** Google NotebookLM. Teachers upload material exported from here to get an
- *  audio overview — there is no public API to do it for them, so the app hands
- *  off rather than integrates. See STATUS.md. */
-export const NOTEBOOKLM_URL = 'https://notebooklm.google.com';
 
 export async function openExternal(url: string): Promise<void> {
   try {
