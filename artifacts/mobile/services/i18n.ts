@@ -755,6 +755,7 @@ const translations = {
     slidesIncludeExamples: 'أضف أمثلة محلولة (مع وقت للتفكير)',
     slidesIncludePractice: 'أضف تدريبًا وواجبًا',
     slidesSaved: 'حُفظت الشرائح في مساحتك',
+    slidesUnsaved: 'أزلت الشرائح من مساحتك',
     // Class Challenge (phone-free team game)
     gameTitle: 'تحدي الصف',
     gameSubtitle: 'لعبة أسئلة بين فرق الصف — بدون هواتف للطلاب. الشاشة هي لوحة اللعب.',
@@ -1685,6 +1686,7 @@ const translations = {
     slidesIncludeExamples: 'Include worked examples (with think time)',
     slidesIncludePractice: 'Include practice and homework',
     slidesSaved: 'Slides saved to your workspace',
+    slidesUnsaved: 'Slides removed from your workspace',
     // Class Challenge (phone-free team game)
     gameTitle: 'Class Challenge',
     gameSubtitle: 'A team quiz game with no student phones — the screen is the game board.',
