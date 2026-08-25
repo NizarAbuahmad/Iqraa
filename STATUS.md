@@ -4971,6 +4971,56 @@ light tint that was white-on-cream.
 **Not verified:** the .pptx was not opened in PowerPoint. The colour inputs are
 shared now and the file builds, but nobody has looked at a rendered slide.
 
+## The escape deck never said what the codes were for, 2026-08-25
+
+Reported with two screenshots of the same deck on the deployed site. Both
+reveal slides were headed «تم فتح الكود!» — the placeholder title from the
+prompt, copied through verbatim — and slide 7's code rendered as a barely
+visible speck. That speck was `٠`: Arabic-Indic zero is a dot, and at 48px
+green on a light board it is nothing. Nobody watching could tell what the
+number was, or what they were supposed to do with it.
+
+The second half of that is the part worth writing down. **The unlock code has
+no mechanism behind it.** There is no input, no validation, no gate — `grep
+unlockCode` finds it in the prompts, the mock decks, and one render block in
+`presentation.tsx`, and nowhere else. The lock is fiction; the code is
+something students copy onto paper and read back at the end. That is a fine
+design, but a deck that never explains it leaves a class staring at a digit
+with no idea it is theirs to keep. Both language decks now open with a
+"كيف نلعب؟" / "How to Play" slide that says so outright, including the line
+that there is nothing to type the digits into.
+
+The codes themselves are fixed in two places, because a prompt asks and does
+not guarantee:
+
+- The escape prompts (both languages) now state the code rules explicitly —
+  one digit ١–٩, never ٠, distinct per challenge, reveal title naming the
+  digit, summary listing the full sequence — and the worked example carries a
+  real code instead of a repeated `"5"` the model was evidently copying.
+- `lib/escapeCodes.ts` repairs what still comes back wrong: a code that is
+  zero, empty, multi-character or duplicated is replaced; a reveal takes the
+  code of the challenge before it; a generic reveal title is rewritten to name
+  the digit. A valid, distinct code is left exactly as the model wrote it. It
+  runs on every classroom activity and is a no-op for decks with no
+  `unlockCode`, since `activityType` is model output too and is not always the
+  one that was asked for. 18 tests, including the `٠` case that started this.
+
+When it does repair a code, it also rewrites the summary's full-code line —
+a stale summary sends the class out with the wrong final answer, which is
+worse than the digit it was fixing.
+
+`PROMPT_VERSION` bumped to `2026-08-25.1`: the prompts changed in a way that
+makes previously recorded generations stale, which is what that constant is for.
+
+**Not verified:** this has not been run against a live model. The prompt half
+is unproven — what is tested is the repair layer, which is deliberately the
+half that does not depend on the model complying. The mock decks (used under
+`DEMO_MODE`) were updated by hand and are 13 slides now, not 12.
+
+**Not done:** the how-to-play slide is a second `type: 'intro'` rather than a
+new slide type. A `rules` type would theme separately and let the exporters
+treat it differently, but it would touch the type union, `deckTheme`, the
+presenter and both exporters — too much to smuggle into this.
 
 ## The favourite star lit whether or not anything was saved, 2026-08-25
 
