@@ -603,6 +603,52 @@ defines all four keys in both languages, and `pnpm run typecheck` is clean on
 `main`. Left in place rather than deleted — this file's habit of recording a
 problem and never its fix is the thing worth not repeating.
 
+## Book figures come out of the NCCD PDFs, 2026-08-25
+
+The equation solver below draws every curve a stem states algebraically. The
+books also print circles, 3-D solids, vector diagrams and scatter plots that no
+equation in the stem describes, so those have to come from the book.
+`scripts/extract_book_figures.py` cuts them out.
+
+**A figure is vector drawing operations, not an embedded image.** The books hold
+only ~74 rasters across 150 pages and those are photographs; every graph is
+drawn with paths. So the script seeds on a pair of axes, clusters the drawing
+rects around it, and renders that region at 160 dpi.
+
+Two mistakes worth not repeating, both caught by looking at the output rather
+than reasoning about it:
+
+- **A crossing is not a bounding-box overlap.** The first pass treated any long
+  horizontal plus any long vertical as axes — which the four sides of a
+  rectangle satisfy, so a «spot the error» page with two notebook-paper boxes
+  came out as a graph. Each segment must now pass through the other's interior.
+- **Never grow through text.** Growing by proximity over drawings *and* text
+  chains out of the figure into the body prose and stops only at the page cap;
+  **half** the first run swallowed most of a page. Drawings cluster; text is
+  only ever admitted, never chased. That one change took the clean rate from
+  roughly 18/42 to 31/39.
+
+| Book | Figures |
+| --- | --- |
+| math-s1-student-book | 39 |
+| math-s2-student-book | 17 |
+| chem-s1-student-book | 4 |
+
+`math-s2` p021 is the `x² + y² = 9` / `y + x = 5` system, p024 the
+parabola-and-line, p028 the circle-and-parabola — the figures that prompted
+this, recovered from the book rather than redrawn.
+
+**Assisted, not automatic, and not yet wired to anything.** About one crop in
+five still absorbs an adjacent exercise block, so the script writes a
+`_review.png` contact sheet per book and nothing reads the output. A figure
+printed beside the wrong question is worse than no figure — the whole lesson of
+the check-slide work above — so the review pass is part of the design, not a
+missing feature.
+
+**Still to do:** review and prune the crops, map each surviving figure to a
+lesson and an example, then render it on the slide. `index.json` records
+`sourceId` + `pdfPage` per figure, which is what a mapping will key on.
+
 ## Equations the book actually writes now draw, 2026-08-25
 
 Every graph in the Grade 10 book is a *system*, and the book writes systems in

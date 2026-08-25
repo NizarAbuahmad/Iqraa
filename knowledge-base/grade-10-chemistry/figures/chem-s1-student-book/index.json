@@ -1,0 +1,49 @@
+{
+ "sourceId": "chem-s1-student-book",
+ "figures": [
+  {
+   "file": "p024.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 24,
+   "rect": [
+    19.2,
+    599.6,
+    417.6,
+    778.0
+   ]
+  },
+  {
+   "file": "p042.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 42,
+   "rect": [
+    93.9,
+    68.8,
+    494.3,
+    389.1
+   ]
+  },
+  {
+   "file": "p048.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 48,
+   "rect": [
+    136.8,
+    640.7,
+    435.4,
+    771.2
+   ]
+  },
+  {
+   "file": "p072.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 72,
+   "rect": [
+    22.4,
+    514.1,
+    419.0,
+    721.7
+   ]
+  }
+ ]
+}
