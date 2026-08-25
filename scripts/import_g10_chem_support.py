@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import shutil
 from pathlib import Path
@@ -15,6 +16,27 @@ DEFAULT_SRC = Path(
 ROOT = Path(__file__).resolve().parents[1]
 OUT_PDF = ROOT / "knowledge-base" / "grade-10-chemistry" / "support-pdfs"
 OUT_DATA = ROOT / "artifacts" / "mobile" / "data" / "g10_chem_support_resources.json"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STOP, 2026-08-25.
+#
+# This script writes `artifacts/mobile/data/g10_chem_support_resources.json`,
+# a catalog that no longer exists. It described the same PDFs as
+# `lib/curriculum/src/data/g10_sources.json` under a second id space and a
+# second type vocabulary, the two drifted, and the manifest absorbed it.
+#
+# Running this as-is recreates the split — and silently, because nothing
+# imports the file it writes any more, so the damage would only show up the
+# next time someone believed it. Point OUT_DATA at the manifest and teach the
+# type rules to emit `kind` values before removing this guard.
+# ─────────────────────────────────────────────────────────────────────────────
+if os.environ.get("IQRA_ALLOW_LEGACY_SUPPORT_IMPORT") != "1":
+    raise SystemExit(
+        "Refusing to run: this writes the retired per-subject support catalog.\n"
+        "The bank now lives in lib/curriculum/src/data/g10_sources.json.\n"
+        "Set IQRA_ALLOW_LEGACY_SUPPORT_IMPORT=1 only if you have read the note above."
+    )
+
 
 SKIP_NAMES = {
     "school brochure updated.pdf",

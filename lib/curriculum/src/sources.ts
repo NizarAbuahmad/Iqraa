@@ -15,9 +15,18 @@
  * trust. Data is data.
  *
  * Refreshing it after the Drive changes: list each folder in `FOLDERS` and add
- * what is missing. Nothing here is load-bearing at runtime — no screen reads
- * it — so a stale entry costs a wrong answer to "what do we have", never a
- * broken app.
+ * what is missing.
+ *
+ * **This is now load-bearing.** It used to be a note to ourselves that nothing
+ * read at runtime. On 2026-08-25 it absorbed
+ * `artifacts/mobile/data/g10_{math,chem}_support_resources.json` — a second
+ * catalog of the same 66 PDFs, with its own id space and its own type
+ * vocabulary — and `bank.ts` now serves the app's support-resource search from
+ * here. The two had already drifted in ways that reached teachers: all ten
+ * past exam papers were typed `quiz`, five of them tagged `remedial`, and
+ * three entries pointed at copies this file marks `duplicate` (including both
+ * chemistry student books, in their downsampled re-compressed form). One
+ * registry, so there is nothing left to drift against.
  */
 import raw from './data/g10_sources.json' with { type: 'json' };
 
@@ -78,6 +87,42 @@ export interface CurriculumSource {
   /** Filename exactly as it appears in Drive, so it can be found by search. */
   title: string;
   bytes: number;
+  /**
+   * Name of the file on disk under `localRoot`. Usually identical to `title`,
+   * but not always: a few files were downloaded twice and carry the Windows
+   * « (1)» suffix on disk while Drive holds the clean name.
+   */
+  filename: string;
+  /**
+   * The teacher who wrote it, or `null` for NCCD — it publishes as an
+   * institution, and every personal author previously recorded against one of
+   * its documents turned out to be a filename-parsing artefact.
+   */
+  authorAr: string | null;
+  /**
+   * Curriculum scope, in the bank's own tag namespace (`s1-u2`, `chem-s2-u4`,
+   * `s1`, …) rather than catalog unit ids — unit ids are book-local, so every
+   * book has a `u1` and matching on them would attach a maths worksheet to a
+   * chemistry unit 1. `BANK_UNIT_TAGS` lists the vocabulary.
+   */
+  unitTags: string[];
+  /**
+   * Objective-level anchoring — the granularity exam generation and coverage
+   * actually speak (`evaluations.objectiveIds`). **Empty on every entry
+   * today**, because nothing has been mined this finely yet, and an empty list
+   * is the honest way to say so. Never populate it by expanding a unit tag: a
+   * unit is not an objective, and a wrong anchor here becomes a wrong claim
+   * about what an exam covers.
+   */
+  objectiveIds: string[];
+  /**
+   * Free-text search terms that are not already carried by `kind`, `subject`
+   * or `unitTags`. Kept deliberately thin: the absorbed catalog's keyword
+   * lists were mostly copies of its own tags, which is how the string
+   * `remedial` came to sit on all eight past exam papers and score against
+   * remedial queries.
+   */
+  keywords: string[];
   subject: 'math' | 'chemistry' | 'financial-literacy';
   /** null when the document spans both semesters or names none. */
   semester: 1 | 2 | null;

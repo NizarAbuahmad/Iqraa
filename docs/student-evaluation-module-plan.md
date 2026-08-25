@@ -706,8 +706,9 @@ keeps it specific instead of generic.
 **Rule-based floor:** even with AI off, recommendations are produced
 deterministically — every objective below the proficiency threshold yields
 "راجع {objective}" plus practice items pulled from the existing lesson resources
-(`g10_math_support_resources.json`). The AI layer *enriches* this; it is not the
-only source. The feature must never return an empty recommendations panel.
+(the knowledge bank — `bankItems()` in `@workspace/curriculum`; this named
+`g10_math_support_resources.json`, which was absorbed into the manifest on
+2026-08-25). The AI layer *enriches* this; it is not the only source. The feature must never return an empty recommendations panel.
 
 ---
 

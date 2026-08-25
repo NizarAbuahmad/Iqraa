@@ -112,11 +112,15 @@ Vision screens (student/parent/school dashboards) are deprioritized.
 - **Every Grade 10 source PDF is now inventoried** in
   `lib/curriculum/src/data/g10_sources.json`, read through
   `lib/curriculum/src/sources.ts` (`usableSources()`, `pendingSources()`,
-  `conflicts()`). It records, per file, its Drive id, what kind of document it
-  is, whether NCCD or a named teacher wrote it, and whether anything has been
-  extracted from it. Written from a Drive listing taken 2026-08-24; nothing at
-  runtime reads it, so a stale entry costs a wrong answer to "what do we have",
-  never a broken app. `scripts/verify-curriculum.ts` only scans
+  `conflicts()`) and `lib/curriculum/src/bank.ts` (`bankItems()`,
+  `examPapers()`, `usePolicy()`). It records, per file, its Drive id, what kind
+  of document it is, whether NCCD or a named teacher wrote it, whether anything
+  has been extracted from it, and — since 2026-08-25 — its curriculum scope,
+  author and search terms. Written from a Drive listing taken 2026-08-24.
+  **It is load-bearing as of 2026-08-25**: the app's support-resource search is
+  a derived view of it, so a stale entry now costs a teacher a wrong document,
+  not just a wrong answer to "what do we have".
+  `scripts/verify-curriculum.ts` only scans
   `iqra_curriculum_*.json`, since the manifest lives in the same folder and has
   no units — without that filter it reported two structural errors and exited
   non-zero.
@@ -221,6 +225,71 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## One knowledge bank, and ten past papers that were invisible, 2026-08-25
+
+There were two catalogs of the same PDFs. `lib/curriculum/src/data/g10_sources.json`
+held 78 documents with Drive ids, authority and duplicate resolution, and
+**nothing read it**. `artifacts/mobile/data/g10_{math,chem}_support_resources.json`
+held 66 of those same documents under a second id space and a second type
+vocabulary, and it was the one the app actually searched.
+
+They had drifted, in three ways that reached teachers:
+
+- **All ten real exam papers were typed `quiz`**, the same value as a practice
+  worksheet. Five of them were also tagged `remedial`, and carried `remedial`
+  in their keyword list, where the scorer reads it at +2. So eight Jordanian
+  final and monthly papers — the single most valuable thing in the Drive for
+  exam work — were indistinguishable from remedial material, and there was no
+  query that could ask for them.
+- **Three entries pointed at copies the manifest marks `duplicate`**, including
+  both chemistry student books in their downsampled iLovePDF form. The app
+  de-duplicated by title and the two copies of each book had different titles
+  (one Arabic, one English), so it could never have caught them.
+- Four ministry files were credited to an author named «ول» — the tail of
+  «الأول». The absorbed catalog had parsed authors off filenames.
+
+**The manifest absorbed the catalog.** It gained `filename`, `authorAr`,
+`unitTags`, `keywords` and an always-empty `objectiveIds`; the two mobile JSONs
+are deleted; `mathSupportResources.ts` is now a search over
+`@workspace/curriculum` and owns no data. `kind` is the only type vocabulary
+left, so `exam`, `question-bank` and `study-pack` are three different things
+and a teacher asking for quiz material now reaches the real papers
+(`teachingAssistant.ts` passes `kinds: ['question-bank', 'exam', 'answer-key']`).
+
+**`usePolicy` is the one place the reproduction line is drawn.** NCCD →
+`quotable`; teacher and third-party → `reference-only`, meaning it may inform
+generation and must never be emitted verbatim into anything a teacher exports.
+`assertQuotable()` throws, naming the author, so the export path fails closed
+rather than on someone remembering. Same discipline as `verified`.
+
+**One thing I asserted and the data contradicted, worth recording because it is
+the exact trap this repo keeps falling into:** I wrote that every exam paper is
+teacher-authored. Nine are. The tenth, `math-diagnostic-test`, is the ministry
+diagnostic and is quotable. `kind: 'exam'` is therefore *not* a proxy for
+reference-only, and there is a test holding that.
+
+**Still open — do not read this entry as saying the bank is built:**
+
+- `objectiveIds` is empty on all 78 entries. Unit-level tags are enough to put
+  a PDF on a lesson shelf; they are useless for exam assembly, which speaks
+  `evaluations.objectiveIds`. Nothing has been mined that finely, and the test
+  asserts the emptiness so it cannot be faked from a unit tag.
+- **63 of 78 documents are `pending`** — a title and a Drive id, no extracted
+  content. The blueprint miner has a data model's worth of fuel and no fuel:
+  the PDFs live on the Windows mirror in `localRoot`, not in the repo.
+- The PDFs still are not shipped. `knowledge-base/*/support-pdfs/` is
+  gitignored and empty, so «📎 مواد مساندة متوفرة في مكتبة اقرأ» remains a
+  promise the product cannot keep — it names a file it cannot hand over.
+- `scripts/import_g10_{math,chem}_support.py` would recreate the split. They
+  now refuse to run without `IQRA_ALLOW_LEGACY_SUPPORT_IMPORT=1`.
+- Financial literacy is held out of the app view on purpose (`APP_SUBJECTS` in
+  `mathSupportResources.ts`), because of the unresolved S1/S2 edition conflict.
+  Its S1 book is otherwise usable; revisit when the edition is chosen.
+- `محمد طارق` and `محمد طارق عوض` are probably one teacher. Left as two.
+
+44 curriculum / 783 mobile / 175 api-server tests pass, typecheck clean,
+`verify-curriculum` reports 0 errors. (Mobile was 761 on the branch alone; the
+extra 22 came in with `main` when this was merged up, not from this change.)
 ## The seed deploys itself now, 2026-08-25
 
 Production went live with `level_scales` empty. Nothing had ever run
