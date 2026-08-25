@@ -603,6 +603,58 @@ defines all four keys in both languages, and `pnpm run typecheck` is clean on
 `main`. Left in place rather than deleted — this file's habit of recording a
 problem and never its fix is the thing worth not repeating.
 
+## Each figure knows its unit and lesson, 2026-08-25
+
+`index.json` now carries `unit`, `lesson`, `lessonTitleEn` and
+`lessonStartPage` beside the page number, so a figure can be found by the
+lesson it belongs to rather than by where it happens to sit in a PDF.
+
+**Lesson openers are typeset, so they are detectable.** «الدرس» at 20–22pt in
+the top band, the lesson number at 40pt+, the title beneath. The English title
+is the one kept: the Arabic spans come out of the PDF with their diacritics
+reordered and their letters unjoined («حُّلُ ُمُعادالٍتٍ»), so they cannot be
+matched against anything, while the English line is clean ASCII.
+
+**Three traps, each of which produced confident wrong answers:**
+
+- **RTL puts the number before the word.** The running header extracts as
+  «21  1 الوحدة», so `الوحدة\s*(\d+)` matches nothing on those pages and
+  quietly carries a stale unit forward — it reported unit 10 for a unit-1
+  page, with no error anywhere.
+- **The header lags on a lesson opener.** Reading the unit off the opener
+  filed every unit's *first* lesson under the preceding unit. The unit is now
+  read from a page inside the lesson.
+- **The book's unit numbers are not a sequence index.** Semester 1 prints
+  **units 5–8**; semester 2 prints **1–4**. Numbering by position would have
+  labelled every semester-1 figure with a unit the book does not use, and a
+  teacher looking for «الوحدة 5» would have been shown unit 1. The printed
+  number is what is recorded.
+
+**Verified by content, not by counting.** `math-s2` p021 (circle + line) lands
+in «Solving a System of Linear and Quadratic Equations»; p028 (circle +
+parabola) in «Solving a System of Two Quadratic Equations»; the s1 hyperbolas
+on p020–p024 in «Rational Functions». The lesson each figure was filed under
+describes the mathematics in it.
+
+| Book | Figures | Placed |
+| --- | --- | --- |
+| math-s1-student-book | 39 | 39 |
+| math-s2-student-book | 17 | 16 |
+| chem-s1-student-book | 4 | 0 |
+
+The unplaced `math-s2` figure is on a unit-project page ahead of lesson 1,
+which is correct.
+
+**Chemistry is deliberately unplaced.** Its book uses a different opener
+layout, and a loosened detector found exactly one lesson — filing all four
+figures into a single lesson spanning fifty pages, titled with that lesson's
+«الفكرة الرئيسة» line rather than its name. An outline yielding fewer than
+three lessons is now refused outright: a wrong lesson reads exactly like a
+right one, so nothing is better.
+
+**Still to do:** match `lessonTitleEn` to a `KB_LESSONS` id, and render the
+figure on the slide. Nothing in the app reads any of this yet.
+
 ## Book figures come out of the NCCD PDFs, 2026-08-25
 
 The equation solver below draws every curve a stem states algebraically. The

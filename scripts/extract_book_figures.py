@@ -50,6 +50,7 @@ _review.png per book.
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -85,6 +86,97 @@ MAX_H = 0.60
 # drawing cluster, and cropping flush to it sliced «100» down to «0».
 MARGIN = 10
 DPI = 160
+
+
+
+# ─── Where in the book a figure sits ─────────────────────────────────────────
+
+# RTL: the extracted stream puts the NUMBER BEFORE the word, so the running
+# header reads «21  1 الوحدة». A left-to-right `الوحدة\s*(\d+)` matches nothing
+# on those pages and silently carries a stale unit forward from an earlier one —
+# it reported unit 10 for a unit-1 page, with no error anywhere.
+UNIT_HEADER = re.compile(r"([0-9\u0660-\u0669]+)\s*[\u064B-\u065F]?\s*\u0627\u0644\u0648\u062D\u062F\u0629")
+ARABIC_DIGITS = str.maketrans("\u0660\u0661\u0662\u0663\u0664\u0665\u0666\u0667\u0668\u0669", "0123456789")
+
+
+def _spans(page: pymupdf.Page):
+    for block in page.get_text("dict")["blocks"]:
+        for line in block.get("lines", []):
+            for span in line.get("spans", []):
+                yield span
+
+
+def lesson_start(page: pymupdf.Page) -> dict | None:
+    """A lesson opener: «الدرس» set at 22pt in the top band, its number at 45pt,
+    and titles beneath.
+
+    The English title is the one worth keeping. The Arabic spans come out of
+    the PDF with their diacritics reordered and their letters unjoined
+    («حُّلُ ُمُعادالٍتٍ»), so they are useless for matching; the English line is
+    clean ASCII.
+
+    The bands are loose enough for two different layouts. Maths sets «الدرس»
+    at the very top with the number under it; chemistry puts a 58pt number
+    first and «الدرس» below the Arabic title. Pinning the tight maths
+    coordinates found no chemistry lesson at all.
+    """
+    if not any(
+        s["text"].strip() == "\u0627\u0644\u062F\u0631\u0633" and s["size"] >= 20 and s["bbox"][1] < 60
+        for s in _spans(page)
+    ):
+        return None
+    number = title_en = None
+    for s in _spans(page):
+        t = s["text"].strip()
+        if s["size"] >= 40 and s["bbox"][1] < 60 and t.translate(ARABIC_DIGITS).isdigit():
+            number = int(t.translate(ARABIC_DIGITS))
+        if 13 <= s["size"] <= 20 and 60 < s["bbox"][1] < 115:
+            if t and all(ord(c) < 0x0600 for c in t) and len(t) > 6:
+                title_en = re.sub(r"\s+", " ", t)
+    return None if number is None else {"lesson": number, "titleEn": title_en}
+
+
+def outline(doc: pymupdf.Document) -> dict[int, dict]:
+    """Map every 1-based page to the lesson it belongs to.
+
+    Lesson openers give the boundaries and the lesson number. The UNIT number
+    is read from the running header of a page *inside* the lesson, never the
+    opener: on an opener the header still shows the outgoing unit.
+
+    The printed number is what gets recorded, not a position in the sequence.
+    The semester-1 book prints units 5–8 and semester-2 prints 1–4, so a
+    sequence index would have labelled every semester-1 figure with a unit
+    number the book does not use — and a teacher looking for «الوحدة 5» would
+    have been shown unit 1.
+    """
+    lessons: list[dict] = []
+    for n in range(len(doc)):
+        start = lesson_start(doc[n])
+        if start:
+            lessons.append({**start, "startPage": n + 1, "unit": None})
+
+    # An outline this thin is not an outline. The chemistry book yielded a
+    # single opener, so every figure in it was filed under one lesson spanning
+    # fifty pages — titled with that lesson's «الفكرة الرئيسة» line rather than
+    # its name. Placing figures on that is worse than leaving them unplaced,
+    # because a wrong lesson reads exactly like a right one.
+    if len(lessons) < 3:
+        return {}
+
+    for i, lesson in enumerate(lessons):
+        end = lessons[i + 1]["startPage"] if i + 1 < len(lessons) else len(doc) + 1
+        for p in range(lesson["startPage"], end):
+            m = UNIT_HEADER.search(doc[p - 1].get_text())
+            if m:
+                lesson["unit"] = int(m.group(1).translate(ARABIC_DIGITS))
+                break
+
+    by_page: dict[int, dict] = {}
+    for i, lesson in enumerate(lessons):
+        end = lessons[i + 1]["startPage"] if i + 1 < len(lessons) else len(doc) + 1
+        for p in range(lesson["startPage"], end):
+            by_page[p] = lesson
+    return by_page
 
 
 def _crosses(h: pymupdf.Rect, v: pymupdf.Rect) -> bool:
@@ -156,8 +248,9 @@ def with_labels(page: pymupdf.Page, r: pymupdf.Rect, pad: float = 7) -> pymupdf.
 
 
 def figures_in(pdf: Path):
-    """Yield (page_number, page, rect) for every figure found."""
+    """Yield (page_number, page, rect, lesson) for every figure found."""
     doc = pymupdf.open(pdf)
+    where = outline(doc)
     for n in range(len(doc)):
         page = doc[n]
         seed = axis_seed(page)
@@ -167,7 +260,7 @@ def figures_in(pdf: Path):
         r = pymupdf.Rect(r + (-MARGIN, -MARGIN, MARGIN, MARGIN)) & page.rect
         if r.width < 70 or r.height < 70:
             continue
-        yield n, page, r
+        yield n, page, r, where.get(n + 1)
 
 
 def review_sheet(paths: list[Path], out: Path) -> None:
@@ -202,7 +295,7 @@ def main() -> None:
         outdir = ROOT / "knowledge-base" / subject / "figures" / source_id
         outdir.mkdir(parents=True, exist_ok=True)
         index, written = [], []
-        for n, page, r in figures_in(pdf):
+        for n, page, r, lesson in figures_in(pdf):
             name = f"p{n + 1:03d}.png"
             path = outdir / name
             page.get_pixmap(clip=r, dpi=DPI).save(path)
@@ -214,6 +307,11 @@ def main() -> None:
                     # 1-based, matching how a teacher cites a page.
                     "pdfPage": n + 1,
                     "rect": [round(v, 1) for v in r],
+                    # As PRINTED in the book, so «الوحدة 5» finds unit 5.
+                    "unit": lesson["unit"] if lesson else None,
+                    "lesson": lesson["lesson"] if lesson else None,
+                    "lessonTitleEn": lesson["titleEn"] if lesson else None,
+                    "lessonStartPage": lesson["startPage"] if lesson else None,
                 }
             )
         (outdir / "index.json").write_text(
@@ -221,7 +319,9 @@ def main() -> None:
             encoding="utf-8",
         )
         review_sheet(written, outdir / "_review.png")
-        print(f"{source_id}: {len(index)} figures → {outdir.relative_to(ROOT)}")
+        placed = sum(1 for f in index if f["unit"] is not None)
+        print(f"{source_id}: {len(index)} figures ({placed} placed in a lesson)"
+              f" → {outdir.relative_to(ROOT)}")
     print("\nReview each _review.png and delete any crop that grabbed the wrong")
     print("thing before wiring these into the app.")
 

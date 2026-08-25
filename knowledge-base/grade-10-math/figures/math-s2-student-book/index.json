@@ -10,7 +10,11 @@
     294.5,
     275.0,
     544.3
-   ]
+   ],
+   "unit": null,
+   "lesson": null,
+   "lessonTitleEn": null,
+   "lessonStartPage": null
   },
   {
    "file": "p016.png",
@@ -21,7 +25,11 @@
     397.2,
     218.0,
     736.0
-   ]
+   ],
+   "unit": 1,
+   "lesson": 1,
+   "lessonTitleEn": "Solving Special Equations",
+   "lessonStartPage": 8
   },
   {
    "file": "p021.png",
@@ -32,7 +40,11 @@
     279.9,
     554.3,
     410.3
-   ]
+   ],
+   "unit": 1,
+   "lesson": 2,
+   "lessonTitleEn": "Solving a System of Linear and Quadratic Equations",
+   "lessonStartPage": 18
   },
   {
    "file": "p024.png",
@@ -43,7 +55,11 @@
     609.2,
     177.1,
     739.8
-   ]
+   ],
+   "unit": 1,
+   "lesson": 2,
+   "lessonTitleEn": "Solving a System of Linear and Quadratic Equations",
+   "lessonStartPage": 18
   },
   {
    "file": "p025.png",
@@ -54,7 +70,11 @@
     444.7,
     563.6,
     705.5
-   ]
+   ],
+   "unit": 1,
+   "lesson": 3,
+   "lessonTitleEn": "Solving a System of Two Quadratic Equations",
+   "lessonStartPage": 25
   },
   {
    "file": "p028.png",
@@ -65,7 +85,11 @@
     381.4,
     577.1,
     582.8
-   ]
+   ],
+   "unit": 1,
+   "lesson": 3,
+   "lessonTitleEn": "Solving a System of Two Quadratic Equations",
+   "lessonStartPage": 25
   },
   {
    "file": "p054.png",
@@ -76,7 +100,11 @@
     390.7,
     231.6,
     545.6
-   ]
+   ],
+   "unit": 2,
+   "lesson": 4,
+   "lessonTitleEn": "Equation of a Circle",
+   "lessonStartPage": 54
   },
   {
    "file": "p055.png",
@@ -87,7 +115,11 @@
     369.4,
     160.7,
     495.1
-   ]
+   ],
+   "unit": 2,
+   "lesson": 4,
+   "lessonTitleEn": "Equation of a Circle",
+   "lessonStartPage": 54
   },
   {
    "file": "p060.png",
@@ -98,7 +130,11 @@
     589.5,
     190.2,
     738.4
-   ]
+   ],
+   "unit": 2,
+   "lesson": 4,
+   "lessonTitleEn": "Equation of a Circle",
+   "lessonStartPage": 54
   },
   {
    "file": "p067.png",
@@ -109,7 +145,11 @@
     66.2,
     225.2,
     161.3
-   ]
+   ],
+   "unit": 3,
+   "lesson": 1,
+   "lessonTitleEn": "Trigonometric Ratios",
+   "lessonStartPage": 66
   },
   {
    "file": "p068.png",
@@ -120,7 +160,11 @@
     441.4,
     441.8,
     700.3
-   ]
+   ],
+   "unit": 3,
+   "lesson": 1,
+   "lessonTitleEn": "Trigonometric Ratios",
+   "lessonStartPage": 66
   },
   {
    "file": "p069.png",
@@ -131,7 +175,11 @@
     152.3,
     268.7,
     291.7
-   ]
+   ],
+   "unit": 3,
+   "lesson": 1,
+   "lessonTitleEn": "Trigonometric Ratios",
+   "lessonStartPage": 66
   },
   {
    "file": "p075.png",
@@ -142,7 +190,11 @@
     62.5,
     476.2,
     536.2
-   ]
+   ],
+   "unit": 3,
+   "lesson": 2,
+   "lessonTitleEn": "between 0º and 360º",
+   "lessonStartPage": 74
   },
   {
    "file": "p085.png",
@@ -153,7 +205,11 @@
     190.6,
     342.0,
     379.3
-   ]
+   ],
+   "unit": 3,
+   "lesson": 3,
+   "lessonTitleEn": "Graphing Trigonometric Functions",
+   "lessonStartPage": 82
   },
   {
    "file": "p086.png",
@@ -164,7 +220,11 @@
     374.6,
     510.7,
     521.1
-   ]
+   ],
+   "unit": 3,
+   "lesson": 3,
+   "lessonTitleEn": "Graphing Trigonometric Functions",
+   "lessonStartPage": 82
   },
   {
    "file": "p101.png",
@@ -175,7 +235,11 @@
     185.6,
     292.0,
     326.5
-   ]
+   ],
+   "unit": 4,
+   "lesson": 1,
+   "lessonTitleEn": "Bearing",
+   "lessonStartPage": 100
   },
   {
    "file": "p103.png",
@@ -186,7 +250,11 @@
     565.1,
     257.0,
     678.8
-   ]
+   ],
+   "unit": 4,
+   "lesson": 1,
+   "lessonTitleEn": "Bearing",
+   "lessonStartPage": 100
   }
  ]
 }

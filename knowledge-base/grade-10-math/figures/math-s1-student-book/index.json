@@ -10,7 +10,11 @@
     421.1,
     162.9,
     547.3
-   ]
+   ],
+   "unit": 5,
+   "lesson": 1,
+   "lessonTitleEn": "Polynomial Functions",
+   "lessonStartPage": 8
   },
   {
    "file": "p011.png",
@@ -21,7 +25,11 @@
     10.9,
     443.7,
     505.6
-   ]
+   ],
+   "unit": 5,
+   "lesson": 1,
+   "lessonTitleEn": "Polynomial Functions",
+   "lessonStartPage": 8
   },
   {
    "file": "p017.png",
@@ -32,7 +40,11 @@
     69.2,
     163.2,
     179.7
-   ]
+   ],
+   "unit": 5,
+   "lesson": 1,
+   "lessonTitleEn": "Polynomial Functions",
+   "lessonStartPage": 8
   },
   {
    "file": "p020.png",
@@ -43,7 +55,11 @@
     573.6,
     193.9,
     720.5
-   ]
+   ],
+   "unit": 5,
+   "lesson": 2,
+   "lessonTitleEn": "Rational Functions",
+   "lessonStartPage": 18
   },
   {
    "file": "p021.png",
@@ -54,7 +70,11 @@
     59.1,
     206.8,
     220.0
-   ]
+   ],
+   "unit": 5,
+   "lesson": 2,
+   "lessonTitleEn": "Rational Functions",
+   "lessonStartPage": 18
   },
   {
    "file": "p022.png",
@@ -65,7 +85,11 @@
     425.2,
     186.5,
     607.8
-   ]
+   ],
+   "unit": 5,
+   "lesson": 2,
+   "lessonTitleEn": "Rational Functions",
+   "lessonStartPage": 18
   },
   {
    "file": "p023.png",
@@ -76,7 +100,11 @@
     79.3,
     480.7,
     575.4
-   ]
+   ],
+   "unit": 5,
+   "lesson": 2,
+   "lessonTitleEn": "Rational Functions",
+   "lessonStartPage": 18
   },
   {
    "file": "p024.png",
@@ -87,7 +115,11 @@
     357.8,
     201.1,
     469.0
-   ]
+   ],
+   "unit": 5,
+   "lesson": 2,
+   "lessonTitleEn": "Rational Functions",
+   "lessonStartPage": 18
   },
   {
    "file": "p032.png",
@@ -98,7 +130,11 @@
     557.3,
     568.6,
     688.1
-   ]
+   ],
+   "unit": 5,
+   "lesson": 4,
+   "lessonTitleEn": "Inverse Function",
+   "lessonStartPage": 32
   },
   {
    "file": "p033.png",
@@ -109,7 +145,11 @@
     611.9,
     395.1,
     687.1
-   ]
+   ],
+   "unit": 5,
+   "lesson": 4,
+   "lessonTitleEn": "Inverse Function",
+   "lessonStartPage": 32
   },
   {
    "file": "p041.png",
@@ -120,7 +160,11 @@
     63.5,
     147.1,
     190.3
-   ]
+   ],
+   "unit": 5,
+   "lesson": 4,
+   "lessonTitleEn": "Inverse Function",
+   "lessonStartPage": 32
   },
   {
    "file": "p057.png",
@@ -131,7 +175,11 @@
     62.4,
     430.7,
     342.4
-   ]
+   ],
+   "unit": 6,
+   "lesson": 1,
+   "lessonTitleEn": "Estimating Slope",
+   "lessonStartPage": 56
   },
   {
    "file": "p058.png",
@@ -142,7 +190,11 @@
     60.9,
     444.9,
     518.8
-   ]
+   ],
+   "unit": 6,
+   "lesson": 1,
+   "lessonTitleEn": "Estimating Slope",
+   "lessonStartPage": 56
   },
   {
    "file": "p059.png",
@@ -153,7 +205,11 @@
     535.5,
     158.3,
     709.4
-   ]
+   ],
+   "unit": 6,
+   "lesson": 1,
+   "lessonTitleEn": "Estimating Slope",
+   "lessonStartPage": 56
   },
   {
    "file": "p060.png",
@@ -164,7 +220,11 @@
     484.5,
     203.0,
     592.5
-   ]
+   ],
+   "unit": 6,
+   "lesson": 1,
+   "lessonTitleEn": "Estimating Slope",
+   "lessonStartPage": 56
   },
   {
    "file": "p061.png",
@@ -175,7 +235,11 @@
     56.5,
     212.9,
     210.8
-   ]
+   ],
+   "unit": 6,
+   "lesson": 1,
+   "lessonTitleEn": "Estimating Slope",
+   "lessonStartPage": 56
   },
   {
    "file": "p062.png",
@@ -186,7 +250,11 @@
     54.3,
     230.8,
     228.0
-   ]
+   ],
+   "unit": 6,
+   "lesson": 1,
+   "lessonTitleEn": "Estimating Slope",
+   "lessonStartPage": 56
   },
   {
    "file": "p064.png",
@@ -197,7 +265,11 @@
     343.8,
     177.4,
     556.6
-   ]
+   ],
+   "unit": 6,
+   "lesson": 2,
+   "lessonTitleEn": "Differentiation",
+   "lessonStartPage": 63
   },
   {
    "file": "p069.png",
@@ -208,7 +280,11 @@
     59.6,
     161.8,
     211.9
-   ]
+   ],
+   "unit": 6,
+   "lesson": 2,
+   "lessonTitleEn": "Differentiation",
+   "lessonStartPage": 63
   },
   {
    "file": "p070.png",
@@ -219,7 +295,11 @@
     273.5,
     227.0,
     365.8
-   ]
+   ],
+   "unit": 6,
+   "lesson": 3,
+   "lessonTitleEn": "Maximum and Minimum Values",
+   "lessonStartPage": 70
   },
   {
    "file": "p071.png",
@@ -230,7 +310,11 @@
     306.1,
     182.5,
     428.6
-   ]
+   ],
+   "unit": 6,
+   "lesson": 3,
+   "lessonTitleEn": "Maximum and Minimum Values",
+   "lessonStartPage": 70
   },
   {
    "file": "p076.png",
@@ -241,7 +325,11 @@
     476.7,
     189.7,
     612.8
-   ]
+   ],
+   "unit": 6,
+   "lesson": 3,
+   "lessonTitleEn": "Maximum and Minimum Values",
+   "lessonStartPage": 70
   },
   {
    "file": "p077.png",
@@ -252,7 +340,11 @@
     454.5,
     499.7,
     594.8
-   ]
+   ],
+   "unit": 6,
+   "lesson": 3,
+   "lessonTitleEn": "Maximum and Minimum Values",
+   "lessonStartPage": 70
   },
   {
    "file": "p081.png",
@@ -263,7 +355,11 @@
     310.4,
     517.4,
     390.1
-   ]
+   ],
+   "unit": 7,
+   "lesson": 1,
+   "lessonTitleEn": "Vectors in the Coordinate Plane",
+   "lessonStartPage": 80
   },
   {
    "file": "p082.png",
@@ -274,7 +370,11 @@
     64.4,
     444.4,
     280.9
-   ]
+   ],
+   "unit": 7,
+   "lesson": 1,
+   "lessonTitleEn": "Vectors in the Coordinate Plane",
+   "lessonStartPage": 80
   },
   {
    "file": "p084.png",
@@ -285,7 +385,11 @@
     59.0,
     444.4,
     497.7
-   ]
+   ],
+   "unit": 7,
+   "lesson": 1,
+   "lessonTitleEn": "Vectors in the Coordinate Plane",
+   "lessonStartPage": 80
   },
   {
    "file": "p086.png",
@@ -296,7 +400,11 @@
     227.6,
     161.0,
     310.1
-   ]
+   ],
+   "unit": 7,
+   "lesson": 1,
+   "lessonTitleEn": "Vectors in the Coordinate Plane",
+   "lessonStartPage": 80
   },
   {
    "file": "p087.png",
@@ -307,7 +415,11 @@
     237.6,
     166.2,
     368.9
-   ]
+   ],
+   "unit": 7,
+   "lesson": 1,
+   "lessonTitleEn": "Vectors in the Coordinate Plane",
+   "lessonStartPage": 80
   },
   {
    "file": "p090.png",
@@ -318,7 +430,11 @@
     488.0,
     161.5,
     577.7
-   ]
+   ],
+   "unit": 7,
+   "lesson": 2,
+   "lessonTitleEn": "Adding and Subtracting Vectors",
+   "lessonStartPage": 88
   },
   {
    "file": "p091.png",
@@ -329,7 +445,11 @@
     56.7,
     430.4,
     514.5
-   ]
+   ],
+   "unit": 7,
+   "lesson": 2,
+   "lessonTitleEn": "Adding and Subtracting Vectors",
+   "lessonStartPage": 88
   },
   {
    "file": "p108.png",
@@ -340,7 +460,11 @@
     570.7,
     186.3,
     715.5
-   ]
+   ],
+   "unit": 8,
+   "lesson": 1,
+   "lessonTitleEn": "Scatter Graphs",
+   "lessonStartPage": 106
   },
   {
    "file": "p109.png",
@@ -351,7 +475,11 @@
     375.6,
     223.6,
     523.8
-   ]
+   ],
+   "unit": 8,
+   "lesson": 1,
+   "lessonTitleEn": "Scatter Graphs",
+   "lessonStartPage": 106
   },
   {
    "file": "p110.png",
@@ -362,7 +490,11 @@
     125.9,
     210.6,
     269.0
-   ]
+   ],
+   "unit": 8,
+   "lesson": 1,
+   "lessonTitleEn": "Scatter Graphs",
+   "lessonStartPage": 106
   },
   {
    "file": "p111.png",
@@ -373,7 +505,11 @@
     541.6,
     187.4,
     711.1
-   ]
+   ],
+   "unit": 8,
+   "lesson": 1,
+   "lessonTitleEn": "Scatter Graphs",
+   "lessonStartPage": 106
   },
   {
    "file": "p118.png",
@@ -384,7 +520,11 @@
     232.0,
     197.3,
     360.2
-   ]
+   ],
+   "unit": 8,
+   "lesson": 2,
+   "lessonTitleEn": "Cumulative Frequency Graph",
+   "lessonStartPage": 117
   },
   {
    "file": "p121.png",
@@ -395,7 +535,11 @@
     52.7,
     430.7,
     380.6
-   ]
+   ],
+   "unit": 8,
+   "lesson": 2,
+   "lessonTitleEn": "Cumulative Frequency Graph",
+   "lessonStartPage": 117
   },
   {
    "file": "p123.png",
@@ -406,7 +550,11 @@
     325.6,
     197.8,
     483.5
-   ]
+   ],
+   "unit": 8,
+   "lesson": 2,
+   "lessonTitleEn": "Cumulative Frequency Graph",
+   "lessonStartPage": 117
   },
   {
    "file": "p148.png",
@@ -417,7 +565,11 @@
     135.7,
     428.0,
     252.2
-   ]
+   ],
+   "unit": 8,
+   "lesson": 5,
+   "lessonTitleEn": "Probability of Independent and Dependent Events",
+   "lessonStartPage": 139
   },
   {
    "file": "p149.png",
@@ -428,7 +580,11 @@
     449.0,
     518.5,
     608.2
-   ]
+   ],
+   "unit": 8,
+   "lesson": 5,
+   "lessonTitleEn": "Probability of Independent and Dependent Events",
+   "lessonStartPage": 139
   }
  ]
 }

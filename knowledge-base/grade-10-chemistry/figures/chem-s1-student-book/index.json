@@ -10,7 +10,11 @@
     599.6,
     417.6,
     778.0
-   ]
+   ],
+   "unit": null,
+   "lesson": null,
+   "lessonTitleEn": null,
+   "lessonStartPage": null
   },
   {
    "file": "p042.png",
@@ -21,7 +25,11 @@
     68.8,
     494.3,
     389.1
-   ]
+   ],
+   "unit": null,
+   "lesson": null,
+   "lessonTitleEn": null,
+   "lessonStartPage": null
   },
   {
    "file": "p048.png",
@@ -32,7 +40,11 @@
     640.7,
     435.4,
     771.2
-   ]
+   ],
+   "unit": null,
+   "lesson": null,
+   "lessonTitleEn": null,
+   "lessonStartPage": null
   },
   {
    "file": "p072.png",
@@ -43,7 +55,11 @@
     514.1,
     419.0,
     721.7
-   ]
+   ],
+   "unit": null,
+   "lesson": null,
+   "lessonTitleEn": null,
+   "lessonStartPage": null
   }
  ]
 }
