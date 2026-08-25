@@ -36,7 +36,21 @@ services:
     # ~665MB of node_modules the API never imports — into a free-tier builder,
     # which is slow and a plausible OOM/timeout source on a constrained box.
     buildCommand: corepack enable && corepack prepare pnpm@11.18.0 --activate && pnpm install --frozen-lockfile --filter @workspace/api-server... && pnpm --filter @workspace/api-server run build
-    startCommand: pnpm --filter @workspace/api-server run start
+    # The seed runs before the server, on every boot. It is idempotent and
+    # matches on natural keys, so re-running never duplicates and never
+    # overwrites a school's edited thresholds — see seed-assessment.mjs.
+    #
+    # Why here and not once by hand: production went live with `level_scales`
+    # empty, so every evaluation was created with a null scale and answer entry
+    # refused with "No level scale is configured" — a failure three screens
+    # away from its cause. Nothing deployed the seed, exactly as nothing
+    # deploys the schema.
+    #
+    # A failure here stops the boot rather than being swallowed. That is the
+    # intended trade: every route needs the database anyway, so a server that
+    # cannot reach it has nothing to serve, and a silent half-configured start
+    # is what produced this bug in the first place.
+    startCommand: pnpm --filter @workspace/db run seed:assessment && pnpm --filter @workspace/api-server run start
     healthCheckPath: /api/healthz
     envVars:
       - key: NODE_VERSION

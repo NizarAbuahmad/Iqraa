@@ -287,8 +287,62 @@ reference-only, and there is a test holding that.
   Its S1 book is otherwise usable; revisit when the edition is chosen.
 - `محمد طارق` and `محمد طارق عوض` are probably one teacher. Left as two.
 
-44 curriculum / 761 mobile / 175 api-server tests pass, typecheck clean,
-`verify-curriculum` reports 0 errors.
+44 curriculum / 783 mobile / 175 api-server tests pass, typecheck clean,
+`verify-curriculum` reports 0 errors. (Mobile was 761 on the branch alone; the
+extra 22 came in with `main` when this was merged up, not from this change.)
+## The seed deploys itself now, 2026-08-25
+
+Production went live with `level_scales` empty. Nothing had ever run
+`seed-assessment.mjs` against it — the same gap as the schema, one layer up.
+
+The failure that exposed it was three screens from its cause. `POST
+/evaluations` looked up the system default scale, found none, and stored
+`level_scale_id = null` without complaining. The evaluation was created, the
+questions generated, the exam published — and only at answer entry did
+attempt creation refuse: **"No level scale is configured for this
+evaluation."** Every step in between reported success.
+
+**Two fixes, and the second is the one that matters.**
+
+- `POST /evaluations` now returns 409 `no_level_scale` instead of storing a
+  null scale. An error belongs where its cause is.
+- The API's `startCommand` runs the seed before the server, on **every boot**.
+  It is idempotent and matches on natural keys, so re-running never duplicates
+  and never overwrites a school's edited thresholds.
+
+**The seed could not run on a server until now**, which is why it never had.
+It began `delete process.env.DATABASE_URL` then forced the repo-root `.env` —
+correct locally, where the point is that a stale shell variable must not aim a
+seed at the wrong database, and fatal on Render, where there is no `.env` and
+the environment *is* the configuration. It now forces the file only when the
+file exists. Both directions were checked: with a `.env` present a deliberately
+bogus `DATABASE_URL` in the shell was ignored, and with no `.env` the
+environment was used.
+
+**A seed failure stops the boot rather than being swallowed.** That is the
+intended trade. Every route needs the database anyway, so a server that cannot
+reach it has nothing to serve — and a silent half-configured start is precisely
+what produced this bug.
+
+**Verified**: `pnpm --filter @workspace/db run seed:assessment`, the exact
+command the start line runs, against a worktree with no `.env` and the URL in
+the environment. The guard was tested both ways against a running API —
+`201` with a default scale present, `409 no_level_scale` with it switched off,
+and the local scale restored afterwards.
+
+175 api-server tests, 772 mobile, 0 failures.
+
+**Production still needs the seed run by hand once**, because the fix only
+takes effect on the next deploy and the rows are already missing. The SQL is
+the same four statements the script performs; the backfill matters as much as
+the insert, since evaluations already created carry a null scale and will keep
+refusing until it is filled in:
+
+```sql
+UPDATE evaluations
+SET level_scale_id = (SELECT id FROM level_scales WHERE scope = 'system' AND is_default = true LIMIT 1)
+WHERE level_scale_id IS NULL;
+```
 
 ## Marking is reachable from the class, 2026-08-24
 
@@ -543,6 +597,101 @@ as a fault.
 fails with four errors on `main` itself and on anything branched from it. A
 revert exists on `feat/exports-and-chemistry-s2` (`9f680b5`) and has not
 landed. Nothing on this branch touches those files.
+
+**No longer true (checked 2026-08-24, `main` at `1bb904b`):** `i18n.ts` now
+defines all four keys in both languages, and `pnpm run typecheck` is clean on
+`main`. Left in place rather than deleted — this file's habit of recording a
+problem and never its fix is the thing worth not repeating.
+
+## The graph guard missed «يمثل الرسم البياني», 2026-08-25
+
+The fix below shipped, and the very next deck projected two more checks about
+a graph that was not drawn:
+
+> يمثل الرسم البياني خطين مستقيمين يتقاطعان عند النقطة التي تحقق النظام…
+> يوضح الرسم البياني خطين مستقيمين متوازيين لا يتقاطعان أبداً…
+
+`referencesShownVisual` required a noun **and a pointing word** — «الشكل
+**الظاهر**», «الرسم البياني **أعلاه**». Neither of these stems has one.
+**Arabic is verb-first**, so the claim lives in the verb instead: «**يمثل**
+الرسم البياني…» states, as fact, that the class is looking at a figure, and
+is wrong the moment it isn't — exactly what «الظاهر» does, with no
+demonstrative anywhere in the sentence.
+
+So the test is now two shapes, not one: pointing at a figure, or saying what
+it depicts (يمثل / يوضح / يبيّن / يُظهر / يعرض / يصف, plus their تـ forms).
+Neither of the two live stems names a plottable function, so both are dropped
+rather than drawn — the same order the section below describes.
+
+**Where the line sits in English.** The verb form requires `the`: «**the**
+graph shows two lines» is a claim about this slide; «**A** scatter plot shows
+ordered pairs» is a definition of what a scatter plot is. That sentence — in
+`knowledgeBase.ts`, the stats lesson — was the *only* false positive in a
+sweep of all 977 curriculum strings, and `the` is what tells the two apart.
+Arabic needs no such guard: «الرسم البياني» is definite by construction.
+
+**Method worth repeating:** the predicate was run over the real corpus rather
+than reasoned about — 977 objectives, concepts, examples and rules — which is
+how the one bad match was found. Before: 1 flagged. After: 0.
+
+Verified: `pnpm run typecheck` clean; `artifacts/mobile` 772 tests / 0 fail
+(7 new).
+
+## A check that says «في الرسم البياني الظاهر» now has one, 2026-08-24
+
+Reported from a live deck: slide 5 of a Slides Maker lesson read «في الرسم
+البياني الظاهر، يلتقي المستقيمان عند النقطة التي تمثل حل النظام. حدّدوا
+إحداثيات نقطة التقاطع…» — and there was no graph on the slide. The class is
+told to read coordinates off a picture that is not there.
+
+**Why the picture was missing.** `graphCommands` is the only thing that draws
+a curve, and until now only `buildGraphSlide` ever set it — on a dedicated
+`type: 'graph'` slide. A formative check is a `question` or `challenge`
+slide, so a check could talk about a figure but structurally could not carry
+one. The generator writes those stems anyway: it is asked for questions about
+a lesson, not told what the slide will render.
+
+**Two rules, in this order** (`lessonSlides.ts`, applied inside
+`splitChecks` before `isCheckSlide` runs):
+
+1. **Plot what the check itself names.** If the stem references a shown
+   figure and its own text carries plottable functions, `extractGraphCommands`
+   attaches them to that slide. `visualForSlide` was already type-agnostic, so
+   the presenter draws the curves with no renderer change.
+2. **Drop what cannot be rescued.** A check still pointing at an absent figure
+   is not a hard question, it is an impossible one, so it never reaches the
+   deck. The generator is asked for five and the deck places at most five, so
+   in practice a dropped check costs a slide, not a section.
+
+**The deck's own graph is deliberately not borrowed.** `opts.graphCommands`
+comes from the lesson's rule and examples. Projecting that parabola under a
+question about two intersecting lines would put a confident, wrong picture
+beneath a sentence claiming it is the right one — worse than the blank slide
+being fixed. Commands come from the check's own text or from nowhere.
+
+**What the deixis test is for.** `referencesShownVisual` (classMedia.ts)
+requires a noun *and* a pointing word — «الشكل **الظاهر**», «الرسم البياني
+**أعلاه**», "the graph **shown**". Matching «الرسم البياني» alone would have
+deleted every graphing exercise in the corpus, since «ارسم الرسم البياني
+للاقتران» is an instruction to draw one, not a claim that one is on screen.
+
+**Two adjacent gaps closed on the way:**
+
+- `extractGraphCommands` could not match a leading unary minus, so
+  `y = -x + 3` extracted nothing. Any two-line system with a negative slope
+  was projected with one line silently missing — the same shape as the
+  spaces-in-the-body bug found on 2026-08-19 ("Charts: generated from lesson
+  text, refused by default").
+- Neither export drew a plotted curve on a `question` or `challenge` slide,
+  so a check carrying a figure would have printed without it. Both now do,
+  with the option rows and answer card laid out around the plot. **Still
+  open:** in PPTX a *plot* reaches only `graph`, `question` and `challenge`
+  slides — a curve attached to a content slide draws in the PDF and on
+  screen but not in the .pptx. Charts reach every slide type in both.
+
+Verified after merging `main` (`1bb904b`): `pnpm run typecheck` clean;
+`artifacts/mobile` 770 tests / 0 fail (12 new here), `artifacts/api-server`
+161 / 0 fail.
 
 ## A teacher can mark a paper exam by hand, 2026-08-24
 
@@ -3816,10 +3965,8 @@ title on the left, description on the right) while looking correct in dev.
 
 Cause: the app expresses direction *per component* — ~190 sites write
 `flexDirection: isRTL ? 'row-reverse' : 'row'` — which assumes a
-direction-neutral document. `expo export` and the dev server both emit a shell
-with no `dir`, but the deployed HTML served `<html lang="ar" dir="rtl">`, which
-this repo cannot produce. In an RTL document `flexDirection: 'row'` is already
-reversed, so `'row-reverse'` cancels back to visual LTR, while
+direction-neutral document. In an RTL document `flexDirection: 'row'` is
+already reversed, so `'row-reverse'` cancels back to visual LTR, while
 `textAlign: 'right'` (a physical value) stays put.
 
 Measured on the deployed page, children of one such row:
@@ -3827,9 +3974,49 @@ Measured on the deployed page, children of one such row:
 no `dir` → x = `[288, 211]` (descending → visually RTL, correct).
 
 `LanguageContext.applyRTL` now asserts `dir="ltr"` on web at boot and on every
-language change, so the host cannot reintroduce it. `app/+html.tsx` does *not*
-work here — `web.output` is unset, which means `single`, and Expo ignores the
-custom shell in that mode.
+language change. `app/+html.tsx` does *not* work here — `web.output` is unset,
+which means `single`, and Expo ignores the custom shell in that mode.
+
+**Where the `dir="rtl"` actually came from (corrected 2026-08-24).** This entry
+and the comment in `LanguageContext` both said the deployed
+`<html lang="ar" dir="rtl">` was something "this repo cannot produce", and
+blamed the host. It is ours. `scripts/inject-pwa.mjs:39` rewrites the tag after
+`expo export`:
+
+```js
+html = html.replace(/<html lang="en">/, '<html lang="ar" dir="rtl">');
+```
+
+`render.yaml:100` runs `build:web`, which is `expo export && inject-pwa`, so
+every deploy ships that tag. `expo export` alone really does emit a bare shell —
+which is why dev never reproduced it — but the deploy does not stop there.
+
+So the build asserts `dir="rtl"` and the runtime asserts `dir="ltr"` about four
+hundred milliseconds later, on every cold load. Nothing is "reintroducing" the
+attribute; two parts of this repo disagree, and the later one wins.
+
+Re-measured 2026-08-24 against a local `pnpm run build:web` (identical to what
+Render runs), driving the real bundle in Chromium:
+
+| | login-screen row `x` | reading |
+| --- | --- | --- |
+| as shipped (`dir="ltr"`) | `[578, 0]` | descending → visually RTL, correct |
+| forced `dir="rtl"` | `[0, 702]` | ascending → visually LTR, the bug |
+
+The August finding still holds exactly. Forcing `dir="rtl"` swaps the login
+page's two halves and moves the envelope and lock icons to the far left of
+right-aligned Arabic fields — the half-mirrored signature, reproduced on
+current `main`.
+
+No flash: the served `dir="rtl"` is replaced before any text paints (measured
+both unthrottled and at 6× CPU throttling with a slow-network profile), so the
+disagreement costs nothing visually today. It is a correctness and maintenance
+problem, not a rendering one — but it is why nobody could say where the
+attribute came from.
+
+If the per-component flips are ever replaced by real document-level RTL, the
+injector and `applyRTL` have to change in the same commit that deletes them —
+all three, not two.
 
 If the per-component flips are ever replaced by real document-level RTL, `dir`
 must start following the language in the same commit that deletes them.

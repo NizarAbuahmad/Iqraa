@@ -20,6 +20,7 @@ import {
   classifyMediaUrl,
   deckPhotoQueries,
   extractGraphCommands,
+  referencesShownVisual,
   geogebraCommandUrl,
   insertVideoSlide,
   isLikelyImageUrl,
@@ -115,6 +116,13 @@ describe('extractGraphCommands', () => {
 
   it('rejects expressions with unsafe characters', () => {
     assert.deepEqual(extractGraphCommands('f(x)=<script>alert(1)</script>'), []);
+  });
+
+  it('keeps a negative leading coefficient', () => {
+    // `-x + 3` used to match nothing: the term charset had no place for a
+    // leading sign, so half of every two-line system went unplotted.
+    assert.deepEqual(extractGraphCommands('y = -x + 3'), ['y=-x + 3']);
+    assert.deepEqual(extractGraphCommands('f(x) = −2x + 1'), ['f(x)=-2x + 1']);
   });
 
   it('de-duplicates and respects the max', () => {
@@ -417,5 +425,61 @@ describe('shouldSearchForVideo', () => {
       { kind: 'video', url: 'https://youtu.be/dQw4w9WgXcQ', caption: '' },
       { kind: 'image', url: 'https://example.com/a.png', caption: '' },
     ]), false);
+  });
+});
+
+describe('referencesShownVisual', () => {
+  it('catches an Arabic question that points at a figure on the slide', () => {
+    assert.ok(referencesShownVisual('في الرسم البياني الظاهر، يلتقي المستقيمان عند نقطة الحل.'));
+    assert.ok(referencesShownVisual('من الشكل المجاور، أوجد الميل.'));
+    assert.ok(referencesShownVisual('انظر إلى المنحنى أعلاه.'));
+    assert.ok(referencesShownVisual('باستعمال التمثيل البياني الآتي، أوجد الجذور.'));
+  });
+
+  it('catches the English forms', () => {
+    assert.ok(referencesShownVisual('From the graph shown, read the intersection.'));
+    assert.ok(referencesShownVisual('Use the figure below to find the slope.'));
+    assert.ok(referencesShownVisual('The above diagram shows two lines.'));
+  });
+
+  it('catches the verb-led claim, which carries no pointing word at all', () => {
+    // Both of these projected live, past the pointing-word test, as questions
+    // about a graph the slide never drew. Arabic is verb-first, so the
+    // assertion sits in «يمثل» / «يوضح» rather than in a demonstrative.
+    assert.ok(referencesShownVisual(
+      'يمثل الرسم البياني خطين مستقيمين يتقاطعان عند النقطة التي تحقق النظام. ما حل النظام بيانياً؟',
+    ));
+    assert.ok(referencesShownVisual(
+      'يوضح الرسم البياني خطين مستقيمين متوازيين لا يتقاطعان أبداً. ما عدد حلول هذا النظام؟',
+    ));
+    assert.ok(referencesShownVisual('يبيّن الشكل مثلثاً قائم الزاوية.'));
+    assert.ok(referencesShownVisual('The graph shows two parallel lines.'));
+  });
+
+  it('reads a definition as a definition, not as a claim about this slide', () => {
+    // «A scatter plot shows ordered pairs» explains what a scatter plot IS.
+    // It was the single false positive in a sweep of the whole curriculum
+    // corpus, and `the` is what tells the two apart in English.
+    assert.equal(
+      referencesShownVisual('A scatter plot shows ordered pairs (x,y) to reveal a relationship.'),
+      false,
+    );
+    // Arabic verb-led forms still need a GRAPH noun after the verb.
+    assert.equal(referencesShownVisual('يمثل الميل تغير y بالنسبة إلى x.'), false);
+    assert.equal(referencesShownVisual('الخط الأول يمثل معادلة، والخط الثاني يمثل معادلة أخرى.'), false);
+  });
+
+  it('is not fooled by an instruction to DRAW one', () => {
+    // The deixis is the whole test — matching the noun alone would flag every
+    // graphing exercise in the corpus and delete it from the deck.
+    assert.equal(referencesShownVisual('ارسم الرسم البياني للاقتران f(x) = x²'), false);
+    assert.equal(referencesShownVisual('مثّل النظام بيانيًا ثم أوجد الحل.'), false);
+    assert.equal(referencesShownVisual('Sketch the graph of y = 2x - 3.'), false);
+    assert.equal(referencesShownVisual('اكتب الصيغة العامة للمعادلة التربيعية.'), false);
+  });
+
+  it('handles empty input', () => {
+    assert.equal(referencesShownVisual(''), false);
+    assert.equal(referencesShownVisual('   '), false);
   });
 });

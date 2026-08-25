@@ -339,8 +339,12 @@ export function extractGraphCommands(text: string, max = 3): string[] {
   // formula — but requiring an operator between terms stops naturally at
   // `1 and then…` while keeping `x^3 - 4x` whole.
   const term = '[0-9a-z^().√π]+';
+  // A leading unary minus is part of the first term, not an operator between
+  // two of them. Without this `y = -x + 3` matched nothing at all — an
+  // ordinary line with a negative slope, so a two-line system was projected
+  // with one line missing and no error anywhere.
   const re = new RegExp(
-    `([fghy])\\s*(\\([a-z]\\))?\\s*=\\s*(${term}(?:\\s*[+\\-*/]\\s*${term})*)`,
+    `([fghy])\\s*(\\([a-z]\\))?\\s*=\\s*(-?\\s*${term}(?:\\s*[+\\-*/]\\s*${term})*)`,
     'gi',
   );
   let m: RegExpExecArray | null;
@@ -348,11 +352,75 @@ export function extractGraphCommands(text: string, max = 3): string[] {
     const name = m[1]!;
     const arg = m[2] ?? (name.toLowerCase() === 'y' ? '' : '(x)');
     // A trailing full stop is sentence punctuation, never part of the maths.
-    const body = m[3]!.trim().replace(/[.\s]+$/, '');
+    const body = m[3]!.trim().replace(/[.\s]+$/, '').replace(/^-\s*/, '-');
     // A constant is not a curve worth projecting — require a variable.
     if (!/[a-z]/i.test(body)) continue;
     const cmd = `${name}${arg}=${body}`;
     if (!out.includes(cmd)) out.push(cmd);
   }
   return out;
+}
+
+/**
+ * The two ways a stem can claim a picture is already on the slide.
+ *
+ * What both have in common is an assertion that can be *false*. «ارسم الرسم
+ * البياني للاقتران» is an instruction to draw one, and cannot be wrong;
+ * «في الرسم البياني الظاهر» and «يمثل الرسم البياني خطين» both assert one is
+ * on screen, and are wrong the moment it isn't. Matching the noun alone would
+ * flag every graphing exercise in the corpus, so the noun is never enough.
+ */
+const VISUAL_NOUN_AR = '(?:الرسم\\s*البياني|التمثيل\\s*البياني|المنحنى|الرسمة|الشكل|المخطط|الرسم)';
+
+/** Pointing at it: «الشكل الظاهر», «الرسم البياني أعلاه». */
+const SHOWN_VISUAL_AR = new RegExp(
+  `${VISUAL_NOUN_AR}`
+  + '\\s*(?:ال(?:ظاهر|مجاور|موضّح|موضح|مرفق|معروض|آتي|تالي|سابق)[\\u0600-\\u06FF]*'
+  + '|أعلاه|أدناه|أمامكم|أمامك)',
+  'u',
+);
+
+/**
+ * Saying what it shows: «يمثل الرسم البياني خطين…», «يوضح الشكل…».
+ *
+ * Arabic is verb-first, so this assertion carries no demonstrative at all —
+ * which is exactly how two live check slides slipped past the pointing-word
+ * test above and projected a question about a graph that was not drawn. The
+ * verb is doing the same work «الظاهر» does: it states, as fact, that the
+ * class is looking at a figure.
+ */
+const DEPICTS_VISUAL_AR = new RegExp(
+  '(?:يمثّل|يمثل|تمثّل|تمثل|يوضّح|يوضح|توضّح|توضح|يبيّن|يبين|تبيّن|تبين'
+  + '|يُظهر|يظهر|تُظهر|تظهر|يعرض|تعرض|يصف|تصف)'
+  + `\\s+(?:لنا\\s+)?${VISUAL_NOUN_AR}`,
+  'u',
+);
+
+const VISUAL_NOUN_EN = '(?:graph|figure|diagram|chart|plot|curve|sketch|image|picture)';
+const SHOWN_VISUAL_EN = new RegExp(
+  `\\b${VISUAL_NOUN_EN}\\s+(?:shown|above|below|opposite|attached|displayed|here`
+  + `|on\\s+(?:the\\s+)?(?:screen|slide|board))\\b`
+  + `|\\b(?:above|below|shown|attached|adjacent|following)\\s+${VISUAL_NOUN_EN}\\b`
+  // The English half of the same verb-led claim: "the graph shows two lines".
+  // `the` is required, and is what separates the claim from a definition:
+  // «A scatter plot shows ordered pairs» explains what a scatter plot IS —
+  // the one sentence in the whole curriculum corpus this would misread.
+  // Arabic needs no such guard; «الرسم البياني» is definite by construction.
+  + `|\\bthe\\s+${VISUAL_NOUN_EN}\\s+(?:shows|represents|depicts|illustrates|displays)\\b`,
+  'i',
+);
+
+/**
+ * Whether a slide's text asserts that a picture is already on screen.
+ *
+ * A question that opens «في الرسم البياني الظاهر…» is unanswerable when the
+ * slide shows no graph — the class is told to read coordinates off something
+ * that is not there. Generated checks make that claim on their own, so the
+ * deck has to notice it: either the picture gets drawn (the question's own
+ * equations are plottable) or the question does not project at all.
+ */
+export function referencesShownVisual(text: string): boolean {
+  const s = (text ?? '').trim();
+  if (!s) return false;
+  return SHOWN_VISUAL_AR.test(s) || DEPICTS_VISUAL_AR.test(s) || SHOWN_VISUAL_EN.test(s);
 }

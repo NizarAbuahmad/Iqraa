@@ -36,6 +36,13 @@ if (html.includes('manifest.webmanifest')) {
 
 // The document is Arabic-first and right-to-left. Expo's template hardcodes
 // lang="en", which tells a screen reader to pronounce Arabic as English.
+//
+// Note the `dir="rtl"` here does NOT survive to the running app:
+// `LanguageContext.applyRTL` sets `dir="ltr"` at boot, because the app lays out
+// RTL per component and a document-level `dir` double-flips those ~190 sites
+// (see the web-RTL entry in STATUS.md). This line and that one disagree on
+// purpose-by-accident — they were written months apart — and the runtime wins.
+// Changing to document-level RTL means changing both, plus the flips.
 html = html.replace(/<html lang="en">/, '<html lang="ar" dir="rtl">');
 
 // viewport-fit=cover so the safe-area insets the app already respects have
