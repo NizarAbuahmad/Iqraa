@@ -53,8 +53,26 @@ const outDir = path.resolve(here, '../src/data/extracted');
  * recorded, not silently accepted — see the note on `math-s1-student-book`.
  */
 const LOCAL_FILES: Record<string, string> = {
-  'math-s1-student-book': 'attached_assets/10th_grade,_math,_1st_semester_1785071530816.pdf',
-  'math-s2-student-book': 'attached_assets/10th_grade,_math,_2nd_semester_1785147978008.pdf',
+  // ⚠ The two student books are mapped ACROSS their filenames, on purpose.
+  //
+  // `10th_grade,_math,_1st_semester_….pdf` opens «الوحدةُ 5 الاقتراناتُ» and
+  // carries unit 7 المتجهات — catalog **Semester 2**. `…,_2nd_semester_….pdf`
+  // opens «الوحدةُ 1 المعادلاتُ» and carries unit 3 حساب المثلثات — catalog
+  // **Semester 1**. The files are swapped relative to their names, and the
+  // manifest inherited the swap when its entries were written from a Drive
+  // listing rather than from the documents.
+  //
+  // Mapped by content, because that is what makes a citation true: a passage
+  // offered for الدائرة must come from the book that contains الدائرة. Before
+  // this was corrected, retrieval for the circle unit returned a page about
+  // vectors and looked like a scoring problem.
+  //
+  // The teacher guides are *not* affected — the S2 guide really does hold unit
+  // 6 المشتقات — so this is the two student books only. It is also very likely
+  // true of the Drive copies and the `bytes` recorded against these two ids;
+  // see STATUS.md. `bytesDifferFromManifest` fires on both as a result.
+  'math-s1-student-book': 'attached_assets/10th_grade,_math,_2nd_semester_1785147978008.pdf',
+  'math-s2-student-book': 'attached_assets/10th_grade,_math,_1st_semester_1785071530816.pdf',
   'chem-s1-student-book': 'attached_assets/10th_grade,_alchamy1st_semester_1785071530814.pdf',
   'math-s1-exercise-book': 'attached_assets/2026_MT10_WB1__10th_grade,_math_excersice_book,_semster_one_1785147998882.pdf',
   'math-s2-exercise-book': 'attached_assets/MA_10_WB2_6_11_2025-mather_exccersie_book,_semster_2_1785147998882.pdf',

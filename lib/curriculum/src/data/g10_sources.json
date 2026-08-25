@@ -23,13 +23,13 @@
       "extraction": {
         "tool": "pdf-parse@2",
         "extractedAt": "2026-08-25",
-        "pages": 150,
-        "chars": 220128,
-        "localPath": "attached_assets/10th_grade,_math,_1st_semester_1785071530816.pdf",
-        "sha256": "284b59d944a0cc3be7232aa89f35ba2750e82da496917d53781fea4a26d4c14f",
+        "pages": 132,
+        "chars": 184065,
+        "localPath": "attached_assets/10th_grade,_math,_2nd_semester_1785147978008.pdf",
+        "sha256": "31fb912092398e107f62505a4abbada0a571343cbcca69032cb541e1a5182668",
         "bytesDifferFromManifest": {
           "manifest": 18630721,
-          "local": 12150839
+          "local": 33429449
         }
       },
       "filename": "كتاب الطالب لمادة الرياضيات الصف العاشر الفصل الأول.pdf",
@@ -60,10 +60,14 @@
       "extraction": {
         "tool": "pdf-parse@2",
         "extractedAt": "2026-08-25",
-        "pages": 132,
-        "chars": 184065,
-        "localPath": "attached_assets/10th_grade,_math,_2nd_semester_1785147978008.pdf",
-        "sha256": "31fb912092398e107f62505a4abbada0a571343cbcca69032cb541e1a5182668"
+        "pages": 150,
+        "chars": 220128,
+        "localPath": "attached_assets/10th_grade,_math,_1st_semester_1785071530816.pdf",
+        "sha256": "284b59d944a0cc3be7232aa89f35ba2750e82da496917d53781fea4a26d4c14f",
+        "bytesDifferFromManifest": {
+          "manifest": 33429449,
+          "local": 12150839
+        }
       },
       "filename": "10th grade, math, 2nd semester.pdf",
       "authorAr": null,

@@ -21,6 +21,7 @@ import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { G10_SOURCES } from '../sources.ts';
+import { searchForm } from '../passages.ts';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const srcDir = path.resolve(here, '..');
@@ -154,5 +155,36 @@ describe('the extracted text stays out of the app bundle', () => {
     };
     walk(srcDir);
     assert.deepEqual(offenders, [], `these import the extracted corpus: ${offenders.join(', ')}`);
+  });
+});
+
+describe('a book actually contains the units it is mapped to', () => {
+  it('holds its own unit titles, not another semester\'s', () => {
+    // The guard that was missing. `10th_grade,_math,_1st_semester_….pdf` opens
+    // «الوحدةُ 5 الاقتراناتُ» — catalog Semester *2* — and its sibling opens
+    // «الوحدةُ 1 المعادلاتُ». The two student books are swapped relative to
+    // their filenames, and `extract-text.ts` maps across them to compensate.
+    //
+    // Nothing enforced that. Retrieval for الدائرة returned a page about
+    // vectors and read as a ranking problem, which is how a mapping error
+    // disguises itself. Filenames and manifest labels are both hearsay; the
+    // unit titles printed inside the book are not.
+    const bySemester: Record<string, string[]> = {
+      'math-s1-student-book': ['الاسس والمعادلات', 'الدائره', 'حساب المثلثات'],
+      'math-s2-student-book': ['الاقترانات', 'المشتقات', 'المتجهات'],
+      'chem-s1-student-book': ['بنيه الذره', 'الروابط'],
+    };
+    for (const [sourceId, titles] of Object.entries(bySemester)) {
+      const f = path.join(extractedDir, `${sourceId}.json`);
+      if (!existsSync(f)) continue;
+      const doc = JSON.parse(readFileSync(f, 'utf8')) as Extracted;
+      const body = searchForm(doc.text.map(p => p.text).join(' '));
+      const found = titles.filter(t => body.includes(searchForm(t)));
+      assert.ok(
+        found.length >= 2,
+        `${sourceId} contains only ${found.length} of its own unit titles `
+          + `(${found.join(', ') || 'none'}) — it is probably the other semester's book`,
+      );
+    }
   });
 });
