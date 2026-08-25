@@ -122,6 +122,15 @@ import {
 } from '@/services/share';
 import { buildClassDeck } from '@/services/startClass';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
+import { ClassPickerSheet } from '@/components/ui/ClassPickerSheet';
+import { saveItem, updateItem } from '@/services/workspace';
+import {
+  canPresentArtifact,
+  deckForArtifact,
+  materialContentFor,
+  materialFormStateFor,
+  materialTypeFor,
+} from '@/services/chatMaterialActions';
 
 function promptForTeachingAction(
   type: TeachingAction['type'],
@@ -197,6 +206,13 @@ interface Message {
   artifactProse?: string;
   /** Heading + context, so an edited document exports as edited. */
   artifactMeta?: { title: string; subject: string; grade: string; duration?: number };
+  /**
+   * Workspace id, once this material has been saved from chat. Held on the
+   * message so a second tap updates the same material instead of filing a
+   * duplicate, and so "add to class" knows there is already something to
+   * attach.
+   */
+  savedMaterialId?: string;
   sources?: KBLesson[];
   /** Topic used for generator navigation — not rendered as chips in the timeline. */
   lessonTopic?: string;
@@ -626,6 +642,7 @@ const prepStyles = StyleSheet.create({
 function MessageBubble({
   message, colors, isRTL, onLongPress, onClarifySubject, onClarifyLesson, onPedagogicalClarify, prepProgress,
   introName, introPitch, introActions, onEditArtifact, onCopy, onExport,
+  onSaveMaterial, onAddToClass, onPresentMaterial, busyMaterial,
   copyLabel, exportLabel, t,
 }: {
   message: Message; colors: any; isRTL: boolean;
@@ -645,6 +662,16 @@ function MessageBubble({
   /** Both take the whole message: what is copied is not always what is shown. */
   onCopy?: (message: Message) => void;
   onExport?: (message: Message) => void;
+  /**
+   * The three things the tool screens offer once a material exists. Passed
+   * only for messages that carry one — a plain answer has nothing to save,
+   * file or project.
+   */
+  onSaveMaterial?: (message: Message) => void;
+  onAddToClass?: (message: Message) => void;
+  onPresentMaterial?: (message: Message) => void;
+  /** Save / present in flight for this message — both are round trips. */
+  busyMaterial?: boolean;
   copyLabel?: string;
   exportLabel?: string;
   t: (k: any, ...a: any[]) => string;
@@ -737,6 +764,76 @@ function MessageBubble({
   // both put the whole lesson plan on screen twice — once editable, once as the
   // wall of separators the exporter produces.
   const lines = (planData ? (message.artifactProse ?? '') : message.text).split('\n');
+
+  /**
+   * The row under the bubble.
+   *
+   * Copy and export are for any answer long enough to be worth keeping. The
+   * other three exist only when the turn produced an actual material, and they
+   * are the same three the tool screens end with — save it, file it under a
+   * class, put it on the screen. They lead the row and carry the accent colour
+   * because they are the next step; copy and export stay muted behind them.
+   */
+  const artifact = message.artifactData;
+  const canAct = Boolean(artifact && message.artifactMeta);
+  const messageActions: {
+    key: string;
+    icon: keyof typeof Ionicons.glyphMap;
+    label: string;
+    color: string;
+    disabled?: boolean;
+    onPress: () => void;
+  }[] = [];
+
+  if (canAct && onSaveMaterial) {
+    const saved = Boolean(message.savedMaterialId);
+    messageActions.push({
+      key: 'save',
+      icon: saved ? 'checkmark-circle' : 'bookmark-outline',
+      label: saved ? t('iqraSavedMaterial') : t('iqraSaveMaterial'),
+      color: colors.primary,
+      disabled: busyMaterial,
+      onPress: () => onSaveMaterial(message),
+    });
+  }
+  if (canAct && onAddToClass) {
+    messageActions.push({
+      key: 'class',
+      icon: 'people-outline',
+      label: t('iqraAddToClass'),
+      color: colors.primary,
+      disabled: busyMaterial,
+      onPress: () => onAddToClass(message),
+    });
+  }
+  if (canAct && onPresentMaterial && artifact && canPresentArtifact(artifact)) {
+    messageActions.push({
+      key: 'present',
+      icon: 'tv-outline',
+      label: t('iqraPresentMaterial'),
+      color: '#0EA5E9',
+      disabled: busyMaterial,
+      onPress: () => onPresentMaterial(message),
+    });
+  }
+  if (onCopy && onExport && (canAct || message.text.trim().length > 60)) {
+    messageActions.push(
+      {
+        key: 'copy',
+        icon: 'copy-outline',
+        label: copyLabel ?? '',
+        color: colors.mutedForeground,
+        onPress: () => onCopy(message),
+      },
+      {
+        key: 'export',
+        icon: 'share-outline',
+        label: exportLabel ?? '',
+        color: colors.mutedForeground,
+        onPress: () => onExport(message),
+      },
+    );
+  }
 
   return (
     <View style={[styles.rowAssistant, isRTL && styles.rowAssistantRTL]}>
@@ -834,34 +931,28 @@ function MessageBubble({
           </Text>
         </Pressable>
 
-        {onCopy && onExport && message.text.trim().length > 60 ? (
+        {messageActions.length > 0 ? (
           <View style={[styles.msgActions, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <Pressable
-              onPress={() => onCopy(message)}
-              hitSlop={6}
-              style={({ pressed }) => [
-                styles.msgActionBtn,
-                { flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.6 : 1 },
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel={copyLabel}
-            >
-              <Ionicons name="copy-outline" size={13} color={colors.mutedForeground} />
-              <Text style={[styles.msgActionText, { color: colors.mutedForeground }]}>{copyLabel}</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => onExport(message)}
-              hitSlop={6}
-              style={({ pressed }) => [
-                styles.msgActionBtn,
-                { flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.6 : 1 },
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel={exportLabel}
-            >
-              <Ionicons name="share-outline" size={13} color={colors.mutedForeground} />
-              <Text style={[styles.msgActionText, { color: colors.mutedForeground }]}>{exportLabel}</Text>
-            </Pressable>
+            {messageActions.map(action => (
+              <Pressable
+                key={action.key}
+                onPress={action.onPress}
+                disabled={action.disabled}
+                hitSlop={6}
+                style={({ pressed }) => [
+                  styles.msgActionBtn,
+                  {
+                    flexDirection: isRTL ? 'row-reverse' : 'row',
+                    opacity: action.disabled ? 0.45 : pressed ? 0.6 : 1,
+                  },
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={action.label}
+              >
+                <Ionicons name={action.icon} size={13} color={action.color} />
+                <Text style={[styles.msgActionText, { color: action.color }]}>{action.label}</Text>
+              </Pressable>
+            ))}
           </View>
         ) : null}
 
@@ -993,6 +1084,14 @@ export default function IqraScreen() {
   const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
   const [exportText, setExportText] = useState('');
   const [exportVisible, setExportVisible] = useState(false);
+  /**
+   * Workspace id waiting for a class, or null. Set right after a material's
+   * first save — the same "which class is this for?" moment the tool screens
+   * have, and the reason the sheet is opened on an id rather than on a message.
+   */
+  const [classPromptFor, setClassPromptFor] = useState<string | null>(null);
+  /** Message whose save is in flight — its action row is disabled meanwhile. */
+  const [materialBusyId, setMaterialBusyId] = useState<string | null>(null);
   const [loadingPDF, setLoadingPDF] = useState(false);
   const [loadingWord, setLoadingWord] = useState(false);
   // Deep-link state: curriculum lesson to surface as "Open lesson" chip
@@ -1071,6 +1170,132 @@ export default function IqraScreen() {
       prev.map(m => (m.id === messageId ? { ...m, artifactData: next } : m)),
     );
   }, []);
+
+  /**
+   * File a chat-generated material in the workspace, or update the one this
+   * message already owns.
+   *
+   * Saves the structured object, not the chat text: the workspace viewer parses
+   * `content` back into a lesson plan or a worksheet, and re-generating it from
+   * prose would land there as an unreadable blob. It also saves whatever the
+   * teacher has edited in the bubble, because `artifactData` is the edited copy.
+   *
+   * Returns the workspace id so callers that need one — filing it under a class
+   * — can chain, and null when nothing was written. Saying "saved" on a failed
+   * write is the one outcome worse than the failure.
+   */
+  const saveMessageMaterial = useCallback(async (message: Message): Promise<string | null> => {
+    const data = message.artifactData;
+    const meta = message.artifactMeta;
+    if (!data || !meta) return null;
+    const topic = message.lessonTopic?.trim() || meta.title;
+    const payload = {
+      type: materialTypeFor(data.kind),
+      title: meta.title,
+      subject: meta.subject,
+      grade: meta.grade,
+      topic,
+      language: lang as 'ar' | 'en',
+      content: JSON.stringify(materialContentFor(data)),
+      formState: materialFormStateFor(topic),
+    };
+    try {
+      if (message.savedMaterialId) {
+        const ok = await updateItem(message.savedMaterialId, payload);
+        if (!ok) {
+          showToast(t('iqraSaveFailed'));
+          return null;
+        }
+        showToast(t('updatedSuccess'));
+        return message.savedMaterialId;
+      }
+      const saved = await saveItem(payload);
+      setMessages(prev =>
+        prev.map(m => (m.id === message.id ? { ...m, savedMaterialId: saved.id } : m)),
+      );
+      showToast(t('savedSuccess'));
+      return saved.id;
+    } catch {
+      showToast(t('iqraSaveFailed'));
+      return null;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang, t]);
+
+  const handleSaveMaterial = useCallback(async (message: Message) => {
+    if (materialBusyId) return;
+    setMaterialBusyId(message.id);
+    try {
+      const firstSave = !message.savedMaterialId;
+      const id = await saveMessageMaterial(message);
+      if (!id) return;
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      // Only on a first save, exactly as the generator screens do: re-saving an
+      // edit must not re-ask a question the teacher already answered.
+      if (firstSave) setClassPromptFor(id);
+    } finally {
+      setMaterialBusyId(null);
+    }
+  }, [materialBusyId, saveMessageMaterial]);
+
+  /**
+   * A class link is a field on a saved material, so an unsaved one is saved
+   * first — otherwise this button would have nothing to attach and the teacher
+   * would have to know to press Save before it.
+   */
+  const handleAddToClass = useCallback(async (message: Message) => {
+    if (materialBusyId) return;
+    setMaterialBusyId(message.id);
+    try {
+      const id = message.savedMaterialId ?? await saveMessageMaterial(message);
+      if (id) setClassPromptFor(id);
+    } finally {
+      setMaterialBusyId(null);
+    }
+  }, [materialBusyId, saveMessageMaterial]);
+
+  const attachMaterialToClass = useCallback(async (classId: string, className: string) => {
+    const materialId = classPromptFor;
+    setClassPromptFor(null);
+    if (!materialId) return;
+    const ok = await updateItem(materialId, { classGroupId: classId });
+    showToast(ok ? t('savedToClass', className) : t('saveToClassFailed'));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [classPromptFor, t]);
+
+  /**
+   * Project the material this turn produced.
+   *
+   * Deck building is synchronous and local — the plan, worksheet or quiz is
+   * already in hand, so unlike «ابدأ الحصة» this needs no round trip and
+   * projects exactly what is on screen rather than generating something new.
+   */
+  const handlePresentMaterial = useCallback((message: Message) => {
+    const data = message.artifactData;
+    const meta = message.artifactMeta;
+    if (!data || !meta) return;
+    const topic = message.lessonTopic?.trim() || meta.title;
+    try {
+      const deck = deckForArtifact(data, {
+        topic,
+        isAr: lang === 'ar',
+        lesson: message.curriculumLessonId
+          ? getLessonById(message.curriculumLessonId) ?? null
+          : null,
+        subject: meta.subject,
+        grade: meta.grade,
+      });
+      if (!deck) return;
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setPendingClassroomActivity(deck);
+      trackEvent('class_started', { source: 'chat_material', material: data.kind });
+      router.push('/ai-tools/classroom/presentation' as any);
+    } catch {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      showToast(t('iqraPresentFailed'));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang, t]);
 
   // Welcome message on mount / language change — reset session, keep one default active lesson
   useEffect(() => {
@@ -2165,6 +2390,10 @@ export default function IqraScreen() {
             onLongPress={item.role === 'assistant' ? () => handleExportMessage(item) : undefined}
             onCopy={item.role === 'assistant' ? handleCopyMessage : undefined}
             onExport={item.role === 'assistant' ? handleExportMessage : undefined}
+            onSaveMaterial={item.role === 'assistant' ? handleSaveMaterial : undefined}
+            onAddToClass={item.role === 'assistant' ? handleAddToClass : undefined}
+            onPresentMaterial={item.role === 'assistant' ? handlePresentMaterial : undefined}
+            busyMaterial={materialBusyId === item.id}
             copyLabel={t('iqraCopyMessage')}
             exportLabel={t('iqraExportMessage')}
             onClarifySubject={handleClarifySubject}
@@ -2404,6 +2633,11 @@ export default function IqraScreen() {
           cancel: t('cancel'),
         }}
       />
+      <ClassPickerSheet
+        visible={classPromptFor !== null}
+        onClose={() => setClassPromptFor(null)}
+        onPick={(classId, className) => { void attachMaterialToClass(classId, className); }}
+      />
       <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
     </View>
   );
@@ -2459,7 +2693,7 @@ const styles = StyleSheet.create({
   sourceText: { fontSize: 11, marginTop: 6, fontFamily: 'Almarai_400Regular', fontStyle: 'italic' },
   timestamp: { fontSize: 10, marginTop: 6, fontFamily: 'Almarai_400Regular' },
 
-  msgActions: { alignItems: 'center', gap: 14, marginTop: 6, paddingHorizontal: 4 },
+  msgActions: { alignItems: 'center', flexWrap: 'wrap', columnGap: 14, rowGap: 8, marginTop: 6, paddingHorizontal: 4 },
   msgActionBtn: { alignItems: 'center', gap: 4 },
   msgActionText: { fontSize: 11, fontFamily: 'Cairo_500Medium' },
   suggestionChipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },

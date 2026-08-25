@@ -225,6 +225,62 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Chat materials stopped dead-ending at copy, 2026-08-25
+
+**A material generated in chat now offers what the tool screens offer.** Chat
+calls the same generators as `/ai-tools/*` and produces the same objects, but
+the only thing a teacher could do with the result was copy or export the text —
+so the fastest route to a lesson plan was also the one that led nowhere. The row
+under a material bubble now reads **حفظ · أضف لصف · اعرض · نسخ · تصدير**.
+
+- **حفظ** writes the structured object (not the prose) to موادي, so the
+  workspace viewer parses it back, and so a plan edited in the bubble is saved
+  as edited. A first save opens `ClassPickerSheet` on the returned id — the same
+  "which class is this for?" moment the seven generator screens have.
+- **أضف لصف** saves first when the material is not saved yet: the class link is
+  a field on a saved material, so there would otherwise be nothing to attach.
+  The id lives on the message, so a second tap updates rather than files a
+  duplicate.
+- **اعرض** builds the deck locally — `buildLessonDeck` for a plan,
+  `buildDeckFromWorksheet` / `buildDeckFromQuiz` for the other two — and hands
+  it to the presentation screen. Unlike «ابدأ الحصة» this needs no round trip
+  and projects what is on screen instead of generating something new.
+  **Activities get no Present button**: `ActivityOutput` is a teacher run-sheet,
+  not a deck, and there is no builder for one. A button that silently did
+  nothing would be worse than its absence.
+
+**Nothing chat projects claims a verified answer key.** Chat does not run the
+verifier, so `deckForArtifact` passes neither `verified` nor `outcomes` and the
+slides badge unverified — the same rule this file records for `verified`
+everywhere else. A test asserts it.
+
+**An activity is saved as type `lesson`, not `activity`.** `workspace/view.tsx`
+has no `activity` branch and falls through to the quiz renderer, which maps over
+`questions` an `ActivityOutput` does not have — saving it under its own name
+would file a material that crashes the viewer that opens it. This matches what
+`/ai-tools/activity` already does. The dead `'activity'` member of `MaterialType`
+is still dead; giving the viewer a real renderer is the fix, and is not done
+here.
+
+The decision logic is `services/chatMaterialActions.ts` (pure, no React), tested
+in `services/__tests__/chatMaterialActions.test.ts`; `app/(tabs)/iqra.tsx` owns
+the buttons, toasts and navigation.
+
+### Verified by driving the real UI
+
+Expo web on :8081 with `/auth/me` stubbed and no API server, so every write took
+the local fallback path. Asked «حضّر خطة درس عن تركيب الاقترانات», picked
+الرياضيات, and got the plan with all five actions on one RTL row. حفظ → one row
+in `@iqra_workspace_v1` (`type: 'lesson'`, content parsing back to the plan) and
+the label flipped to «محفوظ ✓». أضف لصف → still one row, no duplicate; the class
+sheet self-closed, which is what it does with no roster (server-only). اعرض →
+`/ai-tools/classroom/presentation` rendering a 7-slide deck.
+
+**Left alone:** the deck and the saved material are titled «عن تركيب
+الاقترانات», preposition included. That comes from `resolveArtifactTopic`
+upstream and already showed in the chat prose before this change — it is more
+visible now that it heads a projected slide.
+
 ## The refusal now points somewhere, 2026-08-25
 
 `mockGenerator` declines four of the eight question types on purpose — it will
