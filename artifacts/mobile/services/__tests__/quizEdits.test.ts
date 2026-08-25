@@ -12,6 +12,7 @@ import type { QuizOutput, QuizQuestion } from '../ai/AIService.ts';
 import {
   applyOptionEdit,
   applyQuestionEdit,
+  optionMarkerState,
   parsePoints,
   removeQuestionAt,
   totalPointsOf,
@@ -112,5 +113,20 @@ describe('parsePoints', () => {
     assert.equal(parsePoints('0'), null);
     assert.equal(parsePoints(''), null);
     assert.equal(parsePoints('abc'), null);
+  });
+});
+
+describe('optionMarkerState', () => {
+  it('hides every marker while the answer key is hidden', () => {
+    // The bug this covers: the row tint went away on "hide answers" but the
+    // picker still drew a green tick against the right option, so the answer
+    // was still on screen — and still announced — with the class watching.
+    assert.equal(optionMarkerState(false, 'x = 3', 'x = 3'), 'hidden');
+    assert.equal(optionMarkerState(false, 'x = 4', 'x = 3'), 'hidden');
+  });
+
+  it('marks the key once answers are shown', () => {
+    assert.equal(optionMarkerState(true, 'x = 3', 'x = 3'), 'selected');
+    assert.equal(optionMarkerState(true, 'x = 4', 'x = 3'), 'unselected');
   });
 });

@@ -25,6 +25,7 @@ import { confirm } from '@/services/confirm';
 import {
   applyOptionEdit,
   applyQuestionEdit,
+  optionMarkerState,
   parsePoints,
   removeQuestionAt,
 } from '@/services/quizEdits';
@@ -629,7 +630,8 @@ export default function QuizScreen() {
                 </View>
 
                 {q.options?.map((opt, oi) => {
-                  const isCorrect = showAnswers && opt === q.correctAnswer;
+                  const marker = optionMarkerState(showAnswers, opt, q.correctAnswer);
+                  const isCorrect = marker === 'selected';
                   return (
                     <View key={oi} style={[styles.optRow, { backgroundColor: isCorrect ? '#10B981' + '15' : colors.muted, borderRadius: 8, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                       <Text style={[styles.optLabel, { color: isCorrect ? '#10B981' : colors.mutedForeground, fontFamily: isCorrect ? 'Cairo_600SemiBold' : 'Almarai_400Regular' }]}>
@@ -646,20 +648,25 @@ export default function QuizScreen() {
                       </View>
                       {/* Choosing the right answer is a choice among the
                           options, so it is made by picking one rather than by
-                          retyping it into a separate field. */}
-                      <Pressable
-                        onPress={() => updateQuestion(i, { correctAnswer: opt })}
-                        hitSlop={6}
-                        accessibilityRole="button"
-                        accessibilityState={{ selected: opt === q.correctAnswer }}
-                        accessibilityLabel={`${opt} — ${t('answer')}`}
-                      >
-                        <Ionicons
-                          name={opt === q.correctAnswer ? 'checkmark-circle' : 'ellipse-outline'}
-                          size={17}
-                          color={opt === q.correctAnswer ? '#10B981' : colors.mutedForeground}
-                        />
-                      </Pressable>
+                          retyping it into a separate field. It disappears with
+                          the rest of the key: it names the answer to a screen
+                          reader as well as drawing it, so leaving it up while
+                          "hide answers" is on shows the class the answer. */}
+                      {marker !== 'hidden' && (
+                        <Pressable
+                          onPress={() => updateQuestion(i, { correctAnswer: opt })}
+                          hitSlop={6}
+                          accessibilityRole="button"
+                          accessibilityState={{ selected: isCorrect }}
+                          accessibilityLabel={`${opt} — ${t('answer')}`}
+                        >
+                          <Ionicons
+                            name={isCorrect ? 'checkmark-circle' : 'ellipse-outline'}
+                            size={17}
+                            color={isCorrect ? '#10B981' : colors.mutedForeground}
+                          />
+                        </Pressable>
+                      )}
                     </View>
                   );
                 })}
