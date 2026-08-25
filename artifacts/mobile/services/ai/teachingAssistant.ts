@@ -1068,10 +1068,13 @@ export function buildTeachingAssistantReply(
       query,
       lesson,
       limit: 3,
-      types:
-        intent === 'worksheet' ? ['worksheet']
-          : intent === 'quiz' ? ['quiz', 'answer_key']
-            : intent === 'lesson_plan' ? ['summary', 'worksheet', 'quiz']
+      // A quiz intent now reaches the real test papers. Under the old
+      // vocabulary `quiz` covered practice sheets and past papers alike, so
+      // asking for quiz material could not prefer either.
+      kinds:
+        intent === 'worksheet' ? (['worksheet'] as const)
+          : intent === 'quiz' ? (['question-bank', 'exam', 'answer-key'] as const)
+            : intent === 'lesson_plan' ? (['summary', 'worksheet', 'question-bank'] as const)
               : undefined,
     });
     const packBlock = formatSupportResourcesBlock(pack, isAr ? 'ar' : 'en');

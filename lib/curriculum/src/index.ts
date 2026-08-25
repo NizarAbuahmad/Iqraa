@@ -16,3 +16,4 @@ export * from './catalog.ts';
 export * from './blooms.ts';
 export * from './objectives.ts';
 export * from './sources.ts';
+export * from './bank.ts';

@@ -1,5 +1,5 @@
 {
-  "note": "Grade 10 source documents held in the project Google Drive. Hand-authored from a Drive listing on 2026-08-24; see sources.ts for what each field means and how to refresh this. Titles are copied verbatim from Drive so a file can be found by searching for its name.",
+  "note": "Every Grade 10 source document on file, and what has been done with each one. This is the single registry: `bank.ts` reads it, and the app's support-resource search is a derived view of it. It absorbed artifacts/mobile/data/g10_{math,chem}_support_resources.json on 2026-08-25 — those held the same 66 PDFs under a second id space and a second type vocabulary, and had already drifted (every exam paper was typed `quiz`, and three entries pointed at copies this file marks `duplicate`). Titles are copied verbatim from Drive so a file can be found by searching for its name.",
   "capturedAt": "2026-08-24",
   "localRoot": "C:/Users/Lenovo/Downloads/Raya studio/Iqraa/Calude app/Knowledge Base/10th grade",
   "localRootNote": "The Drive tree is mirrored on disk under this path (chemistry in ./alchamy, math in ./Math), file names matching the Drive titles. Extraction reads from there; Drive is the shareable copy, not the working one. The mirror is close but not exact — it holds at least one file Drive does not (a compressed math teacher guide).",
@@ -10,86 +10,1868 @@
     "1B6WYpFVl8Zik7_JlMFWEH4KP4MS2-Pph": "Financial literacy G10"
   },
   "sources": [
-    { "id": "math-s1-student-book", "driveId": "1RPHOG_hScVh3uO8q-L8fXtDIZI1-UApE", "title": "كتاب الطالب لمادة الرياضيات الصف العاشر الفصل الأول.pdf", "bytes": 18630721, "subject": "math", "semester": 1, "kind": "student-book", "authority": "nccd", "status": "ingested" },
-    { "id": "math-s2-student-book", "driveId": "1Dh6qWpdFDFOgkbP6MoTBsIf5LREwK-f4", "title": "10th grade, math, 2nd semester.pdf", "bytes": 33429449, "subject": "math", "semester": 2, "kind": "student-book", "authority": "nccd", "status": "ingested" },
-    { "id": "math-s1-teacher-guide", "driveId": "1fiJ-CRa0-5rqjYtAOHo8Z34w5j4-Uzgn", "title": "teacher guiede, 10th grade, semster one.pdf", "bytes": 58371821, "subject": "math", "semester": 1, "kind": "teacher-guide", "authority": "nccd", "status": "ingested", "notes": "Source of the math S1 per-lesson objectives (مخطَّط الوحدة tables, book pages 36B/76B/110B)." },
-    { "id": "math-s2-teacher-guide", "driveId": "11OhKr6LEESClLPN1vBQsIyELUVw9RotX", "title": "teacher guiede, 10th grade, semster two.pdf", "bytes": 16165934, "subject": "math", "semester": 2, "kind": "teacher-guide", "authority": "nccd", "status": "pending", "notes": "Not yet mined for misconceptions or worked examples." },
-    { "id": "math-s1-exercise-book", "driveId": "16z2PS7s-7L094u7cNkLN5YcdqbpB1fT8", "title": "10th grade, math excersice book, semster one.pdf", "bytes": 6600081, "subject": "math", "semester": 1, "kind": "activity-book", "authority": "nccd", "status": "pending" },
-    { "id": "math-s2-exercise-book", "driveId": "17u7aF4kRD70F_UKyjc72JksdZ3U_RbF_", "title": "mather exccersie book, semster 2.pdf", "bytes": 4408290, "subject": "math", "semester": 2, "kind": "activity-book", "authority": "nccd", "status": "pending" },
-    { "id": "math-remedial-plan", "driveId": "1G2Uby_TmT4X0zvRqgXEUx7iQ-cjJn2Wo", "title": "خطة البرنامج العلاجي لمادة الرياضيات للصف العاشر الفصل الأول.pdf", "bytes": 317129, "subject": "math", "semester": 1, "kind": "ministry-support", "authority": "nccd", "status": "pending" },
-    { "id": "math-remedial-part1", "driveId": "1iASlbgyWVMTTcMT80tYZcBR0GZTxslCQ", "title": "مادة التدخلات العلاجية لمادة الرياضيات للصف العاشر الجزء الأول.pdf", "bytes": 3496220, "subject": "math", "semester": null, "kind": "ministry-support", "authority": "nccd", "status": "pending" },
-    { "id": "math-remedial-part2", "driveId": "1J0Oj7i3ILaxM7_Bu6XGA6z4RDmSJJmOg", "title": "مادة التدخلات العلاجية لمادة الرياضيات للصف العاشر الجزء الثاني.pdf", "bytes": 2099135, "subject": "math", "semester": null, "kind": "ministry-support", "authority": "nccd", "status": "pending" },
-    { "id": "math-loss-recovery", "driveId": "1DYE6BKUCRl_B65JPgohCyLqr5WRjkZYT", "title": "المادة المقررة لتعويض الفاقد التعليمي لمادة الرياضيات الصف العاشر.pdf", "bytes": 6543330, "subject": "math", "semester": null, "kind": "ministry-support", "authority": "nccd", "status": "pending" },
-    { "id": "math-s1-support-material", "driveId": "1NN1R71SVypOasqZrELBIIbMLKW0ezMyS", "title": "المادة المساندة لمادة الرياضيات الصف العاشر الفصل الأول.pdf", "bytes": 17737588, "subject": "math", "semester": 1, "kind": "ministry-support", "authority": "nccd", "status": "pending" },
-    { "id": "math-s2-support-worksheets", "driveId": "1q5GLby9MlDDOSfFntrZxkuoZlrX2sRJC", "title": "أوراق عمل داعمة لمادة الرياضيات الصف العاشر الفصل الثاني.pdf", "bytes": 621952, "subject": "math", "semester": 2, "kind": "ministry-support", "authority": "nccd", "status": "pending" },
-    { "id": "math-diagnostic-test", "driveId": "1gYj7P7cTT3o_gN5aGrcB_0Vg_jkA46kg", "title": "اختبار تشخيصي لمادة الرياضيات للصف العاشر.pdf", "bytes": 251933, "subject": "math", "semester": null, "kind": "exam", "authority": "nccd", "status": "pending" },
-
-    { "id": "math-u1-answers-almasri", "driveId": "1C0bH5OSIrxS85pv49hplop1YU2Q8skiE", "title": "إجابات أول درسين من الوحدة الأولى الرياضيات الصف العاشر أ. أحمد المصري.pdf", "bytes": 16123407, "subject": "math", "semester": 1, "kind": "answer-key", "authority": "teacher", "status": "pending" },
-    { "id": "math-u1-answers-alkhatib", "driveId": "17PlUHeCwplpScsdJoL-gnjfDTMKfm9fB", "title": "إجابات الوحدة الأولى (الأسس والمعادلات) رياضيات الصف العاشر أ. سلسبيل الخطيب.pdf", "bytes": 19311464, "subject": "math", "semester": 1, "kind": "answer-key", "authority": "teacher", "status": "pending" },
-    { "id": "math-u2-answers-alkhatib", "driveId": "1UgBo0BaiEkbUUN-bTjV24k5AFZ3nlQ1W", "title": "إجابات الوحدة الثانية (الدائرة) رياضيات الصف العاشر أ. سلسبيل الخطيب.pdf", "bytes": 16939957, "subject": "math", "semester": 1, "kind": "answer-key", "authority": "teacher", "status": "pending" },
-    { "id": "math-u1-summary-alkhamayseh", "driveId": "1deeLT37j689TyDhk6ZmknfCLsyws18T6", "title": "ملخص الوحدة الأولى الاقترانات الرياضيات الصف العاشر أ. رعد الخمايسة.pdf", "bytes": 7654977, "subject": "math", "semester": null, "kind": "summary", "authority": "teacher", "status": "pending" },
-    { "id": "math-u2-summary-alkhamayseh", "driveId": "18FSdL2NK8bXdGQRzc0JHBHunc1-uGLhf", "title": "ملخص الوحدة الثانية الاشتقاق الرياضيات الصف العاشر أ. رعد الخمايسة.pdf", "bytes": 4186889, "subject": "math", "semester": null, "kind": "summary", "authority": "teacher", "status": "pending" },
-    { "id": "math-ws-systems-alhindi", "driveId": "1skm0DvZhFf-5L9qEBkyRGDBfb4Mo526I", "title": "ورقة عمل أنظمة المعادلات الرياضية الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf", "bytes": 2396371, "subject": "math", "semester": 1, "kind": "worksheet", "authority": "teacher", "status": "pending" },
-    { "id": "math-ws-systems-alhindi-dup", "driveId": "1HzyFwtsu_smJS3JEKGkw4RvtiZs8TXV1", "title": "ورقة عمل أنظمة المعادلات الرياضية الرياضيات الصف العاشر أ. عبد الحميد الهندي (1).pdf", "bytes": 2396371, "subject": "math", "semester": 1, "kind": "worksheet", "authority": "teacher", "status": "duplicate", "duplicateOf": "math-ws-systems-alhindi" },
-    { "id": "math-ws-systems-solved-alkhatib", "driveId": "1KjBbHc6fPQgXQWY3p4VFzJXem1zBf7VS", "title": "ورقة عمل مع الحلول (حل نظام مكوّن من معادلة خطية ومعادلة تربيعية) أ. سلسبيل الخطيب.pdf", "bytes": 905509, "subject": "math", "semester": 1, "kind": "worksheet", "authority": "teacher", "status": "pending", "notes": "Worked solutions — the depth source for the linear+quadratic system lesson." },
-    { "id": "math-systems-almasri", "driveId": "12IeX2CXbHvSRB4NVoJF8E-SNjM82EaI-", "title": "حل أنظمة المعادلات الرياضية الصف العاشر أ. أحمد المصري.pdf", "bytes": 363537, "subject": "math", "semester": 1, "kind": "worksheet", "authority": "teacher", "status": "pending" },
-    { "id": "math-ws-powers-almasri", "driveId": "1UMa4Mz3l1UqEiBh6ZFlRoUhYbuM8oqgt", "title": "ورقة عمل الأسس والمعادلات الرياضيات الصف العاشر أ. أحمد المصري.pdf", "bytes": 526969, "subject": "math", "semester": 1, "kind": "worksheet", "authority": "teacher", "status": "pending" },
-    { "id": "math-ws-polynomials-almasri", "driveId": "1lnKg8fE72OhQIKjj3i8MhLRjHsFeU4Vl", "title": "ورقة عمل كثيرات الحدود الصف العاشر أ. أحمد المصري.pdf", "bytes": 413745, "subject": "math", "semester": 1, "kind": "worksheet", "authority": "teacher", "status": "pending" },
-    { "id": "math-ws-circle-full-alkhatib", "driveId": "1XjQnnH21FqfscGq99LqPoifqSmpTFpQu", "title": "ورقة عمل شاملة لوحدة الدائرة الرياضيات الصف العاشر أ. سلسبيل الخطيب.pdf", "bytes": 931585, "subject": "math", "semester": 1, "kind": "worksheet", "authority": "teacher", "status": "pending" },
-    { "id": "math-ws-tangents-alhindi", "driveId": "1qYj01qxxDPUbZKiBTA_edR_ICvOa0Epn", "title": "ورقة عمل مماسات الدائرة الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf", "bytes": 355169, "subject": "math", "semester": 1, "kind": "worksheet", "authority": "teacher", "status": "pending" },
-    { "id": "math-ws-tangent-angle-alhindi", "driveId": "1SUioQEhLgn3_Ph5zfKTcDIhb6V0Ls3c3", "title": "ورقة عمل مماسات الدائرة والزاوية المماسية الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf", "bytes": 462181, "subject": "math", "semester": 1, "kind": "worksheet", "authority": "teacher", "status": "pending" },
-    { "id": "math-ws-cyclic-quad-1-alhindi", "driveId": "1qAtlpUASe33M46XBcwqn4H1f-1_nCLg3", "title": "ورقة عمل الشكل الرباعي الدائري (1) الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf", "bytes": 355685, "subject": "math", "semester": 1, "kind": "worksheet", "authority": "teacher", "status": "pending" },
-    { "id": "math-ws-cyclic-quad-2-alhindi", "driveId": "1qBd6GuHodQT3JkaozZHaX-GKWuSTbpf9", "title": "ورقة عمل الشكل الرباعي الدائري (2) الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf", "bytes": 335037, "subject": "math", "semester": 1, "kind": "worksheet", "authority": "teacher", "status": "pending" },
-    { "id": "math-ws-angles-alhindi", "driveId": "1SaxBiF4PiM9a6_ydv5FfvQs4QiZfXCJ5", "title": "ورقة عمل الزاوية المركزية والزاوية المحيطية الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf", "bytes": 353233, "subject": "math", "semester": 1, "kind": "worksheet", "authority": "teacher", "status": "pending" },
-    { "id": "math-ws-chords-1-alhindi", "driveId": "1g5sWd9E8_uvqEe98LqHnA7MJetgR-wBX", "title": "ورقة عمل أوتار الدائرة (1) الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf", "bytes": 292252, "subject": "math", "semester": 1, "kind": "worksheet", "authority": "teacher", "status": "pending" },
-    { "id": "math-ws-chords-1-alhindi-dup", "driveId": "1IagRFXKA7CwOBWF8gZ0oxIq3T4wd5pwf", "title": "ورقة عمل أوتار الدائرة (1) الرياضيات الصف العاشر أ. عبد الحميد الهندي (1).pdf", "bytes": 292252, "subject": "math", "semester": 1, "kind": "worksheet", "authority": "teacher", "status": "duplicate", "duplicateOf": "math-ws-chords-1-alhindi" },
-    { "id": "math-ws-chords-2-alhindi", "driveId": "16PkrogdEwLNHBaEul7BLjFGKropZ4PPo", "title": "ورقة عمل أوتار الدائرة (2) الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf", "bytes": 550428, "subject": "math", "semester": 1, "kind": "worksheet", "authority": "teacher", "status": "pending" },
-    { "id": "math-mcq-circle-alkhatib", "driveId": "1FwdimuqUXfz3c0mWnby6MX7lxJ6FiICm", "title": "أسئلة موضوعية ( ضع دائرة ) لوحدة الدائرة أ. سلسبيل الخطيب.pdf", "bytes": 1377593, "subject": "math", "semester": 1, "kind": "question-bank", "authority": "teacher", "status": "pending" },
-    { "id": "math-mcq-circle-suggested-alkhatib", "driveId": "1yM1OzAver17-H5--1FCnBtzqR4hPyBsB", "title": "أسئلة مقترحة ضع دائرة لوحدة الدائرة مادة الرياضيات الصف العاشر أ.سلسبيل الخطيب.pdf", "bytes": 457033, "subject": "math", "semester": 1, "kind": "question-bank", "authority": "teacher", "status": "pending" },
-    { "id": "math-mcq-circle-suggested-alkhatib-dup", "driveId": "1hZyP14qsBBrukk1ShpDXuUg_gnnUAT-W", "title": "أسئلة مقترحة ضع دائرة لوحدة الدائرة مادة الرياضيات الصف العاشر أ.سلسبيل الخطيب (1).pdf", "bytes": 457033, "subject": "math", "semester": 1, "kind": "question-bank", "authority": "teacher", "status": "duplicate", "duplicateOf": "math-mcq-circle-suggested-alkhatib" },
-    { "id": "math-matrices-suggested-alkhatib", "driveId": "1syBdo_bj1GjlC4TFfUjgDBEXk0n8OAxC", "title": "أسئلة مقترحة لوحدة المصفوفات للاختبار النهائي الفصل الدراسي الأول أ. سلسبيل الخطيب.pdf", "bytes": 777179, "subject": "math", "semester": 1, "kind": "question-bank", "authority": "teacher", "status": "pending" },
-    { "id": "math-final-alhindi", "driveId": "1rmXnc-PCM_TeGtBQ475H5FJhiF0Vc3YD", "title": "اختبار نهاية الفصل الأول الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf", "bytes": 1369918, "subject": "math", "semester": 1, "kind": "exam", "authority": "teacher", "status": "pending" },
-    { "id": "math-final-1-alkhatib", "driveId": "1lBB51UBP6tCRmVwpOHB57cQesZkmYhHK", "title": "اختبار نهائي نموذج1 في مادة الرياضيات الصف العاشر الفصل الأول أ. سلسبيل الخطيب.pdf", "bytes": 1082968, "subject": "math", "semester": 1, "kind": "exam", "authority": "teacher", "status": "pending" },
-    { "id": "math-final-2-alkhatib", "driveId": "1ieTdAjKnWKc5hUuTxE_HlA1l9bxyymEf", "title": "اختبار نهائي نموذج2 في مادة الرياضيات الصف العاشر الفصل الأول أ. سلسبيل الخطيب.pdf", "bytes": 458922, "subject": "math", "semester": 1, "kind": "exam", "authority": "teacher", "status": "pending" },
-    { "id": "math-month1-alkhatib", "driveId": "1KNv_2GRkJzOlcYuGOkHfQaa59n3m0n7D", "title": "اختبار الشهر الأول في الرياضيات الصف العاشر الفصل الأول أ. سلسبيل الخطيب.pdf", "bytes": 3436798, "subject": "math", "semester": 1, "kind": "exam", "authority": "teacher", "status": "pending" },
-    { "id": "math-month2-alfarakh", "driveId": "12LBlTCvBe9LTfIrEHWk19b6zs8a5D-E0", "title": "اختبار شهر ثاني رياضيات الصف العاشر الفصل الأول أ. أحمد الفرخ.pdf", "bytes": 140834, "subject": "math", "semester": 1, "kind": "exam", "authority": "teacher", "status": "pending" },
-    { "id": "math-u6-test-hussein", "driveId": "1s0Uj03pwii4k6MyRvFw9tNlkm89ypcpO", "title": "اختبار الوحدة السادسة رياضيات الصف العاشر أ. رضا حسين.pdf", "bytes": 121726, "subject": "math", "semester": 2, "kind": "exam", "authority": "teacher", "status": "pending" },
-    { "id": "math-u7-test-hussein", "driveId": "1oCyf452IbES_5RsknXIUD5JghwpJGmPZ", "title": "اختبار الوحدة السابعة رياضيات الصف العاشر أ. رضا حسين.pdf", "bytes": 190892, "subject": "math", "semester": 2, "kind": "exam", "authority": "teacher", "status": "pending" },
-    { "id": "math-foundation-lafi", "driveId": "1LRX7ImclbvBDE7byCzqIyATPAxjC4_YG", "title": "دوسية تأسيس رياضيات للصف العاشر إعداد أ. ابتهال لافي.pdf", "bytes": 743049, "subject": "math", "semester": null, "kind": "study-pack", "authority": "teacher", "status": "pending" },
-    { "id": "math-foundations-melhem", "driveId": "1GIyikORoCHaqGeWC4KBl_GJ8GZkFe1_4", "title": "أسس الرياضيات إعداد أ. عبد الله ملحم.pdf", "bytes": 1420909, "subject": "math", "semester": null, "kind": "study-pack", "authority": "teacher", "status": "pending" },
-    { "id": "math-geometry-formulas-melhem", "driveId": "129wB5hhcJhgOUqVtEtwHUxODamXpzqsP", "title": "قوانين الأشكال الهندسية إعداد أ. عبد الله ملحم.pdf", "bytes": 566514, "subject": "math", "semester": null, "kind": "summary", "authority": "teacher", "status": "pending" },
-
-    { "id": "chem-s1-student-book", "driveId": "12a_AVMgB3a3nqfxXHzObtbOjKX7ZBD6l", "title": "10th grade, alchamy1st semester.pdf", "bytes": 29124500, "subject": "chemistry", "semester": 1, "kind": "student-book", "authority": "nccd", "status": "ingested", "notes": "Units 1-3: بنية الذرة وتركيبها / التوزيع الإلكتروني والدورية / المركبات والروابط الكيميائية — two lessons each, plus a تجربة استهلالية, an إثراء وتوسع and a مراجعة per unit. 76 pages, Adobe PDF Library original: prefer this one for page-image extraction. Its 12 objectives are what the lesson-opening pages actually print; the three lessons showing none are the labs, which the book gives no outcomes." },
-    { "id": "chem-s1-student-book-compressed", "driveId": "1OcUbQExGz9Bd1UsuKBZqNLI539soCUZv", "title": "كتاب الطالب لمادة الكيمياء الصف العاشر الفصل الأول.pdf", "bytes": 24778814, "subject": "chemistry", "semester": 1, "kind": "student-book", "authority": "nccd", "status": "duplicate", "duplicateOf": "chem-s1-student-book", "notes": "Resolved 2026-08-24: not a second edition. Identical 76-page count and identical PDF CreationDate as chem-s1-student-book; Producer is iLovePDF, i.e. a re-compression. Readable, but its images are downsampled, which matters because these NCCD PDFs are extracted from page renders." },
-    { "id": "chem-s2-student-book", "driveId": "12bjxCFdCYN3brF73jY-LQLCaee_XGRZl", "title": "10th grade, alchamy.2nd semester.pdf", "bytes": 58646564, "subject": "chemistry", "semester": 2, "kind": "student-book", "authority": "nccd", "status": "ingested", "notes": "Units 4-5: التفاعلات والحسابات الكيميائية / الطاقة الكيميائية — three lessons each, plus a تجربة استهلالية, an إثراء وتوسع and a مراجعة per unit. Unit numbering continues from S1, so the two semesters are one course, not two editions. 84 pages, Adobe original: prefer for extraction. Ingested 2026-08-24 into iqra_curriculum_g10_chem_sem2.json: main ideas, outcomes and bilingual vocabulary from the six lesson openers." },
-    { "id": "chem-s2-student-book-compressed", "driveId": "1Kc6dWg4pAgRCdzIz04t-ZRt7KlYkCSju", "title": "كتاب الطالب لمادة الكيمياء الصف العاشر الفصل الثاني.pdf", "bytes": 27409185, "subject": "chemistry", "semester": 2, "kind": "student-book", "authority": "nccd", "status": "duplicate", "duplicateOf": "chem-s2-student-book", "notes": "Resolved 2026-08-24: same 84 pages and same PDF CreationDate as chem-s2-student-book, re-compressed through iLovePDF (less than half the bytes)." },
-    { "id": "chem-s1-teacher-guide", "driveId": "1lSTUJOvLNSqaLvepUEQpk7jfHb2czApB", "title": "دليل المعلم لمادة الكيمياء الصف العاشر الفصل الأول.pdf", "bytes": 55193457, "subject": "chemistry", "semester": 1, "kind": "teacher-guide", "authority": "nccd", "status": "ingested", "notes": "132 pages. مخطط الوحدة tables at guide pages 7A / 29A / 59A gave the catalog its period counts (3 per lesson), per-unit prior knowledge with the grade each outcome was taught in, the named activities, and unit 3\u0027s finer-grained outcomes (6 and 5, against the book\u0027s 1 and 2). Ingested 2026-08-24. Its per-lesson teaching notes, misconceptions and worksheet answer keys (appendix A1+) are NOT mined yet — that is the depth pass." },
-    { "id": "chem-s2-teacher-guide", "driveId": "1CpsTQ7NfzT0spnFck6cyHQHXWFVj3qpU", "title": "دليل المعلم لمادة الكيمياء الصف العاشر الفصل الثاني.pdf", "bytes": 38253996, "subject": "chemistry", "semester": 2, "kind": "teacher-guide", "authority": "nccd", "status": "ingested", "notes": "مخطط الوحدة at guide pages 7A and 41A gave the period counts (2-4 per lesson, 9 per unit), the per-unit prior knowledge, and the named activities. Its per-lesson teaching notes and the answer appendix (M1+) are not mined yet." },
-    { "id": "chem-s1-activity-book", "driveId": "1QlOHSJyP-Tyn7Q0C7xeQ7y_kfrh_aSH0", "title": "كتاب الأنشطة والتجارب العملية كيمياء الصف العاشر الفصل الأول.pdf", "bytes": 3141923, "subject": "chemistry", "semester": 1, "kind": "activity-book", "authority": "nccd", "status": "pending" },
-    { "id": "chem-s2-activity-book", "driveId": "1B5OMTT_i3gTqTT2YU9hMZDsqckGnabjX", "title": "كتاب الأنشطة والتجارب العملية كيمياء الصف العاشر الفصل الثاني.pdf", "bytes": 1758377, "subject": "chemistry", "semester": 2, "kind": "activity-book", "authority": "nccd", "status": "pending" },
-    { "id": "chem-loss-recovery", "driveId": "1l16yf2EV9aju7UF8xcOXm0xMk-iXr19n", "title": "المادة المقررة لتعويض الفاقد التعليمي لمادة الكيمياء الصف العاشر.pdf", "bytes": 2612943, "subject": "chemistry", "semester": null, "kind": "ministry-support", "authority": "nccd", "status": "pending" },
-    { "id": "chem-s1-pack-sartawi", "driveId": "1MfffMkderuPGUnOpmb0s_QU-xPp3ZOJI", "title": "دوسية الكيمياء الصف العاشر الفصل الدراسي الأول 2021 م. مريم السرطاوي.pdf", "bytes": 4983987, "subject": "chemistry", "semester": 1, "kind": "study-pack", "authority": "teacher", "status": "pending" },
-    { "id": "chem-s1-pack-sartawi-dup", "driveId": "1N4eA0_5ZXs3oZtcr5FVnjW0ueFH1kDLg", "title": "دوسية الكيمياء الصف العاشر الفصل الدراسي الأول 2021 م. مريم السرطاوي (1).pdf", "bytes": 4983987, "subject": "chemistry", "semester": 1, "kind": "study-pack", "authority": "teacher", "status": "duplicate", "duplicateOf": "chem-s1-pack-sartawi" },
-    { "id": "chem-s1-u1-pack-sartawi", "driveId": "1jazGKe-8Dy8AvTIcN-mJpG0eL7DXzpXc", "title": "دوسية الوحدة الأولى الكيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf", "bytes": 1811036, "subject": "chemistry", "semester": 1, "kind": "study-pack", "authority": "teacher", "status": "pending" },
-    { "id": "chem-s1-u2-pack-sartawi", "driveId": "18vPPxm2UQosj2hbRoeNcdTyv_AvRT3Wi", "title": "دوسية الوحدة الثانية الكيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf", "bytes": 2282249, "subject": "chemistry", "semester": 1, "kind": "study-pack", "authority": "teacher", "status": "pending" },
-    { "id": "chem-s1-u3-pack-sartawi", "driveId": "1CB3f9zajyQhTABHDudxWR8zx_JmosZre", "title": "دوسية الوحدة الثالثة الكيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf", "bytes": 2412831, "subject": "chemistry", "semester": 1, "kind": "study-pack", "authority": "teacher", "status": "pending" },
-    { "id": "chem-s1-pack-almasri", "driveId": "1ynQtgLSldvWJL9s3cxpN4olEk1Do4NaW", "title": "دوسية الفصل الأول كيمياء الصف العاشر أ. عبير المصري.pdf", "bytes": 1615124, "subject": "chemistry", "semester": 1, "kind": "study-pack", "authority": "teacher", "status": "pending" },
-    { "id": "chem-s1-summary-shawata", "driveId": "1G8eNXphlCsS2sH-h7A37F3lt9bIZxIT2", "title": "ملخص الكيمياء الصف العاشر الفصل الدراسي الأول أ. ولاء شعواطة.pdf", "bytes": 4736025, "subject": "chemistry", "semester": 1, "kind": "summary", "authority": "teacher", "status": "pending" },
-    { "id": "chem-s2-pack-sartawi", "driveId": "1vum9l3MR_qi_X862yIzfgprokGgURhiE", "title": "دوسية الكيمياء الصف العاشر الفصل الثاني إعداد م. مريم السرطاوي.pdf", "bytes": 3749571, "subject": "chemistry", "semester": 2, "kind": "study-pack", "authority": "teacher", "status": "pending" },
-    { "id": "chem-s2-pack-shawata", "driveId": "1y6TD0EFy627sWKg2oh_cOjM4EAuV6rZV", "title": "دوسية الكيمياء الصف العاشر الفصل الثاني أ.ولاء شعواطة.pdf", "bytes": 6106249, "subject": "chemistry", "semester": 2, "kind": "study-pack", "authority": "teacher", "status": "pending" },
-    { "id": "chem-s2-pack-almasri", "driveId": "1Jkb6g0UyuVWe7ejqIj_Z1cETPQq2P2bq", "title": "ملزمة الكيمياء الصف العاشر الفصل الثاني أ. عبير المصري.pdf", "bytes": 1652511, "subject": "chemistry", "semester": 2, "kind": "study-pack", "authority": "teacher", "status": "pending" },
-    { "id": "chem-u4-summary-sartawi", "driveId": "1LVsQWhgPTzd9HB0sGaeToBg9nkhPE48g", "title": "ملخص الوحدة الرابعة الكيمياء الصف العاشر إعداد م. مريم السرطاوي.pdf", "bytes": 2747824, "subject": "chemistry", "semester": 2, "kind": "summary", "authority": "teacher", "status": "pending" },
-    { "id": "chem-u5-summary-sartawi", "driveId": "1QnVQPXNGXVh3uuBKkJc_ix6geOGXWHWx", "title": "ملخص الوحدة الخامسة الكيمياء الصف العاشر إعداد م. مريم السرطاوي.pdf", "bytes": 2258772, "subject": "chemistry", "semester": 2, "kind": "summary", "authority": "teacher", "status": "pending" },
-    { "id": "chem-s1-question-bank-sartawi", "driveId": "1Ke91aNByOkqUCmGbLxA6wsV-xkROmnMs", "title": "بنك أسئلة الكيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf", "bytes": 707952, "subject": "chemistry", "semester": 1, "kind": "question-bank", "authority": "teacher", "status": "pending" },
-    { "id": "chem-s1-mixed-questions-sartawi", "driveId": "1sGUI-vUP6-GRFTkm9Vn6r--iPTNlm4XD", "title": "أسئلة منوعة كيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf", "bytes": 227212, "subject": "chemistry", "semester": 1, "kind": "question-bank", "authority": "teacher", "status": "pending" },
-    { "id": "chem-ws-bohr-manhaji", "driveId": "1fw3FkExLqJFhCa4b5Vghvi-HtJBJqfi4", "title": "ورقة عمل كيمياء الصف العاشر نظرية بور الذرية شبكة منهاجي التعليمية.pdf", "bytes": 552090, "subject": "chemistry", "semester": 1, "kind": "worksheet", "authority": "third-party", "status": "pending", "notes": "From منهاجي — a third-party network, not the ministry and not a named teacher." },
-    { "id": "chem-ws-bohr-tareq", "driveId": "1q3O9_JqWANmdSePhh3shRq5aVnfsgmX9", "title": "ورقة عمل كيمياء الصف العاشر نظرية بور أ. محمد طارق.pdf", "bytes": 219398, "subject": "chemistry", "semester": 1, "kind": "worksheet", "authority": "teacher", "status": "pending" },
-    { "id": "chem-ws-reactions-tareq", "driveId": "1IpAKqJhcXukd0-h4QUylIFEMfcHyU3c7", "title": "ورقة عمل التفاعلات الكيميائية كيمياء عاشر أ. محمد طارق.pdf", "bytes": 403163, "subject": "chemistry", "semester": 2, "kind": "worksheet", "authority": "teacher", "status": "pending" },
-    { "id": "chem-ws-planck-almasri", "driveId": "1zEse9-kuqh5wdLJ0Dwm87zfzL4Ow3qyc", "title": "ورقة عمل قانون ماكس بلانك الكيمياء للصف العاشر أ. عبير المصري.pdf", "bytes": 150140, "subject": "chemistry", "semester": 1, "kind": "worksheet", "authority": "teacher", "status": "pending" },
-    { "id": "chem-u1-test-shawata", "driveId": "19wlw2bjj-LMM-aATYeXv8_ODJesnjN5W", "title": "اختبار الوحدة الأولى البنية الذرية إعداد المعلمة ولاء شعواطة.pdf", "bytes": 357947, "subject": "chemistry", "semester": 1, "kind": "exam", "authority": "teacher", "status": "pending" },
-    { "id": "chem-s2-month1-tareq", "driveId": "15a-yOq9nucKEbsswUAhHEx0LnFCsEaHi", "title": "اختبار الشهر الأول كيمياء الصف العاشر الفصل الثاني أ. محمد طارق عوض.pdf", "bytes": 58224, "subject": "chemistry", "semester": 2, "kind": "exam", "authority": "teacher", "status": "pending" },
-
-    { "id": "finlit-s1-student-book", "driveId": "1eydBC98cOUFeGH-9XiR_6628PViUFgqu", "title": "الثقافة المالية 10 ف1 small.pdf", "bytes": 5521575, "subject": "financial-literacy", "semester": 1, "kind": "student-book", "authority": "nccd", "status": "ingested", "notes": "40 objectives in the catalog came from this file." },
-    { "id": "finlit-s2-student-book", "driveId": "1qEaXy2Hz8uqNFLByg1GDEwCl4xsOJqMY", "title": "كتاب الطالب لمادة الثقافة المالية للصف العاشر الفصل الثاني.pdf", "bytes": 4871291, "subject": "financial-literacy", "semester": 2, "kind": "student-book", "authority": "nccd", "status": "conflict", "conflictWith": "finlit-s1-student-book", "notes": "The known edition split: the S1 file in the catalog and this S2 book are not the same edition of the course, so their unit/lesson sequences do not line up. Nothing should be generated across both until one edition is chosen." }
-  ]
+    {
+      "id": "math-s1-student-book",
+      "driveId": "1RPHOG_hScVh3uO8q-L8fXtDIZI1-UApE",
+      "title": "كتاب الطالب لمادة الرياضيات الصف العاشر الفصل الأول.pdf",
+      "bytes": 18630721,
+      "subject": "math",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة الرياضيات الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ]
+    },
+    {
+      "id": "math-s2-student-book",
+      "driveId": "1Dh6qWpdFDFOgkbP6MoTBsIf5LREwK-f4",
+      "title": "10th grade, math, 2nd semester.pdf",
+      "bytes": 33429449,
+      "subject": "math",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "10th grade, math, 2nd semester.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ]
+    },
+    {
+      "id": "math-s1-teacher-guide",
+      "driveId": "1fiJ-CRa0-5rqjYtAOHo8Z34w5j4-Uzgn",
+      "title": "teacher guiede, 10th grade, semster one.pdf",
+      "bytes": 58371821,
+      "subject": "math",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "teacher guiede, 10th grade, semster one.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر",
+        "دليل المعلم",
+        "الفصل الأول"
+      ],
+      "notes": "Source of the math S1 per-lesson objectives (مخطَّط الوحدة tables, book pages 36B/76B/110B)."
+    },
+    {
+      "id": "math-s2-teacher-guide",
+      "driveId": "11OhKr6LEESClLPN1vBQsIyELUVw9RotX",
+      "title": "teacher guiede, 10th grade, semster two.pdf",
+      "bytes": 16165934,
+      "subject": "math",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "teacher guiede, 10th grade, semster two.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر",
+        "دليل المعلم",
+        "الفصل الثاني"
+      ],
+      "notes": "Not yet mined for misconceptions or worked examples."
+    },
+    {
+      "id": "math-s1-exercise-book",
+      "driveId": "16z2PS7s-7L094u7cNkLN5YcdqbpB1fT8",
+      "title": "10th grade, math excersice book, semster one.pdf",
+      "bytes": 6600081,
+      "subject": "math",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "10th grade, math excersice book, semster one.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر",
+        "كتاب التمارين",
+        "الفصل الأول"
+      ]
+    },
+    {
+      "id": "math-s2-exercise-book",
+      "driveId": "17u7aF4kRD70F_UKyjc72JksdZ3U_RbF_",
+      "title": "mather exccersie book, semster 2.pdf",
+      "bytes": 4408290,
+      "subject": "math",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "mather exccersie book, semster 2.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر",
+        "كتاب التمارين",
+        "الفصل الثاني"
+      ]
+    },
+    {
+      "id": "math-remedial-plan",
+      "driveId": "1G2Uby_TmT4X0zvRqgXEUx7iQ-cjJn2Wo",
+      "title": "خطة البرنامج العلاجي لمادة الرياضيات للصف العاشر الفصل الأول.pdf",
+      "bytes": 317129,
+      "subject": "math",
+      "semester": 1,
+      "kind": "ministry-support",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "خطة البرنامج العلاجي لمادة الرياضيات للصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-remedial-part1",
+      "driveId": "1iASlbgyWVMTTcMT80tYZcBR0GZTxslCQ",
+      "title": "مادة التدخلات العلاجية لمادة الرياضيات للصف العاشر الجزء الأول.pdf",
+      "bytes": 3496220,
+      "subject": "math",
+      "semester": null,
+      "kind": "ministry-support",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "مادة التدخلات العلاجية لمادة الرياضيات للصف العاشر الجزء الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-remedial-part2",
+      "driveId": "1J0Oj7i3ILaxM7_Bu6XGA6z4RDmSJJmOg",
+      "title": "مادة التدخلات العلاجية لمادة الرياضيات للصف العاشر الجزء الثاني.pdf",
+      "bytes": 2099135,
+      "subject": "math",
+      "semester": null,
+      "kind": "ministry-support",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "مادة التدخلات العلاجية لمادة الرياضيات للصف العاشر الجزء الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-loss-recovery",
+      "driveId": "1DYE6BKUCRl_B65JPgohCyLqr5WRjkZYT",
+      "title": "المادة المقررة لتعويض الفاقد التعليمي لمادة الرياضيات الصف العاشر.pdf",
+      "bytes": 6543330,
+      "subject": "math",
+      "semester": null,
+      "kind": "ministry-support",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "المادة المقررة لتعويض الفاقد التعليمي لمادة الرياضيات الصف العاشر.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-s1-support-material",
+      "driveId": "1NN1R71SVypOasqZrELBIIbMLKW0ezMyS",
+      "title": "المادة المساندة لمادة الرياضيات الصف العاشر الفصل الأول.pdf",
+      "bytes": 17737588,
+      "subject": "math",
+      "semester": 1,
+      "kind": "ministry-support",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "المادة المساندة لمادة الرياضيات الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-s2-support-worksheets",
+      "driveId": "1q5GLby9MlDDOSfFntrZxkuoZlrX2sRJC",
+      "title": "أوراق عمل داعمة لمادة الرياضيات الصف العاشر الفصل الثاني.pdf",
+      "bytes": 621952,
+      "subject": "math",
+      "semester": 2,
+      "kind": "ministry-support",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "أوراق عمل داعمة لمادة الرياضيات الصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-diagnostic-test",
+      "driveId": "1gYj7P7cTT3o_gN5aGrcB_0Vg_jkA46kg",
+      "title": "اختبار تشخيصي لمادة الرياضيات للصف العاشر.pdf",
+      "bytes": 251933,
+      "subject": "math",
+      "semester": null,
+      "kind": "exam",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "اختبار تشخيصي لمادة الرياضيات للصف العاشر.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-u1-answers-almasri",
+      "driveId": "1C0bH5OSIrxS85pv49hplop1YU2Q8skiE",
+      "title": "إجابات أول درسين من الوحدة الأولى الرياضيات الصف العاشر أ. أحمد المصري.pdf",
+      "bytes": 16123407,
+      "subject": "math",
+      "semester": 1,
+      "kind": "answer-key",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "إجابات أول درسين من الوحدة الأولى الرياضيات الصف العاشر أ. أحمد المصري.pdf",
+      "authorAr": "أحمد المصري",
+      "unitTags": [
+        "g10-math-general",
+        "s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-u1-answers-alkhatib",
+      "driveId": "17PlUHeCwplpScsdJoL-gnjfDTMKfm9fB",
+      "title": "إجابات الوحدة الأولى (الأسس والمعادلات) رياضيات الصف العاشر أ. سلسبيل الخطيب.pdf",
+      "bytes": 19311464,
+      "subject": "math",
+      "semester": 1,
+      "kind": "answer-key",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "إجابات الوحدة الأولى (الأسس والمعادلات) رياضيات الصف العاشر أ. سلسبيل الخطيب.pdf",
+      "authorAr": "سلسبيل الخطيب",
+      "unitTags": [
+        "s1",
+        "s1-u1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-u2-answers-alkhatib",
+      "driveId": "1UgBo0BaiEkbUUN-bTjV24k5AFZ3nlQ1W",
+      "title": "إجابات الوحدة الثانية (الدائرة) رياضيات الصف العاشر أ. سلسبيل الخطيب.pdf",
+      "bytes": 16939957,
+      "subject": "math",
+      "semester": 1,
+      "kind": "answer-key",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "إجابات الوحدة الثانية (الدائرة) رياضيات الصف العاشر أ. سلسبيل الخطيب.pdf",
+      "authorAr": "سلسبيل الخطيب",
+      "unitTags": [
+        "s1",
+        "s1-u2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-u1-summary-alkhamayseh",
+      "driveId": "1deeLT37j689TyDhk6ZmknfCLsyws18T6",
+      "title": "ملخص الوحدة الأولى الاقترانات الرياضيات الصف العاشر أ. رعد الخمايسة.pdf",
+      "bytes": 7654977,
+      "subject": "math",
+      "semester": null,
+      "kind": "summary",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "ملخص الوحدة الأولى الاقترانات الرياضيات الصف العاشر أ. رعد الخمايسة.pdf",
+      "authorAr": "رعد الخمايسة",
+      "unitTags": [
+        "s2-u5"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-u2-summary-alkhamayseh",
+      "driveId": "18FSdL2NK8bXdGQRzc0JHBHunc1-uGLhf",
+      "title": "ملخص الوحدة الثانية الاشتقاق الرياضيات الصف العاشر أ. رعد الخمايسة.pdf",
+      "bytes": 4186889,
+      "subject": "math",
+      "semester": null,
+      "kind": "summary",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "ملخص الوحدة الثانية الاشتقاق الرياضيات الصف العاشر أ. رعد الخمايسة.pdf",
+      "authorAr": "رعد الخمايسة",
+      "unitTags": [
+        "s2-u6"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-ws-systems-alhindi",
+      "driveId": "1skm0DvZhFf-5L9qEBkyRGDBfb4Mo526I",
+      "title": "ورقة عمل أنظمة المعادلات الرياضية الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
+      "bytes": 2396371,
+      "subject": "math",
+      "semester": 1,
+      "kind": "worksheet",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "ورقة عمل أنظمة المعادلات الرياضية الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
+      "authorAr": "عبد الحميد الهندي",
+      "unitTags": [
+        "s1",
+        "s1-u1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-ws-systems-alhindi-dup",
+      "driveId": "1HzyFwtsu_smJS3JEKGkw4RvtiZs8TXV1",
+      "title": "ورقة عمل أنظمة المعادلات الرياضية الرياضيات الصف العاشر أ. عبد الحميد الهندي (1).pdf",
+      "bytes": 2396371,
+      "subject": "math",
+      "semester": 1,
+      "kind": "worksheet",
+      "authority": "teacher",
+      "status": "duplicate",
+      "filename": "ورقة عمل أنظمة المعادلات الرياضية الرياضيات الصف العاشر أ. عبد الحميد الهندي (1).pdf",
+      "authorAr": "عبد الحميد الهندي",
+      "unitTags": [
+        "s1",
+        "s1-u1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ],
+      "duplicateOf": "math-ws-systems-alhindi"
+    },
+    {
+      "id": "math-ws-systems-solved-alkhatib",
+      "driveId": "1KjBbHc6fPQgXQWY3p4VFzJXem1zBf7VS",
+      "title": "ورقة عمل مع الحلول (حل نظام مكوّن من معادلة خطية ومعادلة تربيعية) أ. سلسبيل الخطيب.pdf",
+      "bytes": 905509,
+      "subject": "math",
+      "semester": 1,
+      "kind": "worksheet",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "ورقة عمل مع الحلول (حل نظام مكوّن من معادلة خطية ومعادلة تربيعية) أ. سلسبيل الخطيب.pdf",
+      "authorAr": "سلسبيل الخطيب",
+      "unitTags": [
+        "s1",
+        "s1-u1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ],
+      "notes": "Worked solutions — the depth source for the linear+quadratic system lesson."
+    },
+    {
+      "id": "math-systems-almasri",
+      "driveId": "12IeX2CXbHvSRB4NVoJF8E-SNjM82EaI-",
+      "title": "حل أنظمة المعادلات الرياضية الصف العاشر أ. أحمد المصري.pdf",
+      "bytes": 363537,
+      "subject": "math",
+      "semester": 1,
+      "kind": "worksheet",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "حل أنظمة المعادلات الرياضية الصف العاشر أ. أحمد المصري.pdf",
+      "authorAr": "أحمد المصري",
+      "unitTags": [
+        "s1",
+        "s1-u1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-ws-powers-almasri",
+      "driveId": "1UMa4Mz3l1UqEiBh6ZFlRoUhYbuM8oqgt",
+      "title": "ورقة عمل الأسس والمعادلات الرياضيات الصف العاشر أ. أحمد المصري.pdf",
+      "bytes": 526969,
+      "subject": "math",
+      "semester": 1,
+      "kind": "worksheet",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "ورقة عمل الأسس والمعادلات الرياضيات الصف العاشر أ. أحمد المصري.pdf",
+      "authorAr": "أحمد المصري",
+      "unitTags": [
+        "s1",
+        "s1-u1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-ws-polynomials-almasri",
+      "driveId": "1lnKg8fE72OhQIKjj3i8MhLRjHsFeU4Vl",
+      "title": "ورقة عمل كثيرات الحدود الصف العاشر أ. أحمد المصري.pdf",
+      "bytes": 413745,
+      "subject": "math",
+      "semester": 1,
+      "kind": "worksheet",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "ورقة عمل كثيرات الحدود الصف العاشر أ. أحمد المصري.pdf",
+      "authorAr": "أحمد المصري",
+      "unitTags": [
+        "s1",
+        "s1-u1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-ws-circle-full-alkhatib",
+      "driveId": "1XjQnnH21FqfscGq99LqPoifqSmpTFpQu",
+      "title": "ورقة عمل شاملة لوحدة الدائرة الرياضيات الصف العاشر أ. سلسبيل الخطيب.pdf",
+      "bytes": 931585,
+      "subject": "math",
+      "semester": 1,
+      "kind": "worksheet",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "ورقة عمل شاملة لوحدة الدائرة الرياضيات الصف العاشر أ. سلسبيل الخطيب.pdf",
+      "authorAr": "سلسبيل الخطيب",
+      "unitTags": [
+        "s1",
+        "s1-u2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-ws-tangents-alhindi",
+      "driveId": "1qYj01qxxDPUbZKiBTA_edR_ICvOa0Epn",
+      "title": "ورقة عمل مماسات الدائرة الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
+      "bytes": 355169,
+      "subject": "math",
+      "semester": 1,
+      "kind": "worksheet",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "ورقة عمل مماسات الدائرة الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
+      "authorAr": "عبد الحميد الهندي",
+      "unitTags": [
+        "s1",
+        "s1-u2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-ws-tangent-angle-alhindi",
+      "driveId": "1SUioQEhLgn3_Ph5zfKTcDIhb6V0Ls3c3",
+      "title": "ورقة عمل مماسات الدائرة والزاوية المماسية الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
+      "bytes": 462181,
+      "subject": "math",
+      "semester": 1,
+      "kind": "worksheet",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "ورقة عمل مماسات الدائرة والزاوية المماسية الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
+      "authorAr": "عبد الحميد الهندي",
+      "unitTags": [
+        "s1",
+        "s1-u2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-ws-cyclic-quad-1-alhindi",
+      "driveId": "1qAtlpUASe33M46XBcwqn4H1f-1_nCLg3",
+      "title": "ورقة عمل الشكل الرباعي الدائري (1) الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
+      "bytes": 355685,
+      "subject": "math",
+      "semester": 1,
+      "kind": "worksheet",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "ورقة عمل الشكل الرباعي الدائري (1) الرياضيات الصف العاشر أ. عبد الحميد الهندي (1).pdf",
+      "authorAr": "عبد الحميد الهندي",
+      "unitTags": [
+        "s1",
+        "s1-u2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-ws-cyclic-quad-2-alhindi",
+      "driveId": "1qBd6GuHodQT3JkaozZHaX-GKWuSTbpf9",
+      "title": "ورقة عمل الشكل الرباعي الدائري (2) الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
+      "bytes": 335037,
+      "subject": "math",
+      "semester": 1,
+      "kind": "worksheet",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "ورقة عمل الشكل الرباعي الدائري (2) الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
+      "authorAr": "عبد الحميد الهندي",
+      "unitTags": [
+        "s1",
+        "s1-u2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-ws-angles-alhindi",
+      "driveId": "1SaxBiF4PiM9a6_ydv5FfvQs4QiZfXCJ5",
+      "title": "ورقة عمل الزاوية المركزية والزاوية المحيطية الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
+      "bytes": 353233,
+      "subject": "math",
+      "semester": 1,
+      "kind": "worksheet",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "ورقة عمل الزاوية المركزية والزاوية المحيطية الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
+      "authorAr": "عبد الحميد الهندي",
+      "unitTags": [
+        "s1",
+        "s1-u2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-ws-chords-1-alhindi",
+      "driveId": "1g5sWd9E8_uvqEe98LqHnA7MJetgR-wBX",
+      "title": "ورقة عمل أوتار الدائرة (1) الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
+      "bytes": 292252,
+      "subject": "math",
+      "semester": 1,
+      "kind": "worksheet",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "ورقة عمل أوتار الدائرة (1) الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
+      "authorAr": "عبد الحميد الهندي",
+      "unitTags": [
+        "s1",
+        "s1-u2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "ورقة عمل",
+        "أوتار",
+        "الدائرة",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-ws-chords-1-alhindi-dup",
+      "driveId": "1IagRFXKA7CwOBWF8gZ0oxIq3T4wd5pwf",
+      "title": "ورقة عمل أوتار الدائرة (1) الرياضيات الصف العاشر أ. عبد الحميد الهندي (1).pdf",
+      "bytes": 292252,
+      "subject": "math",
+      "semester": 1,
+      "kind": "worksheet",
+      "authority": "teacher",
+      "status": "duplicate",
+      "filename": "ورقة عمل أوتار الدائرة (1) الرياضيات الصف العاشر أ. عبد الحميد الهندي (1).pdf",
+      "authorAr": "عبد الحميد الهندي",
+      "unitTags": [
+        "s1",
+        "s1-u2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ],
+      "duplicateOf": "math-ws-chords-1-alhindi"
+    },
+    {
+      "id": "math-ws-chords-2-alhindi",
+      "driveId": "16PkrogdEwLNHBaEul7BLjFGKropZ4PPo",
+      "title": "ورقة عمل أوتار الدائرة (2) الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
+      "bytes": 550428,
+      "subject": "math",
+      "semester": 1,
+      "kind": "worksheet",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "ورقة عمل أوتار الدائرة (2) الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
+      "authorAr": "عبد الحميد الهندي",
+      "unitTags": [
+        "s1",
+        "s1-u2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-mcq-circle-alkhatib",
+      "driveId": "1FwdimuqUXfz3c0mWnby6MX7lxJ6FiICm",
+      "title": "أسئلة موضوعية ( ضع دائرة ) لوحدة الدائرة أ. سلسبيل الخطيب.pdf",
+      "bytes": 1377593,
+      "subject": "math",
+      "semester": 1,
+      "kind": "question-bank",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "أسئلة موضوعية ( ضع دائرة ) لوحدة الدائرة أ. سلسبيل الخطيب.pdf",
+      "authorAr": "سلسبيل الخطيب",
+      "unitTags": [
+        "s1",
+        "s1-u2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-mcq-circle-suggested-alkhatib",
+      "driveId": "1yM1OzAver17-H5--1FCnBtzqR4hPyBsB",
+      "title": "أسئلة مقترحة ضع دائرة لوحدة الدائرة مادة الرياضيات الصف العاشر أ.سلسبيل الخطيب.pdf",
+      "bytes": 457033,
+      "subject": "math",
+      "semester": 1,
+      "kind": "question-bank",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "أسئلة مقترحة ضع دائرة لوحدة الدائرة مادة الرياضيات الصف العاشر أ.سلسبيل الخطيب.pdf",
+      "authorAr": "سلسبيل الخطيب",
+      "unitTags": [
+        "s1",
+        "s1-u2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-mcq-circle-suggested-alkhatib-dup",
+      "driveId": "1hZyP14qsBBrukk1ShpDXuUg_gnnUAT-W",
+      "title": "أسئلة مقترحة ضع دائرة لوحدة الدائرة مادة الرياضيات الصف العاشر أ.سلسبيل الخطيب (1).pdf",
+      "bytes": 457033,
+      "subject": "math",
+      "semester": 1,
+      "kind": "question-bank",
+      "authority": "teacher",
+      "status": "duplicate",
+      "filename": "أسئلة مقترحة ضع دائرة لوحدة الدائرة مادة الرياضيات الصف العاشر أ.سلسبيل الخطيب (1).pdf",
+      "authorAr": "سلسبيل الخطيب",
+      "unitTags": [
+        "s1",
+        "s1-u2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ],
+      "duplicateOf": "math-mcq-circle-suggested-alkhatib"
+    },
+    {
+      "id": "math-matrices-suggested-alkhatib",
+      "driveId": "1syBdo_bj1GjlC4TFfUjgDBEXk0n8OAxC",
+      "title": "أسئلة مقترحة لوحدة المصفوفات للاختبار النهائي الفصل الدراسي الأول أ. سلسبيل الخطيب.pdf",
+      "bytes": 777179,
+      "subject": "math",
+      "semester": 1,
+      "kind": "question-bank",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "أسئلة مقترحة لوحدة المصفوفات للاختبار النهائي الفصل الدراسي الأول أ. سلسبيل الخطيب.pdf",
+      "authorAr": "سلسبيل الخطيب",
+      "unitTags": [
+        "s1",
+        "s1-matrices"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-final-alhindi",
+      "driveId": "1rmXnc-PCM_TeGtBQ475H5FJhiF0Vc3YD",
+      "title": "اختبار نهاية الفصل الأول الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
+      "bytes": 1369918,
+      "subject": "math",
+      "semester": 1,
+      "kind": "exam",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "اختبار نهاية الفصل الأول الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
+      "authorAr": "عبد الحميد الهندي",
+      "unitTags": [
+        "s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-final-1-alkhatib",
+      "driveId": "1lBB51UBP6tCRmVwpOHB57cQesZkmYhHK",
+      "title": "اختبار نهائي نموذج1 في مادة الرياضيات الصف العاشر الفصل الأول أ. سلسبيل الخطيب.pdf",
+      "bytes": 1082968,
+      "subject": "math",
+      "semester": 1,
+      "kind": "exam",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "اختبار نهائي نموذج1 في مادة الرياضيات الصف العاشر الفصل الأول أ. سلسبيل الخطيب.pdf",
+      "authorAr": "سلسبيل الخطيب",
+      "unitTags": [
+        "s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-final-2-alkhatib",
+      "driveId": "1ieTdAjKnWKc5hUuTxE_HlA1l9bxyymEf",
+      "title": "اختبار نهائي نموذج2 في مادة الرياضيات الصف العاشر الفصل الأول أ. سلسبيل الخطيب.pdf",
+      "bytes": 458922,
+      "subject": "math",
+      "semester": 1,
+      "kind": "exam",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "اختبار نهائي نموذج2 في مادة الرياضيات الصف العاشر الفصل الأول أ. سلسبيل الخطيب.pdf",
+      "authorAr": "سلسبيل الخطيب",
+      "unitTags": [
+        "s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-month1-alkhatib",
+      "driveId": "1KNv_2GRkJzOlcYuGOkHfQaa59n3m0n7D",
+      "title": "اختبار الشهر الأول في الرياضيات الصف العاشر الفصل الأول أ. سلسبيل الخطيب.pdf",
+      "bytes": 3436798,
+      "subject": "math",
+      "semester": 1,
+      "kind": "exam",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "اختبار الشهر الأول في الرياضيات الصف العاشر الفصل الأول أ. سلسبيل الخطيب.pdf",
+      "authorAr": "سلسبيل الخطيب",
+      "unitTags": [
+        "s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-month2-alfarakh",
+      "driveId": "12LBlTCvBe9LTfIrEHWk19b6zs8a5D-E0",
+      "title": "اختبار شهر ثاني رياضيات الصف العاشر الفصل الأول أ. أحمد الفرخ.pdf",
+      "bytes": 140834,
+      "subject": "math",
+      "semester": 1,
+      "kind": "exam",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "اختبار شهر ثاني رياضيات الصف العاشر الفصل الأول أ. أحمد الفرخ.pdf",
+      "authorAr": "أحمد الفرخ",
+      "unitTags": [
+        "s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-u6-test-hussein",
+      "driveId": "1s0Uj03pwii4k6MyRvFw9tNlkm89ypcpO",
+      "title": "اختبار الوحدة السادسة رياضيات الصف العاشر أ. رضا حسين.pdf",
+      "bytes": 121726,
+      "subject": "math",
+      "semester": 2,
+      "kind": "exam",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "اختبار الوحدة السادسة رياضيات الصف العاشر أ. رضا حسين.pdf",
+      "authorAr": "رضا حسين",
+      "unitTags": [
+        "s2",
+        "s2-u6"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-u7-test-hussein",
+      "driveId": "1oCyf452IbES_5RsknXIUD5JghwpJGmPZ",
+      "title": "اختبار الوحدة السابعة رياضيات الصف العاشر أ. رضا حسين.pdf",
+      "bytes": 190892,
+      "subject": "math",
+      "semester": 2,
+      "kind": "exam",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "اختبار الوحدة السابعة رياضيات الصف العاشر أ. رضا حسين.pdf",
+      "authorAr": "رضا حسين",
+      "unitTags": [
+        "s2",
+        "s2-u7"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-foundation-lafi",
+      "driveId": "1LRX7ImclbvBDE7byCzqIyATPAxjC4_YG",
+      "title": "دوسية تأسيس رياضيات للصف العاشر إعداد أ. ابتهال لافي.pdf",
+      "bytes": 743049,
+      "subject": "math",
+      "semester": null,
+      "kind": "study-pack",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "دوسية تأسيس رياضيات للصف العاشر إعداد أ. ابتهال لافي.pdf",
+      "authorAr": "ابتهال لافي",
+      "unitTags": [
+        "s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-foundations-melhem",
+      "driveId": "1GIyikORoCHaqGeWC4KBl_GJ8GZkFe1_4",
+      "title": "أسس الرياضيات إعداد أ. عبد الله ملحم.pdf",
+      "bytes": 1420909,
+      "subject": "math",
+      "semester": null,
+      "kind": "study-pack",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "أسس الرياضيات إعداد أ. عبد الله ملحم.pdf",
+      "authorAr": "عبد الله ملحم",
+      "unitTags": [
+        "s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-geometry-formulas-melhem",
+      "driveId": "129wB5hhcJhgOUqVtEtwHUxODamXpzqsP",
+      "title": "قوانين الأشكال الهندسية إعداد أ. عبد الله ملحم.pdf",
+      "bytes": 566514,
+      "subject": "math",
+      "semester": null,
+      "kind": "summary",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "قوانين الأشكال الهندسية إعداد أ. عبد الله ملحم.pdf",
+      "authorAr": "عبد الله ملحم",
+      "unitTags": [
+        "g10-math-general"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "chem-s1-student-book",
+      "driveId": "12a_AVMgB3a3nqfxXHzObtbOjKX7ZBD6l",
+      "title": "10th grade, alchamy1st semester.pdf",
+      "bytes": 29124500,
+      "subject": "chemistry",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "10th grade, alchamy1st semester.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "chem-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ],
+      "notes": "Units 1-3: بنية الذرة وتركيبها / التوزيع الإلكتروني والدورية / المركبات والروابط الكيميائية — two lessons each, plus a تجربة استهلالية, an إثراء وتوسع and a مراجعة per unit. 76 pages, Adobe PDF Library original: prefer this one for page-image extraction. Its 12 objectives are what the lesson-opening pages actually print; the three lessons showing none are the labs, which the book gives no outcomes."
+    },
+    {
+      "id": "chem-s1-student-book-compressed",
+      "driveId": "1OcUbQExGz9Bd1UsuKBZqNLI539soCUZv",
+      "title": "كتاب الطالب لمادة الكيمياء الصف العاشر الفصل الأول.pdf",
+      "bytes": 24778814,
+      "subject": "chemistry",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "duplicate",
+      "filename": "كتاب الطالب لمادة الكيمياء الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "chem-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ],
+      "duplicateOf": "chem-s1-student-book",
+      "notes": "Resolved 2026-08-24: not a second edition. Identical 76-page count and identical PDF CreationDate as chem-s1-student-book; Producer is iLovePDF, i.e. a re-compression. Readable, but its images are downsampled, which matters because these NCCD PDFs are extracted from page renders."
+    },
+    {
+      "id": "chem-s2-student-book",
+      "driveId": "12bjxCFdCYN3brF73jY-LQLCaee_XGRZl",
+      "title": "10th grade, alchamy.2nd semester.pdf",
+      "bytes": 58646564,
+      "subject": "chemistry",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "10th grade, alchamy.2nd semester.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "chem-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ],
+      "notes": "Units 4-5: التفاعلات والحسابات الكيميائية / الطاقة الكيميائية — three lessons each, plus a تجربة استهلالية, an إثراء وتوسع and a مراجعة per unit. Unit numbering continues from S1, so the two semesters are one course, not two editions. 84 pages, Adobe original: prefer for extraction. Ingested 2026-08-24 into iqra_curriculum_g10_chem_sem2.json: main ideas, outcomes and bilingual vocabulary from the six lesson openers."
+    },
+    {
+      "id": "chem-s2-student-book-compressed",
+      "driveId": "1Kc6dWg4pAgRCdzIz04t-ZRt7KlYkCSju",
+      "title": "كتاب الطالب لمادة الكيمياء الصف العاشر الفصل الثاني.pdf",
+      "bytes": 27409185,
+      "subject": "chemistry",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "duplicate",
+      "filename": "كتاب الطالب لمادة الكيمياء الصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "chem-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ],
+      "duplicateOf": "chem-s2-student-book",
+      "notes": "Resolved 2026-08-24: same 84 pages and same PDF CreationDate as chem-s2-student-book, re-compressed through iLovePDF (less than half the bytes)."
+    },
+    {
+      "id": "chem-s1-teacher-guide",
+      "driveId": "1lSTUJOvLNSqaLvepUEQpk7jfHb2czApB",
+      "title": "دليل المعلم لمادة الكيمياء الصف العاشر الفصل الأول.pdf",
+      "bytes": 55193457,
+      "subject": "chemistry",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة الكيمياء الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "chem-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ],
+      "notes": "132 pages. مخطط الوحدة tables at guide pages 7A / 29A / 59A gave the catalog its period counts (3 per lesson), per-unit prior knowledge with the grade each outcome was taught in, the named activities, and unit 3's finer-grained outcomes (6 and 5, against the book's 1 and 2). Ingested 2026-08-24. Its per-lesson teaching notes, misconceptions and worksheet answer keys (appendix A1+) are NOT mined yet — that is the depth pass."
+    },
+    {
+      "id": "chem-s2-teacher-guide",
+      "driveId": "1CpsTQ7NfzT0spnFck6cyHQHXWFVj3qpU",
+      "title": "دليل المعلم لمادة الكيمياء الصف العاشر الفصل الثاني.pdf",
+      "bytes": 38253996,
+      "subject": "chemistry",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة الكيمياء الصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "chem-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ],
+      "notes": "مخطط الوحدة at guide pages 7A and 41A gave the period counts (2-4 per lesson, 9 per unit), the per-unit prior knowledge, and the named activities. Its per-lesson teaching notes and the answer appendix (M1+) are not mined yet."
+    },
+    {
+      "id": "chem-s1-activity-book",
+      "driveId": "1QlOHSJyP-Tyn7Q0C7xeQ7y_kfrh_aSH0",
+      "title": "كتاب الأنشطة والتجارب العملية كيمياء الصف العاشر الفصل الأول.pdf",
+      "bytes": 3141923,
+      "subject": "chemistry",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "كتاب الأنشطة والتجارب العملية كيمياء الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "chem-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "chem-s2-activity-book",
+      "driveId": "1B5OMTT_i3gTqTT2YU9hMZDsqckGnabjX",
+      "title": "كتاب الأنشطة والتجارب العملية كيمياء الصف العاشر الفصل الثاني.pdf",
+      "bytes": 1758377,
+      "subject": "chemistry",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "كتاب الأنشطة والتجارب العملية كيمياء الصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "chem-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "chem-loss-recovery",
+      "driveId": "1l16yf2EV9aju7UF8xcOXm0xMk-iXr19n",
+      "title": "المادة المقررة لتعويض الفاقد التعليمي لمادة الكيمياء الصف العاشر.pdf",
+      "bytes": 2612943,
+      "subject": "chemistry",
+      "semester": null,
+      "kind": "ministry-support",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "المادة المقررة لتعويض الفاقد التعليمي لمادة الكيمياء الصف العاشر.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "chem-g10-general"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "chem-s1-pack-sartawi",
+      "driveId": "1MfffMkderuPGUnOpmb0s_QU-xPp3ZOJI",
+      "title": "دوسية الكيمياء الصف العاشر الفصل الدراسي الأول 2021 م. مريم السرطاوي.pdf",
+      "bytes": 4983987,
+      "subject": "chemistry",
+      "semester": 1,
+      "kind": "study-pack",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "دوسية الكيمياء الصف العاشر الفصل الدراسي الأول 2021 م. مريم السرطاوي.pdf",
+      "authorAr": "مريم السرطاوي",
+      "unitTags": [
+        "chem-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "chem-s1-pack-sartawi-dup",
+      "driveId": "1N4eA0_5ZXs3oZtcr5FVnjW0ueFH1kDLg",
+      "title": "دوسية الكيمياء الصف العاشر الفصل الدراسي الأول 2021 م. مريم السرطاوي (1).pdf",
+      "bytes": 4983987,
+      "subject": "chemistry",
+      "semester": 1,
+      "kind": "study-pack",
+      "authority": "teacher",
+      "status": "duplicate",
+      "filename": "دوسية الكيمياء الصف العاشر الفصل الدراسي الأول 2021 م. مريم السرطاوي (1).pdf",
+      "authorAr": "مريم السرطاوي",
+      "unitTags": [
+        "chem-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ],
+      "duplicateOf": "chem-s1-pack-sartawi"
+    },
+    {
+      "id": "chem-s1-u1-pack-sartawi",
+      "driveId": "1jazGKe-8Dy8AvTIcN-mJpG0eL7DXzpXc",
+      "title": "دوسية الوحدة الأولى الكيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
+      "bytes": 1811036,
+      "subject": "chemistry",
+      "semester": 1,
+      "kind": "study-pack",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "دوسية الوحدة الأولى الكيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
+      "authorAr": "مريم السرطاوي",
+      "unitTags": [
+        "chem-s1",
+        "chem-s1-u1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "chem-s1-u2-pack-sartawi",
+      "driveId": "18vPPxm2UQosj2hbRoeNcdTyv_AvRT3Wi",
+      "title": "دوسية الوحدة الثانية الكيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
+      "bytes": 2282249,
+      "subject": "chemistry",
+      "semester": 1,
+      "kind": "study-pack",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "دوسية الوحدة الثانية الكيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
+      "authorAr": "مريم السرطاوي",
+      "unitTags": [
+        "chem-s1",
+        "chem-s1-u2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "chem-s1-u3-pack-sartawi",
+      "driveId": "1CB3f9zajyQhTABHDudxWR8zx_JmosZre",
+      "title": "دوسية الوحدة الثالثة الكيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
+      "bytes": 2412831,
+      "subject": "chemistry",
+      "semester": 1,
+      "kind": "study-pack",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "دوسية الوحدة الثالثة الكيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
+      "authorAr": "مريم السرطاوي",
+      "unitTags": [
+        "chem-s1",
+        "chem-s1-u3"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "chem-s1-pack-almasri",
+      "driveId": "1ynQtgLSldvWJL9s3cxpN4olEk1Do4NaW",
+      "title": "دوسية الفصل الأول كيمياء الصف العاشر أ. عبير المصري.pdf",
+      "bytes": 1615124,
+      "subject": "chemistry",
+      "semester": 1,
+      "kind": "study-pack",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "دوسية الفصل الأول كيمياء الصف العاشر أ. عبير المصري.pdf",
+      "authorAr": "عبير المصري",
+      "unitTags": [
+        "chem-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "chem-s1-summary-shawata",
+      "driveId": "1G8eNXphlCsS2sH-h7A37F3lt9bIZxIT2",
+      "title": "ملخص الكيمياء الصف العاشر الفصل الدراسي الأول أ. ولاء شعواطة.pdf",
+      "bytes": 4736025,
+      "subject": "chemistry",
+      "semester": 1,
+      "kind": "summary",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "ملخص الكيمياء الصف العاشر الفصل الدراسي الأول أ. ولاء شعواطة.pdf",
+      "authorAr": "ولاء شعواطة",
+      "unitTags": [
+        "chem-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "chem-s2-pack-sartawi",
+      "driveId": "1vum9l3MR_qi_X862yIzfgprokGgURhiE",
+      "title": "دوسية الكيمياء الصف العاشر الفصل الثاني إعداد م. مريم السرطاوي.pdf",
+      "bytes": 3749571,
+      "subject": "chemistry",
+      "semester": 2,
+      "kind": "study-pack",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "دوسية الكيمياء الصف العاشر الفصل الثاني إعداد م. مريم السرطاوي.pdf",
+      "authorAr": "مريم السرطاوي",
+      "unitTags": [
+        "chem-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "chem-s2-pack-shawata",
+      "driveId": "1y6TD0EFy627sWKg2oh_cOjM4EAuV6rZV",
+      "title": "دوسية الكيمياء الصف العاشر الفصل الثاني أ.ولاء شعواطة.pdf",
+      "bytes": 6106249,
+      "subject": "chemistry",
+      "semester": 2,
+      "kind": "study-pack",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "دوسية الكيمياء الصف العاشر الفصل الثاني أ.ولاء شعواطة.pdf",
+      "authorAr": "ولاء شعواطة",
+      "unitTags": [
+        "chem-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "chem-s2-pack-almasri",
+      "driveId": "1Jkb6g0UyuVWe7ejqIj_Z1cETPQq2P2bq",
+      "title": "ملزمة الكيمياء الصف العاشر الفصل الثاني أ. عبير المصري.pdf",
+      "bytes": 1652511,
+      "subject": "chemistry",
+      "semester": 2,
+      "kind": "study-pack",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "ملزمة الكيمياء الصف العاشر الفصل الثاني أ. عبير المصري.pdf",
+      "authorAr": "عبير المصري",
+      "unitTags": [
+        "chem-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "chem-u4-summary-sartawi",
+      "driveId": "1LVsQWhgPTzd9HB0sGaeToBg9nkhPE48g",
+      "title": "ملخص الوحدة الرابعة الكيمياء الصف العاشر إعداد م. مريم السرطاوي.pdf",
+      "bytes": 2747824,
+      "subject": "chemistry",
+      "semester": 2,
+      "kind": "summary",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "ملخص الوحدة الرابعة الكيمياء الصف العاشر إعداد م. مريم السرطاوي.pdf",
+      "authorAr": "مريم السرطاوي",
+      "unitTags": [
+        "chem-s2",
+        "chem-s2-u4"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "chem-u5-summary-sartawi",
+      "driveId": "1QnVQPXNGXVh3uuBKkJc_ix6geOGXWHWx",
+      "title": "ملخص الوحدة الخامسة الكيمياء الصف العاشر إعداد م. مريم السرطاوي.pdf",
+      "bytes": 2258772,
+      "subject": "chemistry",
+      "semester": 2,
+      "kind": "summary",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "ملخص الوحدة الخامسة الكيمياء الصف العاشر إعداد م. مريم السرطاوي.pdf",
+      "authorAr": "مريم السرطاوي",
+      "unitTags": [
+        "chem-s2",
+        "chem-s2-u5"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "chem-s1-question-bank-sartawi",
+      "driveId": "1Ke91aNByOkqUCmGbLxA6wsV-xkROmnMs",
+      "title": "بنك أسئلة الكيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
+      "bytes": 707952,
+      "subject": "chemistry",
+      "semester": 1,
+      "kind": "question-bank",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "بنك أسئلة الكيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
+      "authorAr": "مريم السرطاوي",
+      "unitTags": [
+        "chem-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "chem-s1-mixed-questions-sartawi",
+      "driveId": "1sGUI-vUP6-GRFTkm9Vn6r--iPTNlm4XD",
+      "title": "أسئلة منوعة كيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
+      "bytes": 227212,
+      "subject": "chemistry",
+      "semester": 1,
+      "kind": "question-bank",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "أسئلة منوعة كيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
+      "authorAr": "مريم السرطاوي",
+      "unitTags": [
+        "chem-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "chem-ws-bohr-manhaji",
+      "driveId": "1fw3FkExLqJFhCa4b5Vghvi-HtJBJqfi4",
+      "title": "ورقة عمل كيمياء الصف العاشر نظرية بور الذرية شبكة منهاجي التعليمية.pdf",
+      "bytes": 552090,
+      "subject": "chemistry",
+      "semester": 1,
+      "kind": "worksheet",
+      "authority": "third-party",
+      "status": "pending",
+      "filename": "ورقة عمل كيمياء الصف العاشر نظرية بور الذرية شبكة منهاجي التعليمية.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "chem-s1",
+        "chem-s1-u1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ],
+      "notes": "From منهاجي — a third-party network, not the ministry and not a named teacher."
+    },
+    {
+      "id": "chem-ws-bohr-tareq",
+      "driveId": "1q3O9_JqWANmdSePhh3shRq5aVnfsgmX9",
+      "title": "ورقة عمل كيمياء الصف العاشر نظرية بور أ. محمد طارق.pdf",
+      "bytes": 219398,
+      "subject": "chemistry",
+      "semester": 1,
+      "kind": "worksheet",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "ورقة عمل كيمياء الصف العاشر نظرية بور أ. محمد طارق.pdf",
+      "authorAr": "محمد طارق",
+      "unitTags": [
+        "chem-s1",
+        "chem-s1-u1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "chem-ws-reactions-tareq",
+      "driveId": "1IpAKqJhcXukd0-h4QUylIFEMfcHyU3c7",
+      "title": "ورقة عمل التفاعلات الكيميائية كيمياء عاشر أ. محمد طارق.pdf",
+      "bytes": 403163,
+      "subject": "chemistry",
+      "semester": 2,
+      "kind": "worksheet",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "ورقة عمل التفاعلات الكيميائية كيمياء عاشر أ. محمد طارق.pdf",
+      "authorAr": "محمد طارق",
+      "unitTags": [
+        "chem-s2",
+        "chem-s2-u5"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "chem-ws-planck-almasri",
+      "driveId": "1zEse9-kuqh5wdLJ0Dwm87zfzL4Ow3qyc",
+      "title": "ورقة عمل قانون ماكس بلانك الكيمياء للصف العاشر أ. عبير المصري.pdf",
+      "bytes": 150140,
+      "subject": "chemistry",
+      "semester": 1,
+      "kind": "worksheet",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "ورقة عمل قانون ماكس بلانك الكيمياء للصف العاشر أ. عبير المصري.pdf",
+      "authorAr": "عبير المصري",
+      "unitTags": [
+        "chem-s1",
+        "chem-s1-u1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "chem-u1-test-shawata",
+      "driveId": "19wlw2bjj-LMM-aATYeXv8_ODJesnjN5W",
+      "title": "اختبار الوحدة الأولى البنية الذرية إعداد المعلمة ولاء شعواطة.pdf",
+      "bytes": 357947,
+      "subject": "chemistry",
+      "semester": 1,
+      "kind": "exam",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "اختبار الوحدة الأولى البنية الذرية إعداد المعلمة ولاء شعواطة.pdf",
+      "authorAr": "ولاء شعواطة",
+      "unitTags": [
+        "chem-s1",
+        "chem-s1-u1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "chem-s2-month1-tareq",
+      "driveId": "15a-yOq9nucKEbsswUAhHEx0LnFCsEaHi",
+      "title": "اختبار الشهر الأول كيمياء الصف العاشر الفصل الثاني أ. محمد طارق عوض.pdf",
+      "bytes": 58224,
+      "subject": "chemistry",
+      "semester": 2,
+      "kind": "exam",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "اختبار الشهر الأول كيمياء الصف العاشر الفصل الثاني أ. محمد طارق عوض.pdf",
+      "authorAr": "محمد طارق عوض",
+      "unitTags": [
+        "chem-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "finlit-s1-student-book",
+      "driveId": "1eydBC98cOUFeGH-9XiR_6628PViUFgqu",
+      "title": "الثقافة المالية 10 ف1 small.pdf",
+      "bytes": 5521575,
+      "subject": "financial-literacy",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "الثقافة المالية 10 ف1 small.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "finlit-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "financial-literacy",
+        "ثقافة مالية",
+        "عاشر",
+        "كتاب الطالب"
+      ],
+      "notes": "40 objectives in the catalog came from this file."
+    },
+    {
+      "id": "finlit-s2-student-book",
+      "driveId": "1qEaXy2Hz8uqNFLByg1GDEwCl4xsOJqMY",
+      "title": "كتاب الطالب لمادة الثقافة المالية للصف العاشر الفصل الثاني.pdf",
+      "bytes": 4871291,
+      "subject": "financial-literacy",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "conflict",
+      "filename": "كتاب الطالب لمادة الثقافة المالية للصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "finlit-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "financial-literacy",
+        "ثقافة مالية",
+        "عاشر",
+        "كتاب الطالب"
+      ],
+      "conflictWith": "finlit-s1-student-book",
+      "notes": "The known edition split: the S1 file in the catalog and this S2 book are not the same edition of the course, so their unit/lesson sequences do not line up. Nothing should be generated across both until one edition is chosen."
+    }
+  ],
+  "mergedAt": "2026-08-25"
 }

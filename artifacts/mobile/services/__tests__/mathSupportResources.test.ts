@@ -2,6 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildSupportResourcesContext,
+  listAllSupportResources,
   formatSupportResourcesBlock,
   searchSupportResources,
   supportResourcesStats,
@@ -10,13 +11,38 @@ import {
 import { KB_LESSONS, getBookForLesson } from '../knowledgeBase.ts';
 
 describe('mathSupportResources', () => {
-  it('loads math + chemistry catalogs', () => {
+  it('reads math + chemistry from the bank', () => {
     const stats = supportResourcesStats();
     assert.ok(stats.total >= 50);
     assert.ok((stats.bySubject.mathematics ?? 0) >= 30);
     assert.ok((stats.bySubject.chemistry ?? 0) >= 20);
-    assert.ok((stats.byType.worksheet ?? 0) >= 1);
-    assert.ok((stats.byType.quiz ?? 0) >= 1);
+    assert.ok((stats.byKind.worksheet ?? 0) >= 1);
+    // `exam` and `question-bank` were one `quiz` bucket until the two catalogs
+    // were merged, so a teacher asking for past papers could not be given them.
+    assert.ok((stats.byKind.exam ?? 0) >= 1);
+    assert.ok((stats.byKind['question-bank'] ?? 0) >= 1);
+  });
+
+  it('offers each document once', () => {
+    // Both chemistry student books used to be listed — the original and an
+    // iLovePDF re-compression, under different titles.
+    const all = listAllSupportResources();
+    assert.equal(new Set(all.map(r => r.id)).size, all.length);
+    assert.equal(new Set(all.map(r => r.driveId)).size, all.length);
+  });
+
+  it('marks a teacher\'s work reference-only and NCCD\'s quotable', () => {
+    const all = listAllSupportResources();
+    for (const r of all) {
+      assert.equal(r.usePolicy, r.authority === 'nccd' ? 'quotable' : 'reference-only', r.id);
+    }
+    assert.ok(all.some(r => r.usePolicy === 'reference-only'));
+  });
+
+  it('can be asked for past papers specifically', () => {
+    const papers = searchSupportResources({ query: 'اختبار نهائي', kinds: ['exam'], limit: 5 });
+    assert.ok(papers.length > 0);
+    assert.ok(papers.every(p => p.kind === 'exam'));
   });
 
   it('finds circle worksheets by query', () => {
@@ -79,9 +105,13 @@ describe('subject isolation', () => {
   });
 
   it('does not emit the mathematics unit tags for another subject', () => {
+    // Bare `s1` counts as a maths tag too: it is what the maths packs are
+    // scoped by, and a financial-literacy lesson emitting it scored +3 against
+    // every one of them — survivable only because the subject gate rejects
+    // them afterwards. A tag that is wrong and then filtered is still wrong.
     for (const lesson of lessonsBySubject('financial-literacy')) {
       for (const tag of unitTagsForLesson(lesson)) {
-        assert.ok(!/^s[12]-u\d+$/.test(tag), `${lesson.id} emitted maths tag ${tag}`);
+        assert.ok(!/^s[12](-u\d+|-matrices)?$/.test(tag), `${lesson.id} emitted maths tag ${tag}`);
       }
     }
   });
