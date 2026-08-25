@@ -7,7 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
-import { buildGeneratorContext, resolveGeneratorGrounding } from '@/services/kbContext';
+import { buildGeneratorContext, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
 import { ActivityOutput, ActivityStep } from '@/services/ai/AIService';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
@@ -116,7 +116,8 @@ export default function ActivityScreen() {
       setGroundedLesson(
         grounding.lesson ? (lang === 'ar' ? grounding.lesson.titleAr : grounding.lesson.titleEn) : null,
       );
-      const additionalContext = buildGeneratorContext(topic.trim(), lang as 'ar' | 'en') || undefined;
+      const additionalContext = buildGeneratorContext(topic.trim(), lang as 'ar' | 'en');
+      const unitId = generatorUnitId(topic.trim(), lang as 'ar' | 'en');
       const out = await aiService.generateActivity({
         grade: grades[gradeIdx].name,
         subject: subjects[subjectIdx].name,
@@ -126,6 +127,7 @@ export default function ActivityScreen() {
         duration: DURATION_VALUES[durationIdx],
         objectives: objective.trim() || undefined,
         additionalContext,
+        unitId,
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setResult(out);

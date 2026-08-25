@@ -32,7 +32,11 @@ pnpm run typecheck                     # whole monorepo
 pnpm run dev:api                       # Express on :8080
 pnpm run dev:mobile:web                # Expo web on :8081 (MOBILE_PORT overrides)
 
+<<<<<<< HEAD
+cd artifacts/mobile     && pnpm test   # 962 tests (2026-08-25)
+=======
 cd artifacts/mobile     && pnpm test   # 925 tests (2026-08-25)
+>>>>>>> origin/main
 cd artifacts/api-server && pnpm build && pnpm test   # build first — see below
 ```
 

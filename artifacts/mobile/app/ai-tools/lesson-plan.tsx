@@ -7,7 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
-import { buildAdaptationsDirective, resolveGeneratorGrounding } from '@/services/kbContext';
+import { buildAdaptationsDirective, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
 import { LessonPlanOutput } from '@/services/ai/AIService';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
@@ -180,6 +180,7 @@ export default function LessonPlanScreen() {
           ? (objectives.trim() || (lang === 'ar' ? 'تبسيط الشرح' : 'Simplify explanation'))
           : (objectives.trim() || undefined),
         additionalContext,
+        unitId: generatorUnitId(topic.trim(), lang as 'ar' | 'en'),
       }, { signal: controller.signal });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setCurriculumGrounded(grounding.grounded);

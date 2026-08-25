@@ -23,6 +23,7 @@ import {
   findNccdUnitByLessonKbId,
 } from './curriculumG10MathSem2.ts';
 import { buildSupportResourcesContext } from './mathSupportResources.ts';
+import { isNccdUnitId } from '@workspace/curriculum';
 
 // ─── Generator KB context ────────────────────────────────────────────────────
 
@@ -206,18 +207,56 @@ export function resolveGeneratorGrounding(
 }
 
 /**
- * Build a compact textbook context string for the AI generator prompts
- * (lesson-plan, worksheet, quiz). Requires an exact / high-confidence KB match.
+ * The curriculum context to send with a generation request.
  *
- * Returns an empty string when ungrounded so callers can fall back to generic
- * generation without presenting unrelated curriculum content as grounded.
+ * Returns the lesson's textbook context when the topic is grounded, and the
+ * *ungrounded note* when it is not — never an empty string.
+ *
+ * It used to return `''` when ungrounded, "so callers can fall back to generic
+ * generation". Every one of the seven callers then wrote
+ * `buildGeneratorContext(...) || undefined`, so the note — the sentence that
+ * tells the model not to claim textbook grounding it does not have — reached a
+ * prompt from exactly none of them. `lesson-plan.tsx` and `worksheet.tsx` were
+ * unaffected only because they bypass this function and read
+ * `resolveGeneratorGrounding` themselves.
+ *
+ * Returning the note is what makes the fallback safe by default rather than by
+ * remembering. A caller that genuinely wants nothing can read `.context` off
+ * `resolveGeneratorGrounding`, which is explicit about what it is skipping.
  */
 export function buildGeneratorContext(
   topic: string,
   lang: 'ar' | 'en',
   options?: BuildGeneratorContextOptions,
 ): string {
-  return resolveGeneratorGrounding(topic, lang, options).context;
+  const grounding = resolveGeneratorGrounding(topic, lang, options);
+  return grounding.grounded ? grounding.context : grounding.ungroundedNote;
+}
+
+/**
+ * The catalog unit a topic belongs to, for the server to fetch book pages with.
+ *
+ * The API resolves a unit from the free-text topic when this is absent, but a
+ * title match can be ambiguous where the app's own lookup is not: the screen
+ * knows which lesson the teacher picked. `null` when ungrounded, or when the
+ * lesson is one of the legacy hardcoded rows whose unit ids (`kbu-chem-1`) are
+ * not in the NCCD namespace the bank indexes by.
+ */
+export function generatorUnitId(topic: string, lang: 'ar' | 'en'): string | undefined {
+  return nccdUnitId(resolveGeneratorGrounding(topic, lang).lesson?.unitId);
+}
+
+/**
+ * A unit id the knowledge bank can index by, or `undefined`.
+ *
+ * The KB carries two unit-id namespaces: NCCD-derived lessons use
+ * `kbu-math-s1-nccd-u2`, and the legacy hardcoded rows use `kbu-chem-1`. Only
+ * the first is what `bankTagsForUnit()` maps onto bank tags, so sending the
+ * second would just be a string the server cannot resolve. Filtering here
+ * keeps that judgement in one place rather than in each screen.
+ */
+export function nccdUnitId(unitId: string | null | undefined): string | undefined {
+  return isNccdUnitId(unitId) ? unitId ?? undefined : undefined;
 }
 
 /**

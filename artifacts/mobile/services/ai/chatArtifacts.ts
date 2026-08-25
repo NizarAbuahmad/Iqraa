@@ -15,6 +15,7 @@ import {
   resolveCurriculumContext,
   type SessionArtifact,
 } from '@/services/ai/teachingAssistant';
+import { buildGeneratorContext, nccdUnitId } from '@/services/kbContext';
 import type { KBLesson } from '@/services/knowledgeBase';
 import {
   formatActivityText,
@@ -114,7 +115,14 @@ function buildRequest(
     questionTypes: ['multiple_choice', 'short_answer', 'true_false'],
     totalMarks: 20,
     activityType: 'group',
-    additionalContext: documentContext?.trim() || undefined,
+    // Chat was the one generation path sending no curriculum context at all:
+    // whatever a teacher had attached, and nothing about the lesson itself. The
+    // teacher's own documents stay first — they are the more specific source —
+    // and the curriculum block (or the note saying there isn't one) follows.
+    additionalContext: [documentContext?.trim(), buildGeneratorContext(topic, lang)]
+      .filter(Boolean)
+      .join('\n\n') || undefined,
+    unitId: nccdUnitId(lesson?.unitId),
   };
 }
 

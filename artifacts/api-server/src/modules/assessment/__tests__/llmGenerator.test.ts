@@ -81,6 +81,27 @@ describe("buildGenerationPrompt", () => {
     );
   });
 
+  it("carries the book's own pages when there are any", () => {
+    // The whole point of the exam path being live. Without this the model
+    // writes multiple-choice distractors from an objective's *title*, which is
+    // the same information the mock generator refused to guess from.
+    const excerpts = "=== نص حرفي من الكتاب المدرسي الرسمي ===\n[1] كتاب الطالب — صفحة 34\nالوترُ قطعةٌ مستقيمةٌ طرفاها على الدائرةِ.";
+    const { user } = buildGenerationPrompt({ ...REQ, bookExcerpts: excerpts });
+    assert.ok(user.includes(excerpts), "the excerpts did not reach the prompt");
+    assert.ok(user.includes("Prefer the book's own worked values"));
+    // Before the JSON contracts: a model that reads the shape first writes to
+    // the shape and treats the content as decoration.
+    assert.ok(user.indexOf(excerpts) < user.indexOf("Allowed types"));
+  });
+
+  it("says nothing about a book when there is none", () => {
+    // Most of the curriculum: six of the bank's 78 documents have been read.
+    // An empty "textbook" heading invites the model to fill it in.
+    const { user } = buildGenerationPrompt(REQ);
+    assert.equal(user.includes("Prefer the book's own"), false);
+    assert.equal(user.includes("الكتاب المدرسي"), false);
+  });
+
   it("tells the model that a question's demand is not its objective's", () => {
     // competency.ts is explicit that inheriting flattens the breakdown. If the
     // prompt does not say so, every question comes back as its objective's level.

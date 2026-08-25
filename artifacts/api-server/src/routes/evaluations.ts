@@ -56,6 +56,7 @@ import {
   recordUsage,
 } from "../lib/aiBudget.ts";
 import { extractJSON } from "../lib/generationShape.ts";
+import { groundingForObjectives } from "../lib/grounding.ts";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { recommendationsFor } from "../modules/assessment/recommend";
 import type { ObjectiveScore } from "../modules/assessment/scoring";
@@ -372,6 +373,17 @@ router.post("/evaluations/:id/generate", async (req: AuthenticatedRequest, res) 
       assertBudgetAvailable();
       await assertUserQuotaAvailable(req.user!.id);
 
+      // The book, where there is one. Exam questions written from an
+      // objective's title alone are the thing this whole path exists to stop
+      // being the ceiling; `null` when nothing has been read for these units,
+      // and the prompt then omits the section entirely.
+      const grounding = groundingForObjectives(objectives, evaluation.language !== "en");
+      if (grounding) {
+        generationNotes.push(
+          `Grounded on ${grounding.sources.map(s => `${s.titleAr} p${s.page}`).join(", ")}.`,
+        );
+      }
+
       const llm = await generateWithModel(
         {
           objectives,
@@ -379,6 +391,7 @@ router.post("/evaluations/:id/generate", async (req: AuthenticatedRequest, res) 
           count: evaluation.targetQuestionCount,
           difficulty: evaluation.difficulty,
           language: evaluation.language,
+          bookExcerpts: grounding?.block,
         },
         async prompt => {
           const model = getGenerationModel();

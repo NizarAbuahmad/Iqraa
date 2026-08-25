@@ -161,7 +161,7 @@ export async function testEntireLesson(
   if (!lesson) throw new Error(`Unknown CQV lesson: ${lessonId}`);
 
   const topic = lesson.lessonNameAr;
-  const additionalContext = buildGeneratorContext(topic, 'ar') || undefined;
+  const additionalContext = buildGeneratorContext(topic, 'ar');
   const req = baseRequest(topic, additionalContext);
   const total = CQV_ARTIFACT_IDS.length;
   const reports: CqvReport[] = [];

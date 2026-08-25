@@ -31,6 +31,7 @@
  *     Jordanian test papers sat in the product invisible to the one feature
  *     that most wants them.
  */
+import { bankTagsForParsedUnit, parseUnitKbId } from './curriculumIds.ts';
 import {
   G10_SOURCES,
   type CurriculumSource,
@@ -109,12 +110,13 @@ export const BANK_UNIT_TAGS: string[] = [
  * emitting `finlit-s1-u1` would invent a tag nothing can carry.
  */
 export function bankTagsForUnit(unitId: string): string[] {
-  const m = /^kbu-(math|chem|finlit)-s([12])-nccd-u(\d+)$/.exec(unitId);
-  if (!m) return [];
-  const [, subject, semester, unit] = m;
-  if (subject === 'finlit') return [`finlit-s${semester}`];
-  const prefix = subject === 'chem' ? 'chem-s' : 's';
-  return [`${prefix}${semester}-u${unit}`, `${prefix}${semester}`];
+  // The id shape and the tag vocabulary both live in `curriculumIds.ts` now —
+  // this function used to carry its own copy of the unit-id regex, and there
+  // were two more (the API server's grounding, the app's kbContext). Adding a
+  // grade segment to a pattern held in three places is two chances to update
+  // only two of them.
+  const parsed = parseUnitKbId(unitId);
+  return parsed ? bankTagsForParsedUnit(parsed) : [];
 }
 
 /** Documents scoped to a catalog unit, by its id. */
@@ -260,4 +262,83 @@ export function bankStats(): {
     bySubject,
     byPolicy,
   };
+}
+
+// ─── Naming a document ───────────────────────────────────────────────────────
+
+/**
+ * `kind` in words a teacher reads.
+ *
+ * Lived in `artifacts/mobile/services/mathSupportResources.ts` until the API
+ * server needed to cite a source in a prompt. Two copies of a label table is
+ * how «ورقة اختبار» and «اختبار» end up meaning the same thing in two screens,
+ * so it moved here — the same reason `normalizeArabic` and `bankTagsForUnit`
+ * are in this package. The mobile module re-exports it; no caller changed.
+ */
+const KIND_LABEL_AR: Record<SourceKind, string> = {
+  'student-book': 'كتاب الطالب',
+  'teacher-guide': 'دليل المعلم',
+  'activity-book': 'كتاب الأنشطة',
+  'ministry-support': 'مادة علاجية / وزارية',
+  worksheet: 'ورقة عمل',
+  'answer-key': 'إجابات',
+  summary: 'ملخص',
+  'study-pack': 'دوسية',
+  'question-bank': 'بنك أسئلة',
+  exam: 'ورقة اختبار',
+};
+
+const KIND_LABEL_EN: Record<SourceKind, string> = {
+  'student-book': 'Student book',
+  'teacher-guide': 'Teacher guide',
+  'activity-book': 'Activity book',
+  'ministry-support': 'Ministry / remedial',
+  worksheet: 'Worksheet',
+  'answer-key': 'Answer key',
+  summary: 'Summary',
+  'study-pack': 'Study pack',
+  'question-bank': 'Question bank',
+  exam: 'Past paper',
+};
+
+/** The one place a `kind` becomes words a teacher reads. */
+export function kindLabel(kind: SourceKind, lang: 'ar' | 'en'): string {
+  return lang === 'ar' ? KIND_LABEL_AR[kind] : KIND_LABEL_EN[kind];
+}
+
+const SUBJECT_LABEL_AR: Record<CurriculumSource['subject'], string> = {
+  math: 'الرياضيات',
+  chemistry: 'الكيمياء',
+  'financial-literacy': 'الثقافة المالية',
+};
+
+const SUBJECT_LABEL_EN: Record<CurriculumSource['subject'], string> = {
+  math: 'Mathematics',
+  chemistry: 'Chemistry',
+  'financial-literacy': 'Financial literacy',
+};
+
+/**
+ * A document named from what it *is*, not from what its file is called.
+ *
+ * `title` is the filename in Drive, and half of them are unusable as a label:
+ * `chem-s1-student-book` is stored as «10th grade, alchamy1st semester.pdf»,
+ * English and misspelled, which is not a citation to show an Arabic-reading
+ * teacher. The structured fields say the same thing correctly in either
+ * language, so the label is built from those and the filename is left to
+ * `displayTitle()`, whose job is finding a file rather than naming a source.
+ */
+export function sourceLabel(
+  source: Pick<CurriculumSource, 'kind' | 'subject' | 'semester'>,
+  lang: 'ar' | 'en',
+): string {
+  const kind = kindLabel(source.kind, lang);
+  if (lang === 'ar') {
+    const subject = SUBJECT_LABEL_AR[source.subject];
+    const term = source.semester ? ` — الفصل ${source.semester === 1 ? 'الأول' : 'الثاني'}` : '';
+    return `${kind} — ${subject}${term}`;
+  }
+  const subject = SUBJECT_LABEL_EN[source.subject];
+  const term = source.semester ? `, semester ${source.semester}` : '';
+  return `${kind} — ${subject}${term}`;
 }

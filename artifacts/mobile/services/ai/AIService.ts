@@ -14,6 +14,14 @@ export interface AIRequest {
   duration?: number;
   language?: 'arabic' | 'english';
   additionalContext?: string;
+  /**
+   * Catalog unit id (`kbu-math-s1-nccd-u2`), when the screen knows it.
+   *
+   * The server uses it to pull the unit's own textbook pages into the prompt.
+   * Optional because it can be recovered from `topic`, but a resolved id beats
+   * a title match — see `generatorUnitId` in `services/kbContext.ts`.
+   */
+  unitId?: string;
   // Lesson plan extras
   teachingStyle?: 'direct' | 'inquiry' | 'collaborative';
   objectives?: string;
@@ -239,6 +247,8 @@ export interface ClassroomActivityRequest {
    */
   classroomSetup?: 'screen' | 'board';
   additionalContext?: string;
+  /** Catalog unit id, so the server can ground the prompt — see `AIRequest.unitId`. */
+  unitId?: string;
   /**
    * How many questions to generate. Honoured by 'quick-check', which defaults
    * to 4 — the size of a standalone whole-class check. Slides Maker asks for
