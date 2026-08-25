@@ -226,6 +226,67 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## An activity is an activity, and «عن» stopped being a lesson title, 2026-08-25
+
+Two things the chat-materials pass left behind, both now closed.
+
+**`MaterialType.activity` is no longer dead.** Every class activity — from the
+Activity screen and from chat — was filed as `'lesson'`, because
+`app/workspace/view.tsx` had no branch for one and its final `else` is the quiz
+renderer, which maps over the `questions` an `ActivityOutput` does not have.
+Saving one honestly meant saving a material that crashed the viewer that opened
+it. The viewer has an `ActivityView` now — objective, group size and duration,
+materials, numbered steps with their minutes, tips, differentiation, assessment
+— in the same order and sections as the Activity screen's own result view, so a
+teacher is looking at the same document on both surfaces. Export follows:
+`formatActivityText` / `buildActivityHTML` already existed and were simply never
+reachable from here.
+
+**The activities already saved as `'lesson'` are rescued by shape, not by a
+migration.** `looksLikeActivityContent()` (`services/materialShape.ts`) decides
+when a stored `'lesson'` is really an activity — keyed on `steps` plus
+`objective`, and refusing anything carrying a plan's `objectives` list. Tested
+in both directions, because a false positive would send a real lesson plan to
+the wrong renderer.
+
+**The viewer stopped keeping its own colour map.** It had a private copy of the
+same five colours `constants/materialKind.ts` holds, and adding a sixth to a
+private copy is the exact drift that file was extracted to stop — a card in
+موادي and the material it opens must not disagree about what colour an activity
+is. One map now.
+
+**«خطة درس عن تركيب الاقترانات» resolved to the topic «عن تركيب الاقترانات».**
+That is a title, and since materials became projectable it is also a slide, so a
+class saw a wall reading "About Function Composition". Two rules meant to
+prevent it never fired in Arabic:
+
+- the `^(عن|حول|about|for)\s+` anchor ran while the string still began with the
+  spaces the verb strip had just left, so it never matched anything;
+- `\b` is defined by `[A-Za-z0-9_]`, so `\bعن\b` cannot match between two
+  Arabic letters — that rule only ever worked for `about` / `for`.
+
+Whitespace is collapsed before the token pass now, and the token test is written
+against spaces and string ends rather than `\b`. A stranded English article
+("a function composition") goes too. `resolveArtifactTopic` moved to
+`services/ai/artifactTopic.ts` to be testable at all — `chatArtifacts.ts`
+constructs the AI client at import time, which `node:test` cannot load, the same
+split `routeGating.ts` and `docxOutline.ts` already made. It is re-exported, so
+no call site changed.
+
+### Verified by driving the real UI
+
+Expo web, `/auth/me` stubbed, no API server. «حضّر خطة درس عن تركيب الاقترانات»
+now saves as **«خطة درس: تركيب الاقترانات»**. A generated activity saves as
+`type: 'activity'` titled «نشاط صفي: تركيب الاقترانات», offers no Present button
+(correct — there is no ActivityOutput deck builder), and opens in the workspace
+showing its objective, materials and numbered steps. A hand-seeded legacy row —
+activity content under `type: 'lesson'` — renders as an activity too, with no
+console errors.
+
+**Left alone:** the activity meta row shows the raw `activityType` (`group`)
+rather than a translated label. That is what the Activity screen shows as well;
+fixing it belongs on both at once.
+
 ## Chat materials stopped dead-ending at copy, 2026-08-25
 
 **A material generated in chat now offers what the tool screens offer.** Chat
@@ -255,13 +316,9 @@ verifier, so `deckForArtifact` passes neither `verified` nor `outcomes` and the
 slides badge unverified — the same rule this file records for `verified`
 everywhere else. A test asserts it.
 
-**An activity is saved as type `lesson`, not `activity`.** `workspace/view.tsx`
-has no `activity` branch and falls through to the quiz renderer, which maps over
-`questions` an `ActivityOutput` does not have — saving it under its own name
-would file a material that crashes the viewer that opens it. This matches what
-`/ai-tools/activity` already does. The dead `'activity'` member of `MaterialType`
-is still dead; giving the viewer a real renderer is the fix, and is not done
-here.
+~~**An activity is saved as type `lesson`, not `activity`.**~~ **Superseded the
+same day** — the viewer got its `ActivityView`, so both surfaces file activities
+as `'activity'` and the type is no longer dead. See the section above.
 
 The decision logic is `services/chatMaterialActions.ts` (pure, no React), tested
 in `services/__tests__/chatMaterialActions.test.ts`; `app/(tabs)/iqra.tsx` owns
@@ -277,10 +334,9 @@ the label flipped to «محفوظ ✓». أضف لصف → still one row, no dup
 sheet self-closed, which is what it does with no roster (server-only). اعرض →
 `/ai-tools/classroom/presentation` rendering a 7-slide deck.
 
-**Left alone:** the deck and the saved material are titled «عن تركيب
-الاقترانات», preposition included. That comes from `resolveArtifactTopic`
-upstream and already showed in the chat prose before this change — it is more
-visible now that it heads a projected slide.
+~~**Left alone:** the deck and the saved material are titled «عن تركيب
+الاقترانات», preposition included.~~ **Fixed the same day** — see the section
+above for why the two rules meant to strip it never fired in Arabic.
 
 ## The refusal now points somewhere, 2026-08-25
 
