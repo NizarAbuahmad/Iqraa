@@ -220,6 +220,112 @@ export function samplePlot(
 }
 
 /**
+ * Rewrite an equation so the curve it names can be sampled.
+ *
+ * The textbook does not write its systems as `y = …`. It writes «x − y = 1»,
+ * «4y − 8x = −21», «y − x² = 7 − 5x» — general form, y buried in the middle —
+ * and until this existed every one of those extracted nothing and drew
+ * nothing, which is why a system question could carry a full set of equations
+ * and still project a blank slide.
+ *
+ * **No symbolic algebra.** Anything linear in y is `a(x)·y + b(x) = 0`, so
+ * three evaluations of the SAME compiled expression recover it exactly:
+ * substitute y = 0, 1, 2 as literals, and
+ *
+ *     b = E(x, 0)      a = E(x, 1) − E(x, 0)      y = −b / a
+ *
+ * The third evaluation is the guard, not a spare: `E(x, 2)` must equal
+ * `2a + b` or the equation is not linear in y and this must refuse it. That is
+ * what stops «x² + y² = 5» being silently mangled into a line — a circle is
+ * quadratic in y, fails the check, and returns null instead of a confident
+ * wrong curve on a projector.
+ */
+function solveLinearInY(equation: string): CompiledExpression | null {
+  const [lhs, rhs, ...extra] = equation.split('=');
+  if (extra.length > 0 || lhs === undefined || rhs === undefined) return null;
+  if (!/y/i.test(equation)) return null;
+
+  // E(x, y) = lhs − (rhs). Substituting a literal for y keeps this inside the
+  // existing single-variable compiler, which is the whole point: no second
+  // evaluator to keep in step with the first.
+  const withY = (value: number) =>
+    compileExpression(`(${lhs.replace(/y/gi, `(${value})`)})-((${rhs.replace(/y/gi, `(${value})`)}))`);
+  const e0 = withY(0);
+  const e1 = withY(1);
+  const e2 = withY(2);
+  if (!e0 || !e1 || !e2) return null;
+
+  const coefficients = (x: number) => {
+    const b = e0(x);
+    const one = e1(x);
+    const two = e2(x);
+    if (b === null || one === null || two === null) return null;
+    if (!Number.isFinite(b) || !Number.isFinite(one) || !Number.isFinite(two)) return null;
+    const a = one - b;
+    // Linearity, checked at this very x rather than assumed from a sample
+    // elsewhere: 2a + b is what E(x, 2) must be.
+    const scale = Math.max(1, Math.abs(two), Math.abs(b), Math.abs(a));
+    if (Math.abs(two - (2 * a + b)) > 1e-9 * scale) return null;
+    return { a, b };
+  };
+
+  // A curve that is not linear in y anywhere is not this function's business.
+  // Probed at several x rather than one: `xy = 1` is linear in y everywhere,
+  // while a quadratic can coincidentally satisfy the check at a single point.
+  const probes = [-2.3, -0.7, 0.9, 2.6];
+  if (!probes.every(x => coefficients(x) !== null)) return null;
+
+  return (x: number) => {
+    const c = coefficients(x);
+    // `a === 0` is a vertical line (x = 3): a real curve, but not one y = f(x)
+    // can express, so the point is dropped rather than sent to Infinity.
+    if (!c || c.a === 0) return null;
+    const y = -c.b / c.a;
+    // Negating a zero intercept yields -0, which plots identically but is not
+    // `Object.is`-equal to 0 — a surprise waiting in any caller that compares.
+    return y === 0 ? 0 : y;
+  };
+}
+
+/**
+ * The y-value function a plot command names, however the equation is written.
+ *
+ * Explicit definitions keep the existing string path so `samplePlot` and its
+ * tests are untouched; everything else goes through the linear-in-y solver
+ * above. Returns null for anything this build cannot draw — a circle, a
+ * vertical line, prose — so the caller shows nothing rather than something
+ * wrong.
+ */
+export function curveFromCommand(command: string): CompiledExpression | null {
+  const explicit = expressionFromCommand(command);
+  if (explicit) return compileExpression(explicit);
+  const normalised = command
+    .replace(/²/g, '^2')
+    .replace(/³/g, '^3')
+    .replace(/[−–—]/g, '-')
+    .replace(/×/g, '*')
+    .trim();
+  if (!/x/i.test(normalised)) return null;
+  return solveLinearInY(normalised);
+}
+
+/** `samplePlot`, for a curve already compiled rather than named by a string. */
+export function sampleCurve(
+  f: CompiledExpression,
+  { from = -5, to = 5, steps = 80 }: SampleOptions = {},
+): { x: number; y: number }[] | null {
+  if (steps < 2 || !(to > from)) return null;
+  const points: { x: number; y: number }[] = [];
+  const dx = (to - from) / (steps - 1);
+  for (let i = 0; i < steps; i++) {
+    const x = from + i * dx;
+    const y = f(x);
+    if (y !== null && Number.isFinite(y)) points.push({ x, y });
+  }
+  return points.length >= 2 ? points : null;
+}
+
+/**
  * `f(x)=x^2-5x+6` / `y = 2x + 1` → the right-hand side.
  * Returns null for anything that is not a single-variable definition, so a
  * GeoGebra command this module cannot plot simply produces no visual.
@@ -434,9 +540,9 @@ export function visualForSlide(slide: VisualSource): VisualBlock | null {
 
   const series: PlotSeries[] = [];
   for (const command of commands) {
-    const expression = expressionFromCommand(command);
-    if (!expression) continue;
-    const points = samplePlot(expression);
+    const curve = curveFromCommand(command);
+    if (!curve) continue;
+    const points = sampleCurve(curve);
     if (points) series.push({ label: command, points });
   }
   return series.length ? { kind: 'plot', series } : null;

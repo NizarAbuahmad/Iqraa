@@ -21,6 +21,7 @@ import {
   deckPhotoQueries,
   extractGraphCommands,
   referencesShownVisual,
+  scanGraphCommands,
   geogebraCommandUrl,
   insertVideoSlide,
   isLikelyImageUrl,
@@ -123,6 +124,22 @@ describe('extractGraphCommands', () => {
     // leading sign, so half of every two-line system went unplotted.
     assert.deepEqual(extractGraphCommands('y = -x + 3'), ['y=-x + 3']);
     assert.deepEqual(extractGraphCommands('f(x) = −2x + 1'), ['f(x)=-2x + 1']);
+  });
+
+  it('reads the general form, not just `y = …`', () => {
+    // Straight from the Grade 10 book's linear-quadratic system figure.
+    assert.deepEqual(
+      extractGraphCommands('يمثل الرسم البياني y − x² = 7 − 5x و 4y − 8x = −21'),
+      ['y - x^2 = 7 - 5x', '4y - 8x = -21'],
+    );
+    assert.deepEqual(extractGraphCommands('المستقيمان x − y = 1 و y + x = 5'), ['x - y = 1', 'y + x = 5']);
+  });
+
+  it('emits nothing it cannot actually draw', () => {
+    // GeoGebra would plot the circle; this build's static renderers cannot,
+    // and a command nothing can draw would let a slide claim a figure it has
+    // not got.
+    assert.deepEqual(extractGraphCommands('x² + y² = 5'), []);
   });
 
   it('de-duplicates and respects the max', () => {
@@ -481,5 +498,23 @@ describe('referencesShownVisual', () => {
   it('handles empty input', () => {
     assert.equal(referencesShownVisual(''), false);
     assert.equal(referencesShownVisual('   '), false);
+  });
+});
+
+describe('scanGraphCommands', () => {
+  it('reports what it had to refuse alongside what it kept', () => {
+    const scan = scanGraphCommands('x² + y² = 5 و x − y = 1');
+    assert.deepEqual(scan.commands, ['x - y = 1']);
+    assert.deepEqual(scan.unplottable, ['x^2 + y^2 = 5']);
+  });
+
+  it('refuses nothing when every equation is drawable', () => {
+    const scan = scanGraphCommands('y − x² = 7 − 5x و 4y − 8x = −21');
+    assert.equal(scan.commands.length, 2);
+    assert.deepEqual(scan.unplottable, []);
+  });
+
+  it('handles empty input', () => {
+    assert.deepEqual(scanGraphCommands(''), { commands: [], unplottable: [] });
   });
 });

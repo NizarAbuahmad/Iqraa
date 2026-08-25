@@ -6,6 +6,7 @@
  * overwhelming majority of what science teachers actually project.
  */
 import type { VisualBlock } from './deckVisuals.ts';
+import { curveFromCommand } from './deckVisuals.ts';
 import type { ActivitySlide } from './ai/AIService.ts';
 
 /** Blank GeoGebra Graphing app — used when there is nothing to plot. */
@@ -320,7 +321,24 @@ export function shouldSearchForVideo(items: readonly AttachedResource[]): boolea
  * prose that would render an error in front of a class.
  */
 export function extractGraphCommands(text: string, max = 3): string[] {
-  if (!text) return [];
+  return scanGraphCommands(text, max).commands;
+}
+
+/**
+ * The same scan, keeping what it had to REFUSE.
+ *
+ * A stem that names «x² + y² = 5 و x − y = 1» yields one drawable curve and
+ * one this build cannot plot. Attaching just the line would put half a picture
+ * under a sentence about both — the confident-wrong-picture failure the whole
+ * check guard exists to prevent — so callers that are deciding whether a slide
+ * can honestly claim a figure need to know something was left out, not just
+ * what came back.
+ */
+export function scanGraphCommands(
+  text: string,
+  max = 3,
+): { commands: string[]; unplottable: string[] } {
+  if (!text) return { commands: [], unplottable: [] };
   // Generated math uses typographic characters GeoGebra won't parse:
   // superscripts and the true minus sign. Normalise before matching.
   text = text
@@ -328,6 +346,7 @@ export function extractGraphCommands(text: string, max = 3): string[] {
     .replace(/³/g, '^3')
     .replace(/[−–—]/g, '-');
   const out: string[] = [];
+  const unplottable: string[] = [];
   // The body is matched as a real expression — a term, then any number of
   // (operator, term) pairs — rather than a flat run of math-safe characters.
   //
@@ -356,9 +375,39 @@ export function extractGraphCommands(text: string, max = 3): string[] {
     // A constant is not a curve worth projecting — require a variable.
     if (!/[a-z]/i.test(body)) continue;
     const cmd = `${name}${arg}=${body}`;
-    if (!out.includes(cmd)) out.push(cmd);
+    if (out.includes(cmd)) continue;
+    if (!curveFromCommand(cmd)) { unplottable.push(cmd); continue; }
+    out.push(cmd);
   }
-  return out;
+
+  // ── Second pass: the general form the textbook actually uses ──────────────
+  // «x − y = 1», «4y − 8x = −21», «y − x² = 7 − 5x». The pattern above needs
+  // the equation to open with a name — `y =`, `f(x) =` — so every system
+  // written the way the book writes it extracted nothing at all, and a
+  // question could carry a complete set of equations and still project a
+  // blank slide.
+  //
+  // Loose to match, strict to keep: anything found here is emitted only if
+  // `curveFromCommand` can actually turn it into a curve. That is what keeps
+  // «x² + y² = 5» out — GeoGebra would plot the circle, but this build's
+  // static renderers cannot, and a command nothing can draw would make a
+  // slide claim a visual it does not have.
+  // A leading sign on either side, for the same reason the pattern above needs
+  // one: `4y - 8x = -21` is an ordinary book equation, and without this the
+  // right-hand side simply failed to match.
+  const side = `-?\\s*${term}(?:\\s*[+\\-*/]\\s*${term})*`;
+  const general = new RegExp(`${side}\\s*=\\s*${side}`, 'gi');
+  const canonical = (c: string) => c.replace(/\s+/g, '');
+  const seen = new Set(out.map(canonical));
+  let g: RegExpExecArray | null;
+  while ((g = general.exec(text)) && out.length < max) {
+    const cmd = g[0]!.trim().replace(/[.\s]+$/, '');
+    if (seen.has(canonical(cmd))) continue;
+    seen.add(canonical(cmd));
+    if (!curveFromCommand(cmd)) { unplottable.push(cmd); continue; }
+    out.push(cmd);
+  }
+  return { commands: out, unplottable };
 }
 
 /**
