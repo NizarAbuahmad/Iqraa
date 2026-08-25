@@ -50,6 +50,25 @@ export function countMaterials(n: number, lang: Lang): string {
   return `${n} ${n === 1 ? 'material' : 'materials'}`;
 }
 
+/**
+ * Same four-case rule again, for the elapsed-seconds counter on a generation
+ * that is still running. "1 ثانية" and "3 ثانية" are both wrong Arabic, and a
+ * counter ticking once a second is the most-read string on the screen while a
+ * teacher waits.
+ */
+export function arCountSeconds(n: number): string {
+  if (n === 1) return 'ثانية واحدة';
+  if (n === 2) return 'ثانيتان';
+  if (n >= 3 && n <= 10) return `${n} ثوانٍ`;
+  return `${n} ثانية`;
+}
+
+/** Count seconds in the active language. */
+export function countSeconds(n: number, lang: Lang): string {
+  if (lang === 'ar') return arCountSeconds(n);
+  return `${n}s`;
+}
+
 const translations = {
   ar: {
     // App
@@ -642,6 +661,12 @@ const translations = {
     activityComingSoon: 'قريبًا',
     startClass: 'ابدأ الحصة',
     startClassFailed: 'تعذّر تجهيز العرض. اضغط «ابدأ الحصة» للمحاولة مرة أخرى.',
+    genElapsed: (secs: string) => `مضى ${secs}`,
+    genSlowHint: 'يستغرق هذا وقتاً أطول من المعتاد. يمكنك الانتظار أو الإيقاف.',
+    genCancel: 'إيقاف',
+    genCancelled: 'أوقفتَ التحضير — لم يُنشأ أي محتوى. بياناتك كما هي.',
+    genRetry: 'أعد المحاولة',
+    genFailedTitle: 'تعذّر التحضير',
     presentOnScreen: 'اعرض على الشاشة',
     nextSlide: 'التالي',
     prevSlide: 'السابق',
@@ -1573,6 +1598,12 @@ const translations = {
     activityComingSoon: 'Coming soon',
     startClass: 'Start class',
     startClassFailed: 'Could not build the deck. Tap "Start class" to try again.',
+    genElapsed: (secs: string) => `${secs} elapsed`,
+    genSlowHint: 'This is taking longer than usual. You can keep waiting or stop it.',
+    genCancel: 'Stop',
+    genCancelled: 'You stopped it — nothing was generated. Your inputs are unchanged.',
+    genRetry: 'Try again',
+    genFailedTitle: 'Could not generate',
     presentOnScreen: 'Present on screen',
     nextSlide: 'Next',
     prevSlide: 'Back',

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import translations, { getT } from '../i18n.ts';
+import translations, { arCountSeconds, countSeconds, getT } from '../i18n.ts';
 
 /*
   `TranslationKey` is `keyof typeof translations.en`, so the English block alone
@@ -63,4 +63,30 @@ test('the failure and not-found copy exists in Arabic, and is Arabic', () => {
     const val = translations.ar[key];
     assert.ok(arabic.test(val), `ar.${key} contains no Arabic characters`);
   }
+});
+
+// ─── the elapsed-seconds counter ─────────────────────────────────────────────
+
+test('Arabic seconds follow the same four-case rule as the other counters', () => {
+  // A counter that ticks once a second is the most-read string on screen while
+  // a teacher waits, so "1 ثانية" and "3 ثانية" would be the most-read broken
+  // Arabic in the product.
+  assert.equal(arCountSeconds(1), 'ثانية واحدة');
+  assert.equal(arCountSeconds(2), 'ثانيتان');
+  assert.equal(arCountSeconds(3), '3 ثوانٍ');
+  assert.equal(arCountSeconds(10), '10 ثوانٍ');
+  assert.equal(arCountSeconds(11), '11 ثانية');
+  assert.equal(arCountSeconds(59), '59 ثانية');
+});
+
+test('zero reads as a plain count, not as an absence', () => {
+  // Unlike students or materials, zero seconds is a real reading on a counter
+  // that just started — "لا ثواني" would be nonsense there.
+  assert.equal(arCountSeconds(0), '0 ثانية');
+  assert.equal(countSeconds(0, 'en'), '0s');
+});
+
+test('countSeconds picks the language', () => {
+  assert.equal(countSeconds(2, 'ar'), 'ثانيتان');
+  assert.equal(countSeconds(2, 'en'), '2s');
 });
