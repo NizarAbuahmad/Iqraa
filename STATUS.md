@@ -5337,6 +5337,48 @@ deploys — is fine: the print iframe inherits the page's base URL, so the
 root-relative `/assets/…` path loads, and `waitForImages` already blocks the
 print until it has.
 
+## Three during-class tools came back, and an exam dead end closed, 2026-08-25
+
+Reported by trying to use the app: «تحدي الهروب» could not be found anywhere,
+and the class screen's «أرفق امتحانًا» dialog said "no exams yet — create one
+first" while offering nothing but Cancel.
+
+**The escape challenge was not missing, it was parked.** The 2026-08-18 audit
+above narrowed both menus to five tools and hid `classroom` — the only door to
+the escape, bingo, relay and gallery-walk formats. Their routes still resolved,
+so the formats were reachable by typing `/ai-tools/classroom`, which is the same
+as unreachable. `game` and `activity` are un-parked with it rather than leaving
+one of the three doors open; everything else the audit parked stays parked, and
+`toolCatalog.test.ts` now pins both lists so either change has to be deliberate.
+
+That audit's other finding is fixed rather than carried forward: **`activity`'s
+description was backwards.** It promised "an in-class experience… not a
+printable worksheet"; `ActivityOutput` has no slides, the screen has no route to
+the presenter, and it renders a document with an export menu. Now described as
+what it is — a step-by-step plan to print or follow. The live-on-screen claim
+belongs to «الفصل التفاعلي», which is on the same menu now, so the two could not
+go on contradicting each other.
+
+**The exam dialog was the materials dialog's bug, un-fixed.** The materials
+sheet grew a dashed «أنشئ مادة جديدة» row for exactly this reason; the exams
+modal never got one. It has one now, routing to `/evaluations/new`. The
+`createNewExam` label already existed in `i18n.ts` and was wired to nothing —
+somebody meant to build this button and stopped.
+
+Only `toolCatalog.ts` changed. `homeAiTools.ts` — the second catalog behind
+Smart Templates and the "قد يفيدك أيضاً" panel — still has `activity` and
+`game` disabled, deliberately: that is a suggestion surface, not a menu, and
+re-enabling it is a separate decision.
+
+**Not verified:** none of this was seen in a browser. The catalog and the
+dialog are unit-covered, but nobody has clicked the new «الفصل التفاعلي» card
+or the new exam button on a running build.
+
+**Still open:** the three-doors question the audit deferred is now more visible,
+not less — `slides`, `game` and `classroom` all build a `ClassroomActivity` and
+land on the same presenter, and all three are on the menu. PostHog is still the
+way to answer which door teachers use.
+
 ## Stop the model writing questions about graphs it never gives, 2026-08-25
 
 The draw-or-drop guard keeps a question about an absent graph off the
