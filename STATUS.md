@@ -5687,3 +5687,57 @@ detector.
 Re-running extraction leaves **every one of the 60 PNGs byte-identical**, so
 the diff is metadata only. `build:web` exports 58 figures, 4 of them
 chemistry.
+
+## Homework cites real exercises now, 2026-08-25
+
+Decks have always been able to say «تمارين ١-٦ صفحة ٧٢». Until now that was
+generated, which is to say invented: the page and the numbers pointed at
+nothing. `scripts/extract_book_exercises.py` reads the ministry's own exercise
+books, and the homework slide carries the result — **31 of 32 maths lessons**,
+attributed to the book on its own line.
+
+### Read from the books, checked three ways
+
+- **Exercise numbers** are set BOLD at ~10-11pt, in STIXGeneral in the
+  first-semester book and UniMath in the second. Matching on weight and size
+  rather than family is what makes one rule fit both. The rule is then
+  self-checking: an exercise book numbers from 1 with nothing skipped, so a run
+  with a gap means the rule caught something else and the page records nothing.
+- **The join is arithmetic** — `u{n}_l{m}` is the number the book prints, with
+  unit 1 shifted by one — and arithmetic is exactly how you cite a confidently
+  wrong page. So the test walks every derived id, asserts it exists in
+  `KB_LESSONS`, and asserts the curriculum's own title matches the book's.
+- **The figure map was deliberately not reused.** It encodes the same
+  relationship but only carries rows for lessons that have a figure, so joining
+  through it covered 18 of 32 and dropped the rest silently.
+
+### Three ways two ministry documents disagree about a title
+
+Found by running the check, and each fixed with an exact rule rather than a
+similarity score — a 0.67 near-miss once almost filed a figure under the wrong
+lesson:
+
+| | book | curriculum | resolved by |
+| --- | --- | --- | --- |
+| `u1_l1` | …System **of** Linear… | …System**:** Linear… | Arabic matches |
+| `u5_l2` | الاقترانات النسبية | **قسمة كثيرات الحدود و**الاقترانات النسبية | containment — the curriculum merges lessons |
+| `u4_l3` | قانون **جيوب** التمام | قانون **جيب** التمام | named exception; both are real names for the Law of Cosines |
+
+### Two things it deliberately does not do
+
+- **A separate detector, not a widened one.** The exercise books set the lesson
+  number at y≈52 and y≈64 where the student-book detector requires y<60.
+  Loosening that shared band would have been the second time in this repo that
+  accommodating one book silently broke another — the first cost 14 of 32
+  maths titles.
+- **The generated homework is left alone.** It may still contain a reference
+  the model invented, which is why the real one is on its own line and says
+  «من كتاب التمارين». Telling the generator not to invent exercise references —
+  the same treatment the figure rule got — is the obvious follow-up.
+
+### Coverage
+
+31 of 32 book lessons join to a curriculum lesson. The one that does not is
+«حل معادلات خاصة», which the curriculum deliberately omits. The two exponent
+lessons the curriculum *does* carry have no exercises in the 2026 book, and
+correctly get silence rather than an invented page.
