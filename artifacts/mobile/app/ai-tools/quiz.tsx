@@ -29,7 +29,8 @@ import {
   removeQuestionAt,
 } from '@/services/quizEdits';
 import { Button } from '@/components/ui/Button';
-import { getItem, saveItem, toggleFavorite, updateItem } from '@/services/workspace';
+import { getItem, saveItem, updateItem } from '@/services/workspace';
+import { useFavorite } from '@/hooks/useFavorite';
 import { ClassPickerSheet } from '@/components/ui/ClassPickerSheet';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
@@ -120,7 +121,6 @@ export default function QuizScreen() {
   const [showAnswers, setShowAnswers] = useState(false);
   const [savedId, setSavedId] = useState<string | undefined>(params.savedId);
   const [saveLabel, setSaveLabel] = useState<'save' | 'saved' | 'updated'>('save');
-  const [favorited, setFavorited] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
@@ -128,6 +128,8 @@ export default function QuizScreen() {
   const [loadingWord, setLoadingWord] = useState(false);
   const [loadingSlides, setLoadingSlides] = useState(false);
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
+  const { favorited, setFavorited, toggle: handleToggleFavorite } =
+    useFavorite(savedId, key => showToast(t(key)));
   // Holds the new material's id after a first save — that opens the "which
   // class?" sheet. Re-saving an edit does not re-ask.
   const [classPromptFor, setClassPromptFor] = useState<string | null>(null);
@@ -331,19 +333,6 @@ export default function QuizScreen() {
     if (!materialId) return;
     const ok = await updateItem(materialId, { classGroupId: classId });
     showToast(ok ? t('savedToClass', className) : t('saveToClassFailed'));
-  };
-
-  const handleToggleFavorite = async () => {
-    if (!savedId) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const next = !favorited;
-    setFavorited(next);
-    try {
-      await toggleFavorite(savedId);
-    } catch {
-      setFavorited(!next); // revert on failure
-    }
-    showToast(next ? (lang === 'ar' ? 'أضفتها إلى المفضلة ⭐' : 'Added to Favourites ⭐') : (lang === 'ar' ? 'أزلتها من المفضلة' : 'Removed from Favourites'));
   };
 
   const topPad = insets.top + (insets.top === 0 ? 67 : 0);
@@ -751,7 +740,7 @@ export default function QuizScreen() {
             >
               <Ionicons name={favorited ? 'star' : 'star-outline'} size={16} color={favorited ? '#F59E0B' : colors.mutedForeground} />
               <Text style={[styles.regenText, { color: favorited ? '#F59E0B' : colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }]}>
-                {favorited ? (lang === 'ar' ? 'في المفضلة' : 'Favourited') : (lang === 'ar' ? 'أضف إلى المفضلة' : 'Add to Favourites')}
+                {favorited ? t('inFavorites') : t('addToFavorites')}
               </Text>
             </Pressable>
           )}
