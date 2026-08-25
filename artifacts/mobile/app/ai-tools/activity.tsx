@@ -169,7 +169,12 @@ export default function ActivityScreen() {
       setSaveLabel('updated');
     } else {
       const saved = await saveItem({
-        type: 'lesson',
+        // Its own type, not 'lesson'. That substitution existed only because
+        // the workspace viewer had no activity branch and fell through to the
+        // quiz renderer; it has one now (see app/workspace/view.tsx), so the
+        // material can say what it is. Activities already saved as 'lesson'
+        // are rescued there by shape — nothing needs migrating.
+        type: 'activity',
         title,
         subject: subjects[subjectIdx].name,
         grade: grades[gradeIdx].name,

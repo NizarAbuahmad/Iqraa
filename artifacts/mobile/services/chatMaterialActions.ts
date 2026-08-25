@@ -22,13 +22,12 @@ import { buildLessonDeck } from './lessonSlides.ts';
 /**
  * Workspace type for a chat artifact.
  *
- * `activity` is deliberately saved as `lesson`, matching what the Activity
- * tool screen already does. The workspace has an `activity` member, but
- * `app/workspace/view.tsx` has no branch for it and falls through to the quiz
- * renderer — an ActivityOutput has no `questions`, so opening it would crash
- * the viewer. Until that screen can render one, filing it under the type the
- * viewer degrades on (a few sections shown, none invented) beats filing it
- * under the type that throws.
+ * An activity is filed as `activity`, its own type. That was unsafe until
+ * `app/workspace/view.tsx` grew a branch for it — without one it fell through
+ * to the quiz renderer, which maps over `questions` an `ActivityOutput` does
+ * not have — so both chat and the Activity screen filed activities as
+ * `lesson` and the type sat dead in `MaterialType`. The viewer renders them
+ * now, and the type says what the material is.
  */
 export function materialTypeFor(kind: ChatArtifactData['kind']): MaterialType {
   switch (kind) {
@@ -36,8 +35,9 @@ export function materialTypeFor(kind: ChatArtifactData['kind']): MaterialType {
       return 'worksheet';
     case 'quiz':
       return 'quiz';
-    case 'lesson-plan':
     case 'activity':
+      return 'activity';
+    case 'lesson-plan':
       return 'lesson';
   }
 }
