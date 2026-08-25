@@ -1,0 +1,198 @@
+{
+ "note": "Book lesson -> curriculum lesson. Proposed by title overlap, then hand-checked. A null kbLessonId means no lesson corresponds; those figures stay unused. Do not auto-fill from `candidates`: the book and the curriculum disagree about lesson boundaries — the book splits composition/inverse/radical into separate lessons where the curriculum merges them, so high word overlap is not proof.",
+ "generatedFrom": "lessonTitleEn vs KB_LESSONS titleEn, constrained to the unit number the book prints",
+ "entries": [
+  {
+   "sourceId": "math-s2-student-book",
+   "unit": 1,
+   "lesson": 1,
+   "bookTitleEn": "Solving Special Equations",
+   "kbLessonId": null,
+   "score": 0.5,
+   "candidates": [
+    {
+     "id": "kbl-math-s1-nccd-u1_l1",
+     "titleEn": "Solving a System: Linear and Quadratic Equations",
+     "score": 0.5
+    },
+    {
+     "id": "kbl-math-s1-nccd-u1_l2",
+     "titleEn": "Solving a System of Two Quadratic Equations",
+     "score": 0.5
+    }
+   ],
+   "matchedBy": null,
+   "why": "The book opens unit 1 with a lesson the curriculum does not carry, which is why every later unit-1 lesson sits one place lower in the curriculum than the number the book prints. Left unmatched rather than forced onto a neighbour."
+  },
+  {
+   "sourceId": "math-s2-student-book",
+   "unit": 1,
+   "lesson": 2,
+   "bookTitleEn": "Solving a System of Linear and Quadratic Equations",
+   "kbLessonId": "kbl-math-s1-nccd-u1_l1",
+   "score": 1,
+   "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "math-s2-student-book",
+   "unit": 1,
+   "lesson": 3,
+   "bookTitleEn": "Solving a System of Two Quadratic Equations",
+   "kbLessonId": "kbl-math-s1-nccd-u1_l2",
+   "score": 1,
+   "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "math-s2-student-book",
+   "unit": 2,
+   "lesson": 4,
+   "bookTitleEn": "Equation of a Circle",
+   "kbLessonId": "kbl-math-s1-nccd-u2_l4",
+   "score": 1,
+   "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "math-s2-student-book",
+   "unit": 3,
+   "lesson": 1,
+   "bookTitleEn": "Trigonometric Ratios",
+   "kbLessonId": "kbl-math-s1-nccd-u3_l1",
+   "score": 1,
+   "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "math-s2-student-book",
+   "unit": 3,
+   "lesson": 2,
+   "bookTitleEn": "Trigonometric Ratios for Angles between 0º and 360º",
+   "kbLessonId": "kbl-math-s1-nccd-u3_l2",
+   "score": 0.55,
+   "why": "النسب المثلثية للزوايا ضمن الدورة الواحدة — a full rotation is 0º–360º",
+   "matchedBy": "hand-checked against the curriculum Arabic title"
+  },
+  {
+   "sourceId": "math-s2-student-book",
+   "unit": 3,
+   "lesson": 3,
+   "bookTitleEn": "Graphing Trigonometric Functions",
+   "kbLessonId": "kbl-math-s1-nccd-u3_l3",
+   "score": 1,
+   "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "math-s2-student-book",
+   "unit": 4,
+   "lesson": 1,
+   "bookTitleEn": "Bearing",
+   "kbLessonId": "kbl-math-s1-nccd-u4_l1",
+   "score": 0.5,
+   "why": "الاتجاه من الشمال (Bearing) — same lesson, the curriculum keeps the English word",
+   "matchedBy": "hand-checked against the curriculum Arabic title"
+  },
+  {
+   "sourceId": "math-s1-student-book",
+   "unit": 5,
+   "lesson": 1,
+   "bookTitleEn": "Polynomial Functions",
+   "kbLessonId": "kbl-math-s2-nccd-u5_l1",
+   "score": 0.33,
+   "why": "اقترانات كثيرات الحدود = polynomial functions",
+   "matchedBy": "hand-checked against the curriculum Arabic title"
+  },
+  {
+   "sourceId": "math-s1-student-book",
+   "unit": 5,
+   "lesson": 2,
+   "bookTitleEn": "Rational Functions",
+   "kbLessonId": "kbl-math-s2-nccd-u5_l2",
+   "score": 0.33,
+   "why": "قسمة كثيرات الحدود والاقترانات النسبية = dividing polynomials and rational functions",
+   "matchedBy": "hand-checked against the curriculum Arabic title"
+  },
+  {
+   "sourceId": "math-s1-student-book",
+   "unit": 5,
+   "lesson": 4,
+   "bookTitleEn": "Inverse Function",
+   "kbLessonId": "kbl-math-s2-nccd-u5_l4",
+   "score": 0.67,
+   "why": "الاقتران العكسي = the inverse function. NOT u5_l3, which the English matcher preferred at 0.67 — that lesson merges composition, inverse and radical",
+   "matchedBy": "hand-checked against the curriculum Arabic title"
+  },
+  {
+   "sourceId": "math-s1-student-book",
+   "unit": 6,
+   "lesson": 1,
+   "bookTitleEn": "Estimating Slope",
+   "kbLessonId": "kbl-math-s2-nccd-u6_l1",
+   "score": 0.8,
+   "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "math-s1-student-book",
+   "unit": 6,
+   "lesson": 2,
+   "bookTitleEn": "Differentiation",
+   "kbLessonId": "kbl-math-s2-nccd-u6_l2",
+   "score": 1,
+   "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "math-s1-student-book",
+   "unit": 6,
+   "lesson": 3,
+   "bookTitleEn": "Maximum and Minimum Values",
+   "kbLessonId": "kbl-math-s2-nccd-u6_l3",
+   "score": 1,
+   "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "math-s1-student-book",
+   "unit": 7,
+   "lesson": 1,
+   "bookTitleEn": "Vectors in the Coordinate Plane",
+   "kbLessonId": "kbl-math-s2-nccd-u7_l1",
+   "score": 1,
+   "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "math-s1-student-book",
+   "unit": 7,
+   "lesson": 2,
+   "bookTitleEn": "Adding and Subtracting Vectors",
+   "kbLessonId": "kbl-math-s2-nccd-u7_l2",
+   "score": 0.33,
+   "why": "جمع المتجهات وطرحها = vector addition and subtraction",
+   "matchedBy": "hand-checked against the curriculum Arabic title"
+  },
+  {
+   "sourceId": "math-s1-student-book",
+   "unit": 8,
+   "lesson": 1,
+   "bookTitleEn": "Scatter Graphs",
+   "kbLessonId": "kbl-math-s2-nccd-u8_l1",
+   "score": 1,
+   "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "math-s1-student-book",
+   "unit": 8,
+   "lesson": 2,
+   "bookTitleEn": "Cumulative Frequency Graph",
+   "kbLessonId": "kbl-math-s2-nccd-u8_l2",
+   "score": 1,
+   "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "math-s1-student-book",
+   "unit": 8,
+   "lesson": 5,
+   "bookTitleEn": "Probability of Independent and Dependent Events",
+   "kbLessonId": "kbl-math-s2-nccd-u8_l5",
+   "score": 0,
+   "why": "احتمالات الحوادث المستقلة والحوادث غير المستقلة = independent and dependent events",
+   "matchedBy": "hand-checked against the curriculum Arabic title"
+  }
+ ],
+ "unitNumbering": "The curriculum's `u{n}_l{m}` matches the number the book PRINTS in every unit except unit 1, where the book has an extra opening lesson («حل معادلات خاصة») and the rest shift by one. Semester 1 prints units 5-8 and semester 2 prints 1-4, so the printed number — not a sequence index and not the semester tag — is what joins the two."
+}
