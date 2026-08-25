@@ -470,18 +470,15 @@ export default function LessonPlanScreen() {
         />
       )}
 
-      {result && !loading && (
-        <>
-          <FeedbackWidget materialType="lesson" toolId={isSimplify ? 'simplify' : 'lesson-plan'} />
-          <RelatedResourcesPanel
-            toolId={isSimplify ? 'simplify' : 'lesson-plan'}
-            topic={topic.trim()}
-            isRTL={isRTL}
-          />
-        </>
-      )}
-
-      {/* Save + Regenerate */}
+      {/*
+        Actions come before the feedback and related-resources panels, not
+        after. They used to be the last thing in the scroll: a teacher who had
+        just generated a plan had to scroll the whole plan, then past "rate
+        this", then past a related-resources list, before reaching Save. The
+        controls were there the entire time — the 23 Aug review reported them
+        missing, which is what "present but past two other panels" looks like
+        from the outside. `slides.tsx` already ordered it this way.
+      */}
       {result && !loading && (
         <View style={{ marginHorizontal: 20, gap: 10, marginTop: 4, marginBottom: 20 }}>
           {/* Save button */}
@@ -548,6 +545,17 @@ export default function LessonPlanScreen() {
             <Text style={[styles.regenText, { color: ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>{t('regenerateBtn')}</Text>
           </Pressable>
         </View>
+      )}
+
+      {result && !loading && (
+        <>
+          <FeedbackWidget materialType="lesson" toolId={isSimplify ? 'simplify' : 'lesson-plan'} />
+          <RelatedResourcesPanel
+            toolId={isSimplify ? 'simplify' : 'lesson-plan'}
+            topic={topic.trim()}
+            isRTL={isRTL}
+          />
+        </>
       )}
     </ScrollView>
 
