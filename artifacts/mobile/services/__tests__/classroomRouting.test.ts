@@ -140,6 +140,22 @@ describe('applyClassroomSetup', () => {
     teacherPreparation: 'اطبع 3 حلول خاطئة مسبقًا. اطلب من الطلاب العمل في ثنائيات.',
   };
 
+  it('survives a generation that omitted materials entirely', () => {
+    // `materials` is model output, and the server's usability check requires
+    // only activityName + slides — so a deck can arrive without it. This used
+    // to reach `.some` on undefined and throw, and the builder reports any
+    // throw as «تعذر إتمام العملية»: a complete, usable deck thrown away on
+    // its way to the projector over a field nobody was going to read.
+    const noMaterials = {
+      activityType: 'escape-challenge',
+      teacherPreparation: 'رتّب الطلاب في مجموعات.',
+    } as unknown as typeof boardActivity;
+
+    const out = applyClassroomSetup(noMaterials, 'screen', true);
+    assert.ok(Array.isArray(out.materials), 'materials must come back a list');
+    assert.ok(out.materials.length > 0, 'the projector line is still added');
+  });
+
   it('leaves a board-only room exactly as the generator wrote it', () => {
     // Board is what these activities were authored for, so "no screen" must
     // never quietly drop something the teacher is about to need.

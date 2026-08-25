@@ -5687,3 +5687,49 @@ detector.
 Re-running extraction leaves **every one of the 60 PNGs byte-identical**, so
 the diff is metadata only. `build:web` exports 58 figures, 4 of them
 chemistry.
+
+## Every generation failed on a cold API, and the fallback was suppressed, 2026-08-25
+
+Reported from the deployed site: «بطاقة الخروج», «تحقق سريع» and «تحدي الهروب»
+all failed with «تعذر إتمام العملية. حاول مرة أخرى.» — three different activity
+types, one identical dead end.
+
+**The fallback that exists for exactly this was being skipped.** `postJSON`
+enforced its 18s ceiling by calling `controller.abort()`, so a timeout reached
+`generateWithProvenance` as an `AbortError` — indistinguishable from the
+teacher pressing Cancel. That branch deliberately refuses to substitute mock
+content (answering "stop" with a fabricated worksheet is the substitution the
+module exists to prevent), so it rethrew, the builder caught, and the teacher
+got an error with nothing behind it.
+
+**And the ceiling guaranteed the timeout.** `iqraa-api` is a free Render
+service: it sleeps after ~15 minutes idle and takes 30-60s to answer the first
+request after that — `render.yaml` says so in its own header. 18s is below that
+floor, so the first generation of any session timed out, was classified as a
+cancellation, and failed with no fallback. Every tool, every activity type,
+every time the API had gone to sleep. The timeout is now a `TimeoutError`
+(name, not class — the check is name-based) and the ceiling is 45s.
+
+**A second crash on the same path**, found while confirming the first:
+`applyClassroomSetup` called `.some` on `activity.materials`, but `materials`
+is model output and the server's usability check requires only `activityName`
+and `slides` (`REQUIRED_FIELDS['classroom-activity']`). A generation that
+omitted it threw *after* a successful API call — a complete, usable deck
+discarded on its way to the projector over a field nobody reads. It tolerates
+a missing list now.
+
+Ruled out first: the mock generator builds all seven activity types cleanly
+(escape 13 slides, quick-check 6, error-detective 8, exit-ticket 5, bingo 10,
+relay 6, gallery-walk 7), so the fallback would have produced a deck had it
+been reached.
+
+**Not verified:** the API could not be reached from the sandbox the diagnosis
+was done in (the agent proxy 403s both Render hosts), so neither fault was
+observed live — both are read off the code path, and the fixes are unit-tested
+rather than confirmed against the running system. If «تعذر إتمام العملية»
+survives this, it is a third cause, not these two.
+
+**Worth noting for whoever sees it next:** `builder.tsx` catches with a bare
+`catch {}` and shows one generic string, which is why three different faults
+looked like one. The diagnosis took a code read because the screen carried no
+information at all.

@@ -161,9 +161,15 @@ export function applyClassroomSetup<
     };
   }
   const projector = isAr ? PROJECTOR_AR : PROJECTOR_EN;
-  const alreadyThere = activity.materials.some(m => /شاشة|بروجكتر|projector|screen/i.test(m));
+  // `materials` is model output and the server's usability check does not
+  // require it — REQUIRED_FIELDS['classroom-activity'] is activityName + slides
+  // only. A generation that omits it used to reach `.some` on undefined and
+  // throw here, which the builder reports as «تعذر إتمام العملية»: a complete,
+  // usable deck discarded on its way to the screen over a cosmetic field.
+  const materials = Array.isArray(activity.materials) ? activity.materials : [];
+  const alreadyThere = materials.some(m => /شاشة|بروجكتر|projector|screen/i.test(m));
   return alreadyThere
     ? activity
-    : { ...activity, materials: [projector, ...activity.materials] };
+    : { ...activity, materials: [projector, ...materials] };
 }
 
