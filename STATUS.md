@@ -221,6 +221,60 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The seed deploys itself now, 2026-08-25
+
+Production went live with `level_scales` empty. Nothing had ever run
+`seed-assessment.mjs` against it — the same gap as the schema, one layer up.
+
+The failure that exposed it was three screens from its cause. `POST
+/evaluations` looked up the system default scale, found none, and stored
+`level_scale_id = null` without complaining. The evaluation was created, the
+questions generated, the exam published — and only at answer entry did
+attempt creation refuse: **"No level scale is configured for this
+evaluation."** Every step in between reported success.
+
+**Two fixes, and the second is the one that matters.**
+
+- `POST /evaluations` now returns 409 `no_level_scale` instead of storing a
+  null scale. An error belongs where its cause is.
+- The API's `startCommand` runs the seed before the server, on **every boot**.
+  It is idempotent and matches on natural keys, so re-running never duplicates
+  and never overwrites a school's edited thresholds.
+
+**The seed could not run on a server until now**, which is why it never had.
+It began `delete process.env.DATABASE_URL` then forced the repo-root `.env` —
+correct locally, where the point is that a stale shell variable must not aim a
+seed at the wrong database, and fatal on Render, where there is no `.env` and
+the environment *is* the configuration. It now forces the file only when the
+file exists. Both directions were checked: with a `.env` present a deliberately
+bogus `DATABASE_URL` in the shell was ignored, and with no `.env` the
+environment was used.
+
+**A seed failure stops the boot rather than being swallowed.** That is the
+intended trade. Every route needs the database anyway, so a server that cannot
+reach it has nothing to serve — and a silent half-configured start is precisely
+what produced this bug.
+
+**Verified**: `pnpm --filter @workspace/db run seed:assessment`, the exact
+command the start line runs, against a worktree with no `.env` and the URL in
+the environment. The guard was tested both ways against a running API —
+`201` with a default scale present, `409 no_level_scale` with it switched off,
+and the local scale restored afterwards.
+
+175 api-server tests, 772 mobile, 0 failures.
+
+**Production still needs the seed run by hand once**, because the fix only
+takes effect on the next deploy and the rows are already missing. The SQL is
+the same four statements the script performs; the backfill matters as much as
+the insert, since evaluations already created carry a null scale and will keep
+refusing until it is filled in:
+
+```sql
+UPDATE evaluations
+SET level_scale_id = (SELECT id FROM level_scales WHERE scope = 'system' AND is_default = true LIMIT 1)
+WHERE level_scale_id IS NULL;
+```
+
 ## Marking is reachable from the class, 2026-08-24
 
 Everything built today — hand marking, paper exams, next steps, class gaps —
