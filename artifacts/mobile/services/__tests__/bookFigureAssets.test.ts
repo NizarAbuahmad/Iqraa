@@ -53,9 +53,12 @@ describe('bookFigureAssets', () => {
     }
   });
 
-  it('bundles nothing unreachable — no chemistry, no unmapped figure', () => {
-    // 63 figures were extracted; only the mapped ones are worth downloading.
-    assert.ok(generatedKeys().every(k => !k.startsWith('chem-')));
-    assert.equal(generatedKeys().length, 54);
+  it('bundles nothing unreachable — no unmapped figure', () => {
+    // 60 figures were extracted; only the mapped ones are worth downloading.
+    // Chemistry's four became reachable once the opener detector learned its
+    // layout; the two maths figures that remain unmapped belong to a book
+    // lesson the curriculum does not carry.
+    assert.equal(generatedKeys().length, 58);
+    assert.equal(generatedKeys().filter(k => k.startsWith('chem-')).length, 4);
   });
 });

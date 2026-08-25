@@ -11,10 +11,11 @@
     417.6,
     778.0
    ],
-   "unit": null,
-   "lesson": null,
+   "unit": 1,
+   "lesson": 2,
    "lessonTitleEn": null,
-   "lessonStartPage": null
+   "lessonTitleAr": "ِالنموذجُ الميكانيكيُّ الموجيُّ للذرَّة",
+   "lessonStartPage": 20
   },
   {
    "file": "p042.png",
@@ -26,10 +27,11 @@
     494.3,
     389.1
    ],
-   "unit": null,
-   "lesson": null,
+   "unit": 2,
+   "lesson": 2,
    "lessonTitleEn": null,
-   "lessonStartPage": null
+   "lessonTitleAr": "الخصائصُ الدوريةُ للعناصر",
+   "lessonStartPage": 39
   },
   {
    "file": "p048.png",
@@ -41,10 +43,11 @@
     435.4,
     771.2
    ],
-   "unit": null,
-   "lesson": null,
+   "unit": 2,
+   "lesson": 2,
    "lessonTitleEn": null,
-   "lessonStartPage": null
+   "lessonTitleAr": "الخصائصُ الدوريةُ للعناصر",
+   "lessonStartPage": 39
   },
   {
    "file": "p072.png",
@@ -56,10 +59,11 @@
     419.0,
     721.7
    ],
-   "unit": null,
-   "lesson": null,
+   "unit": 3,
+   "lesson": 2,
    "lessonTitleEn": null,
-   "lessonStartPage": null
+   "lessonTitleAr": "ِ الصيغُ الكيميائيةُ وخصائصُ املُركَّبات",
+   "lessonStartPage": 61
   }
  ]
 }

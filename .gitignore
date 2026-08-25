@@ -69,3 +69,6 @@ eval-out/
 
 # Claude Code local state
 .claude/
+
+# Byte-compiled helpers for scripts/ — regenerated on every run.
+scripts/__pycache__/

@@ -5634,3 +5634,56 @@ The 2026-08-25 extraction entry above claimed "semester 1 prints units 5–8;
 semester 2 prints 1–4". That was the filename talking, and it is now corrected
 in place. The unit numbering itself was never the problem — the books really
 do print 1–8 across the year.
+
+## Chemistry's figures are placed now, 2026-08-25
+
+The chemistry book yielded no outline at all, so its four figures sat
+extracted and unreachable. It has one now — 3 units × 2 lessons, matching
+`KB_LESSONS` exactly — and the figures are joined to their lessons. 58 of the
+60 extracted figures now ship, up from 54.
+
+Every fix below was found by running the detector over the book and counting,
+not by reading it. The maths outline is asserted byte-identical throughout.
+
+### Four reasons it found nothing
+
+- **«الدرس» usually carries a fused vowel mark** — `ُالدرس` — so an exact
+  string comparison matched only pages that happened to also emit a clean
+  copy of the span. That was 1 opener in 6. Compared bare now.
+- **One opener sets «الدرس» at y=77** where its siblings use 47, so a `< 60`
+  ceiling found five of six. The ceiling is 90; the *number* band stays tight,
+  since that is what distinguishes an opener from a page merely mentioning
+  the word.
+- **The chemistry book has no running «الوحدة N» header at all.** Maths
+  repeats the unit on every page; chemistry states it only on unit openers.
+  The header search was therefore matching the *next* unit's opener, which
+  falls inside the last lesson of each unit — labelling «النموذج الميكانيكي
+  الموجي» (unit 1) as unit 2, every unit's final lesson one too high. Openers
+  are now skipped during the header search, and a book with no header takes
+  its unit from the last opener at or before the lesson.
+- **What sits in the English-title band is a SECTION heading.** Chemistry's
+  first section — «الخصائص الفيزيائية للمركبات الأيونية» / "Physical
+  Properties of Ionic Compounds" — sits under a lesson actually called «الصيغ
+  الكيميائية وخصائص المركبات». An English line sharing that band with Arabic
+  is refused, and chemistry is identified by its Arabic title instead, which
+  matches the curriculum's word for word.
+
+### A widening that cost 14 titles
+
+Reaching for chemistry's English title, the band went from `< 115` to
+`< 140`. Chemistry gained nothing — it prints its English lesson title at
+10pt, letter-spaced, and not on every opener — while maths **silently lost 14
+of 32 titles**, because the wider band caught Arabic body text and the
+section-heading rule then rejected the line. Caught by diffing the maths
+outline against a snapshot taken before the change. The ceiling is back at
+115.
+
+That snapshot is the method worth keeping: capture the known-good outline
+first, then require it byte-identical after every change to a shared
+detector.
+
+### Verified
+
+Re-running extraction leaves **every one of the 60 PNGs byte-identical**, so
+the diff is metadata only. `build:web` exports 58 figures, 4 of them
+chemistry.

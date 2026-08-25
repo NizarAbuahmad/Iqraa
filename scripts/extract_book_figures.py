@@ -117,6 +117,37 @@ def _spans(page: pymupdf.Page):
                 yield span
 
 
+# Arabic combining marks (harakat) and the tatweel stretch character. PDF text
+# extraction fuses these into the word, so «الدرس» arrives as «ُالدرس» on most
+# pages — invisible in a terminal, fatal to an equality test.
+_MARKS = re.compile(r"[\u064B-\u0652\u0640\u0670]")
+
+
+def _bare(text: str) -> str:
+    """`text` with Arabic diacritics stripped, for comparing a keyword."""
+    return _MARKS.sub("", text).strip()
+
+
+def _dedupe(parts) -> str:
+    """Join spans, dropping the immediate repeats these PDFs emit.
+
+    Every heading appears two or three times in the text layer — once per
+    render pass — so a naive join triples the title.
+    """
+    out: list[str] = []
+    seen: set[str] = set()
+    for t in parts:
+        t = re.sub(r"\s+", " ", t.strip())
+        # Compare bare: the repeats differ only by a stray combining mark, so
+        # an exact test lets «…الهيدروجين» through twice.
+        key = _bare(t)
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        out.append(t)
+    return " ".join(out)
+
+
 def lesson_start(page: pymupdf.Page) -> dict | None:
     """A lesson opener: «الدرس» set at 22pt in the top band, its number at 45pt,
     and titles beneath.
@@ -130,9 +161,26 @@ def lesson_start(page: pymupdf.Page) -> dict | None:
     at the very top with the number under it; chemistry puts a 58pt number
     first and «الدرس» below the Arabic title. Pinning the tight maths
     coordinates found no chemistry lesson at all.
+
+    Two things the first version got wrong, both found by running it over
+    chemistry and counting rather than by reading it:
+
+    * «الدرس» usually extracts with a vowel mark fused to it — `ُالدرس` — so an
+      exact string comparison matched only the pages that happened to also
+      carry a clean copy of the span. That was 1 opener out of 6. Diacritics
+      are stripped before comparing.
+    * Chemistry states no English lesson title this band can reach — what
+      sits there is its first SECTION heading. Widening the band to find one
+      only nulled 14 maths titles, because the wider band caught Arabic body
+      text. The ceiling stays at 115 and chemistry is identified by its
+      Arabic title instead.
+    * One chemistry opener (unit 3 lesson 2) sets «الدرس» at y=77 where its
+      siblings put it at 47, so a `< 60` ceiling found five of six. The ceiling
+      is 90. The number band is deliberately left tighter: it is what tells an
+      opener apart from a page that merely mentions the word.
     """
     if not any(
-        s["text"].strip() == "\u0627\u0644\u062F\u0631\u0633" and s["size"] >= 20 and s["bbox"][1] < 60
+        _bare(s["text"]) == "\u0627\u0644\u062F\u0631\u0633" and s["size"] >= 20 and s["bbox"][1] < 90
         for s in _spans(page)
     ):
         return None
@@ -141,15 +189,64 @@ def lesson_start(page: pymupdf.Page) -> dict | None:
     # «between 0º and 360º». Keeping only the last span kept only the tail,
     # which then matched nothing at all in the curriculum.
     title_parts: list[tuple[float, float, str]] = []
+    arabic_in_band = False
+    heading_parts: list[tuple[float, float, str]] = []
     for s in _spans(page):
         t = s["text"].strip()
         if s["size"] >= 40 and s["bbox"][1] < 60 and t.translate(ARABIC_DIGITS).isdigit():
             number = int(t.translate(ARABIC_DIGITS))
+        # The Arabic lesson title: the largest text in the very top band. It is
+        # the only identifier chemistry states plainly, and it is what the
+        # curriculum's own lesson titles are written in.
+        if s["size"] >= 24 and s["bbox"][1] < 60 and t and not all(ord(c) < 0x0600 for c in t):
+            heading_parts.append((round(s["bbox"][1], 1), s["bbox"][0], t))
         if 13 <= s["size"] <= 20 and 60 < s["bbox"][1] < 115:
-            if t and all(ord(c) < 0x0600 for c in t) and len(t) > 3:
+            if not t:
+                continue
+            if all(ord(c) < 0x0600 for c in t) and len(t) > 3:
                 title_parts.append((round(s["bbox"][1], 1), s["bbox"][0], t))
-    title_en = re.sub(r"\s+", " ", " ".join(t for _, _, t in sorted(title_parts))) or None
-    return None if number is None else {"lesson": number, "titleEn": title_en}
+            else:
+                arabic_in_band = True
+
+    # An English line sharing this band with Arabic is a SECTION heading, not
+    # the lesson's name. Maths puts the English lesson title alone there;
+    # chemistry fills the band with its first section — «الخصائص الفيزيائية
+    # للمركبات الأيونية» / "Physical Properties of Ionic Compounds" — under a
+    # lesson actually called «الصيغ الكيميائية وخصائص المركبات». Recording that
+    # as the lesson title is a confident wrong label, so it is refused.
+    title_en = (
+        None
+        if arabic_in_band
+        else re.sub(r"\s+", " ", " ".join(t for _, _, t in sorted(title_parts))) or None
+    )
+    title_ar = _dedupe(t for _, _, t in sorted(heading_parts)) or None
+    return (
+        None
+        if number is None
+        else {"lesson": number, "titleEn": title_en, "titleAr": title_ar}
+    )
+
+
+def unit_start(page: pymupdf.Page) -> int | None:
+    """The unit number if this page is a UNIT opener, else None.
+
+    Both books announce a unit the same way: «الوحدة» set large in the top
+    band with the number larger still beside it. Maths then repeats the unit
+    in a running header on every page; chemistry does not repeat it anywhere,
+    which is why these pages are the only record of it there.
+    """
+    if not any(
+        _bare(s["text"]) == "\u0627\u0644\u0648\u062D\u062F\u0629"
+        and s["size"] >= 30
+        and s["bbox"][1] < 60
+        for s in _spans(page)
+    ):
+        return None
+    for s in _spans(page):
+        t = _bare(s["text"])
+        if s["size"] >= 60 and s["bbox"][1] < 130 and t.translate(ARABIC_DIGITS).isdigit():
+            return int(t.translate(ARABIC_DIGITS))
+    return None
 
 
 def outline(doc: pymupdf.Document) -> dict[int, dict]:
@@ -181,13 +278,34 @@ def outline(doc: pymupdf.Document) -> dict[int, dict]:
     if len(lessons) < 3:
         return {}
 
+    # Unit openers, which are the only statement of the unit in a book without
+    # a running header.
+    openers = {n + 1: u for n in range(len(doc)) if (u := unit_start(doc[n])) is not None}
+
     for i, lesson in enumerate(lessons):
         end = lessons[i + 1]["startPage"] if i + 1 < len(lessons) else len(doc) + 1
         for p in range(lesson["startPage"], end):
+            # Never read the header off a unit OPENER inside this lesson's
+            # span. A lesson runs up to the next lesson, which in the last
+            # lesson of a unit means it also contains the NEXT unit's opener —
+            # and reading the number there labelled chemistry's «النموذج
+            # الميكانيكي الموجي» (unit 1) as unit 2, every unit's last lesson
+            # one too high. Maths hides this: its running header is on every
+            # ordinary page, so the loop breaks long before reaching an opener.
+            if p in openers:
+                continue
             m = UNIT_HEADER.search(doc[p - 1].get_text())
             if m:
                 lesson["unit"] = int(m.group(1).translate(ARABIC_DIGITS))
                 break
+
+    # Books with no running header at all — chemistry — get the unit from the
+    # last opener at or before the lesson.
+    for lesson in lessons:
+        if lesson["unit"] is None:
+            before = [p for p in openers if p <= lesson["startPage"]]
+            if before:
+                lesson["unit"] = openers[max(before)]
 
     by_page: dict[int, dict] = {}
     for i, lesson in enumerate(lessons):
@@ -361,6 +479,10 @@ def main() -> None:
                     "unit": lesson["unit"] if lesson else None,
                     "lesson": lesson["lesson"] if lesson else None,
                     "lessonTitleEn": lesson["titleEn"] if lesson else None,
+                    # Chemistry states no English lesson title the opener band
+                    # can reach, so the Arabic one is its only identifier — and
+                    # it is what the curriculum's titles are written in anyway.
+                    "lessonTitleAr": lesson.get("titleAr") if lesson else None,
                     "lessonStartPage": lesson["startPage"] if lesson else None,
                 }
             )

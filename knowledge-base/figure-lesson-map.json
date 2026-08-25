@@ -3,6 +3,36 @@
  "generatedFrom": "lessonTitleEn vs KB_LESSONS titleEn, constrained to the unit number the book prints",
  "entries": [
   {
+   "sourceId": "chem-s1-student-book",
+   "unit": 1,
+   "lesson": 2,
+   "bookTitleAr": "النموذج الميكانيكي الموجي للذرة",
+   "kbLessonId": "kbl-chem-s1-nccd-u1_l2",
+   "score": 1.0,
+   "matchedBy": "arabic-title",
+   "why": "Chemistry is joined on the Arabic title, which matches the curriculum's word for word — the book states no English lesson title the opener band can reach, and what sits there is its first SECTION heading. The unit and lesson numbers agree independently: the book prints 3 units of 2 lessons and the curriculum carries exactly u1_l1..u3_l2."
+  },
+  {
+   "sourceId": "chem-s1-student-book",
+   "unit": 2,
+   "lesson": 2,
+   "bookTitleAr": "الخصائص الدورية للعناصر",
+   "kbLessonId": "kbl-chem-s1-nccd-u2_l2",
+   "score": 1.0,
+   "matchedBy": "arabic-title",
+   "why": "Chemistry is joined on the Arabic title, which matches the curriculum's word for word — the book states no English lesson title the opener band can reach, and what sits there is its first SECTION heading. The unit and lesson numbers agree independently: the book prints 3 units of 2 lessons and the curriculum carries exactly u1_l1..u3_l2."
+  },
+  {
+   "sourceId": "chem-s1-student-book",
+   "unit": 3,
+   "lesson": 2,
+   "bookTitleAr": "الصيغ الكيميائية وخصائص المركبات",
+   "kbLessonId": "kbl-chem-s1-nccd-u3_l2",
+   "score": 1.0,
+   "matchedBy": "arabic-title",
+   "why": "Chemistry is joined on the Arabic title, which matches the curriculum's word for word — the book states no English lesson title the opener band can reach, and what sits there is its first SECTION heading. The unit and lesson numbers agree independently: the book prints 3 units of 2 lessons and the curriculum carries exactly u1_l1..u3_l2."
+  },
+  {
    "sourceId": "math-s1-student-book",
    "unit": 1,
    "lesson": 1,
