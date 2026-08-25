@@ -156,8 +156,13 @@ export default function ActivityScreen() {
     const title = getExportTitle();
     const formState = { gradeIdx, subjectIdx, topic: topic.trim(), activityTypeIdx, durationIdx, objective };
 
-    if (savedId) {
-      await updateItem(savedId, {
+    // `updateItem` answers false when the material is no longer there — the
+    // teacher deleted it from موادي while this screen still held its id. The
+    // return value used to be dropped, so the button reported "تم التحديث"
+    // over a material that no longer existed and the work was never saved
+    // again. Folding the call into the condition makes a failed update fall
+    // through to creating a fresh one, which is what pressing Save meant.
+    if (savedId && (await updateItem(savedId, {
         title,
         subject: subjects[subjectIdx].name,
         grade: grades[gradeIdx].name,
@@ -165,7 +170,7 @@ export default function ActivityScreen() {
         language: lang,
         content: JSON.stringify(result),
         formState,
-      });
+      }))) {
       setSaveLabel('updated');
     } else {
       const saved = await saveItem({
