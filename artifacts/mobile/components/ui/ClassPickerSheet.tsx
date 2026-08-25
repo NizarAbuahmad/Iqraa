@@ -1,9 +1,17 @@
 /**
- * "Which class is this for?" — shown right after a material is saved.
+ * "Which class is this for?" — the one place a material's class is chosen.
  *
  * Asking here rather than adding a class field to every generator form: there
  * are seven save sites and they all have crowded layouts, but they all end the
  * same way, with an id in hand. One sheet, opened on that id, covers them all.
+ *
+ * It used to be strictly one-shot: opened once on first save, no current
+ * selection shown, no way to clear. So a teacher who picked the wrong class had
+ * no route back — the sheet never reopened, the screen never said which class
+ * the material went to, and the class screen's attach list deliberately hides
+ * already-attached materials, so the other class could not claim it either. The
+ * only exit was Remove, buried in the old class's الموارد tab. It now takes the
+ * current selection and can clear it, and `MaterialClassField` reopens it.
  *
  * Two behaviours worth knowing before reusing this:
  *
@@ -23,6 +31,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { listClasses, type ClassGroup } from '@/services/roster';
+import { className } from '@/services/materialClass';
 import { countStudents } from '@/services/i18n';
 
 const ACCENT = '#1B6B62';
@@ -31,6 +40,8 @@ export function ClassPickerSheet({
   visible,
   onClose,
   onPick,
+  selectedClassId = null,
+  onClear,
 }: {
   visible: boolean;
   /** Dismissed, or nothing to choose from. The material stays unattached. */
@@ -40,6 +51,14 @@ export function ClassPickerSheet({
    * active language so callers do not each repeat the nameAr fallback.
    */
   onPick: (classId: string, displayName: string) => void;
+  /** The class this material is in already, ticked and named as the current one. */
+  selectedClassId?: string | null;
+  /**
+   * Take the material out of its class. The row only appears when there is a
+   * selection to undo — "remove from class" on an unfiled material is an
+   * action with no effect, offered to someone who did not ask for it.
+   */
+  onClear?: () => void;
 }) {
   const colors = useColors();
   const { t, isRTL, lang } = useLanguage();
@@ -83,7 +102,7 @@ export function ClassPickerSheet({
               { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align },
             ]}
           >
-            {t('saveToClassTitle')}
+            {selectedClassId ? t('changeClassTitle') : t('saveToClassTitle')}
           </Text>
           <Text
             style={[
@@ -102,17 +121,27 @@ export function ClassPickerSheet({
               keyExtractor={c => c.id}
               style={{ maxHeight: 300 }}
               contentContainerStyle={{ gap: 8 }}
-              renderItem={({ item }) => (
+              renderItem={({ item }) => {
+                const current = item.id === selectedClassId;
+                return (
                 <Pressable
-                  onPress={() =>
-                    onPick(item.id, lang === 'ar' && item.nameAr ? item.nameAr : item.name)
-                  }
+                  onPress={() => (current ? onClose() : onPick(item.id, className(item, lang)))}
                   style={[
                     styles.row,
-                    { borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' },
+                    {
+                      borderColor: current ? ACCENT : colors.border,
+                      backgroundColor: current ? ACCENT + '12' : 'transparent',
+                      flexDirection: isRTL ? 'row-reverse' : 'row',
+                    },
                   ]}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: current }}
                 >
-                  <Ionicons name="people-outline" size={18} color={ACCENT} />
+                  <Ionicons
+                    name={current ? 'checkmark-circle' : 'people-outline'}
+                    size={18}
+                    color={ACCENT}
+                  />
                   <View style={{ flex: 1 }}>
                     <Text
                       style={{
@@ -122,7 +151,7 @@ export function ClassPickerSheet({
                       }}
                       numberOfLines={1}
                     >
-                      {lang === 'ar' && item.nameAr ? item.nameAr : item.name}
+                      {className(item, lang)}
                     </Text>
                     <Text
                       style={{
@@ -136,9 +165,34 @@ export function ClassPickerSheet({
                     </Text>
                   </View>
                 </Pressable>
-              )}
+                );
+              }}
             />
           )}
+
+          {/* Only with something to undo — see `onClear`. */}
+          {!loading && selectedClassId && onClear ? (
+            <Pressable
+              onPress={onClear}
+              style={[
+                styles.row,
+                { borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' },
+              ]}
+              accessibilityRole="button"
+            >
+              <Ionicons name="close-circle-outline" size={18} color={colors.mutedForeground} />
+              <Text
+                style={{
+                  color: colors.mutedForeground,
+                  fontFamily: 'Cairo_500Medium',
+                  flex: 1,
+                  textAlign: align,
+                }}
+              >
+                {t('removeFromClass')}
+              </Text>
+            </Pressable>
+          ) : null}
 
           <View style={styles.actions}>
             <Pressable onPress={onClose} style={styles.btn}>
