@@ -126,7 +126,7 @@ import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { ClassPickerSheet, type ClassPick } from '@/components/ui/ClassPickerSheet';
 import { describeAttachResult } from '@/services/classAttach';
 import type { Lang } from '@/services/i18n';
-import { attachToClasses, saveItem, updateItem } from '@/services/workspace';
+import { attachToClasses, getItem, saveItem, updateItem } from '@/services/workspace';
 import {
   canPresentArtifact,
   deckForArtifact,
@@ -1118,6 +1118,12 @@ export default function IqraScreen() {
    * have, and the reason the sheet is opened on an id rather than on a message.
    */
   const [classPromptFor, setClassPromptFor] = useState<string | null>(null);
+  /**
+   * The class that material is already in, so the sheet opens on its current
+   * answer rather than asking from scratch. Null means unfiled — which is also
+   * what a class deleted since is resolved to, rather than a stale name.
+   */
+  const [classPromptCurrent, setClassPromptCurrent] = useState<string | null>(null);
   /** Message whose save is in flight — its action row is disabled meanwhile. */
   const [materialBusyId, setMaterialBusyId] = useState<string | null>(null);
   const [loadingPDF, setLoadingPDF] = useState(false);
@@ -1276,21 +1282,46 @@ export default function IqraScreen() {
     setMaterialBusyId(message.id);
     try {
       const id = message.savedMaterialId ?? await saveMessageMaterial(message);
-      if (id) setClassPromptFor(id);
+      if (!id) return;
+      // Read the class it is in before asking, so a second tap offers to move
+      // or remove it instead of re-asking a question already answered.
+      let current: string | null = null;
+      try {
+        current = (await getItem(id))?.classGroupId ?? null;
+      } catch {
+        // Offline: the sheet opens with nothing ticked, which is honest — it
+        // could not confirm a class, so it claims none.
+      }
+      setClassPromptCurrent(current);
+      setClassPromptFor(id);
     } finally {
       setMaterialBusyId(null);
     }
   }, [materialBusyId, saveMessageMaterial]);
 
+  const closeClassPrompt = useCallback(() => {
+    setClassPromptFor(null);
+    setClassPromptCurrent(null);
+  }, []);
+
   const attachMaterialToClass = useCallback(async (picks: ClassPick[]) => {
     const materialId = classPromptFor;
-    setClassPromptFor(null);
+    closeClassPrompt();
     if (!materialId || picks.length === 0) return;
-    // One column, many classes: the extras become copies. See attachToClasses.
+    // One column, many classes: the first keeps it, the rest get copies.
     const outcome = await attachToClasses(materialId, picks.map(p => p.id));
     showToast(describeAttachResult(outcome, picks, t, lang as Lang));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [classPromptFor, t, lang]);
+  }, [classPromptFor, closeClassPrompt, t, lang]);
+
+  const detachMaterialFromClass = useCallback(async () => {
+    const materialId = classPromptFor;
+    closeClassPrompt();
+    if (!materialId) return;
+    const ok = await updateItem(materialId, { classGroupId: null });
+    showToast(ok ? t('removedFromClass') : t('saveToClassFailed'));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [classPromptFor, closeClassPrompt, t]);
 
   /**
    * Project the material this turn produced.
@@ -2727,8 +2758,11 @@ export default function IqraScreen() {
       />
       <ClassPickerSheet
         visible={classPromptFor !== null}
-        onClose={() => setClassPromptFor(null)}
+        selectedClassId={classPromptCurrent}
+        onClose={closeClassPrompt}
+        multiple
         onPick={picks => { void attachMaterialToClass(picks); }}
+        onClear={() => { void detachMaterialFromClass(); }}
       />
       <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
     </View>

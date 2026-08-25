@@ -42,11 +42,9 @@ import { summarizeVerification } from '@/services/quizVerification';
 import { confirm } from '@/services/confirm';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { timerSecondsForSlide } from '@/services/presentationUtils';
-import { attachToClasses, deleteItem, getAllItems, saveItem, updateItem } from '@/services/workspace';
+import { deleteItem, getAllItems, saveItem, updateItem } from '@/services/workspace';
 import { findMatchingItem } from '@/services/savedMaterialMatch';
-import { ClassPickerSheet, type ClassPick } from '@/components/ui/ClassPickerSheet';
-import { describeAttachResult } from '@/services/classAttach';
-import type { Lang } from '@/services/i18n';
+import { MaterialClassField } from '@/components/ui/MaterialClassField';
 import { buildDeckSlidesHTML, exportAsPDF } from '@/services/share';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
@@ -114,8 +112,6 @@ export default function SlidesScreen() {
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
-  // Holds the new deck's id after saving — that opens the "which class?" sheet.
-  const [classPromptFor, setClassPromptFor] = useState<string | null>(null);
 
   // Per-slide editing — the deck is a draft the teacher owns, not a fixed
   // output. Edits live in the same deck state that Present/Save/PDF read, so
@@ -513,17 +509,8 @@ export default function SlidesScreen() {
   const forgetSaved = () => {
     setSavedId(null);
     savedContentRef.current = '';
-    setClassPromptFor(null);
   };
 
-  const attachToClass = async (picks: ClassPick[]) => {
-    const materialId = classPromptFor;
-    setClassPromptFor(null);
-    if (!materialId || picks.length === 0) return;
-    // One column, many classes: the extras become copies. See attachToClasses.
-    const outcome = await attachToClasses(materialId, picks.map(p => p.id));
-    showToast(describeAttachResult(outcome, picks, t, lang as Lang));
-  };
 
   /**
    * Save, or un-save. The button reads as a bookmark, so it behaves like one:
@@ -566,7 +553,6 @@ export default function SlidesScreen() {
       showToast(t('slidesSaved'));
       // Every save creates a new workspace item — including a re-save after an
       // un-save — so every save asks which class that item belongs to.
-      setClassPromptFor(item.id);
     } finally {
       setSavingBusy(false);
     }
@@ -880,6 +866,9 @@ export default function SlidesScreen() {
               <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 15 }}>{t('presentOnScreen')}</Text>
             </Pressable>
 
+            {/* Which class this deck is for — nothing until it is saved. */}
+            <MaterialClassField materialId={savedId} onToast={showToast} />
+
             <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 10 }}>
               <Pressable
                 onPress={toggleSave}
@@ -1066,11 +1055,6 @@ export default function SlidesScreen() {
         </View>
       </Modal>
 
-      <ClassPickerSheet
-        visible={classPromptFor !== null}
-        onClose={() => setClassPromptFor(null)}
-        onPick={picks => { void attachToClass(picks); }}
-      />
       <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
     </View>
   );

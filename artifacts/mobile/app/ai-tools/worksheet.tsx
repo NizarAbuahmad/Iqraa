@@ -17,11 +17,9 @@ import {
 } from '@/services/curriculumData';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { Button } from '@/components/ui/Button';
-import { attachToClasses, getItem, saveItem, updateItem } from '@/services/workspace';
+import { getItem, saveItem, updateItem } from '@/services/workspace';
 import { useFavorite } from '@/hooks/useFavorite';
-import { ClassPickerSheet, type ClassPick } from '@/components/ui/ClassPickerSheet';
-import { describeAttachResult } from '@/services/classAttach';
-import type { Lang } from '@/services/i18n';
+import { MaterialClassField } from '@/components/ui/MaterialClassField';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
@@ -120,9 +118,6 @@ export default function WorksheetScreen() {
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
   const { favorited, setFavorited, toggle: handleToggleFavorite } =
     useFavorite(savedId, key => showToast(t(key)));
-  // Holds the new material's id after a first save — that opens the "which
-  // class?" sheet. Re-saving an edit does not re-ask.
-  const [classPromptFor, setClassPromptFor] = useState<string | null>(null);
 
   // Prior-knowledge availability for the currently selected lesson (no fabrication)
   const priorKnowledge = (() => {
@@ -265,19 +260,10 @@ export default function WorksheetScreen() {
       });
       setSavedId(saved.id);
       setSaveLabel('saved');
-      setClassPromptFor(saved.id);
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
-  const attachToClass = async (picks: ClassPick[]) => {
-    const materialId = classPromptFor;
-    setClassPromptFor(null);
-    if (!materialId || picks.length === 0) return;
-    // One column, many classes: the extras become copies. See attachToClasses.
-    const outcome = await attachToClasses(materialId, picks.map(p => p.id));
-    showToast(describeAttachResult(outcome, picks, t, lang as Lang));
-  };
 
   const typeLabels: Record<QType, string> = {
     multiple_choice: t('typeMultipleChoice'),
@@ -610,6 +596,9 @@ export default function WorksheetScreen() {
       */}
       {result && !loading && (
         <View style={{ marginHorizontal: 20, gap: 10, marginTop: 8, marginBottom: 20 }}>
+          {/* Which class this material is for — nothing until it is saved. */}
+          <MaterialClassField materialId={savedId ?? null} onToast={showToast} />
+
           <Pressable
             onPress={handleSave}
             style={({ pressed }) => [
@@ -676,11 +665,6 @@ export default function WorksheetScreen() {
       loadingWord={loadingWord}
       loadingSlides={loadingSlides}
       labels={exportLabels}
-    />
-    <ClassPickerSheet
-      visible={classPromptFor !== null}
-      onClose={() => setClassPromptFor(null)}
-      onPick={picks => { void attachToClass(picks); }}
     />
     <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
     </View>

@@ -1,9 +1,17 @@
 /**
- * "Which class is this for?" — shown right after a material is saved.
+ * "Which class is this for?" — the one place a material's class is chosen.
  *
  * Asking here rather than adding a class field to every generator form: there
  * are seven save sites and they all have crowded layouts, but they all end the
  * same way, with an id in hand. One sheet, opened on that id, covers them all.
+ *
+ * It used to be strictly one-shot: opened once on first save, no current
+ * selection shown, no way to clear. So a teacher who picked the wrong class had
+ * no route back — the sheet never reopened, the screen never said which class
+ * the material went to, and the class screen's attach list deliberately hides
+ * already-attached materials, so the other class could not claim it either. The
+ * only exit was Remove, buried in the old class's الموارد tab. It now takes the
+ * current selection and can clear it, and `MaterialClassField` reopens it.
  *
  * Two behaviours worth knowing before reusing this:
  *
@@ -17,15 +25,19 @@
  *   already saved, and a failure dialog about a question the teacher did not
  *   ask is worse than not asking.
  * - **Picking is multi-select and committed by a button.** A teacher teaching
- *   the same lesson to three sections was previously done the moment they
- *   touched a row — one class, sheet gone, no way back except attaching from
- *   inside each class. Selecting is now separate from confirming, so a
- *   mis-tap is recoverable and several sections are one trip.
+ *   the same lesson to three sections was previously finished the moment they
+ *   touched a row, and had to save the material once per section. Selecting is
+ *   now separate from confirming, and the material's current class starts
+ *   ticked so the sheet still opens showing where it already is.
+ *
+ * Clearing stays its own row rather than "untick everything and confirm":
+ * removing a material from its class is not the same gesture as choosing
+ * classes, and an empty confirm reads as a no-op, not as a delete.
  *
  * `saved_materials.class_group_id` holds ONE class, so what the caller does
  * with several is duplicate (see `attachToClasses` in services/workspace.ts).
- * That is why the confirm label and the toast both say copies rather than
- * implying one shared material.
+ * The first stays put and the rest become copies, which is why the toast says
+ * copies rather than implying one shared material.
  */
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -33,6 +45,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { listClasses, type ClassGroup } from '@/services/roster';
+import { className } from '@/services/materialClass';
 import { countStudents } from '@/services/i18n';
 
 const ACCENT = '#1B6B62';
@@ -44,16 +57,36 @@ export function ClassPickerSheet({
   visible,
   onClose,
   onPick,
+  selectedClassId = null,
+  onClear,
+  multiple = false,
 }: {
   visible: boolean;
   /** Dismissed, or nothing to choose from. The material stays unattached. */
   onClose: () => void;
   /**
-   * The teacher confirmed their selection — never empty, and in the order they
-   * appear in the roster. Display names come back resolved for the active
-   * language so callers do not each repeat the nameAr fallback.
+   * The teacher confirmed their selection — never empty, and in roster order.
+   * Display names come back resolved for the active language so callers do not
+   * each repeat the nameAr fallback.
    */
   onPick: (picks: ClassPick[]) => void;
+  /** The class this material is in already, ticked and named as the current one. */
+  selectedClassId?: string | null;
+  /**
+   * Let the teacher tick several classes and commit with a button.
+   *
+   * Off by default, and deliberately not everywhere: a *material* can be
+   * copied into three sections (`attachToClasses` duplicates it), but an
+   * *evaluation* has one class and no copy semantics — offering it checkboxes
+   * would let a teacher tick three and silently keep one.
+   */
+  multiple?: boolean;
+  /**
+   * Take the material out of its class. The row only appears when there is a
+   * selection to undo — "remove from class" on an unfiled material is an
+   * action with no effect, offered to someone who did not ask for it.
+   */
+  onClear?: () => void;
 }) {
   const colors = useColors();
   const { t, isRTL, lang } = useLanguage();
@@ -65,9 +98,10 @@ export function ClassPickerSheet({
     if (!visible) return;
     let cancelled = false;
     setLoading(true);
-    // A fresh material is a fresh question: carrying the last one's ticks over
-    // would attach this one to whatever the previous save happened to pick.
-    setSelected([]);
+    // Seeded from the current class, not carried over: the sheet should open
+    // showing where this material already is, and a fresh material must not
+    // inherit whatever the previous one happened to pick.
+    setSelected(selectedClassId ? [selectedClassId] : []);
     void (async () => {
       let loaded: ClassGroup[] = [];
       try {
@@ -101,7 +135,7 @@ export function ClassPickerSheet({
               { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align },
             ]}
           >
-            {t('saveToClassTitle')}
+            {selectedClassId ? t('changeClassTitle') : t('saveToClassTitle')}
           </Text>
           <Text
             style={[
@@ -121,29 +155,37 @@ export function ClassPickerSheet({
               style={{ maxHeight: 300 }}
               contentContainerStyle={{ gap: 8 }}
               renderItem={({ item }) => {
+                const current = item.id === selectedClassId;
                 const on = selected.includes(item.id);
                 return (
                 <Pressable
-                  onPress={() =>
+                  onPress={() => {
+                    if (!multiple) {
+                      // Single-pick keeps the behaviour it had: tapping the
+                      // class it is already in is a no-op, so just close.
+                      if (current) onClose();
+                      else onPick([{ id: item.id, name: className(item, lang) }]);
+                      return;
+                    }
                     setSelected(cur =>
                       cur.includes(item.id) ? cur.filter(id => id !== item.id) : [...cur, item.id],
-                    )
-                  }
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked: on }}
+                    );
+                  }}
                   style={[
                     styles.row,
                     {
-                      borderColor: on ? ACCENT : colors.border,
-                      backgroundColor: on ? ACCENT + '10' : 'transparent',
+                      borderColor: (multiple ? on : current) ? ACCENT : colors.border,
+                      backgroundColor: (multiple ? on : current) ? ACCENT + '12' : 'transparent',
                       flexDirection: isRTL ? 'row-reverse' : 'row',
                     },
                   ]}
+                  accessibilityRole={multiple ? 'checkbox' : 'button'}
+                  accessibilityState={multiple ? { checked: on } : { selected: current }}
                 >
                   <Ionicons
-                    name={on ? 'checkbox' : 'square-outline'}
-                    size={20}
-                    color={on ? ACCENT : colors.mutedForeground}
+                    name={multiple ? (on ? 'checkbox' : 'square-outline') : (current ? 'checkmark-circle' : 'people-outline')}
+                    size={multiple ? 20 : 18}
+                    color={!multiple || on ? ACCENT : colors.mutedForeground}
                   />
                   <View style={{ flex: 1 }}>
                     <Text
@@ -154,17 +196,19 @@ export function ClassPickerSheet({
                       }}
                       numberOfLines={1}
                     >
-                      {lang === 'ar' && item.nameAr ? item.nameAr : item.name}
+                      {className(item, lang)}
                     </Text>
                     <Text
                       style={{
-                        color: colors.mutedForeground,
+                        color: current ? ACCENT : colors.mutedForeground,
                         fontFamily: 'Almarai_400Regular',
                         fontSize: 12,
                         textAlign: align,
                       }}
                     >
-                      {countStudents(item.studentCount, lang)}
+                      {current
+                        ? `${t('currentClassTag')} · ${countStudents(item.studentCount, lang)}`
+                        : countStudents(item.studentCount, lang)}
                     </Text>
                   </View>
                 </Pressable>
@@ -172,6 +216,30 @@ export function ClassPickerSheet({
               }}
             />
           )}
+
+          {/* Only with something to undo — see `onClear`. */}
+          {!loading && selectedClassId && onClear ? (
+            <Pressable
+              onPress={onClear}
+              style={[
+                styles.row,
+                { borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' },
+              ]}
+              accessibilityRole="button"
+            >
+              <Ionicons name="close-circle-outline" size={18} color={colors.mutedForeground} />
+              <Text
+                style={{
+                  color: colors.mutedForeground,
+                  fontFamily: 'Cairo_500Medium',
+                  flex: 1,
+                  textAlign: align,
+                }}
+              >
+                {t('removeFromClass')}
+              </Text>
+            </Pressable>
+          ) : null}
 
           <View style={[styles.actions, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Pressable onPress={onClose} style={styles.btn}>
@@ -181,11 +249,12 @@ export function ClassPickerSheet({
             </Pressable>
             {/* Disabled rather than hidden: a button that appears once you tick
                 a row gives no hint that ticking is what the sheet wants. */}
+            {multiple ? (
             <Pressable
               onPress={() => {
                 const picks = classes
                   .filter(c => selected.includes(c.id))
-                  .map(c => ({ id: c.id, name: lang === 'ar' && c.nameAr ? c.nameAr : c.name }));
+                  .map(c => ({ id: c.id, name: className(c, lang) }));
                 if (picks.length > 0) onPick(picks);
               }}
               disabled={selected.length === 0}
@@ -205,6 +274,7 @@ export function ClassPickerSheet({
                 {t('saveToClassesConfirm')}
               </Text>
             </Pressable>
+            ) : null}
           </View>
         </View>
       </View>

@@ -15,10 +15,13 @@ import {
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { Button } from '@/components/ui/Button';
-import { attachToClasses, getItem, saveItem, updateItem } from '@/services/workspace';
-import { ClassPickerSheet, type ClassPick } from '@/components/ui/ClassPickerSheet';
-import { describeAttachResult } from '@/services/classAttach';
-import type { Lang } from '@/services/i18n';
+import { getItem, saveItem, updateItem } from '@/services/workspace';
+import { MaterialClassField } from '@/components/ui/MaterialClassField';
+import {
+  ACTIVITY_TYPE_IDS,
+  activityTypeLabel,
+  type ActivityTypeId,
+} from '@/constants/activityType';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
@@ -36,8 +39,7 @@ import {
 
 const ACCENT = '#E67E22';
 const DURATION_VALUES = [20, 30, 45, 60];
-const ACTIVITY_TYPE_IDS = ['individual', 'group', 'discussion', 'hands-on', 'game'] as const;
-type AType = typeof ACTIVITY_TYPE_IDS[number];
+type AType = ActivityTypeId;
 
 export default function ActivityScreen() {
   const colors = useColors();
@@ -54,10 +56,7 @@ export default function ActivityScreen() {
   const gradeNames = grades.map(g => lang === 'ar' ? g.nameAr : g.name);
   const subjectNames = subjects.map(s => lang === 'ar' ? s.nameAr : s.name);
   const durationLabels = DURATION_VALUES.map(d => `${d} ${t('min')}`);
-  const activityTypeLabels = [
-    t('activityTypeIndividual'), t('activityTypeGroup'), t('activityTypeDiscussion'),
-    t('activityTypeHandsOn'), t('activityTypeGame'),
-  ];
+  const activityTypeLabels = ACTIVITY_TYPE_IDS.map(id => activityTypeLabel(id, t));
 
   const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(params.gradeIdx, grades.length));
   const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx, subjects.length));
@@ -81,9 +80,6 @@ export default function ActivityScreen() {
   const [loadingSlides, setLoadingSlides] = useState(false);
 
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
-  // Holds the new material's id after a first save — that opens the "which
-  // class?" sheet. Re-saving an edit does not re-ask.
-  const [classPromptFor, setClassPromptFor] = useState<string | null>(null);
 
   // Reset topic when grade or subject changes
   const prevGradeRef = React.useRef(gradeIdx);
@@ -187,19 +183,10 @@ export default function ActivityScreen() {
       });
       setSavedId(saved.id);
       setSaveLabel('saved');
-      setClassPromptFor(saved.id);
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
-  const attachToClass = async (picks: ClassPick[]) => {
-    const materialId = classPromptFor;
-    setClassPromptFor(null);
-    if (!materialId || picks.length === 0) return;
-    // One column, many classes: the extras become copies. See attachToClasses.
-    const outcome = await attachToClasses(materialId, picks.map(p => p.id));
-    showToast(describeAttachResult(outcome, picks, t, lang as Lang));
-  };
 
   const handleShareText = async () => {
     if (!result) return;
@@ -381,6 +368,9 @@ export default function ActivityScreen() {
       {/* Actions */}
       {result && !loading && (
         <View style={{ marginHorizontal: 20, gap: 10, marginTop: 4, marginBottom: 20 }}>
+          {/* Which class this material is for — nothing until it is saved. */}
+          <MaterialClassField materialId={savedId ?? null} onToast={showToast} />
+
           <Pressable
             onPress={handleSave}
             style={({ pressed }) => [styles.saveBtn, {
@@ -430,11 +420,6 @@ export default function ActivityScreen() {
       loadingSlides={loadingSlides}
       labels={exportLabels}
     />
-    <ClassPickerSheet
-      visible={classPromptFor !== null}
-      onClose={() => setClassPromptFor(null)}
-      onPick={picks => { void attachToClass(picks); }}
-    />
     <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
     </View>
   );
@@ -462,7 +447,7 @@ function ActivityResult({ activity, colors, isRTL, t, lang }: {
       <View style={[styles.metaRow, { flexDirection: isRTL ? 'row-reverse' : 'row', borderColor: colors.border, backgroundColor: colors.card, borderRadius: colors.radius }]}>
         <MetaPill icon="people-outline" label={activity.groupSize} color={ACCENT_LOCAL} />
         <MetaPill icon="time-outline" label={`${activity.totalDuration} ${t('min')}`} color={ACCENT_LOCAL} />
-        <MetaPill icon="flash-outline" label={activity.activityType} color={ACCENT_LOCAL} />
+        <MetaPill icon="flash-outline" label={activityTypeLabel(activity.activityType, t)} color={ACCENT_LOCAL} />
       </View>
 
       {/* Objective */}

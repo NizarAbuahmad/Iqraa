@@ -41,10 +41,8 @@ import {
 } from '@/services/curriculumData';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { Button } from '@/components/ui/Button';
-import { attachToClasses, saveItem } from '@/services/workspace';
-import { ClassPickerSheet, type ClassPick } from '@/components/ui/ClassPickerSheet';
-import { describeAttachResult } from '@/services/classAttach';
-import type { Lang } from '@/services/i18n';
+import { saveItem, updateItem } from '@/services/workspace';
+import { MaterialClassField } from '@/components/ui/MaterialClassField';
 import { Toast } from '@/components/ui/Toast';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
@@ -135,9 +133,6 @@ export default function LessonFlowScreen() {
   const durationLabels = DURATION_VALUES.map(d => `${d} ${t('min')}`);
 
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
-  // Holds the new material's id after a first save — that opens the "which
-  // class?" sheet. Re-saving an edit does not re-ask.
-  const [classPromptFor, setClassPromptFor] = useState<string | null>(null);
 
   const setStep = (key: StepKey, status: StepStatus) =>
     setStepStatus(prev => ({ ...prev, [key]: status }));
@@ -259,18 +254,9 @@ export default function LessonFlowScreen() {
       setSavedId(newMat.id);
       setSaveLabel('saved');
       showToast(t('savedSuccess'));
-      setClassPromptFor(newMat.id);
     }
   };
 
-  const attachToClass = async (picks: ClassPick[]) => {
-    const materialId = classPromptFor;
-    setClassPromptFor(null);
-    if (!materialId || picks.length === 0) return;
-    // One column, many classes: the extras become copies. See attachToClasses.
-    const outcome = await attachToClasses(materialId, picks.map(p => p.id));
-    showToast(describeAttachResult(outcome, picks, t, lang as Lang));
-  };
 
   // ── Export PDF ──────────────────────────────────────────────────────────────
 
@@ -561,14 +547,16 @@ export default function LessonFlowScreen() {
           </View>
         )}
 
+        {/* Which class this flow is for — nothing until it is saved. */}
+        {isDone && (
+          <View style={{ marginHorizontal: 20, marginTop: 12 }}>
+            <MaterialClassField materialId={savedId ?? null} onToast={showToast} />
+          </View>
+        )}
+
         {isDone && <FeedbackWidget materialType="flow" toolId="lesson-flow" />}
       </ScrollView>
 
-      <ClassPickerSheet
-        visible={classPromptFor !== null}
-        onClose={() => setClassPromptFor(null)}
-        onPick={picks => { void attachToClass(picks); }}
-      />
       <Toast
         message={toastMsg}
         visible={toastVisible}

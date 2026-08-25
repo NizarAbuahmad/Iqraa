@@ -508,6 +508,7 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
       />
       <ClassPickerSheet
         visible={classPromptFor !== null}
+        multiple
         onClose={() => setClassPromptFor(null)}
         onPick={picks => {
           const materialId = classPromptFor;
