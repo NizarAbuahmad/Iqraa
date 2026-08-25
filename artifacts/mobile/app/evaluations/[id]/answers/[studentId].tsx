@@ -26,11 +26,13 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { copyToClipboard, formatAttemptResultText, shareAsText } from '@/services/share';
 import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
+import { pickMarkSheetPhoto } from '@/services/documents/pick';
 import { Toast } from '@/components/ui/Toast';
 import {
   EvaluationError,
   getAttempt,
   saveAnswer,
+  scanMarks,
   setQuestionGrade,
   setTeacherComment,
   startAttempt,
@@ -128,6 +130,7 @@ export default function AnswerEntryScreen() {
   const [result, setResult] = useState<AttemptResult | null>(null);
   const [nextSteps, setNextSteps] = useState<Recommendation[]>([]);
   const [scope, setScope] = useState<AttemptEvaluationSummary | null>(null);
+  const [scanning, setScanning] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -210,6 +213,51 @@ export default function AnswerEntryScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [attemptId, setGradeField],
   );
+
+  /**
+   * Fill the mark boxes from a photo of the paper.
+   *
+   * Nothing is saved here — the proposals go into the boxes and the teacher
+   * confirms each one the way they would if they had typed it. That is the
+   * point: a misread cannot become a mark without a person seeing the number.
+   *
+   * Questions the scan could not read are left **empty**, never zero, and the
+   * teacher is told how many still need them.
+   */
+  const onScanMarks = useCallback(async () => {
+    if (!attemptId || scanning) return;
+    const image = await pickMarkSheetPhoto();
+    if (!image) return;
+    setScanning(true);
+    setError('');
+    try {
+      const res = await scanMarks(attemptId, image);
+      if (res.proposals.length === 0) {
+        showToast(t('scanFoundNothing'));
+        return;
+      }
+      setGrades(prev => {
+        const next = { ...prev };
+        for (const p of res.proposals) {
+          const current: GradeDraft = next[p.questionId] ?? { marks: '', note: '', saved: '' };
+          // `saved` is left alone deliberately: these are not saved yet, and
+          // a rejected edit must still revert to the last accepted mark.
+          next[p.questionId] = { ...current, marks: String(p.awardedMarks) };
+        }
+        return next;
+      });
+      showToast(
+        res.skipped.length > 0
+          ? t('scanFilledSome', String(res.proposals.length), String(res.skipped.length))
+          : t('scanFilledAll', String(res.proposals.length)),
+      );
+    } catch (err) {
+      setError(err instanceof EvaluationError ? err.message : t('scanFailed'));
+    } finally {
+      setScanning(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attemptId, scanning]);
 
   const commitComment = useCallback(
     async (value: string) => {
@@ -317,6 +365,26 @@ export default function AnswerEntryScreen() {
             t={t}
           />
         )}
+
+        <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
+          <Pressable
+            onPress={onScanMarks}
+            disabled={scanning}
+            style={[styles.scanBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: scanning ? 0.6 : 1 }]}
+          >
+            {scanning ? (
+              <ActivityIndicator size="small" color={ACCENT} />
+            ) : (
+              <Ionicons name="camera-outline" size={18} color={ACCENT} />
+            )}
+            <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>
+              {scanning ? t('scanReading') : t('scanMarksBtn')}
+            </Text>
+          </Pressable>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, marginTop: 6, textAlign: align }}>
+            {t('scanMarksHint')}
+          </Text>
+        </View>
 
         <View style={{ padding: 20, gap: 14 }}>
           {questions.map((q, i) => (
@@ -880,6 +948,7 @@ const styles = StyleSheet.create({
   competencyRow: { alignItems: 'center' },
   qCard: { borderWidth: 1, borderRadius: 12, padding: 14 },
   qTop: { alignItems: 'center', gap: 8, marginBottom: 10 },
+  scanBtn: { alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderRadius: 10, paddingVertical: 12 },
   recBtn: { alignSelf: 'flex-start', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
   gradeRow: { borderTopWidth: 1, marginTop: 12, paddingTop: 10, gap: 8 },
   markInput: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, minWidth: 64, textAlign: 'center', fontSize: 14 },
