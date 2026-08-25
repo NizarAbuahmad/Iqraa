@@ -41,6 +41,7 @@ import type { DeckVideo } from '@/services/youtubeVideo';
 import { summarizeVerification } from '@/services/quizVerification';
 import { confirm } from '@/services/confirm';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
+import { timerSecondsForSlide } from '@/services/presentationUtils';
 import { deleteItem, getAllItems, saveItem, updateItem } from '@/services/workspace';
 import { findMatchingItem } from '@/services/savedMaterialMatch';
 import { ClassPickerSheet } from '@/components/ui/ClassPickerSheet';
@@ -847,9 +848,11 @@ export default function SlidesScreen() {
                     >
                       {s.title}
                     </Text>
-                    {s.durationSeconds > 0 && (
+                    {/* The projector's own rule, so the editor cannot advertise a
+                        timer the presentation screen then refuses to run. */}
+                    {timerSecondsForSlide(s) > 0 && (
                       <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 11 }}>
-                        {s.durationSeconds}s
+                        {timerSecondsForSlide(s)}s
                       </Text>
                     )}
                     <Ionicons name="create-outline" size={16} color={colors.mutedForeground} />

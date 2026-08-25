@@ -46,9 +46,10 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     because the count was repeatedly described as "all in
     `lib/integrations-openai-ai-server`", which is wrong by a factor of three
     and would send someone looking in the wrong package.
-- Mobile test suite: 725 tests, 0 failures, 10 skipped (re-counted 2026-08-23
-  on an installed workspace; 723 on 2026-08-22, the 480 here was stale before
-  that, and the 376 before it).
+- Mobile test suite: 855 tests, 0 failures, 10 skipped (re-counted 2026-08-25
+  on an installed workspace, with `main` merged in; 725 on 2026-08-23, 723 on
+  2026-08-22, the 480 here was stale before that, and the 376 before it).
+  The number moves with almost every merge — re-count rather than cite it.
   The 10 skips are the chemistry KB-search cases, skipped by their own suite,
   not by the runner.
   The `test` script globs `services/__tests__/**/*.test.ts` — it used to be a
@@ -4971,6 +4972,57 @@ light tint that was white-on-cream.
 **Not verified:** the .pptx was not opened in PowerPoint. The colour inputs are
 shared now and the file builds, but nobody has looked at a rendered slide.
 
+## The escape deck never said what the codes were for, 2026-08-25
+
+Reported with two screenshots of the same deck on the deployed site. Both
+reveal slides were headed «تم فتح الكود!» — the placeholder title from the
+prompt, copied through verbatim — and slide 7's code rendered as a barely
+visible speck. That speck was `٠`: Arabic-Indic zero is a dot, and at 48px
+green on a light board it is nothing. Nobody watching could tell what the
+number was, or what they were supposed to do with it.
+
+The second half of that is the part worth writing down. **The unlock code has
+no mechanism behind it.** There is no input, no validation, no gate — `grep
+unlockCode` finds it in the prompts, the mock decks, and one render block in
+`presentation.tsx`, and nowhere else. The lock is fiction; the code is
+something students copy onto paper and read back at the end. That is a fine
+design, but a deck that never explains it leaves a class staring at a digit
+with no idea it is theirs to keep. Both language decks now open with a
+"كيف نلعب؟" / "How to Play" slide that says so outright, including the line
+that there is nothing to type the digits into.
+
+The codes themselves are fixed in two places, because a prompt asks and does
+not guarantee:
+
+- The escape prompts (both languages) now state the code rules explicitly —
+  one digit ١–٩, never ٠, distinct per challenge, reveal title naming the
+  digit, summary listing the full sequence — and the worked example carries a
+  real code instead of a repeated `"5"` the model was evidently copying.
+- `lib/escapeCodes.ts` repairs what still comes back wrong: a code that is
+  zero, empty, multi-character or duplicated is replaced; a reveal takes the
+  code of the challenge before it; a generic reveal title is rewritten to name
+  the digit. A valid, distinct code is left exactly as the model wrote it. It
+  runs on every classroom activity and is a no-op for decks with no
+  `unlockCode`, since `activityType` is model output too and is not always the
+  one that was asked for. 18 tests, including the `٠` case that started this.
+
+When it does repair a code, it also rewrites the summary's full-code line —
+a stale summary sends the class out with the wrong final answer, which is
+worse than the digit it was fixing.
+
+`PROMPT_VERSION` bumped to `2026-08-25.1`: the prompts changed in a way that
+makes previously recorded generations stale, which is what that constant is for.
+
+**Not verified:** this has not been run against a live model. The prompt half
+is unproven — what is tested is the repair layer, which is deliberately the
+half that does not depend on the model complying. The mock decks (used under
+`DEMO_MODE`) were updated by hand and are 13 slides now, not 12.
+
+**Not done:** the how-to-play slide is a second `type: 'intro'` rather than a
+new slide type. A `rules` type would theme separately and let the exporters
+treat it differently, but it would touch the type union, `deckTheme`, the
+presenter and both exporters — too much to smuggle into this.
+
 
 ## The favourite star lit whether or not anything was saved, 2026-08-25
 
@@ -5012,6 +5064,36 @@ label — «مفضلة» whether or not it was one — and now changes with the 
 against the running system. The honest-failure branch is unit-tested and the
 green path is not observably changed, but nobody has watched a real 500 put the
 star back.
+
+## The mission slide looked like it had failed to load, 2026-08-25
+
+Reported from a live deck with a screenshot: slide 1/10 of an escape challenge
+showed «مهمتكم», three lines of text, a countdown reading 00:58 — and two
+thirds of the projector empty below it. The question asked was whether
+something was supposed to be there.
+
+Nothing was. `SlideView`'s cover branch (`presentation.tsx`) draws title, rule
+and body and stops; hint, answer, unlock badge, visuals and the teacher-panel
+button are all conditional and an intro slide carries none of them. But the
+cover was top-aligned inside a full-height stage with a `contentContainerStyle`
+that did not grow, so a short slide sat under the header with the rest of the
+screen blank. It now grows to the stage and centres (`flexGrow` on both the
+scroll content box and the cover). Content taller than the stage still starts
+at the top and scrolls — checked in a react-native-web harness at 1400×760,
+both cases, because the app itself is behind a login this container cannot pass.
+
+The timer was the real defect. Every generation prompt specifies
+`durationSeconds: 0` for intro slides (`api-server/src/routes/generate.ts`) and
+nothing enforced it, so a model that emitted 60 got a live countdown — and an
+amber-then-red bar — against a paragraph that asks the class to do nothing yet.
+`timerSecondsForSlide` in `services/presentationUtils.ts` now returns 0 for the
+slide types that are read out rather than worked through (intro, reveal,
+summary, divider, scoreboard, podium); the presenter and the slides outline
+both ask it instead of reading `durationSeconds` raw, so the editor cannot
+advertise a timer the projector then refuses to run.
+
+Clamped at display time on purpose: the deck keeps what the model produced, so
+saves and exports are unchanged and the clamp cannot corrupt a stored activity.
 
 ## The book's figures are on the slides now, 2026-08-25
 

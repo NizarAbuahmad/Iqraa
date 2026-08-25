@@ -7,7 +7,8 @@
  * Covers:
  *  1. timerColor() returns the correct colour at >50%, 10–50%, and <20% remaining.
  *  2. tickTimer() counts down from durationSeconds to 0.
- *  3. slideHasTimer() returns false for slides with durationSeconds = 0.
+ *  3. slideHasTimer() returns false for slides with durationSeconds = 0, and for
+ *     read-out slide types (intro / reveal / summary …) whatever their duration.
  *  4. classroomStore set / get / clear round-trip.
  *  5. Integration: mock ClassroomActivity → classroomStore → simulated screen state
  *     (first slide, advance to next, hint toggle).
@@ -21,6 +22,7 @@ import {
   calcTimerPct,
   tickTimer,
   slideHasTimer,
+  timerSecondsForSlide,
 } from '../presentationUtils.ts';
 
 import {
@@ -32,7 +34,8 @@ import {
 // Inlined types (avoids importing React-Native-dependent modules in Node runner)
 interface ActivitySlide {
   slideNumber: number;
-  type: 'intro' | 'challenge' | 'reveal' | 'summary' | 'bingo-call' | 'relay-problem';
+  type: 'intro' | 'challenge' | 'reveal' | 'summary' | 'bingo-call' | 'relay-problem'
+      | 'divider' | 'scoreboard' | 'podium';
   title: string;
   content: string;
   hint?: string;
@@ -193,13 +196,53 @@ describe('tickTimer() — counts down from durationSeconds to 0', () => {
 
 describe('slideHasTimer()', () => {
   it('returns false for durationSeconds = 0 (teacher-paced slide)', () => {
-    const slide = makeSlide({ durationSeconds: 0 });
+    const slide = makeSlide({ type: 'challenge', durationSeconds: 0 });
     assert.equal(slideHasTimer(slide), false);
   });
 
   it('returns true for durationSeconds > 0', () => {
-    const slide = makeSlide({ durationSeconds: 60 });
+    const slide = makeSlide({ type: 'challenge', durationSeconds: 60 });
     assert.equal(slideHasTimer(slide), true);
+  });
+
+  it('returns false on a read-out slide type even with a duration set', () => {
+    assert.equal(slideHasTimer(makeSlide({ type: 'intro', durationSeconds: 60 })), false);
+  });
+});
+
+// ─── 3b. timerSecondsForSlide — the clamp behind slideHasTimer ────────────────
+
+describe('timerSecondsForSlide()', () => {
+  it('keeps the duration on slide types the class works through', () => {
+    assert.equal(timerSecondsForSlide(makeSlide({ type: 'challenge', durationSeconds: 90 })), 90);
+    assert.equal(timerSecondsForSlide(makeSlide({ type: 'relay-problem', durationSeconds: 45 })), 45);
+    assert.equal(timerSecondsForSlide(makeSlide({ type: 'bingo-call', durationSeconds: 30 })), 30);
+  });
+
+  it('refuses a countdown on slide types that are read out, not worked on', () => {
+    // The generation prompts ask for 0 here; this is what happens when a model
+    // ignores that and puts 60s on the mission slide.
+    for (const type of ['intro', 'reveal', 'summary', 'divider', 'scoreboard', 'podium'] as const) {
+      assert.equal(
+        timerSecondsForSlide(makeSlide({ type, durationSeconds: 60 })),
+        0,
+        `${type} slides must not run a timer`,
+      );
+    }
+  });
+
+  it('never returns a negative or non-finite duration', () => {
+    assert.equal(timerSecondsForSlide(makeSlide({ type: 'challenge', durationSeconds: -30 })), 0);
+    assert.equal(
+      timerSecondsForSlide({ type: 'challenge', durationSeconds: undefined as unknown as number }),
+      0,
+    );
+  });
+
+  it('leaves the deck untouched — the clamp is display-only', () => {
+    const slide = makeSlide({ type: 'intro', durationSeconds: 60 });
+    timerSecondsForSlide(slide);
+    assert.equal(slide.durationSeconds, 60, 'the stored deck keeps what the model produced');
   });
 });
 
@@ -278,6 +321,23 @@ describe('PresentationScreen — simulated state flow', () => {
     assert.equal(slide.title, 'Solve: 2x + 3 = 13');
     assert.equal(hintVisible, false, 'hint should reset on slide change');
     assert.equal(answerVisible, false, 'answer should reset on slide change');
+  });
+
+  it('mission slide does not run a countdown even when the model timed it', () => {
+    // The reported bug: slide 1 of a generated escape-challenge deck showed a
+    // live 00:58 counting down against «مهمتكم» — a paragraph with no task in it.
+    const activity = makeMockActivity();
+    setPendingClassroomActivity(activity);
+    const loaded = getPendingClassroomActivity()!;
+
+    const missionSlide = loaded.slides[0];
+    assert.equal(missionSlide.type, 'intro');
+    assert.ok(missionSlide.durationSeconds > 0, 'the model did put a duration on it');
+
+    // Simulate initSlide for the mission slide
+    const timerTotal = timerSecondsForSlide(missionSlide);
+    assert.equal(timerTotal, 0, 'no timer box, no countdown bar');
+    assert.equal(slideHasTimer(missionSlide), false);
   });
 
   it('summary slide (durationSeconds=0) has no timer', () => {
