@@ -914,6 +914,32 @@ export default function ClassDetailScreen() {
                 </Pressable>
               )}
             />
+            {/* Same dead end the materials sheet above already grew out of: a
+                teacher with no exams was told to "create one first" and given
+                only Cancel — with the create screen three navigations away,
+                in a tools menu they had no reason to be looking at. */}
+            <Pressable
+              onPress={() => {
+                setShowAttachExam(false);
+                router.push('/evaluations/new');
+              }}
+              style={[
+                styles.createRow,
+                { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' },
+              ]}
+            >
+              <Ionicons name="add-circle-outline" size={18} color={ACCENT} />
+              <Text
+                style={{
+                  color: ACCENT,
+                  fontFamily: 'Cairo_600SemiBold',
+                  flex: 1,
+                  textAlign: align,
+                }}
+              >
+                {t('createNewExam')}
+              </Text>
+            </Pressable>
             <Pressable onPress={() => setShowAttachExam(false)} style={{ paddingVertical: 12 }}>
               <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: 'center' }}>
                 {t('cancel')}

@@ -29,13 +29,34 @@ import {
 } from "@workspace/curriculum";
 import { authMiddleware, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { logger } from "../lib/logger";
-import { generateMockEvaluation } from "../modules/assessment/mockGenerator";
+import {
+  bankContextFor,
+  generateMockEvaluation,
+  type GenerationResult,
+} from "../modules/assessment/mockGenerator";
 import { validateGenerated } from "../modules/assessment/validator";
 import { QUESTION_TYPES } from "../modules/assessment/questionTypes";
 import { COMPETENCY_KEYS, type CompetencyKey } from "../modules/assessment/competency";
 import { isPaperQuestion, parsePaperRows } from "../modules/assessment/paperExam";
 import { aggregateClass } from "../modules/assessment/classInsights";
 import { generateShareCode } from "../modules/assessment/studentView";
+import {
+  GENERATION_PROMPT_VERSION,
+  generateWithModel,
+} from "../modules/assessment/llmGenerator";
+import {
+  AiBudgetExceededError,
+  AiLiveModeOffError,
+  AiUserQuotaExceededError,
+  assertBudgetAvailable,
+  assertLiveModeEnabled,
+  assertUserQuotaAvailable,
+  getGenerationModel,
+  isAiLiveModeOn,
+  recordUsage,
+} from "../lib/aiBudget.ts";
+import { extractJSON } from "../lib/generationShape.ts";
+import { openai } from "@workspace/integrations-openai-ai-server";
 import { recommendationsFor } from "../modules/assessment/recommend";
 import type { ObjectiveScore } from "../modules/assessment/scoring";
 
@@ -327,12 +348,87 @@ router.post("/evaluations/:id/generate", async (req: AuthenticatedRequest, res) 
       return;
     }
 
-    const result = generateMockEvaluation({
-      objectives,
-      assessmentTypes: evaluation.assessmentTypes,
-      count: evaluation.targetQuestionCount,
-      difficulty: evaluation.difficulty,
-    });
+    /**
+     * Which generator wrote this paper, and the one rule about it.
+     *
+     * With live mode off, the mock runs — four Arabic templates that cannot
+     * produce a single self-marking question type. With it on, a model writes
+     * them properly.
+     *
+     * **A failed model call does not quietly become the mock.** This repo has
+     * been bitten once by mock output that looked identical to real output;
+     * four template questions appearing where a teacher asked for a real paper
+     * is the same bug wearing a different hat. The failure is reported and the
+     * teacher decides.
+     */
+    const live = isAiLiveModeOn();
+    let result: GenerationResult;
+    let generator: "mock" | "llm" = "mock";
+    let modelId: string | null = null;
+    const generationNotes: string[] = [];
+
+    if (live) {
+      assertLiveModeEnabled();
+      assertBudgetAvailable();
+      await assertUserQuotaAvailable(req.user!.id);
+
+      const llm = await generateWithModel(
+        {
+          objectives,
+          assessmentTypes: evaluation.assessmentTypes,
+          count: evaluation.targetQuestionCount,
+          difficulty: evaluation.difficulty,
+          language: evaluation.language,
+        },
+        async prompt => {
+          const model = getGenerationModel();
+          const completion = await openai.chat.completions.create({
+            model,
+            // Room for a full paper of questions with options and rubrics. A
+            // truncated response parses to something plausible, which is worse
+            // than an error.
+            max_completion_tokens: 8000,
+            messages: [
+              { role: "system", content: prompt.system },
+              { role: "user", content: prompt.user },
+            ],
+          });
+          recordUsage(completion.usage, model, {
+            kind: "quiz",
+            promptVersion: GENERATION_PROMPT_VERSION,
+            userId: req.user!.id,
+          });
+          return {
+            parsed: extractJSON(completion.choices[0]?.message?.content ?? "{}"),
+            model,
+          };
+        },
+      );
+
+      generator = "llm";
+      modelId = llm.model;
+      generationNotes.push(...llm.notes);
+      result = {
+        questions: llm.questions,
+        // The model was asked for every requested type, so nothing is
+        // "unavailable" the way it is for the mock — a type that came back
+        // wrong is a discard, and llm.notes already says so.
+        unavailableTypes: [],
+        shortfall: Math.max(0, evaluation.targetQuestionCount - llm.questions.length),
+        notes: [],
+        // Still worth carrying: the bank pointer answers "where else could I
+        // look", which is useful whether or not the generator declined
+        // anything. It just is not a consolation prize here.
+        bankContext: bankContextFor(objectives),
+      };
+    } else {
+      result = generateMockEvaluation({
+        objectives,
+        assessmentTypes: evaluation.assessmentTypes,
+        count: evaluation.targetQuestionCount,
+        difficulty: evaluation.difficulty,
+      });
+    }
 
     const validation = validateGenerated(result.questions, {
       allowedObjectiveIds: evaluation.objectiveIds,
@@ -372,11 +468,21 @@ router.post("/evaluations/:id/generate", async (req: AuthenticatedRequest, res) 
       );
     }
 
+    // Recorded on the evaluation, not just in each question's aiMetadata, so
+    // "was this paper written by a model or by four templates?" is answerable
+    // without opening a question.
+    await db
+      .update(evaluations)
+      .set({ generator, modelId, updatedAt: new Date() })
+      .where(eq(evaluations.id, evaluation.id));
+
     const totalMarks = await recomputeTotal(evaluation.id);
 
     res.json({
       questions: await liveQuestions(evaluation.id),
       totalMarks,
+      generator,
+      modelId,
       requested: evaluation.targetQuestionCount,
       produced: validation.accepted.length,
       // Everything the generator declined or the validator dropped, stated
@@ -386,11 +492,34 @@ router.post("/evaluations/:id/generate", async (req: AuthenticatedRequest, res) 
       // the types we declined, and where real items for them would come from.
       bankContext: result.bankContext,
       rejected: validation.rejected,
-      warnings: [...result.notes, ...validation.warnings],
+      warnings: [...result.notes, ...generationNotes, ...validation.warnings],
     });
   } catch (err) {
+    // Four different things a teacher can do something about, and they are not
+    // the same thing. "Generation failed" for all of them is the message that
+    // makes a spend cap look like an outage and an outage look like a bug.
+    if (err instanceof AiUserQuotaExceededError) {
+      res.status(429).json({ error: err.message, code: "user_quota_exceeded" });
+      return;
+    }
+    if (err instanceof AiBudgetExceededError) {
+      res.status(429).json({ error: err.message, code: "budget_exceeded" });
+      return;
+    }
+    if (err instanceof AiLiveModeOffError) {
+      res.status(503).json({ error: err.message, code: "live_mode_off" });
+      return;
+    }
     logger.error({ err }, "generate evaluation failed");
-    res.status(500).json({ error: "Generation failed" });
+    res.status(502).json({
+      // Says which half failed. Nothing was written — the questions are only
+      // replaced after a successful generation — so retrying is safe, and
+      // saying so stops a teacher wondering whether they now have half a paper.
+      error:
+        "The question generator did not respond. Nothing was changed — try again, "
+        + "or switch this evaluation to a paper exam.",
+      code: "generator_unavailable",
+    });
   }
 });
 

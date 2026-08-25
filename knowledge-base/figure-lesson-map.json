@@ -3,7 +3,7 @@
  "generatedFrom": "lessonTitleEn vs KB_LESSONS titleEn, constrained to the unit number the book prints",
  "entries": [
   {
-   "sourceId": "math-s2-student-book",
+   "sourceId": "math-s1-student-book",
    "unit": 1,
    "lesson": 1,
    "bookTitleEn": "Solving Special Equations",
@@ -25,7 +25,7 @@
    "why": "The book opens unit 1 with a lesson the curriculum does not carry, which is why every later unit-1 lesson sits one place lower in the curriculum than the number the book prints. Left unmatched rather than forced onto a neighbour."
   },
   {
-   "sourceId": "math-s2-student-book",
+   "sourceId": "math-s1-student-book",
    "unit": 1,
    "lesson": 2,
    "bookTitleEn": "Solving a System of Linear and Quadratic Equations",
@@ -34,7 +34,7 @@
    "matchedBy": "title-overlap"
   },
   {
-   "sourceId": "math-s2-student-book",
+   "sourceId": "math-s1-student-book",
    "unit": 1,
    "lesson": 3,
    "bookTitleEn": "Solving a System of Two Quadratic Equations",
@@ -43,7 +43,7 @@
    "matchedBy": "title-overlap"
   },
   {
-   "sourceId": "math-s2-student-book",
+   "sourceId": "math-s1-student-book",
    "unit": 2,
    "lesson": 4,
    "bookTitleEn": "Equation of a Circle",
@@ -52,7 +52,7 @@
    "matchedBy": "title-overlap"
   },
   {
-   "sourceId": "math-s2-student-book",
+   "sourceId": "math-s1-student-book",
    "unit": 3,
    "lesson": 1,
    "bookTitleEn": "Trigonometric Ratios",
@@ -61,7 +61,7 @@
    "matchedBy": "title-overlap"
   },
   {
-   "sourceId": "math-s2-student-book",
+   "sourceId": "math-s1-student-book",
    "unit": 3,
    "lesson": 2,
    "bookTitleEn": "Trigonometric Ratios for Angles between 0º and 360º",
@@ -71,7 +71,7 @@
    "matchedBy": "hand-checked against the curriculum Arabic title"
   },
   {
-   "sourceId": "math-s2-student-book",
+   "sourceId": "math-s1-student-book",
    "unit": 3,
    "lesson": 3,
    "bookTitleEn": "Graphing Trigonometric Functions",
@@ -80,7 +80,7 @@
    "matchedBy": "title-overlap"
   },
   {
-   "sourceId": "math-s2-student-book",
+   "sourceId": "math-s1-student-book",
    "unit": 4,
    "lesson": 1,
    "bookTitleEn": "Bearing",
@@ -90,7 +90,7 @@
    "matchedBy": "hand-checked against the curriculum Arabic title"
   },
   {
-   "sourceId": "math-s1-student-book",
+   "sourceId": "math-s2-student-book",
    "unit": 5,
    "lesson": 1,
    "bookTitleEn": "Polynomial Functions",
@@ -100,7 +100,7 @@
    "matchedBy": "hand-checked against the curriculum Arabic title"
   },
   {
-   "sourceId": "math-s1-student-book",
+   "sourceId": "math-s2-student-book",
    "unit": 5,
    "lesson": 2,
    "bookTitleEn": "Rational Functions",
@@ -110,7 +110,7 @@
    "matchedBy": "hand-checked against the curriculum Arabic title"
   },
   {
-   "sourceId": "math-s1-student-book",
+   "sourceId": "math-s2-student-book",
    "unit": 5,
    "lesson": 4,
    "bookTitleEn": "Inverse Function",
@@ -120,7 +120,7 @@
    "matchedBy": "hand-checked against the curriculum Arabic title"
   },
   {
-   "sourceId": "math-s1-student-book",
+   "sourceId": "math-s2-student-book",
    "unit": 6,
    "lesson": 1,
    "bookTitleEn": "Estimating Slope",
@@ -129,7 +129,7 @@
    "matchedBy": "title-overlap"
   },
   {
-   "sourceId": "math-s1-student-book",
+   "sourceId": "math-s2-student-book",
    "unit": 6,
    "lesson": 2,
    "bookTitleEn": "Differentiation",
@@ -138,7 +138,7 @@
    "matchedBy": "title-overlap"
   },
   {
-   "sourceId": "math-s1-student-book",
+   "sourceId": "math-s2-student-book",
    "unit": 6,
    "lesson": 3,
    "bookTitleEn": "Maximum and Minimum Values",
@@ -147,7 +147,7 @@
    "matchedBy": "title-overlap"
   },
   {
-   "sourceId": "math-s1-student-book",
+   "sourceId": "math-s2-student-book",
    "unit": 7,
    "lesson": 1,
    "bookTitleEn": "Vectors in the Coordinate Plane",
@@ -156,7 +156,7 @@
    "matchedBy": "title-overlap"
   },
   {
-   "sourceId": "math-s1-student-book",
+   "sourceId": "math-s2-student-book",
    "unit": 7,
    "lesson": 2,
    "bookTitleEn": "Adding and Subtracting Vectors",
@@ -166,7 +166,7 @@
    "matchedBy": "hand-checked against the curriculum Arabic title"
   },
   {
-   "sourceId": "math-s1-student-book",
+   "sourceId": "math-s2-student-book",
    "unit": 8,
    "lesson": 1,
    "bookTitleEn": "Scatter Graphs",
@@ -175,7 +175,7 @@
    "matchedBy": "title-overlap"
   },
   {
-   "sourceId": "math-s1-student-book",
+   "sourceId": "math-s2-student-book",
    "unit": 8,
    "lesson": 2,
    "bookTitleEn": "Cumulative Frequency Graph",
@@ -184,7 +184,7 @@
    "matchedBy": "title-overlap"
   },
   {
-   "sourceId": "math-s1-student-book",
+   "sourceId": "math-s2-student-book",
    "unit": 8,
    "lesson": 5,
    "bookTitleEn": "Probability of Independent and Dependent Events",
@@ -194,5 +194,5 @@
    "matchedBy": "hand-checked against the curriculum Arabic title"
   }
  ],
- "unitNumbering": "The curriculum's `u{n}_l{m}` matches the number the book PRINTS in every unit except unit 1, where the book has an extra opening lesson («حل معادلات خاصة») and the rest shift by one. Semester 1 prints units 5-8 and semester 2 prints 1-4, so the printed number — not a sequence index and not the semester tag — is what joins the two."
+ "unitNumbering": "The curriculum's `u{n}_l{m}` matches the number the book PRINTS in every unit except unit 1, where the book has an extra opening lesson («حل معادلات خاصة») and the rest shift by one. Units 1-4 are semester 1 and units 5-8 are semester 2, so the printed unit number also identifies which student book a figure came from — `check_semester` in scripts/extract_book_figures.py enforces that. Note the maths PDFs in attached_assets are named backwards: the file called `1st_semester` is the second-semester book. Source ids follow the books' contents, not their filenames."
 }

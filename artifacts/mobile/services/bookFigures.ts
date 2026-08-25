@@ -34,7 +34,11 @@ export type BookFigure = {
   sourceId: string;
   /** 1-based page in that PDF, so any figure can be checked against the book. */
   pdfPage: number;
-  /** Unit and lesson AS PRINTED. Semester 1 prints units 5–8, semester 2 1–4. */
+  /**
+   * Unit and lesson AS PRINTED by the book. Grade 10 maths numbers its units
+   * 1-8 across the year: 1-4 in semester 1, 5-8 in semester 2, so the unit
+   * also tells you which book a figure came from.
+   */
   unit: number | null;
   lesson: number | null;
   lessonTitleEn: string | null;

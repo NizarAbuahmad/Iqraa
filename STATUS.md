@@ -290,6 +290,135 @@ instead of a rich wrong one. Live AI generation is unaffected.
 sweep asserting the 16-lesson drift still exists in `searchKBSemantic` — the
 day it stops being true, the reason for threading the id through is gone.
 
+
+## The two maths student books are swapped, 2026-08-25
+
+Found by testing retrieval, not by reading data. Asking the new passage layer
+for الدائرة returned a page about المتجهات, which looks like a ranking problem
+and is not one.
+
+`10th_grade,_math,_1st_semester_….pdf` opens **«الوحدةُ 5 الاقتراناتُ»** and
+carries unit 7 المتجهات — the catalog's **Semester 2**. Its sibling named
+`…,_2nd_semester_….pdf` opens **«الوحدةُ 1 المعادلاتُ»** and carries unit 3
+حساب المثلثات — the catalog's **Semester 1**. The files are swapped relative to
+their names, and `g10_sources.json` inherited the swap because its entries were
+written from a Drive listing rather than from the documents.
+
+The teacher guides are **not** affected: the S2 guide really does hold unit 6
+المشتقات. This is the two student books only.
+
+`extract-text.ts` now maps them across their filenames, by content, because
+that is what makes a citation true — a passage offered for الدائرة has to come
+from the book containing الدائرة. Retrieval for that unit now returns
+«معرفة الوترِ، والقُطْرِ، والمماسِّ» (p34) and «الزوايا في الدائرة» (p47).
+
+**This very likely extends past the two local files.** The `bytes` recorded
+against `math-s1-student-book` and `math-s2-student-book`, and probably the
+Drive copies themselves, carry the same swap — 33,429,449 bytes matches the
+manifest's *s2* entry exactly and is the file whose contents are *s1*. Nothing
+downstream of the catalog is wrong (unit numbers, titles and objectives are all
+internally consistent and came from the guides), but anyone going to Drive for
+"the semester 1 maths book" should expect to open semester 2.
+
+A test now asserts each extracted book contains at least two of its own unit
+titles. Reintroducing the swap fails it with "math-s1-student-book contains
+only 1 of its own unit titles (الدائره) — it is probably the other semester's
+book". Filenames and manifest labels are hearsay; the unit titles printed
+inside the book are not.
+
+**And there were three `normalizeArabic`s.** One in `blooms.ts`, one in the
+api-server grading path, and nearly a third for retrieval. They agreed on
+Arabic and disagreed on Latin case and Arabic-Indic digits. Now one, in
+`lib/curriculum/src/arabic.ts`, re-exported from both old homes so no import
+changed. Checked before merging: over all 196 marker terms and catalog
+objectives the two differed on 7 strings, every one an English objective being
+lowercased, and the Bloom's markers are Arabic verbs.
+
+Retrieval itself (`src/passages.ts`, server-only, on the `./passages` subpath)
+is lexical rather than vector: the bank already scopes a query to one book by
+unit tag, so what is left is ranking a few hundred pages, and there is no
+embedding store to add. Passage text is returned **raw** — repaired and folded
+only for matching — because re-spelling a textbook on the way to a prompt is a
+silent edit of a source document.
+
+69 curriculum / 878 mobile / 223 api-server tests pass; typecheck clean.
+(Mobile was 855 on the branch alone; the rest came in with `main`.)
+
+**Still not wired to anything a teacher sees.** No prompt reads a passage yet,
+and `DEMO_MODE` remains `true`.
+
+## The books can be read after all, 2026-08-25
+
+Two things I had been repeating in this file were wrong, and both were load-
+bearing.
+
+**The PDFs are not all on a Windows mirror.** Six real NCCD documents are
+committed in `attached_assets/` — both math student books, chemistry S1, both
+math exercise books, and the S2 teacher guide (~101 MB, tracked). That claim was
+only ever true of the *teacher-made support pack*. The seventh, the math S1
+teacher guide, is a Git-LFS pointer: 58 MB unpulled, and `git-lfs` is not
+installed in the session container, so it stays blocked.
+
+**Arabic extracts fine.** The entry above about `pdftotext` mangling Arabic is
+accurate about *matching* and was read as "these PDFs are unusable". They are
+not. `pdf-parse` — a root dependency that until today nothing imported — pulls
+**682 pages and 1.18M characters** of readable Arabic prose out of the six:
+
+| source | pages | chars |
+| --- | --- | --- |
+| math-s2-teacher-guide | 218 | 558,414 |
+| math-s1-student-book | 150 | 220,128 |
+| math-s2-student-book | 132 | 184,065 |
+| chem-s1-student-book | 76 | 113,815 |
+| math-s2-exercise-book | 56 | 57,003 |
+| math-s1-exercise-book | 50 | 47,275 |
+
+What is genuinely broken is string matching, for two narrow reasons: the
+lam-alef ligature decomposes («الاقتران» → «االقتران») and tashkeel is
+interleaved. `normalizeArabic()` plus a lam-alef fix takes probe matching from
+mostly-failing to mostly-passing. **A model reads this text fine; a regex does
+not.** So `lib/curriculum/scripts/extract-text.ts` stores pages and stops —
+no structure parsing, no hunt for lesson boundaries. Every previous attempt to
+infer structure from these books by pattern produced confidently wrong output;
+retrieval will scope by the bank's unit tags, which already work.
+
+**Provenance records the file actually read.** `math-s1-student-book` on disk is
+a 12.1 MB Adobe InDesign original against the manifest's 18.6 MB — same 150
+pages, same publisher, a different export. `extraction.bytesDifferFromManifest`
+records that rather than letting two exports of one book quietly become
+interchangeable, which is the assumption that put a downsampled copy of each
+chemistry textbook in front of teachers. Each extraction carries its own
+`sha256` and `localPath`, and a test re-hashes the file on disk.
+
+**`status: 'ingested'` now means two different things, deliberately.** It used to
+mean "a human transcribed objectives out of this by eye". It now also covers
+"machine text exists". The new `extraction` block says precisely which, because
+a document can have one without the other — and until today *every* book had
+objectives with no machine-readable text.
+
+**The 2.1 MB must not reach the phone.** The mobile app imports
+`@workspace/curriculum`, so one static import of the corpus from `index.ts`
+would ship all of it to every device for a feature the app does not run. A test
+fails if anything under `src/` imports `data/extracted`. Retrieval belongs
+behind a server-only subpath export.
+
+Two bugs in my own first draft of that test, both worth recording because both
+looked like data problems: it asserted 20 consecutive Arabic characters per page
+and reported chemistry as 2 pages of 76 — the pages carry ~1,200 Arabic
+characters each, but tashkeel, spaces and «Principal Quantum Number» mean a
+20-character run almost never occurs; it was measuring typography, not language.
+And the bundle guard grepped for the string `data/extracted`, which flagged
+`sources.ts` for *documenting* where the text lives. Density, and an import
+regex, respectively.
+
+51 curriculum / 855 mobile / 223 api-server tests pass; typecheck clean;
+`verify-curriculum` 0 errors. (Mobile was 815 and api-server 193 on the branch
+alone; the rest arrived with `main` when this was merged up.)
+
+**What this does not yet do:** no grounding, no change to any prompt — and `DEMO_MODE` is still `true` with
+`AI_LIVE_MODE` unset, so no prompt reaches a model at all. This is the corpus,
+not the feature.
+
 ## An activity is an activity, and «عن» stopped being a lesson title, 2026-08-25
 
 Two things the chat-materials pass left behind, both now closed.
@@ -571,6 +700,96 @@ reference-only, and there is a test holding that.
 44 curriculum / 783 mobile / 175 api-server tests pass, typecheck clean,
 `verify-curriculum` reports 0 errors. (Mobile was 761 on the branch alone; the
 extra 22 came in with `main` when this was merged up, not from this change.)
+## A model can write the exam now, 2026-08-25
+
+The student link shipped and immediately hit its own ceiling: **no teacher
+could create a single question that marks itself.** The mock generator refuses
+multiple choice, true/false, matching and fill-blank by design — its own note
+says they "need distractors or factual statements that cannot be derived from
+the curriculum text alone" — and the question editor can change a body but not
+a *type*. Those four are exactly the types Tier 1 grades. So a link exam was
+all written answers and the teacher still marked every one; the link removed
+transcription, not marking.
+
+`POST /evaluations/:id/generate` now takes a model path when `AI_LIVE_MODE` is
+on, and the mock when it is not.
+
+**Split so the risky part is pure.** `buildGenerationPrompt` and
+`parseGeneratedQuestions` are pure functions with 15 tests; only the call out is
+not. The parser assumes carelessness — every case it handles is something a
+model actually does: inventing an objective id, returning a type nobody asked
+for, omitting marks, wrapping the array in the wrong key. Malformed items are
+dropped **with a reason a human can read**, and the count is reported, because
+a teacher who asked for 15 and got 11 is owed the reason.
+
+**Nothing new decides whether a question is good enough.** Output goes through
+`validateGenerated` — the same gate the mock passes — which already enforces
+objective scope, requested types, per-type structure, positive marks and
+near-duplicate stems. The grading mode comes from the type registry, never from
+the model: a model claiming its own question is `deterministic` would be
+deciding how it gets marked.
+
+**A failed model call never becomes four template questions.** This is the
+repo's own scar — mock output that looked identical to real output — and it
+would have been trivial to reintroduce here. Verified with live mode on and a
+deliberately invalid key: `502 generator_unavailable`, nothing written, the
+evaluation not marked as model-written. The message names which half failed and
+says nothing was changed, so a teacher is not left wondering whether they now
+have half a paper.
+
+The four failure modes are now distinguishable — `live_mode_off` (503),
+`budget_exceeded` (429), `user_quota_exceeded` (429), `generator_unavailable`
+(502). One "Generation failed" for all of them is what makes a spend cap look
+like an outage and an outage look like a bug.
+
+**A per-teacher allowance, because fifty teachers share one card.**
+`AI_BUDGET_USD` is a single month-to-date total; with a pilot that size,
+whoever generates on the 20th is refused with no way to tell it from a bug.
+`AI_USER_BUDGET_USD` caps each teacher, read from the ledger rather than a
+process counter — an in-memory total is what made the global cap a *per-wake*
+allowance once before, since the free tier restarts on every wake. Unset means
+no per-teacher cap, which is right for one teacher and wrong for fifty.
+**Verified**: seeded $0.90 of spend against a $0.50 cap gave `429
+user_quota_exceeded`. A ledger that cannot be read does not block generation —
+the global cap still applies underneath, and turning a database blip into a
+total outage is the worse failure.
+
+### Two things tidied on the way, both duplication of a security control
+
+- **`sanitizeQuestionForStudent` now delegates to the type registry.** Every
+  entry in `QUESTION_TYPES` already carries a `sanitizeForStudent` whose
+  interface says it must never include answers or rubric. Yesterday's student
+  link added a *second* allowlist beside it — two definitions of the same
+  control, which would have disagreed the first time a type gained a field. The
+  local list survives only as the fallback for a type the registry does not
+  know.
+- **`fill_blank.sanitizeForStudent` passed `body.blanks` through unexamined.**
+  The real key lives in `expectedAnswer.blanks` and never reaches the
+  projection, so nothing was leaking — but nothing renders `body.blanks` either
+  (the student screen counts placeholders in the template), which made it free
+  parking for a generator to leave answers in. That stops being hypothetical
+  the moment a model writes these bodies. Now `template` only.
+- `extractJSON` moved from inside `routes/generate.ts` to
+  `lib/generationShape.ts`, since two routes need it and a second copy would
+  drift the first time a model found a new way to be "helpful".
+
+### What is still not true
+
+**The maths verifier cannot check a generated answer key.** The plan said keys
+would go through SymPy; the service only exposes `/verify/derivative` and
+`/compute/derivative` — there is no general equivalence endpoint. So a
+generated key is *unverified* unless the question happens to be a derivative,
+and nothing claims otherwise. Wiring Tier 2 equivalence into grading needs a new
+endpoint on the Python service first.
+
+**Nothing has generated a real question yet.** Every test above runs with live
+mode off or with a deliberately broken key. Turning it on is env-only —
+`AI_LIVE_MODE=true`, `AI_BUDGET_USD`, `AI_USER_BUDGET_USD`, a working
+`OPENAI_API_KEY` — and it costs real money per paper, so it is a decision
+rather than a deploy.
+
+238 api-server tests, 878 mobile, 0 failures.
+
 ## Students answer on their own phones, 2026-08-25
 
 Marking worked; getting the answers in did not. A teacher typed every mark by
@@ -1052,11 +1271,14 @@ matched against anything, while the English line is clean ASCII.
 - **The header lags on a lesson opener.** Reading the unit off the opener
   filed every unit's *first* lesson under the preceding unit. The unit is now
   read from a page inside the lesson.
-- **The book's unit numbers are not a sequence index.** Semester 1 prints
-  **units 5–8**; semester 2 prints **1–4**. Numbering by position would have
-  labelled every semester-1 figure with a unit the book does not use, and a
+- **The book's unit numbers are not a sequence index.** Each book restarts
+  its lessons at 1 while the units run 1-8 across the year, so numbering by
+  position would have labelled figures with units the book does not use and a
   teacher looking for «الوحدة 5» would have been shown unit 1. The printed
   number is what is recorded.
+  **Corrected 2026-08-25:** this entry used to say "semester 1 prints units
+  5–8; semester 2 prints 1–4". That was the *filename* talking. Units 1-4 are
+  semester 1 — see the 2026-08-25 entry below.
 
 **Verified by content, not by counting.** `math-s2` p021 (circle + line) lands
 in «Solving a System of Linear and Quadratic Equations»; p028 (circle +
@@ -5273,3 +5495,142 @@ that may not resolve inside that HTML. Web — the surface that actually
 deploys — is fine: the print iframe inherits the page's base URL, so the
 root-relative `/assets/…` path loads, and `waitForImages` already blocks the
 print until it has.
+
+## Three during-class tools came back, and an exam dead end closed, 2026-08-25
+
+Reported by trying to use the app: «تحدي الهروب» could not be found anywhere,
+and the class screen's «أرفق امتحانًا» dialog said "no exams yet — create one
+first" while offering nothing but Cancel.
+
+**The escape challenge was not missing, it was parked.** The 2026-08-18 audit
+above narrowed both menus to five tools and hid `classroom` — the only door to
+the escape, bingo, relay and gallery-walk formats. Their routes still resolved,
+so the formats were reachable by typing `/ai-tools/classroom`, which is the same
+as unreachable. `game` and `activity` are un-parked with it rather than leaving
+one of the three doors open; everything else the audit parked stays parked, and
+`toolCatalog.test.ts` now pins both lists so either change has to be deliberate.
+
+That audit's other finding is fixed rather than carried forward: **`activity`'s
+description was backwards.** It promised "an in-class experience… not a
+printable worksheet"; `ActivityOutput` has no slides, the screen has no route to
+the presenter, and it renders a document with an export menu. Now described as
+what it is — a step-by-step plan to print or follow. The live-on-screen claim
+belongs to «الفصل التفاعلي», which is on the same menu now, so the two could not
+go on contradicting each other.
+
+**The exam dialog was the materials dialog's bug, un-fixed.** The materials
+sheet grew a dashed «أنشئ مادة جديدة» row for exactly this reason; the exams
+modal never got one. It has one now, routing to `/evaluations/new`. The
+`createNewExam` label already existed in `i18n.ts` and was wired to nothing —
+somebody meant to build this button and stopped.
+
+Only `toolCatalog.ts` changed. `homeAiTools.ts` — the second catalog behind
+Smart Templates and the "قد يفيدك أيضاً" panel — still has `activity` and
+`game` disabled, deliberately: that is a suggestion surface, not a menu, and
+re-enabling it is a separate decision.
+
+**Not verified:** none of this was seen in a browser. The catalog and the
+dialog are unit-covered, but nobody has clicked the new «الفصل التفاعلي» card
+or the new exam button on a running build.
+
+**Still open:** the three-doors question the audit deferred is now more visible,
+not less — `slides`, `game` and `classroom` all build a `ClassroomActivity` and
+land on the same presenter, and all three are on the menu. PostHog is still the
+way to answer which door teachers use.
+
+## Stop the model writing questions about graphs it never gives, 2026-08-25
+
+The draw-or-drop guard keeps a question about an absent graph off the
+projector, but dropping is a last resort — the question is still lost, and
+the three slides that started this all drop rather than draw. The real fix is
+that the model never writes one.
+
+Nothing in this repo writes «يمثل الرسم البياني خطين مستقيمين…» — grep found
+that phrasing in no generator, no mock and no question bank. The model
+produces it unprompted, and the prompts said nothing about figures at all. So
+the rule now sits in `SYSTEM_AR` / `SYSTEM_EN`, which every generator passes
+(lesson-plan, worksheet, quiz, classroom-activity), rather than in the one
+builder that got caught.
+
+**The latin-variable clause is the load-bearing half.**
+`extractGraphCommands` matches `[a-z]` terms, so «y = 2س + 1» extracts
+*nothing* and its question is dropped exactly as if it had named no equations
+at all. A rule saying only "state the equations" would have produced
+dutifully compliant questions that still showed an empty slide — the original
+bug wearing a better sentence. Verified before the rule was written:
+
+| stem | commands extracted |
+| --- | --- |
+| «… y = 2x + 1 و y = -x + 4» | 2 |
+| «… y = 2س + 1 و y = -س + 4» | **0** |
+| «مثّل المستقيم ص = 2س + 1» | **0** |
+
+This does not touch the display convention: س still appears at display time,
+well after extraction.
+
+The rule also says what to write *instead* («وإن أردتَ سؤالًا بلا معادلات
+فاكتبه بلا أي إشارة إلى رسم»), because without it the model's cheapest escape
+is to stop writing graph questions altogether.
+
+### Held together by a comment, not a compiler
+
+The prompt lives in `api-server` and the extractor in `mobile`, and no build
+step checks that the rule's worked example still parses.
+`classMedia.test.ts` asserts the exact sentence yields two curves, and
+`figureRule.test.ts` asserts the prompt still contains it and carries no
+Arabic maths variable. Both carry a comment pointing at the other. If the
+prompt's example ever changes, change them together.
+
+## The two maths books were labelled backwards, 2026-08-25
+
+Every one of the 54 figure captions named the wrong semester. A unit-1 figure
+was captioned «الفصل الثاني» and vice versa — so the one claim those captions
+existed to support, *that a teacher can hold the projected figure against the
+printed page*, sent them to the wrong book first.
+
+**The maths PDF filenames in `attached_assets` are backwards.** The file
+called `10th_grade,_math,_1st_semester…` says «الفصل الدراسـي الثانـي» on its
+own title page and contains units 5–8; the one called `2nd_semester` says
+«الفصل الدراسي الأول» and contains units 1–4. `BOOKS` took each source id from
+the filename, so the ids were swapped, and from there the wrong semester
+flowed into every caption.
+
+The teacher-guide filenames are *correct*, which is part of why this was hard
+to spot: only the two student books are misnamed.
+
+### What was and was not broken
+
+- **The figure→lesson join was right all along.** It was built by reading
+  lesson titles, not filenames, so every figure sat on the correct lesson. The
+  only wrong thing was the book label. Nothing failed, no test went red, and
+  the figures on screen were the right figures — which is exactly why it
+  shipped.
+- **Captions were wrong on all 54.** Fixed by correcting the ids; the caption
+  code itself never needed changing.
+
+### The guard
+
+`check_semester` now refuses to write an index whose units contradict its
+source id, using an invariant the extractor already parses reliably: Grade 10
+maths teaches **units 1–4 in semester 1 and 5–8 in semester 2**. Verified by
+feeding it the exact mistake that shipped —
+
+```
+math-s1-student-book: semester 1 should hold units 1-4, but the book's own
+headers say unit(s) [5, 6, 7, 8]. The source id and the PDF are mismatched.
+```
+
+`bookFigures.test.ts` asserts the same invariant from the app side: a
+`kbl-math-s1-…` lesson may only be illustrated from the semester-1 book.
+
+Reading the PDF cover text was tried first and abandoned. «الأول» extracts as
+`ا أ ل و ل` — the alef and hamza-alef swapped, the same RTL reordering that
+made the unit header «21  1 الوحدة» in the first extraction pass. Deriving the
+semester from unit numbers avoids the Arabic text layer entirely.
+
+### Correction to an earlier entry
+
+The 2026-08-25 extraction entry above claimed "semester 1 prints units 5–8;
+semester 2 prints 1–4". That was the filename talking, and it is now corrected
+in place. The unit numbering itself was never the problem — the books really
+do print 1–8 across the year.

@@ -518,3 +518,40 @@ describe('scanGraphCommands', () => {
     assert.deepEqual(scanGraphCommands(''), { commands: [], unplottable: [] });
   });
 });
+
+describe('the shape the prompt teaches the model to write', () => {
+  /**
+   * Copied verbatim from FIGURE_RULE_AR / FIGURE_RULE_EN in
+   * artifacts/api-server/src/lib/prompts.ts. The prompt tells the model to
+   * imitate these sentences; this asserts that imitating them actually yields
+   * a drawn graph rather than a dropped question.
+   *
+   * The two halves must agree across packages and nothing enforces that at
+   * build time, so if the prompt's example changes, change these too — a rule
+   * teaching a form that extracts nothing is the original bug wearing a
+   * better sentence.
+   */
+  const AR = 'يمثل الرسم البياني المستقيمين y = 2x + 1 و y = -x + 4، جد نقطة تقاطعهما';
+  const EN = 'The graph shows the lines y = 2x + 1 and y = -x + 4; find their intersection.';
+
+  it('is recognised as claiming a visual, in both languages', () => {
+    assert.equal(referencesShownVisual(AR), true);
+    assert.equal(referencesShownVisual(EN), true);
+  });
+
+  it('yields both curves, so the claim is honoured rather than dropped', () => {
+    for (const text of [AR, EN]) {
+      const { commands, unplottable } = scanGraphCommands(text);
+      assert.deepEqual(unplottable, [], text);
+      assert.equal(commands.length, 2, text);
+    }
+  });
+
+  it('would extract nothing had the rule allowed Arabic variables', () => {
+    // Why the prompt insists on latin x and y: this is the same sentence with
+    // «س» for x, and it is indistinguishable from naming no equations at all.
+    const arabicVars = 'يمثل الرسم البياني المستقيمين y = 2س + 1 و y = -س + 4';
+    assert.equal(referencesShownVisual(arabicVars), true);
+    assert.deepEqual(scanGraphCommands(arabicVars).commands, []);
+  });
+});
