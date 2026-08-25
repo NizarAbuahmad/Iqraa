@@ -23,8 +23,10 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  buildLessonDeck, splitChecks, splitExample, splitWarmup, withoutSlide,
+  BOOK_FIGURE_MAX, bookFigureCaption, buildLessonDeck, splitChecks, splitExample,
+  splitWarmup, withoutSlide,
 } from '../lessonSlides.ts';
+import { figuresForLesson } from '../bookFigures.ts';
 import type { ActivitySlide, LessonPlanOutput } from '../ai/AIService.ts';
 import type { KBLesson } from '../knowledgeBase.ts';
 
@@ -552,5 +554,75 @@ describe('withoutSlide', () => {
     const [a, b, video] = [slide('a'), slide('b'), slide('video')];
     const left = withoutSlide([a, video, b], b);
     assert.deepEqual(left.map(s => s.title), ['a', 'video']);
+  });
+});
+
+describe('book figures on the deck', () => {
+  // A real curriculum lesson that has figures, unlike the synthetic LESSON
+  // above — the join is the thing under test, so a fixture would prove nothing.
+  const WITH_FIGURES: KBLesson = { ...LESSON, id: 'kbl-math-s1-nccd-u1_l1' };
+  const uri = (f: { file: string }) => `asset://${f.file}`;
+  const figureSlides = (deck: { slides: ActivitySlide[] }) =>
+    deck.slides.filter(s => s.type === 'media' && s.mediaUrl?.startsWith('asset://'));
+
+  it('shows the lesson\'s own figures, captioned with the page', () => {
+    const deck = buildLessonDeck('نظام معادلات', true, { lesson: WITH_FIGURES, figureUri: uri });
+    const shown = figureSlides(deck);
+    assert.ok(shown.length > 0, 'the lesson has figures and they reached the deck');
+    const expected = figuresForLesson(WITH_FIGURES.id).slice(0, BOOK_FIGURE_MAX);
+    assert.deepEqual(shown.map(s => s.mediaUrl), expected.map(uri));
+    // The page number is what lets a teacher check the slide against the book.
+    for (const s of shown) assert.match(s.mediaCaption ?? '', /صفحة/);
+  });
+
+  it('caps them, so a six-figure lesson is not six slides of looking', () => {
+    const many = figuresForLesson('kbl-math-s2-nccd-u5_l2');
+    assert.ok(many.length > BOOK_FIGURE_MAX, 'this lesson really does have more');
+    const deck = buildLessonDeck('اقترانات نسبية', true, {
+      lesson: { ...LESSON, id: 'kbl-math-s2-nccd-u5_l2' }, figureUri: uri,
+    });
+    assert.equal(figureSlides(deck).length, BOOK_FIGURE_MAX);
+  });
+
+  it('adds nothing when no resolver is passed — the pre-figures deck', () => {
+    const before = buildLessonDeck('نظام معادلات', true, { lesson: WITH_FIGURES });
+    assert.equal(figureSlides(before).length, 0);
+  });
+
+  it('drops a figure the bundler never got, rather than rendering it broken', () => {
+    const deck = buildLessonDeck('نظام معادلات', true, {
+      lesson: WITH_FIGURES, figureUri: () => null,
+    });
+    assert.equal(figureSlides(deck).length, 0);
+  });
+
+  it('adds nothing for a lesson with no figures at all', () => {
+    const deck = buildLessonDeck('درس بلا أشكال', true, { lesson: LESSON, figureUri: uri });
+    assert.equal(figureSlides(deck).length, 0);
+  });
+
+  it('keeps slide numbers consecutive with figures inserted', () => {
+    const deck = buildLessonDeck('نظام معادلات', true, { lesson: WITH_FIGURES, figureUri: uri });
+    assert.deepEqual(numbersOf(deck), deck.slides.map((_, i) => i + 1));
+  });
+});
+
+describe('bookFigureCaption', () => {
+  const figure = {
+    file: 'p021.png', sourceId: 'math-s2-student-book', pdfPage: 21,
+    unit: 1, lesson: 1, lessonTitleEn: null,
+  };
+
+  it('names the book, the semester and the page in Arabic digits', () => {
+    assert.equal(bookFigureCaption(figure, true), 'كتاب الطالب · الفصل الثاني · صفحة ٢١');
+  });
+
+  it('stays latin in English', () => {
+    assert.equal(bookFigureCaption(figure, false), 'Student Book · Semester 2 · page 21');
+  });
+
+  it('reads the semester off the source id', () => {
+    const s1 = { ...figure, sourceId: 'math-s1-student-book' };
+    assert.match(bookFigureCaption(s1, true), /الفصل الأول/);
   });
 });

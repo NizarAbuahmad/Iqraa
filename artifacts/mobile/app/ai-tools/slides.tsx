@@ -30,6 +30,7 @@ import { buildGeneratorContext, resolveGeneratorGrounding } from '@/services/kbC
 import {
   buildLessonDeck, EXIT_TICKET_MAX, MID_LESSON_CHECK_MAX, rebuildAnswerKey, withoutSlide,
 } from '@/services/lessonSlides';
+import { bookFigureUri } from '@/services/bookFigureUri';
 import {
   applyMediaEdit, extractGraphCommands, insertLessonResources, nextVideoSuggestion,
   shouldSearchForVideo, videoCaption,
@@ -356,6 +357,7 @@ export default function SlidesScreen() {
         includePractice,
         graphCommands,
         checks,
+        figureUri: bookFigureUri,
       });
       // The teacher's own resources go in before anything is shown, unlike
       // the searched media which arrives later — they are local, so there is
