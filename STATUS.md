@@ -973,16 +973,41 @@ A positional rule ("mid-word «ال» is a ligature") looks tempting and breaks 
 every word ending in -aal — سؤال، مثال، جمال. The information needed to tell
 them apart is simply absent from what Drive returns.
 
-**pypdf does not have this problem.** The same class of PDF, read by
-`scripts/extract_curriculum_pages.py` locally, gives clean text with harakat
-intact — «المسافةُ بينَ نقطتَيْنِ», «الإحداثي» ×44, «الطلبة» ×7, zero broken
-forms. So the split is settled:
+**pypdf does not have this problem.** The same class of PDF read by
+`scripts/extract_curriculum_pages.py` gives clean text with harakat intact —
+«المسافةُ بينَ نقطتَيْنِ», «الإحداثي» ×44, «الطلبة» ×7, zero broken forms.
 
-| Use Drive for | Use the local script for |
-| --- | --- |
-| seeing what books exist, names, sizes, structure | any Arabic string that ships |
-| contents pages and unit/lesson **counts** | النتاجات, titles, vocabulary |
-| cross-checking a fact against clean data | anything written into a curriculum JSON |
+**Corrected 2026-08-24 — that does not require the owner's machine.** The
+above was written as though pypdf were only reachable locally, and the
+conclusion drawn from it («don't bother splitting, Drive can't give usable
+Arabic») was wrong. Drive has a *second* tool: `download_file_content`
+returns the raw PDF bytes as base64, and pypdf can then run on them here.
+Verified end to end on «مادة التدخلات العلاجية … الصف التاسع الجزء الثاني»
+(5.2 MB, official MoE): 49 pages, 6,324 Arabic letters, **0** `/uniXXXX`,
+**0** broken forms, harakat intact — «الأعدادِ النسبيةِ», «أولاً», «كلاهُما».
+The decoded bytes matched Drive's reported `fileSize` exactly and began
+`%PDF-1.7`.
+
+So the two Drive tools differ, and only one of them is lossy:
+
+| Drive tool | Arabic | Use for |
+| --- | --- | --- |
+| `read_file_content` | **corrupted** (lam-alef transposed) | never for shipped text |
+| `download_file_content` + pypdf | **clean** | everything, up to a size limit |
+
+**The limit is between 5.2 MB and 9.4 MB.** Measured: 157 KB ✓, 2.4 MB ✓,
+5.2 MB ✓, 9.4 MB ✗ (fails as "session expired", reproducibly, three
+attempts). Oversized-but-under-the-limit results are written to a file rather
+than returned inline, which is what makes this work at all — the base64 never
+has to fit in context.
+
+Consequence: **anything ≤ ~5 MB in Drive needs nothing from anyone.** The
+Grade 9 teacher guides (45.9 MB, 36.5 MB) and Grade 2's unit-8 split (9.4 MB)
+are still over. For those, either the local script, or a smaller file in
+Drive — note the owner already compressed the Grade 9 guide 25.9 MB → 2.7 MB
+with iLovePDF, and image compression does not touch a PDF's text layer, so a
+compressed guide should come through this route. **Untested** — worth one
+file before doing it to all of them.
 
 The `semester_covered: 1` above was established this way and is safe: the
 *fact* came from Drive (unit 4 appears in the الفصل الأول contents), and every
