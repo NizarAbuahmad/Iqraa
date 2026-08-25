@@ -227,6 +227,66 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## A material's class stopped being a one-way door, 2026-08-25
+
+Reported from the running app: "the add button to classes not changing when
+changing the class and i can't uncheck it." Both halves were true.
+
+**The class was asked once and never mentioned again.** `ClassPickerSheet`
+opened on first save only (`setClassPromptFor(saved.id)`), showed no current
+selection, and had no clear. No generator screen said which class a material had
+gone to. And the class screen's attach list is `all.filter(m => !m.classGroupId)`
+on purpose — "a material belongs to one class, so showing an attached one would
+present a silent move as an add" — so the other class could not claim it either.
+The only exit was Remove, inside the old class's الموارد tab. A wrong pick was
+effectively permanent.
+
+Now: the sheet takes `selectedClassId` (ticked, and titled «انقل المادة إلى صف
+آخر» instead of «لأي صف هذه المادة؟») and an `onClear` that renders a «بلا صف»
+row — only when there is a selection to undo. `MaterialClassField` states the
+class on the material itself («الصف: العاشر أ» / «غير مرتبطة بصف») and reopens
+the sheet on tap.
+
+**The eight copies are down to one.** Every save site repeated the same six
+lines — the `classPromptFor` id, the `attachToClass` writer, the toast, the
+sheet — which is why a fix here had to be made in eight places to be made at
+all. The six generator screens now pass one prop; chat keeps its own handler
+because its material is per-message, but drives the same sheet.
+
+**Cards in موادي name their class.** They carried `classGroupId` and showed
+nothing, so the only way to learn where a material was filed was to open it.
+
+**`activityType` is translated.** An otherwise Arabic activity had the word
+`group` in its meta row, on the Activity screen and in the workspace viewer
+both. The forms had the translations; nothing carried them back to the output.
+`constants/activityType.ts` holds the map, and falls back to the raw value —
+with live AI the generator is not bound to the form's five ids, and echoing what
+it said beats calling a jigsaw a group activity.
+
+### Two bugs this pass created and caught
+
+- **The sheet auto-opened on a material that already had a class.** The prompt
+  effect gated on `loading`, which starts `false` — so on the render where the
+  id first appeared it ran before the fetch effect had set it, saw a `classId`
+  still null because nothing had looked yet, and opened. It now waits for the
+  read-back on that exact id, and skips an id the screen opened with (editing a
+  saved material is not a fresh save).
+- **A malformed roster response crashed the workspace list.** `listClasses()`
+  returns `data.classes` unchecked, so a body without that key arrives as
+  `undefined` and `.find` throws. Found by stubbing the endpoint with a bare
+  array while driving the UI. `classNameFor` takes a nullish list now.
+
+### Verified by driving the real UI
+
+Expo web with a stubbed `/auth/me` and roster, and `/api/workspace/*` answering
+404 so writes took the local path. On the lesson-plan screen opened at a saved
+material: the sheet did **not** auto-open, the row read «الصف: العاشر أ», moving
+to العاشر ب persisted `classGroupId: 'c2'`, and «بلا صف» persisted `null`. In
+chat: the first «أضف لصف» asked (no clear row offered on an unfiled material),
+picking filed it, and a second tap reopened as a move with the current class
+ticked and a clear row — one workspace row throughout, never a duplicate. موادي
+showed the class name on the card.
+
 ## «ابدأ الحصة» projects the lesson that was picked, 2026-08-25
 
 **Reported:** change the lesson in chat, choose a different subject, press

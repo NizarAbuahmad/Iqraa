@@ -7,6 +7,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { confirm } from '@/services/confirm';
+import { listClasses, type ClassGroup } from '@/services/roster';
+import { classNameFor } from '@/services/materialClass';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import {
@@ -38,6 +40,13 @@ export default function WorkspaceScreen() {
   const [query, setQuery] = useState('');
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [menuItem, setMenuItem] = useState<SavedMaterial | null>(null);
+  /**
+   * The roster, only so a card can name the class it belongs to. Loaded once
+   * per focus rather than per card: `classGroupId` is stored on the material,
+   * but a teacher reads class names, not ids — and a class deleted since
+   * resolves to no class rather than a name that is gone.
+   */
+  const [classes, setClasses] = useState<ClassGroup[]>([]);
 
   const reload = useCallback(async () => {
     const type = activeTab === 'all' ? undefined : activeTab;
@@ -52,6 +61,11 @@ export default function WorkspaceScreen() {
   useFocusEffect(
     useCallback(() => {
       reload();
+      // Server-only, so offline this stays empty and the cards simply show no
+      // class — never a wrong one.
+      // `?? []` because listClasses returns `data.classes` unchecked: a
+      // malformed body lands here as undefined and the cards read it directly.
+      void listClasses().then(cs => setClasses(cs ?? [])).catch(() => setClasses([]));
     }, [reload]),
   );
 
@@ -151,6 +165,7 @@ export default function WorkspaceScreen() {
   const renderItem = ({ item }: { item: SavedMaterial }) => {
     const color = MATERIAL_COLOR[item.type];
     const icon = MATERIAL_ICON[item.type];
+    const classLabel = classNameFor(classes, item.classGroupId, lang as 'ar' | 'en');
     return (
       <Pressable
         onPress={() => router.push({ pathname: '/workspace/view', params: { id: item.id } })}
@@ -187,6 +202,20 @@ export default function WorkspaceScreen() {
             <Text style={[styles.metaText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
               {item.grade}
             </Text>
+            {/* Which class it is filed under. Absent rather than "no class":
+                an unfiled material is the normal case and does not need a
+                label saying so on every card. */}
+            {classLabel ? (
+              <View style={[styles.classPill, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                <Ionicons name="people-outline" size={11} color={colors.mutedForeground} />
+                <Text
+                  style={[styles.metaText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}
+                  numberOfLines={1}
+                >
+                  {classLabel}
+                </Text>
+              </View>
+            ) : null}
           </View>
           <Text style={[styles.metaText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left', marginTop: 2 }]}>
             {t('savedAt')} {formatDate(item.savedAt)}
@@ -441,6 +470,7 @@ const styles = StyleSheet.create({
   cardIcon: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   cardTitle: { fontSize: 14, marginBottom: 6, lineHeight: 20 },
   cardMeta: { alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  classPill: { alignItems: 'center', gap: 3 },
   typePill: { paddingHorizontal: 8, paddingVertical: 2 },
   typeText: { fontSize: 11 },
   metaText: { fontSize: 11 },
