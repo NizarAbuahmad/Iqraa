@@ -1,0 +1,149 @@
+{
+ "sourceId": "math-s1-exercise-book",
+ "lessons": [
+  {
+   "page": 10,
+   "unit": 1,
+   "lesson": 1,
+   "titleAr": "ح ُّلُ ُمُعادالٍتٍ خاَّصٍََة",
+   "titleEn": "Solving Special Equations",
+   "exerciseCount": 18,
+   "exercisesTrusted": true
+  },
+  {
+   "page": 11,
+   "unit": 1,
+   "lesson": 2,
+   "titleAr": "َح َُّلُ نظاٍمٍ ُمُكَّوٍَنٍ مْنْ معادلٍةٍ خِّطِيٍةٍ ومعادلٍةٍ تربيعيٍة",
+   "titleEn": "Solving a System of Linear and Quadratic Equations",
+   "exerciseCount": 17,
+   "exercisesTrusted": true
+  },
+  {
+   "page": 12,
+   "unit": 1,
+   "lesson": 3,
+   "titleAr": "حَلُّ نظامٍ مُكوَّنٍ منْ معادلتيْنِ تربيعيتيْن",
+   "titleEn": "Solving a System of Two Quadratic Equations",
+   "exerciseCount": 14,
+   "exercisesTrusted": true
+  },
+  {
+   "page": 19,
+   "unit": 2,
+   "lesson": 1,
+   "titleAr": "أوتارُ الدائرةِ، وأقطارُها، ومماسّاتُها",
+   "titleEn": "Chords, Diameters and Tangents of a Circle",
+   "exerciseCount": 8,
+   "exercisesTrusted": true
+  },
+  {
+   "page": 20,
+   "unit": 2,
+   "lesson": 2,
+   "titleAr": "األقواسُ والقطاعاتُ الدائرية",
+   "titleEn": "Arcs and Sectors",
+   "exerciseCount": 9,
+   "exercisesTrusted": true
+  },
+  {
+   "page": 21,
+   "unit": 2,
+   "lesson": 3,
+   "titleAr": "الزوايا في الدائرة",
+   "titleEn": "Angles in a Circle",
+   "exerciseCount": 10,
+   "exercisesTrusted": true
+  },
+  {
+   "page": 22,
+   "unit": 2,
+   "lesson": 4,
+   "titleAr": "معادلةُ الدائرة",
+   "titleEn": "Equation of a Circle",
+   "exerciseCount": 12,
+   "exercisesTrusted": true
+  },
+  {
+   "page": 30,
+   "unit": 3,
+   "lesson": 1,
+   "titleAr": "النسبُ المثلثية",
+   "titleEn": "Trigonometric Ratios",
+   "exerciseCount": 22,
+   "exercisesTrusted": true
+  },
+  {
+   "page": 31,
+   "unit": 3,
+   "lesson": 2,
+   "titleAr": "النسبُ المثلثيةُ للزوايا ضمنَ الدورةِ الواحدة",
+   "titleEn": "Trigonometric Ratios for Angles between 0° and 360°",
+   "exerciseCount": 32,
+   "exercisesTrusted": true
+  },
+  {
+   "page": 32,
+   "unit": 3,
+   "lesson": 3,
+   "titleAr": "تمثيلُ االقتراناتِ المثلثية",
+   "titleEn": "Graphing Trigonometric Functions",
+   "exerciseCount": 7,
+   "exercisesTrusted": true
+  },
+  {
+   "page": 33,
+   "unit": 3,
+   "lesson": 4,
+   "titleAr": "حَلُّ المعادالتِ المثلثية",
+   "titleEn": "Solving Trigonometric Equations",
+   "exerciseCount": 26,
+   "exercisesTrusted": true
+  },
+  {
+   "page": 39,
+   "unit": 4,
+   "lesson": 1,
+   "titleAr": "االتجاُهُ مَنَ الشماِل",
+   "titleEn": "Bearing",
+   "exerciseCount": 9,
+   "exercisesTrusted": true
+  },
+  {
+   "page": 40,
+   "unit": 4,
+   "lesson": 2,
+   "titleAr": "قانوُنُ الجيوِب",
+   "titleEn": "Law of Sines",
+   "exerciseCount": 12,
+   "exercisesTrusted": true
+  },
+  {
+   "page": 41,
+   "unit": 4,
+   "lesson": 3,
+   "titleAr": "قانوُنُ جيوِبِ التماِم",
+   "titleEn": "Law of Cosines",
+   "exerciseCount": 17,
+   "exercisesTrusted": true
+  },
+  {
+   "page": 42,
+   "unit": 4,
+   "lesson": 4,
+   "titleAr": "استعماُلُ جيِبِ الزاويِةِ إليجاِدِ مساحِةِ المثلِث",
+   "titleEn": "Using Sine to Find the Area of a Triangle",
+   "exerciseCount": 12,
+   "exercisesTrusted": true
+  },
+  {
+   "page": 43,
+   "unit": 4,
+   "lesson": 5,
+   "titleAr": "َح َُّلُ مسائَلَ ثالثيِةِ األبعاِد",
+   "titleEn": "Solving Problems in Three Dimensions",
+   "exerciseCount": 7,
+   "exercisesTrusted": true
+  }
+ ]
+}

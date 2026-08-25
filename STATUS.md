@@ -277,6 +277,66 @@ hardcodes both indices; it is reached from the classroom hub rather than from
 chat with a lesson, and it has its own on-screen picker, so it is not part of
 this path.
 
+## A material's class stopped being a one-way door, 2026-08-25
+
+Reported from the running app: "the add button to classes not changing when
+changing the class and i can't uncheck it." Both halves were true.
+
+**The class was asked once and never mentioned again.** `ClassPickerSheet`
+opened on first save only (`setClassPromptFor(saved.id)`), showed no current
+selection, and had no clear. No generator screen said which class a material had
+gone to. And the class screen's attach list is `all.filter(m => !m.classGroupId)`
+on purpose — "a material belongs to one class, so showing an attached one would
+present a silent move as an add" — so the other class could not claim it either.
+The only exit was Remove, inside the old class's الموارد tab. A wrong pick was
+effectively permanent.
+
+Now: the sheet takes `selectedClassId` (ticked, and titled «انقل المادة إلى صف
+آخر» instead of «لأي صف هذه المادة؟») and an `onClear` that renders a «بلا صف»
+row — only when there is a selection to undo. `MaterialClassField` states the
+class on the material itself («الصف: العاشر أ» / «غير مرتبطة بصف») and reopens
+the sheet on tap.
+
+**The eight copies are down to one.** Every save site repeated the same six
+lines — the `classPromptFor` id, the `attachToClass` writer, the toast, the
+sheet — which is why a fix here had to be made in eight places to be made at
+all. The six generator screens now pass one prop; chat keeps its own handler
+because its material is per-message, but drives the same sheet.
+
+**Cards in موادي name their class.** They carried `classGroupId` and showed
+nothing, so the only way to learn where a material was filed was to open it.
+
+**`activityType` is translated.** An otherwise Arabic activity had the word
+`group` in its meta row, on the Activity screen and in the workspace viewer
+both. The forms had the translations; nothing carried them back to the output.
+`constants/activityType.ts` holds the map, and falls back to the raw value —
+with live AI the generator is not bound to the form's five ids, and echoing what
+it said beats calling a jigsaw a group activity.
+
+### Two bugs this pass created and caught
+
+- **The sheet auto-opened on a material that already had a class.** The prompt
+  effect gated on `loading`, which starts `false` — so on the render where the
+  id first appeared it ran before the fetch effect had set it, saw a `classId`
+  still null because nothing had looked yet, and opened. It now waits for the
+  read-back on that exact id, and skips an id the screen opened with (editing a
+  saved material is not a fresh save).
+- **A malformed roster response crashed the workspace list.** `listClasses()`
+  returns `data.classes` unchecked, so a body without that key arrives as
+  `undefined` and `.find` throws. Found by stubbing the endpoint with a bare
+  array while driving the UI. `classNameFor` takes a nullish list now.
+
+### Verified by driving the real UI
+
+Expo web with a stubbed `/auth/me` and roster, and `/api/workspace/*` answering
+404 so writes took the local path. On the lesson-plan screen opened at a saved
+material: the sheet did **not** auto-open, the row read «الصف: العاشر أ», moving
+to العاشر ب persisted `classGroupId: 'c2'`, and «بلا صف» persisted `null`. In
+chat: the first «أضف لصف» asked (no clear row offered on an unfiled material),
+picking filed it, and a second tap reopened as a move with the current class
+ticked and a clear row — one workspace row throughout, never a duplicate. موادي
+showed the class name on the card.
+
 ## «ابدأ الحصة» projects the lesson that was picked, 2026-08-25
 
 **Reported:** change the lesson in chat, choose a different subject, press
@@ -750,6 +810,40 @@ reference-only, and there is a test holding that.
 44 curriculum / 783 mobile / 175 api-server tests pass, typecheck clean,
 `verify-curriculum` reports 0 errors. (Mobile was 761 on the branch alone; the
 extra 22 came in with `main` when this was merged up, not from this change.)
+## Two dead ends found by using it, 2026-08-25
+
+Both came from a teacher walking the real flow on production, and neither
+would have shown up in a test.
+
+**The share card named a problem and offered no way to fix it.** An exam that
+is not attached to a class cannot have a working link — the roster a student
+picks their name from *is* the class — so the card said "attach this to a class
+first" and stopped there. Attaching was only possible from inside the class
+(الصفوف → الامتحانات → +), which a teacher standing on the evaluation screen has
+no reason to guess. It now offers «أرفقه بصف الآن» and opens
+`ClassPickerSheet` — the same sheet the seven generators already use, which
+loads the list itself and closes silently for a teacher with no classes rather
+than showing an empty dialog.
+
+**Submitting looked like a button that did nothing.** «سلّم وصحّح» sits at the
+bottom of a long page and the result card renders at the top, so a successful
+submit changed nothing where the teacher was looking. The marks were saved
+correctly the whole time — the teacher only found out by navigating to the
+results dashboard and seeing 80%. Now it says «تم التصحيح — النتيجة في الأعلى»
+and scrolls to the card.
+
+The second one is worth remembering as a shape: **the work happened, the
+feedback was somewhere else.** Nothing was broken, no error was thrown, and the
+data was right. It still read as a failure, which is all that matters at the
+moment a teacher decides whether to trust the tool.
+
+243 api-server tests, 895 mobile, 0 failures.
+
+**Verified as far as the automation allows.** The attach button renders on an
+unattached published exam, and the endpoint behind it was proven when the exams
+tab shipped. The *click* is not machine-verifiable — synthetic events do not
+reach these React-Native-Web controls, which is already recorded above.
+
 ## A model can write the exam now, 2026-08-25
 
 The student link shipped and immediately hit its own ceiling: **no teacher
@@ -5737,3 +5831,103 @@ detector.
 Re-running extraction leaves **every one of the 60 PNGs byte-identical**, so
 the diff is metadata only. `build:web` exports 58 figures, 4 of them
 chemistry.
+
+## Every generation failed on a cold API, and the fallback was suppressed, 2026-08-25
+
+Reported from the deployed site: «بطاقة الخروج», «تحقق سريع» and «تحدي الهروب»
+all failed with «تعذر إتمام العملية. حاول مرة أخرى.» — three different activity
+types, one identical dead end.
+
+**The fallback that exists for exactly this was being skipped.** `postJSON`
+enforced its 18s ceiling by calling `controller.abort()`, so a timeout reached
+`generateWithProvenance` as an `AbortError` — indistinguishable from the
+teacher pressing Cancel. That branch deliberately refuses to substitute mock
+content (answering "stop" with a fabricated worksheet is the substitution the
+module exists to prevent), so it rethrew, the builder caught, and the teacher
+got an error with nothing behind it.
+
+**And the ceiling guaranteed the timeout.** `iqraa-api` is a free Render
+service: it sleeps after ~15 minutes idle and takes 30-60s to answer the first
+request after that — `render.yaml` says so in its own header. 18s is below that
+floor, so the first generation of any session timed out, was classified as a
+cancellation, and failed with no fallback. Every tool, every activity type,
+every time the API had gone to sleep. The timeout is now a `TimeoutError`
+(name, not class — the check is name-based) and the ceiling is 45s.
+
+**A second crash on the same path**, found while confirming the first:
+`applyClassroomSetup` called `.some` on `activity.materials`, but `materials`
+is model output and the server's usability check requires only `activityName`
+and `slides` (`REQUIRED_FIELDS['classroom-activity']`). A generation that
+omitted it threw *after* a successful API call — a complete, usable deck
+discarded on its way to the projector over a field nobody reads. It tolerates
+a missing list now.
+
+Ruled out first: the mock generator builds all seven activity types cleanly
+(escape 13 slides, quick-check 6, error-detective 8, exit-ticket 5, bingo 10,
+relay 6, gallery-walk 7), so the fallback would have produced a deck had it
+been reached.
+
+**Not verified:** the API could not be reached from the sandbox the diagnosis
+was done in (the agent proxy 403s both Render hosts), so neither fault was
+observed live — both are read off the code path, and the fixes are unit-tested
+rather than confirmed against the running system. If «تعذر إتمام العملية»
+survives this, it is a third cause, not these two.
+
+**Worth noting for whoever sees it next:** `builder.tsx` catches with a bare
+`catch {}` and shows one generic string, which is why three different faults
+looked like one. The diagnosis took a code read because the screen carried no
+information at all.
+
+## Homework cites real exercises now, 2026-08-25
+
+Decks have always been able to say «تمارين ١-٦ صفحة ٧٢». Until now that was
+generated, which is to say invented: the page and the numbers pointed at
+nothing. `scripts/extract_book_exercises.py` reads the ministry's own exercise
+books, and the homework slide carries the result — **31 of 32 maths lessons**,
+attributed to the book on its own line.
+
+### Read from the books, checked three ways
+
+- **Exercise numbers** are set BOLD at ~10-11pt, in STIXGeneral in the
+  first-semester book and UniMath in the second. Matching on weight and size
+  rather than family is what makes one rule fit both. The rule is then
+  self-checking: an exercise book numbers from 1 with nothing skipped, so a run
+  with a gap means the rule caught something else and the page records nothing.
+- **The join is arithmetic** — `u{n}_l{m}` is the number the book prints, with
+  unit 1 shifted by one — and arithmetic is exactly how you cite a confidently
+  wrong page. So the test walks every derived id, asserts it exists in
+  `KB_LESSONS`, and asserts the curriculum's own title matches the book's.
+- **The figure map was deliberately not reused.** It encodes the same
+  relationship but only carries rows for lessons that have a figure, so joining
+  through it covered 18 of 32 and dropped the rest silently.
+
+### Three ways two ministry documents disagree about a title
+
+Found by running the check, and each fixed with an exact rule rather than a
+similarity score — a 0.67 near-miss once almost filed a figure under the wrong
+lesson:
+
+| | book | curriculum | resolved by |
+| --- | --- | --- | --- |
+| `u1_l1` | …System **of** Linear… | …System**:** Linear… | Arabic matches |
+| `u5_l2` | الاقترانات النسبية | **قسمة كثيرات الحدود و**الاقترانات النسبية | containment — the curriculum merges lessons |
+| `u4_l3` | قانون **جيوب** التمام | قانون **جيب** التمام | named exception; both are real names for the Law of Cosines |
+
+### Two things it deliberately does not do
+
+- **A separate detector, not a widened one.** The exercise books set the lesson
+  number at y≈52 and y≈64 where the student-book detector requires y<60.
+  Loosening that shared band would have been the second time in this repo that
+  accommodating one book silently broke another — the first cost 14 of 32
+  maths titles.
+- **The generated homework is left alone.** It may still contain a reference
+  the model invented, which is why the real one is on its own line and says
+  «من كتاب التمارين». Telling the generator not to invent exercise references —
+  the same treatment the figure rule got — is the obvious follow-up.
+
+### Coverage
+
+31 of 32 book lessons join to a curriculum lesson. The one that does not is
+«حل معادلات خاصة», which the curriculum deliberately omits. The two exponent
+lessons the curriculum *does* carry have no exercises in the 2026 book, and
+correctly get silence rather than an invented page.
