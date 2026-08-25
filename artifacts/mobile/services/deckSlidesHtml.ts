@@ -127,6 +127,20 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
       ${footer(num)}</div>`;
   };
 
+  /**
+   * The plotted curve a slide carries, if any.
+   *
+   * Split out of `contentSlide` because question and challenge slides need it
+   * too: a check whose stem says «في الرسم البياني الظاهر…» now carries the
+   * `graphCommands` for that figure (see lessonSlides.ts), and the printed
+   * deck has to draw it for the same reason the projected one does.
+   */
+  const slidePlot = (slide: ActivitySlide) => {
+    const visual = visualForSlide(slide);
+    const svg = visual ? visualToSvg(visual, 640, 320) : '';
+    return svg ? `<div class="deck-plot">${svg}</div>` : '';
+  };
+
   const graphSlide = (slide: ActivitySlide, num: number) => {
     const accent = deckSlideAccent('graph');
     const commands = slide.graphCommands ?? [];
@@ -169,6 +183,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
       ${deckHeader(slide.title, accent, '🔐')}
       <div class="deck-body deck-body-center">
         ${deckContentLine(slide.content, true)}
+        ${slidePlot(slide)}
         ${slide.answer ? `
           <div class="deck-answer" style="border-color:${accent}44">
             <div class="deck-answer-label" style="color:${accent}">${L('الإجابة', 'Answer')}</div>
@@ -233,6 +248,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
       ${deckHeader(slide.title, accent, '🙋')}
       <div class="deck-body deck-body-center">
         ${deckContentLine(slide.content, true)}
+        ${slidePlot(slide)}
         <div class="deck-options">
           ${options.map((opt, i) => {
             const correct = i === slide.correctIndex;
@@ -255,15 +271,10 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
       ${deckHeader(slide.title, accent, deckSlideEmoji(slide.type))}
       <div class="deck-body">
         ${lines.map(l => deckBodyLine(l, accent)).join('')}
-        ${(() => {
-          // Any slide may carry a visual, not just graph slides. A chart
-          // attached to a content slide rendered nowhere in the exports until
-          // this existed — the drawing was only ever wired into the graph
-          // branch.
-          const visual = visualForSlide(slide);
-          const svg = visual ? visualToSvg(visual, 640, 320) : '';
-          return svg ? `<div class="deck-plot">${svg}</div>` : '';
-        })()}
+        ${/* Any slide may carry a visual, not just graph slides. A chart
+             attached to a content slide rendered nowhere in the exports until
+             this existed — the drawing was only ever wired into the graph
+             branch. */ slidePlot(slide)}
       </div>
       ${footer(num)}</div>`;
   };

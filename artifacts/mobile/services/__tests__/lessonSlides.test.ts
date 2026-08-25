@@ -449,6 +449,64 @@ describe('splitChecks', () => {
   });
 });
 
+describe('checks that point at a figure', () => {
+  /** The shape the live generator actually produced — the bug this covers. */
+  const openCheck = (content: string): ActivitySlide => ({
+    slideNumber: 2,
+    type: 'challenge',
+    title: 'سؤال 1',
+    content,
+    hint: 'ابدأ من نقطة التقاطع',
+    answer: '(1 ، 2)',
+    durationSeconds: 60,
+  });
+
+  const DANGLING = 'في الرسم البياني الظاهر، يلتقي المستقيمان عند النقطة التي تمثل حل النظام. حدّدوا إحداثيات نقطة التقاطع.';
+
+  it('drops a check that claims a graph is on screen but carries none', () => {
+    const { mid, exit } = splitChecks([openCheck(DANGLING), mcq(2), mcq(3), mcq(4), mcq(5)]);
+    assert.ok(
+      [...mid, ...exit].every(s => s.content !== DANGLING),
+      'a question about an absent graph never reaches the projector',
+    );
+    assert.equal(mid.length + exit.length, 4);
+  });
+
+  it('keeps it, with the curves attached, when the stem names them', () => {
+    const withEquations = openCheck(
+      'في الرسم البياني الظاهر: y = x + 1 و y = -x + 3. حدّدوا إحداثيات نقطة التقاطع.',
+    );
+    const { mid } = splitChecks([withEquations]);
+    assert.equal(mid.length, 1);
+    assert.deepEqual(mid[0]!.graphCommands, ['y=x + 1', 'y=-x + 3']);
+  });
+
+  it('leaves an ordinary check alone — no figure claimed, no graph invented', () => {
+    const plain = openCheck('أوجد حل المعادلة: x² - 5x + 6 = 0');
+    const { mid } = splitChecks([plain]);
+    assert.equal(mid.length, 1);
+    assert.equal(mid[0]!.graphCommands, undefined);
+  });
+
+  it('does not read «ارسم الرسم البياني» as a claim that one is showing', () => {
+    const draw = openCheck('ارسم الرسم البياني للاقتران ثم صف سلوكه.');
+    assert.equal(splitChecks([draw]).mid.length, 1);
+  });
+
+  it('never borrows the deck-level graph for a check about something else', () => {
+    const deck = buildLessonDeck('حل المعادلات التربيعية', true, {
+      lesson: LESSON,
+      plan: PLAN,
+      graphCommands: ['f(x)=x^2'],
+      checks: [openCheck(DANGLING)],
+    });
+    assert.ok(
+      deck.slides.every(s => !s.content.includes('يلتقي المستقيمان')),
+      'the parabola the lesson plots is not evidence for a question about two lines',
+    );
+  });
+});
+
 describe('splitWarmup', () => {
   it('projects only the question and keeps the stage directions for the teacher', () => {
     const intro = `ابدأ بطرح السؤال: “أين نلتقي بالأقواس في حياتنا؟” سجّل إجابات الطلاب على السبورة.`;
