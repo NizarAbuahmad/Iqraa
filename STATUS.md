@@ -810,6 +810,41 @@ reference-only, and there is a test holding that.
 44 curriculum / 783 mobile / 175 api-server tests pass, typecheck clean,
 `verify-curriculum` reports 0 errors. (Mobile was 761 on the branch alone; the
 extra 22 came in with `main` when this was merged up, not from this change.)
+## Save stopped working after you deleted the material, 2026-08-25
+
+Reported from use: save a quiz, pick a class, leave the screen, delete the
+material from موادي, then press Save again — and nothing happens.
+
+`updateItem` returns `false` when the material is no longer there. All four
+generator screens — quiz, activity, lesson plan, worksheet — **dropped that
+return value**:
+
+```ts
+await updateItem(savedId, { … });   // false, ignored
+setSaveLabel('updated');            // says "تم التحديث" anyway
+```
+
+So the screen still held the id of something the teacher had since deleted, the
+PATCH answered 404, and the button reported success over a material that no
+longer existed. The work was never saved again, and nothing said so.
+
+The fix folds the call into the condition, so a failed update falls through to
+creating a fresh material — which is what pressing Save meant:
+
+```ts
+if (savedId && (await updateItem(savedId, { … }))) { … } else { …create… }
+```
+
+Confirmed against the API: PATCH returns 200 while the item exists and 404
+after it is deleted, which is exactly the signal that was being thrown away.
+
+**The same shape as the submit bug above**, and worth noticing twice in one
+day: the operation reported success, the data said otherwise, and only a
+teacher using it found out. Both were places where a return value or a piece of
+feedback existed and nothing looked at it.
+
+895 mobile tests, 0 failures.
+
 ## Two dead ends found by using it, 2026-08-25
 
 Both came from a teacher walking the real flow on production, and neither
