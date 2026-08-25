@@ -38,7 +38,8 @@ import type { DeckVideo } from '@/services/youtubeVideo';
 import { summarizeVerification } from '@/services/quizVerification';
 import { confirm } from '@/services/confirm';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
-import { deleteItem, saveItem, updateItem } from '@/services/workspace';
+import { deleteItem, getAllItems, saveItem, updateItem } from '@/services/workspace';
+import { findMatchingItem } from '@/services/savedMaterialMatch';
 import { ClassPickerSheet } from '@/components/ui/ClassPickerSheet';
 import { buildDeckSlidesHTML, exportAsPDF } from '@/services/share';
 import {
@@ -87,6 +88,12 @@ export default function SlidesScreen() {
    * over a stored deck that no longer matches what is on screen.
    */
   const savedContentRef = useRef('');
+  /**
+   * The deck identity this screen has already looked up in the workspace.
+   * The lookup runs once per identity so that an un-save is not undone by the
+   * next render re-adopting an older duplicate of the same deck.
+   */
+  const lookedUpKeyRef = useRef<string | null>(null);
   const [plan, setPlan] = useState<LessonPlanOutput | null>(null);
   const [grounded, setGrounded] = useState(false);
   const [groundedLesson, setGroundedLesson] = useState('');
@@ -489,6 +496,20 @@ export default function SlidesScreen() {
    * the second press removes the material it created rather than storing the
    * same deck twice.
    */
+  /**
+   * What this deck is, in the terms the workspace stores. One definition, used
+   * both to save and to recognise a deck that is already saved — if the two
+   * ever drift the button starts lying again.
+   */
+  const deckIdentity = (built: ClassroomActivity) => ({
+    type: 'slides' as const,
+    title: built.activityName,
+    subject: isAr ? subjects[subjectIdx].nameAr : subjects[subjectIdx].name,
+    grade: isAr ? grades[gradeIdx].nameAr : grades[gradeIdx].name,
+    topic: topic.trim(),
+    language: (isAr ? 'ar' : 'en') as 'ar' | 'en',
+  });
+
   const toggleSave = async () => {
     if (!deck || savingBusy) return;
     setSavingBusy(true);
@@ -502,12 +523,7 @@ export default function SlidesScreen() {
       }
       const content = JSON.stringify(deck);
       const item = await saveItem({
-        type: 'slides',
-        title: deck.activityName,
-        subject: isAr ? subjects[subjectIdx].nameAr : subjects[subjectIdx].name,
-        grade: isAr ? grades[gradeIdx].nameAr : grades[gradeIdx].name,
-        topic: topic.trim(),
-        language: isAr ? 'ar' : 'en',
+        ...deckIdentity(deck),
         content,
         formState: { gradeIdx, subjectIdx, topic: topic.trim(), includeExamples, includePractice },
       });
@@ -521,6 +537,43 @@ export default function SlidesScreen() {
       setSavingBusy(false);
     }
   };
+
+  /**
+   * Pick the button's state back up from the workspace.
+   *
+   * `savedId` is screen state, so it died with the screen: a teacher who saved
+   * a deck, went to look at موادي and came back found the button offering to
+   * save again, and pressing it made a second copy instead of removing the
+   * first. The workspace is what actually remembers, so ask it.
+   *
+   * Once per identity, not once per render: `deck` is replaced by every edit
+   * and by the media passes, and re-running after an un-save could re-adopt an
+   * older duplicate of the same deck and light the button straight back up.
+   */
+  useEffect(() => {
+    if (!deck || savedId) return;
+    const identity = deckIdentity(deck);
+    const key = JSON.stringify(identity);
+    if (lookedUpKeyRef.current === key) return;
+    lookedUpKeyRef.current = key;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const existing = findMatchingItem(await getAllItems(), identity);
+        if (cancelled || !existing) return;
+        // Seed the sync ref from the STORED copy, so the sync effect pushes
+        // the on-screen deck only where the two genuinely differ.
+        savedContentRef.current = existing.content;
+        setSavedId(existing.id);
+      } catch {
+        // Offline, or the workspace is unreachable. The button stays on
+        // "احفظ" — the honest state for a screen that cannot tell.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [deck, savedId]);
 
   // Slide edits, and the media/video passes that land after generation, both
   // replace the deck. While it is saved, the stored copy follows.
