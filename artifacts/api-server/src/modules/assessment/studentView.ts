@@ -6,12 +6,21 @@
  *
  * The sanitiser is **the** control on answer keys. Hiding `expectedAnswer` in
  * the client is not a control — the payload arrives on the student's phone
- * either way, and a browser devtools tab is all it takes. So the projection is
- * built by naming the fields that may leave, never by deleting the ones that
- * may not: a question type added later inherits the safe default instead of
- * quietly leaking a new field nobody remembered to strip.
+ * either way, and a browser devtools tab is all it takes.
+ *
+ * The projection itself is **not defined here**. Every entry in
+ * `QUESTION_TYPES` already carries a `sanitizeForStudent`, declared in the same
+ * object as its `validate` and `grade`, and the interface states it must never
+ * include answers or rubric. Delegating to it means a new question type defines
+ * its student view exactly once, beside the rest of its behaviour — a second
+ * copy in this file would be one more place to forget, and the two would
+ * disagree the first time a type gained a field.
+ *
+ * The local allowlist below survives only as the fallback for a type the
+ * registry does not know, where failing safe matters more than completeness.
  */
 import crypto from "node:crypto";
+import { QUESTION_TYPES } from "./questionTypes.ts";
 
 /**
  * No I, L, O, 0 or 1. A teacher writes this on a whiteboard and thirty
@@ -62,20 +71,12 @@ export interface StudentQuestion {
 }
 
 /**
- * Body fields that are safe to show, per question type. An allowlist, because
- * the alternative — copying the body and deleting the dangerous keys — fails
- * open the first time a question type gains a field.
+ * Fallback allowlist, used only when the type registry has never heard of this
+ * question type. Deliberately meagre: a prompt and nothing else, because the
+ * one thing worth guaranteeing about an unrecognised type is that it cannot
+ * leak a field this file has never seen.
  */
-const SAFE_BODY_FIELDS: Record<string, readonly string[]> = {
-  multiple_choice: ["stem", "options", "multiSelect"],
-  true_false: ["statement"],
-  matching: ["left", "right", "instructions"],
-  fill_blank: ["template", "wordBank", "instructions"],
-  short_answer: ["prompt"],
-  open_ended: ["prompt"],
-  problem_solving: ["prompt", "scenario"],
-  practical_task: ["prompt", "scenario", "materials"],
-};
+const FALLBACK_BODY_FIELDS: readonly string[] = ["prompt", "stem", "statement"];
 
 /**
  * An option carries the answer in `isCorrect` on some generators. Strip every
@@ -94,17 +95,29 @@ export function sanitizeQuestionForStudent(question: {
   marks: unknown;
   body: Record<string, unknown> | null | undefined;
 }): StudentQuestion {
-  const allowed = SAFE_BODY_FIELDS[question.type] ?? ["prompt", "stem", "statement"];
   const source = question.body ?? {};
-  const body: Record<string, unknown> = {};
+  const typeModule = QUESTION_TYPES[question.type as keyof typeof QUESTION_TYPES];
 
-  for (const key of allowed) {
-    if (!(key in source)) continue;
-    const value = source[key];
-    body[key] =
-      (key === "options" || key === "left" || key === "right") && Array.isArray(value)
-        ? value.map(safeOption)
-        : value;
+  let body: Record<string, unknown>;
+  if (typeModule) {
+    body = typeModule.sanitizeForStudent({
+      type: question.type as never,
+      body: source,
+      expectedAnswer: {},
+      rubric: null,
+    });
+  } else {
+    body = {};
+    for (const key of FALLBACK_BODY_FIELDS) {
+      if (key in source) body[key] = source[key];
+    }
+  }
+
+  // Belt and braces on the one field that carries correctness inside itself.
+  // The registry's projections already do this; re-doing it costs nothing and
+  // means a future projection that forgets cannot leak through here.
+  for (const key of ["options", "left", "right"]) {
+    if (Array.isArray(body[key])) body[key] = (body[key] as unknown[]).map(safeOption);
   }
 
   return {

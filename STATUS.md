@@ -634,6 +634,96 @@ reference-only, and there is a test holding that.
 44 curriculum / 783 mobile / 175 api-server tests pass, typecheck clean,
 `verify-curriculum` reports 0 errors. (Mobile was 761 on the branch alone; the
 extra 22 came in with `main` when this was merged up, not from this change.)
+## A model can write the exam now, 2026-08-25
+
+The student link shipped and immediately hit its own ceiling: **no teacher
+could create a single question that marks itself.** The mock generator refuses
+multiple choice, true/false, matching and fill-blank by design — its own note
+says they "need distractors or factual statements that cannot be derived from
+the curriculum text alone" — and the question editor can change a body but not
+a *type*. Those four are exactly the types Tier 1 grades. So a link exam was
+all written answers and the teacher still marked every one; the link removed
+transcription, not marking.
+
+`POST /evaluations/:id/generate` now takes a model path when `AI_LIVE_MODE` is
+on, and the mock when it is not.
+
+**Split so the risky part is pure.** `buildGenerationPrompt` and
+`parseGeneratedQuestions` are pure functions with 15 tests; only the call out is
+not. The parser assumes carelessness — every case it handles is something a
+model actually does: inventing an objective id, returning a type nobody asked
+for, omitting marks, wrapping the array in the wrong key. Malformed items are
+dropped **with a reason a human can read**, and the count is reported, because
+a teacher who asked for 15 and got 11 is owed the reason.
+
+**Nothing new decides whether a question is good enough.** Output goes through
+`validateGenerated` — the same gate the mock passes — which already enforces
+objective scope, requested types, per-type structure, positive marks and
+near-duplicate stems. The grading mode comes from the type registry, never from
+the model: a model claiming its own question is `deterministic` would be
+deciding how it gets marked.
+
+**A failed model call never becomes four template questions.** This is the
+repo's own scar — mock output that looked identical to real output — and it
+would have been trivial to reintroduce here. Verified with live mode on and a
+deliberately invalid key: `502 generator_unavailable`, nothing written, the
+evaluation not marked as model-written. The message names which half failed and
+says nothing was changed, so a teacher is not left wondering whether they now
+have half a paper.
+
+The four failure modes are now distinguishable — `live_mode_off` (503),
+`budget_exceeded` (429), `user_quota_exceeded` (429), `generator_unavailable`
+(502). One "Generation failed" for all of them is what makes a spend cap look
+like an outage and an outage look like a bug.
+
+**A per-teacher allowance, because fifty teachers share one card.**
+`AI_BUDGET_USD` is a single month-to-date total; with a pilot that size,
+whoever generates on the 20th is refused with no way to tell it from a bug.
+`AI_USER_BUDGET_USD` caps each teacher, read from the ledger rather than a
+process counter — an in-memory total is what made the global cap a *per-wake*
+allowance once before, since the free tier restarts on every wake. Unset means
+no per-teacher cap, which is right for one teacher and wrong for fifty.
+**Verified**: seeded $0.90 of spend against a $0.50 cap gave `429
+user_quota_exceeded`. A ledger that cannot be read does not block generation —
+the global cap still applies underneath, and turning a database blip into a
+total outage is the worse failure.
+
+### Two things tidied on the way, both duplication of a security control
+
+- **`sanitizeQuestionForStudent` now delegates to the type registry.** Every
+  entry in `QUESTION_TYPES` already carries a `sanitizeForStudent` whose
+  interface says it must never include answers or rubric. Yesterday's student
+  link added a *second* allowlist beside it — two definitions of the same
+  control, which would have disagreed the first time a type gained a field. The
+  local list survives only as the fallback for a type the registry does not
+  know.
+- **`fill_blank.sanitizeForStudent` passed `body.blanks` through unexamined.**
+  The real key lives in `expectedAnswer.blanks` and never reaches the
+  projection, so nothing was leaking — but nothing renders `body.blanks` either
+  (the student screen counts placeholders in the template), which made it free
+  parking for a generator to leave answers in. That stops being hypothetical
+  the moment a model writes these bodies. Now `template` only.
+- `extractJSON` moved from inside `routes/generate.ts` to
+  `lib/generationShape.ts`, since two routes need it and a second copy would
+  drift the first time a model found a new way to be "helpful".
+
+### What is still not true
+
+**The maths verifier cannot check a generated answer key.** The plan said keys
+would go through SymPy; the service only exposes `/verify/derivative` and
+`/compute/derivative` — there is no general equivalence endpoint. So a
+generated key is *unverified* unless the question happens to be a derivative,
+and nothing claims otherwise. Wiring Tier 2 equivalence into grading needs a new
+endpoint on the Python service first.
+
+**Nothing has generated a real question yet.** Every test above runs with live
+mode off or with a deliberately broken key. Turning it on is env-only —
+`AI_LIVE_MODE=true`, `AI_BUDGET_USD`, `AI_USER_BUDGET_USD`, a working
+`OPENAI_API_KEY` — and it costs real money per paper, so it is a decision
+rather than a deploy.
+
+238 api-server tests, 878 mobile, 0 failures.
+
 ## Students answer on their own phones, 2026-08-25
 
 Marking worked; getting the answers in did not. A teacher typed every mark by

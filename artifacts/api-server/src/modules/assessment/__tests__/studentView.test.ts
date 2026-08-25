@@ -115,7 +115,11 @@ describe("sanitizeQuestionForStudent", () => {
         orderIndex: 2,
         type: "fill_blank",
         marks: "2",
+        // Two places a key can hide: the real one (`expectedAnswer.blanks`,
+        // which never reaches this function) and `body.blanks`, where a
+        // generator could plausibly leave it. Neither may survive.
         body: { template: "{{1}} + ٢ = ٤", blanks: ["٢"], wordBank: ["١", "٢", "٣"] },
+        expectedAnswer: { blanks: [{ accept: ["٢"] }] },
       },
     ].map(sanitizeQuestionForStudent);
 
