@@ -81,6 +81,79 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(res.status, 200);
   });
 
+  it("keeps the bank catalog public, and free of what it cannot serve", async () => {
+    // Same reasoning as curriculum: titles and provenance, not documents.
+    const res = await fetch(`${base}/bank/items?kind=exam`);
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as {
+      items: Array<{ kind: string; usePolicy: string; driveId?: string; status: string }>;
+      total: number;
+    };
+    assert.ok(body.total >= 10, `only ${body.total} exam papers`);
+    for (const item of body.items) {
+      assert.equal(item.kind, "exam");
+      // The policy travels with the item: a caller assembling something a
+      // teacher exports must not have to go and look it up.
+      assert.ok(["quotable", "reference-only"].includes(item.usePolicy));
+      // No handle to a file this API does not serve.
+      assert.equal(item.driveId, undefined);
+    }
+    assert.ok(body.items.some(i => i.usePolicy === "reference-only"));
+  });
+
+  it("refuses a kind from the retired vocabulary rather than ignoring it", async () => {
+    // `quiz` was the old catalog's word for both exams and question banks.
+    // Answering 200 with the whole bank would look like a working query.
+    const res = await fetch(`${base}/bank/items?kind=quiz`);
+    assert.equal(res.status, 400);
+    const body = (await res.json()) as { error: string };
+    assert.equal(body.error, "unknown_kind");
+  });
+
+  it("scopes bank items to a unit, and says which tags it used", async () => {
+    const res = await fetch(`${base}/bank/items?unitId=kbu-math-s1-nccd-u2`);
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as { total: number; unitTags: string[] };
+    assert.deepEqual(body.unitTags, ["s1-u2", "s1"]);
+    assert.ok(body.total > 0);
+  });
+
+  it("distinguishes an unscoped unit from a unit with no material", async () => {
+    // An unrecognised unit id resolves to no tags at all. Returning an empty
+    // list for both cases would conflate "nothing on file" with "bad id".
+    const res = await fetch(`${base}/bank/items?unitId=not-a-unit`);
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as { total: number; unitTags: string[] };
+    assert.deepEqual(body.unitTags, []);
+    assert.equal(body.total, 0);
+  });
+
+  it("answers what the bank holds for a set of objectives", async () => {
+    const objectives = await (await fetch(
+      `${base}/curriculum/objectives?unitId=kbu-math-s1-nccd-u2`,
+    )).json() as { objectives: Array<{ id: string }> };
+    assert.ok(objectives.objectives.length > 0);
+    const ids = objectives.objectives.slice(0, 2).map(o => o.id).join(",");
+
+    const res = await fetch(`${base}/bank/for-objectives?objectiveIds=${encodeURIComponent(ids)},nope`);
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as {
+      total: number; unitIds: string[]; unknownObjectiveIds: string[];
+    };
+    assert.ok(body.total > 0);
+    assert.deepEqual(body.unitIds, ["kbu-math-s1-nccd-u2"]);
+    // An id that resolves to nothing is named, not silently dropped.
+    assert.deepEqual(body.unknownObjectiveIds, ["nope"]);
+  });
+
+  it("reports how much of the bank has actually been read", async () => {
+    const res = await fetch(`${base}/bank/stats`);
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as { usable: number; ingested: number; pending: number };
+    assert.equal(body.usable, body.ingested + body.pending);
+    assert.ok(body.pending > body.ingested, "most of the bank is unread — say so");
+  });
+
   it("keeps the verifier probe public", async () => {
     // Whether the verifier is deployed must be answerable without logging in.
     // 503 here means reachable-and-down, which is a valid answer, not a refusal.
