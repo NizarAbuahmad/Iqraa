@@ -7,7 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
-import { getUnitPriorKnowledge, resolveGeneratorGrounding } from '@/services/kbContext';
+import { generatorUnitId, getUnitPriorKnowledge, resolveGeneratorGrounding } from '@/services/kbContext';
 import { WorksheetOutput } from '@/services/ai/AIService';
 import { buildDeckFromWorksheet } from '@/services/classDeck';
 import { summarizeVerification, type VerifyOutcome } from '@/services/quizVerification';
@@ -196,6 +196,7 @@ export default function WorksheetScreen() {
         numQuestions: NUM_Q_OPTIONS[numQIdx],
         questionTypes: Array.from(selectedTypes),
         additionalContext,
+        unitId: generatorUnitId(topic.trim(), lang as 'ar' | 'en'),
         includePriorReview: usePrior,
         priorKnowledge: usePrior ? unitPrior : undefined,
       };

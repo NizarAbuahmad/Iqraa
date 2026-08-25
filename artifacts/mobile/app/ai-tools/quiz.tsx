@@ -7,7 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
-import { buildGeneratorContext, resolveGeneratorGrounding } from '@/services/kbContext';
+import { buildGeneratorContext, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
 import { QuizOutput, QuizQuestion } from '@/services/ai/AIService';
 import { buildDeckFromQuiz } from '@/services/classDeck';
 import { summarizeVerification, type VerifyOutcome } from '@/services/quizVerification';
@@ -244,7 +244,8 @@ export default function QuizScreen() {
       setGroundedLesson(
         grounding.lesson ? (lang === 'ar' ? grounding.lesson.titleAr : grounding.lesson.titleEn) : null,
       );
-      const additionalContext = buildGeneratorContext(topic.trim(), lang as 'ar' | 'en') || undefined;
+      const additionalContext = buildGeneratorContext(topic.trim(), lang as 'ar' | 'en');
+      const unitId = generatorUnitId(topic.trim(), lang as 'ar' | 'en');
       const out = await aiService.generateQuiz({
         // Localised: this string is carried into generated content verbatim —
         // the Arabic worksheet header printed «الصف: Grade 10». `grade` is never
@@ -260,6 +261,7 @@ export default function QuizScreen() {
         questionTypes: Array.from(selectedTypes),
         difficulty: DIFFICULTY_MAP[DIFFICULTY_IDS[diffIdx]],
         additionalContext,
+        unitId,
       }, { signal: controller.signal });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       // Options are lettered by the renderer, once, in the display language.

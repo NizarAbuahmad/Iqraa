@@ -27,7 +27,7 @@ import { Button } from '@/components/ui/Button';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import type { ClassroomActivity } from '@/services/ai/AIService';
-import { buildGeneratorContext, resolveGeneratorGrounding } from '@/services/kbContext';
+import { buildGeneratorContext, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
 import { buildGameDeckFromQuiz } from '@/services/classDeck';
 import { createGame, MAX_TEAMS, MIN_TEAMS } from '@/services/classGame';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
@@ -99,7 +99,8 @@ export default function ClassGameScreen() {
         numQuestions: questionCount,
         questionTypes: ['multiple_choice'],
         language: isAr ? 'arabic' : 'english',
-        additionalContext: buildGeneratorContext(trimmed, lang as 'ar' | 'en') || undefined,
+        additionalContext: buildGeneratorContext(trimmed, lang as 'ar' | 'en'),
+        unitId: generatorUnitId(trimmed, lang as 'ar' | 'en'),
       });
 
       const built = buildGameDeckFromQuiz(quiz, trimmed, isAr, {

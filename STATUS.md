@@ -46,8 +46,9 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     because the count was repeatedly described as "all in
     `lib/integrations-openai-ai-server`", which is wrong by a factor of three
     and would send someone looking in the wrong package.
-- Mobile test suite: 855 tests, 0 failures, 10 skipped (re-counted 2026-08-25
-  on an installed workspace, with `main` merged in; 725 on 2026-08-23, 723 on
+- Mobile test suite: 896 tests, 0 failures, 10 skipped (re-counted 2026-08-25
+  on an installed workspace, with `main` merged in; 855 earlier the same day,
+  725 on 2026-08-23, 723 on
   2026-08-22, the 480 here was stale before that, and the 376 before it).
   The number moves with almost every merge — re-count rather than cite it.
   The 10 skips are the chemistry KB-search cases, skipped by their own suite,
@@ -226,6 +227,78 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The books are in the prompts now, 2026-08-25
+
+The corpus extracted two entries below this one was read by nothing. It is now
+read by every generator, server-side.
+
+**How it attaches.** `artifacts/api-server/src/lib/grounding.ts`. Resolve the
+unit — an explicit `unitId` from the screen if there is one, else
+`resolveUnitByTopic(topic)` — pull up to three ranked pages with
+`passagesForUnit({ quotableOnly: true })`, and append them to
+`additionalContext` under a cited heading. All eight builders in `prompts.ts`
+and all nine classroom-activity prompts already inject `additionalContext`, so
+**no prompt builder was edited**; the body is enriched before the builder runs.
+
+It is *not* middleware. `routes/index.ts` mounts `router.use(generateRouter)`
+with no path prefix, so `generateRouter.use(mw)` would have become API-wide and
+shadowed every router after it — the trap this file and `mountOrder.test.ts`
+both already record. Six routes call `withGrounding` explicitly instead.
+
+**Exams too.** `llmGenerator`'s prompt takes an optional `bookExcerpts`, filled
+from `groundingForObjectives(objectives)` in `routes/evaluations.ts`. A model
+writing multiple-choice distractors from an objective's *title* is guessing at
+exactly what `mockGenerator` refused to guess at; now it has the pages. Both
+prompt versions bumped (`2026-08-25.2`, `exam-gen-2`).
+
+**Quotable-only, asserted on the output.** A generated worksheet is an export
+path. Teacher-authored bank documents are `reference-only`, and
+`quotableOnly: true` is one flag away from being forgotten at a new call site,
+so the test checks the returned `sourceId`s rather than the argument.
+
+**Citations reach the client.** Every grounded response carries
+`sources: [{ sourceId, titleAr, page }]`. Labels come from
+`sourceLabel(kind, subject, semester)` in `bank.ts`, never the filename —
+`chem-s1-student-book` is stored as «10th grade, alchamy1st semester.pdf»,
+which is not a citation to show an Arabic-reading teacher. `kindLabel` moved
+out of `mathSupportResources.ts` into `bank.ts` at the same time; the mobile
+module re-exports it, so no caller changed.
+
+**Three latent bugs closed on the way.**
+
+- **`buildGeneratorContext` returned `''` when ungrounded** "so callers can
+  fall back". All seven callers wrote `... || undefined`, so the ungrounded
+  note — the sentence telling the model *not* to claim textbook grounding —
+  reached a prompt from none of them. `lesson-plan.tsx` and `worksheet.tsx`
+  were fine only because they bypass the function. It now returns the note.
+- **Chat sent no curriculum context at all.** `chatArtifacts.ts` passed the
+  teacher's attachments and nothing else. Now both, attachments first.
+- **The filename fence.** `demoExtractFromName` invented learning objectives,
+  formulas, definitions, worked examples and classroom activities out of a
+  *filename* whenever the file could not be read — which on mobile is every
+  PDF, every Word and PowerPoint file and every image, since there is no OCR —
+  and `buildDocumentPromptBlock` put them in the prompt under ordinary
+  headings. It was labelled `extractQuality: 'filename'`, and that is precisely
+  why it survived: honest label, invented payload, and only the payload reaches
+  a model. Same shape as a `verified` flag set from a fallback. Those fields are
+  now empty and the block says the file was not read and that nothing may be
+  attributed to it. Only the filename and its own words survive.
+
+**The fence had never been testable.** `extract.ts` imports `react-native` at
+module scope, which `node:test` cannot parse — so the invented content was
+unreachable by any assertion. The pure half is now `documents/extractMeta.ts`,
+the same split `exportHtml.ts` got out of `share.ts`, and the new test was
+verified to fail (6 of 12) when one invented objective is put back.
+
+69 curriculum / 896 mobile / 260 api-server tests pass; typecheck clean;
+`verify-curriculum` 0 errors.
+
+**Still invisible to a teacher.** `DEMO_MODE` is `true` and `AI_LIVE_MODE` is
+unset, so no prompt reaches a model. Verified instead by composing the real
+prompt directly: for «أوتار الدائرة وأقطارها ومماساتها» the lesson-plan prompt
+is 5,838 characters carrying pages 34, 47 and 49 of the maths S1 student book,
+with the teacher's own context still first and the JSON contract still last.
+
 ## The two maths student books are swapped, 2026-08-25
 
 Found by testing retrieval, not by reading data. Asking the new passage layer
@@ -350,9 +423,10 @@ regex, respectively.
 `verify-curriculum` 0 errors. (Mobile was 815 and api-server 193 on the branch
 alone; the rest arrived with `main` when this was merged up.)
 
-**What this does not yet do:** no grounding, no change to any prompt — and `DEMO_MODE` is still `true` with
-`AI_LIVE_MODE` unset, so no prompt reaches a model at all. This is the corpus,
-not the feature.
+~~**What this does not yet do:** no grounding, no change to any prompt.~~
+**Superseded 2026-08-25** — see "The books are in the prompts now" above. The
+`DEMO_MODE` half still holds: it is `true` and `AI_LIVE_MODE` is unset, so no
+prompt reaches a model.
 ## An activity is an activity, and «عن» stopped being a lesson title, 2026-08-25
 
 Two things the chat-materials pass left behind, both now closed.

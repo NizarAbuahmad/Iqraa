@@ -261,3 +261,82 @@ export function bankStats(): {
     byPolicy,
   };
 }
+
+// ─── Naming a document ───────────────────────────────────────────────────────
+
+/**
+ * `kind` in words a teacher reads.
+ *
+ * Lived in `artifacts/mobile/services/mathSupportResources.ts` until the API
+ * server needed to cite a source in a prompt. Two copies of a label table is
+ * how «ورقة اختبار» and «اختبار» end up meaning the same thing in two screens,
+ * so it moved here — the same reason `normalizeArabic` and `bankTagsForUnit`
+ * are in this package. The mobile module re-exports it; no caller changed.
+ */
+const KIND_LABEL_AR: Record<SourceKind, string> = {
+  'student-book': 'كتاب الطالب',
+  'teacher-guide': 'دليل المعلم',
+  'activity-book': 'كتاب الأنشطة',
+  'ministry-support': 'مادة علاجية / وزارية',
+  worksheet: 'ورقة عمل',
+  'answer-key': 'إجابات',
+  summary: 'ملخص',
+  'study-pack': 'دوسية',
+  'question-bank': 'بنك أسئلة',
+  exam: 'ورقة اختبار',
+};
+
+const KIND_LABEL_EN: Record<SourceKind, string> = {
+  'student-book': 'Student book',
+  'teacher-guide': 'Teacher guide',
+  'activity-book': 'Activity book',
+  'ministry-support': 'Ministry / remedial',
+  worksheet: 'Worksheet',
+  'answer-key': 'Answer key',
+  summary: 'Summary',
+  'study-pack': 'Study pack',
+  'question-bank': 'Question bank',
+  exam: 'Past paper',
+};
+
+/** The one place a `kind` becomes words a teacher reads. */
+export function kindLabel(kind: SourceKind, lang: 'ar' | 'en'): string {
+  return lang === 'ar' ? KIND_LABEL_AR[kind] : KIND_LABEL_EN[kind];
+}
+
+const SUBJECT_LABEL_AR: Record<CurriculumSource['subject'], string> = {
+  math: 'الرياضيات',
+  chemistry: 'الكيمياء',
+  'financial-literacy': 'الثقافة المالية',
+};
+
+const SUBJECT_LABEL_EN: Record<CurriculumSource['subject'], string> = {
+  math: 'Mathematics',
+  chemistry: 'Chemistry',
+  'financial-literacy': 'Financial literacy',
+};
+
+/**
+ * A document named from what it *is*, not from what its file is called.
+ *
+ * `title` is the filename in Drive, and half of them are unusable as a label:
+ * `chem-s1-student-book` is stored as «10th grade, alchamy1st semester.pdf»,
+ * English and misspelled, which is not a citation to show an Arabic-reading
+ * teacher. The structured fields say the same thing correctly in either
+ * language, so the label is built from those and the filename is left to
+ * `displayTitle()`, whose job is finding a file rather than naming a source.
+ */
+export function sourceLabel(
+  source: Pick<CurriculumSource, 'kind' | 'subject' | 'semester'>,
+  lang: 'ar' | 'en',
+): string {
+  const kind = kindLabel(source.kind, lang);
+  if (lang === 'ar') {
+    const subject = SUBJECT_LABEL_AR[source.subject];
+    const term = source.semester ? ` — الفصل ${source.semester === 1 ? 'الأول' : 'الثاني'}` : '';
+    return `${kind} — ${subject}${term}`;
+  }
+  const subject = SUBJECT_LABEL_EN[source.subject];
+  const term = source.semester ? `, semester ${source.semester}` : '';
+  return `${kind} — ${subject}${term}`;
+}

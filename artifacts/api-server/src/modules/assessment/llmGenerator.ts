@@ -31,7 +31,7 @@ import { competencyForBlooms, type CompetencyKey } from "./competency.ts";
 import type { GeneratedQuestion } from "./mockGenerator.ts";
 
 /** Bumped when the prompt changes shape, so usage rows stay comparable. */
-export const GENERATION_PROMPT_VERSION = "exam-gen-1";
+export const GENERATION_PROMPT_VERSION = "exam-gen-2";
 
 export interface LlmGenerationRequest {
   objectives: CurriculumObjective[];
@@ -39,6 +39,16 @@ export interface LlmGenerationRequest {
   count: number;
   difficulty: Difficulty;
   language: string;
+  /**
+   * Verbatim pages from the official textbook for these objectives, already
+   * formatted and cited — see `lib/grounding.ts`.
+   *
+   * Optional, and absent is the common case: only six of the bank's 78
+   * documents have been read. A question written from an objective's title
+   * alone is what this exists to improve on, not to replace — the model is
+   * asked to prefer the book's own numbers and phrasing when there is a book.
+   */
+  bookExcerpts?: string;
 }
 
 /**
@@ -118,6 +128,18 @@ export function buildGenerationPrompt(req: LlmGenerationRequest): {
     "Objectives (use these ids verbatim):",
     objectives,
     "",
+    // Before the type contracts, not after: this is what the questions are
+    // *about*, and a model that has read the contracts first tends to write to
+    // the shape and treat the content as decoration.
+    ...(req.bookExcerpts
+      ? [
+        req.bookExcerpts,
+        "",
+        "Prefer the book's own worked values, notation and vocabulary over inventing your own. "
+          + "Do not write a question about something the excerpts do not cover unless an objective requires it.",
+        "",
+      ]
+      : []),
     "Allowed types and the exact JSON each must use:",
     contracts,
     "",
