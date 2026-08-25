@@ -99,6 +99,7 @@ import {
   subscribeSessionDocuments,
   type SessionDocument,
 } from '@/services/documents';
+import { lessonPickerParams } from '@/services/lessonPrep';
 import {
   buildCurrentLessonView,
   buildLessonSuggestions,
@@ -2100,7 +2101,14 @@ export default function IqraScreen() {
       const hw = type === 'homework' ? { isHomework: '1' } : {};
       router.push({
         pathname: resourceRoute(type) as any,
-        params: { topic, ...hw },
+        // Without the lesson's own picker indices the tool opens on
+        // Mathematics whatever the teacher is teaching — see
+        // `lessonPickerParams`.
+        params: {
+          topic,
+          ...(lessonPickerParams(sessionMemory.activeLessonId, lang as 'ar' | 'en') ?? {}),
+          ...hw,
+        },
       });
       return;
     }
@@ -2199,7 +2207,13 @@ export default function IqraScreen() {
     if (tool.route) {
       router.push({
         pathname: tool.route as any,
-        params: { ...(topic ? { topic } : {}), ...(tool.routeParams ?? {}) },
+        params: {
+          ...(topic ? { topic } : {}),
+          // The lesson's grade and subject travel with the topic. A tool's own
+          // `routeParams` still win — they are the explicit choice.
+          ...(lessonPickerParams(sessionMemory.activeLessonId, lang as 'ar' | 'en') ?? {}),
+          ...(tool.routeParams ?? {}),
+        },
       });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -87,6 +87,33 @@ export function resolveLessonPrepContext(
 }
 
 /**
+ * Route params that open a generator screen on a lesson's own grade and
+ * subject, ready to spread into `router.push({ params })`.
+ *
+ * Every generator screen reads `gradeIdx` / `subjectIdx` and falls back to
+ * index 0 — Grade 10 *Mathematics* — when they are absent. That default is
+ * silent and it is not cosmetic: the screen generates with
+ * `subjects[subjectIdx].name`, and `isMathContext` branches on that string, so
+ * a chemistry lesson opened without these params is served maths questions
+ * from the concrete bank under the chemistry title. The AI-tools hub and
+ * `LessonPrepPanel` already pass them; chat did not.
+ *
+ * Returns `null` for an unknown or absent lesson, so the caller adds nothing
+ * and the screen keeps its own default rather than being sent to a subject
+ * nobody chose.
+ */
+export function lessonPickerParams(
+  lessonId: string | null | undefined,
+  lang: 'ar' | 'en',
+): { gradeIdx: string; subjectIdx: string } | null {
+  if (!lessonId) return null;
+  const context = resolveLessonPrepContext(lessonId, lang);
+  if (!context) return null;
+  const { gradeIdx, subjectIdx } = lessonPrepPickerIndices(context);
+  return { gradeIdx: String(gradeIdx), subjectIdx: String(subjectIdx) };
+}
+
+/**
  * Where this lesson sits in the AI-tools pickers, so handing off to the full
  * tool arrives on the right grade and subject instead of on index 0.
  */

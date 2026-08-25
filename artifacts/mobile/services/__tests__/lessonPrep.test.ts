@@ -13,6 +13,8 @@
  *  4. Ungrounded lessons carry the explicit "do not claim textbook grounding" note.
  *  5. Picker indices point at the lesson's own grade/subject for the handoff to
  *     the full tool.
+ *  6. `lessonPickerParams` turns those indices into route params, and returns
+ *     null rather than a wrong-subject default when the lesson is unknown.
  */
 
 import { describe, it } from 'node:test';
@@ -20,6 +22,7 @@ import assert from 'node:assert/strict';
 
 import {
   buildLessonPrepRequest,
+  lessonPickerParams,
   lessonPrepPickerIndices,
   resolveLessonPrepContext,
 } from '../lessonPrep.ts';
@@ -118,5 +121,46 @@ describe('lessonPrepPickerIndices', () => {
     const { gradeIdx, subjectIdx } = lessonPrepPickerIndices(ctx);
     assert.equal(getPickerGrades()[gradeIdx]!.id, 'grade-10');
     assert.equal(getPickerSubjects()[subjectIdx]!.id, 'chemistry');
+  });
+});
+
+describe('lessonPickerParams', () => {
+  // Every generator screen defaults these to index 0 — Grade 10 Mathematics —
+  // and generates with `subjects[subjectIdx].name`, which `isMathContext`
+  // branches on. A chemistry lesson opened without them gets maths questions.
+  it('carries the lesson own subject as route params', () => {
+    const params = lessonPickerParams(CHEM_LESSON_ID, 'ar');
+    assert.ok(params);
+    assert.equal(getPickerSubjects()[Number(params.subjectIdx)]!.id, 'chemistry');
+    assert.equal(getPickerGrades()[Number(params.gradeIdx)]!.id, 'grade-10');
+  });
+
+  it('emits strings, because route params are strings', () => {
+    const params = lessonPickerParams(CHEM_LESSON_ID, 'ar')!;
+    assert.equal(typeof params.gradeIdx, 'string');
+    assert.equal(typeof params.subjectIdx, 'string');
+  });
+
+  it('agrees with lessonPrepPickerIndices for the same lesson', () => {
+    const ctx = resolveLessonPrepContext(CHEM_LESSON_ID, 'ar')!;
+    const indices = lessonPrepPickerIndices(ctx);
+    const params = lessonPickerParams(CHEM_LESSON_ID, 'ar')!;
+    assert.equal(params.gradeIdx, String(indices.gradeIdx));
+    assert.equal(params.subjectIdx, String(indices.subjectIdx));
+  });
+
+  it('still resolves the subject in an English UI', () => {
+    const params = lessonPickerParams(CHEM_LESSON_ID, 'en');
+    assert.ok(params);
+    assert.equal(getPickerSubjects()[Number(params.subjectIdx)]!.id, 'chemistry');
+  });
+
+  // Null, not `{subjectIdx: '0'}`: with no lesson to speak for, the screen's
+  // own default is honest, while a fabricated index would send the teacher to
+  // a subject nobody chose.
+  it('returns null for an unknown or absent lesson', () => {
+    assert.equal(lessonPickerParams('no-such-lesson', 'ar'), null);
+    assert.equal(lessonPickerParams(null, 'ar'), null);
+    assert.equal(lessonPickerParams(undefined, 'ar'), null);
   });
 });

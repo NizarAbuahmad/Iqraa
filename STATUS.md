@@ -46,10 +46,10 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     because the count was repeatedly described as "all in
     `lib/integrations-openai-ai-server`", which is wrong by a factor of three
     and would send someone looking in the wrong package.
-- Mobile test suite: 894 tests, 0 failures, 10 skipped (re-counted 2026-08-25
-  on an installed workspace, with `main` merged in; 888, 865 and 855 earlier
-  the same day, 725 on 2026-08-23, 723 on 2026-08-22, the 480 here was stale
-  before that, and the 376 before it).
+- Mobile test suite: 900 tests, 0 failures, 10 skipped (re-counted 2026-08-25
+  on an installed workspace, with `main` merged in; 894, 888, 865 and 855
+  earlier the same day, 725 on 2026-08-23, 723 on 2026-08-22, the 480 here was
+  stale before that, and the 376 before it).
   The number moves with almost every merge — re-count rather than cite it.
   The 10 skips are the chemistry KB-search cases, skipped by their own suite,
   not by the runner.
@@ -226,6 +226,56 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     deployed. The client's timeout is 2.5s, so the first call after idle fails.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
+
+## The tools carry the lesson's subject too, 2026-08-25
+
+The Start Class fix earlier today closed one door and left its twin open. Chat
+navigates to a generator screen with `params: { topic }` and nothing else
+(`app/(tabs)/iqra.tsx`, both the tool menu and «اعرض» on a finished resource).
+Every generator screen reads `gradeIdx` / `subjectIdx` and falls back to index
+0 — **Grade 10 Mathematics** — then generates with
+`subjects[subjectIdx].name`, which is exactly the string `isMathContext`
+branches on.
+
+So with «تجربة استهلالية: الطيف الذري» pinned in chat, opening شرائح الدرس gave
+a 13-slide deck headed «الرياضيات · الصف العاشر» whose two quick-checks were
+`y = x²` intersection questions. Same fault as «ابدأ الحصة» had, one screen
+over, and it was never chat-specific: the AI-tools hub and `LessonPrepPanel`
+have always passed these params. Only chat did not.
+
+`lessonPickerParams(lessonId, lang)` in `services/lessonPrep.ts` turns the
+active lesson into `{ gradeIdx, subjectIdx }` route params (it wraps the
+existing `lessonPrepPickerIndices`), and both chat navigation sites spread it.
+It returns **null** for an unknown or absent lesson rather than a fabricated
+`'0'` — with no lesson to speak for, the screen's own default is honest.
+
+**`lesson-flow` could not receive a subject at all.** It read only `topic` and
+pinned both indices to `resolvePickerIndex(undefined, …)`, so it was the one
+generator no caller could aim, however much the caller knew. It now reads both
+params like its six siblings.
+
+### Verified by driving the real UI
+
+Same click path on both builds — تغيير الدرس → الكيمياء → بنية الذرة وتركيبها →
+تجربة استهلالية: الطيف الذري → الأدوات → شرائح الدرس → جهّز الشرائح → اعرض على
+الشاشة.
+
+- **Before:** URL carries `topic` only; **الرياضيات** selected; 13 slides
+  headed «الرياضيات · الصف العاشر»; quick-checks are `y = x²` and
+  `y = x² − 4` intersections.
+- **After:** URL carries `gradeIdx=0&subjectIdx=1`; **الكيمياء** selected;
+  8 slides headed «الكيمياء · الصف العاشر»; the quick-check is the chemistry
+  «اشرح بكلماتك» prompt.
+- Maths unchanged: the default lesson opens on `subjectIdx=0` and still
+  generates its 23-slide composition deck.
+
+**Left alone:** `TopicSelector` still shows its unit/lesson placeholders when a
+topic arrives as a prop — the topic is in state and is what generates, but the
+dropdowns look empty. That is the pre-existing note in the component's own
+comment, not something this touched. `app/ai-tools/classroom/builder.tsx` also
+hardcodes both indices; it is reached from the classroom hub rather than from
+chat with a lesson, and it has its own on-screen picker, so it is not part of
+this path.
 
 ## «ابدأ الحصة» projects the lesson that was picked, 2026-08-25
 
