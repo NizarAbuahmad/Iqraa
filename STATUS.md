@@ -46,9 +46,10 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     because the count was repeatedly described as "all in
     `lib/integrations-openai-ai-server`", which is wrong by a factor of three
     and would send someone looking in the wrong package.
-- Mobile test suite: 839 tests, 0 failures, 10 skipped (re-counted 2026-08-25
+- Mobile test suite: 855 tests, 0 failures, 10 skipped (re-counted 2026-08-25
   on an installed workspace, with `main` merged in; 725 on 2026-08-23, 723 on
   2026-08-22, the 480 here was stale before that, and the 376 before it).
+  The number moves with almost every merge — re-count rather than cite it.
   The 10 skips are the chemistry KB-search cases, skipped by their own suite,
   not by the runner.
   The `test` script globs `services/__tests__/**/*.test.ts` — it used to be a
@@ -224,6 +225,62 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     deployed. The client's timeout is 2.5s, so the first call after idle fails.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
+
+## Chat materials stopped dead-ending at copy, 2026-08-25
+
+**A material generated in chat now offers what the tool screens offer.** Chat
+calls the same generators as `/ai-tools/*` and produces the same objects, but
+the only thing a teacher could do with the result was copy or export the text —
+so the fastest route to a lesson plan was also the one that led nowhere. The row
+under a material bubble now reads **حفظ · أضف لصف · اعرض · نسخ · تصدير**.
+
+- **حفظ** writes the structured object (not the prose) to موادي, so the
+  workspace viewer parses it back, and so a plan edited in the bubble is saved
+  as edited. A first save opens `ClassPickerSheet` on the returned id — the same
+  "which class is this for?" moment the seven generator screens have.
+- **أضف لصف** saves first when the material is not saved yet: the class link is
+  a field on a saved material, so there would otherwise be nothing to attach.
+  The id lives on the message, so a second tap updates rather than files a
+  duplicate.
+- **اعرض** builds the deck locally — `buildLessonDeck` for a plan,
+  `buildDeckFromWorksheet` / `buildDeckFromQuiz` for the other two — and hands
+  it to the presentation screen. Unlike «ابدأ الحصة» this needs no round trip
+  and projects what is on screen instead of generating something new.
+  **Activities get no Present button**: `ActivityOutput` is a teacher run-sheet,
+  not a deck, and there is no builder for one. A button that silently did
+  nothing would be worse than its absence.
+
+**Nothing chat projects claims a verified answer key.** Chat does not run the
+verifier, so `deckForArtifact` passes neither `verified` nor `outcomes` and the
+slides badge unverified — the same rule this file records for `verified`
+everywhere else. A test asserts it.
+
+**An activity is saved as type `lesson`, not `activity`.** `workspace/view.tsx`
+has no `activity` branch and falls through to the quiz renderer, which maps over
+`questions` an `ActivityOutput` does not have — saving it under its own name
+would file a material that crashes the viewer that opens it. This matches what
+`/ai-tools/activity` already does. The dead `'activity'` member of `MaterialType`
+is still dead; giving the viewer a real renderer is the fix, and is not done
+here.
+
+The decision logic is `services/chatMaterialActions.ts` (pure, no React), tested
+in `services/__tests__/chatMaterialActions.test.ts`; `app/(tabs)/iqra.tsx` owns
+the buttons, toasts and navigation.
+
+### Verified by driving the real UI
+
+Expo web on :8081 with `/auth/me` stubbed and no API server, so every write took
+the local fallback path. Asked «حضّر خطة درس عن تركيب الاقترانات», picked
+الرياضيات, and got the plan with all five actions on one RTL row. حفظ → one row
+in `@iqra_workspace_v1` (`type: 'lesson'`, content parsing back to the plan) and
+the label flipped to «محفوظ ✓». أضف لصف → still one row, no duplicate; the class
+sheet self-closed, which is what it does with no roster (server-only). اعرض →
+`/ai-tools/classroom/presentation` rendering a 7-slide deck.
+
+**Left alone:** the deck and the saved material are titled «عن تركيب
+الاقترانات», preposition included. That comes from `resolveArtifactTopic`
+upstream and already showed in the chat prose before this change — it is more
+visible now that it heads a projected slide.
 
 ## The refusal now points somewhere, 2026-08-25
 
@@ -810,6 +867,49 @@ landed. Nothing on this branch touches those files.
 defines all four keys in both languages, and `pnpm run typecheck` is clean on
 `main`. Left in place rather than deleted — this file's habit of recording a
 problem and never its fix is the thing worth not repeating.
+
+## Figures are joined to curriculum lessons by a checked-in map, 2026-08-25
+
+`figuresForLesson(kbLessonId)` in `services/bookFigures.ts` answers the
+question the app actually asks. 18 of the 19 book lessons that carry figures
+are joined to a `KB_LESSONS` id.
+
+**The join is a file, not a runtime match, because the two datasets disagree
+about lesson boundaries.** The book splits composition, inverse and radical
+functions into separate lessons where the curriculum merges them into one;
+the book opens unit 1 with «حل معادلات خاصة», which the curriculum does not
+carry at all, so every later unit-1 lesson sits one place lower than the
+number the book prints. Title overlap scored **0.67** between «Inverse
+Function» and the merged lesson — convincing enough to ship, wrong enough to
+file a figure under a lesson about something else.
+
+**Half the misses were an alphabet problem.** Many curriculum lessons carry an
+Arabic title only, so English-to-English matching could not see them at all:
+«Polynomial Functions» ↔ «اقترانات كثيرات الحدود», «Adding and Subtracting
+Vectors» ↔ «جمع المتجهات وطرحها», «Inverse Function» ↔ «الاقتران العكسي» —
+that last one an exact match to a *different* lesson than the 0.67 English
+candidate. Automatic matching proposed 11; reading the Arabic settled 7 more.
+
+**Two extraction bugs found on the way:**
+
+- A lesson title can run to a second line («Trigonometric Ratios for Angles» /
+  «between 0º and 360º»); keeping only the last span kept only the tail, which
+  then matched nothing.
+- `u{n}_l{m}` in the curriculum matches the number the book PRINTS in every
+  unit except unit 1. Worth knowing before anyone tries to derive the join
+  arithmetically.
+
+The one unmatched lesson stays unmatched: its figures are extracted, indexed
+and simply never asked for.
+
+**Not on a slide yet.** `figurePath()` returns a repo-relative path rather
+than an imported asset, because how these reach a running app — bundled by
+Metro or served over HTTP — is unsettled, and baking one answer in would make
+the other expensive.
+
+Verified: `pnpm run typecheck` clean; `artifacts/mobile` 823 tests / 0 fail
+(8 new, asserted against the real extracted data rather than fixtures — a
+fixture would only agree with itself).
 
 ## Each figure knows its unit and lesson, 2026-08-25
 
@@ -4871,6 +4971,58 @@ light tint that was white-on-cream.
 
 **Not verified:** the .pptx was not opened in PowerPoint. The colour inputs are
 shared now and the file builds, but nobody has looked at a rendered slide.
+
+## The escape deck never said what the codes were for, 2026-08-25
+
+Reported with two screenshots of the same deck on the deployed site. Both
+reveal slides were headed «تم فتح الكود!» — the placeholder title from the
+prompt, copied through verbatim — and slide 7's code rendered as a barely
+visible speck. That speck was `٠`: Arabic-Indic zero is a dot, and at 48px
+green on a light board it is nothing. Nobody watching could tell what the
+number was, or what they were supposed to do with it.
+
+The second half of that is the part worth writing down. **The unlock code has
+no mechanism behind it.** There is no input, no validation, no gate — `grep
+unlockCode` finds it in the prompts, the mock decks, and one render block in
+`presentation.tsx`, and nowhere else. The lock is fiction; the code is
+something students copy onto paper and read back at the end. That is a fine
+design, but a deck that never explains it leaves a class staring at a digit
+with no idea it is theirs to keep. Both language decks now open with a
+"كيف نلعب؟" / "How to Play" slide that says so outright, including the line
+that there is nothing to type the digits into.
+
+The codes themselves are fixed in two places, because a prompt asks and does
+not guarantee:
+
+- The escape prompts (both languages) now state the code rules explicitly —
+  one digit ١–٩, never ٠, distinct per challenge, reveal title naming the
+  digit, summary listing the full sequence — and the worked example carries a
+  real code instead of a repeated `"5"` the model was evidently copying.
+- `lib/escapeCodes.ts` repairs what still comes back wrong: a code that is
+  zero, empty, multi-character or duplicated is replaced; a reveal takes the
+  code of the challenge before it; a generic reveal title is rewritten to name
+  the digit. A valid, distinct code is left exactly as the model wrote it. It
+  runs on every classroom activity and is a no-op for decks with no
+  `unlockCode`, since `activityType` is model output too and is not always the
+  one that was asked for. 18 tests, including the `٠` case that started this.
+
+When it does repair a code, it also rewrites the summary's full-code line —
+a stale summary sends the class out with the wrong final answer, which is
+worse than the digit it was fixing.
+
+`PROMPT_VERSION` bumped to `2026-08-25.1`: the prompts changed in a way that
+makes previously recorded generations stale, which is what that constant is for.
+
+**Not verified:** this has not been run against a live model. The prompt half
+is unproven — what is tested is the repair layer, which is deliberately the
+half that does not depend on the model complying. The mock decks (used under
+`DEMO_MODE`) were updated by hand and are 13 slides now, not 12.
+
+**Not done:** the how-to-play slide is a second `type: 'intro'` rather than a
+new slide type. A `rules` type would theme separately and let the exporters
+treat it differently, but it would touch the type union, `deckTheme`, the
+presenter and both exporters — too much to smuggle into this.
+
 
 ## The favourite star lit whether or not anything was saved, 2026-08-25
 

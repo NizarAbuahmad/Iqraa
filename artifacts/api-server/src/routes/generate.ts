@@ -23,6 +23,7 @@ import {
   getGenerationModel,
   recordUsage,
 } from "../lib/aiBudget.ts";
+import { normalizeEscapeCodes } from "../lib/escapeCodes.ts";
 import { PROMPT_VERSION, generationKeys } from "../lib/generationKey.ts";
 import {
   assertUsableGeneration,
@@ -191,7 +192,10 @@ generateRouter.post('/generate/classroom-activity', async (req: AuthenticatedReq
     const prompt = (isAr ? classroomPromptAr(body) : classroomPromptEn(body))
       + classroomSetupClause(body, isAr);
     const data = await generateContent("classroom-activity", isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS, body, req.user?.id);
-    res.json(data);
+    // The escape deck's unlock codes are the activity's only mechanic and the
+    // app never validates them, so an unreadable or repeated digit ships as-is.
+    // A no-op for every other activity type. See lib/escapeCodes.ts.
+    res.json(normalizeEscapeCodes(data, isAr));
   } catch (err) {
     respondAiError(err, res, "generate classroom-activity");
   }
@@ -319,6 +323,11 @@ ${b.additionalContext ? `\nمحتوى الكتاب المدرسي:\n${b.addition
 أنشئ سلسلة من 4-6 مسائل متصلة (إجابة كل مسألة تُمرَّر للتالية). أضف شريحة ملخص في النهاية.`;
   }
 
+  // Named because the how-to-play slide now tells students how many challenges
+  // stand between them and the exit, so the count has to be the same number the
+  // deck is actually built from.
+  const challengeCount = Math.floor((b.duration ?? 20) / 4);
+
   return `أنت مصمم أنشطة صفية تفاعلية. أنشئ نشاط "تحدي الهروب" لمادة ${b.subject}، الصف ${b.grade}، موضوع "${b.topic}".
 المدة: ${b.duration} دقيقة | الصعوبة: ${diffs[b.difficulty] ?? b.difficulty} | التجميع: ${groups[b.groupType] ?? b.groupType} | الهدف: ${goals[b.teachingGoal] ?? b.teachingGoal}
 ${b.additionalContext ? `\nمحتوى الكتاب المدرسي:\n${b.additionalContext}` : ''}
@@ -341,17 +350,24 @@ ${b.additionalContext ? `\nمحتوى الكتاب المدرسي:\n${b.addition
       "slideNumber": 1,
       "type": "intro",
       "title": "مهمتكم",
-      "content": "وصف المهمة",
+      "content": "القصة التي تؤطّر التحديات بجملتين",
       "durationSeconds": 0
     },
     {
       "slideNumber": 2,
+      "type": "intro",
+      "title": "كيف نلعب؟",
+      "content": "• تعملون في مجموعات، ولكل مجموعة ورقة واحدة تسجّلون فيها الأرقام.\\n• عدد التحديات: ${challengeCount}، ولكل تحدٍّ وقت محدّد يظهر على الشاشة.\\n• كل تحدٍّ تحلّونه حلًّا صحيحًا يكشف رقمًا سريًا واحدًا — اكتبوه فورًا بالترتيب.\\n• لا تُدخلون الأرقام في أي مكان: الكود يُجمع على ورقتكم أنتم.\\n• في النهاية تقرؤون الأرقام بالترتيب نفسه، فيكتمل كود الهروب.",
+      "durationSeconds": 0
+    },
+    {
+      "slideNumber": 3,
       "type": "challenge",
       "title": "التحدي 1",
       "content": "نص التحدي",
       "hint": "تلميح مساعد",
       "answer": "الإجابة الصحيحة",
-      "unlockCode": "5",
+      "unlockCode": "٧",
       "durationSeconds": 180,
       "teacher": {
         "expectedAnswer": "الإجابة المفصّلة",
@@ -362,11 +378,11 @@ ${b.additionalContext ? `\nمحتوى الكتاب المدرسي:\n${b.addition
       }
     },
     {
-      "slideNumber": 3,
+      "slideNumber": 4,
       "type": "reveal",
-      "title": "تم فتح الكود!",
-      "content": "وصف الكود المفتوح",
-      "unlockCode": "5",
+      "title": "🔓 الكود ٧ مفتوح!",
+      "content": "أحسنتم! سجّلوا الرقم ٧ في ورقتكم وانتقلوا إلى التحدي التالي.",
+      "unlockCode": "٧",
       "durationSeconds": 0
     }
   ],
@@ -376,7 +392,14 @@ ${b.additionalContext ? `\nمحتوى الكتاب المدرسي:\n${b.addition
   "assessment": "كيف تقيّم النشاط",
   "extensionChallenge": "تحدٍّ إضافي للمتقدمين"
 }
-أنشئ ${Math.floor(b.duration / 4)} تحديًا على الأقل. كل تحدٍّ يتبعه شريحة كشف.`;
+أنشئ ${challengeCount} تحديًا على الأقل. كل تحدٍّ يتبعه شريحة كشف، ثم اختم بشريحة "summary".
+
+قواعد كود الهروب — التزم بها حرفيًا:
+- "unlockCode" رقم عربي واحد فقط من ١ إلى ٩. لا تستخدم ٠ أبدًا (يظهر على الشاشة كنقطة لا تكاد تُرى)، ولا رقمًا من خانتين، ولا حرفًا.
+- لكل تحدٍّ رقم مختلف عن كل الأرقام الأخرى في النشاط. لا تكرّر رقمًا ولا تنسخ الرقم الوارد في المثال أعلاه.
+- شريحة الكشف تحمل "unlockCode" نفسه المكتوب في التحدي الذي تسبقها مباشرةً.
+- عنوان شريحة الكشف يذكر الرقم صراحةً بالصيغة: "🔓 الكود ٧ مفتوح!" — استبدل ٧ بالرقم الفعلي. لا تكتب عنوانًا عامًّا مثل "تم فتح الكود!".
+- شريحة "summary" الأخيرة تسرد الأرقام كاملةً بالترتيب، مثال: "كود الهروب الكامل: ٧ – ٣ – ٩ – ٢ – ٥".`;
 }
 
 function classroomPromptEn(b: any): string {
@@ -572,6 +595,9 @@ Return JSON in this exact shape (all text in English):
 Generate 3 questions: recall, application, critical thinking. Each is a challenge slide. End with a 'pens down' summary slide.`;
   }
 
+  // Same reason as the Arabic builder: the how-to-play slide states the count.
+  const challengeCount = Math.floor((b.duration ?? 20) / 4);
+
   return `You are an interactive classroom activity designer. Create a Math Escape Challenge for ${b.subject}, Grade ${b.grade}, topic "${b.topic}".
 Duration: ${b.duration} min | Difficulty: ${b.difficulty} | Groups: ${b.groupType} | Goal: ${b.teachingGoal}
 ${b.additionalContext ? `\nTextbook context:\n${b.additionalContext}` : ''}
@@ -590,15 +616,22 @@ Return JSON in this exact shape (all text in English):
   "materials": ["item 1","item 2"],
   "teacherPreparation": "Teacher setup steps",
   "slides": [
-    { "slideNumber": 1, "type": "intro", "title": "Your Mission", "content": "Mission description", "durationSeconds": 0 },
+    { "slideNumber": 1, "type": "intro", "title": "Your Mission", "content": "The two-sentence story that frames the challenges", "durationSeconds": 0 },
     {
       "slideNumber": 2,
+      "type": "intro",
+      "title": "How to Play",
+      "content": "• Work in groups. One sheet per group — that is where the digits go.\\n• There are ${challengeCount} challenges, each with its own timer on screen.\\n• Solve a challenge correctly and one secret digit is revealed — write it down straight away, in order.\\n• There is nothing to type the digits into: the code is collected on your own sheet.\\n• At the end, read your digits back in the same order to complete the escape code.",
+      "durationSeconds": 0
+    },
+    {
+      "slideNumber": 3,
       "type": "challenge",
       "title": "Challenge 1",
       "content": "Challenge question text",
       "hint": "A helpful hint",
       "answer": "The correct answer",
-      "unlockCode": "5",
+      "unlockCode": "7",
       "durationSeconds": 180,
       "teacher": {
         "expectedAnswer": "Detailed expected answer",
@@ -608,7 +641,7 @@ Return JSON in this exact shape (all text in English):
         "differentiationTips": "How to support different levels"
       }
     },
-    { "slideNumber": 3, "type": "reveal", "title": "Code Unlocked!", "content": "Code reveal message", "unlockCode": "5", "durationSeconds": 0 }
+    { "slideNumber": 4, "type": "reveal", "title": "🔓 Code 7 unlocked!", "content": "Well done — write 7 on your sheet and move on to the next challenge.", "unlockCode": "7", "durationSeconds": 0 }
   ],
   "teacherNotes": ["note 1"],
   "answerKey": ["Challenge 1 answer"],
@@ -616,7 +649,14 @@ Return JSON in this exact shape (all text in English):
   "assessment": "How to assess the activity",
   "extensionChallenge": "Extension challenge for advanced students"
 }
-Generate at least ${Math.floor(b.duration / 4)} challenges. Each challenge slide is followed by a reveal slide.`;
+Generate at least ${challengeCount} challenges. Each challenge slide is followed by a reveal slide, then close with a "summary" slide.
+
+Escape-code rules — follow these exactly:
+- "unlockCode" is a single digit from 1 to 9. Never 0 (it renders on screen as a dot nobody can read), never two digits, never a letter.
+- Every challenge gets a digit that differs from every other digit in the activity. Do not repeat one, and do not copy the digit used in the example above.
+- A reveal slide carries the same "unlockCode" as the challenge slide immediately before it.
+- The reveal slide's title names the digit outright, in the form "🔓 Code 7 unlocked!" — with 7 replaced by the real digit. Never a generic title like "Code Unlocked!".
+- The closing "summary" slide lists the whole code in order, e.g. "Full escape code: 7 - 3 - 9 - 2 - 5".`;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
