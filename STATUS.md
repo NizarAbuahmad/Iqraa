@@ -46,9 +46,9 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     because the count was repeatedly described as "all in
     `lib/integrations-openai-ai-server`", which is wrong by a factor of three
     and would send someone looking in the wrong package.
-- Mobile test suite: 888 tests, 0 failures, 10 skipped (re-counted 2026-08-25
-  on an installed workspace, with `main` merged in; 865 and 855 earlier the
-  same day, 725 on 2026-08-23, 723 on 2026-08-22, the 480 here was stale
+- Mobile test suite: 894 tests, 0 failures, 10 skipped (re-counted 2026-08-25
+  on an installed workspace, with `main` merged in; 888, 865 and 855 earlier
+  the same day, 725 on 2026-08-23, 723 on 2026-08-22, the 480 here was stale
   before that, and the 376 before it).
   The number moves with almost every merge — re-count rather than cite it.
   The 10 skips are the chemistry KB-search cases, skipped by their own suite,
