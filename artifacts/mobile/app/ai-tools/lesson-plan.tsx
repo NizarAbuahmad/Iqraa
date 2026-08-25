@@ -16,7 +16,7 @@ import { TopicSelector } from '@/components/ui/TopicSelector';
 import { Button } from '@/components/ui/Button';
 import { getItem, saveItem, updateItem } from '@/services/workspace';
 import { useFavorite } from '@/hooks/useFavorite';
-import { ClassPickerSheet } from '@/components/ui/ClassPickerSheet';
+import { MaterialClassField } from '@/components/ui/MaterialClassField';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
@@ -112,10 +112,6 @@ export default function LessonPlanScreen() {
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
   const { favorited, setFavorited, toggle: handleToggleFavorite } =
     useFavorite(savedId, key => showToast(t(key)));
-  // Set to the new material's id after a first save, which is what opens the
-  // "which class?" sheet. Only on a first save — re-saving an edit should not
-  // re-ask, and an update already carries whatever class it was given.
-  const [classPromptFor, setClassPromptFor] = useState<string | null>(null);
 
   // If editing a saved item, load it and restore its result
   useEffect(() => {
@@ -219,8 +215,13 @@ export default function LessonPlanScreen() {
       : `Lesson Plan: ${topic.trim()}`;
     const formState = { gradeIdx, subjectIdx, topic: topic.trim(), durationIdx, styleIdx, objectives, adaptations };
 
-    if (savedId) {
-      await updateItem(savedId, {
+    // `updateItem` answers false when the material is no longer there — the
+    // teacher deleted it from موادي while this screen still held its id. The
+    // return value used to be dropped, so the button reported "تم التحديث"
+    // over a material that no longer existed and the work was never saved
+    // again. Folding the call into the condition makes a failed update fall
+    // through to creating a fresh one, which is what pressing Save meant.
+    if (savedId && (await updateItem(savedId, {
         title,
         subject: subjects[subjectIdx].name,
         // Localised: this string is carried into generated content verbatim —
@@ -233,7 +234,7 @@ export default function LessonPlanScreen() {
         language: lang,
         content: JSON.stringify(result),
         formState,
-      });
+      }))) {
       setSaveLabel('updated');
     } else {
       const saved = await saveItem({
@@ -253,18 +254,10 @@ export default function LessonPlanScreen() {
       });
       setSavedId(saved.id);
       setSaveLabel('saved');
-      setClassPromptFor(saved.id);
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
-  const attachToClass = async (classId: string, className: string) => {
-    const materialId = classPromptFor;
-    setClassPromptFor(null);
-    if (!materialId) return;
-    const ok = await updateItem(materialId, { classGroupId: classId });
-    showToast(ok ? t('savedToClass', className) : t('saveToClassFailed'));
-  };
 
   const getExportMeta = () => ({
     // Localised, like the picker above it. Taking `.name` straight off the
@@ -506,6 +499,9 @@ export default function LessonPlanScreen() {
       {result && !loading && (
         <View style={{ marginHorizontal: 20, gap: 10, marginTop: 4, marginBottom: 20 }}>
           {/* Save button */}
+          {/* Which class this material is for — nothing until it is saved. */}
+          <MaterialClassField materialId={savedId ?? null} onToast={showToast} />
+
           <Pressable
             onPress={handleSave}
             style={({ pressed }) => [
@@ -596,11 +592,6 @@ export default function LessonPlanScreen() {
       loadingWord={loadingWord}
       loadingSlides={loadingSlides}
       labels={exportLabels}
-    />
-    <ClassPickerSheet
-      visible={classPromptFor !== null}
-      onClose={() => setClassPromptFor(null)}
-      onPick={(classId, className) => { void attachToClass(classId, className); }}
     />
     <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
     </View>

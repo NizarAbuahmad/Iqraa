@@ -17,7 +17,7 @@
  * A mark the teacher types wins over the machine's, and re-submitting does not
  * wipe it — see the note on the submit route.
  */
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -133,6 +133,7 @@ export default function AnswerEntryScreen() {
   const [error, setError] = useState('');
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
 
   useEffect(() => {
@@ -236,6 +237,12 @@ export default function AnswerEntryScreen() {
       setGrades(gradeDrafts(data.grades));
       setResult(data.result);
       setNextSteps(data.recommendations ?? []);
+      // The result card is at the top of the page and the button is at the
+      // bottom, so a successful submit changed nothing where the teacher was
+      // looking — it read as a button that did nothing. Say so, then take them
+      // to the thing that changed.
+      showToast(t('attemptGradedToast'));
+      scrollRef.current?.scrollTo({ y: 0, animated: true });
     } catch (err) {
       setError(err instanceof EvaluationError ? err.message : t('attemptSubmitFailed'));
     } finally {
@@ -267,7 +274,7 @@ export default function AnswerEntryScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+      <ScrollView ref={scrollRef} style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         <View style={[styles.header, { backgroundColor: ACCENT, paddingTop: insets.top + 12 }]}>
           <Pressable onPress={() => router.back()} style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />

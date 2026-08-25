@@ -44,6 +44,75 @@ describe('resolveArtifactTopic — the preposition the ask leaves behind', () =>
     assert.equal(en('create a worksheet for circles'), 'circles');
   });
 
+  /**
+   * The strings the product actually sends.
+   *
+   * Every chip prompt in `iqra.tsx` and `lessonCopilot.ts` is built as
+   * `«…عن: ${topic}»` — colon included. Tapping a chip is the most common way
+   * a material gets generated, so these are the cases that decide what a saved
+   * material is called and what heads its first projected slide. The earlier
+   * fix was tested only against hand-typed asks and missed every one of them.
+   */
+  it('handles the colon the app’s own chips send', () => {
+    const topic = 'تركيب الاقترانات';
+    for (const prompt of [
+      `حضّر خطة درس كاملة عن: ${topic}`,
+      `أنشئ ورقة عمل صفية عن: ${topic}`,
+      `أنشئ واجباً منزلياً عن: ${topic}`,
+      `جهّز اختباراً قصيراً عن: ${topic}`,
+      `اقترح نشاطاً صفياً عن: ${topic}`,
+    ]) {
+      assert.equal(ar(prompt), topic, `chip prompt kept its preposition: ${prompt}`);
+    }
+  });
+
+  it('handles the English chips the same way', () => {
+    assert.equal(en('Prepare a full lesson plan about: Function Composition'), 'Function Composition');
+    assert.equal(en('Create a short quiz about: Circles'), 'Circles');
+  });
+
+  /**
+   * The Arabic the chips are actually written in.
+   *
+   * «واجباً», «اختباراً», «نشاطاً» arrive inflected while the strip list holds
+   * bare stems, so matching the stem alone left the accusative tail behind as
+   * its own word — «أنشئ واجباً منزلياً عن: الدائرة» became «اً منزلياً الدائرة».
+   */
+  it('strips an inflected noun whole, tail included', () => {
+    assert.equal(ar('أنشئ واجباً منزلياً عن: الدائرة'), 'الدائرة');
+    assert.equal(ar('جهّز اختباراً قصيراً عن: الدائرة'), 'الدائرة');
+    assert.equal(ar('اقترح نشاطاً صفياً عن: الدائرة'), 'الدائرة');
+  });
+
+  it('strips what describes the artifact, not the topic', () => {
+    // «صفية» describes the worksheet. It only becomes a leading word once
+    // «ورقة عمل» in front of it is gone, which is why removal repeats.
+    assert.equal(ar('أنشئ ورقة عمل صفية عن: الدائرة'), 'الدائرة');
+    assert.equal(en('Prepare a full lesson plan about: Circles'), 'Circles');
+    assert.equal(en('Create an in-class worksheet about: Circles'), 'Circles');
+  });
+
+  it('leaves real curriculum topics untouched', () => {
+    // The strip is a word blacklist, so the risk it carries is eating a topic.
+    for (const topic of [
+      'تركيب الاقترانات', 'الدائرة', 'المتجهات', 'حساب المثلثات',
+      'الإحصاء والاحتمالات', 'كثيرات الحدود', 'المشتقات', 'قانون الجيوب',
+      'الاقتران الجذري', 'الأسس والمعادلات',
+    ]) {
+      assert.equal(ar(topic), topic, `ate part of a bare topic: ${topic}`);
+    }
+    // 'class' is deliberately not a qualifier — it would strip this to
+    // "Management".
+    assert.equal(en('Class Management'), 'Class Management');
+  });
+
+  it('never leaves a stranded separator at the front', () => {
+    for (const prompt of ['خطة درس: الدائرة', 'خطة درس — الدائرة', 'خطة درس عن : الدائرة']) {
+      const out = ar(prompt);
+      assert.ok(!/^[:：،,\-–—]/.test(out), `left a separator: "${out}" from "${prompt}"`);
+    }
+  });
+
   it('keeps a topic that is only a topic', () => {
     assert.equal(ar('تركيب الاقترانات'), 'تركيب الاقترانات');
     assert.equal(ar('خطة درس المتجهات'), 'المتجهات');

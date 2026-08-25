@@ -46,8 +46,9 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     because the count was repeatedly described as "all in
     `lib/integrations-openai-ai-server`", which is wrong by a factor of three
     and would send someone looking in the wrong package.
-- Mobile test suite: 909 tests, 0 failures, 10 skipped (re-counted 2026-08-25
-  on an installed workspace, with `main` merged in; 894, 888, 865 and 855
+- Mobile test suite: 962 tests, 0 failures, 10 skipped (re-counted 2026-08-25
+  on an installed workspace, with `main` merged in; 925, 909, 900, 894, 888,
+  865 and 855
   earlier the same day, 725 on 2026-08-23, 723 on 2026-08-22, the 480 here was
   stale before that, and the 376 before it).
   The number moves with almost every merge — re-count rather than cite it.
@@ -282,14 +283,19 @@ compile-error trail, not a silent gap. And `APP_SUBJECTS` in
 next to it (the unresolved financial-literacy edition conflict), not an
 oversight. Widening either would have removed a working safeguard.
 
-**Still true and not fixed here:** `isMathContext`
-(`services/ai/mathPractice.ts:71`) decides "is this maths?" by regex over the
-topic string. Add physics and a lesson mentioning «متجه» gets served maths
-practice from the concrete bank — the same class of bug this file already
-records having shipped once. It needs the lesson's own subject instead, and
-that is its own change.
+**Narrower than it was, and still not fixed here.** `isMathContext`
+(`services/ai/mathPractice.ts:71`) concatenates the subject name with the topic
+and lesson text and regex-matches the lot — `متجه|دائر|مثلث|…`. "The tools carry
+the lesson's subject too" (above, landed while this was in review) fixed the
+half that mattered most: the screens now receive the real `subjectIdx` instead
+of defaulting to Grade 10 Mathematics, so the right subject name reaches the
+blob. What it does not change is that the *topic* half still votes: a physics
+lesson correctly labelled `Physics` but mentioning «متجه» still matches. So this
+is no longer "every chat-launched tool thinks it is maths" — it is a narrower
+false positive that will start mattering when a second science subject exists.
+Its own change.
 
-83 curriculum / 909 mobile / 262 api-server tests pass; typecheck clean;
+83 curriculum / 962 mobile / 262 api-server tests pass; typecheck clean;
 `verify-curriculum` 0 errors; grounding coverage unchanged at 45 of 64 lessons.
 
 ## The books are in the prompts now, 2026-08-25
@@ -355,7 +361,7 @@ unreachable by any assertion. The pure half is now `documents/extractMeta.ts`,
 the same split `exportHtml.ts` got out of `share.ts`, and the new test was
 verified to fail (6 of 12) when one invented objective is put back.
 
-83 curriculum / 909 mobile / 262 api-server tests pass; typecheck clean;
+83 curriculum / 962 mobile / 262 api-server tests pass; typecheck clean;
 `verify-curriculum` 0 errors.
 
 **Still invisible to a teacher.** `DEMO_MODE` is `true` and `AI_LIVE_MODE` is
@@ -363,6 +369,163 @@ unset, so no prompt reaches a model. Verified instead by composing the real
 prompt directly: for «أوتار الدائرة وأقطارها ومماساتها» the lesson-plan prompt
 is 5,838 characters carrying pages 34, 47 and 49 of the maths S1 student book,
 with the teacher's own context still first and the JSON contract still last.
+## The «عن» fix only fixed what was typed by hand, 2026-08-25
+
+Reported with a screenshot of موادي: a material still titled «خطة درس: عن:
+تركيب الاقترانات». The fix earlier today was real but shallow, and the way it
+was verified is the lesson.
+
+**The chips send punctuation the strip did not expect.** Every prompt builder —
+`promptForTeachingAction` in `iqra.tsx`, `buildLessonSuggestions` in
+`lessonCopilot.ts` — writes `«…عن: ${topic}»`, colon included. The rule matched
+a bare `عن` token, so `عن:` sailed through. Tapping a chip is the most common
+way a material is generated; typing the ask is the rare one. **The UI check
+typed it, so it passed while the common path stayed broken.**
+
+**Probing the real strings found four more leaks, not one.** Only 2 of the 10
+prompts the product actually sends resolved to a clean topic:
+
+| what the chip sends | what it resolved to |
+| --- | --- |
+| `أنشئ ورقة عمل صفية عن: X` | `صفية X` |
+| `أنشئ واجباً منزلياً عن: X` | `اً منزلياً X` |
+| `جهّز اختباراً قصيراً عن: X` | `اً قصيراً X` |
+| `اقترح نشاطاً صفياً عن: X` | `اقترح اً صفياً X` |
+| `Prepare a full lesson plan about: X` | `full X` |
+
+Three separate causes: Arabic nouns arrive **inflected** (`واجباً`) while the
+list held bare stems, so the accusative tail was left behind as its own word;
+**qualifiers** describing the artifact (`صفية`, `full`, `in-class`) were not in
+the list at all; and `اقترح` / `suggest` were missing from the verbs.
+
+`topicFromQuery` is now a named export with the parts as lists — verbs, nouns,
+qualifiers, lead-ins — each Arabic noun allowing the accusative tail, and the
+removal repeating until it stops finding anything (one pass leaves `صفية`,
+which only becomes a leading word once `ورقة عمل` in front of it is gone).
+
+**The blacklist's own risk is eating a topic**, so the tests assert the ten real
+curriculum topics survive bare. One casualty found and reverted: bare `class`
+stripped "Class Management" to "Management", so it is deliberately not a
+qualifier — `صفية` / `in-class` / `classroom` cover every phrasing the chips
+send.
+
+### Verified by tapping the chip, not by typing
+
+The same check as before would have passed again. This one taps «حضّر خطة
+الدرس» in the running app: the reply reads «المادة جاهزة لدرس «تركيب
+الاقترانات»», the saved material is titled «خطة درس: تركيب الاقترانات», and a
+DOM sweep for «عن:» finds it in exactly one place — the user's own bubble
+echoing what the chip sent, which is correct.
+
+## The tools carry the lesson's subject too, 2026-08-25
+
+The Start Class fix earlier today closed one door and left its twin open. Chat
+navigates to a generator screen with `params: { topic }` and nothing else
+(`app/(tabs)/iqra.tsx`, both the tool menu and «اعرض» on a finished resource).
+Every generator screen reads `gradeIdx` / `subjectIdx` and falls back to index
+0 — **Grade 10 Mathematics** — then generates with
+`subjects[subjectIdx].name`, which is exactly the string `isMathContext`
+branches on.
+
+So with «تجربة استهلالية: الطيف الذري» pinned in chat, opening شرائح الدرس gave
+a 13-slide deck headed «الرياضيات · الصف العاشر» whose two quick-checks were
+`y = x²` intersection questions. Same fault as «ابدأ الحصة» had, one screen
+over, and it was never chat-specific: the AI-tools hub and `LessonPrepPanel`
+have always passed these params. Only chat did not.
+
+`lessonPickerParams(lessonId, lang)` in `services/lessonPrep.ts` turns the
+active lesson into `{ gradeIdx, subjectIdx }` route params (it wraps the
+existing `lessonPrepPickerIndices`), and both chat navigation sites spread it.
+It returns **null** for an unknown or absent lesson rather than a fabricated
+`'0'` — with no lesson to speak for, the screen's own default is honest.
+
+**`lesson-flow` could not receive a subject at all.** It read only `topic` and
+pinned both indices to `resolvePickerIndex(undefined, …)`, so it was the one
+generator no caller could aim, however much the caller knew. It now reads both
+params like its six siblings.
+
+### Verified by driving the real UI
+
+Same click path on both builds — تغيير الدرس → الكيمياء → بنية الذرة وتركيبها →
+تجربة استهلالية: الطيف الذري → الأدوات → شرائح الدرس → جهّز الشرائح → اعرض على
+الشاشة.
+
+- **Before:** URL carries `topic` only; **الرياضيات** selected; 13 slides
+  headed «الرياضيات · الصف العاشر»; quick-checks are `y = x²` and
+  `y = x² − 4` intersections.
+- **After:** URL carries `gradeIdx=0&subjectIdx=1`; **الكيمياء** selected;
+  8 slides headed «الكيمياء · الصف العاشر»; the quick-check is the chemistry
+  «اشرح بكلماتك» prompt.
+- Maths unchanged: the default lesson opens on `subjectIdx=0` and still
+  generates its 23-slide composition deck.
+
+**Left alone:** `TopicSelector` still shows its unit/lesson placeholders when a
+topic arrives as a prop — the topic is in state and is what generates, but the
+dropdowns look empty. That is the pre-existing note in the component's own
+comment, not something this touched. `app/ai-tools/classroom/builder.tsx` also
+hardcodes both indices; it is reached from the classroom hub rather than from
+chat with a lesson, and it has its own on-screen picker, so it is not part of
+this path.
+
+## A material's class stopped being a one-way door, 2026-08-25
+
+Reported from the running app: "the add button to classes not changing when
+changing the class and i can't uncheck it." Both halves were true.
+
+**The class was asked once and never mentioned again.** `ClassPickerSheet`
+opened on first save only (`setClassPromptFor(saved.id)`), showed no current
+selection, and had no clear. No generator screen said which class a material had
+gone to. And the class screen's attach list is `all.filter(m => !m.classGroupId)`
+on purpose — "a material belongs to one class, so showing an attached one would
+present a silent move as an add" — so the other class could not claim it either.
+The only exit was Remove, inside the old class's الموارد tab. A wrong pick was
+effectively permanent.
+
+Now: the sheet takes `selectedClassId` (ticked, and titled «انقل المادة إلى صف
+آخر» instead of «لأي صف هذه المادة؟») and an `onClear` that renders a «بلا صف»
+row — only when there is a selection to undo. `MaterialClassField` states the
+class on the material itself («الصف: العاشر أ» / «غير مرتبطة بصف») and reopens
+the sheet on tap.
+
+**The eight copies are down to one.** Every save site repeated the same six
+lines — the `classPromptFor` id, the `attachToClass` writer, the toast, the
+sheet — which is why a fix here had to be made in eight places to be made at
+all. The six generator screens now pass one prop; chat keeps its own handler
+because its material is per-message, but drives the same sheet.
+
+**Cards in موادي name their class.** They carried `classGroupId` and showed
+nothing, so the only way to learn where a material was filed was to open it.
+
+**`activityType` is translated.** An otherwise Arabic activity had the word
+`group` in its meta row, on the Activity screen and in the workspace viewer
+both. The forms had the translations; nothing carried them back to the output.
+`constants/activityType.ts` holds the map, and falls back to the raw value —
+with live AI the generator is not bound to the form's five ids, and echoing what
+it said beats calling a jigsaw a group activity.
+
+### Two bugs this pass created and caught
+
+- **The sheet auto-opened on a material that already had a class.** The prompt
+  effect gated on `loading`, which starts `false` — so on the render where the
+  id first appeared it ran before the fetch effect had set it, saw a `classId`
+  still null because nothing had looked yet, and opened. It now waits for the
+  read-back on that exact id, and skips an id the screen opened with (editing a
+  saved material is not a fresh save).
+- **A malformed roster response crashed the workspace list.** `listClasses()`
+  returns `data.classes` unchecked, so a body without that key arrives as
+  `undefined` and `.find` throws. Found by stubbing the endpoint with a bare
+  array while driving the UI. `classNameFor` takes a nullish list now.
+
+### Verified by driving the real UI
+
+Expo web with a stubbed `/auth/me` and roster, and `/api/workspace/*` answering
+404 so writes took the local path. On the lesson-plan screen opened at a saved
+material: the sheet did **not** auto-open, the row read «الصف: العاشر أ», moving
+to العاشر ب persisted `classGroupId: 'c2'`, and «بلا صف» persisted `null`. In
+chat: the first «أضف لصف» asked (no clear row offered on an unfiled material),
+picking filed it, and a second tap reopened as a move with the current class
+ticked and a clear row — one workspace row throughout, never a duplicate. موادي
+showed the class name on the card.
 
 ## «ابدأ الحصة» projects the lesson that was picked, 2026-08-25
 
@@ -837,6 +1000,75 @@ reference-only, and there is a test holding that.
 44 curriculum / 783 mobile / 175 api-server tests pass, typecheck clean,
 `verify-curriculum` reports 0 errors. (Mobile was 761 on the branch alone; the
 extra 22 came in with `main` when this was merged up, not from this change.)
+## Save stopped working after you deleted the material, 2026-08-25
+
+Reported from use: save a quiz, pick a class, leave the screen, delete the
+material from موادي, then press Save again — and nothing happens.
+
+`updateItem` returns `false` when the material is no longer there. All four
+generator screens — quiz, activity, lesson plan, worksheet — **dropped that
+return value**:
+
+```ts
+await updateItem(savedId, { … });   // false, ignored
+setSaveLabel('updated');            // says "تم التحديث" anyway
+```
+
+So the screen still held the id of something the teacher had since deleted, the
+PATCH answered 404, and the button reported success over a material that no
+longer existed. The work was never saved again, and nothing said so.
+
+The fix folds the call into the condition, so a failed update falls through to
+creating a fresh material — which is what pressing Save meant:
+
+```ts
+if (savedId && (await updateItem(savedId, { … }))) { … } else { …create… }
+```
+
+Confirmed against the API: PATCH returns 200 while the item exists and 404
+after it is deleted, which is exactly the signal that was being thrown away.
+
+**The same shape as the submit bug above**, and worth noticing twice in one
+day: the operation reported success, the data said otherwise, and only a
+teacher using it found out. Both were places where a return value or a piece of
+feedback existed and nothing looked at it.
+
+895 mobile tests, 0 failures.
+
+## Two dead ends found by using it, 2026-08-25
+
+Both came from a teacher walking the real flow on production, and neither
+would have shown up in a test.
+
+**The share card named a problem and offered no way to fix it.** An exam that
+is not attached to a class cannot have a working link — the roster a student
+picks their name from *is* the class — so the card said "attach this to a class
+first" and stopped there. Attaching was only possible from inside the class
+(الصفوف → الامتحانات → +), which a teacher standing on the evaluation screen has
+no reason to guess. It now offers «أرفقه بصف الآن» and opens
+`ClassPickerSheet` — the same sheet the seven generators already use, which
+loads the list itself and closes silently for a teacher with no classes rather
+than showing an empty dialog.
+
+**Submitting looked like a button that did nothing.** «سلّم وصحّح» sits at the
+bottom of a long page and the result card renders at the top, so a successful
+submit changed nothing where the teacher was looking. The marks were saved
+correctly the whole time — the teacher only found out by navigating to the
+results dashboard and seeing 80%. Now it says «تم التصحيح — النتيجة في الأعلى»
+and scrolls to the card.
+
+The second one is worth remembering as a shape: **the work happened, the
+feedback was somewhere else.** Nothing was broken, no error was thrown, and the
+data was right. It still read as a failure, which is all that matters at the
+moment a teacher decides whether to trust the tool.
+
+243 api-server tests, 895 mobile, 0 failures.
+
+**Verified as far as the automation allows.** The attach button renders on an
+unattached published exam, and the endpoint behind it was proven when the exams
+tab shipped. The *click* is not machine-verifiable — synthetic events do not
+reach these React-Native-Web controls, which is already recorded above.
+
 ## A model can write the exam now, 2026-08-25
 
 The student link shipped and immediately hit its own ceiling: **no teacher
@@ -5870,3 +6102,165 @@ survives this, it is a third cause, not these two.
 `catch {}` and shows one generic string, which is why three different faults
 looked like one. The diagnosis took a code read because the screen carried no
 information at all.
+
+## One material, several sections — and a picker you can change your mind in, 2026-08-25
+
+Asked for directly while testing: the «لأي صف هذه المادة؟» sheet should let a
+teacher pick more than one class, then confirm or leave.
+
+**Landed on top of the same-day rework** that gave the sheet a current-class
+tick and a Clear row (PR #145). Both were wanted and neither was dropped: the
+rows became checkboxes, the material's current class starts ticked, and Clear
+stays its own row rather than becoming "untick everything and confirm" — an
+empty confirm reads as a no-op, not as a delete.
+
+**Multi-select is opt-in per caller (`multiple`).** The three material sites
+use it; `app/evaluations/[id]` deliberately does not. An evaluation holds one
+class and has no copy semantics, so checkboxes there would let a teacher tick
+three and silently keep one.
+
+**The old sheet committed on touch.** Tapping a row attached the material and
+closed — one class, no confirm, no way back except attaching from inside each
+class afterwards. A teacher who teaches the same lesson to three sections had
+to save it three times, and a mis-tap was final. Rows are checkboxes now, with
+«احفظ في الصفوف المحددة» and «ليس الآن»; the confirm is disabled rather than
+hidden while nothing is ticked, because a button that appears on first tick
+does not tell you ticking is what the sheet wants.
+
+**What "several classes" means here, and what it does not.**
+`saved_materials.class_group_id` is a single column. Its schema comment says a
+material used with two sections has to be duplicated, and to *"promote to a
+join table if teachers actually ask for shared materials"*. A teacher asked; the
+join table did not happen in this pass. **Chosen deliberately:** the schema is
+deployed by hand (`pnpm --filter @workspace/db run push`) and this file already
+records what a release that adds a table and skips that push does to
+production, with teachers on the live build right now.
+
+So the first class keeps the original and every class after it gets a copy,
+through the `POST /workspace/items/:id/duplicate` the schema comment points at.
+First rather than last on purpose: the teacher is looking at the material they
+just made, and it should stay theirs rather than silently becoming copy three.
+**The copies are independent** — editing صف أ's worksheet does not change صف ب —
+so the toast says «نسخة مستقلة لكل صف» rather than implying one shared thing.
+
+**The save screens each held one line** — `ok ? savedToClass(name) :
+saveToClassFailed` — which cannot describe two of three landing. (PR #145 had
+already folded eight of those sites into `MaterialClassField`, which is why
+this touched four callers rather than eight.) Both the
+policy and the message moved into `services/classAttach.ts`, which imports no
+react-native and so is loadable by `node --test`: the same split, for the same
+reason, as `generateWithProvenance` living outside `RemoteAIService`. 13 tests
+cover the ordering, the de-duplication of a class picked twice, partial
+failure, and Arabic number agreement at 2 / 10 / 11.
+
+**Still open — the join table.** This makes the common case work without a
+migration; it does not make a material genuinely shared. A teacher who edits
+one copy will reasonably expect the others to follow, and they will not. That
+is the argument for promoting it, and it is now a known cost rather than a
+hypothetical one.
+
+**Not verified:** not seen in a browser. The policy and the message are unit
+tested; nobody has ticked three real classes on a running build and confirmed
+three materials arrive.
+
+## Homework cites real exercises now, 2026-08-25
+
+Decks have always been able to say «تمارين ١-٦ صفحة ٧٢». Until now that was
+generated, which is to say invented: the page and the numbers pointed at
+nothing. `scripts/extract_book_exercises.py` reads the ministry's own exercise
+books, and the homework slide carries the result — **31 of 32 maths lessons**,
+attributed to the book on its own line.
+
+### Read from the books, checked three ways
+
+- **Exercise numbers** are set BOLD at ~10-11pt, in STIXGeneral in the
+  first-semester book and UniMath in the second. Matching on weight and size
+  rather than family is what makes one rule fit both. The rule is then
+  self-checking: an exercise book numbers from 1 with nothing skipped, so a run
+  with a gap means the rule caught something else and the page records nothing.
+- **The join is arithmetic** — `u{n}_l{m}` is the number the book prints, with
+  unit 1 shifted by one — and arithmetic is exactly how you cite a confidently
+  wrong page. So the test walks every derived id, asserts it exists in
+  `KB_LESSONS`, and asserts the curriculum's own title matches the book's.
+- **The figure map was deliberately not reused.** It encodes the same
+  relationship but only carries rows for lessons that have a figure, so joining
+  through it covered 18 of 32 and dropped the rest silently.
+
+### Three ways two ministry documents disagree about a title
+
+Found by running the check, and each fixed with an exact rule rather than a
+similarity score — a 0.67 near-miss once almost filed a figure under the wrong
+lesson:
+
+| | book | curriculum | resolved by |
+| --- | --- | --- | --- |
+| `u1_l1` | …System **of** Linear… | …System**:** Linear… | Arabic matches |
+| `u5_l2` | الاقترانات النسبية | **قسمة كثيرات الحدود و**الاقترانات النسبية | containment — the curriculum merges lessons |
+| `u4_l3` | قانون **جيوب** التمام | قانون **جيب** التمام | named exception; both are real names for the Law of Cosines |
+
+### Two things it deliberately does not do
+
+- **A separate detector, not a widened one.** The exercise books set the lesson
+  number at y≈52 and y≈64 where the student-book detector requires y<60.
+  Loosening that shared band would have been the second time in this repo that
+  accommodating one book silently broke another — the first cost 14 of 32
+  maths titles.
+- **The generated homework is left alone.** It may still contain a reference
+  the model invented, which is why the real one is on its own line and says
+  «من كتاب التمارين». Telling the generator not to invent exercise references —
+  the same treatment the figure rule got — is the obvious follow-up.
+
+### Coverage
+
+31 of 32 book lessons join to a curriculum lesson. The one that does not is
+«حل معادلات خاصة», which the curriculum deliberately omits. The two exponent
+lessons the curriculum *does* carry have no exercises in the 2026 book, and
+correctly get silence rather than an invented page.
+
+## Pacing filled in from the teacher guides, 2026-08-25
+
+Every maths lesson now carries a period count and every unit a total, read
+from the «عدد الحصص» column of the guides' مخطط الوحدة tables.
+
+**The data was mostly right already.** Six of the eight units matched the
+guide exactly, which is the useful finding: this was four nulls, not a
+rebuild.
+
+| filled | value | from |
+| --- | --- | --- |
+| `u1_lab` periods | 1 | TG s1 p15, «معمل برمجية جيوجبرا» row |
+| `u6` total | 14 | TG s2 p83 |
+| `u8_l5` periods | 4 | TG s2 p157 |
+| `u8` total | 21 | TG s2 p157 |
+
+A null here is invisible rather than loud — a pacing plan just omits the
+lesson — which is why `curriculumPacing.test.ts` now asserts there are none.
+
+### Reading the table
+
+The plan is a table whose columns are only distinguishable by x-position: the
+lesson number sits at x≈598 (right edge, RTL) and its period count at x≈81.
+Pairing by shared y recovers the column. The unit total is the last number in
+the same column, labelled «مجموع الحصص».
+
+### The gap is the unit's own work
+
+A unit's printed total always exceeds its lessons' sum, because the guide
+counts the lab, the project and the end-of-unit test in the same column.
+Six units sit at exactly 3 (project 1 + test 2), unit 4 at 4 — and unit 2 at
+**7**, which is not a mistake but the divergence below, arithmetically
+visible.
+
+### Unit 2's periods were deliberately not imported
+
+The teacher guide's «الدائرة» lists **five** lessons and a GeoGebra lab; this
+curriculum carries four lessons and no lab — matching the student book and the
+2026 exercise book, both of which print four. Same shape as unit 1: the guide
+is the first *trial* edition and the outlier, except here the curriculum
+followed the newer books.
+
+Its per-lesson counts therefore do not map, and forcing them would put a
+number on a lesson the guide was describing differently. The printed total
+(20) is kept, the lesson counts are left as they were, and the unit carries a
+`pacing_note` saying so — in the data, not only in a test, so the next person
+editing the curriculum sees it.

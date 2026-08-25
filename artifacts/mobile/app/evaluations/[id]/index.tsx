@@ -20,11 +20,13 @@ import {
   generateEvaluation,
   getEvaluation,
   publishEvaluation,
+  setEvaluationClass,
   type Evaluation,
   type EvaluationQuestion,
   type QuestionType,
 } from '@/services/evaluations';
 import { copyToClipboard } from '@/services/share';
+import { ClassPickerSheet } from '@/components/ui/ClassPickerSheet';
 import type { TranslationKey } from '@/services/i18n';
 
 const ACCENT = '#1B6B62';
@@ -70,6 +72,7 @@ export default function EvaluationDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
+  const [pickingClass, setPickingClass] = useState(false);
   const [questions, setQuestions] = useState<EvaluationQuestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -177,12 +180,38 @@ export default function EvaluationDetailScreen() {
         <ShareLinkCard
           shareCode={evaluation.shareCode ?? null}
           attachedToClass={Boolean(evaluation.classGroupId)}
+          onAttach={() => setPickingClass(true)}
           colors={colors}
           isRTL={isRTL}
           align={align}
           t={t}
         />
       )}
+
+      {/*
+        Attaching was only possible from inside a class, which left the share
+        card telling a teacher what was wrong and giving them nowhere to fix it.
+        The same sheet the generators use handles it — it already loads the
+        list, and already closes itself for a teacher who has no classes rather
+        than offering an empty dialog.
+      */}
+      <ClassPickerSheet
+        visible={pickingClass}
+        onClose={() => setPickingClass(false)}
+        onPick={async picks => {
+          setPickingClass(false);
+          // Single-pick (no `multiple`): an evaluation holds one class and has
+          // no copy semantics, so there is never more than one here.
+          const classId = picks[0]?.id;
+          if (!id || !classId) return;
+          try {
+            await setEvaluationClass(id, classId);
+            await load();
+          } catch (err) {
+            setError(err instanceof EvaluationError ? err.message : t('saveToClassFailed'));
+          }
+        }}
+      />
 
       {evaluation?.status === 'published' && (
         <View style={{ marginHorizontal: 20, marginTop: 16, gap: 10 }}>
@@ -279,10 +308,11 @@ export default function EvaluationDetailScreen() {
  * show a link that 404s, it says which step is missing.
  */
 function ShareLinkCard({
-  shareCode, attachedToClass, colors, isRTL, align, t,
+  shareCode, attachedToClass, onAttach, colors, isRTL, align, t,
 }: {
   shareCode: string | null;
   attachedToClass: boolean;
+  onAttach: () => void;
   colors: ReturnType<typeof useColors>;
   isRTL: boolean;
   align: 'left' | 'right';
@@ -308,9 +338,22 @@ function ShareLinkCard({
         </Text>
 
         {!attachedToClass ? (
-          <Text style={{ color: '#F59E0B', fontFamily: 'Almarai_400Regular', fontSize: 13, marginTop: 8, textAlign: align }}>
-            {t('shareExamNeedsClass')}
-          </Text>
+          <>
+            <Text style={{ color: '#F59E0B', fontFamily: 'Almarai_400Regular', fontSize: 13, marginTop: 8, textAlign: align }}>
+              {t('shareExamNeedsClass')}
+            </Text>
+            {/* Naming the problem without offering the fix is what made this a
+                dead end — the only way to attach was from inside the class. */}
+            <Pressable
+              onPress={onAttach}
+              style={[styles.shareBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+            >
+              <Ionicons name="people-outline" size={16} color={ACCENT} />
+              <Text style={{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>
+                {t('shareExamAttachNow')}
+              </Text>
+            </Pressable>
+          </>
         ) : (
           <>
             <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, marginTop: 4, textAlign: align }}>

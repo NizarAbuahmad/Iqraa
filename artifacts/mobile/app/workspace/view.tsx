@@ -20,6 +20,7 @@ import { looksLikeActivityContent } from '@/services/materialShape';
 // extracted to stop — a card in موادي and the material it opens must not
 // disagree about what colour an activity is.
 import { MATERIAL_COLOR } from '@/constants/materialKind';
+import { activityTypeLabel } from '@/constants/activityType';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { normalizeQuestionOptions, optionLetter } from '@/services/optionLabels';
 import { ExportMenu } from '@/components/ui/ExportMenu';
@@ -366,7 +367,7 @@ function ActivityView({ activity, colors, isRTL, t, accent, isAr }: {
           {activity.objective}
         </Text>
         <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 12, marginTop: 10 }]}>
-          {[activity.groupSize, `${activity.totalDuration} ${t('min')}`, activity.activityType]
+          {[activity.groupSize, `${activity.totalDuration} ${t('min')}`, activityTypeLabel(activity.activityType, t)]
             .filter(Boolean)
             .map(label => (
               <Text key={label} style={{ fontSize: 12, color: accent, fontFamily: 'Cairo_500Medium' }}>

@@ -32,7 +32,11 @@ pnpm run typecheck                     # whole monorepo
 pnpm run dev:api                       # Express on :8080
 pnpm run dev:mobile:web                # Expo web on :8081 (MOBILE_PORT overrides)
 
-cd artifacts/mobile     && pnpm test   # 909 tests (2026-08-25)
+<<<<<<< HEAD
+cd artifacts/mobile     && pnpm test   # 962 tests (2026-08-25)
+=======
+cd artifacts/mobile     && pnpm test   # 925 tests (2026-08-25)
+>>>>>>> origin/main
 cd artifacts/api-server && pnpm build && pnpm test   # build first — see below
 ```
 
@@ -76,7 +80,10 @@ Before a live demo: [`docs/demo-checklist.md`](./docs/demo-checklist.md).
   so passing `subject: 'Mathematics'` for a chemistry lesson serves it maths
   questions from the concrete bank, titled with the chemistry lesson. Anything
   calling a generator must pass the lesson's own subject; the defaults on
-  `buildClassDeck` are maths and will not fail loudly.
+  `buildClassDeck` are maths and will not fail loudly. The same trap sits on
+  every `/ai-tools/*` screen: they default `subjectIdx` to 0 — Mathematics — so
+  navigating with a bare `topic` param silently regenerates this bug. Use
+  `lessonPickerParams(lessonId, lang)` when you know the lesson.
 - **Extensionless relative imports only work through esbuild.** Anything loaded
   directly by `node --test` needs an explicit `.ts` extension.
 - **The OpenAI client throws at module scope without a key**, which makes
