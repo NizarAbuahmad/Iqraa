@@ -57,6 +57,18 @@ export type TopicSelectionDetail = {
   unitOrder: number | null;
   unitTitle: string | null;
   lessonTitle: string | null;
+  /**
+   * The KB id of the lesson that was actually tapped — null for entire-unit
+   * and entire-book, which are not a single lesson.
+   *
+   * The title string alone is not enough to identify it again: re-deriving
+   * the lesson with `searchKBSemantic(lessonTitle)` — what the chat's
+   * change-lesson sheet did — returns a *different* lesson for 16 of the
+   * picker's 63 entries («قانون الجيوب» comes back as «قانون جيب التمام»), so
+   * the teacher picked one lesson and the session pinned another. Pass the id
+   * through and there is nothing to re-derive.
+   */
+  lessonId: string | null;
 };
 
 interface Props {
@@ -124,7 +136,7 @@ export function TopicSelector({
   // Require a lesson (or entire-unit / entire-book) before setting topic —
   // unit-only selection used to set the unit title (e.g. wrong "المعادلات").
   useEffect(() => {
-    const noDetail: TopicSelectionDetail = { unitOrder: null, unitTitle: null, lessonTitle: null };
+    const noDetail: TopicSelectionDetail = { unitOrder: null, unitTitle: null, lessonTitle: null, lessonId: null };
     if (!kbAvailable) return;
     if (!selectedUnitId) {
       // Mount with a topic already passed in: leave it alone. Only a selection
@@ -148,13 +160,13 @@ export function TopicSelector({
     // Unit chosen but no lesson yet → wait for lesson picker
     if (!selectedLessonId) {
       onChange('');
-      onSelectionDetail?.({ unitOrder: unit.order, unitTitle, lessonTitle: null });
+      onSelectionDetail?.({ unitOrder: unit.order, unitTitle, lessonTitle: null, lessonId: null });
       return;
     }
 
     if (selectedLessonId === ENTIRE_UNIT) {
       onChange(unitTitle);
-      onSelectionDetail?.({ unitOrder: unit.order, unitTitle, lessonTitle: unitTitle });
+      onSelectionDetail?.({ unitOrder: unit.order, unitTitle, lessonTitle: unitTitle, lessonId: null });
       return;
     }
 
@@ -163,7 +175,7 @@ export function TopicSelector({
       // Lesson title alone for precise KB / NCCD matching
       const lessonTitle = lang === 'ar' ? lesson.titleAr : lesson.titleEn;
       onChange(lessonTitle);
-      onSelectionDetail?.({ unitOrder: unit.order, unitTitle, lessonTitle });
+      onSelectionDetail?.({ unitOrder: unit.order, unitTitle, lessonTitle, lessonId: lesson.id });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedUnitId, selectedLessonId, lang]);

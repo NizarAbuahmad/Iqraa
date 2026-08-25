@@ -46,9 +46,10 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     because the count was repeatedly described as "all in
     `lib/integrations-openai-ai-server`", which is wrong by a factor of three
     and would send someone looking in the wrong package.
-- Mobile test suite: 855 tests, 0 failures, 10 skipped (re-counted 2026-08-25
-  on an installed workspace, with `main` merged in; 725 on 2026-08-23, 723 on
-  2026-08-22, the 480 here was stale before that, and the 376 before it).
+- Mobile test suite: 865 tests, 0 failures, 10 skipped (re-counted 2026-08-25
+  on an installed workspace, with `main` merged in; 855 earlier the same day,
+  725 on 2026-08-23, 723 on 2026-08-22, the 480 here was stale before that,
+  and the 376 before it).
   The number moves with almost every merge — re-count rather than cite it.
   The 10 skips are the chemistry KB-search cases, skipped by their own suite,
   not by the runner.
@@ -225,6 +226,69 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     deployed. The client's timeout is 2.5s, so the first call after idle fails.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
+
+## «ابدأ الحصة» projects the lesson that was picked, 2026-08-25
+
+**Reported:** change the lesson in chat, choose a different subject, press
+«ابدأ الحصة» — and the projector still shows the first selection. Reproduced in
+the running app, and it was two separate faults wearing one face.
+
+**1. The deck had no subject, and the default is maths.** The chat called
+`buildClassDeck({ topic, lang })`; `subjectId`/`subjectName` default to
+`mathematics` / `Mathematics`. `isMathContext` matches on the subject *name*,
+so every deck was a maths deck. Picking «تجربة استهلالية: الطيف الذري»
+(chemistry) and starting the class gave 7 slides: a graph slide and four
+algebra questions — `y = x²` intersections, a linear/quadratic system — under
+the chemistry title. The home screen never had this bug; it passed
+`pickedSubject.name`. The subject was dropped when Start Class moved out of
+home into `services/startClass.ts` and the chat became its only caller.
+`CurrentLessonView` now carries `subjectId` / `subjectName` from the lesson's
+own book, and chat passes them.
+
+**2. The change-lesson sheet threw away the id and searched for the title.**
+`TopicSelector` knows exactly which lesson was tapped; `ContextBanner` kept
+only the title string and re-derived the lesson with `searchKBSemantic`. That
+returns a *different* lesson for **16 of the picker's 63 lessons**. Picking
+«قانون الجيوب» pinned and displayed «قانون جيب التمام» — verified in the app
+before the fix, on the lesson card and in the reply. `TopicSelectionDetail`
+now carries `lessonId`, `resolvePickedLesson` prefers it, and the id is
+persisted in `HomeLessonPick` so a restored pick is the same lesson too. The
+search stays as the fallback for entire-unit picks and free-typed topics.
+(`resolveGeneratorGrounding` was never the culprit — it resolves 63/63 exact
+titles correctly. Only the semantic search drifts.)
+
+Two smaller things fell out of the same trace, both fixed here:
+
+- A pick with no KB match kept the previous `activeLessonId` while showing the
+  new title, so generators stayed grounded on the lesson just left. It is
+  cleared now, and both language topic fields move together.
+- The reply to a freshly picked lesson still announced «وسأراعي تركيزك الحالي»
+  with the *previous* lesson: `sendMessage` read `teachingCtx` / `sessionMemory`
+  from a closure React had not updated yet. It now takes the teaching context
+  from `pinnedLessonId` when one is passed — the same argument that already
+  existed to solve this for retrieval.
+
+### Verified by driving the real UI
+
+Expo web build served statically with `/auth/me` stubbed and a token in
+`localStorage`; no API server, so everything took the local/demo path. Same
+click path each time — تغيير الدرس → الكيمياء → بنية الذرة وتركيبها → تجربة
+استهلالية: الطيف الذري → ابدأ الحصة.
+
+- **Before:** 7 slides — graph + four `y = x²` maths questions.
+- **After:** 3 slides — whiteboard rules, one open chemistry prompt, summary.
+- Maths is unchanged: the default lesson still projects 8 slides with its
+  objectives and four composition/inverse questions.
+
+**Worth knowing:** the chemistry deck is thin because `MockAIService` has no
+chemistry question bank — its non-maths quick-check is one «اشرح بكلماتك»
+prompt. That is pre-existing mock behaviour, not something this change
+introduced; what changed is that a chemistry lesson now gets a thin honest deck
+instead of a rich wrong one. Live AI generation is unaffected.
+
+`services/__tests__/lessonPickFidelity.test.ts` covers all of it, including a
+sweep asserting the 16-lesson drift still exists in `searchKBSemantic` — the
+day it stops being true, the reason for threading the id through is gone.
 
 ## Chat materials stopped dead-ending at copy, 2026-08-25
 
