@@ -25,7 +25,11 @@
  */
 import {
   getLessonById,
+  itemsForUnit,
+  usePolicy,
   type CurriculumObjective,
+  type CurriculumSource,
+  type SourceKind,
 } from "@workspace/curriculum";
 import type { Difficulty, QuestionType } from "@workspace/db";
 import {
@@ -33,8 +37,8 @@ import {
   COMPETENCY_KEYS,
   MARKS_BY_COMPETENCY,
   type CompetencyKey,
-} from "./competency";
-import { mockableTypes, QUESTION_TYPES } from "./questionTypes";
+} from "./competency.ts";
+import { mockableTypes, QUESTION_TYPES } from "./questionTypes.ts";
 
 export interface GeneratedQuestion {
   type: QuestionType;
@@ -64,6 +68,118 @@ export interface GenerationResult {
   /** Set when fewer questions were produced than asked for. */
   shortfall: number;
   notes: string[];
+  /**
+   * What the knowledge bank holds for these objectives' units.
+   *
+   * A refusal on its own is a dead end: the teacher asked for multiple choice,
+   * got told no, and is no closer to an exam. There are real question banks,
+   * past papers and answer keys on file for most of these units, so the
+   * refusal can end with where to look instead. It is not yet retrieval —
+   * nothing has been extracted from those documents — and this is deliberately
+   * shaped like the answer retrieval will give, so the seam is already here.
+   */
+  bankContext: BankContext;
+}
+
+/** Bank material scoped to the units the requested objectives belong to. */
+export interface BankContext {
+  /** Counts by kind, over the units in scope. */
+  byKind: Partial<Record<SourceKind, number>>;
+  /**
+   * The documents most likely to supply the types this generator declined:
+   * question banks first, then past papers, then answer keys.
+   */
+  suggested: Array<{
+    id: string;
+    title: string;
+    kind: SourceKind;
+    authorAr: string | null;
+    usePolicy: "quotable" | "reference-only";
+  }>;
+  total: number;
+  /**
+   * How many of those documents nothing has been extracted from. Reported
+   * because it is the whole distance between this and real retrieval — a
+   * caller must not read `total` as "items we could serve".
+   */
+  pending: number;
+  /** How many may not be reproduced. Counted, not estimated. */
+  referenceOnly: number;
+}
+
+/** Kinds that could supply a real item, in the order worth reaching for. */
+const ITEM_SOURCE_KINDS: readonly SourceKind[] = ["question-bank", "exam", "answer-key"];
+
+/** English words for the note. The `kind` slugs are identifiers, not prose. */
+const KIND_WORDS: Record<string, [one: string, many: string]> = {
+  "question-bank": ["question bank", "question banks"],
+  exam: ["past paper", "past papers"],
+  "answer-key": ["answer key", "answer keys"],
+};
+
+/**
+ * Summarise the bank for a set of objectives.
+ *
+ * Scoped by unit, because that is the granularity the bank is anchored at —
+ * `objectiveIds` is empty on every document, and inventing an objective-level
+ * claim from a unit tag is the mistake the manifest's own comments warn about.
+ */
+export function bankContextFor(objectives: readonly CurriculumObjective[]): BankContext {
+  const byId = new Map<string, CurriculumSource>();
+  for (const unitId of new Set(objectives.map(o => o.unitId))) {
+    for (const item of itemsForUnit(unitId)) byId.set(item.id, item);
+  }
+  const items = [...byId.values()];
+
+  const byKind: Partial<Record<SourceKind, number>> = {};
+  for (const item of items) byKind[item.kind] = (byKind[item.kind] ?? 0) + 1;
+
+  const suggested = items
+    .filter(i => ITEM_SOURCE_KINDS.includes(i.kind))
+    .sort((a, b) => ITEM_SOURCE_KINDS.indexOf(a.kind) - ITEM_SOURCE_KINDS.indexOf(b.kind)
+      || a.title.localeCompare(b.title, "ar"))
+    .slice(0, 5)
+    .map(i => ({
+      id: i.id,
+      title: i.title,
+      kind: i.kind,
+      authorAr: i.authorAr,
+      usePolicy: usePolicy(i),
+    }));
+
+  return {
+    byKind,
+    suggested,
+    total: items.length,
+    pending: items.filter(i => i.status === "pending").length,
+    referenceOnly: items.filter(i => usePolicy(i) === "reference-only").length,
+  };
+}
+
+/**
+ * One sentence naming what exists, for the notes a teacher reads.
+ *
+ * Says the count rather than "most": the ratio of reference-only material
+ * varies by unit, and a sentence that guesses at it is the kind of almost-true
+ * claim this codebase has been bitten by.
+ */
+function bankNote(ctx: BankContext): string | null {
+  if (!ctx.suggested.length) return null;
+  const counts = ITEM_SOURCE_KINDS
+    .map(k => {
+      const n = ctx.byKind[k];
+      if (!n) return null;
+      const [one, many] = KIND_WORDS[k]!;
+      return `${n} ${n === 1 ? one : many}`;
+    })
+    .filter(Boolean)
+    .join(", ");
+  const caveat = ctx.referenceOnly > 0
+    ? ` ${ctx.referenceOnly} of the ${ctx.total} documents for these units are a named `
+      + `teacher's own work and must not be reproduced verbatim.`
+    : "";
+  return `The library holds ${counts} for these units — real items to draw on, `
+    + `but nothing has been extracted from them yet.${caveat}`;
 }
 
 /** Arabic stems by cognitive demand. The verb sets the level, as in the corpus. */
@@ -152,10 +268,16 @@ export function generateMockEvaluation(req: GenerationRequest): GenerationResult
       unavailableTypes,
       shortfall: req.count,
       notes: ["No learning objectives were provided, so nothing could be generated."],
+      // No objectives means no units, so nothing to scope the bank by. An
+      // empty context, not the whole bank.
+      bankContext: bankContextFor([]),
     };
   }
 
+  const bankContext = bankContextFor(req.objectives);
+
   if (available.length === 0) {
+    const pointer = bankNote(bankContext);
     return {
       questions: [],
       unavailableTypes,
@@ -164,7 +286,9 @@ export function generateMockEvaluation(req: GenerationRequest): GenerationResult
         "None of the requested question types can be produced without inventing " +
           "subject content. Add an open-response type, write these questions by " +
           "hand, or switch the generator to a real model.",
+        ...(pointer ? [pointer] : []),
       ],
+      bankContext,
     };
   }
 
@@ -173,6 +297,8 @@ export function generateMockEvaluation(req: GenerationRequest): GenerationResult
       `Skipped ${unavailableTypes.join(", ")}: these need distractors or factual ` +
         `statements that cannot be derived from the curriculum text alone.`,
     );
+    const pointer = bankNote(bankContext);
+    if (pointer) notes.push(pointer);
   }
 
   const allocation = allocateQuestions(req.count, req.difficulty);
@@ -243,5 +369,5 @@ export function generateMockEvaluation(req: GenerationRequest): GenerationResult
     notes.push(`Produced ${questions.length} of ${req.count} requested questions.`);
   }
 
-  return { questions, unavailableTypes, shortfall: Math.max(0, shortfall), notes };
+  return { questions, unavailableTypes, shortfall: Math.max(0, shortfall), notes, bankContext };
 }

@@ -380,6 +380,9 @@ router.post("/evaluations/:id/generate", async (req: AuthenticatedRequest, res) 
       // Everything the generator declined or the validator dropped, stated
       // plainly. A teacher seeing 12 of 15 should know why, not wonder.
       unavailableTypes: result.unavailableTypes,
+      // What the library holds for these units. Pairs with unavailableTypes:
+      // the types we declined, and where real items for them would come from.
+      bankContext: result.bankContext,
       rejected: validation.rejected,
       warnings: [...result.notes, ...validation.warnings],
     });

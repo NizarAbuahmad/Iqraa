@@ -7,6 +7,7 @@ import authRouter from "./auth";
 import workspaceRouter from "./workspace";
 import verifiedMathRouter from "./verifiedMath";
 import curriculumRouter from "./curriculum";
+import bankRouter from "./bank";
 import rosterRouter from "./roster";
 import evaluationsRouter from "./evaluations";
 import attemptsRouter from "./attempts";
@@ -31,6 +32,9 @@ router.use("/auth", authRouter);
 router.use("/workspace", workspaceRouter);
 // Published national curriculum data — deliberately public, see curriculum.ts.
 router.use(curriculumRouter);
+// A catalog of document titles and provenance, on the same reasoning. It does
+// not serve the documents; there is nothing here to serve.
+router.use(bankRouter);
 router.use(rosterRouter);
 router.use(evaluationsRouter);
 router.use(attemptsRouter);

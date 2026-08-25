@@ -281,6 +281,66 @@ sheet self-closed, which is what it does with no roster (server-only). اعرض 
 upstream and already showed in the chat prose before this change — it is more
 visible now that it heads a projected slide.
 
+## The refusal now points somewhere, 2026-08-25
+
+`mockGenerator` declines four of the eight question types on purpose — it will
+not invent distractors, and there is a long comment saying why. The refusal was
+also the end of the reply: a teacher asked for multiple choice, got told no,
+and was no closer to an exam.
+
+The bank knows there are 3 question banks, 6 past papers and 3 answer keys on
+file for الدائرة. It could not say so, because **nothing server-side could see
+the bank at all** — `bank.ts` shipped in `@workspace/curriculum`, which the API
+already depends on, and only the mobile app read it.
+
+Now a declined type ends with:
+
+> Skipped multiple_choice, true_false: these need distractors or factual
+> statements that cannot be derived from the curriculum text alone.
+> The library holds 3 question banks, 6 past papers, 3 answer keys for these
+> units — real items to draw on, but nothing has been extracted from them yet.
+> 26 of the 35 documents for these units are a named teacher's own work and
+> must not be reproduced verbatim.
+
+The counts are counted, not estimated. An earlier draft said "most are a named
+teacher's work"; the ratio varies by unit and a sentence that guesses is the
+shape of almost-true claim this file exists to stop.
+
+**`bankContext` is shaped like the answer retrieval will give**, so the seam is
+already in place: `suggested` is the ranked list of documents that could supply
+a real item (question banks, then past papers, then answer keys), each with its
+`usePolicy`. What is missing is only the extracted content — `pending` reports
+that per request rather than leaving `total` to be misread as "items we can
+serve".
+
+**New: `GET /bank/items`, `/bank/for-objectives`, `/bank/stats`.** Public, on
+the same reasoning as `/curriculum/*` — titles and provenance, not documents.
+`driveId` is dropped from the projection: a handle to a file this API does not
+serve. `?kind=quiz` — the retired vocabulary's word — is a 400 rather than a
+silently unfiltered 200.
+
+**Two bugs found on the way, both latent for a while:**
+
+- **Ten of the seventeen chemistry lessons resolved to no unit tag at all** —
+  all of units 2, 4 and 5. `unitTagsForLesson` matched chemistry units against
+  `unit.id === 'kbu-chem-1'` and four siblings, ids from a scheme the catalog
+  no longer uses. Every branch was dead, so chemistry fell through to title
+  keywords, and «التفاعلات الكيميائية» misses `/تفاعلات كيمي/` because the
+  definite article sits between the two words. Those lessons saw only
+  semester-wide material, in the shelf *and* in chat grounding. Replaced by
+  `bankTagsForUnit()` in `bank.ts`, derived from the id's structure — which is
+  also what lets the server answer. One mapping, both callers.
+- **`mockGenerator` could not be loaded by `node --test`** — it imported
+  `./competency` and `./questionTypes` without extensions, which only esbuild
+  resolves. That is the documented trap in CLAUDE.md, and it is why the
+  deliberate-refusal logic had no direct test until now. Two characters each.
+
+44 curriculum / 815 mobile / 193 api-server tests pass, typecheck clean,
+`verify-curriculum` 0 errors.
+
+**Unchanged and still the blocker:** 63 of 78 documents are `pending`. This
+tells a teacher what exists; it cannot yet hand them a question out of it.
+
 ## The lesson page says what the library holds, 2026-08-25
 
 The knowledge-bank merge earlier today made `kind` trustworthy — `exam`,
