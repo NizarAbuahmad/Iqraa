@@ -26,8 +26,12 @@ export type AiSource = 'live' | 'mock' | 'none';
  *  'live'      — the API answered. The only reason that means a real model ran.
  *  'fallback'  — a live call was attempted and failed; mock content stood in.
  *  'failed'    — a live call failed and strict mode refused to substitute.
+ *  'cancelled' — the teacher stopped it. Nothing was produced, and nothing
+ *                should be: an abort is the one failure that must never reach
+ *                the mock fallback, or pressing Cancel would hand back a
+ *                fabricated lesson plan indistinguishable from a real one.
  */
-export type AiSourceReason = 'demo-mode' | 'live' | 'fallback' | 'failed';
+export type AiSourceReason = 'demo-mode' | 'live' | 'fallback' | 'failed' | 'cancelled';
 
 /** Which generator ran — matches the API path segment, e.g. 'lesson-plan'. */
 export type AiGenerationKind =
@@ -99,6 +103,17 @@ export function resetGenerationLog(): void {
 }
 
 /**
+ * Did this rejection come from an `AbortController`, i.e. did someone cancel?
+ *
+ * Checked by name rather than `instanceof DOMException`: the abort travels
+ * through `fetch` in the app and through plain `Error` in tests, and the
+ * class is not the same object in both. The name is.
+ */
+export function isAbortError(e: unknown): boolean {
+  return !!e && typeof e === 'object' && (e as { name?: unknown }).name === 'AbortError';
+}
+
+/**
  * Run a generator and record which of the two paths produced the answer.
  *
  * Lives here rather than in `RemoteAIService` so the fallback policy can be
@@ -126,6 +141,13 @@ export async function generateWithProvenance<T>(
     return out;
   } catch (e) {
     const error = describeAiError(e);
+    // A cancel is not a failure to paper over. Falling back here would answer
+    // "stop" with a full, plausible, entirely fabricated lesson plan — the
+    // exact substitution this module exists to make visible.
+    if (isAbortError(e)) {
+      recordGeneration({ kind, source: 'none', reason: 'cancelled', at: now() });
+      throw e;
+    }
     if (strict) {
       // Refusing to substitute is the loudest possible disclosure: the screen
       // shows its error state rather than content nothing generated.
@@ -162,6 +184,10 @@ export function aiSourceBadgeState(
 ): AiSourceBadgeState | null {
   if (demoMode) return { labelKey: 'demoModeBadge', icon: 'flask-outline', tone: 'quiet' };
   if (!last) return null;
+  // A cancelled run produced nothing, so there is nothing to label — same
+  // reasoning as `!last`. Without this it falls through to "Live AI", which
+  // would assert a model answered when the teacher stopped it before it did.
+  if (last.reason === 'cancelled') return null;
   if (last.reason === 'fallback' || last.reason === 'failed') {
     return {
       labelKey: 'aiFallbackBadge', icon: 'warning-outline', tone: 'warn',

@@ -4,6 +4,7 @@ import {
   aiSourceBadgeState,
   describeAiError,
   generateWithProvenance,
+  isAbortError,
   getGenerationHistory,
   getLastGeneration,
   recordGeneration,
@@ -130,6 +131,63 @@ test('strict mode refuses to substitute and rethrows', async () => {
   assert.deepEqual(getLastGeneration(), {
     kind: 'activity', source: 'none', reason: 'failed', error: 'HTTP 500', at: AT,
   });
+});
+
+// ─── cancelling ──────────────────────────────────────────────────────────────
+
+function aborted() {
+  const e = new Error('The operation was aborted');
+  e.name = 'AbortError';
+  return Promise.reject(e);
+}
+
+test('isAbortError recognises an abort by name, not by class', () => {
+  const e = new Error('aborted');
+  e.name = 'AbortError';
+  assert.equal(isAbortError(e), true);
+  assert.equal(isAbortError(new Error('HTTP 500')), false);
+  assert.equal(isAbortError(null), false);
+  assert.equal(isAbortError('AbortError'), false);
+});
+
+test('a cancelled call never substitutes mock content', async () => {
+  fresh();
+  let mockRan = false;
+  const watchedMock = async () => { mockRan = true; return 'mock-content'; };
+
+  // The whole point. Non-strict mode falls back on failure, and a cancel
+  // arrives as a rejection like any other — so without the abort check, a
+  // teacher who pressed Cancel would be handed a complete, plausible,
+  // entirely fabricated worksheet instead of their form back.
+  await assert.rejects(
+    () => generateWithProvenance('worksheet', aborted, watchedMock, {
+      demoMode: false, strict: false, now: clock,
+    }),
+    /aborted/,
+  );
+  assert.equal(mockRan, false, 'the mock generator must not run on a cancel');
+});
+
+test('a cancelled call is recorded as cancelled, producing nothing', async () => {
+  fresh();
+  await assert.rejects(
+    () => generateWithProvenance('quiz', aborted, mock, {
+      demoMode: false, strict: false, now: clock,
+    }),
+    /aborted/,
+  );
+  assert.deepEqual(getLastGeneration(), {
+    kind: 'quiz', source: 'none', reason: 'cancelled', at: AT,
+  });
+});
+
+test('the badge says nothing after a cancel rather than claiming live AI', () => {
+  // Falling through to the live badge here would assert that a model answered
+  // when the teacher stopped it before it did.
+  const cancelled = { kind: 'quiz' as const, source: 'none' as const, reason: 'cancelled' as const, at: AT };
+  assert.equal(aiSourceBadgeState(false, cancelled), null);
+  // Demo mode still outranks everything — it describes the whole session.
+  assert.equal(aiSourceBadgeState(true, cancelled)?.labelKey, 'demoModeBadge');
 });
 
 test('strict mode never calls the mock generator at all', async () => {

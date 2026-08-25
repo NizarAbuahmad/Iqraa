@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +17,8 @@ import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
 } from '@/services/curriculumData';
 import { TopicSelector } from '@/components/ui/TopicSelector';
+import { GenerationStatus } from '@/components/ui/GenerationStatus';
+import { isAbortError } from '@/services/ai/aiProvenance';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { EditableText } from '@/components/ui/Editable';
 import { confirm } from '@/services/confirm';
@@ -98,6 +100,14 @@ export default function QuizScreen() {
   const [marksIdx, setMarksIdx] = useState(params.marksIdx ? parseInt(params.marksIdx, 10) : 1);
   const [selectedTypes, setSelectedTypes] = useState<Set<QType>>(parseTypes(params.selectedTypes));
   const [loading, setLoading] = useState(false);
+  /**
+   * Held across renders so Cancel can reach the in-flight request. A cancel
+   * that only cleared the spinner would leave the call running and still
+   * billing against AI_BUDGET_USD — the teacher would have stopped the
+   * waiting, not the spending.
+   */
+  const abortRef = useRef<AbortController | null>(null);
+  const [cancelled, setCancelled] = useState(false);
   const [result, setResult] = useState<QuizOutput | null>(null);
   /** null = not checked yet (or the check failed); [] onwards = per question. */
   const [outcomes, setOutcomes] = useState<VerifyOutcome[] | null>(null);
@@ -220,7 +230,10 @@ export default function QuizScreen() {
 
   const generate = async () => {
     if (!topic.trim()) { setError(t('topicRequired')); return; }
-    setError(''); setLoading(true); setResult(null); setOutcomes(null); setEditedQuestions(new Set()); setShowAnswers(false); setSaveLabel('save');
+    setError(''); setCancelled(false);
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setLoading(true); setResult(null); setOutcomes(null); setEditedQuestions(new Set()); setShowAnswers(false); setSaveLabel('save');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
       const grounding = resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en');
@@ -244,7 +257,7 @@ export default function QuizScreen() {
         questionTypes: Array.from(selectedTypes),
         difficulty: DIFFICULTY_MAP[DIFFICULTY_IDS[diffIdx]],
         additionalContext,
-      });
+      }, { signal: controller.signal });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       // Options are lettered by the renderer, once, in the display language.
       // Models routinely bake their own "أ)" into the option text as well, and
@@ -266,11 +279,22 @@ export default function QuizScreen() {
         const { verifyMathItem } = await import('@/services/ai/verifyMath');
         setOutcomes(await verifyQuizAnswers(out, verifyMathItem));
       })().catch(() => setOutcomes(null));
-    } catch {
-      setError(t('generationFailed'));
+    } catch (e) {
+      // A cancel is the teacher's own doing, so it is reported as a stop, not
+      // as a failure they need to diagnose or retry out of. The raw error text
+      // is deliberately not shown: "HTTP 500" is not a sentence in a language
+      // a teacher reads, and aiProvenance already records it for the badge.
+      if (isAbortError(e)) setCancelled(true);
+      else setError(t('generationFailed'));
     } finally {
+      abortRef.current = null;
       setLoading(false);
     }
+  };
+
+  /** Stop the in-flight request and hand the teacher their form back. */
+  const cancelGenerate = () => {
+    abortRef.current?.abort();
   };
 
   const handleSave = async () => {
@@ -432,17 +456,38 @@ export default function QuizScreen() {
           ))}
         </View>
 
-        {error ? <Text style={[{ color: colors.destructive, fontSize: 13, fontFamily: 'Almarai_400Regular', marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
+        {/*
+          The validation error (an empty topic) stays here, next to the field
+          it is about. Generation failures moved down to GenerationStatus,
+          beside the spinner they replace — they used to render above the form,
+          out of sight of the button that had just been pressed.
+        */}
+        {error && !topic.trim() ? <Text style={[{ color: colors.destructive, fontSize: 13, fontFamily: 'Almarai_400Regular', marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
         <Button label={loading ? t('generatingQuiz') : t('generateQuizBtn')} onPress={generate} loading={loading} disabled={!topic.trim()} fullWidth style={{ backgroundColor: ACCENT }} />
+        {/*
+          A greyed-out primary button with nothing next to it reads as a broken
+          product rather than an unmet precondition. It says which one.
+        */}
+        {!topic.trim() ? (
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
+            {t('needTopicHint')}
+          </Text>
+        ) : null}
       </View>
 
       {/* Loading */}
-      {loading && (
-        <View style={[styles.loadBox, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, marginHorizontal: 20, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <ActivityIndicator color={ACCENT} />
-          <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14 }]}>{t('generatingQuiz')}</Text>
-        </View>
-      )}
+      <GenerationStatus
+        phase={loading ? 'loading' : cancelled ? 'cancelled' : (error && topic.trim()) ? 'error' : 'idle'}
+        loadingLabel={t('generatingQuiz')}
+        errorDetail={error}
+        onCancel={cancelGenerate}
+        onRetry={generate}
+        colors={colors}
+        isRTL={isRTL}
+        lang={lang as 'ar' | 'en'}
+        accent={ACCENT}
+        t={t}
+      />
 
       {/* Result */}
       {/* What the material is anchored to. Shown both ways: a teacher needs to
@@ -829,7 +874,6 @@ const styles = StyleSheet.create({
   checkboxGroup: { borderWidth: 1, padding: 14, marginBottom: 16, gap: 4 },
   checkRow: { alignItems: 'center', gap: 10, paddingVertical: 6 },
   checkbox: { width: 20, height: 20, borderRadius: 4, borderWidth: 2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  loadBox: { alignItems: 'center', gap: 12, padding: 20, borderWidth: 1, marginBottom: 16 },
   quizHeader: { padding: 16, borderWidth: 1, marginBottom: 16 },
   quizTitle: { fontSize: 16, marginBottom: 10 },
   quizMeta: { gap: 8, flexWrap: 'wrap' },

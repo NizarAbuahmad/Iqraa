@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,6 +21,8 @@ import { getItem, saveItem, toggleFavorite, updateItem } from '@/services/worksp
 import { ClassPickerSheet } from '@/components/ui/ClassPickerSheet';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
+import { GenerationStatus } from '@/components/ui/GenerationStatus';
+import { isAbortError } from '@/services/ai/aiProvenance';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { RelatedResourcesPanel } from '@/components/ui/RelatedResourcesPanel';
@@ -88,6 +90,14 @@ export default function WorksheetScreen() {
   const [selectedTypes, setSelectedTypes] = useState<Set<QType>>(parseTypes(params.selectedTypes));
   const [includePriorReview, setIncludePriorReview] = useState(false);
   const [loading, setLoading] = useState(false);
+  /**
+   * Held across renders so Cancel can reach the in-flight request. A cancel
+   * that only cleared the spinner would leave the call running and still
+   * billing against AI_BUDGET_USD — the teacher would have stopped the
+   * waiting, not the spending.
+   */
+  const abortRef = useRef<AbortController | null>(null);
+  const [cancelled, setCancelled] = useState(false);
   const [result, setResult] = useState<WorksheetOutput | null>(null);
   /** null = not checked yet (or the check failed); [] onwards = per question. */
   const [outcomes, setOutcomes] = useState<VerifyOutcome[] | null>(null);
@@ -157,7 +167,10 @@ export default function WorksheetScreen() {
 
   const generate = async () => {
     if (!topic.trim()) { setError(t('topicRequired')); return; }
-    setError(''); setLoading(true); setResult(null); setOutcomes(null); setCurriculumGrounded(null); setGroundedLesson(null);
+    setError(''); setCancelled(false);
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setLoading(true); setResult(null); setOutcomes(null); setCurriculumGrounded(null); setGroundedLesson(null);
     setSaveLabel('save');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
@@ -186,8 +199,8 @@ export default function WorksheetScreen() {
       };
       // Homework uses a distinct generator — not a worksheet clone.
       const out = isHomework
-        ? await aiService.generateHomework(baseReq)
-        : await aiService.generateWorksheet(baseReq);
+        ? await aiService.generateHomework(baseReq, { signal: controller.signal })
+        : await aiService.generateWorksheet(baseReq, { signal: controller.signal });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setCurriculumGrounded(grounding.grounded);
       setGroundedLesson(
@@ -205,11 +218,22 @@ export default function WorksheetScreen() {
         const { verifyMathItem } = await import('@/services/ai/verifyMath');
         setOutcomes(await verifyWorksheetAnswers(out, verifyMathItem));
       })().catch(() => setOutcomes(null));
-    } catch {
-      setError(t('generationFailed'));
+    } catch (e) {
+      // A cancel is the teacher's own doing, so it is reported as a stop, not
+      // as a failure they need to diagnose or retry out of. The raw error text
+      // is deliberately not shown: "HTTP 500" is not a sentence in a language
+      // a teacher reads, and aiProvenance already records it for the badge.
+      if (isAbortError(e)) setCancelled(true);
+      else setError(t('generationFailed'));
     } finally {
+      abortRef.current = null;
       setLoading(false);
     }
+  };
+
+  /** Stop the in-flight request and hand the teacher their form back. */
+  const cancelGenerate = () => {
+    abortRef.current?.abort();
   };
 
   const handleSave = async () => {
@@ -403,17 +427,38 @@ export default function WorksheetScreen() {
           ) : null}
         </View>
 
-        {error ? <Text style={[{ color: colors.destructive, fontSize: 13, fontFamily: 'Almarai_400Regular', marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
+        {/*
+          The validation error (an empty topic) stays here, next to the field
+          it is about. Generation failures moved down to GenerationStatus,
+          beside the spinner they replace — they used to render above the form,
+          out of sight of the button that had just been pressed.
+        */}
+        {error && !topic.trim() ? <Text style={[{ color: colors.destructive, fontSize: 13, fontFamily: 'Almarai_400Regular', marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
         <Button label={loading ? t('generating') : t('createWorksheetBtn')} onPress={generate} loading={loading} disabled={!topic.trim()} fullWidth />
+        {/*
+          A greyed-out primary button with nothing next to it reads as a broken
+          product rather than an unmet precondition. It says which one.
+        */}
+        {!topic.trim() ? (
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
+            {t('needTopicHint')}
+          </Text>
+        ) : null}
       </View>
 
       {/* Loading */}
-      {loading && (
-        <View style={[styles.loadBox, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, marginHorizontal: 20, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <ActivityIndicator color={ACCENT} />
-          <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14 }]}>{t('buildingWorksheet')}</Text>
-        </View>
-      )}
+      <GenerationStatus
+        phase={loading ? 'loading' : cancelled ? 'cancelled' : (error && topic.trim()) ? 'error' : 'idle'}
+        loadingLabel={t('buildingWorksheet')}
+        errorDetail={error}
+        onCancel={cancelGenerate}
+        onRetry={generate}
+        colors={colors}
+        isRTL={isRTL}
+        lang={lang as 'ar' | 'en'}
+        accent={ACCENT}
+        t={t}
+      />
 
       {/* Grounding status — never present ungrounded output as curriculum-backed */}
       {/* What the material is anchored to. Shown both ways: a teacher needs
@@ -716,7 +761,6 @@ const styles = StyleSheet.create({
   checkboxGroup: { borderWidth: 1, padding: 14, marginBottom: 16, gap: 4 },
   checkRow: { alignItems: 'center', gap: 10, paddingVertical: 6 },
   checkbox: { width: 20, height: 20, borderRadius: 4, borderWidth: 2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  loadBox: { alignItems: 'center', gap: 12, padding: 20, borderWidth: 1, marginBottom: 16 },
   successBanner: { alignItems: 'center', gap: 10, padding: 14, borderWidth: 1, marginBottom: 12 },
   secTitle: { fontSize: 14, marginBottom: 10 },
   presentBtn: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, marginBottom: 16 },

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,6 +18,8 @@ import { getItem, saveItem, toggleFavorite, updateItem } from '@/services/worksp
 import { ClassPickerSheet } from '@/components/ui/ClassPickerSheet';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
+import { GenerationStatus } from '@/components/ui/GenerationStatus';
+import { isAbortError } from '@/services/ai/aiProvenance';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
@@ -77,6 +79,14 @@ export default function LessonPlanScreen() {
   const [durationIdx, setDurationIdx] = useState(params.durationIdx ? parseInt(params.durationIdx, 10) : 1);
   const [styleIdx, setStyleIdx] = useState(params.styleIdx ? parseInt(params.styleIdx, 10) : 0);
   const [loading, setLoading] = useState(false);
+  /**
+   * Held across renders so Cancel can reach the in-flight request. A cancel
+   * that only cleared the spinner would leave the call running and still
+   * billing against AI_BUDGET_USD — the teacher would have stopped the
+   * waiting, not the spending.
+   */
+  const abortRef = useRef<AbortController | null>(null);
+  const [cancelled, setCancelled] = useState(false);
   const [result, setResult] = useState<LessonPlanOutput | null>(null);
   /** null until first generate; then whether the plan used a confident KB lesson. */
   const [curriculumGrounded, setCurriculumGrounded] = useState<boolean | null>(null);
@@ -135,6 +145,9 @@ export default function LessonPlanScreen() {
   const generate = async () => {
     if (!topic.trim()) { setError(t('topicRequired')); return; }
     setError('');
+    setCancelled(false);
+    const controller = new AbortController();
+    abortRef.current = controller;
     setLoading(true);
     setResult(null);
     setCurriculumGrounded(null);
@@ -169,7 +182,7 @@ export default function LessonPlanScreen() {
           ? (objectives.trim() || (lang === 'ar' ? 'تبسيط الشرح' : 'Simplify explanation'))
           : (objectives.trim() || undefined),
         additionalContext,
-      });
+      }, { signal: controller.signal });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setCurriculumGrounded(grounding.grounded);
       setGroundedLesson(
@@ -177,11 +190,23 @@ export default function LessonPlanScreen() {
       );
       setResult(out);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
-    } catch {
-      setError(t('generationFailed'));
+    } catch (e) {
+      // A cancel is the teacher's own doing, so it is reported as a stop, not
+      // as a failure they need to diagnose or retry out of.
+      if (isAbortError(e)) setCancelled(true);
+      // Deliberately not the raw error: "HTTP 500" is not a sentence in any
+      // language a teacher reads. The technical text is already recorded in
+      // aiProvenance, where the badge carries it for support.
+      else setError(t('generationFailed'));
     } finally {
+      abortRef.current = null;
       setLoading(false);
     }
+  };
+
+  /** Stop the in-flight request and hand the teacher their form back. */
+  const cancelGenerate = () => {
+    abortRef.current?.abort();
   };
 
   const handleSave = async () => {
@@ -420,7 +445,13 @@ export default function LessonPlanScreen() {
         {/* Teaching style picker */}
         <PickerField label={t('teachingStyleLabel')} value={styleLabels[styleIdx]} options={styleLabels} onChange={setStyleIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
 
-        {error ? <Text style={[{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
+        {/*
+          The validation error (an empty topic) still belongs here, next to the
+          field it is about. Generation failures moved down to GenerationStatus,
+          beside the spinner they replace — they used to render above the form,
+          out of sight of the button that had just been pressed.
+        */}
+        {error && !topic.trim() ? <Text style={[{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
         <Button
           label={loading ? t('generatingLessonPlan') : t('generateLessonPlanBtn')}
           onPress={generate}
@@ -429,15 +460,18 @@ export default function LessonPlanScreen() {
         />
       </View>
 
-      {/* Loading state */}
-      {loading && (
-        <View style={[styles.loadingBox, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, marginHorizontal: 20, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <ActivityIndicator color={ACCENT} />
-          <Text style={[styles.loadingText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
-            {t('craftingLessonPlan')}
-          </Text>
-        </View>
-      )}
+      <GenerationStatus
+        phase={loading ? 'loading' : cancelled ? 'cancelled' : (error && topic.trim()) ? 'error' : 'idle'}
+        loadingLabel={t('craftingLessonPlan')}
+        errorDetail={error}
+        onCancel={cancelGenerate}
+        onRetry={generate}
+        colors={colors}
+        isRTL={isRTL}
+        lang={lang as 'ar' | 'en'}
+        accent={ACCENT}
+        t={t}
+      />
 
       {/* Grounding status — never present ungrounded output as curriculum-backed */}
       {/* What the material is anchored to. Shown both ways: a teacher needs
@@ -663,8 +697,6 @@ const styles = StyleSheet.create({
   pickerBtn: { alignItems: 'center', borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 13 },
   pickerDropdown: { borderWidth: 1, marginTop: -8, marginBottom: 8, overflow: 'hidden' },
   pickerOption: { alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1 },
-  loadingBox: { alignItems: 'center', gap: 12, padding: 20, borderWidth: 1, marginBottom: 16 },
-  loadingText: { fontSize: 14 },
   resultHeader: { alignItems: 'center', gap: 8, padding: 14, borderWidth: 1, marginBottom: 20 },
   resultHeaderText: { fontSize: 14 },
   resultSectionHeader: { alignItems: 'center', gap: 6, marginBottom: 8 },

@@ -275,11 +275,24 @@ export interface LessonFlowOutput {
   exitTicket: QuizOutput;
 }
 
+/**
+ * Per-call options every generator accepts.
+ *
+ * `signal` exists so a teacher who presses Cancel actually stops the request
+ * rather than only stopping the spinner. That distinction matters more here
+ * than in most apps: live generation is metered against `AI_BUDGET_USD`, so a
+ * cancel that abandoned the UI while the request ran on would keep spending
+ * against a cap the teacher thinks they just protected.
+ */
+export interface GenerateOptions {
+  signal?: AbortSignal;
+}
+
 export abstract class AIService {
-  abstract generateLessonPlan(req: AIRequest): Promise<LessonPlanOutput>;
-  abstract generateWorksheet(req: AIRequest): Promise<WorksheetOutput>;
-  abstract generateQuiz(req: AIRequest): Promise<QuizOutput>;
-  abstract generateHomework(req: AIRequest): Promise<WorksheetOutput>;
-  abstract generateActivity(req: AIRequest): Promise<ActivityOutput>;
-  abstract generateClassroomActivity(req: ClassroomActivityRequest): Promise<ClassroomActivity>;
+  abstract generateLessonPlan(req: AIRequest, opts?: GenerateOptions): Promise<LessonPlanOutput>;
+  abstract generateWorksheet(req: AIRequest, opts?: GenerateOptions): Promise<WorksheetOutput>;
+  abstract generateQuiz(req: AIRequest, opts?: GenerateOptions): Promise<QuizOutput>;
+  abstract generateHomework(req: AIRequest, opts?: GenerateOptions): Promise<WorksheetOutput>;
+  abstract generateActivity(req: AIRequest, opts?: GenerateOptions): Promise<ActivityOutput>;
+  abstract generateClassroomActivity(req: ClassroomActivityRequest, opts?: GenerateOptions): Promise<ClassroomActivity>;
 }

@@ -14,6 +14,7 @@
 import {
   ActivityOutput, AIRequest, AIService,
   ClassroomActivity, ClassroomActivityRequest,
+  GenerateOptions,
   LessonPlanOutput, QuizOutput, WorksheetOutput,
 } from './AIService';
 import { DEMO_MODE } from './demoMode';
@@ -26,9 +27,21 @@ import { describeAiError, generateWithProvenance, recordGeneration } from './aiP
 // authMiddleware to those prefixes) — go through apiFetch, not a bare fetch(),
 // so the access token actually rides along and a 401 gets one refresh-and-retry
 // instead of silently falling through to the mock generator below.
-async function postJSON<T>(path: string, body: unknown, timeoutMs = 18_000): Promise<T> {
+async function postJSON<T>(
+  path: string,
+  body: unknown,
+  opts: GenerateOptions = {},
+  timeoutMs = 18_000,
+): Promise<T> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
+  // Two things can end this request — the timeout above and the teacher
+  // pressing Cancel — and `fetch` takes one signal. Forwarding the caller's
+  // abort into the same controller keeps one signal on the wire without either
+  // side having to know about the other.
+  const onAbort = () => controller.abort();
+  opts.signal?.addEventListener('abort', onAbort);
+  if (opts.signal?.aborted) controller.abort();
   try {
     const res = await apiFetch(path, {
       method: 'POST',
@@ -42,56 +55,57 @@ async function postJSON<T>(path: string, body: unknown, timeoutMs = 18_000): Pro
     return res.json() as Promise<T>;
   } finally {
     clearTimeout(timer);
+    opts.signal?.removeEventListener('abort', onAbort);
   }
 }
 
 export class RemoteAIService extends AIService {
   private fallback = new MockAIService();
 
-  async generateLessonPlan(req: AIRequest): Promise<LessonPlanOutput> {
+  async generateLessonPlan(req: AIRequest, opts?: GenerateOptions): Promise<LessonPlanOutput> {
     return generateWithProvenance(
       'lesson-plan',
-      () => postJSON<LessonPlanOutput>('/generate/lesson-plan', req),
+      () => postJSON<LessonPlanOutput>('/generate/lesson-plan', req, opts),
       () => this.fallback.generateLessonPlan(req),
     );
   }
 
-  async generateWorksheet(req: AIRequest): Promise<WorksheetOutput> {
+  async generateWorksheet(req: AIRequest, opts?: GenerateOptions): Promise<WorksheetOutput> {
     return generateWithProvenance(
       'worksheet',
-      () => postJSON<WorksheetOutput>('/generate/worksheet', req),
+      () => postJSON<WorksheetOutput>('/generate/worksheet', req, opts),
       () => this.fallback.generateWorksheet(req),
     );
   }
 
-  async generateQuiz(req: AIRequest): Promise<QuizOutput> {
+  async generateQuiz(req: AIRequest, opts?: GenerateOptions): Promise<QuizOutput> {
     return generateWithProvenance(
       'quiz',
-      () => postJSON<QuizOutput>('/generate/quiz', req),
+      () => postJSON<QuizOutput>('/generate/quiz', req, opts),
       () => this.fallback.generateQuiz(req),
     );
   }
 
-  async generateActivity(req: AIRequest): Promise<ActivityOutput> {
+  async generateActivity(req: AIRequest, opts?: GenerateOptions): Promise<ActivityOutput> {
     return generateWithProvenance(
       'activity',
-      () => postJSON<ActivityOutput>('/generate/activity', req),
+      () => postJSON<ActivityOutput>('/generate/activity', req, opts),
       () => this.fallback.generateActivity(req),
     );
   }
 
-  async generateHomework(req: AIRequest): Promise<WorksheetOutput> {
+  async generateHomework(req: AIRequest, opts?: GenerateOptions): Promise<WorksheetOutput> {
     return generateWithProvenance(
       'homework',
-      () => postJSON<WorksheetOutput>('/generate/homework', req),
+      () => postJSON<WorksheetOutput>('/generate/homework', req, opts),
       () => this.fallback.generateHomework(req),
     );
   }
 
-  async generateClassroomActivity(req: ClassroomActivityRequest): Promise<ClassroomActivity> {
+  async generateClassroomActivity(req: ClassroomActivityRequest, opts?: GenerateOptions): Promise<ClassroomActivity> {
     const activity = await generateWithProvenance(
       'classroom-activity',
-      () => postJSON<ClassroomActivity>('/generate/classroom-activity', req),
+      () => postJSON<ClassroomActivity>('/generate/classroom-activity', req, opts),
       () => this.fallback.generateClassroomActivity(req),
     );
     // Applied here rather than inside the generators: the mock deck, the live

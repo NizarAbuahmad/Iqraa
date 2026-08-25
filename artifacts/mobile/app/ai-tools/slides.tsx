@@ -17,6 +17,8 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { TopicSelector } from '@/components/ui/TopicSelector';
+import { GenerationStatus } from '@/components/ui/GenerationStatus';
+import { isAbortError } from '@/services/ai/aiProvenance';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { Button } from '@/components/ui/Button';
 import { Toast } from '@/components/ui/Toast';
@@ -71,6 +73,13 @@ export default function SlidesScreen() {
   const [includeExamples, setIncludeExamples] = useState(true);
   const [includePractice, setIncludePractice] = useState(true);
   const [loading, setLoading] = useState(false);
+  /**
+   * Held across renders so Cancel can reach the in-flight requests — plural
+   * here: this screen asks for the formative checks and the lesson plan at
+   * once, and one controller ends both.
+   */
+  const abortRef = useRef<AbortController | null>(null);
+  const [cancelled, setCancelled] = useState(false);
   const [deck, setDeck] = useState<ClassroomActivity | null>(null);
   /**
    * The workspace item this deck is stored as, or null when it is not stored.
@@ -256,7 +265,10 @@ export default function SlidesScreen() {
   const generate = async () => {
     const trimmed = topic.trim();
     if (!trimmed) { setError(t('topicRequired')); return; }
-    setError(''); setLoading(true); setDeck(null);
+    setError(''); setCancelled(false);
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setLoading(true); setDeck(null);
     // A new deck is a different material: it is not the one that was saved.
     forgetSaved();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -289,7 +301,7 @@ export default function SlidesScreen() {
           // for exactly what the deck places means no question is generated
           // and then thrown away.
           numQuestions: MID_LESSON_CHECK_MAX + EXIT_TICKET_MAX,
-        })
+        }, { signal: controller.signal })
         .then(a => a.slides)
         .catch((): ActivitySlide[] => []);
 
@@ -306,8 +318,13 @@ export default function SlidesScreen() {
           topic: trimmed,
           language: isAr ? 'arabic' : 'english',
           additionalContext: buildGeneratorContext(trimmed, lang as 'ar' | 'en') || undefined,
-        });
-      } catch {
+        }, { signal: controller.signal });
+      } catch (e) {
+        // This screen deliberately survives a failed plan — the curriculum book
+        // alone still makes a projectable deck. A cancel is the one rejection
+        // that must not be absorbed here: continuing would answer "stop" with
+        // a finished deck the teacher asked not to have.
+        if (isAbortError(e)) throw e;
         lessonPlan = null;
       }
 
@@ -460,9 +477,20 @@ export default function SlidesScreen() {
           // Missing media is a normal outcome, never a failure state for the deck.
         }
       })();
+    } catch (e) {
+      // Reached only by a cancel today: every other failure inside is handled
+      // where it happens, because a partial deck still has value.
+      if (isAbortError(e)) setCancelled(true);
+      else setError(t('generationFailed'));
     } finally {
+      abortRef.current = null;
       setLoading(false);
     }
+  };
+
+  /** Stop both in-flight requests and hand the teacher their form back. */
+  const cancelGenerate = () => {
+    abortRef.current?.abort();
   };
 
   const present = () => {
@@ -707,7 +735,12 @@ export default function SlidesScreen() {
             <Toggle label={t('slidesIncludePractice')} value={includePractice} onChange={setIncludePractice} />
           </View>
 
-          {error ? (
+          {/*
+            The validation error (an empty topic) stays here, next to the field
+            it is about. Generation failures moved down to GenerationStatus,
+            beside the spinner they replace.
+          */}
+          {error && !topic.trim() ? (
             <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }}>
               {error}
             </Text>
@@ -721,14 +754,18 @@ export default function SlidesScreen() {
           />
         </View>
 
-        {loading && (
-          <View style={[styles.loadingBox, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <ActivityIndicator color={ACCENT} />
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14 }}>
-              {t('slidesBuilding')}
-            </Text>
-          </View>
-        )}
+        <GenerationStatus
+          phase={loading ? 'loading' : cancelled ? 'cancelled' : (error && topic.trim()) ? 'error' : 'idle'}
+          loadingLabel={t('slidesBuilding')}
+          errorDetail={error}
+          onCancel={cancelGenerate}
+          onRetry={generate}
+          colors={colors}
+          isRTL={isRTL}
+          lang={lang as 'ar' | 'en'}
+          accent={ACCENT}
+          t={t}
+        />
 
         {deck && !loading && (
           <View style={{ marginHorizontal: 20 }}>
@@ -1083,7 +1120,6 @@ const styles = StyleSheet.create({
   pillText: { fontSize: 13 },
   toggle: { alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1.5 },
   toggleText: { fontSize: 13 },
-  loadingBox: { alignItems: 'center', gap: 12, padding: 20, borderWidth: 1, marginHorizontal: 20, marginBottom: 16 },
   previewCard: { borderWidth: 1, padding: 16, marginBottom: 12 },
   previewTitle: { fontSize: 17, marginBottom: 4 },
   previewMeta: { fontSize: 12 },
