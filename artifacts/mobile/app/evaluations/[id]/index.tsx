@@ -24,6 +24,7 @@ import {
   type EvaluationQuestion,
   type QuestionType,
 } from '@/services/evaluations';
+import { copyToClipboard } from '@/services/share';
 import type { TranslationKey } from '@/services/i18n';
 
 const ACCENT = '#1B6B62';
@@ -173,6 +174,17 @@ export default function EvaluationDetailScreen() {
       ) : null}
 
       {evaluation?.status === 'published' && (
+        <ShareLinkCard
+          shareCode={evaluation.shareCode ?? null}
+          attachedToClass={Boolean(evaluation.classGroupId)}
+          colors={colors}
+          isRTL={isRTL}
+          align={align}
+          t={t}
+        />
+      )}
+
+      {evaluation?.status === 'published' && (
         <View style={{ marginHorizontal: 20, marginTop: 16, gap: 10 }}>
           <Pressable
             onPress={() => router.push({ pathname: '/evaluations/[id]/answers', params: { id: evaluation.id } })}
@@ -255,6 +267,83 @@ export default function EvaluationDetailScreen() {
   );
 }
 
+/**
+ * The link a teacher writes on the board.
+ *
+ * Shows the code large enough to read from the back of a classroom, because
+ * that is literally what happens to it. The full URL is there to copy into
+ * WhatsApp; the code is there for the board.
+ *
+ * An exam not attached to a class has a code that cannot work — the roster a
+ * student picks their name from *is* the class. Rather than hide the card or
+ * show a link that 404s, it says which step is missing.
+ */
+function ShareLinkCard({
+  shareCode, attachedToClass, colors, isRTL, align, t,
+}: {
+  shareCode: string | null;
+  attachedToClass: boolean;
+  colors: ReturnType<typeof useColors>;
+  isRTL: boolean;
+  align: 'left' | 'right';
+  t: (key: TranslationKey, ...args: any[]) => string;
+}) {
+  const [copied, setCopied] = useState(false);
+  if (!shareCode) return null;
+
+  // Built from where the app is actually being served, so a local build hands
+  // out a local link and production hands out a production one. Hardcoding it
+  // is how a pilot ends up telling thirty students to visit localhost.
+  const origin =
+    typeof window !== 'undefined' && window.location?.origin
+      ? window.location.origin
+      : '';
+  const url = `${origin}/take/${shareCode}`;
+
+  return (
+    <View style={{ marginHorizontal: 20, marginTop: 16 }}>
+      <View style={[styles.shareCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 14, textAlign: align }}>
+          {t('shareExamTitle')}
+        </Text>
+
+        {!attachedToClass ? (
+          <Text style={{ color: '#F59E0B', fontFamily: 'Almarai_400Regular', fontSize: 13, marginTop: 8, textAlign: align }}>
+            {t('shareExamNeedsClass')}
+          </Text>
+        ) : (
+          <>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, marginTop: 4, textAlign: align }}>
+              {t('shareExamHint')}
+            </Text>
+            <Text
+              selectable
+              style={{ color: ACCENT, fontFamily: 'Cairo_700Bold', fontSize: 34, letterSpacing: 4, textAlign: 'center', marginVertical: 12 }}
+            >
+              {shareCode}
+            </Text>
+            <Text selectable style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: 'center' }}>
+              {url}
+            </Text>
+            <Pressable
+              onPress={async () => {
+                await copyToClipboard(url);
+                setCopied(true);
+              }}
+              style={[styles.shareBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+            >
+              <Ionicons name={copied ? 'checkmark' : 'copy-outline'} size={16} color={ACCENT} />
+              <Text style={{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>
+                {t(copied ? 'copiedToClipboard' : 'shareExamCopyLink')}
+              </Text>
+            </Pressable>
+          </>
+        )}
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: { paddingHorizontal: 20, paddingBottom: 20, gap: 10 },
@@ -269,6 +358,8 @@ const styles = StyleSheet.create({
   qText: { fontSize: 14, lineHeight: 20 },
   actionBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: 15, borderRadius: 10 },
   actionBtnOutline: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 13, borderRadius: 10, borderWidth: 1.5, marginBottom: 10 },
+  shareCard: { borderWidth: 1, borderRadius: 12, padding: 16 },
+  shareBtn: { alignSelf: 'center', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8, marginTop: 12 },
   enterAnswersBtn: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 10 },
   resultsBtn: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 13, borderRadius: 10, borderWidth: 1.5 },
 });

@@ -53,6 +53,17 @@ async function ownedAttempt(attemptId: string, teacherId: string) {
   return row;
 }
 
+/** Owned-or-nothing, same rule as everywhere else: never distinguish
+ *  "not yours" from "not there". */
+async function ownedStudent(id: string, teacherId: string) {
+  const [row] = await db
+    .select({ id: students.id })
+    .from(students)
+    .where(and(eq(students.id, id), eq(students.teacherId, teacherId)))
+    .limit(1);
+  return row;
+}
+
 /** The snapshot, in the shape the scoring modules take. */
 function snapshotQuestions(attempt: Attempt): AttemptQuestionInput[] {
   const snapshot = (attempt.questionSnapshot as EvaluationQuestion[]) ?? [];
@@ -498,7 +509,14 @@ router.put("/attempts/:id/grades/:questionId", async (req: AuthenticatedRequest,
   }
 });
 
-/** The teacher's note on the sitting as a whole. */
+/**
+ * The teacher's note on the sitting, and moving a sitting to another student.
+ *
+ * Reassignment is the safety net under the shared exam link. A student can tap
+ * the wrong name on the class list, and a level attached to the wrong child is
+ * worse than no level — so it has to be fixable, by the one person who knows
+ * whose handwriting it is.
+ */
 router.patch("/attempts/:id", async (req: AuthenticatedRequest, res) => {
   try {
     const owned = await ownedAttempt(req.params["id"] as string, req.user!.id);
@@ -506,21 +524,86 @@ router.patch("/attempts/:id", async (req: AuthenticatedRequest, res) => {
       res.status(404).json({ error: "Attempt not found" });
       return;
     }
-    if (typeof req.body?.teacherComment !== "string") {
-      res.status(400).json({ error: "teacherComment is required" });
+
+    const updates: { teacherComment?: string; studentId?: string; updatedAt: Date } = {
+      updatedAt: new Date(),
+    };
+
+    if (typeof req.body?.teacherComment === "string") {
+      updates.teacherComment = req.body.teacherComment.trim().slice(0, 4000);
+    }
+
+    if (typeof req.body?.studentId === "string" && req.body.studentId.trim()) {
+      const studentId = req.body.studentId.trim();
+      const student = await ownedStudent(studentId, req.user!.id);
+      if (!student) {
+        res.status(404).json({ error: "Student not found" });
+        return;
+      }
+      // One sitting per student per exam. Moving onto a student who already
+      // has one would leave two papers for the same child and no way to say
+      // which is theirs.
+      const [clash] = await db
+        .select({ id: attempts.id })
+        .from(attempts)
+        .where(
+          and(
+            eq(attempts.evaluationId, owned.attempt.evaluationId),
+            eq(attempts.studentId, studentId),
+          ),
+        )
+        .limit(1);
+      if (clash && clash.id !== owned.attempt.id) {
+        res.status(409).json({
+          error: "That student already has a sitting for this exam",
+          code: "student_has_attempt",
+        });
+        return;
+      }
+      updates.studentId = studentId;
+    }
+
+    if (updates.teacherComment === undefined && updates.studentId === undefined) {
+      res.status(400).json({ error: "teacherComment or studentId is required" });
       return;
     }
 
     const [attempt] = await db
       .update(attempts)
-      .set({ teacherComment: req.body.teacherComment.trim().slice(0, 4000), updatedAt: new Date() })
+      .set(updates)
       .where(eq(attempts.id, owned.attempt.id))
       .returning();
 
     res.json({ attempt });
   } catch (err) {
-    logger.error({ err }, "save teacher comment failed");
-    res.status(500).json({ error: "Failed to save the comment" });
+    logger.error({ err }, "update attempt failed");
+    res.status(500).json({ error: "Failed to update the attempt" });
+  }
+});
+
+/**
+ * Release a sitting so the name can be claimed again.
+ *
+ * The other half of the shared-link safety net: a student whose phone died, or
+ * who opened someone else's name and stopped, leaves a claimed name nobody can
+ * use. Deleting the attempt frees it.
+ *
+ * Deliberately destructive and deliberately teacher-only. Marks, answers,
+ * grades and recommendations cascade with it — which is why the UI must name
+ * what is being thrown away rather than calling this "reset".
+ */
+router.delete("/attempts/:id", async (req: AuthenticatedRequest, res) => {
+  try {
+    const owned = await ownedAttempt(req.params["id"] as string, req.user!.id);
+    if (!owned) {
+      res.status(404).json({ error: "Attempt not found" });
+      return;
+    }
+    await db.delete(attempts).where(eq(attempts.id, owned.attempt.id));
+    res.json({ deleted: true });
+  } catch (err) {
+    logger.error({ err }, "delete attempt failed");
+    res.status(500).json({ error: "Failed to release this sitting" });
   }
 });
 

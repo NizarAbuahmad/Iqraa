@@ -197,6 +197,33 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     }
   });
 
+  it("keeps the student exam link public, and only the link", async () => {
+    // The one unauthenticated write surface. What is asserted is the absence of
+    // a 401: that status would mean an earlier guard swallowed the request and
+    // the public router never saw it, which is the failure this whole file
+    // exists for.
+    //
+    // 500 is the *expected* answer here, not a flaw — this suite boots with a
+    // deliberately unreachable DATABASE_URL, and reaching a database error is
+    // itself proof the request got through to the handler. The other public
+    // routes return 200 only because they never touch the database.
+    const res = await fetch(`${base}/take/ZZZZZZ`);
+    assert.notEqual(res.status, 401, "the student link must not require a token");
+    assert.ok(
+      res.status === 404 || res.status === 500,
+      `expected 404 (no such code) or 500 (no database in this suite), got ${res.status}`,
+    );
+  });
+
+  it("still refuses a student token where a teacher token is required", async () => {
+    // A student's bearer token is scoped to one attempt. Presenting anything at
+    // all to a teacher route must not be mistaken for a session.
+    const res = await fetch(`${base}/evaluations`, {
+      headers: { authorization: "Bearer not-a-teacher-token" },
+    });
+    assert.equal(res.status, 401);
+  });
+
   it("guards the Unsplash lookup route", async () => {
     // Shares one server-side access key across every teacher — an
     // unauthenticated caller could otherwise exhaust the app's whole rate limit.

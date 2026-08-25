@@ -27,6 +27,8 @@ export interface Evaluation {
   classGroupId?: string | null;
   /** Papers with marks on them. Only meaningful for a class-scoped list. */
   markedCount?: number;
+  /** The student link's code. Issued at publish; null before that. */
+  shareCode?: string | null;
   title: string;
   titleAr: string;
   gradeId: string;
