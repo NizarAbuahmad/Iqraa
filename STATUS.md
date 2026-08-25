@@ -1012,7 +1012,10 @@ so the id is captured purely to ask the question.
 
 **`updateItem` returns whether the change persisted, and callers check it.** It
 returned `void` and swallowed every failure, which was harmless while the only
-callers were favourite toggles that re-read the list afterwards. Attaching to a
+callers were favourite toggles that re-read the list afterwards. (**That premise
+was wrong** — see the 2026-08-25 entry at the end of this file. Only two of the
+six favourite callers re-read anything; the four generator screens held their
+own optimistic star and never asked.) Attaching to a
 class then started showing «حُفظت في العاشر أ» from a toast that fired no matter
 what. Caught by the browser check below, which reported success against a
 database where the material stayed unattached — the same shape as the `verified`
@@ -4704,3 +4707,45 @@ light tint that was white-on-cream.
 
 **Not verified:** the .pptx was not opened in PowerPoint. The colour inputs are
 shared now and the file builds, but nobody has looked at a rendered slide.
+
+
+## The favourite star lit whether or not anything was saved, 2026-08-25
+
+Reported from the hosted web build, on a quiz that had just been saved: tapping
+**أضف إلى المفضلة** did not read as having done anything, and tapping it again
+read as nothing at all.
+
+Two independent faults, both of them the same shape as the `verified` lesson
+this file already records — **fail closed, or label honestly, never both.**
+
+**`toggleFavorite` could not fail.** It returned `void`. On the signed-in path
+it fell through to the local store on any non-OK response, and for a signed-in
+teacher the material is normally not *in* the local store — so `if (item)` was
+false and the whole toggle evaporated, resolving successfully. Every caller
+flipped its star optimistically and toasted «أضفتها إلى المفضلة» regardless.
+Nothing was written; the next reload put the star out. It now returns
+`{ ok, isFavorite }` and takes the desired state as an argument, which also
+removes the read-then-write round trip that let two taps both read "off".
+
+**The toast could not repeat.** `Toast`'s animation keyed on `visible` alone.
+Tapping the star twice set `visible` true when it already was, so the effect
+never re-ran: the second message swapped into a view already fading out, and
+the first sequence's `onHide` then unmounted it. Star on, star off, one
+confirmation — which is exactly what was reported. It keys on the message now
+and restarts the sequence, and a superseded run no longer fires `onHide`.
+
+**One hook, not six handlers.** `hooks/useFavorite.ts` owns the star for the
+four generator screens and the workspace viewer; the decision itself lives in
+`services/favorites.ts`, which is dependency-free and covered by
+`services/__tests__/favorites.test.ts`. A failed write puts the star back where
+it was — not on `result.isFavorite`, which says nothing when the write did not
+land — and says `favoriteFailed`. A second tap is sequenced rather than
+blocked, so "add it, then change my mind" still works while the first request
+is in flight. The labels moved into `i18n.ts` (`addToFavorites`, `inFavorites`,
+`favoriteShort`, `favoriteFailed`); the workspace viewer's star had a fixed
+label — «مفضلة» whether or not it was one — and now changes with the state.
+
+**Not verified:** neither the offline nor the server-error path was exercised
+against the running system. The honest-failure branch is unit-tested and the
+green path is not observably changed, but nobody has watched a real 500 put the
+star back.
