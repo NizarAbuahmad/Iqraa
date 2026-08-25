@@ -20,9 +20,11 @@
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "verify": "node --experimental-strip-types scripts/verify-curriculum.ts",
-    "test": "node --experimental-strip-types --test \"src/**/__tests__/**/*.test.ts\""
+    "test": "node --experimental-strip-types --test \"src/**/__tests__/**/*.test.ts\"",
+    "extract-text": "node --experimental-strip-types scripts/extract-text.ts"
   },
   "devDependencies": {
-    "@types/node": "catalog:"
+    "@types/node": "catalog:",
+    "pdf-parse": "^2.4.5"
   }
 }

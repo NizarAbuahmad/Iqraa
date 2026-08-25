@@ -225,6 +225,78 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The books can be read after all, 2026-08-25
+
+Two things I had been repeating in this file were wrong, and both were load-
+bearing.
+
+**The PDFs are not all on a Windows mirror.** Six real NCCD documents are
+committed in `attached_assets/` — both math student books, chemistry S1, both
+math exercise books, and the S2 teacher guide (~101 MB, tracked). That claim was
+only ever true of the *teacher-made support pack*. The seventh, the math S1
+teacher guide, is a Git-LFS pointer: 58 MB unpulled, and `git-lfs` is not
+installed in the session container, so it stays blocked.
+
+**Arabic extracts fine.** The entry above about `pdftotext` mangling Arabic is
+accurate about *matching* and was read as "these PDFs are unusable". They are
+not. `pdf-parse` — a root dependency that until today nothing imported — pulls
+**682 pages and 1.18M characters** of readable Arabic prose out of the six:
+
+| source | pages | chars |
+| --- | --- | --- |
+| math-s2-teacher-guide | 218 | 558,414 |
+| math-s1-student-book | 150 | 220,128 |
+| math-s2-student-book | 132 | 184,065 |
+| chem-s1-student-book | 76 | 113,815 |
+| math-s2-exercise-book | 56 | 57,003 |
+| math-s1-exercise-book | 50 | 47,275 |
+
+What is genuinely broken is string matching, for two narrow reasons: the
+lam-alef ligature decomposes («الاقتران» → «االقتران») and tashkeel is
+interleaved. `normalizeArabic()` plus a lam-alef fix takes probe matching from
+mostly-failing to mostly-passing. **A model reads this text fine; a regex does
+not.** So `lib/curriculum/scripts/extract-text.ts` stores pages and stops —
+no structure parsing, no hunt for lesson boundaries. Every previous attempt to
+infer structure from these books by pattern produced confidently wrong output;
+retrieval will scope by the bank's unit tags, which already work.
+
+**Provenance records the file actually read.** `math-s1-student-book` on disk is
+a 12.1 MB Adobe InDesign original against the manifest's 18.6 MB — same 150
+pages, same publisher, a different export. `extraction.bytesDifferFromManifest`
+records that rather than letting two exports of one book quietly become
+interchangeable, which is the assumption that put a downsampled copy of each
+chemistry textbook in front of teachers. Each extraction carries its own
+`sha256` and `localPath`, and a test re-hashes the file on disk.
+
+**`status: 'ingested'` now means two different things, deliberately.** It used to
+mean "a human transcribed objectives out of this by eye". It now also covers
+"machine text exists". The new `extraction` block says precisely which, because
+a document can have one without the other — and until today *every* book had
+objectives with no machine-readable text.
+
+**The 2.1 MB must not reach the phone.** The mobile app imports
+`@workspace/curriculum`, so one static import of the corpus from `index.ts`
+would ship all of it to every device for a feature the app does not run. A test
+fails if anything under `src/` imports `data/extracted`. Retrieval belongs
+behind a server-only subpath export.
+
+Two bugs in my own first draft of that test, both worth recording because both
+looked like data problems: it asserted 20 consecutive Arabic characters per page
+and reported chemistry as 2 pages of 76 — the pages carry ~1,200 Arabic
+characters each, but tashkeel, spaces and «Principal Quantum Number» mean a
+20-character run almost never occurs; it was measuring typography, not language.
+And the bundle guard grepped for the string `data/extracted`, which flagged
+`sources.ts` for *documenting* where the text lives. Density, and an import
+regex, respectively.
+
+51 curriculum / 815 mobile / 193 api-server tests pass; typecheck clean;
+`verify-curriculum` 0 errors.
+
+**What this does not yet do:** nothing reads the text. No retrieval, no
+grounding, no change to any prompt — and `DEMO_MODE` is still `true` with
+`AI_LIVE_MODE` unset, so no prompt reaches a model at all. This is the corpus,
+not the feature.
+
 ## The refusal now points somewhere, 2026-08-25
 
 `mockGenerator` declines four of the eight question types on purpose — it will

@@ -20,6 +20,18 @@
       "kind": "student-book",
       "authority": "nccd",
       "status": "ingested",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-25",
+        "pages": 150,
+        "chars": 220128,
+        "localPath": "attached_assets/10th_grade,_math,_1st_semester_1785071530816.pdf",
+        "sha256": "284b59d944a0cc3be7232aa89f35ba2750e82da496917d53781fea4a26d4c14f",
+        "bytesDifferFromManifest": {
+          "manifest": 18630721,
+          "local": 12150839
+        }
+      },
       "filename": "كتاب الطالب لمادة الرياضيات الصف العاشر الفصل الأول.pdf",
       "authorAr": null,
       "unitTags": [
@@ -45,6 +57,14 @@
       "kind": "student-book",
       "authority": "nccd",
       "status": "ingested",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-25",
+        "pages": 132,
+        "chars": 184065,
+        "localPath": "attached_assets/10th_grade,_math,_2nd_semester_1785147978008.pdf",
+        "sha256": "31fb912092398e107f62505a4abbada0a571343cbcca69032cb541e1a5182668"
+      },
       "filename": "10th grade, math, 2nd semester.pdf",
       "authorAr": null,
       "unitTags": [
@@ -95,7 +115,15 @@
       "semester": 2,
       "kind": "teacher-guide",
       "authority": "nccd",
-      "status": "pending",
+      "status": "ingested",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-25",
+        "pages": 218,
+        "chars": 558414,
+        "localPath": "attached_assets/Book10_2_Proof3_WEB-teacher_guiede,_10th_grade,_semster_two_1785147998881.pdf",
+        "sha256": "f3c362a34c1b8862485b95a2944719eeea820dbaa4ca134cd90119507f318810"
+      },
       "filename": "teacher guiede, 10th grade, semster two.pdf",
       "authorAr": null,
       "unitTags": [
@@ -121,7 +149,15 @@
       "semester": 1,
       "kind": "activity-book",
       "authority": "nccd",
-      "status": "pending",
+      "status": "ingested",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-25",
+        "pages": 50,
+        "chars": 47275,
+        "localPath": "attached_assets/2026_MT10_WB1__10th_grade,_math_excersice_book,_semster_one_1785147998882.pdf",
+        "sha256": "3fdcdea589cd02957375a0ef352a24ed5f905b9832b754dee58795a5d70ffb07"
+      },
       "filename": "10th grade, math excersice book, semster one.pdf",
       "authorAr": null,
       "unitTags": [
@@ -146,7 +182,15 @@
       "semester": 2,
       "kind": "activity-book",
       "authority": "nccd",
-      "status": "pending",
+      "status": "ingested",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-25",
+        "pages": 56,
+        "chars": 57003,
+        "localPath": "attached_assets/MA_10_WB2_6_11_2025-mather_exccersie_book,_semster_2_1785147998882.pdf",
+        "sha256": "302c2a3c58f34a9d4be13a89c7aebfa7f05f8d4a2ec96c07e8ea1aeaab64f5fb"
+      },
       "filename": "mather exccersie book, semster 2.pdf",
       "authorAr": null,
       "unitTags": [
@@ -1144,6 +1188,14 @@
       "kind": "student-book",
       "authority": "nccd",
       "status": "ingested",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-25",
+        "pages": 76,
+        "chars": 113815,
+        "localPath": "attached_assets/10th_grade,_alchamy1st_semester_1785071530814.pdf",
+        "sha256": "0df149c6402ff1163af158ad4a7f463d978b20897afba463f5150df0dea42456"
+      },
       "filename": "10th grade, alchamy1st semester.pdf",
       "authorAr": null,
       "unitTags": [
