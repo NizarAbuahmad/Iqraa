@@ -41,8 +41,10 @@ import {
 } from '@/services/curriculumData';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { Button } from '@/components/ui/Button';
-import { saveItem, updateItem } from '@/services/workspace';
-import { ClassPickerSheet } from '@/components/ui/ClassPickerSheet';
+import { attachToClasses, saveItem } from '@/services/workspace';
+import { ClassPickerSheet, type ClassPick } from '@/components/ui/ClassPickerSheet';
+import { describeAttachResult } from '@/services/classAttach';
+import type { Lang } from '@/services/i18n';
 import { Toast } from '@/components/ui/Toast';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
@@ -261,12 +263,13 @@ export default function LessonFlowScreen() {
     }
   };
 
-  const attachToClass = async (classId: string, className: string) => {
+  const attachToClass = async (picks: ClassPick[]) => {
     const materialId = classPromptFor;
     setClassPromptFor(null);
-    if (!materialId) return;
-    const ok = await updateItem(materialId, { classGroupId: classId });
-    showToast(ok ? t('savedToClass', className) : t('saveToClassFailed'));
+    if (!materialId || picks.length === 0) return;
+    // One column, many classes: the extras become copies. See attachToClasses.
+    const outcome = await attachToClasses(materialId, picks.map(p => p.id));
+    showToast(describeAttachResult(outcome, picks, t, lang as Lang));
   };
 
   // ── Export PDF ──────────────────────────────────────────────────────────────
@@ -564,7 +567,7 @@ export default function LessonFlowScreen() {
       <ClassPickerSheet
         visible={classPromptFor !== null}
         onClose={() => setClassPromptFor(null)}
-        onPick={(classId, className) => { void attachToClass(classId, className); }}
+        onPick={picks => { void attachToClass(picks); }}
       />
       <Toast
         message={toastMsg}

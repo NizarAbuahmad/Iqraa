@@ -123,8 +123,10 @@ import {
 } from '@/services/share';
 import { buildClassDeck } from '@/services/startClass';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
-import { ClassPickerSheet } from '@/components/ui/ClassPickerSheet';
-import { saveItem, updateItem } from '@/services/workspace';
+import { ClassPickerSheet, type ClassPick } from '@/components/ui/ClassPickerSheet';
+import { describeAttachResult } from '@/services/classAttach';
+import type { Lang } from '@/services/i18n';
+import { attachToClasses, saveItem, updateItem } from '@/services/workspace';
 import {
   canPresentArtifact,
   deckForArtifact,
@@ -1280,14 +1282,15 @@ export default function IqraScreen() {
     }
   }, [materialBusyId, saveMessageMaterial]);
 
-  const attachMaterialToClass = useCallback(async (classId: string, className: string) => {
+  const attachMaterialToClass = useCallback(async (picks: ClassPick[]) => {
     const materialId = classPromptFor;
     setClassPromptFor(null);
-    if (!materialId) return;
-    const ok = await updateItem(materialId, { classGroupId: classId });
-    showToast(ok ? t('savedToClass', className) : t('saveToClassFailed'));
+    if (!materialId || picks.length === 0) return;
+    // One column, many classes: the extras become copies. See attachToClasses.
+    const outcome = await attachToClasses(materialId, picks.map(p => p.id));
+    showToast(describeAttachResult(outcome, picks, t, lang as Lang));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [classPromptFor, t]);
+  }, [classPromptFor, t, lang]);
 
   /**
    * Project the material this turn produced.
@@ -2725,7 +2728,7 @@ export default function IqraScreen() {
       <ClassPickerSheet
         visible={classPromptFor !== null}
         onClose={() => setClassPromptFor(null)}
-        onPick={(classId, className) => { void attachMaterialToClass(classId, className); }}
+        onPick={picks => { void attachMaterialToClass(picks); }}
       />
       <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
     </View>

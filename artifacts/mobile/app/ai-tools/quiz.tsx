@@ -30,9 +30,11 @@ import {
   removeQuestionAt,
 } from '@/services/quizEdits';
 import { Button } from '@/components/ui/Button';
-import { getItem, saveItem, updateItem } from '@/services/workspace';
+import { attachToClasses, getItem, saveItem, updateItem } from '@/services/workspace';
 import { useFavorite } from '@/hooks/useFavorite';
-import { ClassPickerSheet } from '@/components/ui/ClassPickerSheet';
+import { ClassPickerSheet, type ClassPick } from '@/components/ui/ClassPickerSheet';
+import { describeAttachResult } from '@/services/classAttach';
+import type { Lang } from '@/services/i18n';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
@@ -328,12 +330,13 @@ export default function QuizScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
-  const attachToClass = async (classId: string, className: string) => {
+  const attachToClass = async (picks: ClassPick[]) => {
     const materialId = classPromptFor;
     setClassPromptFor(null);
-    if (!materialId) return;
-    const ok = await updateItem(materialId, { classGroupId: classId });
-    showToast(ok ? t('savedToClass', className) : t('saveToClassFailed'));
+    if (!materialId || picks.length === 0) return;
+    // One column, many classes: the extras become copies. See attachToClasses.
+    const outcome = await attachToClasses(materialId, picks.map(p => p.id));
+    showToast(describeAttachResult(outcome, picks, t, lang as Lang));
   };
 
   const topPad = insets.top + (insets.top === 0 ? 67 : 0);
@@ -793,7 +796,7 @@ export default function QuizScreen() {
     <ClassPickerSheet
       visible={classPromptFor !== null}
       onClose={() => setClassPromptFor(null)}
-      onPick={(classId, className) => { void attachToClass(classId, className); }}
+      onPick={picks => { void attachToClass(picks); }}
     />
     <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
     </View>

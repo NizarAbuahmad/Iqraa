@@ -16,6 +16,16 @@
  *   nothing to choose from. That is also a silent close: the material is
  *   already saved, and a failure dialog about a question the teacher did not
  *   ask is worse than not asking.
+ * - **Picking is multi-select and committed by a button.** A teacher teaching
+ *   the same lesson to three sections was previously done the moment they
+ *   touched a row — one class, sheet gone, no way back except attaching from
+ *   inside each class. Selecting is now separate from confirming, so a
+ *   mis-tap is recoverable and several sections are one trip.
+ *
+ * `saved_materials.class_group_id` holds ONE class, so what the caller does
+ * with several is duplicate (see `attachToClasses` in services/workspace.ts).
+ * That is why the confirm label and the toast both say copies rather than
+ * implying one shared material.
  */
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -27,6 +37,9 @@ import { countStudents } from '@/services/i18n';
 
 const ACCENT = '#1B6B62';
 
+/** One chosen class, with its name already resolved for the active language. */
+export type ClassPick = { id: string; name: string };
+
 export function ClassPickerSheet({
   visible,
   onClose,
@@ -36,20 +49,25 @@ export function ClassPickerSheet({
   /** Dismissed, or nothing to choose from. The material stays unattached. */
   onClose: () => void;
   /**
-   * The teacher chose a class. The display name comes back resolved for the
-   * active language so callers do not each repeat the nameAr fallback.
+   * The teacher confirmed their selection — never empty, and in the order they
+   * appear in the roster. Display names come back resolved for the active
+   * language so callers do not each repeat the nameAr fallback.
    */
-  onPick: (classId: string, displayName: string) => void;
+  onPick: (picks: ClassPick[]) => void;
 }) {
   const colors = useColors();
   const { t, isRTL, lang } = useLanguage();
   const [classes, setClasses] = useState<ClassGroup[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<string[]>([]);
 
   useEffect(() => {
     if (!visible) return;
     let cancelled = false;
     setLoading(true);
+    // A fresh material is a fresh question: carrying the last one's ticks over
+    // would attach this one to whatever the previous save happened to pick.
+    setSelected([]);
     void (async () => {
       let loaded: ClassGroup[] = [];
       try {
@@ -102,17 +120,31 @@ export function ClassPickerSheet({
               keyExtractor={c => c.id}
               style={{ maxHeight: 300 }}
               contentContainerStyle={{ gap: 8 }}
-              renderItem={({ item }) => (
+              renderItem={({ item }) => {
+                const on = selected.includes(item.id);
+                return (
                 <Pressable
                   onPress={() =>
-                    onPick(item.id, lang === 'ar' && item.nameAr ? item.nameAr : item.name)
+                    setSelected(cur =>
+                      cur.includes(item.id) ? cur.filter(id => id !== item.id) : [...cur, item.id],
+                    )
                   }
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: on }}
                   style={[
                     styles.row,
-                    { borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' },
+                    {
+                      borderColor: on ? ACCENT : colors.border,
+                      backgroundColor: on ? ACCENT + '10' : 'transparent',
+                      flexDirection: isRTL ? 'row-reverse' : 'row',
+                    },
                   ]}
                 >
-                  <Ionicons name="people-outline" size={18} color={ACCENT} />
+                  <Ionicons
+                    name={on ? 'checkbox' : 'square-outline'}
+                    size={20}
+                    color={on ? ACCENT : colors.mutedForeground}
+                  />
                   <View style={{ flex: 1 }}>
                     <Text
                       style={{
@@ -136,14 +168,41 @@ export function ClassPickerSheet({
                     </Text>
                   </View>
                 </Pressable>
-              )}
+                );
+              }}
             />
           )}
 
-          <View style={styles.actions}>
+          <View style={[styles.actions, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Pressable onPress={onClose} style={styles.btn}>
               <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }}>
                 {t('notNow')}
+              </Text>
+            </Pressable>
+            {/* Disabled rather than hidden: a button that appears once you tick
+                a row gives no hint that ticking is what the sheet wants. */}
+            <Pressable
+              onPress={() => {
+                const picks = classes
+                  .filter(c => selected.includes(c.id))
+                  .map(c => ({ id: c.id, name: lang === 'ar' && c.nameAr ? c.nameAr : c.name }));
+                if (picks.length > 0) onPick(picks);
+              }}
+              disabled={selected.length === 0}
+              accessibilityState={{ disabled: selected.length === 0 }}
+              style={[
+                styles.btn,
+                styles.confirm,
+                { backgroundColor: selected.length === 0 ? colors.border : ACCENT },
+              ]}
+            >
+              <Text
+                style={{
+                  color: selected.length === 0 ? colors.mutedForeground : '#fff',
+                  fontFamily: 'Cairo_600SemiBold',
+                }}
+              >
+                {t('saveToClassesConfirm')}
               </Text>
             </Pressable>
           </View>
@@ -172,6 +231,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
   },
-  actions: { flexDirection: 'row', justifyContent: 'flex-end' },
+  actions: { justifyContent: 'flex-end', alignItems: 'center', gap: 8 },
+  confirm: { minWidth: 120, alignItems: 'center' },
   btn: { paddingHorizontal: 18, paddingVertical: 11, borderRadius: 10 },
 });

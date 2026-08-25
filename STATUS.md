@@ -5733,3 +5733,50 @@ survives this, it is a third cause, not these two.
 `catch {}` and shows one generic string, which is why three different faults
 looked like one. The diagnosis took a code read because the screen carried no
 information at all.
+
+## One material, several sections — and a picker you can change your mind in, 2026-08-25
+
+Asked for directly while testing: the «لأي صف هذه المادة؟» sheet should let a
+teacher pick more than one class, then confirm or leave.
+
+**The old sheet committed on touch.** Tapping a row attached the material and
+closed — one class, no confirm, no way back except attaching from inside each
+class afterwards. A teacher who teaches the same lesson to three sections had
+to save it three times, and a mis-tap was final. Rows are checkboxes now, with
+«احفظ في الصفوف المحددة» and «ليس الآن»; the confirm is disabled rather than
+hidden while nothing is ticked, because a button that appears on first tick
+does not tell you ticking is what the sheet wants.
+
+**What "several classes" means here, and what it does not.**
+`saved_materials.class_group_id` is a single column. Its schema comment says a
+material used with two sections has to be duplicated, and to *"promote to a
+join table if teachers actually ask for shared materials"*. A teacher asked; the
+join table did not happen in this pass. **Chosen deliberately:** the schema is
+deployed by hand (`pnpm --filter @workspace/db run push`) and this file already
+records what a release that adds a table and skips that push does to
+production, with teachers on the live build right now.
+
+So the first class keeps the original and every class after it gets a copy,
+through the `POST /workspace/items/:id/duplicate` the schema comment points at.
+First rather than last on purpose: the teacher is looking at the material they
+just made, and it should stay theirs rather than silently becoming copy three.
+**The copies are independent** — editing صف أ's worksheet does not change صف ب —
+so the toast says «نسخة مستقلة لكل صف» rather than implying one shared thing.
+
+**The eight save screens each held one line** — `ok ? savedToClass(name) :
+saveToClassFailed` — which cannot describe two of three landing. Both the
+policy and the message moved into `services/classAttach.ts`, which imports no
+react-native and so is loadable by `node --test`: the same split, for the same
+reason, as `generateWithProvenance` living outside `RemoteAIService`. 13 tests
+cover the ordering, the de-duplication of a class picked twice, partial
+failure, and Arabic number agreement at 2 / 10 / 11.
+
+**Still open — the join table.** This makes the common case work without a
+migration; it does not make a material genuinely shared. A teacher who edits
+one copy will reasonably expect the others to follow, and they will not. That
+is the argument for promoting it, and it is now a known cost rather than a
+hypothetical one.
+
+**Not verified:** not seen in a browser. The policy and the message are unit
+tested; nobody has ticked three real classes on a running build and confirmed
+three materials arrive.

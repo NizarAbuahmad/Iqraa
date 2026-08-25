@@ -42,9 +42,11 @@ import { summarizeVerification } from '@/services/quizVerification';
 import { confirm } from '@/services/confirm';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { timerSecondsForSlide } from '@/services/presentationUtils';
-import { deleteItem, getAllItems, saveItem, updateItem } from '@/services/workspace';
+import { attachToClasses, deleteItem, getAllItems, saveItem, updateItem } from '@/services/workspace';
 import { findMatchingItem } from '@/services/savedMaterialMatch';
-import { ClassPickerSheet } from '@/components/ui/ClassPickerSheet';
+import { ClassPickerSheet, type ClassPick } from '@/components/ui/ClassPickerSheet';
+import { describeAttachResult } from '@/services/classAttach';
+import type { Lang } from '@/services/i18n';
 import { buildDeckSlidesHTML, exportAsPDF } from '@/services/share';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
@@ -514,12 +516,13 @@ export default function SlidesScreen() {
     setClassPromptFor(null);
   };
 
-  const attachToClass = async (classId: string, className: string) => {
+  const attachToClass = async (picks: ClassPick[]) => {
     const materialId = classPromptFor;
     setClassPromptFor(null);
-    if (!materialId) return;
-    const ok = await updateItem(materialId, { classGroupId: classId });
-    showToast(ok ? t('savedToClass', className) : t('saveToClassFailed'));
+    if (!materialId || picks.length === 0) return;
+    // One column, many classes: the extras become copies. See attachToClasses.
+    const outcome = await attachToClasses(materialId, picks.map(p => p.id));
+    showToast(describeAttachResult(outcome, picks, t, lang as Lang));
   };
 
   /**
@@ -1066,7 +1069,7 @@ export default function SlidesScreen() {
       <ClassPickerSheet
         visible={classPromptFor !== null}
         onClose={() => setClassPromptFor(null)}
-        onPick={(classId, className) => { void attachToClass(classId, className); }}
+        onPick={picks => { void attachToClass(picks); }}
       />
       <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
     </View>

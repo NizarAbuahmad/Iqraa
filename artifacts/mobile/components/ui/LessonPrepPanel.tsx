@@ -34,7 +34,7 @@ import {
   resolveLessonPrepContext,
   type TeachingStyle,
 } from '@/services/lessonPrep';
-import { saveItem, updateItem } from '@/services/workspace';
+import { attachToClasses, saveItem, updateItem } from '@/services/workspace';
 import { useFavorite } from '@/hooks/useFavorite';
 import {
   buildLessonPlanHTML,
@@ -47,7 +47,9 @@ import {
 } from '@/services/share';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { Button } from '@/components/ui/Button';
-import { ClassPickerSheet } from '@/components/ui/ClassPickerSheet';
+import { ClassPickerSheet, type ClassPick } from '@/components/ui/ClassPickerSheet';
+import { describeAttachResult } from '@/services/classAttach';
+import type { Lang } from '@/services/i18n';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
@@ -507,12 +509,13 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
       <ClassPickerSheet
         visible={classPromptFor !== null}
         onClose={() => setClassPromptFor(null)}
-        onPick={(classId, className) => {
+        onPick={picks => {
           const materialId = classPromptFor;
           setClassPromptFor(null);
-          if (!materialId) return;
-          void updateItem(materialId, { classGroupId: classId })
-            .then(ok => showToast(ok ? t('savedToClass', className) : t('saveToClassFailed')));
+          if (!materialId || picks.length === 0) return;
+          // One column, many classes: the extras become copies.
+          void attachToClasses(materialId, picks.map(p => p.id))
+            .then(outcome => showToast(describeAttachResult(outcome, picks, t, lang as Lang)));
         }}
       />
       <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
