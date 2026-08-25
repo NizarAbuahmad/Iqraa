@@ -321,6 +321,15 @@ export default function ActivityScreen() {
           disabled={!topic.trim()}
           fullWidth
         />
+        {/*
+          A greyed-out primary button with nothing next to it reads as a broken
+          product rather than an unmet precondition. It says which one.
+        */}
+        {!topic.trim() ? (
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
+            {t('needTopicHint')}
+          </Text>
+        ) : null}
       </View>
 
       {/* Loading */}

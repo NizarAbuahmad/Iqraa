@@ -446,6 +446,15 @@ export default function LessonFlowScreen() {
                 disabled={!topic.trim()}
                 style={{ backgroundColor: NAVY }}
               />
+              {/*
+                A greyed-out primary button with nothing next to it reads as a
+                broken product rather than an unmet precondition. It says which.
+              */}
+              {!topic.trim() ? (
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
+                  {t('needTopicHint')}
+                </Text>
+              ) : null}
             </View>
           </View>
         )}

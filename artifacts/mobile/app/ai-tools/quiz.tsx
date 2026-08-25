@@ -464,6 +464,15 @@ export default function QuizScreen() {
         */}
         {error && !topic.trim() ? <Text style={[{ color: colors.destructive, fontSize: 13, fontFamily: 'Almarai_400Regular', marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
         <Button label={loading ? t('generatingQuiz') : t('generateQuizBtn')} onPress={generate} loading={loading} disabled={!topic.trim()} fullWidth style={{ backgroundColor: ACCENT }} />
+        {/*
+          A greyed-out primary button with nothing next to it reads as a broken
+          product rather than an unmet precondition. It says which one.
+        */}
+        {!topic.trim() ? (
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
+            {t('needTopicHint')}
+          </Text>
+        ) : null}
       </View>
 
       {/* Loading */}
