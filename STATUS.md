@@ -227,6 +227,63 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Something finally asks whether the schema was pushed, 2026-08-25
+
+**First, a correction I made in conversation and am writing down so it does not
+spread: deploying is not manual.** `render.yaml` sets no `autoDeploy: false`, so
+a push to `main` deploys on its own; the only wait is build time. (Worth one
+glance at the Render dashboard, which can override the blueprint — this sandbox
+cannot reach onrender.com to confirm.)
+
+**What is manual is the schema push, and that stays manual on purpose.**
+`drizzle-kit push` resolves drift by dropping columns, which is why
+`render.yaml` deliberately keeps it out of `buildCommand`. That decision is
+sound. What made it dangerous is that nothing ever asked whether the push had
+happened — on 2026-08-19 that ran until 14 of 24 tables were missing from
+production and the evaluations subsystem had never once worked there. It was
+found only because somebody happened to look.
+
+Two checks now, covering the two different ways it bites:
+
+- **At merge time** (`ci.yml`, job `schema push acknowledged`): a PR touching
+  `lib/db/src/schema` fails until its description says `schema-push: done` or
+  `schema-push: n/a`. It cannot verify you ran the push; it makes the decision
+  explicit rather than implicit, which is the whole difference between that
+  outage and a chore. The diff uses `base...head` so commits that landed on
+  main since the branch started are not counted as this PR's.
+- **Afterwards** (`schema-check.yml`): `verify-schema` against the production
+  DATABASE_URL daily at 06:00 UTC — before the Jordan school day — plus on
+  demand and whenever a schema change reaches main. This catches the state
+  whatever caused it: a hand-dropped table, a push against the wrong URL, a
+  backup restored from before a migration. Needs a `DATABASE_URL` repository
+  secret; **without it the job reports "not configured" and stops** rather than
+  failing every night or, worse, implying it checked.
+
+**`verify-schema` grew the two things a monitor needs.** `--from-env` reads the
+URL from the environment (a runner has no `.env`, and writing one just to hold a
+secret puts the credential in a file for no reason) — opt-in, so a stale local
+shell value can never silently reach a check that reports which database it
+looked at. And "could not check" is now exit **2**, distinct from exit 1's
+"checked, tables missing": unhandled, a refused connection exits non-zero with a
+stack trace, which to a nightly job is indistinguishable from the gap it exists
+to find. A flaky night must not read as an outage, and an outage must not be
+dismissed as a flaky night.
+
+### Verified against a real database, not just the failure paths
+
+Ran a scratch Postgres 16 and drove all four states: empty database → 25 tables
+missing, exit 1; `push` → «Every declared table exists», exit 0; then
+`DROP TABLE evaluations CASCADE` — the actual 2026-08-19 shape — → `MISS
+evaluations.ts 1/2 evaluation authoring (التقييمات)`, exit 1. Unreachable host
+and absent URL both exit 2 with one clear line. The PR-body matcher was tested
+too: it accepts the marker at line start in any case, refuses a mid-line
+mention, and does not execute backticks in a PR body.
+
+**Still not automated, deliberately:** nothing runs `push` for you, and
+`push.mjs` still reads only the repo-root `.env` — a destructive command taking
+its target from an ambient variable is the foot-gun the original decision was
+avoiding.
+
 ## The «عن» fix only fixed what was typed by hand, 2026-08-25
 
 Reported with a screenshot of موادي: a material still titled «خطة درس: عن:

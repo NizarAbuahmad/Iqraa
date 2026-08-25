@@ -1,0 +1,115 @@
+# Does production actually have the tables the code expects?
+#
+# The schema is the one thing in this repo that does not deploy itself, by
+# decision: `drizzle-kit push` resolves drift by dropping columns, so
+# `render.yaml` deliberately keeps it out of the build and the push is run by
+# hand. That decision is defensible. What made it dangerous was that nothing
+# ever asked whether the push had happened — on 2026-08-19, 14 of 24 tables
+# were missing from production and the entire evaluations subsystem had never
+# once been able to work there. It was fixed the same afternoon, but only
+# because somebody happened to look.
+#
+# The CI job in ci.yml catches the mistake at merge time. This catches the
+# state, whoever caused it and whenever: a table dropped by hand, a push run
+# against the wrong URL, a restored backup from before a migration. Read-only —
+# `to_regclass` looks names up in the catalog and touches no data.
+name: Schema check
+
+on:
+  schedule:
+    # 06:00 UTC daily — before the Jordan school day, so a gap found overnight
+    # is fixable before anyone teaches against it.
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    # A schema change reaching main is the moment the push is most likely to
+    # be outstanding, so ask immediately rather than waiting for the schedule.
+    paths:
+      - 'lib/db/src/schema/**'
+
+concurrency:
+  group: schema-check
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: production tables present
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      # A repo without the secret set must not fail every night. Until someone
+      # adds DATABASE_URL this reports "not configured" and stops, which is
+      # honest: it has not checked, so it must not claim production is fine.
+      - name: Is the database URL configured?
+        id: cfg
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DATABASE_URL:-}" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "### Schema check skipped"
+              echo
+              echo 'No `DATABASE_URL` secret is set on this repository, so nothing was checked.'
+              echo 'Add the production (Neon) URL under Settings → Secrets and variables → Actions.'
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.cfg.outputs.configured == 'true'
+        with:
+          node-version: 24.15.0
+
+      - name: Enable pnpm
+        if: steps.cfg.outputs.configured == 'true'
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.18.0 --activate
+
+      # Only the db package and its deps — `pg` is all the script needs, and a
+      # full workspace install would spend minutes on Expo for a catalog query.
+      - name: Install
+        if: steps.cfg.outputs.configured == 'true'
+        run: pnpm install --frozen-lockfile --filter @workspace/db...
+
+      # --from-env because a runner has no repo-root .env, and writing one just
+      # to hold a secret would put the credential in a file for no reason.
+      #
+      # Exit 1 is "checked, tables are missing" — a real alert. Exit 2 is
+      # "could not check at all", usually an unreachable database; it fails too,
+      # but the summary says which, so a flaky night is never read as an outage
+      # and an outage is never dismissed as a flaky night.
+      - name: Verify schema
+        if: steps.cfg.outputs.configured == 'true'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          set -uo pipefail
+          set +e
+          OUT=$(pnpm --filter @workspace/db run verify-schema -- --from-env 2>&1)
+          CODE=$?
+          set -e
+          echo "$OUT"
+          {
+            case "$CODE" in
+              0) echo "### Schema check passed" ;;
+              1) echo "### Tables are missing from production" ;;
+              *) echo "### Schema could NOT be checked" ;;
+            esac
+            echo
+            echo '```'
+            # The host appears in the output; the credential never does.
+            echo "$OUT"
+            echo '```'
+            if [ "$CODE" = "1" ]; then
+              echo
+              echo 'Fix: `pnpm --filter @workspace/db run push` against the same DATABASE_URL.'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$CODE"
