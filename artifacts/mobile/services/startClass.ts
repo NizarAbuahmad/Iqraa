@@ -13,6 +13,7 @@ import { buildChartSlide, buildGraphSlide, buildMediaSlide, extractGraphCommands
 import { chartForLesson } from './deckVisuals.ts';
 import { getLessonMedia } from './lessonMedia.ts';
 import { resolveGeneratorGrounding } from './kbContext.ts';
+import { getLessonById } from './knowledgeBase.ts';
 import type { ClassroomActivity } from './ai/AIService.ts';
 
 export type StartClassInput = {
@@ -20,6 +21,17 @@ export type StartClassInput = {
   lang: 'ar' | 'en';
   subjectId?: string;
   subjectName?: string;
+  /**
+   * The KB id of the lesson to ground on, when the caller knows it.
+   *
+   * `resolveGeneratorGrounding` resolves an exact lesson title correctly
+   * (checked: 63/63 of the picker's titles), so this is not a fix for a
+   * drifting deck — it is the caller saying which lesson it means instead of
+   * hoping a string round-trips. It matters where the string is not a lesson
+   * title at all: an entire-unit pick, a free-typed topic, a title the
+   * teacher has since edited.
+   */
+  lessonId?: string | null;
 };
 
 /**
@@ -32,10 +44,12 @@ export async function buildClassDeck({
   lang,
   subjectId = 'mathematics',
   subjectName = 'Mathematics',
+  lessonId,
 }: StartClassInput): Promise<ClassroomActivity> {
   const topic = rawTopic.trim();
   const isAr = lang === 'ar';
-  const grounding = resolveGeneratorGrounding(topic, lang);
+  const groundedLesson = (lessonId ? getLessonById(lessonId) : null)
+    ?? resolveGeneratorGrounding(topic, lang).lesson;
 
   const activity = await aiService.generateClassroomActivity({
     grade: '10',
@@ -49,7 +63,7 @@ export async function buildClassDeck({
     language: isAr ? 'arabic' : 'english',
   });
 
-  const objSlide = objectivesSlide(grounding.lesson, topic, isAr, 0);
+  const objSlide = objectivesSlide(groundedLesson, topic, isAr, 0);
 
   // Plot what the class is actually about: the lesson's own examples AND the
   // functions inside the generated questions. Curriculum objectives are prose
@@ -65,8 +79,8 @@ export async function buildClassDeck({
   const graphCommands = extractGraphCommands(
     [
       topic,
-      ...(grounding.lesson?.examplesAr ?? []),
-      ...(grounding.lesson?.objectives ?? []),
+      ...(groundedLesson?.examplesAr ?? []),
+      ...(groundedLesson?.objectives ?? []),
       ...activity.slides.map(s => s.content),
     ].join(' \n '),
   );
@@ -85,8 +99,8 @@ export async function buildClassDeck({
   // most lessons get nothing here and that is the intended outcome.
   const chartVisual = chartForLesson(
     [
-      ...(grounding.lesson?.examplesAr ?? []),
-      ...(grounding.lesson?.keyConceptsAr ?? []),
+      ...(groundedLesson?.examplesAr ?? []),
+      ...(groundedLesson?.keyConceptsAr ?? []),
       ...activity.slides.map(s => s.content),
     ].join('\n'),
   );

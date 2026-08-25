@@ -3,13 +3,13 @@
  * Demo Mode: fully local KB grounding. No OpenAI / network.
  */
 
-import type { KBLesson } from '../knowledgeBase';
-import { getBookForLesson, getUnitForLesson } from '../knowledgeBase';
-import { SUBJECTS } from '../curriculumData';
+import type { KBLesson } from '../knowledgeBase.ts';
+import { getBookForLesson, getUnitForLesson } from '../knowledgeBase.ts';
+import { SUBJECTS } from '../curriculumData.ts';
 import {
   formatSupportResourcesBlock,
   searchSupportResources,
-} from '../mathSupportResources';
+} from '../mathSupportResources.ts';
 
 export type TeachingAssistantMode = 'teacher' | 'student';
 
