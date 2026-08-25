@@ -25,6 +25,7 @@ import type { KBLesson } from './knowledgeBase.ts';
 import { buildGraphSlide, referencesShownVisual, scanGraphCommands } from './classMedia.ts';
 import { visualForSlide } from './deckVisuals.ts';
 import { type BookFigure, figuresForLesson } from './bookFigures.ts';
+import { exerciseReference, exercisesForLesson } from './bookExercises.ts';
 
 /**
  * Split a generated warm-up into what the class sees and what only the
@@ -550,12 +551,22 @@ export function buildLessonDeck(
   }
 
   // ── 10. Homework, only when there is one ────────────────────────────────
+  // The book's real exercises go on this slide when the ministry prints any
+  // for this lesson — «تمارين ١-١٧، صفحة ١١», read out of the exercise book
+  // rather than generated. It is attributed to the book on its own line
+  // precisely because the generated homework above it may contain a reference
+  // the model invented, and a teacher has to be able to tell which is which.
+  const bookExercises = includePractice ? exercisesForLesson(lesson?.id) : null;
+  const bookLine = bookExercises
+    ? `📖 ${L('من كتاب التمارين', 'From the exercise book')}: `
+      + exerciseReference(bookExercises, isAr)
+    : '';
   const homework = includePractice ? nonEmpty(plan?.homework) : '';
-  if (homework) {
+  if (homework || bookLine) {
     push({
       type: 'intro',
       title: L('🏠 الواجب', '🏠 Homework'),
-      content: homework,
+      content: [homework, bookLine].filter(Boolean).join('\n\n'),
       durationSeconds: 0,
     });
   }
