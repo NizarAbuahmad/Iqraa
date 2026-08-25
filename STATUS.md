@@ -5094,3 +5094,62 @@ advertise a timer the projector then refuses to run.
 
 Clamped at display time on purpose: the deck keeps what the model produced, so
 saves and exports are unchanged and the clamp cannot corrupt a stored activity.
+
+## The book's figures are on the slides now, 2026-08-25
+
+`figuresForLesson()` had no caller — 54 extracted figures sat in
+`knowledge-base/` and nothing asked for them. They now appear as media slides
+in the lesson deck, after the rule and before the interactive graph.
+
+**Bundled, not served** (the decision that was open): `require()`d at build
+time, so figures need no network and no API. The web export puts them in
+`dist/assets/__knowledge-base/…` as 54 separately-hashed files — 1.7 MB
+fetched lazily by the browser, *not* added to the 4.87 MB JS bundle. The
+"3.3 MB into the bundle" cost quoted while deciding was wrong twice over: the
+figures are separate files, and only the 54 reachable ones ship (chemistry's
+four and every unmapped maths figure are excluded).
+
+### Traps found doing it
+
+- **`knowledge-base/` was outside Metro's `watchFolders`.** It is not a
+  workspace package, so Expo's default config never watched it, and Metro
+  refuses to resolve anything outside `projectRoot + watchFolders`. This was
+  a latent break, not a new one: `bookFigures.ts` already imported JSON from
+  there, and the *first screen to import it* would have failed the bundle.
+  One line in `metro.config.js` fixes both the JSON and the PNGs.
+- **`require('x.png')` is not the same value on web and native.** Metro's web
+  output makes each asset a module exporting `{uri, width, height}`; native
+  yields an opaque numeric id for the asset registry. The generated map was
+  first typed `Record<string, number>` — a lie on the platform that actually
+  ships. `bookFigureUri` now forks on the shape, and the type says both.
+  Found by reading the built bundle, not by reasoning about it.
+- **The map has to be generated.** Metro resolves assets from *string
+  literals* at build time, so `require(figurePath(f))` cannot work.
+  `scripts/gen_book_figure_assets.mjs` writes one literal `require()` per
+  figure. Its failure mode is silent — extract figures, forget to regenerate,
+  and they are simply absent — so `bookFigureAssets.test.ts` asserts the map
+  covers exactly the reachable set and that every path exists on disk.
+- **A capped count, deliberately.** Lessons carry up to six figures (median
+  three). `BOOK_FIGURE_MAX = 2` — six would be six slides of looking at
+  pictures in a 45-minute period.
+
+### What this deliberately does *not* do
+
+Figures are **not** attached to check questions that mention a graph. A
+lesson's figure is not necessarily *the* figure a given question means, and
+putting a plausible-looking wrong picture beside a question is the exact
+failure the draw-or-drop guard exists to prevent. Those questions are still
+dropped unless their own text carries plottable equations.
+
+Every figure slide is captioned «كتاب الطالب · الفصل … · صفحة ٢١». The page
+number is the point: it is what lets a teacher hold the projected figure
+against the printed one. A picture on a projector with no provenance is
+indistinguishable from one the AI invented, and these are the opposite.
+
+### Not verified
+
+Native PDF export (`Print.printToFileAsync`) is handed a bundled-asset URI
+that may not resolve inside that HTML. Web — the surface that actually
+deploys — is fine: the print iframe inherits the page's base URL, so the
+root-relative `/assets/…` path loads, and `waitForImages` already blocks the
+print until it has.

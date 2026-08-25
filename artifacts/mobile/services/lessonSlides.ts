@@ -24,6 +24,7 @@ import type {
 import type { KBLesson } from './knowledgeBase.ts';
 import { buildGraphSlide, referencesShownVisual, scanGraphCommands } from './classMedia.ts';
 import { visualForSlide } from './deckVisuals.ts';
+import { type BookFigure, figuresForLesson } from './bookFigures.ts';
 
 /**
  * Split a generated warm-up into what the class sees and what only the
@@ -90,10 +91,28 @@ export interface LessonDeckOptions {
    * leaves the deck exactly as it was before checks existed.
    */
   checks?: ActivitySlide[];
+  /**
+   * Resolves a book figure to a loadable URI — `bookFigureUri` in the app,
+   * a stub in tests. Injected rather than imported because that function
+   * reaches into `react-native`, and this module is exercised under
+   * `node --test`, where importing it would fail at module scope.
+   *
+   * Omitted → no figure slides, exactly as before figures existed.
+   */
+  figureUri?: (figure: BookFigure) => string | null;
 }
 
 /** Mid-lesson checks, at most. Two interruptions in 45 minutes, not five. */
 export const MID_LESSON_CHECK_MAX = 2;
+/**
+ * Book figures shown per lesson, at most.
+ *
+ * Lessons carry up to six (median three). All six would be six slides of
+ * looking at pictures in a 45-minute period, so the deck shows the first two
+ * in book order and leaves the rest — the same omit-rather-than-pad rule the
+ * graph slide follows.
+ */
+export const BOOK_FIGURE_MAX = 2;
 /** Exit-ticket questions, at most. */
 export const EXIT_TICKET_MAX = 3;
 /**
@@ -234,6 +253,26 @@ function pickLang<T>(ar: T | undefined, en: T | undefined, isAr: boolean): T | u
   return isAr ? ar : en;
 }
 
+/**
+ * «كتاب الطالب · الفصل الأول · صفحة ٢١» — book, semester and page.
+ *
+ * The page is the point: it is the one thing that lets a teacher put the
+ * projected figure next to the printed one and confirm they match. Arabic
+ * digits at display time only, per the repo's convention — `pdfPage` stays a
+ * latin number everywhere else.
+ */
+export function bookFigureCaption(figure: BookFigure, isAr: boolean): string {
+  const semester = figure.sourceId.includes('-s2-')
+    ? (isAr ? 'الفصل الثاني' : 'Semester 2')
+    : (isAr ? 'الفصل الأول' : 'Semester 1');
+  const page = isAr
+    ? String(figure.pdfPage).replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[Number(d)])
+    : String(figure.pdfPage);
+  return isAr
+    ? `كتاب الطالب · ${semester} · صفحة ${page}`
+    : `Student Book · ${semester} · page ${page}`;
+}
+
 export function buildLessonDeck(
   lessonTitle: string,
   isAr: boolean,
@@ -361,6 +400,36 @@ export function buildLessonDeck(
       type: 'intro',
       title: L('📐 القاعدة', '📐 The Rule'),
       content: rules.map(r => `• ${r}`).join('\n'),
+      durationSeconds: 0,
+    });
+  }
+
+  // ── 6a. The book's own figures ──────────────────────────────────────────
+  // The diagrams the students have open in front of them. Shown after the
+  // rule and before the interactive graph so the sequence reads: here is the
+  // rule, here is how your book draws it, now watch it move.
+  //
+  // Every figure is captioned with its book and page, because a picture on a
+  // projector with no provenance is indistinguishable from one the AI made up
+  // — and these are the opposite of that, cut straight out of the ministry's
+  // student book. The caption is what lets a teacher check one against the
+  // page on the desk.
+  //
+  // `figureUri` returning null means the figure exists in the index but was
+  // never bundled; the slide is dropped rather than rendered broken.
+  const figures = opts.figureUri
+    ? figuresForLesson(lesson?.id).slice(0, BOOK_FIGURE_MAX)
+    : [];
+  for (const figure of figures) {
+    const uri = opts.figureUri!(figure);
+    if (!uri) continue;
+    push({
+      type: 'media',
+      title: L('من كتاب الطالب', 'From the Student Book'),
+      content: bookFigureCaption(figure, isAr),
+      mediaKind: 'image',
+      mediaUrl: uri,
+      mediaCaption: bookFigureCaption(figure, isAr),
       durationSeconds: 0,
     });
   }
