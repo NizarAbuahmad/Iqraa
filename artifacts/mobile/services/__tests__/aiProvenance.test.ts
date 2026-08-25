@@ -168,6 +168,30 @@ test('a cancelled call never substitutes mock content', async () => {
   assert.equal(mockRan, false, 'the mock generator must not run on a cancel');
 });
 
+test('a timeout falls back rather than being read as a cancel', async () => {
+  fresh();
+  let mockRan = false;
+  const watchedMock = async () => { mockRan = true; return 'mock-content'; };
+  // `postJSON` aborts its own fetch on a timeout, so the rejection reaching
+  // here would be an `AbortError` and land in the cancel branch above — mock
+  // suppressed, screen empty, teacher told «تعذر إتمام العملية». It throws a
+  // `TimeoutError` instead, and this pins the half of that contract which
+  // lives on this side: anything not literally named AbortError falls back.
+  const timedOut = async (): Promise<string> => {
+    const e = new Error('Request to /generate/classroom-activity timed out after 45000ms');
+    e.name = 'TimeoutError';
+    throw e;
+  };
+
+  const out = await generateWithProvenance('classroom-activity', timedOut, watchedMock, {
+    demoMode: false, strict: false, now: clock,
+  });
+
+  assert.equal(out, 'mock-content');
+  assert.equal(mockRan, true, 'a timeout must still get the teacher something');
+  assert.equal(getLastGeneration()?.reason, 'fallback', 'not "cancelled"');
+});
+
 test('a cancelled call is recorded as cancelled, producing nothing', async () => {
   fresh();
   await assert.rejects(

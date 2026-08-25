@@ -27,14 +27,38 @@ import { describeAiError, generateWithProvenance, recordGeneration } from './aiP
 // authMiddleware to those prefixes) — go through apiFetch, not a bare fetch(),
 // so the access token actually rides along and a 401 gets one refresh-and-retry
 // instead of silently falling through to the mock generator below.
+/**
+ * The request ran out of time — deliberately NOT an `AbortError`.
+ *
+ * `iqraa-api` is a free Render service: it sleeps after ~15 minutes idle and
+ * takes 30-60s to answer the first request after that (see render.yaml). The
+ * old 18s ceiling was below that floor, so the first generation of any session
+ * timed out — and, being an `AbortError`, was classified as a cancellation,
+ * which is the one failure the fallback deliberately does not cover. Every
+ * activity type failed identically with no sample content and no explanation.
+ */
+class TimeoutError extends Error {
+  constructor(path: string, ms: number) {
+    super(`Request to ${path} timed out after ${ms}ms`);
+    this.name = 'TimeoutError';
+  }
+}
+
 async function postJSON<T>(
   path: string,
   body: unknown,
   opts: GenerateOptions = {},
-  timeoutMs = 18_000,
+  timeoutMs = 45_000,
 ): Promise<T> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  // Which of the two aborts fired. Both reach `fetch` through one controller
+  // and both surface as `AbortError`, and the fallback policy reads that name
+  // to mean "the teacher pressed Cancel" and refuses to substitute mock
+  // content (see generateWithProvenance). A timeout is not a cancel: without
+  // this flag every timeout was reported as a cancellation and the teacher got
+  // «تعذر إتمام العملية» with no fallback and nothing on screen.
+  let timedOut = false;
+  const timer = setTimeout(() => { timedOut = true; controller.abort(); }, timeoutMs);
   // Two things can end this request — the timeout above and the teacher
   // pressing Cancel — and `fetch` takes one signal. Forwarding the caller's
   // abort into the same controller keeps one signal on the wire without either
@@ -53,6 +77,13 @@ async function postJSON<T>(
       throw new Error((err as any).error ?? `HTTP ${res.status}`);
     }
     return res.json() as Promise<T>;
+  } catch (e) {
+    // A real cancel still wins: if the caller's signal is aborted the teacher
+    // asked to stop, whatever the timer did afterwards.
+    if (timedOut && !opts.signal?.aborted) {
+      throw new TimeoutError(path, timeoutMs);
+    }
+    throw e;
   } finally {
     clearTimeout(timer);
     opts.signal?.removeEventListener('abort', onAbort);
