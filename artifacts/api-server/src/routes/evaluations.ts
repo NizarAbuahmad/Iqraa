@@ -35,6 +35,7 @@ import { QUESTION_TYPES } from "../modules/assessment/questionTypes";
 import { COMPETENCY_KEYS, type CompetencyKey } from "../modules/assessment/competency";
 import { isPaperQuestion, parsePaperRows } from "../modules/assessment/paperExam";
 import { aggregateClass } from "../modules/assessment/classInsights";
+import { generateShareCode } from "../modules/assessment/studentView";
 import { recommendationsFor } from "../modules/assessment/recommend";
 import type { ObjectiveScore } from "../modules/assessment/scoring";
 
@@ -186,6 +187,7 @@ router.get("/evaluations", async (req: AuthenticatedRequest, res) => {
       .select({
         id: evaluations.id,
         classGroupId: evaluations.classGroupId,
+        shareCode: evaluations.shareCode,
         title: evaluations.title,
         titleAr: evaluations.titleAr,
         subjectId: evaluations.subjectId,
@@ -380,6 +382,9 @@ router.post("/evaluations/:id/generate", async (req: AuthenticatedRequest, res) 
       // Everything the generator declined or the validator dropped, stated
       // plainly. A teacher seeing 12 of 15 should know why, not wonder.
       unavailableTypes: result.unavailableTypes,
+      // What the library holds for these units. Pairs with unavailableTypes:
+      // the types we declined, and where real items for them would come from.
+      bankContext: result.bankContext,
       rejected: validation.rejected,
       warnings: [...result.notes, ...validation.warnings],
     });
@@ -707,16 +712,36 @@ router.post("/evaluations/:id/publish", async (req: AuthenticatedRequest, res) =
       return;
     }
 
-    const [updated] = await db
-      .update(evaluations)
-      .set({
-        status: "published",
-        publishedAt: new Date(),
-        updatedAt: new Date(),
-        totalMarks: total.toFixed(2),
-      })
-      .where(eq(evaluations.id, evaluation.id))
-      .returning();
+    // The share code is issued once and kept. Re-publishing after an edit must
+    // not invalidate a link a teacher has already written on the board.
+    //
+    // The retry is for the unique index, not for luck: 31^6 codes make a
+    // collision vanishingly rare, and silently failing a publish because of one
+    // would be a bug nobody could reproduce.
+    let updated;
+    for (let attempt = 0; attempt < 5 && !updated; attempt++) {
+      try {
+        [updated] = await db
+          .update(evaluations)
+          .set({
+            status: "published",
+            publishedAt: new Date(),
+            updatedAt: new Date(),
+            totalMarks: total.toFixed(2),
+            shareCode: evaluation.shareCode ?? generateShareCode(),
+          })
+          .where(eq(evaluations.id, evaluation.id))
+          .returning();
+      } catch (err) {
+        const code = (err as { code?: string })?.code;
+        if (code !== "23505" || evaluation.shareCode) throw err;
+        logger.warn({ evaluationId: evaluation.id }, "share code collision, retrying");
+      }
+    }
+    if (!updated) {
+      res.status(500).json({ error: "Failed to publish" });
+      return;
+    }
 
     res.json({ evaluation: updated });
   } catch (err) {

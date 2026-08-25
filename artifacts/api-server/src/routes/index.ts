@@ -7,9 +7,11 @@ import authRouter from "./auth";
 import workspaceRouter from "./workspace";
 import verifiedMathRouter from "./verifiedMath";
 import curriculumRouter from "./curriculum";
+import bankRouter from "./bank";
 import rosterRouter from "./roster";
 import evaluationsRouter from "./evaluations";
 import attemptsRouter from "./attempts";
+import studentAttemptRouter from "./studentAttempt";
 import mediaRouter from "./media";
 import feedbackRouter from "./feedback";
 import adminRouter from "./admin";
@@ -31,9 +33,18 @@ router.use("/auth", authRouter);
 router.use("/workspace", workspaceRouter);
 // Published national curriculum data — deliberately public, see curriculum.ts.
 router.use(curriculumRouter);
+// A catalog of document titles and provenance, on the same reasoning. It does
+// not serve the documents; there is nothing here to serve.
+router.use(bankRouter);
 router.use(rosterRouter);
 router.use(evaluationsRouter);
 router.use(attemptsRouter);
+// The student exam link — deliberately public, and the only unauthenticated
+// write surface in the API. It carries its own rate limiter and its own
+// token check, both path-scoped inside the router. Mounted *after* the
+// teacher routers so it cannot shadow them, and asserted in mountOrder.test.ts
+// both ways: reachable without a token, and not having made anything else so.
+router.use(studentAttemptRouter);
 // Path-scoped, not `router.use(authMiddleware, chatRouter)` — that form mounts
 // the middleware at "/" and reproduces the original bug, answering 401 for
 // paths no router owns. The prefixes below cover every route these four

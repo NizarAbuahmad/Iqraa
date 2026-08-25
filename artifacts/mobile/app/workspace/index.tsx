@@ -55,8 +55,13 @@ export default function WorkspaceScreen() {
     }, [reload]),
   );
 
-  const handleToggleFavorite = async (id: string) => {
-    await toggleFavorite(id);
+  // The list re-reads the store afterwards, so the star here always shows what
+  // persisted rather than what was intended. Passing `next` explicitly is what
+  // keeps a fast double-tap from racing itself: the read-then-flip form asked
+  // the server for the current value, and two taps could both read "off".
+  const handleToggleFavorite = async (item: SavedMaterial) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await toggleFavorite(item.id, !item.isFavorite);
     reload();
   };
 
@@ -191,7 +196,7 @@ export default function WorkspaceScreen() {
         {/* Actions */}
         <View style={[styles.cardActions, { alignItems: isRTL ? 'flex-start' : 'flex-end' }]}>
           <Pressable
-            onPress={() => handleToggleFavorite(item.id)}
+            onPress={() => handleToggleFavorite(item)}
             hitSlop={8}
             style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
           >

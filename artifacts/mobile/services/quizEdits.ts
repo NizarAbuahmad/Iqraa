@@ -64,3 +64,26 @@ export function removeQuestionAt(quiz: QuizOutput, index: number): QuizOutput {
   const questions = quiz.questions.filter((_, i) => i !== index);
   return { ...quiz, questions, totalPoints: totalPointsOf(questions) };
 }
+
+/**
+ * What an option's answer marker may show while the answer key is hidden.
+ *
+ * "Hide answers" is what a teacher taps before turning the laptop towards the
+ * class, so every tell has to go, not just the obvious one. The row tint and
+ * the explanation were gated on the toggle; the picker that sets the key was
+ * not, so it kept rendering a green `checkmark-circle` against the right
+ * option — the answer stayed on screen with the highlight removed, which reads
+ * as the toggle being broken.
+ *
+ * The marker is an editing control, so hiding the key hides it entirely rather
+ * than drawing every option unselected: a picker that showed nothing selected
+ * would invite a tap that silently rewrites the key.
+ */
+export function optionMarkerState(
+  showAnswers: boolean,
+  option: string,
+  correctAnswer: string,
+): 'hidden' | 'selected' | 'unselected' {
+  if (!showAnswers) return 'hidden';
+  return option === correctAnswer ? 'selected' : 'unselected';
+}

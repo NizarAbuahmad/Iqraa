@@ -22,6 +22,7 @@ import {
   type BankUsePolicy,
   appSubjectId,
   bankItems,
+  bankTagsForUnit,
   isUnitScopedTag,
   usePolicy,
 } from '@workspace/curriculum';
@@ -125,75 +126,65 @@ function detectSubjectFromQuery(query: string): 'mathematics' | 'chemistry' | nu
   return null;
 }
 
-/** Map a KB unit id → bank unitTags. */
+/**
+ * Map a KB lesson onto the bank's unit tags.
+ *
+ * The structural mapping lives in `@workspace/curriculum` so the API server
+ * derives the same tags from a `CurriculumObjective` — the unit ids are one
+ * namespace and there is no reason for two implementations of this.
+ */
 export function unitTagsForLesson(lesson: KBLesson | null | undefined): string[] {
   if (!lesson) return [];
   const unit = getUnitForLesson(lesson);
   const book = getBookForLesson(lesson);
-  const tags: string[] = [];
-  if (!unit) return tags;
+  if (!unit) return [];
 
-  // `s1-u1` / `s2-u3` are MATHEMATICS tags — the maths packs are the only ones
-  // that use the bare form. Every NCCD unit id matches /nccd-u\d+/ though, so a
-  // financial-literacy unit 1 emitted `s1-u1` and scored +8 against every maths
-  // unit-1 resource. Chemistry escaped this only because it carries explicit
-  // `chem-*` tags below. Emit the bare form only for the subject it actually
-  // belongs to; a subject with no packs should match nothing, which is the
-  // honest answer.
-  const m = unit.id.match(/nccd-(u\d+)/i);
-  if (m?.[1] && book?.subjectId === 'mathematics') {
-    const u = m[1].toLowerCase();
-    if (book?.semester === 2 || /s2/i.test(unit.id)) tags.push(`s2-${u}`);
-    else tags.push(`s1-${u}`);
+  // Primary: derived from the unit id.
+  //
+  // This replaced a hand-written mapping that tested `unit.id === 'kbu-chem-1'`
+  // and four siblings — ids from a scheme the catalog no longer uses. Every one
+  // of those branches was dead, which left chemistry unit tags to the title
+  // keywords below, and ten of the seventeen chemistry lessons — all of units
+  // 2, 4 and 5 — resolved to no unit tag at all.
+  const tags: string[] = [...bankTagsForUnit(unit.id)];
+
+  // Fallback for a unit the mapping does not recognise (a non-NCCD book).
+  // Better a semester tag than nothing; previously this was the only source of
+  // the semester tag and it is kept for the ids `bankTagsForUnit` returns [] for.
+  if (!tags.length && book?.semester) {
+    if (book.subjectId === 'chemistry') tags.push(`chem-s${book.semester}`);
+    else if (book.subjectId === 'financial-literacy') tags.push(`finlit-s${book.semester}`);
+    else if (book.subjectId === 'mathematics') tags.push(`s${book.semester}`);
   }
 
-  // Chemistry KB units
-  if (unit.id === 'kbu-chem-1') tags.push('chem-s1-u1');
-  if (unit.id === 'kbu-chem-2') tags.push('chem-s1-u2');
-  if (unit.id === 'kbu-chem-3') tags.push('chem-s1-u3');
-  if (unit.id === 'kbu-chem-s2-4') tags.push('chem-s2-u4');
-  if (unit.id === 'kbu-chem-s2-5') tags.push('chem-s2-u5');
-
-  // Title fallbacks, for when the unit-id mapping above does not fire.
+  // Secondary: title keywords, each gated to its own subject.
   //
-  // **Each set is gated to its own subject.** Ungated, «تجربة استهلالية:
-  // المعادلة الكيميائية» matched /معادل/ and picked up the MATHEMATICS tag
-  // `s1-u1` — six algebra worksheets attached to a chemistry lab. Chat
-  // survived it only because `scoreResource` rejects a subject mismatch
-  // afterwards; anything reading these tags directly, as the lesson shelf
-  // does, had no such protection. Emit the right tags rather than rely on
-  // something downstream to discard the wrong ones.
+  // These are no longer load-bearing for the unit a lesson sits in — they now
+  // only add a *neighbouring* unit's material, where the topic genuinely spans
+  // two (a trigonometry lesson that also wants the functions summary).
+  //
+  // Gating matters: ungated, «تجربة استهلالية: المعادلة الكيميائية» matched
+  // /معادل/ and picked up the MATHEMATICS tag `s1-u1`, putting six algebra
+  // worksheets on a chemistry lab. Chat survived it only because
+  // `scoreResource` rejects a subject mismatch afterwards.
   const title = `${unit.titleAr} ${lesson.titleAr}`;
   if (book?.subjectId === 'mathematics') {
     if (/مصفوف/.test(title)) tags.push('s1-matrices');
     if (/دائر/.test(title)) tags.push('s1-u2');
     if (/اشتقاق|مشتق/.test(title)) tags.push('s2-u6');
     // Known imprecision, left alone: «الاقترانات المثلثية» is a Semester 1
-    // trigonometry lesson and this tags it with the Semester 2 functions unit.
-    // Both are genuinely about اقترانات, so the extra material is related
-    // rather than wrong — unlike the cross-subject case above.
+    // trigonometry lesson and this also tags it with the Semester 2 functions
+    // unit. Both are genuinely about اقترانات, so the extra material is
+    // related rather than wrong — unlike the cross-subject case above.
     if (/اقتران/.test(title)) tags.push('s2-u5');
     if (/أسس|معادل/.test(title)) tags.push('s1-u1');
   }
   if (book?.subjectId === 'chemistry') {
     if (/بنية الذرة|بور|بلانك/.test(title)) tags.push('chem-s1-u1');
-    if (/جدول دوري/.test(title)) tags.push('chem-s1-u2');
+    if (/جدول دوري|دوري/.test(title)) tags.push('chem-s1-u2');
     if (/روابط|تساهمية|أيونية|فلزية/.test(title)) tags.push('chem-s1-u3');
-    if (/تفاعلات كيمي/.test(title)) tags.push('chem-s2-u5');
-  }
-
-  // The semester tag is namespaced by subject for the same reason the unit tag
-  // is. A financial-literacy lesson used to emit the bare maths `s1`, which
-  // matched every maths pack scoped to semester 1 at +3 — survivable only
-  // because the subject gate in `scoreResource` rejects them afterwards. A tag
-  // that is wrong and then filtered is still a wrong tag; name the subject.
-  if (book?.subjectId === 'chemistry') {
-    tags.push(book.semester === 2 ? 'chem-s2' : 'chem-s1');
-  } else if (book?.subjectId === 'financial-literacy') {
-    tags.push(book.semester === 2 ? 'finlit-s2' : 'finlit-s1');
-  } else if (book?.subjectId === 'mathematics') {
-    if (book.semester === 1) tags.push('s1');
-    if (book.semester === 2) tags.push('s2');
+    if (/تفاعل/.test(title)) tags.push('chem-s2-u4');
+    if (/طاقة/.test(title)) tags.push('chem-s2-u5');
   }
 
   return [...new Set(tags)];
