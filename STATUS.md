@@ -276,7 +276,8 @@ embedding store to add. Passage text is returned **raw** — repaired and folded
 only for matching — because re-spelling a textbook on the way to a prompt is a
 silent edit of a source document.
 
-69 curriculum / 855 mobile / 223 api-server tests pass; typecheck clean.
+69 curriculum / 878 mobile / 223 api-server tests pass; typecheck clean.
+(Mobile was 855 on the branch alone; the rest came in with `main`.)
 
 **Still not wired to anything a teacher sees.** No prompt reads a passage yet,
 and `DEMO_MODE` remains `true`.
@@ -352,6 +353,67 @@ alone; the rest arrived with `main` when this was merged up.)
 **What this does not yet do:** no grounding, no change to any prompt — and `DEMO_MODE` is still `true` with
 `AI_LIVE_MODE` unset, so no prompt reaches a model at all. This is the corpus,
 not the feature.
+## An activity is an activity, and «عن» stopped being a lesson title, 2026-08-25
+
+Two things the chat-materials pass left behind, both now closed.
+
+**`MaterialType.activity` is no longer dead.** Every class activity — from the
+Activity screen and from chat — was filed as `'lesson'`, because
+`app/workspace/view.tsx` had no branch for one and its final `else` is the quiz
+renderer, which maps over the `questions` an `ActivityOutput` does not have.
+Saving one honestly meant saving a material that crashed the viewer that opened
+it. The viewer has an `ActivityView` now — objective, group size and duration,
+materials, numbered steps with their minutes, tips, differentiation, assessment
+— in the same order and sections as the Activity screen's own result view, so a
+teacher is looking at the same document on both surfaces. Export follows:
+`formatActivityText` / `buildActivityHTML` already existed and were simply never
+reachable from here.
+
+**The activities already saved as `'lesson'` are rescued by shape, not by a
+migration.** `looksLikeActivityContent()` (`services/materialShape.ts`) decides
+when a stored `'lesson'` is really an activity — keyed on `steps` plus
+`objective`, and refusing anything carrying a plan's `objectives` list. Tested
+in both directions, because a false positive would send a real lesson plan to
+the wrong renderer.
+
+**The viewer stopped keeping its own colour map.** It had a private copy of the
+same five colours `constants/materialKind.ts` holds, and adding a sixth to a
+private copy is the exact drift that file was extracted to stop — a card in
+موادي and the material it opens must not disagree about what colour an activity
+is. One map now.
+
+**«خطة درس عن تركيب الاقترانات» resolved to the topic «عن تركيب الاقترانات».**
+That is a title, and since materials became projectable it is also a slide, so a
+class saw a wall reading "About Function Composition". Two rules meant to
+prevent it never fired in Arabic:
+
+- the `^(عن|حول|about|for)\s+` anchor ran while the string still began with the
+  spaces the verb strip had just left, so it never matched anything;
+- `\b` is defined by `[A-Za-z0-9_]`, so `\bعن\b` cannot match between two
+  Arabic letters — that rule only ever worked for `about` / `for`.
+
+Whitespace is collapsed before the token pass now, and the token test is written
+against spaces and string ends rather than `\b`. A stranded English article
+("a function composition") goes too. `resolveArtifactTopic` moved to
+`services/ai/artifactTopic.ts` to be testable at all — `chatArtifacts.ts`
+constructs the AI client at import time, which `node:test` cannot load, the same
+split `routeGating.ts` and `docxOutline.ts` already made. It is re-exported, so
+no call site changed.
+
+### Verified by driving the real UI
+
+Expo web, `/auth/me` stubbed, no API server. «حضّر خطة درس عن تركيب الاقترانات»
+now saves as **«خطة درس: تركيب الاقترانات»**. A generated activity saves as
+`type: 'activity'` titled «نشاط صفي: تركيب الاقترانات», offers no Present button
+(correct — there is no ActivityOutput deck builder), and opens in the workspace
+showing its objective, materials and numbered steps. A hand-seeded legacy row —
+activity content under `type: 'lesson'` — renders as an activity too, with no
+console errors.
+
+**Left alone:** the activity meta row shows the raw `activityType` (`group`)
+rather than a translated label. That is what the Activity screen shows as well;
+fixing it belongs on both at once.
+
 ## Chat materials stopped dead-ending at copy, 2026-08-25
 
 **A material generated in chat now offers what the tool screens offer.** Chat
@@ -381,13 +443,9 @@ verifier, so `deckForArtifact` passes neither `verified` nor `outcomes` and the
 slides badge unverified — the same rule this file records for `verified`
 everywhere else. A test asserts it.
 
-**An activity is saved as type `lesson`, not `activity`.** `workspace/view.tsx`
-has no `activity` branch and falls through to the quiz renderer, which maps over
-`questions` an `ActivityOutput` does not have — saving it under its own name
-would file a material that crashes the viewer that opens it. This matches what
-`/ai-tools/activity` already does. The dead `'activity'` member of `MaterialType`
-is still dead; giving the viewer a real renderer is the fix, and is not done
-here.
+~~**An activity is saved as type `lesson`, not `activity`.**~~ **Superseded the
+same day** — the viewer got its `ActivityView`, so both surfaces file activities
+as `'activity'` and the type is no longer dead. See the section above.
 
 The decision logic is `services/chatMaterialActions.ts` (pure, no React), tested
 in `services/__tests__/chatMaterialActions.test.ts`; `app/(tabs)/iqra.tsx` owns
@@ -403,10 +461,9 @@ the label flipped to «محفوظ ✓». أضف لصف → still one row, no dup
 sheet self-closed, which is what it does with no roster (server-only). اعرض →
 `/ai-tools/classroom/presentation` rendering a 7-slide deck.
 
-**Left alone:** the deck and the saved material are titled «عن تركيب
-الاقترانات», preposition included. That comes from `resolveArtifactTopic`
-upstream and already showed in the chat prose before this change — it is more
-visible now that it heads a projected slide.
+~~**Left alone:** the deck and the saved material are titled «عن تركيب
+الاقترانات», preposition included.~~ **Fixed the same day** — see the section
+above for why the two rules meant to strip it never fired in Arabic.
 
 ## The refusal now points somewhere, 2026-08-25
 
@@ -5220,3 +5277,62 @@ advertise a timer the projector then refuses to run.
 
 Clamped at display time on purpose: the deck keeps what the model produced, so
 saves and exports are unchanged and the clamp cannot corrupt a stored activity.
+
+## The book's figures are on the slides now, 2026-08-25
+
+`figuresForLesson()` had no caller — 54 extracted figures sat in
+`knowledge-base/` and nothing asked for them. They now appear as media slides
+in the lesson deck, after the rule and before the interactive graph.
+
+**Bundled, not served** (the decision that was open): `require()`d at build
+time, so figures need no network and no API. The web export puts them in
+`dist/assets/__knowledge-base/…` as 54 separately-hashed files — 1.7 MB
+fetched lazily by the browser, *not* added to the 4.87 MB JS bundle. The
+"3.3 MB into the bundle" cost quoted while deciding was wrong twice over: the
+figures are separate files, and only the 54 reachable ones ship (chemistry's
+four and every unmapped maths figure are excluded).
+
+### Traps found doing it
+
+- **`knowledge-base/` was outside Metro's `watchFolders`.** It is not a
+  workspace package, so Expo's default config never watched it, and Metro
+  refuses to resolve anything outside `projectRoot + watchFolders`. This was
+  a latent break, not a new one: `bookFigures.ts` already imported JSON from
+  there, and the *first screen to import it* would have failed the bundle.
+  One line in `metro.config.js` fixes both the JSON and the PNGs.
+- **`require('x.png')` is not the same value on web and native.** Metro's web
+  output makes each asset a module exporting `{uri, width, height}`; native
+  yields an opaque numeric id for the asset registry. The generated map was
+  first typed `Record<string, number>` — a lie on the platform that actually
+  ships. `bookFigureUri` now forks on the shape, and the type says both.
+  Found by reading the built bundle, not by reasoning about it.
+- **The map has to be generated.** Metro resolves assets from *string
+  literals* at build time, so `require(figurePath(f))` cannot work.
+  `scripts/gen_book_figure_assets.mjs` writes one literal `require()` per
+  figure. Its failure mode is silent — extract figures, forget to regenerate,
+  and they are simply absent — so `bookFigureAssets.test.ts` asserts the map
+  covers exactly the reachable set and that every path exists on disk.
+- **A capped count, deliberately.** Lessons carry up to six figures (median
+  three). `BOOK_FIGURE_MAX = 2` — six would be six slides of looking at
+  pictures in a 45-minute period.
+
+### What this deliberately does *not* do
+
+Figures are **not** attached to check questions that mention a graph. A
+lesson's figure is not necessarily *the* figure a given question means, and
+putting a plausible-looking wrong picture beside a question is the exact
+failure the draw-or-drop guard exists to prevent. Those questions are still
+dropped unless their own text carries plottable equations.
+
+Every figure slide is captioned «كتاب الطالب · الفصل … · صفحة ٢١». The page
+number is the point: it is what lets a teacher hold the projected figure
+against the printed one. A picture on a projector with no provenance is
+indistinguishable from one the AI invented, and these are the opposite.
+
+### Not verified
+
+Native PDF export (`Print.printToFileAsync`) is handed a bundled-asset URI
+that may not resolve inside that HTML. Web — the surface that actually
+deploys — is fine: the print iframe inherits the page's base URL, so the
+root-relative `/assets/…` path loads, and `waitForImages` already blocks the
+print until it has.
