@@ -83,15 +83,20 @@ export default function LessonFlowScreen() {
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
   const scrollRef = useRef<ScrollView>(null);
-  const params = useLocalSearchParams<{ topic?: string }>();
+  const params = useLocalSearchParams<{
+    topic?: string; gradeIdx?: string; subjectIdx?: string;
+  }>();
 
   const grades = getPickerGrades();
   const subjects = getPickerSubjects();
 
   // Form state
   const [topic, setTopic] = useState(params.topic ?? '');
-  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(undefined, grades.length));
-  const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(undefined, subjects.length));
+  // These were pinned to `undefined` — index 0, Grade 10 Mathematics — so this
+  // screen was the one generator a caller could not aim at a subject, however
+  // much it knew. Every sibling screen already reads them.
+  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(params.gradeIdx, grades.length));
+  const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx, subjects.length));
   const [durationIdx, setDurationIdx] = useState(0);
 
   // Generation state
