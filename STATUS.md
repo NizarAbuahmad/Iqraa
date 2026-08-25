@@ -226,6 +226,194 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The two maths student books are swapped, 2026-08-25
+
+Found by testing retrieval, not by reading data. Asking the new passage layer
+for الدائرة returned a page about المتجهات, which looks like a ranking problem
+and is not one.
+
+`10th_grade,_math,_1st_semester_….pdf` opens **«الوحدةُ 5 الاقتراناتُ»** and
+carries unit 7 المتجهات — the catalog's **Semester 2**. Its sibling named
+`…,_2nd_semester_….pdf` opens **«الوحدةُ 1 المعادلاتُ»** and carries unit 3
+حساب المثلثات — the catalog's **Semester 1**. The files are swapped relative to
+their names, and `g10_sources.json` inherited the swap because its entries were
+written from a Drive listing rather than from the documents.
+
+The teacher guides are **not** affected: the S2 guide really does hold unit 6
+المشتقات. This is the two student books only.
+
+`extract-text.ts` now maps them across their filenames, by content, because
+that is what makes a citation true — a passage offered for الدائرة has to come
+from the book containing الدائرة. Retrieval for that unit now returns
+«معرفة الوترِ، والقُطْرِ، والمماسِّ» (p34) and «الزوايا في الدائرة» (p47).
+
+**This very likely extends past the two local files.** The `bytes` recorded
+against `math-s1-student-book` and `math-s2-student-book`, and probably the
+Drive copies themselves, carry the same swap — 33,429,449 bytes matches the
+manifest's *s2* entry exactly and is the file whose contents are *s1*. Nothing
+downstream of the catalog is wrong (unit numbers, titles and objectives are all
+internally consistent and came from the guides), but anyone going to Drive for
+"the semester 1 maths book" should expect to open semester 2.
+
+A test now asserts each extracted book contains at least two of its own unit
+titles. Reintroducing the swap fails it with "math-s1-student-book contains
+only 1 of its own unit titles (الدائره) — it is probably the other semester's
+book". Filenames and manifest labels are hearsay; the unit titles printed
+inside the book are not.
+
+**And there were three `normalizeArabic`s.** One in `blooms.ts`, one in the
+api-server grading path, and nearly a third for retrieval. They agreed on
+Arabic and disagreed on Latin case and Arabic-Indic digits. Now one, in
+`lib/curriculum/src/arabic.ts`, re-exported from both old homes so no import
+changed. Checked before merging: over all 196 marker terms and catalog
+objectives the two differed on 7 strings, every one an English objective being
+lowercased, and the Bloom's markers are Arabic verbs.
+
+Retrieval itself (`src/passages.ts`, server-only, on the `./passages` subpath)
+is lexical rather than vector: the bank already scopes a query to one book by
+unit tag, so what is left is ranking a few hundred pages, and there is no
+embedding store to add. Passage text is returned **raw** — repaired and folded
+only for matching — because re-spelling a textbook on the way to a prompt is a
+silent edit of a source document.
+
+69 curriculum / 878 mobile / 223 api-server tests pass; typecheck clean.
+(Mobile was 855 on the branch alone; the rest came in with `main`.)
+
+**Still not wired to anything a teacher sees.** No prompt reads a passage yet,
+and `DEMO_MODE` remains `true`.
+
+## The books can be read after all, 2026-08-25
+
+Two things I had been repeating in this file were wrong, and both were load-
+bearing.
+
+**The PDFs are not all on a Windows mirror.** Six real NCCD documents are
+committed in `attached_assets/` — both math student books, chemistry S1, both
+math exercise books, and the S2 teacher guide (~101 MB, tracked). That claim was
+only ever true of the *teacher-made support pack*. The seventh, the math S1
+teacher guide, is a Git-LFS pointer: 58 MB unpulled, and `git-lfs` is not
+installed in the session container, so it stays blocked.
+
+**Arabic extracts fine.** The entry above about `pdftotext` mangling Arabic is
+accurate about *matching* and was read as "these PDFs are unusable". They are
+not. `pdf-parse` — a root dependency that until today nothing imported — pulls
+**682 pages and 1.18M characters** of readable Arabic prose out of the six:
+
+| source | pages | chars |
+| --- | --- | --- |
+| math-s2-teacher-guide | 218 | 558,414 |
+| math-s1-student-book | 150 | 220,128 |
+| math-s2-student-book | 132 | 184,065 |
+| chem-s1-student-book | 76 | 113,815 |
+| math-s2-exercise-book | 56 | 57,003 |
+| math-s1-exercise-book | 50 | 47,275 |
+
+What is genuinely broken is string matching, for two narrow reasons: the
+lam-alef ligature decomposes («الاقتران» → «االقتران») and tashkeel is
+interleaved. `normalizeArabic()` plus a lam-alef fix takes probe matching from
+mostly-failing to mostly-passing. **A model reads this text fine; a regex does
+not.** So `lib/curriculum/scripts/extract-text.ts` stores pages and stops —
+no structure parsing, no hunt for lesson boundaries. Every previous attempt to
+infer structure from these books by pattern produced confidently wrong output;
+retrieval will scope by the bank's unit tags, which already work.
+
+**Provenance records the file actually read.** `math-s1-student-book` on disk is
+a 12.1 MB Adobe InDesign original against the manifest's 18.6 MB — same 150
+pages, same publisher, a different export. `extraction.bytesDifferFromManifest`
+records that rather than letting two exports of one book quietly become
+interchangeable, which is the assumption that put a downsampled copy of each
+chemistry textbook in front of teachers. Each extraction carries its own
+`sha256` and `localPath`, and a test re-hashes the file on disk.
+
+**`status: 'ingested'` now means two different things, deliberately.** It used to
+mean "a human transcribed objectives out of this by eye". It now also covers
+"machine text exists". The new `extraction` block says precisely which, because
+a document can have one without the other — and until today *every* book had
+objectives with no machine-readable text.
+
+**The 2.1 MB must not reach the phone.** The mobile app imports
+`@workspace/curriculum`, so one static import of the corpus from `index.ts`
+would ship all of it to every device for a feature the app does not run. A test
+fails if anything under `src/` imports `data/extracted`. Retrieval belongs
+behind a server-only subpath export.
+
+Two bugs in my own first draft of that test, both worth recording because both
+looked like data problems: it asserted 20 consecutive Arabic characters per page
+and reported chemistry as 2 pages of 76 — the pages carry ~1,200 Arabic
+characters each, but tashkeel, spaces and «Principal Quantum Number» mean a
+20-character run almost never occurs; it was measuring typography, not language.
+And the bundle guard grepped for the string `data/extracted`, which flagged
+`sources.ts` for *documenting* where the text lives. Density, and an import
+regex, respectively.
+
+51 curriculum / 855 mobile / 223 api-server tests pass; typecheck clean;
+`verify-curriculum` 0 errors. (Mobile was 815 and api-server 193 on the branch
+alone; the rest arrived with `main` when this was merged up.)
+
+**What this does not yet do:** no grounding, no change to any prompt — and `DEMO_MODE` is still `true` with
+`AI_LIVE_MODE` unset, so no prompt reaches a model at all. This is the corpus,
+not the feature.
+## An activity is an activity, and «عن» stopped being a lesson title, 2026-08-25
+
+Two things the chat-materials pass left behind, both now closed.
+
+**`MaterialType.activity` is no longer dead.** Every class activity — from the
+Activity screen and from chat — was filed as `'lesson'`, because
+`app/workspace/view.tsx` had no branch for one and its final `else` is the quiz
+renderer, which maps over the `questions` an `ActivityOutput` does not have.
+Saving one honestly meant saving a material that crashed the viewer that opened
+it. The viewer has an `ActivityView` now — objective, group size and duration,
+materials, numbered steps with their minutes, tips, differentiation, assessment
+— in the same order and sections as the Activity screen's own result view, so a
+teacher is looking at the same document on both surfaces. Export follows:
+`formatActivityText` / `buildActivityHTML` already existed and were simply never
+reachable from here.
+
+**The activities already saved as `'lesson'` are rescued by shape, not by a
+migration.** `looksLikeActivityContent()` (`services/materialShape.ts`) decides
+when a stored `'lesson'` is really an activity — keyed on `steps` plus
+`objective`, and refusing anything carrying a plan's `objectives` list. Tested
+in both directions, because a false positive would send a real lesson plan to
+the wrong renderer.
+
+**The viewer stopped keeping its own colour map.** It had a private copy of the
+same five colours `constants/materialKind.ts` holds, and adding a sixth to a
+private copy is the exact drift that file was extracted to stop — a card in
+موادي and the material it opens must not disagree about what colour an activity
+is. One map now.
+
+**«خطة درس عن تركيب الاقترانات» resolved to the topic «عن تركيب الاقترانات».**
+That is a title, and since materials became projectable it is also a slide, so a
+class saw a wall reading "About Function Composition". Two rules meant to
+prevent it never fired in Arabic:
+
+- the `^(عن|حول|about|for)\s+` anchor ran while the string still began with the
+  spaces the verb strip had just left, so it never matched anything;
+- `\b` is defined by `[A-Za-z0-9_]`, so `\bعن\b` cannot match between two
+  Arabic letters — that rule only ever worked for `about` / `for`.
+
+Whitespace is collapsed before the token pass now, and the token test is written
+against spaces and string ends rather than `\b`. A stranded English article
+("a function composition") goes too. `resolveArtifactTopic` moved to
+`services/ai/artifactTopic.ts` to be testable at all — `chatArtifacts.ts`
+constructs the AI client at import time, which `node:test` cannot load, the same
+split `routeGating.ts` and `docxOutline.ts` already made. It is re-exported, so
+no call site changed.
+
+### Verified by driving the real UI
+
+Expo web, `/auth/me` stubbed, no API server. «حضّر خطة درس عن تركيب الاقترانات»
+now saves as **«خطة درس: تركيب الاقترانات»**. A generated activity saves as
+`type: 'activity'` titled «نشاط صفي: تركيب الاقترانات», offers no Present button
+(correct — there is no ActivityOutput deck builder), and opens in the workspace
+showing its objective, materials and numbered steps. A hand-seeded legacy row —
+activity content under `type: 'lesson'` — renders as an activity too, with no
+console errors.
+
+**Left alone:** the activity meta row shows the raw `activityType` (`group`)
+rather than a translated label. That is what the Activity screen shows as well;
+fixing it belongs on both at once.
+
 ## Chat materials stopped dead-ending at copy, 2026-08-25
 
 **A material generated in chat now offers what the tool screens offer.** Chat
@@ -255,13 +443,9 @@ verifier, so `deckForArtifact` passes neither `verified` nor `outcomes` and the
 slides badge unverified — the same rule this file records for `verified`
 everywhere else. A test asserts it.
 
-**An activity is saved as type `lesson`, not `activity`.** `workspace/view.tsx`
-has no `activity` branch and falls through to the quiz renderer, which maps over
-`questions` an `ActivityOutput` does not have — saving it under its own name
-would file a material that crashes the viewer that opens it. This matches what
-`/ai-tools/activity` already does. The dead `'activity'` member of `MaterialType`
-is still dead; giving the viewer a real renderer is the fix, and is not done
-here.
+~~**An activity is saved as type `lesson`, not `activity`.**~~ **Superseded the
+same day** — the viewer got its `ActivityView`, so both surfaces file activities
+as `'activity'` and the type is no longer dead. See the section above.
 
 The decision logic is `services/chatMaterialActions.ts` (pure, no React), tested
 in `services/__tests__/chatMaterialActions.test.ts`; `app/(tabs)/iqra.tsx` owns
@@ -277,10 +461,9 @@ the label flipped to «محفوظ ✓». أضف لصف → still one row, no dup
 sheet self-closed, which is what it does with no roster (server-only). اعرض →
 `/ai-tools/classroom/presentation` rendering a 7-slide deck.
 
-**Left alone:** the deck and the saved material are titled «عن تركيب
-الاقترانات», preposition included. That comes from `resolveArtifactTopic`
-upstream and already showed in the chat prose before this change — it is more
-visible now that it heads a projected slide.
+~~**Left alone:** the deck and the saved material are titled «عن تركيب
+الاقترانات», preposition included.~~ **Fixed the same day** — see the section
+above for why the two rules meant to strip it never fired in Arabic.
 
 ## The refusal now points somewhere, 2026-08-25
 
@@ -5195,3 +5378,46 @@ or the new exam button on a running build.
 not less — `slides`, `game` and `classroom` all build a `ClassroomActivity` and
 land on the same presenter, and all three are on the menu. PostHog is still the
 way to answer which door teachers use.
+
+## Stop the model writing questions about graphs it never gives, 2026-08-25
+
+The draw-or-drop guard keeps a question about an absent graph off the
+projector, but dropping is a last resort — the question is still lost, and
+the three slides that started this all drop rather than draw. The real fix is
+that the model never writes one.
+
+Nothing in this repo writes «يمثل الرسم البياني خطين مستقيمين…» — grep found
+that phrasing in no generator, no mock and no question bank. The model
+produces it unprompted, and the prompts said nothing about figures at all. So
+the rule now sits in `SYSTEM_AR` / `SYSTEM_EN`, which every generator passes
+(lesson-plan, worksheet, quiz, classroom-activity), rather than in the one
+builder that got caught.
+
+**The latin-variable clause is the load-bearing half.**
+`extractGraphCommands` matches `[a-z]` terms, so «y = 2س + 1» extracts
+*nothing* and its question is dropped exactly as if it had named no equations
+at all. A rule saying only "state the equations" would have produced
+dutifully compliant questions that still showed an empty slide — the original
+bug wearing a better sentence. Verified before the rule was written:
+
+| stem | commands extracted |
+| --- | --- |
+| «… y = 2x + 1 و y = -x + 4» | 2 |
+| «… y = 2س + 1 و y = -س + 4» | **0** |
+| «مثّل المستقيم ص = 2س + 1» | **0** |
+
+This does not touch the display convention: س still appears at display time,
+well after extraction.
+
+The rule also says what to write *instead* («وإن أردتَ سؤالًا بلا معادلات
+فاكتبه بلا أي إشارة إلى رسم»), because without it the model's cheapest escape
+is to stop writing graph questions altogether.
+
+### Held together by a comment, not a compiler
+
+The prompt lives in `api-server` and the extractor in `mobile`, and no build
+step checks that the rule's worked example still parses.
+`classMedia.test.ts` asserts the exact sentence yields two curves, and
+`figureRule.test.ts` asserts the prompt still contains it and carries no
+Arabic maths variable. Both carry a comment pointing at the other. If the
+prompt's example ever changes, change them together.

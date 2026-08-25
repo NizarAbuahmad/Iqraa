@@ -254,55 +254,12 @@ export async function generateChatArtifact(opts: {
   };
 }
 
-/** Resolve topic string for generation from lesson / docs / query. */
-export function resolveArtifactTopic(opts: {
-  lang: 'ar' | 'en';
-  query: string;
-  lesson: KBLesson | null;
-  activeTopicAr: string | null;
-  activeTopicEn: string | null;
-  docTopic?: string | null;
-  /** When true, uploaded materials beat a soft-pinned curriculum lesson. */
-  preferDocuments?: boolean;
-}): string {
-  const {
-    lang,
-    query,
-    lesson,
-    activeTopicAr,
-    activeTopicEn,
-    docTopic,
-    preferDocuments = false,
-  } = opts;
-
-  if (preferDocuments && docTopic?.trim()) return docTopic.trim();
-
-  // Explicit topic left in the query after stripping artifact verbs
-  // Include حضر/جهز without shadda — teachers often type without tashkeel.
-  const stripped = query
-    .replace(
-      /خطة(\s*درس)?|ورقة(\s*عمل)?|اختبار(\s*قصير)?|واجب(\s*منزلي)?|نشاط(\s*صفي)?|lesson\s*plan|worksheet|quiz|homework|activity|أنشئ|انشئ|ولّد|ولد|اعمل|أعمل|حضّ?ر|جهز|جهّز|أعد|اعد|إعداد|اعداد|كاملة|كامل|prepare|create|make|generate|build/gi,
-      ' ',
-    )
-    .replace(/^(عن|حول|about|for)\s+/i, '')
-    .replace(/\b(عن|حول|about|for)\b/gi, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  // Prefer an explicit topic in the message over soft-pinned / default lesson
-  if (stripped && stripped.length >= 3) {
-    const lessonTitle = lesson
-      ? (lang === 'ar' ? lesson.titleAr : lesson.titleEn)
-      : '';
-    const looksLikeBareVerbOnly = /^(حضّ?ر|أنشئ|جهز|أعد|prepare|create)$/i.test(stripped);
-    if (!looksLikeBareVerbOnly && stripped !== lessonTitle) {
-      return stripped;
-    }
-  }
-
-  if (docTopic?.trim()) return docTopic.trim();
-  if (lesson) return lang === 'ar' ? lesson.titleAr : lesson.titleEn;
-  if (lang === 'ar' && activeTopicAr) return activeTopicAr;
-  if (lang === 'en' && activeTopicEn) return activeTopicEn;
-  return stripped || query.trim();
-}
+/**
+ * Re-exported so `generateChatArtifact`'s callers keep one import.
+ *
+ * The function itself lives in `artifactTopic.ts` because this module imports
+ * `RemoteAIService` at value level, which `node:test` cannot load — the same
+ * split `routeGating.ts` and `docxOutline.ts` already made. Topic resolution
+ * is pure string work and is worth testing directly.
+ */
+export { resolveArtifactTopic } from './artifactTopic.ts';

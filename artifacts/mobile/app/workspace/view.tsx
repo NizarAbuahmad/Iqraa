@@ -11,26 +11,25 @@ import { useLanguage } from '@/context/LanguageContext';
 import { SavedMaterial, getItem } from '@/services/workspace';
 import { useFavorite } from '@/hooks/useFavorite';
 import {
-  ClassroomActivity, LessonFlowOutput, LessonPlanOutput, QuizOutput, WorksheetOutput,
+  ActivityOutput, ActivityStep, ClassroomActivity, LessonFlowOutput, LessonPlanOutput,
+  QuizOutput, WorksheetOutput,
 } from '@/services/ai/AIService';
+import { looksLikeActivityContent } from '@/services/materialShape';
+// One map, not two. This screen kept its own copy of the same five colours;
+// adding a sixth to a private copy is exactly the drift `materialKind.ts` was
+// extracted to stop — a card in موادي and the material it opens must not
+// disagree about what colour an activity is.
+import { MATERIAL_COLOR } from '@/constants/materialKind';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { normalizeQuestionOptions, optionLetter } from '@/services/optionLabels';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import {
-  buildLessonFlowHTML, buildLessonPlanHTML, buildQuizHTML, buildWorksheetHTML,
+  buildActivityHTML, buildLessonFlowHTML, buildLessonPlanHTML, buildQuizHTML, buildWorksheetHTML,
   copyToClipboard, exportAsPDF, exportAsWord,
-  formatLessonPlanText, formatQuizText, formatWorksheetText,
+  formatActivityText, formatLessonPlanText, formatQuizText, formatWorksheetText,
   shareAsText,
 } from '@/services/share';
-
-const TYPE_COLOR: Record<string, string> = {
-  lesson: '#1B6B62',
-  worksheet: '#8B5CF6',
-  quiz: '#F59E0B',
-  flow: '#00A99D',
-  slides: '#0EA5E9',
-};
 
 export default function WorkspaceViewScreen() {
   const colors = useColors();
@@ -82,33 +81,52 @@ export default function WorkspaceViewScreen() {
     );
   }
 
-  const accent = TYPE_COLOR[item.type] ?? colors.primary;
-  let content: LessonPlanOutput | WorksheetOutput | QuizOutput | ClassroomActivity | null = null;
+  let content:
+    | LessonPlanOutput | WorksheetOutput | QuizOutput | ClassroomActivity | ActivityOutput
+    | null = null;
   try { content = JSON.parse(item.content); } catch { /* noop */ }
 
+  /**
+   * The kind this material is rendered, exported and edited as.
+   *
+   * Normally just `item.type`. The exception is every activity saved before
+   * the workspace could render one: those went in as `'lesson'` because the
+   * honest type crashed the viewer. They are still in teachers' workspaces, so
+   * the shape decides when the stored type says lesson — see materialShape.ts.
+   */
+  const kind = item.type === 'lesson' && looksLikeActivityContent(content)
+    ? 'activity'
+    : item.type;
+
+  const accent = MATERIAL_COLOR[kind as keyof typeof MATERIAL_COLOR] ?? colors.primary;
+
   const editRoute =
-    item.type === 'lesson' ? '/ai-tools/lesson-plan'
-      : item.type === 'worksheet' ? '/ai-tools/worksheet'
-        : item.type === 'flow' ? '/ai-tools/lesson-flow'
-          : item.type === 'slides' ? '/ai-tools/slides'
-            : '/ai-tools/quiz';
+    kind === 'lesson' ? '/ai-tools/lesson-plan'
+      : kind === 'activity' ? '/ai-tools/activity'
+        : kind === 'worksheet' ? '/ai-tools/worksheet'
+          : kind === 'flow' ? '/ai-tools/lesson-flow'
+            : kind === 'slides' ? '/ai-tools/slides'
+              : '/ai-tools/quiz';
 
   const isAr = lang === 'ar';
   const getPlainText = () => {
     if (!content) return item.title;
-    if (item.type === 'lesson') return formatLessonPlanText(content as LessonPlanOutput, item.title, { subject: item.subject, grade: item.grade }, isAr);
-    if (item.type === 'worksheet') return formatWorksheetText(content as WorksheetOutput, item.title, { subject: item.subject, grade: item.grade }, isAr);
-    if (item.type === 'flow') return item.title; // flow exports as PDF only
-    if (item.type === 'slides') return formatDeckOutline(content as ClassroomActivity, isAr);
-    return formatQuizText(content as QuizOutput, item.title, { subject: item.subject, grade: item.grade }, isAr);
+    const meta = { subject: item.subject, grade: item.grade };
+    if (kind === 'lesson') return formatLessonPlanText(content as LessonPlanOutput, item.title, meta, isAr);
+    if (kind === 'activity') return formatActivityText(content as ActivityOutput, item.title, meta, isAr);
+    if (kind === 'worksheet') return formatWorksheetText(content as WorksheetOutput, item.title, meta, isAr);
+    if (kind === 'flow') return item.title; // flow exports as PDF only
+    if (kind === 'slides') return formatDeckOutline(content as ClassroomActivity, isAr);
+    return formatQuizText(content as QuizOutput, item.title, meta, isAr);
   };
   const getHTML = () => {
     if (!content) return '<p></p>';
     const meta = { subject: item.subject, grade: item.grade };
-    if (item.type === 'lesson') return buildLessonPlanHTML(content as LessonPlanOutput, item.title, meta, isAr);
-    if (item.type === 'worksheet') return buildWorksheetHTML(content as WorksheetOutput, item.title, meta, isAr);
-    if (item.type === 'flow') return buildLessonFlowHTML(content as unknown as LessonFlowOutput, isAr);
-    if (item.type === 'slides') return buildDeckHTML(content as ClassroomActivity, isAr);
+    if (kind === 'lesson') return buildLessonPlanHTML(content as LessonPlanOutput, item.title, meta, isAr);
+    if (kind === 'activity') return buildActivityHTML(content as ActivityOutput, item.title, meta, isAr);
+    if (kind === 'worksheet') return buildWorksheetHTML(content as WorksheetOutput, item.title, meta, isAr);
+    if (kind === 'flow') return buildLessonFlowHTML(content as unknown as LessonFlowOutput, isAr);
+    if (kind === 'slides') return buildDeckHTML(content as ClassroomActivity, isAr);
     return buildQuizHTML(content as QuizOutput, item.title, meta, isAr);
   };
 
@@ -193,7 +211,7 @@ export default function WorkspaceViewScreen() {
         </Pressable>
         {/* A saved deck's whole point is being projected again — the workspace
             is where a teacher returns to it the morning of the lesson. */}
-        {item.type === 'slides' && content && (
+        {kind === 'slides' && content && (
           <Pressable
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -208,7 +226,7 @@ export default function WorkspaceViewScreen() {
             </Text>
           </Pressable>
         )}
-        {item.type === 'flow' && content && (
+        {kind === 'flow' && content && (
           <Pressable
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -240,13 +258,15 @@ export default function WorkspaceViewScreen() {
           <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }}>
             {t('noContentAvailable')}
           </Text>
-        ) : item.type === 'lesson' ? (
+        ) : kind === 'lesson' ? (
           <LessonView plan={content as LessonPlanOutput} colors={colors} isRTL={isRTL} t={t} accent={accent} />
-        ) : item.type === 'worksheet' ? (
+        ) : kind === 'activity' ? (
+          <ActivityView activity={content as ActivityOutput} colors={colors} isRTL={isRTL} t={t} accent={accent} isAr={isAr} />
+        ) : kind === 'worksheet' ? (
           <WorksheetView ws={content as WorksheetOutput} colors={colors} isRTL={isRTL} t={t} accent={accent} />
-        ) : item.type === 'flow' ? (
+        ) : kind === 'flow' ? (
           <FlowView flow={content as unknown as LessonFlowOutput} colors={colors} isRTL={isRTL} lang={lang} accent={accent} />
-        ) : item.type === 'slides' ? (
+        ) : kind === 'slides' ? (
           <SlidesDeckView deck={content as ClassroomActivity} colors={colors} isRTL={isRTL} isAr={isAr} accent={accent} />
         ) : (
           <QuizView quiz={content as QuizOutput} colors={colors} isRTL={isRTL} t={t} accent={accent} lang={lang} />
@@ -307,6 +327,124 @@ function LessonView({ plan, colors, isRTL, t, accent }: {
           </ContentSection>
         );
       })}
+    </>
+  );
+}
+
+// ─── Activity renderer ────────────────────────────────────────────────────────
+
+/**
+ * A class activity as the teacher saved it.
+ *
+ * Deliberately the same sections, order and accent as the Activity screen's
+ * own result view: a teacher who saved it there and opens it here should be
+ * looking at the same document, not a workspace-flavoured summary of it. The
+ * steps carry their own card because the numbering and the per-step minutes
+ * are how the activity is actually run.
+ */
+function ActivityView({ activity, colors, isRTL, t, accent, isAr }: {
+  activity: ActivityOutput; colors: any; isRTL: boolean; t: any; accent: string; isAr: boolean;
+}) {
+  return (
+    <>
+      <View
+        style={[
+          {
+            backgroundColor: accent + '10',
+            borderColor: accent + '30',
+            borderWidth: 1,
+            borderRadius: colors.radius,
+            padding: 14,
+            marginBottom: 16,
+          },
+        ]}
+      >
+        <Text style={[{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 11, marginBottom: 4, textAlign: isRTL ? 'right' : 'left' }]}>
+          {isAr ? 'الهدف' : 'Objective'}
+        </Text>
+        <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }]}>
+          {activity.objective}
+        </Text>
+        <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 12, marginTop: 10 }]}>
+          {[activity.groupSize, `${activity.totalDuration} ${t('min')}`, activity.activityType]
+            .filter(Boolean)
+            .map(label => (
+              <Text key={label} style={{ fontSize: 12, color: accent, fontFamily: 'Cairo_500Medium' }}>
+                {label}
+              </Text>
+            ))}
+        </View>
+      </View>
+
+      {activity.materials?.length > 0 && (
+        <ContentSection title={t('sectionMaterials')} icon="bag-outline" isRTL={isRTL} accent={accent} colors={colors}>
+          {activity.materials.map((m, i) => (
+            <View key={i} style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, marginBottom: 6, alignItems: 'flex-start' }]}>
+              <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: accent, marginTop: 7, flexShrink: 0 }} />
+              <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{m}</Text>
+            </View>
+          ))}
+        </ContentSection>
+      )}
+
+      {activity.steps?.length > 0 && (
+        <View style={{ marginBottom: 16 }}>
+          <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6, marginBottom: 8 }]}>
+            <Ionicons name="list-outline" size={15} color={accent} />
+            <Text style={[{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 14, textAlign: isRTL ? 'right' : 'left' }]}>
+              {t('sectionActivitySteps')}
+            </Text>
+          </View>
+          {activity.steps.map((step: ActivityStep, i: number) => (
+            <View
+              key={step.stepNumber ?? i}
+              style={[{ backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1, borderRadius: colors.radius, padding: 14, marginBottom: 8 }]}
+            >
+              <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 10, marginBottom: 8 }]}>
+                <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: accent, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Text style={{ color: '#fff', fontSize: 12, fontFamily: 'Cairo_700Bold' }}>{step.stepNumber ?? i + 1}</Text>
+                </View>
+                <Text style={[{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 13, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>
+                  {step.title}
+                </Text>
+                <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11 }]}>
+                  {step.durationMin} {t('activityMin')}
+                </Text>
+              </View>
+              <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 19, textAlign: isRTL ? 'right' : 'left' }]}>
+                {step.description}
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {activity.teacherTips?.length > 0 && (
+        <ContentSection title={t('sectionTeacherTips')} icon="bulb-outline" isRTL={isRTL} accent={accent} colors={colors}>
+          {activity.teacherTips.map((tip, i) => (
+            <View key={i} style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, marginBottom: 6, alignItems: 'flex-start' }]}>
+              <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: accent, marginTop: 7, flexShrink: 0 }} />
+              <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{tip}</Text>
+            </View>
+          ))}
+        </ContentSection>
+      )}
+
+      {!!activity.differentiation && (
+        <ContentSection title={t('sectionDifferentiation')} icon="layers-outline" isRTL={isRTL} accent={accent} colors={colors}>
+          <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }]}>
+            {activity.differentiation}
+          </Text>
+        </ContentSection>
+      )}
+
+      {!!activity.assessment && (
+        <ContentSection title={t('sectionAssessment')} icon="checkmark-done-outline" isRTL={isRTL} accent={accent} colors={colors}>
+          <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }]}>
+            {activity.assessment}
+          </Text>
+        </ContentSection>
+      )}
     </>
   );
 }

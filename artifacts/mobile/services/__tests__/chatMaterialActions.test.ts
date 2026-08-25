@@ -6,9 +6,9 @@
  *     artifacts/mobile/services/__tests__/chatMaterialActions.test.ts
  *
  * Covers:
- *  1. Every artifact kind maps to a workspace type the viewer can render —
- *     `app/workspace/view.tsx` falls through to the quiz renderer, so saving
- *     an activity as type 'activity' would open a crash.
+ *  1. Every artifact kind maps to the workspace type its own renderer expects,
+ *     an activity included — it is filed as 'activity' now that
+ *     `app/workspace/view.tsx` has a branch for one.
  *  2. What is stored is the generator output, so the viewer parses it back.
  *  3. Present is offered only where a deck actually exists.
  *  4. The decks chat builds are well-formed (intro first, consecutive numbers).
@@ -120,13 +120,13 @@ describe('materialTypeFor', () => {
     assert.equal(materialTypeFor('lesson-plan'), 'lesson');
     assert.equal(materialTypeFor('worksheet'), 'worksheet');
     assert.equal(materialTypeFor('quiz'), 'quiz');
+    assert.equal(materialTypeFor('activity'), 'activity');
   });
 
-  it('never saves an activity as a type the workspace viewer would parse as a quiz', () => {
-    // `app/workspace/view.tsx` has no 'activity' branch and falls through to
-    // QuizView, which maps over `questions`. An ActivityOutput has none.
+  it('never files an activity as a type the workspace viewer parses as a quiz', () => {
+    // The viewer's final `else` is QuizView, which maps over `questions`. An
+    // ActivityOutput has none, so a mislabelled activity crashes on open.
     assert.notEqual(materialTypeFor('activity'), 'quiz');
-    assert.equal(materialTypeFor('activity'), 'lesson');
   });
 });
 
