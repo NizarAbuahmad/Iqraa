@@ -227,6 +227,54 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The «عن» fix only fixed what was typed by hand, 2026-08-25
+
+Reported with a screenshot of موادي: a material still titled «خطة درس: عن:
+تركيب الاقترانات». The fix earlier today was real but shallow, and the way it
+was verified is the lesson.
+
+**The chips send punctuation the strip did not expect.** Every prompt builder —
+`promptForTeachingAction` in `iqra.tsx`, `buildLessonSuggestions` in
+`lessonCopilot.ts` — writes `«…عن: ${topic}»`, colon included. The rule matched
+a bare `عن` token, so `عن:` sailed through. Tapping a chip is the most common
+way a material is generated; typing the ask is the rare one. **The UI check
+typed it, so it passed while the common path stayed broken.**
+
+**Probing the real strings found four more leaks, not one.** Only 2 of the 10
+prompts the product actually sends resolved to a clean topic:
+
+| what the chip sends | what it resolved to |
+| --- | --- |
+| `أنشئ ورقة عمل صفية عن: X` | `صفية X` |
+| `أنشئ واجباً منزلياً عن: X` | `اً منزلياً X` |
+| `جهّز اختباراً قصيراً عن: X` | `اً قصيراً X` |
+| `اقترح نشاطاً صفياً عن: X` | `اقترح اً صفياً X` |
+| `Prepare a full lesson plan about: X` | `full X` |
+
+Three separate causes: Arabic nouns arrive **inflected** (`واجباً`) while the
+list held bare stems, so the accusative tail was left behind as its own word;
+**qualifiers** describing the artifact (`صفية`, `full`, `in-class`) were not in
+the list at all; and `اقترح` / `suggest` were missing from the verbs.
+
+`topicFromQuery` is now a named export with the parts as lists — verbs, nouns,
+qualifiers, lead-ins — each Arabic noun allowing the accusative tail, and the
+removal repeating until it stops finding anything (one pass leaves `صفية`,
+which only becomes a leading word once `ورقة عمل` in front of it is gone).
+
+**The blacklist's own risk is eating a topic**, so the tests assert the ten real
+curriculum topics survive bare. One casualty found and reverted: bare `class`
+stripped "Class Management" to "Management", so it is deliberately not a
+qualifier — `صفية` / `in-class` / `classroom` cover every phrasing the chips
+send.
+
+### Verified by tapping the chip, not by typing
+
+The same check as before would have passed again. This one taps «حضّر خطة
+الدرس» in the running app: the reply reads «المادة جاهزة لدرس «تركيب
+الاقترانات»», the saved material is titled «خطة درس: تركيب الاقترانات», and a
+DOM sweep for «عن:» finds it in exactly one place — the user's own bubble
+echoing what the chip sent, which is correct.
+
 ## The tools carry the lesson's subject too, 2026-08-25
 
 The Start Class fix earlier today closed one door and left its twin open. Chat
