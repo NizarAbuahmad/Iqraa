@@ -362,20 +362,37 @@ export function extractGraphCommands(text: string, max = 3): string[] {
 }
 
 /**
- * Words that make a slide's text point AT a picture — «الشكل الظاهر»,
- * «الرسم البياني أعلاه», "the graph shown".
+ * The two ways a stem can claim a picture is already on the slide.
  *
- * The deixis is the whole test, and it is why this is two halves rather than
- * a list of nouns. «ارسم الرسم البياني للاقتران» is an instruction to draw
- * one; «في الرسم البياني الظاهر» is a claim that one is already on the
- * screen. Only the second can be wrong, and only the second is what this
- * looks for — matching the noun alone would flag every graphing exercise in
- * the corpus.
+ * What both have in common is an assertion that can be *false*. «ارسم الرسم
+ * البياني للاقتران» is an instruction to draw one, and cannot be wrong;
+ * «في الرسم البياني الظاهر» and «يمثل الرسم البياني خطين» both assert one is
+ * on screen, and are wrong the moment it isn't. Matching the noun alone would
+ * flag every graphing exercise in the corpus, so the noun is never enough.
  */
+const VISUAL_NOUN_AR = '(?:الرسم\\s*البياني|التمثيل\\s*البياني|المنحنى|الرسمة|الشكل|المخطط|الرسم)';
+
+/** Pointing at it: «الشكل الظاهر», «الرسم البياني أعلاه». */
 const SHOWN_VISUAL_AR = new RegExp(
-  '(?:الرسم\\s*البياني|التمثيل\\s*البياني|المنحنى|الرسمة|الشكل|المخطط|الرسم)'
+  `${VISUAL_NOUN_AR}`
   + '\\s*(?:ال(?:ظاهر|مجاور|موضّح|موضح|مرفق|معروض|آتي|تالي|سابق)[\\u0600-\\u06FF]*'
   + '|أعلاه|أدناه|أمامكم|أمامك)',
+  'u',
+);
+
+/**
+ * Saying what it shows: «يمثل الرسم البياني خطين…», «يوضح الشكل…».
+ *
+ * Arabic is verb-first, so this assertion carries no demonstrative at all —
+ * which is exactly how two live check slides slipped past the pointing-word
+ * test above and projected a question about a graph that was not drawn. The
+ * verb is doing the same work «الظاهر» does: it states, as fact, that the
+ * class is looking at a figure.
+ */
+const DEPICTS_VISUAL_AR = new RegExp(
+  '(?:يمثّل|يمثل|تمثّل|تمثل|يوضّح|يوضح|توضّح|توضح|يبيّن|يبين|تبيّن|تبين'
+  + '|يُظهر|يظهر|تُظهر|تظهر|يعرض|تعرض|يصف|تصف)'
+  + `\\s+(?:لنا\\s+)?${VISUAL_NOUN_AR}`,
   'u',
 );
 
@@ -383,7 +400,13 @@ const VISUAL_NOUN_EN = '(?:graph|figure|diagram|chart|plot|curve|sketch|image|pi
 const SHOWN_VISUAL_EN = new RegExp(
   `\\b${VISUAL_NOUN_EN}\\s+(?:shown|above|below|opposite|attached|displayed|here`
   + `|on\\s+(?:the\\s+)?(?:screen|slide|board))\\b`
-  + `|\\b(?:above|below|shown|attached|adjacent|following)\\s+${VISUAL_NOUN_EN}\\b`,
+  + `|\\b(?:above|below|shown|attached|adjacent|following)\\s+${VISUAL_NOUN_EN}\\b`
+  // The English half of the same verb-led claim: "the graph shows two lines".
+  // `the` is required, and is what separates the claim from a definition:
+  // «A scatter plot shows ordered pairs» explains what a scatter plot IS —
+  // the one sentence in the whole curriculum corpus this would misread.
+  // Arabic needs no such guard; «الرسم البياني» is definite by construction.
+  + `|\\bthe\\s+${VISUAL_NOUN_EN}\\s+(?:shows|represents|depicts|illustrates|displays)\\b`,
   'i',
 );
 
@@ -399,5 +422,5 @@ const SHOWN_VISUAL_EN = new RegExp(
 export function referencesShownVisual(text: string): boolean {
   const s = (text ?? '').trim();
   if (!s) return false;
-  return SHOWN_VISUAL_AR.test(s) || SHOWN_VISUAL_EN.test(s);
+  return SHOWN_VISUAL_AR.test(s) || DEPICTS_VISUAL_AR.test(s) || SHOWN_VISUAL_EN.test(s);
 }

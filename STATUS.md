@@ -480,6 +480,40 @@ defines all four keys in both languages, and `pnpm run typecheck` is clean on
 `main`. Left in place rather than deleted — this file's habit of recording a
 problem and never its fix is the thing worth not repeating.
 
+## The graph guard missed «يمثل الرسم البياني», 2026-08-25
+
+The fix below shipped, and the very next deck projected two more checks about
+a graph that was not drawn:
+
+> يمثل الرسم البياني خطين مستقيمين يتقاطعان عند النقطة التي تحقق النظام…
+> يوضح الرسم البياني خطين مستقيمين متوازيين لا يتقاطعان أبداً…
+
+`referencesShownVisual` required a noun **and a pointing word** — «الشكل
+**الظاهر**», «الرسم البياني **أعلاه**». Neither of these stems has one.
+**Arabic is verb-first**, so the claim lives in the verb instead: «**يمثل**
+الرسم البياني…» states, as fact, that the class is looking at a figure, and
+is wrong the moment it isn't — exactly what «الظاهر» does, with no
+demonstrative anywhere in the sentence.
+
+So the test is now two shapes, not one: pointing at a figure, or saying what
+it depicts (يمثل / يوضح / يبيّن / يُظهر / يعرض / يصف, plus their تـ forms).
+Neither of the two live stems names a plottable function, so both are dropped
+rather than drawn — the same order the section below describes.
+
+**Where the line sits in English.** The verb form requires `the`: «**the**
+graph shows two lines» is a claim about this slide; «**A** scatter plot shows
+ordered pairs» is a definition of what a scatter plot is. That sentence — in
+`knowledgeBase.ts`, the stats lesson — was the *only* false positive in a
+sweep of all 977 curriculum strings, and `the` is what tells the two apart.
+Arabic needs no such guard: «الرسم البياني» is definite by construction.
+
+**Method worth repeating:** the predicate was run over the real corpus rather
+than reasoned about — 977 objectives, concepts, examples and rules — which is
+how the one bad match was found. Before: 1 flagged. After: 0.
+
+Verified: `pnpm run typecheck` clean; `artifacts/mobile` 772 tests / 0 fail
+(7 new).
+
 ## A check that says «في الرسم البياني الظاهر» now has one, 2026-08-24
 
 Reported from a live deck: slide 5 of a Slides Maker lesson read «في الرسم

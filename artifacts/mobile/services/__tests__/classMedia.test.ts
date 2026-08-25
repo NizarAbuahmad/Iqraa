@@ -442,6 +442,33 @@ describe('referencesShownVisual', () => {
     assert.ok(referencesShownVisual('The above diagram shows two lines.'));
   });
 
+  it('catches the verb-led claim, which carries no pointing word at all', () => {
+    // Both of these projected live, past the pointing-word test, as questions
+    // about a graph the slide never drew. Arabic is verb-first, so the
+    // assertion sits in «يمثل» / «يوضح» rather than in a demonstrative.
+    assert.ok(referencesShownVisual(
+      'يمثل الرسم البياني خطين مستقيمين يتقاطعان عند النقطة التي تحقق النظام. ما حل النظام بيانياً؟',
+    ));
+    assert.ok(referencesShownVisual(
+      'يوضح الرسم البياني خطين مستقيمين متوازيين لا يتقاطعان أبداً. ما عدد حلول هذا النظام؟',
+    ));
+    assert.ok(referencesShownVisual('يبيّن الشكل مثلثاً قائم الزاوية.'));
+    assert.ok(referencesShownVisual('The graph shows two parallel lines.'));
+  });
+
+  it('reads a definition as a definition, not as a claim about this slide', () => {
+    // «A scatter plot shows ordered pairs» explains what a scatter plot IS.
+    // It was the single false positive in a sweep of the whole curriculum
+    // corpus, and `the` is what tells the two apart in English.
+    assert.equal(
+      referencesShownVisual('A scatter plot shows ordered pairs (x,y) to reveal a relationship.'),
+      false,
+    );
+    // Arabic verb-led forms still need a GRAPH noun after the verb.
+    assert.equal(referencesShownVisual('يمثل الميل تغير y بالنسبة إلى x.'), false);
+    assert.equal(referencesShownVisual('الخط الأول يمثل معادلة، والخط الثاني يمثل معادلة أخرى.'), false);
+  });
+
   it('is not fooled by an instruction to DRAW one', () => {
     // The deixis is the whole test — matching the noun alone would flag every
     // graphing exercise in the corpus and delete it from the deck.
