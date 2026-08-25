@@ -24,7 +24,7 @@ import {
 import { useLanguage } from '@/context/LanguageContext';
 import { ActivitySlide, ClassroomActivity } from '@/services/ai/AIService';
 import { getPendingClassroomActivity, clearClassroomActivity } from '@/services/classroomStore';
-import { timerColor } from '@/services/presentationUtils';
+import { timerColor, timerSecondsForSlide } from '@/services/presentationUtils';
 import Svg, { Line, Polyline, Rect } from 'react-native-svg';
 import { plotGeometry, visualForSlide } from '@/services/deckVisuals';
 // Shared with both exports so the projected slide and the exported one cannot
@@ -638,10 +638,13 @@ export default function PresentationScreen() {
     setHintVisible(false);
     setAnswerVisible(false);
     setTeacherPanelOpen(false);
-    if (slide.durationSeconds > 0) {
+    // Not `slide.durationSeconds` — an intro, a reveal or a summary is read to
+    // the class, so a duration on one is model noise rather than a task to time.
+    const seconds = timerSecondsForSlide(slide);
+    if (seconds > 0) {
       clearIntervalIfRunning();
-      setTimerSec(slide.durationSeconds);
-      setTimerTotal(slide.durationSeconds);
+      setTimerSec(seconds);
+      setTimerTotal(seconds);
       setTimerRunning(true);
     } else {
       clearIntervalIfRunning();
@@ -779,11 +782,11 @@ export default function PresentationScreen() {
 
   const restartTimer = () => {
     if (!activity) return;
-    const s = activity.slides[slideIndex];
-    if (s.durationSeconds > 0) {
+    const seconds = timerSecondsForSlide(activity.slides[slideIndex]);
+    if (seconds > 0) {
       clearIntervalIfRunning();
-      setTimerSec(s.durationSeconds);
-      setTimerTotal(s.durationSeconds);
+      setTimerSec(seconds);
+      setTimerTotal(seconds);
       setTimerRunning(true);
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -1141,7 +1144,9 @@ const styles = StyleSheet.create({
   blob: { position: 'absolute', borderRadius: 999, backgroundColor: BLOB },
   blobTop: { width: 260, height: 260, top: -96, left: -84 },
   blobBottom: { width: 330, height: 330, bottom: -132, right: -116 },
-  slideScroll: { paddingHorizontal: 24, paddingBottom: 20 },
+  // flexGrow so the content box is at least the height of the stage: the cover
+  // below centres itself inside it instead of hugging the top edge.
+  slideScroll: { paddingHorizontal: 24, paddingBottom: 20, flexGrow: 1 },
   revealSection: { marginTop: 12, gap: 8 },
   revealBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 10, borderWidth: 1 },
   revealBtnText: { fontSize: 14 },
@@ -1161,7 +1166,10 @@ const styles = StyleSheet.create({
 
 const slideStyles = StyleSheet.create({
   container: { paddingTop: 8 },
-  cover: { paddingTop: 48, paddingBottom: 32 },
+  // Centred vertically. Left top-aligned, a three-line mission sat under the
+  // header with two-thirds of the projector empty below it, which reads as a
+  // slide that failed to load rather than one that is simply short.
+  cover: { flexGrow: 1, justifyContent: 'center', paddingTop: 48, paddingBottom: 32 },
   coverTitle: { fontSize: 40, lineHeight: 62, color: ACCENT },
   coverSub: { fontSize: 20, lineHeight: 34, color: TEXT_MUTED, marginBottom: 6 },
   rule: { width: 64, height: 5, borderRadius: 3, backgroundColor: PINK, marginTop: 14, marginBottom: 24 },

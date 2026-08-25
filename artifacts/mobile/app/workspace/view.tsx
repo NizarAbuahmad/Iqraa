@@ -8,7 +8,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { SavedMaterial, getItem, toggleFavorite } from '@/services/workspace';
+import { SavedMaterial, getItem } from '@/services/workspace';
+import { useFavorite } from '@/hooks/useFavorite';
 import {
   ClassroomActivity, LessonFlowOutput, LessonPlanOutput, QuizOutput, WorksheetOutput,
 } from '@/services/ai/AIService';
@@ -45,8 +46,9 @@ export default function WorkspaceViewScreen() {
   const [toastVisible, setToastVisible] = useState(false);
   const [loadingPDF, setLoadingPDF] = useState(false);
   const [loadingWord, setLoadingWord] = useState(false);
-  const [favorited, setFavorited] = useState(false);
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
+  const { favorited, setFavorited, toggle: handleToggleFavorite } =
+    useFavorite(item?.id, key => showToast(t(key)));
 
   useEffect(() => {
     if (id) {
@@ -57,15 +59,6 @@ export default function WorkspaceViewScreen() {
       });
     }
   }, [id]);
-
-  const handleToggleFavorite = async () => {
-    if (!item) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const next = !favorited;
-    setFavorited(next);
-    await toggleFavorite(item.id);
-    showToast(next ? t('addedToFavorites' as any) : t('removedFromFavorites' as any));
-  };
 
   if (loading) {
     return (
@@ -188,7 +181,7 @@ export default function WorkspaceViewScreen() {
             color={favorited ? '#F59E0B' : colors.mutedForeground}
           />
           <Text style={[{ color: favorited ? '#F59E0B' : colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 13 }]}>
-            {lang === 'ar' ? 'مفضلة' : 'Favourite'}
+            {favorited ? t('inFavorites') : t('favoriteShort')}
           </Text>
         </Pressable>
         <Pressable

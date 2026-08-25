@@ -114,6 +114,16 @@ export const attempts = pgTable(
     index("attempts_evaluation_idx").on(t.evaluationId),
     index("attempts_student_idx").on(t.studentId),
     index("attempts_status_idx").on(t.status),
+    /**
+     * One sitting per student per exam, enforced here rather than by the
+     * check-then-insert in the route.
+     *
+     * Thirty students press start within the same few seconds, which is the
+     * textbook shape for that race: two devices claiming the same name both
+     * pass the "is it taken?" query before either has inserted, and one child
+     * ends up with two papers. Only the database can decide this, so it does.
+     */
+    unique("attempts_evaluation_student_unique").on(t.evaluationId, t.studentId),
   ],
 );
 

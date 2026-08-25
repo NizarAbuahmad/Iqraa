@@ -34,7 +34,8 @@ import {
   resolveLessonPrepContext,
   type TeachingStyle,
 } from '@/services/lessonPrep';
-import { saveItem, toggleFavorite, updateItem } from '@/services/workspace';
+import { saveItem, updateItem } from '@/services/workspace';
+import { useFavorite } from '@/hooks/useFavorite';
 import {
   buildLessonPlanHTML,
   buildLessonPlanSlidesHTML,
@@ -98,7 +99,6 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
 
   const [savedId, setSavedId] = useState<string | undefined>();
   const [saveLabel, setSaveLabel] = useState<'save' | 'saved' | 'updated'>('save');
-  const [favorited, setFavorited] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [loadingPDF, setLoadingPDF] = useState(false);
   const [loadingWord, setLoadingWord] = useState(false);
@@ -107,6 +107,8 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
   const [toastVisible, setToastVisible] = useState(false);
 
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
+  const { favorited, toggle: handleToggleFavorite } =
+    useFavorite(savedId, key => showToast(t(key)), Haptics.ImpactFeedbackStyle.Light);
   // Holds the new material's id after a first save — that is what opens the
   // "which class?" sheet. Re-saving an edit does not re-ask.
   const [classPromptFor, setClassPromptFor] = useState<string | null>(null);
@@ -193,21 +195,6 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
       setClassPromptFor(saved.id);
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-  };
-
-  const handleToggleFavorite = async () => {
-    if (!savedId) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const next = !favorited;
-    setFavorited(next);
-    try {
-      await toggleFavorite(savedId);
-    } catch {
-      setFavorited(!next); // revert on failure
-    }
-    showToast(next
-      ? (lang === 'ar' ? 'أضفتها إلى المفضلة ⭐' : 'Added to Favourites ⭐')
-      : (lang === 'ar' ? 'أزلتها من المفضلة' : 'Removed from Favourites'));
   };
 
   const handleShareText = async () => {
@@ -460,9 +447,7 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
             {!!savedId && (
               <ActionButton
                 icon={favorited ? 'star' : 'star-outline'}
-                label={favorited
-                  ? (lang === 'ar' ? 'في المفضلة' : 'Favourited')
-                  : (lang === 'ar' ? 'أضف إلى المفضلة' : 'Add to Favourites')}
+                label={favorited ? t('inFavorites') : t('addToFavorites')}
                 onPress={handleToggleFavorite}
                 accent={favorited ? '#F59E0B' : colors.mutedForeground}
                 colors={colors}

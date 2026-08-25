@@ -6,7 +6,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { isEntryRoute } from '../routeGating.ts';
+import { isEntryRoute, isPublicRoute } from '../routeGating.ts';
 
 describe('isEntryRoute', () => {
   it('treats the auth and onboarding routes as entries', () => {
@@ -47,5 +47,34 @@ describe('isEntryRoute', () => {
     // '/registered-classes' is not '/register'.
     assert.equal(isEntryRoute('/registered-classes'), false);
     assert.equal(isEntryRoute('/logins'), false);
+  });
+});
+
+describe('isPublicRoute', () => {
+  it('lets a student reach an exam link without an account', () => {
+    for (const p of ['/take', '/take/9VBMQD', '/take/9VBMQD/answer']) {
+      assert.equal(isPublicRoute(p), true, p);
+    }
+  });
+
+  it('keeps every teacher route private', () => {
+    for (const p of ['/', '/home', '/classes', '/evaluations', '/admin/dashboard', '/workspace']) {
+      assert.equal(isPublicRoute(p), false, p);
+    }
+  });
+
+  it('does not open a route that merely starts with the same letters', () => {
+    // '/takeover' is not '/take'. A prefix check without the boundary would
+    // make any future route beginning "take" public.
+    assert.equal(isPublicRoute('/takeover'), false);
+    assert.equal(isPublicRoute('/taken'), false);
+  });
+
+  it('treats no path as private, unlike isEntryRoute', () => {
+    // isEntryRoute answers true here because there is no destination to keep.
+    // This one must fail closed: unknown is not public.
+    assert.equal(isPublicRoute(null), false);
+    assert.equal(isPublicRoute(undefined), false);
+    assert.equal(isPublicRoute(''), false);
   });
 });

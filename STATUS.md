@@ -46,9 +46,10 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     because the count was repeatedly described as "all in
     `lib/integrations-openai-ai-server`", which is wrong by a factor of three
     and would send someone looking in the wrong package.
-- Mobile test suite: 725 tests, 0 failures, 10 skipped (re-counted 2026-08-23
-  on an installed workspace; 723 on 2026-08-22, the 480 here was stale before
-  that, and the 376 before it).
+- Mobile test suite: 855 tests, 0 failures, 10 skipped (re-counted 2026-08-25
+  on an installed workspace, with `main` merged in; 725 on 2026-08-23, 723 on
+  2026-08-22, the 480 here was stale before that, and the 376 before it).
+  The number moves with almost every merge — re-count rather than cite it.
   The 10 skips are the chemistry KB-search cases, skipped by their own suite,
   not by the runner.
   The `test` script globs `services/__tests__/**/*.test.ts` — it used to be a
@@ -289,13 +290,69 @@ And the bundle guard grepped for the string `data/extracted`, which flagged
 `sources.ts` for *documenting* where the text lives. Density, and an import
 regex, respectively.
 
-51 curriculum / 815 mobile / 193 api-server tests pass; typecheck clean;
-`verify-curriculum` 0 errors.
+51 curriculum / 855 mobile / 223 api-server tests pass; typecheck clean;
+`verify-curriculum` 0 errors. (Mobile was 815 and api-server 193 on the branch
+alone; the rest arrived with `main` when this was merged up.)
 
 **What this does not yet do:** nothing reads the text. No retrieval, no
 grounding, no change to any prompt — and `DEMO_MODE` is still `true` with
 `AI_LIVE_MODE` unset, so no prompt reaches a model at all. This is the corpus,
 not the feature.
+## Chat materials stopped dead-ending at copy, 2026-08-25
+
+**A material generated in chat now offers what the tool screens offer.** Chat
+calls the same generators as `/ai-tools/*` and produces the same objects, but
+the only thing a teacher could do with the result was copy or export the text —
+so the fastest route to a lesson plan was also the one that led nowhere. The row
+under a material bubble now reads **حفظ · أضف لصف · اعرض · نسخ · تصدير**.
+
+- **حفظ** writes the structured object (not the prose) to موادي, so the
+  workspace viewer parses it back, and so a plan edited in the bubble is saved
+  as edited. A first save opens `ClassPickerSheet` on the returned id — the same
+  "which class is this for?" moment the seven generator screens have.
+- **أضف لصف** saves first when the material is not saved yet: the class link is
+  a field on a saved material, so there would otherwise be nothing to attach.
+  The id lives on the message, so a second tap updates rather than files a
+  duplicate.
+- **اعرض** builds the deck locally — `buildLessonDeck` for a plan,
+  `buildDeckFromWorksheet` / `buildDeckFromQuiz` for the other two — and hands
+  it to the presentation screen. Unlike «ابدأ الحصة» this needs no round trip
+  and projects what is on screen instead of generating something new.
+  **Activities get no Present button**: `ActivityOutput` is a teacher run-sheet,
+  not a deck, and there is no builder for one. A button that silently did
+  nothing would be worse than its absence.
+
+**Nothing chat projects claims a verified answer key.** Chat does not run the
+verifier, so `deckForArtifact` passes neither `verified` nor `outcomes` and the
+slides badge unverified — the same rule this file records for `verified`
+everywhere else. A test asserts it.
+
+**An activity is saved as type `lesson`, not `activity`.** `workspace/view.tsx`
+has no `activity` branch and falls through to the quiz renderer, which maps over
+`questions` an `ActivityOutput` does not have — saving it under its own name
+would file a material that crashes the viewer that opens it. This matches what
+`/ai-tools/activity` already does. The dead `'activity'` member of `MaterialType`
+is still dead; giving the viewer a real renderer is the fix, and is not done
+here.
+
+The decision logic is `services/chatMaterialActions.ts` (pure, no React), tested
+in `services/__tests__/chatMaterialActions.test.ts`; `app/(tabs)/iqra.tsx` owns
+the buttons, toasts and navigation.
+
+### Verified by driving the real UI
+
+Expo web on :8081 with `/auth/me` stubbed and no API server, so every write took
+the local fallback path. Asked «حضّر خطة درس عن تركيب الاقترانات», picked
+الرياضيات, and got the plan with all five actions on one RTL row. حفظ → one row
+in `@iqra_workspace_v1` (`type: 'lesson'`, content parsing back to the plan) and
+the label flipped to «محفوظ ✓». أضف لصف → still one row, no duplicate; the class
+sheet self-closed, which is what it does with no roster (server-only). اعرض →
+`/ai-tools/classroom/presentation` rendering a 7-slide deck.
+
+**Left alone:** the deck and the saved material are titled «عن تركيب
+الاقترانات», preposition included. That comes from `resolveArtifactTopic`
+upstream and already showed in the chat prose before this change — it is more
+visible now that it heads a projected slide.
 
 ## The refusal now points somewhere, 2026-08-25
 
@@ -466,6 +523,110 @@ reference-only, and there is a test holding that.
 44 curriculum / 783 mobile / 175 api-server tests pass, typecheck clean,
 `verify-curriculum` reports 0 errors. (Mobile was 761 on the branch alone; the
 extra 22 came in with `main` when this was merged up, not from this change.)
+## Students answer on their own phones, 2026-08-25
+
+Marking worked; getting the answers in did not. A teacher typed every mark by
+hand, and the answer sheet has no "next student", so a class of thirty meant
+thirty round trips through a picker. At the scale of a fifty-teacher pilot that
+is the thing that decides whether any of the rest gets used.
+
+One link goes on the board. Each student opens it, taps their own name, answers
+on their phone, and hands in. `attempts.source` was designed for exactly this in
+Phase 4, so **nothing in grading, scoring, levels or recommendations changed** —
+the same submit path runs, and a sitting that arrived by link is indistinguishable
+downstream from one the teacher typed.
+
+**The only unauthenticated write surface in the API.** Everything about
+`routes/studentAttempt.ts` follows from that:
+
+- **The answer key never leaves.** `sanitizeQuestionForStudent` builds the
+  student's copy from an **allowlist** of body fields per question type, rather
+  than copying the body and deleting what is dangerous. A question type that
+  gains a field later inherits the safe default instead of silently leaking.
+  Options are rebuilt down to `{id, text}`, because `isCorrect` rides inside
+  them. Asserted on the **serialised** payload at any depth, not on object
+  properties — checking `payload.expectedAnswer === undefined` passes happily
+  while the key sits inside an option.
+- **Mounted without auth and path-scoped**, with `mountOrder.test.ts` extended
+  both ways: the link answers without a token, and nothing else became public.
+  That test boots against an unreachable database on purpose, so the assertion
+  is "not 401" — a 500 there is *proof the request reached the handler*, and a
+  401 would mean an earlier guard swallowed it.
+- **A wrong code answers exactly as a draft or a closed exam does.** A public
+  endpoint should not confirm which codes exist.
+
+**Identity is a shared link and a tapped name, chosen over per-student links.**
+Thirty individual WhatsApp messages per exam is the thing that gets abandoned in
+week one. The plan doc rejected this shape because "a level attached to the
+wrong name is worse than no level", and that objection is not dissolved by
+convenience — it is contained, four ways: an explicit confirm step before the
+first question; a claimed name cannot be claimed again; the teacher sees who
+started and when; and the teacher can **move a sitting to the right student**
+afterwards, which is the only one of the four that actually repairs a mistake.
+`DELETE /attempts/:id` releases a name for the phone that died.
+
+Accepted and stated plainly: anyone holding the link sees the class's first
+names while the exam is open.
+
+**The race a classroom actually produces.** Thirty devices press start within
+seconds, so a check-then-insert lets two claims on one name both pass before
+either writes. Found by re-reading the claim path rather than by a failure:
+there was no unique index on `(evaluation_id, student_id)`. There is now, and
+the route catches `23505` and answers `name_taken`. **Verified with 30
+simultaneous claims on one name: 1 created, 29 refused, 0 unexplained errors.**
+
+**A share code, not a UUID.** Six characters from an alphabet with no `I`, `L`,
+`O`, `0` or `1`, because a teacher writes it on a whiteboard and a student reads
+it from the back of the room. Issued at publish and **kept across re-publishes**
+— a link already on the board must not stop working because the exam was edited.
+Input is normalised for the lower case, spaces and dashes students actually
+type; ambiguous characters are dropped rather than guessed at, since mapping
+`O` to `0` would be inventing an intent.
+
+**Verified end to end** against a running API and Postgres: the link opens with
+no token; the roster marks taken names; a claim issues a 64-character token
+stored only as a hash; a second claim on the same name is refused; a student from
+another class cannot be claimed through the link; autosave survives a resume;
+a forged token is refused; editing after handing in is refused; and the student
+is told only that it was received — no score, because releasing a result is the
+teacher's decision and correctness would leak the key to everyone still sitting.
+
+**Objective questions really do mark themselves.** A student tapped a
+multiple-choice and a true/false answer through the link; the teacher opened it
+and got `12.00/12.00`, four questions auto-marked, four written ones left for
+them, result honestly provisional.
+
+### The finding that changes what comes next
+
+**No teacher can currently create a question that self-grades.** The mock
+generator refuses multiple choice, true/false, matching and fill-blank by
+design — its own note says they "need distractors or factual statements that
+cannot be derived from the curriculum text alone" — and the question editor can
+change a question's body but **not its type**. Those four types are exactly the
+ones Tier 1 grades.
+
+So shipped alone, this link collects typed answers that the teacher still marks
+entirely by hand. It removes transcription, not marking. The two
+self-grading questions proved above had to be inserted directly into the
+database, because no route can make one.
+
+That moves **real question generation from "next" to "the thing that makes this
+pay off"**, and it is why the auto-grading path was proven now rather than
+assumed later.
+
+### Migrations
+
+Applied locally; production needs both:
+
+```sql
+ALTER TABLE evaluations ADD COLUMN share_code text UNIQUE;
+CREATE UNIQUE INDEX attempts_evaluation_student_unique ON attempts (evaluation_id, student_id);
+```
+
+The index will fail if any student already has two sittings for one exam. Check
+before running it, and resolve the duplicates rather than dropping the index —
+it is the only thing preventing the classroom race.
+
 ## The seed deploys itself now, 2026-08-25
 
 Production went live with `level_scales` empty. Nothing had ever run
@@ -778,6 +939,49 @@ landed. Nothing on this branch touches those files.
 defines all four keys in both languages, and `pnpm run typecheck` is clean on
 `main`. Left in place rather than deleted — this file's habit of recording a
 problem and never its fix is the thing worth not repeating.
+
+## Figures are joined to curriculum lessons by a checked-in map, 2026-08-25
+
+`figuresForLesson(kbLessonId)` in `services/bookFigures.ts` answers the
+question the app actually asks. 18 of the 19 book lessons that carry figures
+are joined to a `KB_LESSONS` id.
+
+**The join is a file, not a runtime match, because the two datasets disagree
+about lesson boundaries.** The book splits composition, inverse and radical
+functions into separate lessons where the curriculum merges them into one;
+the book opens unit 1 with «حل معادلات خاصة», which the curriculum does not
+carry at all, so every later unit-1 lesson sits one place lower than the
+number the book prints. Title overlap scored **0.67** between «Inverse
+Function» and the merged lesson — convincing enough to ship, wrong enough to
+file a figure under a lesson about something else.
+
+**Half the misses were an alphabet problem.** Many curriculum lessons carry an
+Arabic title only, so English-to-English matching could not see them at all:
+«Polynomial Functions» ↔ «اقترانات كثيرات الحدود», «Adding and Subtracting
+Vectors» ↔ «جمع المتجهات وطرحها», «Inverse Function» ↔ «الاقتران العكسي» —
+that last one an exact match to a *different* lesson than the 0.67 English
+candidate. Automatic matching proposed 11; reading the Arabic settled 7 more.
+
+**Two extraction bugs found on the way:**
+
+- A lesson title can run to a second line («Trigonometric Ratios for Angles» /
+  «between 0º and 360º»); keeping only the last span kept only the tail, which
+  then matched nothing.
+- `u{n}_l{m}` in the curriculum matches the number the book PRINTS in every
+  unit except unit 1. Worth knowing before anyone tries to derive the join
+  arithmetically.
+
+The one unmatched lesson stays unmatched: its figures are extracted, indexed
+and simply never asked for.
+
+**Not on a slide yet.** `figurePath()` returns a repo-relative path rather
+than an imported asset, because how these reach a running app — bundled by
+Metro or served over HTTP — is unsettled, and baking one answer in would make
+the other expensive.
+
+Verified: `pnpm run typecheck` clean; `artifacts/mobile` 823 tests / 0 fail
+(8 new, asserted against the real extracted data rather than fixtures — a
+fixture would only agree with itself).
 
 ## Each figure knows its unit and lesson, 2026-08-25
 
@@ -1144,7 +1348,10 @@ so the id is captured purely to ask the question.
 
 **`updateItem` returns whether the change persisted, and callers check it.** It
 returned `void` and swallowed every failure, which was harmless while the only
-callers were favourite toggles that re-read the list afterwards. Attaching to a
+callers were favourite toggles that re-read the list afterwards. (**That premise
+was wrong** — see the 2026-08-25 entry at the end of this file. Only two of the
+six favourite callers re-read anything; the four generator screens held their
+own optimistic star and never asked.) Attaching to a
 class then started showing «حُفظت في العاشر أ» from a toast that fired no matter
 what. Caught by the browser check below, which reported success against a
 database where the material stayed unattached — the same shape as the `verified`
@@ -4836,3 +5043,126 @@ light tint that was white-on-cream.
 
 **Not verified:** the .pptx was not opened in PowerPoint. The colour inputs are
 shared now and the file builds, but nobody has looked at a rendered slide.
+
+## The escape deck never said what the codes were for, 2026-08-25
+
+Reported with two screenshots of the same deck on the deployed site. Both
+reveal slides were headed «تم فتح الكود!» — the placeholder title from the
+prompt, copied through verbatim — and slide 7's code rendered as a barely
+visible speck. That speck was `٠`: Arabic-Indic zero is a dot, and at 48px
+green on a light board it is nothing. Nobody watching could tell what the
+number was, or what they were supposed to do with it.
+
+The second half of that is the part worth writing down. **The unlock code has
+no mechanism behind it.** There is no input, no validation, no gate — `grep
+unlockCode` finds it in the prompts, the mock decks, and one render block in
+`presentation.tsx`, and nowhere else. The lock is fiction; the code is
+something students copy onto paper and read back at the end. That is a fine
+design, but a deck that never explains it leaves a class staring at a digit
+with no idea it is theirs to keep. Both language decks now open with a
+"كيف نلعب؟" / "How to Play" slide that says so outright, including the line
+that there is nothing to type the digits into.
+
+The codes themselves are fixed in two places, because a prompt asks and does
+not guarantee:
+
+- The escape prompts (both languages) now state the code rules explicitly —
+  one digit ١–٩, never ٠, distinct per challenge, reveal title naming the
+  digit, summary listing the full sequence — and the worked example carries a
+  real code instead of a repeated `"5"` the model was evidently copying.
+- `lib/escapeCodes.ts` repairs what still comes back wrong: a code that is
+  zero, empty, multi-character or duplicated is replaced; a reveal takes the
+  code of the challenge before it; a generic reveal title is rewritten to name
+  the digit. A valid, distinct code is left exactly as the model wrote it. It
+  runs on every classroom activity and is a no-op for decks with no
+  `unlockCode`, since `activityType` is model output too and is not always the
+  one that was asked for. 18 tests, including the `٠` case that started this.
+
+When it does repair a code, it also rewrites the summary's full-code line —
+a stale summary sends the class out with the wrong final answer, which is
+worse than the digit it was fixing.
+
+`PROMPT_VERSION` bumped to `2026-08-25.1`: the prompts changed in a way that
+makes previously recorded generations stale, which is what that constant is for.
+
+**Not verified:** this has not been run against a live model. The prompt half
+is unproven — what is tested is the repair layer, which is deliberately the
+half that does not depend on the model complying. The mock decks (used under
+`DEMO_MODE`) were updated by hand and are 13 slides now, not 12.
+
+**Not done:** the how-to-play slide is a second `type: 'intro'` rather than a
+new slide type. A `rules` type would theme separately and let the exporters
+treat it differently, but it would touch the type union, `deckTheme`, the
+presenter and both exporters — too much to smuggle into this.
+
+
+## The favourite star lit whether or not anything was saved, 2026-08-25
+
+Reported from the hosted web build, on a quiz that had just been saved: tapping
+**أضف إلى المفضلة** did not read as having done anything, and tapping it again
+read as nothing at all.
+
+Two independent faults, both of them the same shape as the `verified` lesson
+this file already records — **fail closed, or label honestly, never both.**
+
+**`toggleFavorite` could not fail.** It returned `void`. On the signed-in path
+it fell through to the local store on any non-OK response, and for a signed-in
+teacher the material is normally not *in* the local store — so `if (item)` was
+false and the whole toggle evaporated, resolving successfully. Every caller
+flipped its star optimistically and toasted «أضفتها إلى المفضلة» regardless.
+Nothing was written; the next reload put the star out. It now returns
+`{ ok, isFavorite }` and takes the desired state as an argument, which also
+removes the read-then-write round trip that let two taps both read "off".
+
+**The toast could not repeat.** `Toast`'s animation keyed on `visible` alone.
+Tapping the star twice set `visible` true when it already was, so the effect
+never re-ran: the second message swapped into a view already fading out, and
+the first sequence's `onHide` then unmounted it. Star on, star off, one
+confirmation — which is exactly what was reported. It keys on the message now
+and restarts the sequence, and a superseded run no longer fires `onHide`.
+
+**One hook, not six handlers.** `hooks/useFavorite.ts` owns the star for the
+four generator screens and the workspace viewer; the decision itself lives in
+`services/favorites.ts`, which is dependency-free and covered by
+`services/__tests__/favorites.test.ts`. A failed write puts the star back where
+it was — not on `result.isFavorite`, which says nothing when the write did not
+land — and says `favoriteFailed`. A second tap is sequenced rather than
+blocked, so "add it, then change my mind" still works while the first request
+is in flight. The labels moved into `i18n.ts` (`addToFavorites`, `inFavorites`,
+`favoriteShort`, `favoriteFailed`); the workspace viewer's star had a fixed
+label — «مفضلة» whether or not it was one — and now changes with the state.
+
+**Not verified:** neither the offline nor the server-error path was exercised
+against the running system. The honest-failure branch is unit-tested and the
+green path is not observably changed, but nobody has watched a real 500 put the
+star back.
+
+## The mission slide looked like it had failed to load, 2026-08-25
+
+Reported from a live deck with a screenshot: slide 1/10 of an escape challenge
+showed «مهمتكم», three lines of text, a countdown reading 00:58 — and two
+thirds of the projector empty below it. The question asked was whether
+something was supposed to be there.
+
+Nothing was. `SlideView`'s cover branch (`presentation.tsx`) draws title, rule
+and body and stops; hint, answer, unlock badge, visuals and the teacher-panel
+button are all conditional and an intro slide carries none of them. But the
+cover was top-aligned inside a full-height stage with a `contentContainerStyle`
+that did not grow, so a short slide sat under the header with the rest of the
+screen blank. It now grows to the stage and centres (`flexGrow` on both the
+scroll content box and the cover). Content taller than the stage still starts
+at the top and scrolls — checked in a react-native-web harness at 1400×760,
+both cases, because the app itself is behind a login this container cannot pass.
+
+The timer was the real defect. Every generation prompt specifies
+`durationSeconds: 0` for intro slides (`api-server/src/routes/generate.ts`) and
+nothing enforced it, so a model that emitted 60 got a live countdown — and an
+amber-then-red bar — against a paragraph that asks the class to do nothing yet.
+`timerSecondsForSlide` in `services/presentationUtils.ts` now returns 0 for the
+slide types that are read out rather than worked through (intro, reveal,
+summary, divider, scoreboard, podium); the presenter and the slides outline
+both ask it instead of reading `durationSeconds` raw, so the editor cannot
+advertise a timer the projector then refuses to run.
+
+Clamped at display time on purpose: the deck keeps what the model produced, so
+saves and exports are unchanged and the clamp cannot corrupt a stored activity.
