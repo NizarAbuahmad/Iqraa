@@ -22,8 +22,8 @@ import type {
   LessonPlanOutput,
 } from './ai/AIService.ts';
 import type { KBLesson } from './knowledgeBase.ts';
-import { buildGraphSlide, extractGraphCommands, referencesShownVisual } from './classMedia.ts';
-import { isRenderableVisual } from './deckVisuals.ts';
+import { buildGraphSlide, referencesShownVisual, scanGraphCommands } from './classMedia.ts';
+import { visualForSlide } from './deckVisuals.ts';
 
 /**
  * Split a generated warm-up into what the class sees and what only the
@@ -160,9 +160,16 @@ function isCheckSlide(s: ActivitySlide): boolean {
   return s.type === 'challenge';
 }
 
-/** Whether this slide already draws something — a chart, or a plotted curve. */
+/**
+ * Whether this slide actually DRAWS something.
+ *
+ * `visualForSlide` rather than a length check on `graphCommands`: a command
+ * the renderers cannot sample — a circle, a vertical line — leaves the slide
+ * as blank as no command at all, and a slide that merely *holds* one must not
+ * be able to satisfy a stem that claims a figure is on screen.
+ */
 function slideShowsVisual(s: ActivitySlide): boolean {
-  return isRenderableVisual(s.visual) || (s.graphCommands ?? []).length > 0;
+  return visualForSlide(s) !== null;
 }
 
 /**
@@ -183,8 +190,13 @@ function slideShowsVisual(s: ActivitySlide): boolean {
  */
 function withOwnVisual(slide: ActivitySlide): ActivitySlide {
   if (slideShowsVisual(slide) || !referencesShownVisual(slide.content)) return slide;
-  const commands = extractGraphCommands(slide.content);
-  return commands.length > 0 ? { ...slide, graphCommands: commands } : slide;
+  const { commands, unplottable } = scanGraphCommands(slide.content);
+  // All of the figure, or none of it. «x² + y² = 5 و x − y = 1» gives one
+  // drawable line and one circle this build cannot plot; drawing the line
+  // alone under a sentence describing both is a picture that contradicts its
+  // own caption, so the check keeps nothing and `isCheckSlide` drops it.
+  if (unplottable.length > 0 || commands.length === 0) return slide;
+  return { ...slide, graphCommands: commands };
 }
 
 /**

@@ -13,7 +13,9 @@ import {
   chartForLesson,
   compileExpression,
   extractChartData,
+  curveFromCommand,
   expressionFromCommand,
+  sampleCurve,
   isRenderableVisual,
   plotGeometry,
   samplePlot,
@@ -96,6 +98,46 @@ describe('samplePlot', () => {
   it('returns null when nothing plottable survives', () => {
     assert.equal(samplePlot('sin(x)'), null);
     assert.equal(samplePlot('x^2', { from: 5, to: 5 }), null);
+  });
+});
+
+describe('curveFromCommand — the general form the textbook writes', () => {
+  const at = (cmd: string, x: number) => curveFromCommand(cmd)?.(x) ?? null;
+
+  it('solves an equation with y buried in the middle', () => {
+    // None of these open with `y =`, which is why they used to draw nothing.
+    assert.equal(at('x - y = 1', 3), 2);              // y = x - 1
+    assert.equal(at('y + x = 5', 2), 3);              // y = 5 - x
+    assert.equal(at('4y - 8x = -21', 2), -1.25);      // y = 2x - 5.25
+    assert.equal(at('y - x^2 = 7 - 5x', 2), 1);       // y = x^2 - 5x + 7
+  });
+
+  it('reads the typographic forms the book prints', () => {
+    assert.equal(at('x² + y = 4', 2), 0);
+    assert.equal(at('4y − 8x = −21', 2), -1.25);
+  });
+
+  it('still takes the explicit forms', () => {
+    assert.equal(at('y = 2x + 1', 3), 7);
+    assert.equal(at('f(x)=x^2-5x+6', 2), 0);
+  });
+
+  it('refuses what it cannot solve rather than guessing a curve', () => {
+    // Quadratic in y: the linearity guard is what stops a circle being
+    // mangled into a line and projected as if it were right.
+    assert.equal(curveFromCommand('x^2 + y^2 = 5'), null);
+    assert.equal(curveFromCommand('y^2 = x'), null);
+    // A vertical line is a real curve, but not one y = f(x) can express.
+    assert.equal(curveFromCommand('x = 3'), null);
+    assert.equal(curveFromCommand('the graph of the system'), null);
+  });
+
+  it('samples a solved curve into points like any other', () => {
+    const f = curveFromCommand('x - y = 1')!;
+    const pts = sampleCurve(f, { from: 0, to: 4, steps: 5 })!;
+    assert.equal(pts.length, 5);
+    assert.deepEqual(pts[0], { x: 0, y: -1 });
+    assert.deepEqual(pts[4], { x: 4, y: 3 });
   });
 });
 

@@ -481,6 +481,20 @@ describe('checks that point at a figure', () => {
     assert.deepEqual(mid[0]!.graphCommands, ['y=x + 1', 'y=-x + 3']);
   });
 
+  it('draws a system written the way the book writes it', () => {
+    const system = openCheck('يمثل الرسم البياني النظام: y − x² = 7 − 5x و 4y − 8x = −21. ما حل النظام؟');
+    const { mid } = splitChecks([system]);
+    assert.equal(mid.length, 1, 'the check survives');
+    assert.deepEqual(mid[0]!.graphCommands, ['y - x^2 = 7 - 5x', '4y - 8x = -21']);
+  });
+
+  it('keeps all of a figure or none of it', () => {
+    // One drawable line, one circle this build cannot plot. Drawing the line
+    // alone would contradict a stem that describes both.
+    const half = openCheck('يمثل الرسم البياني النظام: x² + y² = 5 و x − y = 1. ما حل النظام؟');
+    assert.equal(splitChecks([half]).mid.length, 0);
+  });
+
   it('leaves an ordinary check alone — no figure claimed, no graph invented', () => {
     const plain = openCheck('أوجد حل المعادلة: x² - 5x + 6 = 0');
     const { mid } = splitChecks([plain]);

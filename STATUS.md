@@ -534,6 +534,60 @@ defines all four keys in both languages, and `pnpm run typecheck` is clean on
 `main`. Left in place rather than deleted — this file's habit of recording a
 problem and never its fix is the thing worth not repeating.
 
+## Equations the book actually writes now draw, 2026-08-25
+
+Every graph in the Grade 10 book is a *system*, and the book writes systems in
+general form — «x − y = 1», «4y − 8x = −21», «y − x² = 7 − 5x». The extractor
+required the equation to open with a name (`y =`, `f(x) =`), so **not one of
+them extracted anything**. A question could carry a complete, correct set of
+equations and still project a blank slide; the drop guard then removed the
+question, which was honest but not the outcome anyone wants.
+
+**Solved with three evaluations, not symbolic algebra.** Anything linear in y
+is `a(x)·y + b(x) = 0`, so substituting y = 0, 1, 2 as literals into the
+*existing* single-variable compiler recovers it exactly:
+
+    b = E(x, 0)      a = E(x, 1) − E(x, 0)      y = −b / a
+
+The third evaluation is the guard, not a spare: `E(x, 2)` must equal `2a + b`,
+checked at four different x. **That check is what keeps a circle a circle** —
+«x² + y² = 5» is quadratic in y, fails, and returns null instead of being
+flattened into a confident wrong line on a projector. Vertical lines (`a = 0`)
+fall out the same way.
+
+No renderer changed. A `PlotSeries` is sampled points, so a curve recovered
+this way draws on screen, in the PDF and in the PPTX exactly like any other.
+
+**All of a figure, or none of it.** `scanGraphCommands` now returns what it had
+to refuse beside what it kept. «x² + y² = 5 و x − y = 1» yields one drawable
+line and one circle this build cannot plot, and drawing the line alone under a
+sentence describing both is a picture contradicting its own caption — so the
+check keeps nothing and is dropped, exactly as before.
+
+**`slideShowsVisual` asks the renderer, not the field.** It tested
+`graphCommands.length > 0`; a command nothing can sample leaves a slide as
+blank as no command at all, so it now calls `visualForSlide`. Without this the
+circle case would have re-opened the original bug from the other side.
+
+Measured against the four book figures:
+
+| Figure | Before | After |
+| --- | --- | --- |
+| `y − x² = 7 − 5x`, `4y − 8x = −21` | nothing | both curves |
+| `y = 2 + 0.12x − 0.002x²`, `y = 0.15x` | both curves | both curves |
+| `x² + y² = 5`, `x − y = 1` | nothing | refused as incomplete |
+| `x² + y² = 9`, `y + x = 5` | nothing | refused as incomplete |
+
+**Still open — circles.** They are refused rather than drawn. On screen and in
+the PDF a circle is cheap (angle-sampled points draw straight through the
+existing polyline path), but the PPTX export plots against a *category* axis,
+which cannot represent a curve whose x is non-monotonic — it would print a
+distorted blob. Doing it properly there means a scatter chart or native
+shapes, which is its own piece of work rather than a rider on this one.
+
+Verified: `pnpm run typecheck` clean; `artifacts/mobile` 792 tests / 0 fail
+(12 new), `artifacts/api-server` 175 / 0 fail.
+
 ## The graph guard missed «يمثل الرسم البياني», 2026-08-25
 
 The fix below shipped, and the very next deck projected two more checks about
