@@ -40,7 +40,35 @@ export function tickTimer(currentSec: number): number {
 
 /**
  * Whether a slide should show a timer at all.
+ *
+ * Type-aware: a duration on a read-out slide type is not a timer.
+ * See `timerSecondsForSlide` below.
  */
-export function slideHasTimer(slide: { durationSeconds: number }): boolean {
-  return slide.durationSeconds > 0;
+export function slideHasTimer(slide: { type: string; durationSeconds: number }): boolean {
+  return timerSecondsForSlide(slide) > 0;
+}
+
+/**
+ * Slide types the class reads rather than works through.
+ *
+ * The generation prompts already ask for `durationSeconds: 0` on these
+ * (see artifacts/api-server/src/routes/generate.ts) but nothing enforced it, so
+ * a model that emitted a duration anyway put a live countdown on the mission
+ * slide — a clock ticking against a paragraph that asks the class to do
+ * nothing yet, and a red bar by the time the teacher finishes reading it out.
+ */
+export const UNTIMED_SLIDE_TYPES = [
+  'intro', 'reveal', 'summary', 'divider', 'scoreboard', 'podium',
+] as const;
+
+/**
+ * How many seconds this slide should actually count down.
+ *
+ * Refused at display time rather than rewritten into the deck: the value the
+ * model produced stays intact for saves and exports, and every surface that
+ * shows a timer asks this instead of reading `durationSeconds` raw.
+ */
+export function timerSecondsForSlide(slide: { type: string; durationSeconds: number }): number {
+  if ((UNTIMED_SLIDE_TYPES as readonly string[]).includes(slide.type)) return 0;
+  return Math.max(0, slide.durationSeconds || 0);
 }
