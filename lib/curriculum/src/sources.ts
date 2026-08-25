@@ -70,7 +70,12 @@ export type SourceAuthority =
   | 'third-party';
 
 export type SourceStatus =
-  /** Already read into `data/iqra_curriculum_*.json`. */
+  /**
+   * Something has been taken out of it. Deliberately coarse — `extraction`
+   * says precisely what. A document can have its text extracted and no
+   * objectives mined, or (as with every book here before 2026-08-25) the
+   * reverse: objectives transcribed by eye with no machine-readable text.
+   */
   | 'ingested'
   /** On file, nothing extracted from it yet. */
   | 'pending'
@@ -123,6 +128,29 @@ export interface CurriculumSource {
    * remedial queries.
    */
   keywords: string[];
+  /**
+   * The machine text extraction, when one has been run.
+   *
+   * Absent means no page text exists for this document — most of the bank.
+   * Present means `data/extracted/<id>.json` holds its pages.
+   *
+   * `sha256` and `localPath` record the file that was *actually read*, which
+   * is not always the file this entry describes: `math-s1-student-book` on
+   * disk is a 12.1 MB Adobe original against the manifest's 18.6 MB, same 150
+   * pages and same publisher. `bytesDifferFromManifest` marks those rather
+   * than letting two exports of one book quietly become interchangeable —
+   * that assumption is what put a downsampled copy of each chemistry textbook
+   * in front of teachers.
+   */
+  extraction?: {
+    tool: string;
+    extractedAt: string;
+    pages: number;
+    chars: number;
+    localPath: string;
+    sha256: string;
+    bytesDifferFromManifest?: { manifest: number; local: number };
+  };
   subject: 'math' | 'chemistry' | 'financial-literacy';
   /** null when the document spans both semesters or names none. */
   semester: 1 | 2 | null;

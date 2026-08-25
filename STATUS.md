@@ -226,6 +226,133 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The two maths student books are swapped, 2026-08-25
+
+Found by testing retrieval, not by reading data. Asking the new passage layer
+for الدائرة returned a page about المتجهات, which looks like a ranking problem
+and is not one.
+
+`10th_grade,_math,_1st_semester_….pdf` opens **«الوحدةُ 5 الاقتراناتُ»** and
+carries unit 7 المتجهات — the catalog's **Semester 2**. Its sibling named
+`…,_2nd_semester_….pdf` opens **«الوحدةُ 1 المعادلاتُ»** and carries unit 3
+حساب المثلثات — the catalog's **Semester 1**. The files are swapped relative to
+their names, and `g10_sources.json` inherited the swap because its entries were
+written from a Drive listing rather than from the documents.
+
+The teacher guides are **not** affected: the S2 guide really does hold unit 6
+المشتقات. This is the two student books only.
+
+`extract-text.ts` now maps them across their filenames, by content, because
+that is what makes a citation true — a passage offered for الدائرة has to come
+from the book containing الدائرة. Retrieval for that unit now returns
+«معرفة الوترِ، والقُطْرِ، والمماسِّ» (p34) and «الزوايا في الدائرة» (p47).
+
+**This very likely extends past the two local files.** The `bytes` recorded
+against `math-s1-student-book` and `math-s2-student-book`, and probably the
+Drive copies themselves, carry the same swap — 33,429,449 bytes matches the
+manifest's *s2* entry exactly and is the file whose contents are *s1*. Nothing
+downstream of the catalog is wrong (unit numbers, titles and objectives are all
+internally consistent and came from the guides), but anyone going to Drive for
+"the semester 1 maths book" should expect to open semester 2.
+
+A test now asserts each extracted book contains at least two of its own unit
+titles. Reintroducing the swap fails it with "math-s1-student-book contains
+only 1 of its own unit titles (الدائره) — it is probably the other semester's
+book". Filenames and manifest labels are hearsay; the unit titles printed
+inside the book are not.
+
+**And there were three `normalizeArabic`s.** One in `blooms.ts`, one in the
+api-server grading path, and nearly a third for retrieval. They agreed on
+Arabic and disagreed on Latin case and Arabic-Indic digits. Now one, in
+`lib/curriculum/src/arabic.ts`, re-exported from both old homes so no import
+changed. Checked before merging: over all 196 marker terms and catalog
+objectives the two differed on 7 strings, every one an English objective being
+lowercased, and the Bloom's markers are Arabic verbs.
+
+Retrieval itself (`src/passages.ts`, server-only, on the `./passages` subpath)
+is lexical rather than vector: the bank already scopes a query to one book by
+unit tag, so what is left is ranking a few hundred pages, and there is no
+embedding store to add. Passage text is returned **raw** — repaired and folded
+only for matching — because re-spelling a textbook on the way to a prompt is a
+silent edit of a source document.
+
+69 curriculum / 878 mobile / 223 api-server tests pass; typecheck clean.
+(Mobile was 855 on the branch alone; the rest came in with `main`.)
+
+**Still not wired to anything a teacher sees.** No prompt reads a passage yet,
+and `DEMO_MODE` remains `true`.
+
+## The books can be read after all, 2026-08-25
+
+Two things I had been repeating in this file were wrong, and both were load-
+bearing.
+
+**The PDFs are not all on a Windows mirror.** Six real NCCD documents are
+committed in `attached_assets/` — both math student books, chemistry S1, both
+math exercise books, and the S2 teacher guide (~101 MB, tracked). That claim was
+only ever true of the *teacher-made support pack*. The seventh, the math S1
+teacher guide, is a Git-LFS pointer: 58 MB unpulled, and `git-lfs` is not
+installed in the session container, so it stays blocked.
+
+**Arabic extracts fine.** The entry above about `pdftotext` mangling Arabic is
+accurate about *matching* and was read as "these PDFs are unusable". They are
+not. `pdf-parse` — a root dependency that until today nothing imported — pulls
+**682 pages and 1.18M characters** of readable Arabic prose out of the six:
+
+| source | pages | chars |
+| --- | --- | --- |
+| math-s2-teacher-guide | 218 | 558,414 |
+| math-s1-student-book | 150 | 220,128 |
+| math-s2-student-book | 132 | 184,065 |
+| chem-s1-student-book | 76 | 113,815 |
+| math-s2-exercise-book | 56 | 57,003 |
+| math-s1-exercise-book | 50 | 47,275 |
+
+What is genuinely broken is string matching, for two narrow reasons: the
+lam-alef ligature decomposes («الاقتران» → «االقتران») and tashkeel is
+interleaved. `normalizeArabic()` plus a lam-alef fix takes probe matching from
+mostly-failing to mostly-passing. **A model reads this text fine; a regex does
+not.** So `lib/curriculum/scripts/extract-text.ts` stores pages and stops —
+no structure parsing, no hunt for lesson boundaries. Every previous attempt to
+infer structure from these books by pattern produced confidently wrong output;
+retrieval will scope by the bank's unit tags, which already work.
+
+**Provenance records the file actually read.** `math-s1-student-book` on disk is
+a 12.1 MB Adobe InDesign original against the manifest's 18.6 MB — same 150
+pages, same publisher, a different export. `extraction.bytesDifferFromManifest`
+records that rather than letting two exports of one book quietly become
+interchangeable, which is the assumption that put a downsampled copy of each
+chemistry textbook in front of teachers. Each extraction carries its own
+`sha256` and `localPath`, and a test re-hashes the file on disk.
+
+**`status: 'ingested'` now means two different things, deliberately.** It used to
+mean "a human transcribed objectives out of this by eye". It now also covers
+"machine text exists". The new `extraction` block says precisely which, because
+a document can have one without the other — and until today *every* book had
+objectives with no machine-readable text.
+
+**The 2.1 MB must not reach the phone.** The mobile app imports
+`@workspace/curriculum`, so one static import of the corpus from `index.ts`
+would ship all of it to every device for a feature the app does not run. A test
+fails if anything under `src/` imports `data/extracted`. Retrieval belongs
+behind a server-only subpath export.
+
+Two bugs in my own first draft of that test, both worth recording because both
+looked like data problems: it asserted 20 consecutive Arabic characters per page
+and reported chemistry as 2 pages of 76 — the pages carry ~1,200 Arabic
+characters each, but tashkeel, spaces and «Principal Quantum Number» mean a
+20-character run almost never occurs; it was measuring typography, not language.
+And the bundle guard grepped for the string `data/extracted`, which flagged
+`sources.ts` for *documenting* where the text lives. Density, and an import
+regex, respectively.
+
+51 curriculum / 855 mobile / 223 api-server tests pass; typecheck clean;
+`verify-curriculum` 0 errors. (Mobile was 815 and api-server 193 on the branch
+alone; the rest arrived with `main` when this was merged up.)
+
+**What this does not yet do:** no grounding, no change to any prompt — and `DEMO_MODE` is still `true` with
+`AI_LIVE_MODE` unset, so no prompt reaches a model at all. This is the corpus,
+not the feature.
 ## An activity is an activity, and «عن» stopped being a lesson title, 2026-08-25
 
 Two things the chat-materials pass left behind, both now closed.
