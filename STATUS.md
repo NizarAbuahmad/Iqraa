@@ -700,6 +700,40 @@ reference-only, and there is a test holding that.
 44 curriculum / 783 mobile / 175 api-server tests pass, typecheck clean,
 `verify-curriculum` reports 0 errors. (Mobile was 761 on the branch alone; the
 extra 22 came in with `main` when this was merged up, not from this change.)
+## Two dead ends found by using it, 2026-08-25
+
+Both came from a teacher walking the real flow on production, and neither
+would have shown up in a test.
+
+**The share card named a problem and offered no way to fix it.** An exam that
+is not attached to a class cannot have a working link — the roster a student
+picks their name from *is* the class — so the card said "attach this to a class
+first" and stopped there. Attaching was only possible from inside the class
+(الصفوف → الامتحانات → +), which a teacher standing on the evaluation screen has
+no reason to guess. It now offers «أرفقه بصف الآن» and opens
+`ClassPickerSheet` — the same sheet the seven generators already use, which
+loads the list itself and closes silently for a teacher with no classes rather
+than showing an empty dialog.
+
+**Submitting looked like a button that did nothing.** «سلّم وصحّح» sits at the
+bottom of a long page and the result card renders at the top, so a successful
+submit changed nothing where the teacher was looking. The marks were saved
+correctly the whole time — the teacher only found out by navigating to the
+results dashboard and seeing 80%. Now it says «تم التصحيح — النتيجة في الأعلى»
+and scrolls to the card.
+
+The second one is worth remembering as a shape: **the work happened, the
+feedback was somewhere else.** Nothing was broken, no error was thrown, and the
+data was right. It still read as a failure, which is all that matters at the
+moment a teacher decides whether to trust the tool.
+
+243 api-server tests, 895 mobile, 0 failures.
+
+**Verified as far as the automation allows.** The attach button renders on an
+unattached published exam, and the endpoint behind it was proven when the exams
+tab shipped. The *click* is not machine-verifiable — synthetic events do not
+reach these React-Native-Web controls, which is already recorded above.
+
 ## A model can write the exam now, 2026-08-25
 
 The student link shipped and immediately hit its own ceiling: **no teacher
