@@ -254,31 +254,58 @@ export async function duplicateItem(id: string): Promise<SavedMaterial | null> {
   return copy;
 }
 
-/** Toggle the isFavorite flag. */
-export async function toggleFavorite(id: string): Promise<void> {
+/**
+ * Set — or flip — the isFavorite flag. **Returns the state that actually
+ * persisted, and whether anything persisted at all.**
+ *
+ * It used to return `void`, and every one of its callers flipped a star
+ * optimistically and then told the teacher «أضفتها إلى المفضلة» no matter what
+ * came back. Nothing ever came back: the signed-in path fell through to the
+ * local store on any non-OK response, the item is normally not in the local
+ * store for a signed-in teacher, and the `if (item)` guard then swallowed the
+ * whole toggle. The star stayed lit until the next reload put it out. Same
+ * honesty rule as `updateItem` above — a caller that tells the teacher
+ * something worked has to be able to ask whether it did.
+ *
+ * Pass `next` when the caller already knows which way the star should go. An
+ * optimistic UI always does, and it saves the read-then-write round trip that
+ * let a second tap race the first.
+ */
+export async function toggleFavorite(
+  id: string,
+  next?: boolean,
+): Promise<{ ok: boolean; isFavorite: boolean }> {
   if (await isAuthenticated()) {
     try {
-      // First fetch current state
-      const res = await apiFetch(`/workspace/items/${id}`);
-      if (res.ok) {
-        const item = await res.json() as ApiItem;
+      let target = next;
+      if (target === undefined) {
+        const res = await apiFetch(`/workspace/items/${id}`);
+        if (res.ok) {
+          const item = await res.json() as ApiItem;
+          target = !item.isFavorite;
+        }
+      }
+      if (target !== undefined) {
         const patchRes = await apiFetch(`/workspace/items/${id}`, {
           method: 'PATCH',
-          body: JSON.stringify({ isFavorite: !item.isFavorite }),
+          body: JSON.stringify({ isFavorite: target }),
         });
-        if (patchRes.ok) return;
+        if (patchRes.ok) return { ok: true, isFavorite: target };
       }
     } catch {
       // fall through to local
     }
   }
 
+  // Local fallback. For a signed-out teacher this *is* the store. For a
+  // signed-in one whose request failed the item is usually not here at all,
+  // and that is the case worth reporting: nothing was written anywhere.
   const items = await readLocal();
   const item = items.find((i) => i.id === id);
-  if (item) {
-    item.isFavorite = !item.isFavorite;
-    await writeLocal(items);
-  }
+  if (!item) return { ok: false, isFavorite: false };
+  item.isFavorite = next ?? !item.isFavorite;
+  await writeLocal(items);
+  return { ok: true, isFavorite: item.isFavorite };
 }
 
 /** Return all items, newest first. */

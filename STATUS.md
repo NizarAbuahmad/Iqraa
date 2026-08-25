@@ -225,6 +225,66 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The refusal now points somewhere, 2026-08-25
+
+`mockGenerator` declines four of the eight question types on purpose — it will
+not invent distractors, and there is a long comment saying why. The refusal was
+also the end of the reply: a teacher asked for multiple choice, got told no,
+and was no closer to an exam.
+
+The bank knows there are 3 question banks, 6 past papers and 3 answer keys on
+file for الدائرة. It could not say so, because **nothing server-side could see
+the bank at all** — `bank.ts` shipped in `@workspace/curriculum`, which the API
+already depends on, and only the mobile app read it.
+
+Now a declined type ends with:
+
+> Skipped multiple_choice, true_false: these need distractors or factual
+> statements that cannot be derived from the curriculum text alone.
+> The library holds 3 question banks, 6 past papers, 3 answer keys for these
+> units — real items to draw on, but nothing has been extracted from them yet.
+> 26 of the 35 documents for these units are a named teacher's own work and
+> must not be reproduced verbatim.
+
+The counts are counted, not estimated. An earlier draft said "most are a named
+teacher's work"; the ratio varies by unit and a sentence that guesses is the
+shape of almost-true claim this file exists to stop.
+
+**`bankContext` is shaped like the answer retrieval will give**, so the seam is
+already in place: `suggested` is the ranked list of documents that could supply
+a real item (question banks, then past papers, then answer keys), each with its
+`usePolicy`. What is missing is only the extracted content — `pending` reports
+that per request rather than leaving `total` to be misread as "items we can
+serve".
+
+**New: `GET /bank/items`, `/bank/for-objectives`, `/bank/stats`.** Public, on
+the same reasoning as `/curriculum/*` — titles and provenance, not documents.
+`driveId` is dropped from the projection: a handle to a file this API does not
+serve. `?kind=quiz` — the retired vocabulary's word — is a 400 rather than a
+silently unfiltered 200.
+
+**Two bugs found on the way, both latent for a while:**
+
+- **Ten of the seventeen chemistry lessons resolved to no unit tag at all** —
+  all of units 2, 4 and 5. `unitTagsForLesson` matched chemistry units against
+  `unit.id === 'kbu-chem-1'` and four siblings, ids from a scheme the catalog
+  no longer uses. Every branch was dead, so chemistry fell through to title
+  keywords, and «التفاعلات الكيميائية» misses `/تفاعلات كيمي/` because the
+  definite article sits between the two words. Those lessons saw only
+  semester-wide material, in the shelf *and* in chat grounding. Replaced by
+  `bankTagsForUnit()` in `bank.ts`, derived from the id's structure — which is
+  also what lets the server answer. One mapping, both callers.
+- **`mockGenerator` could not be loaded by `node --test`** — it imported
+  `./competency` and `./questionTypes` without extensions, which only esbuild
+  resolves. That is the documented trap in CLAUDE.md, and it is why the
+  deliberate-refusal logic had no direct test until now. Two characters each.
+
+44 curriculum / 815 mobile / 193 api-server tests pass, typecheck clean,
+`verify-curriculum` 0 errors.
+
+**Unchanged and still the blocker:** 63 of 78 documents are `pending`. This
+tells a teacher what exists; it cannot yet hand them a question out of it.
+
 ## The lesson page says what the library holds, 2026-08-25
 
 The knowledge-bank merge earlier today made `kind` trustworthy — `exam`,
@@ -1012,7 +1072,10 @@ so the id is captured purely to ask the question.
 
 **`updateItem` returns whether the change persisted, and callers check it.** It
 returned `void` and swallowed every failure, which was harmless while the only
-callers were favourite toggles that re-read the list afterwards. Attaching to a
+callers were favourite toggles that re-read the list afterwards. (**That premise
+was wrong** — see the 2026-08-25 entry at the end of this file. Only two of the
+six favourite callers re-read anything; the four generator screens held their
+own optimistic star and never asked.) Attaching to a
 class then started showing «حُفظت في العاشر أ» from a toast that fired no matter
 what. Caught by the browser check below, which reported success against a
 database where the material stayed unattached — the same shape as the `verified`
@@ -4755,3 +4818,44 @@ half that does not depend on the model complying. The mock decks (used under
 new slide type. A `rules` type would theme separately and let the exporters
 treat it differently, but it would touch the type union, `deckTheme`, the
 presenter and both exporters — too much to smuggle into this.
+
+## The favourite star lit whether or not anything was saved, 2026-08-25
+
+Reported from the hosted web build, on a quiz that had just been saved: tapping
+**أضف إلى المفضلة** did not read as having done anything, and tapping it again
+read as nothing at all.
+
+Two independent faults, both of them the same shape as the `verified` lesson
+this file already records — **fail closed, or label honestly, never both.**
+
+**`toggleFavorite` could not fail.** It returned `void`. On the signed-in path
+it fell through to the local store on any non-OK response, and for a signed-in
+teacher the material is normally not *in* the local store — so `if (item)` was
+false and the whole toggle evaporated, resolving successfully. Every caller
+flipped its star optimistically and toasted «أضفتها إلى المفضلة» regardless.
+Nothing was written; the next reload put the star out. It now returns
+`{ ok, isFavorite }` and takes the desired state as an argument, which also
+removes the read-then-write round trip that let two taps both read "off".
+
+**The toast could not repeat.** `Toast`'s animation keyed on `visible` alone.
+Tapping the star twice set `visible` true when it already was, so the effect
+never re-ran: the second message swapped into a view already fading out, and
+the first sequence's `onHide` then unmounted it. Star on, star off, one
+confirmation — which is exactly what was reported. It keys on the message now
+and restarts the sequence, and a superseded run no longer fires `onHide`.
+
+**One hook, not six handlers.** `hooks/useFavorite.ts` owns the star for the
+four generator screens and the workspace viewer; the decision itself lives in
+`services/favorites.ts`, which is dependency-free and covered by
+`services/__tests__/favorites.test.ts`. A failed write puts the star back where
+it was — not on `result.isFavorite`, which says nothing when the write did not
+land — and says `favoriteFailed`. A second tap is sequenced rather than
+blocked, so "add it, then change my mind" still works while the first request
+is in flight. The labels moved into `i18n.ts` (`addToFavorites`, `inFavorites`,
+`favoriteShort`, `favoriteFailed`); the workspace viewer's star had a fixed
+label — «مفضلة» whether or not it was one — and now changes with the state.
+
+**Not verified:** neither the offline nor the server-error path was exercised
+against the running system. The honest-failure branch is unit-tested and the
+green path is not observably changed, but nobody has watched a real 500 put the
+star back.

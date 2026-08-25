@@ -763,6 +763,10 @@ const translations = {
     noFavoritesDesc: 'اضغط النجمة على أي مادة لإضافتها',
     addedToFavorites: 'أضفتها إلى المفضلة ⭐',
     removedFromFavorites: 'أزلتها من المفضلة',
+    addToFavorites: 'أضف إلى المفضلة',
+    inFavorites: 'في المفضلة',
+    favoriteShort: 'مفضلة',
+    favoriteFailed: 'تعذّر حفظ المفضلة، حاول مرة أخرى',
     loadDemoData: 'حمّل محتوى تجريبياً',
     demoDataLoaded: 'المحتوى التجريبي جاهز',
     // Presentation celebration
@@ -1712,6 +1716,10 @@ const translations = {
     noFavoritesDesc: 'Tap the star on any material to add it',
     addedToFavorites: 'Added to Favourites ⭐',
     removedFromFavorites: 'Removed from Favourites',
+    addToFavorites: 'Add to Favourites',
+    inFavorites: 'Favourited',
+    favoriteShort: 'Favourite',
+    favoriteFailed: 'Could not save the favourite — try again',
     loadDemoData: 'Load sample content',
     demoDataLoaded: 'Sample content loaded!',
     // Presentation celebration
