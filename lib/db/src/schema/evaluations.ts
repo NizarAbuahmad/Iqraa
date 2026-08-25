@@ -60,6 +60,17 @@ export const evaluations = pgTable(
     titleAr: text("title_ar").notNull().default(""),
 
     /**
+     * Short code a student types, or the tail of the link they open. Issued at
+     * publish time and unique across every teacher, so a code identifies one
+     * exam without a login. Null until published: an unpublished exam has no
+     * link, because there is nothing to sit yet.
+     *
+     * The roster the link offers comes from `classGroupId` below — which is
+     * why an exam must be attached to a class before it can be handed out.
+     */
+    shareCode: text("share_code").unique(),
+
+    /**
      * The class this exam belongs to, chosen by the teacher after the fact —
      * never at authoring time. Same shape and same reasoning as
      * `saved_materials.class_group_id`: `SET NULL` because archiving a class

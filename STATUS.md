@@ -290,6 +290,110 @@ reference-only, and there is a test holding that.
 44 curriculum / 783 mobile / 175 api-server tests pass, typecheck clean,
 `verify-curriculum` reports 0 errors. (Mobile was 761 on the branch alone; the
 extra 22 came in with `main` when this was merged up, not from this change.)
+## Students answer on their own phones, 2026-08-25
+
+Marking worked; getting the answers in did not. A teacher typed every mark by
+hand, and the answer sheet has no "next student", so a class of thirty meant
+thirty round trips through a picker. At the scale of a fifty-teacher pilot that
+is the thing that decides whether any of the rest gets used.
+
+One link goes on the board. Each student opens it, taps their own name, answers
+on their phone, and hands in. `attempts.source` was designed for exactly this in
+Phase 4, so **nothing in grading, scoring, levels or recommendations changed** —
+the same submit path runs, and a sitting that arrived by link is indistinguishable
+downstream from one the teacher typed.
+
+**The only unauthenticated write surface in the API.** Everything about
+`routes/studentAttempt.ts` follows from that:
+
+- **The answer key never leaves.** `sanitizeQuestionForStudent` builds the
+  student's copy from an **allowlist** of body fields per question type, rather
+  than copying the body and deleting what is dangerous. A question type that
+  gains a field later inherits the safe default instead of silently leaking.
+  Options are rebuilt down to `{id, text}`, because `isCorrect` rides inside
+  them. Asserted on the **serialised** payload at any depth, not on object
+  properties — checking `payload.expectedAnswer === undefined` passes happily
+  while the key sits inside an option.
+- **Mounted without auth and path-scoped**, with `mountOrder.test.ts` extended
+  both ways: the link answers without a token, and nothing else became public.
+  That test boots against an unreachable database on purpose, so the assertion
+  is "not 401" — a 500 there is *proof the request reached the handler*, and a
+  401 would mean an earlier guard swallowed it.
+- **A wrong code answers exactly as a draft or a closed exam does.** A public
+  endpoint should not confirm which codes exist.
+
+**Identity is a shared link and a tapped name, chosen over per-student links.**
+Thirty individual WhatsApp messages per exam is the thing that gets abandoned in
+week one. The plan doc rejected this shape because "a level attached to the
+wrong name is worse than no level", and that objection is not dissolved by
+convenience — it is contained, four ways: an explicit confirm step before the
+first question; a claimed name cannot be claimed again; the teacher sees who
+started and when; and the teacher can **move a sitting to the right student**
+afterwards, which is the only one of the four that actually repairs a mistake.
+`DELETE /attempts/:id` releases a name for the phone that died.
+
+Accepted and stated plainly: anyone holding the link sees the class's first
+names while the exam is open.
+
+**The race a classroom actually produces.** Thirty devices press start within
+seconds, so a check-then-insert lets two claims on one name both pass before
+either writes. Found by re-reading the claim path rather than by a failure:
+there was no unique index on `(evaluation_id, student_id)`. There is now, and
+the route catches `23505` and answers `name_taken`. **Verified with 30
+simultaneous claims on one name: 1 created, 29 refused, 0 unexplained errors.**
+
+**A share code, not a UUID.** Six characters from an alphabet with no `I`, `L`,
+`O`, `0` or `1`, because a teacher writes it on a whiteboard and a student reads
+it from the back of the room. Issued at publish and **kept across re-publishes**
+— a link already on the board must not stop working because the exam was edited.
+Input is normalised for the lower case, spaces and dashes students actually
+type; ambiguous characters are dropped rather than guessed at, since mapping
+`O` to `0` would be inventing an intent.
+
+**Verified end to end** against a running API and Postgres: the link opens with
+no token; the roster marks taken names; a claim issues a 64-character token
+stored only as a hash; a second claim on the same name is refused; a student from
+another class cannot be claimed through the link; autosave survives a resume;
+a forged token is refused; editing after handing in is refused; and the student
+is told only that it was received — no score, because releasing a result is the
+teacher's decision and correctness would leak the key to everyone still sitting.
+
+**Objective questions really do mark themselves.** A student tapped a
+multiple-choice and a true/false answer through the link; the teacher opened it
+and got `12.00/12.00`, four questions auto-marked, four written ones left for
+them, result honestly provisional.
+
+### The finding that changes what comes next
+
+**No teacher can currently create a question that self-grades.** The mock
+generator refuses multiple choice, true/false, matching and fill-blank by
+design — its own note says they "need distractors or factual statements that
+cannot be derived from the curriculum text alone" — and the question editor can
+change a question's body but **not its type**. Those four types are exactly the
+ones Tier 1 grades.
+
+So shipped alone, this link collects typed answers that the teacher still marks
+entirely by hand. It removes transcription, not marking. The two
+self-grading questions proved above had to be inserted directly into the
+database, because no route can make one.
+
+That moves **real question generation from "next" to "the thing that makes this
+pay off"**, and it is why the auto-grading path was proven now rather than
+assumed later.
+
+### Migrations
+
+Applied locally; production needs both:
+
+```sql
+ALTER TABLE evaluations ADD COLUMN share_code text UNIQUE;
+CREATE UNIQUE INDEX attempts_evaluation_student_unique ON attempts (evaluation_id, student_id);
+```
+
+The index will fail if any student already has two sittings for one exam. Check
+before running it, and resolve the duplicates rather than dropping the index —
+it is the only thing preventing the classroom race.
+
 ## The seed deploys itself now, 2026-08-25
 
 Production went live with `level_scales` empty. Nothing had ever run

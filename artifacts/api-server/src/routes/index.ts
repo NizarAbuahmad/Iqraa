@@ -10,6 +10,7 @@ import curriculumRouter from "./curriculum";
 import rosterRouter from "./roster";
 import evaluationsRouter from "./evaluations";
 import attemptsRouter from "./attempts";
+import studentAttemptRouter from "./studentAttempt";
 import mediaRouter from "./media";
 import feedbackRouter from "./feedback";
 import adminRouter from "./admin";
@@ -34,6 +35,12 @@ router.use(curriculumRouter);
 router.use(rosterRouter);
 router.use(evaluationsRouter);
 router.use(attemptsRouter);
+// The student exam link — deliberately public, and the only unauthenticated
+// write surface in the API. It carries its own rate limiter and its own
+// token check, both path-scoped inside the router. Mounted *after* the
+// teacher routers so it cannot shadow them, and asserted in mountOrder.test.ts
+// both ways: reachable without a token, and not having made anything else so.
+router.use(studentAttemptRouter);
 // Path-scoped, not `router.use(authMiddleware, chatRouter)` — that form mounts
 // the middleware at "/" and reproduces the original bug, answering 401 for
 // paths no router owns. The prefixes below cover every route these four

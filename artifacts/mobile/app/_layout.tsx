@@ -28,7 +28,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { hasSeenAppIntro } from '@/services/appIntro';
-import { isEntryRoute } from '@/services/routeGating';
+import { isEntryRoute, isPublicRoute } from '@/services/routeGating';
 import { identifyUser, initAnalytics, resetAnalyticsIdentity, trackScreen } from '@/services/analytics';
 
 SplashScreen.preventAutoHideAsync();
@@ -54,6 +54,16 @@ function RootLayoutNav() {
     const onInternalDev = pathname?.startsWith('/dev') ?? false;
 
     if (onInternalDev) {
+      wasLoading.current = false;
+      wasSignedIn.current = signedIn;
+      return;
+    }
+
+    // A student sitting an exam is not a teacher and has no account to be
+    // signed out of. Their link must survive both branches below — the
+    // signed-out one would send them to a login screen they can never pass,
+    // and the signed-in one would yank a teacher testing the link to the tabs.
+    if (isPublicRoute(pathname)) {
       wasLoading.current = false;
       wasSignedIn.current = signedIn;
       return;

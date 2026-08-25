@@ -12,6 +12,24 @@
  * — or a fresh sign-in — should hand them over to the tabs.
  */
 
+/**
+ * Routes that belong to someone who is not a teacher and never will be.
+ *
+ * A student opening an exam link has no account and cannot make one — the link
+ * is the identity. Without this the boot effect sends them to a teacher login
+ * screen, which is not a smaller problem than a broken link: it is a locked
+ * door with someone else's name on it.
+ *
+ * Kept as a prefix list rather than a regex so adding one is unmistakable, and
+ * so a route can never become public by accident of pattern.
+ */
+const PUBLIC_ROUTES = ['/take'];
+
+export function isPublicRoute(pathname: string | null | undefined): boolean {
+  if (!pathname) return false;
+  return PUBLIC_ROUTES.some(p => pathname === p || pathname.startsWith(`${p}/`));
+}
+
 /** Routes whose whole purpose is to lead somewhere else once you're signed in. */
 const ENTRY_ROUTES = ['/login', '/register', '/forgot-password', '/onboarding'];
 
