@@ -12,15 +12,47 @@
  */
 
 // ─── System prompts ──────────────────────────────────────────────────────────
+/**
+ * Why the figure rule is in the SYSTEM prompt and not one builder
+ * ───────────────────────────────────────────────────────────────
+ * Decks shipped with checks reading «يمثل الرسم البياني خطين مستقيمين…» beside
+ * an empty slide. Nothing in this repo writes that sentence — the model does,
+ * unprompted, and it did it across activity types. So the rule belongs where
+ * every generator sees it rather than in the one builder that got caught.
+ *
+ * The latin-variable clause is load-bearing, not a style note.
+ * `extractGraphCommands` matches `[a-z]` terms, so «y = 2س + 1» yields NOTHING
+ * and the question is dropped exactly as if it had named no equations at all.
+ * A rule that said only "state the equations" would have produced compliant
+ * questions that still showed no graph. Verified before writing this: latin
+ * «y = 2x + 1 و y = -x + 4» extracts both curves; the س form extracts zero.
+ *
+ * Display-time conversion to س is unaffected — that happens in the app, well
+ * after extraction, per the repo's compute-in-latin convention.
+ */
+const FIGURE_RULE_AR = `قاعدة الرسوم والأشكال: لا تكتب سؤالًا يشير إلى رسم بياني أو شكل («يمثل الرسم البياني…»، «في الشكل المجاور…»، «الرسم الظاهر») إلا إذا ذكرتَ في نص السؤال نفسه معادلات ذلك الرسم.
+يرسم التطبيق المنحنيات من المعادلات الواردة في النص فقط، فإن أشرتَ إلى رسم بلا معادلات لن يرى الطلبة شيئًا ويُحذف السؤال.
+اكتب المعادلات بالحرفين اللاتينيين x و y حتى لو كان باقي النص عربيًا — مثال صحيح: «يمثل الرسم البياني المستقيمين y = 2x + 1 و y = -x + 4، جد نقطة تقاطعهما».
+وإن أردتَ سؤالًا بلا معادلات فاكتبه بلا أي إشارة إلى رسم.`;
+
+const FIGURE_RULE_EN = `Figures and graphs: never write a question that refers to a graph or figure ("the graph shows…", "in the diagram…", "the graph above") unless the question text itself states that figure's equations.
+The app draws curves only from equations found in the text, so a question pointing at a figure without them shows students nothing and is dropped.
+Write equations with latin x and y — correct example: "The graph shows the lines y = 2x + 1 and y = -x + 4; find their intersection."
+If you want a question with no equations, write it with no reference to a figure.`;
+
 export const SYSTEM_AR = `أنت مولّد محتوى تعليمي متخصص للمنهج الأردني.
 قم بإنشاء محتوى احترافي ودقيق مناسب للمعلمين.
 أجب دائمًا بـJSON صحيح فقط، بدون أي نص إضافي قبله أو بعده.
-استخدم اللغة العربية الفصيحة في جميع النصوص.`;
+استخدم اللغة العربية الفصيحة في جميع النصوص.
+
+${FIGURE_RULE_AR}`;
 
 export const SYSTEM_EN = `You are an educational content generator specialized in the Jordanian curriculum.
 Produce professional, accurate content suitable for teachers.
 Always respond with valid JSON only, no text before or after.
-Use clear academic English throughout.`;
+Use clear academic English throughout.
+
+${FIGURE_RULE_EN}`;
 
 // ─── Prompt builders ─────────────────────────────────────────────────────────
 export function lessonPlanPromptAr(b: any): string {

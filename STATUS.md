@@ -5209,3 +5209,46 @@ that may not resolve inside that HTML. Web — the surface that actually
 deploys — is fine: the print iframe inherits the page's base URL, so the
 root-relative `/assets/…` path loads, and `waitForImages` already blocks the
 print until it has.
+
+## Stop the model writing questions about graphs it never gives, 2026-08-25
+
+The draw-or-drop guard keeps a question about an absent graph off the
+projector, but dropping is a last resort — the question is still lost, and
+the three slides that started this all drop rather than draw. The real fix is
+that the model never writes one.
+
+Nothing in this repo writes «يمثل الرسم البياني خطين مستقيمين…» — grep found
+that phrasing in no generator, no mock and no question bank. The model
+produces it unprompted, and the prompts said nothing about figures at all. So
+the rule now sits in `SYSTEM_AR` / `SYSTEM_EN`, which every generator passes
+(lesson-plan, worksheet, quiz, classroom-activity), rather than in the one
+builder that got caught.
+
+**The latin-variable clause is the load-bearing half.**
+`extractGraphCommands` matches `[a-z]` terms, so «y = 2س + 1» extracts
+*nothing* and its question is dropped exactly as if it had named no equations
+at all. A rule saying only "state the equations" would have produced
+dutifully compliant questions that still showed an empty slide — the original
+bug wearing a better sentence. Verified before the rule was written:
+
+| stem | commands extracted |
+| --- | --- |
+| «… y = 2x + 1 و y = -x + 4» | 2 |
+| «… y = 2س + 1 و y = -س + 4» | **0** |
+| «مثّل المستقيم ص = 2س + 1» | **0** |
+
+This does not touch the display convention: س still appears at display time,
+well after extraction.
+
+The rule also says what to write *instead* («وإن أردتَ سؤالًا بلا معادلات
+فاكتبه بلا أي إشارة إلى رسم»), because without it the model's cheapest escape
+is to stop writing graph questions altogether.
+
+### Held together by a comment, not a compiler
+
+The prompt lives in `api-server` and the extractor in `mobile`, and no build
+step checks that the rule's worked example still parses.
+`classMedia.test.ts` asserts the exact sentence yields two curves, and
+`figureRule.test.ts` asserts the prompt still contains it and carries no
+Arabic maths variable. Both carry a comment pointing at the other. If the
+prompt's example ever changes, change them together.
