@@ -138,6 +138,19 @@ router.post("/evaluations", async (req: AuthenticatedRequest, res) => {
       .from(levelScales)
       .where(and(eq(levelScales.scope, "system"), eq(levelScales.isDefault, true)))
       .limit(1);
+    // Refuse here rather than storing a null scale and failing later.
+    // Without this an evaluation is created happily, and the teacher only
+    // finds out three screens on — at answer entry, where the attempt cannot
+    // be graded against a scale that does not exist. An error belongs where
+    // its cause is.
+    if (!defaultScale) {
+      res.status(409).json({
+        error:
+          "No level scale is configured. Seed the assessment configuration before creating evaluations.",
+        code: "no_level_scale",
+      });
+      return;
+    }
 
     const [row] = await db
       .insert(evaluations)
@@ -155,7 +168,7 @@ router.post("/evaluations", async (req: AuthenticatedRequest, res) => {
         targetQuestionCount: count,
         assessmentTypes: requestedTypes,
         language: trimmed(req.body?.language) || "ar",
-        levelScaleId: defaultScale?.id ?? null,
+        levelScaleId: defaultScale.id,
       })
       .returning();
 
