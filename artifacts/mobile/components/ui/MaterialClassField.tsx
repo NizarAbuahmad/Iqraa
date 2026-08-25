@@ -19,8 +19,10 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { ClassPickerSheet } from '@/components/ui/ClassPickerSheet';
-import { getItem, updateItem } from '@/services/workspace';
+import { ClassPickerSheet, type ClassPick } from '@/components/ui/ClassPickerSheet';
+import { attachToClasses, getItem, updateItem } from '@/services/workspace';
+import { describeAttachResult } from '@/services/classAttach';
+import type { Lang } from '@/services/i18n';
 import { listClasses } from '@/services/roster';
 import { classNameFor } from '@/services/materialClass';
 
@@ -108,24 +110,27 @@ export function MaterialClassField({
     if (!classId) setOpen(true);
   }, [promptOnNew, materialId, resolvedFor, classId]);
 
-  const pick = useCallback(async (pickedId: string, displayName: string) => {
-    if (!materialId) return;
+  const pick = useCallback(async (picks: ClassPick[]) => {
+    if (!materialId || picks.length === 0) return;
     setOpen(false);
     setSaving(true);
     try {
-      const ok = await updateItem(materialId, { classGroupId: pickedId });
-      if (!ok) {
+      // `class_group_id` holds one class, so the first keeps this material and
+      // the rest get copies — see attachToClasses. That is also why the field
+      // below goes on showing the first: it is the one this screen still edits.
+      const outcome = await attachToClasses(materialId, picks.map(p => p.id));
+      if (outcome.attached === 0) {
         onToast(t('saveToClassFailed'));
         return;
       }
-      setClassId(pickedId);
-      setName(displayName);
+      setClassId(picks[0]!.id);
+      setName(picks[0]!.name);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      onToast(t('savedToClass', displayName));
+      onToast(describeAttachResult(outcome, picks, t, lang as Lang));
     } finally {
       setSaving(false);
     }
-  }, [materialId, onToast, t]);
+  }, [materialId, onToast, t, lang]);
 
   const clear = useCallback(async () => {
     if (!materialId) return;
@@ -204,7 +209,8 @@ export function MaterialClassField({
         visible={open}
         selectedClassId={classId}
         onClose={() => setOpen(false)}
-        onPick={(id, displayName) => { void pick(id, displayName); }}
+        multiple
+        onPick={picks => { void pick(picks); }}
         onClear={() => { void clear(); }}
       />
     </>

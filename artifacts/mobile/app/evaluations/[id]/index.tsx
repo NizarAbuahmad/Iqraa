@@ -198,9 +198,12 @@ export default function EvaluationDetailScreen() {
       <ClassPickerSheet
         visible={pickingClass}
         onClose={() => setPickingClass(false)}
-        onPick={async classId => {
+        onPick={async picks => {
           setPickingClass(false);
-          if (!id) return;
+          // Single-pick (no `multiple`): an evaluation holds one class and has
+          // no copy semantics, so there is never more than one here.
+          const classId = picks[0]?.id;
+          if (!id || !classId) return;
           try {
             await setEvaluationClass(id, classId);
             await load();

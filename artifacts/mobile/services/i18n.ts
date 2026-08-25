@@ -34,6 +34,26 @@ export function countStudents(n: number, lang: Lang): string {
   return lang === 'ar' ? arCountStudents(n) : enCountStudents(n);
 }
 
+/** Same four-case rule as arCountStudents, for a count of classes. */
+export function arCountClasses(n: number): string {
+  if (n === 0) return 'لا صفوف';
+  if (n === 1) return 'صف واحد';
+  if (n === 2) return 'صفّان';
+  if (n >= 3 && n <= 10) return `${n} صفوف`;
+  return `${n} صفًّا`;
+}
+
+/** English side of the same count. */
+export function enCountClasses(n: number): string {
+  if (n === 0) return 'No classes';
+  return `${n} ${n === 1 ? 'class' : 'classes'}`;
+}
+
+/** Count classes in the active language. */
+export function countClasses(n: number, lang: Lang): string {
+  return lang === 'ar' ? arCountClasses(n) : enCountClasses(n);
+}
+
 /** Same four-case rule as arCountStudents, for materials attached to a class. */
 export function arCountMaterials(n: number): string {
   if (n === 0) return 'لا موارد';
@@ -923,6 +943,10 @@ const translations = {
     removedFromClass: 'أُزيلت من الصف',
     notNow: 'ليس الآن',
     savedToClass: (name: string) => `حُفظت في ${name}`,
+    savedToClasses: (classes: string) => `حُفظت في ${classes} — نسخة مستقلة لكل صف`,
+    savedToClassesPartial: (ok: string, total: string) => `حُفظت في ${ok} من ${total} — أعد المحاولة للبقية`,
+    saveToClassesConfirm: 'احفظ في الصفوف المحددة',
+    currentClassTag: 'الصف الحالي',
     saveToClassFailed: 'تعذّر ربطها بالصف — المادة محفوظة، حاول الإرفاق من داخل الصف',
 
     // Evaluations — authoring
@@ -1915,6 +1939,10 @@ const translations = {
     removedFromClass: 'Removed from class',
     notNow: 'Not now',
     savedToClass: (name: string) => `Saved to ${name}`,
+    savedToClasses: (classes: string) => `Saved to ${classes} — a separate copy for each`,
+    savedToClassesPartial: (ok: string, total: string) => `Saved to ${ok} of ${total} — try the rest again`,
+    saveToClassesConfirm: 'Save to selected classes',
+    currentClassTag: 'Current class',
     saveToClassFailed: "Couldn't add it to the class — the material is saved, try attaching from the class",
 
     // Evaluations — authoring

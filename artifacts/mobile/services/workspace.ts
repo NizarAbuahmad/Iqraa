@@ -9,6 +9,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiFetch, getAccessToken } from './apiClient';
 import { trackEvent } from './analytics';
+import { attachAcrossClasses } from './classAttach';
 
 // 'activity' is a first-class kind: it is stage 3 of the lesson flow, a CQV
 // artifact type ('classroom-activity'), and already has a `materialActivity`
@@ -474,4 +475,25 @@ export async function getItem(id: string): Promise<SavedMaterial | null> {
 
   const items = await readLocal();
   return items.find((i) => i.id === id) ?? null;
+}
+
+/**
+ * Attach one saved material to several classes at once.
+ *
+ * Wiring only — the ordering and counting live in `attachAcrossClasses`, which
+ * is testable because it does not reach AsyncStorage. See that function for
+ * why the first class keeps the original and the rest get copies.
+ */
+export async function attachToClasses(
+  materialId: string,
+  classIds: string[],
+): Promise<{ attached: number; requested: number }> {
+  return attachAcrossClasses(
+    {
+      update: (id, classGroupId) => updateItem(id, { classGroupId }),
+      duplicate: (id) => duplicateItem(id),
+    },
+    materialId,
+    classIds,
+  );
 }
