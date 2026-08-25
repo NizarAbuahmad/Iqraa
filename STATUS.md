@@ -225,6 +225,50 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The lesson page says what the library holds, 2026-08-25
+
+The knowledge-bank merge earlier today made `kind` trustworthy — `exam`,
+`question-bank` and `worksheet` are three different things now. This spends it:
+the lesson page has a **مكتبة الدرس** section listing the documents on file for
+that lesson, by kind, with the teacher who wrote each one.
+
+**The split is the design.** `math-s1-student-book` is tagged `s1` and so
+belongs to all eighteen Semester 1 lessons; a worksheet on أوتار الدائرة is
+tagged `s1-u2` and belongs to four. Listed together, every maths lesson's shelf
+is the same twenty-odd files and the specific ones are lost. So
+`isUnitScopedTag` (new, in `bank.ts`, replacing an inlined `tag.includes('-u')`)
+splits them: unit-scoped material leads, semester-wide material is collapsed
+behind a toggle. أوتار الدائرة gets **8 worksheets, 2 question banks and an
+answer key** at the top, and 24 semester-wide files behind the fold.
+
+**A bug the probe caught before it shipped.** «تجربة استهلالية: المعادلة
+الكيميائية» matched the maths title rule `/أسس|معادل/` and picked up the
+MATHEMATICS tag `s1-u1` — six algebra worksheets on a chemistry lab. It had
+been latent for as long as those rules existed: chat survived it because
+`scoreResource` rejects a subject mismatch *after* scoring, and nothing else
+read the tags. The shelf reads them directly and had no such backstop. Fixed
+where it belongs — the title rules are now gated to their own subject, so the
+wrong tag is never emitted rather than emitted and discarded. Two tests hold
+it: one over every lesson's shelf, one over the whole tag namespace.
+
+`s1-matrices` also stopped being treated as semester-wide. It is a unit tag
+that carries no number, so the old `includes('-u')` check scored it 3 instead
+of 8.
+
+**What the shelf does not do: hand over the PDF.** The binaries are gitignored
+and not shipped, so a download button would fail. It says so once under the
+header and the only action on a row is «اسأل عنه», which routes to chat —
+which already grounds its reply on these titles. Wiring real file delivery is
+still blocked on the same decision as the blueprint miner: get the PDFs
+somewhere the app can reach, or publish the Drive links (`driveUrl()` exists;
+whether the folder is shared with teachers is **not verified**).
+
+Financial-literacy lessons get an empty shelf, deliberately — `APP_SUBJECTS`,
+and the unresolved S1/S2 edition conflict behind it. A test asserts the empty
+rather than leaving it to chance.
+
+44 curriculum / 808 mobile / 175 api-server tests pass, typecheck clean.
+
 ## One knowledge bank, and ten past papers that were invisible, 2026-08-25
 
 There were two catalogs of the same PDFs. `lib/curriculum/src/data/g10_sources.json`

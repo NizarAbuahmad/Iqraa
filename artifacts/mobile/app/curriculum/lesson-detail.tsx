@@ -11,6 +11,7 @@ import {
   isBrowserLessonTitleOnly,
 } from '@/services/curriculumData';
 import { LessonPrepPanel } from '@/components/ui/LessonPrepPanel';
+import { LessonShelfPanel } from '@/components/ui/LessonShelfPanel';
 
 const BLOOMS_COLORS: Record<string, string> = {
   Remember: '#6366F1',
@@ -136,6 +137,11 @@ export default function LessonDetailScreen() {
 
         {/* Preparation — in place, on the lesson it belongs to */}
         {prepOpen ? <LessonPrepPanel lessonId={lesson.id} accent={color} /> : null}
+
+        {/* What the library actually holds for this lesson. Above the
+            curriculum sections because a teacher preparing tomorrow wants the
+            worksheets before they want the Bloom's levels. */}
+        <LessonShelfPanel lessonId={lesson.id} accent={color} />
 
         {/* Objectives */}
         <Section title={t('learningObjectives')} icon="checkmark-circle-outline" color={color} isRTL={isRTL}>

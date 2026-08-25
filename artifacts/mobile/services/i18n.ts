@@ -239,6 +239,18 @@ const translations = {
     // Curriculum — lesson detail
     lessonNotFound: 'لم نجد هذا الدرس',
     learningObjectives: 'الأهداف التعليمية',
+    // Lesson library — the knowledge bank, scoped to one lesson.
+    shelfTitle: 'مكتبة الدرس',
+    shelfCount: (n: number) => (n === 1 ? 'ملف واحد' : n === 2 ? 'ملفان' : n <= 10 ? `${n} ملفات` : `${n} ملفًا`),
+    shelfUnitScoped: (n: number) => `خاص بهذه الوحدة (${n})`,
+    shelfSemesterScoped: 'مواد الفصل كاملًا',
+    shelfEmpty: 'لا توجد مواد في المكتبة لهذا الدرس بعد.',
+    shelfReferenceOnly: (n: number) =>
+      `${n} من إعداد معلمين — للاستئناس في التحضير، لا لإعادة نشرها.`,
+    shelfNotInApp: 'الملفات نفسها ليست داخل التطبيق. اسأل اقرأ ليحضّر لك اعتمادًا عليها.',
+    shelfAsk: 'اسأل عنه',
+    shelfShowSemester: (n: number) => `إظهار مواد الفصل (${n})`,
+    shelfHideSemester: (n: number) => `إخفاء مواد الفصل (${n})`,
     keyTerms: 'المصطلحات الأساسية',
     learningOutcomes: 'النتاجات التعليمية',
 
@@ -1197,6 +1209,17 @@ const translations = {
 
     lessonNotFound: 'Lesson not found',
     learningObjectives: 'Learning Objectives',
+    shelfTitle: 'Lesson library',
+    shelfCount: (n: number) => `${n} file${n === 1 ? '' : 's'}`,
+    shelfUnitScoped: (n: number) => `For this unit (${n})`,
+    shelfSemesterScoped: 'Whole-semester material',
+    shelfEmpty: 'Nothing in the library for this lesson yet.',
+    shelfReferenceOnly: (n: number) =>
+      `${n} written by teachers — to inform your preparation, not to be reprinted.`,
+    shelfNotInApp: 'The PDFs themselves are not in the app. Ask IQRA to prepare from them.',
+    shelfAsk: 'Ask about it',
+    shelfShowSemester: (n: number) => `Show semester material (${n})`,
+    shelfHideSemester: (n: number) => `Hide semester material (${n})`,
     keyTerms: 'Key Terms',
     learningOutcomes: 'Learning Outcomes',
 
