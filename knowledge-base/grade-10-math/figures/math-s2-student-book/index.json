@@ -14,6 +14,7 @@
    "unit": 5,
    "lesson": 1,
    "lessonTitleEn": "Polynomial Functions",
+   "lessonTitleAr": null,
    "lessonStartPage": 8
   },
   {
@@ -29,6 +30,7 @@
    "unit": 5,
    "lesson": 1,
    "lessonTitleEn": "Polynomial Functions",
+   "lessonTitleAr": null,
    "lessonStartPage": 8
   },
   {
@@ -44,6 +46,7 @@
    "unit": 5,
    "lesson": 1,
    "lessonTitleEn": "Polynomial Functions",
+   "lessonTitleAr": null,
    "lessonStartPage": 8
   },
   {
@@ -59,6 +62,7 @@
    "unit": 5,
    "lesson": 2,
    "lessonTitleEn": "Rational Functions",
+   "lessonTitleAr": null,
    "lessonStartPage": 18
   },
   {
@@ -74,6 +78,7 @@
    "unit": 5,
    "lesson": 2,
    "lessonTitleEn": "Rational Functions",
+   "lessonTitleAr": null,
    "lessonStartPage": 18
   },
   {
@@ -89,6 +94,7 @@
    "unit": 5,
    "lesson": 2,
    "lessonTitleEn": "Rational Functions",
+   "lessonTitleAr": null,
    "lessonStartPage": 18
   },
   {
@@ -104,6 +110,7 @@
    "unit": 5,
    "lesson": 2,
    "lessonTitleEn": "Rational Functions",
+   "lessonTitleAr": null,
    "lessonStartPage": 18
   },
   {
@@ -119,6 +126,7 @@
    "unit": 5,
    "lesson": 2,
    "lessonTitleEn": "Rational Functions",
+   "lessonTitleAr": null,
    "lessonStartPage": 18
   },
   {
@@ -134,6 +142,7 @@
    "unit": 5,
    "lesson": 4,
    "lessonTitleEn": "Inverse Function",
+   "lessonTitleAr": null,
    "lessonStartPage": 32
   },
   {
@@ -149,6 +158,7 @@
    "unit": 5,
    "lesson": 4,
    "lessonTitleEn": "Inverse Function",
+   "lessonTitleAr": null,
    "lessonStartPage": 32
   },
   {
@@ -164,6 +174,7 @@
    "unit": 5,
    "lesson": 4,
    "lessonTitleEn": "Inverse Function",
+   "lessonTitleAr": null,
    "lessonStartPage": 32
   },
   {
@@ -179,6 +190,7 @@
    "unit": 6,
    "lesson": 1,
    "lessonTitleEn": "Estimating Slope",
+   "lessonTitleAr": null,
    "lessonStartPage": 56
   },
   {
@@ -194,6 +206,7 @@
    "unit": 6,
    "lesson": 1,
    "lessonTitleEn": "Estimating Slope",
+   "lessonTitleAr": null,
    "lessonStartPage": 56
   },
   {
@@ -209,6 +222,7 @@
    "unit": 6,
    "lesson": 1,
    "lessonTitleEn": "Estimating Slope",
+   "lessonTitleAr": null,
    "lessonStartPage": 56
   },
   {
@@ -224,6 +238,7 @@
    "unit": 6,
    "lesson": 1,
    "lessonTitleEn": "Estimating Slope",
+   "lessonTitleAr": null,
    "lessonStartPage": 56
   },
   {
@@ -239,6 +254,7 @@
    "unit": 6,
    "lesson": 1,
    "lessonTitleEn": "Estimating Slope",
+   "lessonTitleAr": null,
    "lessonStartPage": 56
   },
   {
@@ -254,6 +270,7 @@
    "unit": 6,
    "lesson": 1,
    "lessonTitleEn": "Estimating Slope",
+   "lessonTitleAr": null,
    "lessonStartPage": 56
   },
   {
@@ -269,6 +286,7 @@
    "unit": 6,
    "lesson": 2,
    "lessonTitleEn": "Differentiation",
+   "lessonTitleAr": null,
    "lessonStartPage": 63
   },
   {
@@ -284,6 +302,7 @@
    "unit": 6,
    "lesson": 2,
    "lessonTitleEn": "Differentiation",
+   "lessonTitleAr": null,
    "lessonStartPage": 63
   },
   {
@@ -299,6 +318,7 @@
    "unit": 6,
    "lesson": 3,
    "lessonTitleEn": "Maximum and Minimum Values",
+   "lessonTitleAr": null,
    "lessonStartPage": 70
   },
   {
@@ -314,6 +334,7 @@
    "unit": 6,
    "lesson": 3,
    "lessonTitleEn": "Maximum and Minimum Values",
+   "lessonTitleAr": null,
    "lessonStartPage": 70
   },
   {
@@ -329,6 +350,7 @@
    "unit": 6,
    "lesson": 3,
    "lessonTitleEn": "Maximum and Minimum Values",
+   "lessonTitleAr": null,
    "lessonStartPage": 70
   },
   {
@@ -344,6 +366,7 @@
    "unit": 6,
    "lesson": 3,
    "lessonTitleEn": "Maximum and Minimum Values",
+   "lessonTitleAr": null,
    "lessonStartPage": 70
   },
   {
@@ -359,6 +382,7 @@
    "unit": 7,
    "lesson": 1,
    "lessonTitleEn": "Vectors in the Coordinate Plane",
+   "lessonTitleAr": null,
    "lessonStartPage": 80
   },
   {
@@ -374,6 +398,7 @@
    "unit": 7,
    "lesson": 1,
    "lessonTitleEn": "Vectors in the Coordinate Plane",
+   "lessonTitleAr": null,
    "lessonStartPage": 80
   },
   {
@@ -389,6 +414,7 @@
    "unit": 7,
    "lesson": 1,
    "lessonTitleEn": "Vectors in the Coordinate Plane",
+   "lessonTitleAr": null,
    "lessonStartPage": 80
   },
   {
@@ -404,6 +430,7 @@
    "unit": 7,
    "lesson": 1,
    "lessonTitleEn": "Vectors in the Coordinate Plane",
+   "lessonTitleAr": null,
    "lessonStartPage": 80
   },
   {
@@ -419,6 +446,7 @@
    "unit": 7,
    "lesson": 1,
    "lessonTitleEn": "Vectors in the Coordinate Plane",
+   "lessonTitleAr": null,
    "lessonStartPage": 80
   },
   {
@@ -434,6 +462,7 @@
    "unit": 7,
    "lesson": 2,
    "lessonTitleEn": "Adding and Subtracting Vectors",
+   "lessonTitleAr": null,
    "lessonStartPage": 88
   },
   {
@@ -449,6 +478,7 @@
    "unit": 7,
    "lesson": 2,
    "lessonTitleEn": "Adding and Subtracting Vectors",
+   "lessonTitleAr": null,
    "lessonStartPage": 88
   },
   {
@@ -464,6 +494,7 @@
    "unit": 8,
    "lesson": 1,
    "lessonTitleEn": "Scatter Graphs",
+   "lessonTitleAr": null,
    "lessonStartPage": 106
   },
   {
@@ -479,6 +510,7 @@
    "unit": 8,
    "lesson": 1,
    "lessonTitleEn": "Scatter Graphs",
+   "lessonTitleAr": null,
    "lessonStartPage": 106
   },
   {
@@ -494,6 +526,7 @@
    "unit": 8,
    "lesson": 1,
    "lessonTitleEn": "Scatter Graphs",
+   "lessonTitleAr": null,
    "lessonStartPage": 106
   },
   {
@@ -509,6 +542,7 @@
    "unit": 8,
    "lesson": 1,
    "lessonTitleEn": "Scatter Graphs",
+   "lessonTitleAr": null,
    "lessonStartPage": 106
   },
   {
@@ -524,6 +558,7 @@
    "unit": 8,
    "lesson": 2,
    "lessonTitleEn": "Cumulative Frequency Graph",
+   "lessonTitleAr": null,
    "lessonStartPage": 117
   },
   {
@@ -539,6 +574,7 @@
    "unit": 8,
    "lesson": 2,
    "lessonTitleEn": "Cumulative Frequency Graph",
+   "lessonTitleAr": null,
    "lessonStartPage": 117
   },
   {
@@ -554,6 +590,7 @@
    "unit": 8,
    "lesson": 2,
    "lessonTitleEn": "Cumulative Frequency Graph",
+   "lessonTitleAr": null,
    "lessonStartPage": 117
   },
   {
@@ -569,6 +606,7 @@
    "unit": 8,
    "lesson": 5,
    "lessonTitleEn": "Probability of Independent and Dependent Events",
+   "lessonTitleAr": null,
    "lessonStartPage": 139
   },
   {
@@ -584,6 +622,7 @@
    "unit": 8,
    "lesson": 5,
    "lessonTitleEn": "Probability of Independent and Dependent Events",
+   "lessonTitleAr": null,
    "lessonStartPage": 139
   }
  ]

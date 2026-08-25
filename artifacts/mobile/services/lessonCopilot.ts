@@ -10,16 +10,19 @@ import {
   type ChatSessionMemory,
   type LessonPinStrength,
   type SessionArtifact,
-} from '@/services/ai/teachingAssistant';
-import { DEMO_CONTINUE } from '@/services/continueTeaching';
+} from './ai/teachingAssistant.ts';
+import { DEMO_CONTINUE } from './continueTeaching.ts';
 import {
+  getBookForLesson,
   getLessonById,
   isConfidentKbHit,
   KB_CONFIDENT_SCORE,
+  searchKBSemantic,
   type KBLesson,
   type KBScoredLesson,
-} from '@/services/knowledgeBase';
-import type { SessionDocument } from '@/services/documents';
+} from './knowledgeBase.ts';
+import { getPickerSubjects } from './curriculumData.ts';
+import type { SessionDocument } from './documents/index.ts';
 
 export { isConfidentKbHit, KB_CONFIDENT_SCORE };
 
@@ -65,6 +68,34 @@ export function resolveActiveLesson(memory: ChatSessionMemory): KBLesson | null 
     if (hit) return hit;
   }
   return null;
+}
+
+/**
+ * The lesson behind a change-lesson pick.
+ *
+ * The picker knows exactly which lesson was tapped, so use its id. Searching
+ * the KB for the title instead is not equivalent: for 16 of the picker's 63
+ * lessons the top semantic hit is a *different* lesson (choosing «قانون
+ * الجيوب» pinned «قانون جيب التمام», «حسابات الطاقة في التفاعلات الكيميائية»
+ * pinned «تغيرات الطاقة في التفاعلات الكيميائية»), and the whole session —
+ * the lesson card, chat retrieval, «ابدأ الحصة» — then followed a lesson the
+ * teacher never chose.
+ *
+ * The search stays as the fallback for what has no id: entire-unit and
+ * entire-book picks, and free-typed topics.
+ */
+export function resolvePickedLesson(
+  topic: string,
+  pick: { lessonId?: string | null } | undefined,
+  lang: 'ar' | 'en',
+): KBLesson | null {
+  if (pick?.lessonId) {
+    const exact = getLessonById(pick.lessonId);
+    if (exact) return exact;
+  }
+  const query = topic.trim();
+  if (!query) return null;
+  return searchKBSemantic(query, lang)[0] ?? null;
 }
 
 /** Soft-seed the demo default lesson for the card — does not hard-pin retrieval. */
@@ -160,9 +191,30 @@ export type CurrentLessonView = {
   unitLesson: string;
   topic: string;
   lessonId: string;
+  /**
+   * The active lesson's own subject, from its book — `mathematics`,
+   * `chemistry`, `financial-literacy`. Callers that generate material must
+   * pass this along instead of defaulting to maths: `isMathContext` reads the
+   * subject name, so a chemistry lesson announced as "Mathematics" is served a
+   * deck of algebra questions with the chemistry title pasted on top.
+   */
+  subjectId: string;
+  /** English subject name — the string the generators expect. */
+  subjectName: string;
   uploadedCount: number;
   resources: ResourceChip[];
 };
+
+/** The lesson's subject, defaulting to maths when it has no book. */
+function subjectOfLesson(lesson: KBLesson | null): { subjectId: string; subjectName: string } {
+  const book = lesson ? getBookForLesson(lesson) : undefined;
+  if (!book) return { subjectId: 'mathematics', subjectName: 'Mathematics' };
+  const subject = getPickerSubjects().find(s => s.id === book.subjectId);
+  return {
+    subjectId: book.subjectId,
+    subjectName: subject?.name ?? 'Mathematics',
+  };
+}
 
 export function buildCurrentLessonView(
   memory: ChatSessionMemory,
@@ -206,6 +258,7 @@ export function buildCurrentLessonView(
     unitLesson,
     topic,
     lessonId: lesson?.id ?? memory.activeLessonId ?? DEFAULT_ACTIVE_LESSON_ID,
+    ...subjectOfLesson(lesson),
     uploadedCount: readyDocs.length,
     resources: RESOURCE_META.map(meta => ({
       ...meta,

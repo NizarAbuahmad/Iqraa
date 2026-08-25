@@ -46,10 +46,10 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     because the count was repeatedly described as "all in
     `lib/integrations-openai-ai-server`", which is wrong by a factor of three
     and would send someone looking in the wrong package.
-- Mobile test suite: 896 tests, 0 failures, 10 skipped (re-counted 2026-08-25
-  on an installed workspace, with `main` merged in; 855 earlier the same day,
-  725 on 2026-08-23, 723 on
-  2026-08-22, the 480 here was stale before that, and the 376 before it).
+- Mobile test suite: 909 tests, 0 failures, 10 skipped (re-counted 2026-08-25
+  on an installed workspace, with `main` merged in; 894, 888, 865 and 855
+  earlier the same day, 725 on 2026-08-23, 723 on 2026-08-22, the 480 here was
+  stale before that, and the 376 before it).
   The number moves with almost every merge — re-count rather than cite it.
   The 10 skips are the chemistry KB-search cases, skipped by their own suite,
   not by the runner.
@@ -290,7 +290,7 @@ unreachable by any assertion. The pure half is now `documents/extractMeta.ts`,
 the same split `exportHtml.ts` got out of `share.ts`, and the new test was
 verified to fail (6 of 12) when one invented objective is put back.
 
-69 curriculum / 896 mobile / 260 api-server tests pass; typecheck clean;
+69 curriculum / 909 mobile / 262 api-server tests pass; typecheck clean;
 `verify-curriculum` 0 errors.
 
 **Still invisible to a teacher.** `DEMO_MODE` is `true` and `AI_LIVE_MODE` is
@@ -298,6 +298,69 @@ unset, so no prompt reaches a model. Verified instead by composing the real
 prompt directly: for «أوتار الدائرة وأقطارها ومماساتها» the lesson-plan prompt
 is 5,838 characters carrying pages 34, 47 and 49 of the maths S1 student book,
 with the teacher's own context still first and the JSON contract still last.
+
+## «ابدأ الحصة» projects the lesson that was picked, 2026-08-25
+
+**Reported:** change the lesson in chat, choose a different subject, press
+«ابدأ الحصة» — and the projector still shows the first selection. Reproduced in
+the running app, and it was two separate faults wearing one face.
+
+**1. The deck had no subject, and the default is maths.** The chat called
+`buildClassDeck({ topic, lang })`; `subjectId`/`subjectName` default to
+`mathematics` / `Mathematics`. `isMathContext` matches on the subject *name*,
+so every deck was a maths deck. Picking «تجربة استهلالية: الطيف الذري»
+(chemistry) and starting the class gave 7 slides: a graph slide and four
+algebra questions — `y = x²` intersections, a linear/quadratic system — under
+the chemistry title. The home screen never had this bug; it passed
+`pickedSubject.name`. The subject was dropped when Start Class moved out of
+home into `services/startClass.ts` and the chat became its only caller.
+`CurrentLessonView` now carries `subjectId` / `subjectName` from the lesson's
+own book, and chat passes them.
+
+**2. The change-lesson sheet threw away the id and searched for the title.**
+`TopicSelector` knows exactly which lesson was tapped; `ContextBanner` kept
+only the title string and re-derived the lesson with `searchKBSemantic`. That
+returns a *different* lesson for **16 of the picker's 63 lessons**. Picking
+«قانون الجيوب» pinned and displayed «قانون جيب التمام» — verified in the app
+before the fix, on the lesson card and in the reply. `TopicSelectionDetail`
+now carries `lessonId`, `resolvePickedLesson` prefers it, and the id is
+persisted in `HomeLessonPick` so a restored pick is the same lesson too. The
+search stays as the fallback for entire-unit picks and free-typed topics.
+(`resolveGeneratorGrounding` was never the culprit — it resolves 63/63 exact
+titles correctly. Only the semantic search drifts.)
+
+Two smaller things fell out of the same trace, both fixed here:
+
+- A pick with no KB match kept the previous `activeLessonId` while showing the
+  new title, so generators stayed grounded on the lesson just left. It is
+  cleared now, and both language topic fields move together.
+- The reply to a freshly picked lesson still announced «وسأراعي تركيزك الحالي»
+  with the *previous* lesson: `sendMessage` read `teachingCtx` / `sessionMemory`
+  from a closure React had not updated yet. It now takes the teaching context
+  from `pinnedLessonId` when one is passed — the same argument that already
+  existed to solve this for retrieval.
+
+### Verified by driving the real UI
+
+Expo web build served statically with `/auth/me` stubbed and a token in
+`localStorage`; no API server, so everything took the local/demo path. Same
+click path each time — تغيير الدرس → الكيمياء → بنية الذرة وتركيبها → تجربة
+استهلالية: الطيف الذري → ابدأ الحصة.
+
+- **Before:** 7 slides — graph + four `y = x²` maths questions.
+- **After:** 3 slides — whiteboard rules, one open chemistry prompt, summary.
+- Maths is unchanged: the default lesson still projects 8 slides with its
+  objectives and four composition/inverse questions.
+
+**Worth knowing:** the chemistry deck is thin because `MockAIService` has no
+chemistry question bank — its non-maths quick-check is one «اشرح بكلماتك»
+prompt. That is pre-existing mock behaviour, not something this change
+introduced; what changed is that a chemistry lesson now gets a thin honest deck
+instead of a rich wrong one. Live AI generation is unaffected.
+
+`services/__tests__/lessonPickFidelity.test.ts` covers all of it, including a
+sweep asserting the 16-lesson drift still exists in `searchKBSemantic` — the
+day it stops being true, the reason for threading the id through is gone.
 
 ## The two maths student books are swapped, 2026-08-25
 
@@ -427,6 +490,7 @@ alone; the rest arrived with `main` when this was merged up.)
 **Superseded 2026-08-25** — see "The books are in the prompts now" above. The
 `DEMO_MODE` half still holds: it is `true` and `AI_LIVE_MODE` is unset, so no
 prompt reaches a model.
+
 ## An activity is an activity, and «عن» stopped being a lesson title, 2026-08-25
 
 Two things the chat-materials pass left behind, both now closed.
@@ -5642,3 +5706,102 @@ The 2026-08-25 extraction entry above claimed "semester 1 prints units 5–8;
 semester 2 prints 1–4". That was the filename talking, and it is now corrected
 in place. The unit numbering itself was never the problem — the books really
 do print 1–8 across the year.
+
+## Chemistry's figures are placed now, 2026-08-25
+
+The chemistry book yielded no outline at all, so its four figures sat
+extracted and unreachable. It has one now — 3 units × 2 lessons, matching
+`KB_LESSONS` exactly — and the figures are joined to their lessons. 58 of the
+60 extracted figures now ship, up from 54.
+
+Every fix below was found by running the detector over the book and counting,
+not by reading it. The maths outline is asserted byte-identical throughout.
+
+### Four reasons it found nothing
+
+- **«الدرس» usually carries a fused vowel mark** — `ُالدرس` — so an exact
+  string comparison matched only pages that happened to also emit a clean
+  copy of the span. That was 1 opener in 6. Compared bare now.
+- **One opener sets «الدرس» at y=77** where its siblings use 47, so a `< 60`
+  ceiling found five of six. The ceiling is 90; the *number* band stays tight,
+  since that is what distinguishes an opener from a page merely mentioning
+  the word.
+- **The chemistry book has no running «الوحدة N» header at all.** Maths
+  repeats the unit on every page; chemistry states it only on unit openers.
+  The header search was therefore matching the *next* unit's opener, which
+  falls inside the last lesson of each unit — labelling «النموذج الميكانيكي
+  الموجي» (unit 1) as unit 2, every unit's final lesson one too high. Openers
+  are now skipped during the header search, and a book with no header takes
+  its unit from the last opener at or before the lesson.
+- **What sits in the English-title band is a SECTION heading.** Chemistry's
+  first section — «الخصائص الفيزيائية للمركبات الأيونية» / "Physical
+  Properties of Ionic Compounds" — sits under a lesson actually called «الصيغ
+  الكيميائية وخصائص المركبات». An English line sharing that band with Arabic
+  is refused, and chemistry is identified by its Arabic title instead, which
+  matches the curriculum's word for word.
+
+### A widening that cost 14 titles
+
+Reaching for chemistry's English title, the band went from `< 115` to
+`< 140`. Chemistry gained nothing — it prints its English lesson title at
+10pt, letter-spaced, and not on every opener — while maths **silently lost 14
+of 32 titles**, because the wider band caught Arabic body text and the
+section-heading rule then rejected the line. Caught by diffing the maths
+outline against a snapshot taken before the change. The ceiling is back at
+115.
+
+That snapshot is the method worth keeping: capture the known-good outline
+first, then require it byte-identical after every change to a shared
+detector.
+
+### Verified
+
+Re-running extraction leaves **every one of the 60 PNGs byte-identical**, so
+the diff is metadata only. `build:web` exports 58 figures, 4 of them
+chemistry.
+
+## Every generation failed on a cold API, and the fallback was suppressed, 2026-08-25
+
+Reported from the deployed site: «بطاقة الخروج», «تحقق سريع» and «تحدي الهروب»
+all failed with «تعذر إتمام العملية. حاول مرة أخرى.» — three different activity
+types, one identical dead end.
+
+**The fallback that exists for exactly this was being skipped.** `postJSON`
+enforced its 18s ceiling by calling `controller.abort()`, so a timeout reached
+`generateWithProvenance` as an `AbortError` — indistinguishable from the
+teacher pressing Cancel. That branch deliberately refuses to substitute mock
+content (answering "stop" with a fabricated worksheet is the substitution the
+module exists to prevent), so it rethrew, the builder caught, and the teacher
+got an error with nothing behind it.
+
+**And the ceiling guaranteed the timeout.** `iqraa-api` is a free Render
+service: it sleeps after ~15 minutes idle and takes 30-60s to answer the first
+request after that — `render.yaml` says so in its own header. 18s is below that
+floor, so the first generation of any session timed out, was classified as a
+cancellation, and failed with no fallback. Every tool, every activity type,
+every time the API had gone to sleep. The timeout is now a `TimeoutError`
+(name, not class — the check is name-based) and the ceiling is 45s.
+
+**A second crash on the same path**, found while confirming the first:
+`applyClassroomSetup` called `.some` on `activity.materials`, but `materials`
+is model output and the server's usability check requires only `activityName`
+and `slides` (`REQUIRED_FIELDS['classroom-activity']`). A generation that
+omitted it threw *after* a successful API call — a complete, usable deck
+discarded on its way to the projector over a field nobody reads. It tolerates
+a missing list now.
+
+Ruled out first: the mock generator builds all seven activity types cleanly
+(escape 13 slides, quick-check 6, error-detective 8, exit-ticket 5, bingo 10,
+relay 6, gallery-walk 7), so the fallback would have produced a deck had it
+been reached.
+
+**Not verified:** the API could not be reached from the sandbox the diagnosis
+was done in (the agent proxy 403s both Render hosts), so neither fault was
+observed live — both are read off the code path, and the fixes are unit-tested
+rather than confirmed against the running system. If «تعذر إتمام العملية»
+survives this, it is a third cause, not these two.
+
+**Worth noting for whoever sees it next:** `builder.tsx` catches with a bare
+`catch {}` and shows one generic string, which is why three different faults
+looked like one. The diagnosis took a code read because the screen carried no
+information at all.

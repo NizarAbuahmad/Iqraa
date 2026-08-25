@@ -83,7 +83,7 @@ export default function DashboardScreen() {
   const [draftTopic, setDraftTopic] = useState('');
   const [draftSubjectId, setDraftSubjectId] = useState('mathematics');
   const [draftDetail, setDraftDetail] = useState<TopicSelectionDetail>({
-    unitOrder: null, unitTitle: null, lessonTitle: null,
+    unitOrder: null, unitTitle: null, lessonTitle: null, lessonId: null,
   });
   const pickerSubjects = getPickerSubjects();
   // Class Mode media attached to the CURRENT lesson (shown as deck slides).
@@ -119,7 +119,7 @@ export default function DashboardScreen() {
     if (user && !pick && !(await wasOnboarded())) {
       await markOnboarded();
       setDraftTopic('');
-      setDraftDetail({ unitOrder: null, unitTitle: null, lessonTitle: null });
+      setDraftDetail({ unitOrder: null, unitTitle: null, lessonTitle: null, lessonId: null });
       setPickerOpen(true);
     }
     if (user) setCoachVisible(!(await wasCoachDismissed()));
@@ -199,14 +199,19 @@ export default function DashboardScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setDraftTopic('');
     setDraftSubjectId(lessonPick?.subjectId ?? 'mathematics');
-    setDraftDetail({ unitOrder: null, unitTitle: null, lessonTitle: null });
+    setDraftDetail({ unitOrder: null, unitTitle: null, lessonTitle: null, lessonId: null });
     setPickerOpen(true);
   };
 
   const confirmLessonPick = async () => {
     const topic = draftTopic.trim();
     if (!topic) return;
-    const pick: HomeLessonPick = { topic, unitOrder: draftDetail.unitOrder, subjectId: draftSubjectId };
+    const pick: HomeLessonPick = {
+      topic,
+      unitOrder: draftDetail.unitOrder,
+      subjectId: draftSubjectId,
+      lessonId: draftDetail.lessonId,
+    };
     setLessonPick(pick);
     setPickerOpen(false);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -816,7 +821,7 @@ export default function DashboardScreen() {
                       // Changing subject invalidates the unit/lesson draft.
                       setDraftSubjectId(s.id);
                       setDraftTopic('');
-                      setDraftDetail({ unitOrder: null, unitTitle: null, lessonTitle: null });
+                      setDraftDetail({ unitOrder: null, unitTitle: null, lessonTitle: null, lessonId: null });
                     }}
                     style={{
                       paddingHorizontal: 16,

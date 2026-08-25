@@ -32,7 +32,7 @@ pnpm run typecheck                     # whole monorepo
 pnpm run dev:api                       # Express on :8080
 pnpm run dev:mobile:web                # Expo web on :8081 (MOBILE_PORT overrides)
 
-cd artifacts/mobile     && pnpm test   # 896 tests (2026-08-25)
+cd artifacts/mobile     && pnpm test   # 909 tests (2026-08-25)
 cd artifacts/api-server && pnpm build && pnpm test   # build first — see below
 ```
 
@@ -66,6 +66,17 @@ Before a live demo: [`docs/demo-checklist.md`](./docs/demo-checklist.md).
   router mounted after it. Scope guards to their paths. The tell is an unowned
   path returning 401 instead of 404 — `src/routes/__tests__/mountOrder.test.ts`
   asserts this.
+- **A lesson title does not identify a lesson.** `searchKBSemantic(title)`
+  returns a *different* lesson for 16 of the picker's 63 lessons («قانون
+  الجيوب» → «قانون جيب التمام»), so any flow that carries a lesson as a string
+  and re-derives it later can silently swap it. Carry the KB id. Note
+  `resolveGeneratorGrounding` is exact on exact titles (63/63) — it is the
+  semantic search that drifts, so "grounding is fine" does not mean the pin is.
+- **Generators branch on the subject NAME.** `isMathContext` tests the string,
+  so passing `subject: 'Mathematics'` for a chemistry lesson serves it maths
+  questions from the concrete bank, titled with the chemistry lesson. Anything
+  calling a generator must pass the lesson's own subject; the defaults on
+  `buildClassDeck` are maths and will not fail loudly.
 - **Extensionless relative imports only work through esbuild.** Anything loaded
   directly by `node --test` needs an explicit `.ts` extension.
 - **The OpenAI client throws at module scope without a key**, which makes

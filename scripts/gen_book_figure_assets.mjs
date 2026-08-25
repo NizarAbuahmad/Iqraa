@@ -31,6 +31,7 @@ const mapped = new Set(
 const indexes = [
   'knowledge-base/grade-10-math/figures/math-s1-student-book/index.json',
   'knowledge-base/grade-10-math/figures/math-s2-student-book/index.json',
+  'knowledge-base/grade-10-chemistry/figures/chem-s1-student-book/index.json',
 ];
 
 const rows = [];

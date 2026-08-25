@@ -18,6 +18,10 @@
 export type BookFigureAsset = number | { uri: string; width?: number; height?: number };
 
 export const BOOK_FIGURE_ASSETS: Record<string, BookFigureAsset> = {
+  'chem-s1-student-book/p024.png': require('../../../knowledge-base/grade-10-chemistry/figures/chem-s1-student-book/p024.png'),
+  'chem-s1-student-book/p042.png': require('../../../knowledge-base/grade-10-chemistry/figures/chem-s1-student-book/p042.png'),
+  'chem-s1-student-book/p048.png': require('../../../knowledge-base/grade-10-chemistry/figures/chem-s1-student-book/p048.png'),
+  'chem-s1-student-book/p072.png': require('../../../knowledge-base/grade-10-chemistry/figures/chem-s1-student-book/p072.png'),
   'math-s1-student-book/p021.png': require('../../../knowledge-base/grade-10-math/figures/math-s1-student-book/p021.png'),
   'math-s1-student-book/p024.png': require('../../../knowledge-base/grade-10-math/figures/math-s1-student-book/p024.png'),
   'math-s1-student-book/p025.png': require('../../../knowledge-base/grade-10-math/figures/math-s1-student-book/p025.png'),
@@ -75,4 +79,4 @@ export const BOOK_FIGURE_ASSETS: Record<string, BookFigureAsset> = {
 };
 
 /** How many figures ship with the app. Asserted by the drift test. */
-export const BOOK_FIGURE_COUNT = 54;
+export const BOOK_FIGURE_COUNT = 58;

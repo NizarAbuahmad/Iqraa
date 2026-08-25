@@ -105,6 +105,7 @@ import {
   isBareArtifactShortcut,
   isConfidentKbHit,
   pinLesson,
+  resolvePickedLesson,
   resourceRoute,
   seedDefaultLessonMemory,
   shouldReuseActiveLesson,
@@ -288,19 +289,25 @@ const SUGGESTIONS: Record<Mode, Record<'ar' | 'en', Suggestion[]>> = {
 };
 
 // ─── Context Banner ───────────────────────────────────────────────────────────
+/**
+ * What the change-lesson sheet knows about the lesson the teacher tapped.
+ * `lessonId` is null for entire-unit / entire-book picks and for free text.
+ */
+type ChatLessonPick = { topic: string; subjectId: string; lessonId: string | null };
+
 function ContextBanner({
   colors, isRTL, lang, t, onContextChange, onAsk, hidePill, externalOpen, onExternalOpenChange, onGlobalPick,
 }: {
   colors: any; isRTL: boolean; lang: 'ar' | 'en';
   t: (k: any) => string;
-  onContextChange: (ctx: string) => void;
-  onAsk: (topic: string) => void;
+  onContextChange: (ctx: string, pick?: ChatLessonPick) => void;
+  onAsk: (topic: string, pick?: ChatLessonPick) => void;
   /** When true, only the change-lesson modal is rendered (card owns the chrome). */
   hidePill?: boolean;
   externalOpen?: boolean;
   onExternalOpenChange?: (open: boolean) => void;
   /** Confirmed picks propagate to the app-wide current-lesson context. */
-  onGlobalPick?: (pick: { topic: string; subjectId: string }) => void;
+  onGlobalPick?: (pick: ChatLessonPick) => void;
 }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [subjIdx, setSubjIdx] = useState(0);
@@ -308,6 +315,10 @@ function ContextBanner({
   // Draft topic while modal is open; only committed on confirm
   const [draftTopic, setDraftTopic] = useState('');
   const [draftSubjIdx, setDraftSubjIdx] = useState(0);
+  // The KB id of the lesson the teacher tapped, straight from the picker.
+  // Kept because the title alone does not identify it again — see
+  // `TopicSelectionDetail.lessonId`.
+  const [draftLessonId, setDraftLessonId] = useState<string | null>(null);
 
   const subj = CONTEXT_SUBJECTS[draftSubjIdx];
   const isOpen = externalOpen ?? modalOpen;
@@ -319,6 +330,7 @@ function ContextBanner({
   const openModal = () => {
     setDraftTopic(topic);
     setDraftSubjIdx(subjIdx);
+    setDraftLessonId(null);
     setOpen(true);
   };
 
@@ -326,17 +338,23 @@ function ContextBanner({
     if (externalOpen) {
       setDraftTopic(topic);
       setDraftSubjIdx(subjIdx);
+      setDraftLessonId(null);
     }
   }, [externalOpen]);
 
   const handleConfirm = () => {
     setSubjIdx(draftSubjIdx);
     setTopicInternal(draftTopic);
-    onContextChange(draftTopic);
+    const pick: ChatLessonPick = {
+      topic: draftTopic.trim(),
+      subjectId: subj.subjectId,
+      lessonId: draftLessonId,
+    };
+    onContextChange(draftTopic, pick);
     setOpen(false);
-    if (draftTopic.trim()) {
-      onGlobalPick?.({ topic: draftTopic.trim(), subjectId: subj.subjectId });
-      onAsk(draftTopic.trim());
+    if (pick.topic) {
+      onGlobalPick?.(pick);
+      onAsk(pick.topic, pick);
     }
   };
 
@@ -347,6 +365,7 @@ function ContextBanner({
   const handleClear = () => {
     setTopicInternal('');
     setSubjIdx(0);
+    setDraftLessonId(null);
     onContextChange('');
   };
 
@@ -424,7 +443,7 @@ function ContextBanner({
               {CONTEXT_SUBJECTS.map((s, i) => (
                 <Pressable
                   key={s.subjectId}
-                  onPress={() => { setDraftSubjIdx(i); setDraftTopic(''); }}
+                  onPress={() => { setDraftSubjIdx(i); setDraftTopic(''); setDraftLessonId(null); }}
                   style={[ctxStyles.subjPill, {
                     backgroundColor: draftSubjIdx === i ? colors.primary : colors.muted,
                     borderRadius: 16,
@@ -451,6 +470,7 @@ function ContextBanner({
               gradeId={subj.gradeId}
               value={draftTopic}
               onChange={setDraftTopic}
+              onSelectionDetail={d => setDraftLessonId(d.lessonId)}
               lang={lang}
               isRTL={isRTL}
               colors={colors}
@@ -1062,6 +1082,12 @@ export default function IqraScreen() {
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
   const [teachingCtx, setTeachingCtx] = useState('');
+  // The lesson id that came with `teachingCtx`, when the sheet supplied one.
+  // Without it the retrieval below re-derived the lesson from the topic
+  // string and could seat a neighbouring lesson at the top of the results.
+  const [teachingCtxLessonId, setTeachingCtxLessonId] = useState<string | null>(null);
+  /** Latest `teachingCtx`, readable from async callbacks without a re-render. */
+  const teachingCtxRef = useRef(teachingCtx);
   /** Session memory for collaborative Demo Mode chat (active lesson + prior asks). */
   const [sessionMemory, setSessionMemory] = useState<ChatSessionMemory>(() =>
     seedDefaultLessonMemory(emptyChatSessionMemory()),
@@ -1320,14 +1346,27 @@ export default function IqraScreen() {
   useEffect(() => {
     void loadLessonPick().then(pick => {
       if (!pick?.topic) return;
-      setTeachingCtx(prev => (prev.trim() ? prev : pick.topic));
-      const hits = searchKBSemantic(pick.topic, lang as 'ar' | 'en');
-      if (hits[0]) {
-        setSessionMemory(prev => pinLesson(prev, hits[0]!, 'soft'));
+      // A pick made in the sheet while this read was in flight wins — but the
+      // topic and its lesson id must move together, so both are guarded by
+      // the same condition rather than by two independent updaters.
+      if (!teachingCtxRef.current.trim()) {
+        setTeachingCtx(pick.topic);
+        setTeachingCtxLessonId(pick.lessonId ?? null);
+      }
+      // Restore the exact lesson that was picked. Re-deriving it from the
+      // saved title put the teacher on a neighbouring lesson often enough
+      // that «ابدأ الحصة» could open on something they never chose.
+      const restored = resolvePickedLesson(pick.topic, pick, lang as 'ar' | 'en');
+      if (restored) {
+        setSessionMemory(prev => pinLesson(prev, restored, 'soft'));
       }
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang]);
+
+  useEffect(() => {
+    teachingCtxRef.current = teachingCtx;
+  }, [teachingCtx]);
 
   useEffect(() => {
     setSessionDocs(getSessionDocuments());
@@ -1471,11 +1510,18 @@ export default function IqraScreen() {
         : searchKBRanked(q, lang as 'ar' | 'en');
       const confidentHit = isConfidentKbHit(ranked);
 
+      // The lesson this send was explicitly pinned to, when there is one. It
+      // is also the honest teaching context: `teachingCtx` and
+      // `sessionMemory` in this closure still describe the previous lesson
+      // when the send comes from the change-lesson sheet, which is how a
+      // reply about the newly picked lesson could still announce «تركيزك
+      // الحالي» as the one the teacher had just left.
+      const pinnedLesson = pinnedLessonId ? getLessonById(pinnedLessonId) : null;
+
       let results: KBLesson[];
       if (pinnedLessonId) {
-        const pinned = getLessonById(pinnedLessonId);
-        results = pinned
-          ? [pinned]
+        results = pinnedLesson
+          ? [pinnedLesson]
           : deduplicateByUnit(searchKBSemantic(q, lang as 'ar' | 'en'), 3);
       } else {
         results = deduplicateByUnit(
@@ -1486,9 +1532,13 @@ export default function IqraScreen() {
 
       // Prefer explicit teaching-context lesson when available
       if (!pinnedLessonId && teachingCtx.trim()) {
-        const ctxHits = searchKBSemantic(teachingCtx.trim(), lang as 'ar' | 'en');
-        if (ctxHits[0]) {
-          results = [ctxHits[0], ...results.filter(r => r.id !== ctxHits[0]!.id)].slice(0, 3);
+        const ctxLesson = resolvePickedLesson(
+          teachingCtx.trim(),
+          { lessonId: teachingCtxLessonId },
+          lang as 'ar' | 'en',
+        );
+        if (ctxLesson) {
+          results = [ctxLesson, ...results.filter(r => r.id !== ctxLesson.id)].slice(0, 3);
         }
       }
 
@@ -1621,7 +1671,9 @@ export default function IqraScreen() {
           lessons: results,
           lang: lang as 'ar' | 'en',
           mode,
-          teachingContext: teachingCtx || sessionMemory.activeTopicAr || sessionMemory.activeTopicEn,
+          teachingContext: pinnedLesson
+            ? (lang === 'ar' ? pinnedLesson.titleAr : pinnedLesson.titleEn)
+            : (teachingCtx || sessionMemory.activeTopicAr || sessionMemory.activeTopicEn),
           memory: sessionMemory,
           documentContext: hasDocs ? docBundle.promptBlock : null,
           documentNames: docNames,
@@ -1952,7 +2004,7 @@ export default function IqraScreen() {
         setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
       }
     },
-    [deepLinkColor, deepLinkLessonId, lang, messages, mode, sessionMemory, t, teachingCtx],
+    [deepLinkColor, deepLinkLessonId, lang, messages, mode, sessionMemory, t, teachingCtx, teachingCtxLessonId],
   );
 
   // Auto-send deep-link message once welcome message is in place
@@ -2172,7 +2224,21 @@ export default function IqraScreen() {
     setStartClassError('');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
-      const activity = await buildClassDeck({ topic, lang: lang as 'ar' | 'en' });
+      // The lesson's OWN subject, not the deck builder's maths default. That
+      // default was silent and wrong: `isMathContext` reads the subject name,
+      // so a chemistry lesson announced as "Mathematics" came back as a deck
+      // of algebra questions under the chemistry title — the teacher changed
+      // the lesson and «ابدأ الحصة» still projected the previous subject.
+      const activity = await buildClassDeck({
+        topic,
+        lang: lang as 'ar' | 'en',
+        subjectId: currentLessonView?.subjectId,
+        subjectName: currentLessonView?.subjectName,
+        // Only when a lesson is genuinely pinned: with a free-typed topic the
+        // card falls back to the demo lesson for its labels, and grounding the
+        // deck on that fallback would be the very swap this fixes.
+        lessonId: sessionMemory.activeLessonId,
+      });
       setPendingClassroomActivity(activity);
       trackEvent('class_started', { source: 'chat' });
       router.push('/ai-tools/classroom/presentation' as any);
@@ -2187,7 +2253,15 @@ export default function IqraScreen() {
     } finally {
       setStartingClass(false);
     }
-  }, [startingClass, currentLessonView?.topic, lang, t]);
+  }, [
+    startingClass,
+    currentLessonView?.topic,
+    currentLessonView?.subjectId,
+    currentLessonView?.subjectName,
+    sessionMemory.activeLessonId,
+    lang,
+    t,
+  ]);
   const lessonSuggestions = buildLessonSuggestions(
       sessionMemory,
       lang as 'ar' | 'en',
@@ -2332,24 +2406,39 @@ export default function IqraScreen() {
           onGlobalPick={(pick) => {
             // Changing the lesson in chat updates the app-wide context too —
             // home and the tools hub follow (one source of truth).
-            void saveLessonPick({ topic: pick.topic, unitOrder: null, subjectId: pick.subjectId });
+            void saveLessonPick({
+              topic: pick.topic,
+              unitOrder: null,
+              subjectId: pick.subjectId,
+              lessonId: pick.lessonId,
+            });
           }}
-          onContextChange={(ctx) => {
+          onContextChange={(ctx, pick) => {
             setTeachingCtx(ctx);
+            setTeachingCtxLessonId(pick?.lessonId ?? null);
             if (!ctx.trim()) return;
-            const hits = searchKBSemantic(ctx.trim(), lang as 'ar' | 'en');
-            if (hits[0]) {
-              setSessionMemory(prev => pinLesson(prev, hits[0]!, 'hard'));
+            const picked = resolvePickedLesson(ctx, pick, lang as 'ar' | 'en');
+            if (picked) {
+              setSessionMemory(prev => pinLesson(prev, picked, 'hard'));
             } else {
+              // No curriculum lesson behind this topic. Drop the previous
+              // lesson id as well as its title: keeping it left every
+              // generator — and «ابدأ الحصة» — grounded on the lesson the
+              // teacher just navigated away from, while the card showed the
+              // new topic. Both language fields move together for the same
+              // reason; a half-updated pair reads as the old lesson in the
+              // other language.
+              const topic = ctx.trim();
               setSessionMemory(prev => ({
                 ...prev,
-                activeTopicAr: lang === 'ar' ? ctx.trim() : prev.activeTopicAr,
-                activeTopicEn: lang === 'en' ? ctx.trim() : prev.activeTopicEn,
+                activeLessonId: null,
+                activeTopicAr: topic,
+                activeTopicEn: topic,
                 lessonPin: 'hard',
               }));
             }
           }}
-          onAsk={(topic) => {
+          onAsk={(topic, pick) => {
             // `onContextChange` just fired and queued the pin update for this
             // same topic, but React hasn't applied it yet — `sessionMemory`
             // in this closure is still the *previous* lesson. Passing that
@@ -2357,12 +2446,12 @@ export default function IqraScreen() {
             // to keep answering about the lesson the teacher just left.
             // Resolve fresh, the same way onContextChange does, so both agree
             // on the lesson that was actually just picked.
-            const hits = searchKBSemantic(topic, lang as 'ar' | 'en');
+            const picked = resolvePickedLesson(topic, pick, lang as 'ar' | 'en');
             sendMessage(
               lang === 'ar'
                 ? `أدرّس "${topic}" للصف العاشر. أعطني نظرة شاملة عن الموضوع مع أهم مفاهيمه.`
                 : `I'm teaching "${topic}" to Grade 10 students. Give me a comprehensive overview of this topic with key concepts.`,
-              hits[0]?.id ?? undefined,
+              picked?.id ?? undefined,
             );
           }}
         />

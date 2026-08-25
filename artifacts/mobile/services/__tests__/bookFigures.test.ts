@@ -47,24 +47,27 @@ describe('figuresForLesson', () => {
   });
 
   it('is empty for a lesson with nothing mapped, and for nothing at all', () => {
-    // Chemistry is unmapped by design — its book yields no usable outline.
+    // A real chemistry lesson that simply has no figures: the extractor found
+    // four in that book and none of them fall in unit 1 lesson 1.
     assert.deepEqual(figuresForLesson('kbl-chem-s1-nccd-u1_l1'), []);
     assert.deepEqual(figuresForLesson('no-such-lesson'), []);
     assert.deepEqual(figuresForLesson(null), []);
     assert.deepEqual(figuresForLesson(undefined), []);
   });
 
-  it("draws each lesson's figures from its own semester's book", () => {
-    // The invariant that the source ids were violating: Grade 10 maths puts
-    // units 1-4 in semester 1 and 5-8 in semester 2, so a `kbl-math-s1-…`
-    // lesson can only be illustrated by the semester-1 student book.
+  it("draws each lesson's figures from its own subject and semester's book", () => {
+    // The invariant the source ids were violating: Grade 10 maths puts units
+    // 1-4 in semester 1 and 5-8 in semester 2, so a `kbl-math-s1-…` lesson can
+    // only be illustrated by the semester-1 maths book.
     //
-    // This was false for all 54 figures, because the ids came from PDF
+    // This was false for all 54 maths figures, because the ids came from PDF
     // filenames that are backwards. Nothing failed — the figures were on the
     // right lessons and only the book label was wrong, which is why it
     // shipped. Hence a test rather than a comment.
     for (const id of lessonsWithFigures()) {
-      const expected = id.includes('-s1-') ? 'math-s1-student-book' : 'math-s2-student-book';
+      const m = /^kbl-(math|chem)-(s[12])-/.exec(id);
+      assert.ok(m, `${id} has a subject and semester`);
+      const expected = `${m![1]}-${m![2]}-student-book`;
       for (const f of figuresForLesson(id)) {
         assert.equal(f.sourceId, expected, `${id} is illustrated from ${f.sourceId}`);
       }
@@ -81,6 +84,18 @@ describe('figuresForLesson', () => {
         seen.set(key, id);
       }
     }
+  });
+
+  it('places the chemistry figures its book does carry', () => {
+    // Chemistry yielded no outline at all until the opener detector learned
+    // its layout, so these four figures existed but nothing could ask for
+    // them. Joined on the Arabic title, which matches the curriculum's word
+    // for word — the book states no English lesson title on its openers.
+    const wave = figuresForLesson('kbl-chem-s1-nccd-u1_l2');
+    assert.ok(wave.some(f => f.file === 'p024.png'), 'the wave-model figure');
+    assert.ok(wave.every(f => f.sourceId === 'chem-s1-student-book'));
+    assert.equal(figuresForLesson('kbl-chem-s1-nccd-u2_l2').length, 2);
+    assert.equal(figuresForLesson('kbl-chem-s1-nccd-u3_l2').length, 1);
   });
 
   it('carries the page number, so any figure can be checked against the book', () => {

@@ -26,6 +26,7 @@
 import figureMap from '../../../knowledge-base/figure-lesson-map.json' with { type: 'json' };
 import mathS1 from '../../../knowledge-base/grade-10-math/figures/math-s1-student-book/index.json' with { type: 'json' };
 import mathS2 from '../../../knowledge-base/grade-10-math/figures/math-s2-student-book/index.json' with { type: 'json' };
+import chemS1 from '../../../knowledge-base/grade-10-chemistry/figures/chem-s1-student-book/index.json' with { type: 'json' };
 
 export type BookFigure = {
   /** File name inside the book's figure directory, e.g. `p021.png`. */
@@ -54,6 +55,7 @@ type MapEntry = {
 const INDEXES: { sourceId: string; figures: BookFigure[] }[] = [
   mathS1 as { sourceId: string; figures: BookFigure[] },
   mathS2 as { sourceId: string; figures: BookFigure[] },
+  chemS1 as { sourceId: string; figures: BookFigure[] },
 ];
 
 /** `sourceId|unit|lesson`, the only key both files share. */
@@ -88,9 +90,10 @@ const BY_LESSON: Map<string, BookFigure[]> = (() => {
 /**
  * The figures printed in this curriculum lesson, in book order.
  *
- * Empty for a lesson with no mapped figures — which covers chemistry entirely,
- * every non-maths subject, and the one maths lesson the curriculum does not
- * carry. Callers show what they get and nothing when they get nothing.
+ * Empty for a lesson with no mapped figures — every subject beyond maths and
+ * chemistry, the chemistry lessons whose figures the extractor found none of,
+ * and the one maths lesson the curriculum does not carry. Callers show what
+ * they get and nothing when they get nothing.
  */
 export function figuresForLesson(kbLessonId: string | null | undefined): BookFigure[] {
   if (!kbLessonId) return [];
