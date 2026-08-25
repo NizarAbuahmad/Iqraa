@@ -11,6 +11,14 @@
  */
 
 import raw from '../data/iqra_curriculum_g10_finlit_sem1.json' with { type: 'json' };
+import {
+  lessonKbId,
+  lessonKbPrefix,
+  objectiveId,
+  unitKbId,
+  unitKbPrefix,
+  type CurriculumIdScope,
+} from '../curriculumIds.ts';
 
 /** Book id in KB_BOOKS this catalog belongs to (new subject — no legacy rows). */
 export const FINLIT_S1_BOOK_ID = 'kb-finlit-10-s1';
@@ -70,19 +78,29 @@ type FinlitKbLesson = {
   periods: number | null;
 };
 
+/**
+ * What this catalog's ids are scoped to.
+ *
+ * The prefix used to be interpolated inline here and repeated as a string
+ * literal wherever an id had to be parsed back apart. It now comes from
+ * `curriculumIds.ts`, which is the only thing that knows a Grade 10 id has no
+ * grade segment and a Grade 9 one does.
+ */
+const SCOPE: CurriculumIdScope = { gradeId: 'grade-10', subject: 'finlit', semester: 1 };
+
 /** Stable KB unit id (e.g. u1 → kbu-finlit-s1-nccd-u1). */
 export function finlitSem1UnitKbId(jsonUnitId: string): string {
-  return `kbu-finlit-s1-nccd-${jsonUnitId}`;
+  return unitKbId(SCOPE, jsonUnitId);
 }
 
 /** Stable KB lesson id (e.g. u1_l1 → kbl-finlit-s1-nccd-u1_l1). */
 export function finlitSem1LessonKbId(jsonLessonId: string): string {
-  return `kbl-finlit-s1-nccd-${jsonLessonId}`;
+  return lessonKbId(SCOPE, jsonLessonId);
 }
 
 /** Look up a JSON lesson by mapped KB lesson id. */
 export function findFinlitSem1LessonByKbId(kbLessonId: string): FinlitSem1Lesson | null {
-  const prefix = 'kbl-finlit-s1-nccd-';
+  const prefix = lessonKbPrefix(SCOPE);
   if (!kbLessonId.startsWith(prefix)) return null;
   const jsonId = kbLessonId.slice(prefix.length);
   for (const u of nccdG10FinlitSem1.units) {
@@ -224,7 +242,7 @@ export function buildFinlitSem1BrowserCatalog(): {
         teacherNotes: '',
         teacherNotesAr: '',
         outcomes: objectives.map((o, i) => ({
-          id: `o-finlit-s1-${lesson.id}-${i}`,
+          id: objectiveId(SCOPE, lesson.id, i),
           lessonId: lessonKbId,
           description: o,
           descriptionAr: o,

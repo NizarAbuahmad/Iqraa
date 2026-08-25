@@ -14,6 +14,14 @@
  */
 
 import raw from '../data/iqra_curriculum_g10_chem_sem2.json' with { type: 'json' };
+import {
+  lessonKbId,
+  lessonKbPrefix,
+  objectiveId,
+  unitKbId,
+  unitKbPrefix,
+  type CurriculumIdScope,
+} from '../curriculumIds.ts';
 
 /** Book id in KB_BOOKS that this JSON supersedes. */
 export const CHEM_S2_BOOK_ID = 'kb-chem-10-s2';
@@ -83,19 +91,29 @@ type ChemKbLesson = {
   periods: number | null;
 };
 
+/**
+ * What this catalog's ids are scoped to.
+ *
+ * The prefix used to be interpolated inline here and repeated as a string
+ * literal wherever an id had to be parsed back apart. It now comes from
+ * `curriculumIds.ts`, which is the only thing that knows a Grade 10 id has no
+ * grade segment and a Grade 9 one does.
+ */
+const SCOPE: CurriculumIdScope = { gradeId: 'grade-10', subject: 'chem', semester: 2 };
+
 /** Stable KB unit id (e.g. u4 → kbu-chem-s2-nccd-u4). */
 export function chemSem2UnitKbId(jsonUnitId: string): string {
-  return `kbu-chem-s2-nccd-${jsonUnitId}`;
+  return unitKbId(SCOPE, jsonUnitId);
 }
 
 /** Stable KB lesson id (e.g. u4_l1 → kbl-chem-s2-nccd-u4_l1). */
 export function chemSem2LessonKbId(jsonLessonId: string): string {
-  return `kbl-chem-s2-nccd-${jsonLessonId}`;
+  return lessonKbId(SCOPE, jsonLessonId);
 }
 
 /** Look up a JSON lesson by mapped KB lesson id. */
 export function findChemSem2LessonByKbId(kbLessonId: string): ChemSem2Lesson | null {
-  const prefix = 'kbl-chem-s2-nccd-';
+  const prefix = lessonKbPrefix(SCOPE);
   if (!kbLessonId.startsWith(prefix)) return null;
   const jsonId = kbLessonId.slice(prefix.length);
   for (const u of nccdG10ChemSem2.units) {
@@ -237,7 +255,7 @@ export function buildChemSem2BrowserCatalog(): {
         teacherNotes: '',
         teacherNotesAr: '',
         outcomes: objectives.map((o, i) => ({
-          id: `o-nccd-chem-s2-${lesson.id}-${i}`,
+          id: objectiveId(SCOPE, lesson.id, i),
           lessonId: lessonKbId,
           description: o,
           descriptionAr: o,

@@ -32,15 +32,12 @@
  * Imports nothing that touches the OpenAI client — that throws at module scope
  * without a key, which would make this untestable under `node --test`.
  */
-import { G10_SOURCES, sourceLabel } from "@workspace/curriculum";
+import { G10_SOURCES, isNccdUnitId, sourceLabel } from "@workspace/curriculum";
 import {
   passagesForUnit,
   resolveUnitByTopic,
   type Passage,
 } from "@workspace/curriculum/passages";
-
-/** Catalog unit ids, e.g. `kbu-math-s1-nccd-u2`. Anything else is not a unit. */
-const UNIT_ID = /^kbu-(?:math|chem|finlit)-s[12]-nccd-u\d+$/;
 
 /**
  * Pages per request. Three is roughly 4,500 characters — enough for a model to
@@ -137,7 +134,7 @@ export function groundingFor(
 ): Grounding | null {
   // An explicit unit id beats a title match — the caller knows which lesson the
   // teacher picked, and a resolver working from free text can only infer it.
-  const explicit = typeof input.unitId === "string" && UNIT_ID.test(input.unitId)
+  const explicit = typeof input.unitId === "string" && isNccdUnitId(input.unitId)
     ? input.unitId
     : null;
   const topic = typeof input.topic === "string" ? input.topic : "";
@@ -178,7 +175,7 @@ export function groundingForObjectives(
   objectives: readonly { unitId: string }[],
   isAr: boolean,
 ): Grounding | null {
-  const unitIds = [...new Set(objectives.map(o => o.unitId).filter(id => UNIT_ID.test(id)))];
+  const unitIds = [...new Set(objectives.map(o => o.unitId).filter(isNccdUnitId))];
   if (!unitIds.length) return null;
 
   const pooled = unitIds

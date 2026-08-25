@@ -23,6 +23,7 @@ import {
   findNccdUnitByLessonKbId,
 } from './curriculumG10MathSem2.ts';
 import { buildSupportResourcesContext } from './mathSupportResources.ts';
+import { isNccdUnitId } from '@workspace/curriculum';
 
 // ─── Generator KB context ────────────────────────────────────────────────────
 
@@ -255,7 +256,7 @@ export function generatorUnitId(topic: string, lang: 'ar' | 'en'): string | unde
  * keeps that judgement in one place rather than in each screen.
  */
 export function nccdUnitId(unitId: string | null | undefined): string | undefined {
-  return unitId && /^kbu-(?:math|chem|finlit)-s[12]-nccd-u\d+$/.test(unitId) ? unitId : undefined;
+  return isNccdUnitId(unitId) ? unitId ?? undefined : undefined;
 }
 
 /**

@@ -227,6 +227,71 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## A second grade can be added without a collision, 2026-08-25
+
+Every curriculum id omits the grade. A unit is `kbu-math-s1-nccd-u2`, a lesson
+`kbl-math-s1-nccd-u2_l1`, an objective `o-nccd-s1-u2_l1-0`, a bank tag `s1-u2`.
+Grade 9 maths semester 1 unit 2 wants **the identical string for all four**, and
+nothing would have noticed: there was no uniqueness check anywhere in the
+repo, so a second grade would have silently overwritten the first in every map
+keyed by unit id. The first symptom would have been a teacher seeing another
+year's lesson.
+
+**The grade was never missing from the data.** Every unit reaches one through
+`book.gradeId` — 17 of 17, no gaps — and the catalog already spans two grades,
+`grade-10` and a `grade-8` science stub. It was missing only from the strings,
+because each of the five catalog modules interpolated its own prefix inline
+(`` `kbu-math-s1-nccd-${jsonUnitId}` ``, five times) and then repeated that
+prefix as a string literal wherever an id had to be parsed apart.
+
+**What changed.** `lib/curriculum/src/curriculumIds.ts` is now the only thing
+that decides what an id looks like. The five catalogs call it. `grade-10` gets
+the historical form and every other grade gets an explicit `g9-` segment —
+which *is* an implicit default, and the difference from before is that it now
+lives in one documented function with a test on it rather than in five files as
+an unwritten assumption.
+
+**Grade 10's ids did not move — not one byte.** `evaluations.unitId`,
+`evaluations.lessonId`, `evaluations.objectiveIds` and
+`evaluation_questions.objectiveId` are free-text Postgres columns holding these
+exact strings, so a rename is a migration over live student work. Verified by
+dumping all 17 unit, 64 lesson and 196 objective ids before and after and
+diffing: identical. The new test pins them **literally** rather than building
+them with the same helpers the code uses — a test that recomputed them would
+agree with any rename.
+
+**Three copies of one regex became one.** `bankTagsForUnit` in `bank.ts`, the
+API server's `UNIT_ID` in `grounding.ts`, and the app's `nccdUnitId` in
+`kbContext.ts` each carried `/^kbu-(math|chem|finlit)-s[12]-nccd-u\d+$/`.
+Adding a segment to a pattern held in three places is two chances to update only
+two of them. All three now call `isNccdUnitId`.
+
+**The guard is the deliverable**, not the refactor.
+`src/__tests__/curriculumIds.test.ts` asserts global id uniqueness, that a
+synthetic Grade 9 catalog over the same unit numbering collides with nothing,
+and that Grade 10's ids are what they always were. Verified it fails on both
+regressions it exists for: **2 of 14 red** when a Grade 9 id is built without
+its grade segment, **4 of 14 red** when a Grade 10 id is quietly renamed.
+
+**One plan item was dropped after checking it.** The plan said to "open the
+subject union" — `CurriculumSource['subject']` is `'math' | 'chemistry' |
+'financial-literacy'`. It turns out to be self-guarding: three exhaustive
+`Record<CurriculumSource['subject'], …>` maps mean adding a subject is a
+compile-error trail, not a silent gap. And `APP_SUBJECTS` in
+`mathSupportResources.ts` is a deliberate hold-back with its reason written
+next to it (the unresolved financial-literacy edition conflict), not an
+oversight. Widening either would have removed a working safeguard.
+
+**Still true and not fixed here:** `isMathContext`
+(`services/ai/mathPractice.ts:71`) decides "is this maths?" by regex over the
+topic string. Add physics and a lesson mentioning «متجه» gets served maths
+practice from the concrete bank — the same class of bug this file already
+records having shipped once. It needs the lesson's own subject instead, and
+that is its own change.
+
+83 curriculum / 909 mobile / 262 api-server tests pass; typecheck clean;
+`verify-curriculum` 0 errors; grounding coverage unchanged at 45 of 64 lessons.
+
 ## The books are in the prompts now, 2026-08-25
 
 The corpus extracted two entries below this one was read by nothing. It is now
@@ -290,7 +355,7 @@ unreachable by any assertion. The pure half is now `documents/extractMeta.ts`,
 the same split `exportHtml.ts` got out of `share.ts`, and the new test was
 verified to fail (6 of 12) when one invented objective is put back.
 
-69 curriculum / 909 mobile / 262 api-server tests pass; typecheck clean;
+83 curriculum / 909 mobile / 262 api-server tests pass; typecheck clean;
 `verify-curriculum` 0 errors.
 
 **Still invisible to a teacher.** `DEMO_MODE` is `true` and `AI_LIVE_MODE` is

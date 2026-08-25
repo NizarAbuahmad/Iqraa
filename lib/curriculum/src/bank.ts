@@ -31,6 +31,7 @@
  *     Jordanian test papers sat in the product invisible to the one feature
  *     that most wants them.
  */
+import { bankTagsForParsedUnit, parseUnitKbId } from './curriculumIds.ts';
 import {
   G10_SOURCES,
   type CurriculumSource,
@@ -109,12 +110,13 @@ export const BANK_UNIT_TAGS: string[] = [
  * emitting `finlit-s1-u1` would invent a tag nothing can carry.
  */
 export function bankTagsForUnit(unitId: string): string[] {
-  const m = /^kbu-(math|chem|finlit)-s([12])-nccd-u(\d+)$/.exec(unitId);
-  if (!m) return [];
-  const [, subject, semester, unit] = m;
-  if (subject === 'finlit') return [`finlit-s${semester}`];
-  const prefix = subject === 'chem' ? 'chem-s' : 's';
-  return [`${prefix}${semester}-u${unit}`, `${prefix}${semester}`];
+  // The id shape and the tag vocabulary both live in `curriculumIds.ts` now —
+  // this function used to carry its own copy of the unit-id regex, and there
+  // were two more (the API server's grounding, the app's kbContext). Adding a
+  // grade segment to a pattern held in three places is two chances to update
+  // only two of them.
+  const parsed = parseUnitKbId(unitId);
+  return parsed ? bankTagsForParsedUnit(parsed) : [];
 }
 
 /** Documents scoped to a catalog unit, by its id. */
