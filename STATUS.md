@@ -46,9 +46,9 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     because the count was repeatedly described as "all in
     `lib/integrations-openai-ai-server`", which is wrong by a factor of three
     and would send someone looking in the wrong package.
-- Mobile test suite: 725 tests, 0 failures, 10 skipped (re-counted 2026-08-23
-  on an installed workspace; 723 on 2026-08-22, the 480 here was stale before
-  that, and the 376 before it).
+- Mobile test suite: 821 tests, 0 failures, 10 skipped (re-counted 2026-08-25
+  on an installed workspace; 725 on 2026-08-23, 723 on 2026-08-22, the 480 here
+  was stale before that, and the 376 before it).
   The 10 skips are the chemistry KB-search cases, skipped by their own suite,
   not by the runner.
   The `test` script globs `services/__tests__/**/*.test.ts` — it used to be a
@@ -4704,3 +4704,33 @@ light tint that was white-on-cream.
 
 **Not verified:** the .pptx was not opened in PowerPoint. The colour inputs are
 shared now and the file builds, but nobody has looked at a rendered slide.
+
+## The mission slide looked like it had failed to load, 2026-08-25
+
+Reported from a live deck with a screenshot: slide 1/10 of an escape challenge
+showed «مهمتكم», three lines of text, a countdown reading 00:58 — and two
+thirds of the projector empty below it. The question asked was whether
+something was supposed to be there.
+
+Nothing was. `SlideView`'s cover branch (`presentation.tsx`) draws title, rule
+and body and stops; hint, answer, unlock badge, visuals and the teacher-panel
+button are all conditional and an intro slide carries none of them. But the
+cover was top-aligned inside a full-height stage with a `contentContainerStyle`
+that did not grow, so a short slide sat under the header with the rest of the
+screen blank. It now grows to the stage and centres (`flexGrow` on both the
+scroll content box and the cover). Content taller than the stage still starts
+at the top and scrolls — checked in a react-native-web harness at 1400×760,
+both cases, because the app itself is behind a login this container cannot pass.
+
+The timer was the real defect. Every generation prompt specifies
+`durationSeconds: 0` for intro slides (`api-server/src/routes/generate.ts`) and
+nothing enforced it, so a model that emitted 60 got a live countdown — and an
+amber-then-red bar — against a paragraph that asks the class to do nothing yet.
+`timerSecondsForSlide` in `services/presentationUtils.ts` now returns 0 for the
+slide types that are read out rather than worked through (intro, reveal,
+summary, divider, scoreboard, podium); the presenter and the slides outline
+both ask it instead of reading `durationSeconds` raw, so the editor cannot
+advertise a timer the projector then refuses to run.
+
+Clamped at display time on purpose: the deck keeps what the model produced, so
+saves and exports are unchanged and the clamp cannot corrupt a stored activity.

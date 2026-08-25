@@ -30,9 +30,9 @@ Older audits live in `docs/archive/` — historical snapshots, do not act on the
 pnpm install
 pnpm run typecheck                     # whole monorepo
 pnpm run dev:api                       # Express on :8080
-pnpm run dev:mobile:web                # Expo web on :8083
+pnpm run dev:mobile:web                # Expo web on :8081 (MOBILE_PORT overrides)
 
-cd artifacts/mobile     && pnpm test   # 480 tests
+cd artifacts/mobile     && pnpm test   # 821 tests (2026-08-25)
 cd artifacts/api-server && pnpm build && pnpm test   # build first — see below
 ```
 
