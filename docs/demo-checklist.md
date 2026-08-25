@@ -117,3 +117,14 @@ one line of output, and it runs locally with no deployment required.
   in step 3 before an audience watches you type it.
 - **Only `main` is deployed.** If a change "isn't showing", check it is merged
   before debugging anything visual.
+
+## Before a real class uses a student link
+
+- [ ] **Move `iqraa-api` and `iqraa-verifier` off Render's free tier.** Free
+      instances sleep after ~15 minutes and take 30–60s to wake. Thirty
+      students opening a link at the start of a lesson would each wait on a
+      blank screen. Fine for testing, fatal in a classroom.
+- [ ] Set `AI_USER_BUDGET_USD` — the AI budget is otherwise one shared total,
+      and the teacher who generates on the 20th is refused with no way to tell
+      it from a bug.
+- [ ] Load-test 30 concurrent submits, and re-check Neon's connection headroom.

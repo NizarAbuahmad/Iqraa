@@ -700,6 +700,68 @@ reference-only, and there is a test holding that.
 44 curriculum / 783 mobile / 175 api-server tests pass, typecheck clean,
 `verify-curriculum` reports 0 errors. (Mobile was 761 on the branch alone; the
 extra 22 came in with `main` when this was merged up, not from this change.)
+## Scanning the marks off the paper, 2026-08-25
+
+A class of thirty on a ten-question paper is three hundred numbers typed by
+hand, and that is the cost that decides whether a teacher keeps using any of
+this. They already marked the paper. This reads their marks off a photo of it.
+
+**Vision was confirmed available first**, because it gates the whole feature:
+`gpt-5.4-mini` accepted an image and answered normally. Had it been text-only,
+no amount of code would have helped — the OpenAI project permits only that and
+`gpt-5.4-nano`.
+
+**`POST /attempts/:id/scan-marks` writes nothing.** It returns *proposals* that
+land in the boxes on screen; the ordinary marking endpoint is still the only
+thing that saves a mark. That is the entire safety design, and it is why this
+was worth building before reading students' answers: a misread cannot become a
+mark without a teacher seeing the number first.
+
+The module is built to under-claim, because a wrong OCR does not throw — it
+produces a confident wrong number against a real child:
+
+- A mark it cannot read comes back **absent, never zero**. A blank box is a cue
+  to look; a zero is a mark.
+- A number outside the question's range is **dropped, not clamped**. Turning a
+  misread 50 into 5 invents a mark nobody wrote and looks exactly like a
+  correct reading.
+- A mark for a question not on the paper is ignored — that is a misread of the
+  page, and reporting it would put a mark on the wrong question.
+- Every proposal carries `readAs`, the characters the model claims it saw, so
+  the teacher checks a reading rather than trusting a total.
+- Arabic-Indic digits, `٥٫٥`, `5½` and `٥ ونصف` all parse; anything else is a
+  skip with a reason.
+
+The prompt says outright that it is *transcribing, not marking* — never infer a
+mark from the student's work, never fill a gap, and omitting always beats
+guessing.
+
+**The photo is not stored.** It goes to the model and is discarded. There is no
+object storage in this app, and inventing one to hold exam papers belonging to
+minors deserves its own decision rather than arriving as a side effect of a
+convenience feature. The cost is that a disputed mark has no scan to appeal to.
+
+### A 500 that ordinary use would have hit
+
+`express.json()` was at its 100KB default. A phone photo is several megabytes
+before base64 inflates it by a third, so the body parser rejected it **before
+any route ran** and the generic handler answered `500 Internal server error` —
+nothing a teacher could act on, on the feature's main path. The limit is now
+12MB, and `entity.too.large` answers 413 with advice. `scan-marks` still
+refuses over 8MB itself; the limit only has to be high enough that the refusal
+comes from somewhere that can explain itself.
+
+Found by testing the guard, not the happy path.
+
+13 tests on the parser, 6 on the route's guards (bad body, oversized, another
+teacher's attempt, no token, live mode off, and that none of it writes a
+grade). 256 api-server tests, 895 mobile, 0 failures.
+
+**Not verified: the model actually reading a sheet.** The local key is a
+placeholder and the endpoint is not deployed yet, so every test above runs with
+live mode off. The first real scan will be the first time a photograph reaches
+the model.
+
 ## Save stopped working after you deleted the material, 2026-08-25
 
 Reported from use: save a quiz, pick a class, leave the screen, delete the

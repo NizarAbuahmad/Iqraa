@@ -35,6 +35,23 @@ import {
 } from "../modules/assessment/manualGrade";
 import { recommendationsFor } from "../modules/assessment/recommend";
 import type { LevelBandInput } from "../modules/assessment/scoring";
+import {
+  buildScanPrompt,
+  parseScanResponse,
+  type ScannableQuestion,
+} from "../modules/assessment/scanMarks";
+import {
+  AiBudgetExceededError,
+  AiLiveModeOffError,
+  AiUserQuotaExceededError,
+  assertBudgetAvailable,
+  assertLiveModeEnabled,
+  assertUserQuotaAvailable,
+  getGenerationModel,
+  recordUsage,
+} from "../lib/aiBudget.ts";
+import { extractJSON } from "../lib/generationShape.ts";
+import { openai } from "@workspace/integrations-openai-ai-server";
 import { resolveObjectiveIds } from "@workspace/curriculum";
 
 const router = Router();
@@ -506,6 +523,119 @@ router.put("/attempts/:id/grades/:questionId", async (req: AuthenticatedRequest,
   } catch (err) {
     logger.error({ err }, "manual grade failed");
     res.status(500).json({ error: "Failed to save the mark" });
+  }
+});
+
+/**
+ * Read the teacher's handwritten marks off a photo of the paper.
+ *
+ * A class of thirty on a ten-question paper is three hundred numbers typed by
+ * hand. The teacher has already marked the paper; this saves them typing it
+ * out again.
+ *
+ * **It writes nothing.** The response is a set of proposals that land in the
+ * boxes on screen, and the ordinary marking endpoint is still the only thing
+ * that saves a mark. That is deliberate, and it is the whole safety design: a
+ * misread cannot become a mark without a teacher seeing the number first.
+ *
+ * The photo is not stored. It goes to the model and is discarded — there is no
+ * object storage in this app, and inventing one to hold exam papers belonging
+ * to minors is a decision that deserves its own conversation rather than
+ * arriving as a side effect of a convenience feature.
+ */
+router.post("/attempts/:id/scan-marks", async (req: AuthenticatedRequest, res) => {
+  try {
+    const owned = await ownedAttempt(req.params["id"] as string, req.user!.id);
+    if (!owned) {
+      res.status(404).json({ error: "Attempt not found" });
+      return;
+    }
+
+    const image = typeof req.body?.image === "string" ? req.body.image : "";
+    // A data URL, because there is nowhere to put a file.
+    if (!image.startsWith("data:image/")) {
+      res.status(400).json({ error: "image must be a data URL", code: "bad_image" });
+      return;
+    }
+    // Roughly a high-quality phone photo once base64 has inflated it by a
+    // third. A guard against a request the model would refuse anyway, with a
+    // message that tells the teacher what to do instead.
+    if (image.length > 8_000_000) {
+      res.status(413).json({
+        error: "That photo is too large. Take it again at a lower quality.",
+        code: "image_too_large",
+      });
+      return;
+    }
+
+    assertLiveModeEnabled();
+    assertBudgetAvailable();
+    await assertUserQuotaAvailable(req.user!.id);
+
+    const snapshot = (owned.attempt.questionSnapshot as EvaluationQuestion[]) ?? [];
+    if (snapshot.length === 0) {
+      res.status(409).json({ error: "This attempt has no questions" });
+      return;
+    }
+    const questions: ScannableQuestion[] = snapshot.map((q, i) => ({
+      questionId: q.id,
+      number: i + 1,
+      maxMarks: Number(q.marks),
+      type: q.type,
+    }));
+
+    const prompt = buildScanPrompt(questions);
+    const model = getGenerationModel();
+    const completion = await openai.chat.completions.create({
+      model,
+      max_completion_tokens: 1500,
+      messages: [
+        { role: "system", content: prompt.system },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: prompt.user },
+            { type: "image_url", image_url: { url: image } },
+          ],
+        },
+      ],
+    });
+    recordUsage(completion.usage, model, {
+      kind: "quiz",
+      promptVersion: "scan-marks-1",
+      userId: req.user!.id,
+    });
+
+    const parsed = parseScanResponse(
+      extractJSON(completion.choices[0]?.message?.content ?? "{}"),
+      questions,
+    );
+
+    res.json({
+      ...parsed,
+      model,
+      // Stated in the response so a client cannot present these as saved.
+      saved: false,
+    });
+  } catch (err) {
+    if (err instanceof AiUserQuotaExceededError) {
+      res.status(429).json({ error: err.message, code: "user_quota_exceeded" });
+      return;
+    }
+    if (err instanceof AiBudgetExceededError) {
+      res.status(429).json({ error: err.message, code: "budget_exceeded" });
+      return;
+    }
+    if (err instanceof AiLiveModeOffError) {
+      res.status(503).json({ error: err.message, code: "live_mode_off" });
+      return;
+    }
+    logger.error({ err }, "scan marks failed");
+    res.status(502).json({
+      error:
+        "Could not read that photo. Nothing was changed — try again, or enter the marks by hand.",
+      code: "scan_unavailable",
+    });
   }
 });
 

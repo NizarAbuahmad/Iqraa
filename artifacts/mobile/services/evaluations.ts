@@ -401,6 +401,39 @@ export async function setQuestionGrade(
   return readJson(res, 'Saving the mark');
 }
 
+/** One mark the scan believes it read, for the teacher to confirm. */
+export interface MarkProposal {
+  questionId: string;
+  number: number;
+  awardedMarks: number;
+  /** The characters the model reported seeing, so the teacher checks a
+   *  reading rather than trusting a total. */
+  readAs: string;
+}
+
+/**
+ * Read the marks off a photo of the paper.
+ *
+ * Saves nothing — `saved: false` comes back in the response to say so. The
+ * proposals go into the boxes and the teacher confirms them through the
+ * ordinary marking call.
+ */
+export async function scanMarks(
+  attemptId: string,
+  image: string,
+): Promise<{
+  proposals: MarkProposal[];
+  skipped: { number: number; reason: string }[];
+  model: string;
+  saved: boolean;
+}> {
+  const res = await apiFetch(`/attempts/${attemptId}/scan-marks`, {
+    method: 'POST',
+    body: JSON.stringify({ image }),
+  });
+  return readJson(res, 'Reading the marks');
+}
+
 export async function setTeacherComment(attemptId: string, teacherComment: string): Promise<Attempt> {
   const res = await apiFetch(`/attempts/${attemptId}`, {
     method: 'PATCH',
