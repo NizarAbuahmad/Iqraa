@@ -64,14 +64,25 @@ ASSETS = ROOT / "attached_assets"
 
 # Source id → the PDF in attached_assets. Ids match lib/curriculum's
 # g10_sources.json so a figure can be traced back to the book it was cut from.
+#
+# THE MATHS FILENAMES ARE BACKWARDS. Read the pairing below carefully before
+# "fixing" it: the file called `1st_semester` is the SECOND-semester book and
+# vice versa. Both books say so on their own title pages — «الفصل الدراسـي
+# الثانـي» appears in the one named 1st_semester — and their contents agree:
+# that file holds units 5-8, the other holds units 1-4.
+#
+# This was got wrong originally, by taking the id from the filename. The ids
+# then flowed into every figure's `sourceId`, and from there into a caption
+# telling teachers to look in the wrong book. `check_semester` below is the
+# guard so it cannot happen quietly again.
 BOOKS: dict[str, tuple[str, str]] = {
     "math-s1-student-book": (
         "grade-10-math",
-        "10th_grade,_math,_1st_semester_1785071530816.pdf",
+        "10th_grade,_math,_2nd_semester_1785147978008.pdf",
     ),
     "math-s2-student-book": (
         "grade-10-math",
-        "10th_grade,_math,_2nd_semester_1785147978008.pdf",
+        "10th_grade,_math,_1st_semester_1785071530816.pdf",
     ),
     "chem-s1-student-book": (
         "grade-10-chemistry",
@@ -149,10 +160,12 @@ def outline(doc: pymupdf.Document) -> dict[int, dict]:
     opener: on an opener the header still shows the outgoing unit.
 
     The printed number is what gets recorded, not a position in the sequence.
-    The semester-1 book prints units 5–8 and semester-2 prints 1–4, so a
-    sequence index would have labelled every semester-1 figure with a unit
-    number the book does not use — and a teacher looking for «الوحدة 5» would
-    have been shown unit 1.
+    Each book restarts its lessons at 1, so a running index would number the
+    second book's units 1-4 when it prints 5-8. The printed number is what a
+    teacher searching for «الوحدة 5» will look for.
+
+    Units 1-4 are semester 1 and 5-8 semester 2 — see `check_semester`, which
+    uses exactly that to catch a book filed under the wrong id.
     """
     lessons: list[dict] = []
     for n in range(len(doc)):
@@ -291,6 +304,38 @@ def review_sheet(paths: list[Path], out: Path) -> None:
     sheet.save(out)
 
 
+def check_semester(source_id: str, index: list[dict]) -> None:
+    """Fail loudly if a book's figures carry units its semester cannot hold.
+
+    Grade 10 maths numbers its units 1-8 across the year: semester 1 teaches
+    units 1-4, semester 2 teaches 5-8. So the units found in a book are proof
+    of which semester it is, and they are read from the page headers — content,
+    not the filename.
+
+    That distinction is the whole point. The maths PDFs are named backwards,
+    and taking the id from the filename put every semester-1 figure under
+    `math-s2-student-book`, which a caption then printed to teachers as the
+    wrong book. Nothing failed; the figures were right and only the label was
+    wrong, which is exactly the kind of error that survives review.
+
+    Chemistry has no usable outline, so its figures carry no unit and are not
+    checked — the same reason they are not mapped to lessons.
+    """
+    expected = {1: range(1, 5), 2: range(5, 9)}
+    semester = 1 if "-s1-" in source_id else 2 if "-s2-" in source_id else None
+    if semester is None:
+        return
+    seen = {f["unit"] for f in index if f.get("unit") is not None}
+    stray = sorted(u for u in seen if u not in expected[semester])
+    if stray:
+        raise SystemExit(
+            f"{source_id}: semester {semester} should hold units "
+            f"{expected[semester].start}-{expected[semester].stop - 1}, "
+            f"but the book's own headers say unit(s) {stray}. "
+            f"The source id and the PDF are mismatched — check BOOKS."
+        )
+
+
 def main() -> None:
     for source_id, (subject, filename) in BOOKS.items():
         pdf = ASSETS / filename
@@ -319,6 +364,7 @@ def main() -> None:
                     "lessonStartPage": lesson["startPage"] if lesson else None,
                 }
             )
+        check_semester(source_id, index)
         (outdir / "index.json").write_text(
             json.dumps({"sourceId": source_id, "figures": index}, ensure_ascii=False, indent=1),
             encoding="utf-8",

@@ -2,48 +2,108 @@
  "sourceId": "math-s2-student-book",
  "figures": [
   {
-   "file": "p007.png",
+   "file": "p010.png",
    "sourceId": "math-s2-student-book",
-   "pdfPage": 7,
+   "pdfPage": 10,
    "rect": [
-    13.6,
-    294.5,
-    275.0,
-    544.3
+    46.7,
+    421.1,
+    162.9,
+    547.3
    ],
-   "unit": null,
-   "lesson": null,
-   "lessonTitleEn": null,
-   "lessonStartPage": null
+   "unit": 5,
+   "lesson": 1,
+   "lessonTitleEn": "Polynomial Functions",
+   "lessonStartPage": 8
   },
   {
-   "file": "p016.png",
+   "file": "p011.png",
    "sourceId": "math-s2-student-book",
-   "pdfPage": 16,
+   "pdfPage": 11,
    "rect": [
-    42.8,
-    397.2,
-    218.0,
-    736.0
+    17.8,
+    10.9,
+    443.7,
+    505.6
    ],
-   "unit": 1,
+   "unit": 5,
    "lesson": 1,
-   "lessonTitleEn": "Solving Special Equations",
+   "lessonTitleEn": "Polynomial Functions",
    "lessonStartPage": 8
+  },
+  {
+   "file": "p017.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 17,
+   "rect": [
+    35.9,
+    69.2,
+    163.2,
+    179.7
+   ],
+   "unit": 5,
+   "lesson": 1,
+   "lessonTitleEn": "Polynomial Functions",
+   "lessonStartPage": 8
+  },
+  {
+   "file": "p020.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 20,
+   "rect": [
+    49.6,
+    573.6,
+    193.9,
+    720.5
+   ],
+   "unit": 5,
+   "lesson": 2,
+   "lessonTitleEn": "Rational Functions",
+   "lessonStartPage": 18
   },
   {
    "file": "p021.png",
    "sourceId": "math-s2-student-book",
    "pdfPage": 21,
    "rect": [
-    415.0,
-    279.9,
-    554.3,
-    410.3
+    34.8,
+    59.1,
+    206.8,
+    220.0
    ],
-   "unit": 1,
+   "unit": 5,
    "lesson": 2,
-   "lessonTitleEn": "Solving a System of Linear and Quadratic Equations",
+   "lessonTitleEn": "Rational Functions",
+   "lessonStartPage": 18
+  },
+  {
+   "file": "p022.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 22,
+   "rect": [
+    46.7,
+    425.2,
+    186.5,
+    607.8
+   ],
+   "unit": 5,
+   "lesson": 2,
+   "lessonTitleEn": "Rational Functions",
+   "lessonStartPage": 18
+  },
+  {
+   "file": "p023.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 23,
+   "rect": [
+    32.2,
+    79.3,
+    480.7,
+    575.4
+   ],
+   "unit": 5,
+   "lesson": 2,
+   "lessonTitleEn": "Rational Functions",
    "lessonStartPage": 18
   },
   {
@@ -51,210 +111,480 @@
    "sourceId": "math-s2-student-book",
    "pdfPage": 24,
    "rect": [
-    49.1,
-    609.2,
-    177.1,
-    739.8
+    77.4,
+    357.8,
+    201.1,
+    469.0
    ],
-   "unit": 1,
+   "unit": 5,
    "lesson": 2,
-   "lessonTitleEn": "Solving a System of Linear and Quadratic Equations",
+   "lessonTitleEn": "Rational Functions",
    "lessonStartPage": 18
   },
   {
-   "file": "p025.png",
+   "file": "p032.png",
    "sourceId": "math-s2-student-book",
-   "pdfPage": 25,
+   "pdfPage": 32,
    "rect": [
-    406.4,
-    444.7,
-    563.6,
-    705.5
+    430.0,
+    557.3,
+    568.6,
+    688.1
    ],
-   "unit": 1,
-   "lesson": 3,
-   "lessonTitleEn": "Solving a System of Two Quadratic Equations",
-   "lessonStartPage": 25
-  },
-  {
-   "file": "p028.png",
-   "sourceId": "math-s2-student-book",
-   "pdfPage": 28,
-   "rect": [
-    431.7,
-    381.4,
-    577.1,
-    582.8
-   ],
-   "unit": 1,
-   "lesson": 3,
-   "lessonTitleEn": "Solving a System of Two Quadratic Equations",
-   "lessonStartPage": 25
-  },
-  {
-   "file": "p054.png",
-   "sourceId": "math-s2-student-book",
-   "pdfPage": 54,
-   "rect": [
-    59.4,
-    390.7,
-    231.6,
-    545.6
-   ],
-   "unit": 2,
+   "unit": 5,
    "lesson": 4,
-   "lessonTitleEn": "Equation of a Circle",
-   "lessonStartPage": 54
+   "lessonTitleEn": "Inverse Function",
+   "lessonStartPage": 32
   },
   {
-   "file": "p055.png",
+   "file": "p033.png",
    "sourceId": "math-s2-student-book",
-   "pdfPage": 55,
+   "pdfPage": 33,
    "rect": [
-    34.1,
-    369.4,
-    160.7,
-    495.1
+    265.7,
+    611.9,
+    395.1,
+    687.1
    ],
-   "unit": 2,
+   "unit": 5,
    "lesson": 4,
-   "lessonTitleEn": "Equation of a Circle",
-   "lessonStartPage": 54
+   "lessonTitleEn": "Inverse Function",
+   "lessonStartPage": 32
+  },
+  {
+   "file": "p041.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 41,
+   "rect": [
+    53.6,
+    63.5,
+    147.1,
+    190.3
+   ],
+   "unit": 5,
+   "lesson": 4,
+   "lessonTitleEn": "Inverse Function",
+   "lessonStartPage": 32
+  },
+  {
+   "file": "p057.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 57,
+   "rect": [
+    32.5,
+    62.4,
+    430.7,
+    342.4
+   ],
+   "unit": 6,
+   "lesson": 1,
+   "lessonTitleEn": "Estimating Slope",
+   "lessonStartPage": 56
+  },
+  {
+   "file": "p058.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 58,
+   "rect": [
+    46.7,
+    60.9,
+    444.9,
+    518.8
+   ],
+   "unit": 6,
+   "lesson": 1,
+   "lessonTitleEn": "Estimating Slope",
+   "lessonStartPage": 56
+  },
+  {
+   "file": "p059.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 59,
+   "rect": [
+    40.4,
+    535.5,
+    158.3,
+    709.4
+   ],
+   "unit": 6,
+   "lesson": 1,
+   "lessonTitleEn": "Estimating Slope",
+   "lessonStartPage": 56
   },
   {
    "file": "p060.png",
    "sourceId": "math-s2-student-book",
    "pdfPage": 60,
    "rect": [
-    47.0,
-    589.5,
-    190.2,
-    738.4
+    46.9,
+    484.5,
+    203.0,
+    592.5
    ],
-   "unit": 2,
-   "lesson": 4,
-   "lessonTitleEn": "Equation of a Circle",
-   "lessonStartPage": 54
+   "unit": 6,
+   "lesson": 1,
+   "lessonTitleEn": "Estimating Slope",
+   "lessonStartPage": 56
   },
   {
-   "file": "p067.png",
+   "file": "p061.png",
    "sourceId": "math-s2-student-book",
-   "pdfPage": 67,
+   "pdfPage": 61,
    "rect": [
-    126.9,
-    66.2,
-    225.2,
-    161.3
+    33.0,
+    56.5,
+    212.9,
+    210.8
    ],
-   "unit": 3,
+   "unit": 6,
    "lesson": 1,
-   "lessonTitleEn": "Trigonometric Ratios",
-   "lessonStartPage": 66
+   "lessonTitleEn": "Estimating Slope",
+   "lessonStartPage": 56
   },
   {
-   "file": "p068.png",
+   "file": "p062.png",
    "sourceId": "math-s2-student-book",
-   "pdfPage": 68,
+   "pdfPage": 62,
    "rect": [
-    45.4,
-    441.4,
-    441.8,
-    700.3
+    65.5,
+    54.3,
+    230.8,
+    228.0
    ],
-   "unit": 3,
+   "unit": 6,
    "lesson": 1,
-   "lessonTitleEn": "Trigonometric Ratios",
-   "lessonStartPage": 66
+   "lessonTitleEn": "Estimating Slope",
+   "lessonStartPage": 56
+  },
+  {
+   "file": "p064.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 64,
+   "rect": [
+    49.1,
+    343.8,
+    177.4,
+    556.6
+   ],
+   "unit": 6,
+   "lesson": 2,
+   "lessonTitleEn": "Differentiation",
+   "lessonStartPage": 63
   },
   {
    "file": "p069.png",
    "sourceId": "math-s2-student-book",
    "pdfPage": 69,
    "rect": [
-    139.1,
-    152.3,
-    268.7,
-    291.7
+    36.4,
+    59.6,
+    161.8,
+    211.9
    ],
-   "unit": 3,
-   "lesson": 1,
-   "lessonTitleEn": "Trigonometric Ratios",
-   "lessonStartPage": 66
-  },
-  {
-   "file": "p075.png",
-   "sourceId": "math-s2-student-book",
-   "pdfPage": 75,
-   "rect": [
-    29.3,
-    62.5,
-    476.2,
-    536.2
-   ],
-   "unit": 3,
+   "unit": 6,
    "lesson": 2,
-   "lessonTitleEn": "Trigonometric Ratios for Angles between 0º and 360º",
-   "lessonStartPage": 74
+   "lessonTitleEn": "Differentiation",
+   "lessonStartPage": 63
   },
   {
-   "file": "p085.png",
+   "file": "p070.png",
    "sourceId": "math-s2-student-book",
-   "pdfPage": 85,
+   "pdfPage": 70,
    "rect": [
-    123.5,
-    190.6,
-    342.0,
-    379.3
+    48.5,
+    273.5,
+    227.0,
+    365.8
    ],
-   "unit": 3,
+   "unit": 6,
    "lesson": 3,
-   "lessonTitleEn": "Graphing Trigonometric Functions",
-   "lessonStartPage": 82
+   "lessonTitleEn": "Maximum and Minimum Values",
+   "lessonStartPage": 70
+  },
+  {
+   "file": "p071.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 71,
+   "rect": [
+    35.7,
+    306.1,
+    182.5,
+    428.6
+   ],
+   "unit": 6,
+   "lesson": 3,
+   "lessonTitleEn": "Maximum and Minimum Values",
+   "lessonStartPage": 70
+  },
+  {
+   "file": "p076.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 76,
+   "rect": [
+    47.2,
+    476.7,
+    189.7,
+    612.8
+   ],
+   "unit": 6,
+   "lesson": 3,
+   "lessonTitleEn": "Maximum and Minimum Values",
+   "lessonStartPage": 70
+  },
+  {
+   "file": "p077.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 77,
+   "rect": [
+    339.1,
+    454.5,
+    499.7,
+    594.8
+   ],
+   "unit": 6,
+   "lesson": 3,
+   "lessonTitleEn": "Maximum and Minimum Values",
+   "lessonStartPage": 70
+  },
+  {
+   "file": "p081.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 81,
+   "rect": [
+    436.7,
+    310.4,
+    517.4,
+    390.1
+   ],
+   "unit": 7,
+   "lesson": 1,
+   "lessonTitleEn": "Vectors in the Coordinate Plane",
+   "lessonStartPage": 80
+  },
+  {
+   "file": "p082.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 82,
+   "rect": [
+    46.2,
+    64.4,
+    444.4,
+    280.9
+   ],
+   "unit": 7,
+   "lesson": 1,
+   "lessonTitleEn": "Vectors in the Coordinate Plane",
+   "lessonStartPage": 80
+  },
+  {
+   "file": "p084.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 84,
+   "rect": [
+    46.6,
+    59.0,
+    444.4,
+    497.7
+   ],
+   "unit": 7,
+   "lesson": 1,
+   "lessonTitleEn": "Vectors in the Coordinate Plane",
+   "lessonStartPage": 80
   },
   {
    "file": "p086.png",
    "sourceId": "math-s2-student-book",
    "pdfPage": 86,
    "rect": [
-    291.6,
-    374.6,
-    510.7,
-    521.1
+    82.7,
+    227.6,
+    161.0,
+    310.1
    ],
-   "unit": 3,
-   "lesson": 3,
-   "lessonTitleEn": "Graphing Trigonometric Functions",
-   "lessonStartPage": 82
+   "unit": 7,
+   "lesson": 1,
+   "lessonTitleEn": "Vectors in the Coordinate Plane",
+   "lessonStartPage": 80
   },
   {
-   "file": "p101.png",
+   "file": "p087.png",
    "sourceId": "math-s2-student-book",
-   "pdfPage": 101,
+   "pdfPage": 87,
    "rect": [
-    159.8,
-    185.6,
-    292.0,
-    326.5
+    36.5,
+    237.6,
+    166.2,
+    368.9
    ],
-   "unit": 4,
+   "unit": 7,
    "lesson": 1,
-   "lessonTitleEn": "Bearing",
-   "lessonStartPage": 100
+   "lessonTitleEn": "Vectors in the Coordinate Plane",
+   "lessonStartPage": 80
   },
   {
-   "file": "p103.png",
+   "file": "p090.png",
    "sourceId": "math-s2-student-book",
-   "pdfPage": 103,
+   "pdfPage": 90,
    "rect": [
-    34.7,
-    565.1,
-    257.0,
-    678.8
+    57.4,
+    488.0,
+    161.5,
+    577.7
    ],
-   "unit": 4,
+   "unit": 7,
+   "lesson": 2,
+   "lessonTitleEn": "Adding and Subtracting Vectors",
+   "lessonStartPage": 88
+  },
+  {
+   "file": "p091.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 91,
+   "rect": [
+    32.5,
+    56.7,
+    430.4,
+    514.5
+   ],
+   "unit": 7,
+   "lesson": 2,
+   "lessonTitleEn": "Adding and Subtracting Vectors",
+   "lessonStartPage": 88
+  },
+  {
+   "file": "p108.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 108,
+   "rect": [
+    46.2,
+    570.7,
+    186.3,
+    715.5
+   ],
+   "unit": 8,
    "lesson": 1,
-   "lessonTitleEn": "Bearing",
-   "lessonStartPage": 100
+   "lessonTitleEn": "Scatter Graphs",
+   "lessonStartPage": 106
+  },
+  {
+   "file": "p109.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 109,
+   "rect": [
+    52.9,
+    375.6,
+    223.6,
+    523.8
+   ],
+   "unit": 8,
+   "lesson": 1,
+   "lessonTitleEn": "Scatter Graphs",
+   "lessonStartPage": 106
+  },
+  {
+   "file": "p110.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 110,
+   "rect": [
+    66.6,
+    125.9,
+    210.6,
+    269.0
+   ],
+   "unit": 8,
+   "lesson": 1,
+   "lessonTitleEn": "Scatter Graphs",
+   "lessonStartPage": 106
+  },
+  {
+   "file": "p111.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 111,
+   "rect": [
+    49.9,
+    541.6,
+    187.4,
+    711.1
+   ],
+   "unit": 8,
+   "lesson": 1,
+   "lessonTitleEn": "Scatter Graphs",
+   "lessonStartPage": 106
+  },
+  {
+   "file": "p118.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 118,
+   "rect": [
+    72.4,
+    232.0,
+    197.3,
+    360.2
+   ],
+   "unit": 8,
+   "lesson": 2,
+   "lessonTitleEn": "Cumulative Frequency Graph",
+   "lessonStartPage": 117
+  },
+  {
+   "file": "p121.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 121,
+   "rect": [
+    30.2,
+    52.7,
+    430.7,
+    380.6
+   ],
+   "unit": 8,
+   "lesson": 2,
+   "lessonTitleEn": "Cumulative Frequency Graph",
+   "lessonStartPage": 117
+  },
+  {
+   "file": "p123.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 123,
+   "rect": [
+    49.3,
+    325.6,
+    197.8,
+    483.5
+   ],
+   "unit": 8,
+   "lesson": 2,
+   "lessonTitleEn": "Cumulative Frequency Graph",
+   "lessonStartPage": 117
+  },
+  {
+   "file": "p148.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 148,
+   "rect": [
+    326.8,
+    135.7,
+    428.0,
+    252.2
+   ],
+   "unit": 8,
+   "lesson": 5,
+   "lessonTitleEn": "Probability of Independent and Dependent Events",
+   "lessonStartPage": 139
+  },
+  {
+   "file": "p149.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 149,
+   "rect": [
+    334.1,
+    449.0,
+    518.5,
+    608.2
+   ],
+   "unit": 8,
+   "lesson": 5,
+   "lessonTitleEn": "Probability of Independent and Dependent Events",
+   "lessonStartPage": 139
   }
  ]
 }
