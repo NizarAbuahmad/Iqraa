@@ -811,6 +811,49 @@ defines all four keys in both languages, and `pnpm run typecheck` is clean on
 `main`. Left in place rather than deleted — this file's habit of recording a
 problem and never its fix is the thing worth not repeating.
 
+## Figures are joined to curriculum lessons by a checked-in map, 2026-08-25
+
+`figuresForLesson(kbLessonId)` in `services/bookFigures.ts` answers the
+question the app actually asks. 18 of the 19 book lessons that carry figures
+are joined to a `KB_LESSONS` id.
+
+**The join is a file, not a runtime match, because the two datasets disagree
+about lesson boundaries.** The book splits composition, inverse and radical
+functions into separate lessons where the curriculum merges them into one;
+the book opens unit 1 with «حل معادلات خاصة», which the curriculum does not
+carry at all, so every later unit-1 lesson sits one place lower than the
+number the book prints. Title overlap scored **0.67** between «Inverse
+Function» and the merged lesson — convincing enough to ship, wrong enough to
+file a figure under a lesson about something else.
+
+**Half the misses were an alphabet problem.** Many curriculum lessons carry an
+Arabic title only, so English-to-English matching could not see them at all:
+«Polynomial Functions» ↔ «اقترانات كثيرات الحدود», «Adding and Subtracting
+Vectors» ↔ «جمع المتجهات وطرحها», «Inverse Function» ↔ «الاقتران العكسي» —
+that last one an exact match to a *different* lesson than the 0.67 English
+candidate. Automatic matching proposed 11; reading the Arabic settled 7 more.
+
+**Two extraction bugs found on the way:**
+
+- A lesson title can run to a second line («Trigonometric Ratios for Angles» /
+  «between 0º and 360º»); keeping only the last span kept only the tail, which
+  then matched nothing.
+- `u{n}_l{m}` in the curriculum matches the number the book PRINTS in every
+  unit except unit 1. Worth knowing before anyone tries to derive the join
+  arithmetically.
+
+The one unmatched lesson stays unmatched: its figures are extracted, indexed
+and simply never asked for.
+
+**Not on a slide yet.** `figurePath()` returns a repo-relative path rather
+than an imported asset, because how these reach a running app — bundled by
+Metro or served over HTTP — is unsettled, and baking one answer in would make
+the other expensive.
+
+Verified: `pnpm run typecheck` clean; `artifacts/mobile` 823 tests / 0 fail
+(8 new, asserted against the real extracted data rather than fixtures — a
+fixture would only agree with itself).
+
 ## Each figure knows its unit and lesson, 2026-08-25
 
 `index.json` now carries `unit`, `lesson`, `lessonTitleEn` and

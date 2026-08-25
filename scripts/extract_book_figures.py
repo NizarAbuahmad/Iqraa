@@ -125,14 +125,19 @@ def lesson_start(page: pymupdf.Page) -> dict | None:
         for s in _spans(page)
     ):
         return None
-    number = title_en = None
+    number = None
+    # A title can run to a second line — «Trigonometric Ratios for Angles» /
+    # «between 0º and 360º». Keeping only the last span kept only the tail,
+    # which then matched nothing at all in the curriculum.
+    title_parts: list[tuple[float, float, str]] = []
     for s in _spans(page):
         t = s["text"].strip()
         if s["size"] >= 40 and s["bbox"][1] < 60 and t.translate(ARABIC_DIGITS).isdigit():
             number = int(t.translate(ARABIC_DIGITS))
         if 13 <= s["size"] <= 20 and 60 < s["bbox"][1] < 115:
-            if t and all(ord(c) < 0x0600 for c in t) and len(t) > 6:
-                title_en = re.sub(r"\s+", " ", t)
+            if t and all(ord(c) < 0x0600 for c in t) and len(t) > 3:
+                title_parts.append((round(s["bbox"][1], 1), s["bbox"][0], t))
+    title_en = re.sub(r"\s+", " ", " ".join(t for _, _, t in sorted(title_parts))) or None
     return None if number is None else {"lesson": number, "titleEn": title_en}
 
 
