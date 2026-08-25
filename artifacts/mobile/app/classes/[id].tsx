@@ -1,9 +1,14 @@
 /**
  * Class detail — who is in this class, and what was made for it.
  *
- * Two tabs over one class. The roster (الطلاب) is the register; materials
- * (الموارد) is what the teacher attached from their workspace, which is what
- * turns a class from an address book into "what did I give صف أ".
+ * Three tabs over one class. The roster (الطلاب) is the register; materials
+ * (الموارد) is what the teacher attached from their workspace; exams
+ * (الامتحانات) is what they set and are marking. Together they turn a class
+ * from an address book into "what did I give صف أ, and how did they do".
+ *
+ * The exams tab exists because marking was only reachable through the tools
+ * catalog — a teacher standing on their own class, looking at their own
+ * students, had no path to "mark their paper" at all.
  *
  * Attaching happens here rather than at generation time on purpose: a material
  * is usually written before there is a class to hang it on, and putting a class
@@ -43,6 +48,7 @@ import {
   type RosterStudent,
 } from '@/services/roster';
 import { getItems, updateItem, type SavedMaterial } from '@/services/workspace';
+import { listEvaluations, setEvaluationClass, type Evaluation } from '@/services/evaluations';
 import {
   MATERIAL_COLOR,
   MATERIAL_ICON,
@@ -53,7 +59,7 @@ import { confirm } from '@/services/confirm';
 
 const ACCENT = '#1B6B62';
 
-type Tab = 'students' | 'materials';
+type Tab = 'students' | 'materials' | 'exams';
 
 export default function ClassDetailScreen() {
   const colors = useColors();
@@ -70,6 +76,11 @@ export default function ClassDetailScreen() {
   const [showAdd, setShowAdd] = useState(false);
   const [namesText, setNamesText] = useState('');
   const [saving, setSaving] = useState(false);
+  const [exams, setExams] = useState<Evaluation[]>([]);
+  const [showAttachExam, setShowAttachExam] = useState(false);
+  const [attachableExams, setAttachableExams] = useState<Evaluation[]>([]);
+  const [examCount, setExamCount] = useState(0);
+  const [attachingExamId, setAttachingExamId] = useState<string | null>(null);
   const [showAttach, setShowAttach] = useState(false);
   const [attachable, setAttachable] = useState<SavedMaterial[]>([]);
   const [attachingId, setAttachingId] = useState<string | null>(null);
@@ -107,6 +118,7 @@ export default function ClassDetailScreen() {
     // roster failure must not blank the materials tab and vice versa. Loaded
     // outside the try above for exactly that reason.
     setMaterials(await getItems({ classId: id }));
+    setExams(await listEvaluations({ classId: id }));
   }, [id, describe]);
 
   useFocusEffect(
@@ -221,6 +233,57 @@ export default function ClassDetailScreen() {
     }
   };
 
+  /**
+   * Only exams in no class are offered, asked of the server rather than
+   * filtered here — same reason as materials: an exam belongs to one class, so
+   * offering an attached one would present a silent move as an add.
+   */
+  const openAttachExam = async () => {
+    setShowAttachExam(true);
+    const [all, free] = await Promise.all([
+      listEvaluations({}),
+      listEvaluations({ classId: 'none' }),
+    ]);
+    // Kept apart so the empty state can tell "you have not made an exam yet"
+    // from "they are all in other classes" — identical blank lists, opposite
+    // meanings, and only one of them needs a way out.
+    setExamCount(all.length);
+    setAttachableExams(free);
+  };
+
+  const onAttachExam = async (exam: Evaluation) => {
+    if (!id || attachingExamId) return;
+    setAttachingExamId(exam.id);
+    try {
+      await setEvaluationClass(exam.id, id);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setShowAttachExam(false);
+      await load();
+    } catch {
+      setError(t('saveToClassFailed'));
+    } finally {
+      setAttachingExamId(null);
+    }
+  };
+
+  const onDetachExam = async (exam: Evaluation) => {
+    const title = (lang === 'ar' ? exam.titleAr : exam.title) || t('newEvaluation');
+    const ok = await confirm({
+      title: t('detachExam'),
+      message: t('detachMaterialConfirm', title),
+      confirmLabel: t('remove'),
+      cancelLabel: t('cancel'),
+      destructive: true,
+    });
+    if (!ok) return;
+    try {
+      await setEvaluationClass(exam.id, null);
+      await load();
+    } catch {
+      setError(t('saveToClassFailed'));
+    }
+  };
+
   const onDetach = async (material: SavedMaterial) => {
     const ok = await confirm({
       title: t('detachMaterial'),
@@ -259,7 +322,11 @@ export default function ClassDetailScreen() {
     </View>
   ) : null;
 
-  const empty = (icon: keyof typeof Ionicons.glyphMap, titleKey: 'noStudentsYet' | 'noMaterialsYet', descKey: 'noStudentsDesc' | 'noMaterialsDesc') => (
+  const empty = (
+    icon: keyof typeof Ionicons.glyphMap,
+    titleKey: 'noStudentsYet' | 'noMaterialsYet' | 'noExamsYet',
+    descKey: 'noStudentsDesc' | 'noMaterialsDesc' | 'noExamsDesc',
+  ) => (
     <View style={styles.empty}>
       <Ionicons name={icon} size={40} color={colors.mutedForeground} />
       <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }]}>
@@ -321,6 +388,7 @@ export default function ClassDetailScreen() {
         <View style={[styles.tabs, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           {renderTab('students', t('classTabStudents'), countStudents(students.length, lang))}
           {renderTab('materials', t('classTabMaterials'), countMaterials(materials.length, lang))}
+          {renderTab('exams', t('classTabExams'), t('countExams', exams.length))}
         </View>
       </View>
 
@@ -402,7 +470,7 @@ export default function ClassDetailScreen() {
             </Pressable>
           )}
         />
-      ) : (
+      ) : tab === 'materials' ? (
         <FlatList
           data={materials}
           keyExtractor={m => m.id}
@@ -455,11 +523,50 @@ export default function ClassDetailScreen() {
             </Pressable>
           )}
         />
+      ) : (
+        <FlatList
+          data={exams}
+          keyExtractor={e => e.id}
+          contentContainerStyle={{ padding: 20, paddingBottom: 100, gap: 10 }}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={empty('clipboard-outline', 'noExamsYet', 'noExamsDesc')}
+          renderItem={({ item }) => {
+            const title = (lang === 'ar' ? item.titleAr : item.title) || t('newEvaluation');
+            const draft = item.status !== 'published';
+            return (
+              <Pressable
+                onPress={() =>
+                  router.push(
+                    draft
+                      ? { pathname: '/evaluations/[id]', params: { id: item.id } }
+                      : { pathname: '/evaluations/[id]/answers', params: { id: item.id } },
+                  )
+                }
+                style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.rowName, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align }]} numberOfLines={1}>
+                    {title}
+                  </Text>
+                  <Text style={[styles.rowRef, { color: draft ? '#F59E0B' : colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+                    {draft
+                      ? t('examNotPublished')
+                      : t('examMarkedCount', String(item.markedCount ?? 0), String(students.length))}
+                  </Text>
+                </View>
+                <Pressable onPress={() => { void onDetachExam(item); }} hitSlop={10}>
+                  <Ionicons name="close" size={20} color={colors.mutedForeground} />
+                </Pressable>
+              </Pressable>
+            );
+          }}
+        />
       )}
 
       <Pressable
         onPress={() => {
           if (tab === 'students') setShowAdd(true);
+          else if (tab === 'exams') void openAttachExam();
           else void openAttach();
         }}
         style={[styles.fab, { backgroundColor: ACCENT, bottom: insets.bottom + 24 }]}
@@ -726,6 +833,92 @@ export default function ClassDetailScreen() {
                 </Text>
               </Pressable>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showAttachExam}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowAttachExam(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
+            <Text
+              style={[
+                styles.modalTitle,
+                { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align },
+              ]}
+            >
+              {t('attachExam')}
+            </Text>
+            <Text
+              style={[
+                styles.modalHint,
+                { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align },
+              ]}
+            >
+              {t('attachExamHint')}
+            </Text>
+            <FlatList
+              data={attachableExams}
+              keyExtractor={e => e.id}
+              style={{ maxHeight: 320 }}
+              contentContainerStyle={{ gap: 8 }}
+              ListEmptyComponent={
+                <Text
+                  style={[
+                    styles.modalHint,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: 'Almarai_400Regular',
+                      textAlign: 'center',
+                      paddingVertical: 24,
+                    },
+                  ]}
+                >
+                  {examCount === 0 ? t('noExamsAtAll') : t('noExamsToAttach')}
+                </Text>
+              }
+              renderItem={({ item }) => (
+                <Pressable
+                  onPress={() => { void onAttachExam(item); }}
+                  disabled={attachingExamId !== null}
+                  style={[
+                    styles.pickRow,
+                    {
+                      borderColor: colors.border,
+                      opacity: attachingExamId && attachingExamId !== item.id ? 0.5 : 1,
+                      flexDirection: isRTL ? 'row-reverse' : 'row',
+                    },
+                  ]}
+                >
+                  <Text
+                    style={{
+                      color: colors.foreground,
+                      fontFamily: 'Almarai_400Regular',
+                      fontSize: 14,
+                      flex: 1,
+                      textAlign: align,
+                    }}
+                    numberOfLines={1}
+                  >
+                    {(lang === 'ar' ? item.titleAr : item.title) || t('newEvaluation')}
+                  </Text>
+                  {attachingExamId === item.id ? (
+                    <ActivityIndicator size="small" color={ACCENT} />
+                  ) : (
+                    <Ionicons name="add-circle-outline" size={18} color={ACCENT} />
+                  )}
+                </Pressable>
+              )}
+            />
+            <Pressable onPress={() => setShowAttachExam(false)} style={{ paddingVertical: 12 }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: 'center' }}>
+                {t('cancel')}
+              </Text>
+            </Pressable>
           </View>
         </View>
       </Modal>
