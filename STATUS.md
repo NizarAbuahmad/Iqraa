@@ -5931,3 +5931,51 @@ lesson:
 «حل معادلات خاصة», which the curriculum deliberately omits. The two exponent
 lessons the curriculum *does* carry have no exercises in the 2026 book, and
 correctly get silence rather than an invented page.
+
+## Pacing filled in from the teacher guides, 2026-08-25
+
+Every maths lesson now carries a period count and every unit a total, read
+from the «عدد الحصص» column of the guides' مخطط الوحدة tables.
+
+**The data was mostly right already.** Six of the eight units matched the
+guide exactly, which is the useful finding: this was four nulls, not a
+rebuild.
+
+| filled | value | from |
+| --- | --- | --- |
+| `u1_lab` periods | 1 | TG s1 p15, «معمل برمجية جيوجبرا» row |
+| `u6` total | 14 | TG s2 p83 |
+| `u8_l5` periods | 4 | TG s2 p157 |
+| `u8` total | 21 | TG s2 p157 |
+
+A null here is invisible rather than loud — a pacing plan just omits the
+lesson — which is why `curriculumPacing.test.ts` now asserts there are none.
+
+### Reading the table
+
+The plan is a table whose columns are only distinguishable by x-position: the
+lesson number sits at x≈598 (right edge, RTL) and its period count at x≈81.
+Pairing by shared y recovers the column. The unit total is the last number in
+the same column, labelled «مجموع الحصص».
+
+### The gap is the unit's own work
+
+A unit's printed total always exceeds its lessons' sum, because the guide
+counts the lab, the project and the end-of-unit test in the same column.
+Six units sit at exactly 3 (project 1 + test 2), unit 4 at 4 — and unit 2 at
+**7**, which is not a mistake but the divergence below, arithmetically
+visible.
+
+### Unit 2's periods were deliberately not imported
+
+The teacher guide's «الدائرة» lists **five** lessons and a GeoGebra lab; this
+curriculum carries four lessons and no lab — matching the student book and the
+2026 exercise book, both of which print four. Same shape as unit 1: the guide
+is the first *trial* edition and the outlier, except here the curriculum
+followed the newer books.
+
+Its per-lesson counts therefore do not map, and forcing them would put a
+number on a lesson the guide was describing differently. The printed total
+(20) is kept, the lesson counts are left as they were, and the unit carries a
+`pacing_note` saying so — in the data, not only in a test, so the next person
+editing the curriculum sees it.
