@@ -65,6 +65,23 @@ export function appSubjectId(subject: CurriculumSource['subject']): string {
   return BANK_SUBJECT_IDS[subject];
 }
 
+/**
+ * Whether a tag names a single unit rather than a whole semester or subject.
+ *
+ * The distinction is what keeps a lesson's shelf useful. `math-s1-student-book`
+ * is scoped `s1` and so matches all eighteen Semester 1 lessons; a worksheet on
+ * أوتار الدائرة is scoped `s1-u2` and matches four. Ranking or grouping them
+ * together buries the four under the eighteen.
+ *
+ * `s1-matrices` is the one unit tag that does not carry a number — the
+ * matrices material is scoped by name because the catalog does not number that
+ * unit. It was previously classed as semester-wide by an inlined
+ * `tag.includes('-u')` check, which is the reason this lives in one place now.
+ */
+export function isUnitScopedTag(tag: string): boolean {
+  return /-u\d+$/.test(tag) || tag === 's1-matrices';
+}
+
 /** Every unit tag in use, sorted. The vocabulary a lesson must map onto to match. */
 export const BANK_UNIT_TAGS: string[] = [
   ...new Set(G10_SOURCES.flatMap(s => s.unitTags)),

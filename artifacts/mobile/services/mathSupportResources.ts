@@ -22,6 +22,7 @@ import {
   type BankUsePolicy,
   appSubjectId,
   bankItems,
+  isUnitScopedTag,
   usePolicy,
 } from '@workspace/curriculum';
 import type { KBLesson } from './knowledgeBase.ts';
@@ -84,6 +85,39 @@ const KIND_LABEL_EN: Record<SourceKind, string> = {
   exam: 'Past paper',
 };
 
+/**
+ * The title as a teacher should read it, rather than as Drive stores it.
+ *
+ * `titleAr` is the filename, verbatim and deliberately so — the manifest keeps
+ * it that way precisely so a file can be found by searching for its name. That
+ * makes it wrong for a list: it ends in `.pdf`, and most of these filenames
+ * already carry the author, so a row that also shows `authorAr` prints
+ * «... أ. عبد الحميد الهندي.pdf» above «أ. عبد الحميد الهندي».
+ *
+ * Only ever trims the end, and only a credit that matches the author already
+ * recorded for that file — a title with a name embedded mid-sentence, or a
+ * different name at the end, is left exactly as it is.
+ */
+export function displayTitle(r: Pick<SupportResource, 'titleAr' | 'authorAr'>): string {
+  let out = r.titleAr.replace(/\.pdf$/i, '').trim();
+  out = out.replace(/\s*\(\d+\)$/, '').trim();
+  if (r.authorAr) {
+    const name = r.authorAr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    out = out.replace(
+      new RegExp(`\\s*(?:إعداد\\s*)?(?:المعلمة|المعلم|أ|م)\\s*\\.?\\s*${name}\\s*$`),
+      '',
+    ).trim();
+  }
+  // Never trim a title away to nothing: a row with no words is worse than a
+  // row that repeats the author.
+  return out.length >= 8 ? out : r.titleAr.replace(/\.pdf$/i, '').trim();
+}
+
+/** The one place a `kind` becomes words a teacher reads. */
+export function kindLabel(kind: SourceKind, lang: 'ar' | 'en'): string {
+  return lang === 'ar' ? KIND_LABEL_AR[kind] : KIND_LABEL_EN[kind];
+}
+
 function detectSubjectFromQuery(query: string): 'mathematics' | 'chemistry' | null {
   const q = query.trim();
   if (/كيمياء|chemistry|بور|بلانك|ذرة|روابط|تفاعلات كيمي/i.test(q)) return 'chemistry';
@@ -120,16 +154,33 @@ export function unitTagsForLesson(lesson: KBLesson | null | undefined): string[]
   if (unit.id === 'kbu-chem-s2-4') tags.push('chem-s2-u4');
   if (unit.id === 'kbu-chem-s2-5') tags.push('chem-s2-u5');
 
+  // Title fallbacks, for when the unit-id mapping above does not fire.
+  //
+  // **Each set is gated to its own subject.** Ungated, «تجربة استهلالية:
+  // المعادلة الكيميائية» matched /معادل/ and picked up the MATHEMATICS tag
+  // `s1-u1` — six algebra worksheets attached to a chemistry lab. Chat
+  // survived it only because `scoreResource` rejects a subject mismatch
+  // afterwards; anything reading these tags directly, as the lesson shelf
+  // does, had no such protection. Emit the right tags rather than rely on
+  // something downstream to discard the wrong ones.
   const title = `${unit.titleAr} ${lesson.titleAr}`;
-  if (/مصفوف/.test(title)) tags.push('s1-matrices');
-  if (/دائر/.test(title)) tags.push('s1-u2');
-  if (/اشتقاق|مشتق/.test(title)) tags.push('s2-u6');
-  if (/اقتران/.test(title)) tags.push('s2-u5');
-  if (/أسس|معادل/.test(title)) tags.push('s1-u1');
-  if (/بنية الذرة|بور|بلانك/.test(title)) tags.push('chem-s1-u1');
-  if (/جدول دوري/.test(title)) tags.push('chem-s1-u2');
-  if (/روابط|تساهمية|أيونية|فلزية/.test(title)) tags.push('chem-s1-u3');
-  if (/تفاعلات كيمي/.test(title)) tags.push('chem-s2-u5');
+  if (book?.subjectId === 'mathematics') {
+    if (/مصفوف/.test(title)) tags.push('s1-matrices');
+    if (/دائر/.test(title)) tags.push('s1-u2');
+    if (/اشتقاق|مشتق/.test(title)) tags.push('s2-u6');
+    // Known imprecision, left alone: «الاقترانات المثلثية» is a Semester 1
+    // trigonometry lesson and this tags it with the Semester 2 functions unit.
+    // Both are genuinely about اقترانات, so the extra material is related
+    // rather than wrong — unlike the cross-subject case above.
+    if (/اقتران/.test(title)) tags.push('s2-u5');
+    if (/أسس|معادل/.test(title)) tags.push('s1-u1');
+  }
+  if (book?.subjectId === 'chemistry') {
+    if (/بنية الذرة|بور|بلانك/.test(title)) tags.push('chem-s1-u1');
+    if (/جدول دوري/.test(title)) tags.push('chem-s1-u2');
+    if (/روابط|تساهمية|أيونية|فلزية/.test(title)) tags.push('chem-s1-u3');
+    if (/تفاعلات كيمي/.test(title)) tags.push('chem-s2-u5');
+  }
 
   // The semester tag is namespaced by subject for the same reason the unit tag
   // is. A financial-literacy lesson used to emit the bare maths `s1`, which
@@ -169,7 +220,7 @@ function scoreResource(
   if (subjectHint && r.subjectId !== subjectHint) return 0;
 
   for (const tag of lessonTags) {
-    if (r.unitTags.includes(tag)) score += tag.includes('-u') ? 8 : 3;
+    if (r.unitTags.includes(tag)) score += isUnitScopedTag(tag) ? 8 : 3;
   }
 
   if (!q) return score;
@@ -246,11 +297,11 @@ export function formatSupportResourcesBlock(
     ? '📎 مواد مساندة متوفرة في مكتبة اقرأ (للمعلم):'
     : '📎 Support materials in the Iqra library:';
   const lines = resources.map(r => {
-    const kind = isAr ? KIND_LABEL_AR[r.kind] : KIND_LABEL_EN[r.kind];
+    const kind = kindLabel(r.kind, isAr ? 'ar' : 'en');
     const author = r.authorAr
       ? (isAr ? ` — أ. ${r.authorAr}` : ` — ${r.authorAr}`)
       : '';
-    return `• [${kind}] ${r.titleAr}${author}`;
+    return `• [${kind}] ${displayTitle(r)}${author}`;
   });
   const tip = isAr
     ? 'يمكنك رفع أحد هذه الملفات في المحادثة لخطة درس / ورقة عمل أدق.'
