@@ -24,6 +24,7 @@ import {
   bankItems,
   bankTagsForUnit,
   isUnitScopedTag,
+  kindLabel,
   usePolicy,
 } from '@workspace/curriculum';
 import type { KBLesson } from './knowledgeBase.ts';
@@ -60,31 +61,7 @@ const RESOURCES: SupportResource[] = bankItems()
   .filter(s => APP_SUBJECTS.has(appSubjectId(s.subject)))
   .map(toResource);
 
-const KIND_LABEL_AR: Record<SourceKind, string> = {
-  'student-book': 'كتاب الطالب',
-  'teacher-guide': 'دليل المعلم',
-  'activity-book': 'كتاب الأنشطة',
-  'ministry-support': 'مادة علاجية / وزارية',
-  worksheet: 'ورقة عمل',
-  'answer-key': 'إجابات',
-  summary: 'ملخص',
-  'study-pack': 'دوسية',
-  'question-bank': 'بنك أسئلة',
-  exam: 'ورقة اختبار',
-};
-
-const KIND_LABEL_EN: Record<SourceKind, string> = {
-  'student-book': 'Student book',
-  'teacher-guide': 'Teacher guide',
-  'activity-book': 'Activity book',
-  'ministry-support': 'Ministry / remedial',
-  worksheet: 'Worksheet',
-  'answer-key': 'Answer key',
-  summary: 'Summary',
-  'study-pack': 'Study pack',
-  'question-bank': 'Question bank',
-  exam: 'Past paper',
-};
+export { kindLabel };
 
 /**
  * The title as a teacher should read it, rather than as Drive stores it.
@@ -114,10 +91,6 @@ export function displayTitle(r: Pick<SupportResource, 'titleAr' | 'authorAr'>): 
   return out.length >= 8 ? out : r.titleAr.replace(/\.pdf$/i, '').trim();
 }
 
-/** The one place a `kind` becomes words a teacher reads. */
-export function kindLabel(kind: SourceKind, lang: 'ar' | 'en'): string {
-  return lang === 'ar' ? KIND_LABEL_AR[kind] : KIND_LABEL_EN[kind];
-}
 
 function detectSubjectFromQuery(query: string): 'mathematics' | 'chemistry' | null {
   const q = query.trim();

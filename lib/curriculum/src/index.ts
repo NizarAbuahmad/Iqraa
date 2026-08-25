@@ -13,6 +13,7 @@
  *   import { buildNccdSem1Catalog } from '@workspace/curriculum/catalogs/g10MathSem1';
  */
 export * from './arabic.ts';
+export * from './curriculumIds.ts';
 export * from './catalog.ts';
 export * from './blooms.ts';
 export * from './objectives.ts';

@@ -24,6 +24,7 @@ import {
   recordUsage,
 } from "../lib/aiBudget.ts";
 import { normalizeEscapeCodes } from "../lib/escapeCodes.ts";
+import { withGrounding, type Grounding } from "../lib/grounding.ts";
 import { PROMPT_VERSION, generationKeys } from "../lib/generationKey.ts";
 import {
   assertUsableGeneration,
@@ -92,6 +93,19 @@ async function generateContent(
   return parsed;
 }
 
+/**
+ * Hand the citations back with the artifact.
+ *
+ * The page numbers exist so a teacher can hold the generated worksheet against
+ * the printed book; stopping them at the prompt would waste the only part of
+ * retrieval a human can check. Additive — every existing field is untouched,
+ * and an ungrounded generation is returned exactly as it was.
+ */
+function withSources(parsed: unknown, grounding: Grounding | null): unknown {
+  if (!grounding || typeof parsed !== "object" || parsed === null) return parsed;
+  return { ...parsed, sources: grounding.sources };
+}
+
 /** AI live-mode-off and budget-exceeded are expected, user-facing states — not server errors. */
 function respondAiError(err: unknown, res: Response, label: string): void {
   if (err instanceof AiLiveModeOffError) {
@@ -117,11 +131,11 @@ function respondAiError(err: unknown, res: Response, label: string): void {
 // ─── Lesson Plan ─────────────────────────────────────────────────────────────
 generateRouter.post("/generate/lesson-plan", async (req: AuthenticatedRequest, res) => {
   try {
-    const body = req.body;
-    const isAr = body.language !== "english";
+    const isAr = req.body.language !== "english";
+    const { body, grounding } = withGrounding(req.body, isAr);
     const prompt = isAr ? lessonPlanPromptAr(body) : lessonPlanPromptEn(body);
     const parsed = await generateContent("lesson-plan", isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS, body, req.user?.id);
-    res.json(parsed);
+    res.json(withSources(parsed, grounding));
   } catch (err) {
     respondAiError(err, res, "generate lesson-plan");
   }
@@ -130,11 +144,11 @@ generateRouter.post("/generate/lesson-plan", async (req: AuthenticatedRequest, r
 // ─── Worksheet ────────────────────────────────────────────────────────────────
 generateRouter.post("/generate/worksheet", async (req: AuthenticatedRequest, res) => {
   try {
-    const body = req.body;
-    const isAr = body.language !== "english";
+    const isAr = req.body.language !== "english";
+    const { body, grounding } = withGrounding(req.body, isAr);
     const prompt = isAr ? worksheetPromptAr(body) : worksheetPromptEn(body);
     const parsed = await generateContent("worksheet", isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS, body, req.user?.id);
-    res.json(parsed);
+    res.json(withSources(parsed, grounding));
   } catch (err) {
     respondAiError(err, res, "generate worksheet");
   }
@@ -143,11 +157,11 @@ generateRouter.post("/generate/worksheet", async (req: AuthenticatedRequest, res
 // ─── Quiz ─────────────────────────────────────────────────────────────────────
 generateRouter.post("/generate/quiz", async (req: AuthenticatedRequest, res) => {
   try {
-    const body = req.body;
-    const isAr = body.language !== "english";
+    const isAr = req.body.language !== "english";
+    const { body, grounding } = withGrounding(req.body, isAr);
     const prompt = isAr ? quizPromptAr(body) : quizPromptEn(body);
     const parsed = await generateContent("quiz", isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS, body, req.user?.id);
-    res.json(parsed);
+    res.json(withSources(parsed, grounding));
   } catch (err) {
     respondAiError(err, res, "generate quiz");
   }
@@ -156,11 +170,11 @@ generateRouter.post("/generate/quiz", async (req: AuthenticatedRequest, res) => 
 // ─── Homework ─────────────────────────────────────────────────────────────────
 generateRouter.post("/generate/homework", async (req: AuthenticatedRequest, res) => {
   try {
-    const body = req.body;
-    const isAr = body.language !== "english";
+    const isAr = req.body.language !== "english";
+    const { body, grounding } = withGrounding(req.body, isAr);
     const prompt = isAr ? worksheetPromptAr({ ...body, homework: true }) : worksheetPromptEn({ ...body, homework: true });
     const parsed = await generateContent("homework", isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS, body, req.user?.id);
-    res.json(parsed);
+    res.json(withSources(parsed, grounding));
   } catch (err) {
     respondAiError(err, res, "generate homework");
   }
@@ -169,11 +183,11 @@ generateRouter.post("/generate/homework", async (req: AuthenticatedRequest, res)
 // ─── Activity ─────────────────────────────────────────────────────────────────
 generateRouter.post("/generate/activity", async (req: AuthenticatedRequest, res) => {
   try {
-    const body = req.body;
-    const isAr = body.language !== "english";
+    const isAr = req.body.language !== "english";
+    const { body, grounding } = withGrounding(req.body, isAr);
     const prompt = isAr ? activityPromptAr(body) : activityPromptEn(body);
     const parsed = await generateContent("activity", isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS, body, req.user?.id);
-    res.json(parsed);
+    res.json(withSources(parsed, grounding));
   } catch (err) {
     respondAiError(err, res, "generate activity");
   }
@@ -187,8 +201,8 @@ generateRouter.post("/generate/activity", async (req: AuthenticatedRequest, res)
 // unauthenticated, unlimited proxy onto the OpenAI account. Same failure
 // shape as the roster/evaluations mount-order incident; see routes/index.ts.
 generateRouter.post('/generate/classroom-activity', async (req: AuthenticatedRequest, res) => {
-  const body = req.body as Record<string, unknown>;
-  const isAr = body.language === 'arabic';
+  const isAr = (req.body as Record<string, unknown>).language === 'arabic';
+  const { body, grounding } = withGrounding(req.body as Record<string, unknown>, isAr);
   try {
     const prompt = (isAr ? classroomPromptAr(body) : classroomPromptEn(body))
       + classroomSetupClause(body, isAr);
@@ -196,7 +210,7 @@ generateRouter.post('/generate/classroom-activity', async (req: AuthenticatedReq
     // The escape deck's unlock codes are the activity's only mechanic and the
     // app never validates them, so an unreadable or repeated digit ships as-is.
     // A no-op for every other activity type. See lib/escapeCodes.ts.
-    res.json(normalizeEscapeCodes(data, isAr));
+    res.json(withSources(normalizeEscapeCodes(data, isAr), grounding));
   } catch (err) {
     respondAiError(err, res, "generate classroom-activity");
   }

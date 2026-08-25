@@ -46,8 +46,9 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     because the count was repeatedly described as "all in
     `lib/integrations-openai-ai-server`", which is wrong by a factor of three
     and would send someone looking in the wrong package.
-- Mobile test suite: 925 tests, 0 failures, 10 skipped (re-counted 2026-08-25
-  on an installed workspace, with `main` merged in; 900, 894, 888, 865 and 855
+- Mobile test suite: 962 tests, 0 failures, 10 skipped (re-counted 2026-08-25
+  on an installed workspace, with `main` merged in; 925, 909, 900, 894, 888,
+  865 and 855
   earlier the same day, 725 on 2026-08-23, 723 on 2026-08-22, the 480 here was
   stale before that, and the 376 before it).
   The number moves with almost every merge — re-count rather than cite it.
@@ -284,6 +285,148 @@ mention, and does not execute backticks in a PR body.
 its target from an ambient variable is the foot-gun the original decision was
 avoiding.
 
+## A second grade can be added without a collision, 2026-08-25
+
+Every curriculum id omits the grade. A unit is `kbu-math-s1-nccd-u2`, a lesson
+`kbl-math-s1-nccd-u2_l1`, an objective `o-nccd-s1-u2_l1-0`, a bank tag `s1-u2`.
+Grade 9 maths semester 1 unit 2 wants **the identical string for all four**, and
+nothing would have noticed: there was no uniqueness check anywhere in the
+repo, so a second grade would have silently overwritten the first in every map
+keyed by unit id. The first symptom would have been a teacher seeing another
+year's lesson.
+
+**The grade was never missing from the data.** Every unit reaches one through
+`book.gradeId` — 17 of 17, no gaps — and the catalog already spans two grades,
+`grade-10` and a `grade-8` science stub. It was missing only from the strings,
+because each of the five catalog modules interpolated its own prefix inline
+(`` `kbu-math-s1-nccd-${jsonUnitId}` ``, five times) and then repeated that
+prefix as a string literal wherever an id had to be parsed apart.
+
+**What changed.** `lib/curriculum/src/curriculumIds.ts` is now the only thing
+that decides what an id looks like. The five catalogs call it. `grade-10` gets
+the historical form and every other grade gets an explicit `g9-` segment —
+which *is* an implicit default, and the difference from before is that it now
+lives in one documented function with a test on it rather than in five files as
+an unwritten assumption.
+
+**Grade 10's ids did not move — not one byte.** `evaluations.unitId`,
+`evaluations.lessonId`, `evaluations.objectiveIds` and
+`evaluation_questions.objectiveId` are free-text Postgres columns holding these
+exact strings, so a rename is a migration over live student work. Verified by
+dumping all 17 unit, 64 lesson and 196 objective ids before and after and
+diffing: identical. The new test pins them **literally** rather than building
+them with the same helpers the code uses — a test that recomputed them would
+agree with any rename.
+
+**Three copies of one regex became one.** `bankTagsForUnit` in `bank.ts`, the
+API server's `UNIT_ID` in `grounding.ts`, and the app's `nccdUnitId` in
+`kbContext.ts` each carried `/^kbu-(math|chem|finlit)-s[12]-nccd-u\d+$/`.
+Adding a segment to a pattern held in three places is two chances to update only
+two of them. All three now call `isNccdUnitId`.
+
+**The guard is the deliverable**, not the refactor.
+`src/__tests__/curriculumIds.test.ts` asserts global id uniqueness, that a
+synthetic Grade 9 catalog over the same unit numbering collides with nothing,
+and that Grade 10's ids are what they always were. Verified it fails on both
+regressions it exists for: **2 of 14 red** when a Grade 9 id is built without
+its grade segment, **4 of 14 red** when a Grade 10 id is quietly renamed.
+
+**One plan item was dropped after checking it.** The plan said to "open the
+subject union" — `CurriculumSource['subject']` is `'math' | 'chemistry' |
+'financial-literacy'`. It turns out to be self-guarding: three exhaustive
+`Record<CurriculumSource['subject'], …>` maps mean adding a subject is a
+compile-error trail, not a silent gap. And `APP_SUBJECTS` in
+`mathSupportResources.ts` is a deliberate hold-back with its reason written
+next to it (the unresolved financial-literacy edition conflict), not an
+oversight. Widening either would have removed a working safeguard.
+
+**Narrower than it was, and still not fixed here.** `isMathContext`
+(`services/ai/mathPractice.ts:71`) concatenates the subject name with the topic
+and lesson text and regex-matches the lot — `متجه|دائر|مثلث|…`. "The tools carry
+the lesson's subject too" (above, landed while this was in review) fixed the
+half that mattered most: the screens now receive the real `subjectIdx` instead
+of defaulting to Grade 10 Mathematics, so the right subject name reaches the
+blob. What it does not change is that the *topic* half still votes: a physics
+lesson correctly labelled `Physics` but mentioning «متجه» still matches. So this
+is no longer "every chat-launched tool thinks it is maths" — it is a narrower
+false positive that will start mattering when a second science subject exists.
+Its own change.
+
+83 curriculum / 962 mobile / 262 api-server tests pass; typecheck clean;
+`verify-curriculum` 0 errors; grounding coverage unchanged at 45 of 64 lessons.
+
+## The books are in the prompts now, 2026-08-25
+
+The corpus extracted two entries below this one was read by nothing. It is now
+read by every generator, server-side.
+
+**How it attaches.** `artifacts/api-server/src/lib/grounding.ts`. Resolve the
+unit — an explicit `unitId` from the screen if there is one, else
+`resolveUnitByTopic(topic)` — pull up to three ranked pages with
+`passagesForUnit({ quotableOnly: true })`, and append them to
+`additionalContext` under a cited heading. All eight builders in `prompts.ts`
+and all nine classroom-activity prompts already inject `additionalContext`, so
+**no prompt builder was edited**; the body is enriched before the builder runs.
+
+It is *not* middleware. `routes/index.ts` mounts `router.use(generateRouter)`
+with no path prefix, so `generateRouter.use(mw)` would have become API-wide and
+shadowed every router after it — the trap this file and `mountOrder.test.ts`
+both already record. Six routes call `withGrounding` explicitly instead.
+
+**Exams too.** `llmGenerator`'s prompt takes an optional `bookExcerpts`, filled
+from `groundingForObjectives(objectives)` in `routes/evaluations.ts`. A model
+writing multiple-choice distractors from an objective's *title* is guessing at
+exactly what `mockGenerator` refused to guess at; now it has the pages. Both
+prompt versions bumped (`2026-08-25.2`, `exam-gen-2`).
+
+**Quotable-only, asserted on the output.** A generated worksheet is an export
+path. Teacher-authored bank documents are `reference-only`, and
+`quotableOnly: true` is one flag away from being forgotten at a new call site,
+so the test checks the returned `sourceId`s rather than the argument.
+
+**Citations reach the client.** Every grounded response carries
+`sources: [{ sourceId, titleAr, page }]`. Labels come from
+`sourceLabel(kind, subject, semester)` in `bank.ts`, never the filename —
+`chem-s1-student-book` is stored as «10th grade, alchamy1st semester.pdf»,
+which is not a citation to show an Arabic-reading teacher. `kindLabel` moved
+out of `mathSupportResources.ts` into `bank.ts` at the same time; the mobile
+module re-exports it, so no caller changed.
+
+**Three latent bugs closed on the way.**
+
+- **`buildGeneratorContext` returned `''` when ungrounded** "so callers can
+  fall back". All seven callers wrote `... || undefined`, so the ungrounded
+  note — the sentence telling the model *not* to claim textbook grounding —
+  reached a prompt from none of them. `lesson-plan.tsx` and `worksheet.tsx`
+  were fine only because they bypass the function. It now returns the note.
+- **Chat sent no curriculum context at all.** `chatArtifacts.ts` passed the
+  teacher's attachments and nothing else. Now both, attachments first.
+- **The filename fence.** `demoExtractFromName` invented learning objectives,
+  formulas, definitions, worked examples and classroom activities out of a
+  *filename* whenever the file could not be read — which on mobile is every
+  PDF, every Word and PowerPoint file and every image, since there is no OCR —
+  and `buildDocumentPromptBlock` put them in the prompt under ordinary
+  headings. It was labelled `extractQuality: 'filename'`, and that is precisely
+  why it survived: honest label, invented payload, and only the payload reaches
+  a model. Same shape as a `verified` flag set from a fallback. Those fields are
+  now empty and the block says the file was not read and that nothing may be
+  attributed to it. Only the filename and its own words survive.
+
+**The fence had never been testable.** `extract.ts` imports `react-native` at
+module scope, which `node:test` cannot parse — so the invented content was
+unreachable by any assertion. The pure half is now `documents/extractMeta.ts`,
+the same split `exportHtml.ts` got out of `share.ts`, and the new test was
+verified to fail (6 of 12) when one invented objective is put back.
+
+83 curriculum / 962 mobile / 262 api-server tests pass; typecheck clean;
+`verify-curriculum` 0 errors.
+
+**Still invisible to a teacher.** `DEMO_MODE` is `true` and `AI_LIVE_MODE` is
+unset, so no prompt reaches a model. Verified instead by composing the real
+prompt directly: for «أوتار الدائرة وأقطارها ومماساتها» the lesson-plan prompt
+is 5,838 characters carrying pages 34, 47 and 49 of the maths S1 student book,
+with the teacher's own context still first and the JSON contract still last.
+
 ## The «عن» fix only fixed what was typed by hand, 2026-08-25
 
 Reported with a screenshot of موادي: a material still titled «خطة درس: عن:
@@ -505,7 +648,6 @@ instead of a rich wrong one. Live AI generation is unaffected.
 sweep asserting the 16-lesson drift still exists in `searchKBSemantic` — the
 day it stops being true, the reason for threading the id through is gone.
 
-
 ## The two maths student books are swapped, 2026-08-25
 
 Found by testing retrieval, not by reading data. Asking the new passage layer
@@ -630,9 +772,10 @@ regex, respectively.
 `verify-curriculum` 0 errors. (Mobile was 815 and api-server 193 on the branch
 alone; the rest arrived with `main` when this was merged up.)
 
-**What this does not yet do:** no grounding, no change to any prompt — and `DEMO_MODE` is still `true` with
-`AI_LIVE_MODE` unset, so no prompt reaches a model at all. This is the corpus,
-not the feature.
+~~**What this does not yet do:** no grounding, no change to any prompt.~~
+**Superseded 2026-08-25** — see "The books are in the prompts now" above. The
+`DEMO_MODE` half still holds: it is `true` and `AI_LIVE_MODE` is unset, so no
+prompt reaches a model.
 
 ## An activity is an activity, and «عن» stopped being a lesson title, 2026-08-25
 
