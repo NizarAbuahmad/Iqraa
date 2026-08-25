@@ -17,11 +17,13 @@ import { figuresForLesson, figurePath, lessonsWithFigures } from '../bookFigures
 describe('figuresForLesson', () => {
   it('finds the system figures under the lesson that teaches systems', () => {
     // p021 is the x² + y² = 9 / y + x = 5 figure — a circle and a line, which
-    // is exactly a linear-quadratic system.
+    // is exactly a linear-quadratic system. It sits in the SEMESTER-1 book:
+    // units 1-4 are semester 1, and the PDF whose filename says otherwise is
+    // the one that is wrong (see scripts/extract_book_figures.py BOOKS).
     const figures = figuresForLesson('kbl-math-s1-nccd-u1_l1');
     assert.ok(figures.length > 0, 'the lesson has figures');
     assert.ok(figures.some(f => f.file === 'p021.png'));
-    assert.ok(figures.every(f => f.sourceId === 'math-s2-student-book'));
+    assert.ok(figures.every(f => f.sourceId === 'math-s1-student-book'));
   });
 
   it('keeps the circle-and-parabola figure with the two-quadratics lesson', () => {
@@ -52,6 +54,23 @@ describe('figuresForLesson', () => {
     assert.deepEqual(figuresForLesson(undefined), []);
   });
 
+  it("draws each lesson's figures from its own semester's book", () => {
+    // The invariant that the source ids were violating: Grade 10 maths puts
+    // units 1-4 in semester 1 and 5-8 in semester 2, so a `kbl-math-s1-…`
+    // lesson can only be illustrated by the semester-1 student book.
+    //
+    // This was false for all 54 figures, because the ids came from PDF
+    // filenames that are backwards. Nothing failed — the figures were on the
+    // right lessons and only the book label was wrong, which is why it
+    // shipped. Hence a test rather than a comment.
+    for (const id of lessonsWithFigures()) {
+      const expected = id.includes('-s1-') ? 'math-s1-student-book' : 'math-s2-student-book';
+      for (const f of figuresForLesson(id)) {
+        assert.equal(f.sourceId, expected, `${id} is illustrated from ${f.sourceId}`);
+      }
+    }
+  });
+
   it('never files a figure under two different lessons', () => {
     const seen = new Map<string, string>();
     for (const id of lessonsWithFigures()) {
@@ -79,7 +98,7 @@ describe('figurePath', () => {
     const [figure] = figuresForLesson('kbl-math-s1-nccd-u1_l1');
     assert.equal(
       figurePath(figure!),
-      `knowledge-base/grade-10-math/figures/math-s2-student-book/${figure!.file}`,
+      `knowledge-base/grade-10-math/figures/math-s1-student-book/${figure!.file}`,
     );
   });
 });

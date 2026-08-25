@@ -1115,11 +1115,14 @@ matched against anything, while the English line is clean ASCII.
 - **The header lags on a lesson opener.** Reading the unit off the opener
   filed every unit's *first* lesson under the preceding unit. The unit is now
   read from a page inside the lesson.
-- **The book's unit numbers are not a sequence index.** Semester 1 prints
-  **units 5–8**; semester 2 prints **1–4**. Numbering by position would have
-  labelled every semester-1 figure with a unit the book does not use, and a
+- **The book's unit numbers are not a sequence index.** Each book restarts
+  its lessons at 1 while the units run 1-8 across the year, so numbering by
+  position would have labelled figures with units the book does not use and a
   teacher looking for «الوحدة 5» would have been shown unit 1. The printed
   number is what is recorded.
+  **Corrected 2026-08-25:** this entry used to say "semester 1 prints units
+  5–8; semester 2 prints 1–4". That was the *filename* talking. Units 1-4 are
+  semester 1 — see the 2026-08-25 entry below.
 
 **Verified by content, not by counting.** `math-s2` p021 (circle + line) lands
 in «Solving a System of Linear and Quadratic Equations»; p028 (circle +
@@ -5379,3 +5382,57 @@ step checks that the rule's worked example still parses.
 `figureRule.test.ts` asserts the prompt still contains it and carries no
 Arabic maths variable. Both carry a comment pointing at the other. If the
 prompt's example ever changes, change them together.
+
+## The two maths books were labelled backwards, 2026-08-25
+
+Every one of the 54 figure captions named the wrong semester. A unit-1 figure
+was captioned «الفصل الثاني» and vice versa — so the one claim those captions
+existed to support, *that a teacher can hold the projected figure against the
+printed page*, sent them to the wrong book first.
+
+**The maths PDF filenames in `attached_assets` are backwards.** The file
+called `10th_grade,_math,_1st_semester…` says «الفصل الدراسـي الثانـي» on its
+own title page and contains units 5–8; the one called `2nd_semester` says
+«الفصل الدراسي الأول» and contains units 1–4. `BOOKS` took each source id from
+the filename, so the ids were swapped, and from there the wrong semester
+flowed into every caption.
+
+The teacher-guide filenames are *correct*, which is part of why this was hard
+to spot: only the two student books are misnamed.
+
+### What was and was not broken
+
+- **The figure→lesson join was right all along.** It was built by reading
+  lesson titles, not filenames, so every figure sat on the correct lesson. The
+  only wrong thing was the book label. Nothing failed, no test went red, and
+  the figures on screen were the right figures — which is exactly why it
+  shipped.
+- **Captions were wrong on all 54.** Fixed by correcting the ids; the caption
+  code itself never needed changing.
+
+### The guard
+
+`check_semester` now refuses to write an index whose units contradict its
+source id, using an invariant the extractor already parses reliably: Grade 10
+maths teaches **units 1–4 in semester 1 and 5–8 in semester 2**. Verified by
+feeding it the exact mistake that shipped —
+
+```
+math-s1-student-book: semester 1 should hold units 1-4, but the book's own
+headers say unit(s) [5, 6, 7, 8]. The source id and the PDF are mismatched.
+```
+
+`bookFigures.test.ts` asserts the same invariant from the app side: a
+`kbl-math-s1-…` lesson may only be illustrated from the semester-1 book.
+
+Reading the PDF cover text was tried first and abandoned. «الأول» extracts as
+`ا أ ل و ل` — the alef and hamza-alef swapped, the same RTL reordering that
+made the unit header «21  1 الوحدة» in the first extraction pass. Deriving the
+semester from unit numbers avoids the Arabic text layer entirely.
+
+### Correction to an earlier entry
+
+The 2026-08-25 extraction entry above claimed "semester 1 prints units 5–8;
+semester 2 prints 1–4". That was the filename talking, and it is now corrected
+in place. The unit numbering itself was never the problem — the books really
+do print 1–8 across the year.
