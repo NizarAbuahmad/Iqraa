@@ -215,7 +215,13 @@ const fillBlank: TypeModule = {
     return errors;
   },
   sanitizeForStudent(q) {
-    return { template: q.body["template"], blanks: q.body["blanks"] };
+    // `template` only. The answers live in `expectedAnswer.blanks` and never
+    // come near this projection, but `body.blanks` was passed through
+    // unexamined and nothing renders it — the student screen builds its inputs
+    // by counting {{n}} placeholders in the template. That made it a free
+    // parking space for a generator to leave answers in, which stops being
+    // hypothetical the moment a model writes these bodies.
+    return { template: q.body["template"] };
   },
   grade(q, response) {
     const blanks = asList(q.expectedAnswer["blanks"]);

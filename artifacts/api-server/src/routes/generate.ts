@@ -27,6 +27,7 @@ import { normalizeEscapeCodes } from "../lib/escapeCodes.ts";
 import { PROMPT_VERSION, generationKeys } from "../lib/generationKey.ts";
 import {
   assertUsableGeneration,
+  extractJSON,
   UnusableGenerationError,
   type GenerationKind,
 } from "../lib/generationShape.ts";
@@ -657,23 +658,6 @@ Escape-code rules — follow these exactly:
 - A reveal slide carries the same "unlockCode" as the challenge slide immediately before it.
 - The reveal slide's title names the digit outright, in the form "🔓 Code 7 unlocked!" — with 7 replaced by the real digit. Never a generic title like "Code Unlocked!".
 - The closing "summary" slide lists the whole code in order, e.g. "Full escape code: 7 - 3 - 9 - 2 - 5".`;
-}
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-function extractJSON(raw: string): unknown {
-  // Strip markdown code fences if present
-  const cleaned = raw
-    .replace(/^```(?:json)?\s*/i, "")
-    .replace(/\s*```$/i, "")
-    .trim();
-  try {
-    return JSON.parse(cleaned);
-  } catch {
-    // Try to find the first { ... } block
-    const match = cleaned.match(/\{[\s\S]*\}/);
-    if (match) return JSON.parse(match[0]);
-    throw new Error("Could not parse JSON from AI response");
-  }
 }
 
 export default generateRouter;

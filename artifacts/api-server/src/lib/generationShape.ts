@@ -100,3 +100,30 @@ export function assertUsableGeneration(kind: GenerationKind, parsed: unknown): v
   const missing = missingFields(kind, parsed);
   if (missing.length > 0) throw new UnusableGenerationError(kind, missing);
 }
+
+/**
+ * Pull JSON out of a model response.
+ *
+ * Models wrap JSON in markdown fences, prepend "Here is the JSON:", or trail a
+ * sentence after the closing brace — all of which are the model being helpful
+ * and all of which break `JSON.parse`. The brace-matching fallback is for those
+ * cases, not for truncation: a response cut off mid-object still parses to
+ * something plausible, which is why `assertUsableGeneration` exists downstream.
+ *
+ * Lives here rather than in a route because two routes now need it, and a
+ * second copy would drift the moment one of them met a new way of being
+ * helpful.
+ */
+export function extractJSON(raw: string): unknown {
+  const cleaned = raw
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    const match = cleaned.match(/\{[\s\S]*\}/);
+    if (match) return JSON.parse(match[0]);
+    throw new Error("Could not parse JSON from AI response");
+  }
+}

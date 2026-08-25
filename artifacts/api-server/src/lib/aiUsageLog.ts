@@ -104,6 +104,40 @@ export async function recordGeneration(row: GenerationRecord): Promise<void> {
  * second as the first is how a budget guard reports all-clear over a total it
  * never managed to load.
  */
+/**
+ * Month-to-date spend for one teacher.
+ *
+ * Separate from the global total because they answer different questions. The
+ * global one protects the project's card; this one stops a single teacher
+ * consuming a shared allowance that fifty people are sharing — with one cap,
+ * whoever generates on the 20th is refused and has no way to tell that from a
+ * bug.
+ *
+ * Returns null when the table cannot be read, and callers must treat that as
+ * "unknown", never as "zero spent".
+ */
+export async function readUserPeriodSpendUsd(userId: string): Promise<number | null> {
+  try {
+    const { db, aiGenerations } = await import("@workspace/db");
+    const { and, eq, gte, sql } = await import("drizzle-orm");
+    const rows = await db
+      .select({ total: sql<string>`coalesce(sum(${aiGenerations.costUsd}), 0)` })
+      .from(aiGenerations)
+      .where(
+        and(
+          gte(aiGenerations.createdAt, currentPeriodStart()),
+          eq(aiGenerations.userId, userId),
+        ),
+      );
+    const total = Number(rows[0]?.total ?? 0);
+    if (!Number.isFinite(total)) return null;
+    return total;
+  } catch (err) {
+    note(err, "read");
+    return null;
+  }
+}
+
 export async function readPeriodSpendUsd(): Promise<number | null> {
   try {
     const { db, aiGenerations } = await import("@workspace/db");

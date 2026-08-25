@@ -26,6 +26,7 @@ import {
   currentPeriodStart,
   getPersistenceFailure,
   readPeriodSpendUsd,
+  readUserPeriodSpendUsd,
   recordGeneration,
 } from "./aiUsageLog.ts";
 
@@ -193,6 +194,46 @@ export function assertLiveModeEnabled(): void {
 }
 
 /** Throws AiBudgetExceededError once the running total meets the configured cap. */
+export class AiUserQuotaExceededError extends Error {
+  constructor(spentUsd: number, limitUsd: number) {
+    super(
+      `This teacher has used $${spentUsd.toFixed(4)} of their $${limitUsd.toFixed(2)} monthly ` +
+        `allowance. Raise AI_USER_BUDGET_USD to change it.`,
+    );
+    this.name = "AiUserQuotaExceededError";
+  }
+}
+
+/**
+ * Per-teacher monthly allowance. Zero or unset means no per-teacher cap, which
+ * is the right default for a single-teacher deployment and the wrong one for a
+ * pilot — with fifty teachers sharing a single project budget, one enthusiastic
+ * user can spend everyone else's month in an afternoon.
+ */
+export function getUserBudgetLimitUsd(): number {
+  const raw = Number(process.env["AI_USER_BUDGET_USD"]);
+  return Number.isFinite(raw) && raw > 0 ? raw : 0;
+}
+
+/**
+ * Refuse if this teacher is over their own allowance.
+ *
+ * Async because it reads the ledger rather than a process counter — a per-user
+ * total cannot live in memory when the free tier restarts on every wake, which
+ * is the exact bug that made `AI_BUDGET_USD` a per-wake allowance once before.
+ *
+ * A ledger that cannot be read does **not** block the call. The global cap is
+ * still in force underneath, and refusing every teacher because a query failed
+ * turns a database blip into a total outage.
+ */
+export async function assertUserQuotaAvailable(userId: string | null | undefined): Promise<void> {
+  const limit = getUserBudgetLimitUsd();
+  if (!limit || !userId) return;
+  const spent = await readUserPeriodSpendUsd(userId);
+  if (spent === null) return;
+  if (spent >= limit) throw new AiUserQuotaExceededError(spent, limit);
+}
+
 export function assertBudgetAvailable(): void {
   rollPeriodIfNeeded();
   const limit = getBudgetLimitUsd();
