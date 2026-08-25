@@ -603,6 +603,104 @@ defines all four keys in both languages, and `pnpm run typecheck` is clean on
 `main`. Left in place rather than deleted — this file's habit of recording a
 problem and never its fix is the thing worth not repeating.
 
+## Each figure knows its unit and lesson, 2026-08-25
+
+`index.json` now carries `unit`, `lesson`, `lessonTitleEn` and
+`lessonStartPage` beside the page number, so a figure can be found by the
+lesson it belongs to rather than by where it happens to sit in a PDF.
+
+**Lesson openers are typeset, so they are detectable.** «الدرس» at 20–22pt in
+the top band, the lesson number at 40pt+, the title beneath. The English title
+is the one kept: the Arabic spans come out of the PDF with their diacritics
+reordered and their letters unjoined («حُّلُ ُمُعادالٍتٍ»), so they cannot be
+matched against anything, while the English line is clean ASCII.
+
+**Three traps, each of which produced confident wrong answers:**
+
+- **RTL puts the number before the word.** The running header extracts as
+  «21  1 الوحدة», so `الوحدة\s*(\d+)` matches nothing on those pages and
+  quietly carries a stale unit forward — it reported unit 10 for a unit-1
+  page, with no error anywhere.
+- **The header lags on a lesson opener.** Reading the unit off the opener
+  filed every unit's *first* lesson under the preceding unit. The unit is now
+  read from a page inside the lesson.
+- **The book's unit numbers are not a sequence index.** Semester 1 prints
+  **units 5–8**; semester 2 prints **1–4**. Numbering by position would have
+  labelled every semester-1 figure with a unit the book does not use, and a
+  teacher looking for «الوحدة 5» would have been shown unit 1. The printed
+  number is what is recorded.
+
+**Verified by content, not by counting.** `math-s2` p021 (circle + line) lands
+in «Solving a System of Linear and Quadratic Equations»; p028 (circle +
+parabola) in «Solving a System of Two Quadratic Equations»; the s1 hyperbolas
+on p020–p024 in «Rational Functions». The lesson each figure was filed under
+describes the mathematics in it.
+
+| Book | Figures | Placed |
+| --- | --- | --- |
+| math-s1-student-book | 39 | 39 |
+| math-s2-student-book | 17 | 16 |
+| chem-s1-student-book | 4 | 0 |
+
+The unplaced `math-s2` figure is on a unit-project page ahead of lesson 1,
+which is correct.
+
+**Chemistry is deliberately unplaced.** Its book uses a different opener
+layout, and a loosened detector found exactly one lesson — filing all four
+figures into a single lesson spanning fifty pages, titled with that lesson's
+«الفكرة الرئيسة» line rather than its name. An outline yielding fewer than
+three lessons is now refused outright: a wrong lesson reads exactly like a
+right one, so nothing is better.
+
+**Still to do:** match `lessonTitleEn` to a `KB_LESSONS` id, and render the
+figure on the slide. Nothing in the app reads any of this yet.
+
+## Book figures come out of the NCCD PDFs, 2026-08-25
+
+The equation solver below draws every curve a stem states algebraically. The
+books also print circles, 3-D solids, vector diagrams and scatter plots that no
+equation in the stem describes, so those have to come from the book.
+`scripts/extract_book_figures.py` cuts them out.
+
+**A figure is vector drawing operations, not an embedded image.** The books hold
+only ~74 rasters across 150 pages and those are photographs; every graph is
+drawn with paths. So the script seeds on a pair of axes, clusters the drawing
+rects around it, and renders that region at 160 dpi.
+
+Two mistakes worth not repeating, both caught by looking at the output rather
+than reasoning about it:
+
+- **A crossing is not a bounding-box overlap.** The first pass treated any long
+  horizontal plus any long vertical as axes — which the four sides of a
+  rectangle satisfy, so a «spot the error» page with two notebook-paper boxes
+  came out as a graph. Each segment must now pass through the other's interior.
+- **Never grow through text.** Growing by proximity over drawings *and* text
+  chains out of the figure into the body prose and stops only at the page cap;
+  **half** the first run swallowed most of a page. Drawings cluster; text is
+  only ever admitted, never chased. That one change took the clean rate from
+  roughly 18/42 to 31/39.
+
+| Book | Figures |
+| --- | --- |
+| math-s1-student-book | 39 |
+| math-s2-student-book | 17 |
+| chem-s1-student-book | 4 |
+
+`math-s2` p021 is the `x² + y² = 9` / `y + x = 5` system, p024 the
+parabola-and-line, p028 the circle-and-parabola — the figures that prompted
+this, recovered from the book rather than redrawn.
+
+**Assisted, not automatic, and not yet wired to anything.** About one crop in
+five still absorbs an adjacent exercise block, so the script writes a
+`_review.png` contact sheet per book and nothing reads the output. A figure
+printed beside the wrong question is worse than no figure — the whole lesson of
+the check-slide work above — so the review pass is part of the design, not a
+missing feature.
+
+**Still to do:** review and prune the crops, map each surviving figure to a
+lesson and an example, then render it on the slide. `index.json` records
+`sourceId` + `pdfPage` per figure, which is what a mapping will key on.
+
 ## Equations the book actually writes now draw, 2026-08-25
 
 Every graph in the Grade 10 book is a *system*, and the book writes systems in
