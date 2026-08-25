@@ -88,12 +88,12 @@ const BEFORE_CLASS_ALL: ToolDef[] = [
 ];
 
 // Overlaps with Slides Maker and Class Challenge — all three end in the same
-// presentation player. Kept because it carries activity formats the other two
-// do not (bingo, relay, gallery walk), but it is the obvious candidate if the
-// three entry points ever need collapsing into one.
+// presentation player, and it is still the obvious candidate if the three entry
+// points ever need collapsing into one. Un-parked 2026-08-25 anyway: it is the
+// only door to the escape / bingo / relay / gallery-walk formats, and with it
+// hidden those were reachable only by typing the URL. Nobody found them.
 const CLASSROOM_HUB: ToolDef = {
   id: 'classroom',
-  hidden: true,
   titleKey: 'toolClassroomTitle',
   descKey: 'toolClassroomDesc',
   icon: 'grid-outline',
@@ -103,8 +103,16 @@ const CLASSROOM_HUB: ToolDef = {
 
 const DURING_CLASS_ALL: ToolDef[] = [
   {
+    id: 'worksheet',
+    titleKey: 'toolWorksheetTitle',
+    descKey: 'toolWorksheetDesc',
+    icon: 'list-outline',
+    color: '#0E8F86',
+    route: '/ai-tools/worksheet',
+  },
+  CLASSROOM_HUB,
+  {
     id: 'game',
-    hidden: true,
     titleKey: 'toolGameTitle',
     descKey: 'toolGameDesc',
     icon: 'trophy-outline',
@@ -113,7 +121,6 @@ const DURING_CLASS_ALL: ToolDef[] = [
   },
   {
     id: 'activity',
-    hidden: true,
     titleKey: 'toolActivityTitle',
     descKey: 'toolActivityDesc',
     icon: 'people-outline',
@@ -131,15 +138,6 @@ const DURING_CLASS_ALL: ToolDef[] = [
     externalAction: 'geogebra-graphing',
     mathOnly: true,
   },
-  {
-    id: 'worksheet',
-    titleKey: 'toolWorksheetTitle',
-    descKey: 'toolWorksheetDesc',
-    icon: 'list-outline',
-    color: '#0E8F86',
-    route: '/ai-tools/worksheet',
-  },
-  CLASSROOM_HUB,
   // The retired home screen, now named for the only two things it still
   // uniquely does: attaching media to the current lesson (which becomes deck
   // slides in Class Mode) and Smart Templates. It used to hide behind a card

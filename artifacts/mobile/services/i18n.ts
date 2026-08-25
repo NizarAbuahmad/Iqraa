@@ -622,7 +622,7 @@ const translations = {
 
     // Activity generator
     toolActivityTitle: 'نشاط صفي',
-    toolActivityDesc: 'تجربة تفاعلية في الصف: عمل جماعي، نقاش، أو لعبة — وليست ورقة للطباعة.',
+    toolActivityDesc: 'خطة نشاط جماعي بالخطوات والأدوار والزمن — للطباعة أو للرجوع إليها أثناء الحصة.',
     activityBadge: 'نشاط صفي',
     createActivityTitle: 'نشاط صفي',
     activityTypeLabel: 'نوع النشاط',
@@ -1611,7 +1611,7 @@ const translations = {
 
     // Activity generator
     toolActivityTitle: 'Class activity',
-    toolActivityDesc: 'An in-class experience: group work, discussion, or a game — not a printable worksheet.',
+    toolActivityDesc: 'A step-by-step plan for a group activity — roles, timings and materials, to print or follow in class.',
     activityBadge: 'AI Activity',
     createActivityTitle: 'Generate Activity',
     activityTypeLabel: 'Activity type',
