@@ -1,3 +1,18 @@
+// CHANGING ANYTHING IN THIS DIRECTORY DOES NOT DEPLOY IT.
+//
+// The tables come from `pnpm --filter @workspace/db run push`, run by hand
+// against the production DATABASE_URL. It is deliberately not wired into the
+// Render build — drizzle-kit resolves drift by dropping columns, and a deploy
+// is the wrong place to discover that (see the header of render.yaml).
+//
+// So: add a table here, run the push, and confirm it with
+// `pnpm --filter @workspace/db run verify-schema`. Skipping it ships endpoints
+// that answer 503 — on 2026-08-19 that went unnoticed until 14 of 24 tables
+// were absent from production.
+//
+// CI asks about it: a PR touching this directory fails until its description
+// carries `schema-push: done` or `schema-push: n/a`.
+
 // Export your models here. Add one export per file
 export * from "./conversations";
 export * from "./messages";

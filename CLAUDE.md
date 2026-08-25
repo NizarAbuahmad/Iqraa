@@ -115,8 +115,12 @@ Before a live demo: [`docs/demo-checklist.md`](./docs/demo-checklist.md).
   found 1:36pm, migrated 1:41pm, re-checked 1:42pm). This entry went on
   asserting the outage for three more days, because only the problem got
   written down and not the fix.
-  **Verified 24/24 present on 2026-08-22.** The gap in the *process* is real
-  and still open; that particular outage is not. Re-check with
-  `pnpm --filter @workspace/db run verify-schema` rather than trusting this
-  line — and note it only asks whether each table *name* exists, so a table
-  with a stale column set still reports `ok`.
+  **Verified 24/24 present on 2026-08-22.** The push is still manual, on
+  purpose, but since 2026-08-25 it is *checked* — a PR touching
+  `lib/db/src/schema` must answer `schema-push:` in its description, and
+  `.github/workflows/schema-check.yml` runs `verify-schema` against production
+  daily.
+  The gap in the *process* is narrowed, not closed — nothing runs the push for
+  you. Re-check with `pnpm --filter @workspace/db run verify-schema` rather
+  than trusting this line, and note it only asks whether each table *name*
+  exists, so a table with a stale column set still reports `ok`.

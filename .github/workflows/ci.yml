@@ -66,6 +66,82 @@ jobs:
       - name: Verify curriculum data
         run: pnpm --filter @workspace/curriculum run verify
 
+  # A schema change is the one edit in this repo that does not deploy itself.
+  #
+  # `render.yaml` says so at the top and explains why: `drizzle-kit push`
+  # resolves drift by dropping columns, so it is deliberately kept out of the
+  # build. The cost is that adding a table and forgetting the push ships
+  # endpoints that answer 503 — on 2026-08-19 that went unnoticed until 14 of
+  # 24 tables were absent from production, the entire evaluations subsystem
+  # among them. Nobody was lying; nothing asked the question.
+  #
+  # This job asks it at the only moment someone can still act on it cheaply:
+  # while the change is still a pull request. It does not run the push, and it
+  # cannot tell whether you ran it — it makes the decision explicit instead of
+  # implicit, which is the whole difference between that outage and a chore.
+  schema-push:
+    name: schema push acknowledged
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Did this PR change the schema?
+        id: changed
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          # `git diff base...head` compares against the merge base, so commits
+          # that landed on main since this branch started are not counted as
+          # this PR's changes.
+          FILES=$(git diff --name-only "$BASE_SHA...$HEAD_SHA" -- lib/db/src/schema || true)
+          if [ -n "$FILES" ]; then
+            echo "touched=true" >> "$GITHUB_OUTPUT"
+            echo "Schema files changed:"
+            echo "$FILES"
+          else
+            echo "touched=false" >> "$GITHUB_OUTPUT"
+            echo "No schema files changed."
+          fi
+
+      - name: Require an explicit answer about the push
+        if: steps.changed.outputs.touched == 'true'
+        env:
+          # Body text is untrusted input from whoever opened the PR, so it goes
+          # through the environment rather than being interpolated into the
+          # script, where a backtick would run.
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          set -euo pipefail
+          if printf '%s' "$PR_BODY" | grep -qiE '^[[:space:]]*schema-push:[[:space:]]*(done|n/a|not-needed)'; then
+            echo "Acknowledged in the PR body."
+            exit 0
+          fi
+          cat <<'MSG'
+          This PR changes lib/db/src/schema, and the schema does not deploy itself.
+
+          Run the push against the production DATABASE_URL:
+
+              pnpm --filter @workspace/db run push
+
+          then confirm it with `pnpm --filter @workspace/db run verify-schema`.
+
+          Add ONE of these lines to the PR description to clear this check:
+
+              schema-push: done        (pushed — production has the new tables)
+              schema-push: n/a         (types or comments only; no new table or column)
+
+          Not a formality: on 2026-08-19 a skipped push left 14 of 24 tables
+          missing from production and the evaluations subsystem could not work
+          there at all.
+          MSG
+          exit 1
+
   verifier:
     name: math verifier
     runs-on: ubuntu-latest

@@ -24,6 +24,14 @@
 # (see failRoster in artifacts/api-server/src/routes/roster.ts). Push is
 # deliberately not wired into buildCommand: drizzle-kit resolves drift by
 # dropping columns, and a deploy is the wrong place to discover that.
+#
+# That decision stands. What changed on 2026-08-25 is that something now asks
+# whether the push happened, instead of nobody noticing for days:
+#   - .github/workflows/ci.yml — a PR touching lib/db/src/schema must say
+#     `schema-push: done` or `schema-push: n/a` in its description.
+#   - .github/workflows/schema-check.yml — runs verify-schema against the
+#     production DATABASE_URL daily, on demand, and whenever a schema change
+#     reaches main. Read-only; needs a DATABASE_URL repository secret.
 
 services:
   - type: web
