@@ -88,6 +88,41 @@ export const BANK_UNIT_TAGS: string[] = [
 ].sort();
 
 /**
+ * Catalog unit id → the bank tags a document must carry to belong to it.
+ *
+ * Every NCCD unit id has the shape `kbu-{subject}-s{semester}-nccd-u{n}`, which
+ * is all the information the bank tag namespace needs. Deriving the tags from
+ * the id rather than listing them means a new unit is scoped the moment it is
+ * added to the catalog.
+ *
+ * This exists because the app was matching chemistry units by hand against ids
+ * from an older scheme — `unit.id === 'kbu-chem-1'`, which no unit has had for
+ * some time. Those five branches were dead, so chemistry unit tags came only
+ * from title keywords, and **ten of the seventeen chemistry lessons resolved to
+ * no unit tag at all** (all of units 2, 4 and 5). Their shelves and their chat
+ * grounding saw only semester-wide material. «التفاعلات الكيميائية» missing
+ * `/تفاعلات كيمي/` — the definite article falls between the two words — is the
+ * kind of near-miss that makes title matching the wrong primary mechanism.
+ *
+ * Returns the unit tag first, then the semester tag. Financial literacy gets
+ * only a semester tag: the bank holds no unit-level material for it, so
+ * emitting `finlit-s1-u1` would invent a tag nothing can carry.
+ */
+export function bankTagsForUnit(unitId: string): string[] {
+  const m = /^kbu-(math|chem|finlit)-s([12])-nccd-u(\d+)$/.exec(unitId);
+  if (!m) return [];
+  const [, subject, semester, unit] = m;
+  if (subject === 'finlit') return [`finlit-s${semester}`];
+  const prefix = subject === 'chem' ? 'chem-s' : 's';
+  return [`${prefix}${semester}-u${unit}`, `${prefix}${semester}`];
+}
+
+/** Documents scoped to a catalog unit, by its id. */
+export function itemsForUnit(unitId: string, filter: BankFilter = {}): CurriculumSource[] {
+  return itemsForUnitTags(bankTagsForUnit(unitId), filter);
+}
+
+/**
  * Whether this document's content may be reproduced.
  *
  * `third-party` is grouped with `teacher` rather than given a third value:
