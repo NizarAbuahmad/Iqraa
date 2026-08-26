@@ -39,6 +39,20 @@ export interface AIRequest {
   activityType?: 'individual' | 'group' | 'discussion' | 'hands-on' | 'game';
 }
 
+/**
+ * A textbook page the server actually attached to the prompt — a citation a
+ * teacher can check, not just a lesson match. Mirrors `GroundedSource` in
+ * `artifacts/api-server/src/lib/grounding.ts`; present only when
+ * `withGrounding` found real book passages for the request.
+ */
+export interface GroundedSource {
+  sourceId: string;
+  /** The document as a teacher would name it. */
+  titleAr: string;
+  /** 1-based page in that document. */
+  page: number;
+}
+
 export interface LessonPlanOutput {
   title: string;
   grade: string;
@@ -54,6 +68,7 @@ export interface LessonPlanOutput {
   assessment: string;
   differentiation: string;
   homework: string;
+  sources?: GroundedSource[];
 }
 
 export interface WorksheetOutput {
@@ -61,6 +76,7 @@ export interface WorksheetOutput {
   instructions: string;
   sections: WorksheetSection[];
   answerKey: WorksheetAnswerKeyItem[];
+  sources?: GroundedSource[];
 }
 
 export interface WorksheetSection {
@@ -86,6 +102,7 @@ export interface QuizOutput {
   duration: number;
   totalPoints: number;
   questions: QuizQuestion[];
+  sources?: GroundedSource[];
 }
 
 export interface QuizQuestion {
@@ -116,6 +133,7 @@ export interface ActivityOutput {
   teacherTips: string[];
   differentiation: string;
   assessment: string;
+  sources?: GroundedSource[];
 }
 
 // ─── Interactive Classroom Engine ────────────────────────────────────────────

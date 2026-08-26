@@ -15,15 +15,29 @@
  *
  * Deliberately quiet. This is information, not an error: ungrounded output is
  * still useful, it just carries a different claim.
+ *
+ * `sources`, when present, is a level more specific than `grounded`: the
+ * lesson can resolve (`grounded: true`) while the server still finds no
+ * extracted book passages for it — most lessons today, since only six books
+ * are ingested. When it *is* present, it is the page a teacher can hold the
+ * printed book open to and check, not just a lesson-title match.
  */
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { sourceCitationLine } from '@/services/kbContext';
+
+type GroundedSource = {
+  titleAr: string;
+  page: number;
+};
 
 type Props = {
   grounded: boolean;
   /** Curriculum lesson title, when there is one. */
   lessonTitle?: string | null;
+  /** Book pages the server actually attached to the prompt — see `GroundedSource` in AIService.ts. */
+  sources?: readonly GroundedSource[];
   isRTL: boolean;
   colors: {
     primary: string;
@@ -40,7 +54,7 @@ type Props = {
   };
 };
 
-export function GroundingNotice({ grounded, lessonTitle, isRTL, colors, labels }: Props) {
+export function GroundingNotice({ grounded, lessonTitle, sources, isRTL, colors, labels }: Props) {
   const rowDir = isRTL ? 'row-reverse' : 'row';
   const align = isRTL ? 'right' : 'left';
 
@@ -74,6 +88,20 @@ export function GroundingNotice({ grounded, lessonTitle, isRTL, colors, labels }
         >
           {grounded ? labels.grounded(lessonTitle ?? '') : labels.generic}
         </Text>
+        {grounded && sources && sources.length > 0 && (
+          <Text
+            style={[
+              styles.hint,
+              {
+                color: colors.primary,
+                fontFamily: 'Almarai_400Regular',
+                textAlign: align,
+              },
+            ]}
+          >
+            {sourceCitationLine(sources, isRTL)}
+          </Text>
+        )}
         {grounded ? null : (
           <Text
             style={[

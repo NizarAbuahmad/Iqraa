@@ -173,6 +173,28 @@ export function buildAdaptationsDirective(text: string, lang: 'ar' | 'en'): stri
 }
 
 /**
+ * One display line for the textbook pages a generation actually cites.
+ *
+ * `GroundedSource[]` (see `ai/AIService.ts`) is a level more specific than
+ * `resolveGeneratorGrounding`'s `grounded` flag: the lesson can resolve while
+ * the server still finds no extracted book passages for it — most lessons
+ * today, since only six books are ingested. When sources *are* present, this
+ * is the page a teacher can hold the printed book open to and check.
+ *
+ * Returns '' for an empty list so callers can render conditionally on truthiness.
+ */
+export function sourceCitationLine(
+  sources: readonly { titleAr: string; page: number }[],
+  isAr: boolean,
+): string {
+  if (!sources.length) return '';
+  const arabicDigits = (n: number) => String(n).replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[Number(d)]!);
+  return sources
+    .map(s => (isAr ? `${s.titleAr} · صفحة ${arabicDigits(s.page)}` : `${s.titleAr} · page ${s.page}`))
+    .join(isAr ? '، ' : ', ');
+}
+
+/**
  * Resolve whether a topic is curriculum-grounded for generation.
  * Weak fuzzy hits are rejected — never silently substitute an unrelated lesson.
  */

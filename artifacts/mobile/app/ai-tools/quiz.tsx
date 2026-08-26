@@ -492,6 +492,7 @@ export default function QuizScreen() {
           <GroundingNotice
             grounded={curriculumGrounded}
             lessonTitle={groundedLesson}
+            sources={result.sources}
             isRTL={isRTL}
             colors={colors}
             labels={{

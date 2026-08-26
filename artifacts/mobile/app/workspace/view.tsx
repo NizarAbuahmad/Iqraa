@@ -297,7 +297,7 @@ export default function WorkspaceViewScreen() {
 function LessonView({ plan, colors, isRTL, t, accent }: {
   plan: LessonPlanOutput; colors: any; isRTL: boolean; t: any; accent: string;
 }) {
-  const sections: Array<{ key: keyof LessonPlanOutput; titleKey: string; icon: string }> = [
+  const sections: Array<{ key: Exclude<keyof LessonPlanOutput, 'sources'>; titleKey: string; icon: string }> = [
     { key: 'objectives', titleKey: 'sectionObjectives', icon: 'flag-outline' },
     { key: 'materials', titleKey: 'sectionMaterials', icon: 'bag-outline' },
     { key: 'introduction', titleKey: 'sectionIntroduction', icon: 'play-outline' },

@@ -46,9 +46,9 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     because the count was repeatedly described as "all in
     `lib/integrations-openai-ai-server`", which is wrong by a factor of three
     and would send someone looking in the wrong package.
-- Mobile test suite: 962 tests, 0 failures, 10 skipped (re-counted 2026-08-25
-  on an installed workspace, with `main` merged in; 925, 909, 900, 894, 888,
-  865 and 855
+- Mobile test suite: 975 tests, 0 failures, 10 skipped (re-counted 2026-08-26
+  on an installed workspace; 971 and 962 the day before, 925, 909, 900, 894,
+  888, 865 and 855
   earlier the same day, 725 on 2026-08-23, 723 on 2026-08-22, the 480 here was
   stale before that, and the 376 before it).
   The number moves with almost every merge — re-count rather than cite it.
@@ -6578,3 +6578,42 @@ number on a lesson the guide was describing differently. The printed total
 (20) is kept, the lesson counts are left as they were, and the unit carries a
 `pacing_note` saying so — in the data, not only in a test, so the next person
 editing the curriculum sees it.
+
+## The page citation is now on screen, not just in the response, 2026-08-26
+
+Live grounding was verified end to end on 2026-08-26: a real worksheet on
+أوتار الدائرة, generated against the live API, reproduced named theorems from
+the actual textbook page (confirmed against the printed book), and the
+`/api/healthz/ai-budget` spend delta ($0.5678 → $0.6199) proved it was a real
+model call, not the mock fallback. What that check could not do is what a
+teacher does every time: the API has returned `sources: [{sourceId, titleAr,
+page}]` since PR #140, and nothing on screen read it — verifying grounding
+meant opening the PDF and matching a theorem by eye.
+
+`LessonPlanOutput`, `WorksheetOutput`, `QuizOutput` and `ActivityOutput` (in
+`services/ai/AIService.ts`) now carry an optional `sources?: GroundedSource[]`
+field, mirroring the server's type. `GroundingNotice` — already rendered on
+all four generator screens (worksheet, quiz, lesson-plan, activity) to say
+whether a generation is anchored to the curriculum — gained a `sources` prop:
+when the lesson resolved *and* the server actually attached book passages, a
+second line prints each citation, e.g. «كتاب الرياضيات - الفصل الأول · صفحة
+٣٥». When only the lesson resolved but no passages were found (most lessons
+today — six of 78 documents are ingested), the line is silently absent; this
+is the same distinction `groundingFor()` already draws server-side between
+"a unit resolved" and "passages were found for it".
+
+The formatting itself (Arabic-Indic digits, the `·` separator, the join for
+more than one source) lives in `sourceCitationLine()` in `services/kbContext.ts`
+rather than inside the component, so it runs under the mobile test glob
+(`services/__tests__/**/*.test.ts`, which does not reach `components/`) —
+`components/ui/*` has no test coverage in this repo and this file is not an
+exception to that, but the pure formatting logic underneath it now is.
+
+**Not verified visually.** This sandbox has no `OPENAI_API_KEY` and outbound
+access to the production API is blocked (same limitation recorded when
+`DEMO_MODE` was flipped, days earlier in this same thread) — `MockAIService`
+never sets `.sources`, so there is nothing in this container that can produce
+a screen actually showing the new line. `pnpm run typecheck` (all three
+packages) and the mobile suite (975 tests, 0 failures) both pass. Confirm on
+the next live generation that the citation line under the grounding banner
+reads correctly, RTL included.
