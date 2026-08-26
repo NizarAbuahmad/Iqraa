@@ -1,0 +1,203 @@
+{
+  "meta": {
+    "grade": "الصف التاسع",
+    "grade_en": "Grade 9",
+    "subject": "الرياضيات",
+    "subject_en": "Mathematics",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 2,
+    "provenance_note": "لا كتاب طالب ولا دليل معلم للفصل الثاني متاح في هذه الجلسة — كل ما هنا من كتاب التمارين الرسمي وحده (رفعه المستخدم مباشرة كملف PDF، 52 صفحة). العناوين وترتيب الدروس من فهرس الكتاب. التعلُّم السابق من عنوان أول قسم مراجعة («أستعدُّ لدراسة الوحدة») في كل وحدة فقط — راجع known_gaps. لا نتاجات درس ولا مصطلحات ولا عدد حصص لأي درس، لعدم توفر جدول مخطَّط الوحدة (دليل المعلم) لهذا الفصل.",
+    "source_books": {
+      "exercise_book": "كتاب التمارين - الرياضيات - الصف التاسع - الفصل الدراسي الثاني - رفعه المستخدم مباشرة كملف PDF، 52 صفحة"
+    },
+    "schema_version": "1.0",
+    "known_gaps": [
+      "كل وحدات هذا الملف (5-8) بلا نتاجات درس أو مصطلحات أو عدد حصص — لا يوجد دليل معلم متاح لهذا الفصل في أي مصدر وصلت إليه هذه الجلسة (لا عبر Drive ولا عبر ما رفعه المستخدم).",
+      "قوائم «التعلُّم السابق» لكل وحدة هنا مأخوذة من عنوان أول قسم مراجعة فقط في كتاب التمارين (الدرس 1 عادة) — ليست قائمة شاملة لكل درس في الوحدة كما في التعلُّم السابق الكامل عندما يتوفر.",
+      "لا عناوين إنجليزية مطبوعة متاحة لأي وحدة أو درس هنا — كل العناوين الإنجليزية ترجمة أمينة من المُعِد، وليست من الكتاب.",
+      "ترقيم الوحدات يواصل من الفصل الأول (5-8 بعد وحدات 1-4) — لم يُتحقَّق من أن هذا يطابق دليل المعلم لأنه غير متاح، لكنه يطابق ترقيم كتاب التمارين نفسه."
+    ]
+  },
+  "units": [
+    {
+      "id": "u5",
+      "number": 5,
+      "title_ar": "العلاقات في المثلثات والنسب المثلثية",
+      "title_en": "Relations in Triangles and Trigonometric Ratios",
+      "data_tier": "unit-level only (exercise book)",
+      "total_periods": null,
+      "prior_knowledge": [
+        "تحديد المثلثات المتشابهة باستعمال حالات التشابه SAS، SSS، AA"
+      ],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_ar": "الأجزاء المتناسبة في المثلثات",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l2",
+          "order": 2,
+          "title_ar": "منصفات الزوايا في المثلث",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l3",
+          "order": 3,
+          "title_ar": "القطع المتوسطة والارتفاعات في المثلث",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l4",
+          "order": 4,
+          "title_ar": "النسب المثلثية",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l5",
+          "order": 5,
+          "title_ar": "تطبيقات النسب المثلثية",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u6",
+      "number": 6,
+      "title_ar": "المقادير الأسية والمقادير الجذرية",
+      "title_en": "Exponential and Radical Expressions",
+      "data_tier": "unit-level only (exercise book)",
+      "total_periods": null,
+      "prior_knowledge": [
+        "استعمال قواعد ضرب القوى الصحيحة وقسمتها لتبسيط عبارات أسية"
+      ],
+      "lessons": [
+        {
+          "id": "u6_l1",
+          "order": 1,
+          "title_ar": "تبسيط المقادير الأسية",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l2",
+          "order": 2,
+          "title_ar": "العمليات على المقادير الجذرية",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l3",
+          "order": 3,
+          "title_ar": "حل المعادلات الجذرية",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u7",
+      "number": 7,
+      "title_ar": "المقادير الجبرية النسبية",
+      "title_en": "Rational Algebraic Expressions",
+      "data_tier": "unit-level only (exercise book)",
+      "total_periods": null,
+      "prior_knowledge": [
+        "تحليل المقادير الجبرية إلى العوامل"
+      ],
+      "lessons": [
+        {
+          "id": "u7_l1",
+          "order": 1,
+          "title_ar": "ضرب المقادير الجبرية النسبية وقسمتها",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l2",
+          "order": 2,
+          "title_ar": "جمع المقادير الجبرية النسبية وطرحها",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l3",
+          "order": 3,
+          "title_ar": "حل المعادلات النسبية",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u8",
+      "number": 8,
+      "title_ar": "الإحصاء والاحتمالات",
+      "title_en": "Statistics and Probability",
+      "data_tier": "unit-level only (exercise book)",
+      "total_periods": null,
+      "prior_knowledge": [
+        "إيجاد المدى والمدى الربيعي لمجموعة بيانات"
+      ],
+      "lessons": [
+        {
+          "id": "u8_l1",
+          "order": 1,
+          "title_ar": "مقاييس التشتت",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l2",
+          "order": 2,
+          "title_ar": "الجداول التكرارية ذات الفئات",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l3",
+          "order": 3,
+          "title_ar": "المدرجات التكرارية",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l4",
+          "order": 4,
+          "title_ar": "الاحتمالات وأشكال ڤن",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l5",
+          "order": 5,
+          "title_ar": "الاحتمال الهندسي",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}

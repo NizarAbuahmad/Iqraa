@@ -33,6 +33,12 @@ import {
   isG9MathSem1TitleOnlyUnit,
   isG9MathSem1TitleOnlyLesson,
 } from './catalogs/g9MathSem1.ts';
+import {
+  G9_MATH_S2_CURRICULUM_BOOK_ID,
+  buildG9MathSem2BrowserCatalog,
+  isG9MathSem2TitleOnlyUnit,
+  isG9MathSem2TitleOnlyLesson,
+} from './catalogs/g9MathSem2.ts';
 
 export interface Grade {
   id: string;
@@ -347,6 +353,20 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+  },
+  // ── Math Grade 9 – Semester 2 ───────────────────────────────────────────────
+  {
+    id: 'book-math-9-s2',
+    title: 'Mathematics – Grade 9, Semester 2',
+    titleAr: 'الرياضيات – الصف التاسع – الفصل الثاني',
+    subjectId: 'mathematics',
+    gradeId: 'grade-9',
+    academicYear: '2023-2024',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
   },
   // ── Other grades ───────────────────────────────────────────────────────────
   {
@@ -1187,6 +1207,7 @@ const _finlitSem1Browser = buildFinlitSem1BrowserCatalog();
 const _chemSem1Browser = buildChemSem1BrowserCatalog();
 const _chemSem2Browser = buildChemSem2BrowserCatalog();
 const _g9MathSem1Browser = buildG9MathSem1BrowserCatalog();
+const _g9MathSem2Browser = buildG9MathSem2BrowserCatalog();
 
 // ─── Authored-Bloom's enrichment for NCCD browser rows ───────────────────────
 //
@@ -1301,6 +1322,7 @@ export const UNITS: Unit[] = [
   ..._nccdSem2Browser.units,
   ..._finlitSem1Browser.units,
   ..._g9MathSem1Browser.units,
+  ..._g9MathSem2Browser.units,
 ];
 
 /** Active lessons — legacy Math/Chem G10 rows replaced by NCCD-sourced browser rows. */
@@ -1312,6 +1334,7 @@ export const LESSONS: Lesson[] = [
   ..._nccdSem2Browser.lessons,
   ..._finlitSem1Browser.lessons,
   ..._g9MathSem1Browser.lessons,
+  ..._g9MathSem2Browser.lessons,
 ];
 
 /** Math Grade 10 Semester 1 book id (NCCD-backed). */
@@ -1327,12 +1350,16 @@ export function isBrowserCurriculumPreparing(_bookId: string): boolean {
 
 /** UI: Sem1 units 2–4 — real titles, unit-level objectives only. */
 export function isBrowserUnitTitleOnly(unitId: string): boolean {
-  return isNccdSem1TitleOnlyUnit(unitId) || isG9MathSem1TitleOnlyUnit(unitId);
+  return isNccdSem1TitleOnlyUnit(unitId)
+    || isG9MathSem1TitleOnlyUnit(unitId)
+    || isG9MathSem2TitleOnlyUnit(unitId);
 }
 
 /** UI: Sem1 units 2–4 lessons — title confirmed, no per-lesson objectives yet. */
 export function isBrowserLessonTitleOnly(lessonId: string): boolean {
-  return isNccdSem1TitleOnlyLesson(lessonId) || isG9MathSem1TitleOnlyLesson(lessonId);
+  return isNccdSem1TitleOnlyLesson(lessonId)
+    || isG9MathSem1TitleOnlyLesson(lessonId)
+    || isG9MathSem2TitleOnlyLesson(lessonId);
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
