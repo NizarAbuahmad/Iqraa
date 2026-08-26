@@ -38,8 +38,10 @@ figure printed beside the wrong question is worse than no figure, which is the
 whole lesson of the check-slide work this follows.
 
 These *are* reachable from the app now (`services/bookFigures.ts` → the slides
-path), so a bad crop left in place ships. Deleting the PNG is enough: the index
-lists it but `gen_book_figure_assets.mjs` only maps files that exist.
+path), so a bad crop left in place ships. Deleting a crop means deleting BOTH
+the PNG and its `index.json` entry: the bundler map is generated from files
+that exist, but `figuresForLesson` reads the index, so pruning only one leaves
+the two disagreeing about what the lesson has.
 
 Usage
 ─────

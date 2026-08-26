@@ -47,9 +47,12 @@ describe('figuresForLesson', () => {
   });
 
   it('is empty for a lesson with nothing mapped, and for nothing at all', () => {
-    // A real chemistry lesson that simply has no figures: the extractor found
-    // four in that book and none of them fall in unit 1 lesson 1.
-    assert.deepEqual(figuresForLesson('kbl-chem-s1-nccd-u1_l1'), []);
+    // Financial literacy, whose book is not in the repo at all — so this stays
+    // empty for a structural reason rather than an incidental one. It used to
+    // be a chemistry lesson, picked when that book yielded five figures; it now
+    // yields 68 and that lesson has eleven, which made the example wrong
+    // without making the behaviour wrong.
+    assert.deepEqual(figuresForLesson('kbl-finlit-s1-nccd-u1_l1'), []);
     assert.deepEqual(figuresForLesson('no-such-lesson'), []);
     assert.deepEqual(figuresForLesson(null), []);
     assert.deepEqual(figuresForLesson(undefined), []);

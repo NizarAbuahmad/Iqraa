@@ -306,22 +306,6 @@
    "lessonStartPage": 25
   },
   {
-   "file": "p034.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 34,
-   "rect": [
-    442.5,
-    0.0,
-    565.2,
-    145.8
-   ],
-   "unit": 2,
-   "lesson": 1,
-   "lessonTitleEn": "Chords, Diameters and Tangents of a Circle",
-   "lessonTitleAr": null,
-   "lessonStartPage": 34
-  },
-  {
    "file": "p034b.png",
    "sourceId": "math-s1-student-book",
    "pdfPage": 34,
@@ -466,22 +450,6 @@
    "lessonStartPage": 34
   },
   {
-   "file": "p037.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 37,
-   "rect": [
-    413.2,
-    99.6,
-    523.9,
-    208.4
-   ],
-   "unit": 2,
-   "lesson": 1,
-   "lessonTitleEn": "Chords, Diameters and Tangents of a Circle",
-   "lessonTitleAr": null,
-   "lessonStartPage": 34
-  },
-  {
    "file": "p037b.png",
    "sourceId": "math-s1-student-book",
    "pdfPage": 37,
@@ -506,22 +474,6 @@
     612.6,
     135.1,
     712.6
-   ],
-   "unit": 2,
-   "lesson": 1,
-   "lessonTitleEn": "Chords, Diameters and Tangents of a Circle",
-   "lessonTitleAr": null,
-   "lessonStartPage": 34
-  },
-  {
-   "file": "p038.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 38,
-   "rect": [
-    423.7,
-    116.0,
-    564.1,
-    329.4
    ],
    "unit": 2,
    "lesson": 1,
