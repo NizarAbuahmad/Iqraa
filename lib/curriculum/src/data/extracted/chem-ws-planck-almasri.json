@@ -1,0 +1,20 @@
+{
+ "sourceId": "chem-ws-planck-almasri",
+ "localPath": "attached_assets/knowledge-base-pending/chem-ws-planck-almasri.pdf",
+ "bytes": 150140,
+ "sha256": "34ce3f169a20a710a57507150c231ab12c45c82895b22561eff29d12a010ad74",
+ "tool": "pdf-parse@2",
+ "extractedAt": "2026-08-26",
+ "pages": 2,
+ "chars": 648,
+ "text": [
+  {
+   "page": 1,
+   "text": "Teacher Abeer almasri\n1\tTeacher Abeer almasri\nالمادة :\tالكيمياء\nورقة عمل\t(\t1\t)\n(\tتطبيقات على قانون ماكس بالنك\t)\n............................. : االسم\t.......\nالصف :\tالعاشر\t) الشعبة : (\nالفصل الدراسي األ\tول\n2023\t/\t2022\n\tالنتاجات :\t1\t.\tيطبق قانون ماكس بالنك\nتدريب (\t1\t: )ياحسب طاقة فوتون من الضوء األزرق طوله الموج\t475\tنانو مت\nتدريب (\t2\t: )\tاحسب تردد شعاع من الضوء األصفر طولهيموج\t589\tنانومت"
+  },
+  {
+   "page": 2,
+   "text": "Teacher Abeer almasri\n2\tTeacher Abeer almasri\nTEACHER ABEER ALMASRI\nتدريب\t(\t3\t)يما طاقة فوتون طوله الموج\t400\tنانومت\nتد\tر\tيب\t(\t4\t)\tما تردُّد الفوتون الذي له طاقة مقدارها\tJ19\t-\n2.52×10\nتدريب\t(\t5\t)\tف\tوتون\tضوء\tتردُّده\tz\tH14\n0\t1\t×\t0\t5\t.\t5\tاحسب\tطولهيالموج\tوطاقته\t."
+  }
+ ]
+}

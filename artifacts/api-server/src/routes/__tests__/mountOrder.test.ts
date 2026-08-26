@@ -151,7 +151,10 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(res.status, 200);
     const body = (await res.json()) as { usable: number; ingested: number; pending: number };
     assert.equal(body.usable, body.ingested + body.pending);
-    assert.ok(body.pending > body.ingested, "most of the bank is unread — say so");
+    // Flipped 2026-08-26 alongside lib/curriculum's bank.test.ts: 51 documents
+    // were ingested that day, taking ingested past pending for the first time.
+    assert.ok(body.pending > 0, "the bank should still have unread documents to say so about");
+    assert.ok(body.ingested > body.pending, "most of the bank has been read — say so");
   });
 
   it("keeps the verifier probe public", async () => {

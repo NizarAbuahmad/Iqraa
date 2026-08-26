@@ -6742,6 +6742,114 @@ self-guarding or deliberately held back, and neither changed today.
 
 981 mobile tests pass (was 975), typecheck clean across all three packages.
 
+## 46 of the 60 pending documents are read, 2026-08-26
+
+The blocker recorded above ("63 of 78 documents are `pending` — a title and a
+Drive id, no extracted text") and repeated again earlier today ("all 60
+`pending` documents have no local file anywhere in this repo and there is no
+Drive/S3 fetch mechanism") is now wrong on both counts. The user supplied the
+Drive folder the manifest's `driveId`s already pointed at, and this session
+has real Google Drive MCP access — a capability that simply was not checked
+for before answering "no fetch mechanism exists."
+
+**54 of 60 were downloaded and byte-verified against the manifest**, using
+`download_file_content` per `driveId`. The tool caps a single call at 10 MB
+and returns everything larger as a downloadable-once file on disk rather than
+inline — both are treated as ordinary conditions, not failures: results over
+the inline-token limit are saved by the harness to a local JSON file (`{id,
+title, content}`, content base64) and decoded from there without ever putting
+the base64 in this session's own context, and results over 10 MB are named
+and left for later rather than retried into a wall. Six documents remain
+unfetched:
+
+| id | why |
+| --- | --- |
+| `math-s1-support-material`, `math-u1-answers-almasri`, `math-u1-answers-alkhatib`, `math-u2-answers-alkhatib` | 15–18 MB, over the tool's 10 MB ceiling |
+| `math-loss-recovery`, `math-u1-summary-alkhamayseh` | repeated transient "MCP server session expired" across many retries — not a size or content problem, the same two ids failed at every position in every batch tried |
+
+**Extraction caught two failure modes a first pass would have shipped
+silently.** `extract-text.ts` already treats a PDF with no text layer as an
+honest skip ("needs OCR"); two more shapes needed the same treatment, found by
+running the corpus through the existing `extraction.test.ts` Arabic-density
+check and refusing to accept a document just because `pdf-parse` returned
+non-empty text:
+
+- **Two files decoded to 28–37% raw control characters** (`math-foundations-melhem`,
+  `math-geometry-formulas-melhem`) — pdf-parse reading an embedded font
+  against the wrong cmap does not throw, it returns bytes. `assert.ok(text.length
+  > 0)` alone would have called this a success.
+- **Three files from the same author** (`chem-ws-bohr-tareq`,
+  `chem-ws-reactions-tareq`, `chem-s2-month1-tareq`) **decoded to real Arabic
+  in the wrong Unicode block** — Arabic Presentation Forms (isolated glyph
+  shapes, U+FB50–FEFF) with each word's letters in reverse order, instead of
+  the base Arabic block a shaped renderer would produce. Readable by a person
+  who mentally un-reverses each word; unusable as a citation or as text handed
+  to a model.
+
+Both are now gates in `extract-text.ts` itself — a control-character fraction
+over 5%, or more Presentation-Forms characters than base-Arabic characters —
+so a future file with either defect is reported and skipped at extraction
+time, the same as "no text layer," rather than silently marked `ingested`.
+
+**The test that should have caught this only caught the first file
+alphabetically.** `extraction.test.ts`'s Arabic-density check asserted inside
+a loop over all extracted files; the first assertion failure throws, so once
+`chem-s1-pack-almasri` (a real, correctly-extracted document — see below)
+tripped the old per-page threshold, the two genuinely corrupted files sitting
+later in listing order never got checked at all in that run. Rewritten to
+collect every failure before asserting.
+
+**The threshold itself was also wrong, for a document type the corpus didn't
+have before.** The old check required 70% of a document's *pages* to
+individually clear a density bar — calibrated on six continuous-prose
+textbooks. `chem-s1-pack-almasri` is a real, cleanly-extracted teacher-made
+study pack with legitimate blank divider pages and dotted table-of-contents
+leaders (`denseFrac` 0.67, just under the old bar) — a real document, not a
+bad extraction. Rewritten to measure Arabic density across the whole document
+rather than per-page: the lowest ratio among all 46 genuine extractions is
+0.32; the five rejected above measured 0.00–0.12. A 0.2 floor sits in that
+gap with real margin on both sides.
+
+**Grounding coverage moved from 45 to 53 of 64 lessons** — remeasured, not
+estimated — because 7 of the newly-ingested documents carry `authority:
+"nccd"` (the two chemistry activity books, the ministry remedial-program
+material, the diagnostic test) and are therefore `quotable`, the same as the
+original six books, and now contribute real passages alongside them.
+
+**One more stale assumption, caught by a test that turned out to be checking
+the wrong thing.** `grounding.test.ts`'s "cites only NCCD material" test
+matched cited source ids against a hardcoded regex of the original six
+books' filenames. It broke the moment a *legitimately* NCCD-authority
+document outside that regex got cited — which is the correct outcome of
+ingesting more NCCD material, not a bug. Rewritten to check the manifest's own
+`authority` field instead of guessing at an id-naming convention.
+
+**Two now-inverted directional tests, fixed in the direction reality moved.**
+`bank.test.ts`'s and `mountOrder.test.ts`'s `bankStats`/`/bank/stats` checks
+both asserted `pending > ingested` — true when written, false as of today
+(57 ingested, 14 pending). Flipped, with the date and the reason recorded next
+to each so the next person who has to flip it again knows this is a fact
+about the corpus's reading progress, not an invariant of the code.
+
+83 curriculum / 981 mobile / 275 api-server tests pass; typecheck clean;
+`pnpm --filter @workspace/curriculum run verify` reports 0 errors (unchanged —
+it checks the curriculum catalog, not the bank manifest).
+
+### What's still not done
+
+- The 6 documents in the table above.
+- The 3 documents extraction genuinely cannot read without OCR
+  (`math-remedial-part2`, `math-u2-summary-alkhamayseh`, `math-ws-systems-alhindi`)
+  — no text layer at all, same class as the S1 teacher guide's LFS block.
+- The 5 documents whose extraction is real but unusable, per the two new
+  gates above — `math-foundations-melhem`, `math-geometry-formulas-melhem`,
+  `chem-ws-bohr-tareq`, `chem-ws-reactions-tareq`, `chem-s2-month1-tareq`.
+
+That's all 14 remaining `pending` entries accounted for. The manifest's other
+7 non-`ingested` entries (6 `duplicate`, 1 `conflict`) are unrelated to this
+pass — pre-existing and untouched. 78 total = 57 `ingested` + 14 `pending` +
+6 `duplicate` + 1 `conflict`.
+
 ## `verify-curriculum` gaps: 14 → 7, 2026-08-26
 
 Before touching any new grade, closed what was cheaply closeable in the
@@ -6790,3 +6898,54 @@ this script) — as a follow-up, not attempted in this pass.
 curriculum tests pass (unchanged), typecheck not run here (container has no
 `node_modules` for `@workspace/curriculum` — pre-existing, unrelated to this
 change).
+
+## Grade 9 Math Semester 1 lands, in the data model only, 2026-08-26
+
+The first real second-grade catalog since the id-collision scheme (2026-08-25,
+above) was built to allow one. `lib/curriculum/src/catalogs/g9MathSem1.ts` and
+`data/iqra_curriculum_g9_math_sem1.json`, mirroring `g10MathSem1.ts`'s shape
+and tiering exactly: Unit 1 lesson-level (objectives, vocabulary, periods),
+Units 2–4 title-only (real titles and order from the student book, no invented
+content). Wired into `catalog.ts`'s `UNITS`/`LESSONS`/`BOOKS` alongside the
+existing NCCD catalogs.
+
+**Deliberately not exposed to any picker.** `INVESTOR_MVP_CURRICULUM` still
+gates everything to `grade-10`; this PR does not touch `MVP_GRADE_ID` or
+`MVP_BOOK_IDS`. Whether a second grade becomes visible alongside Grade 10 or
+swaps it in is a product decision, not made here — confirmed by hand that
+`getVisibleGrades()`, `getBooksForSubjectGrade('mathematics','grade-9')` and
+`isCurriculumBookVisible('book-math-9-s1')` all still report Grade 9 as
+absent/invisible with this change applied.
+
+**Sourcing hit a real tooling limit, not a data-availability one.** The NCCD
+Grade 9 Math source PDFs exist in Drive in the same volume as Grade 10's — full
+S1 and S2 sets (student books, teacher guides, exercise books, answer keys,
+remedial material). But both available Drive extraction paths cap out on large
+files: `download_file_content` (raw bytes) times out above ~2MB for this
+account, and `read_file_content` (Drive's own text extraction) silently
+truncates — no error, the text just stops. The S1 student book (8.9MB, 151
+pages) returned text through ~page 80; the 46MB teacher guide returned text
+through ~page 51. Unit 1 was fully inside that window; Units 2–4 were not, so
+they carry no lesson-level content — not because the source doesn't exist, but
+because nothing available in this session could read that far into it.
+
+**One real book-vs-guide conflict found and resolved by precedent, not by
+authority.** The teacher guide's Unit 1 مخطط الوحدة lists four lessons,
+including a "حل معادلات القيمة المطلقة ومتبايناتها" (absolute-value
+equations/inequalities) lesson the student book's own table of contents does
+not carry. Sided with the student book — same call as the Grade 10 circle-unit
+precedent (2026-08-25 entries above) — but flagged as unconfirmed in the JSON's
+`known_gaps` rather than asserted, because that Grade 10 case had a national
+framework document to check against and this one does not.
+
+`curriculumIds.test.ts`'s "produces ids no existing id already uses" test
+asserted no synthetic Grade 9 id collides with anything in the catalog — true
+by construction when Grade 9 was hypothetical, false now that it's real (a
+Grade 9 lesson id matching its own synthetic candidate is the scheme working).
+Rewrote it to scope the collision check to non-Grade-9 content, so it still
+catches an actual cross-grade collision.
+
+83 curriculum tests pass (was 83, one rewritten), `verify-curriculum`: 6 files,
+78 lessons, 21 gaps (14 pre-existing + 7 new, all Grade 9 Units 2–4's expected
+title-only gaps). Typecheck not run here (same pre-existing `node_modules` gap
+as the entry above).

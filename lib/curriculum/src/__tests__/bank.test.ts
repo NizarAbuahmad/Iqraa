@@ -216,8 +216,13 @@ describe('bankStats', () => {
     const s = bankStats();
     assert.equal(s.total, G10_SOURCES.length);
     assert.equal(s.usable + s.excluded, s.total);
+    // Flipped 2026-08-26: 51 support-pack documents were read that day,
+    // taking ingested past pending for the first time. Assert the fact of
+    // the day rather than a fixed direction, so this test states what is
+    // true instead of just what was true when it was written.
     assert.ok(s.ingested > 0);
-    assert.ok(s.pending > s.ingested, 'most of the bank is still unread — say so');
+    assert.ok(s.pending > 0, 'the bank should still have unread documents to say so about');
+    assert.ok(s.ingested > s.pending, 'most of the bank has been read — say so');
     assert.equal(s.byPolicy.quotable + s.byPolicy['reference-only'], s.usable);
     assert.equal(Object.values(s.byKind).reduce((a, b) => a + b, 0), s.usable);
   });
