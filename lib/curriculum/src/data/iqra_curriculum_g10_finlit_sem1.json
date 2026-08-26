@@ -26,6 +26,7 @@
       "title_en": "Project Management",
       "general_idea_ar": "«كيف يمكن تحويل فكرة بسيطة إلى مشروع ناجح يدار بكفاءة، ويحقق أهدافه كاملة؟»",
       "total_periods": null,
+      "data_tier": "book-level (student book only — no NCCD teacher guide located for this subject)",
       "lessons": [
         {
           "id": "u1_l1",
@@ -124,6 +125,7 @@
       "title_en": "Economic Feasibility Study for Entrepreneurial Projects",
       "general_idea_ar": "«كيف يمكن التحقق من جدوى فكرة المشروع قبل تنفيذها بما يضمن نجاحها واستدامتها في السوق؟»",
       "total_periods": null,
+      "data_tier": "book-level (student book only — no NCCD teacher guide located for this subject)",
       "lessons": [
         {
           "id": "u2_l1",
