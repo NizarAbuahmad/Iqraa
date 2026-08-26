@@ -46,6 +46,7 @@ export {
   buildQuizSlidesHTML,
   buildWorksheetHTML,
   buildWorksheetSlidesHTML,
+  type BookFigureRef,
 } from './exportHtml.ts';
 
 // ─── Clipboard ────────────────────────────────────────────────────────────────

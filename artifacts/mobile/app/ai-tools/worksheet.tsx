@@ -8,6 +8,7 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { generatorUnitId, getUnitPriorKnowledge, resolveGeneratorGrounding } from '@/services/kbContext';
+import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
 import { WorksheetOutput } from '@/services/ai/AIService';
 import { buildDeckFromWorksheet } from '@/services/classDeck';
 import { summarizeVerification, type VerifyOutcome } from '@/services/quizVerification';
@@ -303,11 +304,20 @@ export default function WorksheetScreen() {
     await copyToClipboard(formatWorksheetText(result, getExportTitle(), getExportMeta(), lang === 'ar'));
     showToast(t('copiedToClipboard'));
   };
+  // Lesson-level, resolved fresh at export time rather than carried in state —
+  // the same re-resolve `resolveGeneratorGrounding` already does elsewhere in
+  // this file. Empty for an ungrounded topic; the appendix just doesn't print.
+  const getExportFigures = () =>
+    bookFigureRefsForLesson(
+      resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en').lesson?.id,
+      lang === 'ar',
+    );
+
   const handlePDF = async () => {
     if (!result) return;
     setLoadingPDF(true);
     try {
-      await exportAsPDF(buildWorksheetHTML(result, getExportTitle(), getExportMeta(), lang === 'ar'), getExportTitle().replace(/[^\w\s]/g, '').trim());
+      await exportAsPDF(buildWorksheetHTML(result, getExportTitle(), getExportMeta(), lang === 'ar', getExportFigures()), getExportTitle().replace(/[^\w\s]/g, '').trim());
     } catch { showToast(t('generationFailed')); } finally { setLoadingPDF(false); }
   };
   const handleWord = async () => {

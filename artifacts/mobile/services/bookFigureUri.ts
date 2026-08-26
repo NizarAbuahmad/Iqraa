@@ -15,7 +15,9 @@
 import { Image } from 'react-native';
 
 import { BOOK_FIGURE_ASSETS } from './bookFigureAssets';
-import type { BookFigure } from './bookFigures';
+import { figuresForLesson, type BookFigure } from './bookFigures';
+import { bookFigureCaption } from './lessonSlides';
+import type { BookFigureRef } from './exportHtml.ts';
 
 /**
  * `null` when the figure was never bundled — a figure extracted after the last
@@ -32,4 +34,28 @@ export function bookFigureUri(figure: BookFigure): string | null {
   // one that actually ships — independent of that function's behaviour.
   if (typeof asset === 'object') return asset.uri || null;
   return Image.resolveAssetSource(asset)?.uri ?? null;
+}
+
+/**
+ * A lesson's figures, ready for `buildWorksheetHTML` / `buildQuizHTML` /
+ * `buildLessonPlanHTML` / `buildActivityHTML`'s reference-appendix param.
+ *
+ * The one place that turns `figuresForLesson()` into `BookFigureRef[]` — the
+ * same three-step lookup `lessonSlides.ts` does inline for slides
+ * (`figuresForLesson` → `bookFigureUri` → `bookFigureCaption`), pulled out so
+ * the four document exports do not each grow their own copy. A figure that
+ * was extracted after the last `gen_book_figure_assets.mjs` run resolves to no
+ * URI and is dropped here, same as it is on a slide.
+ */
+export function bookFigureRefsForLesson(
+  kbLessonId: string | null | undefined,
+  isAr: boolean,
+): BookFigureRef[] {
+  const out: BookFigureRef[] = [];
+  for (const figure of figuresForLesson(kbLessonId)) {
+    const uri = bookFigureUri(figure);
+    if (!uri) continue;
+    out.push({ uri, page: figure.pdfPage, caption: bookFigureCaption(figure, isAr) });
+  }
+  return out;
 }

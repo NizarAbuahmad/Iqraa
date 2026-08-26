@@ -22,6 +22,8 @@ import {
   buildQuizSlidesHTML,
   buildWorksheetHTML,
   buildWorksheetSlidesHTML,
+  EXPORT_FIGURE_MAX,
+  type BookFigureRef,
 } from '../exportHtml.ts';
 import type {
   ActivityOutput,
@@ -205,5 +207,79 @@ describe('document shape', () => {
     const html = buildQuizHTML(hostile, 'اختبار', meta, true);
     assert.ok(!html.includes('<script>alert(1)</script>'), 'question text was not escaped');
     assert.ok(html.includes('&lt;script&gt;'));
+  });
+});
+
+
+describe('book figure appendix', () => {
+  // A model never chose these — the whole point (see `figuresSectionHTML`'s
+  // header comment). These are fixture URIs, not resolved assets; the actual
+  // resolution (`bookFigureUri` + react-native) is out of reach for
+  // `node:test`, same reason `bookFigureUri.ts` itself has no test file.
+  const someFigures = (n: number): BookFigureRef[] =>
+    Array.from({ length: n }, (_, i) => ({
+      uri: `file:///figs/p0${i}.png`,
+      page: 10 + i,
+      caption: `كتاب الطالب · صفحة ${10 + i}`,
+    }));
+
+  it('adds nothing when no figures are passed — the default for every caller today', () => {
+    // Every builder defaults `figures` to []. If a caller forgets to resolve
+    // and pass them, the document must print exactly as it always has, not
+    // silently gain an empty section.
+    for (const [name, html] of arabicDocuments()) {
+      assert.ok(!html.includes('من الكتاب المدرسي'), `${name} grew an appendix from nothing`);
+    }
+  });
+
+  it('prints the appendix for all four document builders, cited by page', () => {
+    const figs = someFigures(2);
+    const builders: [string, (f: BookFigureRef[]) => string][] = [
+      ['worksheet', f => buildWorksheetHTML(worksheet(), 'ورقة عمل', meta, true, f)],
+      ['quiz', f => buildQuizHTML(quiz(), 'اختبار', meta, true, f)],
+      ['lessonPlan', f => buildLessonPlanHTML(plan(), 'خطة', meta, true, f)],
+      ['activity', f => buildActivityHTML(activity(), 'نشاط', meta, true, f)],
+    ];
+    for (const [name, build] of builders) {
+      const html = build(figs);
+      assert.ok(html.includes('من الكتاب المدرسي'), `${name} did not print the appendix heading`);
+      assert.ok(html.includes('file:///figs/p00.png'), `${name} dropped the first figure's URI`);
+      assert.ok(html.includes('صفحة 10'), `${name} dropped the page citation`);
+    }
+  });
+
+  it('never attaches a figure to a specific question', () => {
+    // The property that makes this safe without a vision model: the appendix
+    // is a lesson-level block after the content, never interleaved with a
+    // `.q-card`. A regex checking "no <img> before the last q-card" is the
+    // structural version of that guarantee.
+    const html = buildQuizHTML(quiz(), 'اختبار', meta, true, someFigures(1));
+    const lastQuestion = html.lastIndexOf('q-card');
+    const firstImage = html.indexOf('<img');
+    assert.ok(firstImage > lastQuestion, 'a figure appeared before the questions, not after them');
+  });
+
+  it('caps at EXPORT_FIGURE_MAX rather than printing a whole lesson\'s figures', () => {
+    const html = buildWorksheetHTML(worksheet(), 'ورقة عمل', meta, true, someFigures(EXPORT_FIGURE_MAX + 5));
+    const shown = html.match(/<img /g)?.length ?? 0;
+    assert.equal(shown, EXPORT_FIGURE_MAX);
+  });
+
+  it('escapes a hostile URI or caption', () => {
+    const hostile: BookFigureRef[] = [{
+      uri: '"><script>alert(1)</script>',
+      page: 1,
+      caption: '<script>alert(2)</script>',
+    }];
+    const html = buildQuizHTML(quiz(), 'اختبار', meta, true, hostile);
+    assert.ok(!html.includes('<script>alert(1)</script>'));
+    assert.ok(!html.includes('<script>alert(2)</script>'));
+  });
+
+  it('says the note in the requested language', () => {
+    const ar = buildQuizHTML(quiz(), 'اختبار', meta, true, someFigures(1));
+    const en = buildQuizHTML(quiz(), 'Quiz', meta, false, someFigures(1));
+    assert.ok(ar.includes('من الكتاب المدرسي'));
+    assert.ok(en.includes('From the Student Book'));
   });
 });
