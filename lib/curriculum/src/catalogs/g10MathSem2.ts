@@ -51,7 +51,8 @@ export type NccdCurriculumMeta = {
   curriculum_authority: string;
   semester_covered: number;
   semester_note: string;
-  source_books: string[];
+  /** Free-form source-book citations, keyed by whatever the data calls each one — see the other g10 catalogs' JSON for the varying key names. */
+  source_books: Record<string, string>;
   provenance: string;
   schema_version: string;
   known_gaps: string[];
