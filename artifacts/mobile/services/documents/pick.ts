@@ -4,6 +4,7 @@
 
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
+import { downscaleImage } from '../imageDownscale';
 import type { PickedFile } from './session';
 
 export async function pickTeachingDocuments(): Promise<PickedFile[]> {
@@ -82,5 +83,8 @@ export async function pickMarkSheetPhoto(): Promise<string | null> {
   const asset = result.assets[0]!;
   if (!asset.base64) return null;
   const mime = asset.mimeType || 'image/jpeg';
-  return `data:${mime};base64,${asset.base64}`;
+  // Shrunk before it leaves: a default phone photo is megabytes, and the first
+  // real scan in production was refused for size. `quality` alone does not
+  // help — it re-compresses twelve megapixels rather than sending fewer.
+  return downscaleImage(`data:${mime};base64,${asset.base64}`);
 }

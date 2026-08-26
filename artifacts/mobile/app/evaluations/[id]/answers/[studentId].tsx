@@ -252,7 +252,20 @@ export default function AnswerEntryScreen() {
           : t('scanFilledAll', String(res.proposals.length)),
       );
     } catch (err) {
-      setError(err instanceof EvaluationError ? err.message : t('scanFailed'));
+      // The API answers in English, and this screen is Arabic. Every failure
+      // here carries a code precisely so the teacher is told what to do in
+      // their own language instead of being shown the server's sentence —
+      // which is what production did on the first real scan.
+      const code = err instanceof EvaluationError ? err.code : '';
+      setError(
+        code === 'image_too_large' || code === 'payload_too_large'
+          ? t('scanTooLarge')
+          : code === 'live_mode_off'
+            ? t('scanUnavailable')
+            : code === 'user_quota_exceeded' || code === 'budget_exceeded'
+              ? t('scanBudgetSpent')
+              : t('scanFailed'),
+      );
     } finally {
       setScanning(false);
     }
