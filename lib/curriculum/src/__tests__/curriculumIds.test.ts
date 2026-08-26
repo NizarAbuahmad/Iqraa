@@ -119,11 +119,21 @@ describe('a second grade collides with nothing', () => {
   it('produces ids no existing id already uses', () => {
     // The whole point. Build a plausible Grade 9 maths catalog over the same
     // unit and lesson numbering Grade 10 uses, and assert nothing lands on top
-    // of anything real.
+    // of anything real *outside Grade 9* — Grade 9 Math S1 is real content now
+    // (see g9MathSem1.ts), so its own ids naturally reappear in this sweep,
+    // which is the id scheme working, not a collision. Scoped out by grade,
+    // not by subject/semester, so a future Grade 9 subject still gets the
+    // real protection this test exists for.
+    const bookGrade = new Map(BOOKS.map(b => [b.id, b.gradeId]));
+    const unitGrade = new Map(UNITS.map(u => [u.id, bookGrade.get(u.bookId)]));
+    const lessonGrade = new Map(LESSONS.map(l => [l.id, unitGrade.get(l.unitId)]));
+    const nonG9Units = UNITS.filter(u => unitGrade.get(u.id) !== 'grade-9');
+    const nonG9Lessons = LESSONS.filter(l => lessonGrade.get(l.id) !== 'grade-9');
+    const nonG9Objectives = getAllObjectives().filter(o => lessonGrade.get(o.lessonId) !== 'grade-9');
     const taken = new Set<string>([
-      ...UNITS.map(u => u.id),
-      ...LESSONS.map(l => l.id),
-      ...getAllObjectives().map(o => o.id),
+      ...nonG9Units.map(u => u.id),
+      ...nonG9Lessons.map(l => l.id),
+      ...nonG9Objectives.map(o => o.id),
     ]);
     const clashes: string[] = [];
     for (let u = 1; u <= 8; u += 1) {
