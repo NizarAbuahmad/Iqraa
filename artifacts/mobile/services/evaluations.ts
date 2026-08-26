@@ -77,12 +77,15 @@ export interface GenerateResult {
 export class EvaluationError extends Error {
   readonly status: number;
   readonly code: string;
+  /** Per-question reasons on a 400 "not ready to publish" — e.g. `/publish`'s blockers array. */
+  readonly details: string[];
 
-  constructor(message: string, status: number, code: string) {
+  constructor(message: string, status: number, code: string, details: string[] = []) {
     super(message);
     this.name = 'EvaluationError';
     this.status = status;
     this.code = code;
+    this.details = details;
   }
 }
 
@@ -90,14 +93,16 @@ async function readJson<T>(res: Response, action: string): Promise<T> {
   if (!res.ok) {
     let detail = '';
     let code = '';
+    let blockers: string[] = [];
     try {
-      const body = (await res.json()) as { error?: string; code?: string };
+      const body = (await res.json()) as { error?: string; code?: string; blockers?: string[] };
       detail = body.error ?? '';
       code = body.code ?? '';
+      blockers = Array.isArray(body.blockers) ? body.blockers : [];
     } catch {
       /* body wasn't JSON — the status is all we have */
     }
-    throw new EvaluationError(detail || `${action} failed (${res.status})`, res.status, code);
+    throw new EvaluationError(detail || `${action} failed (${res.status})`, res.status, code, blockers);
   }
   return (await res.json()) as T;
 }
