@@ -104,6 +104,70 @@ function esc(s: string): string {
 }
 
 /**
+ * A book figure ready to print — already resolved to a loadable URI and
+ * already captioned. Kept separate from `BookFigure` in `bookFigures.ts`:
+ * this file is pure and pulled into `node --test` (see the header note), and
+ * resolving a figure to a URI needs `bookFigureUri.ts`, which imports
+ * react-native to do it. The caller resolves both and hands over a plain
+ * object — the same dependency-injection shape `lessonSlides.ts` already uses
+ * for `opts.figureUri`, so this file still never touches react-native.
+ */
+export interface BookFigureRef {
+  uri: string;
+  /** 1-based page in the source PDF — the citation a teacher can check. */
+  page: number;
+  caption: string;
+}
+
+/**
+ * Cap on how many of a lesson's figures print in a document's appendix.
+ *
+ * Unlike a slide deck (`BOOK_FIGURE_MAX = 2`, one per beat), this is one
+ * static page: the circle-geometry lesson alone has 25 figures, and printing
+ * all of them before the answer key would bury it. Six is generous for "the
+ * diagrams this lesson's exercises reference" while keeping the appendix a
+ * page, not a photocopy of the chapter.
+ */
+export const EXPORT_FIGURE_MAX = 6;
+
+/**
+ * The "from the textbook" appendix a worksheet, quiz, lesson plan or activity
+ * can carry — lesson-level, never per-question.
+ *
+ * A generated question can say «انظر الشكل المجاور» because that is how the
+ * book itself writes such a question, and a teacher reading it expects a
+ * picture. But the model that wrote the question never saw the book's
+ * figures, so it cannot know which one goes with which item — letting it
+ * choose would be the same fabrication `demoExtractFromName`'s fence exists
+ * to stop, in a new place. What is safe without a vision model is showing
+ * every diagram the book prints for this lesson, cited by page, and trusting
+ * the teacher to match it to a question by eye, exactly as a student does
+ * from the printed book itself.
+ *
+ * Self-contained inline styles rather than the `.section`/`.section-title`
+ * classes `htmlBase` defines: `buildActivityHTML` builds its own document
+ * with no such classes, and this function is called from both.
+ */
+function figuresSectionHTML(figures: readonly BookFigureRef[], isAr: boolean): string {
+  if (!figures.length) return '';
+  const shown = figures.slice(0, EXPORT_FIGURE_MAX);
+  const cards = shown.map(f => `
+      <div style="break-inside:avoid;page-break-inside:avoid;border:1px solid #e5e7eb;border-radius:6px;padding:10px;text-align:center;background:#fafafa">
+        <img src="${esc(f.uri)}" alt="${esc(f.caption)}" style="max-width:100%;max-height:260px;object-fit:contain" />
+        <div style="font-size:11px;color:#666;margin-top:6px">${esc(f.caption)}</div>
+      </div>`).join('');
+  const note = isAr
+    ? 'أشكالٌ من الكتاب المدرسي لهذا الدرس، ليطابقها المعلّم بعينه مع أيّ سؤال يشير إلى شكل.'
+    : "Figures from this lesson's student book, for the teacher to match by eye against any question that refers to one.";
+  return `
+    <div style="margin-top:24px;break-inside:avoid">
+      <div style="font-size:13px;font-weight:700;color:#1B6B62;text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid #e5e7eb;padding-bottom:4px;margin-bottom:6px">${isAr ? 'من الكتاب المدرسي' : 'From the Student Book'}</div>
+      <div style="font-size:11px;color:#888;margin-bottom:10px;font-style:italic">${esc(note)}</div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">${cards}</div>
+    </div>`;
+}
+
+/**
  * One `.q-option` row. Shared by the worksheet and quiz builders, which had
  * byte-identical copies of this line — the kind of duplication that lets one
  * export get fixed and the other keep printing A/B/C/D.
@@ -118,6 +182,7 @@ export function buildLessonPlanHTML(
   title: string,
   meta: { subject: string; grade: string; duration?: number },
   isAr: boolean,
+  figures: readonly BookFigureRef[] = [],
 ): string {
   const L = (ar: string, en: string) => isAr ? ar : en;
   const section = (label: string, body: string) =>
@@ -139,6 +204,7 @@ export function buildLessonPlanHTML(
     ${section(L('التقييم', 'Assessment'), plan.assessment)}
     ${section(L('التمايز', 'Differentiation'), plan.differentiation)}
     ${section(L('الواجب المنزلي', 'Homework'), plan.homework)}
+    ${figuresSectionHTML(figures, isAr)}
   `;
   return htmlBase(content, isAr, title);
 }
@@ -148,6 +214,7 @@ export function buildWorksheetHTML(
   title: string,
   meta: { subject: string; grade: string },
   isAr: boolean,
+  figures: readonly BookFigureRef[] = [],
 ): string {
   const L = (ar: string, en: string) => isAr ? ar : en;
   let qNum = 1;
@@ -177,6 +244,7 @@ export function buildWorksheetHTML(
     ${ws.instructions ? `<div class="body-text" style="margin-bottom:16px;color:#555;font-style:italic">${esc(ws.instructions)}</div>` : ''}
     ${sections}
     ${answerKey}
+    ${figuresSectionHTML(figures, isAr)}
   `;
   return htmlBase(content, isAr, title);
 }
@@ -186,6 +254,7 @@ export function buildQuizHTML(
   title: string,
   meta: { subject: string; grade: string },
   isAr: boolean,
+  figures: readonly BookFigureRef[] = [],
 ): string {
   const L = (ar: string, en: string) => isAr ? ar : en;
   const typeLabel = (t: string) =>
@@ -215,6 +284,7 @@ export function buildQuizHTML(
     <div class="doc-meta">${esc(meta.subject)} • ${esc(meta.grade)} • ${quiz.duration} ${L('دقيقة', 'min')} • ${quiz.totalPoints} ${L('نقطة', 'pts')}</div>
     ${questions}
     <div class="answer-key"><div class="section-title">${L('مفتاح الإجابات', 'Answer Key')}</div>${akRows}</div>
+    ${figuresSectionHTML(figures, isAr)}
   `;
   return htmlBase(content, isAr, title);
 }
@@ -223,6 +293,7 @@ export function buildActivityHTML(
   title: string,
   meta: { subject: string; grade: string },
   isAr: boolean,
+  figures: readonly BookFigureRef[] = [],
 ): string {
   const dir = isAr ? 'rtl' : 'ltr';
   const align = isAr ? 'right' : 'left';
@@ -279,6 +350,7 @@ export function buildActivityHTML(
   ${section(L('نصائح للمعلم', 'Teacher Tips'), `<ul>${activity.teacherTips.map(t => `<li>${e(t)}</li>`).join('')}</ul>`)}
   ${section(L('التمايز', 'Differentiation'), `<p style="font-size:13px;color:#374151;line-height:1.8">${e(activity.differentiation)}</p>`)}
   ${section(L('التقييم', 'Assessment'), `<p style="font-size:13px;color:#374151;line-height:1.8">${e(activity.assessment)}</p>`)}
+  ${figuresSectionHTML(figures, isAr)}
   <div class="footer">${L('أُنشئ بواسطة إقرأ — مساعد التدريس الذكي', 'Generated by Iqra — AI Teaching Assistant')}</div>
 </body>
 </html>`;

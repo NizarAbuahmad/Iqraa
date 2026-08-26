@@ -394,6 +394,54 @@ empty rather than incidentally so.
 
 959 mobile tests pass; typecheck clean.
 
+## A worksheet can show the book's own diagram now, without a model choosing which, 2026-08-26
+
+The book figures joined to lessons yesterday reached nothing but slides. A
+worksheet, quiz, lesson plan or activity that says «انظر الشكل المجاور» —
+because that is how the book itself writes such a question — printed with no
+figure anywhere on the page.
+
+The straightforward fix, letting the model pick which of a lesson's figures
+goes with which question, was rejected on purpose. **The model cannot see
+these images.** It only knows a filename and a page number, so choosing
+between them would be a guess dressed as a citation — the same class of
+fabrication `demoExtractFromName`'s fence exists to stop, in a new place.
+
+What ships instead is lesson-level, not per-question: every export now carries
+an optional "من الكتاب المدرسي" appendix, printed once, after the content, with
+the lesson's own figures — up to `EXPORT_FIGURE_MAX` (6) — each captioned with
+its page. A teacher reading «انظر الشكل المجاور» on the paper turns the page
+and matches it by eye, exactly as they would with the printed book open beside
+them. Verified against the actual circle-chords lesson: rendered
+`buildWorksheetHTML` with four real figures resolved from
+`math-s1-student-book`, screenshotted the HTML with headless Chromium, and
+read it — the diagrams, their page citations, and the "no page chosen for you"
+note all render correctly, after the answer key, never inside a question.
+
+`figuresSectionHTML` is one function, called from all four document builders
+(`buildWorksheetHTML`, `buildQuizHTML`, `buildLessonPlanHTML`,
+`buildActivityHTML`) with self-contained inline styles rather than the
+`.section` classes `htmlBase` defines — `buildActivityHTML` builds its own
+document with no such classes, so a class-based version would have rendered
+unstyled there. `bookFigureRefsForLesson()` in `bookFigureUri.ts` is the one
+place that turns `figuresForLesson()` into what the builders take, the same
+three-step lookup `lessonSlides.ts` already did inline for slides, pulled out
+so four callers do not grow four copies.
+
+Scoped deliberately narrow. Per-question figure binding is still not done, and
+still needs either a vision model or per-exercise extraction metadata neither
+of which exists. The `FIGURE_RULE_AR`/`EN` system-prompt rule — never
+reference a figure unless the question states its equations — is untouched;
+it was written for graphs and still silently excludes every circle-geometry
+question a live model would write. Word export carries no images at all: it
+goes through `docx` paragraphs with no image support, a pre-existing
+limitation this does not touch.
+
+971 mobile tests pass; typecheck clean. New tests were checked against two
+regressions, not just written to pass: removing the cap turns "caps at
+EXPORT_FIGURE_MAX" red, and moving the appendix before the questions turns
+"never attaches a figure to a specific question" red.
+
 ## A second grade can be added without a collision, 2026-08-25
 
 Every curriculum id omits the grade. A unit is `kbu-math-s1-nccd-u2`, a lesson

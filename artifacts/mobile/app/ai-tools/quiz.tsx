@@ -8,6 +8,7 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { buildGeneratorContext, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
+import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
 import { QuizOutput, QuizQuestion } from '@/services/ai/AIService';
 import { buildDeckFromQuiz } from '@/services/classDeck';
 import { summarizeVerification, type VerifyOutcome } from '@/services/quizVerification';
@@ -356,11 +357,19 @@ export default function QuizScreen() {
     await copyToClipboard(formatQuizText(result, getExportTitle(), getExportMeta(), lang === 'ar'));
     showToast(t('copiedToClipboard'));
   };
+  // Lesson-level, resolved fresh at export time — same re-resolve pattern this
+  // file already uses elsewhere. Empty for an ungrounded topic.
+  const getExportFigures = () =>
+    bookFigureRefsForLesson(
+      resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en').lesson?.id,
+      lang === 'ar',
+    );
+
   const handlePDF = async () => {
     if (!result) return;
     setLoadingPDF(true);
     try {
-      await exportAsPDF(buildQuizHTML(result, getExportTitle(), getExportMeta(), lang === 'ar'), getExportTitle().replace(/[^\w\s]/g, '').trim());
+      await exportAsPDF(buildQuizHTML(result, getExportTitle(), getExportMeta(), lang === 'ar', getExportFigures()), getExportTitle().replace(/[^\w\s]/g, '').trim());
     } catch { showToast(t('generationFailed')); } finally { setLoadingPDF(false); }
   };
   const handleWord = async () => {

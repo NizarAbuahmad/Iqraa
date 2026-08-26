@@ -8,6 +8,7 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { buildAdaptationsDirective, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
+import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
 import { LessonPlanOutput } from '@/services/ai/AIService';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
@@ -283,11 +284,19 @@ export default function LessonPlanScreen() {
     showToast(t('copiedToClipboard'));
   };
 
+  // Lesson-level, resolved fresh at export time — same re-resolve pattern this
+  // file already uses elsewhere. Empty for an ungrounded or simplify-mode topic.
+  const getExportFigures = () =>
+    bookFigureRefsForLesson(
+      resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en').lesson?.id,
+      lang === 'ar',
+    );
+
   const handlePDF = async () => {
     if (!result) return;
     setLoadingPDF(true);
     try {
-      const html = buildLessonPlanHTML(result, getExportTitle(), getExportMeta(), lang === 'ar');
+      const html = buildLessonPlanHTML(result, getExportTitle(), getExportMeta(), lang === 'ar', getExportFigures());
       await exportAsPDF(html, getExportTitle().replace(/[^\w\s]/g, '').trim());
     } catch (e) {
       showToast(t('generationFailed'));
