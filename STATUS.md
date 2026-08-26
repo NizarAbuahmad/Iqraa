@@ -228,6 +228,42 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Production has all 25 tables, and something checks it now, 2026-08-25
+
+The `DATABASE_URL` secret is set and the schema monitor has run against the real
+Neon database. **25 of 25 tables present** on
+`ep-bold-bar-asvxvxjr-pooler…eu-central-1` — every file `ok`, evaluations
+included. That subsystem is the one that could not work at all on 2026-08-19,
+and it is the one this check exists to notice.
+
+The count moved from the 24 recorded on 2026-08-22 because `aiGenerations` was
+added since; it is present, so nothing is behind.
+
+The monitor now runs on its own at 06:00 UTC, on demand from the Actions tab,
+and whenever a schema change reaches `main`. The merge-time guard has also been
+seen taking its **active** path on GitHub, not just its skip path — «Schema
+files changed: lib/db/src/schema/index.ts» followed by «Acknowledged in the PR
+body.» The one branch still unexercised in CI is the outright failure (schema
+touched, no marker); that is covered by local tests, and the first real schema
+PR is its live test.
+
+**One thing to know before upgrading `pg`.** The run prints a deprecation
+warning: `sslmode=require` currently behaves as `verify-full`, and in
+pg-connection-string v3 / pg v9 it will adopt weaker libpq semantics. The
+production URL says `require`. It changes nothing today — TLS is on either way —
+but the same URL feeds the API, so that upgrade would quietly relax certificate
+verification there too, not just in this script. The fix, whenever `pg` is
+upgraded deliberately, is `sslmode=verify-full` in the Render env var.
+
+### CLAUDE.md had unresolved conflict markers on main
+
+Found while editing it: `<<<<<<< HEAD` / `=======` / `>>>>>>> origin/main` were
+committed into the Commands block, straddling two different mobile test counts
+(962 and 925). A merge resolution had been half-done and the markers shipped.
+Resolved by **running the suite** rather than picking a side: 962 tests, 952
+passing, 10 skipped. A `git grep` over the repo confirms no other tracked file
+carries stray markers.
+
 ## Something finally asks whether the schema was pushed, 2026-08-25
 
 **First, a correction I made in conversation and am writing down so it does not
