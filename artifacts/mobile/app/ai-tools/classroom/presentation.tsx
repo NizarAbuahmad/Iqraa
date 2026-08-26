@@ -3,6 +3,7 @@ import {
   Animated,
   Image,
   Linking,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -199,16 +200,29 @@ function GraphView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; 
 function MediaView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; t: (k: any, arg?: any) => string }) {
   const url = slide.mediaUrl ?? '';
   const embed = slide.mediaKind === 'video' ? youtubeEmbedUrl(url) : null;
+  const [zoomed, setZoomed] = useState(false);
 
   return (
     <View style={mediaStyles.wrap}>
       {slide.mediaKind === 'image' ? (
-        <Image
-          source={{ uri: url }}
-          style={mediaStyles.image}
-          resizeMode="contain"
-          accessibilityLabel={slide.mediaCaption || ''}
-        />
+        // Tap to enlarge. A book figure is a diagram with point labels on it,
+        // and at slide size «J» or «٣٦٠°» is a few pixels — legible from a
+        // laptop, not from the back of a classroom.
+        <Pressable
+          onPress={() => setZoomed(true)}
+          accessibilityRole="button"
+          accessibilityLabel={t('enlargeImage')}
+        >
+          <Image
+            source={{ uri: url }}
+            style={mediaStyles.image}
+            resizeMode="contain"
+            accessibilityLabel={slide.mediaCaption || ''}
+          />
+          <View style={mediaStyles.zoomHint} pointerEvents="none">
+            <Ionicons name="expand" size={18} color="#fff" />
+          </View>
+        </Pressable>
       ) : Platform.OS === 'web' && embed ? (
         <View style={mediaStyles.frame}>
           {React.createElement('iframe', {
@@ -230,6 +244,41 @@ function MediaView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; 
           </Text>
         </Pressable>
       )}
+
+      {/* Full-screen viewer. `transparent` over a near-opaque backdrop rather
+          than an opaque Modal: the slide stays faintly visible behind, so it
+          reads as a zoom of this figure and not a navigation away from the
+          deck. Dismissed by tapping anywhere, which is the gesture people try
+          first, with an explicit button for anyone who does not. */}
+      <Modal
+        visible={zoomed}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setZoomed(false)}
+        supportedOrientations={['portrait', 'landscape']}
+      >
+        <Pressable style={mediaStyles.zoomBackdrop} onPress={() => setZoomed(false)}>
+          <Image
+            source={{ uri: url }}
+            style={mediaStyles.zoomImage}
+            resizeMode="contain"
+            accessibilityLabel={slide.mediaCaption || ''}
+          />
+          {!!slide.mediaCaption && (
+            <Text style={[mediaStyles.zoomCaption, { fontFamily: 'Cairo_400Regular' }]}>
+              {slide.mediaCaption}
+            </Text>
+          )}
+          <Pressable
+            style={mediaStyles.zoomClose}
+            onPress={() => setZoomed(false)}
+            accessibilityRole="button"
+            accessibilityLabel={t('closeImage')}
+          >
+            <Ionicons name="close" size={26} color="#fff" />
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -1226,6 +1275,26 @@ const mediaStyles = StyleSheet.create({
     borderColor: BORDER,
   },
   image: { width: '100%', height: 460, borderRadius: 14, backgroundColor: CARD_BG },
+  zoomHint: {
+    position: 'absolute', bottom: 10, right: 10,
+    width: 34, height: 34, borderRadius: 17,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: 'rgba(15,23,42,0.55)',
+  },
+  zoomBackdrop: {
+    flex: 1, backgroundColor: 'rgba(8,12,20,0.94)',
+    alignItems: 'center', justifyContent: 'center', padding: 24, gap: 14,
+  },
+  // A figure is mostly white, so it needs its own ground against the dark
+  // backdrop or the strokes float in the void.
+  zoomImage: { width: '100%', flex: 1, borderRadius: 12, backgroundColor: '#fff' },
+  zoomCaption: { fontSize: 16, color: '#E2E8F0', textAlign: 'center' },
+  zoomClose: {
+    position: 'absolute', top: 18, right: 18,
+    width: 44, height: 44, borderRadius: 22,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.16)',
+  },
   openBtn: {
     alignItems: 'center',
     justifyContent: 'center',

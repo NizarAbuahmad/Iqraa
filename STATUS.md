@@ -6578,3 +6578,65 @@ number on a lesson the guide was describing differently. The printed total
 (20) is kept, the lesson counts are left as they were, and the unit carries a
 `pacing_note` saying so — in the data, not only in a test, so the next person
 editing the curriculum sees it.
+
+## Figures were being cropped through their own labels, 2026-08-26
+
+Reported from a live deck with two screenshots: the tangents diagram on page
+35 with «J» sliced down the middle at the right edge, and the circle on page
+34 with «Q» cut off the top and «P»/«L» the bottom.
+
+**The PNG was cropped, not the display.** Worth stating because the display
+was the obvious suspect and was innocent: `MediaView` already used
+`resizeMode="contain"`. Opening the extracted file settled it in one look —
+the glyph was missing from the image itself.
+
+`with_labels` admits a label only when 60% of it already sits inside the
+figure. A point label just outside fails that, and then `MARGIN` cuts straight
+through the glyph. `uncut_labels` now finishes any small label the crop is
+*already slicing*.
+
+### Why not just loosen `with_labels`
+
+Because that admits text the crop never touches, which is how a figure grows
+into the paragraph beside it — the failure that once swallowed most of a page.
+The new step only extends a box through something it is already cutting: a
+span the crop clips is part of the picture, one it does not touch is somebody
+else's prose.
+
+### The first threshold was inside the prose range
+
+An 18%-of-page-width ceiling let a page of Arabic credits into a crop, because
+Arabic extracts as many short spans and a character count would not have
+caught it either. Measured against the books rather than guessed again:
+
+| | width, as % of page |
+| --- | --- |
+| «J», «ZT», «360°» | 0.7 – 2.4% |
+| shortest prose line near a figure | 12.4% |
+
+The ceiling is 5%, in the gap, plus a 6-character limit. Both guards, since
+either alone lets one of the two cases through.
+
+### Bounded, and measured that way
+
+Compared against the identical script with the step removed: **46 of 142**
+maths-s1 crops grew, largest **+27pt**; **29 of 89** maths-s2, largest
+**+21pt**. Never more than about one label.
+
+That comparison also settled a false alarm. Against `HEAD` some crops looked
+twice as wide — but the committed PNGs came from an earlier version of the
+script, so the diff was against a stale baseline, not against this change.
+Comparing two runs of the *current* script with only this step differing is
+what isolates it.
+
+## Tap a figure to enlarge it, 2026-08-26
+
+A book figure is a diagram with point labels on it, and at slide size «J» is a
+few pixels — readable on a laptop, not from the back of a classroom. Tapping
+opens it full-screen over a near-opaque backdrop, dismissed by tapping
+anywhere or with an explicit close button.
+
+The backdrop is deliberately not opaque: the slide stays faintly visible, so
+it reads as a zoom of this figure rather than navigation away from the deck.
+The image keeps a white ground, because a line diagram on a dark backdrop
+loses its strokes.
