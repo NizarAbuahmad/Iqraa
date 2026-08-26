@@ -20,6 +20,7 @@ import {
   buildLessonBlock,
   buildAdaptationsDirective,
   resolveGeneratorGrounding,
+  sourceCitationLine,
   TRIM_TIERS,
   CONTEXT_CHAR_BUDGET,
   deduplicateByUnit,
@@ -341,5 +342,32 @@ describe('buildAdaptationsDirective', () => {
     const out = buildAdaptationsDirective('adapt for a student with ADHD', 'en');
     assert.match(out, /differentiation/);
     assert.match(out, /not learning\s+outcomes/);
+  });
+});
+
+describe('sourceCitationLine', () => {
+  it('renders the page in Arabic-Indic digits with a middle dot separator', () => {
+    const out = sourceCitationLine([{ titleAr: 'كتاب الرياضيات - الفصل الأول', page: 35 }], true);
+    assert.equal(out, 'كتاب الرياضيات - الفصل الأول · صفحة ٣٥');
+  });
+
+  it('renders plain digits in English', () => {
+    const out = sourceCitationLine([{ titleAr: 'Math Book — Semester 1', page: 35 }], false);
+    assert.equal(out, 'Math Book — Semester 1 · page 35');
+  });
+
+  it('joins multiple sources, each with its own page', () => {
+    const out = sourceCitationLine(
+      [
+        { titleAr: 'كتاب الرياضيات - الفصل الأول', page: 34 },
+        { titleAr: 'كتاب الرياضيات - الفصل الأول', page: 35 },
+      ],
+      true,
+    );
+    assert.equal(out, 'كتاب الرياضيات - الفصل الأول · صفحة ٣٤، كتاب الرياضيات - الفصل الأول · صفحة ٣٥');
+  });
+
+  it('is empty for no sources so callers can render conditionally', () => {
+    assert.equal(sourceCitationLine([], true), '');
   });
 });

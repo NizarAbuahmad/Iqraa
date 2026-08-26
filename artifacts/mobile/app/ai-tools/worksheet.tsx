@@ -462,6 +462,7 @@ export default function WorksheetScreen() {
           <GroundingNotice
             grounded={curriculumGrounded}
             lessonTitle={groundedLesson}
+            sources={result.sources}
             isRTL={isRTL}
             colors={colors}
             labels={{
