@@ -56,6 +56,17 @@ Provision the database schema (requires a valid `DATABASE_URL` in the repo-root 
 pnpm --filter @workspace/db run push
 ```
 
+Then seed the assessment configuration — required before the **Evaluations** tool
+can create anything. Without it, `POST /api/evaluations` 409s with "No level
+scale is configured" on the very first attempt:
+
+```powershell
+pnpm --filter @workspace/db run seed:assessment
+```
+
+This is idempotent (matches on natural keys, safe to re-run) and is what the
+hosted deploy runs on every boot — see `startCommand` in `render.yaml`.
+
 This loads the root `.env` automatically. If push fails with password authentication errors, fix the password in `DATABASE_URL` and create the DB if needed:
 
 ```powershell
