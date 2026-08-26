@@ -47,9 +47,12 @@ describe('figuresForLesson', () => {
   });
 
   it('is empty for a lesson with nothing mapped, and for nothing at all', () => {
-    // A real chemistry lesson that simply has no figures: the extractor found
-    // four in that book and none of them fall in unit 1 lesson 1.
-    assert.deepEqual(figuresForLesson('kbl-chem-s1-nccd-u1_l1'), []);
+    // Financial literacy, whose book is not in the repo at all — so this stays
+    // empty for a structural reason rather than an incidental one. It used to
+    // be a chemistry lesson, picked when that book yielded five figures; it now
+    // yields 68 and that lesson has eleven, which made the example wrong
+    // without making the behaviour wrong.
+    assert.deepEqual(figuresForLesson('kbl-finlit-s1-nccd-u1_l1'), []);
     assert.deepEqual(figuresForLesson('no-such-lesson'), []);
     assert.deepEqual(figuresForLesson(null), []);
     assert.deepEqual(figuresForLesson(undefined), []);
@@ -94,15 +97,28 @@ describe('figuresForLesson', () => {
     const wave = figuresForLesson('kbl-chem-s1-nccd-u1_l2');
     assert.ok(wave.some(f => f.file === 'p024.png'), 'the wave-model figure');
     assert.ok(wave.every(f => f.sourceId === 'chem-s1-student-book'));
-    assert.equal(figuresForLesson('kbl-chem-s1-nccd-u2_l2').length, 2);
-    assert.equal(figuresForLesson('kbl-chem-s1-nccd-u3_l2').length, 1);
+    // Counts are asserted as "some", not as a number. They were 2 and 1 when
+    // the extractor only found figures seeded on a pair of axes; teaching the
+    // seed to follow curve clusters took chemistry from 5 figures to 68, and a
+    // pinned count here would have to be edited every time extraction improves
+    // — which makes it a changelog, not a guard. What must stay true is that
+    // the lesson resolves to figures, and to figures from its own book.
+    for (const id of ['kbl-chem-s1-nccd-u2_l2', 'kbl-chem-s1-nccd-u3_l2']) {
+      const figs = figuresForLesson(id);
+      assert.ok(figs.length > 0, `${id} lost its figures`);
+      assert.ok(figs.every(f => f.sourceId === 'chem-s1-student-book'), id);
+    }
   });
 
   it('carries the page number, so any figure can be checked against the book', () => {
     for (const id of lessonsWithFigures()) {
       for (const f of figuresForLesson(id)) {
         assert.ok(Number.isInteger(f.pdfPage) && f.pdfPage > 0, `${f.file} has a page`);
-        assert.match(f.file, /^p\d{3}\.png$/);
+        // `p035.png`, and `p035b.png` for the second figure on a page. One
+        // page routinely prints four or five independent diagrams down the
+        // margin; before the extractor could yield more than one per page,
+        // the bare form was the only shape a filename could take.
+        assert.match(f.file, /^p\d{3}[a-z]?\.png$/);
       }
     }
   });

@@ -285,6 +285,79 @@ mention, and does not execute backticks in a PR body.
 its target from an ambient variable is the foot-gun the original decision was
 avoiding.
 
+## The book's own diagrams reach a lesson now, 2026-08-25
+
+Asked why a worksheet on «أوتار الدائرة» carries no diagram when the book's own
+exercises cannot be answered without one, the answer was three faults stacked,
+not one missing feature. Two are fixed here.
+
+**The extractor could not see those figures.** `axis_seed` needs a long
+horizontal and a long vertical that cross, and `figures_in` skipped any page
+without one. That finds coordinate graphs and nothing else. Page 35 of the
+maths S1 book carries 108 drawing paths and 109 curve operations and returned
+`None`; the circle unit extracted zero figures across four lessons. Circles are
+Bézier curves, so `curve_seeds` clusters those instead, filtered two ways —
+both found by rendering crops and looking at them, neither visible in a count:
+
+- Rounded panels are curves too. The «رموز رياضية» callout seeds as happily as
+  a circle and is only 120pt wide, so width caps miss it. Text coverage
+  separates them cleanly: real figures 1-12%, every panel 43-52%.
+- One page prints four or five diagrams down the margin. `figures_in` yielded
+  one per page, so the right seed alone would still have merged them.
+
+Cluster growth is now scoped to axis seeds — a curve seed is already the whole
+diagram, and growing it chained out through the panel border. That alone took
+the circle lesson from 14 clean crops in 18 to 22 in 25.
+
+**63 figures → 379.** math-s1 18 → 176, math-s2 40 → 135, chem-s1 5 → 68.
+
+**The join was the other half, and the bigger one.** Extraction alone changed
+lesson coverage not at all: still 21 of 64, still zero on the circle lesson.
+`figure-lesson-map.json` had 22 entries because it was hand-curated against the
+old extraction — the circle lessons had never had a figure to map, so they had
+no entry. 38 book lessons now carry figures; 16 entries added, each a
+translation check between the book's English opener title and the curriculum's
+Arabic one, not a string overlap. `math-s1|1|1` stays `null` on purpose: the
+book opens unit 1 with a lesson the curriculum does not carry, which is why
+every later unit-1 lesson sits one place lower.
+
+**Coverage 21 → 37 of 64 lessons. The circle lesson: 0 → 22 figures.**
+
+The remaining 27 are not a join problem. Ten are financial literacy and eight
+are chemistry S2 — books that have never been extracted, one of which is not in
+the repo. Seven are `_lab` lessons the book prints no opener for. Two are real
+maths lessons where nothing was found.
+
+**Deleting a bad crop now works.** It is the documented review step, but the
+index still listed the figure and `gen_book_figure_assets.mjs` emitted a
+`require()` for the missing file — so following the instruction broke the
+bundle. The generator skips absent files, and a deleted crop must lose its
+`index.json` entry too, or `figuresForLesson` and the asset map disagree about
+what a lesson has.
+
+**Only one lesson has had the human pass.** I reviewed the circle lesson's 25
+crops on a contact sheet and deleted three that grabbed page furniture — a
+lesson-number badge, a margin rule, an «أتذكّر» callout. The other ~355 have
+not been looked at, and the script's "about one crop in five absorbs an
+adjacent exercise block" warning still stands. They are reachable from the
+slides path, so an unreviewed bad crop ships.
+
+**Still not done, and the third fault:** nothing renders these outside slides.
+Lesson plans, worksheets and exams do not touch `figuresForLesson`, and the
+system prompt still tells the model never to reference a figure unless the
+question text states its equations — a rule written for graphs that silently
+puts every circle-geometry question out of scope. Per-question binding also
+needs care: the model cannot see these images, so letting it choose which
+diagram belongs to which question is the fabrication failure the filename
+fence closed earlier today, in a new place.
+
+Two tests pinned numbers this moves; both now assert the property instead. The
+asset map must equal exactly what the lessons can reach, recomputed rather than
+counted, and the empty-lesson example moved to financial literacy — structurally
+empty rather than incidentally so.
+
+959 mobile tests pass; typecheck clean.
+
 ## A second grade can be added without a collision, 2026-08-25
 
 Every curriculum id omits the grade. A unit is `kbu-math-s1-nccd-u2`, a lesson

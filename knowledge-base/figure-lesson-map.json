@@ -5,12 +5,31 @@
   {
    "sourceId": "chem-s1-student-book",
    "unit": 1,
+   "lesson": 1,
+   "bookTitleAr": "نظريةُ بور لذرَّةِ الهيدروجين",
+   "kbLessonId": "kbl-chem-s1-nccd-u1_l1",
+   "score": 1,
+   "matchedBy": "arabic-title"
+  },
+  {
+   "sourceId": "chem-s1-student-book",
+   "unit": 1,
    "lesson": 2,
    "bookTitleAr": "النموذج الميكانيكي الموجي للذرة",
    "kbLessonId": "kbl-chem-s1-nccd-u1_l2",
-   "score": 1.0,
+   "score": 1,
    "matchedBy": "arabic-title",
    "why": "Chemistry is joined on the Arabic title, which matches the curriculum's word for word — the book states no English lesson title the opener band can reach, and what sits there is its first SECTION heading. The unit and lesson numbers agree independently: the book prints 3 units of 2 lessons and the curriculum carries exactly u1_l1..u3_l2."
+  },
+  {
+   "sourceId": "chem-s1-student-book",
+   "unit": 2,
+   "lesson": 1,
+   "bookTitleAr": "التوزيعُ اإللكترونيُّ للذرّات",
+   "kbLessonId": "kbl-chem-s1-nccd-u2_l1",
+   "score": 1,
+   "why": "The book title carries the decomposed lam-alef the PDF text layer produces; «اإللكتروني» is «الإلكتروني».",
+   "matchedBy": "arabic-title"
   },
   {
    "sourceId": "chem-s1-student-book",
@@ -18,9 +37,18 @@
    "lesson": 2,
    "bookTitleAr": "الخصائص الدورية للعناصر",
    "kbLessonId": "kbl-chem-s1-nccd-u2_l2",
-   "score": 1.0,
+   "score": 1,
    "matchedBy": "arabic-title",
    "why": "Chemistry is joined on the Arabic title, which matches the curriculum's word for word — the book states no English lesson title the opener band can reach, and what sits there is its first SECTION heading. The unit and lesson numbers agree independently: the book prints 3 units of 2 lessons and the curriculum carries exactly u1_l1..u3_l2."
+  },
+  {
+   "sourceId": "chem-s1-student-book",
+   "unit": 3,
+   "lesson": 1,
+   "bookTitleAr": "الروابطُ الكيميائيةُ وأنواعُها",
+   "kbLessonId": "kbl-chem-s1-nccd-u3_l1",
+   "score": 1,
+   "matchedBy": "arabic-title"
   },
   {
    "sourceId": "chem-s1-student-book",
@@ -28,7 +56,7 @@
    "lesson": 2,
    "bookTitleAr": "الصيغ الكيميائية وخصائص المركبات",
    "kbLessonId": "kbl-chem-s1-nccd-u3_l2",
-   "score": 1.0,
+   "score": 1,
    "matchedBy": "arabic-title",
    "why": "Chemistry is joined on the Arabic title, which matches the curriculum's word for word — the book states no English lesson title the opener band can reach, and what sits there is its first SECTION heading. The unit and lesson numbers agree independently: the book prints 3 units of 2 lessons and the curriculum carries exactly u1_l1..u3_l2."
   },
@@ -75,6 +103,36 @@
   {
    "sourceId": "math-s1-student-book",
    "unit": 2,
+   "lesson": 1,
+   "bookTitleEn": "Chords, Diameters and Tangents of a Circle",
+   "kbLessonId": "kbl-math-s1-nccd-u2_l1",
+   "score": 1,
+   "why": "أوتار الدائرة وأقطارها ومماساتها — chords/diameters/tangents, in that order.",
+   "matchedBy": "hand-checked: book English title against the curriculum Arabic title"
+  },
+  {
+   "sourceId": "math-s1-student-book",
+   "unit": 2,
+   "lesson": 2,
+   "bookTitleEn": "Arcs and Sectors",
+   "kbLessonId": "kbl-math-s1-nccd-u2_l2",
+   "score": 1,
+   "why": "الأقواس والقطاعات الدائرية.",
+   "matchedBy": "hand-checked: book English title against the curriculum Arabic title"
+  },
+  {
+   "sourceId": "math-s1-student-book",
+   "unit": 2,
+   "lesson": 3,
+   "bookTitleEn": "Angles in a Circle",
+   "kbLessonId": "kbl-math-s1-nccd-u2_l3",
+   "score": 1,
+   "why": "الزوايا في الدائرة.",
+   "matchedBy": "hand-checked: book English title against the curriculum Arabic title"
+  },
+  {
+   "sourceId": "math-s1-student-book",
+   "unit": 2,
    "lesson": 4,
    "bookTitleEn": "Equation of a Circle",
    "kbLessonId": "kbl-math-s1-nccd-u2_l4",
@@ -111,6 +169,16 @@
   },
   {
    "sourceId": "math-s1-student-book",
+   "unit": 3,
+   "lesson": 4,
+   "bookTitleEn": "Solving Trigonometric Equations",
+   "kbLessonId": "kbl-math-s1-nccd-u3_l4",
+   "score": 1,
+   "why": "حل المعادلات المثلثية.",
+   "matchedBy": "hand-checked: book English title against the curriculum Arabic title"
+  },
+  {
+   "sourceId": "math-s1-student-book",
    "unit": 4,
    "lesson": 1,
    "bookTitleEn": "Bearing",
@@ -118,6 +186,46 @@
    "score": 0.5,
    "why": "الاتجاه من الشمال (Bearing) — same lesson, the curriculum keeps the English word",
    "matchedBy": "hand-checked against the curriculum Arabic title"
+  },
+  {
+   "sourceId": "math-s1-student-book",
+   "unit": 4,
+   "lesson": 2,
+   "bookTitleEn": "Law of Sines",
+   "kbLessonId": "kbl-math-s1-nccd-u4_l2",
+   "score": 1,
+   "why": "قانون الجيوب.",
+   "matchedBy": "hand-checked: book English title against the curriculum Arabic title"
+  },
+  {
+   "sourceId": "math-s1-student-book",
+   "unit": 4,
+   "lesson": 3,
+   "bookTitleEn": "Law of Cosines",
+   "kbLessonId": "kbl-math-s1-nccd-u4_l3",
+   "score": 1,
+   "why": "قانون جيب التمام. Note these two are the pair `searchKBSemantic` confuses — the id is carried, not the title.",
+   "matchedBy": "hand-checked: book English title against the curriculum Arabic title"
+  },
+  {
+   "sourceId": "math-s1-student-book",
+   "unit": 4,
+   "lesson": 4,
+   "bookTitleEn": "Using Sine to Find the Area of a Triangle",
+   "kbLessonId": "kbl-math-s1-nccd-u4_l4",
+   "score": 1,
+   "why": "استعمال جيب الزاوية لإيجاد مساحة المثلث.",
+   "matchedBy": "hand-checked: book English title against the curriculum Arabic title"
+  },
+  {
+   "sourceId": "math-s1-student-book",
+   "unit": 4,
+   "lesson": 5,
+   "bookTitleEn": "Solving Problems in Three Dimensions",
+   "kbLessonId": "kbl-math-s1-nccd-u4_l5",
+   "score": 1,
+   "why": "حل مسائل ثلاثية الأبعاد.",
+   "matchedBy": "hand-checked: book English title against the curriculum Arabic title"
   },
   {
    "sourceId": "math-s2-student-book",
@@ -142,12 +250,32 @@
   {
    "sourceId": "math-s2-student-book",
    "unit": 5,
+   "lesson": 3,
+   "bookTitleEn": "Composition of Functions",
+   "kbLessonId": "kbl-math-s2-nccd-u5_l3",
+   "score": 1,
+   "why": "تركيب الاقترانات.",
+   "matchedBy": "hand-checked: book English title against the curriculum Arabic title"
+  },
+  {
+   "sourceId": "math-s2-student-book",
+   "unit": 5,
    "lesson": 4,
    "bookTitleEn": "Inverse Function",
    "kbLessonId": "kbl-math-s2-nccd-u5_l4",
    "score": 0.67,
    "why": "الاقتران العكسي = the inverse function. NOT u5_l3, which the English matcher preferred at 0.67 — that lesson merges composition, inverse and radical",
    "matchedBy": "hand-checked against the curriculum Arabic title"
+  },
+  {
+   "sourceId": "math-s2-student-book",
+   "unit": 5,
+   "lesson": 5,
+   "bookTitleEn": "Sequences",
+   "kbLessonId": "kbl-math-s2-nccd-u5_l5",
+   "score": 1,
+   "why": "المتتاليات.",
+   "matchedBy": "hand-checked: book English title against the curriculum Arabic title"
   },
   {
    "sourceId": "math-s2-student-book",
@@ -197,6 +325,16 @@
   },
   {
    "sourceId": "math-s2-student-book",
+   "unit": 7,
+   "lesson": 3,
+   "bookTitleEn": "Scalar Product",
+   "kbLessonId": "kbl-math-s2-nccd-u7_l3",
+   "score": 1,
+   "why": "الضرب القياسي.",
+   "matchedBy": "hand-checked: book English title against the curriculum Arabic title"
+  },
+  {
+   "sourceId": "math-s2-student-book",
    "unit": 8,
    "lesson": 1,
    "bookTitleEn": "Scatter Graphs",
@@ -212,6 +350,26 @@
    "kbLessonId": "kbl-math-s2-nccd-u8_l2",
    "score": 1,
    "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "math-s2-student-book",
+   "unit": 8,
+   "lesson": 3,
+   "bookTitleEn": "Measures of Variation for Frequency Tables with Class Intervals",
+   "kbLessonId": "kbl-math-s2-nccd-u8_l3",
+   "score": 1,
+   "why": "مقاييس التشتت للجداول التكرارية ذات الفئات.",
+   "matchedBy": "hand-checked: book English title against the curriculum Arabic title"
+  },
+  {
+   "sourceId": "math-s2-student-book",
+   "unit": 8,
+   "lesson": 4,
+   "bookTitleEn": "Probability of Mutually Exclusive Events",
+   "kbLessonId": "kbl-math-s2-nccd-u8_l4",
+   "score": 1,
+   "why": "احتمالات الحوادث المتنافية.",
+   "matchedBy": "hand-checked: book English title against the curriculum Arabic title"
   },
   {
    "sourceId": "math-s2-student-book",

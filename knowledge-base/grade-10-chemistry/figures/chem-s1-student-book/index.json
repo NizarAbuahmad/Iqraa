@@ -2,6 +2,310 @@
  "sourceId": "chem-s1-student-book",
  "figures": [
   {
+   "file": "p001.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 1,
+   "rect": [
+    47.3,
+    33.4,
+    138.5,
+    122.8
+   ],
+   "unit": null,
+   "lesson": null,
+   "lessonTitleEn": null,
+   "lessonTitleAr": null,
+   "lessonStartPage": null
+  },
+  {
+   "file": "p001b.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 1,
+   "rect": [
+    358.5,
+    32.5,
+    548.6,
+    123.4
+   ],
+   "unit": null,
+   "lesson": null,
+   "lessonTitleEn": null,
+   "lessonTitleAr": null,
+   "lessonStartPage": null
+  },
+  {
+   "file": "p006.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 6,
+   "rect": [
+    0.0,
+    0.0,
+    73.1,
+    150.6
+   ],
+   "unit": null,
+   "lesson": null,
+   "lessonTitleEn": null,
+   "lessonTitleAr": null,
+   "lessonStartPage": null
+  },
+  {
+   "file": "p008.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 8,
+   "rect": [
+    0.0,
+    0.0,
+    132.0,
+    202.1
+   ],
+   "unit": null,
+   "lesson": null,
+   "lessonTitleEn": null,
+   "lessonTitleAr": null,
+   "lessonStartPage": null
+  },
+  {
+   "file": "p008b.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 8,
+   "rect": [
+    133.1,
+    0.0,
+    236.7,
+    104.6
+   ],
+   "unit": null,
+   "lesson": null,
+   "lessonTitleEn": null,
+   "lessonTitleAr": null,
+   "lessonStartPage": null
+  },
+  {
+   "file": "p008c.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 8,
+   "rect": [
+    252.1,
+    0.0,
+    334.0,
+    107.7
+   ],
+   "unit": null,
+   "lesson": null,
+   "lessonTitleEn": null,
+   "lessonTitleAr": null,
+   "lessonStartPage": null
+  },
+  {
+   "file": "p009.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 9,
+   "rect": [
+    135.1,
+    488.2,
+    422.5,
+    637.8
+   ],
+   "unit": null,
+   "lesson": null,
+   "lessonTitleEn": null,
+   "lessonTitleAr": null,
+   "lessonStartPage": null
+  },
+  {
+   "file": "p011.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 11,
+   "rect": [
+    67.6,
+    87.2,
+    289.5,
+    197.3
+   ],
+   "unit": 1,
+   "lesson": 1,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "نظريةُ بور لذرَّةِ الهيدروجين",
+   "lessonStartPage": 10
+  },
+  {
+   "file": "p012.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 12,
+   "rect": [
+    393.6,
+    74.3,
+    544.3,
+    258.4
+   ],
+   "unit": 1,
+   "lesson": 1,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "نظريةُ بور لذرَّةِ الهيدروجين",
+   "lessonStartPage": 10
+  },
+  {
+   "file": "p012b.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 12,
+   "rect": [
+    387.1,
+    289.1,
+    536.7,
+    471.5
+   ],
+   "unit": 1,
+   "lesson": 1,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "نظريةُ بور لذرَّةِ الهيدروجين",
+   "lessonStartPage": 10
+  },
+  {
+   "file": "p013.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 13,
+   "rect": [
+    246.0,
+    42.6,
+    452.8,
+    176.0
+   ],
+   "unit": 1,
+   "lesson": 1,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "نظريةُ بور لذرَّةِ الهيدروجين",
+   "lessonStartPage": 10
+  },
+  {
+   "file": "p013b.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 13,
+   "rect": [
+    196.0,
+    564.3,
+    549.3,
+    740.4
+   ],
+   "unit": 1,
+   "lesson": 1,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "نظريةُ بور لذرَّةِ الهيدروجين",
+   "lessonStartPage": 10
+  },
+  {
+   "file": "p013c.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 13,
+   "rect": [
+    196.0,
+    583.3,
+    289.5,
+    691.0
+   ],
+   "unit": 1,
+   "lesson": 1,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "نظريةُ بور لذرَّةِ الهيدروجين",
+   "lessonStartPage": 10
+  },
+  {
+   "file": "p016.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 16,
+   "rect": [
+    381.6,
+    166.3,
+    556.0,
+    486.5
+   ],
+   "unit": 1,
+   "lesson": 1,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "نظريةُ بور لذرَّةِ الهيدروجين",
+   "lessonStartPage": 10
+  },
+  {
+   "file": "p016b.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 16,
+   "rect": [
+    47.2,
+    567.4,
+    387.5,
+    732.3
+   ],
+   "unit": 1,
+   "lesson": 1,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "نظريةُ بور لذرَّةِ الهيدروجين",
+   "lessonStartPage": 10
+  },
+  {
+   "file": "p017.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 17,
+   "rect": [
+    208.3,
+    20.2,
+    548.6,
+    228.7
+   ],
+   "unit": 1,
+   "lesson": 1,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "نظريةُ بور لذرَّةِ الهيدروجين",
+   "lessonStartPage": 10
+  },
+  {
+   "file": "p017b.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 17,
+   "rect": [
+    52.2,
+    36.7,
+    202.9,
+    220.9
+   ],
+   "unit": 1,
+   "lesson": 1,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "نظريةُ بور لذرَّةِ الهيدروجين",
+   "lessonStartPage": 10
+  },
+  {
+   "file": "p019.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 19,
+   "rect": [
+    0.0,
+    0.0,
+    595.3,
+    225.0
+   ],
+   "unit": 1,
+   "lesson": 1,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "نظريةُ بور لذرَّةِ الهيدروجين",
+   "lessonStartPage": 10
+  },
+  {
+   "file": "p021.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 21,
+   "rect": [
+    42.1,
+    141.3,
+    216.6,
+    578.6
+   ],
+   "unit": 1,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "ِالنموذجُ الميكانيكيُّ الموجيُّ للذرَّة",
+   "lessonStartPage": 20
+  },
+  {
    "file": "p024.png",
    "sourceId": "chem-s1-student-book",
    "pdfPage": 24,
@@ -16,6 +320,214 @@
    "lessonTitleEn": null,
    "lessonTitleAr": "ِالنموذجُ الميكانيكيُّ الموجيُّ للذرَّة",
    "lessonStartPage": 20
+  },
+  {
+   "file": "p025.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 25,
+   "rect": [
+    0.0,
+    626.5,
+    151.4,
+    793.7
+   ],
+   "unit": 1,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "ِالنموذجُ الميكانيكيُّ الموجيُّ للذرَّة",
+   "lessonStartPage": 20
+  },
+  {
+   "file": "p026.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 26,
+   "rect": [
+    488.9,
+    476.1,
+    595.3,
+    551.8
+   ],
+   "unit": 1,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "ِالنموذجُ الميكانيكيُّ الموجيُّ للذرَّة",
+   "lessonStartPage": 20
+  },
+  {
+   "file": "p026b.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 26,
+   "rect": [
+    375.5,
+    626.5,
+    595.3,
+    793.7
+   ],
+   "unit": 1,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "ِالنموذجُ الميكانيكيُّ الموجيُّ للذرَّة",
+   "lessonStartPage": 20
+  },
+  {
+   "file": "p027.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 27,
+   "rect": [
+    402.6,
+    0.0,
+    595.3,
+    211.8
+   ],
+   "unit": 1,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "ِالنموذجُ الميكانيكيُّ الموجيُّ للذرَّة",
+   "lessonStartPage": 20
+  },
+  {
+   "file": "p028.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 28,
+   "rect": [
+    0.0,
+    0.0,
+    132.0,
+    202.1
+   ],
+   "unit": 1,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "ِالنموذجُ الميكانيكيُّ الموجيُّ للذرَّة",
+   "lessonStartPage": 20
+  },
+  {
+   "file": "p028b.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 28,
+   "rect": [
+    133.1,
+    0.0,
+    236.7,
+    104.6
+   ],
+   "unit": 1,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "ِالنموذجُ الميكانيكيُّ الموجيُّ للذرَّة",
+   "lessonStartPage": 20
+  },
+  {
+   "file": "p028c.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 28,
+   "rect": [
+    252.1,
+    0.0,
+    334.0,
+    107.7
+   ],
+   "unit": 1,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "ِالنموذجُ الميكانيكيُّ الموجيُّ للذرَّة",
+   "lessonStartPage": 20
+  },
+  {
+   "file": "p029.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 29,
+   "rect": [
+    0.0,
+    0.0,
+    595.3,
+    202.1
+   ],
+   "unit": 1,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "ِالنموذجُ الميكانيكيُّ الموجيُّ للذرَّة",
+   "lessonStartPage": 20
+  },
+  {
+   "file": "p029b.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 29,
+   "rect": [
+    48.3,
+    201.2,
+    170.6,
+    326.9
+   ],
+   "unit": 1,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "ِالنموذجُ الميكانيكيُّ الموجيُّ للذرَّة",
+   "lessonStartPage": 20
+  },
+  {
+   "file": "p029c.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 29,
+   "rect": [
+    178.2,
+    209.8,
+    275.3,
+    319.2
+   ],
+   "unit": 1,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "ِالنموذجُ الميكانيكيُّ الموجيُّ للذرَّة",
+   "lessonStartPage": 20
+  },
+  {
+   "file": "p031.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 31,
+   "rect": [
+    42.0,
+    254.0,
+    215.7,
+    535.0
+   ],
+   "unit": 2,
+   "lesson": 1,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "التوزيعُ اإللكترونيُّ للذرّات",
+   "lessonStartPage": 30
+  },
+  {
+   "file": "p031b.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 31,
+   "rect": [
+    283.9,
+    624.4,
+    410.5,
+    710.2
+   ],
+   "unit": 2,
+   "lesson": 1,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "التوزيعُ اإللكترونيُّ للذرّات",
+   "lessonStartPage": 30
+  },
+  {
+   "file": "p038.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 38,
+   "rect": [
+    0.0,
+    0.0,
+    595.3,
+    253.9
+   ],
+   "unit": 2,
+   "lesson": 1,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "التوزيعُ اإللكترونيُّ للذرّات",
+   "lessonStartPage": 30
   },
   {
    "file": "p042.png",
@@ -34,14 +546,14 @@
    "lessonStartPage": 39
   },
   {
-   "file": "p048.png",
+   "file": "p047.png",
    "sourceId": "chem-s1-student-book",
-   "pdfPage": 48,
+   "pdfPage": 47,
    "rect": [
-    136.8,
-    640.7,
-    435.4,
-    771.2
+    108.2,
+    129.0,
+    389.4,
+    625.1
    ],
    "unit": 2,
    "lesson": 2,
@@ -50,14 +562,526 @@
    "lessonStartPage": 39
   },
   {
-   "file": "p072.png",
+   "file": "p047b.png",
    "sourceId": "chem-s1-student-book",
-   "pdfPage": 72,
+   "pdfPage": 47,
    "rect": [
-    22.4,
-    514.1,
-    419.0,
-    721.7
+    384.6,
+    130.1,
+    472.5,
+    625.4
+   ],
+   "unit": 2,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "الخصائصُ الدوريةُ للعناصر",
+   "lessonStartPage": 39
+  },
+  {
+   "file": "p049.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 49,
+   "rect": [
+    0.0,
+    0.0,
+    202.2,
+    482.1
+   ],
+   "unit": 2,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "الخصائصُ الدوريةُ للعناصر",
+   "lessonStartPage": 39
+  },
+  {
+   "file": "p049b.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 49,
+   "rect": [
+    0.0,
+    476.1,
+    101.9,
+    551.8
+   ],
+   "unit": 2,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "الخصائصُ الدوريةُ للعناصر",
+   "lessonStartPage": 39
+  },
+  {
+   "file": "p049c.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 49,
+   "rect": [
+    0.0,
+    626.5,
+    151.4,
+    793.7
+   ],
+   "unit": 2,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "الخصائصُ الدوريةُ للعناصر",
+   "lessonStartPage": 39
+  },
+  {
+   "file": "p050.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 50,
+   "rect": [
+    491.3,
+    464.1,
+    595.3,
+    551.8
+   ],
+   "unit": 2,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "الخصائصُ الدوريةُ للعناصر",
+   "lessonStartPage": 39
+  },
+  {
+   "file": "p050b.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 50,
+   "rect": [
+    352.3,
+    622.6,
+    595.3,
+    793.7
+   ],
+   "unit": 2,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "الخصائصُ الدوريةُ للعناصر",
+   "lessonStartPage": 39
+  },
+  {
+   "file": "p052.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 52,
+   "rect": [
+    0.0,
+    0.0,
+    132.0,
+    202.1
+   ],
+   "unit": 2,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "الخصائصُ الدوريةُ للعناصر",
+   "lessonStartPage": 39
+  },
+  {
+   "file": "p052b.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 52,
+   "rect": [
+    133.1,
+    0.0,
+    236.7,
+    104.6
+   ],
+   "unit": 2,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "الخصائصُ الدوريةُ للعناصر",
+   "lessonStartPage": 39
+  },
+  {
+   "file": "p052c.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 52,
+   "rect": [
+    252.1,
+    0.0,
+    334.0,
+    107.7
+   ],
+   "unit": 2,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "الخصائصُ الدوريةُ للعناصر",
+   "lessonStartPage": 39
+  },
+  {
+   "file": "p053.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 53,
+   "rect": [
+    0.0,
+    0.0,
+    595.3,
+    202.1
+   ],
+   "unit": 2,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "الخصائصُ الدوريةُ للعناصر",
+   "lessonStartPage": 39
+  },
+  {
+   "file": "p055.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 55,
+   "rect": [
+    51.8,
+    51.9,
+    202.5,
+    236.0
+   ],
+   "unit": 3,
+   "lesson": 1,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "الروابطُ الكيميائيةُ وأنواعُها",
+   "lessonStartPage": 54
+  },
+  {
+   "file": "p055b.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 55,
+   "rect": [
+    187.5,
+    593.9,
+    428.8,
+    717.4
+   ],
+   "unit": 3,
+   "lesson": 1,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "الروابطُ الكيميائيةُ وأنواعُها",
+   "lessonStartPage": 54
+  },
+  {
+   "file": "p056.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 56,
+   "rect": [
+    67.4,
+    46.4,
+    201.8,
+    123.4
+   ],
+   "unit": 3,
+   "lesson": 1,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "الروابطُ الكيميائيةُ وأنواعُها",
+   "lessonStartPage": 54
+  },
+  {
+   "file": "p056b.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 56,
+   "rect": [
+    212.9,
+    47.6,
+    341.5,
+    132.6
+   ],
+   "unit": 3,
+   "lesson": 1,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "الروابطُ الكيميائيةُ وأنواعُها",
+   "lessonStartPage": 54
+  },
+  {
+   "file": "p058.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 58,
+   "rect": [
+    51.2,
+    45.5,
+    245.1,
+    215.3
+   ],
+   "unit": 3,
+   "lesson": 1,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "الروابطُ الكيميائيةُ وأنواعُها",
+   "lessonStartPage": 54
+  },
+  {
+   "file": "p059.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 59,
+   "rect": [
+    384.2,
+    88.7,
+    527.5,
+    175.2
+   ],
+   "unit": 3,
+   "lesson": 1,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "الروابطُ الكيميائيةُ وأنواعُها",
+   "lessonStartPage": 54
+  },
+  {
+   "file": "p059b.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 59,
+   "rect": [
+    42.1,
+    358.2,
+    215.8,
+    683.5
+   ],
+   "unit": 3,
+   "lesson": 1,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "الروابطُ الكيميائيةُ وأنواعُها",
+   "lessonStartPage": 54
+  },
+  {
+   "file": "p060.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 60,
+   "rect": [
+    88.2,
+    431.2,
+    490.3,
+    583.7
+   ],
+   "unit": 3,
+   "lesson": 1,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "الروابطُ الكيميائيةُ وأنواعُها",
+   "lessonStartPage": 54
+  },
+  {
+   "file": "p060b.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 60,
+   "rect": [
+    309.3,
+    573.9,
+    442.7,
+    651.8
+   ],
+   "unit": 3,
+   "lesson": 1,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "الروابطُ الكيميائيةُ وأنواعُها",
+   "lessonStartPage": 54
+  },
+  {
+   "file": "p062.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 62,
+   "rect": [
+    44.2,
+    509.0,
+    449.8,
+    793.7
+   ],
+   "unit": 3,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "ِ الصيغُ الكيميائيةُ وخصائصُ املُركَّبات",
+   "lessonStartPage": 61
+  },
+  {
+   "file": "p063.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 63,
+   "rect": [
+    197.0,
+    172.2,
+    277.5,
+    252.6
+   ],
+   "unit": 3,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "ِ الصيغُ الكيميائيةُ وخصائصُ املُركَّبات",
+   "lessonStartPage": 61
+  },
+  {
+   "file": "p063b.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 63,
+   "rect": [
+    98.7,
+    242.4,
+    238.4,
+    376.8
+   ],
+   "unit": 3,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "ِ الصيغُ الكيميائيةُ وخصائصُ املُركَّبات",
+   "lessonStartPage": 61
+  },
+  {
+   "file": "p064.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 64,
+   "rect": [
+    71.5,
+    521.2,
+    249.5,
+    695.2
+   ],
+   "unit": 3,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "ِ الصيغُ الكيميائيةُ وخصائصُ املُركَّبات",
+   "lessonStartPage": 61
+  },
+  {
+   "file": "p066.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 66,
+   "rect": [
+    65.0,
+    498.3,
+    451.5,
+    613.7
+   ],
+   "unit": 3,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "ِ الصيغُ الكيميائيةُ وخصائصُ املُركَّبات",
+   "lessonStartPage": 61
+  },
+  {
+   "file": "p069.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 69,
+   "rect": [
+    347.0,
+    20.2,
+    548.6,
+    100.3
+   ],
+   "unit": 3,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "ِ الصيغُ الكيميائيةُ وخصائصُ املُركَّبات",
+   "lessonStartPage": 61
+  },
+  {
+   "file": "p069b.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 69,
+   "rect": [
+    347.0,
+    376.7,
+    548.6,
+    456.8
+   ],
+   "unit": 3,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "ِ الصيغُ الكيميائيةُ وخصائصُ املُركَّبات",
+   "lessonStartPage": 61
+  },
+  {
+   "file": "p073.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 73,
+   "rect": [
+    0.0,
+    0.0,
+    202.2,
+    482.1
+   ],
+   "unit": 3,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "ِ الصيغُ الكيميائيةُ وخصائصُ املُركَّبات",
+   "lessonStartPage": 61
+  },
+  {
+   "file": "p073b.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 73,
+   "rect": [
+    0.0,
+    476.1,
+    101.9,
+    551.8
+   ],
+   "unit": 3,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "ِ الصيغُ الكيميائيةُ وخصائصُ املُركَّبات",
+   "lessonStartPage": 61
+  },
+  {
+   "file": "p073c.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 73,
+   "rect": [
+    0.0,
+    626.5,
+    151.4,
+    793.7
+   ],
+   "unit": 3,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "ِ الصيغُ الكيميائيةُ وخصائصُ املُركَّبات",
+   "lessonStartPage": 61
+  },
+  {
+   "file": "p074.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 74,
+   "rect": [
+    492.8,
+    476.1,
+    595.3,
+    551.8
+   ],
+   "unit": 3,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "ِ الصيغُ الكيميائيةُ وخصائصُ املُركَّبات",
+   "lessonStartPage": 61
+  },
+  {
+   "file": "p074b.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 74,
+   "rect": [
+    346.8,
+    507.6,
+    495.3,
+    620.4
+   ],
+   "unit": 3,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "ِ الصيغُ الكيميائيةُ وخصائصُ املُركَّبات",
+   "lessonStartPage": 61
+  },
+  {
+   "file": "p074c.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 74,
+   "rect": [
+    101.7,
+    595.5,
+    237.5,
+    748.1
+   ],
+   "unit": 3,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "ِ الصيغُ الكيميائيةُ وخصائصُ املُركَّبات",
+   "lessonStartPage": 61
+  },
+  {
+   "file": "p074d.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 74,
+   "rect": [
+    381.3,
+    616.0,
+    595.3,
+    793.7
    ],
    "unit": 3,
    "lesson": 2,
