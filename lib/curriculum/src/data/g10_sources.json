@@ -219,7 +219,7 @@
       "semester": 1,
       "kind": "ministry-support",
       "authority": "nccd",
-      "status": "pending",
+      "status": "ingested",
       "filename": "خطة البرنامج العلاجي لمادة الرياضيات للصف العاشر الفصل الأول.pdf",
       "authorAr": null,
       "unitTags": [
@@ -231,7 +231,15 @@
         "math",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 1,
+        "chars": 1683,
+        "localPath": "attached_assets/knowledge-base-pending/math-remedial-plan.pdf",
+        "sha256": "5a757a291a93032d6c402c0c103b20a7ca618f08abc9e26380009d8e9f96305c"
+      }
     },
     {
       "id": "math-remedial-part1",
@@ -242,7 +250,7 @@
       "semester": null,
       "kind": "ministry-support",
       "authority": "nccd",
-      "status": "pending",
+      "status": "ingested",
       "filename": "مادة التدخلات العلاجية لمادة الرياضيات للصف العاشر الجزء الأول.pdf",
       "authorAr": null,
       "unitTags": [
@@ -254,7 +262,15 @@
         "math",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 33,
+        "chars": 35103,
+        "localPath": "attached_assets/knowledge-base-pending/math-remedial-part1.pdf",
+        "sha256": "0b2dd1d69907975179d0de269be9143c99032a01c13a9c7d1916ed6ca89ae558"
+      }
     },
     {
       "id": "math-remedial-part2",
@@ -334,7 +350,7 @@
       "semester": 2,
       "kind": "ministry-support",
       "authority": "nccd",
-      "status": "pending",
+      "status": "ingested",
       "filename": "أوراق عمل داعمة لمادة الرياضيات الصف العاشر الفصل الثاني.pdf",
       "authorAr": null,
       "unitTags": [
@@ -346,7 +362,15 @@
         "math",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 20,
+        "chars": 17041,
+        "localPath": "attached_assets/knowledge-base-pending/math-s2-support-worksheets.pdf",
+        "sha256": "e6ddb27e2e77e57495097d815d62c19ea3d2393c0c2ab84fea0651ef9ebe17c4"
+      }
     },
     {
       "id": "math-diagnostic-test",
@@ -357,7 +381,7 @@
       "semester": null,
       "kind": "exam",
       "authority": "nccd",
-      "status": "pending",
+      "status": "ingested",
       "filename": "اختبار تشخيصي لمادة الرياضيات للصف العاشر.pdf",
       "authorAr": null,
       "unitTags": [
@@ -369,7 +393,15 @@
         "math",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 12,
+        "chars": 4762,
+        "localPath": "attached_assets/knowledge-base-pending/math-diagnostic-test.pdf",
+        "sha256": "31ad1895582864acecaeb3b04b81a15cab5f06efe0b0abf0955d7f68bbf26cf6"
+      }
     },
     {
       "id": "math-u1-answers-almasri",
@@ -547,7 +579,7 @@
       "semester": 1,
       "kind": "worksheet",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "ورقة عمل مع الحلول (حل نظام مكوّن من معادلة خطية ومعادلة تربيعية) أ. سلسبيل الخطيب.pdf",
       "authorAr": "سلسبيل الخطيب",
       "unitTags": [
@@ -561,7 +593,15 @@
         "رياضيات",
         "عاشر"
       ],
-      "notes": "Worked solutions — the depth source for the linear+quadratic system lesson."
+      "notes": "Worked solutions — the depth source for the linear+quadratic system lesson.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 6,
+        "chars": 6918,
+        "localPath": "attached_assets/knowledge-base-pending/math-ws-systems-solved-alkhatib.pdf",
+        "sha256": "3edfe97ec45974f3eaa493401572a7142592306a1b7153b85c96f99ec69c09b5"
+      }
     },
     {
       "id": "math-systems-almasri",
@@ -572,7 +612,7 @@
       "semester": 1,
       "kind": "worksheet",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "حل أنظمة المعادلات الرياضية الصف العاشر أ. أحمد المصري.pdf",
       "authorAr": "أحمد المصري",
       "unitTags": [
@@ -585,7 +625,15 @@
         "math",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 3,
+        "chars": 2165,
+        "localPath": "attached_assets/knowledge-base-pending/math-systems-almasri.pdf",
+        "sha256": "b6035becada95e1da32784f95f6fc6a949f3a671c9e80f400b69385262914c44"
+      }
     },
     {
       "id": "math-ws-powers-almasri",
@@ -596,7 +644,7 @@
       "semester": 1,
       "kind": "worksheet",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "ورقة عمل الأسس والمعادلات الرياضيات الصف العاشر أ. أحمد المصري.pdf",
       "authorAr": "أحمد المصري",
       "unitTags": [
@@ -609,7 +657,15 @@
         "math",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 6,
+        "chars": 3708,
+        "localPath": "attached_assets/knowledge-base-pending/math-ws-powers-almasri.pdf",
+        "sha256": "4a477a733f2fc96489909377140fbfbaf9abf55fe853f499ba8b4cde09741774"
+      }
     },
     {
       "id": "math-ws-polynomials-almasri",
@@ -620,7 +676,7 @@
       "semester": 1,
       "kind": "worksheet",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "ورقة عمل كثيرات الحدود الصف العاشر أ. أحمد المصري.pdf",
       "authorAr": "أحمد المصري",
       "unitTags": [
@@ -633,7 +689,15 @@
         "math",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 3,
+        "chars": 3407,
+        "localPath": "attached_assets/knowledge-base-pending/math-ws-polynomials-almasri.pdf",
+        "sha256": "df3bad13d0ebae630fb2c374939f1b64d10341228ad22ff0863676bac240a64b"
+      }
     },
     {
       "id": "math-ws-circle-full-alkhatib",
@@ -644,7 +708,7 @@
       "semester": 1,
       "kind": "worksheet",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "ورقة عمل شاملة لوحدة الدائرة الرياضيات الصف العاشر أ. سلسبيل الخطيب.pdf",
       "authorAr": "سلسبيل الخطيب",
       "unitTags": [
@@ -657,7 +721,15 @@
         "math",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 3,
+        "chars": 1377,
+        "localPath": "attached_assets/knowledge-base-pending/math-ws-circle-full-alkhatib.pdf",
+        "sha256": "7a703b58b5ee0f68fc9d77349181325f54404e6766e8c8394e358c272b301670"
+      }
     },
     {
       "id": "math-ws-tangents-alhindi",
@@ -668,7 +740,7 @@
       "semester": 1,
       "kind": "worksheet",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "ورقة عمل مماسات الدائرة الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
       "authorAr": "عبد الحميد الهندي",
       "unitTags": [
@@ -681,7 +753,15 @@
         "math",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 2,
+        "chars": 1334,
+        "localPath": "attached_assets/knowledge-base-pending/math-ws-tangents-alhindi.pdf",
+        "sha256": "def34e85674914a421f43b6704c9445ecca042f76f857044ba02f34b8dbdcb25"
+      }
     },
     {
       "id": "math-ws-tangent-angle-alhindi",
@@ -692,7 +772,7 @@
       "semester": 1,
       "kind": "worksheet",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "ورقة عمل مماسات الدائرة والزاوية المماسية الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
       "authorAr": "عبد الحميد الهندي",
       "unitTags": [
@@ -705,7 +785,15 @@
         "math",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 2,
+        "chars": 1511,
+        "localPath": "attached_assets/knowledge-base-pending/math-ws-tangent-angle-alhindi.pdf",
+        "sha256": "e7e1b943120ed3a2322249b6f100d2b9982821cd1569ad0a6f40be6822439cde"
+      }
     },
     {
       "id": "math-ws-cyclic-quad-1-alhindi",
@@ -716,7 +804,7 @@
       "semester": 1,
       "kind": "worksheet",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "ورقة عمل الشكل الرباعي الدائري (1) الرياضيات الصف العاشر أ. عبد الحميد الهندي (1).pdf",
       "authorAr": "عبد الحميد الهندي",
       "unitTags": [
@@ -729,7 +817,15 @@
         "math",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 2,
+        "chars": 1183,
+        "localPath": "attached_assets/knowledge-base-pending/math-ws-cyclic-quad-1-alhindi.pdf",
+        "sha256": "8901d580b84d93c734f049215983847d840cc94e673aaa50bd4c5373a19c6ea8"
+      }
     },
     {
       "id": "math-ws-cyclic-quad-2-alhindi",
@@ -740,7 +836,7 @@
       "semester": 1,
       "kind": "worksheet",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "ورقة عمل الشكل الرباعي الدائري (2) الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
       "authorAr": "عبد الحميد الهندي",
       "unitTags": [
@@ -753,7 +849,15 @@
         "math",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 3,
+        "chars": 1067,
+        "localPath": "attached_assets/knowledge-base-pending/math-ws-cyclic-quad-2-alhindi.pdf",
+        "sha256": "c18a92e7d69520f5196f526ad9bd278bb7e535952dab6d6d68c5bc76be99423b"
+      }
     },
     {
       "id": "math-ws-angles-alhindi",
@@ -764,7 +868,7 @@
       "semester": 1,
       "kind": "worksheet",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "ورقة عمل الزاوية المركزية والزاوية المحيطية الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
       "authorAr": "عبد الحميد الهندي",
       "unitTags": [
@@ -777,7 +881,15 @@
         "math",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 3,
+        "chars": 2272,
+        "localPath": "attached_assets/knowledge-base-pending/math-ws-angles-alhindi.pdf",
+        "sha256": "f27c08594e1c442228121ddd5e46c70ee53f05064e2196b3de1a3903592a8b99"
+      }
     },
     {
       "id": "math-ws-chords-1-alhindi",
@@ -788,7 +900,7 @@
       "semester": 1,
       "kind": "worksheet",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "ورقة عمل أوتار الدائرة (1) الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
       "authorAr": "عبد الحميد الهندي",
       "unitTags": [
@@ -802,7 +914,15 @@
         "الدائرة",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 2,
+        "chars": 1517,
+        "localPath": "attached_assets/knowledge-base-pending/math-ws-chords-1-alhindi.pdf",
+        "sha256": "dea74b3f525c7a6fbab36ac7978329082899f2d8d76df0813dacce63a64f2507"
+      }
     },
     {
       "id": "math-ws-chords-1-alhindi-dup",
@@ -838,7 +958,7 @@
       "semester": 1,
       "kind": "worksheet",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "ورقة عمل أوتار الدائرة (2) الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
       "authorAr": "عبد الحميد الهندي",
       "unitTags": [
@@ -851,7 +971,15 @@
         "math",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 2,
+        "chars": 1631,
+        "localPath": "attached_assets/knowledge-base-pending/math-ws-chords-2-alhindi.pdf",
+        "sha256": "b5458edacc81ed688d997fab3b52de332d8f7fa85460c5105f8e9fd6a3c7576b"
+      }
     },
     {
       "id": "math-mcq-circle-alkhatib",
@@ -862,7 +990,7 @@
       "semester": 1,
       "kind": "question-bank",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "أسئلة موضوعية ( ضع دائرة ) لوحدة الدائرة أ. سلسبيل الخطيب.pdf",
       "authorAr": "سلسبيل الخطيب",
       "unitTags": [
@@ -875,7 +1003,15 @@
         "math",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 5,
+        "chars": 2659,
+        "localPath": "attached_assets/knowledge-base-pending/math-mcq-circle-alkhatib.pdf",
+        "sha256": "93142df2322dd22333bfc4926e0616ff61e1a8f49f3764dfed725c3e846ef882"
+      }
     },
     {
       "id": "math-mcq-circle-suggested-alkhatib",
@@ -886,7 +1022,7 @@
       "semester": 1,
       "kind": "question-bank",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "أسئلة مقترحة ضع دائرة لوحدة الدائرة مادة الرياضيات الصف العاشر أ.سلسبيل الخطيب.pdf",
       "authorAr": "سلسبيل الخطيب",
       "unitTags": [
@@ -899,7 +1035,15 @@
         "math",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 2,
+        "chars": 1282,
+        "localPath": "attached_assets/knowledge-base-pending/math-mcq-circle-suggested-alkhatib.pdf",
+        "sha256": "9c0fdac920f198a53804d0d01b24b581215c05b4602288339da4d47115253ff7"
+      }
     },
     {
       "id": "math-mcq-circle-suggested-alkhatib-dup",
@@ -935,7 +1079,7 @@
       "semester": 1,
       "kind": "question-bank",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "أسئلة مقترحة لوحدة المصفوفات للاختبار النهائي الفصل الدراسي الأول أ. سلسبيل الخطيب.pdf",
       "authorAr": "سلسبيل الخطيب",
       "unitTags": [
@@ -948,7 +1092,15 @@
         "math",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 3,
+        "chars": 2105,
+        "localPath": "attached_assets/knowledge-base-pending/math-matrices-suggested-alkhatib.pdf",
+        "sha256": "ea7619687c0a0df99aa064a7277ba4012e25c091e769e10c60792335b845ac8b"
+      }
     },
     {
       "id": "math-final-alhindi",
@@ -959,7 +1111,7 @@
       "semester": 1,
       "kind": "exam",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "اختبار نهاية الفصل الأول الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
       "authorAr": "عبد الحميد الهندي",
       "unitTags": [
@@ -971,7 +1123,15 @@
         "math",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 5,
+        "chars": 3261,
+        "localPath": "attached_assets/knowledge-base-pending/math-final-alhindi.pdf",
+        "sha256": "8b7f8dfcb86c2636f4e32ada5d6501c3dc93ecbc287570d8582da6256da83d22"
+      }
     },
     {
       "id": "math-final-1-alkhatib",
@@ -982,7 +1142,7 @@
       "semester": 1,
       "kind": "exam",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "اختبار نهائي نموذج1 في مادة الرياضيات الصف العاشر الفصل الأول أ. سلسبيل الخطيب.pdf",
       "authorAr": "سلسبيل الخطيب",
       "unitTags": [
@@ -994,7 +1154,15 @@
         "math",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 7,
+        "chars": 6582,
+        "localPath": "attached_assets/knowledge-base-pending/math-final-1-alkhatib.pdf",
+        "sha256": "6cdacb808f27d308a19b2b8c5bf932c5730c8f4f2c593d745e824751a9b6efa6"
+      }
     },
     {
       "id": "math-final-2-alkhatib",
@@ -1005,7 +1173,7 @@
       "semester": 1,
       "kind": "exam",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "اختبار نهائي نموذج2 في مادة الرياضيات الصف العاشر الفصل الأول أ. سلسبيل الخطيب.pdf",
       "authorAr": "سلسبيل الخطيب",
       "unitTags": [
@@ -1017,7 +1185,15 @@
         "math",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 2,
+        "chars": 2291,
+        "localPath": "attached_assets/knowledge-base-pending/math-final-2-alkhatib.pdf",
+        "sha256": "20c17c27365119f24f5b4ef22c167827fd1fb433a354cb78fbb2f739ef0c62d7"
+      }
     },
     {
       "id": "math-month1-alkhatib",
@@ -1028,7 +1204,7 @@
       "semester": 1,
       "kind": "exam",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "اختبار الشهر الأول في الرياضيات الصف العاشر الفصل الأول أ. سلسبيل الخطيب.pdf",
       "authorAr": "سلسبيل الخطيب",
       "unitTags": [
@@ -1040,7 +1216,15 @@
         "math",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 10,
+        "chars": 2650,
+        "localPath": "attached_assets/knowledge-base-pending/math-month1-alkhatib.pdf",
+        "sha256": "cfa250c898d9ed246eda373a3d2646053ab1c9523215750a46d8d374e0dbec3f"
+      }
     },
     {
       "id": "math-month2-alfarakh",
@@ -1051,7 +1235,7 @@
       "semester": 1,
       "kind": "exam",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "اختبار شهر ثاني رياضيات الصف العاشر الفصل الأول أ. أحمد الفرخ.pdf",
       "authorAr": "أحمد الفرخ",
       "unitTags": [
@@ -1063,7 +1247,15 @@
         "math",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 2,
+        "chars": 736,
+        "localPath": "attached_assets/knowledge-base-pending/math-month2-alfarakh.pdf",
+        "sha256": "d9b2680840d8679441ff0e7dd27e8b98b4797c095f44e54220feca29cb691190"
+      }
     },
     {
       "id": "math-u6-test-hussein",
@@ -1074,7 +1266,7 @@
       "semester": 2,
       "kind": "exam",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "اختبار الوحدة السادسة رياضيات الصف العاشر أ. رضا حسين.pdf",
       "authorAr": "رضا حسين",
       "unitTags": [
@@ -1087,7 +1279,15 @@
         "math",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 2,
+        "chars": 1138,
+        "localPath": "attached_assets/knowledge-base-pending/math-u6-test-hussein.pdf",
+        "sha256": "e852ba2e198cb3bce752a7e17c90332ab9ca6c54ff72414e3988bdbbef2ae491"
+      }
     },
     {
       "id": "math-u7-test-hussein",
@@ -1098,7 +1298,7 @@
       "semester": 2,
       "kind": "exam",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "اختبار الوحدة السابعة رياضيات الصف العاشر أ. رضا حسين.pdf",
       "authorAr": "رضا حسين",
       "unitTags": [
@@ -1111,7 +1311,15 @@
         "math",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 2,
+        "chars": 1561,
+        "localPath": "attached_assets/knowledge-base-pending/math-u7-test-hussein.pdf",
+        "sha256": "d470c655defbc2bbb6206924e2b5feceb24418458c964705da8d43c629277e94"
+      }
     },
     {
       "id": "math-foundation-lafi",
@@ -1122,7 +1330,7 @@
       "semester": null,
       "kind": "study-pack",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "دوسية تأسيس رياضيات للصف العاشر إعداد أ. ابتهال لافي.pdf",
       "authorAr": "ابتهال لافي",
       "unitTags": [
@@ -1134,7 +1342,15 @@
         "math",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 25,
+        "chars": 14417,
+        "localPath": "attached_assets/knowledge-base-pending/math-foundation-lafi.pdf",
+        "sha256": "77bd743de09a2f27c673f1e247ccfb4aa0daeb6bdfbbe8b0c6d34d902ff41e8d"
+      }
     },
     {
       "id": "math-foundations-melhem",
@@ -1345,7 +1561,7 @@
       "semester": 1,
       "kind": "activity-book",
       "authority": "nccd",
-      "status": "pending",
+      "status": "ingested",
       "filename": "كتاب الأنشطة والتجارب العملية كيمياء الصف العاشر الفصل الأول.pdf",
       "authorAr": null,
       "unitTags": [
@@ -1357,7 +1573,15 @@
         "chemistry",
         "كيمياء",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 20,
+        "chars": 27630,
+        "localPath": "attached_assets/knowledge-base-pending/chem-s1-activity-book.pdf",
+        "sha256": "e5b6b3a8409b2e9ea6b3a71847dc37f33bd8c3b449760119e177ab6c5474ff4b"
+      }
     },
     {
       "id": "chem-s2-activity-book",
@@ -1368,7 +1592,7 @@
       "semester": 2,
       "kind": "activity-book",
       "authority": "nccd",
-      "status": "pending",
+      "status": "ingested",
       "filename": "كتاب الأنشطة والتجارب العملية كيمياء الصف العاشر الفصل الثاني.pdf",
       "authorAr": null,
       "unitTags": [
@@ -1380,7 +1604,15 @@
         "chemistry",
         "كيمياء",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 26,
+        "chars": 34380,
+        "localPath": "attached_assets/knowledge-base-pending/chem-s2-activity-book.pdf",
+        "sha256": "e0940b450955483634b23055cc7ad04fe515a5ef1293be0168722d5f0770f243"
+      }
     },
     {
       "id": "chem-loss-recovery",
@@ -1391,7 +1623,7 @@
       "semester": null,
       "kind": "ministry-support",
       "authority": "nccd",
-      "status": "pending",
+      "status": "ingested",
       "filename": "المادة المقررة لتعويض الفاقد التعليمي لمادة الكيمياء الصف العاشر.pdf",
       "authorAr": null,
       "unitTags": [
@@ -1403,7 +1635,15 @@
         "chemistry",
         "كيمياء",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 52,
+        "chars": 33715,
+        "localPath": "attached_assets/knowledge-base-pending/chem-loss-recovery.pdf",
+        "sha256": "2c58785d854dfd24ba3e1e37652a7f75d75b4663ab56b7cb0b678ddbf43ba454"
+      }
     },
     {
       "id": "chem-s1-pack-sartawi",
@@ -1414,7 +1654,7 @@
       "semester": 1,
       "kind": "study-pack",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "دوسية الكيمياء الصف العاشر الفصل الدراسي الأول 2021 م. مريم السرطاوي.pdf",
       "authorAr": "مريم السرطاوي",
       "unitTags": [
@@ -1426,7 +1666,15 @@
         "chemistry",
         "كيمياء",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 149,
+        "chars": 174171,
+        "localPath": "attached_assets/knowledge-base-pending/chem-s1-pack-sartawi.pdf",
+        "sha256": "212d6c63d7f71475e7accad86801425a77cd3a5fbb3c935bd4cbbbf00bdd2848"
+      }
     },
     {
       "id": "chem-s1-pack-sartawi-dup",
@@ -1461,7 +1709,7 @@
       "semester": 1,
       "kind": "study-pack",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "دوسية الوحدة الأولى الكيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
       "authorAr": "مريم السرطاوي",
       "unitTags": [
@@ -1474,7 +1722,15 @@
         "chemistry",
         "كيمياء",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 67,
+        "chars": 75516,
+        "localPath": "attached_assets/knowledge-base-pending/chem-s1-u1-pack-sartawi.pdf",
+        "sha256": "0a11b9bf7f59907cd58f875ff739e9dab1afe0009d7e71175c2f4f14cf5be1ad"
+      }
     },
     {
       "id": "chem-s1-u2-pack-sartawi",
@@ -1485,7 +1741,7 @@
       "semester": 1,
       "kind": "study-pack",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "دوسية الوحدة الثانية الكيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
       "authorAr": "مريم السرطاوي",
       "unitTags": [
@@ -1498,7 +1754,15 @@
         "chemistry",
         "كيمياء",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 65,
+        "chars": 71809,
+        "localPath": "attached_assets/knowledge-base-pending/chem-s1-u2-pack-sartawi.pdf",
+        "sha256": "40420967f96cd9cb6789eb43985365e8b4c7619af5498670f4677f39f4ca67f2"
+      }
     },
     {
       "id": "chem-s1-u3-pack-sartawi",
@@ -1509,7 +1773,7 @@
       "semester": 1,
       "kind": "study-pack",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "دوسية الوحدة الثالثة الكيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
       "authorAr": "مريم السرطاوي",
       "unitTags": [
@@ -1522,7 +1786,15 @@
         "chemistry",
         "كيمياء",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 68,
+        "chars": 66827,
+        "localPath": "attached_assets/knowledge-base-pending/chem-s1-u3-pack-sartawi.pdf",
+        "sha256": "206af4678164d726f5e9221e30f6a5a1fbf33f9947d77143a0c7d80aa19eb827"
+      }
     },
     {
       "id": "chem-s1-pack-almasri",
@@ -1533,7 +1805,7 @@
       "semester": 1,
       "kind": "study-pack",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "دوسية الفصل الأول كيمياء الصف العاشر أ. عبير المصري.pdf",
       "authorAr": "عبير المصري",
       "unitTags": [
@@ -1545,7 +1817,15 @@
         "chemistry",
         "كيمياء",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 52,
+        "chars": 35434,
+        "localPath": "attached_assets/knowledge-base-pending/chem-s1-pack-almasri.pdf",
+        "sha256": "b713176b80d0dae787455e526053bdb43c79d6ff0ce54e3b9ca9c973af530782"
+      }
     },
     {
       "id": "chem-s1-summary-shawata",
@@ -1556,7 +1836,7 @@
       "semester": 1,
       "kind": "summary",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "ملخص الكيمياء الصف العاشر الفصل الدراسي الأول أ. ولاء شعواطة.pdf",
       "authorAr": "ولاء شعواطة",
       "unitTags": [
@@ -1568,7 +1848,15 @@
         "chemistry",
         "كيمياء",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 93,
+        "chars": 47748,
+        "localPath": "attached_assets/knowledge-base-pending/chem-s1-summary-shawata.pdf",
+        "sha256": "ec3ca27a2c474c36d8acc4871029e8c677f531362a788e6dceb3ad0fe3623f3a"
+      }
     },
     {
       "id": "chem-s2-pack-sartawi",
@@ -1579,7 +1867,7 @@
       "semester": 2,
       "kind": "study-pack",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "دوسية الكيمياء الصف العاشر الفصل الثاني إعداد م. مريم السرطاوي.pdf",
       "authorAr": "مريم السرطاوي",
       "unitTags": [
@@ -1591,7 +1879,15 @@
         "chemistry",
         "كيمياء",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 141,
+        "chars": 159330,
+        "localPath": "attached_assets/knowledge-base-pending/chem-s2-pack-sartawi.pdf",
+        "sha256": "538ba9d599845a8c7fab8401b75a718524407cdb28ba53e82c7f7b60ca768199"
+      }
     },
     {
       "id": "chem-s2-pack-shawata",
@@ -1602,7 +1898,7 @@
       "semester": 2,
       "kind": "study-pack",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "دوسية الكيمياء الصف العاشر الفصل الثاني أ.ولاء شعواطة.pdf",
       "authorAr": "ولاء شعواطة",
       "unitTags": [
@@ -1614,7 +1910,15 @@
         "chemistry",
         "كيمياء",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 140,
+        "chars": 80233,
+        "localPath": "attached_assets/knowledge-base-pending/chem-s2-pack-shawata.pdf",
+        "sha256": "4d4249ce3e3efa693c23b5add1be17557b792cc6c7e0bec139ea463e01b186af"
+      }
     },
     {
       "id": "chem-s2-pack-almasri",
@@ -1625,7 +1929,7 @@
       "semester": 2,
       "kind": "study-pack",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "ملزمة الكيمياء الصف العاشر الفصل الثاني أ. عبير المصري.pdf",
       "authorAr": "عبير المصري",
       "unitTags": [
@@ -1637,7 +1941,15 @@
         "chemistry",
         "كيمياء",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 49,
+        "chars": 20392,
+        "localPath": "attached_assets/knowledge-base-pending/chem-s2-pack-almasri.pdf",
+        "sha256": "41be69178baccb461fc7a815010d21eb03591df0a285a27b9a4f34bfa28fb49e"
+      }
     },
     {
       "id": "chem-u4-summary-sartawi",
@@ -1648,7 +1960,7 @@
       "semester": 2,
       "kind": "summary",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "ملخص الوحدة الرابعة الكيمياء الصف العاشر إعداد م. مريم السرطاوي.pdf",
       "authorAr": "مريم السرطاوي",
       "unitTags": [
@@ -1661,7 +1973,15 @@
         "chemistry",
         "كيمياء",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 86,
+        "chars": 79483,
+        "localPath": "attached_assets/knowledge-base-pending/chem-u4-summary-sartawi.pdf",
+        "sha256": "08b5aea4cd80efad07d1a0f0b669ec27e2a69b835a40acd5d8c73e2a169fc094"
+      }
     },
     {
       "id": "chem-u5-summary-sartawi",
@@ -1672,7 +1992,7 @@
       "semester": 2,
       "kind": "summary",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "ملخص الوحدة الخامسة الكيمياء الصف العاشر إعداد م. مريم السرطاوي.pdf",
       "authorAr": "مريم السرطاوي",
       "unitTags": [
@@ -1685,7 +2005,15 @@
         "chemistry",
         "كيمياء",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 71,
+        "chars": 78304,
+        "localPath": "attached_assets/knowledge-base-pending/chem-u5-summary-sartawi.pdf",
+        "sha256": "c6bc50b5381e51b2a1abdb12608f5e19812f345f31b25ffb45c3b91c1ceb2a66"
+      }
     },
     {
       "id": "chem-s1-question-bank-sartawi",
@@ -1696,7 +2024,7 @@
       "semester": 1,
       "kind": "question-bank",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "بنك أسئلة الكيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
       "authorAr": "مريم السرطاوي",
       "unitTags": [
@@ -1708,7 +2036,15 @@
         "chemistry",
         "كيمياء",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 21,
+        "chars": 14413,
+        "localPath": "attached_assets/knowledge-base-pending/chem-s1-question-bank-sartawi.pdf",
+        "sha256": "6bfae1bf8c53dcc446c95f0a113891f7029e5026a2d22001b4c1ac0f366876bd"
+      }
     },
     {
       "id": "chem-s1-mixed-questions-sartawi",
@@ -1719,7 +2055,7 @@
       "semester": 1,
       "kind": "question-bank",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "أسئلة منوعة كيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
       "authorAr": "مريم السرطاوي",
       "unitTags": [
@@ -1731,7 +2067,15 @@
         "chemistry",
         "كيمياء",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 14,
+        "chars": 6644,
+        "localPath": "attached_assets/knowledge-base-pending/chem-s1-mixed-questions-sartawi.pdf",
+        "sha256": "6b04303b25ac2c35b7daa18a30c753c6b8922c68f4c57f35c245af8396bd99fa"
+      }
     },
     {
       "id": "chem-ws-bohr-manhaji",
@@ -1742,7 +2086,7 @@
       "semester": 1,
       "kind": "worksheet",
       "authority": "third-party",
-      "status": "pending",
+      "status": "ingested",
       "filename": "ورقة عمل كيمياء الصف العاشر نظرية بور الذرية شبكة منهاجي التعليمية.pdf",
       "authorAr": null,
       "unitTags": [
@@ -1756,7 +2100,15 @@
         "كيمياء",
         "عاشر"
       ],
-      "notes": "From منهاجي — a third-party network, not the ministry and not a named teacher."
+      "notes": "From منهاجي — a third-party network, not the ministry and not a named teacher.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 8,
+        "chars": 3373,
+        "localPath": "attached_assets/knowledge-base-pending/chem-ws-bohr-manhaji.pdf",
+        "sha256": "f0bc7ff58c8dca85b2f482a88fe1701d62e3f512f7c3536be1024d71410c24a5"
+      }
     },
     {
       "id": "chem-ws-bohr-tareq",
@@ -1815,7 +2167,7 @@
       "semester": 1,
       "kind": "worksheet",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "ورقة عمل قانون ماكس بلانك الكيمياء للصف العاشر أ. عبير المصري.pdf",
       "authorAr": "عبير المصري",
       "unitTags": [
@@ -1828,7 +2180,15 @@
         "chemistry",
         "كيمياء",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 2,
+        "chars": 648,
+        "localPath": "attached_assets/knowledge-base-pending/chem-ws-planck-almasri.pdf",
+        "sha256": "34ce3f169a20a710a57507150c231ab12c45c82895b22561eff29d12a010ad74"
+      }
     },
     {
       "id": "chem-u1-test-shawata",
@@ -1839,7 +2199,7 @@
       "semester": 1,
       "kind": "exam",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "اختبار الوحدة الأولى البنية الذرية إعداد المعلمة ولاء شعواطة.pdf",
       "authorAr": "ولاء شعواطة",
       "unitTags": [
@@ -1852,7 +2212,15 @@
         "chemistry",
         "كيمياء",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 7,
+        "chars": 7072,
+        "localPath": "attached_assets/knowledge-base-pending/chem-u1-test-shawata.pdf",
+        "sha256": "9d4715e23635d1480947cc1a69d2a7aaeb8a41eff5d34b237e6771feaf655ab9"
+      }
     },
     {
       "id": "chem-s2-month1-tareq",

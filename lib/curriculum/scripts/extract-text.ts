@@ -82,12 +82,76 @@ const LOCAL_FILES: Record<string, string> = {
   // objective — so it is named here to be picked up automatically once
   // `git lfs pull` has run, rather than quietly omitted.
   'math-s1-teacher-guide': 'attached_assets/TE010_Book-teacher_guiede,_10th_grade,_semster_one_1785147998881.pdf',
+
+  // The 54 support-pack documents below (out of 60 pending in the
+  // manifest) were fetched from the Drive folder the manifest's driveId
+  // already pointed at, 2026-08-26 — see STATUS.md. Six remain unfetched:
+  // two hit repeated transient MCP session drops, four exceed the 10MB
+  // single-call download ceiling of the tool used to fetch them.
+  'math-remedial-plan': 'attached_assets/knowledge-base-pending/math-remedial-plan.pdf',
+  'math-remedial-part1': 'attached_assets/knowledge-base-pending/math-remedial-part1.pdf',
+  'math-remedial-part2': 'attached_assets/knowledge-base-pending/math-remedial-part2.pdf',
+  'math-s2-support-worksheets': 'attached_assets/knowledge-base-pending/math-s2-support-worksheets.pdf',
+  'math-diagnostic-test': 'attached_assets/knowledge-base-pending/math-diagnostic-test.pdf',
+  'math-u2-summary-alkhamayseh': 'attached_assets/knowledge-base-pending/math-u2-summary-alkhamayseh.pdf',
+  'math-ws-systems-alhindi': 'attached_assets/knowledge-base-pending/math-ws-systems-alhindi.pdf',
+  'math-ws-systems-solved-alkhatib': 'attached_assets/knowledge-base-pending/math-ws-systems-solved-alkhatib.pdf',
+  'math-systems-almasri': 'attached_assets/knowledge-base-pending/math-systems-almasri.pdf',
+  'math-ws-powers-almasri': 'attached_assets/knowledge-base-pending/math-ws-powers-almasri.pdf',
+  'math-ws-polynomials-almasri': 'attached_assets/knowledge-base-pending/math-ws-polynomials-almasri.pdf',
+  'math-ws-circle-full-alkhatib': 'attached_assets/knowledge-base-pending/math-ws-circle-full-alkhatib.pdf',
+  'math-ws-tangents-alhindi': 'attached_assets/knowledge-base-pending/math-ws-tangents-alhindi.pdf',
+  'math-ws-tangent-angle-alhindi': 'attached_assets/knowledge-base-pending/math-ws-tangent-angle-alhindi.pdf',
+  'math-ws-cyclic-quad-1-alhindi': 'attached_assets/knowledge-base-pending/math-ws-cyclic-quad-1-alhindi.pdf',
+  'math-ws-cyclic-quad-2-alhindi': 'attached_assets/knowledge-base-pending/math-ws-cyclic-quad-2-alhindi.pdf',
+  'math-ws-angles-alhindi': 'attached_assets/knowledge-base-pending/math-ws-angles-alhindi.pdf',
+  'math-ws-chords-1-alhindi': 'attached_assets/knowledge-base-pending/math-ws-chords-1-alhindi.pdf',
+  'math-ws-chords-2-alhindi': 'attached_assets/knowledge-base-pending/math-ws-chords-2-alhindi.pdf',
+  'math-mcq-circle-alkhatib': 'attached_assets/knowledge-base-pending/math-mcq-circle-alkhatib.pdf',
+  'math-mcq-circle-suggested-alkhatib': 'attached_assets/knowledge-base-pending/math-mcq-circle-suggested-alkhatib.pdf',
+  'math-matrices-suggested-alkhatib': 'attached_assets/knowledge-base-pending/math-matrices-suggested-alkhatib.pdf',
+  'math-final-alhindi': 'attached_assets/knowledge-base-pending/math-final-alhindi.pdf',
+  'math-final-1-alkhatib': 'attached_assets/knowledge-base-pending/math-final-1-alkhatib.pdf',
+  'math-final-2-alkhatib': 'attached_assets/knowledge-base-pending/math-final-2-alkhatib.pdf',
+  'math-month1-alkhatib': 'attached_assets/knowledge-base-pending/math-month1-alkhatib.pdf',
+  'math-month2-alfarakh': 'attached_assets/knowledge-base-pending/math-month2-alfarakh.pdf',
+  'math-u6-test-hussein': 'attached_assets/knowledge-base-pending/math-u6-test-hussein.pdf',
+  'math-u7-test-hussein': 'attached_assets/knowledge-base-pending/math-u7-test-hussein.pdf',
+  'math-foundation-lafi': 'attached_assets/knowledge-base-pending/math-foundation-lafi.pdf',
+  'math-foundations-melhem': 'attached_assets/knowledge-base-pending/math-foundations-melhem.pdf',
+  'math-geometry-formulas-melhem': 'attached_assets/knowledge-base-pending/math-geometry-formulas-melhem.pdf',
+  'chem-s1-activity-book': 'attached_assets/knowledge-base-pending/chem-s1-activity-book.pdf',
+  'chem-s2-activity-book': 'attached_assets/knowledge-base-pending/chem-s2-activity-book.pdf',
+  'chem-loss-recovery': 'attached_assets/knowledge-base-pending/chem-loss-recovery.pdf',
+  'chem-s1-pack-sartawi': 'attached_assets/knowledge-base-pending/chem-s1-pack-sartawi.pdf',
+  'chem-s1-u1-pack-sartawi': 'attached_assets/knowledge-base-pending/chem-s1-u1-pack-sartawi.pdf',
+  'chem-s1-u2-pack-sartawi': 'attached_assets/knowledge-base-pending/chem-s1-u2-pack-sartawi.pdf',
+  'chem-s1-u3-pack-sartawi': 'attached_assets/knowledge-base-pending/chem-s1-u3-pack-sartawi.pdf',
+  'chem-s1-pack-almasri': 'attached_assets/knowledge-base-pending/chem-s1-pack-almasri.pdf',
+  'chem-s1-summary-shawata': 'attached_assets/knowledge-base-pending/chem-s1-summary-shawata.pdf',
+  'chem-s2-pack-sartawi': 'attached_assets/knowledge-base-pending/chem-s2-pack-sartawi.pdf',
+  'chem-s2-pack-shawata': 'attached_assets/knowledge-base-pending/chem-s2-pack-shawata.pdf',
+  'chem-s2-pack-almasri': 'attached_assets/knowledge-base-pending/chem-s2-pack-almasri.pdf',
+  'chem-u4-summary-sartawi': 'attached_assets/knowledge-base-pending/chem-u4-summary-sartawi.pdf',
+  'chem-u5-summary-sartawi': 'attached_assets/knowledge-base-pending/chem-u5-summary-sartawi.pdf',
+  'chem-s1-question-bank-sartawi': 'attached_assets/knowledge-base-pending/chem-s1-question-bank-sartawi.pdf',
+  'chem-s1-mixed-questions-sartawi': 'attached_assets/knowledge-base-pending/chem-s1-mixed-questions-sartawi.pdf',
+  'chem-ws-bohr-manhaji': 'attached_assets/knowledge-base-pending/chem-ws-bohr-manhaji.pdf',
+  'chem-ws-bohr-tareq': 'attached_assets/knowledge-base-pending/chem-ws-bohr-tareq.pdf',
+  'chem-ws-reactions-tareq': 'attached_assets/knowledge-base-pending/chem-ws-reactions-tareq.pdf',
+  'chem-ws-planck-almasri': 'attached_assets/knowledge-base-pending/chem-ws-planck-almasri.pdf',
+  'chem-u1-test-shawata': 'attached_assets/knowledge-base-pending/chem-u1-test-shawata.pdf',
+  'chem-s2-month1-tareq': 'attached_assets/knowledge-base-pending/chem-s2-month1-tareq.pdf',
 };
 
 /** A Git-LFS pointer is a ~130-byte text file, not the document it stands for. */
 function isLfsPointer(buf: Buffer): boolean {
   return buf.length < 1024 && buf.subarray(0, 40).toString('utf8').startsWith('version https://git-lfs');
 }
+
+const CONTROL_CHAR_RE = /[\x00-\x08\x0e-\x1f]/g;
+const ARABIC_PRESENTATION_FORMS_RE = /[ﭐ-﷿ﹰ-﻿]/g;
+const BASIC_ARABIC_RE = /[؀-ۿ]/g;
 
 export interface ExtractedPage {
   page: number;
@@ -139,6 +203,28 @@ async function extractOne(sourceId: string, rel: string): Promise<ExtractedDocum
     }
     if (!pages.some(p => p.text.length > 0)) {
       return `no text layer — needs OCR, which this project does not have: ${rel}`;
+    }
+
+    const allText = pages.map(p => p.text).join('');
+    // pdf-parse decoding a PDF's embedded font against the wrong cmap does not
+    // throw — it returns text, just not text. Found on two real files: 28-37%
+    // of the "extracted" characters were C0 control codes (\x00-\x1F), which
+    // essentially never appear in real prose. A silent pass here would have
+    // shipped noise into a teacher's prompt labelled as a citable page.
+    const controlChars = (allText.match(CONTROL_CHAR_RE) ?? []).length;
+    if (allText.length > 0 && controlChars / allText.length > 0.05) {
+      return `decoded to mostly non-printable control characters (font cmap likely broken) — not usable: ${rel}`;
+    }
+    // Found on three files from the same author: real Arabic, but the PDF
+    // encodes it as Arabic Presentation Forms (isolated per-glyph shapes,
+    // U+FB50-FEFF) instead of the base Arabic block, and pdf-parse returns
+    // them unshaped and with each word's letters in reverse order. Technically
+    // decodable by a person turning the page sideways; unusable as a citation
+    // or as text handed to a model.
+    const presentationForms = (allText.match(ARABIC_PRESENTATION_FORMS_RE) ?? []).length;
+    const basicArabic = (allText.match(BASIC_ARABIC_RE) ?? []).length;
+    if (presentationForms > basicArabic) {
+      return `Arabic in reversed presentation-form glyphs, not the base Arabic block — unusable without un-shaping: ${rel}`;
     }
 
     const manifest = G10_SOURCES.find(s => s.id === sourceId);

@@ -96,15 +96,34 @@ describe('extracted text', () => {
     // ~1,200 Arabic characters each, but interleaved tashkeel, spaces and
     // English terms («Principal Quantum Number») mean a 20-character run
     // almost never occurs. The run was measuring typography, not language.
+    //
+    // A second draft required 70% of a document's *pages* to individually
+    // clear a density bar. That is the wrong unit once the corpus includes
+    // teacher-made booklets rather than only continuous-prose textbooks: a
+    // real, cleanly-extracted study pack can legitimately carry blank divider
+    // pages and dotted table-of-contents leaders, which are real pages with
+    // near-zero Arabic on them and not a sign the extraction failed. Measured
+    // at the whole-document level instead. The real floor, checked against
+    // every extraction on disk: the lowest ratio among genuine documents is
+    // 0.32; the reversed-glyph and broken-cmap files this same run's quality
+    // gate now rejects before they reach disk measured 0.00-0.12. 0.2 sits in
+    // the gap with margin on both sides, not picked to just barely pass today.
     const ARABIC = /[؀-ۿ]/g;
+    const failures: string[] = [];
     for (const f of files) {
       const doc = load(f);
-      const dense = doc.text.filter(p => (p.text.match(ARABIC) ?? []).length >= 100).length;
-      assert.ok(
-        dense > doc.pages * 0.7,
-        `${doc.sourceId}: only ${dense} of ${doc.pages} pages carry substantial Arabic`,
-      );
+      const arabicChars = doc.text.reduce((n, p) => n + (p.text.match(ARABIC) ?? []).length, 0);
+      const ratio = doc.chars > 0 ? arabicChars / doc.chars : 0;
+      if (ratio <= 0.2) {
+        failures.push(`${doc.sourceId}: only ${(ratio * 100).toFixed(1)}% of extracted characters are Arabic`);
+      }
     }
+    // Every file is checked before asserting — a loop that throws on the
+    // first bad file would let a second one hide behind it alphabetically.
+    // That is exactly what happened while calibrating this test: two files
+    // extracting to pure control-character noise sat past `chem-s1-pack-*`
+    // in listing order and never got checked until this was fixed.
+    assert.deepEqual(failures, []);
   });
 
   it('records the file it actually read, and flags a mismatched one', () => {

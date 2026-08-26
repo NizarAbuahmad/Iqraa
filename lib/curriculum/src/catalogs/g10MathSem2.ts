@@ -51,7 +51,7 @@ export type NccdCurriculumMeta = {
   curriculum_authority: string;
   semester_covered: number;
   semester_note: string;
-  source_books: string[];
+  source_books: { teacher_guide: string; student_book: string };
   provenance: string;
   schema_version: string;
   known_gaps: string[];
