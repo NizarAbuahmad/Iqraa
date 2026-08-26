@@ -220,3 +220,23 @@ describe('the stems still reach the verifier', () => {
     assert.notEqual(classifyVerifiableTopic(stem)?.topic, 'derivative_polynomial');
   });
 });
+
+describe('a family stays on-topic when a lesson needs more items than it has', () => {
+  beforeEach(() => beginMathPracticeSession());
+
+  it('never drifts a function-composition lesson into unrelated algebra', () => {
+    // «تركيب الاقترانات» only has 5 concrete bank items (family `functions`).
+    // A worksheet or quiz asking for more than that used to fall straight
+    // through to the generic `algebra` family the moment the family's own
+    // items ran out — a teacher who picked this exact lesson got a
+    // quadratic-formula or linear-equation item with no connection to it.
+    // Every draw here must still carry the functions family's own notation
+    // (f(x)/g(x)/a_n), never a bare algebra-only equation like the fallback
+    // bank's «2x + 5 = 17».
+    for (let i = 0; i < 8; i++) {
+      const q = takeConcreteMath('short_answer', 'تركيب الاقترانات', null, 'medium', 'ar', 0);
+      assert.ok(q, `draw ${i + 1} returned nothing`);
+      assert.match(q!.text, /f\(x\)|g\(x\)|a_n/, `draw ${i + 1} left the functions family: ${q!.text}`);
+    }
+  });
+});
