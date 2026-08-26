@@ -6741,3 +6741,52 @@ was not attempted here — the 2026-08-25 entry above already found both
 self-guarding or deliberately held back, and neither changed today.
 
 981 mobile tests pass (was 975), typecheck clean across all three packages.
+
+## `verify-curriculum` gaps: 14 → 7, 2026-08-26
+
+Before touching any new grade, closed what was cheaply closeable in the
+content gaps `verify-curriculum --gaps` already tracked for Grade 10.
+
+**Math S2's 5 gaps were a data-shape bug, not missing content.**
+`meta.source_books` was an array of two strings; the validator requires an
+object (`isObj(meta.source_books)`), so it read as absent even though both
+source books were named. Reshaped to `{ teacher_guide, student_book }`. The
+four units' `total_periods`/`prior_knowledge` already carry the teacher
+guide's مخطط الوحدة data (`pacing_source` says so on every unit) — that *is*
+lesson-level provenance, it just had no `data_tier` field naming it. Added
+`"data_tier": "lesson-level (teacher guide + student book)"` to all four,
+matching the string chem-S1 already uses for the same tier. 0 gaps now.
+
+**Finlit S1's `data_tier` gaps closed the same way, honestly downgraded.**
+Its own `known_gaps` already said the student book carries no period counts
+and a teacher guide "is unavailable." Checked whether that was still true —
+listed the Drive folder directly (`Financial literacy G10`, two files: the S1
+book already ingested and the S2 book already marked `conflict` for its
+edition mismatch) rather than trusting the prose. No teacher guide exists.
+So both units got `"data_tier": "book-level (student book only — no NCCD
+teacher guide located for this subject)"` — a true, lower-tier label, not the
+teacher-guide-backed tier math and chem carry.
+
+**Not closed, on purpose — closing them would mean inventing content:**
+- **5 chemistry gaps** (`تجربة استهلالية`, 3 in S1 + 2 in S2): the source
+  book states no learning outcomes for these lab-intro lessons.
+  `iqra_curriculum_g10_chem_sem1.json`'s own `known_gaps` already says so
+  ("الكتاب لا يذكر نتاجات لها"). Writing outcomes not in the book would be
+  exactly the "plausible-looking invention"
+  `validateCurriculum.ts` says provenance exists to catch.
+- **Finlit S1's 2 `prior_knowledge` gaps**: same reason — no teacher guide
+  to source a prior-knowledge list from, and the student book doesn't state
+  one. Left empty rather than filled with a plausible-sounding guess.
+
+**Checked, not assumed, that the source PDFs are actually reachable.** Every
+row in `g10_sources.json` carries a Google Drive `driveId`; this session has
+read access to that Drive (confirmed by fetching one pending document's
+metadata). That reopens the door on the two gaps that are genuinely blocked
+on missing source material — chemistry S2 and financial-literacy's
+figure/diagram grounding (18 of the 64-lesson gap tracked separately, not by
+this script) — as a follow-up, not attempted in this pass.
+
+`verify-curriculum`: 14 gaps → 7, all seven now the honest kind. 83
+curriculum tests pass (unchanged), typecheck not run here (container has no
+`node_modules` for `@workspace/curriculum` — pre-existing, unrelated to this
+change).
