@@ -820,32 +820,36 @@ export default function SlidesScreen() {
                   row opens the editor — the deck is theirs to adjust. */}
               <View style={{ marginTop: 12, gap: 6 }}>
                 {deck.slides.map((s, i) => (
-                  <Pressable
+                  <View
                     key={i}
-                    onPress={() => { Haptics.selectionAsync(); openEdit(i); }}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${t('editSlide')}: ${s.title}`}
-                    style={({ pressed }) => [
-                      { flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 10, opacity: pressed ? 0.7 : 1 },
-                    ]}
+                    style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 10 }}
                   >
-                    <View style={[styles.slideNum, { backgroundColor: ACCENT + '18' }]}>
-                      <Text style={{ color: ACCENT, fontFamily: 'Cairo_700Bold', fontSize: 11 }}>{i + 1}</Text>
-                    </View>
-                    <Text
-                      style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }}
-                      numberOfLines={1}
+                    <Pressable
+                      onPress={() => { Haptics.selectionAsync(); openEdit(i); }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${t('editSlide')}: ${s.title}`}
+                      style={({ pressed }) => [
+                        { flex: 1, flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 10, opacity: pressed ? 0.7 : 1 },
+                      ]}
                     >
-                      {s.title}
-                    </Text>
-                    {/* The projector's own rule, so the editor cannot advertise a
-                        timer the presentation screen then refuses to run. */}
-                    {timerSecondsForSlide(s) > 0 && (
-                      <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 11 }}>
-                        {timerSecondsForSlide(s)}s
+                      <View style={[styles.slideNum, { backgroundColor: ACCENT + '18' }]}>
+                        <Text style={{ color: ACCENT, fontFamily: 'Cairo_700Bold', fontSize: 11 }}>{i + 1}</Text>
+                      </View>
+                      <Text
+                        style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }}
+                        numberOfLines={1}
+                      >
+                        {s.title}
                       </Text>
-                    )}
-                    <Ionicons name="create-outline" size={16} color={colors.mutedForeground} />
+                      {/* The projector's own rule, so the editor cannot advertise a
+                          timer the presentation screen then refuses to run. */}
+                      {timerSecondsForSlide(s) > 0 && (
+                        <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 11 }}>
+                          {timerSecondsForSlide(s)}s
+                        </Text>
+                      )}
+                      <Ionicons name="create-outline" size={16} color={colors.mutedForeground} />
+                    </Pressable>
                     <Pressable
                       onPress={() => { Haptics.selectionAsync(); void removeSlide(i); }}
                       hitSlop={8}
@@ -854,7 +858,7 @@ export default function SlidesScreen() {
                     >
                       <Ionicons name="trash-outline" size={16} color={colors.mutedForeground} />
                     </Pressable>
-                  </Pressable>
+                  </View>
                 ))}
               </View>
             </View>
