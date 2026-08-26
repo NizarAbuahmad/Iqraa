@@ -6898,3 +6898,54 @@ this script) — as a follow-up, not attempted in this pass.
 curriculum tests pass (unchanged), typecheck not run here (container has no
 `node_modules` for `@workspace/curriculum` — pre-existing, unrelated to this
 change).
+
+## Grade 9 Math Semester 1 lands, in the data model only, 2026-08-26
+
+The first real second-grade catalog since the id-collision scheme (2026-08-25,
+above) was built to allow one. `lib/curriculum/src/catalogs/g9MathSem1.ts` and
+`data/iqra_curriculum_g9_math_sem1.json`, mirroring `g10MathSem1.ts`'s shape
+and tiering exactly: Unit 1 lesson-level (objectives, vocabulary, periods),
+Units 2–4 title-only (real titles and order from the student book, no invented
+content). Wired into `catalog.ts`'s `UNITS`/`LESSONS`/`BOOKS` alongside the
+existing NCCD catalogs.
+
+**Deliberately not exposed to any picker.** `INVESTOR_MVP_CURRICULUM` still
+gates everything to `grade-10`; this PR does not touch `MVP_GRADE_ID` or
+`MVP_BOOK_IDS`. Whether a second grade becomes visible alongside Grade 10 or
+swaps it in is a product decision, not made here — confirmed by hand that
+`getVisibleGrades()`, `getBooksForSubjectGrade('mathematics','grade-9')` and
+`isCurriculumBookVisible('book-math-9-s1')` all still report Grade 9 as
+absent/invisible with this change applied.
+
+**Sourcing hit a real tooling limit, not a data-availability one.** The NCCD
+Grade 9 Math source PDFs exist in Drive in the same volume as Grade 10's — full
+S1 and S2 sets (student books, teacher guides, exercise books, answer keys,
+remedial material). But both available Drive extraction paths cap out on large
+files: `download_file_content` (raw bytes) times out above ~2MB for this
+account, and `read_file_content` (Drive's own text extraction) silently
+truncates — no error, the text just stops. The S1 student book (8.9MB, 151
+pages) returned text through ~page 80; the 46MB teacher guide returned text
+through ~page 51. Unit 1 was fully inside that window; Units 2–4 were not, so
+they carry no lesson-level content — not because the source doesn't exist, but
+because nothing available in this session could read that far into it.
+
+**One real book-vs-guide conflict found and resolved by precedent, not by
+authority.** The teacher guide's Unit 1 مخطط الوحدة lists four lessons,
+including a "حل معادلات القيمة المطلقة ومتبايناتها" (absolute-value
+equations/inequalities) lesson the student book's own table of contents does
+not carry. Sided with the student book — same call as the Grade 10 circle-unit
+precedent (2026-08-25 entries above) — but flagged as unconfirmed in the JSON's
+`known_gaps` rather than asserted, because that Grade 10 case had a national
+framework document to check against and this one does not.
+
+`curriculumIds.test.ts`'s "produces ids no existing id already uses" test
+asserted no synthetic Grade 9 id collides with anything in the catalog — true
+by construction when Grade 9 was hypothetical, false now that it's real (a
+Grade 9 lesson id matching its own synthetic candidate is the scheme working).
+Rewrote it to scope the collision check to non-Grade-9 content, so it still
+catches an actual cross-grade collision.
+
+83 curriculum tests pass (was 83, one rewritten), `verify-curriculum`: 6 files,
+78 lessons, 21 gaps (14 pre-existing + 7 new, all Grade 9 Units 2–4's expected
+title-only gaps). Typecheck not run here (same pre-existing `node_modules` gap
+as the entry above).

@@ -27,6 +27,12 @@ import {
   FINLIT_S1_CURRICULUM_BOOK_ID,
   buildFinlitSem1BrowserCatalog,
 } from './catalogs/g10FinlitSem1.ts';
+import {
+  G9_MATH_S1_CURRICULUM_BOOK_ID,
+  buildG9MathSem1BrowserCatalog,
+  isG9MathSem1TitleOnlyUnit,
+  isG9MathSem1TitleOnlyLesson,
+} from './catalogs/g9MathSem1.ts';
 
 export interface Grade {
   id: string;
@@ -318,6 +324,23 @@ export const BOOKS: Book[] = [
     audience: 'all',
     semester: 1,
     pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Financial%20culture/G10/1/%D8%A7%D9%84%D8%AB%D9%82%D8%A7%D9%81%D8%A9%20%D8%A7%D9%84%D9%85%D8%A7%D9%84%D9%8A%D8%A9%2010%20%D9%811%20small%20.pdf',
+  },
+  // ── Math Grade 9 – Semester 1 ───────────────────────────────────────────────
+  // Distinct id from the pre-existing inert `book-math-9` stub below (no real
+  // content, never referenced) — kept separate rather than reused so this
+  // NCCD-sourced book's provenance isn't attached to that stub's history.
+  {
+    id: 'book-math-9-s1',
+    title: 'Mathematics – Grade 9, Semester 1',
+    titleAr: 'الرياضيات – الصف التاسع – الفصل الأول',
+    subjectId: 'mathematics',
+    gradeId: 'grade-9',
+    academicYear: '2023-2024',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
   },
   // ── Other grades ───────────────────────────────────────────────────────────
   {
@@ -1157,6 +1180,7 @@ const _nccdSem2Browser = buildNccdSem2BrowserCatalog();
 const _finlitSem1Browser = buildFinlitSem1BrowserCatalog();
 const _chemSem1Browser = buildChemSem1BrowserCatalog();
 const _chemSem2Browser = buildChemSem2BrowserCatalog();
+const _g9MathSem1Browser = buildG9MathSem1BrowserCatalog();
 
 // ─── Authored-Bloom's enrichment for NCCD browser rows ───────────────────────
 //
@@ -1270,6 +1294,7 @@ export const UNITS: Unit[] = [
   ..._nccdSem1Browser.units,
   ..._nccdSem2Browser.units,
   ..._finlitSem1Browser.units,
+  ..._g9MathSem1Browser.units,
 ];
 
 /** Active lessons — legacy Math/Chem G10 rows replaced by NCCD-sourced browser rows. */
@@ -1280,6 +1305,7 @@ export const LESSONS: Lesson[] = [
   ..._nccdSem1Browser.lessons,
   ..._nccdSem2Browser.lessons,
   ..._finlitSem1Browser.lessons,
+  ..._g9MathSem1Browser.lessons,
 ];
 
 /** Math Grade 10 Semester 1 book id (NCCD-backed). */
@@ -1295,12 +1321,12 @@ export function isBrowserCurriculumPreparing(_bookId: string): boolean {
 
 /** UI: Sem1 units 2–4 — real titles, unit-level objectives only. */
 export function isBrowserUnitTitleOnly(unitId: string): boolean {
-  return isNccdSem1TitleOnlyUnit(unitId);
+  return isNccdSem1TitleOnlyUnit(unitId) || isG9MathSem1TitleOnlyUnit(unitId);
 }
 
 /** UI: Sem1 units 2–4 lessons — title confirmed, no per-lesson objectives yet. */
 export function isBrowserLessonTitleOnly(lessonId: string): boolean {
-  return isNccdSem1TitleOnlyLesson(lessonId);
+  return isNccdSem1TitleOnlyLesson(lessonId) || isG9MathSem1TitleOnlyLesson(lessonId);
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
