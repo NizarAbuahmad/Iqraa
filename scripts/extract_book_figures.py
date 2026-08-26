@@ -32,11 +32,14 @@ Two things this learned the hard way, both visible in the review sheet:
 This is assisted, not automatic
 ───────────────────────────────
 About one crop in five still absorbs an adjacent exercise block. That is why
-the script writes `_review.png` — a contact sheet of everything it found — and
-why nothing here is wired into the app. Look at the sheet, delete the bad
-crops, and only then use what is left. A figure printed beside the wrong
-question is worse than no figure, which is the whole lesson of the check-slide
-work this follows.
+the script writes `_review.png` — a contact sheet of everything it found. Look
+at the sheet and delete the bad crops before regenerating the asset map. A
+figure printed beside the wrong question is worse than no figure, which is the
+whole lesson of the check-slide work this follows.
+
+These *are* reachable from the app now (`services/bookFigures.ts` → the slides
+path), so a bad crop left in place ships. Deleting the PNG is enough: the index
+lists it but `gen_book_figure_assets.mjs` only maps files that exist.
 
 Usage
 ─────
@@ -341,6 +344,72 @@ def axis_seed(page: pymupdf.Page) -> pymupdf.Rect | None:
     return best
 
 
+def curve_seeds(page: pymupdf.Page, gap: float = 6) -> list[pymupdf.Rect]:
+    """Clusters of curve drawing, for the figures that have no axes at all.
+
+    `axis_seed` finds graphs, and only graphs: it needs a long horizontal and a
+    long vertical that cross. Unit 2 of the maths book is circle geometry —
+    circles, chords, tangents, angle marks — and not one of those pages has an
+    axis pair. Page 35 carries 108 drawing paths and 109 curve operations, and
+    the old seed returned None for all of it, so the whole unit extracted zero
+    figures while its exercises («يُمثِّلُ N مركزَ الدائرةِ في الشكلِ المجاورِ»)
+    are unanswerable without them.
+
+    A circle is drawn as Bézier curve operations, so those are the signal. Two
+    things have to be filtered back out, both learned by looking at the crops:
+
+    - **Rounded panels are curves too.** The «رموز رياضية» callout and the
+      yellow theorem box are rounded rectangles, so they seed just as happily
+      as a circle does. Width caps miss them — the callout is only 120pt wide.
+      What separates them is that a panel is mostly *text* and a diagram is
+      mostly *drawing*: measured over three pages, real figures came out at
+      1-12% text coverage and every panel at 43-52%.
+    - **One page holds several figures.** The exercise pages print four or five
+      independent diagrams down the margin. Growing one seed over all of them
+      swallows the questions in between, so each cluster stays its own figure.
+    """
+    W, H = page.rect.width, page.rect.height
+    rects: list[pymupdf.Rect] = []
+    for d in page.get_drawings():
+        if not any(item[0] == "c" for item in d["items"]):
+            continue
+        r = pymupdf.Rect(d["rect"])
+        if r.width < 8 or r.height < 8:
+            continue  # dots, bullet glyphs, tick marks on their own
+        if r.width > W * 0.55 or r.height > H * 0.55:
+            continue  # page furniture: frames, full-width rounded panels
+        rects.append(r)
+
+    merged = True
+    while merged:
+        merged = False
+        for i in range(len(rects)):
+            for j in range(i + 1, len(rects)):
+                if pymupdf.Rect(rects[i] + (-gap, -gap, gap, gap)).intersects(rects[j]):
+                    rects[i] = rects[i] | rects.pop(j)
+                    merged = True
+                    break
+            if merged:
+                break
+    return rects
+
+
+def text_fraction(page: pymupdf.Page, r: pymupdf.Rect) -> float:
+    """How much of a rect is covered by text spans.
+
+    The one measurement that tells a diagram from a callout box. Both are drawn
+    with curves; only one is mostly words.
+    """
+    covered = 0.0
+    for block in page.get_text("dict")["blocks"]:
+        for line in block.get("lines", []):
+            for span in line.get("spans", []):
+                overlap = pymupdf.Rect(span["bbox"]) & r
+                if not overlap.is_empty:
+                    covered += overlap.get_area()
+    return covered / max(r.get_area(), 1.0)
+
+
 def drawing_cluster(page: pymupdf.Page, seed: pymupdf.Rect, gap: float = 9) -> pymupdf.Rect:
     """Chain together the drawing rects that touch the seed, and only those."""
     boxes = [pymupdf.Rect(d["rect"]) for d in page.get_drawings()]
@@ -383,20 +452,56 @@ def with_labels(page: pymupdf.Page, r: pymupdf.Rect, pad: float = 7) -> pymupdf.
     return out
 
 
+#: Above this share of text, a curve cluster is a callout panel, not a figure.
+MAX_TEXT_SHARE = 0.30
+
+
 def figures_in(pdf: Path):
-    """Yield (page_number, page, rect, lesson) for every figure found."""
+    """Yield (page_number, page, rect, lesson) for every figure found.
+
+    Two seed families, and a page can yield several of each. Axis pairs find
+    the coordinate graphs this script was written for; curve clusters find the
+    geometry — circles, arcs, solids — that has no axes and was therefore
+    invisible to it. Seeds that grow into the same region are one figure.
+    """
     doc = pymupdf.open(pdf)
     where = outline(doc)
     for n in range(len(doc)):
         page = doc[n]
-        seed = axis_seed(page)
-        if seed is None:
-            continue
-        r = with_labels(page, drawing_cluster(page, seed))
-        r = pymupdf.Rect(r + (-MARGIN, -MARGIN, MARGIN, MARGIN)) & page.rect
-        if r.width < 70 or r.height < 70:
-            continue
-        yield n, page, r, where.get(n + 1)
+
+        seeds: list[tuple[str, pymupdf.Rect]] = []
+        axis = axis_seed(page)
+        if axis is not None:
+            seeds.append(("axis", axis))
+        seeds.extend(("curve", c) for c in curve_seeds(page))
+
+        found: list[pymupdf.Rect] = []
+        for kind, seed in seeds:
+            # Axis seeds are a bare cross and must be grown over the curve and
+            # tick paths around them. Curve seeds are already the whole diagram
+            # — growing those was what swallowed the yellow theorem panel on
+            # page 35 and the «أتذكّر» callout on page 38: the seed was a clean
+            # circle, and `drawing_cluster` chained it out through the panel
+            # border to the box edge. Visible in the contact sheet as four bad
+            # crops in eighteen; not visible in any count.
+            r = drawing_cluster(page, seed) if kind == "axis" else pymupdf.Rect(seed)
+            r = with_labels(page, r)
+            r = pymupdf.Rect(r + (-MARGIN, -MARGIN, MARGIN, MARGIN)) & page.rect
+            if r.width < 70 or r.height < 70:
+                continue
+            if text_fraction(page, r) > MAX_TEXT_SHARE:
+                continue
+            # Two seeds inside one diagram — a circle and the axes it sits on —
+            # grow to the same place. Keep the first; a near-duplicate crop
+            # printed twice beside one question reads as two questions.
+            if any(prev.intersects(r) and (prev & r).get_area() > r.get_area() * 0.5
+                   for prev in found):
+                continue
+            found.append(r)
+
+        # Left to right, top to bottom, so the file suffixes follow the page.
+        for r in sorted(found, key=lambda b: (round(b.y0), b.x0)):
+            yield n, page, r, where.get(n + 1)
 
 
 def review_sheet(paths: list[Path], out: Path) -> None:
@@ -463,8 +568,17 @@ def main() -> None:
         outdir = ROOT / "knowledge-base" / subject / "figures" / source_id
         outdir.mkdir(parents=True, exist_ok=True)
         index, written = [], []
+        # A page can now yield several figures, so the page number alone is no
+        # longer a unique name. The first keeps the bare `p035.png` it has
+        # always had; the rest get a letter. Filenames are referenced from the
+        # generated asset map, not from the lesson map, so this churns only
+        # what `gen_book_figure_assets.mjs` regenerates.
+        seen_on_page: dict[int, int] = {}
         for n, page, r, lesson in figures_in(pdf):
-            name = f"p{n + 1:03d}.png"
+            k = seen_on_page.get(n, 0)
+            seen_on_page[n] = k + 1
+            suffix = "" if k == 0 else chr(ord("b") + k - 1)
+            name = f"p{n + 1:03d}{suffix}.png"
             path = outdir / name
             page.get_pixmap(clip=r, dpi=DPI).save(path)
             written.append(path)

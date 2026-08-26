@@ -14,7 +14,7 @@
  * Check: artifacts/mobile/services/__tests__/bookFigureAssets.test.ts fails if
  * this file is stale, so a newly extracted figure cannot be silently missed.
  */
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
@@ -39,6 +39,12 @@ for (const rel of indexes) {
   const dir = path.dirname(rel);
   for (const f of read(rel).figures) {
     if (!mapped.has(`${f.sourceId}|${f.unit}|${f.lesson}`)) continue;
+    // Deleting a bad crop is the documented review step, and the index still
+    // lists it — the extractor writes the index in the same pass that writes
+    // the PNGs, so it cannot know what a human removed afterwards. Emitting a
+    // `require()` for a file that is gone breaks the bundle, which made "look
+    // at the contact sheet and delete the bad ones" advice that did not work.
+    if (!existsSync(path.join(ROOT, dir, f.file))) continue;
     rows.push({ key: `${f.sourceId}/${f.file}`, from: `../../../${dir}/${f.file}` });
   }
 }
