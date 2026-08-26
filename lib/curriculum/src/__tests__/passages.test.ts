@@ -117,7 +117,10 @@ describe('passagesForUnit', () => {
 
   it('knows which sources have text', () => {
     assert.ok(hasExtractedText('math-s1-student-book'));
-    assert.ok(!hasExtractedText('math-final-alhindi'));
+    // Still pending as of 2026-08-26: the file is 17 MB, over the 10 MB
+    // single-call ceiling of the tool used to fetch the support pack — see
+    // STATUS.md. Pick a fresh still-pending id here if this one gets fetched.
+    assert.ok(!hasExtractedText('math-s1-support-material'));
   });
 });
 
