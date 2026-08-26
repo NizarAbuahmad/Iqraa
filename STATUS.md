@@ -1131,6 +1131,43 @@ reference-only, and there is a test holding that.
 44 curriculum / 783 mobile / 175 api-server tests pass, typecheck clean,
 `verify-curriculum` reports 0 errors. (Mobile was 761 on the branch alone; the
 extra 22 came in with `main` when this was merged up, not from this change.)
+## The first real scan was refused, 2026-08-25
+
+The mark scanner shipped and the first photograph a teacher actually took came
+back **"That photo is too large. Take it again at a lower quality."** — in
+English, on an Arabic screen.
+
+Two separate faults in one screenshot, and both were mine.
+
+**The photo was never shrunk.** The picker asked `expo-image-picker` for
+`quality: 0.6`, which re-compresses twelve megapixels rather than sending
+fewer, so a default phone photo still arrived at several megabytes and a third
+larger again as base64. The answer is to send less, not to raise the cap: a page
+of handwritten marks is legible at about 1600px on the long edge, and a
+3024×4032 photo becomes 1200×1600 — **a 6.3× cut in pixels, measured at 5.1× in
+bytes** in the browser engine the web build actually runs in.
+
+Done with `canvas`, no new dependency, and **web only on purpose**: the app is
+served as an Expo web build and that is where teachers use it. On native it
+returns the photo untouched rather than pretending — `expo-image-manipulator`
+is the answer there, and adding a dependency for a platform nobody runs yet is
+a cost with no reader. `fitWithin` is split into `imageFit.ts` so it can be
+tested, the same split `routeGating.ts` and `studentAnswers.ts` already make.
+
+**The teacher was shown the server's English.** Every failure on this path
+already carried a `code` — that was the point of splitting them — and the
+screen ignored all of it and rendered `err.message`. Now `image_too_large`,
+`live_mode_off`, `budget_exceeded` and `user_quota_exceeded` each map to an
+Arabic sentence that says what to do, and the fallback is "enter the marks by
+hand" rather than the raw message.
+
+Worth noting what this cost: the guard was tested, the parser was tested, the
+route was tested — and none of that touched the one path a teacher takes with
+a real phone. The failure was in the two steps either side of everything that
+had tests.
+
+968 mobile tests, 0 failures.
+
 ## Scanning the marks off the paper, 2026-08-25
 
 A class of thirty on a ten-question paper is three hundred numbers typed by
