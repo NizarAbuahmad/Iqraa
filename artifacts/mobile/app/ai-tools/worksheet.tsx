@@ -20,15 +20,13 @@ import { TopicSelector } from '@/components/ui/TopicSelector';
 import { Button } from '@/components/ui/Button';
 import { getItem, saveItem, updateItem } from '@/services/workspace';
 import { useFavorite } from '@/hooks/useFavorite';
-import { MaterialClassField } from '@/components/ui/MaterialClassField';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
 import { isAbortError } from '@/services/ai/aiProvenance';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
-import { RelatedResourcesPanel } from '@/components/ui/RelatedResourcesPanel';
-import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
+import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
 import { MathParagraph } from '@/components/ui/MathParagraph';
 import {
   buildWorksheetHTML, buildWorksheetSlidesHTML, copyToClipboard, exportAsPDF, exportAsWord,
@@ -281,13 +279,6 @@ export default function WorksheetScreen() {
   };
 
   const topPad = insets.top + (insets.top === 0 ? 67 : 0);
-
-  const saveBtnLabel =
-    saveLabel === 'saved' ? t('savedSuccess')
-      : saveLabel === 'updated' ? t('updatedSuccess')
-        : savedId ? t('updateInWorkspace')
-          : t('saveToWorkspace');
-  const saveDone = saveLabel === 'saved' || saveLabel === 'updated';
 
   const getExportTitle = () => lang === 'ar' ? `ورقة عمل: ${topic.trim()}` : `Worksheet: ${topic.trim()}`;
   // Localised, like the picker above it. Taking `.name` straight off the
@@ -602,70 +593,21 @@ export default function WorksheetScreen() {
         </View>
       )}
 
-      {/*
-        Actions come before the feedback and related-resources panels, not
-        after. They used to be the last thing in the scroll: a teacher who had
-        just generated a plan had to scroll the whole plan, then past "rate
-        this", then past a related-resources list, before reaching Save. The
-        controls were there the entire time — the 23 Aug review reported them
-        missing, which is what "present but past two other panels" looks like
-        from the outside. `slides.tsx` already ordered it this way.
-      */}
       {result && !loading && (
-        <View style={{ marginHorizontal: 20, gap: 10, marginTop: 8, marginBottom: 20 }}>
-          {/* Which class this material is for — nothing until it is saved. */}
-          <MaterialClassField materialId={savedId ?? null} onToast={showToast} />
-
-          <Pressable
-            onPress={handleSave}
-            style={({ pressed }) => [
-              styles.saveBtn,
-              { backgroundColor: saveDone ? ACCENT : 'transparent', borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.8 : 1 },
-            ]}
-          >
-            <Ionicons name={saveDone ? 'checkmark-circle' : 'bookmark-outline'} size={16} color={saveDone ? '#fff' : ACCENT} />
-            <Text style={[styles.saveBtnText, { color: saveDone ? '#fff' : ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>{saveBtnLabel}</Text>
-          </Pressable>
-          {!!savedId && (
-            <Pressable
-              onPress={handleToggleFavorite}
-              style={({ pressed }) => [
-                styles.regenBtn,
-                { borderColor: favorited ? '#F59E0B' : colors.mutedForeground, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', backgroundColor: favorited ? '#F59E0B18' : 'transparent', opacity: pressed ? 0.8 : 1 },
-              ]}
-            >
-              <Ionicons name={favorited ? 'star' : 'star-outline'} size={16} color={favorited ? '#F59E0B' : colors.mutedForeground} />
-              <Text style={[styles.regenText, { color: favorited ? '#F59E0B' : colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }]}>
-                {favorited ? t('inFavorites') : t('addToFavorites')}
-              </Text>
-            </Pressable>
-          )}
-          <Pressable
-            onPress={() => setShowExport(true)}
-            style={[styles.regenBtn, { borderColor: colors.mutedForeground, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-          >
-            <Ionicons name="share-outline" size={16} color={colors.mutedForeground} />
-            <Text style={[styles.regenText, { color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }]}>{t('exportBtn')}</Text>
-          </Pressable>
-          <Pressable
-            onPress={generate}
-            style={[styles.regenBtn, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-          >
-            <Ionicons name="refresh-outline" size={16} color={ACCENT} />
-            <Text style={[styles.regenText, { color: ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>{t('regenerateBtn')}</Text>
-          </Pressable>
-        </View>
-      )}
-
-      {result && !loading && (
-        <>
-          <FeedbackWidget materialType="worksheet" toolId={isHomework ? 'homework' : 'worksheet'} />
-          <RelatedResourcesPanel
-            toolId={isHomework ? 'homework' : 'worksheet'}
-            topic={topic.trim()}
-            isRTL={isRTL}
-          />
-        </>
+        <GeneratorResultActions
+          accent={ACCENT}
+          savedId={savedId}
+          onToast={showToast}
+          saveState={saveLabel}
+          onSave={handleSave}
+          favorite={{ favorited, onToggle: handleToggleFavorite }}
+          onExport={() => setShowExport(true)}
+          onRegenerate={generate}
+          materialType="worksheet"
+          toolId={isHomework ? 'homework' : 'worksheet'}
+          topic={topic.trim()}
+          marginTop={8}
+        />
       )}
     </ScrollView>
 
@@ -768,8 +710,4 @@ const styles = StyleSheet.create({
   akRow: { gap: 8, marginBottom: 6, alignItems: 'flex-start' },
   akNum: { fontSize: 13, width: 22 },
   akAnswer: { flex: 1, fontSize: 13, lineHeight: 19 },
-  saveBtn: { alignItems: 'center', gap: 8, padding: 14, borderWidth: 1.5 },
-  saveBtnText: { fontSize: 14 },
-  regenBtn: { alignItems: 'center', gap: 8, padding: 14, borderWidth: 1.5 },
-  regenText: { fontSize: 14 },
 });

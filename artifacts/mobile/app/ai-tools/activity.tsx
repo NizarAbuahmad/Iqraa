@@ -17,7 +17,6 @@ import { TopicSelector } from '@/components/ui/TopicSelector';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { Button } from '@/components/ui/Button';
 import { getItem, saveItem, updateItem } from '@/services/workspace';
-import { MaterialClassField } from '@/components/ui/MaterialClassField';
 import {
   ACTIVITY_TYPE_IDS,
   activityTypeLabel,
@@ -26,8 +25,7 @@ import {
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
-import { RelatedResourcesPanel } from '@/components/ui/RelatedResourcesPanel';
-import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
+import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
 import {
   buildActivityHTML,
   buildActivitySlidesHTML,
@@ -249,12 +247,6 @@ export default function ActivityScreen() {
 
   const topPad = insets.top + (insets.top === 0 ? 67 : 0);
 
-  const saveBtnLabel =
-    saveLabel === 'saved' ? t('savedSuccess')
-      : saveLabel === 'updated' ? t('updatedSuccess')
-        : savedId ? t('updateInWorkspace')
-          : t('saveToWorkspace');
-
   const exportLabels = {
     title: t('exportTitle'),
     shareLabel: t('exportShare'), shareSub: t('exportShareSub'),
@@ -376,50 +368,18 @@ export default function ActivityScreen() {
       {result && <ActivityResult activity={result} colors={colors} isRTL={isRTL} t={t} lang={lang} />}
 
       {result && !loading && (
-        <>
-          <FeedbackWidget materialType="activity" toolId="activity" />
-          <RelatedResourcesPanel toolId="activity" topic={topic.trim()} isRTL={isRTL} />
-        </>
-      )}
-
-      {/* Actions */}
-      {result && !loading && (
-        <View style={{ marginHorizontal: 20, gap: 10, marginTop: 4, marginBottom: 20 }}>
-          {/* Which class this material is for — nothing until it is saved. */}
-          <MaterialClassField materialId={savedId ?? null} onToast={showToast} />
-
-          <Pressable
-            onPress={handleSave}
-            style={({ pressed }) => [styles.saveBtn, {
-              backgroundColor: (saveLabel === 'saved' || saveLabel === 'updated') ? ACCENT : 'transparent',
-              borderColor: ACCENT, borderRadius: colors.radius,
-              flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.8 : 1,
-            }]}
-          >
-            <Ionicons
-              name={(saveLabel === 'saved' || saveLabel === 'updated') ? 'checkmark-circle' : 'bookmark-outline'}
-              size={16}
-              color={(saveLabel === 'saved' || saveLabel === 'updated') ? '#fff' : ACCENT}
-            />
-            <Text style={[styles.saveBtnText, { color: (saveLabel === 'saved' || saveLabel === 'updated') ? '#fff' : ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>
-              {saveBtnLabel}
-            </Text>
-          </Pressable>
-          <Pressable
-            onPress={() => setShowExport(true)}
-            style={[styles.regenBtn, { borderColor: colors.mutedForeground, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-          >
-            <Ionicons name="share-outline" size={16} color={colors.mutedForeground} />
-            <Text style={[styles.regenText, { color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }]}>{t('exportBtn')}</Text>
-          </Pressable>
-          <Pressable
-            onPress={generate}
-            style={[styles.regenBtn, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-          >
-            <Ionicons name="refresh-outline" size={16} color={ACCENT} />
-            <Text style={[styles.regenText, { color: ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>{t('regenerateBtn')}</Text>
-          </Pressable>
-        </View>
+        <GeneratorResultActions
+          accent={ACCENT}
+          savedId={savedId}
+          onToast={showToast}
+          saveState={saveLabel}
+          onSave={handleSave}
+          onExport={() => setShowExport(true)}
+          onRegenerate={generate}
+          materialType="activity"
+          toolId="activity"
+          topic={topic.trim()}
+        />
       )}
     </ScrollView>
 
@@ -644,8 +604,4 @@ const styles = StyleSheet.create({
   stepTitle: { fontSize: 13 },
   stepDur: { fontSize: 11 },
   stepDesc: { fontSize: 13, lineHeight: 20 },
-  saveBtn: { alignItems: 'center', gap: 8, padding: 14, borderWidth: 1.5 },
-  saveBtnText: { fontSize: 14 },
-  regenBtn: { alignItems: 'center', gap: 8, padding: 14, borderWidth: 1.5 },
-  regenText: { fontSize: 14 },
 });
