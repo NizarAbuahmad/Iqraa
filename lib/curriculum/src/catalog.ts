@@ -133,15 +133,21 @@ export const SUBJECTS: Subject[] = [
 
 /**
  * Investor MVP curriculum lock.
- * When true, curriculum UI exposes Jordan → Grade 10 → Mathematics + Chemistry → S1/S2.
- * Full catalog data below is retained for later expansion — do not delete it.
+ * When true, curriculum UI exposes Jordan → {validated grades} → Mathematics +
+ * Chemistry → S1/S2. Full catalog data below is retained for later expansion —
+ * do not delete it.
  */
 export const INVESTOR_MVP_CURRICULUM = true;
 
-/** Grade / subject / books allowed in the investor demo curriculum path. */
-export const MVP_GRADE_ID = 'grade-10';
-/** @deprecated Prefer MVP_SUBJECT_IDS — kept for older call sites. */
-export const MVP_SUBJECT_ID = 'mathematics';
+/**
+ * Grades allowed in the investor demo curriculum path — a set, not a single
+ * grade, so a second (third, ...) grade joins the picker once it is actually
+ * complete rather than replacing Grade 10. A grade is added here only when
+ * its catalog is done (all units/semesters, not just one) — Grade 9 Math is
+ * real content (see g9MathSem1.ts) but only Semester 1 Unit 1 is lesson-level
+ * so far, and is deliberately not in this set yet.
+ */
+export const MVP_GRADE_IDS: readonly string[] = ['grade-10'];
 export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy'];
 /** Main semester books only (guides/exercises stay in data, hidden from UI). */
 export const MVP_BOOK_IDS: readonly string[] = [
@@ -155,13 +161,13 @@ export const MVP_BOOK_IDS: readonly string[] = [
 
 export function getVisibleGrades(): Grade[] {
   if (!INVESTOR_MVP_CURRICULUM) return GRADES;
-  return GRADES.filter(g => g.id === MVP_GRADE_ID);
+  return GRADES.filter(g => MVP_GRADE_IDS.includes(g.id));
 }
 
 export function getSubjectsForGrade(gradeId: string): Subject[] {
   const subjects = SUBJECTS.filter(s => s.grades.includes(gradeId));
   if (!INVESTOR_MVP_CURRICULUM) return subjects;
-  if (gradeId !== MVP_GRADE_ID) return [];
+  if (!MVP_GRADE_IDS.includes(gradeId)) return [];
   return subjects.filter(s => (MVP_SUBJECT_IDS as readonly string[]).includes(s.id));
 }
 
@@ -193,7 +199,7 @@ export function resolvePickerIndex(
 /** True when a subject/grade pair is allowed in investor-facing pickers. */
 export function isPickerCurriculumVisible(subjectId: string, gradeId: string): boolean {
   if (!INVESTOR_MVP_CURRICULUM) return true;
-  return gradeId === MVP_GRADE_ID
+  return MVP_GRADE_IDS.includes(gradeId)
     && (MVP_SUBJECT_IDS as readonly string[]).includes(subjectId);
 }
 

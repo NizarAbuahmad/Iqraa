@@ -6949,3 +6949,27 @@ catches an actual cross-grade collision.
 78 lessons, 21 gaps (14 pre-existing + 7 new, all Grade 9 Units 2–4's expected
 title-only gaps). Typecheck not run here (same pre-existing `node_modules` gap
 as the entry above).
+
+## The MVP grade lock is a set now, 2026-08-26
+
+Settled the product question the previous two entries deferred: once a grade
+is actually complete, does it join Grade 10 in the app, or replace it? Decided
+**join** — a school has teachers across grades at once, and that's the shape
+the roadmap in `STATUS.md`'s earlier grade-expansion discussion assumed too.
+
+`MVP_GRADE_ID: string` (`'grade-10'`) is now `MVP_GRADE_IDS: readonly
+string[]` (`['grade-10']`), checked with `.includes()` everywhere it used to
+be checked with `===` (`getVisibleGrades`, `getSubjectsForGrade`,
+`isPickerCurriculumVisible`). The deprecated, already-unused `MVP_SUBJECT_ID`
+singular went with it — confirmed via repo-wide grep that neither name was
+referenced outside `catalog.ts` before deleting.
+
+**Grade 9 is not in the set yet, on purpose.** Only Semester 1 Unit 1 is
+lesson-level; Units 2–4 are title-only and Semester 2 doesn't exist. Widening
+the set is a one-line change (`MVP_GRADE_IDS: readonly string[] =
+['grade-10', 'grade-9']`) — the right time to make it is when Grade 9's
+catalog is actually done, not now. Confirmed behavior is unchanged today:
+`getVisibleGrades()` still returns only `grade-10`, `isPickerCurriculumVisible
+('mathematics', 'grade-9')` still returns `false`.
+
+83 curriculum tests pass, unchanged.
