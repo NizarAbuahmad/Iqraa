@@ -7027,3 +7027,80 @@ untouched, so none of this reaches any picker yet — confirmed unchanged:
 21) — Grade 9 Sem1 alone dropped from 14 gaps to 5 (Unit 2's five lessons,
 the only ones left with no source), Sem2 added 16 new (every lesson, honestly,
 since no guide exists for it). 83 curriculum tests pass, unchanged.
+
+## Chasing the last 6: text obtained for 5, none ingested yet, 2026-08-26
+
+Followed up on the 6 documents the previous entry left unfetched. All 6 are
+answered now, but "answered" means three different things, and none of the
+6 are in `data/extracted/` yet — the reason why is the real finding here.
+
+**The two "session expired" stragglers were a tool-choice problem, not a
+transient one.** `math-loss-recovery` and `math-u1-summary-alkhamayseh` had
+failed on every retry, in every batch position, across many attempts — with
+`download_file_content`. Switched to `read_file_content` (Drive's own
+server-side text conversion, not a raw-byte download) and both succeeded on
+the first try. Whatever was dropping the session was specific to the download
+path, not to these two files.
+
+**One of those two looked misattributed, and wasn't.** `math-loss-recovery`'s
+manifest title is about "تعويض الفاقد التعليمي" (compensating for lost
+learning), but the fetched text opens with a book introduction and table of
+contents that reads like a general curriculum front-matter, not
+loss-recovery-specific framing. Checked before trusting it: the file size
+matches the manifest exactly (6,543,330 bytes), and the body — read in
+full — is the loss-recovery syllabus itself (algebra, quadratics, exponents,
+coordinate geometry, trigonometry), ending "تم بحمد الله تعالى". Every
+official MoE document in this corpus opens with the same "منهاجي" front
+matter; that's why it looked like a different document at a glance. Not a
+misattribution — a false alarm, recorded here because the check is what
+makes that conclusion trustworthy rather than assumed.
+
+**`read_file_content` also turned out to work around the 10 MB download
+ceiling**, since it doesn't move raw bytes. Tried it on the four large
+files blocked by that ceiling:
+
+| id | result |
+| --- | --- |
+| `math-u2-answers-alkhatib` | real text, correctly ordered, circle-geometry answer key |
+| `math-s1-support-material`, `math-u1-answers-almasri` | real Arabic text, but every *line* is character-order-reversed |
+| `math-u1-answers-alkhatib` | "Page 1" … "Page 85" headers only, no OCR'd text under any of them |
+
+The line-reversal is a third, distinct corruption shape from the two
+`extract-text.ts` already gates (control-character noise, and per-word
+Arabic-Presentation-Forms reversal). Confirmed fixable — reversing each line
+(`[...line].reverse().join('')`) restored real prose on a sample check
+(`رشانلا ميلعتلاو ةيبرتلا ةرازو` → `وزارة التربية والتعليم الناشر`) — but
+that repair is not written anywhere yet. `math-u1-answers-alkhatib` is the
+same "no text layer, needs OCR" class as the three already on file
+(`math-remedial-part2`, `math-u2-summary-alkhamayseh`, `math-ws-systems-alhindi`).
+
+**None of the 3 good ones (`math-loss-recovery`, `math-u1-summary-alkhamayseh`,
+`math-u2-answers-alkhatib`) are in `data/extracted/` yet, on purpose.** Every
+extraction on file today carries real printed page numbers, for free, from
+`pdf-parse` reading a local PDF — that's what lets `grounding.ts` cite "page
+34" and mean it. `read_file_content` returns Drive's flattened text
+conversion with no such structure. One of the three happens to carry visible
+printed-page footers in its own text (`-1-`, `-2-`, … `-22-`); the other two
+show no reliable per-document delimiter at a glance. Writing a per-document
+regex to guess page boundaries from three different documents' three
+different footer conventions, unverified, is exactly the trap
+`extract-text.ts`'s own header comment already names from a past attempt:
+"every previous attempt to infer structure from these books by pattern...
+produced confidently wrong output." A wrong page number on a citation is
+worse than no citation — a teacher who turns to "page 12" and finds something
+else loses trust in every citation after it, not just that one.
+
+So this stops at acquisition. **Real, verified text exists on disk in this
+conversation's history for 3 more documents than before**, but turning that
+into a trustworthy citation needs one of two things neither built here: a
+page-preserving extraction path for Drive-converted text, or a document-level
+(no-page) citation shape that `groundingFor`/`grounding.test.ts` don't
+support today. Left as an open decision rather than guessed at.
+
+Updated count: of the 78-document manifest, 3 more (`math-loss-recovery`,
+`math-u1-summary-alkhamayseh`, `math-u2-answers-alkhatib`) now have real,
+verified text sitting outside the repo, not yet ingested. `math-s1-support-material`
+and `math-u1-answers-almasri` need the line-reversal repair written first.
+`math-u1-answers-alkhatib` joins the no-text-layer/OCR-needed group. No files
+changed in `lib/curriculum` this pass — this entry is the only artifact of
+this session's work.
