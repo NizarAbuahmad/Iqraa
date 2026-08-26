@@ -46,8 +46,9 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     because the count was repeatedly described as "all in
     `lib/integrations-openai-ai-server`", which is wrong by a factor of three
     and would send someone looking in the wrong package.
-- Mobile test suite: 975 tests, 0 failures, 10 skipped (re-counted 2026-08-26
-  on an installed workspace; 971 and 962 the day before, 925, 909, 900, 894,
+- Mobile test suite: 981 tests, 0 failures, 10 skipped (re-counted 2026-08-26
+  on an installed workspace; 975, 971 and 962 earlier the same day/day before,
+  925, 909, 900, 894,
   888, 865 and 855
   earlier the same day, 725 on 2026-08-23, 723 on 2026-08-22, the 480 here was
   stale before that, and the 376 before it).
@@ -6679,3 +6680,64 @@ The backdrop is deliberately not opaque: the slide stays faintly visible, so
 it reads as a zoom of this figure rather than navigation away from the deck.
 The image keeps a white ground, because a line diagram on a dark backdrop
 loses its strokes.
+
+## The topic half of isMathContext stopped voting, 2026-08-26
+
+Closes the gap the 2026-08-25 entry above ("Narrower than it was, and still
+not fixed here") left open: a lesson correctly labelled with a non-math
+subject could still get algebra questions, because the topic/lesson-text half
+of `isMathContext`'s one shared regex could out-vote a correctly-passed
+subject. Confirmed live, not hypothetical, against the real KB before
+touching anything: 4 of today's 78 lessons false-positive-match the regex
+today — 3 chemistry lessons whose text contains «معادلة» (chemical
+*equation*, matched via «معادل») and one financial-literacy lesson matched
+via «أسي». `generateWorksheet` for the real chemistry lesson «التفاعلات
+الكيميائية» produced abstract algebra items before this change; it does not
+after (checked directly, not just by the new tests below).
+
+**The subject is now checked twice, in order, and the first real answer
+wins.** `isMathContext` (`services/ai/mathPractice.ts`) first asks the KB
+lesson itself — `getBookForLesson(kb)?.subjectId` — which exists precisely
+because a book's subject is ground truth and a caller's string is a second
+copy of it that can drift. Only when there is no KB lesson (an ungrounded,
+free-text topic) does the caller's `subject` string get consulted at all, and
+only when neither gives an answer does the old topic-text regex still run.
+This is a different shape from the previous partial fix, which appended
+`subject` into the same blob the regex ran over — additive, not a gate, so a
+correct subject could still lose to the topic text. Now a correct subject
+(or a resolvable KB lesson) always wins.
+
+**The other half of the bug was a wiring gap, not a logic gap.**
+`tryMathPractice` — the function every one of `generateWorksheet`,
+`generateQuiz`, and `generateHomework`'s three core questions actually route
+through — never received a `subject` argument at all, even after "the tools
+carry the lesson's subject too" landed. `req.subject` was in scope the entire
+time in all three generators; it just dead-ended at the top of each function
+instead of reaching the ten `makeXXX_ar/en` question factories and the six
+quiz wrappers underneath. Only `generateActivity`, `generateClassroomActivity`
+and `generateHomework`'s optional *challenge* question threaded it through —
+which is why the existing test for this bug
+(`lessonPickFidelity.test.ts`, "the subject a deck is generated under") only
+ever exercised `generateClassroomActivity` and never caught the worksheet/
+quiz/homework-core gap. All sixteen functions and every call site now take
+and pass `subject`; none of `prompts.ts`, the API routes, or any screen
+needed to change — `req.subject` was already there, it just wasn't being read
+past `tryMathPractice`.
+
+**The existing test's premise flipped, on purpose.** Its `asMaths` case
+mislabelled a real chemistry lesson's subject as `'Mathematics'` and asserted
+the (old, buggy) result: algebra questions anyway. That assertion is now
+backwards — a mislabelled subject on a lesson the KB can identify must no
+longer win, so the test was rewritten to assert exactly that, plus a second
+case (a topic with no KB match) confirming the caller-supplied subject still
+governs when there is nothing else to check it against. New
+`mathPractice.test.ts` tests `isMathContext` directly for the first time —
+checked against a real regression before trusting it: 2 of 5 fail on the
+pre-fix code, both the chemistry and financial-literacy false positives found
+above.
+
+Widening `APP_SUBJECTS` or `CurriculumSource['subject']` for a fourth subject
+was not attempted here — the 2026-08-25 entry above already found both
+self-guarding or deliberately held back, and neither changed today.
+
+981 mobile tests pass (was 975), typecheck clean across all three packages.

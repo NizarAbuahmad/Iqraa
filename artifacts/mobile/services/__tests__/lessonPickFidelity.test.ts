@@ -130,14 +130,45 @@ describe('buildCurrentLessonView subject', () => {
 });
 
 describe('the subject a deck is generated under', () => {
+  const questionText = (a: { slides: { type: string; content: string }[] }) =>
+    a.slides.filter(s => s.type === 'question').map(s => s.content).join('\n');
+
   // Why the wrong subject was visible rather than cosmetic: the generator
   // branches on it. Announce a chemistry lesson as Mathematics and the class
-  // gets algebra questions with the chemistry title on top.
-  it('changes the questions a chemistry lesson gets', async () => {
+  // used to get algebra questions with the chemistry title on top.
+  //
+  // `isMathContext` now derives the subject from the topic's own KB lesson
+  // first (`getBookForLesson(kb)?.subjectId`) rather than trusting a
+  // caller-supplied subject string that may disagree with it — a mislabelled
+  // subject can no longer override a lesson's real one.
+  it('never serves math content for a topic that resolves to a real chemistry lesson, even mislabelled', async () => {
     const svc = new MockAIService();
     const req = {
       grade: '10',
-      topic: 'تجربة استهلالية: الطيف الذري',
+      topic: 'تجربة استهلالية: الطيف الذري', // a real chemistry KB lesson
+      activityType: 'quick-check',
+      duration: 15,
+      difficulty: 'standard',
+      groupType: 'whole-class',
+      teachingGoal: 'warm-up',
+      language: 'arabic',
+    } as const;
+
+    const mislabelledAsMaths = await svc.generateClassroomActivity({ ...req, subject: 'Mathematics' } as any);
+    const asChem = await svc.generateClassroomActivity({ ...req, subject: 'Chemistry' } as any);
+
+    assert.doesNotMatch(questionText(mislabelledAsMaths), /y\s*=|x²/);
+    assert.doesNotMatch(questionText(asChem), /y\s*=|x²/);
+  });
+
+  // No KB lesson exists to derive a subject from, so the caller-supplied
+  // subject is the only signal left — this is the path that must keep
+  // branching on `subject`, unlike the case above.
+  it('falls back to the caller-supplied subject when the topic matches no KB lesson', async () => {
+    const svc = new MockAIService();
+    const req = {
+      grade: '10',
+      topic: 'موضوع حر غير موجود في المنهج',
       activityType: 'quick-check',
       duration: 15,
       difficulty: 'standard',
@@ -149,10 +180,7 @@ describe('the subject a deck is generated under', () => {
     const asMaths = await svc.generateClassroomActivity({ ...req, subject: 'Mathematics' } as any);
     const asChem = await svc.generateClassroomActivity({ ...req, subject: 'Chemistry' } as any);
 
-    const questionText = (a: { slides: { type: string; content: string }[] }) =>
-      a.slides.filter(s => s.type === 'question').map(s => s.content).join('\n');
-
-    // The maths reading pulls x/y algebra items the chemistry lesson never mentions.
+    // The maths reading pulls x/y algebra items a chemistry-labelled request never gets.
     assert.match(questionText(asMaths), /y\s*=|x²/);
     assert.doesNotMatch(questionText(asChem), /y\s*=|x²/);
   });

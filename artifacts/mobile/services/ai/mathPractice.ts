@@ -4,6 +4,7 @@
  * falls back to abstract meta-prompts ("اشرح كيف يساعدك فهم X").
  */
 import type { KBLesson } from '../knowledgeBase.ts';
+import { getBookForLesson } from '../knowledgeBase.ts';
 
 export type Lang = 'ar' | 'en';
 export type QType = 'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false' | 'word_problem';
@@ -68,11 +69,44 @@ export function lessonTextBlob(topic: string, kb: KBLesson | null): string {
   ].join(' ');
 }
 
+/**
+ * Subject names — `Subject.name`/`.nameAr` from `lib/curriculum/src/catalog.ts` —
+ * that are known and are NOT mathematics. Matched, not imported: this file has
+ * no dependency on `@workspace/curriculum`, and duplicating the handful of
+ * names as a regex is cheaper than adding one for a single lookup.
+ */
+const KNOWN_NON_MATH_SUBJECT = /^(chemistry|الكيمياء|physics|الفيزياء|biology|الأحياء|science|العلوم|financial literacy|الثقافة المالية|arabic|اللغة العربية|english|اللغة الإنجليزية|islamic studies|التربية الإسلامية|social studies|الدراسات الاجتماعية|computer|الحاسوب)$/i;
+
+const MATH_TEXT_RE = /رياضيات|math|kbl-math|kbu-math|kb-math|معادل|أسي|أسس|دائر|مثلث|جيوب|جيب|اقتران|مشتق|متجه|احتمال|إحصاء|جيوجبرا|geogebra|quadratic|trigon|derivative|vector|circle|exponent|polynomial|sequence|statistic|probabilit/i;
+
+/**
+ * Is this generation for a maths lesson?
+ *
+ * Subject is authoritative, not additive: a chemistry lesson on «المعادلة
+ * الكيميائية» (chemical *equation*) or a finance lesson mentioning «تراكم
+ * أسي» (exponential growth) used to still flip this to `true`, because the
+ * old version only ever appended `subject` to the same blob it ran one regex
+ * over — the topic/lesson text could still out-vote a correctly-passed
+ * non-math subject. See CLAUDE.md: "Generators branch on the subject NAME."
+ *
+ * `kb`, when present, is the ground truth — its own book's `subjectId` is
+ * looked up directly rather than trusting the caller's `subject` string a
+ * second time. `subject` is the fallback for an ungrounded topic (no KB
+ * lesson resolved) where nothing else names the subject. Only when neither
+ * gives a real answer does this fall back to the old topic/lesson-text
+ * heuristic, which is still what free-text topics with no picked lesson need.
+ */
 export function isMathContext(topic: string, kb: KBLesson | null, subject?: string): boolean {
-  const blob = `${subject ?? ''} ${lessonTextBlob(topic, kb)}`;
-  return /رياضيات|math|kbl-math|kbu-math|kb-math|معادل|أسي|أسس|دائر|مثلث|جيوب|جيب|اقتران|مشتق|متجه|احتمال|إحصاء|جيوجبرا|geogebra|quadratic|trigon|derivative|vector|circle|exponent|polynomial|sequence|statistic|probabilit/i.test(
-    blob,
-  );
+  const kbSubjectId = kb ? getBookForLesson(kb)?.subjectId : undefined;
+  if (kbSubjectId) return kbSubjectId === 'mathematics';
+
+  const s = subject?.trim();
+  if (s) {
+    if (KNOWN_NON_MATH_SUBJECT.test(s)) return false;
+    if (/^(mathematics|رياضيات|math)$/i.test(s)) return true;
+  }
+
+  return MATH_TEXT_RE.test(lessonTextBlob(topic, kb));
 }
 
 export function detectMathFamily(topic: string, kb: KBLesson | null): MathFamily {
