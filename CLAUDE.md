@@ -32,11 +32,7 @@ pnpm run typecheck                     # whole monorepo
 pnpm run dev:api                       # Express on :8080
 pnpm run dev:mobile:web                # Expo web on :8081 (MOBILE_PORT overrides)
 
-<<<<<<< HEAD
 cd artifacts/mobile     && pnpm test   # 962 tests (2026-08-25)
-=======
-cd artifacts/mobile     && pnpm test   # 925 tests (2026-08-25)
->>>>>>> origin/main
 cd artifacts/api-server && pnpm build && pnpm test   # build first — see below
 ```
 
@@ -115,11 +111,13 @@ Before a live demo: [`docs/demo-checklist.md`](./docs/demo-checklist.md).
   found 1:36pm, migrated 1:41pm, re-checked 1:42pm). This entry went on
   asserting the outage for three more days, because only the problem got
   written down and not the fix.
-  **Verified 24/24 present on 2026-08-22.** The push is still manual, on
-  purpose, but since 2026-08-25 it is *checked* — a PR touching
-  `lib/db/src/schema` must answer `schema-push:` in its description, and
-  `.github/workflows/schema-check.yml` runs `verify-schema` against production
-  daily.
+  **Verified 25/25 present on 2026-08-25**, against the real Neon database
+  (`ep-bold-bar-asvxvxjr-pooler…eu-central-1`) — every file `ok`, evaluations
+  included. The push is still manual, on purpose, but it is now *checked*: a PR
+  touching `lib/db/src/schema` must answer `schema-push:` in its description,
+  and `.github/workflows/schema-check.yml` runs `verify-schema` against
+  production daily at 06:00 UTC, on demand, and whenever a schema change
+  reaches `main`. The `DATABASE_URL` repository secret it needs is set.
   The gap in the *process* is narrowed, not closed — nothing runs the push for
   you. Re-check with `pnpm --filter @workspace/db run verify-schema` rather
   than trusting this line, and note it only asks whether each table *name*
