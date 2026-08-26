@@ -3,16 +3,17 @@
  *
  * Two things are being guarded, and only one of them is "grounding works".
  *
- * The other is the fallback. Retrieval is empty for most of the curriculum —
- * six of 78 documents have been read — so the ungrounded path is the common
- * path, and a bug there is invisible: the request still succeeds, the teacher
- * still gets a lesson plan, and nobody finds out that a topic was silently
- * matched to the wrong unit's pages. So the assertions below are as much about
- * what the body looks like when nothing is found as when something is.
+ * The other is the fallback. Retrieval is still empty for part of the
+ * curriculum — 57 of 78 documents have been read as of 2026-08-26, up from
+ * six — so the ungrounded path stays real, not hypothetical, and a bug there
+ * is invisible: the request still succeeds, the teacher still gets a lesson
+ * plan, and nobody finds out that a topic was silently matched to the wrong
+ * unit's pages. So the assertions below are as much about what the body looks
+ * like when nothing is found as when something is.
  */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { getObjectivesForUnit } from "@workspace/curriculum";
+import { getObjectivesForUnit, G10_SOURCES } from "@workspace/curriculum";
 import { groundingFor, groundingForObjectives, withGrounding } from "../grounding.ts";
 
 /** الدائرة — extracted, and the unit with the most material on file. */
@@ -148,12 +149,17 @@ describe("nothing reference-only reaches a prompt", () => {
     ].filter(g => g !== null);
     assert.ok(grounded.length >= 3, "not enough grounded units to make this test mean anything");
 
-    // The six extracted documents are all NCCD student/exercise books and the
-    // S2 teacher guide. Anything else appearing here is teacher-authored.
-    const NCCD = /^(math|chem)-s[12]-(student-book|exercise-book|teacher-guide)$/;
+    // Checked against the manifest's own `authority` field, not a hardcoded
+    // id pattern — a pattern matching only the original six NCCD books broke
+    // the moment more NCCD-authority documents were ingested alongside them,
+    // which is the expected outcome of ingesting more, not a regression.
+    // `usePolicy()`/`quotableOnly` is what actually enforces this at runtime;
+    // this asserts that enforcement held, not a guess at what today's ids look like.
     for (const g of grounded) {
       for (const s of g.sources) {
-        assert.match(s.sourceId, NCCD, `${s.sourceId} is not quotable NCCD material`);
+        const manifestEntry = G10_SOURCES.find(src => src.id === s.sourceId);
+        assert.ok(manifestEntry, `${s.sourceId} cited but has no manifest entry`);
+        assert.equal(manifestEntry.authority, "nccd", `${s.sourceId} is not quotable NCCD material`);
       }
     }
   });

@@ -428,7 +428,24 @@ export function takeConcreteMath(
     return ranked[0] ?? null;
   };
 
-  let item = pickFrom(family) ?? pickFrom('algebra');
+  /**
+   * A worksheet/quiz asking for more items than a lesson's family has (e.g.
+   * `functions` has 5) used to fall straight through to the unrelated
+   * `algebra` family here — a teacher who picked one exact lesson would get
+   * a quadratic-formula or linear-system item with no connection to it. A
+   * repeat from the *same* family, reformatted under a different question
+   * type, stays on-topic; only the generic algebra family (or true
+   * exhaustion of the whole bank) should ever leave the detected family.
+   */
+  const pickFromRepeating = (fam: MathFamily): ConcreteItem | null => {
+    const pool = BANK.filter(i => i.family === fam);
+    if (pool.length === 0) return null;
+    const sameDiff = pool.filter(i => i.diff === diff);
+    const ranked = sameDiff.length > 0 ? sameDiff : pool;
+    return ranked[Math.floor(Math.random() * ranked.length)] ?? null;
+  };
+
+  let item = pickFrom(family) ?? pickFromRepeating(family) ?? pickFrom('algebra');
   if (!item) {
     // Exhausted — allow any unused item
     item = BANK.find(i => !usedIds.has(i.id)) ?? null;
