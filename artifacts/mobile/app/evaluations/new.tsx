@@ -221,7 +221,11 @@ export default function NewEvaluationScreen() {
       }
       router.replace({ pathname: '/evaluations/[id]', params: { id: evaluation.id } });
     } catch (err) {
-      setError(err instanceof EvaluationError ? err.message : t('evaluationCreateFailed'));
+      if (err instanceof EvaluationError && err.code === 'no_level_scale') {
+        setError(t('evaluationSetupNotReady'));
+      } else {
+        setError(err instanceof EvaluationError ? err.message : t('evaluationCreateFailed'));
+      }
       setCreating(false);
     }
   };

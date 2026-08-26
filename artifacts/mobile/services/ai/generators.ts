@@ -949,7 +949,7 @@ export class MockAIService extends AIService {
     }
 
     return {
-      title: lang === 'ar' ? `اختبار ${req.subject} – ${topic}` : `${req.subject} Quiz – ${topic}`,
+      title: lang === 'ar' ? `اختبار ${topic}` : `${req.subject} Quiz – ${topic}`,
       duration,
       totalPoints: questions.reduce((s, q) => s + q.points, 0),
       questions,
