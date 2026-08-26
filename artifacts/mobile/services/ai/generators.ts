@@ -113,8 +113,9 @@ function tryMathPractice(
   diff: string,
   lang: Lang,
   points: number,
+  subject?: string,
 ): WQ | null {
-  if (!isMathContext(topic, kb)) return null;
+  if (!isMathContext(topic, kb, subject)) return null;
   const tier: DiffTier = diff === 'easy' || diff === 'hard' ? diff : 'medium';
   return takeConcreteMath(type, topic, kb, tier, lang, points);
 }
@@ -274,9 +275,9 @@ function tfPts(_diff: string) { return 2; }
 
 // ─── Arabic question factories — one question per call, random phrasing ───────
 
-function makeMCQ_ar(topic: string, kb: KBLesson | null, diff: string): WQ {
+function makeMCQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: string): WQ {
   const pts = mcPts(diff);
-  const math = tryMathPractice('multiple_choice', topic, kb, diff, 'ar', pts);
+  const math = tryMathPractice('multiple_choice', topic, kb, diff, 'ar', pts, subject);
   if (math) return math;
   const t0 = kb?.keyTerms?.[0];
   const t1 = kb?.keyTerms?.[1];
@@ -297,9 +298,9 @@ function makeMCQ_ar(topic: string, kb: KBLesson | null, diff: string): WQ {
   return pick(templates)();
 }
 
-function makeSAQ_ar(topic: string, kb: KBLesson | null, diff: string): WQ {
+function makeSAQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: string): WQ {
   const pts = saPts(diff);
-  const math = tryMathPractice('short_answer', topic, kb, diff, 'ar', pts);
+  const math = tryMathPractice('short_answer', topic, kb, diff, 'ar', pts, subject);
   if (math) return math;
   const t0 = kb?.keyTerms?.[0];
   const t1 = kb?.keyTerms?.[1];
@@ -317,9 +318,9 @@ function makeSAQ_ar(topic: string, kb: KBLesson | null, diff: string): WQ {
   return pick(templates)();
 }
 
-function makeFBQ_ar(topic: string, kb: KBLesson | null, diff: string): WQ {
+function makeFBQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: string): WQ {
   const pts = fbPts(diff);
-  const math = tryMathPractice('fill_blank', topic, kb, diff, 'ar', pts);
+  const math = tryMathPractice('fill_blank', topic, kb, diff, 'ar', pts, subject);
   if (math) return math;
   const t0 = kb?.keyTerms?.[0];
   const t1 = kb?.keyTerms?.[1];
@@ -335,9 +336,9 @@ function makeFBQ_ar(topic: string, kb: KBLesson | null, diff: string): WQ {
   return pick(templates)();
 }
 
-function makeTFQ_ar(topic: string, kb: KBLesson | null, _diff: string): WQ {
+function makeTFQ_ar(topic: string, kb: KBLesson | null, _diff: string, subject?: string): WQ {
   const pts = tfPts(_diff);
-  const math = tryMathPractice('true_false', topic, kb, _diff, 'ar', pts);
+  const math = tryMathPractice('true_false', topic, kb, _diff, 'ar', pts, subject);
   if (math) return math;
   const c0 = kb?.keyConceptsAr?.[0] ?? topic;
   const c1 = kb?.keyConceptsAr?.[1] ?? `تطبيق ${topic}`;
@@ -355,9 +356,9 @@ function makeTFQ_ar(topic: string, kb: KBLesson | null, _diff: string): WQ {
 }
 
 /** Real-life word problem aligned with "حل مسائل حياتية" curriculum phrasing. */
-function makeWPQ_ar(topic: string, kb: KBLesson | null, diff: string): WQ {
+function makeWPQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: string): WQ {
   const pts = saPts(diff);
-  const math = tryMathPractice('word_problem', topic, kb, diff, 'ar', pts);
+  const math = tryMathPractice('word_problem', topic, kb, diff, 'ar', pts, subject);
   if (math) return math;
   const c0 = kb?.keyConceptsAr?.[0] ?? topic;
   const obj = kb?.objectives?.find(o => /حياتي|مسألة|نمذج/.test(o));
@@ -393,9 +394,9 @@ function makePriorReviewQ_ar(concept: string): WQ {
 
 // ─── English question factories ───────────────────────────────────────────────
 
-function makeMCQ_en(topic: string, kb: KBLesson | null, diff: string): WQ {
+function makeMCQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: string): WQ {
   const pts = mcPts(diff);
-  const math = tryMathPractice('multiple_choice', topic, kb, diff, 'en', pts);
+  const math = tryMathPractice('multiple_choice', topic, kb, diff, 'en', pts, subject);
   if (math) return math;
   const t0 = kb?.keyTerms?.[0];
   const t1 = kb?.keyTerms?.[1];
@@ -415,9 +416,9 @@ function makeMCQ_en(topic: string, kb: KBLesson | null, diff: string): WQ {
   return pick(templates)();
 }
 
-function makeSAQ_en(topic: string, kb: KBLesson | null, diff: string): WQ {
+function makeSAQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: string): WQ {
   const pts = saPts(diff);
-  const math = tryMathPractice('short_answer', topic, kb, diff, 'en', pts);
+  const math = tryMathPractice('short_answer', topic, kb, diff, 'en', pts, subject);
   if (math) return math;
   const t0 = kb?.keyTerms?.[0];
   const t1 = kb?.keyTerms?.[1];
@@ -435,9 +436,9 @@ function makeSAQ_en(topic: string, kb: KBLesson | null, diff: string): WQ {
   return pick(templates)();
 }
 
-function makeFBQ_en(topic: string, kb: KBLesson | null, diff: string): WQ {
+function makeFBQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: string): WQ {
   const pts = fbPts(diff);
-  const math = tryMathPractice('fill_blank', topic, kb, diff, 'en', pts);
+  const math = tryMathPractice('fill_blank', topic, kb, diff, 'en', pts, subject);
   if (math) return math;
   const t0 = kb?.keyTerms?.[0];
   const t1 = kb?.keyTerms?.[1];
@@ -453,9 +454,9 @@ function makeFBQ_en(topic: string, kb: KBLesson | null, diff: string): WQ {
   return pick(templates)();
 }
 
-function makeTFQ_en(topic: string, kb: KBLesson | null, _diff: string): WQ {
+function makeTFQ_en(topic: string, kb: KBLesson | null, _diff: string, subject?: string): WQ {
   const pts = tfPts(_diff);
-  const math = tryMathPractice('true_false', topic, kb, _diff, 'en', pts);
+  const math = tryMathPractice('true_false', topic, kb, _diff, 'en', pts, subject);
   if (math) return math;
   const c0 = kb?.keyConceptsEn?.[0] ?? topic;
   const c1 = kb?.keyConceptsEn?.[1] ?? `application of ${topic}`;
@@ -473,9 +474,9 @@ function makeTFQ_en(topic: string, kb: KBLesson | null, _diff: string): WQ {
 }
 
 /** Real-life word problem aligned with curriculum "solve real-life problems" outcomes. */
-function makeWPQ_en(topic: string, kb: KBLesson | null, diff: string): WQ {
+function makeWPQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: string): WQ {
   const pts = saPts(diff);
-  const math = tryMathPractice('word_problem', topic, kb, diff, 'en', pts);
+  const math = tryMathPractice('word_problem', topic, kb, diff, 'en', pts, subject);
   if (math) return math;
   const c0 = kb?.keyConceptsEn?.[0] ?? topic;
   const templates: Array<() => WQ> = [
@@ -529,30 +530,30 @@ function sectionTitleEn(type: QType, pts: number): string {
 
 // ─── Quiz question factories ──────────────────────────────────────────────────
 
-function makeQuizMCQ_ar(topic: string, kb: KBLesson | null, pts: number, id: string): QuizQuestion {
-  const q = makeMCQ_ar(topic, kb, 'medium');
+function makeQuizMCQ_ar(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string): QuizQuestion {
+  const q = makeMCQ_ar(topic, kb, 'medium', subject);
   return { id, type: 'multiple_choice', text: q.text, options: q.options, correctAnswer: q.answer, points: pts, explanation: `${q.answer} — راجع ${kb?.titleAr ?? topic} في الكتاب المدرسي.` };
 }
-function makeQuizMCQ_en(topic: string, kb: KBLesson | null, pts: number, id: string): QuizQuestion {
-  const q = makeMCQ_en(topic, kb, 'medium');
+function makeQuizMCQ_en(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string): QuizQuestion {
+  const q = makeMCQ_en(topic, kb, 'medium', subject);
   return { id, type: 'multiple_choice', text: q.text, options: q.options, correctAnswer: q.answer, points: pts, explanation: `${q.answer} — See ${kb?.titleEn ?? topic} in the textbook.` };
 }
 
-function makeQuizTF_ar(topic: string, kb: KBLesson | null, pts: number, id: string): QuizQuestion {
-  const q = makeTFQ_ar(topic, kb, 'medium');
+function makeQuizTF_ar(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string): QuizQuestion {
+  const q = makeTFQ_ar(topic, kb, 'medium', subject);
   return { id, type: 'true_false', text: q.text, options: ['صح', 'خطأ'], correctAnswer: q.answer, points: pts, explanation: `الإجابة "${q.answer}" — ${q.text}` };
 }
-function makeQuizTF_en(topic: string, kb: KBLesson | null, pts: number, id: string): QuizQuestion {
-  const q = makeTFQ_en(topic, kb, 'medium');
+function makeQuizTF_en(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string): QuizQuestion {
+  const q = makeTFQ_en(topic, kb, 'medium', subject);
   return { id, type: 'true_false', text: q.text, options: ['True', 'False'], correctAnswer: q.answer, points: pts, explanation: `The answer is "${q.answer}" — ${q.text}` };
 }
 
-function makeQuizSA_ar(topic: string, kb: KBLesson | null, pts: number, id: string): QuizQuestion {
-  const q = makeSAQ_ar(topic, kb, 'medium');
+function makeQuizSA_ar(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string): QuizQuestion {
+  const q = makeSAQ_ar(topic, kb, 'medium', subject);
   return { id, type: 'short_answer', text: q.text, correctAnswer: q.answer, points: pts, explanation: `إجابة كاملة: ${q.answer}` };
 }
-function makeQuizSA_en(topic: string, kb: KBLesson | null, pts: number, id: string): QuizQuestion {
-  const q = makeSAQ_en(topic, kb, 'medium');
+function makeQuizSA_en(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string): QuizQuestion {
+  const q = makeSAQ_en(topic, kb, 'medium', subject);
   return { id, type: 'short_answer', text: q.text, correctAnswer: q.answer, points: pts, explanation: `Full answer: ${q.answer}` };
 }
 
@@ -779,17 +780,17 @@ export class MockAIService extends AIService {
 
     const makeGenericQ = (type: QType, diff: DiffTier): WQ => {
       if (lang === 'ar') {
-        if (type === 'multiple_choice') return makeMCQ_ar(topic, kb, diff);
-        if (type === 'short_answer') return makeSAQ_ar(topic, kb, diff);
-        if (type === 'fill_blank') return makeFBQ_ar(topic, kb, diff);
-        if (type === 'word_problem') return makeWPQ_ar(topic, kb, diff);
-        return makeTFQ_ar(topic, kb, diff);
+        if (type === 'multiple_choice') return makeMCQ_ar(topic, kb, diff, req.subject);
+        if (type === 'short_answer') return makeSAQ_ar(topic, kb, diff, req.subject);
+        if (type === 'fill_blank') return makeFBQ_ar(topic, kb, diff, req.subject);
+        if (type === 'word_problem') return makeWPQ_ar(topic, kb, diff, req.subject);
+        return makeTFQ_ar(topic, kb, diff, req.subject);
       }
-      if (type === 'multiple_choice') return makeMCQ_en(topic, kb, diff);
-      if (type === 'short_answer') return makeSAQ_en(topic, kb, diff);
-      if (type === 'fill_blank') return makeFBQ_en(topic, kb, diff);
-      if (type === 'word_problem') return makeWPQ_en(topic, kb, diff);
-      return makeTFQ_en(topic, kb, diff);
+      if (type === 'multiple_choice') return makeMCQ_en(topic, kb, diff, req.subject);
+      if (type === 'short_answer') return makeSAQ_en(topic, kb, diff, req.subject);
+      if (type === 'fill_blank') return makeFBQ_en(topic, kb, diff, req.subject);
+      if (type === 'word_problem') return makeWPQ_en(topic, kb, diff, req.subject);
+      return makeTFQ_en(topic, kb, diff, req.subject);
     };
 
     /** Main-body question via shared factories (math → concrete practice). Dedup stems. */
@@ -930,13 +931,13 @@ export class MockAIService extends AIService {
         usedPts += pts;
 
         if (lang === 'ar') {
-          if (type === 'multiple_choice') questions.push(pushUnique(() => makeQuizMCQ_ar(topic, kb, pts, id)));
-          else if (type === 'true_false') questions.push(pushUnique(() => makeQuizTF_ar(topic, kb, pts, id)));
-          else questions.push(pushUnique(() => makeQuizSA_ar(topic, kb, pts, id)));
+          if (type === 'multiple_choice') questions.push(pushUnique(() => makeQuizMCQ_ar(topic, kb, pts, id, req.subject)));
+          else if (type === 'true_false') questions.push(pushUnique(() => makeQuizTF_ar(topic, kb, pts, id, req.subject)));
+          else questions.push(pushUnique(() => makeQuizSA_ar(topic, kb, pts, id, req.subject)));
         } else {
-          if (type === 'multiple_choice') questions.push(pushUnique(() => makeQuizMCQ_en(topic, kb, pts, id)));
-          else if (type === 'true_false') questions.push(pushUnique(() => makeQuizTF_en(topic, kb, pts, id)));
-          else questions.push(pushUnique(() => makeQuizSA_en(topic, kb, pts, id)));
+          if (type === 'multiple_choice') questions.push(pushUnique(() => makeQuizMCQ_en(topic, kb, pts, id, req.subject)));
+          else if (type === 'true_false') questions.push(pushUnique(() => makeQuizTF_en(topic, kb, pts, id, req.subject)));
+          else questions.push(pushUnique(() => makeQuizSA_en(topic, kb, pts, id, req.subject)));
         }
       }
     }
@@ -2143,7 +2144,7 @@ export class MockAIService extends AIService {
     for (let i = 0; i < 3; i++) {
       let q: WQ | null = null;
       for (let attempt = 0; attempt < 12; attempt++) {
-        const candidate = lang === 'ar' ? makeSAQ_ar(topic, kb, 'medium') : makeSAQ_en(topic, kb, 'medium');
+        const candidate = lang === 'ar' ? makeSAQ_ar(topic, kb, 'medium', req.subject) : makeSAQ_en(topic, kb, 'medium', req.subject);
         const key = questionStemKey(candidate.text);
         if (!usedStems.has(key)) {
           usedStems.add(key);
@@ -2151,7 +2152,7 @@ export class MockAIService extends AIService {
           break;
         }
       }
-      if (!q) q = lang === 'ar' ? makeSAQ_ar(topic, kb, 'hard') : makeSAQ_en(topic, kb, 'hard');
+      if (!q) q = lang === 'ar' ? makeSAQ_ar(topic, kb, 'hard', req.subject) : makeSAQ_en(topic, kb, 'hard', req.subject);
       core.push({
         ...q,
         text: `${q.text}${workSpace}`,
