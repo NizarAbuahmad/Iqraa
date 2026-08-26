@@ -101,6 +101,10 @@ MAX_H = 0.60
 # Breathing room on the final crop. Axis tick numbers sit just outside the
 # drawing cluster, and cropping flush to it sliced «100» down to «0».
 MARGIN = 10
+# How far the crop may stretch to finish a label it is cutting through, in
+# points. Two glyph widths: enough for «J» or «360°», far short of a word of
+# body text.
+LABEL_REACH = 22
 DPI = 160
 
 
@@ -458,6 +462,57 @@ def with_labels(page: pymupdf.Page, r: pymupdf.Rect, pad: float = 7) -> pymupdf.
 MAX_TEXT_SHARE = 0.30
 
 
+def uncut_labels(page: pymupdf.Page, r: pymupdf.Rect) -> pymupdf.Rect:
+    """Finish any label the crop currently slices through.
+
+    `with_labels` admits a label only when most of it already sits inside the
+    figure. A point label just outside — «J» on the right of the tangents
+    diagram on page 35, «K» at its bottom-left — fails that test, and then the
+    margin cuts straight through the glyph. On the projector that reads as a
+    broken image rather than a tight crop.
+
+    This is deliberately not a looser `with_labels`. Loosening that admits text
+    the crop does not touch, which is how a figure grows into the body prose
+    beside it — the failure that once swallowed most of a page. This only
+    finishes what is ALREADY being cut, and only when finishing it costs a
+    little: a span the crop clips is part of the picture; one it does not touch
+    is somebody else's paragraph.
+    """
+    out = pymupdf.Rect(r)
+    for block in page.get_text("dict")["blocks"]:
+        for line in block.get("lines", []):
+            for span in line.get("spans", []):
+                if not span["text"].strip():
+                    continue
+                text = span["text"].strip()
+                sb = pymupdf.Rect(span["bbox"])
+                # A point label is tiny: measured across these books, «J», «ZT»
+                # and «360°» run 0.7-2.4% of the page width, while the shortest
+                # line of prose that sits near a figure runs 12%. The gap is
+                # wide, so the threshold sits in it rather than near either
+                # edge. An 18% ceiling tried first was inside the prose range,
+                # and pulled a page of Arabic credits into a crop — Arabic
+                # extracts as many short spans, so a character count alone
+                # would not have caught it either. Both guards, then.
+                if sb.width > page.rect.width * 0.05 or len(text) > 6:
+                    continue
+                overlap = sb & out
+                # Only spans the crop actually cuts: touching it, but not
+                # already inside it.
+                if overlap.is_empty or out.contains(sb):
+                    continue
+                grown = out | sb
+                # Finishing a label is a small change. Anything that grows the
+                # box appreciably is not a label being clipped.
+                if (grown.width > out.width + LABEL_REACH
+                        or grown.height > out.height + LABEL_REACH):
+                    continue
+                if (grown.width < page.rect.width * MAX_W
+                        and grown.height < page.rect.height * MAX_H):
+                    out = grown
+    return out
+
+
 def figures_in(pdf: Path):
     """Yield (page_number, page, rect, lesson) for every figure found.
 
@@ -489,6 +544,8 @@ def figures_in(pdf: Path):
             r = drawing_cluster(page, seed) if kind == "axis" else pymupdf.Rect(seed)
             r = with_labels(page, r)
             r = pymupdf.Rect(r + (-MARGIN, -MARGIN, MARGIN, MARGIN)) & page.rect
+            # After the margin, because the margin is what does the cutting.
+            r = uncut_labels(page, r) & page.rect
             if r.width < 70 or r.height < 70:
                 continue
             if text_fraction(page, r) > MAX_TEXT_SHARE:

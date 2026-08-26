@@ -6,22 +6,6 @@
    "sourceId": "chem-s1-student-book",
    "pdfPage": 1,
    "rect": [
-    47.3,
-    33.4,
-    138.5,
-    122.8
-   ],
-   "unit": null,
-   "lesson": null,
-   "lessonTitleEn": null,
-   "lessonTitleAr": null,
-   "lessonStartPage": null
-  },
-  {
-   "file": "p001b.png",
-   "sourceId": "chem-s1-student-book",
-   "pdfPage": 1,
-   "rect": [
     358.5,
     32.5,
     548.6,
@@ -42,6 +26,22 @@
     0.0,
     73.1,
     150.6
+   ],
+   "unit": null,
+   "lesson": null,
+   "lessonTitleEn": null,
+   "lessonTitleAr": null,
+   "lessonStartPage": null
+  },
+  {
+   "file": "p006b.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 6,
+   "rect": [
+    189.5,
+    0.0,
+    280.9,
+    71.2
    ],
    "unit": null,
    "lesson": null,
@@ -98,14 +98,14 @@
    "lessonStartPage": null
   },
   {
-   "file": "p009.png",
+   "file": "p008d.png",
    "sourceId": "chem-s1-student-book",
-   "pdfPage": 9,
+   "pdfPage": 8,
    "rect": [
-    135.1,
-    488.2,
-    422.5,
-    637.8
+    359.2,
+    0.0,
+    595.3,
+    104.0
    ],
    "unit": null,
    "lesson": null,
@@ -114,14 +114,14 @@
    "lessonStartPage": null
   },
   {
-   "file": "p011.png",
+   "file": "p010.png",
    "sourceId": "chem-s1-student-book",
-   "pdfPage": 11,
+   "pdfPage": 10,
    "rect": [
-    67.6,
-    87.2,
-    289.5,
-    197.3
+    379.6,
+    0.0,
+    595.3,
+    98.4
    ],
    "unit": 1,
    "lesson": 1,
@@ -134,10 +134,10 @@
    "sourceId": "chem-s1-student-book",
    "pdfPage": 12,
    "rect": [
-    393.6,
-    74.3,
-    544.3,
-    258.4
+    397.0,
+    78.0,
+    540.9,
+    255.1
    ],
    "unit": 1,
    "lesson": 1,
@@ -150,10 +150,10 @@
    "sourceId": "chem-s1-student-book",
    "pdfPage": 12,
    "rect": [
-    387.1,
-    289.1,
-    536.7,
-    471.5
+    390.6,
+    292.5,
+    533.3,
+    468.0
    ],
    "unit": 1,
    "lesson": 1,
@@ -166,10 +166,10 @@
    "sourceId": "chem-s1-student-book",
    "pdfPage": 13,
    "rect": [
-    246.0,
-    42.6,
-    452.8,
-    176.0
+    246.1,
+    51.4,
+    452.3,
+    152.9
    ],
    "unit": 1,
    "lesson": 1,
@@ -182,26 +182,10 @@
    "sourceId": "chem-s1-student-book",
    "pdfPage": 13,
    "rect": [
-    196.0,
+    402.8,
     564.3,
-    549.3,
-    740.4
-   ],
-   "unit": 1,
-   "lesson": 1,
-   "lessonTitleEn": null,
-   "lessonTitleAr": "نظريةُ بور لذرَّةِ الهيدروجين",
-   "lessonStartPage": 10
-  },
-  {
-   "file": "p013c.png",
-   "sourceId": "chem-s1-student-book",
-   "pdfPage": 13,
-   "rect": [
-    196.0,
-    583.3,
-    289.5,
-    691.0
+    549.0,
+    725.8
    ],
    "unit": 1,
    "lesson": 1,
@@ -214,10 +198,10 @@
    "sourceId": "chem-s1-student-book",
    "pdfPage": 16,
    "rect": [
-    381.6,
-    166.3,
-    556.0,
-    486.5
+    386.7,
+    171.4,
+    548.0,
+    478.6
    ],
    "unit": 1,
    "lesson": 1,
@@ -246,26 +230,10 @@
    "sourceId": "chem-s1-student-book",
    "pdfPage": 17,
    "rect": [
-    208.3,
-    20.2,
-    548.6,
-    228.7
-   ],
-   "unit": 1,
-   "lesson": 1,
-   "lessonTitleEn": null,
-   "lessonTitleAr": "نظريةُ بور لذرَّةِ الهيدروجين",
-   "lessonStartPage": 10
-  },
-  {
-   "file": "p017b.png",
-   "sourceId": "chem-s1-student-book",
-   "pdfPage": 17,
-   "rect": [
-    52.2,
-    36.7,
-    202.9,
-    220.9
+    55.6,
+    40.4,
+    199.5,
+    217.5
    ],
    "unit": 1,
    "lesson": 1,
@@ -294,10 +262,10 @@
    "sourceId": "chem-s1-student-book",
    "pdfPage": 21,
    "rect": [
-    42.1,
-    141.3,
-    216.6,
-    578.6
+    47.2,
+    146.4,
+    208.5,
+    570.8
    ],
    "unit": 1,
    "lesson": 2,
@@ -327,8 +295,8 @@
    "pdfPage": 25,
    "rect": [
     0.0,
-    626.5,
-    151.4,
+    681.0,
+    104.7,
     793.7
    ],
    "unit": 1,
@@ -342,10 +310,10 @@
    "sourceId": "chem-s1-student-book",
    "pdfPage": 26,
    "rect": [
-    488.9,
-    476.1,
+    504.5,
+    612.7,
     595.3,
-    551.8
+    699.7
    ],
    "unit": 1,
    "lesson": 2,
@@ -359,7 +327,7 @@
    "pdfPage": 26,
    "rect": [
     375.5,
-    626.5,
+    671.3,
     595.3,
     793.7
    ],
@@ -374,7 +342,7 @@
    "sourceId": "chem-s1-student-book",
    "pdfPage": 27,
    "rect": [
-    402.6,
+    404.6,
     0.0,
     595.3,
     211.8
@@ -434,6 +402,22 @@
    "lessonStartPage": 20
   },
   {
+   "file": "p028d.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 28,
+   "rect": [
+    359.2,
+    0.0,
+    595.3,
+    104.0
+   ],
+   "unit": 1,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "ِالنموذجُ الميكانيكيُّ الموجيُّ للذرَّة",
+   "lessonStartPage": 20
+  },
+  {
    "file": "p029.png",
    "sourceId": "chem-s1-student-book",
    "pdfPage": 29,
@@ -455,7 +439,7 @@
    "pdfPage": 29,
    "rect": [
     48.3,
-    201.2,
+    204.6,
     170.6,
     326.9
    ],
@@ -486,10 +470,10 @@
    "sourceId": "chem-s1-student-book",
    "pdfPage": 31,
    "rect": [
-    42.0,
-    254.0,
-    215.7,
-    535.0
+    47.1,
+    259.1,
+    207.8,
+    527.0
    ],
    "unit": 2,
    "lesson": 1,
@@ -546,38 +530,6 @@
    "lessonStartPage": 39
   },
   {
-   "file": "p047.png",
-   "sourceId": "chem-s1-student-book",
-   "pdfPage": 47,
-   "rect": [
-    108.2,
-    129.0,
-    389.4,
-    625.1
-   ],
-   "unit": 2,
-   "lesson": 2,
-   "lessonTitleEn": null,
-   "lessonTitleAr": "الخصائصُ الدوريةُ للعناصر",
-   "lessonStartPage": 39
-  },
-  {
-   "file": "p047b.png",
-   "sourceId": "chem-s1-student-book",
-   "pdfPage": 47,
-   "rect": [
-    384.6,
-    130.1,
-    472.5,
-    625.4
-   ],
-   "unit": 2,
-   "lesson": 2,
-   "lessonTitleEn": null,
-   "lessonTitleAr": "الخصائصُ الدوريةُ للعناصر",
-   "lessonStartPage": 39
-  },
-  {
    "file": "p049.png",
    "sourceId": "chem-s1-student-book",
    "pdfPage": 49,
@@ -599,7 +551,7 @@
    "pdfPage": 49,
    "rect": [
     0.0,
-    476.1,
+    464.7,
     101.9,
     551.8
    ],
@@ -615,8 +567,8 @@
    "pdfPage": 49,
    "rect": [
     0.0,
-    626.5,
-    151.4,
+    681.0,
+    104.7,
     793.7
    ],
    "unit": 2,
@@ -646,10 +598,42 @@
    "sourceId": "chem-s1-student-book",
    "pdfPage": 50,
    "rect": [
-    352.3,
-    622.6,
+    509.5,
+    626.5,
+    595.3,
+    700.4
+   ],
+   "unit": 2,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "الخصائصُ الدوريةُ للعناصر",
+   "lessonStartPage": 39
+  },
+  {
+   "file": "p050c.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 50,
+   "rect": [
+    344.9,
+    659.7,
     595.3,
     793.7
+   ],
+   "unit": 2,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "الخصائصُ الدوريةُ للعناصر",
+   "lessonStartPage": 39
+  },
+  {
+   "file": "p051.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 51,
+   "rect": [
+    401.1,
+    0.0,
+    595.3,
+    211.8
    ],
    "unit": 2,
    "lesson": 2,
@@ -706,6 +690,22 @@
    "lessonStartPage": 39
   },
   {
+   "file": "p052d.png",
+   "sourceId": "chem-s1-student-book",
+   "pdfPage": 52,
+   "rect": [
+    359.2,
+    0.0,
+    595.3,
+    104.0
+   ],
+   "unit": 2,
+   "lesson": 2,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "الخصائصُ الدوريةُ للعناصر",
+   "lessonStartPage": 39
+  },
+  {
    "file": "p053.png",
    "sourceId": "chem-s1-student-book",
    "pdfPage": 53,
@@ -726,10 +726,10 @@
    "sourceId": "chem-s1-student-book",
    "pdfPage": 55,
    "rect": [
-    51.8,
-    51.9,
-    202.5,
-    236.0
+    55.2,
+    55.6,
+    199.2,
+    232.7
    ],
    "unit": 3,
    "lesson": 1,
@@ -746,54 +746,6 @@
     593.9,
     428.8,
     717.4
-   ],
-   "unit": 3,
-   "lesson": 1,
-   "lessonTitleEn": null,
-   "lessonTitleAr": "الروابطُ الكيميائيةُ وأنواعُها",
-   "lessonStartPage": 54
-  },
-  {
-   "file": "p056.png",
-   "sourceId": "chem-s1-student-book",
-   "pdfPage": 56,
-   "rect": [
-    67.4,
-    46.4,
-    201.8,
-    123.4
-   ],
-   "unit": 3,
-   "lesson": 1,
-   "lessonTitleEn": null,
-   "lessonTitleAr": "الروابطُ الكيميائيةُ وأنواعُها",
-   "lessonStartPage": 54
-  },
-  {
-   "file": "p056b.png",
-   "sourceId": "chem-s1-student-book",
-   "pdfPage": 56,
-   "rect": [
-    212.9,
-    47.6,
-    341.5,
-    132.6
-   ],
-   "unit": 3,
-   "lesson": 1,
-   "lessonTitleEn": null,
-   "lessonTitleAr": "الروابطُ الكيميائيةُ وأنواعُها",
-   "lessonStartPage": 54
-  },
-  {
-   "file": "p058.png",
-   "sourceId": "chem-s1-student-book",
-   "pdfPage": 58,
-   "rect": [
-    51.2,
-    45.5,
-    245.1,
-    215.3
    ],
    "unit": 3,
    "lesson": 1,
@@ -822,42 +774,10 @@
    "sourceId": "chem-s1-student-book",
    "pdfPage": 59,
    "rect": [
-    42.1,
-    358.2,
-    215.8,
-    683.5
-   ],
-   "unit": 3,
-   "lesson": 1,
-   "lessonTitleEn": null,
-   "lessonTitleAr": "الروابطُ الكيميائيةُ وأنواعُها",
-   "lessonStartPage": 54
-  },
-  {
-   "file": "p060.png",
-   "sourceId": "chem-s1-student-book",
-   "pdfPage": 60,
-   "rect": [
-    88.2,
-    431.2,
-    490.3,
-    583.7
-   ],
-   "unit": 3,
-   "lesson": 1,
-   "lessonTitleEn": null,
-   "lessonTitleAr": "الروابطُ الكيميائيةُ وأنواعُها",
-   "lessonStartPage": 54
-  },
-  {
-   "file": "p060b.png",
-   "sourceId": "chem-s1-student-book",
-   "pdfPage": 60,
-   "rect": [
-    309.3,
-    573.9,
-    442.7,
-    651.8
+    47.2,
+    363.3,
+    207.9,
+    675.6
    ],
    "unit": 3,
    "lesson": 1,
@@ -870,10 +790,10 @@
    "sourceId": "chem-s1-student-book",
    "pdfPage": 62,
    "rect": [
-    44.2,
-    509.0,
-    449.8,
-    793.7
+    66.1,
+    547.9,
+    311.9,
+    732.5
    ],
    "unit": 3,
    "lesson": 2,
@@ -886,26 +806,10 @@
    "sourceId": "chem-s1-student-book",
    "pdfPage": 63,
    "rect": [
-    197.0,
-    172.2,
-    277.5,
-    252.6
-   ],
-   "unit": 3,
-   "lesson": 2,
-   "lessonTitleEn": null,
-   "lessonTitleAr": "ِ الصيغُ الكيميائيةُ وخصائصُ املُركَّبات",
-   "lessonStartPage": 61
-  },
-  {
-   "file": "p063b.png",
-   "sourceId": "chem-s1-student-book",
-   "pdfPage": 63,
-   "rect": [
     98.7,
     242.4,
     238.4,
-    376.8
+    385.9
    ],
    "unit": 3,
    "lesson": 2,
@@ -934,10 +838,10 @@
    "sourceId": "chem-s1-student-book",
    "pdfPage": 66,
    "rect": [
-    65.0,
-    498.3,
-    451.5,
-    613.7
+    338.6,
+    501.4,
+    444.6,
+    582.8
    ],
    "unit": 3,
    "lesson": 2,
@@ -1015,8 +919,8 @@
    "pdfPage": 73,
    "rect": [
     0.0,
-    626.5,
-    151.4,
+    681.0,
+    104.7,
     793.7
    ],
    "unit": 3,
@@ -1079,7 +983,7 @@
    "pdfPage": 74,
    "rect": [
     381.3,
-    616.0,
+    681.0,
     595.3,
     793.7
    ],
