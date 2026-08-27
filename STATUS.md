@@ -7104,3 +7104,61 @@ and `math-u1-answers-almasri` need the line-reversal repair written first.
 `math-u1-answers-alkhatib` joins the no-text-layer/OCR-needed group. No files
 changed in `lib/curriculum` this pass — this entry is the only artifact of
 this session's work.
+
+## Grounding has been finding zero passages in production since it shipped, 2026-08-27
+
+Went to verify Phase 4 (live AI) end to end and found both switches already
+flipped — `AI_LIVE_MODE=true` and `EXPO_PUBLIC_DEMO_MODE=false` were on in
+Render already, with real spend recorded, so someone had turned this on
+before this session went looking. Generated a real lesson plan for «أوتار
+الدائرة وأقطارها ومماساتها» through the live app: the header badge correctly
+said **ذكاء اصطناعي مباشر**, the content was genuinely on-topic — and the
+grounding pill showed a matched lesson with no page citation under it. That
+combination is the tell: `resolveGeneratorGrounding` (client-side, matches a
+topic string against the bundled `knowledgeBase.ts` catalog) said grounded;
+`groundingFor` (server-side, the one that actually attaches book text) said
+nothing.
+
+**Root cause: the extracted knowledge-bank text never reaches the deployed
+server.** `lib/curriculum/src/passages.ts` locates `data/extracted/` relative
+to its own module's `import.meta.url` — correct in source and under `node
+--test`, where that file really does sit next to a `data/` sibling.
+`artifacts/api-server`'s build bundles the entire app into one file,
+`dist/index.mjs` (`build.mjs`, esbuild, `bundle: true`, single `outdir`).
+Bundling collapses every module's `import.meta.url` into the same value — the
+bundle's own path, not any individual source file's — so at runtime the exact
+same expression resolves to `dist/data/extracted`, and nothing ever put
+anything there. `passagesForUnit`'s `existsSync` check silently took the
+documented-honest path for a source with no extraction on file — the one
+`passages.test.ts` explicitly protects ("is empty rather than approximate
+when nothing is extracted") — because that check cannot tell "this source was
+never read" from "the deploy is broken." Both look identical from inside the
+function. Grounding has resolved zero book passages for every production
+request since it shipped in PR #140, on 2026-08-25 — two days before anyone
+looked at what a live generation actually contained, because the badge and
+the generic grounding pill both looked correct and the content itself read
+as good, topic-appropriate prose either way.
+
+**Fixed at the build, not the lookup.** `build.mjs` now copies
+`lib/curriculum/src/data/extracted/*.json` to `dist/data/extracted/` after
+the esbuild step — the one relative position that stays correct regardless of
+how deep in the bundle graph `passages.ts` sits, so no source changes were
+needed. Verified the fix is real, not coincidental: deleted `dist/data/extracted`
+and reran the new test — it failed; restored it — green again. New guard in
+`mountOrder.test.ts` (same "runs against the built bundle" pattern as the
+rest of that file) asserts the directory exists with real files after a
+build, so this can't silently regress a second time.
+
+**What this means for everything Phase 3/3.5 shipped:** the grounding *code*
+was correct the whole time — `grounding.test.ts`'s 20-odd assertions all run
+against source directly under `node --test`, which never hit this bug, so
+they kept passing while production quietly served zero citations. The gap was
+entirely in what a bundler does to `import.meta.url`, invisible to any test
+that doesn't boot the actual built artifact — which is exactly why
+`mountOrder.test.ts` exists and why this fix's guard lives there too, not in
+`lib/curriculum`.
+
+276 api-server / 83 curriculum / 982 mobile tests pass; typecheck clean. Not
+yet verified against a live redeploy — the next real generation on
+`iqraa-api` after this merges and redeploys should show a page number under
+the grounding pill for units with extracted text (circle unit first).
