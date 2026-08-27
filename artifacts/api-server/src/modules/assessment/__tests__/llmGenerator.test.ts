@@ -11,10 +11,13 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
   GENERATION_PROMPT_VERSION,
+  TYPE_CONTRACTS,
   buildGenerationPrompt,
   parseGeneratedQuestions,
   type LlmGenerationRequest,
 } from "../llmGenerator.ts";
+import { validateGenerated } from "../validator.ts";
+import type { QuestionType } from "@workspace/db";
 import type { CurriculumObjective } from "@workspace/curriculum";
 
 function objective(id: string, blooms = "Apply"): CurriculumObjective {
@@ -238,4 +241,102 @@ describe("parseGeneratedQuestions", () => {
     );
     assert.equal(questions[0]!.rubric, null);
   });
+});
+
+/**
+ * The prompt tells the model one shape per type (`TYPE_CONTRACTS` in
+ * llmGenerator.ts, verbatim — every "…" in it is already a valid JSON string
+ * value, so the contract text parses as-is once the trailing "  — explanation"
+ * is stripped); `validateGenerated` enforces a shape per type independently
+ * (each `QUESTION_TYPES[type].validate()`, in questionTypes.ts). Nothing ties
+ * those two together at compile time, so this builds each test's example
+ * *from the real contract string* rather than from a hand-written object that
+ * merely looks right — otherwise this test would have passed on the original
+ * bug too, the same way a hand-written example can agree with a wrong
+ * assumption instead of the actual prompt text.
+ *
+ * That bug was real: four contracts (short_answer, open_ended,
+ * problem_solving, practical_task) never asked the model for fields their own
+ * validator requires unconditionally — `modelAnswer` and `keyConcepts` for
+ * the three ai_rubric types, `successCriteria` for practical_task — so a
+ * model that followed the prompt exactly still had every open-response
+ * question it wrote rejected.
+ */
+/** Every "…" placeholder replaced by its own distinct value, recursively. */
+function distinguishPlaceholders(value: unknown, counter: { n: number }): unknown {
+  if (Array.isArray(value)) return value.map(v => distinguishPlaceholders(v, counter));
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([k, v]) => [k, distinguishPlaceholders(v, counter)]),
+    );
+  }
+  return value === "…" ? `value-${++counter.n}` : value;
+}
+
+function contractShape(type: QuestionType): Record<string, unknown> {
+  const raw = TYPE_CONTRACTS[type];
+  assert.ok(raw, `no TYPE_CONTRACTS entry for ${type}`);
+  // The JSON object comes first; some entries add "  <em-dash> explanation"
+  // after it for the model to read as prose, not as part of the JSON.
+  const jsonPart = raw.split(/ {2}—/)[0]!.trim();
+  const parsed = JSON.parse(jsonPart) as Record<string, unknown>;
+  // Every "…" in the raw text is the same literal placeholder, so a type with
+  // more than one (multiple_choice's four options) parses to duplicate
+  // content — a real model would never write the same option text four
+  // times, so distinguishing them here tests the *shape* the contract
+  // promises, not an artifact of one placeholder standing for "some text".
+  const distinguished = distinguishPlaceholders(parsed, { n: 0 }) as Record<string, unknown>;
+
+  // `matching`'s contract illustrates one left/right pair — the shape of a
+  // row, not literally "one pair is enough"; `matching.validate()` requires
+  // at least two on each side. Duplicating the one example pair (with a
+  // distinct id) tests the field names the contract promises without
+  // hard-coding "2" from the validator's own rule into this test.
+  if (type === "matching") {
+    const body = distinguished["body"] as { left: { id: string }[]; right: { id: string }[] };
+    const expectedAnswer = distinguished["expectedAnswer"] as { pairs: { left: string; right: string }[] };
+    const left1 = body.left[0]!, right1 = body.right[0]!, pair1 = expectedAnswer.pairs[0]!;
+    body.left.push({ ...left1, id: `${left1.id}-2` });
+    body.right.push({ ...right1, id: `${right1.id}-2` });
+    expectedAnswer.pairs.push({ left: `${left1.id}-2`, right: `${right1.id}-2` });
+  }
+
+  return distinguished;
+}
+
+describe("every TYPE_CONTRACTS shape actually survives validateGenerated", () => {
+  const allTypes: QuestionType[] = [
+    "multiple_choice", "true_false", "matching", "fill_blank",
+    "short_answer", "open_ended", "problem_solving", "practical_task",
+  ];
+
+  for (const type of allTypes) {
+    it(`${type}'s literal contract text survives validation`, () => {
+      const question = {
+        ...contractShape(type),
+        objectiveId: "obj-1",
+        competencyKey: "application",
+        marks: 4,
+        skill: "test skill",
+      };
+
+      const req: LlmGenerationRequest = { ...REQ, assessmentTypes: [type] };
+      const { questions, discarded } = parseGeneratedQuestions(
+        { questions: [question] },
+        req,
+        META,
+      );
+      assert.equal(discarded.length, 0, `parse stage dropped it: ${JSON.stringify(discarded)}`);
+
+      const { accepted, rejected } = validateGenerated(questions, {
+        allowedObjectiveIds: ["obj-1", "obj-2"],
+        allowedTypes: [type],
+      });
+      assert.equal(
+        rejected.length, 0,
+        `validateGenerated rejected the ${type} contract's own example: ${JSON.stringify(rejected)}`,
+      );
+      assert.equal(accepted.length, 1);
+    });
+  }
 });
