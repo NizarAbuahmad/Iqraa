@@ -1,0 +1,186 @@
+{
+  "meta": {
+    "grade": "الصف العاشر",
+    "grade_en": "Grade 10",
+    "subject": "اللغة الإنجليزية - القطاع الصناعي والتقني",
+    "subject_en": "English for the Industrial/Technical track",
+    "track_en": "Industrial / Technical",
+    "track_ar": "القطاع الصناعي والتقني",
+    "curriculum_authority": "York Press / Pearson Education, written by Celia Bingham — a technical-English ESP coursebook; NCCD adoption status for this title not confirmed",
+    "semester_covered": 1,
+    "provenance_note": "The Drive folder holds 'Techer's book industry english 2.pdf' (Vocational English, Level 2, Volume 1 — the same series as Commerce/Agriculture/Hospitality), but that file's text could not be extracted (Drive returned no content for it, unlike its four siblings) — see known_gaps. This catalog instead uses 'Technical English, Level 1, Course Book 1' (Celia Bingham, second edition, 2023) as the Industrial/Technical track's source: a different level (CEFR A1 vs the others' A2) and a different lesson format (no scope-and-sequence table; each unit opens with a 'Briefing' paragraph and lists numbered focus sections). Units 1-8 use that Briefing paragraph and section titles, translated to Arabic for this catalog. Units 9-12 (Troubleshooting, Safety, Cause and effect, Checking and confirming) are title-only: extraction of the source text ran out before reaching their teaching notes, so their objectives here are inferred from the unit title and general ESP course conventions, not read from the book.",
+    "source_books": {
+      "teachers_book_pending_extraction": "Techer's book industry english 2.pdf — Google Drive folder 143JxaWcakvnvZ-iTZYecpBRdyhiLONSX, driveId 1a6j5izZzLqmHdNFNMj7Je93Uk5Fkt9ml (on file, not yet extracted)",
+      "teachers_book_used": "Techer's book technical english.pdf — Google Drive folder 143JxaWcakvnvZ-iTZYecpBRdyhiLONSX, driveId 1WmnwAjSTMgA0-zHEUY6Yoy4CRDqw7WmB"
+    },
+    "schema_version": "1.0",
+    "known_gaps": [
+      "'industry english 2.pdf' (the Level 2 vocational-series title matching Commerce/Agriculture/Hospitality) is on file in Drive but returned empty text on every extraction attempt during authoring. Re-run extraction on that file and replace this catalog's source once it succeeds.",
+      "Units 9-12 are title-only — no Briefing or section detail was read for them; only the Contents page unit title is real. Their objectives/vocabulary here are inferred, not sourced.",
+      "Even for units 1-8, only the unit-opening Briefing paragraph and the numbered section titles were mined — not the lesson-by-lesson activities, audio scripts, dialogues or the Word list appendix.",
+      "This book is CEFR A1 (Level 1), one level below the A2 (Level 2) books used for Commerce/Agriculture/Hospitality — the four tracks are not at matched difficulty.",
+      "Arabic titles and descriptions are translations authored for this catalog, not text printed in the (English-only) source book."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_en": "Check-up",
+      "title_ar": "وحدة تمهيدية (مراجعة)",
+      "briefing_en": "Ways of greeting strangers and introducing oneself in a professional setting; a quick review of letters, numbers, dates, times and units of measurement.",
+      "briefing_ar": "طرق تحية الغرباء وتقديم النفس في بيئة عمل مهنية؛ مراجعة سريعة للحروف والأرقام والتواريخ والأوقات ووحدات القياس.",
+      "focus_areas": [
+        { "en": "Basics", "ar": "أساسيات" },
+        { "en": "Letters and numbers", "ar": "الحروف والأرقام" },
+        { "en": "Dates and times", "ar": "التواريخ والأوقات" }
+      ],
+      "data_tier": "teacher-guide-briefing",
+      "prior_knowledge": ["Basic English communication skills from Grade 9"]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_en": "Parts (1)",
+      "title_ar": "الأجزاء (1)",
+      "briefing_en": "Communicating about the parts (components) of a tool or device, including how to use an instruction manual.",
+      "briefing_ar": "التواصل حول أجزاء (مكونات) أداة أو جهاز، بما في ذلك كيفية استخدام دليل التعليمات.",
+      "focus_areas": [
+        { "en": "Naming", "ar": "تسمية الأجزاء" },
+        { "en": "Assembling", "ar": "التجميع" },
+        { "en": "Ordering", "ar": "الطلب والشراء" }
+      ],
+      "data_tier": "teacher-guide-briefing",
+      "prior_knowledge": ["Vocabulary and grammar from Unit 1: Check-up"]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_en": "Parts (2)",
+      "title_ar": "الأجزاء (2)",
+      "briefing_en": "The parts and components of tools, their functions and locations.",
+      "briefing_ar": "أجزاء الأدوات ومكوناتها ووظائفها ومواقعها.",
+      "focus_areas": [
+        { "en": "Tools", "ar": "الأدوات" },
+        { "en": "Functions", "ar": "الوظائف" },
+        { "en": "Locations", "ar": "المواقع" }
+      ],
+      "data_tier": "teacher-guide-briefing",
+      "prior_knowledge": ["Vocabulary and grammar from Unit 2: Parts (1)"]
+    },
+    {
+      "id": "u4",
+      "number": 4,
+      "title_en": "Movement",
+      "title_ar": "الحركة",
+      "briefing_en": "Ways of communicating about directional movement, needed in engineering fields such as robotics, mechatronics and transportation.",
+      "briefing_ar": "طرق التعبير عن اتجاه الحركة، وتُستخدم في مجالات هندسية مثل الروبوتات والميكاترونكس والنقل.",
+      "focus_areas": [
+        { "en": "Directions", "ar": "الاتجاهات" },
+        { "en": "Instructions", "ar": "التعليمات" },
+        { "en": "Actions", "ar": "الأفعال والحركات" }
+      ],
+      "data_tier": "teacher-guide-briefing",
+      "prior_knowledge": ["Vocabulary and grammar from Unit 3: Parts (2)"]
+    },
+    {
+      "id": "u5",
+      "number": 5,
+      "title_en": "Flow",
+      "title_ar": "التدفق",
+      "briefing_en": "Explaining how fluids move around a system, and how electrical current moves around a circuit.",
+      "briefing_ar": "شرح كيفية تدفق الموائع في نظام ما، وكيفية سريان التيار الكهربائي في دائرة كهربائية.",
+      "focus_areas": [
+        { "en": "Heating system", "ar": "نظام التسخين" },
+        { "en": "Electrical circuit", "ar": "الدائرة الكهربائية" },
+        { "en": "Cooling system", "ar": "نظام التبريد" }
+      ],
+      "data_tier": "teacher-guide-briefing",
+      "prior_knowledge": ["Vocabulary and grammar from Unit 4: Movement"]
+    },
+    {
+      "id": "u6",
+      "number": 6,
+      "title_en": "Materials",
+      "title_ar": "المواد",
+      "briefing_en": "Communicating about materials, their properties, and how to test them — relevant to chemical engineering, plastics processing, mechanical and automobile engineering, aerospace, building and construction.",
+      "briefing_ar": "التواصل حول المواد وخصائصها وكيفية اختبارها، وهو موضوع مرتبط بالهندسة الكيميائية والبلاستيك والهندسة الميكانيكية وصناعة السيارات والطيران والبناء والتشييد.",
+      "focus_areas": [
+        { "en": "Materials testing", "ar": "اختبار المواد" }
+      ],
+      "data_tier": "teacher-guide-briefing",
+      "prior_knowledge": ["Vocabulary and grammar from Unit 5: Flow"]
+    },
+    {
+      "id": "u7",
+      "number": 7,
+      "title_en": "Specifications",
+      "title_ar": "المواصفات",
+      "briefing_en": "Ways of specifying dimensions and quantities, used when ordering or buying equipment for manufacturing and construction projects.",
+      "briefing_ar": "طرق تحديد الأبعاد والكميات، وتُستخدم عند طلب أو شراء المعدات لمشاريع التصنيع والبناء.",
+      "focus_areas": [
+        { "en": "Dimensions", "ar": "الأبعاد" }
+      ],
+      "data_tier": "teacher-guide-briefing",
+      "prior_knowledge": ["Vocabulary and grammar from Unit 6: Materials"]
+    },
+    {
+      "id": "u8",
+      "number": 8,
+      "title_en": "Reporting",
+      "title_ar": "إعداد التقارير",
+      "briefing_en": "Ways of reporting recent incidents, damage and loss (for example in a delivery of goods or equipment), and past events.",
+      "briefing_ar": "طرق الإبلاغ عن الحوادث الأخيرة والأضرار والفقدان (مثل الأضرار في شحنة بضائع أو معدات)، والإبلاغ عن أحداث ماضية.",
+      "focus_areas": [
+        { "en": "Recent incidents", "ar": "حوادث حديثة" },
+        { "en": "Reporting damage", "ar": "الإبلاغ عن الأضرار" }
+      ],
+      "data_tier": "teacher-guide-briefing",
+      "prior_knowledge": ["Vocabulary and grammar from Unit 7: Specifications"]
+    },
+    {
+      "id": "u9",
+      "number": 9,
+      "title_en": "Troubleshooting",
+      "title_ar": "استكشاف الأعطال وحلها",
+      "briefing_en": "Describing faults and problems in equipment and working through solutions to fix them.",
+      "briefing_ar": "وصف الأعطال والمشكلات في المعدات والعمل على إيجاد حلول لإصلاحها.",
+      "focus_areas": [],
+      "data_tier": "title-only",
+      "prior_knowledge": ["Vocabulary and grammar from Unit 8: Reporting"]
+    },
+    {
+      "id": "u10",
+      "number": 10,
+      "title_en": "Safety",
+      "title_ar": "السلامة",
+      "briefing_en": "Language for warnings, hazards, and safety instructions and procedures in a workplace or technical setting.",
+      "briefing_ar": "لغة التحذيرات والمخاطر وتعليمات وإجراءات السلامة في مكان العمل أو البيئة التقنية.",
+      "focus_areas": [],
+      "data_tier": "title-only",
+      "prior_knowledge": ["Vocabulary and grammar from Unit 9: Troubleshooting"]
+    },
+    {
+      "id": "u11",
+      "number": 11,
+      "title_en": "Cause and effect",
+      "title_ar": "السبب والنتيجة",
+      "briefing_en": "Explaining cause-and-effect relationships in technical processes and systems.",
+      "briefing_ar": "شرح علاقات السبب والنتيجة في العمليات والأنظمة التقنية.",
+      "focus_areas": [],
+      "data_tier": "title-only",
+      "prior_knowledge": ["Vocabulary and grammar from Unit 10: Safety"]
+    },
+    {
+      "id": "u12",
+      "number": 12,
+      "title_en": "Checking and confirming",
+      "title_ar": "التحقق والتأكيد",
+      "briefing_en": "Language for checking information, confirming instructions, and verifying that work has been completed correctly.",
+      "briefing_ar": "لغة التحقق من المعلومات وتأكيد التعليمات والتحقق من إنجاز العمل بشكل صحيح.",
+      "focus_areas": [],
+      "data_tier": "title-only",
+      "prior_knowledge": ["Vocabulary and grammar from Unit 11: Cause and effect"]
+    }
+  ]
+}

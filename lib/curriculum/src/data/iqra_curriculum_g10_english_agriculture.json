@@ -1,0 +1,163 @@
+{
+  "meta": {
+    "grade": "الصف العاشر",
+    "grade_en": "Grade 10",
+    "subject": "اللغة الإنجليزية - القطاع الزراعي",
+    "subject_en": "English for the Agriculture track",
+    "track_en": "Agriculture",
+    "track_ar": "القطاع الزراعي",
+    "curriculum_authority": "York Press / Pearson Education, adapted by the Educational Research Center (ERC) — a vocational ESP coursebook; NCCD adoption status for this title not confirmed",
+    "semester_covered": 1,
+    "provenance_note": "Unit-level fields (listening/reading topic, vocabulary topic, grammar topic, career skill, writing task, writing tip) are copied from the 'Student's Book scope and sequence' table printed in the Teacher's Book (Vocational English, Level 2, Volume 1 — Agriculture, by Joanne Taylore-Knowles, York Press/Educational Research Center, 2023). Arabic labels are our own translations — the source book is English-only and prints no Arabic. No lesson-by-lesson activity breakdown from the Teacher's Book teaching notes was mined; each unit is represented as one lesson at scope-and-sequence depth.",
+    "source_books": {
+      "teachers_book": "Techer's book agriculture english 2.pdf — Google Drive folder 143JxaWcakvnvZ-iTZYecpBRdyhiLONSX, driveId 1EJyghKdN7oi_xYyeHJWXZz1lQreAdXuc"
+    },
+    "schema_version": "1.0",
+    "known_gaps": [
+      "Only the Student's Book scope-and-sequence table was mined, not the full unit-by-unit teaching notes (procedural activities, audio scripts, answer keys) inside the Teacher's Book.",
+      "The Workbook column of the scope-and-sequence table (grammar/vocabulary drill references) was not carried over — it duplicates the Grammar/Vocabulary columns already captured.",
+      "No period/حصة counts are printed in the source for this course; estimatedDuration in the browser catalog is a fixed per-unit default, not sourced.",
+      "Arabic titles and topic labels are translations authored for this catalog, not text printed in the (English-only) source book."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_en": "Soil",
+      "title_ar": "التربة",
+      "data_tier": "textbook-scope-sequence",
+      "prior_knowledge": ["Basic English communication skills from Grade 9"],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_en": "Soil",
+          "title_ar": "التربة",
+          "listening_topic": { "en": "Soil preparation", "ar": "تحضير التربة" },
+          "reading_topic": { "en": "An article about vegetable gardens", "ar": "مقال عن حدائق الخضروات" },
+          "vocabulary_topic": { "en": "Gardening and farming equipment; verbs related to farming", "ar": "معدات البستنة والزراعة؛ أفعال متعلقة بالزراعة" },
+          "grammar_topic": { "en": "Linking words", "ar": "أدوات الربط" },
+          "career_skill": { "en": "Discuss soil preparation methods", "ar": "مناقشة طرق تحضير التربة" },
+          "writing_task": { "en": "A blog about soil preparation", "ar": "مدونة عن تحضير التربة" },
+          "writing_tip": { "en": "Writing paragraphs", "ar": "كتابة الفقرات" }
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_en": "Irrigation",
+      "title_ar": "الري",
+      "data_tier": "textbook-scope-sequence",
+      "prior_knowledge": ["Vocabulary and grammar from Unit 1: Soil"],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_en": "Irrigation",
+          "title_ar": "الري",
+          "listening_topic": { "en": "Irrigation and erosion", "ar": "الري والتعرية" },
+          "reading_topic": { "en": "A report on water supply", "ar": "تقرير عن إمدادات المياه" },
+          "vocabulary_topic": { "en": "Urban farming; irrigation", "ar": "الزراعة الحضرية؛ الري" },
+          "grammar_topic": { "en": "Modal verbs for obligation", "ar": "أفعال الوجوب الناقصة" },
+          "career_skill": { "en": "Solve farming problems", "ar": "حل مشكلات زراعية" },
+          "writing_task": { "en": "A report on problems with farming", "ar": "تقرير عن مشكلات زراعية" },
+          "writing_tip": { "en": "Plan your writing", "ar": "التخطيط للكتابة" }
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_en": "Fertilising",
+      "title_ar": "التسميد",
+      "data_tier": "textbook-scope-sequence",
+      "prior_knowledge": ["Vocabulary and grammar from Unit 2: Irrigation"],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_en": "Fertilising",
+          "title_ar": "التسميد",
+          "listening_topic": { "en": "Fertilisers", "ar": "الأسمدة" },
+          "reading_topic": { "en": "An article about composting", "ar": "مقال عن التسميد العضوي (الكمبوست)" },
+          "vocabulary_topic": { "en": "Verbs related to fertilising; graph language", "ar": "أفعال متعلقة بالتسميد؛ لغة الرسوم البيانية" },
+          "grammar_topic": { "en": "Present perfect; used to", "ar": "المضارع التام؛ used to للتعبير عن عادة سابقة" },
+          "career_skill": { "en": "Discuss the use of fertilisers", "ar": "مناقشة استخدام الأسمدة" },
+          "writing_task": { "en": "A poster about fertilising in your region", "ar": "ملصق عن التسميد في منطقتك" },
+          "writing_tip": { "en": "Bullet points", "ar": "النقاط التعدادية" }
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "number": 4,
+      "title_en": "Pests and disease",
+      "title_ar": "الآفات والأمراض",
+      "data_tier": "textbook-scope-sequence",
+      "prior_knowledge": ["Vocabulary and grammar from Unit 3: Fertilising"],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_en": "Pests and disease",
+          "title_ar": "الآفات والأمراض",
+          "listening_topic": { "en": "Weed control", "ar": "مكافحة الأعشاب الضارة" },
+          "reading_topic": { "en": "An article about insect control", "ar": "مقال عن مكافحة الحشرات" },
+          "vocabulary_topic": { "en": "Pests: insects and animals; crops and pests", "ar": "الآفات: الحشرات والحيوانات؛ المحاصيل والآفات" },
+          "grammar_topic": { "en": "Present passive", "ar": "المبني للمجهول في المضارع" },
+          "career_skill": { "en": "Solutions to pest and disease problems", "ar": "حلول لمشكلات الآفات والأمراض" },
+          "writing_task": { "en": "A blog about agriculture", "ar": "مدونة عن الزراعة" },
+          "writing_tip": { "en": "The structure of a blog post", "ar": "بنية تدوينة المدونة" }
+        }
+      ]
+    },
+    {
+      "id": "u5",
+      "number": 5,
+      "title_en": "Harvest",
+      "title_ar": "الحصاد",
+      "data_tier": "textbook-scope-sequence",
+      "prior_knowledge": ["Vocabulary and grammar from Unit 4: Pests and disease"],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_en": "Harvest",
+          "title_ar": "الحصاد",
+          "listening_topic": { "en": "Store or sell the harvest", "ar": "تخزين المحصول أو بيعه" },
+          "reading_topic": { "en": "An article about storing grain", "ar": "مقال عن تخزين الحبوب" },
+          "vocabulary_topic": { "en": "Selling and storing crops", "ar": "بيع المحاصيل وتخزينها" },
+          "grammar_topic": { "en": "Quantifiers; countable and uncountable nouns", "ar": "محددات الكمية؛ الأسماء المعدودة وغير المعدودة" },
+          "career_skill": { "en": "A proposal to solve a farming problem", "ar": "اقتراح لحل مشكلة زراعية" },
+          "writing_task": { "en": "Create a chart about fruit and vegetables", "ar": "إنشاء مخطط عن الفواكه والخضروات" },
+          "writing_tip": { "en": "Creating charts", "ar": "إنشاء المخططات" }
+        }
+      ]
+    },
+    {
+      "id": "u6",
+      "number": 6,
+      "title_en": "Animal and artificial products",
+      "title_ar": "المنتجات الحيوانية والصناعية",
+      "data_tier": "textbook-scope-sequence",
+      "prior_knowledge": ["Vocabulary and grammar from Unit 5: Harvest"],
+      "lessons": [
+        {
+          "id": "u6_l1",
+          "order": 1,
+          "title_en": "Animal and artificial products",
+          "title_ar": "المنتجات الحيوانية والصناعية",
+          "listening_topic": { "en": "Items made with animal products", "ar": "منتجات مصنوعة من مواد حيوانية" },
+          "reading_topic": { "en": "An article about animal products", "ar": "مقال عن المنتجات الحيوانية" },
+          "vocabulary_topic": { "en": "Natural and artificial materials", "ar": "المواد الطبيعية والصناعية" },
+          "grammar_topic": { "en": "Past question forms", "ar": "صيغ السؤال في الماضي" },
+          "career_skill": { "en": "Collaboration and teamwork", "ar": "التعاون والعمل الجماعي" },
+          "writing_task": { "en": "An email about animal byproducts", "ar": "بريد إلكتروني عن المنتجات الثانوية الحيوانية" },
+          "writing_tip": { "en": "Being polite", "ar": "أسلوب المجاملة والتأدب" }
+        }
+      ]
+    }
+  ]
+}
