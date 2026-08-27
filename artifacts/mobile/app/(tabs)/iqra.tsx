@@ -1632,6 +1632,7 @@ export default function IqraScreen() {
             : 'Happy to refine — which lesson or material should I adjust?',
           timestamp: new Date(),
         };
+        awaitingClarifyRef.current = true;
         setMessages(prev => [...prev, clarifyMsg]);
         return;
       }
@@ -1659,6 +1660,7 @@ export default function IqraScreen() {
             clarificationQuery: q,
             timestamp: new Date(),
           };
+          awaitingClarifyRef.current = true;
           setMessages(prev => [...prev, clarifyMsg]);
           return;
         }
@@ -1763,6 +1765,7 @@ export default function IqraScreen() {
         };
         // The `finally` on the enclosing try clears the thinking state, the
         // same way the subject-clarification branch above relies on it.
+        awaitingClarifyRef.current = true;
         setMessages(prev => [...prev, clarifyMsg]);
         return;
       }
@@ -1973,6 +1976,17 @@ export default function IqraScreen() {
         && !pedagogicalClarification
         && (quickTopic || (teachingActions && teachingActions.length > 0)),
       );
+
+      // Structured clarifications (pedagogicalClarification) are the obvious case, but
+      // the live AI path (remoteAIService.chat) also asks free-text clarifying questions
+      // — "which concept do you want explained?" — with no structural flag at all. Without
+      // this, a one-word answer to that question ("الافتراضات") lands back in
+      // classifyChatIntent's short-token fallback, which re-asks its own generic
+      // "concept or material?" question instead of forwarding the answer. Treat any short
+      // reply ending in a question mark, with no artifact produced, as a standing ask.
+      awaitingClarifyRef.current =
+        Boolean(pedagogicalClarification)
+        || (!artifactData && /[؟?]\s*$/.test(responseText.trim()) && responseText.trim().length < 400);
 
       const assistantMsg: Message = {
         id: (Date.now() + 1).toString(),
