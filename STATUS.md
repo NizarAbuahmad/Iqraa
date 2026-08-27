@@ -7163,3 +7163,48 @@ files, 94 lessons, 28 gaps, 0 structural errors) and `test` still 83/83 —
 this pass touched app code, not curriculum data. **Not run against the real
 app** — confirm the grade pill actually renders and a Grade 9 pick survives
 a generator round-trip on the next live check.
+
+## Grade 9's teacher guides surfaced in Drive, closing part of the title-only gap, 2026-08-27
+
+Re-checked Drive for Grade 9 Math source material now that the grade is live.
+Found a complete Semester 2 teacher guide (`دليل المعلم ... الفصل الثاني.pdf`,
+36.5MB) that did not exist in any earlier search this session — the first
+real teacher guide found for that semester. Both S1 and S2 guides exceed the
+10MB `download_file_content` ceiling, so full extraction still isn't
+possible; but `read_file_content` reached each guide's complete table of
+contents (Drive's own text extraction still truncates before any unit's
+actual مخطط الوحدة period table — that's unchanged).
+
+What the TOCs bought, honestly:
+- **Semester 2 (units 5-8): every lesson title now traced to the teacher
+  guide itself**, not just the exercise book. One real correction: Unit 5
+  Lesson 2's official title is «منصفات في المثلث», not «منصفات الزوايا في
+  المثلث» — the exercise-book-derived title had added a qualifier that isn't
+  in the guide. Everything else matched exactly. Still title-only — no
+  periods, objectives, or vocabulary; that needs the unit-plan tables the
+  extraction doesn't reach.
+- **Semester 1 Unit 2**: independently confirmed correct (titles/order
+  already matched, from earlier work). Caught a real ordering bug instead —
+  the Unit 1 GeoGebra lab was positioned before Lesson 1 in the data; the
+  guide's TOC places it after Lesson 4 (this file's `u1_l3`, post-exclusion).
+  Fixed by moving the array entry, not just its `order` number — the
+  browser-catalog builder iterates the JSON array literally and never reads
+  `lesson.order`, so renumbering alone would have changed nothing a reader
+  could see.
+
+Both `iqra_curriculum_g9_math_sem1.json` and `..._sem2.json` provenance/
+known_gaps rewritten to match — S2's now says a teacher guide exists (it
+used to correctly say none did), S1 documents the lab reorder.
+
+**This container now has `node_modules`** — `pnpm install` succeeded this
+session where it hadn't in earlier ones (probably just a fresh container
+with the network reachable this time, not a permanent change; re-check next
+session rather than assuming it holds). Ran the real tools instead of the
+`--noResolve` syntax-check workaround several recent entries had to fall
+back on: `pnpm --filter @workspace/curriculum run verify` (7 files, 94
+lessons, 0 structural errors, 28 gaps — unchanged count, since these were
+title corrections not new lessons), `test` (83/83), and `pnpm run
+typecheck` for the whole monorepo (clean). Grade 9 Math S1 Unit 2 and all of
+Semester 2 remain title-only — the unit-plan tables are the next thing worth
+chasing, and would need either a >10MB-capable download path or the guides
+re-uploaded directly the way the S1 units 3-4 material was.
