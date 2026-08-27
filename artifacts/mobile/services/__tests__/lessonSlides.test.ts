@@ -531,7 +531,16 @@ describe('splitWarmup', () => {
     assert.equal(notes, intro);
   });
 
-  it('projects the text unchanged when there is no quoted question', () => {
+  it('lifts an unquoted, colon-introduced question and keeps the rest for the teacher', () => {
+    const intro = 'يبدأ المعلم بمراجعة سريعة لمفهوم حد وحيد، ثم ينتقل إلى سؤال تمهيدي: '
+      + 'كيف يمكن جمع هذه الحدود أو ضربها لتكوين تعبيرات أكبر؟ بعد ذلك يوضح أن كثيرات '
+      + 'الحدود تُعد من أهم أنواع الاقترانات.';
+    const { projected, notes } = splitWarmup(intro);
+    assert.equal(projected, 'كيف يمكن جمع هذه الحدود أو ضربها لتكوين تعبيرات أكبر؟');
+    assert.equal(notes, intro);
+  });
+
+  it('projects the text unchanged when there is no quoted or colon-introduced question', () => {
     const intro = 'لعبة ما أعرفه: يكتب الطلاب ما يعرفونه عن الدرس.';
     assert.deepEqual(splitWarmup(intro), { projected: intro, notes: '' });
   });
