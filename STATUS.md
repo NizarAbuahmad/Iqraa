@@ -7266,3 +7266,48 @@ that doesn't boot the actual built artifact — which is exactly why
 yet verified against a live redeploy — the next real generation on
 `iqraa-api` after this merges and redeploys should show a page number under
 the grounding pill for units with extracted text (circle unit first).
+
+**Verified against the live deploy, same day.** Re-tested the exact circle-
+unit lesson plan after the fix above went out: the grounding pill now shows
+real citations — «كتاب الطالب — الكيمياء — الفصل الأول، صفحة ١٠» and two more,
+for a chemistry atomic-spectrum lesson tried separately. Checked all three
+cited pages against the actual extracted book text before trusting them: page
+10 opens the Bohr-theory lesson, page 20 the wave-mechanical atomic model,
+page 30 electron configuration — all genuinely on-topic, not coincidental
+round numbers. The fix works.
+
+## Book figures now show on screen, not only in the export, 2026-08-27
+
+Answered a question the citation fix surfaced: a teacher pointed out the
+generated lesson plan named a diagram («انظر الشكل المجاور») with nothing to
+look at. The diagrams exist — 60 figures cut from the student books, already
+mapped lesson-by-lesson (`bookFigures.ts`) and already rendered into every
+PDF/Word export's appendix (`exportHtml.ts`'s `figuresSectionHTML`, captioned
+by book and page, capped at `EXPORT_FIGURE_MAX = 6`). None of that reached the
+in-app result screen a teacher sees immediately after generating — only the
+exported document.
+
+**Not a new feature, a new surface for an existing one.** `bookFigureUri.ts`'s
+`bookFigureRefsForLesson()` already resolves a lesson's figures to real,
+bundled image URIs with captions — built for the export path, already called
+by all four generator screens (`getExportFigures()`, lesson-plan/worksheet/
+quiz/activity) at export time. New `components/ui/BookFiguresPanel.tsx` is a
+thin render of that same, already-resolved data as a two-column image grid
+with captions, mirroring `figuresSectionHTML`'s wording and figure cap
+exactly, so the same reasoning it documents (a generated question can say
+"see the adjacent figure" because that's how the book itself writes such
+questions, but the model never saw the book's figures and cannot know which
+one goes with which item — showing every diagram the lesson prints, cited by
+page, and trusting the teacher to match it by eye, same as a student does
+from the printed book) now applies to what is on screen, not only to what
+gets exported. Wired into the same `GroundingNotice` block on all four
+generator screens, shown only when a lesson actually resolved.
+
+No new data, no new resolution logic — reused `getExportFigures()` verbatim.
+276 api-server / 983 mobile / 83 curriculum tests pass; typecheck clean. No
+component-render tests added — this codebase has none for any `components/ui/*`
+file (checked before assuming a gap), consistent with how `GroundingNotice.tsx`
+itself ships untested at the render level; the data it renders is tested
+thoroughly elsewhere (`bookFigures`, `bookFigureUri`/`exportHtml` figure
+tests). Not yet seen on a live device — confirm the grid renders sensibly on
+a phone-width screen, not just that it typechecks.

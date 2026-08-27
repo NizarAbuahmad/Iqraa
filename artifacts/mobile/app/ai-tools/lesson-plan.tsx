@@ -22,6 +22,7 @@ import { Toast } from '@/components/ui/Toast';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
 import { isAbortError } from '@/services/ai/aiProvenance';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
+import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
@@ -474,6 +475,14 @@ export default function LessonPlanScreen() {
               genericHint: t('notGroundedHint'),
             }}
           />
+          {curriculumGrounded && (
+            <BookFiguresPanel
+              figures={getExportFigures()}
+              isRTL={isRTL}
+              colors={colors}
+              labels={{ title: t('bookFiguresTitle'), note: t('bookFiguresNote') }}
+            />
+          )}
         </View>
       )}
 
