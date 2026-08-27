@@ -115,7 +115,9 @@ describe('subject isolation', () => {
   it('emits no other subject\'s unit tag, for any lesson', () => {
     // Stronger than the financial-literacy case: assert the whole namespace.
     const prefixFor: Record<string, RegExp> = {
-      mathematics: /^(s[12](-u\d+|-matrices)?|g10-math-general)$/,
+      // Grade 10 math tags are bare (`s1-u2`); every other grade gets an
+      // explicit `g{n}-` prefix (`g9-math-s1-u2`) — see bankTagsForParsedUnit.
+      mathematics: /^(s[12](-u\d+|-matrices)?|g10-math-general|g9-math-s[12](-u\d+)?)$/,
       chemistry: /^(chem-s[12](-u\d+)?|chem-g10-general)$/,
       'financial-literacy': /^finlit-s[12]$/,
     };

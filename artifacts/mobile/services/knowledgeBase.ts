@@ -3,12 +3,17 @@
  *  • Chemistry Grade 10, Semester 1 (الكيمياء - الصف العاشر - الفصل الأول)
  *  • Mathematics Grade 10, Semester 1 (الرياضيات - الصف العاشر - الفصل الأول)
  *  • Mathematics Grade 10, Semester 2 (الرياضيات - الصف العاشر - الفصل الثاني)
+ *  • Mathematics Grade 9, Semester 1 (الرياضيات - الصف التاسع - الفصل الأول)
+ *  • Mathematics Grade 9, Semester 2 (الرياضيات - الصف التاسع - الفصل الثاني)
  *
- * Grade 10 Math Semester 1/2 units/lessons are seeded from
- * data/iqra_curriculum_g10_math_sem{1,2}.json (NCCD). Legacy hardcoded Math
- * S1/S2 rows remain below but are excluded from the exported catalog.
+ * Grade 10 Math Semester 1/2 and Grade 9 Math Semester 1/2 units/lessons are
+ * seeded from data/iqra_curriculum_{g10,g9}_math_sem{1,2}.json (NCCD). Legacy
+ * hardcoded Math S1/S2 rows remain below but are excluded from the exported
+ * catalog.
  *
- * Investor MVP: helper lookups hide Chemistry and non-Math books from UI surfaces.
+ * MVP grade/subject visibility (which books actually reach the UI) is
+ * `isKbBookVisible`, driven by `MVP_GRADE_IDS`/`MVP_SUBJECT_IDS` in
+ * `@workspace/curriculum` — check those, not this comment, for current state.
  */
 // Value import, not just the re-export below: `export ... from` creates no local
 // binding, and resolveGroundedKbLesson calls this directly.
@@ -25,6 +30,14 @@ import {
   NCCD_S2_BOOK_ID,
   buildNccdSem2Catalog,
 } from './curriculumG10MathSem2.ts';
+import {
+  G9_MATH_S1_KB_BOOK_ID,
+  buildG9MathSem1Catalog,
+} from './curriculumG9MathSem1.ts';
+import {
+  G9_MATH_S2_KB_BOOK_ID,
+  buildG9MathSem2Catalog,
+} from './curriculumG9MathSem2.ts';
 import {
   CHEM_S1_BOOK_ID,
   buildChemSem1Catalog,
@@ -131,6 +144,24 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Mathematics – Grade 10 – Semester 2',
     semester: 2,
     source: '10th_grade,_math,_2nd_semester_1785147978008.pdf',
+  },
+  {
+    id: G9_MATH_S1_KB_BOOK_ID,
+    gradeId: 'grade-9',
+    subjectId: 'mathematics',
+    titleAr: 'الرياضيات – الصف التاسع – الفصل الأول',
+    titleEn: 'Mathematics – Grade 9 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g9_math_sem1.json (NCCD)',
+  },
+  {
+    id: G9_MATH_S2_KB_BOOK_ID,
+    gradeId: 'grade-9',
+    subjectId: 'mathematics',
+    titleAr: 'الرياضيات – الصف التاسع – الفصل الثاني',
+    titleEn: 'Mathematics – Grade 9 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g9_math_sem2.json (NCCD)',
   },
 ];
 
@@ -1077,6 +1108,8 @@ const _nccdSem2 = buildNccdSem2Catalog();
 const _chemSem1 = buildChemSem1Catalog();
 const _chemSem2 = buildChemSem2Catalog();
 const _finlitSem1 = buildFinlitSem1Catalog();
+const _g9MathSem1 = buildG9MathSem1Catalog();
+const _g9MathSem2 = buildG9MathSem2Catalog();
 const _legacyS1UnitIds = new Set(
   HARDCODED_KB_UNITS.filter(u => u.bookId === NCCD_S1_BOOK_ID).map(u => u.id),
 );
@@ -1199,9 +1232,11 @@ export const KB_UNITS: KBUnit[] = [
   ..._finlitSem1.units,
   ..._nccdSem1.units,
   ..._nccdSem2.units,
+  ..._g9MathSem1.units,
+  ..._g9MathSem2.units,
 ];
 
-/** Active lessons: NCCD Chem S1/S2 + NCCD Math S1/S2 + NCCD FinLit S1. */
+/** Active lessons: NCCD Chem S1/S2 + NCCD Math S1/S2 (G10 + G9) + NCCD FinLit S1. */
 export const KB_LESSONS: KBLesson[] = [
   ...HARDCODED_KB_LESSONS
     .filter(l => !_supersededUnitIds.has(l.unitId))
@@ -1211,6 +1246,10 @@ export const KB_LESSONS: KBLesson[] = [
   ..._finlitSem1.lessons.map(enrichLesson),
   ..._nccdSem1.lessons.map(enrichLesson),
   ..._nccdSem2.lessons.map(enrichLesson),
+  // No hand-authored G9 rows exist to enrich from — these carry only what
+  // the NCCD JSON has (title-only lessons keep an empty summary/objectives).
+  ..._g9MathSem1.lessons,
+  ..._g9MathSem2.lessons,
 ];
 
 // ─────────────────────────────────────────────────────
