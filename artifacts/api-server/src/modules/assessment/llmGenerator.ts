@@ -59,7 +59,7 @@ export interface LlmGenerationRequest {
  * options with unique text and a correct id that exists — and a question that
  * fails them is thrown away after we have already paid for it.
  */
-const TYPE_CONTRACTS: Partial<Record<QuestionType, string>> = {
+export const TYPE_CONTRACTS: Partial<Record<QuestionType, string>> = {
   multiple_choice:
     '{"type":"multiple_choice","body":{"stem":"…","multiSelect":false,' +
     '"options":[{"id":"a","text":"…"},{"id":"b","text":"…"},{"id":"c","text":"…"},{"id":"d","text":"…"}]},' +
@@ -75,17 +75,37 @@ const TYPE_CONTRACTS: Partial<Record<QuestionType, string>> = {
     '{"type":"fill_blank","body":{"template":"… {{1}} … {{2}} …"},' +
     '"expectedAnswer":{"blanks":[{"accept":["…","…"]},{"accept":["…"]}]}}' +
     "  — one entry in blanks per {{n}}, and accept must list every spelling a correct student might write",
+  // These four are graded by a human (practical_task) or, once Tier 3 exists,
+  // an AI rubric grader (the other three) — never by `questionTypes.ts`'s own
+  // `grade()`, which none of them define. All three ai_rubric types need
+  // `modelAnswer` and `keyConcepts` in `expectedAnswer`: the same fields the
+  // mock generator always fills in, and — unlike the four contracts above —
+  // not optional. `validateGenerated` calls each type's own `validate()`
+  // before anything is persisted, and `questionTypes.ts`'s shared open-response
+  // validator rejects any question missing either field, model-written or
+  // not. A contract that omits them (as this one used to for all three) is
+  // not a smaller ask — it is asking the model to write a question that
+  // cannot pass the gate that already exists for it.
   short_answer:
-    '{"type":"short_answer","body":{"prompt":"…"},"expectedAnswer":{"accept":["…"]}}',
+    '{"type":"short_answer","body":{"prompt":"…"},' +
+    '"expectedAnswer":{"modelAnswer":"…","keyConcepts":["…","…"]},' +
+    '"rubric":{"criteria":[{"label":"…","marks":2}]}}',
   open_ended:
-    '{"type":"open_ended","body":{"prompt":"…"},"expectedAnswer":{},' +
+    '{"type":"open_ended","body":{"prompt":"…"},' +
+    '"expectedAnswer":{"modelAnswer":"…","keyConcepts":["…","…"]},' +
     '"rubric":{"criteria":[{"label":"…","marks":2}]}}',
   problem_solving:
-    '{"type":"problem_solving","body":{"prompt":"…"},"expectedAnswer":{},' +
+    '{"type":"problem_solving","body":{"prompt":"…","scenario":"…"},' +
+    '"expectedAnswer":{"modelAnswer":"…","keyConcepts":["…","…"]},' +
     '"rubric":{"criteria":[{"label":"…","marks":2}]}}',
+  // Graded manually against successCriteria, never by an AI rubric — a
+  // rubric example here would be as misleading as omitting successCriteria
+  // is disqualifying, since `practicalTask.validate()` requires the latter
+  // and never looks for the former.
   practical_task:
-    '{"type":"practical_task","body":{"prompt":"…"},"expectedAnswer":{},' +
-    '"rubric":{"criteria":[{"label":"…","marks":2}]}}',
+    '{"type":"practical_task","body":{"prompt":"…"},' +
+    '"expectedAnswer":{"successCriteria":["…","…"]}}' +
+    "  — no rubric; a teacher marks this by hand against the success criteria",
 };
 
 const DIFFICULTY_NOTE: Record<Difficulty, string> = {

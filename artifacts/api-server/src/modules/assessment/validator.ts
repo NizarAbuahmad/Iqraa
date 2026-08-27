@@ -12,8 +12,8 @@
  */
 import type { QuestionType } from "@workspace/db";
 import { normalizeArabic } from "@workspace/curriculum";
-import { QUESTION_TYPES } from "./questionTypes";
-import type { GeneratedQuestion } from "./mockGenerator";
+import { QUESTION_TYPES } from "./questionTypes.ts";
+import type { GeneratedQuestion } from "./mockGenerator.ts";
 
 export interface ValidationIssue {
   index: number;
