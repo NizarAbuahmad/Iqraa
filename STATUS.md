@@ -7105,6 +7105,110 @@ and `math-u1-answers-almasri` need the line-reversal repair written first.
 changed in `lib/curriculum` this pass — this entry is the only artifact of
 this session's work.
 
+## Grade 9 is visible now, and two hardcoded grade-10 UI paths got fixed to match, 2026-08-27
+
+Widened `MVP_GRADE_IDS` to `['grade-10', 'grade-9']` and added
+`book-math-9-s1`/`book-math-9-s2` to `MVP_BOOK_IDS` — the one-line change the
+2026-08-26 entry said was ready whenever a human decided it was time. Decided:
+show it now, honestly thin parts included (all of Semester 2 and Unit 2 of
+Semester 1 are still title-only) rather than waiting for full coverage.
+Confirmed end-to-end: `getBooksForSubjectGrade('mathematics', 'grade-9')`
+returns both semester books, `getUnitsForBook` returns real unit titles for
+each.
+
+**Widening the picker surfaced two screens that were never wired to it at
+all.** `getPickerGrades()`/`getVisibleGrades()` themselves were already
+length-agnostic everywhere the AI-tools screens use them (`resolvePickerIndex`,
+`PickerField`, `lessonPrepPickerIndices` all worked off array length, not a
+hardcoded index) — but two flows never called those functions, they had
+`gradeId: 'grade-10'` typed directly into the code, so a teacher could not
+reach Grade 9 through them no matter what the picker allowed elsewhere:
+
+- `app/home.tsx`'s "change lesson" dialog — `TopicSelector` was pinned to
+  `gradeId="grade-10"`. Added a `draftGradeId` state, a grade-pill row
+  (mirrors the existing subject-pill row, shown only when there's more than
+  one grade to choose), and threaded it into `HomeLessonPick` (new optional
+  `gradeId` field — absent on picks saved before today, callers already
+  fall back to grade-10). The banner's grade label was also a hardcoded
+  string (`'Grade 10'`/`'الصف العاشر'`) regardless of what was actually
+  picked; now reads from the pick.
+- `app/classes/index.tsx`'s new-class dialog — `createClass` always sent
+  `gradeId: 'grade-10'`, no field to change it. Added the same pill pattern.
+
+**Found and fixed a related bug while in `home.tsx`, not introduced by this
+change but caught by the same audit:** `openGenerator` (the quick-generate
+buttons) built its nav params from `buildGeneratorNav` alone, which only sets
+`topic` — never `gradeIdx`/`subjectIdx`. That's exactly the silent-default
+trap this file already documents (`lessonPrep.ts`'s own comment: every
+generator screen falls back to index 0, Grade 10 Mathematics, and
+`isMathContext` branches on that string). It affected Grade 10 Chemistry
+lessons too, not just Grade 9 — a chemistry lesson opened via a home quick-
+action was generating from the math question bank under the chemistry title.
+Fixed by spreading `lessonPickerParams(lessonPick?.lessonId, lang)` into the
+nav params, the same helper the AI-tools hub and `LessonPrepPanel` already
+use.
+
+Verified with an `Explore` agent sweep across `artifacts/mobile/` for other
+places consuming grade pickers before concluding these were the only two
+gaps — everything else (the 7 `ai-tools/*` screens, `evaluations/[id]/results.tsx`,
+`answers/[studentId].tsx`, the API server's `curriculum.ts` proxy) already
+derives its grade index from data rather than a hardcoded literal.
+
+No `node_modules` in this container for either package touched, so neither
+`pnpm --filter mobile typecheck` nor a bundler run was possible here — checked
+syntax only, with global `tsc --noResolve` (parses cleanly, no TS1xxx errors,
+only the expected implicit-`any`/unresolved-import noise from skipping type
+resolution). `pnpm --filter @workspace/curriculum run verify` unchanged (7
+files, 94 lessons, 28 gaps, 0 structural errors) and `test` still 83/83 —
+this pass touched app code, not curriculum data. **Not run against the real
+app** — confirm the grade pill actually renders and a Grade 9 pick survives
+a generator round-trip on the next live check.
+
+## Grade 9's teacher guides surfaced in Drive, closing part of the title-only gap, 2026-08-27
+
+Re-checked Drive for Grade 9 Math source material now that the grade is live.
+Found a complete Semester 2 teacher guide (`دليل المعلم ... الفصل الثاني.pdf`,
+36.5MB) that did not exist in any earlier search this session — the first
+real teacher guide found for that semester. Both S1 and S2 guides exceed the
+10MB `download_file_content` ceiling, so full extraction still isn't
+possible; but `read_file_content` reached each guide's complete table of
+contents (Drive's own text extraction still truncates before any unit's
+actual مخطط الوحدة period table — that's unchanged).
+
+What the TOCs bought, honestly:
+- **Semester 2 (units 5-8): every lesson title now traced to the teacher
+  guide itself**, not just the exercise book. One real correction: Unit 5
+  Lesson 2's official title is «منصفات في المثلث», not «منصفات الزوايا في
+  المثلث» — the exercise-book-derived title had added a qualifier that isn't
+  in the guide. Everything else matched exactly. Still title-only — no
+  periods, objectives, or vocabulary; that needs the unit-plan tables the
+  extraction doesn't reach.
+- **Semester 1 Unit 2**: independently confirmed correct (titles/order
+  already matched, from earlier work). Caught a real ordering bug instead —
+  the Unit 1 GeoGebra lab was positioned before Lesson 1 in the data; the
+  guide's TOC places it after Lesson 4 (this file's `u1_l3`, post-exclusion).
+  Fixed by moving the array entry, not just its `order` number — the
+  browser-catalog builder iterates the JSON array literally and never reads
+  `lesson.order`, so renumbering alone would have changed nothing a reader
+  could see.
+
+Both `iqra_curriculum_g9_math_sem1.json` and `..._sem2.json` provenance/
+known_gaps rewritten to match — S2's now says a teacher guide exists (it
+used to correctly say none did), S1 documents the lab reorder.
+
+**This container now has `node_modules`** — `pnpm install` succeeded this
+session where it hadn't in earlier ones (probably just a fresh container
+with the network reachable this time, not a permanent change; re-check next
+session rather than assuming it holds). Ran the real tools instead of the
+`--noResolve` syntax-check workaround several recent entries had to fall
+back on: `pnpm --filter @workspace/curriculum run verify` (7 files, 94
+lessons, 0 structural errors, 28 gaps — unchanged count, since these were
+title corrections not new lessons), `test` (83/83), and `pnpm run
+typecheck` for the whole monorepo (clean). Grade 9 Math S1 Unit 2 and all of
+Semester 2 remain title-only — the unit-plan tables are the next thing worth
+chasing, and would need either a >10MB-capable download path or the guides
+re-uploaded directly the way the S1 units 3-4 material was.
+
 ## Grounding has been finding zero passages in production since it shipped, 2026-08-27
 
 Went to verify Phase 4 (live AI) end to end and found both switches already

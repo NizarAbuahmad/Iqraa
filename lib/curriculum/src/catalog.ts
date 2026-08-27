@@ -148,12 +148,13 @@ export const INVESTOR_MVP_CURRICULUM = true;
 /**
  * Grades allowed in the investor demo curriculum path — a set, not a single
  * grade, so a second (third, ...) grade joins the picker once it is actually
- * complete rather than replacing Grade 10. A grade is added here only when
- * its catalog is done (all units/semesters, not just one) — Grade 9 Math is
- * real content (see g9MathSem1.ts) but only Semester 1 Unit 1 is lesson-level
- * so far, and is deliberately not in this set yet.
+ * complete rather than replacing Grade 10. Grade 9 Math joined 2026-08-27:
+ * Semester 1 Units 1, 3, 4 are lesson-level and Unit 2 has prior_knowledge;
+ * Semester 2 exists but every unit is still title-only (no teacher guide for
+ * it yet) — shown anyway, honestly thin rather than hidden, per known_gaps in
+ * iqra_curriculum_g9_math_sem2.json.
  */
-export const MVP_GRADE_IDS: readonly string[] = ['grade-10'];
+export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9'];
 export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy'];
 /** Main semester books only (guides/exercises stay in data, hidden from UI). */
 export const MVP_BOOK_IDS: readonly string[] = [
@@ -163,6 +164,8 @@ export const MVP_BOOK_IDS: readonly string[] = [
   'book-chem-10-s2',
   // Financial literacy is Semester 1 only — no S2 book exists in the NCCD data.
   FINLIT_S1_CURRICULUM_BOOK_ID,
+  'book-math-9-s1',
+  'book-math-9-s2',
 ];
 
 export function getVisibleGrades(): Grade[] {
