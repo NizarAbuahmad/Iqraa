@@ -37,6 +37,8 @@ export type HomeLessonPick = {
   topic: string;
   unitOrder: number | null;
   subjectId?: string;
+  /** Absent on picks saved before Grade 9 existed — readers fall back to grade-10. */
+  gradeId?: string;
   /**
    * KB id of the lesson that was picked. Optional because picks saved before
    * this field existed have none, and because entire-unit / entire-book picks

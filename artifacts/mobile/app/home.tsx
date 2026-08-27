@@ -28,7 +28,8 @@ import {
   type HomeToolId,
 } from '@/services/homeAiTools';
 import { TopicSelector, type TopicSelectionDetail } from '@/components/ui/TopicSelector';
-import { getPickerSubjects } from '@/services/curriculumData';
+import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
+import { lessonPickerParams } from '@/services/lessonPrep';
 import {
   loadLessonPick,
   markOnboarded,
@@ -82,10 +83,12 @@ export default function DashboardScreen() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [draftTopic, setDraftTopic] = useState('');
   const [draftSubjectId, setDraftSubjectId] = useState('mathematics');
+  const [draftGradeId, setDraftGradeId] = useState('grade-10');
   const [draftDetail, setDraftDetail] = useState<TopicSelectionDetail>({
     unitOrder: null, unitTitle: null, lessonTitle: null, lessonId: null,
   });
   const pickerSubjects = getPickerSubjects();
+  const pickerGrades = getPickerGrades();
   // Class Mode media attached to the CURRENT lesson (shown as deck slides).
   const [media, setMedia] = useState<LessonMediaItem[]>([]);
   const [mediaUrl, setMediaUrl] = useState('');
@@ -161,7 +164,12 @@ export default function DashboardScreen() {
   const contextSubject = pickedSubject
     ? (lang === 'ar' ? pickedSubject.nameAr : pickedSubject.name)
     : (lang === 'ar' ? 'الرياضيات' : 'Mathematics');
-  const contextGrade = lang === 'ar' ? 'الصف العاشر' : 'Grade 10';
+  const pickedGrade = lessonPick?.gradeId
+    ? pickerGrades.find(g => g.id === lessonPick.gradeId)
+    : undefined;
+  const contextGrade = pickedGrade
+    ? (lang === 'ar' ? pickedGrade.nameAr : pickedGrade.name)
+    : (lang === 'ar' ? 'الصف العاشر' : 'Grade 10');
   const unitNumber = lessonPick
     ? lessonPick.unitOrder
     : (continueItem?.formState?.unitNumber as number | undefined)
@@ -178,7 +186,14 @@ export default function DashboardScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const topic = (topicOverride ?? lessonTopic).trim();
     const nav = buildGeneratorNav(toolId, topic, lang);
-    router.push({ pathname: nav.pathname as any, params: nav.params });
+    // Carries the picked lesson's own grade/subject so the generator screen
+    // doesn't fall back to its index-0 default (Grade 10 Mathematics) — see
+    // lessonPickerParams's own docs for why that default isn't cosmetic.
+    const params = {
+      ...nav.params,
+      ...(lessonPickerParams(lessonPick?.lessonId, lang as 'ar' | 'en') ?? {}),
+    };
+    router.push({ pathname: nav.pathname as any, params });
   };
 
   const runPrompt = (raw?: string) => {
@@ -199,6 +214,7 @@ export default function DashboardScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setDraftTopic('');
     setDraftSubjectId(lessonPick?.subjectId ?? 'mathematics');
+    setDraftGradeId(lessonPick?.gradeId ?? 'grade-10');
     setDraftDetail({ unitOrder: null, unitTitle: null, lessonTitle: null, lessonId: null });
     setPickerOpen(true);
   };
@@ -210,6 +226,7 @@ export default function DashboardScreen() {
       topic,
       unitOrder: draftDetail.unitOrder,
       subjectId: draftSubjectId,
+      gradeId: draftGradeId,
       lessonId: draftDetail.lessonId,
     };
     setLessonPick(pick);
@@ -799,6 +816,58 @@ export default function DashboardScreen() {
                 : 'Pick the subject, unit, then lesson — Jordan curriculum, Grade 10.'}
             </Text>
 
+            {/* Grade pills — only worth showing once there is a real choice. */}
+            {pickerGrades.length > 1 ? (
+              <>
+                <Text
+                  style={{
+                    color: colors.foreground,
+                    fontFamily: 'Cairo_500Medium',
+                    fontSize: 14,
+                    marginBottom: 8,
+                    textAlign: isRTL ? 'right' : 'left',
+                  }}
+                >
+                  {lang === 'ar' ? 'الصف' : 'Grade'}
+                </Text>
+                <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+                  {pickerGrades.map(g => {
+                    const active = draftGradeId === g.id;
+                    return (
+                      <Pressable
+                        key={g.id}
+                        onPress={() => {
+                          // Changing grade invalidates the unit/lesson draft,
+                          // same as changing subject does below.
+                          setDraftGradeId(g.id);
+                          setDraftTopic('');
+                          setDraftDetail({ unitOrder: null, unitTitle: null, lessonTitle: null, lessonId: null });
+                        }}
+                        style={{
+                          paddingHorizontal: 16,
+                          paddingVertical: 9,
+                          borderRadius: 20,
+                          borderWidth: 1.5,
+                          borderColor: active ? TEAL : colors.border,
+                          backgroundColor: active ? TEAL + '16' : colors.card,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            color: active ? TEAL : colors.mutedForeground,
+                            fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
+                            fontSize: 13.5,
+                          }}
+                        >
+                          {lang === 'ar' ? g.nameAr : g.name}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </>
+            ) : null}
+
             {/* Subject pills */}
             <Text
               style={{
@@ -848,7 +917,7 @@ export default function DashboardScreen() {
 
             <TopicSelector
               subjectId={draftSubjectId}
-              gradeId="grade-10"
+              gradeId={draftGradeId}
               value={draftTopic}
               onChange={setDraftTopic}
               onSelectionDetail={setDraftDetail}

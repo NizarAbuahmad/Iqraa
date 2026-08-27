@@ -6974,6 +6974,60 @@ catalog is actually done, not now. Confirmed behavior is unchanged today:
 
 83 curriculum tests pass, unchanged.
 
+## Grade 9 Math grows a real Semester 2, and Units 3–4 stop being title-only, 2026-08-26
+
+The Drive extraction ceiling from the previous entry blocked finishing Grade 9
+Math from Drive alone. The user uploaded four PDFs directly instead —
+`poppler-utils` (`pdftotext`/page rendering) wasn't installed in this
+container; installed it, and it reads these cleanly with correct RTL order,
+unlike Drive's `read_file_content` which returns text with each line's
+characters reversed. Four files, identified by content since the upload
+filenames were stripped to underscores:
+
+- The official Grade 9 Math **Semester 1 exercise book** (54 pages, full).
+- The official Grade 9 Math **Semester 2 exercise book** (52 pages, full) —
+  the first Semester 2 source this project has had at all.
+- Two files together forming a **teacher's edition excerpt covering Units 3
+  and 4 of Semester 1 only** (93 pages) — exercise pages plus the same
+  مخطَّط الوحدة tables the Grade 10 catalogs are built from.
+
+**Units 3 and 4 are now lesson-level**, matching Unit 1's tier — real
+objectives, vocabulary, and periods transcribed from the teacher's-edition
+tables, visually verified against rendered page images (not just text
+extraction) given how much rides on getting a نتاجات table right. Two more
+book-vs-guide conflicts found, resolved the same way as Unit 1's: Unit 3's
+table lists a sixth lesson («حل معادلات خاصة») and Unit 4's a third
+(«البرهان الإحداثي»), neither in the student book's table of contents. Both
+excluded — and this time with stronger evidence than Unit 1 had, because
+*two independent official sources* (the student book **and** the exercise
+book) agree against the guide, not just one. `known_gaps` says so explicitly,
+including the specific unmerged lesson-count math (Unit 3's `total_periods`
+of 24 sums the guide's six lessons; the four kept here sum to 18).
+
+**Unit 2 stays title-only** — no مخطَّط الوحدة table for it turned up in any
+of the five sources this project now has for Semester 1. It did gain
+`prior_knowledge`, though, sourced from the exercise book's own «أستعدُّ
+لدراسة الوحدة» (get ready to study the unit) review-section headers — a
+different, legitimate source from Unit 1's full bulleted list, and
+`known_gaps` says the list drawn from it may be incomplete.
+
+**Semester 2 is new**, `iqra_curriculum_g9_math_sem2.json` +
+`catalogs/g9MathSem2.ts`, same shape as Sem1. Every unit is title-only —
+there is no teacher guide for this semester at all yet, only the exercise
+book's table of contents (4 units, 16 lessons) and, again, one
+`prior_knowledge` item per unit from its «أستعدُّ» section header.
+
+Wired into `catalog.ts` exactly like Sem1 was — new `book-math-9-s2` entry,
+new browser-catalog build, spread into `UNITS`/`LESSONS`,
+`isBrowserUnitTitleOnly`/`isBrowserLessonTitleOnly` extended. `MVP_GRADE_IDS`
+untouched, so none of this reaches any picker yet — confirmed unchanged:
+`getVisibleGrades()` still `['grade-10']`.
+
+`verify-curriculum`: 7 files now (was 6), 94 lessons (was 78), 28 gaps (was
+21) — Grade 9 Sem1 alone dropped from 14 gaps to 5 (Unit 2's five lessons,
+the only ones left with no source), Sem2 added 16 new (every lesson, honestly,
+since no guide exists for it). 83 curriculum tests pass, unchanged.
+
 ## Chasing the last 6: text obtained for 5, none ingested yet, 2026-08-26
 
 Followed up on the 6 documents the previous entry left unfetched. All 6 are
@@ -7050,3 +7104,165 @@ and `math-u1-answers-almasri` need the line-reversal repair written first.
 `math-u1-answers-alkhatib` joins the no-text-layer/OCR-needed group. No files
 changed in `lib/curriculum` this pass — this entry is the only artifact of
 this session's work.
+
+## Grade 9 is visible now, and two hardcoded grade-10 UI paths got fixed to match, 2026-08-27
+
+Widened `MVP_GRADE_IDS` to `['grade-10', 'grade-9']` and added
+`book-math-9-s1`/`book-math-9-s2` to `MVP_BOOK_IDS` — the one-line change the
+2026-08-26 entry said was ready whenever a human decided it was time. Decided:
+show it now, honestly thin parts included (all of Semester 2 and Unit 2 of
+Semester 1 are still title-only) rather than waiting for full coverage.
+Confirmed end-to-end: `getBooksForSubjectGrade('mathematics', 'grade-9')`
+returns both semester books, `getUnitsForBook` returns real unit titles for
+each.
+
+**Widening the picker surfaced two screens that were never wired to it at
+all.** `getPickerGrades()`/`getVisibleGrades()` themselves were already
+length-agnostic everywhere the AI-tools screens use them (`resolvePickerIndex`,
+`PickerField`, `lessonPrepPickerIndices` all worked off array length, not a
+hardcoded index) — but two flows never called those functions, they had
+`gradeId: 'grade-10'` typed directly into the code, so a teacher could not
+reach Grade 9 through them no matter what the picker allowed elsewhere:
+
+- `app/home.tsx`'s "change lesson" dialog — `TopicSelector` was pinned to
+  `gradeId="grade-10"`. Added a `draftGradeId` state, a grade-pill row
+  (mirrors the existing subject-pill row, shown only when there's more than
+  one grade to choose), and threaded it into `HomeLessonPick` (new optional
+  `gradeId` field — absent on picks saved before today, callers already
+  fall back to grade-10). The banner's grade label was also a hardcoded
+  string (`'Grade 10'`/`'الصف العاشر'`) regardless of what was actually
+  picked; now reads from the pick.
+- `app/classes/index.tsx`'s new-class dialog — `createClass` always sent
+  `gradeId: 'grade-10'`, no field to change it. Added the same pill pattern.
+
+**Found and fixed a related bug while in `home.tsx`, not introduced by this
+change but caught by the same audit:** `openGenerator` (the quick-generate
+buttons) built its nav params from `buildGeneratorNav` alone, which only sets
+`topic` — never `gradeIdx`/`subjectIdx`. That's exactly the silent-default
+trap this file already documents (`lessonPrep.ts`'s own comment: every
+generator screen falls back to index 0, Grade 10 Mathematics, and
+`isMathContext` branches on that string). It affected Grade 10 Chemistry
+lessons too, not just Grade 9 — a chemistry lesson opened via a home quick-
+action was generating from the math question bank under the chemistry title.
+Fixed by spreading `lessonPickerParams(lessonPick?.lessonId, lang)` into the
+nav params, the same helper the AI-tools hub and `LessonPrepPanel` already
+use.
+
+Verified with an `Explore` agent sweep across `artifacts/mobile/` for other
+places consuming grade pickers before concluding these were the only two
+gaps — everything else (the 7 `ai-tools/*` screens, `evaluations/[id]/results.tsx`,
+`answers/[studentId].tsx`, the API server's `curriculum.ts` proxy) already
+derives its grade index from data rather than a hardcoded literal.
+
+No `node_modules` in this container for either package touched, so neither
+`pnpm --filter mobile typecheck` nor a bundler run was possible here — checked
+syntax only, with global `tsc --noResolve` (parses cleanly, no TS1xxx errors,
+only the expected implicit-`any`/unresolved-import noise from skipping type
+resolution). `pnpm --filter @workspace/curriculum run verify` unchanged (7
+files, 94 lessons, 28 gaps, 0 structural errors) and `test` still 83/83 —
+this pass touched app code, not curriculum data. **Not run against the real
+app** — confirm the grade pill actually renders and a Grade 9 pick survives
+a generator round-trip on the next live check.
+
+## Grade 9's teacher guides surfaced in Drive, closing part of the title-only gap, 2026-08-27
+
+Re-checked Drive for Grade 9 Math source material now that the grade is live.
+Found a complete Semester 2 teacher guide (`دليل المعلم ... الفصل الثاني.pdf`,
+36.5MB) that did not exist in any earlier search this session — the first
+real teacher guide found for that semester. Both S1 and S2 guides exceed the
+10MB `download_file_content` ceiling, so full extraction still isn't
+possible; but `read_file_content` reached each guide's complete table of
+contents (Drive's own text extraction still truncates before any unit's
+actual مخطط الوحدة period table — that's unchanged).
+
+What the TOCs bought, honestly:
+- **Semester 2 (units 5-8): every lesson title now traced to the teacher
+  guide itself**, not just the exercise book. One real correction: Unit 5
+  Lesson 2's official title is «منصفات في المثلث», not «منصفات الزوايا في
+  المثلث» — the exercise-book-derived title had added a qualifier that isn't
+  in the guide. Everything else matched exactly. Still title-only — no
+  periods, objectives, or vocabulary; that needs the unit-plan tables the
+  extraction doesn't reach.
+- **Semester 1 Unit 2**: independently confirmed correct (titles/order
+  already matched, from earlier work). Caught a real ordering bug instead —
+  the Unit 1 GeoGebra lab was positioned before Lesson 1 in the data; the
+  guide's TOC places it after Lesson 4 (this file's `u1_l3`, post-exclusion).
+  Fixed by moving the array entry, not just its `order` number — the
+  browser-catalog builder iterates the JSON array literally and never reads
+  `lesson.order`, so renumbering alone would have changed nothing a reader
+  could see.
+
+Both `iqra_curriculum_g9_math_sem1.json` and `..._sem2.json` provenance/
+known_gaps rewritten to match — S2's now says a teacher guide exists (it
+used to correctly say none did), S1 documents the lab reorder.
+
+**This container now has `node_modules`** — `pnpm install` succeeded this
+session where it hadn't in earlier ones (probably just a fresh container
+with the network reachable this time, not a permanent change; re-check next
+session rather than assuming it holds). Ran the real tools instead of the
+`--noResolve` syntax-check workaround several recent entries had to fall
+back on: `pnpm --filter @workspace/curriculum run verify` (7 files, 94
+lessons, 0 structural errors, 28 gaps — unchanged count, since these were
+title corrections not new lessons), `test` (83/83), and `pnpm run
+typecheck` for the whole monorepo (clean). Grade 9 Math S1 Unit 2 and all of
+Semester 2 remain title-only — the unit-plan tables are the next thing worth
+chasing, and would need either a >10MB-capable download path or the guides
+re-uploaded directly the way the S1 units 3-4 material was.
+
+## Grounding has been finding zero passages in production since it shipped, 2026-08-27
+
+Went to verify Phase 4 (live AI) end to end and found both switches already
+flipped — `AI_LIVE_MODE=true` and `EXPO_PUBLIC_DEMO_MODE=false` were on in
+Render already, with real spend recorded, so someone had turned this on
+before this session went looking. Generated a real lesson plan for «أوتار
+الدائرة وأقطارها ومماساتها» through the live app: the header badge correctly
+said **ذكاء اصطناعي مباشر**, the content was genuinely on-topic — and the
+grounding pill showed a matched lesson with no page citation under it. That
+combination is the tell: `resolveGeneratorGrounding` (client-side, matches a
+topic string against the bundled `knowledgeBase.ts` catalog) said grounded;
+`groundingFor` (server-side, the one that actually attaches book text) said
+nothing.
+
+**Root cause: the extracted knowledge-bank text never reaches the deployed
+server.** `lib/curriculum/src/passages.ts` locates `data/extracted/` relative
+to its own module's `import.meta.url` — correct in source and under `node
+--test`, where that file really does sit next to a `data/` sibling.
+`artifacts/api-server`'s build bundles the entire app into one file,
+`dist/index.mjs` (`build.mjs`, esbuild, `bundle: true`, single `outdir`).
+Bundling collapses every module's `import.meta.url` into the same value — the
+bundle's own path, not any individual source file's — so at runtime the exact
+same expression resolves to `dist/data/extracted`, and nothing ever put
+anything there. `passagesForUnit`'s `existsSync` check silently took the
+documented-honest path for a source with no extraction on file — the one
+`passages.test.ts` explicitly protects ("is empty rather than approximate
+when nothing is extracted") — because that check cannot tell "this source was
+never read" from "the deploy is broken." Both look identical from inside the
+function. Grounding has resolved zero book passages for every production
+request since it shipped in PR #140, on 2026-08-25 — two days before anyone
+looked at what a live generation actually contained, because the badge and
+the generic grounding pill both looked correct and the content itself read
+as good, topic-appropriate prose either way.
+
+**Fixed at the build, not the lookup.** `build.mjs` now copies
+`lib/curriculum/src/data/extracted/*.json` to `dist/data/extracted/` after
+the esbuild step — the one relative position that stays correct regardless of
+how deep in the bundle graph `passages.ts` sits, so no source changes were
+needed. Verified the fix is real, not coincidental: deleted `dist/data/extracted`
+and reran the new test — it failed; restored it — green again. New guard in
+`mountOrder.test.ts` (same "runs against the built bundle" pattern as the
+rest of that file) asserts the directory exists with real files after a
+build, so this can't silently regress a second time.
+
+**What this means for everything Phase 3/3.5 shipped:** the grounding *code*
+was correct the whole time — `grounding.test.ts`'s 20-odd assertions all run
+against source directly under `node --test`, which never hit this bug, so
+they kept passing while production quietly served zero citations. The gap was
+entirely in what a bundler does to `import.meta.url`, invisible to any test
+that doesn't boot the actual built artifact — which is exactly why
+`mountOrder.test.ts` exists and why this fix's guard lives there too, not in
+`lib/curriculum`.
+
+276 api-server / 83 curriculum / 982 mobile tests pass; typecheck clean. Not
+yet verified against a live redeploy — the next real generation on
+`iqraa-api` after this merges and redeploys should show a page number under
+the grounding pill for units with extracted text (circle unit first).

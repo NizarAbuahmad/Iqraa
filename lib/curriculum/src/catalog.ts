@@ -33,6 +33,12 @@ import {
   isG9MathSem1TitleOnlyUnit,
   isG9MathSem1TitleOnlyLesson,
 } from './catalogs/g9MathSem1.ts';
+import {
+  G9_MATH_S2_CURRICULUM_BOOK_ID,
+  buildG9MathSem2BrowserCatalog,
+  isG9MathSem2TitleOnlyUnit,
+  isG9MathSem2TitleOnlyLesson,
+} from './catalogs/g9MathSem2.ts';
 
 export interface Grade {
   id: string;
@@ -142,12 +148,13 @@ export const INVESTOR_MVP_CURRICULUM = true;
 /**
  * Grades allowed in the investor demo curriculum path — a set, not a single
  * grade, so a second (third, ...) grade joins the picker once it is actually
- * complete rather than replacing Grade 10. A grade is added here only when
- * its catalog is done (all units/semesters, not just one) — Grade 9 Math is
- * real content (see g9MathSem1.ts) but only Semester 1 Unit 1 is lesson-level
- * so far, and is deliberately not in this set yet.
+ * complete rather than replacing Grade 10. Grade 9 Math joined 2026-08-27:
+ * Semester 1 Units 1, 3, 4 are lesson-level and Unit 2 has prior_knowledge;
+ * Semester 2 exists but every unit is still title-only (no teacher guide for
+ * it yet) — shown anyway, honestly thin rather than hidden, per known_gaps in
+ * iqra_curriculum_g9_math_sem2.json.
  */
-export const MVP_GRADE_IDS: readonly string[] = ['grade-10'];
+export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9'];
 export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy'];
 /** Main semester books only (guides/exercises stay in data, hidden from UI). */
 export const MVP_BOOK_IDS: readonly string[] = [
@@ -157,6 +164,8 @@ export const MVP_BOOK_IDS: readonly string[] = [
   'book-chem-10-s2',
   // Financial literacy is Semester 1 only — no S2 book exists in the NCCD data.
   FINLIT_S1_CURRICULUM_BOOK_ID,
+  'book-math-9-s1',
+  'book-math-9-s2',
 ];
 
 export function getVisibleGrades(): Grade[] {
@@ -347,6 +356,20 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+  },
+  // ── Math Grade 9 – Semester 2 ───────────────────────────────────────────────
+  {
+    id: 'book-math-9-s2',
+    title: 'Mathematics – Grade 9, Semester 2',
+    titleAr: 'الرياضيات – الصف التاسع – الفصل الثاني',
+    subjectId: 'mathematics',
+    gradeId: 'grade-9',
+    academicYear: '2023-2024',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
   },
   // ── Other grades ───────────────────────────────────────────────────────────
   {
@@ -1187,6 +1210,7 @@ const _finlitSem1Browser = buildFinlitSem1BrowserCatalog();
 const _chemSem1Browser = buildChemSem1BrowserCatalog();
 const _chemSem2Browser = buildChemSem2BrowserCatalog();
 const _g9MathSem1Browser = buildG9MathSem1BrowserCatalog();
+const _g9MathSem2Browser = buildG9MathSem2BrowserCatalog();
 
 // ─── Authored-Bloom's enrichment for NCCD browser rows ───────────────────────
 //
@@ -1301,6 +1325,7 @@ export const UNITS: Unit[] = [
   ..._nccdSem2Browser.units,
   ..._finlitSem1Browser.units,
   ..._g9MathSem1Browser.units,
+  ..._g9MathSem2Browser.units,
 ];
 
 /** Active lessons — legacy Math/Chem G10 rows replaced by NCCD-sourced browser rows. */
@@ -1312,6 +1337,7 @@ export const LESSONS: Lesson[] = [
   ..._nccdSem2Browser.lessons,
   ..._finlitSem1Browser.lessons,
   ..._g9MathSem1Browser.lessons,
+  ..._g9MathSem2Browser.lessons,
 ];
 
 /** Math Grade 10 Semester 1 book id (NCCD-backed). */
@@ -1327,12 +1353,16 @@ export function isBrowserCurriculumPreparing(_bookId: string): boolean {
 
 /** UI: Sem1 units 2–4 — real titles, unit-level objectives only. */
 export function isBrowserUnitTitleOnly(unitId: string): boolean {
-  return isNccdSem1TitleOnlyUnit(unitId) || isG9MathSem1TitleOnlyUnit(unitId);
+  return isNccdSem1TitleOnlyUnit(unitId)
+    || isG9MathSem1TitleOnlyUnit(unitId)
+    || isG9MathSem2TitleOnlyUnit(unitId);
 }
 
 /** UI: Sem1 units 2–4 lessons — title confirmed, no per-lesson objectives yet. */
 export function isBrowserLessonTitleOnly(lessonId: string): boolean {
-  return isNccdSem1TitleOnlyLesson(lessonId) || isG9MathSem1TitleOnlyLesson(lessonId);
+  return isNccdSem1TitleOnlyLesson(lessonId)
+    || isG9MathSem1TitleOnlyLesson(lessonId)
+    || isG9MathSem2TitleOnlyLesson(lessonId);
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
