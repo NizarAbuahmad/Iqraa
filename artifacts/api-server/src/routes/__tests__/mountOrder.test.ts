@@ -17,7 +17,7 @@
 import { after, before, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { spawn, type ChildProcess } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
@@ -272,5 +272,29 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
       body: "{}",
     });
     assert.equal(res.status, 404);
+  });
+});
+
+describe("the built bundle ships its data, not just its code", { skip: built ? false : "run `pnpm build` first" }, () => {
+  it("puts the extracted knowledge-bank text where the bundle actually looks for it", () => {
+    // `@workspace/curriculum/passages.ts` resolves `data/extracted` relative
+    // to its OWN module's `import.meta.url` — correct in source and under
+    // `node --test`, where that file really does sit next to a `data/`
+    // sibling. Bundling collapses every module into this one dist/index.mjs,
+    // so at runtime `import.meta.url` points at the bundle, not at
+    // passages.ts's original location: the same expression now resolves to
+    // dist/data/extracted. Nothing copied the files there, `existsSync`
+    // failed, and `passagesForUnit` took the documented-honest "no text
+    // extracted for this source" path — indistinguishable from a source that
+    // genuinely has none. Grounding found zero passages for every production
+    // request since it shipped; the UI showed a "grounded" lesson match with
+    // no page citation, which is exactly what a client-side topic match with
+    // an empty server-side `sources` array looks like. `build.mjs` now copies
+    // the files to this exact path — assert the copy landed, not just that
+    // the script contains a copy step.
+    const extractedDir = path.join(path.dirname(entry), "data", "extracted");
+    assert.ok(existsSync(extractedDir), "dist/data/extracted does not exist — grounding will find nothing");
+    const files = readdirSync(extractedDir).filter(f => f.endsWith(".json"));
+    assert.ok(files.length >= 6, `only ${files.length} extraction files shipped next to the built bundle`);
   });
 });

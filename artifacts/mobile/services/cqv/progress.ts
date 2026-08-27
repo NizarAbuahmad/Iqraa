@@ -1,5 +1,5 @@
-import { CQV_ARTIFACTS, getArtifactDef } from './artifacts';
-import { getCqvLesson, getCqvLessons, groupCqvLessonsBySemester } from './catalog';
+import { CQV_ARTIFACTS, getArtifactDef } from './artifacts.ts';
+import { getCqvLesson, getCqvLessons, groupCqvLessonsBySemester } from './catalog.ts';
 import {
   CQV_THRESHOLDS,
   SCORE_DIMENSION_KEYS,
@@ -8,8 +8,8 @@ import {
   getAllThresholds,
   getThreshold,
   type ScoreDimensionKey,
-} from './thresholds';
-import { CQV_ARTIFACT_IDS, type CqvArtifactId, type CqvLessonRef, type CqvReport, type CqvScores } from './types';
+} from './thresholds.ts';
+import { CQV_ARTIFACT_IDS, type CqvArtifactId, type CqvLessonRef, type CqvReport, type CqvScores } from './types.ts';
 
 export type ArtifactProgressStatus = 'empty' | 'generated' | 'complete' | 'below_threshold' | 'fail';
 

@@ -1,0 +1,163 @@
+{
+  "meta": {
+    "grade": "الصف العاشر",
+    "grade_en": "Grade 10",
+    "subject": "اللغة الإنجليزية - قطاع الضيافة والسياحة",
+    "subject_en": "English for the Hospitality and Tourism track",
+    "track_en": "Hospitality and Tourism",
+    "track_ar": "قطاع الضيافة والسياحة",
+    "curriculum_authority": "York Press / Pearson Education, adapted by the Educational Research Center (ERC) — a vocational ESP coursebook; NCCD adoption status for this title not confirmed",
+    "semester_covered": 1,
+    "provenance_note": "Unit-level fields (listening/reading topic, vocabulary topic, grammar topic, career skill, writing task, writing tip) are copied from the 'Student's Book scope and sequence' table printed in the Teacher's Book (Vocational English, Level 2, Volume 1 — Hospitality and Tourism, by Alice Watson, York Press/Educational Research Center, 2023). Arabic labels are our own translations — the source book is English-only and prints no Arabic. No lesson-by-lesson activity breakdown from the Teacher's Book teaching notes was mined; each unit is represented as one lesson at scope-and-sequence depth.",
+    "source_books": {
+      "teachers_book": "Techer's book hospitality english 2.pdf — Google Drive folder 143JxaWcakvnvZ-iTZYecpBRdyhiLONSX, driveId 1pZbTwHj2y_lyv9MBbBTiFk7PF4mHVSbn"
+    },
+    "schema_version": "1.0",
+    "known_gaps": [
+      "Only the Student's Book scope-and-sequence table was mined, not the full unit-by-unit teaching notes (procedural activities, audio scripts, answer keys) inside the Teacher's Book.",
+      "The Workbook column of the scope-and-sequence table (grammar/vocabulary drill references) was not carried over — it duplicates the Grammar/Vocabulary columns already captured.",
+      "No period/حصة counts are printed in the source for this course; estimatedDuration in the browser catalog is a fixed per-unit default, not sourced.",
+      "Arabic titles and topic labels are translations authored for this catalog, not text printed in the (English-only) source book."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_en": "Booking assistance",
+      "title_ar": "المساعدة في الحجز",
+      "data_tier": "textbook-scope-sequence",
+      "prior_knowledge": ["Basic English communication skills from Grade 9"],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_en": "Booking assistance",
+          "title_ar": "المساعدة في الحجز",
+          "listening_topic": { "en": "Discussion about a tour", "ar": "نقاش حول جولة سياحية" },
+          "reading_topic": { "en": "Online chats at a travel agency", "ar": "محادثات إلكترونية في وكالة سفر" },
+          "vocabulary_topic": { "en": "Hotel services", "ar": "خدمات الفندق" },
+          "grammar_topic": { "en": "Present perfect and past simple", "ar": "المضارع التام والماضي البسيط" },
+          "career_skill": { "en": "Give tourist advice to customers", "ar": "تقديم نصائح سياحية للعملاء" },
+          "writing_task": { "en": "An email reply to customers", "ar": "رد بريد إلكتروني على العملاء" },
+          "writing_tip": { "en": "Formal emails", "ar": "الرسائل الإلكترونية الرسمية" }
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_en": "Event planning",
+      "title_ar": "تنظيم الفعاليات",
+      "data_tier": "textbook-scope-sequence",
+      "prior_knowledge": ["Vocabulary and grammar from Unit 1: Booking assistance"],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_en": "Event planning",
+          "title_ar": "تنظيم الفعاليات",
+          "listening_topic": { "en": "Choosing a venue", "ar": "اختيار مكان الفعالية" },
+          "reading_topic": { "en": "An article about a wedding planner", "ar": "مقال عن منظم حفلات زفاف" },
+          "vocabulary_topic": { "en": "Event planning", "ar": "تنظيم الفعاليات" },
+          "grammar_topic": { "en": "Defining and non-defining relative clauses", "ar": "الجمل الوصفية المحددة وغير المحددة" },
+          "career_skill": { "en": "Plan an event", "ar": "التخطيط لفعالية" },
+          "writing_task": { "en": "Instructions for an events planner", "ar": "تعليمات لمنظم فعاليات" },
+          "writing_tip": { "en": "Instructions", "ar": "كتابة التعليمات" }
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_en": "Cultural life",
+      "title_ar": "الحياة الثقافية",
+      "data_tier": "textbook-scope-sequence",
+      "prior_knowledge": ["Vocabulary and grammar from Unit 2: Event planning"],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_en": "Cultural life",
+          "title_ar": "الحياة الثقافية",
+          "listening_topic": { "en": "Talking about entertainment", "ar": "الحديث عن الترفيه" },
+          "reading_topic": { "en": "An entertainment guide", "ar": "دليل ترفيهي" },
+          "vocabulary_topic": { "en": "Sports and entertainment; prepositions to describe entertainment", "ar": "الرياضة والترفيه؛ حروف الجر لوصف الترفيه" },
+          "grammar_topic": { "en": "Expressing the future", "ar": "التعبير عن المستقبل" },
+          "career_skill": { "en": "Present your city", "ar": "تقديم عرض عن مدينتك" },
+          "writing_task": { "en": "An entertainments schedule", "ar": "جدول فعاليات ترفيهية" },
+          "writing_tip": { "en": "Schedules", "ar": "كتابة الجداول" }
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "number": 4,
+      "title_en": "A day at a hotel",
+      "title_ar": "يوم في الفندق",
+      "data_tier": "textbook-scope-sequence",
+      "prior_knowledge": ["Vocabulary and grammar from Unit 3: Cultural life"],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_en": "A day at a hotel",
+          "title_ar": "يوم في الفندق",
+          "listening_topic": { "en": "Working at a hotel", "ar": "العمل في الفندق" },
+          "reading_topic": { "en": "An article about a day at a hotel", "ar": "مقال عن يوم في الفندق" },
+          "vocabulary_topic": { "en": "Hotel tasks phrases", "ar": "تعبيرات مهام العمل الفندقي" },
+          "grammar_topic": { "en": "Present passive; before, after, when", "ar": "المبني للمجهول في المضارع؛ before و after و when" },
+          "career_skill": { "en": "Give a staff welcome talk", "ar": "تقديم كلمة ترحيب للموظفين الجدد" },
+          "writing_task": { "en": "Key information for staff", "ar": "معلومات أساسية للموظفين" },
+          "writing_tip": { "en": "Organising information in a text", "ar": "تنظيم المعلومات في النص" }
+        }
+      ]
+    },
+    {
+      "id": "u5",
+      "number": 5,
+      "title_en": "Eating out",
+      "title_ar": "تناول الطعام خارج المنزل",
+      "data_tier": "textbook-scope-sequence",
+      "prior_knowledge": ["Vocabulary and grammar from Unit 4: A day at a hotel"],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_en": "Eating out",
+          "title_ar": "تناول الطعام خارج المنزل",
+          "listening_topic": { "en": "At a restaurant", "ar": "في المطعم" },
+          "reading_topic": { "en": "A new place in town", "ar": "مكان جديد في المدينة" },
+          "vocabulary_topic": { "en": "Adjectives to describe restaurants; -ing/-ed adjectives", "ar": "صفات لوصف المطاعم؛ الصفات المنتهية بـ ing/-ed-" },
+          "grammar_topic": { "en": "Food service phrasal verbs", "ar": "الأفعال المركّبة في خدمة الطعام" },
+          "career_skill": { "en": "Discuss food and restaurants", "ar": "مناقشة الطعام والمطاعم" },
+          "writing_task": { "en": "A blog about food and restaurants", "ar": "مدونة عن الطعام والمطاعم" },
+          "writing_tip": { "en": "Informal language", "ar": "اللغة غير الرسمية" }
+        }
+      ]
+    },
+    {
+      "id": "u6",
+      "number": 6,
+      "title_en": "Dealing with issues",
+      "title_ar": "التعامل مع المشكلات",
+      "data_tier": "textbook-scope-sequence",
+      "prior_knowledge": ["Vocabulary and grammar from Unit 5: Eating out"],
+      "lessons": [
+        {
+          "id": "u6_l1",
+          "order": 1,
+          "title_en": "Dealing with issues",
+          "title_ar": "التعامل مع المشكلات",
+          "listening_topic": { "en": "Travel problems", "ar": "مشكلات السفر" },
+          "reading_topic": { "en": "Great customer service", "ar": "خدمة عملاء متميزة" },
+          "vocabulary_topic": { "en": "Making improvements at work", "ar": "إجراء تحسينات في العمل" },
+          "grammar_topic": { "en": "Present perfect simple and present perfect continuous", "ar": "المضارع التام البسيط والمضارع التام المستمر" },
+          "career_skill": { "en": "Respond to customer complaints", "ar": "الرد على شكاوى العملاء" },
+          "writing_task": { "en": "A response to a customer complaint", "ar": "رد على شكوى عميل" },
+          "writing_tip": { "en": "Replying to complaints", "ar": "أسلوب الرد على الشكاوى" }
+        }
+      ]
+    }
+  ]
+}

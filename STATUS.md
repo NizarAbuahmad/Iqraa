@@ -186,6 +186,22 @@ Vision screens (student/parent/school dashboards) are deprioritized.
 - Financial Literacy G10 S1 is browsable (2 units / 10 lessons, NCCD-sourced).
   It was previously offered as a subject tile with no book behind it, so the
   subject dead-ended on the "no semesters" empty state.
+- English G10 S1 is browsable (added 2026-08-27): four vocational-track books
+  — Commerce (6 units), Agriculture (6 units), Hospitality and Tourism
+  (6 units), Industrial/Technical (12 units) — one lesson per unit, sourced
+  from Teacher's Books uploaded to the project Drive
+  (`lib/curriculum/src/catalogs/g10EnglishVocational.ts`). Unlike math/chem/
+  finlit these are **not NCCD textbooks**: York Press/Pearson ESP coursebooks
+  adapted by the Educational Research Center, curriculum-authority status for
+  Jordan unconfirmed — see each data file's `meta.curriculum_authority`. The
+  Industrial track uses a different, lower-level coursebook ("Technical
+  English" Level 1/CEFR A1) than the other three (Level 2/CEFR A2) because
+  the matching "industry english 2.pdf" (Level 2, same series as the other
+  three) returned empty text on every Drive extraction attempt — it is on
+  file, unextracted; see that data file's `known_gaps` before trusting its
+  four Briefing-less units (9–12, `data_tier: "title-only"`). Catalog +
+  lessons only: not wired into `knowledgeBase.ts` or any AI generator/bank —
+  `hasKnowledgeBase: false` on all four books.
 - Expo Go on a phone works over LAN (firewall rule `Iqraa-Dev-8080-8083`;
   see LOCAL_SETUP.md).
 - `mockup-sandbox` is excluded from the workspace — it is a design sandbox,
@@ -7299,3 +7315,218 @@ Net: the 2026-08-27 "Grade 9 is visible now" entry was true and also not
 enough — visible in the pickers is not the same as reachable in the one
 screen that matters, and reachable is not the same as grounded in real
 content. All three now hold for Grade 9 Math.
+
+## Grounding has been finding zero passages in production since it shipped, 2026-08-27
+
+Went to verify Phase 4 (live AI) end to end and found both switches already
+flipped — `AI_LIVE_MODE=true` and `EXPO_PUBLIC_DEMO_MODE=false` were on in
+Render already, with real spend recorded, so someone had turned this on
+before this session went looking. Generated a real lesson plan for «أوتار
+الدائرة وأقطارها ومماساتها» through the live app: the header badge correctly
+said **ذكاء اصطناعي مباشر**, the content was genuinely on-topic — and the
+grounding pill showed a matched lesson with no page citation under it. That
+combination is the tell: `resolveGeneratorGrounding` (client-side, matches a
+topic string against the bundled `knowledgeBase.ts` catalog) said grounded;
+`groundingFor` (server-side, the one that actually attaches book text) said
+nothing.
+
+**Root cause: the extracted knowledge-bank text never reaches the deployed
+server.** `lib/curriculum/src/passages.ts` locates `data/extracted/` relative
+to its own module's `import.meta.url` — correct in source and under `node
+--test`, where that file really does sit next to a `data/` sibling.
+`artifacts/api-server`'s build bundles the entire app into one file,
+`dist/index.mjs` (`build.mjs`, esbuild, `bundle: true`, single `outdir`).
+Bundling collapses every module's `import.meta.url` into the same value — the
+bundle's own path, not any individual source file's — so at runtime the exact
+same expression resolves to `dist/data/extracted`, and nothing ever put
+anything there. `passagesForUnit`'s `existsSync` check silently took the
+documented-honest path for a source with no extraction on file — the one
+`passages.test.ts` explicitly protects ("is empty rather than approximate
+when nothing is extracted") — because that check cannot tell "this source was
+never read" from "the deploy is broken." Both look identical from inside the
+function. Grounding has resolved zero book passages for every production
+request since it shipped in PR #140, on 2026-08-25 — two days before anyone
+looked at what a live generation actually contained, because the badge and
+the generic grounding pill both looked correct and the content itself read
+as good, topic-appropriate prose either way.
+
+**Fixed at the build, not the lookup.** `build.mjs` now copies
+`lib/curriculum/src/data/extracted/*.json` to `dist/data/extracted/` after
+the esbuild step — the one relative position that stays correct regardless of
+how deep in the bundle graph `passages.ts` sits, so no source changes were
+needed. Verified the fix is real, not coincidental: deleted `dist/data/extracted`
+and reran the new test — it failed; restored it — green again. New guard in
+`mountOrder.test.ts` (same "runs against the built bundle" pattern as the
+rest of that file) asserts the directory exists with real files after a
+build, so this can't silently regress a second time.
+
+**What this means for everything Phase 3/3.5 shipped:** the grounding *code*
+was correct the whole time — `grounding.test.ts`'s 20-odd assertions all run
+against source directly under `node --test`, which never hit this bug, so
+they kept passing while production quietly served zero citations. The gap was
+entirely in what a bundler does to `import.meta.url`, invisible to any test
+that doesn't boot the actual built artifact — which is exactly why
+`mountOrder.test.ts` exists and why this fix's guard lives there too, not in
+`lib/curriculum`.
+
+276 api-server / 83 curriculum / 982 mobile tests pass; typecheck clean. Not
+yet verified against a live redeploy — the next real generation on
+`iqraa-api` after this merges and redeploys should show a page number under
+the grounding pill for units with extracted text (circle unit first).
+
+**Verified against the live deploy, same day.** Re-tested the exact circle-
+unit lesson plan after the fix above went out: the grounding pill now shows
+real citations — «كتاب الطالب — الكيمياء — الفصل الأول، صفحة ١٠» and two more,
+for a chemistry atomic-spectrum lesson tried separately. Checked all three
+cited pages against the actual extracted book text before trusting them: page
+10 opens the Bohr-theory lesson, page 20 the wave-mechanical atomic model,
+page 30 electron configuration — all genuinely on-topic, not coincidental
+round numbers. The fix works.
+
+## Book figures now show on screen, not only in the export, 2026-08-27
+
+Answered a question the citation fix surfaced: a teacher pointed out the
+generated lesson plan named a diagram («انظر الشكل المجاور») with nothing to
+look at. The diagrams exist — 60 figures cut from the student books, already
+mapped lesson-by-lesson (`bookFigures.ts`) and already rendered into every
+PDF/Word export's appendix (`exportHtml.ts`'s `figuresSectionHTML`, captioned
+by book and page, capped at `EXPORT_FIGURE_MAX = 6`). None of that reached the
+in-app result screen a teacher sees immediately after generating — only the
+exported document.
+
+**Not a new feature, a new surface for an existing one.** `bookFigureUri.ts`'s
+`bookFigureRefsForLesson()` already resolves a lesson's figures to real,
+bundled image URIs with captions — built for the export path, already called
+by all four generator screens (`getExportFigures()`, lesson-plan/worksheet/
+quiz/activity) at export time. New `components/ui/BookFiguresPanel.tsx` is a
+thin render of that same, already-resolved data as a two-column image grid
+with captions, mirroring `figuresSectionHTML`'s wording and figure cap
+exactly, so the same reasoning it documents (a generated question can say
+"see the adjacent figure" because that's how the book itself writes such
+questions, but the model never saw the book's figures and cannot know which
+one goes with which item — showing every diagram the lesson prints, cited by
+page, and trusting the teacher to match it by eye, same as a student does
+from the printed book) now applies to what is on screen, not only to what
+gets exported. Wired into the same `GroundingNotice` block on all four
+generator screens, shown only when a lesson actually resolved.
+
+No new data, no new resolution logic — reused `getExportFigures()` verbatim.
+276 api-server / 983 mobile / 83 curriculum tests pass; typecheck clean. No
+component-render tests added — this codebase has none for any `components/ui/*`
+file (checked before assuming a gap), consistent with how `GroundingNotice.tsx`
+itself ships untested at the render level; the data it renders is tested
+thoroughly elsewhere (`bookFigures`, `bookFigureUri`/`exportHtml` figure
+tests). Not yet seen on a live device — confirm the grid renders sensibly on
+a phone-width screen, not just that it typechecks.
+
+## Teacher-perspective AI Tools review: five follow-up PRs, 2026-08-26/27
+
+A full teacher-perspective review of the AI Tools (Slides Maker, Lesson Plan,
+Worksheet, Quiz, Evaluations, Class Challenge, Classroom Hub, Parent Message)
+— live run plus source/STATUS.md audit — turned up several real issues.
+Fixed in five PRs, landed on the same branch in priority order (#160, #163,
+#165, #174, #176):
+
+**#160 — three cheapest, lowest-risk fixes.** Quiz's generated title leaked
+the raw English subject enum into an otherwise-Arabic string (`اختبار
+Mathematics – …`); every other generator's Arabic title omits the subject,
+Quiz now does too. Slides Maker nested a delete `Pressable` inside the row's
+own edit `Pressable` — an invalid button-in-a-button on web, confirmed via
+React hydration warnings during the live run — split into sibling
+Pressables inside a plain row `View`. Evaluations showed a raw English 409
+(`"No level scale is configured…"`) on an Arabic screen when the assessment
+config wasn't seeded; the response already carried `code: "no_level_scale"`,
+now mapped to a translated message, and the required `pnpm --filter
+@workspace/db run seed:assessment` step (missing from any doc, so any fresh
+environment hit this 409 on the very first evaluation) is now in
+`LOCAL_SETUP.md`.
+
+**#163 — Worksheet/Quiz drifting off-topic once a lesson's item bank ran
+out.** `detectMathFamily` buckets a lesson into one of ~13 concrete-item
+families, several with as few as 5 items. `takeConcreteMath` — the one choke
+point every worksheet/quiz/homework/activity question builder calls through
+— fell straight through to the generic `algebra` family the moment a
+family's unused items ran out, so a lesson on function composition (5
+items) could serve a quadratic-formula question with no connection to it
+once a worksheet asked for more than 5. Fixed by retrying the *same* family
+with repeats allowed before ever falling through to `algebra` — a repeat
+within the right topic costs a teacher far less than a wrong one.
+`mathPractice.ts`; regression test in `questionStems.test.ts` pins a
+function-composition lesson asked for more items than it has never drifting
+into algebra content. Also carried a one-line fix for a `main`-inherited
+typecheck break (`g10MathSem2.ts`'s `NccdCurriculumMeta.source_books` type
+hadn't followed the curriculum JSON's array→object reshape), confirmed
+pre-existing by typechecking a clean `origin/main` checkout in isolation
+first.
+
+**#165 — Evaluations publish blockers dropped, and a real UI-drift bug
+found while extracting a shared component.** Live-verified against a real
+Postgres+API instance that Publish itself works fine (200, `published`
+status, share code issued) — the review's "dead end" observation was almost
+certainly its test automation not handling the native `window.confirm()`
+dialog Publish opens first, not a product bug. But a real, separate gap
+turned up while verifying: the server's 400 when publish is genuinely
+blocked carries a `blockers` array naming the specific problem
+(`"Question 3: ..."`), and the mobile client's `readJson` silently dropped
+it — a teacher who hit a real precondition saw only a generic message with
+no way to tell which question was the issue. Fixed: `EvaluationError` now
+carries `details: string[]`, surfaced in the error banner.
+Separately, extracted `components/ui/GeneratorResultActions.tsx` — Lesson
+Plan, Worksheet, Quiz, and Activity had each hand-built the same
+Save/Favourite/Export/Regenerate row, and a 23 Aug fix that reordered the
+row before the feedback/related-resources panels had reached three of the
+four screens but silently missed `activity.tsx`, because there was no
+shared place for the fix to live. That's the standing risk this file had
+already named for the duplicated row; the fourth screen actually going stale
+is the proof it was real. Live-verified end to end (save a worksheet and an
+activity against a running Expo web instance) that the row now renders in
+the corrected order on all four screens.
+
+**#174 — Evaluations' live-mode generator would have rejected every
+question of 4 of its 8 types.** The review's "shallow template questions"
+finding turned out to be a demo-mode artifact, not a bug —
+`mockGenerator.ts` deliberately produces honest, labeled templates rather
+than fabricating content it can't guarantee correct, same principle as
+Worksheet's "not symbolically verified" badge, and a fully-built live
+generator (`llmGenerator.ts`) already exists behind `AI_LIVE_MODE`. But
+reading that live path found a real bug: `TYPE_CONTRACTS` (the JSON shape
+the prompt tells the model to write) never asked for `modelAnswer`/
+`keyConcepts` for `short_answer`/`open_ended`/`problem_solving`, even though
+`questionTypes.ts`'s validator requires both unconditionally; `practical_task`'s
+contract asked for a rubric it never uses while omitting `successCriteria`,
+the field its validator actually requires. A model following the prompt
+exactly, for any of those four types, would have every question rejected —
+turning `AI_LIVE_MODE` on today would not have produced usable evaluations
+for half the question types. Root cause of why this went unnoticed:
+`validator.ts` imported `./questionTypes` and `./mockGenerator` without the
+`.ts` extension node's native test runner needs (the same extensionless-
+import trap this file already documents elsewhere), so nothing could import
+`validateGenerated` directly and no test ever exercised it against real LLM
+output. Fixed the contracts, fixed the import, and added a test that parses
+each of the 8 `TYPE_CONTRACTS` entries' *literal* JSON — not hand-authored
+examples that could quietly drift from the real prompt text — through the
+same parse→validate pipeline the route uses. Verified the test actually
+catches the bug: reverted just the four contract strings, confirmed exactly
+those four subtests failed with the predicted reasons, restored and
+confirmed all 25 pass.
+
+**#176 — swept the rest of the monorepo for the same extensionless-import
+pattern.** `api-server` route files are clean by construction (only ever
+loaded through the built bundle in `mountOrder.test.ts`, never through the
+native test loader directly); `lib/curriculum` and `lib/db` are clean/not
+applicable. One real finding in `artifacts/mobile/services`:
+`cqv/progress.ts` — pure logic, zero existing test coverage, bare
+extensionless imports — fixed. **Caveat, confirmed by direct probe**: the
+fix alone doesn't make the file test-reachable. It transitively imports
+`cqv/catalog.ts`, which resolves curriculum data via the `@/` path alias —
+something Metro/tsconfig understand but node's native test loader does not
+(`ERR_MODULE_NOT_FOUND: Cannot find package '@/services'`). That's a
+separate, pre-existing, harness-wide gap shared by every `@/`-importing
+service file (9 total, none imported by any existing test) — worth fixing
+on its own, since it silently excludes real logic from ever being unit
+tested the same way the `validator.ts` bug did, but out of scope for this
+sweep.
+
+All five: `pnpm run typecheck` clean, full mobile (972) and api-server (284)
+suites passing at each step. Not independently re-verified as a batch after
+the fact — each PR's own verification stands as recorded above.

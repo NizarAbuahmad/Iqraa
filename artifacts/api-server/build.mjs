@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build as esbuild } from "esbuild";
 import esbuildPluginPino from "esbuild-plugin-pino";
-import { rm } from "node:fs/promises";
+import { cp, rm } from "node:fs/promises";
 
 // Plugins (e.g. 'esbuild-plugin-pino') may use `require` to resolve dependencies
 globalThis.require = createRequire(import.meta.url);
@@ -118,6 +118,22 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
     `,
     },
   });
+
+  // `@workspace/curriculum/passages.ts` locates the extracted knowledge-bank
+  // text as `data/extracted` relative to its OWN module's `import.meta.url`.
+  // That resolves correctly in source and under `node --test`, but bundling
+  // collapses every module into this one dist/index.mjs — so at runtime
+  // `import.meta.url` points at the bundle, not at passages.ts's original
+  // location, and the computed path became dist/data/extracted, which
+  // nothing ever created. The lookup fails `existsSync` and silently returns
+  // "no text extracted for this source" — indistinguishable from a source
+  // that genuinely has none, so grounding has found zero passages for every
+  // request in production since it shipped. Ship the real files to where the
+  // bundle actually looks for them, rather than changing the lookup: it's the
+  // one relative position that stays correct however deep this file sits.
+  const extractedSrc = path.resolve(artifactDir, "../../lib/curriculum/src/data/extracted");
+  const extractedDest = path.join(distDir, "data", "extracted");
+  await cp(extractedSrc, extractedDest, { recursive: true });
 }
 
 buildAll().catch((err) => {

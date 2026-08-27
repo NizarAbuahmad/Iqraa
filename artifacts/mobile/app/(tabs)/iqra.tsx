@@ -73,7 +73,7 @@ import { IqraaMark } from '@/components/ui/IqraaMark';
 import { CHAT_MAX_WIDTH } from '@/constants/layout';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
 import { MathParagraph } from '@/components/ui/MathParagraph';
-import { hasRenderableMath } from '@/services/mathRender';
+import { hasRenderableMath, isolateForeignRuns } from '@/services/mathRender';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { CurrentLessonCard } from '@/components/ui/CurrentLessonCard';
 import { DocumentAttachmentBar } from '@/components/ui/DocumentAttachmentBar';
@@ -943,7 +943,7 @@ function MessageBubble({
               const clean = line.replace(/\*\*/g, '');
               return (
                 <Text key={i} style={[styles.bubbleBold, { color: colors.foreground, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>
-                  {clean}
+                  {isolateForeignRuns(clean)}
                 </Text>
               );
             }
@@ -975,8 +975,8 @@ function MessageBubble({
                   <Text style={[styles.bubbleText, { color: colors.foreground, flex: 1, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>
                     {parts.map((p, pi) =>
                       pi % 2 === 1
-                        ? <Text key={pi} style={{ fontFamily: 'Cairo_600SemiBold' }}>{p}</Text>
-                        : p
+                        ? <Text key={pi} style={{ fontFamily: 'Cairo_600SemiBold' }}>{isolateForeignRuns(p)}</Text>
+                        : isolateForeignRuns(p)
                     )}
                   </Text>
                 </View>

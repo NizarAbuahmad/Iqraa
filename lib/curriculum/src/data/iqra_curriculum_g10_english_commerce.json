@@ -1,0 +1,163 @@
+{
+  "meta": {
+    "grade": "الصف العاشر",
+    "grade_en": "Grade 10",
+    "subject": "اللغة الإنجليزية - القطاع التجاري",
+    "subject_en": "English for the Commerce track",
+    "track_en": "Commerce",
+    "track_ar": "القطاع التجاري",
+    "curriculum_authority": "York Press / Pearson Education, adapted by the Educational Research Center (ERC) — a vocational ESP coursebook; NCCD adoption status for this title not confirmed",
+    "semester_covered": 1,
+    "provenance_note": "Unit-level fields (listening/reading topic, vocabulary topic, grammar topic, career skill, writing task, writing tip) are copied from the 'Student's Book scope and sequence' table printed in the Teacher's Book (Vocational English, Level 2, Volume 1 — Commerce, by Bob Dignen, York Press/Educational Research Center, 2023). Arabic labels are our own translations — the source book is English-only and prints no Arabic. No lesson-by-lesson activity breakdown from the Teacher's Book teaching notes was mined; each unit is represented as one lesson at scope-and-sequence depth.",
+    "source_books": {
+      "teachers_book": "Techer's book commerce english 2.pdf — Google Drive folder 143JxaWcakvnvZ-iTZYecpBRdyhiLONSX, driveId 1IRHz4F1T5V8lsD6hrZSg5RqW_OJx9TUX"
+    },
+    "schema_version": "1.0",
+    "known_gaps": [
+      "Only the Student's Book scope-and-sequence table was mined, not the full unit-by-unit teaching notes (procedural activities, audio scripts, answer keys) inside the Teacher's Book.",
+      "The Workbook column of the scope-and-sequence table (grammar/vocabulary drill references) was not carried over — it duplicates the Grammar/Vocabulary columns already captured.",
+      "No period/حصة counts are printed in the source for this course; estimatedDuration in the browser catalog is a fixed per-unit default, not sourced.",
+      "Arabic titles and topic labels are translations authored for this catalog, not text printed in the (English-only) source book."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_en": "Ways of working",
+      "title_ar": "طرق العمل",
+      "data_tier": "textbook-scope-sequence",
+      "prior_knowledge": ["Basic English communication skills from Grade 9"],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_en": "Ways of working",
+          "title_ar": "طرق العمل",
+          "listening_topic": { "en": "Workplace interviews", "ar": "مقابلات في مكان العمل" },
+          "reading_topic": { "en": "An article on co-working spaces", "ar": "مقال عن مساحات العمل المشترك" },
+          "vocabulary_topic": { "en": "Ways of working", "ar": "طرق العمل" },
+          "grammar_topic": { "en": "Present simple; adverbs and expressions of frequency", "ar": "المضارع البسيط؛ ظروف التكرار وتعبيراته" },
+          "career_skill": { "en": "Make business contacts", "ar": "التعرّف على معارف عمل جدد" },
+          "writing_task": { "en": "A personal profile", "ar": "نبذة شخصية" },
+          "writing_tip": { "en": "Conjunctions", "ar": "أدوات الربط" }
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_en": "Trends and data",
+      "title_ar": "الاتجاهات والبيانات",
+      "data_tier": "textbook-scope-sequence",
+      "prior_knowledge": ["Vocabulary and grammar from Unit 1: Ways of working"],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_en": "Trends and data",
+          "title_ar": "الاتجاهات والبيانات",
+          "listening_topic": { "en": "A news report", "ar": "تقرير إخباري" },
+          "reading_topic": { "en": "An article about eSports", "ar": "مقال عن الرياضات الإلكترونية" },
+          "vocabulary_topic": { "en": "Business trends", "ar": "اتجاهات الأعمال" },
+          "grammar_topic": { "en": "Present continuous and present simple", "ar": "المضارع المستمر والمضارع البسيط" },
+          "career_skill": { "en": "Present visual information", "ar": "عرض المعلومات المرئية" },
+          "writing_task": { "en": "Summarise trends and data", "ar": "تلخيص الاتجاهات والبيانات" },
+          "writing_tip": { "en": "Symbols and abbreviations", "ar": "الرموز والاختصارات" }
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_en": "Starting a business",
+      "title_ar": "تأسيس مشروع تجاري",
+      "data_tier": "textbook-scope-sequence",
+      "prior_knowledge": ["Vocabulary and grammar from Unit 2: Trends and data"],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_en": "Starting a business",
+          "title_ar": "تأسيس مشروع تجاري",
+          "listening_topic": { "en": "A podcast about starting a business", "ar": "بودكاست عن تأسيس مشروع تجاري" },
+          "reading_topic": { "en": "An article about young entrepreneurs", "ar": "مقال عن رواد أعمال شباب" },
+          "vocabulary_topic": { "en": "Starting a business", "ar": "تأسيس مشروع تجاري" },
+          "grammar_topic": { "en": "Past simple and past continuous", "ar": "الماضي البسيط والماضي المستمر" },
+          "career_skill": { "en": "Report what happened at a meeting", "ar": "تلخيص ما جرى في اجتماع" },
+          "writing_task": { "en": "A company website profile", "ar": "نبذة تعريفية لموقع شركة إلكتروني" },
+          "writing_tip": { "en": "Punctuation", "ar": "علامات الترقيم" }
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "number": 4,
+      "title_en": "Orders and deliveries",
+      "title_ar": "الطلبات والتوصيل",
+      "data_tier": "textbook-scope-sequence",
+      "prior_knowledge": ["Vocabulary and grammar from Unit 3: Starting a business"],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_en": "Orders and deliveries",
+          "title_ar": "الطلبات والتوصيل",
+          "listening_topic": { "en": "An order", "ar": "طلب شراء" },
+          "reading_topic": { "en": "A report on the food delivery business", "ar": "تقرير عن قطاع توصيل الطعام" },
+          "vocabulary_topic": { "en": "Placing an order", "ar": "تقديم طلب شراء" },
+          "grammar_topic": { "en": "Verb and noun forms; countable and uncountable nouns; quantifiers", "ar": "صيغ الأفعال والأسماء؛ الأسماء المعدودة وغير المعدودة؛ محددات الكمية" },
+          "career_skill": { "en": "Follow up on an order", "ar": "متابعة طلب شراء" },
+          "writing_task": { "en": "A formal email about an order", "ar": "بريد إلكتروني رسمي بخصوص طلب شراء" },
+          "writing_tip": { "en": "Formal emails", "ar": "الرسائل الإلكترونية الرسمية" }
+        }
+      ]
+    },
+    {
+      "id": "u5",
+      "number": 5,
+      "title_en": "Customer service",
+      "title_ar": "خدمة العملاء",
+      "data_tier": "textbook-scope-sequence",
+      "prior_knowledge": ["Vocabulary and grammar from Unit 4: Orders and deliveries"],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_en": "Customer service",
+          "title_ar": "خدمة العملاء",
+          "listening_topic": { "en": "Customer service", "ar": "خدمة العملاء" },
+          "reading_topic": { "en": "The customer journey", "ar": "رحلة العميل" },
+          "vocabulary_topic": { "en": "Customer service compound nouns", "ar": "الأسماء المركّبة في خدمة العملاء" },
+          "grammar_topic": { "en": "Comparatives and superlatives", "ar": "صيغ المقارنة والتفضيل" },
+          "career_skill": { "en": "Customer feedback and reviews", "ar": "ملاحظات العملاء وتقييماتهم" },
+          "writing_task": { "en": "A customer review", "ar": "تقييم من عميل" },
+          "writing_tip": { "en": "Adding emphasis", "ar": "أساليب التوكيد" }
+        }
+      ]
+    },
+    {
+      "id": "u6",
+      "number": 6,
+      "title_en": "Business events and trips",
+      "title_ar": "الفعاليات والرحلات التجارية",
+      "data_tier": "textbook-scope-sequence",
+      "prior_knowledge": ["Vocabulary and grammar from Unit 5: Customer service"],
+      "lessons": [
+        {
+          "id": "u6_l1",
+          "order": 1,
+          "title_en": "Business events and trips",
+          "title_ar": "الفعاليات والرحلات التجارية",
+          "listening_topic": { "en": "Choosing a business event", "ar": "اختيار فعالية تجارية" },
+          "reading_topic": { "en": "Descriptions of exhibition centres", "ar": "أوصاف مراكز المعارض" },
+          "vocabulary_topic": { "en": "On a business trip", "ar": "في رحلة عمل" },
+          "grammar_topic": { "en": "Future forms", "ar": "صيغ المستقبل" },
+          "career_skill": { "en": "Plan and arrange an event", "ar": "التخطيط لفعالية وتنظيمها" },
+          "writing_task": { "en": "Work notes and messages", "ar": "ملاحظات ورسائل عمل" },
+          "writing_tip": { "en": "Abbreviating your writing", "ar": "اختصار الكتابة" }
+        }
+      ]
+    }
+  ]
+}
