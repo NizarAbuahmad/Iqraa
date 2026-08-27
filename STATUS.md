@@ -6974,6 +6974,60 @@ catalog is actually done, not now. Confirmed behavior is unchanged today:
 
 83 curriculum tests pass, unchanged.
 
+## Grade 9 Math grows a real Semester 2, and Units 3–4 stop being title-only, 2026-08-26
+
+The Drive extraction ceiling from the previous entry blocked finishing Grade 9
+Math from Drive alone. The user uploaded four PDFs directly instead —
+`poppler-utils` (`pdftotext`/page rendering) wasn't installed in this
+container; installed it, and it reads these cleanly with correct RTL order,
+unlike Drive's `read_file_content` which returns text with each line's
+characters reversed. Four files, identified by content since the upload
+filenames were stripped to underscores:
+
+- The official Grade 9 Math **Semester 1 exercise book** (54 pages, full).
+- The official Grade 9 Math **Semester 2 exercise book** (52 pages, full) —
+  the first Semester 2 source this project has had at all.
+- Two files together forming a **teacher's edition excerpt covering Units 3
+  and 4 of Semester 1 only** (93 pages) — exercise pages plus the same
+  مخطَّط الوحدة tables the Grade 10 catalogs are built from.
+
+**Units 3 and 4 are now lesson-level**, matching Unit 1's tier — real
+objectives, vocabulary, and periods transcribed from the teacher's-edition
+tables, visually verified against rendered page images (not just text
+extraction) given how much rides on getting a نتاجات table right. Two more
+book-vs-guide conflicts found, resolved the same way as Unit 1's: Unit 3's
+table lists a sixth lesson («حل معادلات خاصة») and Unit 4's a third
+(«البرهان الإحداثي»), neither in the student book's table of contents. Both
+excluded — and this time with stronger evidence than Unit 1 had, because
+*two independent official sources* (the student book **and** the exercise
+book) agree against the guide, not just one. `known_gaps` says so explicitly,
+including the specific unmerged lesson-count math (Unit 3's `total_periods`
+of 24 sums the guide's six lessons; the four kept here sum to 18).
+
+**Unit 2 stays title-only** — no مخطَّط الوحدة table for it turned up in any
+of the five sources this project now has for Semester 1. It did gain
+`prior_knowledge`, though, sourced from the exercise book's own «أستعدُّ
+لدراسة الوحدة» (get ready to study the unit) review-section headers — a
+different, legitimate source from Unit 1's full bulleted list, and
+`known_gaps` says the list drawn from it may be incomplete.
+
+**Semester 2 is new**, `iqra_curriculum_g9_math_sem2.json` +
+`catalogs/g9MathSem2.ts`, same shape as Sem1. Every unit is title-only —
+there is no teacher guide for this semester at all yet, only the exercise
+book's table of contents (4 units, 16 lessons) and, again, one
+`prior_knowledge` item per unit from its «أستعدُّ» section header.
+
+Wired into `catalog.ts` exactly like Sem1 was — new `book-math-9-s2` entry,
+new browser-catalog build, spread into `UNITS`/`LESSONS`,
+`isBrowserUnitTitleOnly`/`isBrowserLessonTitleOnly` extended. `MVP_GRADE_IDS`
+untouched, so none of this reaches any picker yet — confirmed unchanged:
+`getVisibleGrades()` still `['grade-10']`.
+
+`verify-curriculum`: 7 files now (was 6), 94 lessons (was 78), 28 gaps (was
+21) — Grade 9 Sem1 alone dropped from 14 gaps to 5 (Unit 2's five lessons,
+the only ones left with no source), Sem2 added 16 new (every lesson, honestly,
+since no guide exists for it). 83 curriculum tests pass, unchanged.
+
 ## Chasing the last 6: text obtained for 5, none ingested yet, 2026-08-26
 
 Followed up on the 6 documents the previous entry left unfetched. All 6 are
