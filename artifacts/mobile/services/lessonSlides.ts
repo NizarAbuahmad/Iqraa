@@ -34,15 +34,30 @@ import { exerciseReference, exercisesForLesson } from './bookExercises.ts';
  * Generated intros are written *at the teacher* — "ابدأ بطرح السؤال: «…»
  * سجّل إجابات الطلاب على السبورة" — and this slide is projected on the class
  * screen. Stage directions up there tell the room what the teacher is about
- * to do instead of giving it something to think about, so the quoted
- * question is projected alone and the full instruction moves to the teacher
- * notes. No quoted question means nothing to lift out: the text projects as
- * it always did rather than leaving the slide blank.
+ * to do instead of giving it something to think about, so the question is
+ * projected alone and the full instruction moves to the teacher notes.
+ *
+ * Quoted questions are the clean case. Just as common: an unquoted question
+ * introduced by a colon mid-paragraph — "...ثم ينتقل إلى سؤال تمهيدي: كيف
+ * يمكن جمع هذه الحدود؟ بعد ذلك يوضح أن..." — with narration continuing
+ * straight through the question mark on both sides. A whole-text sentence
+ * split can't isolate that (Arabic narration here runs on commas, not
+ * periods, until the question itself), so the colon is the anchor: it
+ * marks where the question starts, and the following "؟"/"?" marks where it
+ * ends. Only when neither pattern is found is anything left to lift out,
+ * and the text projects as it always did rather than leaving the slide
+ * blank.
  */
 export function splitWarmup(intro: string): { projected: string; notes: string } {
   const quoted = intro.match(/[«"“]\s*([^»"”]*[?؟])\s*[»"”]/u);
-  const question = quoted?.[1]?.trim();
-  return question ? { projected: question, notes: intro } : { projected: intro, notes: '' };
+  if (quoted?.[1]?.trim()) {
+    return { projected: quoted[1].trim(), notes: intro };
+  }
+  const colonIntroduced = intro.match(/:\s*([^:.!]*[?؟])/u);
+  if (colonIntroduced?.[1]?.trim()) {
+    return { projected: colonIntroduced[1].trim(), notes: intro };
+  }
+  return { projected: intro, notes: '' };
 }
 
 /**
