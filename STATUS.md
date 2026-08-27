@@ -186,6 +186,22 @@ Vision screens (student/parent/school dashboards) are deprioritized.
 - Financial Literacy G10 S1 is browsable (2 units / 10 lessons, NCCD-sourced).
   It was previously offered as a subject tile with no book behind it, so the
   subject dead-ended on the "no semesters" empty state.
+- English G10 S1 is browsable (added 2026-08-27): four vocational-track books
+  — Commerce (6 units), Agriculture (6 units), Hospitality and Tourism
+  (6 units), Industrial/Technical (12 units) — one lesson per unit, sourced
+  from Teacher's Books uploaded to the project Drive
+  (`lib/curriculum/src/catalogs/g10EnglishVocational.ts`). Unlike math/chem/
+  finlit these are **not NCCD textbooks**: York Press/Pearson ESP coursebooks
+  adapted by the Educational Research Center, curriculum-authority status for
+  Jordan unconfirmed — see each data file's `meta.curriculum_authority`. The
+  Industrial track uses a different, lower-level coursebook ("Technical
+  English" Level 1/CEFR A1) than the other three (Level 2/CEFR A2) because
+  the matching "industry english 2.pdf" (Level 2, same series as the other
+  three) returned empty text on every Drive extraction attempt — it is on
+  file, unextracted; see that data file's `known_gaps` before trusting its
+  four Briefing-less units (9–12, `data_tier: "title-only"`). Catalog +
+  lessons only: not wired into `knowledgeBase.ts` or any AI generator/bank —
+  `hasKnowledgeBase: false` on all four books.
 - Expo Go on a phone works over LAN (firewall rule `Iqraa-Dev-8080-8083`;
   see LOCAL_SETUP.md).
 - `mockup-sandbox` is excluded from the workspace — it is a design sandbox,

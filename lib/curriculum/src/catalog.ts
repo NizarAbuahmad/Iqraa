@@ -39,6 +39,16 @@ import {
   isG9MathSem2TitleOnlyUnit,
   isG9MathSem2TitleOnlyLesson,
 } from './catalogs/g9MathSem2.ts';
+import {
+  ENGLISH_COMMERCE_S1_CURRICULUM_BOOK_ID,
+  ENGLISH_AGRICULTURE_S1_CURRICULUM_BOOK_ID,
+  ENGLISH_HOSPITALITY_S1_CURRICULUM_BOOK_ID,
+  ENGLISH_INDUSTRY_S1_CURRICULUM_BOOK_ID,
+  buildEnglishCommerceBrowserCatalog,
+  buildEnglishAgricultureBrowserCatalog,
+  buildEnglishHospitalityBrowserCatalog,
+  buildEnglishIndustryBrowserCatalog,
+} from './catalogs/g10EnglishVocational.ts';
 
 export interface Grade {
   id: string;
@@ -155,7 +165,7 @@ export const INVESTOR_MVP_CURRICULUM = true;
  * iqra_curriculum_g9_math_sem2.json.
  */
 export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9'];
-export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy'];
+export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy', 'english'];
 /** Main semester books only (guides/exercises stay in data, hidden from UI). */
 export const MVP_BOOK_IDS: readonly string[] = [
   'book-math-10',
@@ -166,6 +176,12 @@ export const MVP_BOOK_IDS: readonly string[] = [
   FINLIT_S1_CURRICULUM_BOOK_ID,
   'book-math-9-s1',
   'book-math-9-s2',
+  // English vocational tracks (Commerce/Agriculture/Hospitality/Industrial) —
+  // Semester 1 only, no Semester 2 source on file yet.
+  ENGLISH_COMMERCE_S1_CURRICULUM_BOOK_ID,
+  ENGLISH_AGRICULTURE_S1_CURRICULUM_BOOK_ID,
+  ENGLISH_HOSPITALITY_S1_CURRICULUM_BOOK_ID,
+  ENGLISH_INDUSTRY_S1_CURRICULUM_BOOK_ID,
 ];
 
 export function getVisibleGrades(): Grade[] {
@@ -381,6 +397,62 @@ export const BOOKS: Book[] = [
     academicYear: '2024-2025',
     language: 'English',
     edition: '2nd',
+  },
+  // ── English Grade 10 — vocational tracks (Semester 1) ──────────────────────
+  // Source: Vocational English Level 2 Volume 1 (York Press/ERC, 2023),
+  // one Teacher's Book per track. See g10EnglishVocational.ts and each data
+  // file's meta for provenance and known gaps.
+  {
+    id: ENGLISH_COMMERCE_S1_CURRICULUM_BOOK_ID,
+    title: 'English – Commerce Track, Grade 10 (Semester 1)',
+    titleAr: 'اللغة الإنجليزية – القطاع التجاري – الصف العاشر – الفصل الأول',
+    subjectId: 'english',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'English',
+    edition: '2023',
+    hasKnowledgeBase: false,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: ENGLISH_AGRICULTURE_S1_CURRICULUM_BOOK_ID,
+    title: 'English – Agriculture Track, Grade 10 (Semester 1)',
+    titleAr: 'اللغة الإنجليزية – القطاع الزراعي – الصف العاشر – الفصل الأول',
+    subjectId: 'english',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'English',
+    edition: '2023',
+    hasKnowledgeBase: false,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: ENGLISH_HOSPITALITY_S1_CURRICULUM_BOOK_ID,
+    title: 'English – Hospitality and Tourism Track, Grade 10 (Semester 1)',
+    titleAr: 'اللغة الإنجليزية – قطاع الضيافة والسياحة – الصف العاشر – الفصل الأول',
+    subjectId: 'english',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'English',
+    edition: '2023',
+    hasKnowledgeBase: false,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: ENGLISH_INDUSTRY_S1_CURRICULUM_BOOK_ID,
+    title: 'English – Industrial/Technical Track, Grade 10 (Semester 1)',
+    titleAr: 'اللغة الإنجليزية – القطاع الصناعي والتقني – الصف العاشر – الفصل الأول',
+    subjectId: 'english',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'English',
+    edition: '2nd',
+    hasKnowledgeBase: false,
+    audience: 'all',
+    semester: 1,
   },
   {
     id: 'book-science-8',
@@ -1211,6 +1283,10 @@ const _chemSem1Browser = buildChemSem1BrowserCatalog();
 const _chemSem2Browser = buildChemSem2BrowserCatalog();
 const _g9MathSem1Browser = buildG9MathSem1BrowserCatalog();
 const _g9MathSem2Browser = buildG9MathSem2BrowserCatalog();
+const _engCommerceBrowser = buildEnglishCommerceBrowserCatalog();
+const _engAgricultureBrowser = buildEnglishAgricultureBrowserCatalog();
+const _engHospitalityBrowser = buildEnglishHospitalityBrowserCatalog();
+const _engIndustryBrowser = buildEnglishIndustryBrowserCatalog();
 
 // ─── Authored-Bloom's enrichment for NCCD browser rows ───────────────────────
 //
@@ -1326,6 +1402,10 @@ export const UNITS: Unit[] = [
   ..._finlitSem1Browser.units,
   ..._g9MathSem1Browser.units,
   ..._g9MathSem2Browser.units,
+  ..._engCommerceBrowser.units,
+  ..._engAgricultureBrowser.units,
+  ..._engHospitalityBrowser.units,
+  ..._engIndustryBrowser.units,
 ];
 
 /** Active lessons — legacy Math/Chem G10 rows replaced by NCCD-sourced browser rows. */
@@ -1338,6 +1418,10 @@ export const LESSONS: Lesson[] = [
   ..._finlitSem1Browser.lessons,
   ..._g9MathSem1Browser.lessons,
   ..._g9MathSem2Browser.lessons,
+  ..._engCommerceBrowser.lessons,
+  ..._engAgricultureBrowser.lessons,
+  ..._engHospitalityBrowser.lessons,
+  ..._engIndustryBrowser.lessons,
 ];
 
 /** Math Grade 10 Semester 1 book id (NCCD-backed). */

@@ -34,7 +34,14 @@
  */
 
 /** Subject slug as it appears inside an id. Not the app's `subjectId`. */
-export type SubjectSlug = 'math' | 'chem' | 'finlit';
+export type SubjectSlug =
+  | 'math'
+  | 'chem'
+  | 'finlit'
+  | 'eng-commerce'
+  | 'eng-agri'
+  | 'eng-hospitality'
+  | 'eng-industry';
 
 export interface CurriculumIdScope {
   /** Catalog grade id, e.g. `grade-10`. */
@@ -128,7 +135,7 @@ export function objectiveId(
  * `kbContext.ts`. Three copies of a shape that was about to gain a segment is
  * three chances to update two of them.
  */
-const UNIT_ID_RE = /^kbu-(?:g(\d+)-)?(math|chem|finlit)-s([12])-nccd-u(\d+)$/;
+const UNIT_ID_RE = /^kbu-(?:g(\d+)-)?(math|chem|finlit|eng-commerce|eng-agri|eng-hospitality|eng-industry)-s([12])-nccd-u(\d+)$/;
 
 export interface ParsedUnitId {
   gradeId: string;
@@ -169,22 +176,27 @@ export function isNccdUnitId(value: string | null | undefined): boolean {
  * maths is bare (`s1-u2`, `s1`), chemistry is prefixed (`chem-s1-u2`), and
  * financial literacy gets only a semester tag because the bank holds no
  * unit-level material for it — emitting `finlit-s1-u1` would invent a tag
- * nothing can carry.
+ * nothing can carry. The four English vocational tracks are new subjects with
+ * no bank material at all yet, so they get the same semester-only treatment.
  *
  * Other grades are explicit on both axes (`g9-math-s1-u2`, `g9-math-s1`). Maths
  * stops being the silent default the moment there is a second grade to be
  * silent about.
  */
+function hasNoUnitLevelBankMaterial(subject: SubjectSlug): boolean {
+  return subject === 'finlit' || subject.startsWith('eng-');
+}
+
 export function bankTagsForParsedUnit(parsed: ParsedUnitId): string[] {
   const { gradeId, subject, semester, unit } = parsed;
 
   if (gradeId === IMPLICIT_GRADE_ID) {
-    if (subject === 'finlit') return [`finlit-s${semester}`];
+    if (hasNoUnitLevelBankMaterial(subject)) return [`${subject}-s${semester}`];
     const prefix = subject === 'chem' ? 'chem-s' : 's';
     return [`${prefix}${semester}-u${unit}`, `${prefix}${semester}`];
   }
 
   const scope = `${gradeSlug(gradeId)}-${subject}-s${semester}`;
-  if (subject === 'finlit') return [scope];
+  if (hasNoUnitLevelBankMaterial(subject)) return [scope];
   return [`${scope}-u${unit}`, scope];
 }
