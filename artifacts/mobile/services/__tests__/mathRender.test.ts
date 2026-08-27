@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 
 import {
   hasRenderableMath,
+  isolateForeignRuns,
   mathLineToHtml,
   mathLineToUnicode,
   parseMathLine,
@@ -196,5 +197,28 @@ describe('mathLineToUnicode', () => {
   it('round-trips prose untouched', () => {
     const line = 'اليوم سنتعلم درسًا جديدًا';
     assert.equal(mathLineToUnicode(line), line);
+  });
+});
+
+describe('isolateForeignRuns', () => {
+  it('wraps each Latin/math run embedded in Arabic prose in bidi isolates', () => {
+    const out = isolateForeignRuns('إذا كان f(x) = 2x + 3 و g(x) = x²');
+    assert.equal(out, 'إذا كان ⁦f(x) = 2x + 3⁩ و ⁦g(x) = x²⁩');
+  });
+
+  it('leaves pure Arabic prose untouched — no isolates inserted', () => {
+    const line = 'اشرح الفكرة بأسلوب بسيط';
+    assert.equal(isolateForeignRuns(line), line);
+  });
+
+  it('never drops or reorders characters — stripping the isolates recovers the original', () => {
+    const original = 'قيمة x عند f(x) = 2x + 3 هي 11، فإن (f∘g)(x) يساوي: (1 نقطة)';
+    const wrapped = isolateForeignRuns(original);
+    const stripped = wrapped.replace(/[⁦⁩]/g, '');
+    assert.equal(stripped, original);
+  });
+
+  it('handles an empty line', () => {
+    assert.equal(isolateForeignRuns(''), '');
   });
 });
