@@ -24,6 +24,7 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { RosterError, createClass, listClasses, type ClassGroup } from '@/services/roster';
 import { countStudents, type TranslationKey } from '@/services/i18n';
+import { getPickerGrades } from '@/services/curriculumData';
 
 const ACCENT = '#1B6B62';
 
@@ -37,7 +38,9 @@ export default function ClassesScreen() {
   const [error, setError] = useState('');
   const [showNew, setShowNew] = useState(false);
   const [newName, setNewName] = useState('');
+  const [newGradeId, setNewGradeId] = useState('grade-10');
   const [creating, setCreating] = useState(false);
+  const pickerGrades = getPickerGrades();
 
   /**
    * The API answers in English; this screen is Arabic-first. Translate the
@@ -78,10 +81,11 @@ export default function ClassesScreen() {
     setCreating(true);
     setError('');
     try {
-      const created = await createClass({ name, gradeId: 'grade-10' });
+      const created = await createClass({ name, gradeId: newGradeId });
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setShowNew(false);
       setNewName('');
+      setNewGradeId('grade-10');
       setClasses(prev => [...prev, created]);
       router.push({ pathname: '/classes/[id]', params: { id: created.id } });
     } catch (err) {
@@ -231,6 +235,45 @@ export default function ClassesScreen() {
                 },
               ]}
             />
+            {/* Grade picker — only worth showing once there is a real choice. */}
+            {pickerGrades.length > 1 ? (
+              <View
+                style={{
+                  flexDirection: isRTL ? 'row-reverse' : 'row',
+                  gap: 8,
+                  flexWrap: 'wrap',
+                  marginTop: 12,
+                }}
+              >
+                {pickerGrades.map(g => {
+                  const active = newGradeId === g.id;
+                  return (
+                    <Pressable
+                      key={g.id}
+                      onPress={() => setNewGradeId(g.id)}
+                      style={{
+                        paddingHorizontal: 14,
+                        paddingVertical: 7,
+                        borderRadius: 18,
+                        borderWidth: 1.5,
+                        borderColor: active ? ACCENT : colors.border,
+                        backgroundColor: active ? ACCENT + '16' : colors.card,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          color: active ? ACCENT : colors.mutedForeground,
+                          fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
+                          fontSize: 13,
+                        }}
+                      >
+                        {lang === 'ar' ? g.nameAr : g.name}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : null}
             {/* The list's error banner sits behind this sheet, so a failed
                 create looked like nothing happened. Say it here too. */}
             {error ? (
@@ -251,7 +294,13 @@ export default function ClassesScreen() {
               </View>
             ) : null}
             <View style={styles.modalActions}>
-              <Pressable onPress={() => setShowNew(false)} style={styles.modalBtn}>
+              <Pressable
+                onPress={() => {
+                  setShowNew(false);
+                  setNewGradeId('grade-10');
+                }}
+                style={styles.modalBtn}
+              >
                 <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }}>
                   {t('cancel')}
                 </Text>

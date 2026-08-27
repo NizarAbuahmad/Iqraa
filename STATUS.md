@@ -7104,3 +7104,62 @@ and `math-u1-answers-almasri` need the line-reversal repair written first.
 `math-u1-answers-alkhatib` joins the no-text-layer/OCR-needed group. No files
 changed in `lib/curriculum` this pass — this entry is the only artifact of
 this session's work.
+
+## Grade 9 is visible now, and two hardcoded grade-10 UI paths got fixed to match, 2026-08-27
+
+Widened `MVP_GRADE_IDS` to `['grade-10', 'grade-9']` and added
+`book-math-9-s1`/`book-math-9-s2` to `MVP_BOOK_IDS` — the one-line change the
+2026-08-26 entry said was ready whenever a human decided it was time. Decided:
+show it now, honestly thin parts included (all of Semester 2 and Unit 2 of
+Semester 1 are still title-only) rather than waiting for full coverage.
+Confirmed end-to-end: `getBooksForSubjectGrade('mathematics', 'grade-9')`
+returns both semester books, `getUnitsForBook` returns real unit titles for
+each.
+
+**Widening the picker surfaced two screens that were never wired to it at
+all.** `getPickerGrades()`/`getVisibleGrades()` themselves were already
+length-agnostic everywhere the AI-tools screens use them (`resolvePickerIndex`,
+`PickerField`, `lessonPrepPickerIndices` all worked off array length, not a
+hardcoded index) — but two flows never called those functions, they had
+`gradeId: 'grade-10'` typed directly into the code, so a teacher could not
+reach Grade 9 through them no matter what the picker allowed elsewhere:
+
+- `app/home.tsx`'s "change lesson" dialog — `TopicSelector` was pinned to
+  `gradeId="grade-10"`. Added a `draftGradeId` state, a grade-pill row
+  (mirrors the existing subject-pill row, shown only when there's more than
+  one grade to choose), and threaded it into `HomeLessonPick` (new optional
+  `gradeId` field — absent on picks saved before today, callers already
+  fall back to grade-10). The banner's grade label was also a hardcoded
+  string (`'Grade 10'`/`'الصف العاشر'`) regardless of what was actually
+  picked; now reads from the pick.
+- `app/classes/index.tsx`'s new-class dialog — `createClass` always sent
+  `gradeId: 'grade-10'`, no field to change it. Added the same pill pattern.
+
+**Found and fixed a related bug while in `home.tsx`, not introduced by this
+change but caught by the same audit:** `openGenerator` (the quick-generate
+buttons) built its nav params from `buildGeneratorNav` alone, which only sets
+`topic` — never `gradeIdx`/`subjectIdx`. That's exactly the silent-default
+trap this file already documents (`lessonPrep.ts`'s own comment: every
+generator screen falls back to index 0, Grade 10 Mathematics, and
+`isMathContext` branches on that string). It affected Grade 10 Chemistry
+lessons too, not just Grade 9 — a chemistry lesson opened via a home quick-
+action was generating from the math question bank under the chemistry title.
+Fixed by spreading `lessonPickerParams(lessonPick?.lessonId, lang)` into the
+nav params, the same helper the AI-tools hub and `LessonPrepPanel` already
+use.
+
+Verified with an `Explore` agent sweep across `artifacts/mobile/` for other
+places consuming grade pickers before concluding these were the only two
+gaps — everything else (the 7 `ai-tools/*` screens, `evaluations/[id]/results.tsx`,
+`answers/[studentId].tsx`, the API server's `curriculum.ts` proxy) already
+derives its grade index from data rather than a hardcoded literal.
+
+No `node_modules` in this container for either package touched, so neither
+`pnpm --filter mobile typecheck` nor a bundler run was possible here — checked
+syntax only, with global `tsc --noResolve` (parses cleanly, no TS1xxx errors,
+only the expected implicit-`any`/unresolved-import noise from skipping type
+resolution). `pnpm --filter @workspace/curriculum run verify` unchanged (7
+files, 94 lessons, 28 gaps, 0 structural errors) and `test` still 83/83 —
+this pass touched app code, not curriculum data. **Not run against the real
+app** — confirm the grade pill actually renders and a Grade 9 pick survives
+a generator round-trip on the next live check.
