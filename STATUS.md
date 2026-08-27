@@ -7327,3 +7327,115 @@ itself ships untested at the render level; the data it renders is tested
 thoroughly elsewhere (`bookFigures`, `bookFigureUri`/`exportHtml` figure
 tests). Not yet seen on a live device — confirm the grid renders sensibly on
 a phone-width screen, not just that it typechecks.
+
+## Teacher-perspective AI Tools review: five follow-up PRs, 2026-08-26/27
+
+A full teacher-perspective review of the AI Tools (Slides Maker, Lesson Plan,
+Worksheet, Quiz, Evaluations, Class Challenge, Classroom Hub, Parent Message)
+— live run plus source/STATUS.md audit — turned up several real issues.
+Fixed in five PRs, landed on the same branch in priority order (#160, #163,
+#165, #174, #176):
+
+**#160 — three cheapest, lowest-risk fixes.** Quiz's generated title leaked
+the raw English subject enum into an otherwise-Arabic string (`اختبار
+Mathematics – …`); every other generator's Arabic title omits the subject,
+Quiz now does too. Slides Maker nested a delete `Pressable` inside the row's
+own edit `Pressable` — an invalid button-in-a-button on web, confirmed via
+React hydration warnings during the live run — split into sibling
+Pressables inside a plain row `View`. Evaluations showed a raw English 409
+(`"No level scale is configured…"`) on an Arabic screen when the assessment
+config wasn't seeded; the response already carried `code: "no_level_scale"`,
+now mapped to a translated message, and the required `pnpm --filter
+@workspace/db run seed:assessment` step (missing from any doc, so any fresh
+environment hit this 409 on the very first evaluation) is now in
+`LOCAL_SETUP.md`.
+
+**#163 — Worksheet/Quiz drifting off-topic once a lesson's item bank ran
+out.** `detectMathFamily` buckets a lesson into one of ~13 concrete-item
+families, several with as few as 5 items. `takeConcreteMath` — the one choke
+point every worksheet/quiz/homework/activity question builder calls through
+— fell straight through to the generic `algebra` family the moment a
+family's unused items ran out, so a lesson on function composition (5
+items) could serve a quadratic-formula question with no connection to it
+once a worksheet asked for more than 5. Fixed by retrying the *same* family
+with repeats allowed before ever falling through to `algebra` — a repeat
+within the right topic costs a teacher far less than a wrong one.
+`mathPractice.ts`; regression test in `questionStems.test.ts` pins a
+function-composition lesson asked for more items than it has never drifting
+into algebra content. Also carried a one-line fix for a `main`-inherited
+typecheck break (`g10MathSem2.ts`'s `NccdCurriculumMeta.source_books` type
+hadn't followed the curriculum JSON's array→object reshape), confirmed
+pre-existing by typechecking a clean `origin/main` checkout in isolation
+first.
+
+**#165 — Evaluations publish blockers dropped, and a real UI-drift bug
+found while extracting a shared component.** Live-verified against a real
+Postgres+API instance that Publish itself works fine (200, `published`
+status, share code issued) — the review's "dead end" observation was almost
+certainly its test automation not handling the native `window.confirm()`
+dialog Publish opens first, not a product bug. But a real, separate gap
+turned up while verifying: the server's 400 when publish is genuinely
+blocked carries a `blockers` array naming the specific problem
+(`"Question 3: ..."`), and the mobile client's `readJson` silently dropped
+it — a teacher who hit a real precondition saw only a generic message with
+no way to tell which question was the issue. Fixed: `EvaluationError` now
+carries `details: string[]`, surfaced in the error banner.
+Separately, extracted `components/ui/GeneratorResultActions.tsx` — Lesson
+Plan, Worksheet, Quiz, and Activity had each hand-built the same
+Save/Favourite/Export/Regenerate row, and a 23 Aug fix that reordered the
+row before the feedback/related-resources panels had reached three of the
+four screens but silently missed `activity.tsx`, because there was no
+shared place for the fix to live. That's the standing risk this file had
+already named for the duplicated row; the fourth screen actually going stale
+is the proof it was real. Live-verified end to end (save a worksheet and an
+activity against a running Expo web instance) that the row now renders in
+the corrected order on all four screens.
+
+**#174 — Evaluations' live-mode generator would have rejected every
+question of 4 of its 8 types.** The review's "shallow template questions"
+finding turned out to be a demo-mode artifact, not a bug —
+`mockGenerator.ts` deliberately produces honest, labeled templates rather
+than fabricating content it can't guarantee correct, same principle as
+Worksheet's "not symbolically verified" badge, and a fully-built live
+generator (`llmGenerator.ts`) already exists behind `AI_LIVE_MODE`. But
+reading that live path found a real bug: `TYPE_CONTRACTS` (the JSON shape
+the prompt tells the model to write) never asked for `modelAnswer`/
+`keyConcepts` for `short_answer`/`open_ended`/`problem_solving`, even though
+`questionTypes.ts`'s validator requires both unconditionally; `practical_task`'s
+contract asked for a rubric it never uses while omitting `successCriteria`,
+the field its validator actually requires. A model following the prompt
+exactly, for any of those four types, would have every question rejected —
+turning `AI_LIVE_MODE` on today would not have produced usable evaluations
+for half the question types. Root cause of why this went unnoticed:
+`validator.ts` imported `./questionTypes` and `./mockGenerator` without the
+`.ts` extension node's native test runner needs (the same extensionless-
+import trap this file already documents elsewhere), so nothing could import
+`validateGenerated` directly and no test ever exercised it against real LLM
+output. Fixed the contracts, fixed the import, and added a test that parses
+each of the 8 `TYPE_CONTRACTS` entries' *literal* JSON — not hand-authored
+examples that could quietly drift from the real prompt text — through the
+same parse→validate pipeline the route uses. Verified the test actually
+catches the bug: reverted just the four contract strings, confirmed exactly
+those four subtests failed with the predicted reasons, restored and
+confirmed all 25 pass.
+
+**#176 — swept the rest of the monorepo for the same extensionless-import
+pattern.** `api-server` route files are clean by construction (only ever
+loaded through the built bundle in `mountOrder.test.ts`, never through the
+native test loader directly); `lib/curriculum` and `lib/db` are clean/not
+applicable. One real finding in `artifacts/mobile/services`:
+`cqv/progress.ts` — pure logic, zero existing test coverage, bare
+extensionless imports — fixed. **Caveat, confirmed by direct probe**: the
+fix alone doesn't make the file test-reachable. It transitively imports
+`cqv/catalog.ts`, which resolves curriculum data via the `@/` path alias —
+something Metro/tsconfig understand but node's native test loader does not
+(`ERR_MODULE_NOT_FOUND: Cannot find package '@/services'`). That's a
+separate, pre-existing, harness-wide gap shared by every `@/`-importing
+service file (9 total, none imported by any existing test) — worth fixing
+on its own, since it silently excludes real logic from ever being unit
+tested the same way the `validator.ts` bug did, but out of scope for this
+sweep.
+
+All five: `pnpm run typecheck` clean, full mobile (972) and api-server (284)
+suites passing at each step. Not independently re-verified as a batch after
+the fact — each PR's own verification stands as recorded above.
