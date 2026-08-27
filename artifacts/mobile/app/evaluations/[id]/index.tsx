@@ -127,7 +127,11 @@ export default function EvaluationDetailScreen() {
       const updated = await publishEvaluation(id);
       setEvaluation(updated);
     } catch (err) {
-      setError(err instanceof EvaluationError ? err.message : t('evaluationPublishFailed'));
+      if (err instanceof EvaluationError) {
+        setError(err.details.length ? `${err.message}:\n${err.details.join('\n')}` : err.message);
+      } else {
+        setError(t('evaluationPublishFailed'));
+      }
     } finally {
       setBusy(null);
     }

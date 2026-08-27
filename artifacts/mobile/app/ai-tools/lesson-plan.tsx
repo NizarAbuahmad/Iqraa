@@ -17,7 +17,6 @@ import { TopicSelector } from '@/components/ui/TopicSelector';
 import { Button } from '@/components/ui/Button';
 import { getItem, saveItem, updateItem } from '@/services/workspace';
 import { useFavorite } from '@/hooks/useFavorite';
-import { MaterialClassField } from '@/components/ui/MaterialClassField';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
@@ -25,8 +24,7 @@ import { isAbortError } from '@/services/ai/aiProvenance';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
-import { RelatedResourcesPanel } from '@/components/ui/RelatedResourcesPanel';
-import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
+import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
 import {
   buildLessonPlanHTML,
   buildLessonPlanSlidesHTML,
@@ -320,12 +318,6 @@ export default function LessonPlanScreen() {
 
   const topPad = insets.top + (insets.top === 0 ? 67 : 0);
 
-  const saveBtnLabel =
-    saveLabel === 'saved' ? t('savedSuccess')
-      : saveLabel === 'updated' ? t('updatedSuccess')
-        : savedId ? t('updateInWorkspace')
-          : t('saveToWorkspace');
-
   const handleSlides = async () => {
     if (!result) return;
     setLoadingSlides(true);
@@ -497,95 +489,20 @@ export default function LessonPlanScreen() {
         />
       )}
 
-      {/*
-        Actions come before the feedback and related-resources panels, not
-        after. They used to be the last thing in the scroll: a teacher who had
-        just generated a plan had to scroll the whole plan, then past "rate
-        this", then past a related-resources list, before reaching Save. The
-        controls were there the entire time — the 23 Aug review reported them
-        missing, which is what "present but past two other panels" looks like
-        from the outside. `slides.tsx` already ordered it this way.
-      */}
       {result && !loading && (
-        <View style={{ marginHorizontal: 20, gap: 10, marginTop: 4, marginBottom: 20 }}>
-          {/* Save button */}
-          {/* Which class this material is for — nothing until it is saved. */}
-          <MaterialClassField materialId={savedId ?? null} onToast={showToast} />
-
-          <Pressable
-            onPress={handleSave}
-            style={({ pressed }) => [
-              styles.saveBtn,
-              {
-                backgroundColor: (saveLabel === 'saved' || saveLabel === 'updated') ? ACCENT : 'transparent',
-                borderColor: ACCENT,
-                borderRadius: colors.radius,
-                flexDirection: isRTL ? 'row-reverse' : 'row',
-                opacity: pressed ? 0.8 : 1,
-              },
-            ]}
-          >
-            <Ionicons
-              name={(saveLabel === 'saved' || saveLabel === 'updated') ? 'checkmark-circle' : 'bookmark-outline'}
-              size={16}
-              color={(saveLabel === 'saved' || saveLabel === 'updated') ? '#fff' : ACCENT}
-            />
-            <Text style={[
-              styles.saveBtnText,
-              { color: (saveLabel === 'saved' || saveLabel === 'updated') ? '#fff' : ACCENT, fontFamily: 'Cairo_600SemiBold' },
-            ]}>
-              {saveBtnLabel}
-            </Text>
-          </Pressable>
-          {/* Favourite — only shown after saving */}
-          {!!savedId && (
-            <Pressable
-              onPress={handleToggleFavorite}
-              style={({ pressed }) => [
-                styles.regenBtn,
-                {
-                  borderColor: favorited ? '#F59E0B' : colors.mutedForeground,
-                  borderRadius: colors.radius,
-                  flexDirection: isRTL ? 'row-reverse' : 'row',
-                  backgroundColor: favorited ? '#F59E0B18' : 'transparent',
-                  opacity: pressed ? 0.8 : 1,
-                },
-              ]}
-            >
-              <Ionicons name={favorited ? 'star' : 'star-outline'} size={16} color={favorited ? '#F59E0B' : colors.mutedForeground} />
-              <Text style={[styles.regenText, { color: favorited ? '#F59E0B' : colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }]}>
-                {favorited ? t('inFavorites') : t('addToFavorites')}
-              </Text>
-            </Pressable>
-          )}
-          {/* Export */}
-          <Pressable
-            onPress={() => setShowExport(true)}
-            style={[styles.regenBtn, { borderColor: colors.mutedForeground, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-          >
-            <Ionicons name="share-outline" size={16} color={colors.mutedForeground} />
-            <Text style={[styles.regenText, { color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }]}>{t('exportBtn')}</Text>
-          </Pressable>
-          {/* Regenerate */}
-          <Pressable
-            onPress={generate}
-            style={[styles.regenBtn, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-          >
-            <Ionicons name="refresh-outline" size={16} color={ACCENT} />
-            <Text style={[styles.regenText, { color: ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>{t('regenerateBtn')}</Text>
-          </Pressable>
-        </View>
-      )}
-
-      {result && !loading && (
-        <>
-          <FeedbackWidget materialType="lesson" toolId={isSimplify ? 'simplify' : 'lesson-plan'} />
-          <RelatedResourcesPanel
-            toolId={isSimplify ? 'simplify' : 'lesson-plan'}
-            topic={topic.trim()}
-            isRTL={isRTL}
-          />
-        </>
+        <GeneratorResultActions
+          accent={ACCENT}
+          savedId={savedId}
+          onToast={showToast}
+          saveState={saveLabel}
+          onSave={handleSave}
+          favorite={{ favorited, onToggle: handleToggleFavorite }}
+          onExport={() => setShowExport(true)}
+          onRegenerate={generate}
+          materialType="lesson"
+          toolId={isSimplify ? 'simplify' : 'lesson-plan'}
+          topic={topic.trim()}
+        />
       )}
     </ScrollView>
 
@@ -697,8 +614,4 @@ const styles = StyleSheet.create({
   bulletDot: { width: 6, height: 6, borderRadius: 3, marginTop: 7, flexShrink: 0 },
   bulletText: { flex: 1, fontSize: 13, lineHeight: 20 },
   bodyText: { fontSize: 13, lineHeight: 20 },
-  saveBtn: { alignItems: 'center', gap: 8, padding: 14, borderWidth: 1.5 },
-  saveBtnText: { fontSize: 14 },
-  regenBtn: { alignItems: 'center', gap: 8, padding: 14, borderWidth: 1.5 },
-  regenText: { fontSize: 14 },
 });
