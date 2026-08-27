@@ -25,6 +25,7 @@ import { Toast } from '@/components/ui/Toast';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
 import { isAbortError } from '@/services/ai/aiProvenance';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
+import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
 import { MathParagraph } from '@/components/ui/MathParagraph';
@@ -462,6 +463,14 @@ export default function WorksheetScreen() {
               genericHint: t('notGroundedHint'),
             }}
           />
+          {curriculumGrounded && (
+            <BookFiguresPanel
+              figures={getExportFigures()}
+              isRTL={isRTL}
+              colors={colors}
+              labels={{ title: t('bookFiguresTitle'), note: t('bookFiguresNote') }}
+            />
+          )}
           {/* Whether anything actually checked the answer keys. Silent until
               the check resolves: saying nothing is honest, saying "not
               verified" while a request is still in flight is not. */}

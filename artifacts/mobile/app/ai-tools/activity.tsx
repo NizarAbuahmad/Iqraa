@@ -15,6 +15,7 @@ import {
 } from '@/services/curriculumData';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
+import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { Button } from '@/components/ui/Button';
 import { getItem, saveItem, updateItem } from '@/services/workspace';
 import {
@@ -362,6 +363,14 @@ export default function ActivityScreen() {
               genericHint: t('notGroundedHint'),
             }}
           />
+          {curriculumGrounded && (
+            <BookFiguresPanel
+              figures={getExportFigures()}
+              isRTL={isRTL}
+              colors={colors}
+              labels={{ title: t('bookFiguresTitle'), note: t('bookFiguresNote') }}
+            />
+          )}
         </View>
       )}
 
