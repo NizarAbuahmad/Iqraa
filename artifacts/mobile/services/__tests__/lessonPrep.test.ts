@@ -25,6 +25,7 @@ import {
   lessonPickerParams,
   lessonPrepPickerIndices,
   resolveLessonPrepContext,
+  scopePickerParams,
 } from '../lessonPrep.ts';
 import { getPickerGrades, getPickerSubjects, getLessonById } from '../curriculumData.ts';
 
@@ -162,5 +163,33 @@ describe('lessonPickerParams', () => {
     assert.equal(lessonPickerParams('no-such-lesson', 'ar'), null);
     assert.equal(lessonPickerParams(null, 'ar'), null);
     assert.equal(lessonPickerParams(undefined, 'ar'), null);
+  });
+});
+
+describe('scopePickerParams', () => {
+  // The evaluation results and marking screens hand off to the worksheet
+  // generator with indices they used to compute against a grade-filtered
+  // subject list, while the receiving screens rebuild the *bare* list. The two
+  // only agreed because INVESTOR_MVP_CURRICULUM flattens the argument today —
+  // this helper pins the receiver's own lists.
+  it('indices point into the exact lists the generator screens rebuild', () => {
+    const params = scopePickerParams('grade-10', 'chemistry');
+    assert.ok(params);
+    assert.equal(getPickerGrades()[Number(params.gradeIdx)]!.id, 'grade-10');
+    assert.equal(getPickerSubjects()[Number(params.subjectIdx)]!.id, 'chemistry');
+  });
+
+  it('agrees with lessonPickerParams for a lesson of the same scope', () => {
+    const ctx = resolveLessonPrepContext(CHEM_LESSON_ID, 'ar')!;
+    const fromLesson = lessonPickerParams(CHEM_LESSON_ID, 'ar')!;
+    const fromScope = scopePickerParams(ctx.gradeId, ctx.subjectId)!;
+    assert.deepEqual(fromScope, fromLesson);
+  });
+
+  it('returns null rather than a fabricated index for an unknown scope', () => {
+    assert.equal(scopePickerParams('grade-3', 'mathematics'), null);
+    assert.equal(scopePickerParams('grade-10', 'no-such-subject'), null);
+    assert.equal(scopePickerParams(null, 'mathematics'), null);
+    assert.equal(scopePickerParams('grade-10', undefined), null);
   });
 });

@@ -79,7 +79,10 @@ Before a live demo: [`docs/demo-checklist.md`](./docs/demo-checklist.md).
   `buildClassDeck` are maths and will not fail loudly. The same trap sits on
   every `/ai-tools/*` screen: they default `subjectIdx` to 0 — Mathematics — so
   navigating with a bare `topic` param silently regenerates this bug. Use
-  `lessonPickerParams(lessonId, lang)` when you know the lesson.
+  `lessonPickerParams(lessonId, lang)` when you know the lesson, or
+  `scopePickerParams(gradeId, subjectId)` when you only hold the ids — both in
+  `services/lessonPrep.ts`, both computing indices against the exact bare
+  picker lists the receiving screens rebuild.
 - **Extensionless relative imports only work through esbuild.** Anything loaded
   directly by `node --test` needs an explicit `.ts` extension.
 - **The OpenAI client throws at module scope without a key**, which makes
@@ -87,7 +90,9 @@ Before a live demo: [`docs/demo-checklist.md`](./docs/demo-checklist.md).
   the function that calls a model.
 - ~~The `gpt-5.6-luna` model id is hardcoded in three api-server files.~~
   **No longer true (checked 2026-08-19):** that string appears nowhere. The
-  model comes from `getAiModel()` in `lib/aiBudget.ts` — `AI_MODEL`, defaulting
+  model comes from `getGenerationModel()` / `getChatModel()` in
+  `lib/aiBudget.ts` (`getAiModel()` split in two on 2026-08-22) —
+  `AI_MODEL_GENERATE` / `AI_MODEL_CHAT`, both falling back to `AI_MODEL`, then
   to `gpt-4o-mini`. Live generation is gated by `AI_LIVE_MODE=true` and capped
   by `AI_BUDGET_USD`, with `EXPO_PUBLIC_DEMO_MODE=false` on the client. So
   turning real AI on is env vars, not a code change.

@@ -23,6 +23,7 @@ import type { Difficulty, QuestionType } from "@workspace/db";
 import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import {
   getBookById,
+  getEvaluableBookIds,
   getObjectivesForBook,
   objectivesAreWithinBook,
   resolveObjectiveIds,
@@ -368,6 +369,16 @@ router.post("/evaluations/:id/generate", async (req: AuthenticatedRequest, res) 
     let modelId: string | null = null;
     const generationNotes: string[] = [];
 
+    // The exact request handed to the generator, stored on the evaluation —
+    // the schema has promised this since Phase 3 and nothing ever wrote it.
+    const generationParams: Record<string, unknown> = {
+      objectiveIds: evaluation.objectiveIds,
+      assessmentTypes: evaluation.assessmentTypes,
+      count: evaluation.targetQuestionCount,
+      difficulty: evaluation.difficulty,
+      language: evaluation.language,
+    };
+
     if (live) {
       assertLiveModeEnabled();
       assertBudgetAvailable();
@@ -381,6 +392,14 @@ router.post("/evaluations/:id/generate", async (req: AuthenticatedRequest, res) 
       if (grounding) {
         generationNotes.push(
           `Grounded on ${grounding.sources.map(s => `${s.titleAr} p${s.page}`).join(", ")}.`,
+        );
+      } else {
+        // Say so, loudly. A paper written without the book reading exactly
+        // like one written from it is how ungrounded content slips through.
+        generationNotes.push(
+          "No official-book passages are extracted for these objectives' units — "
+            + "the model wrote from the objectives alone. Review against the book "
+            + "before publishing.",
         );
       }
 
@@ -420,6 +439,11 @@ router.post("/evaluations/:id/generate", async (req: AuthenticatedRequest, res) 
 
       generator = "llm";
       modelId = llm.model;
+      generationParams["promptVersion"] = GENERATION_PROMPT_VERSION;
+      generationParams["grounded"] = Boolean(grounding);
+      generationParams["groundingSources"] = grounding
+        ? grounding.sources.map(s => ({ sourceId: s.sourceId, page: s.page }))
+        : [];
       generationNotes.push(...llm.notes);
       result = {
         questions: llm.questions,
@@ -441,6 +465,9 @@ router.post("/evaluations/:id/generate", async (req: AuthenticatedRequest, res) 
         count: evaluation.targetQuestionCount,
         difficulty: evaluation.difficulty,
       });
+      // The seed the template variation ran on — with it, this exact paper
+      // can be regenerated; without it, "reproducible" would be a lie.
+      generationParams["seed"] = result.seed;
     }
 
     const validation = validateGenerated(result.questions, {
@@ -486,7 +513,7 @@ router.post("/evaluations/:id/generate", async (req: AuthenticatedRequest, res) 
     // without opening a question.
     await db
       .update(evaluations)
-      .set({ generator, modelId, updatedAt: new Date() })
+      .set({ generator, modelId, generationParams, updatedAt: new Date() })
       .where(eq(evaluations.id, evaluation.id));
 
     const totalMarks = await recomputeTotal(evaluation.id);
@@ -1106,7 +1133,9 @@ router.get("/evaluations/:id/insights", async (req: AuthenticatedRequest, res) =
 
 router.get("/evaluations/meta/evaluable", async (_req: AuthenticatedRequest, res) => {
   try {
-    const books = ["book-math-10", "book-math-10-s2", "book-chem-10", "book-finlit-10"]
+    // Every book with at least one objective, from the curriculum catalog —
+    // a hand-kept list here silently dropped chemistry S2 when it was added.
+    const books = getEvaluableBookIds()
       .map(id => ({ book: getBookById(id), objectives: getObjectivesForBook(id) }))
       .filter(b => b.book)
       .map(b => ({

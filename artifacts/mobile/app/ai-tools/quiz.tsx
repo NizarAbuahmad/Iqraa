@@ -256,6 +256,10 @@ export default function QuizScreen() {
         duration: DURATION_OPTIONS[durationIdx],
         totalMarks: MARKS_OPTIONS[marksIdx],
         questionTypes: Array.from(selectedTypes),
+        // Two questions per selected type — the same rule MockAIService uses,
+        // so live and mock papers agree on size. Without this the server
+        // prompt fell back to a flat 10, whatever was picked here.
+        numQuestions: selectedTypes.size * 2,
         difficulty: DIFFICULTY_MAP[DIFFICULTY_IDS[diffIdx]],
         additionalContext,
         unitId,

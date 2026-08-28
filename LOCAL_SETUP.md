@@ -13,7 +13,7 @@ This guide runs Iqraa **without Replit**. The product UI is the Expo app in `art
 | **Node.js 24+** | Matches the Replit Node 24 workspace (`node -v`) |
 | **pnpm 9+** | `npm install -g pnpm` or Corepack: `corepack enable` |
 | **PostgreSQL 16+** | Local install or Docker |
-| **OpenAI API key** (optional) | Needed for live chat/generate; mobile falls back to mocks if the API/AI call fails |
+| **OpenAI API key** | The API server refuses to boot without *some* value set (`lib/integrations-openai-ai-server` builds its client at module scope) — a placeholder like `sk-local-dummy` is fine when `AI_LIVE_MODE` is off. A real key is only needed for live chat/generate; mobile falls back to mocks if the API/AI call fails |
 | **Git** | Already required for the repo |
 
 Optional for native device testing: Expo Go on a phone, Android Studio / Xcode.

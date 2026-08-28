@@ -25,7 +25,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { copyToClipboard, formatAttemptResultText, shareAsText } from '@/services/share';
-import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
+import { scopePickerParams } from '@/services/lessonPrep';
 import { pickMarkSheetPhoto } from '@/services/documents/pick';
 import { Toast } from '@/components/ui/Toast';
 import {
@@ -567,16 +567,16 @@ function NextStepsCard({
   lang: string;
   t: (key: TranslationKey, ...args: any[]) => string;
 }) {
-  const gradeIdx = scope ? getPickerGrades().findIndex(g => g.id === scope.gradeId) : -1;
-  const subjectIdx = scope
-    ? getPickerSubjects(scope.gradeId).findIndex(s => s.id === scope.subjectId)
-    : -1;
-  const canGenerate = gradeIdx >= 0 && subjectIdx >= 0;
+  // Indices against the same bare picker lists the worksheet screen rebuilds —
+  // see scopePickerParams: a grade-filtered list here would drift from the
+  // receiver the day INVESTOR_MVP_CURRICULUM stops flattening the argument.
+  const pickerParams = scope ? scopePickerParams(scope.gradeId, scope.subjectId) : null;
+  const canGenerate = pickerParams !== null;
 
   const openWorksheet = (topic: string) => {
     router.push({
       pathname: '/ai-tools/worksheet',
-      params: { topic, gradeIdx: String(gradeIdx), subjectIdx: String(subjectIdx) },
+      params: { topic, ...pickerParams },
     });
   };
 
