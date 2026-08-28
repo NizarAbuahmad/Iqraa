@@ -7530,3 +7530,51 @@ sweep.
 All five: `pnpm run typecheck` clean, full mobile (972) and api-server (284)
 suites passing at each step. Not independently re-verified as a batch after
 the fact — each PR's own verification stands as recorded above.
+
+## Auditing for more "visible but not grounded" bugs found a real one, not the one I went looking for, 2026-08-28
+
+After PR #180 (Grade 9's wrong-screen + unwired-KB bugs), asked an Explore
+agent to check whether the new Grade 10 English curriculum (four vocational
+tracks, merged by a parallel session) had the same shape of problem. It
+does — `lib/curriculum/src/catalogs/g10EnglishVocational.ts` builds only
+`Browser*` rows (for the curriculum-browser UI), never the KB-shaped ones
+`knowledgeBase.ts` needs, and its own file comment says so plainly: "nothing
+in the AI-generation/grounding pipeline consumes these tracks yet." **That's
+the difference from Grade 9's bug** — Grade 9 was shipped *claiming* to be
+reachable and wasn't; English says outright that it isn't wired yet. Not a
+false claim, just unfinished — leaving the KB wiring for whoever picks this
+back up (four tracks' worth of new KB-shaped builders, mirroring
+`buildG9MathSem1Catalog`, is its own real chunk of work, not something to
+fold into an unrelated audit).
+
+What *is* a bug, and now fixed: `mathSupportResources.ts`'s two safety gates
+from the Grade 9 fix — the subject check and the `gradeHint !== 'grade-10'`
+check — both read `getBookForLesson(lesson)?.subjectId` /`?.gradeId`, which
+is `undefined` (not a known mismatch) for any lesson with no resolvable
+book at all. `undefined` fails both `if (hint && ...)` checks open, not
+closed — so a lesson from any subject not yet wired into `KB_BOOKS` (English
+today, whatever's unwired next) skipped both gates entirely and fell through
+to ungated title/keyword matching against every Math/Chemistry PDF. Confirmed
+live with a synthetic English-shaped lesson and a query containing "ورقة عمل
+worksheet exam": three Math PDFs matched before the fix, none after.
+Fixed by resolving the lesson's book once, up front, and returning empty
+immediately when a lesson was named but resolved to no book — before either
+hint is computed, so there's no hint left to read as "no opinion" instead of
+"reject." The widened retry in `buildSupportResourcesContext` (which
+deliberately drops `lesson` and passes `subjectId`/`gradeId` explicitly) is
+unaffected — it never had a `lesson` to fail on.
+
+Verified directly: a fabricated lesson shaped like a Grade 10 English
+commerce lesson (id `kbl-g10-eng-commerce-nccd-u1_l1`, no matching
+`KB_BOOKS` entry) now returns zero resources for a query stuffed with
+matching keywords; a real Grade 10 Math lesson queried the same way still
+returns its normal three PDFs. `pnpm run typecheck` clean, mobile `pnpm
+test` 977/987 (10 skipped) — unchanged pass count, this fix has no test
+coverage of its own yet (worth adding alongside whoever does the English
+KB wiring, since that's what will first exercise this path for real).
+
+No other `BOOKS` entry has this gap — cross-checked every id in
+`catalog.ts`'s `BOOKS` against `MVP_BOOK_IDS` and `knowledgeBase.ts`'s
+`KB_BOOKS`; math-10, math-10-s2, chem-10, chem-10-s2, finlit-s1, math-9-s1,
+math-9-s2 all resolve, and the grade-8/9/11 books outside `MVP_GRADE_IDS`
+are intentionally not visible, not silently broken.
