@@ -10,7 +10,7 @@
     "serve": "node server/serve.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "cqv:scaffold": "node ./scripts/cqv-scaffold.mjs",
-    "test": "node --experimental-strip-types --test \"services/__tests__/**/*.test.ts\"",
+    "test": "node --import ./scripts/registerTestAlias.mjs --experimental-strip-types --test \"services/__tests__/**/*.test.ts\"",
     "build:web": "expo export --platform web && node ./scripts/inject-pwa.mjs"
   },
   "devDependencies": {
