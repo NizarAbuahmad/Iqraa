@@ -372,6 +372,13 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    // NCCD's newer "PublicationDetails" pages are a view-only flipbook, not a
+    // raw .pdf file like the older EBV4.0/Root_Storage links above — but
+    // `DownloadChip` only does `Linking.openURL`, so the teacher-facing
+    // behaviour is identical either way: tap, and the book opens.
+    // Semester 2 (student book + both teacher guides) isn't published on
+    // NCCD yet as of 2026-08-28 — add once it is, rather than guessing a URL.
+    pdfUrl: 'https://www.nccd.gov.jo/Ar/Pages/PublicationDetails?ItemId=9444ff0ea2.html',
   },
   // ── Math Grade 9 – Semester 2 ───────────────────────────────────────────────
   {
