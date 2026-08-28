@@ -54,6 +54,19 @@ export default function SubjectsScreen() {
     user?.role,
   ).slice().sort((a, b) => (a.semester ?? 99) - (b.semester ?? 99));
 
+  // Math/Chem/Finlit have one book per semester, so "Semester 1" alone tells
+  // them apart. English has several different books (different school
+  // tracks — Commerce, Agriculture, Hospitality, Industrial — the way
+  // different Jordanian private schools use different English series) that
+  // all happen to be Semester 1. Showing "Semester 1" on every card there
+  // would make four cards read identically. Fall back to the book's own
+  // title whenever more than one book on this screen shares a semester.
+  const semesterCounts = new Map<number, number>();
+  for (const b of books) {
+    const s = b.semester ?? -1;
+    semesterCounts.set(s, (semesterCounts.get(s) ?? 0) + 1);
+  }
+
   const color = subjectColor ?? colors.primary;
 
   return (
@@ -96,6 +109,12 @@ export default function SubjectsScreen() {
           const lessonCount = units.reduce((n, u) => n + getLessonsForUnit(u.id).length, 0);
           const semesterLabel = getSemesterLabel(book, lang);
           const semesterNum = book.semester;
+          const hasSameSemesterSiblings = (semesterCounts.get(book.semester ?? -1) ?? 0) > 1;
+          const bookName = lang === 'ar' ? (book.titleAr || book.title) : book.title;
+          const cardTitle = hasSameSemesterSiblings ? bookName : semesterLabel;
+          const cardMeta = hasSameSemesterSiblings
+            ? `${semesterLabel} · ${t('unitsAndLessons', units.length, lessonCount)}`
+            : t('unitsAndLessons', units.length, lessonCount);
 
           return (
             <View style={{ gap: 8 }}>
@@ -109,7 +128,7 @@ export default function SubjectsScreen() {
                     bookTitle: book.title,
                     bookTitleAr: book.titleAr,
                     subjectColor: color,
-                    semesterLabel,
+                    semesterLabel: cardTitle,
                   },
                 });
               }}
@@ -131,10 +150,10 @@ export default function SubjectsScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.semesterTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
-                  {semesterLabel}
+                  {cardTitle}
                 </Text>
                 <Text style={[styles.semesterMeta, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
-                  {t('unitsAndLessons', units.length, lessonCount)}
+                  {cardMeta}
                 </Text>
               </View>
               <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
