@@ -245,6 +245,60 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Exams & tests review: variation, book grounding, purpose separation, 2026-08-28
+
+A full pass over both exam systems — the `/ai-tools` generators and the
+evaluations subsystem — against a live local stack (Postgres 16 + API + the
+whole lifecycle: create → generate → publish → student link → claim → answer →
+submit → hand-mark → results). What already held, held: the share-link roster,
+`name_taken` on a double claim, no answer key anywhere in the student payload,
+edit-after-submit refused, a bad key in live mode answering `502
+generator_unavailable` with nothing written. Three teacher-visible problems
+were real and are fixed:
+
+- **Regenerating an exam returned the identical paper.** `generateMockEvaluation`
+  was deterministic by design — fixed stems, round-robin objectives — so the
+  regenerate button looked broken. It now varies (three Arabic phrasings per
+  competency, seeded shuffle of objective order) without inventing content, and
+  the seed is stored so a paper stays reproducible. Same on the client: the
+  concrete math bank drew `ranked[0]`, so every fresh session opened with the
+  identical quiz; the draw is now random within the difficulty-preferred pool,
+  with `usedIds` still preventing repeats within a pass.
+  `mockVariation.test.ts` holds both directions: two seeds differ, same seed
+  replays, and structure (count/types/marks/objective coverage) never moves.
+- **Chemistry S2 could never be examined.** `/evaluations/meta/evaluable`
+  hand-listed four book ids and dropped `book-chem-10-s2` (20 objectives). It
+  now serves `getEvaluableBookIds()` — which also surfaces G9 math, the English
+  tracks, and science-8 (1 objective), since the helper's contract is "has
+  objectives". Verified live: a chem-S2 evaluation generates.
+- **`generationParams` was documented as "the exact request handed to the
+  generator" and never written.** `POST /evaluations/:id/generate` now stores
+  it (objectives, types, count, difficulty, language, seed on the mock path,
+  prompt version + grounding sources on the model path). An ungrounded model
+  generation also says so out loud now — a warning names that no book passages
+  exist for those units, instead of a bookless paper reading exactly like a
+  grounded one.
+
+Smaller repairs on the way: the quiz screen never sent `numQuestions`, so every
+live quiz asked the model for exactly 10 — it now sends 2 × selected types, the
+same rule the mock uses; the evaluations→worksheet handoffs computed
+`subjectIdx` against a grade-filtered list while the receiving screens rebuild
+the bare list (identical only while `INVESTOR_MVP_CURRICULUM` flattens the
+argument) — both now go through `scopePickerParams` in `services/lessonPrep.ts`;
+`game.tsx` got the localised grade name and a cancel; the EN quiz-tool subtitle
+claimed "Auto-graded questions", which is the evaluations feature's job, and
+both tools' subtitles now state their actual, different purposes.
+
+**Still not true, on purpose left as findings:** generated answer keys never
+pass through the math verifier — `evaluationQuestions.verification`,
+`math_equivalence` and `math_verifier` are declared in the schema and written
+by nothing, and the verifier has no general-equivalence endpoint to call;
+`/generate/*` still validates no request body; the evaluations client has no
+offline fallback (server decides mock/live — by design, but stated nowhere).
+Local-boot note that cost an hour: the API refuses to start without *some*
+`OPENAI_API_KEY` even in demo mode — LOCAL_SETUP.md said "optional", now
+corrected.
+
 ## Production has all 25 tables, and something checks it now, 2026-08-25
 
 The `DATABASE_URL` secret is set and the schema monitor has run against the real

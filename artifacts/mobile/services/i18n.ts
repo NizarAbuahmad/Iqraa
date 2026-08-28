@@ -385,7 +385,9 @@ const translations = {
 
     // Quiz generator
     createQuizTitle: 'اختبار قصير',
-    quizSubtitle: 'أسئلة جاهزة للتقويم السريع',
+    // «للمراجعة السريعة»، لا «للتقويم»: هذه الأداة تجهّز مادة تُطبع أو تُعرض،
+    // ولا ترصد درجات — الرصد والتصحيح شأن «التقييمات».
+    quizSubtitle: 'أسئلة جاهزة للمراجعة السريعة — للطباعة أو العرض',
     topicPlaceholderQuiz: 'مثال: الصيغة التربيعية، الكسور...',
     generateQuizBtn: 'جهّز الاختبار',
     generatingQuiz: 'يعمل اقرأ على إعداد الأسئلة...',
@@ -958,7 +960,9 @@ const translations = {
     // Evaluations — authoring
     evaluations: 'التقييمات',
     myEvaluations: 'تقييماتي',
-    evaluationsSubtitle: 'أنشئ تقييمًا وولّد أسئلته من المنهاج',
+    // يقول صراحةً ما يميّز هذه الأداة عن «اختبار قصير»: هنا رصد وتصحيح وسجلّ
+    // لكل طالب، لا مادة للطباعة فحسب.
+    evaluationsSubtitle: 'امتحان يُرصَد ويُصحَّح: ولّد أسئلته من المنهاج وشاركه برابط وصحّح إجابات طلابك',
     newEvaluation: 'تقييم جديد',
     noEvaluationsYet: 'لا تقييمات بعد',
     noEvaluationsDesc: 'أنشئ تقييمك الأول لتوليد أسئلة من المنهاج المعتمد',
@@ -1413,7 +1417,9 @@ const translations = {
     worksheetReady: 'Worksheet ready',
 
     createQuizTitle: 'Create Quiz',
-    quizSubtitle: 'Auto-graded questions',
+    // Not "auto-graded": this tool produces printable/projectable material and
+    // records nothing — grading and records live in Evaluations.
+    quizSubtitle: 'Ready-made questions for a quick review — print or project',
     topicPlaceholderQuiz: 'e.g. Quadratic Formula, Fractions…',
     generateQuizBtn: 'Generate Quiz',
     generatingQuiz: 'Generating quiz questions…',
@@ -1969,7 +1975,9 @@ const translations = {
     // Evaluations — authoring
     evaluations: 'Evaluations',
     myEvaluations: 'My evaluations',
-    evaluationsSubtitle: 'Create an evaluation and generate its questions from the curriculum',
+    // Says what separates this from the Short quiz tool: marks, grading and a
+    // per-student record, not just printable material.
+    evaluationsSubtitle: 'A marked exam with student records: generate it from the curriculum, share a link, grade the answers',
     newEvaluation: 'New evaluation',
     noEvaluationsYet: 'No evaluations yet',
     noEvaluationsDesc: 'Create your first evaluation to generate questions from the approved curriculum',

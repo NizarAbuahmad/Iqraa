@@ -421,11 +421,13 @@ export function takeConcreteMath(
   const pickFrom = (fam: MathFamily): ConcreteItem | null => {
     const pool = BANK.filter(i => matches(i, fam));
     if (pool.length === 0) return null;
-    const ranked = [
-      ...pool.filter(i => i.diff === diff),
-      ...pool.filter(i => i.diff !== diff),
-    ];
-    return ranked[0] ?? null;
+    // Random within the difficulty-preferred slice, not `ranked[0]`: taking
+    // the first unused item in bank order meant every fresh session served
+    // the identical quiz for a topic — "regenerate" only looked alive until
+    // the page reloaded. `usedIds` still guarantees no repeats within a pass.
+    const sameDiff = pool.filter(i => i.diff === diff);
+    const candidates = sameDiff.length > 0 ? sameDiff : pool;
+    return candidates[Math.floor(Math.random() * candidates.length)] ?? null;
   };
 
   /**

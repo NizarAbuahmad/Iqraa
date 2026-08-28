@@ -26,6 +26,7 @@ import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { Button } from '@/components/ui/Button';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
+import { isAbortError } from '@/services/ai/aiProvenance';
 import type { ClassroomActivity } from '@/services/ai/AIService';
 import { buildGeneratorContext, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
 import { buildGameDeckFromQuiz } from '@/services/classDeck';
@@ -65,6 +66,7 @@ export default function ClassGameScreen() {
   const [grounded, setGrounded] = useState(false);
   const [groundedLesson, setGroundedLesson] = useState('');
   const [error, setError] = useState('');
+  const abortRef = useRef<AbortController | null>(null);
 
   // Preview teams with the same factory the game uses, so the names, emojis and
   // colours a teacher sees here are exactly the ones that appear on the board.
@@ -86,6 +88,8 @@ export default function ClassGameScreen() {
     if (!trimmed) { setError(t('topicRequired')); return; }
     setError(''); setLoading(true); setDeck(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     const grounding = resolveGeneratorGrounding(trimmed, lang as 'ar' | 'en');
     setGrounded(grounding.grounded);
@@ -93,7 +97,11 @@ export default function ClassGameScreen() {
 
     try {
       const quiz = await aiService.generateQuiz({
-        grade: grades[gradeIdx].name,
+        // Localised like quiz.tsx: `grade` is display-only and rides into the
+        // generated content verbatim — an Arabic deck should not read
+        // «الصف: Grade 10». `subject` stays English on purpose: it feeds
+        // isMathContext and the other subject-name branches.
+        grade: isAr ? grades[gradeIdx].nameAr : grades[gradeIdx].name,
         subject: subjects[subjectIdx].name,
         topic: trimmed,
         numQuestions: questionCount,
@@ -101,7 +109,7 @@ export default function ClassGameScreen() {
         language: isAr ? 'arabic' : 'english',
         additionalContext: buildGeneratorContext(trimmed, lang as 'ar' | 'en'),
         unitId: generatorUnitId(trimmed, lang as 'ar' | 'en'),
-      });
+      }, { signal: controller.signal });
 
       const built = buildGameDeckFromQuiz(quiz, trimmed, isAr, {
         teamCount,
@@ -120,11 +128,17 @@ export default function ClassGameScreen() {
       setDeck(built);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
-    } catch {
-      setError(t('generationFailed'));
+    } catch (e) {
+      // A cancel is the teacher's own action, not a failure to report.
+      if (!isAbortError(e)) setError(t('generationFailed'));
     } finally {
+      abortRef.current = null;
       setLoading(false);
     }
+  };
+
+  const cancelGenerate = () => {
+    abortRef.current?.abort();
   };
 
   const start = () => {
@@ -301,9 +315,14 @@ export default function ClassGameScreen() {
         {loading && (
           <View style={[styles.loadingBox, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <ActivityIndicator color={ACCENT} />
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14 }}>
+            <Text style={{ flex: 1, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, textAlign: isRTL ? 'right' : 'left' }}>
               {t('gameBuilding')}
             </Text>
+            <Pressable onPress={cancelGenerate} hitSlop={8}>
+              <Text style={{ color: colors.destructive, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+                {t('cancel')}
+              </Text>
+            </Pressable>
           </View>
         )}
 

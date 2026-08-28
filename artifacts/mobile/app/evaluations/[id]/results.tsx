@@ -31,7 +31,7 @@ import {
   type LevelKey,
   type Recommendation,
 } from '@/services/evaluations';
-import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
+import { scopePickerParams } from '@/services/lessonPrep';
 import type { TranslationKey } from '@/services/i18n';
 
 const ACCENT = '#1B6B62';
@@ -282,11 +282,11 @@ function ClassGaps({
   lang: string;
   t: (key: TranslationKey, ...args: any[]) => string;
 }) {
-  const gradeIdx = scope ? getPickerGrades().findIndex(g => g.id === scope.gradeId) : -1;
-  const subjectIdx = scope
-    ? getPickerSubjects(scope.gradeId).findIndex(x => x.id === scope.subjectId)
-    : -1;
-  const canGenerate = gradeIdx >= 0 && subjectIdx >= 0;
+  // Indices against the same bare picker lists the worksheet screen rebuilds —
+  // see scopePickerParams: a grade-filtered list here would drift from the
+  // receiver the day INVESTOR_MVP_CURRICULUM stops flattening the argument.
+  const pickerParams = scope ? scopePickerParams(scope.gradeId, scope.subjectId) : null;
+  const canGenerate = pickerParams !== null;
 
   const worst = insights.objectiveScores.slice(0, MAX_CLASS_GAPS);
   const top = recommendations.find(r => r.kind !== 'reassess');
@@ -329,7 +329,7 @@ function ClassGaps({
           onPress={() =>
             router.push({
               pathname: '/ai-tools/worksheet',
-              params: { topic: topTitle, gradeIdx: String(gradeIdx), subjectIdx: String(subjectIdx) },
+              params: { topic: topTitle, ...pickerParams },
             })
           }
           style={[styles.classGapBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}

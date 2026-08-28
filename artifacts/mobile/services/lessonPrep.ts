@@ -114,6 +114,32 @@ export function lessonPickerParams(
 }
 
 /**
+ * Route params that open a generator on an evaluation's own grade/subject
+ * scope — the `lessonPickerParams` sibling for callers that hold ids rather
+ * than a lesson (the evaluation results and marking screens).
+ *
+ * The indices are computed against the *same lists the receiving screens
+ * rebuild* — bare `getPickerGrades()` / `getPickerSubjects()`. Those two
+ * screens used to call `getPickerSubjects(gradeId)`, which only agrees with
+ * the receiver's bare call while `INVESTOR_MVP_CURRICULUM` makes the argument
+ * a no-op; the day that flag flips, a hand-computed index would open the
+ * worksheet on a different subject than the exam it came from.
+ *
+ * Returns `null` when either id is not in the pickers, so the caller hides
+ * the button rather than sending a teacher to material nobody chose.
+ */
+export function scopePickerParams(
+  gradeId: string | null | undefined,
+  subjectId: string | null | undefined,
+): { gradeIdx: string; subjectIdx: string } | null {
+  if (!gradeId || !subjectId) return null;
+  const gradeIdx = getPickerGrades().findIndex(g => g.id === gradeId);
+  const subjectIdx = getPickerSubjects().findIndex(s => s.id === subjectId);
+  if (gradeIdx < 0 || subjectIdx < 0) return null;
+  return { gradeIdx: String(gradeIdx), subjectIdx: String(subjectIdx) };
+}
+
+/**
  * Where this lesson sits in the AI-tools pickers, so handing off to the full
  * tool arrives on the right grade and subject instead of on index 0.
  */
