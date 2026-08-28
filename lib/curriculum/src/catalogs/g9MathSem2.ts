@@ -23,6 +23,9 @@ import {
 /** Curriculum-browser book id for Math G9 Semester 2. */
 export const G9_MATH_S2_CURRICULUM_BOOK_ID = 'book-math-9-s2';
 
+/** Knowledge-base book id for Math G9 Semester 2 — KB_BOOKS entry in knowledgeBase.ts. */
+export const G9_MATH_S2_KB_BOOK_ID = 'kb-math-9-s2';
+
 export type G9MathSem2DataTier =
   | 'lesson-level (teacher guide + student book)'
   | 'unit-level only (exercise book)';
@@ -90,6 +93,86 @@ export function findG9MathSem2UnitByLessonKbId(lessonKbId: string): G9MathSem2Un
     if (u.lessons.some(l => l.id === jsonId)) return u;
   }
   return null;
+}
+
+/** Shape compatible with KBUnit / KBLesson in knowledgeBase.ts */
+export type G9MathSem2KbUnit = {
+  id: string;
+  bookId: string;
+  order: number;
+  titleAr: string;
+  titleEn: string;
+};
+
+export type G9MathSem2KbLesson = {
+  id: string;
+  unitId: string;
+  order: number;
+  titleAr: string;
+  titleEn: string;
+  summaryAr: string;
+  summaryEn: string;
+  keyConceptsAr: string[];
+  keyConceptsEn: string[];
+  keyTerms: Array<{ ar: string; en: string; definitionAr: string; definitionEn: string }>;
+  objectives: string[];
+  periods: number | null;
+};
+
+/**
+ * Map the NCCD JSON into KB units + lessons for book kb-math-9-s2.
+ * Mirrors buildG9MathSem1Catalog / buildNccdSem1Catalog exactly.
+ */
+export function buildG9MathSem2Catalog(): {
+  units: G9MathSem2KbUnit[];
+  lessons: G9MathSem2KbLesson[];
+} {
+  const units: G9MathSem2KbUnit[] = nccdG9MathSem2.units.map(u => ({
+    id: g9MathSem2UnitKbId(u.id),
+    bookId: G9_MATH_S2_KB_BOOK_ID,
+    order: u.number,
+    titleAr: u.title_ar,
+    titleEn: u.title_en,
+  }));
+
+  const lessons: G9MathSem2KbLesson[] = [];
+  for (const u of nccdG9MathSem2.units) {
+    const unitKbId = g9MathSem2UnitKbId(u.id);
+    const titleOnly = isG9MathSem2TitleOnlyTier(u.data_tier);
+    for (const lesson of u.lessons) {
+      const vocab = lesson.vocabulary ?? [];
+      const objectives = lesson.objectives ?? [];
+      lessons.push({
+        id: g9MathSem2LessonKbId(lesson.id),
+        unitId: unitKbId,
+        order: lesson.order,
+        titleAr: lesson.title_ar,
+        titleEn: lesson.title_ar,
+        summaryAr: objectives.length
+          ? objectives.join('؛ ')
+          : titleOnly
+            ? `درس «${lesson.title_ar}» من وحدة «${u.title_ar}» (عنوان مؤكَّد — النتاجات على مستوى الوحدة).`
+            : `درس «${lesson.title_ar}» من وحدة «${u.title_ar}».`,
+        summaryEn: objectives.length
+          ? objectives.join('; ')
+          : titleOnly
+            ? `Lesson "${lesson.title_ar}" from unit "${u.title_en}" (title confirmed — outcomes are unit-level).`
+            : `Lesson "${lesson.title_ar}" from unit "${u.title_en}".`,
+        keyConceptsAr: [...vocab],
+        keyConceptsEn: [...vocab],
+        keyTerms: vocab.map(term => ({
+          ar: term,
+          en: term,
+          definitionAr: '',
+          definitionEn: '',
+        })),
+        objectives: [...objectives],
+        periods: lesson.periods ?? null,
+      });
+    }
+  }
+
+  return { units, lessons };
 }
 
 export type G9MathSem2BrowserUnit = {

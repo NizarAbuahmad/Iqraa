@@ -5,7 +5,7 @@
 
 import type { KBLesson } from '../knowledgeBase.ts';
 import { getBookForLesson, getUnitForLesson } from '../knowledgeBase.ts';
-import { SUBJECTS } from '../curriculumData.ts';
+import { GRADES, SUBJECTS } from '../curriculumData.ts';
 import {
   formatSupportResourcesBlock,
   searchSupportResources,
@@ -358,14 +358,16 @@ export function resolveCurriculumContext(lesson: KBLesson): CurriculumContext {
   const book = getBookForLesson(lesson);
   const unit = getUnitForLesson(lesson);
   const semester = (book?.semester === 2 ? 2 : 1) as 1 | 2;
-  // Subject follows the lesson's book — this used to hardcode الرياضيات,
-  // which stamped chemistry/finlit replies with the wrong subject line.
+  // Subject and grade both follow the lesson's book — this used to hardcode
+  // الرياضيات and الصف العاشر, which stamped every non-Grade-10-Math reply
+  // (chemistry, finlit, and now Grade 9) with the wrong subject/grade line.
   const subject = book ? SUBJECTS.find(s => s.id === book.subjectId) : undefined;
+  const grade = book ? GRADES.find(g => g.id === book.gradeId) : undefined;
   return {
     curriculumAr: 'المنهاج الأردني',
     curriculumEn: 'Jordan Curriculum',
-    gradeAr: 'الصف العاشر',
-    gradeEn: 'Grade 10',
+    gradeAr: grade?.nameAr ?? 'الصف العاشر',
+    gradeEn: grade?.name ?? 'Grade 10',
     subjectAr: subject?.nameAr ?? 'الرياضيات',
     subjectEn: subject?.name ?? 'Mathematics',
     semester,

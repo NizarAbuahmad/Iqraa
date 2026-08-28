@@ -7225,6 +7225,97 @@ Semester 2 remain title-only — the unit-plan tables are the next thing worth
 chasing, and would need either a >10MB-capable download path or the guides
 re-uploaded directly the way the S1 units 3-4 material was.
 
+## Grade 9 was visible but unreachable — the real screen and the real KB never got the fix, 2026-08-27
+
+Ran the app for the first time this session — `pnpm install` and a local
+Postgres (started in-container: `service postgresql start`, schema pushed
+against `postgresql://postgres:postgres@localhost:5432/iqraa`) both worked,
+where earlier entries this week had no `node_modules` at all and could only
+syntax-check. That let the previous "Not run against the real app" caveat
+from the 2026-08-27 grade-pill entry actually get checked — and it failed.
+
+**`app/home.tsx`, the file the earlier PR fixed, is not the screen a teacher
+lands on.** The real "change lesson" flow is `ContextBanner` inside
+`app/(tabs)/iqra.tsx` — a 2885-line file, its own `CONTEXT_SUBJECTS` /
+`TopicSelector` wiring, nothing shared with `home.tsx` beyond the component
+name. Its grade was `gradeId: 'grade-10'` baked into every subject row, no
+picker, no way to reach Grade 9 from it at all. Fixed the same way as
+`home.tsx`: independent `gradeId`/`draftGradeId` state, a grade-pill row,
+`ChatLessonPick` carries `gradeId` through to `saveLessonPick`. Caught a
+second hardcoded-Grade-10 spot in the same file while there — the synthetic
+"I'm teaching X to Grade 10 students" chat prompt that opens a fresh topic,
+unconditionally, regardless of the grade actually picked.
+
+**Worse: even with the picker fixed, Grade 9 had zero content behind it.**
+`TopicSelector`'s unit → lesson cascade, chat retrieval, `resolveGroundedKbLesson`,
+lesson-prep grounding — all of it reads `services/knowledgeBase.ts`, and
+`KB_BOOKS` there is a hand-maintained list completely separate from
+`lib/curriculum/src/catalog.ts`'s `BOOKS`. It had five Grade 10 entries and
+nothing else; `grep -c grade-9` was 0. Turning `MVP_GRADE_IDS` on
+(2026-08-27, PR #169) made Grade 9 *listed* — grade/subject pickers, the
+curriculum browser — without making it *reachable*: `TopicSelector` falls
+back to a bare free-text box whenever `hasKBContent(subject, grade)` is
+false, silently dropping the one thing that keeps a picked lesson from
+drifting (`onSelectionDetail`'s `lessonId`) and forcing every Grade 9 pick
+through `searchKBSemantic` fallback matching instead.
+
+Fixed by giving Grade 9 Math the same KB-shaped builder Grade 10 Math has
+had all along: added `buildG9MathSem1Catalog()` / `buildG9MathSem2Catalog()`
+to `lib/curriculum/src/catalogs/g9MathSem{1,2}.ts` (mirrors
+`buildNccdSem1Catalog` in `g10MathSem1.ts` field-for-field — same shape,
+same title-only-lesson summary convention), added the two subpath exports to
+`lib/curriculum/package.json`, added `services/curriculumG9MathSem{1,2}.ts`
+re-export shims (same one-line pattern `curriculumG10MathSem1.ts` uses), and
+merged the results into `KB_BOOKS`/`KB_UNITS`/`KB_LESSONS`. Grade 9 Math now
+has a real unit → lesson cascade in the picker, confirmed live: picking
+الصف التاسع → حل المعادلات lists the actual 4 lessons
+(بيانيًا/بالتحليل/بإكمال المربع/بالقانون العام), and the KB id survives
+through to the lesson-grounded chat reply, which cites the real objectives
+from the JSON and correctly labels itself «الصف التاسع» — `resolveCurriculumContext`
+in `teachingAssistant.ts` had the exact same hardcoded-grade bug as the
+subject line its own comment already flagged as fixed; fixed grade the same
+way, from the lesson's own book.
+
+**Wiring Grade 9 into the KB surfaced a live content-isolation bug, not just
+a coverage gap.** `mathSupportResources.ts`'s title-keyword tagging
+(`unitTagsForLesson`'s "secondary" block — `/اقتران/` → `s2-u5`, etc.) is
+gated by subject only, and those bare tags (`s1-u1`, `s2-u5`, no grade
+prefix) are `bankTagsForParsedUnit`'s Grade-10-only namespace — every other
+grade gets an explicit `g{n}-` prefix precisely so this can't collide, a
+mechanism already built for this exact scenario and never wired to check it
+here. The moment Grade 9 Math had lessons to match against, a Grade 9 lesson
+titled «الاقترانات» picked up the Grade 10 functions-unit tag. Confirmed
+live and worse than the tag path alone: `searchSupportResources`'s
+title/keyword scoring has no grade awareness at all (only a subject gate),
+so a Grade 9 «حل المعادلات» lesson pulled three Grade 10 worksheets and an
+answer key straight into a live chat reply — the resource bank is entirely
+Grade 10 material with no `gradeId` field on any entry, so nothing in that
+path could have known better. Fixed at both layers: gated the keyword block
+to `book.gradeId === 'grade-10'`, and added a hard grade gate at the top of
+`searchSupportResources` (empty result for any non-Grade-10 lesson — same
+"honestly empty" precedent already used for financial-literacy) threaded
+through `buildSupportResourcesContext`'s widened retry too, which drops the
+lesson object but needs to keep the grade it implied. Two existing tests
+encoded the old single-grade assumption as their pass condition
+(`lessonShelf.test.ts`'s tag-namespace allowlist, `knowledgeBase.test.ts`'s
+"probability lesson" ranking, now genuinely ambiguous between grades) —
+updated both to state what they actually guarantee post-Grade-9 rather than
+loosening them.
+
+Verified against the real running app end-to-end (not just tests): registered
+a test account, opened the change-lesson sheet in `(tabs)/iqra.tsx`, picked
+الصف التاسع → الرياضيات → حل المعادلات → حل المعادلات التربيعية بالتحليل,
+confirmed the chat reply carries the correct grade label, the real JSON
+objectives, and — after the fix — no Grade 10 resource attachments.
+`pnpm --filter @workspace/curriculum run verify`/`test` unchanged (0 errors,
+28 gaps, 83/83); mobile `pnpm test` 982/982 (972 pass + 10 skipped) after the
+two test updates above; `pnpm run typecheck` clean across the monorepo.
+
+Net: the 2026-08-27 "Grade 9 is visible now" entry was true and also not
+enough — visible in the pickers is not the same as reachable in the one
+screen that matters, and reachable is not the same as grounded in real
+content. All three now hold for Grade 9 Math.
+
 ## Grounding has been finding zero passages in production since it shipped, 2026-08-27
 
 Went to verify Phase 4 (live AI) end to end and found both switches already
