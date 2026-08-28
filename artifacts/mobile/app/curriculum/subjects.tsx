@@ -152,7 +152,7 @@ export default function SubjectsScreen() {
                   )}
                 </View>
                 <Text style={[styles.downloadNote, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
-                  {t('downloadSourceNccd')}
+                  {t('downloadSourceNccd', book.academicYear)}
                 </Text>
               </View>
             )}
