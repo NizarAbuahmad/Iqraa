@@ -57,6 +57,8 @@ export interface EvaluationQuestion {
   source: 'ai' | 'teacher' | 'ai_edited';
 }
 
+export { countBlanks, showBlanks } from './evaluationBlanks.ts';
+
 export interface EvaluableBook {
   bookId: string;
   titleAr: string;

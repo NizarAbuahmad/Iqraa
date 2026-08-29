@@ -21,6 +21,7 @@ import {
   getEvaluation,
   publishEvaluation,
   setEvaluationClass,
+  showBlanks,
   type Evaluation,
   type EvaluationQuestion,
   type QuestionType,
@@ -55,10 +56,11 @@ const TYPE_LABEL_KEY: Record<QuestionType, TranslationKey> = {
 /** The one field worth showing per type, regardless of shape. */
 function questionText(q: EvaluationQuestion): string {
   const body = q.body;
+  const template = body['template'] as string | undefined;
   return (
     (body['stem'] as string | undefined)
     ?? (body['statement'] as string | undefined)
-    ?? (body['template'] as string | undefined)
+    ?? (template === undefined ? undefined : showBlanks(template))
     ?? (body['prompt'] as string | undefined)
     ?? ''
   );
