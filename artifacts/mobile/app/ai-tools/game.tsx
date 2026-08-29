@@ -35,6 +35,7 @@ import { setPendingClassroomActivity } from '@/services/classroomStore';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
 } from '@/services/curriculumData';
+import { groundedSubjectConflict, topicPickerParams } from '@/services/lessonPrep';
 
 const ACCENT = '#F59E0B';
 const QUESTION_COUNTS = [5, 8, 10, 12];
@@ -56,8 +57,17 @@ export default function ClassGameScreen() {
   const params = useLocalSearchParams<{
     gradeIdx?: string; subjectIdx?: string; topic?: string;
   }>();
-  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(params.gradeIdx, grades.length));
-  const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx, subjects.length));
+  // A bare `topic` param (old bookmarks, callers without picker params) says
+  // which grade and subject it belongs to better than picker index 0 does —
+  // ground it instead of opening a math lesson under whatever subject sits
+  // first in the list.
+  const [inferredScope] = useState(() =>
+    params.gradeIdx == null && params.subjectIdx == null
+      ? topicPickerParams(params.topic, lang as 'ar' | 'en')
+      : null,
+  );
+  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(params.gradeIdx ?? inferredScope?.gradeIdx, grades.length));
+  const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx ?? inferredScope?.subjectIdx, subjects.length));
   const [topic, setTopic] = useState(params.topic ?? '');
   const [teamCount, setTeamCount] = useState(4);
   const [questionCount, setQuestionCount] = useState(8);
@@ -86,6 +96,11 @@ export default function ClassGameScreen() {
   const generate = async () => {
     const trimmed = topic.trim();
     if (!trimmed) { setError(t('topicRequired')); return; }
+    // A topic that grounds to another subject's lesson cannot make an honest
+    // game — the KB serves that lesson's own content while the header claims
+    // the picked subject. Refuse and name the real subject instead.
+    const conflict = groundedSubjectConflict(trimmed, lang as 'ar' | 'en', subjects[subjectIdx].id);
+    if (conflict) { setError(t('subjectTopicMismatch', isAr ? conflict.nameAr : conflict.name)); return; }
     setError(''); setLoading(true); setDeck(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const controller = new AbortController();

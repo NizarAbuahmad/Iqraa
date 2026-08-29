@@ -7718,3 +7718,42 @@ No other `BOOKS` entry has this gap — cross-checked every id in
 `KB_BOOKS`; math-10, math-10-s2, chem-10, chem-10-s2, finlit-s1, math-9-s1,
 math-9-s2 all resolve, and the grade-8/9/11 books outside `MVP_GRADE_IDS`
 are intentionally not visible, not silently broken.
+
+## «اختبار في اللغة الإنجليزية» full of math: picker index 0 changed meaning, 2026-08-29
+
+Reported from the deployed site with screenshots: a quiz screen opened as
+`/ai-tools/quiz?topic=<معمل برمجية جيوجبرا: حل أنظمة المعادلات بيانياً>` showed
+**الصف التاسع + اللغة الإنجليزية** over that Grade 10 *math* lab lesson, and
+generating produced English-language math questions titled «اختبار في اللغة
+الإنجليزية للصف التاسع: GeoGebra Lab – Solving Systems of Equations
+Graphically».
+
+Three faults stacked:
+
+1. **Picker order is persisted state, and it silently changed.** The MVP
+   pickers filtered `SUBJECTS`/`GRADES` in *declaration* order, so enabling
+   English (2026-08-27) and Grade 9 *inserted* entries at the front: index 0
+   became English + الصف التاسع. Every screen falls back to index 0 when a
+   picker param is absent, and every saved `formState`/route URL stored bare
+   indices — all of them shifted one entry off. Fixed: `getPickerSubjects` /
+   `getVisibleGrades` / `getSubjectsForGrade` now follow `MVP_SUBJECT_IDS` /
+   `MVP_GRADE_IDS` order (mathematics and grade-10 first, exactly the
+   pre-English positions), and `lib/curriculum/src/__tests__/pickerOrder.test.ts`
+   pins it. **Append** new MVP entries, never insert.
+2. **A bare `topic` param defaulted the scope instead of asking the topic.**
+   All seven `/ai-tools/*` screens now ground a bare topic and take the
+   lesson's own grade/subject (`topicPickerParams` in `services/lessonPrep.ts`)
+   before falling back to index 0. Explicit `gradeIdx`/`subjectIdx` params
+   still win.
+3. **Nothing refused the mismatch.** Even with subject=English picked by hand
+   over a math lesson title, generation went ahead and the server prompt
+   («أنشئ اختبارًا لمادة اللغة الإنجليزية … حول "معمل برمجية جيوجبرا…"») made
+   the model do its best. Now every generator screen (quiz, worksheet,
+   lesson-plan, activity, slides, game, lesson-flow, classroom builder) calls
+   `groundedSubjectConflict` first and refuses with a message naming the
+   lesson's real subject (`subjectTopicMismatch` i18n key, ar+en). Ungrounded
+   free-text topics are untouched — nothing to contradict.
+
+Verified: new tests ground the exact reported topic onto Grade 10 Mathematics
+and flag it under English; mobile suite 1004 pass / 0 fail (10 skipped),
+lib/curriculum 87 pass, api-server 292 pass, `pnpm run typecheck` clean.

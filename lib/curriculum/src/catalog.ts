@@ -194,16 +194,33 @@ export const MVP_BOOK_IDS: readonly string[] = [
   ENGLISH_INDUSTRY_S1_CURRICULUM_BOOK_ID,
 ];
 
+/**
+ * MVP pickers follow the MVP arrays' order, not declaration order in
+ * GRADES/SUBJECTS. Picker positions are persisted — every generator screen's
+ * saved formState and route URLs carry `gradeIdx`/`subjectIdx` as bare
+ * indices, and a screen opened without them falls back to index 0. Filtering
+ * by declaration order meant enabling Grade 9 / English *inserted* entries at
+ * the front: index 0 silently became grade-9/English, and every stored index
+ * pointed one entry off (a bare-topic math URL opened as «اختبار في اللغة
+ * الإنجليزية» over math questions). New grades/subjects must be APPENDED to
+ * MVP_GRADE_IDS / MVP_SUBJECT_IDS so existing indices keep their meaning.
+ */
+function inMvpOrder<T extends { id: string }>(all: T[], mvpIds: readonly string[]): T[] {
+  return mvpIds
+    .map(id => all.find(item => item.id === id))
+    .filter((item): item is T => item !== undefined);
+}
+
 export function getVisibleGrades(): Grade[] {
   if (!INVESTOR_MVP_CURRICULUM) return GRADES;
-  return GRADES.filter(g => MVP_GRADE_IDS.includes(g.id));
+  return inMvpOrder(GRADES, MVP_GRADE_IDS);
 }
 
 export function getSubjectsForGrade(gradeId: string): Subject[] {
   const subjects = SUBJECTS.filter(s => s.grades.includes(gradeId));
   if (!INVESTOR_MVP_CURRICULUM) return subjects;
   if (!MVP_GRADE_IDS.includes(gradeId)) return [];
-  return subjects.filter(s => (MVP_SUBJECT_IDS as readonly string[]).includes(s.id));
+  return inMvpOrder(subjects, MVP_SUBJECT_IDS);
 }
 
 /** Grades shown in AI tools, chat, and other curriculum pickers. */
@@ -216,7 +233,7 @@ export function getPickerSubjects(gradeId?: string): Subject[] {
   if (!INVESTOR_MVP_CURRICULUM) {
     return gradeId ? getSubjectsForGrade(gradeId) : [...SUBJECTS];
   }
-  return SUBJECTS.filter(s => (MVP_SUBJECT_IDS as readonly string[]).includes(s.id));
+  return inMvpOrder(SUBJECTS, MVP_SUBJECT_IDS);
 }
 
 /** Clamp a saved/route picker index into the current picker list. */
