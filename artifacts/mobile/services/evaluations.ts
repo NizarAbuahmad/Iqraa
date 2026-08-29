@@ -55,6 +55,20 @@ export interface EvaluationQuestion {
   marks: string;
   gradingMode: 'deterministic' | 'math_equivalence' | 'ai_rubric' | 'manual';
   source: 'ai' | 'teacher' | 'ai_edited';
+  /**
+   * SymPy's verdict on this question's answer key, when there was one to
+   * check. Absent on every question written before key checking existed, and
+   * on every question whose answer is not symbolic — which is most of them.
+   * `verified: false` therefore means "not checked", never "wrong": a key the
+   * verifier contradicts is dropped at generation and never reaches here.
+   */
+  verification?: {
+    verified: boolean;
+    source: 'sympy' | 'unchecked';
+    computedAnswer?: string | null;
+    reason?: string;
+    checkedAt?: string;
+  } | null;
 }
 
 export { countBlanks, showBlanks } from './evaluationBlanks.ts';

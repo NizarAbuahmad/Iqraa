@@ -307,6 +307,86 @@ Local-boot note that cost an hour: the API refuses to start without *some*
 `OPENAI_API_KEY` even in demo mode — LOCAL_SETUP.md said "optional", now
 corrected.
 
+## Generated answer keys go through SymPy now, 2026-08-29
+
+`evaluationQuestions.verification` had described this since Phase 3 — *"SymPy's
+verdict on the ANSWER KEY at authoring time. A key the verifier contradicts is
+dropped before a teacher ever sees the question"* — and nothing wrote it. A
+model could key «أوجد مشتقة f(x) = x³ − 4x» as `3x² + 4` and the paper reached a
+teacher looking correct: the validator checks type, objective, marks and
+duplication, none of which is arithmetic.
+
+**Measured before building, because the obvious build would have verified
+nothing.** The classification chain requires latin maths, and the generation
+prompt said *"Use Arabic mathematical notation and Arabic-Indic digits where a
+teacher would."* Running real question shapes through `classifyVerifiableTopic`:
+**0 of 5 classifiable in Arabic notation, 5 of 5 in latin.** On top of that, no
+question type carries a symbolic key at all — multiple choice keys an option
+*id*, short answer keys prose. Wiring the verifier to the existing fields would
+have shipped a feature that proves nothing while looking delivered.
+
+So the model now states its key twice: the stem stays Arabic for the class, and
+an optional `check: {topic, question, answer}` carries the same maths in latin
+for the machine (`GENERATION_PROMPT_VERSION` → `exam-gen-3`). This is the repo's
+own standing rule — compute in latin `x`, convert to `س` only at display time —
+applied to answer keys.
+
+**The trap that made this dangerous, found by a test.** SymPy does not reject
+Arabic. With implicit multiplication on, «الإجابة سبعة» parses as a *product of
+eight letter-symbols*, compares unequal to the real answer, and is reported
+`answer_mismatch` — identical to a wrong key. On a check whose verdict deletes a
+teacher's question, in an Arabic-first product, that would have deleted correct
+questions for the offence of being written in Arabic. `relate_answer_key` now
+gates on Arabic script explicitly and answers `error`, never `distinct`;
+legitimate Arabic inside a solution set («أو», «فقط») still verifies, because
+the gate runs after those are normalised away.
+
+**Only a contradiction drops a question.** The new `POST /verify/answer-key`
+returns a three-way relation rather than a bool, because `verify_item`'s
+`expr_equiv` folds `.equals() → None` into `False` — an undecidable comparison
+would read as a wrong key. `indeterminate`, `error` and `unsupported_topic` all
+leave the question in the paper, unverified.
+
+**An unreachable verifier changes nothing.** It is a free-tier service that
+sleeps; losing questions because it was asleep is far worse than shipping an
+unverified key. The first unreachable answer stops the pass, everything
+survives, and a warning says the check did not run.
+
+`verifyMathGuards.ts` moved to a new `lib/math-verify` (`@workspace/math-verify`)
+because the generator runs server-side and a second copy of a correctness
+control is the `sanitizeQuestionForStudent` mistake again. Mobile keeps a
+re-export shim, and its 74 guard tests passing untouched is the proof the move
+was behaviour-free.
+
+**Verified end to end** against Postgres + the real Python verifier + the API,
+driving the real route with a scripted model server (`OPENAI_BASE_URL`):
+
+- a key of `x = 5` for `2x + 5 = 13` is **dropped**, reason: *"it derives \"4\"
+  where the key says \"x = 5\""*; 2 of 3 produced;
+- the correct derivative key stores
+  `{"source":"sympy","verified":true,"computedAnswer":"3*x**2 - 4"}` — read back
+  from the `verification` column;
+- `generationParams` records `keysChecked: 2, keysVerified: 1`;
+- **verifier stopped: 3 of 3 produced, nothing dropped**, warning says the check
+  did not run, and it returns in 0.03s (the pass stops after the first
+  unreachable answer rather than waiting 2.5s per question);
+- a chemistry evaluation on the mock generator: 4 of 4, `keysChecked: 0`,
+  untouched.
+
+Suites: Python 72/72, api-server 303, mobile 1013 (1003 pass, 10 expected
+skips), typecheck clean.
+
+**What this is not.** It checks keys at *authoring* time only. Student answers
+are graded exactly as before — `math_equivalence` and grader `math_verifier` are
+still declared and still unwritten. Coverage is also only as good as the model's
+willingness to emit a `check`: a question without one is never verified, which
+is the honest default and the common case.
+
+**Not machine-verified:** the review screen's «مفتاح مُتحقَّق منه» badge and
+"N of M" summary render from the same data proved above, but the screen itself
+was not driven end to end — synthetic events do not reach these
+React-Native-Web controls, as recorded elsewhere in this file.
+
 ## Production has all 25 tables, and something checks it now, 2026-08-25
 
 The `DATABASE_URL` secret is set and the schema monitor has run against the real
@@ -1537,12 +1617,10 @@ total outage is the worse failure.
 
 ### What is still not true
 
-**The maths verifier cannot check a generated answer key.** The plan said keys
-would go through SymPy; the service only exposes `/verify/derivative` and
-`/compute/derivative` — there is no general equivalence endpoint. So a
-generated key is *unverified* unless the question happens to be a derivative,
-and nothing claims otherwise. Wiring Tier 2 equivalence into grading needs a new
-endpoint on the Python service first.
+~~**The maths verifier cannot check a generated answer key.**~~ **Fixed
+2026-08-29** — see "Generated answer keys go through SymPy now" at the top of
+this file. Authoring-time key checking exists; Tier 2 *grading* (marking a
+student's typed answer by equivalence) still does not.
 
 **Nothing has generated a real question yet.** Every test above runs with live
 mode off or with a deliberately broken key. Turning it on is env-only —

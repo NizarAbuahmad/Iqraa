@@ -22,6 +22,7 @@ Older audits live in `docs/archive/` — historical snapshots, do not act on the
 | `artifacts/math-verifier` | SymPy FastAPI service — verifies math answer keys |
 | `artifacts/mockup-sandbox` | Design sandbox, **excluded from the workspace** |
 | `lib/curriculum` | NCCD curriculum data, shared by app and API |
+| `lib/math-verify` | Gates deciding what may claim symbolic verification — shared by app and API |
 | `lib/db` | Drizzle schema |
 
 ## Commands
@@ -83,6 +84,17 @@ Before a live demo: [`docs/demo-checklist.md`](./docs/demo-checklist.md).
   `scopePickerParams(gradeId, subjectId)` when you only hold the ids — both in
   `services/lessonPrep.ts`, both computing indices against the exact bare
   picker lists the receiving screens rebuild.
+- **SymPy does not reject Arabic — it multiplies it.** With
+  `implicit_multiplication_application` on, «الإجابة سبعة» parses as a product
+  of eight letter-symbols, compares unequal to the real answer, and comes back
+  `answer_mismatch` — indistinguishable from a wrong key. Any check whose
+  verdict *removes* content must therefore gate on Arabic script explicitly and
+  answer "cannot judge", never "wrong"; `relate_answer_key` in
+  `artifacts/math-verifier/verify_core.py` does, and
+  `lib/math-verify/src/answerKey.ts` refuses the same input client-side rather
+  than transliterating «ق(س)» into `f(x)`. Related: `expr_equiv` folds
+  `.equals() → None` into `False`, so anything needing "undecidable" as a
+  distinct outcome must use `_relation`, not `expr_equiv`.
 - **Extensionless relative imports only work through esbuild.** Anything loaded
   directly by `node --test` needs an explicit `.ts` extension.
 - **The OpenAI client throws at module scope without a key**, which makes

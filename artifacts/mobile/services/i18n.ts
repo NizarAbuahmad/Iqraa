@@ -1002,6 +1002,14 @@ const translations = {
     typeProblemSolving: 'حل مسألة',
     typePracticalTask: 'مهمة عملية',
     marksAbbrev: (n: string) => `${n} ع`,
+    // «تم التحقق» يوصف المفتاح لا السؤال: البرنامج يتحقق من صحة الإجابة
+    // رياضيًا، ولا يحكم على جودة السؤال نفسه.
+    keyVerifiedBadge: 'مفتاح مُتحقَّق منه',
+    keysVerifiedSummary: (n: string, m: string) =>
+      `تم التحقق رياضيًا من ${n} من أصل ${m} مفتاح إجابة`,
+    // مهم أن تُقرأ البقية «غير قابلة للفحص» لا «خاطئة»: أي مفتاح ناقضه
+    // المدقّق حُذف سؤاله عند التوليد ولم يصل إلى هنا أصلًا.
+    keysVerifiedNote: 'بقية الأسئلة ليس لها إجابة رمزية يفحصها البرنامج — وهذا لا يعني أنها خاطئة.',
 
     // Evaluations — attempts & answer entry
     enterAnswersBtn: 'أدخل إجابات الطلاب',
@@ -2017,6 +2025,12 @@ const translations = {
     typeProblemSolving: 'Problem Solving',
     typePracticalTask: 'Practical Task',
     marksAbbrev: (n: string) => `${n} pts`,
+    keyVerifiedBadge: 'Key verified',
+    keysVerifiedSummary: (n: string, m: string) =>
+      `${n} of ${m} answer keys verified by the maths verifier`,
+    // "Not checkable", never "wrong": a key the verifier contradicted was
+    // dropped at generation and never reached this screen.
+    keysVerifiedNote: 'The rest have no symbolic answer to check — that does not mean they are wrong.',
 
     // Evaluations — attempts & answer entry
     enterAnswersBtn: 'Enter student answers',
