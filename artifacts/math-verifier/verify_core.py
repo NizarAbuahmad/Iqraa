@@ -568,3 +568,136 @@ def verify_derivative(
 ) -> dict[str, Any]:
     """Backward-compatible wrapper → topic registry."""
     return verify_item("derivative_polynomial", question, answer, distractors)
+
+
+# ─── Answer-key relation (authoring-time key checking) ───────────────────────
+
+# Arabic script blocks. A key written in Arabic prose is not a key this service
+# can judge — and it must say so, because SymPy will not.
+_ARABIC = re.compile(r"[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]")
+
+
+def _unjudgeable_arabic(text: str) -> bool:
+    """
+    True when text still carries Arabic script after normalisation.
+
+    This is a fail-closed gate, not politeness. `parse_expr` runs with
+    `implicit_multiplication_application`, so «الإجابة سبعة» does not raise —
+    it parses as a *product of eight single-letter symbols*, compares unequal
+    to the real answer, and returns `distinct`. A caller that drops questions
+    on `distinct` would therefore delete a correct question for the offence of
+    stating its key in the product's own language.
+
+    Legitimate Arabic in a solution set («أو», «فقط») is removed by
+    _normalise_answer_text before this runs, so only genuine prose trips it.
+    """
+    return bool(_ARABIC.search(text))
+
+
+def relate_answer_key(topic: str, question: str, answer: str) -> dict[str, Any]:
+    """
+    Three-way verdict on a proposed ANSWER KEY.
+
+    `verify_item` answers "is this item provable?" and deliberately collapses
+    "SymPy could not decide" into `answer_mismatch` — for a generated practice
+    item an unprovable key is simply not usable, so one bool is enough.
+
+    A key check cannot collapse them, because its caller **drops the question a
+    teacher was about to receive**. "These differ" and "I could not tell" must
+    therefore arrive apart: only the first is evidence of a wrong key. Hence
+    `_relation` here where `verify_item` uses `expr_equiv`, whose `.equals()`
+    → `None` → `False` would report an undecidable comparison as a mismatch and
+    delete a correct question.
+
+    Returns {"relation", "computed_answer", "error"} where relation is one of
+    'equivalent' | 'distinct' | 'indeterminate' | 'error' | 'unsupported_topic'.
+    Only 'distinct' is evidence against the key.
+    """
+    if topic in EQUATION_TOPICS:
+        try:
+            expected = solve_equation(question)
+        except Exception as exc:  # noqa: BLE001
+            return {
+                "relation": "error",
+                "computed_answer": None,
+                "error": f"solve_error: {type(exc).__name__}: {exc}",
+            }
+        pretty = ", ".join(str(v) for v in expected)
+        if _unjudgeable_arabic(_normalise_answer_text(answer)):
+            return {
+                "relation": "error",
+                "computed_answer": pretty,
+                "error": "answer_not_latin",
+            }
+        try:
+            claimed = parse_solution_set(answer)
+        except Exception as exc:  # noqa: BLE001
+            return {
+                "relation": "error",
+                "computed_answer": pretty,
+                "error": f"answer_parse_error: {type(exc).__name__}: {exc}",
+            }
+        # Same real-root allowance verify_item makes: a curriculum answer that
+        # lists only the real solutions of a complex-rooted equation is right.
+        reals = real_solutions(expected)
+        matched = solution_sets_match(expected, claimed) or (
+            bool(reals) and solution_sets_match(reals, claimed)
+        )
+        return {
+            "relation": "equivalent" if matched else "distinct",
+            "computed_answer": pretty,
+            "error": None if matched else "answer_mismatch",
+        }
+
+    solver = SOLVERS.get(topic)
+    if solver is None:
+        return {
+            "relation": "unsupported_topic",
+            "computed_answer": None,
+            "error": "unsupported_topic",
+        }
+
+    try:
+        if topic in POINT_TOPICS:
+            expected_point = solver(question)
+            pretty = f"({expected_point[0]}, {expected_point[1]})"
+            if _unjudgeable_arabic(normalise_expr_text(answer)):
+                return {
+                    "relation": "error",
+                    "computed_answer": pretty,
+                    "error": "answer_not_latin",
+                }
+            try:
+                claimed_point = parse_point(answer)
+            except Exception as exc:  # noqa: BLE001
+                return {
+                    "relation": "error",
+                    "computed_answer": pretty,
+                    "error": f"answer_parse_error: {type(exc).__name__}: {exc}",
+                }
+            matched = points_match(tuple(expected_point), claimed_point)
+            return {
+                "relation": "equivalent" if matched else "distinct",
+                "computed_answer": pretty,
+                "error": None if matched else "answer_mismatch",
+            }
+
+        expected_expr = str(solver(question))
+        if _unjudgeable_arabic(normalise_expr_text(answer)):
+            return {
+                "relation": "error",
+                "computed_answer": expected_expr,
+                "error": "answer_not_latin",
+            }
+        relation = _relation(expected_expr, answer)
+        return {
+            "relation": relation,
+            "computed_answer": expected_expr,
+            "error": None if relation == "equivalent" else relation,
+        }
+    except Exception as exc:  # noqa: BLE001
+        return {
+            "relation": "error",
+            "computed_answer": None,
+            "error": f"verify_error: {type(exc).__name__}: {exc}",
+        }

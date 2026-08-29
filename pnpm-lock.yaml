@@ -67,6 +67,9 @@ importers:
       '@workspace/integrations-openai-ai-server':
         specifier: workspace:*
         version: link:../../lib/integrations-openai-ai-server
+      '@workspace/math-verify':
+        specifier: workspace:*
+        version: link:../../lib/math-verify
       bcryptjs:
         specifier: ^3.0.3
         version: 3.0.3
@@ -204,6 +207,9 @@ importers:
       '@workspace/curriculum':
         specifier: workspace:*
         version: link:../../lib/curriculum
+      '@workspace/math-verify':
+        specifier: workspace:*
+        version: link:../../lib/math-verify
       babel-plugin-react-compiler:
         specifier: ^19.0.0-beta-e993439-20250117
         version: 19.0.0-beta-ebf51a3-20250411
@@ -366,6 +372,12 @@ importers:
       p-retry:
         specifier: ^7.1.1
         version: 7.1.1
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.9.5
+
+  lib/math-verify:
     devDependencies:
       '@types/node':
         specifier: 'catalog:'

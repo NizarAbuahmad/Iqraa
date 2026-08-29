@@ -76,6 +76,9 @@ export default function EvaluationDetailScreen() {
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
   const [pickingClass, setPickingClass] = useState(false);
   const [questions, setQuestions] = useState<EvaluationQuestion[]>([]);
+  // Only the verifier's own confirmations are counted — never inferred from
+  // a question looking fine.
+  const verifiedCount = questions.filter(q => q.verification?.verified).length;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState<'generate' | 'publish' | null>(null);
@@ -242,6 +245,22 @@ export default function EvaluationDetailScreen() {
         </View>
       )}
 
+      {verifiedCount > 0 && (
+        <View style={{ paddingHorizontal: 20, paddingTop: 4 }}>
+          <View style={[styles.verifySummary, { backgroundColor: '#05966912', borderColor: '#05966933' }]}>
+            <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }}>
+              <Ionicons name="shield-checkmark" size={15} color="#059669" />
+              <Text style={{ color: '#059669', fontFamily: 'Cairo_600SemiBold', fontSize: 12.5, textAlign: align }}>
+                {t('keysVerifiedSummary', String(verifiedCount), String(questions.length))}
+              </Text>
+            </View>
+            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11.5, marginTop: 4, textAlign: align, lineHeight: 18 }}>
+              {t('keysVerifiedNote')}
+            </Text>
+          </View>
+        </View>
+      )}
+
       <View style={{ padding: 20, gap: 10 }}>
         {questions.map((q, i) => (
           <View key={q.id} style={[styles.qCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -258,6 +277,17 @@ export default function EvaluationDetailScreen() {
                 {t('marksAbbrev', q.marks)}
               </Text>
             </View>
+            {/* Only a confirmed key is marked. Nothing is shown for the rest,
+                because a "not verified" chip on most of the paper would read as
+                doubt about questions the verifier never had an opinion on. */}
+            {q.verification?.verified ? (
+              <View style={[styles.verifiedRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                <Ionicons name="shield-checkmark" size={13} color="#059669" />
+                <Text style={{ color: '#059669', fontFamily: 'Cairo_500Medium', fontSize: 11 }}>
+                  {t('keyVerifiedBadge')}
+                </Text>
+              </View>
+            ) : null}
             <Text style={[styles.qText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
               {questionText(q) || '—'}
             </Text>
@@ -405,6 +435,8 @@ const styles = StyleSheet.create({
   qNum: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   typeBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   qText: { fontSize: 14, lineHeight: 20 },
+  verifiedRow: { alignItems: 'center', gap: 5, marginBottom: 6 },
+  verifySummary: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
   actionBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: 15, borderRadius: 10 },
   actionBtnOutline: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 13, borderRadius: 10, borderWidth: 1.5, marginBottom: 10 },
   shareCard: { borderWidth: 1, borderRadius: 12, padding: 16 },

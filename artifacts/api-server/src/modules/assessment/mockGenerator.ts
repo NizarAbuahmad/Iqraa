@@ -38,6 +38,7 @@ import {
   MARKS_BY_COMPETENCY,
   type CompetencyKey,
 } from "./competency.ts";
+import type { AnswerKeyCheck } from "@workspace/math-verify";
 import { mockableTypes, QUESTION_TYPES } from "./questionTypes.ts";
 
 export interface GeneratedQuestion {
@@ -51,6 +52,14 @@ export interface GeneratedQuestion {
   marks: number;
   skill: string | null;
   gradingMode: string;
+  /**
+   * The latin, machine-checkable restatement of this question's key, when the
+   * generator could supply one. Never produced here — the templates below
+   * restate an objective in prose and have no symbolic answer to check — but
+   * carried on the shared type because the LLM path fills it in and both paths
+   * flow through the same verification pass.
+   */
+  check?: AnswerKeyCheck | null;
   aiMetadata: Record<string, unknown>;
 }
 
