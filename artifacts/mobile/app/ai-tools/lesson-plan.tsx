@@ -8,7 +8,6 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { buildAdaptationsDirective, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
-import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
 import { LessonPlanOutput } from '@/services/ai/AIService';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
@@ -17,6 +16,7 @@ import { TopicSelector } from '@/components/ui/TopicSelector';
 import { Button } from '@/components/ui/Button';
 import { getItem, saveItem, updateItem } from '@/services/workspace';
 import { useFavorite } from '@/hooks/useFavorite';
+import { useGeneratorExport } from '@/hooks/useGeneratorExport';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
@@ -26,15 +26,7 @@ import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
-import {
-  buildLessonPlanHTML,
-  buildLessonPlanSlidesHTML,
-  copyToClipboard,
-  exportAsPDF,
-  exportAsWord,
-  formatLessonPlanText,
-  shareAsText,
-} from '@/services/share';
+import { buildLessonPlanHTML, buildLessonPlanSlidesHTML, formatLessonPlanText } from '@/services/share';
 
 const ACCENT = '#1B6B62';
 
@@ -105,9 +97,6 @@ export default function LessonPlanScreen() {
   const [showExport, setShowExport] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
-  const [loadingPDF, setLoadingPDF] = useState(false);
-  const [loadingWord, setLoadingWord] = useState(false);
-  const [loadingSlides, setLoadingSlides] = useState(false);
 
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
   const { favorited, setFavorited, toggle: handleToggleFavorite } =
@@ -270,67 +259,30 @@ export default function LessonPlanScreen() {
 
   const getExportTitle = () => lang === 'ar' ? `خطة درس: ${topic.trim()}` : `Lesson Plan: ${topic.trim()}`;
 
-  const handleShareText = async () => {
-    if (!result) return;
-    const text = formatLessonPlanText(result, getExportTitle(), getExportMeta(), lang === 'ar');
-    await shareAsText(text, getExportTitle());
-  };
-
-  const handleCopy = async () => {
-    if (!result) return;
-    const text = formatLessonPlanText(result, getExportTitle(), getExportMeta(), lang === 'ar');
-    await copyToClipboard(text);
-    showToast(t('copiedToClipboard'));
-  };
-
-  // Lesson-level, resolved fresh at export time — same re-resolve pattern this
-  // file already uses elsewhere. Empty for an ungrounded or simplify-mode topic.
-  const getExportFigures = () =>
-    bookFigureRefsForLesson(
-      resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en').lesson?.id,
-      lang === 'ar',
-    );
-
-  const handlePDF = async () => {
-    if (!result) return;
-    setLoadingPDF(true);
-    try {
-      const html = buildLessonPlanHTML(result, getExportTitle(), getExportMeta(), lang === 'ar', getExportFigures());
-      await exportAsPDF(html, getExportTitle().replace(/[^\w\s]/g, '').trim());
-    } catch (e) {
-      showToast(t('generationFailed'));
-    } finally {
-      setLoadingPDF(false);
-    }
-  };
-
-  const handleWord = async () => {
-    if (!result) return;
-    setLoadingWord(true);
-    try {
-      const text = formatLessonPlanText(result, getExportTitle(), getExportMeta(), lang === 'ar');
-      await exportAsWord(text, getExportTitle().replace(/[^\w\s]/g, '').trim(), lang === 'ar');
-    } catch (e) {
-      showToast(t('generationFailed'));
-    } finally {
-      setLoadingWord(false);
-    }
-  };
+  const {
+    getExportFigures,
+    handleShareText,
+    handleCopy,
+    handlePDF,
+    handleWord,
+    handleSlides,
+    loadingPDF,
+    loadingWord,
+    loadingSlides,
+  } = useGeneratorExport({
+    result,
+    topic,
+    lang,
+    getTitle: getExportTitle,
+    getMeta: getExportMeta,
+    formatText: formatLessonPlanText,
+    buildHTML: buildLessonPlanHTML,
+    buildSlidesHTML: buildLessonPlanSlidesHTML,
+    onError: key => showToast(t(key)),
+    onCopied: key => showToast(t(key)),
+  });
 
   const topPad = insets.top + (insets.top === 0 ? 67 : 0);
-
-  const handleSlides = async () => {
-    if (!result) return;
-    setLoadingSlides(true);
-    try {
-      const html = buildLessonPlanSlidesHTML(result, getExportTitle(), getExportMeta(), lang === 'ar');
-      await exportAsPDF(html, (getExportTitle() + '-slides').replace(/[^\w\s-]/g, '').trim());
-    } catch (e) {
-      showToast(t('generationFailed'));
-    } finally {
-      setLoadingSlides(false);
-    }
-  };
 
   const exportLabels = {
     title: t('exportTitle'),
