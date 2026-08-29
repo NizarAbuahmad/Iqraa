@@ -7,6 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { TopicSelector } from '@/components/ui/TopicSelector';
+import { PillSelector } from '@/components/ui/PillSelector';
 import { Button } from '@/components/ui/Button';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
@@ -98,34 +99,6 @@ export default function ClassroomBuilderScreen() {
     router.push('/ai-tools/classroom/presentation' as any);
   };
 
-  const PillGroup = <T extends string>({
-    label, options, value, onChange,
-  }: { label: string; options: { value: T; label: string }[]; value: T; onChange: (v: T) => void }) => (
-    <View style={{ marginBottom: 18 }}>
-      <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
-      <View style={[styles.pillRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        {options.map(o => {
-          const active = o.value === value;
-          return (
-            <Pressable
-              key={o.value}
-              onPress={() => onChange(o.value)}
-              style={[styles.pill, {
-                backgroundColor: active ? ACCENT : colors.card,
-                borderColor: active ? ACCENT : colors.border,
-                borderRadius: colors.radius,
-              }]}
-            >
-              <Text style={[styles.pillText, { color: active ? '#fff' : colors.mutedForeground, fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular' }]}>
-                {o.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-    </View>
-  );
-
   const difficultyOpts: { value: Difficulty; label: string }[] = [
     { value: 'easy', label: t('difficultyEasy') },
     { value: 'standard', label: lang === 'ar' ? 'متوسط' : 'Standard' },
@@ -176,39 +149,26 @@ export default function ClassroomBuilderScreen() {
       {/* Form */}
       <View style={styles.form}>
         {/* Grade */}
-        <View style={{ marginBottom: 18 }}>
-          <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('grade')}</Text>
-          <View style={[styles.pillRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            {grades.map((g, idx) => {
-              const active = gradeIdx === idx;
-              const label = lang === 'ar' ? g.nameAr : g.name;
-              return (
-                <Pressable key={g.id} onPress={() => setGradeIdx(idx)} style={[styles.pill, { backgroundColor: active ? ACCENT : colors.card, borderColor: active ? ACCENT : colors.border, borderRadius: colors.radius }]}>
-                  <Text style={[styles.pillText, { color: active ? '#fff' : colors.mutedForeground, fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular' }]}>
-                    {label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
+        <PillSelector
+          label={t('grade')}
+          options={grades.map((g, idx) => ({ value: idx, label: lang === 'ar' ? g.nameAr : g.name }))}
+          value={gradeIdx}
+          onChange={setGradeIdx}
+          colors={colors}
+          isRTL={isRTL}
+          accent={ACCENT}
+        />
 
         {/* Subject */}
-        <View style={{ marginBottom: 18 }}>
-          <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('subjects')}</Text>
-          <View style={[styles.pillRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            {subjects.map((s, i) => {
-              const active = subjectIdx === i;
-              return (
-                <Pressable key={s.id} onPress={() => setSubjectIdx(i)} style={[styles.pill, { backgroundColor: active ? ACCENT : colors.card, borderColor: active ? ACCENT : colors.border, borderRadius: colors.radius }]}>
-                  <Text style={[styles.pillText, { color: active ? '#fff' : colors.mutedForeground, fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular' }]}>
-                    {lang === 'ar' ? s.nameAr : s.name}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
+        <PillSelector
+          label={t('subjects')}
+          options={subjects.map((s, i) => ({ value: i, label: lang === 'ar' ? s.nameAr : s.name }))}
+          value={subjectIdx}
+          onChange={setSubjectIdx}
+          colors={colors}
+          isRTL={isRTL}
+          accent={ACCENT}
+        />
 
         {/* Topic */}
         <TopicSelector
@@ -225,30 +185,27 @@ export default function ClassroomBuilderScreen() {
         />
 
         {/* Duration */}
-        <View style={{ marginBottom: 18 }}>
-          <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('durationLabel')}</Text>
-          <View style={[styles.pillRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            {DURATIONS.map((d, i) => {
-              const active = durationIdx === i;
-              return (
-                <Pressable key={d} onPress={() => setDurationIdx(i)} style={[styles.pill, { backgroundColor: active ? ACCENT : colors.card, borderColor: active ? ACCENT : colors.border, borderRadius: colors.radius }]}>
-                  <Text style={[styles.pillText, { color: active ? '#fff' : colors.mutedForeground, fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular' }]}>
-                    {d} {t('min')}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
+        <PillSelector
+          label={t('durationLabel')}
+          options={DURATIONS.map((d, i) => ({ value: i, label: `${d} ${t('min')}` }))}
+          value={durationIdx}
+          onChange={setDurationIdx}
+          colors={colors}
+          isRTL={isRTL}
+          accent={ACCENT}
+        />
 
-        <PillGroup label={t('difficultyLabel')} options={difficultyOpts} value={difficulty} onChange={setDifficulty} />
-        <PillGroup label={lang === 'ar' ? 'نوع المجموعة' : 'Class type'} options={groupOpts} value={groupType} onChange={setGroupType} />
-        <PillGroup label={t('teachingGoalLabel')} options={goalOpts} value={teachingGoal} onChange={setTeachingGoal} />
-        <PillGroup
+        <PillSelector label={t('difficultyLabel')} options={difficultyOpts} value={difficulty} onChange={setDifficulty} colors={colors} isRTL={isRTL} accent={ACCENT} />
+        <PillSelector label={lang === 'ar' ? 'نوع المجموعة' : 'Class type'} options={groupOpts} value={groupType} onChange={setGroupType} colors={colors} isRTL={isRTL} accent={ACCENT} />
+        <PillSelector label={t('teachingGoalLabel')} options={goalOpts} value={teachingGoal} onChange={setTeachingGoal} colors={colors} isRTL={isRTL} accent={ACCENT} />
+        <PillSelector
           label={lang === 'ar' ? 'تجهيزات الصف' : 'Classroom setup'}
           options={setupOpts}
           value={classroomSetup}
           onChange={setClassroomSetup}
+          colors={colors}
+          isRTL={isRTL}
+          accent={ACCENT}
         />
 
         {error ? <Text style={[{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
@@ -346,10 +303,6 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 24 },
   backBtn: { width: 40, height: 40, justifyContent: 'center', marginBottom: 8 },
   form: { padding: 20 },
-  fieldLabel: { fontSize: 13, marginBottom: 8 },
-  pillRow: { flexWrap: 'wrap', gap: 8 },
-  pill: { paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1.5 },
-  pillText: { fontSize: 13 },
   loadingBox: { alignItems: 'center', gap: 12, padding: 20, borderWidth: 1, marginBottom: 16 },
   loadingText: { fontSize: 14 },
   readyBanner: { alignItems: 'center', gap: 8, padding: 14, borderWidth: 1, marginBottom: 14 },

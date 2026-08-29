@@ -53,14 +53,27 @@ function indexOfAnswer(options: string[], answer: string): number {
   return Math.max(0, options.findIndex(o => norm(o) === norm(answer)));
 }
 
+/**
+ * The two rules every projected class-mode format shares: the question
+ * appears and the timer starts, then everyone thinks silently before
+ * answering. `introSlide` and `buildGameDeckFromQuiz`'s intro each add their
+ * own answering mechanic on top of these (raise a hand vs. a team card), so
+ * these two lines are the only ones that were ever duplicated between them.
+ */
+function sharedThinkingRules(isAr: boolean): string {
+  return isAr
+    ? '• يظهر السؤال ويبدأ المؤقت\n• الجميع يفكر بصمت'
+    : '• The question appears and the timer starts\n• Everyone thinks silently';
+}
+
 function introSlide(titleAr: string, lessonTitle: string, isAr: boolean): ActivitySlide {
   return {
     slideNumber: 1,
     type: 'intro',
     title: isAr ? `📚 ${titleAr}` : `📚 ${titleAr}`,
     content: isAr
-      ? `${lessonTitle}\n\nالقواعد:\n• يظهر السؤال ويبدأ المؤقت\n• الجميع يفكر بصمت\n• عند انتهاء الوقت: ارفع يدك للإجابة\n• ثم نكشف الإجابة ونناقش`
-      : `${lessonTitle}\n\nRules:\n• The question appears and the timer starts\n• Everyone thinks silently\n• When time ends: raise your hand to answer\n• Then we reveal and discuss`,
+      ? `${lessonTitle}\n\nالقواعد:\n${sharedThinkingRules(true)}\n• عند انتهاء الوقت: ارفع يدك للإجابة\n• ثم نكشف الإجابة ونناقش`
+      : `${lessonTitle}\n\nRules:\n${sharedThinkingRules(false)}\n• When time ends: raise your hand to answer\n• Then we reveal and discuss`,
     durationSeconds: 0,
   };
 }
@@ -357,8 +370,8 @@ export function buildGameDeckFromQuiz(
     type: 'intro',
     title: isAr ? `🏆 تحدي الصف — ${quiz.title}` : `🏆 Class Challenge — ${quiz.title}`,
     content: isAr
-      ? `${lessonTitle}\n\nالقواعد:\n• الصف مقسوم إلى ${teamCount} فرق\n• يظهر السؤال ويبدأ المؤقت\n• الجميع يفكر بصمت\n• عند انتهاء الوقت: كل فريق يرفع يده للإجابة\n• الفريق المصيب يأخذ ١٠٠ نقطة — والإجابات المتتالية تعطي نقاطًا إضافية`
-      : `${lessonTitle}\n\nRules:\n• The class is split into ${teamCount} teams\n• The question appears and the timer starts\n• Everyone thinks silently\n• When time ends: each team raises a hand to answer\n• A correct team scores 100 points — consecutive answers earn a bonus`,
+      ? `${lessonTitle}\n\nالقواعد:\n• الصف مقسوم إلى ${teamCount} فرق\n${sharedThinkingRules(true)}\n• عند انتهاء الوقت: كل فريق يرفع يده للإجابة\n• الفريق المصيب يأخذ ١٠٠ نقطة — والإجابات المتتالية تعطي نقاطًا إضافية`
+      : `${lessonTitle}\n\nRules:\n• The class is split into ${teamCount} teams\n${sharedThinkingRules(false)}\n• When time ends: each team raises a hand to answer\n• A correct team scores 100 points — consecutive answers earn a bonus`,
     durationSeconds: 0,
   }];
 

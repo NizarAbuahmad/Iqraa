@@ -14,6 +14,7 @@ import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
 } from '@/services/curriculumData';
 import { TopicSelector } from '@/components/ui/TopicSelector';
+import { PickerField } from '@/components/ui/PickerField';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { Button } from '@/components/ui/Button';
@@ -546,41 +547,6 @@ function BodyText({ text, colors, isRTL }: { text: string; colors: ReturnType<ty
   return <Text style={[styles.bodyText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{text}</Text>;
 }
 
-function PickerField({ label, value, options, onChange, colors, isRTL, accent }: {
-  label: string; value: string; options: string[]; onChange: (i: number) => void;
-  colors: ReturnType<typeof useColors>; isRTL: boolean; accent: string;
-}) {
-  const [open, setOpen] = useState(false);
-  return (
-    <View style={{ marginBottom: 16 }}>
-      <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
-      <Pressable
-        onPress={() => setOpen(o => !o)}
-        style={[styles.pickerBtn, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-      >
-        <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{value}</Text>
-        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
-      </Pressable>
-      {open && (
-        <View style={[styles.pickerDropdown, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-          <ScrollView nestedScrollEnabled style={{ maxHeight: 200 }}>
-            {options.map((o, i) => (
-              <Pressable
-                key={i}
-                onPress={() => { onChange(i); setOpen(false); }}
-                style={[styles.pickerOption, { borderBottomColor: colors.border, backgroundColor: o === value ? colors.secondary : 'transparent', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-              >
-                <Text style={[{ color: o === value ? accent : colors.foreground, fontFamily: o === value ? 'Cairo_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{o}</Text>
-                {o === value && <Ionicons name="checkmark" size={16} color={accent} />}
-              </Pressable>
-            ))}
-          </ScrollView>
-        </View>
-      )}
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 28 },
   backBtn: { width: 40, height: 40, justifyContent: 'center', marginBottom: 8 },
@@ -591,9 +557,6 @@ const styles = StyleSheet.create({
   fieldLabel: { fontSize: 13, marginBottom: 6 },
   inputBox: { borderWidth: 1.5, padding: 14, marginBottom: 16 },
   textInput: { fontSize: 15, padding: 0, minHeight: 44 },
-  pickerBtn: { alignItems: 'center', borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 13 },
-  pickerDropdown: { borderWidth: 1, marginTop: -8, marginBottom: 8, overflow: 'hidden' },
-  pickerOption: { alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1 },
   loadingBox: { alignItems: 'center', gap: 12, padding: 20, borderWidth: 1, marginBottom: 16 },
   loadingText: { fontSize: 14 },
   resultHeader: { alignItems: 'center', gap: 8, padding: 14, borderWidth: 1, marginBottom: 16 },
