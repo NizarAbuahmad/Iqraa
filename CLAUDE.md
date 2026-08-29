@@ -77,12 +77,25 @@ Before a live demo: [`docs/demo-checklist.md`](./docs/demo-checklist.md).
   questions from the concrete bank, titled with the chemistry lesson. Anything
   calling a generator must pass the lesson's own subject; the defaults on
   `buildClassDeck` are maths and will not fail loudly. The same trap sits on
-  every `/ai-tools/*` screen: they default `subjectIdx` to 0 — Mathematics — so
-  navigating with a bare `topic` param silently regenerates this bug. Use
+  every `/ai-tools/*` screen: they default `subjectIdx` to 0, so navigating
+  with a bare `topic` param silently regenerates this bug. Use
   `lessonPickerParams(lessonId, lang)` when you know the lesson, or
   `scopePickerParams(gradeId, subjectId)` when you only hold the ids — both in
   `services/lessonPrep.ts`, both computing indices against the exact bare
-  picker lists the receiving screens rebuild.
+  picker lists the receiving screens rebuild. Since 2026-08-29 there are two
+  backstops: a screen opened with a bare `topic` grounds it and takes the
+  lesson's own grade/subject (`topicPickerParams`), and generation refuses a
+  topic whose grounded lesson belongs to another subject
+  (`groundedSubjectConflict`) instead of producing a mislabeled paper.
+- **Picker order is persisted state.** `gradeIdx`/`subjectIdx` are saved in
+  formState and route URLs as bare positions into `getPickerGrades()` /
+  `getPickerSubjects()`. Enabling English/Grade 9 in the MVP set used to
+  *insert* them (SUBJECTS/GRADES declaration order), so index 0 became
+  English + الصف التاسع and a bare-topic math URL generated «اختبار في اللغة
+  الإنجليزية» full of math questions. The MVP pickers now follow
+  `MVP_SUBJECT_IDS` / `MVP_GRADE_IDS` order and `pickerOrder.test.ts` pins
+  mathematics/grade-10 at index 0 — **append** new entries to those arrays,
+  never insert.
 - **Extensionless relative imports only work through esbuild.** Anything loaded
   directly by `node --test` needs an explicit `.ts` extension.
 - **The OpenAI client throws at module scope without a key**, which makes
