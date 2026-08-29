@@ -47,6 +47,7 @@ import {
   type StudentQuestion,
   type StudentResponse,
 } from '@/services/studentExam';
+import { showBlanks } from '@/services/evaluations';
 import type { TranslationKey } from '@/services/i18n';
 
 const ACCENT = '#1B6B62';
@@ -404,8 +405,7 @@ function QuestionCard({
     (body['stem'] as string) ??
     (body['statement'] as string) ??
     (body['prompt'] as string) ??
-    (body['template'] as string) ??
-    '';
+    showBlanks((body['template'] as string) ?? '');
 
   const options = Array.isArray(body['options']) ? (body['options'] as { id: string; text: string }[]) : [];
   const picked = new Set(Array.isArray(response['optionIds']) ? (response['optionIds'] as string[]) : []);
