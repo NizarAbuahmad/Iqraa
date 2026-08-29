@@ -7757,3 +7757,94 @@ Three faults stacked:
 Verified: new tests ground the exact reported topic onto Grade 10 Mathematics
 and flag it under English; mobile suite 1004 pass / 0 fail (10 skipped),
 lib/curriculum 87 pass, api-server 292 pass, `pnpm run typecheck` clean.
+
+## Class-time tools kept as three doors, consolidated underneath, 2026-08-29
+
+The three أثناء الحصة tools (الفصل التفاعلي, تحدي الصف, نشاط صفي) stay
+separate teacher-facing cards — the jobs are genuinely different (formative
+on-screen interaction / zero-prep team retrieval game / printable
+cooperative plan) — but a discussion of "why not one umbrella" surfaced two
+real bugs and some duplicated internals worth fixing regardless of that
+decision.
+
+**Two divergent `ACTIVITY_CARDS` lists, now one.** `services/classroomRouting.ts`
+carried its own 5-card list (`exit-ticket` marked `available:false` with
+empty copy) while `app/ai-tools/classroom/index.tsx` hardcoded a different
+7-card marketplace list. `builder.tsx`'s header looks up the *routing*
+list, so opening the builder from `error-detective` or `gallery-walk`
+silently fell back to generic header copy — those two ids didn't exist in
+the list it was searching. The hub's 7-card list, with its marketplace
+metadata (`durationMin`/`isTeam`/`isSolo`/`isNew`/`isFeatured`/`accentColor`),
+is now the one exported `ACTIVITY_CARDS`; the hub imports it instead of
+keeping its own copy, and its hardcoded "6 activities" header string now
+reads `ACTIVITY_CARDS.length`.
+
+**The live Arabic classroom prompt only covered 3 of 7 formats — English
+covered 6.** In `artifacts/api-server/src/routes/generate.ts`,
+`classroomPromptAr` branched on `bingo`/`relay` only and defaulted
+everything else — `error-detective`, `gallery-walk`, `exit-ticket`,
+`quick-check` — to the escape-challenge prompt. `classroomPromptEn` handled
+three of those four; neither language handled `quick-check` at all, which
+exists only in the offline `MockAIService`. So on the live server, an
+Arabic teacher picking المحقق الرياضي / جولة المعارض / بطاقة الخروج /
+تحقق سريع got an escape-challenge deck instead — and any caller sending
+`quick-check` in live mode (the classroom hub, `slides.tsx`'s mid-lesson
+checks, Start Class, `home.tsx`) hit the same silent substitution. Fixed by
+moving the prompt builders out of `routes/generate.ts` — which imports the
+OpenAI client at module scope and throws without a key, so nothing there
+was ever unit-testable — into `src/lib/classroomPrompts.ts`, adding the
+missing Arabic branches (mirroring the English ones' structure and slide
+counts), and adding `quick-check` in both languages with an explicit
+0-based `correctIndex` instruction and a clamped `numQuestions` (1–8,
+default 4, matching the mock). A new `classroomPrompts.test.ts` pins all 7
+activity ids × both languages to prevent this drifting silently again; a
+matching test on the mobile side pins the same 7-id set against
+`ACTIVITY_CARDS`.
+
+**A live classroom-activity deck could show a false "verified" badge.**
+Nothing stripped `verified`/`verifiedBy`/`computedAnswer` from live model
+output before the route responded, and `presentation.tsx` renders a green
+verified badge straight off `slide.verified`. Only `MockAIService`'s
+offline quick-check path actually runs a verifier (SymPy, via
+`verifyIfPossible`) — a live call never does — but a model asked for JSON
+shaped like `ActivitySlide` will sometimes write `"verified": true`
+unprompted, because the shape invites it. Fixed with a
+`stripUnearnedVerification` sanitizer (same immutable-copy shape as
+`normalizeEscapeCodes` in `lib/escapeCodes.ts`) run on every live
+classroom-activity response. The quick-check card's own description
+(`activityQuickCheckDesc`) claimed "a verified answer key" in both
+languages — no longer true once fabricated verification is actively
+stripped — softened to describe the zero-prep mechanic instead, without
+the verification claim.
+
+**Consolidated, no behavior change:** four screens (game.tsx, classroom
+builder.tsx, slides.tsx, activity.tsx) each hand-rolled their own pill-row
+or dropdown picker. Extracted `components/ui/PillSelector.tsx` (with a
+`pillStyle` override for game.tsx's wider pills) and
+`components/ui/PickerField.tsx` (the dropdown, moved from activity.tsx)
+and switched all four screens over — pixel-identical, and incidentally
+fixes `builder.tsx`'s `PillGroup` having been redefined on every render.
+Also deduped the two rule lines ("the question appears and the timer
+starts" / "everyone thinks silently") that `classDeck.ts`'s `introSlide`
+and `buildGameDeckFromQuiz`'s inline intro each wrote out separately, into
+one `sharedThinkingRules` helper — same final copy, one source.
+
+**Left alone on purpose:** `activity.tsx`'s document generator
+(`ActivityOutput`, no `slides` field, cannot reach the presentation
+player) was not merged with the classroom deck pipeline — different
+endpoint, different output type, and doing so would be exactly the
+"consolidation for its own sake" the discussion ruled out. The
+seven-doors-into-one-presentation-player question flagged back in the
+2026-08-15/18 entries is unaffected by this PR and stays open.
+
+Verified: `pnpm run typecheck` clean across the monorepo. Mobile `pnpm
+test`: 1001 pass / 10 skipped (0 failed), including new coverage in
+`classroomRouting.test.ts` and `classDeck.test.ts`. `api-server` `pnpm
+build && pnpm test`: 315 pass (0 failed), including the new
+`classroomPrompts.test.ts` and the existing mount-order suite. Server-side
+Arabic/quick-check behavior is verified by unit test against the prompt
+builders only — the sandbox proxy blocks live calls to the deployed API,
+same caveat as the 2026-08-25 schema-verification entry. Not yet manually
+walked through in the running app (`pnpm run dev:mobile:web`); do that
+before treating the header-copy and quick-check-format fixes as confirmed
+end-to-end.

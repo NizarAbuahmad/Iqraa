@@ -17,6 +17,7 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { TopicSelector } from '@/components/ui/TopicSelector';
+import { PillSelector } from '@/components/ui/PillSelector';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
 import { isAbortError } from '@/services/ai/aiProvenance';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
@@ -702,21 +703,23 @@ export default function SlidesScreen() {
         </View>
 
         <View style={styles.form}>
-          <PickerRow
+          <PillSelector
             label={t('grade')}
-            items={grades.map(g => (isAr ? g.nameAr : g.name))}
-            index={gradeIdx}
+            options={grades.map((g, i) => ({ value: i, label: isAr ? g.nameAr : g.name }))}
+            value={gradeIdx}
             onChange={setGradeIdx}
             colors={colors}
             isRTL={isRTL}
+            accent={ACCENT}
           />
-          <PickerRow
+          <PillSelector
             label={t('subjects')}
-            items={subjects.map(s => (isAr ? s.nameAr : s.name))}
-            index={subjectIdx}
+            options={subjects.map((s, i) => ({ value: i, label: isAr ? s.nameAr : s.name }))}
+            value={subjectIdx}
             onChange={setSubjectIdx}
             colors={colors}
             isRTL={isRTL}
+            accent={ACCENT}
           />
 
           <TopicSelector
@@ -1080,56 +1083,10 @@ export default function SlidesScreen() {
   );
 }
 
-function PickerRow({
-  label, items, index, onChange, colors, isRTL,
-}: {
-  label: string;
-  items: string[];
-  index: number;
-  onChange: (i: number) => void;
-  colors: any;
-  isRTL: boolean;
-}) {
-  return (
-    <View style={{ marginBottom: 18 }}>
-      <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
-        {label}
-      </Text>
-      <View style={[styles.pillRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        {items.map((item, i) => {
-          const active = i === index;
-          return (
-            <Pressable
-              key={item + i}
-              onPress={() => onChange(i)}
-              style={[styles.pill, {
-                backgroundColor: active ? ACCENT : colors.card,
-                borderColor: active ? ACCENT : colors.border,
-                borderRadius: colors.radius,
-              }]}
-            >
-              <Text style={[styles.pillText, {
-                color: active ? '#fff' : colors.mutedForeground,
-                fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
-              }]}>
-                {item}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 24 },
   backBtn: { width: 40, height: 40, justifyContent: 'center', marginBottom: 8 },
   form: { padding: 20 },
-  fieldLabel: { fontSize: 13, marginBottom: 8 },
-  pillRow: { flexWrap: 'wrap', gap: 8 },
-  pill: { paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1.5 },
-  pillText: { fontSize: 13 },
   toggle: { alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1.5 },
   toggleText: { fontSize: 13 },
   previewCard: { borderWidth: 1, padding: 16, marginBottom: 12 },
