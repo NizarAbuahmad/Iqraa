@@ -8,7 +8,6 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { buildGeneratorContext, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
-import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
 import { QuizOutput, QuizQuestion } from '@/services/ai/AIService';
 import { buildDeckFromQuiz } from '@/services/classDeck';
 import { summarizeVerification, type VerifyOutcome } from '@/services/quizVerification';
@@ -34,14 +33,12 @@ import {
 import { Button } from '@/components/ui/Button';
 import { getItem, saveItem, updateItem } from '@/services/workspace';
 import { useFavorite } from '@/hooks/useFavorite';
+import { useGeneratorExport } from '@/hooks/useGeneratorExport';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
-import {
-  buildQuizHTML, buildQuizSlidesHTML, copyToClipboard, exportAsPDF, exportAsWord,
-  formatQuizText, shareAsText,
-} from '@/services/share';
+import { buildQuizHTML, buildQuizSlidesHTML, formatQuizText } from '@/services/share';
 
 const ACCENT = '#F59E0B';
 
@@ -125,9 +122,6 @@ export default function QuizScreen() {
   const [showExport, setShowExport] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
-  const [loadingPDF, setLoadingPDF] = useState(false);
-  const [loadingWord, setLoadingWord] = useState(false);
-  const [loadingSlides, setLoadingSlides] = useState(false);
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
   const { favorited, setFavorited, toggle: handleToggleFavorite } =
     useFavorite(savedId, key => showToast(t(key)));
@@ -344,46 +338,28 @@ export default function QuizScreen() {
   // material — the screen showed الرياضيات and the exported file disagreed.
   const getExportMeta = () => ({ subject: subjectNames[subjectIdx]!, grade: gradeNames[gradeIdx]! });
 
-  const handleShareText = async () => {
-    if (!result) return;
-    await shareAsText(formatQuizText(result, getExportTitle(), getExportMeta(), lang === 'ar'), getExportTitle());
-  };
-  const handleCopy = async () => {
-    if (!result) return;
-    await copyToClipboard(formatQuizText(result, getExportTitle(), getExportMeta(), lang === 'ar'));
-    showToast(t('copiedToClipboard'));
-  };
-  // Lesson-level, resolved fresh at export time — same re-resolve pattern this
-  // file already uses elsewhere. Empty for an ungrounded topic.
-  const getExportFigures = () =>
-    bookFigureRefsForLesson(
-      resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en').lesson?.id,
-      lang === 'ar',
-    );
-
-  const handlePDF = async () => {
-    if (!result) return;
-    setLoadingPDF(true);
-    try {
-      await exportAsPDF(buildQuizHTML(result, getExportTitle(), getExportMeta(), lang === 'ar', getExportFigures()), getExportTitle().replace(/[^\w\s]/g, '').trim());
-    } catch { showToast(t('generationFailed')); } finally { setLoadingPDF(false); }
-  };
-  const handleWord = async () => {
-    if (!result) return;
-    setLoadingWord(true);
-    try {
-      await exportAsWord(formatQuizText(result, getExportTitle(), getExportMeta(), lang === 'ar'), getExportTitle().replace(/[^\w\s]/g, '').trim(), lang === 'ar');
-    } catch { showToast(t('generationFailed')); } finally { setLoadingWord(false); }
-  };
-
-  const handleSlides = async () => {
-    if (!result) return;
-    setLoadingSlides(true);
-    try {
-      const html = buildQuizSlidesHTML(result, getExportTitle(), getExportMeta(), lang === 'ar');
-      await exportAsPDF(html, (getExportTitle() + '-slides').replace(/[^\w\s-]/g, '').trim());
-    } catch { showToast(t('generationFailed')); } finally { setLoadingSlides(false); }
-  };
+  const {
+    getExportFigures,
+    handleShareText,
+    handleCopy,
+    handlePDF,
+    handleWord,
+    handleSlides,
+    loadingPDF,
+    loadingWord,
+    loadingSlides,
+  } = useGeneratorExport({
+    result,
+    topic,
+    lang,
+    getTitle: getExportTitle,
+    getMeta: getExportMeta,
+    formatText: formatQuizText,
+    buildHTML: buildQuizHTML,
+    buildSlidesHTML: buildQuizSlidesHTML,
+    onError: key => showToast(t(key)),
+    onCopied: key => showToast(t(key)),
+  });
 
   const exportLabels = {
     title: t('exportTitle'),
