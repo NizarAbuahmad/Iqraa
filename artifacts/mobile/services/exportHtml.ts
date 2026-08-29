@@ -196,6 +196,7 @@ export function buildLessonPlanHTML(
     <div class="doc-meta">${esc(meta.subject)} • ${esc(meta.grade)}${meta.duration ? ` • ${meta.duration} ${L('دقيقة', 'min')}` : ''}</div>
     ${bullets(L('الأهداف', 'Objectives'), plan.objectives)}
     ${bullets(L('المواد اللازمة', 'Materials Needed'), plan.materials)}
+    ${plan.priorReview?.trim() ? section(L('مراجعة سابقة', 'Prior Knowledge Review'), plan.priorReview) : ''}
     ${section(L('التمهيد', 'Introduction'), plan.introduction)}
     ${section(L('النشاط الرئيسي', 'Main Activity'), plan.mainActivity)}
     ${section(L('التدريب الموجّه', 'Guided Practice'), plan.guidedPractice)}
@@ -391,56 +392,64 @@ export function buildLessonPlanSlidesHTML(
       <div class="section-body">${content}</div>
     </div>`;
 
-  const TOTAL = 6;
-
   const slide1 = `${slideOpen('title-slide')}
     <div class="title-content">
       <div class="title-badge">${L('خطة درس', 'Lesson Plan')}</div>
       <h1 class="title-main">${esc(title)}</h1>
       <div class="title-meta">${esc(meta.subject)} &nbsp;•&nbsp; ${esc(meta.grade)}${meta.duration ? ` &nbsp;•&nbsp; ${meta.duration} ${L('دقيقة', 'min')}` : ''}</div>
       <div class="title-brand">Iqra — ${L('مساعد التدريس الذكي', 'AI Teaching Assistant')}</div>
-    </div>
-    ${footer(1, TOTAL)}</div>`;
+    </div>`;
+
+  // Optional: present only when the teacher asked for a warm-up review of
+  // prior material. One block, not two-col — there is nothing to pair it with.
+  const priorReviewSlide = plan.priorReview?.trim() ? `${slideOpen()}
+    ${header(L('مراجعة سابقة', 'Prior Knowledge Review'))}
+    <div class="slide-body">
+      ${sectionBlock('🔄', L('مراجعة المعارف السابقة', 'Prior Knowledge Review'), `<p>${esc(plan.priorReview)}</p>`)}
+    </div>` : null;
 
   const slide2 = `${slideOpen()}
     ${header(L('الأهداف والمواد', 'Objectives & Materials'))}
     <div class="slide-body two-col">
       ${sectionBlock('🎯', L('الأهداف التعليمية', 'Learning Objectives'), `<ul>${bullets(plan.objectives)}</ul>`)}
       ${sectionBlock('🎒', L('المواد اللازمة', 'Materials'), `<ul>${bullets(plan.materials)}</ul>`)}
-    </div>
-    ${footer(2, TOTAL)}</div>`;
+    </div>`;
 
   const slide3 = `${slideOpen()}
     ${header(L('التمهيد والنشاط الرئيسي', 'Introduction & Main Activity'))}
     <div class="slide-body two-col">
       ${sectionBlock('▶', L('التمهيد', 'Introduction'), `<p>${esc(plan.introduction)}</p>`)}
       ${sectionBlock('👥', L('النشاط الرئيسي', 'Main Activity'), `<p>${esc(plan.mainActivity)}</p>`)}
-    </div>
-    ${footer(3, TOTAL)}</div>`;
+    </div>`;
 
   const slide4 = `${slideOpen()}
     ${header(L('التدريب الموجّه والمستقل', 'Guided & Independent Practice'))}
     <div class="slide-body two-col">
       ${sectionBlock('✋', L('التدريب الموجّه', 'Guided Practice'), `<p>${esc(plan.guidedPractice)}</p>`)}
       ${sectionBlock('🧑', L('التدريب المستقل', 'Independent Practice'), `<p>${esc(plan.independentPractice)}</p>`)}
-    </div>
-    ${footer(4, TOTAL)}</div>`;
+    </div>`;
 
   const slide5 = `${slideOpen()}
     ${header(L('الختام والتقييم', 'Closure & Assessment'))}
     <div class="slide-body two-col">
       ${sectionBlock('⏹', L('الختام', 'Closure'), `<p>${esc(plan.closure)}</p>`)}
       ${sectionBlock('✅', L('التقييم', 'Assessment'), `<p>${esc(plan.assessment)}</p>`)}
-    </div>
-    ${footer(5, TOTAL)}</div>`;
+    </div>`;
 
   const slide6 = `${slideOpen()}
     ${header(L('التمايز والواجب المنزلي', 'Differentiation & Homework'))}
     <div class="slide-body two-col">
       ${sectionBlock('📚', L('التمايز', 'Differentiation'), `<p>${esc(plan.differentiation)}</p>`)}
       ${sectionBlock('🏠', L('الواجب المنزلي', 'Homework'), `<p>${esc(plan.homework)}</p>`)}
-    </div>
-    ${footer(6, TOTAL)}</div>`;
+    </div>`;
+
+  // Numbered after assembly so an optional slide never desyncs the footer
+  // count from how many slides actually render.
+  const slides = [slide1, priorReviewSlide, slide2, slide3, slide4, slide5, slide6].filter(
+    (s): s is string => s !== null,
+  );
+  const total = slides.length;
+  const body = slides.map((s, i) => `${s}\n    ${footer(i + 1, total)}</div>`).join('\n');
 
   return `<!DOCTYPE html>
 <html dir="${dir}" lang="${isAr ? 'ar' : 'en'}">
@@ -483,12 +492,7 @@ body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','
 </style>
 </head>
 <body>
-${slide1}
-${slide2}
-${slide3}
-${slide4}
-${slide5}
-${slide6}
+${body}
 </body>
 </html>`;
 }

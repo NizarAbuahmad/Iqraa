@@ -23,7 +23,7 @@ import {
 import type { Subject } from './curriculumData.ts';
 import { getBookForLesson } from './knowledgeBase.ts';
 import type { AIRequest } from './ai/AIService.ts';
-import { buildAdaptationsDirective, resolveGeneratorGrounding } from './kbContext.ts';
+import { buildAdaptationsDirective, getUnitPriorKnowledge, resolveGeneratorGrounding } from './kbContext.ts';
 
 export type TeachingStyle = 'direct' | 'inquiry' | 'collaborative';
 
@@ -224,6 +224,14 @@ export function buildLessonPrepRequest(args: {
   teachingStyle?: TeachingStyle;
   /** Free-text delivery instructions ("adapt this for a student with ADHD"). */
   adaptations?: string;
+  /**
+   * Free-text notes on prior topics the teacher wants re-explained — from
+   * earlier lessons or earlier grades — because some students haven't fully
+   * grasped them. Distinct from `adaptations` (delivery instructions).
+   */
+  priorTopicsNotes?: string;
+  /** Prepend the unit's own curriculum "تعلمت سابقًا" concepts, when it has any. */
+  includePriorReview?: boolean;
 }): LessonPrepRequest | null {
   const context = resolveLessonPrepContext(args.lessonId, args.lang);
   if (!context) return null;
@@ -235,6 +243,10 @@ export function buildLessonPrepRequest(args: {
     grounding.grounded ? grounding.context : grounding.ungroundedNote,
     buildAdaptationsDirective(args.adaptations ?? '', args.lang),
   ].filter(Boolean).join('\n') || undefined;
+
+  const unitPrior = grounding.lesson ? getUnitPriorKnowledge(grounding.lesson.id) : [];
+  const usePrior = Boolean(args.includePriorReview) && unitPrior.length > 0;
+  const priorTopicsNotes = args.priorTopicsNotes?.trim() || undefined;
 
   return {
     context,
@@ -251,6 +263,9 @@ export function buildLessonPrepRequest(args: {
       teachingStyle: args.teachingStyle ?? 'direct',
       objectives: context.objectives || undefined,
       additionalContext,
+      includePriorReview: usePrior || undefined,
+      priorKnowledge: usePrior ? unitPrior : undefined,
+      priorTopicsNotes,
     },
   };
 }

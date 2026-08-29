@@ -38,8 +38,14 @@ type Props = {
   editedFields?: ReadonlySet<string>;
 };
 
-/** Section order is the order a teacher teaches in; it is not alphabetical. */
+/**
+ * Section order is the order a teacher teaches in; it is not alphabetical.
+ * `priorReview` is optional — present only when the teacher asked for a
+ * warm-up review of prior material — so it is skipped at render when empty,
+ * unlike the other (always-populated) prose fields below.
+ */
 const PROSE_SECTIONS: [keyof LessonPlanOutput, string, keyof typeof Ionicons.glyphMap][] = [
+  ['priorReview', 'sectionPriorReview', 'refresh-outline'],
   ['introduction', 'sectionIntroduction', 'play-outline'],
   ['mainActivity', 'sectionMainActivity', 'people-outline'],
   ['guidedPractice', 'sectionGuidedPractice', 'hand-left-outline'],
@@ -114,18 +120,21 @@ export function LessonPlanView({
       <Section title={t('sectionMaterials')} icon="bag-outline" isRTL={isRTL} colors={colors} accent={accent}>
         {list('materials')}
       </Section>
-      {PROSE_SECTIONS.map(([field, labelKey, icon]) => (
-        <Section
-          key={field as string}
-          title={t(labelKey)}
-          icon={icon}
-          isRTL={isRTL}
-          colors={colors}
-          accent={accent}
-        >
-          {prose(field)}
-        </Section>
-      ))}
+      {PROSE_SECTIONS.map(([field, labelKey, icon]) => {
+        if (field === 'priorReview' && !String(plan[field] ?? '').trim()) return null;
+        return (
+          <Section
+            key={field as string}
+            title={t(labelKey)}
+            icon={icon}
+            isRTL={isRTL}
+            colors={colors}
+            accent={accent}
+          >
+            {prose(field)}
+          </Section>
+        );
+      })}
     </View>
   );
 }
