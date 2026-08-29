@@ -201,7 +201,15 @@ Vision screens (student/parent/school dashboards) are deprioritized.
   file, unextracted; see that data file's `known_gaps` before trusting its
   four Briefing-less units (9–12, `data_tier: "title-only"`). Catalog +
   lessons only: not wired into `knowledgeBase.ts` or any AI generator/bank —
-  `hasKnowledgeBase: false` on all four books.
+  `hasKnowledgeBase: false` on all four books. Each book card carries a
+  «دليل المعلم» download chip (added 2026-08-29) linking the project Drive's
+  copy of that track's Teacher's Book — Drive links because there is no
+  nccd.gov.jo PDF for these titles; the files were already shared
+  anyone-with-link, and `downloadNote`/`downloadNoteAr` on the `Book` replace
+  the "من موقع المركز الوطني" source line so the UI doesn't claim NCCD
+  provenance. The Industrial card links "industry english 2.pdf" (the
+  track's own Level-2 book) even though its catalog rows were mined from
+  Technical English — the chip's job is the printed book, not the mined text.
 - Expo Go on a phone works over LAN (firewall rule `Iqraa-Dev-8080-8083`;
   see LOCAL_SETUP.md).
 - `mockup-sandbox` is excluded from the workspace — it is a design sandbox,
