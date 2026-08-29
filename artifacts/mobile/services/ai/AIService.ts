@@ -25,11 +25,20 @@ export interface AIRequest {
   // Lesson plan extras
   teachingStyle?: 'direct' | 'inquiry' | 'collaborative';
   objectives?: string;
+  /**
+   * Free-text notes on prior topics the teacher wants re-explained in class —
+   * from earlier lessons or earlier grades — because some students haven't
+   * fully grasped them. Lesson-plan only; distinct from `objectives` (this
+   * lesson's own learning outcomes) and from `additionalContext` (delivery
+   * instructions).
+   */
+  priorTopicsNotes?: string;
   // Worksheet extras
   difficulty?: 'easy' | 'medium' | 'hard' | 'mixed';
   numQuestions?: number;
   questionTypes?: Array<'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false' | 'word_problem'>;
-  /** When true and priorKnowledge is non-empty, prepend a "مراجعة سابقة" warm-up. */
+  /** When true and priorKnowledge is non-empty, prepend a "مراجعة سابقة" warm-up.
+   *  Shared by worksheet and lesson-plan generation. */
   includePriorReview?: boolean;
   /** Grounded unit prior-knowledge concepts (never invent when empty). */
   priorKnowledge?: string[];
@@ -60,6 +69,9 @@ export interface LessonPlanOutput {
   duration: number;
   objectives: string[];
   materials: string[];
+  /** Plan for a short warm-up reviewing prior material — present only when
+   *  the teacher asked for it via `priorTopicsNotes` or `includePriorReview`. */
+  priorReview?: string;
   introduction: string;
   mainActivity: string;
   guidedPractice: string;

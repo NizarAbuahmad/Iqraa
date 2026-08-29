@@ -114,6 +114,59 @@ describe('buildLessonPrepRequest', () => {
   it('returns null for an unknown lesson', () => {
     assert.equal(buildLessonPrepRequest({ lessonId: 'no-such-lesson', lang: 'ar' }), null);
   });
+
+  it('leaves prior-review fields absent when nothing was asked for (regression)', () => {
+    const built = buildLessonPrepRequest({ lessonId: MATH_LESSON_ID, lang: 'ar' })!;
+    assert.equal(built.request.priorTopicsNotes, undefined);
+    assert.equal(built.request.includePriorReview, undefined);
+    assert.equal(built.request.priorKnowledge, undefined);
+  });
+
+  it('trims free-text prior-topics notes and omits them when blank', () => {
+    const withNotes = buildLessonPrepRequest({
+      lessonId: MATH_LESSON_ID,
+      lang: 'ar',
+      priorTopicsNotes: '  راجع حل المعادلات من الصف التاسع  ',
+    })!;
+    assert.equal(withNotes.request.priorTopicsNotes, 'راجع حل المعادلات من الصف التاسع');
+
+    const blank = buildLessonPrepRequest({
+      lessonId: MATH_LESSON_ID,
+      lang: 'ar',
+      priorTopicsNotes: '   ',
+    })!;
+    assert.equal(blank.request.priorTopicsNotes, undefined);
+  });
+
+  it('populates priorKnowledge from the unit only when the teacher asked and the unit actually has it', () => {
+    // u1 (math s1) carries prior_knowledge — ticking the box surfaces it.
+    const withReview = buildLessonPrepRequest({
+      lessonId: MATH_LESSON_ID,
+      lang: 'ar',
+      includePriorReview: true,
+    })!;
+    assert.equal(withReview.request.includePriorReview, true);
+    assert.ok(withReview.request.priorKnowledge?.length, 'expected grounded prior-knowledge concepts');
+
+    // Same lesson, box unticked: never sent even though the unit has data.
+    const unticked = buildLessonPrepRequest({
+      lessonId: MATH_LESSON_ID,
+      lang: 'ar',
+      includePriorReview: false,
+    })!;
+    assert.equal(unticked.request.includePriorReview, undefined);
+    assert.equal(unticked.request.priorKnowledge, undefined);
+
+    // Chemistry lessons are outside the two catalogs getUnitPriorKnowledge
+    // reads — ticking the box must not fabricate concepts for them.
+    const noData = buildLessonPrepRequest({
+      lessonId: CHEM_LESSON_ID,
+      lang: 'ar',
+      includePriorReview: true,
+    })!;
+    assert.equal(noData.request.includePriorReview, undefined);
+    assert.equal(noData.request.priorKnowledge, undefined);
+  });
 });
 
 describe('lessonPrepPickerIndices', () => {

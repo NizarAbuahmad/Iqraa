@@ -56,10 +56,19 @@ ${FIGURE_RULE_EN}`;
 
 // ─── Prompt builders ─────────────────────────────────────────────────────────
 export function lessonPlanPromptAr(b: any): string {
+  const priorConcepts = b.includePriorReview && Array.isArray(b.priorKnowledge) && b.priorKnowledge.length
+    ? b.priorKnowledge
+    : null;
+  const priorNotes = typeof b.priorTopicsNotes === "string" ? b.priorTopicsNotes.trim() : "";
+  const hasPriorReview = Boolean(priorConcepts || priorNotes);
   return `أنشئ خطة درس كاملة لمادة ${b.subject} للصف ${b.grade} حول موضوع "${b.topic}"، مدتها ${b.duration ?? 45} دقيقة.
 ${b.objectives ? `الأهداف المحددة:\n${b.objectives}` : ""}
 ${b.additionalContext ? `سياق إضافي: ${b.additionalContext}` : ""}
 أسلوب التدريس: ${b.teachingStyle === "inquiry" ? "استقصائي" : b.teachingStyle === "collaborative" ? "تعاوني" : "مباشر"}
+${hasPriorReview ? `
+خصّص 5-10 دقائق في بداية الحصة لمراجعة معارف سابقة قد لا يتقنها بعض الطلبة، واكتب خطة هذه المراجعة في حقل "priorReview". هذه مراجعة تمهيدية وليست من أهداف هذا الدرس، فلا تُدرجها ضمن "objectives".
+${priorConcepts ? `مفاهيم من المنهج يجب مراجعتها حرفيًا (لا تختلق غيرها):\n- ${priorConcepts.join("\n- ")}` : ""}
+${priorNotes ? `ملاحظات المعلم عن موضوعات سابقة (قد تكون من دروس أو صفوف سابقة كالصف التاسع) يريد إعادة شرحها لأن بعض الطلبة لم يستوعبوها جيدًا؛ التزم بها كما هي:\n${priorNotes}` : ""}` : ""}
 
 أعد JSON بالشكل الآتي (بالعربية):
 {
@@ -68,7 +77,8 @@ ${b.additionalContext ? `سياق إضافي: ${b.additionalContext}` : ""}
   "subject": "${b.subject}",
   "duration": ${b.duration ?? 45},
   "objectives": ["هدف 1", "هدف 2", "هدف 3"],
-  "materials": ["مادة 1", "مادة 2"],
+  "materials": ["مادة 1", "مادة 2"],${hasPriorReview ? `
+  "priorReview": "خطة مراجعة المعارف السابقة (فقرة)",` : ""}
   "introduction": "نص التمهيد (3-4 جمل)",
   "mainActivity": "وصف النشاط الرئيسي (فقرة)",
   "guidedPractice": "وصف التدريب الموجّه (فقرة)",
@@ -81,10 +91,19 @@ ${b.additionalContext ? `سياق إضافي: ${b.additionalContext}` : ""}
 }
 
 export function lessonPlanPromptEn(b: any): string {
+  const priorConcepts = b.includePriorReview && Array.isArray(b.priorKnowledge) && b.priorKnowledge.length
+    ? b.priorKnowledge
+    : null;
+  const priorNotes = typeof b.priorTopicsNotes === "string" ? b.priorTopicsNotes.trim() : "";
+  const hasPriorReview = Boolean(priorConcepts || priorNotes);
   return `Create a complete lesson plan for ${b.subject}, ${b.grade}, on the topic "${b.topic}", duration ${b.duration ?? 45} minutes.
 ${b.objectives ? `Specified objectives:\n${b.objectives}` : ""}
 ${b.additionalContext ? `Additional context: ${b.additionalContext}` : ""}
 Teaching style: ${b.teachingStyle ?? "direct"}
+${hasPriorReview ? `
+Set aside 5-10 minutes at the start of the lesson to review prior material some students may not have fully grasped, and put that review plan in a "priorReview" field. This is a warm-up review, not one of this lesson's own objectives — do not list it under "objectives".
+${priorConcepts ? `Curriculum concepts to review verbatim (do not invent others):\n- ${priorConcepts.join("\n- ")}` : ""}
+${priorNotes ? `Teacher's notes on prior topics (may be from earlier lessons or earlier grades, e.g. grade 9) they want re-explained because some students did not understand them well; follow these as given:\n${priorNotes}` : ""}` : ""}
 
 Return JSON in this exact shape:
 {
@@ -93,7 +112,8 @@ Return JSON in this exact shape:
   "subject": "${b.subject}",
   "duration": ${b.duration ?? 45},
   "objectives": ["objective 1", "objective 2", "objective 3"],
-  "materials": ["item 1", "item 2"],
+  "materials": ["item 1", "item 2"],${hasPriorReview ? `
+  "priorReview": "Prior-knowledge review plan (paragraph)",` : ""}
   "introduction": "Hook/intro text (3-4 sentences)",
   "mainActivity": "Main activity description (paragraph)",
   "guidedPractice": "Guided practice description (paragraph)",
