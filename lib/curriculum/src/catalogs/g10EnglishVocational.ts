@@ -17,8 +17,12 @@
  * paragraph plus numbered focus sections — because the matching Level-2
  * "industry english" title could not be extracted (see that data file's
  * known_gaps). Two small builder functions below map each shape onto the
- * same browser Unit/Lesson rows; there is no shared KB-shape export because
- * nothing in the AI-generation/grounding pipeline consumes these tracks yet.
+ * same browser Unit/Lesson rows. A third mapper (`toKbCatalog`) reshapes
+ * that same browser output into the KBUnit/KBLesson shape
+ * `services/knowledgeBase.ts` expects — mirroring how every other subject
+ * grounds AI generation (TopicSelector's unit/lesson picker, the "grounded"
+ * badge) — so there is exactly one place that assembles each lesson's
+ * objectives/vocabulary, not two.
  */
 import commerceRaw from '../data/iqra_curriculum_g10_english_commerce.json' with { type: 'json' };
 import agricultureRaw from '../data/iqra_curriculum_g10_english_agriculture.json' with { type: 'json' };
@@ -228,11 +232,82 @@ function buildTechnicalTrackCatalog(
   return { units, lessons };
 }
 
+// ─── KB shape (services/knowledgeBase.ts's KBUnit / KBLesson) ────────────────
+// Every lesson here is a single unit-wide lesson (one lesson per unit, see the
+// module docs), so `order` is always 1 — there is no second lesson to order
+// against.
+type KbUnit = { id: string; bookId: string; order: number; titleAr: string; titleEn: string };
+type KbLesson = {
+  id: string;
+  unitId: string;
+  order: number;
+  titleAr: string;
+  titleEn: string;
+  summaryAr: string;
+  summaryEn: string;
+  keyConceptsAr: string[];
+  keyConceptsEn: string[];
+  keyTerms: Array<{ ar: string; en: string; definitionAr: string; definitionEn: string }>;
+  objectives: string[];
+  periods: number | null;
+};
+
+/**
+ * Reshape a browser-shape {units, lessons} pair into KB-shape, for one book.
+ *
+ * `kbBookId` is deliberately a separate parameter, not `unit.bookId` carried
+ * over: the browser catalog's book lives in catalog.ts's `BOOKS` id space
+ * (`book-english-10-commerce`), the KB catalog's book lives in
+ * `knowledgeBase.ts`'s separate `KB_BOOKS` id space (`kb-eng-commerce-10-s1`)
+ * — the same split finlit's `FINLIT_S1_BOOK_ID` vs
+ * `FINLIT_S1_CURRICULUM_BOOK_ID` makes. Unit/lesson ids need no such
+ * remapping: both shapes already share the `kbu-`/`kbl-` ids from
+ * `curriculumIds.ts`.
+ */
+function toKbCatalog(
+  browser: { units: BrowserUnit[]; lessons: BrowserLesson[] },
+  kbBookId: string,
+): { units: KbUnit[]; lessons: KbLesson[] } {
+  const units: KbUnit[] = browser.units.map(u => ({
+    id: u.id,
+    bookId: kbBookId,
+    order: u.order,
+    titleAr: u.nameAr,
+    titleEn: u.name,
+  }));
+  const lessons: KbLesson[] = browser.lessons.map(l => ({
+    id: l.id,
+    unitId: l.unitId,
+    order: 1,
+    titleAr: l.titleAr,
+    titleEn: l.title,
+    summaryAr: l.objectivesAr.join('؛ '),
+    summaryEn: l.objectives.join('; '),
+    keyConceptsAr: l.keywordsAr,
+    keyConceptsEn: l.keywords,
+    keyTerms: l.keywords.map((en, i) => ({
+      en,
+      ar: l.keywordsAr[i] ?? en,
+      definitionAr: '',
+      definitionEn: '',
+    })),
+    objectives: l.objectives,
+    periods: null,
+  }));
+  return { units, lessons };
+}
+
 // ─── Book ids (browser id space, catalog.ts's BOOKS) ─────────────────────────
 export const ENGLISH_COMMERCE_S1_CURRICULUM_BOOK_ID = 'book-english-10-commerce';
 export const ENGLISH_AGRICULTURE_S1_CURRICULUM_BOOK_ID = 'book-english-10-agriculture';
 export const ENGLISH_HOSPITALITY_S1_CURRICULUM_BOOK_ID = 'book-english-10-hospitality';
 export const ENGLISH_INDUSTRY_S1_CURRICULUM_BOOK_ID = 'book-english-10-industry';
+
+// ─── Book ids (KB id space, services/knowledgeBase.ts's KB_BOOKS) ────────────
+export const ENGLISH_COMMERCE_S1_KB_BOOK_ID = 'kb-eng-commerce-10-s1';
+export const ENGLISH_AGRICULTURE_S1_KB_BOOK_ID = 'kb-eng-agriculture-10-s1';
+export const ENGLISH_HOSPITALITY_S1_KB_BOOK_ID = 'kb-eng-hospitality-10-s1';
+export const ENGLISH_INDUSTRY_S1_KB_BOOK_ID = 'kb-eng-industry-10-s1';
 
 const COMMERCE_SCOPE: CurriculumIdScope = { gradeId: 'grade-10', subject: 'eng-commerce', semester: 1 };
 const AGRICULTURE_SCOPE: CurriculumIdScope = { gradeId: 'grade-10', subject: 'eng-agri', semester: 1 };
@@ -269,4 +344,21 @@ export function buildEnglishIndustryBrowserCatalog() {
     ENGLISH_INDUSTRY_S1_CURRICULUM_BOOK_ID,
     industryRaw as TechCurriculumFile,
   );
+}
+
+// ─── KB-shape catalogs — for services/knowledgeBase.ts's KB_UNITS/KB_LESSONS ─
+export function buildEnglishCommerceKbCatalog() {
+  return toKbCatalog(buildEnglishCommerceBrowserCatalog(), ENGLISH_COMMERCE_S1_KB_BOOK_ID);
+}
+
+export function buildEnglishAgricultureKbCatalog() {
+  return toKbCatalog(buildEnglishAgricultureBrowserCatalog(), ENGLISH_AGRICULTURE_S1_KB_BOOK_ID);
+}
+
+export function buildEnglishHospitalityKbCatalog() {
+  return toKbCatalog(buildEnglishHospitalityBrowserCatalog(), ENGLISH_HOSPITALITY_S1_KB_BOOK_ID);
+}
+
+export function buildEnglishIndustryKbCatalog() {
+  return toKbCatalog(buildEnglishIndustryBrowserCatalog(), ENGLISH_INDUSTRY_S1_KB_BOOK_ID);
 }
