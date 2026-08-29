@@ -352,6 +352,8 @@ const translations = {
     topicPlaceholder: 'مثال: المعادلات التربيعية، التمثيل الضوئي...',
     durationLabel: 'المدة (بالدقائق)',
     topicRequired: 'أدخل موضوع الدرس أولاً.',
+    subjectTopicMismatch: (subject: string) =>
+      `هذا الموضوع درسٌ من مادة «${subject}». غيّر المادة إلى «${subject}»، أو اختر موضوعًا من المادة المحددة.`,
     generationFailed: 'تعذر إتمام العملية. حاول مرة أخرى.',
     curriculumUngroundedNotice: 'هذا الموضوع غير موجود في المنهج المتاح حالياً. الخطة عامة وليست مبنية على نتاجات درس محدد من الكتاب.',
     curriculumUngroundedNoticeWorksheet: 'هذا الموضوع غير موجود في المنهج المتاح حالياً. ورقة العمل عامة وليست مبنية على نتاجات درس محدد من الكتاب.',
@@ -765,7 +767,7 @@ const translations = {
     addMediaAdd: 'أضف',
     addMediaRemove: 'إزالة',
     activityQuickCheckTitle: 'تحقق سريع',
-    activityQuickCheckDesc: 'أسئلة على الشاشة يجيب عنها كل الطلاب معًا ببطاقات أ ب ج د — والإجابة الصحيحة مُتحقق منها',
+    activityQuickCheckDesc: 'أسئلة على الشاشة يجيب عنها كل الطلاب معًا برفع الأيدي — بلا تحضير مسبق',
     verifiedAnswerBadge: 'تم التحقق من الإجابة رياضيًا',
     verifiedBySymbolic: 'تم التحقق من الإجابة رياضيًا (SymPy)',
     verifiedByBank: 'إجابة من بنك الأسئلة المُراجَع',
@@ -1007,6 +1009,14 @@ const translations = {
     typeProblemSolving: 'حل مسألة',
     typePracticalTask: 'مهمة عملية',
     marksAbbrev: (n: string) => `${n} ع`,
+    // «تم التحقق» يوصف المفتاح لا السؤال: البرنامج يتحقق من صحة الإجابة
+    // رياضيًا، ولا يحكم على جودة السؤال نفسه.
+    keyVerifiedBadge: 'مفتاح مُتحقَّق منه',
+    keysVerifiedSummary: (n: string, m: string) =>
+      `تم التحقق رياضيًا من ${n} من أصل ${m} مفتاح إجابة`,
+    // مهم أن تُقرأ البقية «غير قابلة للفحص» لا «خاطئة»: أي مفتاح ناقضه
+    // المدقّق حُذف سؤاله عند التوليد ولم يصل إلى هنا أصلًا.
+    keysVerifiedNote: 'بقية الأسئلة ليس لها إجابة رمزية يفحصها البرنامج — وهذا لا يعني أنها خاطئة.',
 
     // Evaluations — attempts & answer entry
     enterAnswersBtn: 'أدخل إجابات الطلاب',
@@ -1391,6 +1401,8 @@ const translations = {
     topicPlaceholder: 'e.g. Quadratic Equations, Photosynthesis...',
     durationLabel: 'Duration (minutes)',
     topicRequired: 'Please enter a topic.',
+    subjectTopicMismatch: (subject: string) =>
+      `This topic is a ${subject} lesson. Switch the subject to ${subject}, or pick a topic from the selected subject.`,
     generationFailed: 'Generation failed. Please try again.',
     curriculumUngroundedNotice: 'This topic is not in the currently available curriculum. The plan is generic and not grounded in a specific textbook lesson.',
     curriculumUngroundedNoticeWorksheet: 'This topic is not in the currently available curriculum. The worksheet is generic and not grounded in a specific textbook lesson.',
@@ -1788,7 +1800,7 @@ const translations = {
     addMediaAdd: 'Add',
     addMediaRemove: 'Remove',
     activityQuickCheckTitle: 'Quick Check',
-    activityQuickCheckDesc: 'On-screen questions the whole class answers with A B C D cards — with a verified answer key',
+    activityQuickCheckDesc: 'On-screen questions the whole class answers together by raised hands — zero prep',
     verifiedAnswerBadge: 'Answer key mathematically verified',
     verifiedBySymbolic: 'Answer symbolically verified (SymPy)',
     verifiedByBank: 'Answer from the reviewed question bank',
@@ -2027,6 +2039,12 @@ const translations = {
     typeProblemSolving: 'Problem Solving',
     typePracticalTask: 'Practical Task',
     marksAbbrev: (n: string) => `${n} pts`,
+    keyVerifiedBadge: 'Key verified',
+    keysVerifiedSummary: (n: string, m: string) =>
+      `${n} of ${m} answer keys verified by the maths verifier`,
+    // "Not checkable", never "wrong": a key the verifier contradicted was
+    // dropped at generation and never reached this screen.
+    keysVerifiedNote: 'The rest have no symbolic answer to check — that does not mean they are wrong.',
 
     // Evaluations — attempts & answer entry
     enterAnswersBtn: 'Enter student answers',

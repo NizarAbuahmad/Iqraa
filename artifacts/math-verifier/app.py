@@ -5,7 +5,17 @@ POST /verify/derivative
   { "question", "answer", "topic"?, "distractors"? }
 → { "verified", "computed_answer", "error"?, "rejected"? }
 
-Latin symbols only (x). Never send Arabic notation here.
+POST /verify/answer-key
+  { "topic", "question", "answer" }
+→ { "relation", "computed_answer", "error"? }
+  Three-way — 'equivalent' | 'distinct' | 'indeterminate' | 'error' |
+  'unsupported_topic' — because its caller DROPS a teacher's question, and only
+  'distinct' is evidence against a key. /verify/derivative may collapse
+  "could not decide" into a mismatch; this must not.
+
+Latin symbols only (x). Never send Arabic notation here — an Arabic key does
+not raise, it parses as a product of letter-symbols, so /verify/answer-key
+gates on it explicitly and answers 'error', never 'distinct'.
 Uses ProcessPoolExecutor so a 2s timeout can terminate the worker.
 """
 from __future__ import annotations
@@ -18,6 +28,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
 from verify_core import compute_derivative as compute_sync
+from verify_core import relate_answer_key as relate_key_sync
 from verify_core import verify_item as verify_item_sync
 
 VERIFY_TIMEOUT_SEC = 2.0
@@ -40,11 +51,36 @@ class VerifyResponse(BaseModel):
     rejected: list[dict[str, str]] | None = None
 
 
+class KeyRequest(BaseModel):
+    topic: str = Field(..., min_length=1)
+    question: str = Field(..., min_length=1)
+    answer: str = Field(..., min_length=1)
+
+
+class KeyResponse(BaseModel):
+    """
+    A three-way verdict, deliberately not a bool.
+
+    The caller drops a question a teacher was about to receive, so
+    "these differ" and "SymPy could not decide" must not arrive as the same
+    answer. Only `distinct` is evidence against the key.
+    """
+
+    relation: str
+    computed_answer: str | None = None
+    error: str | None = None
+
+
 def _verify_worker(
     payload: tuple[str, str, str, list[dict[str, Any]] | None],
 ) -> dict[str, Any]:
     topic, question, answer, distractors = payload
     return verify_item_sync(topic, question, answer, distractors)
+
+
+def _key_worker(payload: tuple[str, str, str]) -> dict[str, Any]:
+    topic, question, answer = payload
+    return relate_key_sync(topic, question, answer)
 
 
 def _compute_worker(question: str) -> dict[str, Any]:
@@ -131,6 +167,34 @@ def verify_derivative(body: VerifyRequest) -> VerifyResponse:
         computed_answer=result.get("computed_answer"),
         error=result.get("error"),
         rejected=result.get("rejected") or None,
+    )
+
+
+@app.post("/verify/answer-key", response_model=KeyResponse)
+def verify_answer_key(body: KeyRequest) -> KeyResponse:
+    """
+    Is this proposed answer KEY consistent with what SymPy derives?
+
+    Unlike /verify/derivative this never collapses an undecidable comparison
+    into a mismatch — see relate_answer_key. A timeout is `error`, not
+    `distinct`, for the same reason: an unreachable verdict must never be read
+    as a wrong key.
+    """
+    fut = get_executor().submit(
+        _key_worker,
+        (body.topic, body.question, body.answer),
+    )
+    try:
+        result = fut.result(timeout=VERIFY_TIMEOUT_SEC)
+    except FuturesTimeout:
+        fut.cancel()
+        _terminate_executor()
+        return KeyResponse(relation="error", computed_answer=None, error="timeout")
+
+    return KeyResponse(
+        relation=str(result.get("relation")),
+        computed_answer=result.get("computed_answer"),
+        error=result.get("error"),
     )
 
 

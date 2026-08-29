@@ -36,6 +36,8 @@ import {
   type GenerationResult,
 } from "../modules/assessment/mockGenerator";
 import { validateGenerated } from "../modules/assessment/validator";
+import { verifyAnswerKeys } from "../modules/assessment/keyVerification.ts";
+import { relateAnswerKey } from "../lib/mathVerifierClient.ts";
 import { QUESTION_TYPES } from "../modules/assessment/questionTypes";
 import { COMPETENCY_KEYS, type CompetencyKey } from "../modules/assessment/competency";
 import { isPaperQuestion, parsePaperRows } from "../modules/assessment/paperExam";
@@ -475,6 +477,19 @@ router.post("/evaluations/:id/generate", async (req: AuthenticatedRequest, res) 
       allowedTypes: evaluation.assessmentTypes,
     });
 
+    /**
+     * SymPy checks every key that states one, before a teacher sees the paper.
+     *
+     * Placed after the structural validator and before the insert because a
+     * contradicted key means the question should never have existed — dropping
+     * it here keeps `rejected` the single place a teacher reads for "why is
+     * this 14 questions and not 15". A key the verifier cannot judge, or a
+     * verifier that cannot be reached, removes nothing.
+     */
+    const keyCheck = await verifyAnswerKeys(validation.accepted, relateAnswerKey);
+    generationParams["keysChecked"] = keyCheck.checked;
+    generationParams["keysVerified"] = keyCheck.verified;
+
     // Replace rather than append: generating twice should not silently double
     // the length of the evaluation.
     await db
@@ -487,9 +502,9 @@ router.post("/evaluations/:id/generate", async (req: AuthenticatedRequest, res) 
         ),
       );
 
-    if (validation.accepted.length > 0) {
+    if (keyCheck.kept.length > 0) {
       await db.insert(evaluationQuestions).values(
-        validation.accepted.map((q, i) => ({
+        keyCheck.kept.map(({ question: q, verification }, i) => ({
           evaluationId: evaluation.id,
           orderIndex: i,
           type: q.type,
@@ -503,6 +518,10 @@ router.post("/evaluations/:id/generate", async (req: AuthenticatedRequest, res) 
           marks: q.marks.toFixed(2),
           gradingMode: q.gradingMode as never,
           source: "ai" as const,
+          // The column the schema has described since Phase 3 and nothing
+          // wrote. `verified` is the verifier's own word or false — never an
+          // inference from the question having looked fine.
+          verification,
           aiMetadata: q.aiMetadata,
         })),
       );
@@ -524,15 +543,20 @@ router.post("/evaluations/:id/generate", async (req: AuthenticatedRequest, res) 
       generator,
       modelId,
       requested: evaluation.targetQuestionCount,
-      produced: validation.accepted.length,
+      produced: keyCheck.kept.length,
       // Everything the generator declined or the validator dropped, stated
       // plainly. A teacher seeing 12 of 15 should know why, not wonder.
       unavailableTypes: result.unavailableTypes,
       // What the library holds for these units. Pairs with unavailableTypes:
       // the types we declined, and where real items for them would come from.
       bankContext: result.bankContext,
-      rejected: validation.rejected,
-      warnings: [...result.notes, ...generationNotes, ...validation.warnings],
+      rejected: [...validation.rejected, ...keyCheck.dropped],
+      warnings: [
+        ...result.notes,
+        ...generationNotes,
+        ...validation.warnings,
+        ...keyCheck.warnings,
+      ],
     });
   } catch (err) {
     // Four different things a teacher can do something about, and they are not

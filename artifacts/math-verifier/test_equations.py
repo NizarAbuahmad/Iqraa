@@ -13,7 +13,12 @@ from __future__ import annotations
 
 import sys
 
-from verify_core import parse_solution_set, solve_equation, verify_item
+from verify_core import (
+    parse_solution_set,
+    relate_answer_key,
+    solve_equation,
+    verify_item,
+)
 
 # (topic, question, answer, expected_verified, label)
 CASES: list[tuple[str, str, str, bool, str]] = [
@@ -79,6 +84,41 @@ CASES: list[tuple[str, str, str, bool, str]] = [
 ]
 
 
+# (topic, question, answer, expected_relation, label)
+#
+# These pin the promise that lets generation DROP a question: only 'distinct'
+# is evidence against a key. Anything the verifier cannot decide or cannot
+# parse must surface as 'indeterminate'/'error'/'unsupported_topic', because
+# the caller deletes a teacher's question on 'distinct' alone.
+KEY_CASES: list[tuple[str, str, str, str, str]] = [
+    # ── the key is right, in several spellings a model actually writes ──
+    ("derivative_polynomial", "x**3 - 4x", "3x^2 - 4", "equivalent", "derivative key, caret form"),
+    ("derivative_polynomial", "x**3 - 4x", "3*x**2 - 4", "equivalent", "derivative key, python form"),
+    ("derivative_polynomial", "x**3 - 4x", "-4 + 3x^2", "equivalent", "derivative key, reordered"),
+    ("derivative_polynomial", "x**4", "4x³", "equivalent", "derivative key, superscript"),
+    ("derivative_polynomial", "x**2", "x + x", "equivalent", "2x written as x + x"),
+    ("derivative_at_point", "x^4@2", "32", "equivalent", "derivative at a point"),
+    ("equation_quadratic", "x^2 = 49", "x = ±7", "equivalent", "quadratic solution set"),
+    ("circle_center", "(x-4)^2 + (y+1)^2 = 9", "(4, -1)", "equivalent", "circle centre"),
+    # ── the key is wrong: the only verdict that may drop a question ──
+    ("derivative_polynomial", "x**3 - 4x", "3x^2 + 4", "distinct", "sign-flipped derivative key"),
+    ("derivative_at_point", "x^4@2", "16", "distinct", "wrong value at the point"),
+    ("equation_quadratic", "x^2 = 49", "x = 7", "distinct", "half a solution set"),
+    ("circle_center", "(x-4)^2 + (y+1)^2 = 9", "(4, 1)", "distinct", "sign-flipped centre"),
+    # ── not decidable: must never read as a wrong key ──
+    ("derivative_polynomial", "x**2", "!!not an expression!!", "error", "unparseable key"),
+    ("derivative_polynomial", "((((", "2x", "error", "unparseable question"),
+    ("equation_quadratic", "x^2 = 49", "الإجابة سبعة", "error", "prose key, not a set"),
+    ("derivative_polynomial", "x**2", "الإجابة اثنان", "error", "prose key on a derivative"),
+    ("circle_center", "(x-4)^2 + (y+1)^2 = 9", "المركز أربعة", "error", "prose key on a centre"),
+    # Arabic that a real solution set legitimately carries must still verify:
+    # the gate rejects prose, not the language.
+    ("equation_quadratic", "x^2 - 5x + 6 = 0", "x = 2 أو x = 3", "equivalent", "set spelled with أو"),
+    ("equation_linear", "2x + 5 = 13", "x = 4 فقط", "equivalent", "set spelled with فقط"),
+    ("trigonometry_identity", "sin(x)", "cos(x)", "unsupported_topic", "topic with no solver"),
+]
+
+
 def main() -> int:
     failures = 0
 
@@ -89,6 +129,16 @@ def main() -> int:
             print(
                 f"FAIL  {label}: expected verified={expected}, got "
                 f"{result['verified']} (computed={result['computed_answer']}, "
+                f"error={result['error']})"
+            )
+
+    for topic, question, answer, expected_relation, label in KEY_CASES:
+        result = relate_answer_key(topic, question, answer)
+        if result["relation"] != expected_relation:
+            failures += 1
+            print(
+                f"FAIL  {label}: expected relation={expected_relation}, got "
+                f"{result['relation']} (computed={result['computed_answer']}, "
                 f"error={result['error']})"
             )
 
@@ -172,7 +222,16 @@ def main() -> int:
         failures += 1
         print(f"FAIL  complex branch leaked into the classroom evidence: {shown}")
 
-    total = len(CASES) + 9
+    # The whole reason relate_answer_key exists: verify_item collapses an
+    # undecidable comparison into answer_mismatch (expr_equiv turns
+    # .equals() → None into False), which as a key verdict would delete a
+    # correct question. The key path must never inherit that.
+    unparseable = relate_answer_key("derivative_polynomial", "x**2", "@@@")
+    if unparseable["relation"] == "distinct":
+        failures += 1
+        print(f"FAIL  an unparseable key was reported as a wrong key: {unparseable}")
+
+    total = len(CASES) + len(KEY_CASES) + 10
     print(f"{total - failures}/{total} checks passed")
     return 1 if failures else 0
 

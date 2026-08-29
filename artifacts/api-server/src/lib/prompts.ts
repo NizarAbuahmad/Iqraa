@@ -7,8 +7,9 @@
  * real shipped prompts — comparing models on a prompt written for the
  * comparison would measure the wrong thing.
  *
- * The classroom-activity prompts stay in the route: they are ~400 lines and
- * nothing outside that route uses them.
+ * The classroom-activity prompts live in `lib/classroomPrompts.ts` instead of
+ * here — they outgrew this file's per-artifact-type shape once the Arabic
+ * side needed the same 7 activity-type branches as the English side.
  */
 
 // ─── System prompts ──────────────────────────────────────────────────────────

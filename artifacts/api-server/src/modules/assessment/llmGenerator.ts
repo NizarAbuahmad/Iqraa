@@ -27,11 +27,12 @@
 import type { CurriculumObjective } from "@workspace/curriculum";
 import type { Difficulty, QuestionType } from "@workspace/db";
 import { QUESTION_TYPES } from "./questionTypes.ts";
+import { VERIFIABLE_TOPICS, parseAnswerKeyCheck } from "@workspace/math-verify";
 import { competencyForBlooms, type CompetencyKey } from "./competency.ts";
 import type { GeneratedQuestion } from "./mockGenerator.ts";
 
 /** Bumped when the prompt changes shape, so usage rows stay comparable. */
-export const GENERATION_PROMPT_VERSION = "exam-gen-2";
+export const GENERATION_PROMPT_VERSION = "exam-gen-3";
 
 export interface LlmGenerationRequest {
   objectives: CurriculumObjective[];
@@ -138,6 +139,9 @@ export function buildGenerationPrompt(req: LlmGenerationRequest): {
     "3. Distractors are plausible wrong answers a real student would pick — never filler, never obviously absurd, never 'none of the above'.",
     "4. Never write a question whose answer is a matter of opinion unless the type is open_ended.",
     "5. Do not repeat yourself. Two questions that test the same fact in the same way are one question.",
+    "6. A key you state in \"check\" is checked by a computer algebra system before a teacher sees it. "
+      + "Write it only when you are sure, and only in Latin notation — a key written in Arabic cannot be checked "
+      + "and the question simply goes out unverified.",
     "",
     "Return JSON only: {\"questions\": [ … ]}. No prose, no markdown fence.",
   ].join("\n");
@@ -172,6 +176,19 @@ export function buildGenerationPrompt(req: LlmGenerationRequest): {
     "    A recall question about an application objective is knowledge.",
     '  "marks": a positive number, larger for questions that demand more work',
     '  "skill": a two-to-four word label for what it actually tests, or null',
+    "",
+    // The stem stays Arabic for the class; this is the same maths in the only
+    // notation SymPy reads. Optional on purpose — a question with no symbolic
+    // answer must not be forced to invent one, and an absent check costs the
+    // question nothing beyond going out unverified.
+    'Optionally, when the answer is something a computer algebra system can check, also include:',
+    '  "check": {"topic": …, "question": …, "answer": …} — all in LATIN notation (x, 0-9), never Arabic.',
+    `    topic is one of: ${VERIFIABLE_TOPICS.join(" | ")}`,
+    '    question is the payload the topic needs: the expression for a derivative ("x^3 - 4x"),',
+    '      the expression and point separated by @ for derivative_at_point ("x^4@2"),',
+    '      the equation for an equation topic ("2x + 5 = 13") or a circle ("(x-4)^2 + (y+1)^2 = 9").',
+    '    answer is your key in latin form ("3x^2 - 4", "x = 4", "(4, -1)").',
+    '    Omit "check" entirely when the answer is prose, a definition, or otherwise not symbolic.',
   ].join("\n");
 
   return { system, user };
@@ -256,6 +273,11 @@ export function parseGeneratedQuestions(
 
     const skill = typeof q["skill"] === "string" && q["skill"].trim() ? q["skill"].trim() : null;
 
+    // Absent or malformed both give null, and neither is an error: a question
+    // with no symbolic answer is the normal case, and a broken check costs the
+    // question only its chance at being verified, never its place in the paper.
+    const check = parseAnswerKeyCheck(q["check"]);
+
     questions.push({
       type: type as QuestionType,
       body,
@@ -267,6 +289,7 @@ export function parseGeneratedQuestions(
       marks: Math.round(marks * 100) / 100,
       skill,
       gradingMode: typeModule.defaultGradingMode,
+      check,
       // Provenance, so a question can always answer "where did you come from".
       // `evaluations.generator` records the same at the evaluation level.
       aiMetadata: {

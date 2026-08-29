@@ -371,4 +371,22 @@ describe('buildGameDeckFromQuiz', () => {
     const deck = buildGameDeckFromQuiz(openOnly, 'الاقترانات', true, { teamCount: 3 });
     assert.equal(deck.game?.questionCount, 0);
   });
+
+  it('shares the same "question appears, everyone thinks silently" rules as the plain review deck', () => {
+    // buildDeckFromQuiz's intro and this one used to hand-write these two
+    // lines separately — dedupe them into one place and this must still hold.
+    const reviewIntro = buildDeckFromQuiz(MCQ_ONLY, 'الاقترانات', true).slides[0]!.content;
+    const gameIntro = buildGameDeckFromQuiz(MCQ_ONLY, 'الاقترانات', true, { teamCount: 3 }).slides[0]!.content;
+    assert.match(reviewIntro, /يظهر السؤال ويبدأ المؤقت/);
+    assert.match(reviewIntro, /الجميع يفكر بصمت/);
+    assert.match(gameIntro, /يظهر السؤال ويبدأ المؤقت/);
+    assert.match(gameIntro, /الجميع يفكر بصمت/);
+  });
+
+  it('interpolates the clamped team count into the intro, not the raw input', () => {
+    const deck = buildGameDeckFromQuiz(MCQ_ONLY, 'الاقترانات', true, { teamCount: 99 });
+    assert.equal(deck.game?.teamCount, 6);
+    assert.match(deck.slides[0]!.content, /مقسوم إلى 6 فرق/);
+    assert.doesNotMatch(deck.slides[0]!.content, /مقسوم إلى 99 فرق/);
+  });
 });

@@ -82,8 +82,18 @@ export interface Book {
   semester?: 1 | 2;
   /** Official NCCD student-book PDF. Links verified 2026-08-23. */
   pdfUrl?: string;
-  /** Official NCCD teacher-guide PDF. Hidden from students. */
+  /** Teacher-guide / teacher's-book PDF. Hidden from students. NCCD-hosted
+   *  unless `downloadNote` says otherwise. */
   guidePdfUrl?: string;
+  /**
+   * Source note shown under the download chips instead of the default
+   * "من موقع المركز الوطني لتطوير المناهج" line. Set it whenever the linked
+   * PDFs are NOT hosted on nccd.gov.jo, so the UI never claims NCCD
+   * provenance for a file that isn't theirs (the English vocational books
+   * are York Press titles NCCD doesn't publish).
+   */
+  downloadNote?: string;
+  downloadNoteAr?: string;
 }
 
 export interface Unit {
@@ -184,16 +194,33 @@ export const MVP_BOOK_IDS: readonly string[] = [
   ENGLISH_INDUSTRY_S1_CURRICULUM_BOOK_ID,
 ];
 
+/**
+ * MVP pickers follow the MVP arrays' order, not declaration order in
+ * GRADES/SUBJECTS. Picker positions are persisted — every generator screen's
+ * saved formState and route URLs carry `gradeIdx`/`subjectIdx` as bare
+ * indices, and a screen opened without them falls back to index 0. Filtering
+ * by declaration order meant enabling Grade 9 / English *inserted* entries at
+ * the front: index 0 silently became grade-9/English, and every stored index
+ * pointed one entry off (a bare-topic math URL opened as «اختبار في اللغة
+ * الإنجليزية» over math questions). New grades/subjects must be APPENDED to
+ * MVP_GRADE_IDS / MVP_SUBJECT_IDS so existing indices keep their meaning.
+ */
+function inMvpOrder<T extends { id: string }>(all: T[], mvpIds: readonly string[]): T[] {
+  return mvpIds
+    .map(id => all.find(item => item.id === id))
+    .filter((item): item is T => item !== undefined);
+}
+
 export function getVisibleGrades(): Grade[] {
   if (!INVESTOR_MVP_CURRICULUM) return GRADES;
-  return GRADES.filter(g => MVP_GRADE_IDS.includes(g.id));
+  return inMvpOrder(GRADES, MVP_GRADE_IDS);
 }
 
 export function getSubjectsForGrade(gradeId: string): Subject[] {
   const subjects = SUBJECTS.filter(s => s.grades.includes(gradeId));
   if (!INVESTOR_MVP_CURRICULUM) return subjects;
   if (!MVP_GRADE_IDS.includes(gradeId)) return [];
-  return subjects.filter(s => (MVP_SUBJECT_IDS as readonly string[]).includes(s.id));
+  return inMvpOrder(subjects, MVP_SUBJECT_IDS);
 }
 
 /** Grades shown in AI tools, chat, and other curriculum pickers. */
@@ -206,7 +233,7 @@ export function getPickerSubjects(gradeId?: string): Subject[] {
   if (!INVESTOR_MVP_CURRICULUM) {
     return gradeId ? getSubjectsForGrade(gradeId) : [...SUBJECTS];
   }
-  return SUBJECTS.filter(s => (MVP_SUBJECT_IDS as readonly string[]).includes(s.id));
+  return inMvpOrder(SUBJECTS, MVP_SUBJECT_IDS);
 }
 
 /** Clamp a saved/route picker index into the current picker list. */
@@ -409,6 +436,14 @@ export const BOOKS: Book[] = [
   // Source: Vocational English Level 2 Volume 1 (York Press/ERC, 2023),
   // one Teacher's Book per track. See g10EnglishVocational.ts and each data
   // file's meta for provenance and known gaps.
+  //
+  // These are York Press titles NCCD does not publish, so there is no
+  // nccd.gov.jo pdfUrl to link. The guidePdfUrl links below are the team's
+  // own Drive copies of each track's Teacher's Book (the exact files this
+  // catalog was mined from — same driveIds as each data file's meta;
+  // already shared "anyone with link" before they were linked here), and
+  // downloadNote replaces the NCCD source line so the UI doesn't claim
+  // NCCD provenance for them.
   {
     id: ENGLISH_COMMERCE_S1_CURRICULUM_BOOK_ID,
     title: 'English – Commerce Track, Grade 10 (Semester 1)',
@@ -421,6 +456,9 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: false,
     audience: 'all',
     semester: 1,
+    guidePdfUrl: 'https://drive.google.com/file/d/1IRHz4F1T5V8lsD6hrZSg5RqW_OJx9TUX/view',
+    downloadNote: "Teacher's Book — Vocational English series (York Press, 2023) · copy on Google Drive",
+    downloadNoteAr: 'كتاب المعلم — سلسلة Vocational English (York Press، طبعة 2023) · نسخة على Google Drive',
   },
   {
     id: ENGLISH_AGRICULTURE_S1_CURRICULUM_BOOK_ID,
@@ -434,6 +472,9 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: false,
     audience: 'all',
     semester: 1,
+    guidePdfUrl: 'https://drive.google.com/file/d/1EJyghKdN7oi_xYyeHJWXZz1lQreAdXuc/view',
+    downloadNote: "Teacher's Book — Vocational English series (York Press, 2023) · copy on Google Drive",
+    downloadNoteAr: 'كتاب المعلم — سلسلة Vocational English (York Press، طبعة 2023) · نسخة على Google Drive',
   },
   {
     id: ENGLISH_HOSPITALITY_S1_CURRICULUM_BOOK_ID,
@@ -447,6 +488,9 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: false,
     audience: 'all',
     semester: 1,
+    guidePdfUrl: 'https://drive.google.com/file/d/1pZbTwHj2y_lyv9MBbBTiFk7PF4mHVSbn/view',
+    downloadNote: "Teacher's Book — Vocational English series (York Press, 2023) · copy on Google Drive",
+    downloadNoteAr: 'كتاب المعلم — سلسلة Vocational English (York Press، طبعة 2023) · نسخة على Google Drive',
   },
   {
     id: ENGLISH_INDUSTRY_S1_CURRICULUM_BOOK_ID,
@@ -460,6 +504,14 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: false,
     audience: 'all',
     semester: 1,
+    // The track's own Level-2 Teacher's Book ("industry english 2.pdf").
+    // The lesson content above was mined from Technical English Level 1
+    // instead (this file's text wouldn't extract — see the industry data
+    // file's meta), so the linked book and the catalog rows differ; the
+    // link is still the printed book this track's teachers hold.
+    guidePdfUrl: 'https://drive.google.com/file/d/1a6j5izZzLqmHdNFNMj7Je93Uk5Fkt9ml/view',
+    downloadNote: "Teacher's Book — Vocational English series (York Press, 2023) · copy on Google Drive",
+    downloadNoteAr: 'كتاب المعلم — سلسلة Vocational English (York Press، طبعة 2023) · نسخة على Google Drive',
   },
   {
     id: 'book-science-8',
