@@ -20,6 +20,8 @@ import {
   getPickerSubjects,
   getUnitById,
 } from './curriculumData.ts';
+import type { Subject } from './curriculumData.ts';
+import { getBookForLesson } from './knowledgeBase.ts';
 import type { AIRequest } from './ai/AIService.ts';
 import { buildAdaptationsDirective, resolveGeneratorGrounding } from './kbContext.ts';
 
@@ -137,6 +139,59 @@ export function scopePickerParams(
   const subjectIdx = getPickerSubjects().findIndex(s => s.id === subjectId);
   if (gradeIdx < 0 || subjectIdx < 0) return null;
   return { gradeIdx: String(gradeIdx), subjectIdx: String(subjectIdx) };
+}
+
+/**
+ * Picker params inferred from a bare `topic` route param — the last line of
+ * defence for navigations that carry a lesson title but no `gradeIdx` /
+ * `subjectIdx` (old bookmarked URLs, callers that predate `lessonPickerParams`).
+ *
+ * Without this, a generator screen opened as `/ai-tools/quiz?topic=<math
+ * lesson>` falls back to picker index 0 for both — whatever grade and subject
+ * happen to sit there — and generates that lesson under a subject nobody chose
+ * (the live model dutifully produced «اختبار في اللغة الإنجليزية» full of math).
+ * Grounding the topic recovers the lesson's own book, and the book fixes the
+ * grade and the subject.
+ *
+ * Returns `null` for an empty or ungrounded topic, so the caller keeps the
+ * screen's normal defaults.
+ */
+export function topicPickerParams(
+  topic: string | null | undefined,
+  lang: 'ar' | 'en',
+): { gradeIdx: string; subjectIdx: string } | null {
+  const trimmed = topic?.trim();
+  if (!trimmed) return null;
+  const lesson = resolveGeneratorGrounding(trimmed, lang).lesson;
+  if (!lesson) return null;
+  const book = getBookForLesson(lesson);
+  if (!book) return null;
+  return scopePickerParams(book.gradeId, book.subjectId);
+}
+
+/**
+ * The subject a grounded topic actually belongs to, when it is not the one
+ * the teacher's picker shows — `null` when they agree, or when the topic is
+ * ungrounded / the lesson's book unknown (nothing to contradict).
+ *
+ * Generator screens call this before sending a request: a math lesson title
+ * under subject «اللغة الإنجليزية» cannot produce an honest paper — the KB
+ * serves the lesson's own (math) content while the header claims English — so
+ * the screen refuses with the lesson's real subject named instead of
+ * generating mislabeled material. Fail closed, or label honestly; never both.
+ */
+export function groundedSubjectConflict(
+  topic: string,
+  lang: 'ar' | 'en',
+  pickedSubjectId: string,
+): Subject | null {
+  const trimmed = topic.trim();
+  if (!trimmed) return null;
+  const lesson = resolveGeneratorGrounding(trimmed, lang).lesson;
+  if (!lesson) return null;
+  const book = getBookForLesson(lesson);
+  if (!book || book.subjectId === pickedSubjectId) return null;
+  return getPickerSubjects().find(s => s.id === book.subjectId) ?? null;
 }
 
 /**

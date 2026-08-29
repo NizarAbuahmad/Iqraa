@@ -8,11 +8,11 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { buildGeneratorContext, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
-import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
 import { ActivityOutput, ActivityStep } from '@/services/ai/AIService';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
 } from '@/services/curriculumData';
+import { groundedSubjectConflict, topicPickerParams } from '@/services/lessonPrep';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { PickerField } from '@/components/ui/PickerField';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
@@ -28,15 +28,8 @@ import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
-import {
-  buildActivityHTML,
-  buildActivitySlidesHTML,
-  copyToClipboard,
-  exportAsPDF,
-  exportAsWord,
-  formatActivityText,
-  shareAsText,
-} from '@/services/share';
+import { useGeneratorExport } from '@/hooks/useGeneratorExport';
+import { buildActivityHTML, buildActivitySlidesHTML, formatActivityText } from '@/services/share';
 
 const ACCENT = '#E67E22';
 const DURATION_VALUES = [20, 30, 45, 60];
@@ -59,8 +52,17 @@ export default function ActivityScreen() {
   const durationLabels = DURATION_VALUES.map(d => `${d} ${t('min')}`);
   const activityTypeLabels = ACTIVITY_TYPE_IDS.map(id => activityTypeLabel(id, t));
 
-  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(params.gradeIdx, grades.length));
-  const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx, subjects.length));
+  // A bare `topic` param (old bookmarks, callers without picker params) says
+  // which grade and subject it belongs to better than picker index 0 does —
+  // ground it instead of opening a math lesson under whatever subject sits
+  // first in the list.
+  const [inferredScope] = useState(() =>
+    params.gradeIdx == null && params.subjectIdx == null
+      ? topicPickerParams(params.topic, lang as 'ar' | 'en')
+      : null,
+  );
+  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(params.gradeIdx ?? inferredScope?.gradeIdx, grades.length));
+  const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx ?? inferredScope?.subjectIdx, subjects.length));
   const [topic, setTopic] = useState(params.topic ?? '');
   const [activityTypeIdx, setActivityTypeIdx] = useState(params.activityTypeIdx ? parseInt(params.activityTypeIdx, 10) : 1);
   const [durationIdx, setDurationIdx] = useState(params.durationIdx ? parseInt(params.durationIdx, 10) : 1);
@@ -76,9 +78,6 @@ export default function ActivityScreen() {
   const [showExport, setShowExport] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
-  const [loadingPDF, setLoadingPDF] = useState(false);
-  const [loadingWord, setLoadingWord] = useState(false);
-  const [loadingSlides, setLoadingSlides] = useState(false);
 
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
 
@@ -109,6 +108,11 @@ export default function ActivityScreen() {
 
   const generate = async () => {
     if (!topic.trim()) { setError(t('topicRequired')); return; }
+    // A topic that grounds to another subject's lesson cannot make an honest
+    // activity — the KB serves that lesson's own content while the header
+    // claims the picked subject. Refuse and name the real subject instead.
+    const conflict = groundedSubjectConflict(topic.trim(), lang as 'ar' | 'en', subjects[subjectIdx].id);
+    if (conflict) { setError(t('subjectTopicMismatch', lang === 'ar' ? conflict.nameAr : conflict.name)); return; }
     setError(''); setLoading(true); setResult(null); setSaveLabel('save');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
@@ -196,56 +200,28 @@ export default function ActivityScreen() {
   };
 
 
-  const handleShareText = async () => {
-    if (!result) return;
-    const text = formatActivityText(result, getExportTitle(), getExportMeta(), lang === 'ar');
-    await shareAsText(text, getExportTitle());
-  };
-
-  const handleCopy = async () => {
-    if (!result) return;
-    const text = formatActivityText(result, getExportTitle(), getExportMeta(), lang === 'ar');
-    await copyToClipboard(text);
-    showToast(t('copiedToClipboard'));
-  };
-
-  // Lesson-level, resolved fresh at export time — same re-resolve pattern this
-  // file already uses elsewhere. Empty for an ungrounded topic.
-  const getExportFigures = () =>
-    bookFigureRefsForLesson(
-      resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en').lesson?.id,
-      lang === 'ar',
-    );
-
-  const handlePDF = async () => {
-    if (!result) return;
-    setLoadingPDF(true);
-    try {
-      const html = buildActivityHTML(result, getExportTitle(), getExportMeta(), lang === 'ar', getExportFigures());
-      await exportAsPDF(html, getExportTitle().replace(/[^\w\s]/g, '').trim());
-    } catch { showToast(t('generationFailed')); }
-    finally { setLoadingPDF(false); }
-  };
-
-  const handleWord = async () => {
-    if (!result) return;
-    setLoadingWord(true);
-    try {
-      const text = formatActivityText(result, getExportTitle(), getExportMeta(), lang === 'ar');
-      await exportAsWord(text, getExportTitle().replace(/[^\w\s]/g, '').trim(), lang === 'ar');
-    } catch { showToast(t('generationFailed')); }
-    finally { setLoadingWord(false); }
-  };
-
-  const handleSlides = async () => {
-    if (!result) return;
-    setLoadingSlides(true);
-    try {
-      const html = buildActivitySlidesHTML(result, getExportTitle(), getExportMeta(), lang === 'ar');
-      await exportAsPDF(html, (getExportTitle() + '-slides').replace(/[^\w\s-]/g, '').trim());
-    } catch { showToast(t('generationFailed')); }
-    finally { setLoadingSlides(false); }
-  };
+  const {
+    getExportFigures,
+    handleShareText,
+    handleCopy,
+    handlePDF,
+    handleWord,
+    handleSlides,
+    loadingPDF,
+    loadingWord,
+    loadingSlides,
+  } = useGeneratorExport({
+    result,
+    topic,
+    lang,
+    getTitle: getExportTitle,
+    getMeta: getExportMeta,
+    formatText: formatActivityText,
+    buildHTML: buildActivityHTML,
+    buildSlidesHTML: buildActivitySlidesHTML,
+    onError: key => showToast(t(key)),
+    onCopied: key => showToast(t(key)),
+  });
 
   const topPad = insets.top + (insets.top === 0 ? 67 : 0);
 

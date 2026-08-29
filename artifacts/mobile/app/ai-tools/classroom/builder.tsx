@@ -15,6 +15,7 @@ import {
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { ClassroomActivity } from '@/services/ai/AIService';
 import { buildGeneratorContext, generatorUnitId } from '@/services/kbContext';
+import { groundedSubjectConflict } from '@/services/lessonPrep';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { ACTIVITY_CARDS, ClassroomSetup, resolveActivityType } from '@/services/classroomRouting';
 
@@ -65,6 +66,11 @@ export default function ClassroomBuilderScreen() {
 
   const generate = async () => {
     if (!topic.trim()) { setError(t('topicRequired')); return; }
+    // A topic that grounds to another subject's lesson cannot make an honest
+    // activity — the KB serves that lesson's own content while the header
+    // claims the picked subject. Refuse and name the real subject instead.
+    const conflict = groundedSubjectConflict(topic.trim(), lang as 'ar' | 'en', subjects[subjectIdx].id);
+    if (conflict) { setError(t('subjectTopicMismatch', lang === 'ar' ? conflict.nameAr : conflict.name)); return; }
     setError(''); setLoading(true); setResult(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {

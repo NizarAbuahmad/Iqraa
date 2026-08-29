@@ -105,6 +105,9 @@ export default function SubjectsScreen() {
           </View>
         }
         renderItem={({ item: book }) => {
+          // Every mobile role is teacher-or-admin (UserRole has no 'student'),
+          // so the teacher-guide chip renders unconditionally here.
+          const guideUrl = book.guidePdfUrl;
           const units = getUnitsForBook(book.id);
           const lessonCount = units.reduce((n, u) => n + getLessonsForUnit(u.id).length, 0);
           const semesterLabel = getSemesterLabel(book, lang);
@@ -159,19 +162,23 @@ export default function SubjectsScreen() {
               <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
             </Pressable>
 
-            {/* Official NCCD PDFs — the printed book teachers actually hold. */}
-            {(book.pdfUrl || book.guidePdfUrl) && (
+            {/* The printed book teachers actually hold — NCCD PDFs, or the
+                book's own hosted copy when NCCD doesn't publish it (then
+                downloadNote replaces the NCCD source line). */}
+            {(book.pdfUrl || guideUrl) && (
               <View style={{ gap: 4, alignItems: isRTL ? 'flex-end' : 'flex-start' }}>
                 <View style={[styles.downloadRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                   {book.pdfUrl && (
                     <DownloadChip label={t('downloadBook')} url={book.pdfUrl} icon="download-outline" color={color} />
                   )}
-                  {book.guidePdfUrl && (
-                    <DownloadChip label={t('downloadTeacherGuide')} url={book.guidePdfUrl} icon="school-outline" color={color} />
+                  {guideUrl && (
+                    <DownloadChip label={t('downloadTeacherGuide')} url={guideUrl} icon="school-outline" color={color} />
                   )}
                 </View>
                 <Text style={[styles.downloadNote, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
-                  {t('downloadSourceNccd', book.academicYear)}
+                  {(lang === 'ar' ? book.downloadNoteAr : book.downloadNote)
+                    ?? book.downloadNote
+                    ?? t('downloadSourceNccd', book.academicYear)}
                 </Text>
               </View>
             )}
