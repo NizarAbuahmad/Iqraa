@@ -211,6 +211,25 @@ describe('document shape', () => {
 });
 
 
+describe('printing without background graphics', () => {
+  // Chrome's print dialog (and most browsers') defaults "Background graphics"
+  // OFF. The four slide decks put white/near-white title text directly on a
+  // colored gradient title-slide with no other fallback — without this
+  // property, the gradient vanishes on print and the title, subject/grade
+  // line and brand footer all disappear into an all-white page. `docx.docx`
+  // isn't affected (a different writer entirely), only the browser-print /
+  // "Save as PDF" path every one of these HTML builders feeds.
+  it('forces backgrounds to print regardless of the browser\'s default', () => {
+    for (const [name, html] of arabicDocuments()) {
+      assert.match(
+        html,
+        /print-color-adjust:\s*exact/,
+        `${name} has no print-color-adjust — a colored background can silently vanish on print`,
+      );
+    }
+  });
+});
+
 describe('book figure appendix', () => {
   // A model never chose these — the whole point (see `figuresSectionHTML`'s
   // header comment). These are fixture URIs, not resolved assets; the actual
