@@ -307,6 +307,59 @@ Local-boot note that cost an hour: the API refuses to start without *some*
 `OPENAI_API_KEY` even in demo mode — LOCAL_SETUP.md said "optional", now
 corrected.
 
+## The key check now insists on being usable, 2026-08-29
+
+Key verification shipped correct and unexercised: every test, mine and CI's,
+hands the model's latin `check` block over directly. **No real model has ever
+been asked for one**, and reading the prompt back gave two concrete reasons one
+might not supply it — which would leave the feature working perfectly and
+verifying nothing.
+
+- **The system prompt pulled both ways.** *"Use Arabic mathematical notation and
+  Arabic-Indic digits where a teacher would"* was unscoped, so it read as
+  covering everything the model writes; rule 6 then demanded the check be Latin.
+  The Arabic rule now says where it applies — the text a student reads — and
+  states that `check` is machine-only and always Latin.
+- **"Optionally" is an easy out.** Models under-comply with optional fields. It
+  is now an obligation conditional on the answer being symbolic, with the
+  narrow permission to omit kept for prose and definitions: a model badgered
+  into inventing a key for an essay question is worse than a missing one.
+- **A maths paper gets a hard rule and a worked example.** Detected by
+  `paperIsMathematics(objectives)`, which matches on `subjectId` and never on
+  the display name — the name-matching version of this question is already in
+  CLAUDE.md as a repeat offender. The example is one complete question object
+  carrying an Arabic stem *and* its latin check, because showing the two
+  notations coexisting is the thing the description alone was failing to convey.
+  Chemistry gets none of this: the verifier cannot prove its topics, so pressing
+  for a check would only produce keys it must refuse.
+
+`GENERATION_PROMPT_VERSION` → `exam-gen-4`, so before/after is readable from any
+paper's `generationParams`.
+
+**The silent-zero is no longer silent.** A maths paper that checked nothing was
+previously only discoverable by reading `generationParams` in the database. The
+generate response now says so in its warnings, and the app shows it.
+
+**Verified both directions** against Postgres + the real verifier + the API,
+with a scripted model driven through the real route:
+
+- model emitting **no** check blocks → 3 of 3 produced, nothing dropped,
+  `keysChecked: 0`, `promptVersion: exam-gen-4`, and the warning *"No answer key
+  on this maths paper could be checked…"*;
+- model emitting them → **no false alarm**, `keysChecked: 2, keysVerified: 1`,
+  and the deliberately wrong key still dropped naming the arithmetic.
+
+Suites: api-server 346, mobile 1041 (1031 pass, 10 expected skips), typecheck
+clean. The 17 existing `buildGenerationPrompt` tests pass **unchanged** — the
+shared fixture carries no `subjectId`, so it is treated as non-maths and none of
+the new text appears for it.
+
+**Still unproven, and only one thing proves it:** whether a real model actually
+emits `check`. This raises the odds; it cannot settle them. The number that
+settles it is `generationParams.keysChecked` after one live generation with a
+funded key — above zero and the feature is doing real work, zero and the prompt
+needs another pass.
+
 ## Generated answer keys go through SymPy now, 2026-08-29
 
 `evaluationQuestions.verification` had described this since Phase 3 — *"SymPy's

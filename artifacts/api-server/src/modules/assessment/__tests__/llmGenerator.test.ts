@@ -13,6 +13,7 @@ import {
   GENERATION_PROMPT_VERSION,
   TYPE_CONTRACTS,
   buildGenerationPrompt,
+  paperIsMathematics,
   parseGeneratedQuestions,
   type LlmGenerationRequest,
 } from "../llmGenerator.ts";
@@ -31,6 +32,11 @@ function objective(id: string, blooms = "Apply"): CurriculumObjective {
     lessonTitle: "Lesson",
     lessonTitleAr: "الدرس",
   } as unknown as CurriculumObjective;
+}
+
+/** Same fixture, carrying the subject the prompt now branches on. */
+function subjectObjective(id: string, subjectId: string): CurriculumObjective {
+  return { ...objective(id), subjectId } as CurriculumObjective;
 }
 
 const REQ: LlmGenerationRequest = {
@@ -339,4 +345,85 @@ describe("every TYPE_CONTRACTS shape actually survives validateGenerated", () =>
       assert.equal(accepted.length, 1);
     });
   }
+});
+
+describe("paperIsMathematics", () => {
+  // Matched on the id, never the display name — CLAUDE.md records name
+  // matching (`isMathContext`) as a repeat offender in this repo.
+  it("is true when any objective belongs to mathematics", () => {
+    assert.equal(paperIsMathematics([subjectObjective("o1", "mathematics")]), true);
+  });
+
+  it("is false for chemistry, and for an objective carrying no subject at all", () => {
+    assert.equal(paperIsMathematics([subjectObjective("o1", "chemistry")]), false);
+    assert.equal(paperIsMathematics([objective("o1")]), false);
+    assert.equal(paperIsMathematics([]), false);
+  });
+
+  it("does not match the subject's display name", () => {
+    // "Mathematics" is what a picker shows; the id is "mathematics". A helper
+    // that accepted the label would re-create the bug it exists to avoid.
+    assert.equal(paperIsMathematics([subjectObjective("o1", "Mathematics")]), false);
+  });
+});
+
+describe("buildGenerationPrompt — pressing for a checkable key", () => {
+  const mathsReq: LlmGenerationRequest = {
+    ...REQ,
+    objectives: [subjectObjective("obj-1", "mathematics")],
+  };
+  const chemReq: LlmGenerationRequest = {
+    ...REQ,
+    objectives: [subjectObjective("obj-1", "chemistry")],
+  };
+
+  it("scopes the Arabic-notation rule to what a student reads", () => {
+    // The two instructions used to compete: "use Arabic notation" unscoped,
+    // then "the check must be Latin". A model resolving that toward Arabic
+    // produces a check the parser correctly throws away.
+    const { system } = buildGenerationPrompt(mathsReq);
+    assert.match(system, /in the text a student reads/);
+    assert.match(system, /never shown to a student/);
+    assert.match(system, /always Latin/);
+  });
+
+  it("asks for the check as an obligation, not an option", () => {
+    const { user } = buildGenerationPrompt(mathsReq);
+    assert.equal(user.includes("Optionally"), false);
+    assert.match(user, /When the answer is something a computer algebra system can check, include/);
+  });
+
+  it("tells a maths paper that most of its questions need one", () => {
+    assert.match(buildGenerationPrompt(mathsReq).system, /This is a mathematics paper/);
+  });
+
+  it("says nothing of the sort to a chemistry paper", () => {
+    // The verifier proves derivatives, circles and equations. Pressing a
+    // chemistry paper for a check would only produce keys it must refuse.
+    const { system, user } = buildGenerationPrompt(chemReq);
+    assert.equal(system.includes("This is a mathematics paper"), false);
+    assert.equal(user.includes("A complete example of a maths question"), false);
+  });
+
+  it("shows one complete worked example, Arabic stem beside a Latin check", () => {
+    const { user } = buildGenerationPrompt(mathsReq);
+    assert.match(user, /A complete example of a maths question/);
+    // The stem is Arabic…
+    assert.match(user, /أوجد مشتقة/);
+    // …and the check beside it is Latin.
+    assert.match(user, /"check":\{"topic":"derivative_polynomial","question":"x\^3 - 4x","answer":"3x\^2 - 4"\}/);
+  });
+
+  it("the example never models the mistake it exists to prevent", () => {
+    // An example carrying Arabic inside `check` would teach exactly the
+    // failure this whole change is trying to remove.
+    const { user } = buildGenerationPrompt(mathsReq);
+    const example = user.slice(user.indexOf('{"type":"short_answer"'));
+    const check = example.slice(example.indexOf('"check"'));
+    assert.equal(
+      /[\u0600-\u06FF]/.test(check),
+      false,
+      `the worked example's check contains Arabic: ${check}`,
+    );
+  });
 });
