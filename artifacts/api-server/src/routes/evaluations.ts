@@ -46,6 +46,7 @@ import { generateShareCode } from "../modules/assessment/studentView";
 import {
   GENERATION_PROMPT_VERSION,
   generateWithModel,
+  paperIsMathematics,
 } from "../modules/assessment/llmGenerator";
 import {
   AiBudgetExceededError,
@@ -489,6 +490,26 @@ router.post("/evaluations/:id/generate", async (req: AuthenticatedRequest, res) 
     const keyCheck = await verifyAnswerKeys(validation.accepted, relateAnswerKey);
     generationParams["keysChecked"] = keyCheck.checked;
     generationParams["keysVerified"] = keyCheck.verified;
+
+    /**
+     * A maths paper where nothing was checkable is the quiet failure mode of
+     * this whole feature: everything succeeds, and not one key was verified.
+     * Say it out loud rather than leaving it to be discovered by reading
+     * `generationParams` in the database. `keyCheck.warnings` already covers
+     * the verifier being unreachable, which is a different cause and says so.
+     */
+    if (
+      live
+      && keyCheck.kept.length > 0
+      && keyCheck.checked === 0
+      && keyCheck.warnings.length === 0
+      && paperIsMathematics(objectives)
+    ) {
+      generationNotes.push(
+        "No answer key on this maths paper could be checked — the generator supplied none in a form "
+          + "the verifier reads, so every question here is unverified.",
+      );
+    }
 
     // Replace rather than append: generating twice should not silently double
     // the length of the evaluation.
