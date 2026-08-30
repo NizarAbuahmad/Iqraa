@@ -115,6 +115,7 @@ Without an OpenAI key, the API process will not start (AI client initializes at 
 | `ADMIN_DEBUG_KEY` | unset (endpoint 404s) | Set to see recent server errors at `GET /api/healthz/errors` (header `x-admin-key`) |
 | `UNSPLASH_ACCESS_KEY` | unset (Slides Maker skips the image slide) | Free Unsplash "Demo" key — Slides Maker fetches one topic photo per deck when set |
 | `YOUTUBE_API_KEY` | unset (Slides Maker skips the video slide) | Free YouTube Data API key — Slides Maker searches for one real explainer video per lesson when set |
+| `R2_ENDPOINT` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` / `R2_BUCKET` | unset (R2 simply not used) | Cloudflare R2 (S3-compatible), `R2_BUCKET` defaults to `iqraa-media`. See "Hosting source PDFs on R2" below |
 
 ### Testing against real AI (optional)
 
@@ -177,6 +178,53 @@ Set `MATH_VERIFIER_URL=http://127.0.0.1:8090` in the repo-root `.env`. API route
 - `POST /api/generate/verified-derivative/ai`
 - `POST /api/generate/verified-derivative/batch`
 - `POST /api/verify/derivative`
+
+---
+
+## Hosting source PDFs on R2
+
+`lib/curriculum/scripts/extract-text.ts` reads source books from
+`attached_assets/…` on disk. Getting a large or newly-found PDF onto that disk
+used to mean fetching it through Drive's MCP tools, which has two hard
+failure modes on this project's sources: a 10MB single-call ceiling, and two
+distinct corruption bugs on the large-file fallback (reversed lines on some
+documents; blank, OCR-less pages on scanned ones). Cloudflare R2 replaces
+that fetch path with a plain S3 GET/PUT — reachable even from sandboxes that
+block Drive and `nccd.gov.jo` — with zero egress cost, so repeated extraction
+runs are free beyond the flat storage price.
+
+**To add a new source:**
+
+1. Drag the PDF into the `iqraa-media` R2 bucket via the [Cloudflare
+   dashboard](https://dash.cloudflare.com) (Storage & databases → R2 Object
+   Storage → `iqraa-media` → Objects → drag and drop), or via any S3 client
+   for files over ~300MB.
+2. **Name it `<sourceId>.pdf`** — the same `sourceId` key used in
+   `lib/curriculum/scripts/localSources.ts`'s `LOCAL_FILES` map (e.g.
+   `math-s1-teacher-guide.pdf`). This is the only naming rule; it's what lets
+   extraction find it automatically.
+3. Set `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` in `.env`
+   (`R2_BUCKET` defaults to `iqraa-media`) — get these from the Cloudflare
+   dashboard: Storage & databases → R2 Object Storage, or a user-scoped
+   Account API Token with `Workers R2 Storage: Edit` (the Access Key ID is
+   that token's Token ID; the Secret Access Key is the SHA-256 hash of the
+   token value — `curl "https://api.cloudflare.com/client/v4/user/tokens/verify"
+   -H "Authorization: Bearer <token>"` returns the Token ID as `result.id`).
+4. Run `pnpm --filter @workspace/curriculum run extract-text` — any
+   `LOCAL_FILES` entry missing on disk is now fetched from R2 automatically
+   before extraction runs.
+
+**To back up a source already on disk** (so a future run, in this sandbox or
+anyone else's, no longer needs the original Drive link at all):
+
+```powershell
+pnpm --filter @workspace/curriculum run upload-r2 math-s1-teacher-guide
+# or upload everything LOCAL_FILES points at that exists locally:
+pnpm --filter @workspace/curriculum run upload-r2 -- --all
+```
+
+Both scripts no-op (not error) when R2 env vars are unset — a checkout
+without R2 configured behaves exactly as it did before this existed.
 
 ---
 
