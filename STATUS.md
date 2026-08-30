@@ -7889,6 +7889,37 @@ assertions that matched on the old single-language title prefix were updated
 to match the Arabic half instead. Mobile suite 1031 pass / 0 fail (10
 skipped), typecheck clean.
 
+## Every slide heading is bilingual for the English subject, not just checks, 2026-08-30
+
+Follow-up to the same-day fix above: a screenshot showed a plain content
+slide («مفردات الدرس» — Key Vocabulary, for a Grade 10 English-Agriculture
+lesson) still Arabic-only. The earlier fix only made the *numbered check*
+titles (Quick Check N, Exit Ticket N) bilingual; every other slide heading
+`buildLessonDeck` builds (Learning Outcomes, Key Vocabulary, Warm-up, The
+Rule, worked examples, Guided/Independent Practice, Lesson Summary, Homework)
+still picked one language from the app's UI, same defect as before — a
+teacher or student who does not read Arabic has no idea what a slide is
+about when the lesson itself teaches English.
+
+`lessonSlides.ts` now detects `isEnglishSubject` once per deck — the
+lesson's own book (`getBookForLesson(lesson)?.subjectId === 'english'`) when
+a curriculum lesson is attached, falling back to matching `opts.subject`
+against both localised spellings ("English" / «اللغة الإنجليزية», since the
+caller passes whichever the app's own UI language produced) — and every
+chrome-title call site (11 of them) now goes through `T(ar, en)`, which
+composes bilingually only when that flag is set; a non-English deck is
+byte-identical to before. The numbered check titles keep their own always-on
+`BL` from the earlier fix — a check's content can be English even inside an
+Arabic-subject deck (a curriculum lesson with an English-language exercise
+embedded), so those stay unconditional.
+
+Verified: five new `lessonSlides.test.ts` cases — both subject spellings
+trigger it, the lesson's own book wins over a mismatched `subject` string,
+a non-English deck is untouched, and the check titles stay bilingual either
+way (using a real Grade 10 English-Agriculture KB lesson, not a fabricated
+id, since `getBookForLesson` resolves through the real `KB_UNITS`/`KB_BOOKS`
+tables). Mobile suite 1036 pass / 0 fail (10 skipped), typecheck clean.
+
 ## Cloudflare R2 replaces Drive as the source-PDF fetch path, 2026-08-30
 
 Fetching source books through the Drive MCP tools had two hard failure

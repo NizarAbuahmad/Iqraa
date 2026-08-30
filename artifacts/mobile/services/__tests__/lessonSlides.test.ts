@@ -27,6 +27,7 @@ import {
   splitWarmup, withoutSlide,
 } from '../lessonSlides.ts';
 import { figuresForLesson } from '../bookFigures.ts';
+import { getLessonsForUnit, getUnitsForSubjectGrade } from '../knowledgeBase.ts';
 import type { ActivitySlide, LessonPlanOutput } from '../ai/AIService.ts';
 import type { KBLesson } from '../knowledgeBase.ts';
 
@@ -636,5 +637,63 @@ describe('bookFigureCaption', () => {
   it('reads the semester off the source id', () => {
     const s1 = { ...figure, sourceId: 'math-s1-student-book' };
     assert.match(bookFigureCaption(s1, true), /الفصل الأول/);
+  });
+});
+
+describe('bilingual chrome titles for the English subject', () => {
+  // Reported from the running app: a Grade 10 English-track deck's "مفردات
+  // الدرس" (Key Vocabulary) heading was Arabic-only even though the lesson
+  // itself teaches English — a teacher or student who does not read the
+  // Arabic label has no idea what the slide is. `opts.subject` is localised
+  // (the caller passes "English" or «اللغة الإنجليزية» depending on the app's
+  // UI language), so both spellings must trigger it.
+  const ENGLISH_PLAN: LessonPlanOutput = { ...PLAN, subject: 'English' };
+
+  it('shows every section heading in both languages when subject is English', () => {
+    const deck = buildLessonDeck('Farm Equipment', true, {
+      plan: ENGLISH_PLAN, subject: 'English',
+    });
+    const summary = deck.slides.find(s => s.type === 'summary')!;
+    assert.match(summary.title, /ملخص الدرس/);
+    assert.match(summary.title, /Lesson Summary/);
+  });
+
+  it('recognises the Arabic subject label too', () => {
+    const deck = buildLessonDeck('معدات المزرعة', true, {
+      plan: ENGLISH_PLAN, subject: 'اللغة الإنجليزية',
+    });
+    const summary = deck.slides.find(s => s.type === 'summary')!;
+    assert.match(summary.title, /Lesson Summary/);
+  });
+
+  it('trusts the lesson\'s own book over the subject string when both are present', () => {
+    // A real English-track KB lesson (Grade 10 Agriculture, Unit 1) rather
+    // than a fabricated unitId — getBookForLesson resolves through the real
+    // KB_UNITS/KB_BOOKS tables, so a made-up id would just resolve to nothing.
+    const unit = getUnitsForSubjectGrade('english', 'grade-10')[0]!;
+    const englishLesson = getLessonsForUnit(unit.id)[0]!;
+    const deck = buildLessonDeck(englishLesson.titleAr, true, {
+      lesson: englishLesson, plan: ENGLISH_PLAN,
+      // Deliberately wrong subject string — a mismatched caller must not
+      // suppress the bilingual heading the book itself calls for.
+      subject: 'الرياضيات',
+    });
+    const vocab = deck.slides.find(s => s.title.includes('مفردات الدرس'));
+    assert.ok(vocab, 'the lesson has key terms, so a vocabulary slide exists');
+    assert.match(vocab!.title, /Key Vocabulary/);
+  });
+
+  it('leaves a non-English deck single-language, exactly as before', () => {
+    const deck = buildLessonDeck('حل المعادلات التربيعية', true, { lesson: LESSON, plan: PLAN });
+    const summary = deck.slides.find(s => s.type === 'summary')!;
+    assert.equal(summary.title, '🎉 ملخص الدرس');
+  });
+
+  it('still bilinguals the numbered check titles regardless of subject', () => {
+    const deck = buildLessonDeck('حل المعادلات التربيعية', true, {
+      lesson: LESSON, plan: PLAN, checks: [mcq(1), mcq(2), mcq(3), mcq(4), mcq(5)],
+    });
+    const check = deck.slides.find(s => s.title.includes('تحقّق سريع 1'))!;
+    assert.match(check.title, /Quick Check 1/);
   });
 });
