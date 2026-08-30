@@ -8036,3 +8036,66 @@ now reachable by anyone who knows/guesses its filename, even though that
 flow was built assuming private, credentialed S3 access. Not fixed here —
 worth splitting into a separate public bucket before treating anything in
 `iqraa-media` as actually private.
+
+## The R2 fetch path proved out end to end, and found the same public-bucket risk from the other side, 2026-08-30
+
+Uploaded the real `math-s1-teacher-guide.pdf` (a 33MB re-compression, not
+the 58MB Drive original — same "readable, re-compressed, not a different
+edition" pattern as `chem-s1-student-book-compressed`) to `iqraa-media` and
+ran extraction against it for the first time. It worked: 212 pages /
+513,822 characters of genuine, on-topic Arabic teacher-guide prose —
+مُخطَّط الوحدة unit-plan tables, per-lesson outcomes, common-student-error
+notes, worked examples — verified by reading actual extracted pages, not
+just checking the page/char counts moved.
+
+**Caught a real bug the live test exposed that no unit test had:**
+`ensureLocal()`'s R2 fallback checked `existsSync()` alone, so the on-disk
+Git-LFS pointer (a ~130-byte stub) read as "already there" and the fallback
+never fired — the exact case it exists for. Fixed in the same PR (#201,
+merged) that shipped the original R2 work; `math-s1-teacher-guide` sitting
+unpulled the whole time is why this went uncaught until a real file was
+actually uploaded and tested against.
+
+**Also caught: `status: "ingested"` had been true for this source since
+before it ever had real extracted text** — the manifest entry claimed
+`"ingested"` while the file was still an unpulled LFS pointer, with no
+`extraction` block to back the claim. Same class of problem CLAUDE.md
+already names for `verified` — a status flag asserting something nobody
+had checked. Fixed by adding the real `extraction` block (pages, chars,
+sha256, `bytesDifferFromManifest` — required by
+`extraction.test.ts`'s "records the file it actually read" check, which
+correctly failed until this was added) now that the claim is actually
+true.
+
+**One test fixture needed updating, not the code**: `passages.test.ts`
+asserted the circle unit's passages could only come from the student book
+or exercise book — written before the teacher guide had any content to
+contribute. Verified by reading the actual returned passages (not just
+loosening the assertion): every one is genuinely about الدائرة (unit-plan
+table, tangent/chord/diameter outcomes, angles in a circle, circle
+equation), so widened the allowed sources rather than treating this as
+noise to filter.
+
+**The public-bucket risk flagged just above cuts both ways.** It was found
+from the download side (four English PDFs meant to be public); this upload
+proves the same bucket now also holds `math-s1-teacher-guide.pdf` — NCCD
+teacher material, not meant for public redistribution — reachable at the
+same `pub-*.r2.dev` toggle if it's still on. Not verified here: the
+sandbox's egress proxy blocks `*.r2.dev`, so whether that URL actually
+serves the file could not be checked directly from this session. Needs a
+human check of the bucket's Public Access setting before treating anything
+uploaded under the `<sourceId>.pdf` convention as actually private —
+carries real weight now that a real, presumably-restricted source is in the
+bucket, not just a hypothetical.
+
+Verified: `pnpm --filter @workspace/curriculum run verify` — 0 errors.
+`pnpm --filter @workspace/curriculum run test` — 88/88 (was 86/88
+immediately after the upload, both failures were the two findings above,
+both fixed and re-verified passing, not skipped). `pnpm run typecheck`
+clean across the monorepo. Mobile suite 1036/1046 pass (10 pre-existing
+skips), unaffected as expected. The local LFS-pointer file that
+`extract-text.ts` wrote real bytes into during this test was deliberately
+**not** committed — `git-lfs` is not installed in this container, so
+committing it would have bypassed LFS and put a 33MB binary straight into
+git history instead of a pointer; R2 is now the source of truth for this
+file going forward, not a second local copy.

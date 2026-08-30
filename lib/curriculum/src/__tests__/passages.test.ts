@@ -50,7 +50,12 @@ describe('passagesForUnit', () => {
   it('returns the circle unit\'s own pages', () => {
     const ps = passagesForUnit({ unitId: CIRCLE, limit: 5 });
     assert.ok(ps.length > 0, 'no passages for الدائرة');
-    assert.ok(ps.every(p => p.sourceId === 'math-s1-student-book' || p.sourceId === 'math-s1-exercise-book'),
+    // math-s1-teacher-guide joined 2026-08-30 once it was actually extracted
+    // (it had sat as an unpulled Git-LFS pointer before) — its مخطَّط الوحدة
+    // tables and per-lesson outcome pages are genuinely about this unit, not
+    // noise from its book-wide `unitTags: ['s1']` tag.
+    const allowed = new Set(['math-s1-student-book', 'math-s1-exercise-book', 'math-s1-teacher-guide']);
+    assert.ok(ps.every(p => allowed.has(p.sourceId)),
       `unexpected sources: ${[...new Set(ps.map(p => p.sourceId))].join(', ')}`);
     // The vocabulary of this unit, not of a neighbouring one.
     assert.ok(mentions(ps, 'الوتر') || mentions(ps, 'المماس') || mentions(ps, 'الدائرة'));

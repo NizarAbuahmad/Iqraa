@@ -94,6 +94,15 @@
       "kind": "teacher-guide",
       "authority": "nccd",
       "status": "ingested",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-30",
+        "pages": 212,
+        "chars": 513822,
+        "localPath": "attached_assets/TE010_Book-teacher_guiede,_10th_grade,_semster_one_1785147998881.pdf",
+        "sha256": "ba0892fbae697c76dadce9b5c384c59378ca651d204f04147537b37a1c2012b0",
+        "bytesDifferFromManifest": { "manifest": 58371821, "local": 33225440 }
+      },
       "filename": "teacher guiede, 10th grade, semster one.pdf",
       "authorAr": null,
       "unitTags": [
@@ -108,7 +117,7 @@
         "دليل المعلم",
         "الفصل الأول"
       ],
-      "notes": "Source of the math S1 per-lesson objectives (مخطَّط الوحدة tables, book pages 36B/76B/110B)."
+      "notes": "Source of the math S1 per-lesson objectives (مخطَّط الوحدة tables, book pages 36B/76B/110B). `status: \"ingested\"` was set before this file was ever actually extracted — it sat as an unpulled 58MB Git-LFS pointer the whole time, so the claim was untrue until 2026-08-30. Extracted from a 33MB compressed copy fetched via R2 (bytes differ from the 58371821 above; see `extraction` block and the extracted JSON's own `bytesDifferFromManifest`) — same pattern as `chem-s1-student-book-compressed`, a re-compression, not a different edition."
     },
     {
       "id": "math-s2-teacher-guide",
