@@ -408,7 +408,23 @@ export function buildLessonDeck(
   // title" moment here is cheap (no content to author, just the topic name)
   // and breaks up what would otherwise be one visually uniform deck from
   // start to finish.
-  const concepts = bullets(pickLang(lesson?.keyConceptsAr, lesson?.keyConceptsEn, isAr), 8);
+  // `keyConceptsAr/En` sometimes carry nothing but the curriculum's bare
+  // vocabulary list (index terms with no extracted definition — the G9 NCCD
+  // data does this deliberately rather than invent one). A concept slide for
+  // one of those projects a heading and nothing else, so it is dropped here:
+  // it is already shown in the vocabulary slide above, and this file's own
+  // rule is that an empty slide costs the class more than a shorter deck.
+  // A concept with a real definition attached gets it appended below; a
+  // concept that matches no `keyTerms` entry at all is assumed to already be
+  // real explanatory text (a rule, a formula, a defined phrase) and is kept
+  // as-is.
+  const termFor = (concept: string) =>
+    (lesson?.keyTerms ?? []).find(t => (isAr ? t.ar : t.en) === concept);
+  const concepts = bullets(pickLang(lesson?.keyConceptsAr, lesson?.keyConceptsEn, isAr), 8)
+    .filter(concept => {
+      const term = termFor(concept);
+      return !term || nonEmpty(isAr ? term.definitionAr : term.definitionEn);
+    });
   if (concepts.length > 0) {
     push({
       type: 'divider',
@@ -423,10 +439,12 @@ export function buildLessonDeck(
   // from the back row, and it is also the teacher's pacing device — advancing
   // is what marks "this idea is finished".
   concepts.forEach((concept, i) => {
+    const term = termFor(concept);
+    const definition = term ? nonEmpty(isAr ? term.definitionAr : term.definitionEn) : '';
     push({
       type: 'intro',
       title: T(`الفكرة ${i + 1}`, `Idea ${i + 1}`),
-      content: concept,
+      content: definition ? `${concept}\n\n${definition}` : concept,
       durationSeconds: 0,
     });
   });
