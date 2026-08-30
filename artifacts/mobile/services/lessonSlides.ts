@@ -21,7 +21,7 @@ import type {
   ClassroomActivity,
   LessonPlanOutput,
 } from './ai/AIService.ts';
-import type { KBLesson } from './knowledgeBase.ts';
+import { getBookForLesson, type KBLesson } from './knowledgeBase.ts';
 import { buildGraphSlide, referencesShownVisual, scanGraphCommands } from './classMedia.ts';
 import { visualForSlide } from './deckVisuals.ts';
 import { type BookFigure, figuresForLesson } from './bookFigures.ts';
@@ -307,6 +307,20 @@ export function buildLessonDeck(
   // actually projected under it. Showing both removes the guess.
   const BL = (ar: string, en: string) => `${ar} · ${en}`;
 
+  // Whether this deck teaches the English subject itself — Grade 10's
+  // vocational tracks (Commerce, Agriculture, Hospitality, Industrial). Those
+  // lessons are read by an Arabic-medium class, so every slide heading needs
+  // both languages, not just the numbered check titles above: a teacher and
+  // students who read «مفردات الدرس» alone still need "Key Vocabulary" next
+  // to it to know this is the English lesson's vocabulary section, not a
+  // translation exercise. The book is the source of truth when a curriculum
+  // lesson is attached; `opts.subject` (localised — "English" or «اللغة
+  // الإنجليزية» depending on `isAr`) is the fallback for a plan-only deck.
+  const isEnglishSubject =
+    (lesson ? getBookForLesson(lesson)?.subjectId === 'english' : undefined)
+    ?? /^(english|اللغة الإنجليزية)$/i.test((opts.subject ?? '').trim());
+  const T = (ar: string, en: string) => (isEnglishSubject ? BL(ar, en) : L(ar, en));
+
   const title = nonEmpty(lessonTitle)
     || nonEmpty(pickLang(lesson?.titleAr, lesson?.titleEn, isAr))
     || nonEmpty(plan?.title)
@@ -346,7 +360,7 @@ export function buildLessonDeck(
   if (objectives.length > 0) {
     push({
       type: 'intro',
-      title: L('🎯 نتاجات التعلم', '🎯 Learning Outcomes'),
+      title: T('🎯 نتاجات التعلم', '🎯 Learning Outcomes'),
       content: objectives.map(o => `• ${o}`).join('\n'),
       durationSeconds: 0,
     });
@@ -357,7 +371,7 @@ export function buildLessonDeck(
   if (terms.length > 0) {
     push({
       type: 'intro',
-      title: L('📖 مفردات الدرس', '📖 Key Vocabulary'),
+      title: T('📖 مفردات الدرس', '📖 Key Vocabulary'),
       content: terms
         .map(term => {
           const word = isAr ? term.ar : term.en;
@@ -377,7 +391,7 @@ export function buildLessonDeck(
       'Ask, then wait five silent seconds before taking any answer.');
     push({
       type: 'intro',
-      title: L('✨ تمهيد', '✨ Warm-up'),
+      title: T('✨ تمهيد', '✨ Warm-up'),
       content: warm.projected,
       durationSeconds: 0,
       teacher: {
@@ -411,7 +425,7 @@ export function buildLessonDeck(
   concepts.forEach((concept, i) => {
     push({
       type: 'intro',
-      title: L(`الفكرة ${i + 1}`, `Idea ${i + 1}`),
+      title: T(`الفكرة ${i + 1}`, `Idea ${i + 1}`),
       content: concept,
       durationSeconds: 0,
     });
@@ -422,7 +436,7 @@ export function buildLessonDeck(
   if (rules.length > 0) {
     push({
       type: 'intro',
-      title: L('📐 القاعدة', '📐 The Rule'),
+      title: T('📐 القاعدة', '📐 The Rule'),
       content: rules.map(r => `• ${r}`).join('\n'),
       durationSeconds: 0,
     });
@@ -449,7 +463,7 @@ export function buildLessonDeck(
     if (!uri) continue;
     push({
       type: 'media',
-      title: L('من كتاب الطالب', 'From the Student Book'),
+      title: T('من كتاب الطالب', 'From the Student Book'),
       content: bookFigureCaption(figure, isAr),
       mediaKind: 'image',
       mediaUrl: uri,
@@ -497,7 +511,7 @@ export function buildLessonDeck(
     const [problem, answer] = splitExample(example);
     push({
       type: 'challenge',
-      title: L(`مثال ${i + 1}`, `Example ${i + 1}`),
+      title: T(`مثال ${i + 1}`, `Example ${i + 1}`),
       content: problem,
       durationSeconds: EXAMPLE_THINK_SECONDS,
       ...(answer ? { answer } : {}),
@@ -525,7 +539,7 @@ export function buildLessonDeck(
     if (guided) {
       push({
         type: 'intro',
-        title: L('🤝 تدريب موجّه', '🤝 Guided Practice'),
+        title: T('🤝 تدريب موجّه', '🤝 Guided Practice'),
         content: guided,
         durationSeconds: 0,
       });
@@ -534,7 +548,7 @@ export function buildLessonDeck(
     if (independent) {
       push({
         type: 'intro',
-        title: L('✍️ تدريب مستقل', '✍️ Independent Practice'),
+        title: T('✍️ تدريب مستقل', '✍️ Independent Practice'),
         content: independent,
         durationSeconds: 0,
       });
@@ -545,7 +559,7 @@ export function buildLessonDeck(
   const closure = nonEmpty(plan?.closure);
   push({
     type: 'summary',
-    title: L('🎉 ملخص الدرس', '🎉 Lesson Summary'),
+    title: T('🎉 ملخص الدرس', '🎉 Lesson Summary'),
     content: closure || (objectives.length > 0
       ? L(`راجعنا اليوم:\n${objectives.map(o => `• ${o}`).join('\n')}`,
           `Today we covered:\n${objectives.map(o => `• ${o}`).join('\n')}`)
@@ -588,7 +602,7 @@ export function buildLessonDeck(
   if (homework || bookLine) {
     push({
       type: 'intro',
-      title: L('🏠 الواجب', '🏠 Homework'),
+      title: T('🏠 الواجب', '🏠 Homework'),
       content: [homework, bookLine].filter(Boolean).join('\n\n'),
       durationSeconds: 0,
     });
