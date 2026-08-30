@@ -298,6 +298,14 @@ export function buildLessonDeck(
   const includeExamples = opts.includeExamples !== false;
   const includePractice = opts.includePractice !== false;
   const L = (ar: string, en: string) => (isAr ? ar : en);
+  // Bilingual, unlike `L`: these are the numbered section titles that sit
+  // beside a check's own question — Quick Check / Exit Ticket. The check's
+  // question and options are AI-generated and can come back in either
+  // language regardless of `isAr` (an English-subject lesson's exit ticket is
+  // English even when the deck was built with the UI in Arabic), so a
+  // single-language title can end up naming the wrong language for what is
+  // actually projected under it. Showing both removes the guess.
+  const BL = (ar: string, en: string) => `${ar} · ${en}`;
 
   const title = nonEmpty(lessonTitle)
     || nonEmpty(pickLang(lesson?.titleAr, lesson?.titleEn, isAr))
@@ -472,7 +480,7 @@ export function buildLessonDeck(
   // "did you follow me".
   const firstCheckCount = Math.floor(midChecks.length / 2);
   midChecks.slice(0, firstCheckCount).forEach((check, i) => {
-    push(asCheckSlide(check, L(`✋ تحقّق سريع ${i + 1}`, `✋ Quick Check ${i + 1}`)));
+    push(asCheckSlide(check, BL(`✋ تحقّق سريع ${i + 1}`, `Quick Check ${i + 1}`)));
   });
 
   // ── 7. Worked examples — attempted before they are shown ────────────────
@@ -507,7 +515,7 @@ export function buildLessonDeck(
   laterChecks.forEach((check, i) => {
     push(asCheckSlide(
       check,
-      L(`✋ تحقّق سريع ${firstCheckCount + i + 1}`, `✋ Quick Check ${firstCheckCount + i + 1}`),
+      BL(`✋ تحقّق سريع ${firstCheckCount + i + 1}`, `Quick Check ${firstCheckCount + i + 1}`),
     ));
   });
 
@@ -554,13 +562,13 @@ export function buildLessonDeck(
     push({
       type: 'divider',
       title,
-      content: L('🎫 تذكرة الخروج', '🎫 Exit Ticket'),
+      content: BL('🎫 تذكرة الخروج', 'Exit Ticket'),
       durationSeconds: 0,
     });
     exitChecks.forEach((check, i) => {
       push(asCheckSlide(
         check,
-        L(`🎫 تذكرة الخروج ${i + 1}`, `🎫 Exit Ticket ${i + 1}`),
+        BL(`🎫 تذكرة الخروج ${i + 1}`, `Exit Ticket ${i + 1}`),
       ));
     });
   }

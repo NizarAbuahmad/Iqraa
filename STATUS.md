@@ -7848,3 +7848,43 @@ same caveat as the 2026-08-25 schema-verification entry. Not yet manually
 walked through in the running app (`pnpm run dev:mobile:web`); do that
 before treating the header-copy and quick-check-format fixes as confirmed
 end-to-end.
+
+## Projected English content stopped reading backwards, 2026-08-30
+
+Reported with a screenshot: a Slides Maker exit-ticket check for an English
+lesson («Which action is the most logical if a website does not load?»)
+projected with أ/ب/ج/د option letters and right-aligned text, while the slide
+title read Arabic-only («تذكرة الخروج 3»).
+
+Cause: `SlideView` and `QuestionOptions` in
+`app/ai-tools/classroom/presentation.tsx` chose direction and option
+lettering from the app's UI language (`isRTL`), not from what the slide
+itself says. A deck's chrome is picked once at build time from that UI
+language, but a check's own question/options are AI-generated and come back
+in whichever language the lesson actually is — an English-subject exit
+ticket is English even when the surrounding Arabic UI built the deck.
+
+Fixed at the renderer, not the generator (same shape as `optionLabels.ts`
+normalizing on receipt): `services/deckText.ts` gained
+`isEnglishSlideContent(...parts)` — true when the joined payload has no
+Arabic-script character and does have Latin letters, so a stray Latin
+variable inside Arabic prose doesn't flip it. `SlideView` and
+`QuestionOptions` now compute their own `isRTL` from `slide.content` (+
+`slide.options` for the latter), falling back to the app's language only when
+the slide has no opinion. Deliberately excludes `slide.title` from the
+detection — see next paragraph.
+
+Also: `lessonSlides.ts`'s numbered check titles (Quick Check N, Exit Ticket
+N, and the Exit Ticket section divider) are now built bilingually
+(`✋ تحقّق سريع 1 · Quick Check 1`) instead of picking one language — a
+single-language title can no longer name the wrong language for what is
+actually projected under it. This is why the direction detector reads
+`slide.content`/`slide.options` and not `slide.title`: the title is now
+deliberately bilingual and would always contain Arabic.
+
+Verified: new `deckText.test.ts` cases cover the reported question+options
+pair (flips to LTR/A-D) and confirm Arabic prose with an embedded equation or
+Arabic options stays Arabic; `lessonSlides.test.ts`'s two `answerKey`
+assertions that matched on the old single-language title prefix were updated
+to match the Arabic half instead. Mobile suite 1031 pass / 0 fail (10
+skipped), typecheck clean.

@@ -50,3 +50,27 @@ export function looksLikeEquation(line: string): boolean {
   if (!text || isBulletLine(text)) return false;
   return /[=²³√±×÷^]/.test(text) || /\d+x/.test(text) || /\/[0-9٠-٩]/.test(text);
 }
+
+/**
+ * Whether a slide's actual payload — question text and options, not the
+ * chrome around it — reads as English rather than Arabic.
+ *
+ * A deck's chrome (title, "quick check" banner, …) is picked once at build
+ * time from the app's UI language, but the content underneath can disagree:
+ * an English-subject lesson's exit-ticket check comes back from the model in
+ * English regardless of what language the surrounding Arabic UI was in when
+ * the deck was built. Presenting that content right-aligned with أبجد option
+ * letters is asking a class reading an English test to read it backwards.
+ *
+ * Deliberately content-driven rather than reading the deck's own language
+ * flag: any Arabic character anywhere in the payload is enough to keep the
+ * Arabic layout, since a mixed Arabic sentence with an embedded Latin term or
+ * equation is still Arabic prose. Only a payload with **no** Arabic script at
+ * all — the case an English lesson actually produces — flips to English
+ * layout, and only when there is enough Latin text to have an opinion.
+ */
+export function isEnglishSlideContent(...parts: (string | undefined)[]): boolean {
+  const text = parts.filter(Boolean).join(' ');
+  if (/[؀-ۿ]/.test(text)) return false;
+  return /[A-Za-z]{2,}/.test(text);
+}
