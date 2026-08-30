@@ -22,6 +22,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { G10_SOURCES } from '../sources.ts';
 import { searchForm } from '../passages.ts';
+import { isLfsPointer } from '../../scripts/r2.ts';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const srcDir = path.resolve(here, '..');
@@ -130,7 +131,10 @@ describe('extracted text', () => {
     for (const f of files) {
       const doc = load(f);
       const abs = path.join(repoRoot, doc.localPath);
-      if (!existsSync(abs)) continue; // an LFS-thin checkout is not a failure here
+      // An LFS-thin checkout is not a failure here — whether the file is
+      // fully absent, or present only as the ~130-byte pointer stub that
+      // `existsSync` alone can't tell apart from the real thing.
+      if (!existsSync(abs) || isLfsPointer(readFileSync(abs))) continue;
       assert.equal(statSync(abs).size, doc.bytes, `${doc.sourceId} bytes`);
       assert.equal(
         createHash('sha256').update(readFileSync(abs)).digest('hex'),

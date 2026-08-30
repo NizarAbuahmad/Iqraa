@@ -36,17 +36,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PDFParse } from 'pdf-parse';
 import { G10_SOURCES } from '../src/sources.ts';
-import { downloadFromR2, isR2Configured } from './r2.ts';
+import { downloadFromR2, isLfsPointer, isR2Configured } from './r2.ts';
 import { LOCAL_FILES } from './localSources.ts';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '../../..');
 const outDir = path.resolve(here, '../src/data/extracted');
-
-/** A Git-LFS pointer is a ~130-byte text file, not the document it stands for. */
-function isLfsPointer(buf: Buffer): boolean {
-  return buf.length < 1024 && buf.subarray(0, 40).toString('utf8').startsWith('version https://git-lfs');
-}
 
 const CONTROL_CHAR_RE = /[\x00-\x08\x0e-\x1f]/g;
 const ARABIC_PRESENTATION_FORMS_RE = /[ﭐ-﷿ﹰ-﻿]/g;
