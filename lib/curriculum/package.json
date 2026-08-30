@@ -25,9 +25,11 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "verify": "node --experimental-strip-types scripts/verify-curriculum.ts",
     "test": "node --experimental-strip-types --test \"src/**/__tests__/**/*.test.ts\"",
-    "extract-text": "node --experimental-strip-types scripts/extract-text.ts"
+    "extract-text": "node --experimental-strip-types scripts/extract-text.ts",
+    "upload-r2": "node --experimental-strip-types scripts/upload-to-r2.ts"
   },
   "devDependencies": {
+    "@aws-sdk/client-s3": "^3.699.0",
     "@types/node": "catalog:",
     "pdf-parse": "^2.4.5"
   }

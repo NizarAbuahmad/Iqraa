@@ -7888,3 +7888,46 @@ Arabic options stays Arabic; `lessonSlides.test.ts`'s two `answerKey`
 assertions that matched on the old single-language title prefix were updated
 to match the Arabic half instead. Mobile suite 1031 pass / 0 fail (10
 skipped), typecheck clean.
+
+## Cloudflare R2 replaces Drive as the source-PDF fetch path, 2026-08-30
+
+Fetching source books through the Drive MCP tools had two hard failure
+modes on this project's real sources: a 10MB single-call ceiling on the
+small-file path, and two distinct corruption bugs on the large-file
+fallback (whole-line character reversal on some documents; blank,
+OCR-less pages on scanned ones). Neither is fixable by reorganizing Drive
+folders — they're limits of the fetch tool itself, and they are why
+`math-s1-teacher-guide` sat as an unpulled Git-LFS pointer and six of the
+60-item support pack were never fetched at all (see the "Correction" notes
+in the knowledge-bank plan).
+
+Set up a Cloudflare R2 bucket (`iqraa-media`, free tier: 10GB storage, zero
+egress) as the replacement. `lib/curriculum/scripts/r2.ts` is a thin
+S3-compatible client (`@aws-sdk/client-s3`, region `auto`), gated entirely
+by three env vars (`R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`
+— `R2_BUCKET` optional, defaults `iqraa-media`); unset means R2 is simply
+not used, verified by a test that every helper returns inert values
+(`null`/`false`) rather than throwing when unconfigured.
+
+`extract-text.ts`'s `LOCAL_FILES` map moved to its own module
+(`localSources.ts`) — it was inline before, which meant the new
+`upload-to-r2.ts` script would have had to import `extract-text.ts` itself
+to reach it, silently triggering that file's top-level `await main()` (a
+full extraction run) as a side effect of grabbing a constant. Caught before
+it shipped, not after.
+
+`extract-text.ts` now falls back to R2 for any `LOCAL_FILES` entry missing
+on disk, keyed as `<sourceId>.pdf` — chosen over the original filenames
+(several carry a machine-appended timestamp) so uploading a new source is
+one memorable rule: name the file after its `sourceId`. Verified the
+refactor changed nothing for the existing 60-entry manifest: re-ran
+`extract-text` with R2 unconfigured and got byte-identical skip reasons to
+before (LFS pointer, no text layer ×3, broken cmap ×2, reversed
+presentation-form glyphs ×3 — 9 skipped, 0 newly extracted, matching the
+pre-change run exactly).
+
+Not yet done: no source has actually been uploaded to the bucket yet (it's
+freshly created), and the six previously-unfetched support-pack PDFs and
+the `math-s1-teacher-guide` LFS pointer are the first candidates once they
+are. `pnpm run typecheck` clean across the whole monorepo; curriculum suite
+84/84 (was 83, +1 for the new R2 gating test).
