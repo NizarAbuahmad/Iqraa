@@ -79,19 +79,26 @@ export interface ExtractedDocument {
 }
 
 /**
- * When a source isn't already on disk, try pulling it from R2 before giving
- * up — this is the replacement for the Drive fetch path described in r2.ts's
- * header. The R2 key convention is `${sourceId}.pdf`, chosen deliberately
- * over the messy original filenames in `LOCAL_FILES` (several carry a
- * machine-appended timestamp) so uploading a new source to the bucket is a
- * simple, memorable step: name the file after its sourceId.
+ * When a source isn't usably on disk — missing entirely, or present only as
+ * a Git-LFS pointer (a ~130-byte stub `existsSync` sees as "there") — try
+ * pulling it from R2 before giving up. This is the replacement for the Drive
+ * fetch path described in r2.ts's header. The R2 key convention is
+ * `${sourceId}.pdf`, chosen deliberately over the messy original filenames
+ * in `LOCAL_FILES` (several carry a machine-appended timestamp) so
+ * uploading a new source to the bucket is a simple, memorable step: name
+ * the file after its sourceId.
  */
 async function ensureLocal(sourceId: string, abs: string): Promise<string | null> {
-  if (existsSync(abs)) return null;
-  if (!isR2Configured()) return `missing on disk: ${path.relative(repoRoot, abs)}`;
+  const onDisk = existsSync(abs) && !isLfsPointer(readFileSync(abs));
+  if (onDisk) return null;
+
+  const problem = existsSync(abs)
+    ? `Git-LFS pointer, run \`git lfs pull\`: ${path.relative(repoRoot, abs)}`
+    : `missing on disk: ${path.relative(repoRoot, abs)}`;
+  if (!isR2Configured()) return problem;
 
   const bytes = await downloadFromR2(`${sourceId}.pdf`);
-  if (!bytes) return `missing on disk and not found in R2 as ${sourceId}.pdf: ${path.relative(repoRoot, abs)}`;
+  if (!bytes) return `${problem} — and not found in R2 as ${sourceId}.pdf`;
 
   mkdirSync(path.dirname(abs), { recursive: true });
   writeFileSync(abs, bytes);
