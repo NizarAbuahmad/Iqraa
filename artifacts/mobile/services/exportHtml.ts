@@ -55,6 +55,7 @@ function htmlBase(content: string, isRTL: boolean, title: string): string {
       font-size: 14px; line-height: 1.7; color: #1a1a1a;
       padding: 40px; direction: ${dir}; text-align: ${align};
       background: #fff;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
     }
     .school-header {
       border-bottom: 2px solid #1B6B62; padding-bottom: 16px; margin-bottom: 24px;
@@ -325,7 +326,7 @@ export function buildActivityHTML(
   <title>${e(title)}</title>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:${isAr ? "'Amiri','Arial'" : "'Inter','Helvetica Neue',Arial"},sans-serif;font-size:14px;line-height:1.7;color:#1a1a1a;padding:40px;direction:${dir};text-align:${align};background:#fff}
+    body{font-family:${isAr ? "'Amiri','Arial'" : "'Inter','Helvetica Neue',Arial"},sans-serif;font-size:14px;line-height:1.7;color:#1a1a1a;padding:40px;direction:${dir};text-align:${align};background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
     ul{padding-${isAr ? 'right' : 'left'}:20px}li{margin-bottom:4px;font-size:13px;color:#333}
     .footer{margin-top:32px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:11px;color:#aaa;text-align:center}
   </style>
@@ -458,7 +459,7 @@ export function buildLessonPlanSlidesHTML(
 <style>
 @page { size: A4 landscape; margin: 0; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','Arial',sans-serif"}; background:#f0f0f0; }
+body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','Arial',sans-serif"}; background:#f0f0f0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .slide {
   width: 297mm; height: 210mm; background: #fff; position: relative;
   overflow: hidden; page-break-after: always; display: flex; flex-direction: column;
@@ -588,7 +589,7 @@ export function buildActivitySlidesHTML(
 <style>
 @page { size: A4 landscape; margin: 0; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','Arial',sans-serif"}; background:#f0f0f0; }
+body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','Arial',sans-serif"}; background:#f0f0f0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .slide { width:297mm; height:210mm; background:#fff; position:relative; overflow:hidden; page-break-after:always; display:flex; flex-direction:column; }
 .title-slide { background:linear-gradient(135deg,${ACCENT} 0%,#b55a0f 100%); }
 .title-content { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px; text-align:center; }
@@ -722,7 +723,7 @@ export function buildWorksheetSlidesHTML(
 <style>
 @page { size: A4 landscape; margin: 0; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','Arial',sans-serif"}; background:#f0f0f0; }
+body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','Arial',sans-serif"}; background:#f0f0f0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .slide { width:297mm; height:210mm; background:#fff; position:relative; overflow:hidden; page-break-after:always; display:flex; flex-direction:column; }
 .title-slide { background:linear-gradient(135deg,${ACCENT} 0%,#5b21b6 100%); }
 .title-content { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px; text-align:center; }
@@ -854,7 +855,7 @@ export function buildQuizSlidesHTML(
 <style>
 @page { size: A4 landscape; margin: 0; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','Arial',sans-serif"}; background:#f0f0f0; }
+body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','Arial',sans-serif"}; background:#f0f0f0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .slide { width:297mm; height:210mm; background:#fff; position:relative; overflow:hidden; page-break-after:always; display:flex; flex-direction:column; }
 .title-slide { background:linear-gradient(135deg,${ACCENT} 0%,#b45309 100%); }
 .title-content { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px; text-align:center; }
@@ -948,7 +949,7 @@ export function buildLessonFlowHTML(flow: LessonFlowOutput, isAr: boolean): stri
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Amiri:wght@400;700&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: ${font}; font-size: 13px; color: #1f2937; background: #fff; direction: ${dir}; }
+  body { font-family: ${font}; font-size: 13px; color: #1f2937; background: #fff; direction: ${dir}; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .page { padding: 28px 32px; max-width: 800px; margin: 0 auto; }
   /* Cover */
   .cover { text-align: center; padding: 40px 0 32px; border-bottom: 2px solid ${NAVY}; margin-bottom: 28px; }
