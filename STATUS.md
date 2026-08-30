@@ -8015,3 +8015,24 @@ freshly created), and the six previously-unfetched support-pack PDFs and
 the `math-s1-teacher-guide` LFS pointer are the first candidates once they
 are. `pnpm run typecheck` clean across the whole monorepo; curriculum suite
 84/84 (was 83, +1 for the new R2 gating test).
+
+**Same bucket now also serves public downloads, 2026-08-30.** The general
+(non-vocational) Grade 10 English track — Student Book + Activity Book,
+both semesters — has no confirmed NCCD source and no Drive copy on hand, so
+its 4 PDFs were uploaded straight into `iqraa-media` via the Cloudflare
+dashboard and "Public Development URL" was enabled on the bucket to serve
+them (`https://pub-59ecbec8df5a4adc80bf8f7d1084fdd5.r2.dev/<filename>`).
+Wired as `book-english-10-s1` / `-s2` in `catalog.ts` (replacing the old
+placeholder `book-english-10` stub — one real unit, no other content — now
+added to `MVP_BOOK_IDS` so the card is visible), with a new
+`activityPdfUrl` field on `Book` and a third download chip
+(«كتاب الأنشطة» / Activity Book) in `subjects.tsx` for the workbook link,
+next to the existing student-book and teacher-guide chips.
+
+**This makes the whole bucket public, not just these 4 files** — Public
+Development URL is a bucket-level toggle, so any source PDF already
+uploaded (or uploaded later) under the `<sourceId>.pdf` convention above is
+now reachable by anyone who knows/guesses its filename, even though that
+flow was built assuming private, credentialed S3 access. Not fixed here —
+worth splitting into a separate public bucket before treating anything in
+`iqraa-media` as actually private.

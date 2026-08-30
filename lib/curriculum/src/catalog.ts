@@ -85,6 +85,9 @@ export interface Book {
   /** Teacher-guide / teacher's-book PDF. Hidden from students. NCCD-hosted
    *  unless `downloadNote` says otherwise. */
   guidePdfUrl?: string;
+  /** Companion activity/workbook PDF, shown as its own chip (distinct from
+   *  the teacher guide — this one is visible to everyone). */
+  activityPdfUrl?: string;
   /**
    * Source note shown under the download chips instead of the default
    * "من موقع المركز الوطني لتطوير المناهج" line. Set it whenever the linked
@@ -192,6 +195,12 @@ export const MVP_BOOK_IDS: readonly string[] = [
   ENGLISH_AGRICULTURE_S1_CURRICULUM_BOOK_ID,
   ENGLISH_HOSPITALITY_S1_CURRICULUM_BOOK_ID,
   ENGLISH_INDUSTRY_S1_CURRICULUM_BOOK_ID,
+  // General (non-vocational) Grade 10 English — Student + Activity Book
+  // download links only; unit/lesson content is still a placeholder (one
+  // stub unit on S1, none on S2), shown anyway per the same
+  // honestly-thin-rather-than-hidden precedent as Grade 9 Math S2 above.
+  'book-english-10-s1',
+  'book-english-10-s2',
 ];
 
 /**
@@ -422,8 +431,13 @@ export const BOOKS: Book[] = [
     semester: 2,
   },
   // ── Other grades ───────────────────────────────────────────────────────────
+  // General (non-vocational) Grade 10 English track — Student Book + Activity
+  // Book, both semesters. Split into one book per semester (matching every
+  // other subject's convention) rather than one book carrying four links.
+  // Provenance of the source PDFs is not confirmed NCCD — hosted on the
+  // project's own storage, hence downloadNote overriding the NCCD line.
   {
-    id: 'book-english-10',
+    id: 'book-english-10-s1',
     title: 'English for Jordan 10',
     titleAr: 'اللغة الإنجليزية للصف العاشر',
     subjectId: 'english',
@@ -431,6 +445,28 @@ export const BOOKS: Book[] = [
     academicYear: '2024-2025',
     language: 'English',
     edition: '2nd',
+    audience: 'all',
+    semester: 1,
+    pdfUrl: 'https://pub-59ecbec8df5a4adc80bf8f7d1084fdd5.r2.dev/%D9%83%D8%AA%D8%A7%D8%A8%20%D8%A7%D9%84%D8%B7%D8%A7%D9%84%D8%A8%20%D9%84%D9%85%D8%A7%D8%AF%D8%A9%20%D8%A7%D9%84%D9%84%D8%BA%D8%A9%20%D8%A7%D9%84%D8%A5%D9%86%D8%AC%D9%84%D9%8A%D8%B2%D9%8A%D8%A9%20%D8%A7%D9%84%D8%B5%D9%81%20%D8%A7%D9%84%D8%B9%D8%A7%D8%B4%D8%B1%20%D8%A7%D9%84%D9%81%D8%B5%D9%84%20%D8%A7%D9%84%D8%A3%D9%88%D9%84.pdf',
+    activityPdfUrl: 'https://pub-59ecbec8df5a4adc80bf8f7d1084fdd5.r2.dev/%D9%83%D8%AA%D8%A7%D8%A8%20%D8%A7%D9%84%D8%A3%D9%86%D8%B4%D8%B7%D8%A9%20%D9%84%D9%85%D8%A7%D8%AF%D8%A9%20%D8%A7%D9%84%D9%84%D8%BA%D8%A9%20%D8%A7%D9%84%D8%A5%D9%86%D8%AC%D9%84%D9%8A%D8%B2%D9%8A%D8%A9%20%D9%84%D9%84%D8%B5%D9%81%20%D8%A7%D9%84%D8%B9%D8%A7%D8%B4%D8%B1%20%D8%A7%D9%84%D9%81%D8%B5%D9%84%20%D8%A7%D9%84%D8%A3%D9%88%D9%84.pdf',
+    downloadNote: 'Student Book & Activity Book · project storage copy',
+    downloadNoteAr: 'كتاب الطالب وكتاب الأنشطة · نسخة على مساحة تخزين المشروع',
+  },
+  {
+    id: 'book-english-10-s2',
+    title: 'English for Jordan 10 (Semester 2)',
+    titleAr: 'اللغة الإنجليزية للصف العاشر – الفصل الثاني',
+    subjectId: 'english',
+    gradeId: 'grade-10',
+    academicYear: '2024-2025',
+    language: 'English',
+    edition: '2nd',
+    audience: 'all',
+    semester: 2,
+    pdfUrl: 'https://pub-59ecbec8df5a4adc80bf8f7d1084fdd5.r2.dev/%D9%83%D8%AA%D8%A7%D8%A8%20%D8%A7%D9%84%D8%B7%D8%A7%D9%84%D8%A8%20%D9%84%D9%85%D8%A7%D8%AF%D8%A9%20%D8%A7%D9%84%D9%84%D8%BA%D8%A9%20%D8%A7%D9%84%D8%A5%D9%86%D8%AC%D9%84%D9%8A%D8%B2%D9%8A%D8%A9%20%D8%A7%D9%84%D8%B5%D9%81%20%D8%A7%D9%84%D8%B9%D8%A7%D8%B4%D8%B1%20%D8%A7%D9%84%D9%81%D8%B5%D9%84%20%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A.pdf',
+    activityPdfUrl: 'https://pub-59ecbec8df5a4adc80bf8f7d1084fdd5.r2.dev/%D9%83%D8%AA%D8%A7%D8%A8%20%D8%A7%D9%84%D8%A3%D9%86%D8%B4%D8%B7%D8%A9%20%D9%84%D9%85%D8%A7%D8%AF%D8%A9%20%D8%A7%D9%84%D9%84%D8%BA%D8%A9%20%D8%A7%D9%84%D8%A5%D9%86%D8%AC%D9%84%D9%8A%D8%B2%D9%8A%D8%A9%20%D9%84%D9%84%D8%B5%D9%81%20%D8%A7%D9%84%D8%B9%D8%A7%D8%B4%D8%B1%20%D8%A7%D9%84%D9%81%D8%B5%D9%84%20%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A.pdf',
+    downloadNote: 'Student Book & Activity Book · project storage copy',
+    downloadNoteAr: 'كتاب الطالب وكتاب الأنشطة · نسخة على مساحة تخزين المشروع',
   },
   // ── English Grade 10 — vocational tracks (Semester 1) ──────────────────────
   // Source: Vocational English Level 2 Volume 1 (York Press/ERC, 2023),
@@ -684,7 +720,7 @@ const _HARDCODED_UNITS: Unit[] = [
   // Other books
   {
     id: 'unit-eng-10-1',
-    bookId: 'book-english-10',
+    bookId: 'book-english-10-s1',
     name: 'Communication Skills',
     nameAr: 'مهارات التواصل',
     description: 'Reading, writing, and speaking skills',

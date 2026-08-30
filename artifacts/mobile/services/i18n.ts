@@ -247,6 +247,7 @@ const translations = {
     unitsAndLessons: (units: number, lessons: number) => `${units} وحدات · ${lessons} دروس`,
     downloadBook: 'تحميل الكتاب',
     downloadTeacherGuide: 'دليل المعلم',
+    downloadActivityBook: 'كتاب الأنشطة',
     // Books are republished yearly by NCCD — the year is what tells a teacher
     // whether the linked edition still matches what's printed this year.
     downloadSourceNccd: (year: string) => `من موقع المركز الوطني لتطوير المناهج · طبعة ${year}`,
@@ -1305,6 +1306,7 @@ const translations = {
       `${units} unit${units !== 1 ? 's' : ''} · ${lessons} lesson${lessons !== 1 ? 's' : ''}`,
     downloadBook: 'Download book',
     downloadTeacherGuide: 'Teacher guide',
+    downloadActivityBook: 'Activity book',
     downloadSourceNccd: (year: string) => `From the National Center for Curriculum Development · ${year} edition`,
 
     unitLabel: 'Unit',

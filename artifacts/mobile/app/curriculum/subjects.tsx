@@ -16,7 +16,7 @@ import {
 } from '@/services/curriculumData';
 
 function DownloadChip({ label, url, icon, color }: {
-  label: string; url: string; icon: 'download-outline' | 'school-outline'; color: string;
+  label: string; url: string; icon: 'download-outline' | 'school-outline' | 'clipboard-outline'; color: string;
 }) {
   const colors = useColors();
   return (
@@ -165,7 +165,7 @@ export default function SubjectsScreen() {
             {/* The printed book teachers actually hold — NCCD PDFs, or the
                 book's own hosted copy when NCCD doesn't publish it (then
                 downloadNote replaces the NCCD source line). */}
-            {(book.pdfUrl || guideUrl) && (
+            {(book.pdfUrl || guideUrl || book.activityPdfUrl) && (
               <View style={{ gap: 4, alignItems: isRTL ? 'flex-end' : 'flex-start' }}>
                 <View style={[styles.downloadRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                   {book.pdfUrl && (
@@ -173,6 +173,9 @@ export default function SubjectsScreen() {
                   )}
                   {guideUrl && (
                     <DownloadChip label={t('downloadTeacherGuide')} url={guideUrl} icon="school-outline" color={color} />
+                  )}
+                  {book.activityPdfUrl && (
+                    <DownloadChip label={t('downloadActivityBook')} url={book.activityPdfUrl} icon="clipboard-outline" color={color} />
                   )}
                 </View>
                 <Text style={[styles.downloadNote, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
