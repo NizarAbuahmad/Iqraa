@@ -391,8 +391,11 @@ describe('formative checks in the lesson deck', () => {
     // section title, because "تذكرة الخروج 1" is the first exit-ticket
     // question and not the first question in the deck.
     assert.ok(deck.answerKey.some(k => k.startsWith('مثال 1:')));
-    assert.ok(deck.answerKey.some(k => k.startsWith('✋ تحقّق سريع 1: ب1')));
-    assert.ok(deck.answerKey.some(k => k.startsWith('🎫 تذكرة الخروج 1: ب3')));
+    // Titles are bilingual now ("✋ تحقّق سريع 1 · Quick Check 1") since the
+    // check's own question/options can come back in either language — match
+    // on the Arabic half plus the answer rather than the whole prefix.
+    assert.ok(deck.answerKey.some(k => k.includes('✋ تحقّق سريع 1') && k.endsWith(': ب1')));
+    assert.ok(deck.answerKey.some(k => k.includes('🎫 تذكرة الخروج 1') && k.endsWith(': ب3')));
   });
 
   it('leaves open checks out of the answer key rather than printing a blank row', () => {
