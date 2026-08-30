@@ -90,3 +90,15 @@ export async function uploadToR2(key: string, body: Buffer, contentType = 'appli
 export function isR2Configured(): boolean {
   return r2Client() !== null;
 }
+
+/**
+ * A Git-LFS pointer is a ~130-byte text file, not the document it stands
+ * for — an LFS-thin checkout has one at the real file's path, so
+ * `existsSync` alone reads it as "the file is here" when it isn't. Lives
+ * here (not in `extract-text.ts`, which has a top-level `await main()` that
+ * would run on import) so both it and `extraction.test.ts` can check for
+ * this without re-implementing it.
+ */
+export function isLfsPointer(buf: Buffer): boolean {
+  return buf.length < 1024 && buf.subarray(0, 40).toString('utf8').startsWith('version https://git-lfs');
+}
