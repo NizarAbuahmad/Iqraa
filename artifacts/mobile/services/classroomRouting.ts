@@ -14,60 +14,75 @@ export interface ActivityCard {
   difficulty: string;
   groupType: string;
   duration: string;
+  /** Minutes, for the marketplace hub's "Quick" filter. */
+  durationMin: number;
+  isTeam: boolean;
+  isSolo: boolean;
+  isNew: boolean;
+  isFeatured: boolean;
+  accentColor: string;
 }
 
+/**
+ * The one card list for the classroom hub (marketplace grid) and the builder
+ * (header lookup). Previously the hub and this module each kept their own
+ * list and drifted — the hub had 7 cards, this one had 5 — so opening the
+ * builder from `error-detective` or `gallery-walk` fell back to generic
+ * header copy because this module didn't know those ids. See STATUS.md.
+ */
 export const ACTIVITY_CARDS: ActivityCard[] = [
   // escape-challenge stays first: resolveActivityType()'s fallback must match
   // the first card (see classroomRouting.test.ts consistency check).
   {
-    id: 'escape-challenge',
-    emoji: '🔐',
-    titleKey: 'activityEscapeTitle',
-    descKey: 'activityEscapeDesc',
-    available: true,
-    difficulty: 'Easy–Advanced',
-    groupType: 'Groups',
-    duration: '10–30 min',
+    id: 'escape-challenge', emoji: '🔐',
+    titleKey: 'activityEscapeTitle', descKey: 'activityEscapeDesc',
+    available: true, difficulty: 'Easy–Advanced', groupType: 'Groups', duration: '10–30 min',
+    durationMin: 30, isTeam: true, isSolo: false, isNew: false, isFeatured: true,
+    accentColor: '#4F46E5',
   },
   {
-    id: 'quick-check',
-    emoji: '🙋',
-    titleKey: 'activityQuickCheckTitle',
-    descKey: 'activityQuickCheckDesc',
-    available: true,
-    difficulty: 'Easy–Advanced',
-    groupType: 'Whole Class',
-    duration: '5–15 min',
+    id: 'quick-check', emoji: '🙋',
+    titleKey: 'activityQuickCheckTitle', descKey: 'activityQuickCheckDesc',
+    available: true, difficulty: 'Easy–Advanced', groupType: 'Whole Class', duration: '5–15 min',
+    // isFeatured must stay false: the hub renders ONE hero card
+    // (find(isFeatured)) and drops every other featured card from the list.
+    durationMin: 15, isTeam: false, isSolo: false, isNew: true, isFeatured: false,
+    accentColor: '#3B82F6',
   },
   {
-    id: 'bingo',
-    emoji: '🎱',
-    titleKey: 'activityBingoTitle',
-    descKey: 'activityBingoDesc',
-    available: true,
-    difficulty: 'Easy–Medium',
-    groupType: 'Whole Class',
-    duration: '15–25 min',
+    id: 'error-detective', emoji: '🔍',
+    titleKey: 'activityErrorTitle', descKey: 'activityErrorDesc',
+    available: true, difficulty: 'Medium', groupType: 'Pairs', duration: '15–25 min',
+    durationMin: 25, isTeam: true, isSolo: false, isNew: true, isFeatured: false,
+    accentColor: '#E67E22',
   },
   {
-    id: 'relay',
-    emoji: '🏃',
-    titleKey: 'activityRelayTitle',
-    descKey: 'activityRelayDesc',
-    available: true,
-    difficulty: 'Medium–Advanced',
-    groupType: 'Teams',
-    duration: '20–35 min',
+    id: 'exit-ticket', emoji: '🎫',
+    titleKey: 'activityExitTitle', descKey: 'activityExitDesc',
+    available: true, difficulty: 'Easy', groupType: 'Individual', duration: '5–10 min',
+    durationMin: 10, isTeam: false, isSolo: true, isNew: true, isFeatured: false,
+    accentColor: '#10B981',
   },
   {
-    id: 'exit-ticket',
-    emoji: '🎫',
-    titleKey: 'activityExitTitle',
-    descKey: '',
-    available: false,
-    difficulty: '',
-    groupType: '',
-    duration: '',
+    id: 'bingo', emoji: '🎱',
+    titleKey: 'activityBingoTitle', descKey: 'activityBingoDesc',
+    available: true, difficulty: 'Easy–Medium', groupType: 'Whole Class', duration: '15–25 min',
+    durationMin: 25, isTeam: true, isSolo: false, isNew: false, isFeatured: false,
+    accentColor: '#A855F7',
+  },
+  {
+    id: 'relay', emoji: '🏃',
+    titleKey: 'activityRelayTitle', descKey: 'activityRelayDesc',
+    available: true, difficulty: 'Medium–Advanced', groupType: 'Teams', duration: '20–35 min',
+    durationMin: 35, isTeam: true, isSolo: false, isNew: false, isFeatured: false,
+    accentColor: '#F43F5E',
+  },
+  {
+    id: 'gallery-walk', emoji: '🖼️',
+    titleKey: 'activityGalleryTitle', descKey: 'activityGalleryDesc',
+    available: true, difficulty: 'Medium', groupType: 'Groups', duration: '20–30 min',
+    durationMin: 30, isTeam: true, isSolo: false, isNew: true, isFeatured: false,
+    accentColor: '#0EA5E9',
   },
 ];
 

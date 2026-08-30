@@ -50,6 +50,16 @@ import {
   FINLIT_S1_BOOK_ID,
   buildFinlitSem1Catalog,
 } from './curriculumG10FinlitSem1.ts';
+import {
+  ENGLISH_COMMERCE_S1_KB_BOOK_ID,
+  ENGLISH_AGRICULTURE_S1_KB_BOOK_ID,
+  ENGLISH_HOSPITALITY_S1_KB_BOOK_ID,
+  ENGLISH_INDUSTRY_S1_KB_BOOK_ID,
+  buildEnglishCommerceKbCatalog,
+  buildEnglishAgricultureKbCatalog,
+  buildEnglishHospitalityKbCatalog,
+  buildEnglishIndustryKbCatalog,
+} from './curriculumG10EnglishVocational.ts';
 
 export interface KBBook {
   id: string;
@@ -126,6 +136,42 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Financial Literacy – Grade 10 – Semester 1',
     semester: 1,
     source: 'knowledge-base/grade-10-financial-literacy/الثقافة المالية 10 ف1.pdf',
+  },
+  {
+    id: ENGLISH_COMMERCE_S1_KB_BOOK_ID,
+    gradeId: 'grade-10',
+    subjectId: 'english',
+    titleAr: 'اللغة الإنجليزية – القطاع التجاري – الصف العاشر – الفصل الأول',
+    titleEn: 'English – Commerce Track – Grade 10 – Semester 1',
+    semester: 1,
+    source: "Techer's book commerce english 2.pdf (Vocational English, Level 2)",
+  },
+  {
+    id: ENGLISH_AGRICULTURE_S1_KB_BOOK_ID,
+    gradeId: 'grade-10',
+    subjectId: 'english',
+    titleAr: 'اللغة الإنجليزية – القطاع الزراعي – الصف العاشر – الفصل الأول',
+    titleEn: 'English – Agriculture Track – Grade 10 – Semester 1',
+    semester: 1,
+    source: "Techer's book agriculture english 2.pdf (Vocational English, Level 2)",
+  },
+  {
+    id: ENGLISH_HOSPITALITY_S1_KB_BOOK_ID,
+    gradeId: 'grade-10',
+    subjectId: 'english',
+    titleAr: 'اللغة الإنجليزية – قطاع الضيافة والسياحة – الصف العاشر – الفصل الأول',
+    titleEn: 'English – Hospitality and Tourism Track – Grade 10 – Semester 1',
+    semester: 1,
+    source: "Techer's book hospitality english 2.pdf (Vocational English, Level 2)",
+  },
+  {
+    id: ENGLISH_INDUSTRY_S1_KB_BOOK_ID,
+    gradeId: 'grade-10',
+    subjectId: 'english',
+    titleAr: 'اللغة الإنجليزية – القطاع الصناعي والتقني – الصف العاشر – الفصل الأول',
+    titleEn: 'English – Industrial/Technical Track – Grade 10 – Semester 1',
+    semester: 1,
+    source: "Techer's book technical english.pdf (Technical English, Level 1)",
   },
   {
     id: 'kb-math-10-s1',
@@ -1110,6 +1156,10 @@ const _chemSem2 = buildChemSem2Catalog();
 const _finlitSem1 = buildFinlitSem1Catalog();
 const _g9MathSem1 = buildG9MathSem1Catalog();
 const _g9MathSem2 = buildG9MathSem2Catalog();
+const _engCommerce = buildEnglishCommerceKbCatalog();
+const _engAgriculture = buildEnglishAgricultureKbCatalog();
+const _engHospitality = buildEnglishHospitalityKbCatalog();
+const _engIndustry = buildEnglishIndustryKbCatalog();
 const _legacyS1UnitIds = new Set(
   HARDCODED_KB_UNITS.filter(u => u.bookId === NCCD_S1_BOOK_ID).map(u => u.id),
 );
@@ -1219,7 +1269,7 @@ function enrichLesson(lesson: KBLesson): KBLesson {
   };
 }
 
-/** Active units: NCCD Chem S1/S2 + NCCD Math S1/S2 + NCCD FinLit S1. */
+/** Active units: NCCD Chem S1/S2 + NCCD Math S1/S2 + NCCD FinLit S1 + English vocational tracks. */
 export const KB_UNITS: KBUnit[] = [
   ...HARDCODED_KB_UNITS.filter(
     u => u.bookId !== NCCD_S1_BOOK_ID
@@ -1234,9 +1284,13 @@ export const KB_UNITS: KBUnit[] = [
   ..._nccdSem2.units,
   ..._g9MathSem1.units,
   ..._g9MathSem2.units,
+  ..._engCommerce.units,
+  ..._engAgriculture.units,
+  ..._engHospitality.units,
+  ..._engIndustry.units,
 ];
 
-/** Active lessons: NCCD Chem S1/S2 + NCCD Math S1/S2 (G10 + G9) + NCCD FinLit S1. */
+/** Active lessons: NCCD Chem S1/S2 + NCCD Math S1/S2 (G10 + G9) + NCCD FinLit S1 + English vocational tracks. */
 export const KB_LESSONS: KBLesson[] = [
   ...HARDCODED_KB_LESSONS
     .filter(l => !_supersededUnitIds.has(l.unitId))
@@ -1250,6 +1304,12 @@ export const KB_LESSONS: KBLesson[] = [
   // the NCCD JSON has (title-only lessons keep an empty summary/objectives).
   ..._g9MathSem1.lessons,
   ..._g9MathSem2.lessons,
+  // No hand-authored rows exist for English either — these carry only what
+  // g10EnglishVocational.ts's browser catalog already assembled.
+  ..._engCommerce.lessons,
+  ..._engAgriculture.lessons,
+  ..._engHospitality.lessons,
+  ..._engIndustry.lessons,
 ];
 
 // ─────────────────────────────────────────────────────

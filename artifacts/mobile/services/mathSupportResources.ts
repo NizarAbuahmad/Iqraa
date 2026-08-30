@@ -235,19 +235,33 @@ export function searchSupportResources(opts: {
   gradeId?: string | null;
 }): SupportResource[] {
   const query = opts.query ?? '';
-  const lessonTags = unitTagsForLesson(opts.lesson);
   const limit = opts.limit ?? 5;
   const kindFilter = opts.kinds;
-  const subjectHint =
-    opts.subjectId
-    ?? (opts.lesson ? getBookForLesson(opts.lesson)?.subjectId : null)
-    ?? detectSubjectFromQuery(query);
-  const gradeHint = opts.gradeId ?? (opts.lesson ? getBookForLesson(opts.lesson)?.gradeId : null);
+  const lessonBook = opts.lesson ? getBookForLesson(opts.lesson) : undefined;
+
+  // A lesson was named but resolves to no book at all — true for any subject
+  // (English vocational tracks, currently) that's wired into the curriculum
+  // picker but not into KB_BOOKS here. Both hints below are `??`-chained
+  // through `getBookForLesson(...)?.subjectId`, which is `undefined` in this
+  // exact case — not null-from-a-known-mismatch — so the subject and grade
+  // gates that follow would silently no-op instead of rejecting, and an
+  // English lesson whose query happened to contain a word like "worksheet"
+  // or "exam" could match Math/Chemistry PDFs by keyword alone. Fail closed
+  // before either hint is even computed, the same call made for
+  // financial-literacy below (empty and honest beats wrongly scoped) — but
+  // only when a lesson was actually passed and came up empty; the widened
+  // retry below deliberately drops `lesson` and passes subjectId/gradeId
+  // explicitly, so it never hits this branch.
+  if (opts.lesson && !lessonBook) return [];
+
+  const lessonTags = unitTagsForLesson(opts.lesson);
+  const subjectHint = opts.subjectId ?? lessonBook?.subjectId ?? detectSubjectFromQuery(query);
+  const gradeHint = opts.gradeId ?? lessonBook?.gradeId;
 
   // The whole bank is Grade 10 material — no PDF here has ever been scoped
   // to any other grade. Title/keyword matching below has no grade awareness
   // (it scores query tokens against resource titles directly), so without
-  // this a Grade 9 lesson sharing ordinary math vocabulary — «حل المعادلات»,
+  // this a Grade 9 lesson sharing ordinary math vocabulary — «حل المعادلات»،
   // «المعادلات» — pulled in Grade 10 worksheets and answer keys the moment
   // Grade 9 Math had lessons in the KB to search from at all. Same shape as
   // the financial-literacy case below: honestly empty beats wrongly scoped.

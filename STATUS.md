@@ -201,7 +201,15 @@ Vision screens (student/parent/school dashboards) are deprioritized.
   file, unextracted; see that data file's `known_gaps` before trusting its
   four Briefing-less units (9–12, `data_tier: "title-only"`). Catalog +
   lessons only: not wired into `knowledgeBase.ts` or any AI generator/bank —
-  `hasKnowledgeBase: false` on all four books.
+  `hasKnowledgeBase: false` on all four books. Each book card carries a
+  «دليل المعلم» download chip (added 2026-08-29) linking the project Drive's
+  copy of that track's Teacher's Book — Drive links because there is no
+  nccd.gov.jo PDF for these titles; the files were already shared
+  anyone-with-link, and `downloadNote`/`downloadNoteAr` on the `Book` replace
+  the "من موقع المركز الوطني" source line so the UI doesn't claim NCCD
+  provenance. The Industrial card links "industry english 2.pdf" (the
+  track's own Level-2 book) even though its catalog rows were mined from
+  Technical English — the chip's job is the printed book, not the mined text.
 - Expo Go on a phone works over LAN (firewall rule `Iqraa-Dev-8080-8083`;
   see LOCAL_SETUP.md).
 - `mockup-sandbox` is excluded from the workspace — it is a design sandbox,
@@ -244,6 +252,140 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     deployed. The client's timeout is 2.5s, so the first call after idle fails.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
+
+## Exams & tests review: variation, book grounding, purpose separation, 2026-08-28
+
+A full pass over both exam systems — the `/ai-tools` generators and the
+evaluations subsystem — against a live local stack (Postgres 16 + API + the
+whole lifecycle: create → generate → publish → student link → claim → answer →
+submit → hand-mark → results). What already held, held: the share-link roster,
+`name_taken` on a double claim, no answer key anywhere in the student payload,
+edit-after-submit refused, a bad key in live mode answering `502
+generator_unavailable` with nothing written. Three teacher-visible problems
+were real and are fixed:
+
+- **Regenerating an exam returned the identical paper.** `generateMockEvaluation`
+  was deterministic by design — fixed stems, round-robin objectives — so the
+  regenerate button looked broken. It now varies (three Arabic phrasings per
+  competency, seeded shuffle of objective order) without inventing content, and
+  the seed is stored so a paper stays reproducible. Same on the client: the
+  concrete math bank drew `ranked[0]`, so every fresh session opened with the
+  identical quiz; the draw is now random within the difficulty-preferred pool,
+  with `usedIds` still preventing repeats within a pass.
+  `mockVariation.test.ts` holds both directions: two seeds differ, same seed
+  replays, and structure (count/types/marks/objective coverage) never moves.
+- **Chemistry S2 could never be examined.** `/evaluations/meta/evaluable`
+  hand-listed four book ids and dropped `book-chem-10-s2` (20 objectives). It
+  now serves `getEvaluableBookIds()` — which also surfaces G9 math, the English
+  tracks, and science-8 (1 objective), since the helper's contract is "has
+  objectives". Verified live: a chem-S2 evaluation generates.
+- **`generationParams` was documented as "the exact request handed to the
+  generator" and never written.** `POST /evaluations/:id/generate` now stores
+  it (objectives, types, count, difficulty, language, seed on the mock path,
+  prompt version + grounding sources on the model path). An ungrounded model
+  generation also says so out loud now — a warning names that no book passages
+  exist for those units, instead of a bookless paper reading exactly like a
+  grounded one.
+
+Smaller repairs on the way: the quiz screen never sent `numQuestions`, so every
+live quiz asked the model for exactly 10 — it now sends 2 × selected types, the
+same rule the mock uses; the evaluations→worksheet handoffs computed
+`subjectIdx` against a grade-filtered list while the receiving screens rebuild
+the bare list (identical only while `INVESTOR_MVP_CURRICULUM` flattens the
+argument) — both now go through `scopePickerParams` in `services/lessonPrep.ts`;
+`game.tsx` got the localised grade name and a cancel; the EN quiz-tool subtitle
+claimed "Auto-graded questions", which is the evaluations feature's job, and
+both tools' subtitles now state their actual, different purposes.
+
+**Still not true, on purpose left as findings:** generated answer keys never
+pass through the math verifier — `evaluationQuestions.verification`,
+`math_equivalence` and `math_verifier` are declared in the schema and written
+by nothing, and the verifier has no general-equivalence endpoint to call;
+`/generate/*` still validates no request body; the evaluations client has no
+offline fallback (server decides mock/live — by design, but stated nowhere).
+Local-boot note that cost an hour: the API refuses to start without *some*
+`OPENAI_API_KEY` even in demo mode — LOCAL_SETUP.md said "optional", now
+corrected.
+
+## Generated answer keys go through SymPy now, 2026-08-29
+
+`evaluationQuestions.verification` had described this since Phase 3 — *"SymPy's
+verdict on the ANSWER KEY at authoring time. A key the verifier contradicts is
+dropped before a teacher ever sees the question"* — and nothing wrote it. A
+model could key «أوجد مشتقة f(x) = x³ − 4x» as `3x² + 4` and the paper reached a
+teacher looking correct: the validator checks type, objective, marks and
+duplication, none of which is arithmetic.
+
+**Measured before building, because the obvious build would have verified
+nothing.** The classification chain requires latin maths, and the generation
+prompt said *"Use Arabic mathematical notation and Arabic-Indic digits where a
+teacher would."* Running real question shapes through `classifyVerifiableTopic`:
+**0 of 5 classifiable in Arabic notation, 5 of 5 in latin.** On top of that, no
+question type carries a symbolic key at all — multiple choice keys an option
+*id*, short answer keys prose. Wiring the verifier to the existing fields would
+have shipped a feature that proves nothing while looking delivered.
+
+So the model now states its key twice: the stem stays Arabic for the class, and
+an optional `check: {topic, question, answer}` carries the same maths in latin
+for the machine (`GENERATION_PROMPT_VERSION` → `exam-gen-3`). This is the repo's
+own standing rule — compute in latin `x`, convert to `س` only at display time —
+applied to answer keys.
+
+**The trap that made this dangerous, found by a test.** SymPy does not reject
+Arabic. With implicit multiplication on, «الإجابة سبعة» parses as a *product of
+eight letter-symbols*, compares unequal to the real answer, and is reported
+`answer_mismatch` — identical to a wrong key. On a check whose verdict deletes a
+teacher's question, in an Arabic-first product, that would have deleted correct
+questions for the offence of being written in Arabic. `relate_answer_key` now
+gates on Arabic script explicitly and answers `error`, never `distinct`;
+legitimate Arabic inside a solution set («أو», «فقط») still verifies, because
+the gate runs after those are normalised away.
+
+**Only a contradiction drops a question.** The new `POST /verify/answer-key`
+returns a three-way relation rather than a bool, because `verify_item`'s
+`expr_equiv` folds `.equals() → None` into `False` — an undecidable comparison
+would read as a wrong key. `indeterminate`, `error` and `unsupported_topic` all
+leave the question in the paper, unverified.
+
+**An unreachable verifier changes nothing.** It is a free-tier service that
+sleeps; losing questions because it was asleep is far worse than shipping an
+unverified key. The first unreachable answer stops the pass, everything
+survives, and a warning says the check did not run.
+
+`verifyMathGuards.ts` moved to a new `lib/math-verify` (`@workspace/math-verify`)
+because the generator runs server-side and a second copy of a correctness
+control is the `sanitizeQuestionForStudent` mistake again. Mobile keeps a
+re-export shim, and its 74 guard tests passing untouched is the proof the move
+was behaviour-free.
+
+**Verified end to end** against Postgres + the real Python verifier + the API,
+driving the real route with a scripted model server (`OPENAI_BASE_URL`):
+
+- a key of `x = 5` for `2x + 5 = 13` is **dropped**, reason: *"it derives \"4\"
+  where the key says \"x = 5\""*; 2 of 3 produced;
+- the correct derivative key stores
+  `{"source":"sympy","verified":true,"computedAnswer":"3*x**2 - 4"}` — read back
+  from the `verification` column;
+- `generationParams` records `keysChecked: 2, keysVerified: 1`;
+- **verifier stopped: 3 of 3 produced, nothing dropped**, warning says the check
+  did not run, and it returns in 0.03s (the pass stops after the first
+  unreachable answer rather than waiting 2.5s per question);
+- a chemistry evaluation on the mock generator: 4 of 4, `keysChecked: 0`,
+  untouched.
+
+Suites: Python 72/72, api-server 303, mobile 1013 (1003 pass, 10 expected
+skips), typecheck clean.
+
+**What this is not.** It checks keys at *authoring* time only. Student answers
+are graded exactly as before — `math_equivalence` and grader `math_verifier` are
+still declared and still unwritten. Coverage is also only as good as the model's
+willingness to emit a `check`: a question without one is never verified, which
+is the honest default and the common case.
+
+**Not machine-verified:** the review screen's «مفتاح مُتحقَّق منه» badge and
+"N of M" summary render from the same data proved above, but the screen itself
+was not driven end to end — synthetic events do not reach these
+React-Native-Web controls, as recorded elsewhere in this file.
 
 ## Production has all 25 tables, and something checks it now, 2026-08-25
 
@@ -1475,12 +1617,10 @@ total outage is the worse failure.
 
 ### What is still not true
 
-**The maths verifier cannot check a generated answer key.** The plan said keys
-would go through SymPy; the service only exposes `/verify/derivative` and
-`/compute/derivative` — there is no general equivalence endpoint. So a
-generated key is *unverified* unless the question happens to be a derivative,
-and nothing claims otherwise. Wiring Tier 2 equivalence into grading needs a new
-endpoint on the Python service first.
+~~**The maths verifier cannot check a generated answer key.**~~ **Fixed
+2026-08-29** — see "Generated answer keys go through SymPy now" at the top of
+this file. Authoring-time key checking exists; Tier 2 *grading* (marking a
+student's typed answer by equivalence) still does not.
 
 **Nothing has generated a real question yet.** Every test above runs with live
 mode off or with a deliberately broken key. Turning it on is env-only —
@@ -7530,6 +7670,224 @@ sweep.
 All five: `pnpm run typecheck` clean, full mobile (972) and api-server (284)
 suites passing at each step. Not independently re-verified as a batch after
 the fact — each PR's own verification stands as recorded above.
+
+## Auditing for more "visible but not grounded" bugs found a real one, not the one I went looking for, 2026-08-28
+
+After PR #180 (Grade 9's wrong-screen + unwired-KB bugs), asked an Explore
+agent to check whether the new Grade 10 English curriculum (four vocational
+tracks, merged by a parallel session) had the same shape of problem. It
+does — `lib/curriculum/src/catalogs/g10EnglishVocational.ts` builds only
+`Browser*` rows (for the curriculum-browser UI), never the KB-shaped ones
+`knowledgeBase.ts` needs, and its own file comment says so plainly: "nothing
+in the AI-generation/grounding pipeline consumes these tracks yet." **That's
+the difference from Grade 9's bug** — Grade 9 was shipped *claiming* to be
+reachable and wasn't; English says outright that it isn't wired yet. Not a
+false claim, just unfinished — leaving the KB wiring for whoever picks this
+back up (four tracks' worth of new KB-shaped builders, mirroring
+`buildG9MathSem1Catalog`, is its own real chunk of work, not something to
+fold into an unrelated audit).
+
+What *is* a bug, and now fixed: `mathSupportResources.ts`'s two safety gates
+from the Grade 9 fix — the subject check and the `gradeHint !== 'grade-10'`
+check — both read `getBookForLesson(lesson)?.subjectId` /`?.gradeId`, which
+is `undefined` (not a known mismatch) for any lesson with no resolvable
+book at all. `undefined` fails both `if (hint && ...)` checks open, not
+closed — so a lesson from any subject not yet wired into `KB_BOOKS` (English
+today, whatever's unwired next) skipped both gates entirely and fell through
+to ungated title/keyword matching against every Math/Chemistry PDF. Confirmed
+live with a synthetic English-shaped lesson and a query containing "ورقة عمل
+worksheet exam": three Math PDFs matched before the fix, none after.
+Fixed by resolving the lesson's book once, up front, and returning empty
+immediately when a lesson was named but resolved to no book — before either
+hint is computed, so there's no hint left to read as "no opinion" instead of
+"reject." The widened retry in `buildSupportResourcesContext` (which
+deliberately drops `lesson` and passes `subjectId`/`gradeId` explicitly) is
+unaffected — it never had a `lesson` to fail on.
+
+Verified directly: a fabricated lesson shaped like a Grade 10 English
+commerce lesson (id `kbl-g10-eng-commerce-nccd-u1_l1`, no matching
+`KB_BOOKS` entry) now returns zero resources for a query stuffed with
+matching keywords; a real Grade 10 Math lesson queried the same way still
+returns its normal three PDFs. `pnpm run typecheck` clean, mobile `pnpm
+test` 977/987 (10 skipped) — unchanged pass count, this fix has no test
+coverage of its own yet (worth adding alongside whoever does the English
+KB wiring, since that's what will first exercise this path for real).
+
+No other `BOOKS` entry has this gap — cross-checked every id in
+`catalog.ts`'s `BOOKS` against `MVP_BOOK_IDS` and `knowledgeBase.ts`'s
+`KB_BOOKS`; math-10, math-10-s2, chem-10, chem-10-s2, finlit-s1, math-9-s1,
+math-9-s2 all resolve, and the grade-8/9/11 books outside `MVP_GRADE_IDS`
+are intentionally not visible, not silently broken.
+
+## «اختبار في اللغة الإنجليزية» full of math: picker index 0 changed meaning, 2026-08-29
+
+Reported from the deployed site with screenshots: a quiz screen opened as
+`/ai-tools/quiz?topic=<معمل برمجية جيوجبرا: حل أنظمة المعادلات بيانياً>` showed
+**الصف التاسع + اللغة الإنجليزية** over that Grade 10 *math* lab lesson, and
+generating produced English-language math questions titled «اختبار في اللغة
+الإنجليزية للصف التاسع: GeoGebra Lab – Solving Systems of Equations
+Graphically».
+
+Three faults stacked:
+
+1. **Picker order is persisted state, and it silently changed.** The MVP
+   pickers filtered `SUBJECTS`/`GRADES` in *declaration* order, so enabling
+   English (2026-08-27) and Grade 9 *inserted* entries at the front: index 0
+   became English + الصف التاسع. Every screen falls back to index 0 when a
+   picker param is absent, and every saved `formState`/route URL stored bare
+   indices — all of them shifted one entry off. Fixed: `getPickerSubjects` /
+   `getVisibleGrades` / `getSubjectsForGrade` now follow `MVP_SUBJECT_IDS` /
+   `MVP_GRADE_IDS` order (mathematics and grade-10 first, exactly the
+   pre-English positions), and `lib/curriculum/src/__tests__/pickerOrder.test.ts`
+   pins it. **Append** new MVP entries, never insert.
+2. **A bare `topic` param defaulted the scope instead of asking the topic.**
+   All seven `/ai-tools/*` screens now ground a bare topic and take the
+   lesson's own grade/subject (`topicPickerParams` in `services/lessonPrep.ts`)
+   before falling back to index 0. Explicit `gradeIdx`/`subjectIdx` params
+   still win.
+3. **Nothing refused the mismatch.** Even with subject=English picked by hand
+   over a math lesson title, generation went ahead and the server prompt
+   («أنشئ اختبارًا لمادة اللغة الإنجليزية … حول "معمل برمجية جيوجبرا…"») made
+   the model do its best. Now every generator screen (quiz, worksheet,
+   lesson-plan, activity, slides, game, lesson-flow, classroom builder) calls
+   `groundedSubjectConflict` first and refuses with a message naming the
+   lesson's real subject (`subjectTopicMismatch` i18n key, ar+en). Ungrounded
+   free-text topics are untouched — nothing to contradict.
+
+Verified: new tests ground the exact reported topic onto Grade 10 Mathematics
+and flag it under English; mobile suite 1004 pass / 0 fail (10 skipped),
+lib/curriculum 87 pass, api-server 292 pass, `pnpm run typecheck` clean.
+
+## Class-time tools kept as three doors, consolidated underneath, 2026-08-29
+
+The three أثناء الحصة tools (الفصل التفاعلي, تحدي الصف, نشاط صفي) stay
+separate teacher-facing cards — the jobs are genuinely different (formative
+on-screen interaction / zero-prep team retrieval game / printable
+cooperative plan) — but a discussion of "why not one umbrella" surfaced two
+real bugs and some duplicated internals worth fixing regardless of that
+decision.
+
+**Two divergent `ACTIVITY_CARDS` lists, now one.** `services/classroomRouting.ts`
+carried its own 5-card list (`exit-ticket` marked `available:false` with
+empty copy) while `app/ai-tools/classroom/index.tsx` hardcoded a different
+7-card marketplace list. `builder.tsx`'s header looks up the *routing*
+list, so opening the builder from `error-detective` or `gallery-walk`
+silently fell back to generic header copy — those two ids didn't exist in
+the list it was searching. The hub's 7-card list, with its marketplace
+metadata (`durationMin`/`isTeam`/`isSolo`/`isNew`/`isFeatured`/`accentColor`),
+is now the one exported `ACTIVITY_CARDS`; the hub imports it instead of
+keeping its own copy, and its hardcoded "6 activities" header string now
+reads `ACTIVITY_CARDS.length`.
+
+**The live Arabic classroom prompt only covered 3 of 7 formats — English
+covered 6.** In `artifacts/api-server/src/routes/generate.ts`,
+`classroomPromptAr` branched on `bingo`/`relay` only and defaulted
+everything else — `error-detective`, `gallery-walk`, `exit-ticket`,
+`quick-check` — to the escape-challenge prompt. `classroomPromptEn` handled
+three of those four; neither language handled `quick-check` at all, which
+exists only in the offline `MockAIService`. So on the live server, an
+Arabic teacher picking المحقق الرياضي / جولة المعارض / بطاقة الخروج /
+تحقق سريع got an escape-challenge deck instead — and any caller sending
+`quick-check` in live mode (the classroom hub, `slides.tsx`'s mid-lesson
+checks, Start Class, `home.tsx`) hit the same silent substitution. Fixed by
+moving the prompt builders out of `routes/generate.ts` — which imports the
+OpenAI client at module scope and throws without a key, so nothing there
+was ever unit-testable — into `src/lib/classroomPrompts.ts`, adding the
+missing Arabic branches (mirroring the English ones' structure and slide
+counts), and adding `quick-check` in both languages with an explicit
+0-based `correctIndex` instruction and a clamped `numQuestions` (1–8,
+default 4, matching the mock). A new `classroomPrompts.test.ts` pins all 7
+activity ids × both languages to prevent this drifting silently again; a
+matching test on the mobile side pins the same 7-id set against
+`ACTIVITY_CARDS`.
+
+**A live classroom-activity deck could show a false "verified" badge.**
+Nothing stripped `verified`/`verifiedBy`/`computedAnswer` from live model
+output before the route responded, and `presentation.tsx` renders a green
+verified badge straight off `slide.verified`. Only `MockAIService`'s
+offline quick-check path actually runs a verifier (SymPy, via
+`verifyIfPossible`) — a live call never does — but a model asked for JSON
+shaped like `ActivitySlide` will sometimes write `"verified": true`
+unprompted, because the shape invites it. Fixed with a
+`stripUnearnedVerification` sanitizer (same immutable-copy shape as
+`normalizeEscapeCodes` in `lib/escapeCodes.ts`) run on every live
+classroom-activity response. The quick-check card's own description
+(`activityQuickCheckDesc`) claimed "a verified answer key" in both
+languages — no longer true once fabricated verification is actively
+stripped — softened to describe the zero-prep mechanic instead, without
+the verification claim.
+
+**Consolidated, no behavior change:** four screens (game.tsx, classroom
+builder.tsx, slides.tsx, activity.tsx) each hand-rolled their own pill-row
+or dropdown picker. Extracted `components/ui/PillSelector.tsx` (with a
+`pillStyle` override for game.tsx's wider pills) and
+`components/ui/PickerField.tsx` (the dropdown, moved from activity.tsx)
+and switched all four screens over — pixel-identical, and incidentally
+fixes `builder.tsx`'s `PillGroup` having been redefined on every render.
+Also deduped the two rule lines ("the question appears and the timer
+starts" / "everyone thinks silently") that `classDeck.ts`'s `introSlide`
+and `buildGameDeckFromQuiz`'s inline intro each wrote out separately, into
+one `sharedThinkingRules` helper — same final copy, one source.
+
+**Left alone on purpose:** `activity.tsx`'s document generator
+(`ActivityOutput`, no `slides` field, cannot reach the presentation
+player) was not merged with the classroom deck pipeline — different
+endpoint, different output type, and doing so would be exactly the
+"consolidation for its own sake" the discussion ruled out. The
+seven-doors-into-one-presentation-player question flagged back in the
+2026-08-15/18 entries is unaffected by this PR and stays open.
+
+Verified: `pnpm run typecheck` clean across the monorepo. Mobile `pnpm
+test`: 1001 pass / 10 skipped (0 failed), including new coverage in
+`classroomRouting.test.ts` and `classDeck.test.ts`. `api-server` `pnpm
+build && pnpm test`: 315 pass (0 failed), including the new
+`classroomPrompts.test.ts` and the existing mount-order suite. Server-side
+Arabic/quick-check behavior is verified by unit test against the prompt
+builders only — the sandbox proxy blocks live calls to the deployed API,
+same caveat as the 2026-08-25 schema-verification entry. Not yet manually
+walked through in the running app (`pnpm run dev:mobile:web`); do that
+before treating the header-copy and quick-check-format fixes as confirmed
+end-to-end.
+
+## Projected English content stopped reading backwards, 2026-08-30
+
+Reported with a screenshot: a Slides Maker exit-ticket check for an English
+lesson («Which action is the most logical if a website does not load?»)
+projected with أ/ب/ج/د option letters and right-aligned text, while the slide
+title read Arabic-only («تذكرة الخروج 3»).
+
+Cause: `SlideView` and `QuestionOptions` in
+`app/ai-tools/classroom/presentation.tsx` chose direction and option
+lettering from the app's UI language (`isRTL`), not from what the slide
+itself says. A deck's chrome is picked once at build time from that UI
+language, but a check's own question/options are AI-generated and come back
+in whichever language the lesson actually is — an English-subject exit
+ticket is English even when the surrounding Arabic UI built the deck.
+
+Fixed at the renderer, not the generator (same shape as `optionLabels.ts`
+normalizing on receipt): `services/deckText.ts` gained
+`isEnglishSlideContent(...parts)` — true when the joined payload has no
+Arabic-script character and does have Latin letters, so a stray Latin
+variable inside Arabic prose doesn't flip it. `SlideView` and
+`QuestionOptions` now compute their own `isRTL` from `slide.content` (+
+`slide.options` for the latter), falling back to the app's language only when
+the slide has no opinion. Deliberately excludes `slide.title` from the
+detection — see next paragraph.
+
+Also: `lessonSlides.ts`'s numbered check titles (Quick Check N, Exit Ticket
+N, and the Exit Ticket section divider) are now built bilingually
+(`✋ تحقّق سريع 1 · Quick Check 1`) instead of picking one language — a
+single-language title can no longer name the wrong language for what is
+actually projected under it. This is why the direction detector reads
+`slide.content`/`slide.options` and not `slide.title`: the title is now
+deliberately bilingual and would always contain Arabic.
+
+Verified: new `deckText.test.ts` cases cover the reported question+options
+pair (flips to LTR/A-D) and confirm Arabic prose with an embedded equation or
+Arabic options stays Arabic; `lessonSlides.test.ts`'s two `answerKey`
+assertions that matched on the old single-language title prefix were updated
+to match the Arabic half instead. Mobile suite 1031 pass / 0 fail (10
+skipped), typecheck clean.
 
 ## Cloudflare R2 replaces Drive as the source-PDF fetch path, 2026-08-30
 

@@ -22,6 +22,7 @@ Older audits live in `docs/archive/` — historical snapshots, do not act on the
 | `artifacts/math-verifier` | SymPy FastAPI service — verifies math answer keys |
 | `artifacts/mockup-sandbox` | Design sandbox, **excluded from the workspace** |
 | `lib/curriculum` | NCCD curriculum data, shared by app and API |
+| `lib/math-verify` | Gates deciding what may claim symbolic verification — shared by app and API |
 | `lib/db` | Drizzle schema |
 
 ## Commands
@@ -32,7 +33,7 @@ pnpm run typecheck                     # whole monorepo
 pnpm run dev:api                       # Express on :8080
 pnpm run dev:mobile:web                # Expo web on :8081 (MOBILE_PORT overrides)
 
-cd artifacts/mobile     && pnpm test   # 971 tests (2026-08-26)
+cd artifacts/mobile     && pnpm test   # 1017 tests (2026-08-29)
 cd artifacts/api-server && pnpm build && pnpm test   # build first — see below
 ```
 
@@ -77,9 +78,36 @@ Before a live demo: [`docs/demo-checklist.md`](./docs/demo-checklist.md).
   questions from the concrete bank, titled with the chemistry lesson. Anything
   calling a generator must pass the lesson's own subject; the defaults on
   `buildClassDeck` are maths and will not fail loudly. The same trap sits on
-  every `/ai-tools/*` screen: they default `subjectIdx` to 0 — Mathematics — so
-  navigating with a bare `topic` param silently regenerates this bug. Use
-  `lessonPickerParams(lessonId, lang)` when you know the lesson.
+  every `/ai-tools/*` screen: they default `subjectIdx` to 0, so navigating
+  with a bare `topic` param silently regenerates this bug. Use
+  `lessonPickerParams(lessonId, lang)` when you know the lesson, or
+  `scopePickerParams(gradeId, subjectId)` when you only hold the ids — both in
+  `services/lessonPrep.ts`, both computing indices against the exact bare
+  picker lists the receiving screens rebuild. Since 2026-08-29 there are two
+  backstops: a screen opened with a bare `topic` grounds it and takes the
+  lesson's own grade/subject (`topicPickerParams`), and generation refuses a
+  topic whose grounded lesson belongs to another subject
+  (`groundedSubjectConflict`) instead of producing a mislabeled paper.
+- **Picker order is persisted state.** `gradeIdx`/`subjectIdx` are saved in
+  formState and route URLs as bare positions into `getPickerGrades()` /
+  `getPickerSubjects()`. Enabling English/Grade 9 in the MVP set used to
+  *insert* them (SUBJECTS/GRADES declaration order), so index 0 became
+  English + الصف التاسع and a bare-topic math URL generated «اختبار في اللغة
+  الإنجليزية» full of math questions. The MVP pickers now follow
+  `MVP_SUBJECT_IDS` / `MVP_GRADE_IDS` order and `pickerOrder.test.ts` pins
+  mathematics/grade-10 at index 0 — **append** new entries to those arrays,
+  never insert.
+- **SymPy does not reject Arabic — it multiplies it.** With
+  `implicit_multiplication_application` on, «الإجابة سبعة» parses as a product
+  of eight letter-symbols, compares unequal to the real answer, and comes back
+  `answer_mismatch` — indistinguishable from a wrong key. Any check whose
+  verdict *removes* content must therefore gate on Arabic script explicitly and
+  answer "cannot judge", never "wrong"; `relate_answer_key` in
+  `artifacts/math-verifier/verify_core.py` does, and
+  `lib/math-verify/src/answerKey.ts` refuses the same input client-side rather
+  than transliterating «ق(س)» into `f(x)`. Related: `expr_equiv` folds
+  `.equals() → None` into `False`, so anything needing "undecidable" as a
+  distinct outcome must use `_relation`, not `expr_equiv`.
 - **Extensionless relative imports only work through esbuild.** Anything loaded
   directly by `node --test` needs an explicit `.ts` extension.
 - **The OpenAI client throws at module scope without a key**, which makes
@@ -87,7 +115,9 @@ Before a live demo: [`docs/demo-checklist.md`](./docs/demo-checklist.md).
   the function that calls a model.
 - ~~The `gpt-5.6-luna` model id is hardcoded in three api-server files.~~
   **No longer true (checked 2026-08-19):** that string appears nowhere. The
-  model comes from `getAiModel()` in `lib/aiBudget.ts` — `AI_MODEL`, defaulting
+  model comes from `getGenerationModel()` / `getChatModel()` in
+  `lib/aiBudget.ts` (`getAiModel()` split in two on 2026-08-22) —
+  `AI_MODEL_GENERATE` / `AI_MODEL_CHAT`, both falling back to `AI_MODEL`, then
   to `gpt-4o-mini`. Live generation is gated by `AI_LIVE_MODE=true` and capped
   by `AI_BUDGET_USD`, with `EXPO_PUBLIC_DEMO_MODE=false` on the client. So
   turning real AI on is env vars, not a code change.

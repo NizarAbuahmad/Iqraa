@@ -30,7 +30,7 @@ import Svg, { Line, Polyline, Rect } from 'react-native-svg';
 import { plotGeometry, visualForSlide } from '@/services/deckVisuals';
 // Shared with both exports so the projected slide and the exported one cannot
 // disagree about what a bullet, an equation or a section glyph is.
-import { isBulletLine, looksLikeEquation, splitEmoji, stripBullet } from '@/services/deckText';
+import { isBulletLine, isEnglishSlideContent, looksLikeEquation, splitEmoji, stripBullet } from '@/services/deckText';
 import { geogebraCommandUrl, openGeogebraWithCommands } from '@/services/geogebra';
 import { youtubeEmbedUrl } from '@/services/classMedia';
 import {
@@ -379,7 +379,7 @@ function TeacherPanel({
 
 // ─── Question Slide (whole-class ABCD response) ──────────────────────────────
 function QuestionOptions({
-  slide, isRTL, t, revealed, onToggleReveal,
+  slide, isRTL: appIsRTL, t, revealed, onToggleReveal,
 }: {
   slide: ActivitySlide;
   isRTL: boolean;
@@ -389,6 +389,11 @@ function QuestionOptions({
 }) {
   const options = slide.options ?? [];
   if (options.length === 0) return null;
+  // Same reasoning as SlideView: an English-subject check's own options can
+  // be English regardless of the app's UI language, and calling out "ج" over
+  // an English option nobody printed أبجد cards for is not the letter a
+  // student reading it in English would say.
+  const isRTL = isEnglishSlideContent(slide.content, ...options) ? false : appIsRTL;
   // Response letters — students raise a hand and call out the letter
   // (أ = 1, ب = 2, …). No printed cards — the app never had a way to make them.
   const letters = isRTL ? ['أ', 'ب', 'ج', 'د', 'هـ'] : ['A', 'B', 'C', 'D', 'E'];
@@ -497,7 +502,15 @@ function QuestionOptions({
 }
 
 // ─── Slide Content ────────────────────────────────────────────────────────────
-function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
+function SlideView({ slide, isRTL: appIsRTL }: { slide: ActivitySlide; isRTL: boolean }) {
+  // A slide's own question/options can be in English regardless of the app's
+  // UI language: the deck's chrome is picked once at build time from that UI
+  // language, but an English-subject check comes back from the model in
+  // English no matter what. Laying an English question out right-to-left with
+  // the reading edge on the right is asking the class to read it backwards —
+  // so direction here follows the slide's actual payload (its body, not its
+  // title, which is deliberately bilingual and would always read as Arabic).
+  const isRTL = isEnglishSlideContent(slide.content, ...(slide.options ?? [])) ? false : appIsRTL;
   const accent = slideTypeAccent(slide.type);
   const align = isRTL ? ('right' as const) : ('left' as const);
   const edge = isRTL ? ('flex-end' as const) : ('flex-start' as const);

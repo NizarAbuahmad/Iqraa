@@ -18,7 +18,7 @@ import { createHash } from "node:crypto";
  * artifacts wrong or stale. It is part of both keys, so a bump partitions new
  * traffic from old rather than silently mixing them.
  */
-export const PROMPT_VERSION = "2026-08-25.2";
+export const PROMPT_VERSION = "2026-08-29.1";
 
 /** Parameters the plan proposes to serve by slicing one superset artifact,
  *  rather than by generating a separate artifact per combination. They are in
@@ -41,6 +41,7 @@ const STRICT_ONLY_FIELDS = [
   "questionTypes",
   "includePriorReview",
   "priorKnowledge",
+  "priorTopicsNotes",
   "homework",
 ] as const;
 

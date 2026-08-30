@@ -22,9 +22,12 @@ import assert from 'node:assert/strict';
 
 import {
   buildLessonPrepRequest,
+  groundedSubjectConflict,
   lessonPickerParams,
   lessonPrepPickerIndices,
   resolveLessonPrepContext,
+  scopePickerParams,
+  topicPickerParams,
 } from '../lessonPrep.ts';
 import { getPickerGrades, getPickerSubjects, getLessonById } from '../curriculumData.ts';
 
@@ -113,6 +116,59 @@ describe('buildLessonPrepRequest', () => {
   it('returns null for an unknown lesson', () => {
     assert.equal(buildLessonPrepRequest({ lessonId: 'no-such-lesson', lang: 'ar' }), null);
   });
+
+  it('leaves prior-review fields absent when nothing was asked for (regression)', () => {
+    const built = buildLessonPrepRequest({ lessonId: MATH_LESSON_ID, lang: 'ar' })!;
+    assert.equal(built.request.priorTopicsNotes, undefined);
+    assert.equal(built.request.includePriorReview, undefined);
+    assert.equal(built.request.priorKnowledge, undefined);
+  });
+
+  it('trims free-text prior-topics notes and omits them when blank', () => {
+    const withNotes = buildLessonPrepRequest({
+      lessonId: MATH_LESSON_ID,
+      lang: 'ar',
+      priorTopicsNotes: '  راجع حل المعادلات من الصف التاسع  ',
+    })!;
+    assert.equal(withNotes.request.priorTopicsNotes, 'راجع حل المعادلات من الصف التاسع');
+
+    const blank = buildLessonPrepRequest({
+      lessonId: MATH_LESSON_ID,
+      lang: 'ar',
+      priorTopicsNotes: '   ',
+    })!;
+    assert.equal(blank.request.priorTopicsNotes, undefined);
+  });
+
+  it('populates priorKnowledge from the unit only when the teacher asked and the unit actually has it', () => {
+    // u1 (math s1) carries prior_knowledge — ticking the box surfaces it.
+    const withReview = buildLessonPrepRequest({
+      lessonId: MATH_LESSON_ID,
+      lang: 'ar',
+      includePriorReview: true,
+    })!;
+    assert.equal(withReview.request.includePriorReview, true);
+    assert.ok(withReview.request.priorKnowledge?.length, 'expected grounded prior-knowledge concepts');
+
+    // Same lesson, box unticked: never sent even though the unit has data.
+    const unticked = buildLessonPrepRequest({
+      lessonId: MATH_LESSON_ID,
+      lang: 'ar',
+      includePriorReview: false,
+    })!;
+    assert.equal(unticked.request.includePriorReview, undefined);
+    assert.equal(unticked.request.priorKnowledge, undefined);
+
+    // Chemistry lessons are outside the two catalogs getUnitPriorKnowledge
+    // reads — ticking the box must not fabricate concepts for them.
+    const noData = buildLessonPrepRequest({
+      lessonId: CHEM_LESSON_ID,
+      lang: 'ar',
+      includePriorReview: true,
+    })!;
+    assert.equal(noData.request.includePriorReview, undefined);
+    assert.equal(noData.request.priorKnowledge, undefined);
+  });
 });
 
 describe('lessonPrepPickerIndices', () => {
@@ -162,5 +218,101 @@ describe('lessonPickerParams', () => {
     assert.equal(lessonPickerParams('no-such-lesson', 'ar'), null);
     assert.equal(lessonPickerParams(null, 'ar'), null);
     assert.equal(lessonPickerParams(undefined, 'ar'), null);
+  });
+});
+
+describe('scopePickerParams', () => {
+  // The evaluation results and marking screens hand off to the worksheet
+  // generator with indices they used to compute against a grade-filtered
+  // subject list, while the receiving screens rebuild the *bare* list. The two
+  // only agreed because INVESTOR_MVP_CURRICULUM flattens the argument today —
+  // this helper pins the receiver's own lists.
+  it('indices point into the exact lists the generator screens rebuild', () => {
+    const params = scopePickerParams('grade-10', 'chemistry');
+    assert.ok(params);
+    assert.equal(getPickerGrades()[Number(params.gradeIdx)]!.id, 'grade-10');
+    assert.equal(getPickerSubjects()[Number(params.subjectIdx)]!.id, 'chemistry');
+  });
+
+  it('agrees with lessonPickerParams for a lesson of the same scope', () => {
+    const ctx = resolveLessonPrepContext(CHEM_LESSON_ID, 'ar')!;
+    const fromLesson = lessonPickerParams(CHEM_LESSON_ID, 'ar')!;
+    const fromScope = scopePickerParams(ctx.gradeId, ctx.subjectId)!;
+    assert.deepEqual(fromScope, fromLesson);
+  });
+
+  it('returns null rather than a fabricated index for an unknown scope', () => {
+    assert.equal(scopePickerParams('grade-3', 'mathematics'), null);
+    assert.equal(scopePickerParams('grade-10', 'no-such-subject'), null);
+    assert.equal(scopePickerParams(null, 'mathematics'), null);
+    assert.equal(scopePickerParams('grade-10', undefined), null);
+  });
+});
+
+/**
+ * The reported repro: `/ai-tools/quiz?topic=معمل برمجية جيوجبرا: حل أنظمة
+ * المعادلات بيانياً` — a Grade 10 math lesson carried as a bare topic param.
+ * With no picker params the screen fell back to index 0 for both pickers,
+ * which (after Grade 9 and English joined the MVP lists) meant الصف التاسع +
+ * اللغة الإنجليزية, and the model generated math questions titled «اختبار في
+ * اللغة الإنجليزية».
+ */
+const GEOGEBRA_LAB_TOPIC_AR = 'معمل برمجية جيوجبرا: حل أنظمة المعادلات بيانياً';
+
+describe('topicPickerParams', () => {
+  it('grounds the reported bare-topic URL onto Grade 10 Mathematics', () => {
+    const params = topicPickerParams(GEOGEBRA_LAB_TOPIC_AR, 'ar');
+    assert.ok(params, 'the GeoGebra lab lesson must ground');
+    assert.equal(getPickerGrades()[Number(params.gradeIdx)]!.id, 'grade-10');
+    assert.equal(getPickerSubjects()[Number(params.subjectIdx)]!.id, 'mathematics');
+  });
+
+  it('resolves a chemistry lesson title onto chemistry', () => {
+    const chemTitle = getLessonById(CHEM_LESSON_ID)!.titleAr;
+    const params = topicPickerParams(chemTitle, 'ar');
+    assert.ok(params);
+    assert.equal(getPickerSubjects()[Number(params.subjectIdx)]!.id, 'chemistry');
+    assert.equal(getPickerGrades()[Number(params.gradeIdx)]!.id, 'grade-10');
+  });
+
+  it('agrees with lessonPickerParams for the same lesson', () => {
+    const chemTitle = getLessonById(CHEM_LESSON_ID)!.titleAr;
+    assert.deepEqual(
+      topicPickerParams(chemTitle, 'ar'),
+      lessonPickerParams(CHEM_LESSON_ID, 'ar'),
+    );
+  });
+
+  // Null, not a guess: a free-typed topic that grounds nowhere gives the
+  // screen no reason to move its pickers.
+  it('returns null for an ungrounded, empty or absent topic', () => {
+    assert.equal(topicPickerParams('موضوع حر لا يطابق أي درس', 'ar'), null);
+    assert.equal(topicPickerParams('', 'ar'), null);
+    assert.equal(topicPickerParams('   ', 'ar'), null);
+    assert.equal(topicPickerParams(null, 'ar'), null);
+    assert.equal(topicPickerParams(undefined, 'ar'), null);
+  });
+});
+
+describe('groundedSubjectConflict', () => {
+  // The manual half of the same repro: subject picker on English, topic still
+  // a math lesson. Generating anyway makes a paper whose header and content
+  // disagree, so the screens refuse and name the lesson's real subject.
+  it('flags a math lesson topic under the English subject', () => {
+    const conflict = groundedSubjectConflict(GEOGEBRA_LAB_TOPIC_AR, 'ar', 'english');
+    assert.ok(conflict, 'math lesson under English must conflict');
+    assert.equal(conflict.id, 'mathematics');
+    assert.equal(conflict.nameAr, 'الرياضيات');
+  });
+
+  it('is silent when the picked subject matches the lesson', () => {
+    assert.equal(groundedSubjectConflict(GEOGEBRA_LAB_TOPIC_AR, 'ar', 'mathematics'), null);
+    const chemTitle = getLessonById(CHEM_LESSON_ID)!.titleAr;
+    assert.equal(groundedSubjectConflict(chemTitle, 'ar', 'chemistry'), null);
+  });
+
+  it('is silent for an ungrounded topic — nothing to contradict', () => {
+    assert.equal(groundedSubjectConflict('موضوع حر لا يطابق أي درس', 'ar', 'english'), null);
+    assert.equal(groundedSubjectConflict('', 'ar', 'english'), null);
   });
 });

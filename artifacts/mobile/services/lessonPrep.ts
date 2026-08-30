@@ -20,8 +20,10 @@ import {
   getPickerSubjects,
   getUnitById,
 } from './curriculumData.ts';
+import type { Subject } from './curriculumData.ts';
+import { getBookForLesson } from './knowledgeBase.ts';
 import type { AIRequest } from './ai/AIService.ts';
-import { buildAdaptationsDirective, resolveGeneratorGrounding } from './kbContext.ts';
+import { buildAdaptationsDirective, getUnitPriorKnowledge, resolveGeneratorGrounding } from './kbContext.ts';
 
 export type TeachingStyle = 'direct' | 'inquiry' | 'collaborative';
 
@@ -114,6 +116,85 @@ export function lessonPickerParams(
 }
 
 /**
+ * Route params that open a generator on an evaluation's own grade/subject
+ * scope — the `lessonPickerParams` sibling for callers that hold ids rather
+ * than a lesson (the evaluation results and marking screens).
+ *
+ * The indices are computed against the *same lists the receiving screens
+ * rebuild* — bare `getPickerGrades()` / `getPickerSubjects()`. Those two
+ * screens used to call `getPickerSubjects(gradeId)`, which only agrees with
+ * the receiver's bare call while `INVESTOR_MVP_CURRICULUM` makes the argument
+ * a no-op; the day that flag flips, a hand-computed index would open the
+ * worksheet on a different subject than the exam it came from.
+ *
+ * Returns `null` when either id is not in the pickers, so the caller hides
+ * the button rather than sending a teacher to material nobody chose.
+ */
+export function scopePickerParams(
+  gradeId: string | null | undefined,
+  subjectId: string | null | undefined,
+): { gradeIdx: string; subjectIdx: string } | null {
+  if (!gradeId || !subjectId) return null;
+  const gradeIdx = getPickerGrades().findIndex(g => g.id === gradeId);
+  const subjectIdx = getPickerSubjects().findIndex(s => s.id === subjectId);
+  if (gradeIdx < 0 || subjectIdx < 0) return null;
+  return { gradeIdx: String(gradeIdx), subjectIdx: String(subjectIdx) };
+}
+
+/**
+ * Picker params inferred from a bare `topic` route param — the last line of
+ * defence for navigations that carry a lesson title but no `gradeIdx` /
+ * `subjectIdx` (old bookmarked URLs, callers that predate `lessonPickerParams`).
+ *
+ * Without this, a generator screen opened as `/ai-tools/quiz?topic=<math
+ * lesson>` falls back to picker index 0 for both — whatever grade and subject
+ * happen to sit there — and generates that lesson under a subject nobody chose
+ * (the live model dutifully produced «اختبار في اللغة الإنجليزية» full of math).
+ * Grounding the topic recovers the lesson's own book, and the book fixes the
+ * grade and the subject.
+ *
+ * Returns `null` for an empty or ungrounded topic, so the caller keeps the
+ * screen's normal defaults.
+ */
+export function topicPickerParams(
+  topic: string | null | undefined,
+  lang: 'ar' | 'en',
+): { gradeIdx: string; subjectIdx: string } | null {
+  const trimmed = topic?.trim();
+  if (!trimmed) return null;
+  const lesson = resolveGeneratorGrounding(trimmed, lang).lesson;
+  if (!lesson) return null;
+  const book = getBookForLesson(lesson);
+  if (!book) return null;
+  return scopePickerParams(book.gradeId, book.subjectId);
+}
+
+/**
+ * The subject a grounded topic actually belongs to, when it is not the one
+ * the teacher's picker shows — `null` when they agree, or when the topic is
+ * ungrounded / the lesson's book unknown (nothing to contradict).
+ *
+ * Generator screens call this before sending a request: a math lesson title
+ * under subject «اللغة الإنجليزية» cannot produce an honest paper — the KB
+ * serves the lesson's own (math) content while the header claims English — so
+ * the screen refuses with the lesson's real subject named instead of
+ * generating mislabeled material. Fail closed, or label honestly; never both.
+ */
+export function groundedSubjectConflict(
+  topic: string,
+  lang: 'ar' | 'en',
+  pickedSubjectId: string,
+): Subject | null {
+  const trimmed = topic.trim();
+  if (!trimmed) return null;
+  const lesson = resolveGeneratorGrounding(trimmed, lang).lesson;
+  if (!lesson) return null;
+  const book = getBookForLesson(lesson);
+  if (!book || book.subjectId === pickedSubjectId) return null;
+  return getPickerSubjects().find(s => s.id === book.subjectId) ?? null;
+}
+
+/**
  * Where this lesson sits in the AI-tools pickers, so handing off to the full
  * tool arrives on the right grade and subject instead of on index 0.
  */
@@ -143,6 +224,14 @@ export function buildLessonPrepRequest(args: {
   teachingStyle?: TeachingStyle;
   /** Free-text delivery instructions ("adapt this for a student with ADHD"). */
   adaptations?: string;
+  /**
+   * Free-text notes on prior topics the teacher wants re-explained — from
+   * earlier lessons or earlier grades — because some students haven't fully
+   * grasped them. Distinct from `adaptations` (delivery instructions).
+   */
+  priorTopicsNotes?: string;
+  /** Prepend the unit's own curriculum "تعلمت سابقًا" concepts, when it has any. */
+  includePriorReview?: boolean;
 }): LessonPrepRequest | null {
   const context = resolveLessonPrepContext(args.lessonId, args.lang);
   if (!context) return null;
@@ -154,6 +243,10 @@ export function buildLessonPrepRequest(args: {
     grounding.grounded ? grounding.context : grounding.ungroundedNote,
     buildAdaptationsDirective(args.adaptations ?? '', args.lang),
   ].filter(Boolean).join('\n') || undefined;
+
+  const unitPrior = grounding.lesson ? getUnitPriorKnowledge(grounding.lesson.id) : [];
+  const usePrior = Boolean(args.includePriorReview) && unitPrior.length > 0;
+  const priorTopicsNotes = args.priorTopicsNotes?.trim() || undefined;
 
   return {
     context,
@@ -170,6 +263,9 @@ export function buildLessonPrepRequest(args: {
       teachingStyle: args.teachingStyle ?? 'direct',
       objectives: context.objectives || undefined,
       additionalContext,
+      includePriorReview: usePrior || undefined,
+      priorKnowledge: usePrior ? unitPrior : undefined,
+      priorTopicsNotes,
     },
   };
 }

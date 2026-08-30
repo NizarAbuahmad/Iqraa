@@ -77,3 +77,58 @@ export async function verifyDerivative(
     clearTimeout(timer);
   }
 }
+
+/**
+ * SymPy's verdict on a proposed answer KEY.
+ *
+ * Three-way on purpose. `verified: boolean` is the right shape for
+ * `verifyDerivative`, whose caller asks "may this item claim a badge?" — there,
+ * "wrong" and "could not tell" both mean no badge. A key check's caller
+ * **deletes a question the teacher was about to get**, so the two must arrive
+ * apart: only `distinct` is evidence against the key.
+ */
+export type KeyRelation =
+  | "equivalent"
+  | "distinct"
+  | "indeterminate"
+  | "error"
+  | "unsupported_topic";
+
+export type KeyRelationResult = {
+  relation: KeyRelation;
+  computed_answer: string | null;
+  error?: string | null;
+};
+
+export async function relateAnswerKey(
+  topic: string,
+  question: string,
+  answer: string,
+): Promise<KeyRelationResult> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), VERIFY_TIMEOUT_MS);
+  try {
+    const res = await fetch(`${DEFAULT_URL}/verify/answer-key`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ topic, question, answer }),
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      return { relation: "error", computed_answer: null, error: `http_${res.status}` };
+    }
+    return (await res.json()) as KeyRelationResult;
+  } catch (err) {
+    // Never throws, like verifyDerivative: an unreachable verifier is a state
+    // the caller must be able to read, not an exception that aborts a whole
+    // generation. `isVerifierUnreachable` reads these same two strings.
+    const msg = err instanceof Error ? err.message : String(err);
+    return {
+      relation: "error",
+      computed_answer: null,
+      error: msg.includes("abort") ? "timeout" : `client_error:${msg}`,
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}

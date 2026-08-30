@@ -36,6 +36,11 @@ export function formatLessonPlanText(
   lines.push(H(isAr ? 'المواد اللازمة' : 'Materials Needed'));
   plan.materials.forEach(m => lines.push(`• ${m}`));
 
+  if (plan.priorReview?.trim()) {
+    lines.push(H(isAr ? 'مراجعة سابقة' : 'Prior Knowledge Review'));
+    lines.push(plan.priorReview);
+  }
+
   lines.push(H(isAr ? 'التمهيد' : 'Introduction'));
   lines.push(plan.introduction);
 

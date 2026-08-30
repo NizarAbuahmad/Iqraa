@@ -352,6 +352,8 @@ const translations = {
     topicPlaceholder: 'مثال: المعادلات التربيعية، التمثيل الضوئي...',
     durationLabel: 'المدة (بالدقائق)',
     topicRequired: 'أدخل موضوع الدرس أولاً.',
+    subjectTopicMismatch: (subject: string) =>
+      `هذا الموضوع درسٌ من مادة «${subject}». غيّر المادة إلى «${subject}»، أو اختر موضوعًا من المادة المحددة.`,
     generationFailed: 'تعذر إتمام العملية. حاول مرة أخرى.',
     curriculumUngroundedNotice: 'هذا الموضوع غير موجود في المنهج المتاح حالياً. الخطة عامة وليست مبنية على نتاجات درس محدد من الكتاب.',
     curriculumUngroundedNoticeWorksheet: 'هذا الموضوع غير موجود في المنهج المتاح حالياً. ورقة العمل عامة وليست مبنية على نتاجات درس محدد من الكتاب.',
@@ -365,6 +367,7 @@ const translations = {
     lessonPlanReady: 'خطة الدرس جاهزة',
     sectionObjectives: 'الأهداف',
     sectionMaterials: 'المواد اللازمة',
+    sectionPriorReview: 'مراجعة سابقة',
     sectionIntroduction: 'التمهيد',
     sectionMainActivity: 'النشاط الرئيسي',
     sectionClosure: 'الختام',
@@ -385,7 +388,9 @@ const translations = {
 
     // Quiz generator
     createQuizTitle: 'اختبار قصير',
-    quizSubtitle: 'أسئلة جاهزة للتقويم السريع',
+    // «للمراجعة السريعة»، لا «للتقويم»: هذه الأداة تجهّز مادة تُطبع أو تُعرض،
+    // ولا ترصد درجات — الرصد والتصحيح شأن «التقييمات».
+    quizSubtitle: 'أسئلة جاهزة للمراجعة السريعة — للطباعة أو العرض',
     topicPlaceholderQuiz: 'مثال: الصيغة التربيعية، الكسور...',
     generateQuizBtn: 'جهّز الاختبار',
     generatingQuiz: 'يعمل اقرأ على إعداد الأسئلة...',
@@ -522,6 +527,10 @@ const translations = {
     objectivesPlaceholder: 'اكتب أهدافك أو اترك الحقل فارغاً لاقتراحها',
     adaptationsLabel: 'تكييفات وتعليمات إضافية (اختياري)',
     adaptationsPlaceholder: 'مثال: كيّف الخطة لطالب لديه فرط حركة وتشتت انتباه',
+    priorTopicsLabel: 'موضوعات سابقة لإعادة شرحها (اختياري)',
+    priorTopicsPlaceholder: 'مثال: بعض الطلاب لم يستوعبوا حل المعادلات من الصف التاسع — راجعها قبل الدرس الجديد',
+    includePriorReviewPlanLabel: 'تضمين مراجعة للمعارف السابقة من المنهاج',
+    priorReviewPlanUnavailableNote: 'لا توجد معارف سابقة مرتبطة بهذه الوحدة في المنهاج — استخدم حقل الملاحظات أعلاه للإشارة إلى موضوعات محددة.',
     sectionGuidedPractice: 'التدريب الموجّه',
     sectionIndependentPractice: 'التدريب المستقل',
     regenerateBtn: 'أعد التجهيز',
@@ -758,7 +767,7 @@ const translations = {
     addMediaAdd: 'أضف',
     addMediaRemove: 'إزالة',
     activityQuickCheckTitle: 'تحقق سريع',
-    activityQuickCheckDesc: 'أسئلة على الشاشة يجيب عنها كل الطلاب معًا ببطاقات أ ب ج د — والإجابة الصحيحة مُتحقق منها',
+    activityQuickCheckDesc: 'أسئلة على الشاشة يجيب عنها كل الطلاب معًا برفع الأيدي — بلا تحضير مسبق',
     verifiedAnswerBadge: 'تم التحقق من الإجابة رياضيًا',
     verifiedBySymbolic: 'تم التحقق من الإجابة رياضيًا (SymPy)',
     verifiedByBank: 'إجابة من بنك الأسئلة المُراجَع',
@@ -958,7 +967,9 @@ const translations = {
     // Evaluations — authoring
     evaluations: 'التقييمات',
     myEvaluations: 'تقييماتي',
-    evaluationsSubtitle: 'أنشئ تقييمًا وولّد أسئلته من المنهاج',
+    // يقول صراحةً ما يميّز هذه الأداة عن «اختبار قصير»: هنا رصد وتصحيح وسجلّ
+    // لكل طالب، لا مادة للطباعة فحسب.
+    evaluationsSubtitle: 'امتحان يُرصَد ويُصحَّح: ولّد أسئلته من المنهاج وشاركه برابط وصحّح إجابات طلابك',
     newEvaluation: 'تقييم جديد',
     noEvaluationsYet: 'لا تقييمات بعد',
     noEvaluationsDesc: 'أنشئ تقييمك الأول لتوليد أسئلة من المنهاج المعتمد',
@@ -998,6 +1009,14 @@ const translations = {
     typeProblemSolving: 'حل مسألة',
     typePracticalTask: 'مهمة عملية',
     marksAbbrev: (n: string) => `${n} ع`,
+    // «تم التحقق» يوصف المفتاح لا السؤال: البرنامج يتحقق من صحة الإجابة
+    // رياضيًا، ولا يحكم على جودة السؤال نفسه.
+    keyVerifiedBadge: 'مفتاح مُتحقَّق منه',
+    keysVerifiedSummary: (n: string, m: string) =>
+      `تم التحقق رياضيًا من ${n} من أصل ${m} مفتاح إجابة`,
+    // مهم أن تُقرأ البقية «غير قابلة للفحص» لا «خاطئة»: أي مفتاح ناقضه
+    // المدقّق حُذف سؤاله عند التوليد ولم يصل إلى هنا أصلًا.
+    keysVerifiedNote: 'بقية الأسئلة ليس لها إجابة رمزية يفحصها البرنامج — وهذا لا يعني أنها خاطئة.',
 
     // Evaluations — attempts & answer entry
     enterAnswersBtn: 'أدخل إجابات الطلاب',
@@ -1382,6 +1401,8 @@ const translations = {
     topicPlaceholder: 'e.g. Quadratic Equations, Photosynthesis...',
     durationLabel: 'Duration (minutes)',
     topicRequired: 'Please enter a topic.',
+    subjectTopicMismatch: (subject: string) =>
+      `This topic is a ${subject} lesson. Switch the subject to ${subject}, or pick a topic from the selected subject.`,
     generationFailed: 'Generation failed. Please try again.',
     curriculumUngroundedNotice: 'This topic is not in the currently available curriculum. The plan is generic and not grounded in a specific textbook lesson.',
     curriculumUngroundedNoticeWorksheet: 'This topic is not in the currently available curriculum. The worksheet is generic and not grounded in a specific textbook lesson.',
@@ -1395,6 +1416,7 @@ const translations = {
     lessonPlanReady: 'Lesson plan generated successfully',
     sectionObjectives: 'Objectives',
     sectionMaterials: 'Materials Needed',
+    sectionPriorReview: 'Prior Knowledge Review',
     sectionIntroduction: 'Introduction',
     sectionMainActivity: 'Main Activity',
     sectionClosure: 'Closure',
@@ -1413,7 +1435,9 @@ const translations = {
     worksheetReady: 'Worksheet ready',
 
     createQuizTitle: 'Create Quiz',
-    quizSubtitle: 'Auto-graded questions',
+    // Not "auto-graded": this tool produces printable/projectable material and
+    // records nothing — grading and records live in Evaluations.
+    quizSubtitle: 'Ready-made questions for a quick review — print or project',
     topicPlaceholderQuiz: 'e.g. Quadratic Formula, Fractions…',
     generateQuizBtn: 'Generate Quiz',
     generatingQuiz: 'Generating quiz questions…',
@@ -1542,6 +1566,10 @@ const translations = {
     objectivesPlaceholder: 'Type your objectives or leave blank to auto-suggest',
     adaptationsLabel: 'Adaptations & extra instructions (optional)',
     adaptationsPlaceholder: 'e.g. adapt this plan for a student with ADHD',
+    priorTopicsLabel: 'Prior topics to re-explain (optional)',
+    priorTopicsPlaceholder: 'e.g. some students never grasped solving equations from grade 9 — review it before the new lesson',
+    includePriorReviewPlanLabel: 'Include a review of prior curriculum knowledge',
+    priorReviewPlanUnavailableNote: 'The curriculum records no prior knowledge for this unit — use the notes field above to point to specific topics instead.',
     sectionGuidedPractice: 'Guided Practice',
     sectionIndependentPractice: 'Independent Practice',
     regenerateBtn: 'Regenerate',
@@ -1772,7 +1800,7 @@ const translations = {
     addMediaAdd: 'Add',
     addMediaRemove: 'Remove',
     activityQuickCheckTitle: 'Quick Check',
-    activityQuickCheckDesc: 'On-screen questions the whole class answers with A B C D cards — with a verified answer key',
+    activityQuickCheckDesc: 'On-screen questions the whole class answers together by raised hands — zero prep',
     verifiedAnswerBadge: 'Answer key mathematically verified',
     verifiedBySymbolic: 'Answer symbolically verified (SymPy)',
     verifiedByBank: 'Answer from the reviewed question bank',
@@ -1969,7 +1997,9 @@ const translations = {
     // Evaluations — authoring
     evaluations: 'Evaluations',
     myEvaluations: 'My evaluations',
-    evaluationsSubtitle: 'Create an evaluation and generate its questions from the curriculum',
+    // Says what separates this from the Short quiz tool: marks, grading and a
+    // per-student record, not just printable material.
+    evaluationsSubtitle: 'A marked exam with student records: generate it from the curriculum, share a link, grade the answers',
     newEvaluation: 'New evaluation',
     noEvaluationsYet: 'No evaluations yet',
     noEvaluationsDesc: 'Create your first evaluation to generate questions from the approved curriculum',
@@ -2009,6 +2039,12 @@ const translations = {
     typeProblemSolving: 'Problem Solving',
     typePracticalTask: 'Practical Task',
     marksAbbrev: (n: string) => `${n} pts`,
+    keyVerifiedBadge: 'Key verified',
+    keysVerifiedSummary: (n: string, m: string) =>
+      `${n} of ${m} answer keys verified by the maths verifier`,
+    // "Not checkable", never "wrong": a key the verifier contradicted was
+    // dropped at generation and never reached this screen.
+    keysVerifiedNote: 'The rest have no symbolic answer to check — that does not mean they are wrong.',
 
     // Evaluations — attempts & answer entry
     enterAnswersBtn: 'Enter student answers',

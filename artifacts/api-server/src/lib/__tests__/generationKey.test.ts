@@ -91,6 +91,13 @@ describe("generationKeys", () => {
     it("still separates genuinely different lessons in the coarse key", () => {
       assert.notEqual(keys(base).coarseKey, keys({ ...base, topic: "المتجهات" }).coarseKey);
     });
+
+    it("changes the strict key for priorTopicsNotes but not the coarse key", () => {
+      const plain = keys(base);
+      const withNotes = keys({ ...base, priorTopicsNotes: "راجع حل المعادلات من الصف التاسع" });
+      assert.equal(plain.coarseKey, withNotes.coarseKey);
+      assert.notEqual(plain.strictKey, withNotes.strictKey);
+    });
   });
 
   describe("teacher-pasted context", () => {

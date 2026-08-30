@@ -55,6 +55,7 @@ function htmlBase(content: string, isRTL: boolean, title: string): string {
       font-size: 14px; line-height: 1.7; color: #1a1a1a;
       padding: 40px; direction: ${dir}; text-align: ${align};
       background: #fff;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
     }
     .school-header {
       border-bottom: 2px solid #1B6B62; padding-bottom: 16px; margin-bottom: 24px;
@@ -196,6 +197,7 @@ export function buildLessonPlanHTML(
     <div class="doc-meta">${esc(meta.subject)} • ${esc(meta.grade)}${meta.duration ? ` • ${meta.duration} ${L('دقيقة', 'min')}` : ''}</div>
     ${bullets(L('الأهداف', 'Objectives'), plan.objectives)}
     ${bullets(L('المواد اللازمة', 'Materials Needed'), plan.materials)}
+    ${plan.priorReview?.trim() ? section(L('مراجعة سابقة', 'Prior Knowledge Review'), plan.priorReview) : ''}
     ${section(L('التمهيد', 'Introduction'), plan.introduction)}
     ${section(L('النشاط الرئيسي', 'Main Activity'), plan.mainActivity)}
     ${section(L('التدريب الموجّه', 'Guided Practice'), plan.guidedPractice)}
@@ -324,7 +326,7 @@ export function buildActivityHTML(
   <title>${e(title)}</title>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:${isAr ? "'Amiri','Arial'" : "'Inter','Helvetica Neue',Arial"},sans-serif;font-size:14px;line-height:1.7;color:#1a1a1a;padding:40px;direction:${dir};text-align:${align};background:#fff}
+    body{font-family:${isAr ? "'Amiri','Arial'" : "'Inter','Helvetica Neue',Arial"},sans-serif;font-size:14px;line-height:1.7;color:#1a1a1a;padding:40px;direction:${dir};text-align:${align};background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
     ul{padding-${isAr ? 'right' : 'left'}:20px}li{margin-bottom:4px;font-size:13px;color:#333}
     .footer{margin-top:32px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:11px;color:#aaa;text-align:center}
   </style>
@@ -391,56 +393,64 @@ export function buildLessonPlanSlidesHTML(
       <div class="section-body">${content}</div>
     </div>`;
 
-  const TOTAL = 6;
-
   const slide1 = `${slideOpen('title-slide')}
     <div class="title-content">
       <div class="title-badge">${L('خطة درس', 'Lesson Plan')}</div>
       <h1 class="title-main">${esc(title)}</h1>
       <div class="title-meta">${esc(meta.subject)} &nbsp;•&nbsp; ${esc(meta.grade)}${meta.duration ? ` &nbsp;•&nbsp; ${meta.duration} ${L('دقيقة', 'min')}` : ''}</div>
       <div class="title-brand">Iqra — ${L('مساعد التدريس الذكي', 'AI Teaching Assistant')}</div>
-    </div>
-    ${footer(1, TOTAL)}</div>`;
+    </div>`;
+
+  // Optional: present only when the teacher asked for a warm-up review of
+  // prior material. One block, not two-col — there is nothing to pair it with.
+  const priorReviewSlide = plan.priorReview?.trim() ? `${slideOpen()}
+    ${header(L('مراجعة سابقة', 'Prior Knowledge Review'))}
+    <div class="slide-body">
+      ${sectionBlock('🔄', L('مراجعة المعارف السابقة', 'Prior Knowledge Review'), `<p>${esc(plan.priorReview)}</p>`)}
+    </div>` : null;
 
   const slide2 = `${slideOpen()}
     ${header(L('الأهداف والمواد', 'Objectives & Materials'))}
     <div class="slide-body two-col">
       ${sectionBlock('🎯', L('الأهداف التعليمية', 'Learning Objectives'), `<ul>${bullets(plan.objectives)}</ul>`)}
       ${sectionBlock('🎒', L('المواد اللازمة', 'Materials'), `<ul>${bullets(plan.materials)}</ul>`)}
-    </div>
-    ${footer(2, TOTAL)}</div>`;
+    </div>`;
 
   const slide3 = `${slideOpen()}
     ${header(L('التمهيد والنشاط الرئيسي', 'Introduction & Main Activity'))}
     <div class="slide-body two-col">
       ${sectionBlock('▶', L('التمهيد', 'Introduction'), `<p>${esc(plan.introduction)}</p>`)}
       ${sectionBlock('👥', L('النشاط الرئيسي', 'Main Activity'), `<p>${esc(plan.mainActivity)}</p>`)}
-    </div>
-    ${footer(3, TOTAL)}</div>`;
+    </div>`;
 
   const slide4 = `${slideOpen()}
     ${header(L('التدريب الموجّه والمستقل', 'Guided & Independent Practice'))}
     <div class="slide-body two-col">
       ${sectionBlock('✋', L('التدريب الموجّه', 'Guided Practice'), `<p>${esc(plan.guidedPractice)}</p>`)}
       ${sectionBlock('🧑', L('التدريب المستقل', 'Independent Practice'), `<p>${esc(plan.independentPractice)}</p>`)}
-    </div>
-    ${footer(4, TOTAL)}</div>`;
+    </div>`;
 
   const slide5 = `${slideOpen()}
     ${header(L('الختام والتقييم', 'Closure & Assessment'))}
     <div class="slide-body two-col">
       ${sectionBlock('⏹', L('الختام', 'Closure'), `<p>${esc(plan.closure)}</p>`)}
       ${sectionBlock('✅', L('التقييم', 'Assessment'), `<p>${esc(plan.assessment)}</p>`)}
-    </div>
-    ${footer(5, TOTAL)}</div>`;
+    </div>`;
 
   const slide6 = `${slideOpen()}
     ${header(L('التمايز والواجب المنزلي', 'Differentiation & Homework'))}
     <div class="slide-body two-col">
       ${sectionBlock('📚', L('التمايز', 'Differentiation'), `<p>${esc(plan.differentiation)}</p>`)}
       ${sectionBlock('🏠', L('الواجب المنزلي', 'Homework'), `<p>${esc(plan.homework)}</p>`)}
-    </div>
-    ${footer(6, TOTAL)}</div>`;
+    </div>`;
+
+  // Numbered after assembly so an optional slide never desyncs the footer
+  // count from how many slides actually render.
+  const slides = [slide1, priorReviewSlide, slide2, slide3, slide4, slide5, slide6].filter(
+    (s): s is string => s !== null,
+  );
+  const total = slides.length;
+  const body = slides.map((s, i) => `${s}\n    ${footer(i + 1, total)}</div>`).join('\n');
 
   return `<!DOCTYPE html>
 <html dir="${dir}" lang="${isAr ? 'ar' : 'en'}">
@@ -449,7 +459,7 @@ export function buildLessonPlanSlidesHTML(
 <style>
 @page { size: A4 landscape; margin: 0; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','Arial',sans-serif"}; background:#f0f0f0; }
+body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','Arial',sans-serif"}; background:#f0f0f0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .slide {
   width: 297mm; height: 210mm; background: #fff; position: relative;
   overflow: hidden; page-break-after: always; display: flex; flex-direction: column;
@@ -483,12 +493,7 @@ body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','
 </style>
 </head>
 <body>
-${slide1}
-${slide2}
-${slide3}
-${slide4}
-${slide5}
-${slide6}
+${body}
 </body>
 </html>`;
 }
@@ -584,7 +589,7 @@ export function buildActivitySlidesHTML(
 <style>
 @page { size: A4 landscape; margin: 0; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','Arial',sans-serif"}; background:#f0f0f0; }
+body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','Arial',sans-serif"}; background:#f0f0f0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .slide { width:297mm; height:210mm; background:#fff; position:relative; overflow:hidden; page-break-after:always; display:flex; flex-direction:column; }
 .title-slide { background:linear-gradient(135deg,${ACCENT} 0%,#b55a0f 100%); }
 .title-content { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px; text-align:center; }
@@ -718,7 +723,7 @@ export function buildWorksheetSlidesHTML(
 <style>
 @page { size: A4 landscape; margin: 0; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','Arial',sans-serif"}; background:#f0f0f0; }
+body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','Arial',sans-serif"}; background:#f0f0f0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .slide { width:297mm; height:210mm; background:#fff; position:relative; overflow:hidden; page-break-after:always; display:flex; flex-direction:column; }
 .title-slide { background:linear-gradient(135deg,${ACCENT} 0%,#5b21b6 100%); }
 .title-content { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px; text-align:center; }
@@ -850,7 +855,7 @@ export function buildQuizSlidesHTML(
 <style>
 @page { size: A4 landscape; margin: 0; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','Arial',sans-serif"}; background:#f0f0f0; }
+body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','Arial',sans-serif"}; background:#f0f0f0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .slide { width:297mm; height:210mm; background:#fff; position:relative; overflow:hidden; page-break-after:always; display:flex; flex-direction:column; }
 .title-slide { background:linear-gradient(135deg,${ACCENT} 0%,#b45309 100%); }
 .title-content { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px; text-align:center; }
@@ -944,7 +949,7 @@ export function buildLessonFlowHTML(flow: LessonFlowOutput, isAr: boolean): stri
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Amiri:wght@400;700&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: ${font}; font-size: 13px; color: #1f2937; background: #fff; direction: ${dir}; }
+  body { font-family: ${font}; font-size: 13px; color: #1f2937; background: #fff; direction: ${dir}; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .page { padding: 28px 32px; max-width: 800px; margin: 0 auto; }
   /* Cover */
   .cover { text-align: center; padding: 40px 0 32px; border-bottom: 2px solid ${NAVY}; margin-bottom: 28px; }

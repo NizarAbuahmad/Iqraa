@@ -265,6 +265,27 @@ function lpHomework(topic: string, lang: Lang): string {
     `Write a 10-sentence personal summary of ${topic} including a real-world example you found.`,
   ]);
 }
+/**
+ * Plan for a short warm-up reviewing prior material — grounded curriculum
+ * concepts (only when `includePriorReview` + a non-empty `priorKnowledge`)
+ * and/or the teacher's own free-text notes on topics to re-explain.
+ * `undefined` when neither input is present, so callers can omit the field.
+ */
+function lpPriorReview(priorConcepts: string[], notes: string, lang: Lang): string | undefined {
+  const hasConcepts = priorConcepts.length > 0;
+  const hasNotes = notes.trim().length > 0;
+  if (!hasConcepts && !hasNotes) return undefined;
+  if (lang === 'ar') {
+    const parts = ['خصّص 5-10 دقائق في بداية الحصة لمراجعة سريعة قبل الانتقال إلى الدرس الجديد.'];
+    if (hasConcepts) parts.push(`راجع هذه المفاهيم من المنهج: ${priorConcepts.join('، ')}.`);
+    if (hasNotes) parts.push(`بحسب ملاحظات المعلم: ${notes.trim()}`);
+    return parts.join(' ');
+  }
+  const parts = ['Set aside 5-10 minutes at the start of the lesson for a quick review before moving to new material.'];
+  if (hasConcepts) parts.push(`Review these curriculum concepts: ${priorConcepts.join(', ')}.`);
+  if (hasNotes) parts.push(`Per the teacher's notes: ${notes.trim()}`);
+  return parts.join(' ');
+}
 
 // ─── Points helpers ───────────────────────────────────────────────────────────
 
@@ -641,6 +662,9 @@ export class MockAIService extends AIService {
       };
     }
 
+    const priorConcepts = req.includePriorReview && req.priorKnowledge?.length ? req.priorKnowledge : [];
+    const priorReview = lpPriorReview(priorConcepts, req.priorTopicsNotes ?? '', lang);
+
     // Document-grounded lesson plan (Demo Mode) — prefer uploaded materials over KB soft pin
     if (docs.present) {
       if (lang === 'ar') {
@@ -652,6 +676,7 @@ export class MockAIService extends AIService {
             fileLabel.replace(/^الملف /, 'الملف المرفوع: ').replace(/^الملف$/, 'المواد المرفوعة'),
             ...lpMaterialsAr(req.subject).slice(0, 3),
           ],
+          ...(priorReview ? { priorReview } : {}),
           introduction:
             `اعتمادًا على ${fileLabel}: ابدأ بعرض فكرة من الملف واسأل: «ماذا نعرف عن ${topic}؟»`
             + (conceptLine ? ` سجّل المفاهيم الظاهرة: ${conceptLine}.` : '')
@@ -685,6 +710,7 @@ export class MockAIService extends AIService {
           `Uploaded: ${docs.fileNames[0] ?? 'teacher materials'}`,
           ...lpMaterialsEn(req.subject).slice(0, 3),
         ],
+        ...(priorReview ? { priorReview } : {}),
         introduction:
           `Using ${fileLabel}: open with one idea from the file and ask “What do we already know about ${topic}?”`
           + (conceptLine ? ` Capture visible concepts: ${conceptLine}.` : '')
@@ -717,6 +743,7 @@ export class MockAIService extends AIService {
         grade: req.grade, subject: req.subject, duration: dur,
         objectives: lpObjectivesAr(topic, kb, req.objectives),
         materials: lpMaterialsAr(req.subject),
+        ...(priorReview ? { priorReview } : {}),
         introduction: lpIntroAr(topic, kb),
         mainActivity: lpMainActivityAr(topic, kb, style, dur),
         guidedPractice: lpGuidedAr(topic, kb, dur),
@@ -732,6 +759,7 @@ export class MockAIService extends AIService {
       grade: req.grade, subject: req.subject, duration: dur,
       objectives: lpObjectivesEn(topic, kb, req.objectives),
       materials: lpMaterialsEn(req.subject),
+      ...(priorReview ? { priorReview } : {}),
       introduction: lpIntroEn(topic, kb),
       mainActivity: lpMainActivityEn(topic, kb, style, dur),
       guidedPractice: lpGuidedEn(topic, kb, dur),

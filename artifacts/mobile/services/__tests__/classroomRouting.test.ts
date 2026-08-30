@@ -17,6 +17,7 @@ import {
   buildBuilderRoute,
   resolveActivityType,
 } from '../classroomRouting.ts';
+import translations, { getT } from '../i18n.ts';
 
 // ─── 1. ACTIVITY_CARDS data integrity ────────────────────────────────────────
 
@@ -39,6 +40,41 @@ describe('ACTIVITY_CARDS — data integrity', () => {
     const first = ACTIVITY_CARDS[0];
     assert.equal(first.id, 'escape-challenge');
     assert.equal(first.available, true);
+  });
+
+  it('exactly one card is featured (the hub renders find(isFeatured) as its single hero card)', () => {
+    const featured = ACTIVITY_CARDS.filter(c => c.isFeatured);
+    assert.equal(featured.length, 1, `expected exactly one featured card, got ${featured.map(c => c.id)}`);
+  });
+
+  it('every card resolves to a non-empty title and description in both languages', () => {
+    for (const lang of ['ar', 'en'] as const) {
+      const t = getT(lang);
+      for (const card of ACTIVITY_CARDS) {
+        assert.ok(t(card.titleKey as any).trim().length > 0, `${lang}.${card.id}.titleKey rendered empty`);
+        assert.ok(t(card.descKey as any).trim().length > 0, `${lang}.${card.id}.descKey rendered empty`);
+      }
+    }
+  });
+
+  it('every titleKey/descKey is a real translation key in both languages', () => {
+    for (const card of ACTIVITY_CARDS) {
+      assert.ok(card.titleKey in translations.en, `${card.titleKey} is not an English translation key`);
+      assert.ok(card.titleKey in translations.ar, `${card.titleKey} is missing from Arabic`);
+      assert.ok(card.descKey in translations.en, `${card.descKey} is not an English translation key`);
+      assert.ok(card.descKey in translations.ar, `${card.descKey} is missing from Arabic`);
+    }
+  });
+
+  // Cross-referenced against src/lib/__tests__/classroomPrompts.test.ts on the
+  // api-server side — both lists must carry the same 7 ids so a new format
+  // can't be added to one side without the other going stale again.
+  it('pins the exact set of card ids (keep in sync with the server prompt builder)', () => {
+    const ids = ACTIVITY_CARDS.map(c => c.id).sort();
+    assert.deepEqual(ids, [
+      'bingo', 'error-detective', 'escape-challenge', 'exit-ticket',
+      'gallery-walk', 'quick-check', 'relay',
+    ]);
   });
 });
 

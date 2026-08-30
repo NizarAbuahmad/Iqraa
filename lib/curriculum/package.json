@@ -18,6 +18,7 @@
     "./catalogs/g10ChemSem1": "./src/catalogs/g10ChemSem1.ts",
     "./catalogs/g10ChemSem2": "./src/catalogs/g10ChemSem2.ts",
     "./catalogs/g10FinlitSem1": "./src/catalogs/g10FinlitSem1.ts",
+    "./catalogs/g10EnglishVocational": "./src/catalogs/g10EnglishVocational.ts",
     "./validateCurriculum": "./src/validateCurriculum.ts"
   },
   "scripts": {

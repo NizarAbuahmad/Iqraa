@@ -23,6 +23,7 @@ import type { Difficulty, QuestionType } from "@workspace/db";
 import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import {
   getBookById,
+  getEvaluableBookIds,
   getObjectivesForBook,
   objectivesAreWithinBook,
   resolveObjectiveIds,
@@ -35,6 +36,8 @@ import {
   type GenerationResult,
 } from "../modules/assessment/mockGenerator";
 import { validateGenerated } from "../modules/assessment/validator";
+import { verifyAnswerKeys } from "../modules/assessment/keyVerification.ts";
+import { relateAnswerKey } from "../lib/mathVerifierClient.ts";
 import { QUESTION_TYPES } from "../modules/assessment/questionTypes";
 import { COMPETENCY_KEYS, type CompetencyKey } from "../modules/assessment/competency";
 import { isPaperQuestion, parsePaperRows } from "../modules/assessment/paperExam";
@@ -368,6 +371,16 @@ router.post("/evaluations/:id/generate", async (req: AuthenticatedRequest, res) 
     let modelId: string | null = null;
     const generationNotes: string[] = [];
 
+    // The exact request handed to the generator, stored on the evaluation —
+    // the schema has promised this since Phase 3 and nothing ever wrote it.
+    const generationParams: Record<string, unknown> = {
+      objectiveIds: evaluation.objectiveIds,
+      assessmentTypes: evaluation.assessmentTypes,
+      count: evaluation.targetQuestionCount,
+      difficulty: evaluation.difficulty,
+      language: evaluation.language,
+    };
+
     if (live) {
       assertLiveModeEnabled();
       assertBudgetAvailable();
@@ -381,6 +394,14 @@ router.post("/evaluations/:id/generate", async (req: AuthenticatedRequest, res) 
       if (grounding) {
         generationNotes.push(
           `Grounded on ${grounding.sources.map(s => `${s.titleAr} p${s.page}`).join(", ")}.`,
+        );
+      } else {
+        // Say so, loudly. A paper written without the book reading exactly
+        // like one written from it is how ungrounded content slips through.
+        generationNotes.push(
+          "No official-book passages are extracted for these objectives' units — "
+            + "the model wrote from the objectives alone. Review against the book "
+            + "before publishing.",
         );
       }
 
@@ -420,6 +441,11 @@ router.post("/evaluations/:id/generate", async (req: AuthenticatedRequest, res) 
 
       generator = "llm";
       modelId = llm.model;
+      generationParams["promptVersion"] = GENERATION_PROMPT_VERSION;
+      generationParams["grounded"] = Boolean(grounding);
+      generationParams["groundingSources"] = grounding
+        ? grounding.sources.map(s => ({ sourceId: s.sourceId, page: s.page }))
+        : [];
       generationNotes.push(...llm.notes);
       result = {
         questions: llm.questions,
@@ -441,12 +467,28 @@ router.post("/evaluations/:id/generate", async (req: AuthenticatedRequest, res) 
         count: evaluation.targetQuestionCount,
         difficulty: evaluation.difficulty,
       });
+      // The seed the template variation ran on — with it, this exact paper
+      // can be regenerated; without it, "reproducible" would be a lie.
+      generationParams["seed"] = result.seed;
     }
 
     const validation = validateGenerated(result.questions, {
       allowedObjectiveIds: evaluation.objectiveIds,
       allowedTypes: evaluation.assessmentTypes,
     });
+
+    /**
+     * SymPy checks every key that states one, before a teacher sees the paper.
+     *
+     * Placed after the structural validator and before the insert because a
+     * contradicted key means the question should never have existed — dropping
+     * it here keeps `rejected` the single place a teacher reads for "why is
+     * this 14 questions and not 15". A key the verifier cannot judge, or a
+     * verifier that cannot be reached, removes nothing.
+     */
+    const keyCheck = await verifyAnswerKeys(validation.accepted, relateAnswerKey);
+    generationParams["keysChecked"] = keyCheck.checked;
+    generationParams["keysVerified"] = keyCheck.verified;
 
     // Replace rather than append: generating twice should not silently double
     // the length of the evaluation.
@@ -460,9 +502,9 @@ router.post("/evaluations/:id/generate", async (req: AuthenticatedRequest, res) 
         ),
       );
 
-    if (validation.accepted.length > 0) {
+    if (keyCheck.kept.length > 0) {
       await db.insert(evaluationQuestions).values(
-        validation.accepted.map((q, i) => ({
+        keyCheck.kept.map(({ question: q, verification }, i) => ({
           evaluationId: evaluation.id,
           orderIndex: i,
           type: q.type,
@@ -476,6 +518,10 @@ router.post("/evaluations/:id/generate", async (req: AuthenticatedRequest, res) 
           marks: q.marks.toFixed(2),
           gradingMode: q.gradingMode as never,
           source: "ai" as const,
+          // The column the schema has described since Phase 3 and nothing
+          // wrote. `verified` is the verifier's own word or false — never an
+          // inference from the question having looked fine.
+          verification,
           aiMetadata: q.aiMetadata,
         })),
       );
@@ -486,7 +532,7 @@ router.post("/evaluations/:id/generate", async (req: AuthenticatedRequest, res) 
     // without opening a question.
     await db
       .update(evaluations)
-      .set({ generator, modelId, updatedAt: new Date() })
+      .set({ generator, modelId, generationParams, updatedAt: new Date() })
       .where(eq(evaluations.id, evaluation.id));
 
     const totalMarks = await recomputeTotal(evaluation.id);
@@ -497,15 +543,20 @@ router.post("/evaluations/:id/generate", async (req: AuthenticatedRequest, res) 
       generator,
       modelId,
       requested: evaluation.targetQuestionCount,
-      produced: validation.accepted.length,
+      produced: keyCheck.kept.length,
       // Everything the generator declined or the validator dropped, stated
       // plainly. A teacher seeing 12 of 15 should know why, not wonder.
       unavailableTypes: result.unavailableTypes,
       // What the library holds for these units. Pairs with unavailableTypes:
       // the types we declined, and where real items for them would come from.
       bankContext: result.bankContext,
-      rejected: validation.rejected,
-      warnings: [...result.notes, ...generationNotes, ...validation.warnings],
+      rejected: [...validation.rejected, ...keyCheck.dropped],
+      warnings: [
+        ...result.notes,
+        ...generationNotes,
+        ...validation.warnings,
+        ...keyCheck.warnings,
+      ],
     });
   } catch (err) {
     // Four different things a teacher can do something about, and they are not
@@ -1106,7 +1157,9 @@ router.get("/evaluations/:id/insights", async (req: AuthenticatedRequest, res) =
 
 router.get("/evaluations/meta/evaluable", async (_req: AuthenticatedRequest, res) => {
   try {
-    const books = ["book-math-10", "book-math-10-s2", "book-chem-10", "book-finlit-10"]
+    // Every book with at least one objective, from the curriculum catalog —
+    // a hand-kept list here silently dropped chemistry S2 when it was added.
+    const books = getEvaluableBookIds()
       .map(id => ({ book: getBookById(id), objectives: getObjectivesForBook(id) }))
       .filter(b => b.book)
       .map(b => ({

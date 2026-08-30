@@ -28,6 +28,7 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import type { LessonPlanOutput } from '@/services/ai/AIService';
+import { getUnitPriorKnowledge, resolveGeneratorGrounding } from '@/services/kbContext';
 import {
   buildLessonPrepRequest,
   lessonPrepPickerIndices,
@@ -89,6 +90,8 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
   const [duration, setDuration] = useState<number>(context?.duration ?? 45);
   const [styleIdx, setStyleIdx] = useState(0);
   const [adaptations, setAdaptations] = useState('');
+  const [priorTopicsNotes, setPriorTopicsNotes] = useState('');
+  const [includePriorReview, setIncludePriorReview] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
 
   const [loading, setLoading] = useState(false);
@@ -122,6 +125,8 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
       duration,
       teachingStyle: STYLE_IDS[styleIdx],
       adaptations,
+      priorTopicsNotes,
+      includePriorReview,
     });
     if (!built) { setError(t('generationFailed')); return; }
 
@@ -157,6 +162,13 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
 
   if (!context) return null;
 
+  // Prior-knowledge availability for this lesson (no fabrication)
+  const priorKnowledge = (() => {
+    const g = resolveGeneratorGrounding(context.topic, lang as 'ar' | 'en');
+    return g.lesson ? getUnitPriorKnowledge(g.lesson.id) : [];
+  })();
+  const priorReviewAvailable = priorKnowledge.length > 0;
+
   const applyEdit = <K extends keyof LessonPlanOutput>(field: K, value: LessonPlanOutput[K]) => {
     setResult(prev => (prev ? { ...prev, [field]: value } : prev));
     setEditedFields(prev => new Set(prev).add(field as string));
@@ -176,6 +188,7 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
       styleIdx,
       objectives: context.objectives,
       adaptations,
+      priorTopicsNotes,
       lessonId,
     };
     const payload = {
@@ -272,6 +285,7 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
         styleIdx: String(styleIdx),
         objectives: context.objectives,
         adaptations,
+        priorTopicsNotes,
       },
     });
   };
@@ -367,6 +381,43 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
               onChangeText={setAdaptations}
               multiline
             />
+          </View>
+
+          <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align }]}>
+            {t('priorTopicsLabel')}
+          </Text>
+          <View style={[styles.inputBox, { backgroundColor: colors.background, borderColor: colors.border, borderRadius: colors.radius }]}>
+            <TextInput
+              style={[styles.textInput, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: align }]}
+              placeholder={t('priorTopicsPlaceholder')}
+              placeholderTextColor={colors.mutedForeground}
+              value={priorTopicsNotes}
+              onChangeText={setPriorTopicsNotes}
+              multiline
+            />
+          </View>
+
+          <View style={[styles.checkboxGroup, { backgroundColor: colors.background, borderColor: colors.border, borderRadius: colors.radius, opacity: priorReviewAvailable ? 1 : 0.55 }]}>
+            <CheckboxRow
+              label={t('includePriorReviewPlanLabel')}
+              checked={includePriorReview && priorReviewAvailable}
+              onToggle={() => { if (priorReviewAvailable) setIncludePriorReview(v => !v); }}
+              accent={accent}
+              colors={colors}
+              isRTL={isRTL}
+              disabled={!priorReviewAvailable}
+            />
+            {!priorReviewAvailable ? (
+              <Text style={{
+                color: colors.mutedForeground,
+                fontFamily: 'Almarai_400Regular',
+                fontSize: 12,
+                marginTop: 2,
+                textAlign: align,
+              }}>
+                {t('priorReviewPlanUnavailableNote')}
+              </Text>
+            ) : null}
           </View>
         </View>
       )}
@@ -549,6 +600,25 @@ function Chip({ label, selected, accent, colors, onPress }: {
   );
 }
 
+function CheckboxRow({ label, checked, onToggle, accent, colors, isRTL, disabled }: {
+  label: string; checked: boolean; onToggle: () => void;
+  accent: string; colors: ReturnType<typeof useColors>; isRTL: boolean;
+  disabled?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={disabled ? undefined : onToggle}
+      disabled={disabled}
+      style={[styles.checkRow, { flexDirection: isRTL ? 'row-reverse' : 'row', opacity: disabled ? 0.6 : 1 }]}
+    >
+      <View style={[styles.checkbox, { borderColor: checked ? accent : colors.border, backgroundColor: checked ? accent : 'transparent' }]}>
+        {checked && <Ionicons name="checkmark" size={13} color="#fff" />}
+      </View>
+      <Text style={[{ color: disabled ? colors.mutedForeground : colors.foreground, fontFamily: checked ? 'Cairo_500Medium' : 'Almarai_400Regular', fontSize: 13, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
+    </Pressable>
+  );
+}
+
 function ActionButton({ icon, label, onPress, accent, filled, colors, isRTL }: {
   icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void;
   accent: string; filled?: boolean; colors: ReturnType<typeof useColors>; isRTL: boolean;
@@ -590,6 +660,9 @@ const styles = StyleSheet.create({
   chipText: { fontSize: 12 },
   inputBox: { borderWidth: 1.5, padding: 12, marginTop: 2 },
   textInput: { fontSize: 14, padding: 0, minHeight: 48 },
+  checkboxGroup: { borderWidth: 1.5, padding: 12, marginTop: 10, gap: 4 },
+  checkRow: { alignItems: 'center', gap: 10, paddingVertical: 4 },
+  checkbox: { width: 18, height: 18, borderRadius: 4, borderWidth: 2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   loadingBox: { alignItems: 'center', gap: 12, padding: 16, marginTop: 12 },
   loadingText: { fontSize: 13 },
   error: { fontSize: 13, marginTop: 10 },

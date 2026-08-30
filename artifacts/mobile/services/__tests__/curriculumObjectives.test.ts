@@ -181,4 +181,20 @@ describe('objective index — evaluable books', () => {
   it('includes the math S1 book the demo runs on', () => {
     assert.ok(getEvaluableBookIds().includes(MATH_S1_BOOK));
   });
+
+  it('includes every Grade 10 core book — chem S2 was silently missing once', () => {
+    // The API's /evaluations/meta/evaluable serves this list. It used to be
+    // hand-listed there and dropped book-chem-10-s2, so that book's 19
+    // objectives could never be examined.
+    const evaluable = getEvaluableBookIds();
+    for (const bookId of [
+      'book-math-10',
+      'book-math-10-s2',
+      'book-chem-10',
+      'book-chem-10-s2',
+      'book-finlit-10',
+    ]) {
+      assert.ok(evaluable.includes(bookId), `${bookId} missing from evaluable books`);
+    }
+  });
 });
