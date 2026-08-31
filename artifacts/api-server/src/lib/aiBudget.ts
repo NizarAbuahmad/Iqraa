@@ -22,6 +22,7 @@
  * should not look identical to one that works.
  */
 import { logger } from "./logger.ts";
+import { getCacheFailure, type CacheOperation } from "./artifactCache.ts";
 import {
   currentPeriodStart,
   getPersistenceFailure,
@@ -264,6 +265,7 @@ export type GenerationDetail = {
   hasContext?: boolean;
   userId?: string | null;
   cacheStatus?: "hit" | "miss";
+  artifactId?: string | null;
 };
 
 /**
@@ -308,9 +310,36 @@ export function recordUsage(
     strictKey: detail.strictKey ?? "",
     hasContext: detail.hasContext ?? false,
     cacheStatus: detail.cacheStatus ?? "miss",
+    artifactId: detail.artifactId ?? null,
     promptTokens,
     completionTokens,
     costUsd: cost,
+  });
+}
+
+/**
+ * Record a request served from the shared variant pool.
+ *
+ * A separate entry point from `recordUsage` because a hit has no `usage` to
+ * price and must not touch the spend total — and because that is the whole
+ * point of it. It still writes a row: without one, the hit rate is invisible,
+ * and so is which variant this teacher has now seen, which is what stops the
+ * next regeneration handing them the same paper back.
+ */
+export function recordCacheHit(model: string, detail: GenerationDetail): void {
+  void recordGeneration({
+    userId: detail.userId ?? null,
+    kind: detail.kind,
+    model,
+    promptVersion: detail.promptVersion,
+    coarseKey: detail.coarseKey ?? "",
+    strictKey: detail.strictKey ?? "",
+    hasContext: detail.hasContext ?? false,
+    cacheStatus: "hit",
+    artifactId: detail.artifactId ?? null,
+    promptTokens: 0,
+    completionTokens: 0,
+    costUsd: 0,
   });
 }
 
@@ -324,6 +353,7 @@ export function getBudgetStatus(): {
   periodStart: string;
   persisted: boolean;
   persistenceFailure: "read" | "insert" | null;
+  cacheFailure: CacheOperation | null;
 } {
   rollPeriodIfNeeded();
   const limitUsd = getBudgetLimitUsd();
@@ -344,5 +374,9 @@ export function getBudgetStatus(): {
     periodStart: periodStart.toISOString(),
     persisted: hydrated,
     persistenceFailure: getPersistenceFailure(),
+    // A shared cache that silently never hits looks exactly like a cache
+    // working on a quiet day. This is the difference, and the bill is the only
+    // other place it would ever show up.
+    cacheFailure: getCacheFailure(),
   };
 }

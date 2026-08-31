@@ -22,6 +22,47 @@ export interface AIRequest {
    * a title match — see `generatorUnitId` in `services/kbContext.ts`.
    */
   unitId?: string;
+  /**
+   * Curriculum lesson id (`resolveGeneratorGrounding(...).lesson.id`), when the
+   * screen knows it.
+   *
+   * The server keys the shared artifact pool on this in preference to `topic`.
+   * A lesson title does not identify a lesson — CLAUDE.md records
+   * `searchKBSemantic(title)` returning a different lesson for 16 of the
+   * picker's 63 — and once artifacts are shared between teachers, two lessons
+   * whose titles normalise alike would be served each other's worksheets.
+   */
+  lessonId?: string;
+  /**
+   * Who wrote `additionalContext`.
+   *
+   * `'curriculum'` — the app derived it from the KB for this lesson. It is the
+   * same text for every teacher who asks the same question, so the artifact can
+   * be shared with them. `'teacher'` — it contains material the teacher
+   * supplied (a pasted note, an attached document); the artifact is generated
+   * fresh and never pooled.
+   *
+   * Omitted is read by the server as `'teacher'`. Fail closed: a screen that
+   * forgets to say gets a cache miss, never someone else's material.
+   */
+  contextSource?: 'curriculum' | 'teacher';
+  /**
+   * The teacher asked for a replacement for what is on screen, not another
+   * copy of it.
+   *
+   * The server answers this from the variant pool when it can — free, and
+   * guaranteed different — and otherwise steers a fresh generation away from
+   * `avoid`. Without it a "regenerate" is a byte-identical request and comes
+   * back as the same paper reworded, which is the one thing the button is for.
+   */
+  regenerate?: boolean;
+  /** Question stems and headings already on screen, so a regeneration does not
+   *  repeat them. Sent by the screen because it is the only party that knows
+   *  what the teacher is actually looking at. */
+  avoid?: string[];
+  /** `variantId`s from the pool this teacher already holds, echoed back so the
+   *  server does not serve them again. */
+  excludeVariantIds?: string[];
   // Lesson plan extras
   teachingStyle?: 'direct' | 'inquiry' | 'collaborative';
   objectives?: string;
@@ -81,6 +122,7 @@ export interface LessonPlanOutput {
   differentiation: string;
   homework: string;
   sources?: GroundedSource[];
+  variantId?: string;
 }
 
 export interface WorksheetOutput {
@@ -89,6 +131,7 @@ export interface WorksheetOutput {
   sections: WorksheetSection[];
   answerKey: WorksheetAnswerKeyItem[];
   sources?: GroundedSource[];
+  variantId?: string;
 }
 
 export interface WorksheetSection {
@@ -115,6 +158,7 @@ export interface QuizOutput {
   totalPoints: number;
   questions: QuizQuestion[];
   sources?: GroundedSource[];
+  variantId?: string;
 }
 
 export interface QuizQuestion {
@@ -146,6 +190,7 @@ export interface ActivityOutput {
   differentiation: string;
   assessment: string;
   sources?: GroundedSource[];
+  variantId?: string;
 }
 
 // ─── Interactive Classroom Engine ────────────────────────────────────────────
@@ -246,6 +291,8 @@ export interface ClassroomActivity {
   printables: string[];
   assessment: string;
   extensionChallenge: string;
+  /** The pool variant this deck came from — see `AIRequest.regenerate`. */
+  variantId?: string;
   /**
    * Present only on Class Challenge decks. Its presence is what switches the
    * presentation screen into game mode (scoreboard strip, award row on reveal,
@@ -279,6 +326,14 @@ export interface ClassroomActivityRequest {
   additionalContext?: string;
   /** Catalog unit id, so the server can ground the prompt — see `AIRequest.unitId`. */
   unitId?: string;
+  /** See the identically named fields on `AIRequest` — same meaning, same
+   *  reasons; this request type predates the shared one and has never been
+   *  merged with it. */
+  lessonId?: string;
+  contextSource?: 'curriculum' | 'teacher';
+  regenerate?: boolean;
+  avoid?: string[];
+  excludeVariantIds?: string[];
   /**
    * How many questions to generate. Honoured by 'quick-check', which defaults
    * to 4 — the size of a standalone whole-class check. Slides Maker asks for

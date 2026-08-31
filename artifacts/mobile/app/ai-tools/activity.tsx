@@ -7,7 +7,8 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
-import { buildGeneratorContext, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
+import { buildGeneratorContext, generatorLessonId, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
+import { regenerationFields } from '@/services/ai/regeneration';
 import { ActivityOutput, ActivityStep } from '@/services/ai/AIService';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
@@ -106,7 +107,19 @@ export default function ActivityScreen() {
     if (result) setSaveLabel(savedId ? 'updated' : 'save');
   }, [result]);
 
-  const generate = async () => {
+  /**
+   * `regenerate` is the teacher asking for a replacement, not another copy.
+   *
+   * It used to be the same call: the button re-ran this function with an
+   * identical body, and the same prompt came back as the same content
+   * reworded. The flag lets the server answer from a variant it has already
+   * paid for — free, and certain to be different — and steer a fresh
+   * generation away from what is on screen when it cannot.
+   */
+  const generate = async (opts?: { regenerate?: boolean }) => {
+    // Read before any setState clears it — this is what the teacher is
+    // looking at, and what a regeneration must not hand back.
+    const previous = result;
     if (!topic.trim()) { setError(t('topicRequired')); return; }
     // A topic that grounds to another subject's lesson cannot make an honest
     // activity — the KB serves that lesson's own content while the header
@@ -133,6 +146,12 @@ export default function ActivityScreen() {
         objectives: objective.trim() || undefined,
         additionalContext,
         unitId,
+        lessonId: generatorLessonId(topic.trim(), lang as 'ar' | 'en'),
+        // A typed objective is the teacher's own words, and they end up inside
+        // the generated activity — so that request is theirs alone and never
+        // enters the shared pool. Picking a lesson and generating does.
+        contextSource: objective.trim() ? 'teacher' : 'curriculum',
+        ...regenerationFields(opts?.regenerate === true, previous),
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setResult(out);
@@ -297,7 +316,7 @@ export default function ActivityScreen() {
         {error ? <Text style={[{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
         <Button
           label={loading ? t('generatingActivity') : t('generateActivityBtn')}
-          onPress={generate}
+          onPress={() => generate()}
           loading={loading}
           disabled={!topic.trim()}
           fullWidth
@@ -361,7 +380,7 @@ export default function ActivityScreen() {
           saveState={saveLabel}
           onSave={handleSave}
           onExport={() => setShowExport(true)}
-          onRegenerate={generate}
+          onRegenerate={() => generate({ regenerate: true })}
           materialType="activity"
           toolId="activity"
           topic={topic.trim()}

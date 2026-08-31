@@ -29,7 +29,7 @@ import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { isAbortError } from '@/services/ai/aiProvenance';
 import type { ClassroomActivity } from '@/services/ai/AIService';
-import { buildGeneratorContext, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
+import { buildGeneratorContext, generatorLessonId, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
 import { buildGameDeckFromQuiz } from '@/services/classDeck';
 import { createGame, MAX_TEAMS, MIN_TEAMS } from '@/services/classGame';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
@@ -125,6 +125,10 @@ export default function ClassGameScreen() {
         language: isAr ? 'arabic' : 'english',
         additionalContext: buildGeneratorContext(trimmed, lang as 'ar' | 'en'),
         unitId: generatorUnitId(trimmed, lang as 'ar' | 'en'),
+        lessonId: generatorLessonId(trimmed, lang as 'ar' | 'en'),
+        // Nothing here but the lesson the teacher picked, so the quiz behind
+        // the deck can be shared with every other teacher who picks it.
+        contextSource: 'curriculum',
       }, { signal: controller.signal });
 
       const built = buildGameDeckFromQuiz(quiz, trimmed, isAr, {

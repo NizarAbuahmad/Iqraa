@@ -14,7 +14,7 @@ import {
 } from '@/services/curriculumData';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { ClassroomActivity } from '@/services/ai/AIService';
-import { buildGeneratorContext, generatorUnitId } from '@/services/kbContext';
+import { buildGeneratorContext, generatorLessonId, generatorUnitId } from '@/services/kbContext';
 import { groundedSubjectConflict } from '@/services/lessonPrep';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { ACTIVITY_CARDS, ClassroomSetup, resolveActivityType } from '@/services/classroomRouting';
@@ -88,6 +88,8 @@ export default function ClassroomBuilderScreen() {
         language: lang === 'ar' ? 'arabic' : 'english',
         additionalContext,
         unitId: generatorUnitId(topic.trim(), lang as 'ar' | 'en'),
+        lessonId: generatorLessonId(topic.trim(), lang as 'ar' | 'en'),
+        contextSource: 'curriculum',
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setResult(out);

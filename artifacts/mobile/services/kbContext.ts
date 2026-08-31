@@ -269,6 +269,25 @@ export function generatorUnitId(topic: string, lang: 'ar' | 'en'): string | unde
 }
 
 /**
+ * The curriculum lesson id a topic grounds to, for the server to key the
+ * shared artifact pool on.
+ *
+ * The id, not the title, because the pool is shared between teachers and a
+ * title does not identify a lesson: CLAUDE.md records `searchKBSemantic(title)`
+ * returning a *different* lesson for 16 of the picker's 63 («قانون الجيوب» →
+ * «قانون جيب التمام»). Keying on a normalised title meant two lessons could
+ * collide onto one key; before there was a pool that was a bad log line, and
+ * with one it is teacher A being served teacher B's lesson.
+ *
+ * `undefined` when the topic is free-typed and grounds to nothing — the server
+ * falls back to the normalised topic, which is a correct key for a lesson that
+ * exists nowhere in the curriculum.
+ */
+export function generatorLessonId(topic: string, lang: 'ar' | 'en'): string | undefined {
+  return resolveGeneratorGrounding(topic, lang).lesson?.id;
+}
+
+/**
  * A unit id the knowledge bank can index by, or `undefined`.
  *
  * The KB carries two unit-id namespaces: NCCD-derived lessons use

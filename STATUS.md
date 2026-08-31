@@ -253,6 +253,74 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Regeneration means something, and one artifact can serve many teachers, 2026-08-31
+
+Two teacher-facing complaints with one mechanism behind them: pressing
+«إعادة التوليد» returned the same paper reworded, and every teacher asking for
+the same lesson paid for their own model call.
+
+**They are the same feature.** A regeneration is what fills a shared pool, and
+the pool is what makes the next teacher's regeneration free. Phase 1 of
+`docs/ai-cost-savings-plan.md` — the shared cache and single-flight — is built;
+phases 2 (superset slicing) and 3 (precomputed catalog) are not.
+
+What is now true, checked against the code and the suites:
+
+- **Regenerate is a different request.** It was not: `onRegenerate={generate}`
+  re-ran the same function with a byte-identical body, and `generateContent`
+  set no seed, no temperature and no directive. The screens now send
+  `regenerate: true`, the stems on screen (`avoid`) and the pool variant they
+  hold (`excludeVariantIds`) — see `services/ai/regeneration.ts`.
+- **The server answers a regeneration from the pool when it can.** A variant
+  this teacher has not seen costs nothing and is certainly different. Only when
+  there is none does it generate, steered by a named variation profile keyed to
+  the pool slot and by an exclusion list of what the teacher already saw.
+- **And it checks.** `overlapRatio` measures how much of the "new" artifact the
+  teacher had already been shown; above half it retries once with a harder
+  directive. Nothing marks an artifact regenerated on the strength of having
+  asked for one — the repo has shipped a flag describing an intention rather
+  than a result before, and this is that shape of claim.
+- **`ai_artifacts` holds up to 5 variants per key**, served least-used-first.
+  Keyed on `strictKey`, not `coarseKey`: the coarse key drops difficulty,
+  question count and duration on the promise that phase 2 will slice a superset
+  down to them, and phase 2 does not exist — serving on it today would hand a
+  teacher who asked for 5 easy questions a 15-question hard paper.
+- **`ai_generations` rows now carry `artifactId`**, which makes them a
+  per-teacher serve log: "which variants has this teacher seen" is a query over
+  rows that were already being written. `cacheStatus` finally moves off `miss`.
+- **A cache hit is served even when the budget is spent.** `assertBudgetAvailable()`
+  now runs after the lookup — it costs nothing to hand over an artifact that
+  was paid for last week. `assertLiveModeEnabled()` still runs first, on
+  purpose: with live mode off this API is meant to make no AI claim at all.
+
+**The finding that decides whether any of this works.** The plan's scope rule
+was "global for requests with no `additionalContext`". Every generator screen
+sends `additionalContext` — it is `buildGeneratorContext()` output, curriculum
+text the app derives from the lesson — so that rule would have excluded
+essentially every request from the pool and the hit rate would have been zero
+for reasons no dashboard would have explained. Requests now declare
+`contextSource`; only `'teacher'` (a pasted note, an attached document, typed
+objectives or adaptations) stays private, and an absent value is read as
+`'teacher'` so a screen that forgets fails closed.
+
+**Not built, and worth knowing:**
+- `POST /generate/variants/:id/retire` exists and nothing in the app calls it.
+  It is the safety valve for sharing — one bad worksheet now reaches every
+  teacher who asks for that lesson — and until a screen offers it, retiring a
+  variant is a curl an operator has to run.
+- The hit rate has not been observed on real traffic. Everything above is what
+  the code does, verified by tests; the first number that means anything comes
+  from `select cache_status, count(*) from ai_generations` after a week.
+- Nothing precomputes the catalog, so a teacher is still the one paying for the
+  first request on any lesson. That is phase 3, ~$1 for all of math S1.
+
+**Needs the manual push** — `ai_artifacts` is a new table and `ai_generations`
+gains a column: `pnpm --filter @workspace/db run push`, then
+`pnpm --filter @workspace/db run verify-schema`. Without it the pool degrades
+to "generate every time", which is the old behaviour, and
+`/healthz/ai-budget` reports it under `cacheFailure` rather than failing
+silently.
+
 ## Exams & tests review: variation, book grounding, purpose separation, 2026-08-28
 
 A full pass over both exam systems — the `/ai-tools` generators and the
