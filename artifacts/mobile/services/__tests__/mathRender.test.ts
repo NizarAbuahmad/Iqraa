@@ -221,4 +221,41 @@ describe('isolateForeignRuns', () => {
   it('handles an empty line', () => {
     assert.equal(isolateForeignRuns(''), '');
   });
+
+  // The two lines from the slide that shipped scrambled to a projector:
+  // «f(x) = 2x⁴ - x² + 3» rendered as «x⁴f(x) = 2 - x² + 3», and the «t²»
+  // of «5t²» was carried off to the next line on its own.
+  it('keeps a polynomial with unicode superscripts whole', () => {
+    const out = isolateForeignRuns(
+      'إيجاد مشتقة الاقترانات الآتية: f(x) = 2x⁴ - x² + 3، و g(x) = 5x³',
+    );
+    assert.equal(
+      out,
+      'إيجاد مشتقة الاقترانات الآتية: ⁦f(x) = 2x⁴ - x² + 3⁩، و ⁦g(x) = 5x³⁩',
+    );
+  });
+
+  it('keeps a displacement formula whole, trailing squared term included', () => {
+    const out = isolateForeignRuns('السرعة اللحظية باستخدام s(t) = 80t - 5t²');
+    assert.equal(out, 'السرعة اللحظية باستخدام ⁦s(t) = 80t - 5t²⁩');
+  });
+
+  it('isolates subscripts and comparisons as one run, not three', () => {
+    assert.equal(isolateForeignRuns('حيث x₁ ≤ 5'), 'حيث ⁦x₁ ≤ 5⁩');
+  });
+
+  // A run only earns an isolate when it could actually be reordered. These
+  // three were caught by the export suite: isolating them split «أ.» into
+  // «أ⁦.⁩» and cut the page out of a «ص 45» citation.
+  it('leaves a bare number alone — bidi already places it correctly', () => {
+    assert.equal(isolateForeignRuns('انظر صفحة 45'), 'انظر صفحة 45');
+  });
+
+  it('leaves standalone punctuation alone', () => {
+    assert.equal(isolateForeignRuns('أ. الوقت'), 'أ. الوقت');
+  });
+
+  it('still isolates a number once an operator joins it', () => {
+    assert.equal(isolateForeignRuns('احسب 2 + 3'), 'احسب ⁦2 + 3⁩');
+  });
 });

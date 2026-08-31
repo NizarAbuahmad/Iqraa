@@ -255,6 +255,52 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Embedded maths stopped being scrambled by RTL, 2026-08-31
+
+A generated slide read «إيجاد مشتقة الاقترانات الآتية: f(x) = 2x⁴ - x² + 3»
+and **projected as `x⁴f(x) = 2 - x² + 3`**; on the next line the `t²` of
+`s(t) = 80t - 5t²` was carried off to a line of its own. A teacher was showing
+a class wrong maths.
+
+Bidi, not maths. Arabic prose sets a right-to-left run, and the digits,
+parentheses and operators inside an embedded equation are bidi-*neutral*, so
+the platform reorders them against the surrounding Arabic unless each
+Latin/maths run is explicitly isolated.
+
+**The fix already existed and had never been wired up.** `isolateForeignRuns()`
+landed in `services/mathRender.ts` on 2026-08-27 for exactly this failure, with
+tests — and was applied to the chat bubble and `MathParagraph` only. Eleven
+other screens rendering model-written prose never got it.
+
+Now wired everywhere it applies, following the chat pattern
+(`writingDirection` for the paragraph's base direction, `isolateForeignRuns`
+for the runs inside it):
+
+| Surface | Was |
+| --- | --- |
+| `presentation.tsx` | the reported bug — and it set `textAlign` but never `writingDirection`, in 1349 lines |
+| `evaluations/[id]/index.tsx`, `…/answers/[studentId].tsx`, `take/[code].tsx` | teacher review, grading, and the paper a student actually sits |
+| `lesson-flow`, `activity`, `classroom/builder`, `slides`, `game` | artifact previews |
+| `iqra.tsx:987` | the one chat branch the 2026-08-27 commit missed |
+| `exportHtml.ts`, `deckSlidesHtml.ts` | print/PDF — isolation moved into `esc` so a new builder cannot forget it, with `escAttr` as the explicit opt-out for URLs |
+
+**Two things the export suite caught, worth keeping in mind.** Isolating every
+run the character class matched wrapped a lone `.` and a bare «ص 45» page
+number — which split the abjad option marker «أ.» into «أ⁦.⁩» and cut the page
+out of a citation. A run now earns an isolate only if it holds a Latin letter,
+or a number *and* an operator; a standalone number or punctuation mark is laid
+out correctly on its own. Separately, a URL printed as visible text has to be
+isolated **whole** (`escUrlText`): general run detection cuts it at the `://`,
+because a colon is not a maths character, and the scheme can then swap sides
+with the host.
+
+`exportPptx.ts` and `exportText.ts` are deliberately untouched — invisible
+U+2066/U+2069 can read as corruption in apps that do not honour them.
+
+**Not machine-verified:** the rendering itself. Synthetic events still do not
+reach these React-Native-Web controls. The helper and the exported strings are
+tested (mobile 1091 pass / 0 fail); the screen call sites were read by eye.
+
 ## Regeneration means something, and one artifact can serve many teachers, 2026-08-31
 
 Two teacher-facing complaints with one mechanism behind them: pressing

@@ -14,6 +14,15 @@ import assert from 'node:assert/strict';
 import { buildDeckSlidesHTML } from '../deckSlidesHtml.ts';
 import type { ActivitySlide, ClassroomActivity } from '../ai/AIService.ts';
 
+/**
+ * Drop the U+2066/U+2069 directional isolates the exporter adds around Latin
+ * and maths runs, so an assertion can talk about the text a reader sees
+ * rather than the invisible marks that hold it in order.
+ */
+function stripIsolates(html: string): string {
+  return html.replace(/[\u2066\u2069]/g, '');
+}
+
 function deck(slides: ActivitySlide[]): ClassroomActivity {
   return {
     activityName: 'الاشتقاق',
@@ -122,7 +131,10 @@ describe('buildDeckSlidesHTML — media slide', () => {
       },
     ]), true);
     assert.match(html, /src="https:\/\/images\.unsplash\.com\/photo-1\.jpg"/);
-    assert.match(html, /📷 A\. Photographer · Unsplash/);
+    // The caption's Latin runs carry directional isolates on an RTL page, so
+    // assert the credit's content survives rather than its exact byte form —
+    // the src above is the one that must stay isolate-free.
+    assert.match(stripIsolates(html), /📷 A\. Photographer · Unsplash/);
   });
 
   it('renders a video media slide as a real clickable link, not an image', () => {
@@ -145,7 +157,11 @@ describe('buildDeckSlidesHTML — media slide', () => {
     assert.match(html, /شرح الاشتقاق — قناة الرياضيات/);
     assert.match(html, /deck-video-note">فيديو خارجي — راجعه قبل العرض/);
     // The bare URL prints too, for the paper case where a link can't be clicked.
-    assert.match(html, /deck-video-url">https:\/\/youtu\.be\/dQw4w9WgXcQ/);
+    assert.match(stripIsolates(html), /deck-video-url">https:\/\/youtu\.be\/dQw4w9WgXcQ/);
+    // …and it prints as ONE isolated unit. Left to the general run detection
+    // it would be cut at the "://" and the scheme could swap sides with the
+    // host on an RTL page — a URL nobody can retype.
+    assert.match(html, /deck-video-url">\u2066https:\/\/youtu\.be\/dQw4w9WgXcQ\u2069</);
   });
 });
 

@@ -26,6 +26,7 @@ import { Toast } from '@/components/ui/Toast';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
+import { isolateForeignRuns } from '@/services/mathRender';
 import type { ActivitySlide, ClassroomActivity, LessonPlanOutput } from '@/services/ai/AIService';
 import { buildGeneratorContext, generatorLessonId, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
 import {
@@ -864,10 +865,17 @@ export default function SlidesScreen() {
                         <Text style={{ color: ACCENT, fontFamily: 'Cairo_700Bold', fontSize: 11 }}>{i + 1}</Text>
                       </View>
                       <Text
-                        style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }}
+                        style={{
+                          flex: 1,
+                          color: colors.foreground,
+                          fontFamily: 'Almarai_400Regular',
+                          fontSize: 13,
+                          textAlign: isRTL ? 'right' : 'left',
+                          writingDirection: isRTL ? 'rtl' : 'ltr',
+                        }}
                         numberOfLines={1}
                       >
-                        {s.title}
+                        {isolateForeignRuns(s.title)}
                       </Text>
                       {/* The projector's own rule, so the editor cannot advertise a
                           timer the presentation screen then refuses to run. */}

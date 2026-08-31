@@ -14,6 +14,7 @@ import {
 } from '@/services/curriculumData';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { ClassroomActivity } from '@/services/ai/AIService';
+import { isolateForeignRuns } from '@/services/mathRender';
 import { buildGeneratorContext, generatorLessonId, generatorUnitId } from '@/services/kbContext';
 import { groundedSubjectConflict } from '@/services/lessonPrep';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
@@ -258,11 +259,31 @@ export default function ClassroomBuilderScreen() {
 
           {/* Activity overview */}
           <View style={[styles.previewCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-            <Text style={[styles.previewTitle, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
-              {result.activityName}
+            <Text
+              style={[
+                styles.previewTitle,
+                {
+                  color: colors.foreground,
+                  fontFamily: 'Cairo_700Bold',
+                  textAlign: isRTL ? 'right' : 'left',
+                  writingDirection: isRTL ? 'rtl' : 'ltr',
+                },
+              ]}
+            >
+              {isolateForeignRuns(result.activityName)}
             </Text>
-            <Text style={[styles.previewObj, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
-              {result.learningObjective}
+            <Text
+              style={[
+                styles.previewObj,
+                {
+                  color: colors.mutedForeground,
+                  fontFamily: 'Almarai_400Regular',
+                  textAlign: isRTL ? 'right' : 'left',
+                  writingDirection: isRTL ? 'rtl' : 'ltr',
+                },
+              ]}
+            >
+              {isolateForeignRuns(result.learningObjective)}
             </Text>
 
             {/* Stats row */}

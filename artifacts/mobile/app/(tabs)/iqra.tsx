@@ -985,7 +985,7 @@ function MessageBubble({
             if (line.startsWith('📚') || line.startsWith('📖')) {
               return (
                 <Text key={i} style={[styles.sourceText, { color: colors.mutedForeground, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>
-                  {line}
+                  {isolateForeignRuns(line)}
                 </Text>
               );
             }
