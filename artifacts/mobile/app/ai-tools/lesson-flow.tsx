@@ -22,7 +22,7 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
-import { buildGeneratorContext, generatorUnitId } from '@/services/kbContext';
+import { buildGeneratorContext, generatorLessonId, generatorUnitId } from '@/services/kbContext';
 import {
   ActivityOutput,
   LessonFlowOutput,
@@ -199,7 +199,13 @@ export default function LessonFlowScreen() {
     try {
       const kbCtx = await buildGeneratorContext(topic, lang === 'ar' ? 'ar' : 'en');
       const unitId = generatorUnitId(topic, lang === 'ar' ? 'ar' : 'en');
-      const req = { grade, subject, topic, language, duration, additionalContext: kbCtx, unitId };
+      const req = {
+        grade, subject, topic, language, duration, additionalContext: kbCtx, unitId,
+        lessonId: generatorLessonId(topic, lang === 'ar' ? 'ar' : 'en'),
+        // Every step of the flow is built from the lesson alone, so each one
+        // can be served from — and fill — the shared pool.
+        contextSource: 'curriculum' as const,
+      };
 
       await runLessonFlowFrom(startKey, req, aiService, prior, {
         onStepStart: (key) => setStep(key, 'loading'),

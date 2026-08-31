@@ -123,6 +123,12 @@ function buildRequest(
       .filter(Boolean)
       .join('\n\n') || undefined,
     unitId: nccdUnitId(lesson?.unitId),
+    lessonId: lesson?.id,
+    // The one generation path that can carry a teacher's own document. When it
+    // does, the artifact is derived from their material and must never be
+    // pooled for anyone else; with no attachment it is the lesson like every
+    // other screen. See AIRequest.contextSource.
+    contextSource: documentContext?.trim() ? 'teacher' : 'curriculum',
   };
 }
 

@@ -13,7 +13,7 @@ the single largest avoidable cost in the product.
 | Decision | Choice |
 | --- | --- |
 | Identical output vs variants | **Pool of 3–5 variants per key**, served round-robin |
-| Cache scope | **Global for requests with no `additionalContext`**; per-user for requests that carry it |
+| Cache scope | **Global for requests whose context is curriculum-derived**; never pooled for requests carrying teacher-supplied material |
 | Discrete vs free-form form inputs | **Constrain the UI** to discrete durations / question counts |
 
 The variant pool is a product call, not a cost one: a single shared worksheet
@@ -21,17 +21,35 @@ means two classes in the same school get the identical sheet and students swap
 answers. A pool of 3–5 costs ~N× a single cache entry and still beats the
 uncached path by two orders of magnitude.
 
-The scope rule exists because `additionalContext` is **free text teachers paste
-from their own material**. Serving a globally-cached artifact derived from
-teacher A's pasted content to teacher B is a content leak. Requests carrying it
-never enter the global cache.
+The scope rule exists because a request can carry material the teacher supplied
+— a pasted note, an attached document, typed objectives. Serving an artifact
+derived from teacher A's material to teacher B is a content leak. Such requests
+never enter the global pool at all (not "cached per user": a per-user cache of
+pasted content earns almost nothing, since teachers rarely re-paste the same
+document, in exchange for a place it could leak from).
+
+> **Corrected 2026-08-31, while building phase 1.** This rule originally read
+> "global for requests with no `additionalContext`", and that would have made
+> the hit rate zero. **Every generator screen sends `additionalContext`** — it
+> is `buildGeneratorContext()` output, curriculum text the app derives from the
+> lesson, identical for any teacher who asks the same question — and the server
+> then appends its own book-passage grounding to the same field. Reading
+> "context present" as "teacher material" excludes essentially every request
+> from the pool, and nothing about the resulting 0% hit rate would have said
+> why. The distinction that matters is *provenance*, not presence: requests now
+> carry `contextSource: 'curriculum' | 'teacher'`, absent read as `'teacher'`
+> so a caller that forgets fails closed.
 
 ## What the code does today (verified)
 
-- Every `/generate/*` request is one uncached model call. There is no cache of
-  any kind in `artifacts/api-server/src` or `lib/db` — the only `cache` matches
-  in the tree are comments in `aiBudget.ts` about OpenAI's own cached-input
-  pricing tier.
+_The list below describes the code as of 2026-08-22. Phases 0 and 1 have since
+been built; where a line is superseded it says so rather than being deleted,
+because the shape of the old behaviour is what the phases were sized against._
+
+- ~~Every `/generate/*` request is one uncached model call.~~ **Superseded
+  2026-08-31 (phase 1).** A shareable request is looked up in `ai_artifacts`
+  by its strict key first, and only generated on a miss; concurrent misses on
+  one key are collapsed by `lib/singleFlight.ts`.
 - Six routes share one helper, `generateContent()` in
   `artifacts/api-server/src/routes/generate.ts`: lesson-plan, worksheet, quiz,
   homework, activity, classroom-activity.
@@ -244,10 +262,30 @@ production** — see the landmine above. Without it, every hit-rate claim in thi
 document is a guess, and this repo's convention is to verify against the running
 system rather than trust a doc. Cheap, and it is what proves phase 1 worked.
 
-**Phase 1 — shared cache + single-flight.** Content-addressed lookup on the
-normalized key, plus the in-flight map described above. Also drop the echoed
-scaffold fields from the output shapes. Expect a moderate hit rate here —
-phase 2 is what makes it high.
+**Phase 1 — shared cache + single-flight. Built 2026-08-31.** Content-addressed
+lookup on the **strict** key — not the coarse one; the coarse key drops the
+parameters phase 2 has not yet arrived to slice, and serving on it would answer
+"5 easy questions" with a 15-question hard paper. `ai_artifacts` holds up to 5
+variants per key, served least-used-first, and `ai_generations.artifactId`
+records which variant each teacher was handed, which is what lets a regenerate
+find one they have not seen.
+
+Regeneration is part of this phase rather than a separate feature, and that was
+the design's one genuine surprise. Pressing "regenerate" re-sent a byte-identical
+request, so the pool would have answered it with the artifact the teacher had
+just rejected — the cache would have made the worse bug worse. Turning it into
+"serve a variant they have not seen, or generate one steered away from what they
+have" is what makes the two features one mechanism: a teacher's regeneration is
+how the pool grows, and the pool is what makes the next teacher's regeneration
+free. See `lib/variation.ts`, `lib/variantPolicy.ts`.
+
+Still outstanding from this phase: dropping the echoed scaffold fields
+(`grade`, `subject`, `duration`…) from the output shapes.
+
+The measured hit rate is still unknown — everything above is what the code
+does, not what traffic has shown. `select cache_status, count(*) from
+ai_generations where created_at > now() - interval '7 days' group by 1` is the
+question, and it needs a week of real use to mean anything.
 
 **Phase 2 — superset generation and local slicing.** The key-space collapse, plus
 the UI change to discrete inputs. This is the phase that actually earns the

@@ -7,7 +7,8 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
-import { buildAdaptationsDirective, generatorUnitId, getUnitPriorKnowledge, resolveGeneratorGrounding } from '@/services/kbContext';
+import { buildAdaptationsDirective, generatorLessonId, generatorUnitId, getUnitPriorKnowledge, resolveGeneratorGrounding } from '@/services/kbContext';
+import { regenerationFields } from '@/services/ai/regeneration';
 import { LessonPlanOutput } from '@/services/ai/AIService';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
@@ -155,7 +156,19 @@ export default function LessonPlanScreen() {
     setSaveLabel(savedId ? 'updated' : 'save');
   };
 
-  const generate = async () => {
+  /**
+   * `regenerate` is the teacher asking for a replacement, not another copy.
+   *
+   * It used to be the same call: the button re-ran this function with an
+   * identical body, and the same prompt came back as the same content
+   * reworded. The flag lets the server answer from a variant it has already
+   * paid for — free, and certain to be different — and steer a fresh
+   * generation away from what is on screen when it cannot.
+   */
+  const generate = async (opts?: { regenerate?: boolean }) => {
+    // Read before any setState clears it — this is what the teacher is
+    // looking at, and what a regeneration must not hand back.
+    const previous = result;
     if (!topic.trim()) { setError(t('topicRequired')); return; }
     // A topic that grounds to another subject's lesson cannot make an honest
     // plan — the KB serves that lesson's own content while the header claims
@@ -203,6 +216,15 @@ export default function LessonPlanScreen() {
           : (objectives.trim() || undefined),
         additionalContext,
         unitId: generatorUnitId(topic.trim(), lang as 'ar' | 'en'),
+        lessonId: generatorLessonId(topic.trim(), lang as 'ar' | 'en'),
+        // Objectives, adaptations and prior-topic notes are all free text the
+        // teacher typed, and all three are carried into the plan verbatim. A
+        // plan built from any of them is that teacher's and is never pooled;
+        // a plan built from the lesson alone is everybody's.
+        contextSource: (objectives.trim() || adaptations.trim() || priorTopicsNotes.trim())
+          ? 'teacher' as const
+          : 'curriculum' as const,
+        ...regenerationFields(opts?.regenerate === true, previous),
         includePriorReview: usePrior || undefined,
         priorKnowledge: usePrior ? unitPrior : undefined,
         priorTopicsNotes: priorTopicsNotes.trim() || undefined,
@@ -471,7 +493,7 @@ export default function LessonPlanScreen() {
         {error && !topic.trim() ? <Text style={[{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
         <Button
           label={loading ? t('generatingLessonPlan') : t('generateLessonPlanBtn')}
-          onPress={generate}
+          onPress={() => generate()}
           loading={loading}
           fullWidth
         />
@@ -539,7 +561,7 @@ export default function LessonPlanScreen() {
           onSave={handleSave}
           favorite={{ favorited, onToggle: handleToggleFavorite }}
           onExport={() => setShowExport(true)}
-          onRegenerate={generate}
+          onRegenerate={() => generate({ regenerate: true })}
           materialType="lesson"
           toolId={isSimplify ? 'simplify' : 'lesson-plan'}
           topic={topic.trim()}

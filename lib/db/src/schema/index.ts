@@ -28,6 +28,8 @@ export * from "./feedback";
 
 // AI spend + cache-hit measurement — see docs/ai-cost-savings-plan.md
 export * from "./aiGenerations";
+// The shared variant pool those keys are looked up in (plan phase 1)
+export * from "./aiArtifacts";
 
 // Teacher-uploaded lesson attachments (R2-backed) — see routes/lessonMedia.ts
 export * from "./lessonMedia";

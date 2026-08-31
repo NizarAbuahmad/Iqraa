@@ -27,7 +27,7 @@ import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import type { ActivitySlide, ClassroomActivity, LessonPlanOutput } from '@/services/ai/AIService';
-import { buildGeneratorContext, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
+import { buildGeneratorContext, generatorLessonId, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
 import {
   buildLessonDeck, EXIT_TICKET_MAX, MID_LESSON_CHECK_MAX, rebuildAnswerKey, withoutSlide,
 } from '@/services/lessonSlides';
@@ -342,6 +342,8 @@ export default function SlidesScreen() {
           language: isAr ? 'arabic' : 'english',
           additionalContext: buildGeneratorContext(trimmed, lang as 'ar' | 'en'),
           unitId: generatorUnitId(trimmed, lang as 'ar' | 'en'),
+          lessonId: generatorLessonId(trimmed, lang as 'ar' | 'en'),
+          contextSource: 'curriculum',
         }, { signal: controller.signal });
       } catch (e) {
         // This screen deliberately survives a failed plan — the curriculum book
