@@ -27,6 +27,15 @@ interface Colors {
 
 interface Props<T extends string | number> {
   label: string;
+  /**
+   * One line under the pills saying what the choice actually changes.
+   *
+   * Added for classroom/builder.tsx's «تجهيزات الصف» row, where the two
+   * options rewrite the materials list and the on-screen wording but leave
+   * the questions alone — a difference invisible until you read both outputs
+   * side by side, so the row read as decorative.
+   */
+  hint?: string;
   options: PillOption<T>[];
   value: T;
   onChange: (value: T) => void;
@@ -46,7 +55,7 @@ interface Props<T extends string | number> {
 }
 
 export function PillSelector<T extends string | number>({
-  label, options, value, onChange, colors, isRTL, accent, haptics = false, pillStyle, containerStyle,
+  label, options, value, onChange, colors, isRTL, accent, hint, haptics = false, pillStyle, containerStyle,
 }: Props<T>) {
   return (
     <View style={[{ marginBottom: 18 }, containerStyle]}>
@@ -83,6 +92,11 @@ export function PillSelector<T extends string | number>({
           );
         })}
       </View>
+      {hint ? (
+        <Text style={[styles.hint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+          {hint}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -92,4 +106,5 @@ const styles = StyleSheet.create({
   pillRow: { flexWrap: 'wrap', gap: 8 },
   pill: { paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1.5 },
   pillText: { fontSize: 13 },
+  hint: { fontSize: 11, lineHeight: 16, marginTop: 6 },
 });
