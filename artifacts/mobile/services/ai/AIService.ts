@@ -46,6 +46,22 @@ export interface AIRequest {
   totalMarks?: number;
   // Activity extras
   activityType?: 'individual' | 'group' | 'discussion' | 'hands-on' | 'game';
+  /**
+   * Which slot in the lesson this activity fills.
+   *
+   * A warm-up is short prior-knowledge retrieval, not a shortened version of
+   * the main activity. The lesson flow used to generate both from the same
+   * call with only the duration changed, so a teacher got the same four steps
+   * and the same three problems twice in one lesson.
+   */
+  activityVariant?: 'main' | 'warmup';
+  /**
+   * Continue the concrete-item selection from the previous generation instead
+   * of restarting it, so two activities in the same lesson do not pose the
+   * same problems. Set by `lessonFlowRunner` on the calls that follow the
+   * warm-up; only the deterministic bank honours it.
+   */
+  continueMathPractice?: boolean;
 }
 
 /**

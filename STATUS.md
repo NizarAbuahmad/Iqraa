@@ -46,8 +46,9 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     because the count was repeatedly described as "all in
     `lib/integrations-openai-ai-server`", which is wrong by a factor of three
     and would send someone looking in the wrong package.
-- Mobile test suite: 981 tests, 0 failures, 10 skipped (re-counted 2026-08-26
-  on an installed workspace; 975, 971 and 962 earlier the same day/day before,
+- Mobile test suite: 1070 tests, 0 failures, 10 skipped (re-counted 2026-08-31
+  on an installed workspace; 1046 before the activity-format work the same day,
+  981 on 2026-08-26; 975, 971 and 962 earlier the same day/day before,
   925, 909, 900, 894,
   888, 865 and 855
   earlier the same day, 725 on 2026-08-23, 723 on 2026-08-22, the 480 here was
@@ -252,6 +253,75 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     deployed. The client's timeout is 2.5s, so the first call after idle fails.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
+
+## The five activity types stopped being one template, 2026-08-31
+
+**The Activity generator produced one activity with five names.** Measured
+before the fix, generating all five types for the same lesson and stripping
+the title and the group-size noun: **1 distinct body across 5 types.** Per
+field, out of five types, `objective` / `materials` / `steps` / `teacherTips` /
+`differentiation` / `assessment` each had **1 distinct value**; only
+`groupSize` had five, and `title` had three (individual, group and hands-on
+all read «تعلم تعاوني»). `activityType` controlled exactly one interpolated
+noun.
+
+The seams showed in the Arabic: step 2 was `قسّم الطلاب حسب ${groupLabel}`, so
+«individual» rendered as **«قسّم الطلاب حسب فردي. تحل كل مجموعة المسألتين»** and
+«discussion» as «قسّم الطلاب حسب الصف كامل». The teacher tips then told you to
+assign roles inside each group — on an individual worksheet. «لعبة تعليمية» had
+no rules, no scoring, no rounds and no win condition.
+
+**The lesson flow generated the warm-up from the same call.**
+`lessonFlowRunner` asked for a 10-minute `hands-on` activity and then a
+30-minute `game`, so a teacher running the journey got the same four steps,
+the same materials, tips and differentiation, and **the same three problems
+posed twice in one lesson**. The warm-up also claimed 10 minutes while its
+steps summed to 20 (`stepDur = max(5, (duration - 10) / 2)`, four steps).
+
+**Now:** each format has its own blueprint in
+`artifacts/mobile/services/ai/activityBlueprints.ts` — steps, materials, tips,
+differentiation and assessment built around what the format is for.
+Re-measured after: **5 distinct bodies out of 5, and 5 distinct values on
+every field including the title.**
+
+| Format | Structure it now produces |
+| --- | --- |
+| `individual` | silent retrieval → worked example → faded practice → self-explanation. No groups anywhere. |
+| `group` | jigsaw: four different tasks, expert groups, teach-back, random individual accountability |
+| `discussion` | a contestable claim, vote, silent think, pairs, talk moves, re-vote |
+| `hands-on` | build/measure a physical artefact, then reconcile measured against computed |
+| `game` | announced rules, teams, two rounds (the second a wager), live scoreboard, win condition, miss review |
+| `warmup` | three steps: prior-knowledge retrieval, one check, a bridge to today |
+
+`activityVariant: 'warmup'` is the lesson flow's opening step now, and
+`continueMathPractice: true` on the activity call keeps it off the items the
+warm-up just used — **verified: 0 shared problem values** between the two.
+Step durations are computed by `distributeMinutes` and `totalDuration` is the
+**sum of the steps**, so the two can no longer disagree.
+
+**The live-AI path had the same hole and is fixed too.**
+`activityPromptAr`/`activityPromptEn` injected the type name into one opening
+sentence and asked for the same fixed JSON shape for all five, so the model had
+nothing to differentiate on. They now carry a per-format structure clause
+(`ACTIVITY_FORMAT_RULES_AR` / `_EN` in `artifacts/api-server/src/lib/prompts.ts`),
+mirroring the blueprints — the same 7-branch treatment `classroomPrompts.ts`
+already had. **Keep the two in step:** a teacher must not get a different kind
+of activity depending on whether live generation was on. `PROMPT_VERSION` is
+bumped to `2026-08-31.1`, and `activityVariant` is in **both** generation keys
+(not strict-only like `activityType`) — a warm-up is not a slice of the main
+activity, and sharing a coarse key is how the two came to be identical.
+
+**Not touched:** `generateClassroomActivity` was already properly
+differentiated — bingo emits `bingo-call` slides with a caller list, relay
+emits `relay-problem` slides, quick-check emits MCQs whose distractors are
+misconceptions from the concrete bank. That capability existed; the
+lesson-activity generator just never got it.
+
+**Pinned by** `services/__tests__/activityBlueprints.test.ts` (every type
+differs from every other on every field, in Arabic and English, for a maths and
+a chemistry lesson; each format carries its defining structure; durations sum)
+and `artifacts/api-server/src/lib/__tests__/activityPrompts.test.ts` (all five
+prompts differ, each names its own structure, in both languages).
 
 ## Exams & tests review: variation, book grounding, purpose separation, 2026-08-28
 

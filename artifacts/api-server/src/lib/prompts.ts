@@ -247,25 +247,83 @@ Return JSON in this exact shape:
 }
 
 // ─── Activity prompt builders ────────────────────────────────────────────────
+/**
+ * Per-format structure rules for the single-activity generator.
+ *
+ * The prompt used to inject the type name into one opening sentence and then
+ * ask for the same fixed JSON shape for all five formats, so the model had
+ * nothing to differentiate on — a "game" came back as the same four
+ * cooperative steps with the word game in the title. These clauses say what
+ * each format has to STRUCTURALLY contain, mirroring the blueprints the
+ * offline generator builds in `artifacts/mobile/services/ai/activityBlueprints.ts`.
+ * Keep the two in step: a teacher must not get a different kind of activity
+ * depending on whether live generation was on.
+ */
+const ACTIVITY_FORMAT_RULES_AR: Record<string, string> = {
+  individual: `هذا نشاط فردي. يجب أن يتضمن بالترتيب: استرجاع صامت من الذاكرة والدفاتر مغلقة، ثم مثال محلول بالكامل يدرسه الطالب ولا يحله، ثم تدرّب متدرّج (سؤال نصفه محلول ثم سؤال بلا مساعدة)، ثم سؤال يشرح فيه الطالب لنفسه سبب صحة خطوته الأولى.
+ممنوع تمامًا: المجموعات، توزيع الأدوار، العروض التقديمية، أي عبارة فيها «قسّم الطلاب» أو «كل مجموعة». حجم المجموعة هو «فردي».
+مواد النشاط أدوات فردية (دفتر، بطاقة مثال محلول، ورقة عمل) لا مواد جماعية.`,
+  group: `هذا نشاط تعلّم تعاوني بنية جيقسو حقيقية. يجب أن يتضمن: مجموعات أساسية من 4 يأخذ كل فرد فيها مهمة **مختلفة** عن زملائه (اذكر المهام الأربع صراحة)، ثم مجموعات خبراء يجتمع فيها أصحاب المهمة نفسها، ثم عودة كل خبير ليعلّم جزءه، ثم مساءلة فردية عشوائية يُسحب فيها رقم فيعرض صاحبه إجابة مجموعته كاملة.
+اشترط أن إجابة المجموعة لا تكتمل بغياب أي جزء — هذا هو الاعتماد المتبادل، وبدونه يعمل طالب واحد ويشاهد ثلاثة.`,
+  discussion: `هذا نقاش صفّي، وليس عملًا في مجموعات. يجب أن يتضمن: ادعاءً واحدًا قابلًا للجدل مصاغًا كجملة تقريرية (خطأ شائع معقول، لا عبارة صحيحة يتفق عليها الجميع)، تصويتًا أوليًا، دقيقتَي تفكير فردي صامت يكتب فيهما الطالب موقفه وسببًا واحدًا، مرحلة ثنائية يعيد فيها كل طالب صياغة سبب زميله قبل الرد، نقاشًا صفّيًا تديره بعبارات إدارة الحوار (من يعيد صياغة ما قاله زميله؟ ما دليلك؟ متى يفشل هذا الادعاء؟)، ثم تصويتًا ثانيًا يُقارن بالأول.
+ممنوع: أوراق العمل، الأدوار داخل المجموعة، العروض. لا تكشف الحكم على الادعاء قبل الخطوة الأخيرة.`,
+  "hands-on": `هذا نشاط تطبيقي عملي بمواد ملموسة. يجب أن يُنتج الطلاب شيئًا ماديًا: بناء أو قص أو قياس أو تركيب نموذج. يجب أن يتضمن خطوة يقارن فيها الطالب **القيمة التي قاسها** بالقيمة التي تعطيها القاعدة ويفسّر الفرق بينهما.
+قائمة المواد يجب أن تكون أدوات حقيقية (ورق مقوّى، مقص، مسطرة، منقلة، خيط، آلة حاسبة) لا «أوراق عمل مطبوعة» فقط. نشاط يُحلّ كله على الورق ليس نشاطًا تطبيقيًا.`,
+  game: `هذه لعبة تعليمية تنافسية، ولا تكفي تسميتها لعبة. يجب أن تتضمن صراحةً: قواعد مكتوبة تُعلن قبل البدء، فرقًا مسمّاة، جولتين على الأقل بنظام نقاط مختلف بينهما (الثانية بمخاطرة/رهان يعلنه الفريق قبل رؤية السؤال)، لوحة نتائج محدَّثة أمام الجميع، مؤقتًا لكل سؤال، وشرط فوز واضح.
+واختم بخطوة مراجعة للسؤال الذي أخطأت فيه أكثر الفرق — بلا هذه الخطوة تبقى المتعة وتضيع الفائدة.`,
+  warmup: `هذه تهيئة قصيرة في بداية الحصة، لا نسخة مصغّرة من نشاط الحصة. ثلاث خطوات فقط: استرجاع من الذاكرة للمعرفة **السابقة** والدفاتر مغلقة، سؤال تحقّق واحد، ثم جملة تربط ما استُرجع بهدف حصة اليوم.
+ممنوع: شرح المحتوى الجديد، المجموعات، العروض، بطاقات الخروج.`,
+};
+
+const ACTIVITY_FORMAT_RULES_EN: Record<string, string> = {
+  individual: `This is an INDIVIDUAL activity. It must contain, in order: silent retrieval from memory with notebooks closed; a fully worked example the student studies rather than solves; faded practice (one half-solved item, then one unaided); and a self-explanation prompt asking why their first step was legal.
+Strictly forbidden: groups, role assignment, presentations, any phrase like "divide students into" or "each group". Group size is "Individual".
+Materials must be individual tools (notebook, worked-example card, worksheet), not group supplies.`,
+  group: `This is a cooperative activity with a real JIGSAW structure. It must contain: home groups of 4 where each member takes a **different** task from their teammates (state all four tasks explicitly); expert groups where students holding the same task meet; a return where each expert teaches their part; and random individual accountability where a drawn number decides who reports the group's whole answer.
+Require that the group answer cannot be completed if any part is missing — that interdependence is the point; without it one student works and three watch.`,
+  discussion: `This is a whole-class DISCUSSION, not group work. It must contain: one contestable claim written as an assertion (a plausible misconception, not a true statement everyone agrees with); an initial vote; two minutes of silent individual thinking where each student writes a position plus one reason; a paired stage where each student restates their partner's reason before responding; a whole-class discussion run with talk moves (who can restate that? what is your evidence? when does this claim fail?); and a second vote compared with the first.
+Forbidden: worksheets, in-group roles, presentations. Do not settle the claim before the final step.`,
+  "hands-on": `This is a HANDS-ON activity with physical materials. Students must produce something physical: build, cut, measure, or assemble a model. It must contain a step where students compare **the value they measured** with the value the rule predicts and account for the gap.
+The materials list must be real equipment (card stock, scissors, ruler, protractor, string, calculator), not just "printed worksheets". An activity done entirely on paper is not hands-on.`,
+  game: `This is a competitive learning GAME — calling it a game is not enough. It must explicitly contain: written rules announced before play; named teams; at least two rounds scored differently (the second with a wager the team declares before seeing the question); a scoreboard updated in full view; a timer per question; and a clear win condition.
+Close with a review of the question most teams got wrong — without it the fun stays and the learning does not.`,
+  warmup: `This is a short lesson-opening WARM-UP, not a miniature version of the lesson activity. Exactly three steps: retrieval of **prior** knowledge from memory with notebooks closed; one quick check question; and a sentence bridging what was retrieved to today's objective.
+Forbidden: teaching the new content, groups, presentations, exit tickets.`,
+};
+
+/** The format the activity should be built as — `activityVariant` wins. */
+function activityFormatKey(b: any): string {
+  return b.activityVariant === "warmup" ? "warmup" : (b.activityType ?? "group");
+}
+
 export function activityPromptAr(b: any): string {
-  const dur = b.duration ?? 30;
-  const type = b.activityType ?? "group";
+  const key = activityFormatKey(b);
+  const dur = b.duration ?? (key === "warmup" ? 8 : 30);
   const typeLabel: Record<string, string> = {
     individual: "فردي", group: "جماعي تعاوني", discussion: "نقاش صفي",
-    "hands-on": "تطبيقي عملي", game: "لعبة تعليمية",
+    "hands-on": "تطبيقي عملي", game: "لعبة تعليمية", warmup: "تهيئة واسترجاع",
   };
-  return `صمّم نشاطًا تعليميًا ${typeLabel[type] ?? type} لمادة ${b.subject} للصف ${b.grade} حول موضوع "${b.topic}".
+  const rule = ACTIVITY_FORMAT_RULES_AR[key] ?? ACTIVITY_FORMAT_RULES_AR.group;
+  return `صمّم نشاطًا تعليميًا ${typeLabel[key] ?? key} لمادة ${b.subject} للصف ${b.grade} حول موضوع "${b.topic}".
 مدة النشاط: ${dur} دقيقة.
 ${b.objectives ? `هدف النشاط: ${b.objectives}` : ""}
 ${b.additionalContext ? `\nسياق الكتاب المدرسي:\n${b.additionalContext}` : ""}
 
+بنية هذا النوع من الأنشطة — التزم بها ولا تستبدلها ببنية عامة:
+${rule}
+
+قواعد عامة:
+- مجموع durationMin لكل الخطوات يجب أن يساوي ${dur} بالضبط.
+- اكتب خطوات يستطيع المعلم تنفيذها كما هي: ماذا يقول، ماذا يوزّع، كم دقيقة، وماذا يفعل الطلاب.
+- يجب أن تعكس المواد والنصائح والتقييم هذا النوع تحديدًا؛ لا تكتب نصائح عن المجموعات في نشاط فردي.
+
 أعد JSON بالشكل الآتي (بالعربية):
 {
   "title": "عنوان النشاط",
-  "activityType": "${type}",
+  "activityType": "${key}",
   "totalDuration": ${dur},
   "objective": "هدف النشاط بجملة واحدة",
-  "groupSize": "حجم المجموعة (مثل: 3-4 طلاب)",
+  "groupSize": "حجم المجموعة المناسب لهذا النوع",
   "materials": ["مادة 1", "مادة 2"],
   "steps": [
     { "stepNumber": 1, "title": "عنوان الخطوة", "description": "وصف تفصيلي للخطوة", "durationMin": 5 }
@@ -277,20 +335,29 @@ ${b.additionalContext ? `\nسياق الكتاب المدرسي:\n${b.additional
 }
 
 export function activityPromptEn(b: any): string {
-  const dur = b.duration ?? 30;
-  const type = b.activityType ?? "group";
-  return `Design a ${type} classroom activity for ${b.subject}, ${b.grade}, on the topic "${b.topic}".
+  const key = activityFormatKey(b);
+  const dur = b.duration ?? (key === "warmup" ? 8 : 30);
+  const rule = ACTIVITY_FORMAT_RULES_EN[key] ?? ACTIVITY_FORMAT_RULES_EN.group;
+  return `Design a ${key} classroom activity for ${b.subject}, ${b.grade}, on the topic "${b.topic}".
 Duration: ${dur} minutes.
 ${b.objectives ? `Lesson objective: ${b.objectives}` : ""}
 ${b.additionalContext ? `\nTextbook context:\n${b.additionalContext}` : ""}
 
+Structure required for this format — follow it, do not substitute a generic one:
+${rule}
+
+General rules:
+- The durationMin values must sum to exactly ${dur}.
+- Write steps a teacher can run as written: what they say, what they hand out, how long, what students do.
+- Materials, tips and assessment must reflect THIS format; never give group advice in an individual activity.
+
 Return JSON in this exact shape:
 {
   "title": "Activity title",
-  "activityType": "${type}",
+  "activityType": "${key}",
   "totalDuration": ${dur},
   "objective": "One-sentence activity objective",
-  "groupSize": "e.g. 3-4 students",
+  "groupSize": "The grouping this format requires",
   "materials": ["item 1", "item 2"],
   "steps": [
     { "stepNumber": 1, "title": "Step title", "description": "Detailed step description for the teacher", "durationMin": 5 }

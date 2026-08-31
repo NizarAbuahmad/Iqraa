@@ -18,7 +18,7 @@ import { createHash } from "node:crypto";
  * artifacts wrong or stale. It is part of both keys, so a bump partitions new
  * traffic from old rather than silently mixing them.
  */
-export const PROMPT_VERSION = "2026-08-29.1";
+export const PROMPT_VERSION = "2026-08-31.1";
 
 /** Parameters the plan proposes to serve by slicing one superset artifact,
  *  rather than by generating a separate artifact per combination. They are in
@@ -127,6 +127,11 @@ export function generationKeys(
     subject: normalizeValue(body.subject),
     grade: normalizeValue(body.grade),
     language: normalizeValue(body.language) ?? "arabic",
+    // In BOTH keys, unlike `activityType`. A warm-up is not a slice of the
+    // main activity that a superset artifact could be cut from — it is a
+    // different artifact, and sharing a coarse key with the lesson activity
+    // is how the two came to be identical in the first place.
+    activityVariant: normalizeValue(body.activityVariant),
   };
 
   const strict: Record<string, unknown> = { ...shared };

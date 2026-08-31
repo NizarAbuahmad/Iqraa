@@ -108,6 +108,17 @@ Before a live demo: [`docs/demo-checklist.md`](./docs/demo-checklist.md).
   than transliterating «ق(س)» into `f(x)`. Related: `expr_equiv` folds
   `.equals() → None` into `False`, so anything needing "undecidable" as a
   distinct outcome must use `_relation`, not `expr_equiv`.
+- **An activity format lives in two places and both must move.** Each of the
+  five activity types (plus `warmup`) has a blueprint in
+  `artifacts/mobile/services/ai/activityBlueprints.ts` for the offline path and
+  a structure clause in `ACTIVITY_FORMAT_RULES_AR`/`_EN`
+  (`artifacts/api-server/src/lib/prompts.ts`) for the live one. Change one
+  without the other and a teacher gets a different kind of activity depending
+  on whether live generation was on. All five used to be a single template with
+  the group-size noun swapped in — 1 distinct body across 5 types, measured —
+  so the tests that pin them apart (`activityBlueprints.test.ts`,
+  `activityPrompts.test.ts`) assert *every field differs from every other
+  type*; a new format needs its own entry in both files or they fail.
 - **Extensionless relative imports only work through esbuild.** Anything loaded
   directly by `node --test` needs an explicit `.ts` extension.
 - **The OpenAI client throws at module scope without a key**, which makes

@@ -19,6 +19,7 @@ import {
   takeConcreteMathBatch,
   type DiffTier,
 } from './mathPractice.ts';
+import { buildActivityBlueprint } from './activityBlueprints.ts';
 import { classifyVerifiableTopic } from './verifyMathGuards.ts';
 
 /**
@@ -984,94 +985,58 @@ export class MockAIService extends AIService {
     };
   }
 
+  /**
+   * A single-format classroom activity.
+   *
+   * Each activity type gets its OWN structure from `activityBlueprints.ts` —
+   * this used to be one template with the group-size noun swapped into it, so
+   * all five types came back byte-identical apart from the title. See that
+   * module's header for what each format is built to do.
+   *
+   * `activityVariant: 'warmup'` produces the short prior-knowledge retrieval
+   * the lesson flow opens with, not a compressed copy of the main activity.
+   */
   async generateActivity(req: AIRequest): Promise<ActivityOutput> {
     await this.delay();
-    beginMathPracticeSession();
+    // The lesson flow generates a warm-up and then the main activity. Both
+    // used to reset the session, so both drew the SAME three problems and the
+    // teacher posed each of them twice in one lesson. `continueMathPractice`
+    // lets the second call carry on from where the first stopped.
+    if (!req.continueMathPractice) beginMathPracticeSession();
+
     const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
     const kb = groundedKb(req.topic, lang);
     const topic = req.topic;
-    const actType = req.activityType ?? 'group';
-    const duration = req.duration ?? 30;
-    const stepDur = Math.max(5, Math.round((duration - 10) / 2));
+    const isWarmup = req.activityVariant === 'warmup';
+    const actType = isWarmup ? 'warmup' : (req.activityType ?? 'group');
+    const duration = req.duration ?? (isWarmup ? 8 : 30);
     const math = isMathContext(topic, kb, req.subject);
-    const practice = math ? takeConcreteMathBatch(3, topic, kb, lang, 'medium') : [];
+    // A warm-up poses one item; the main activity needs three (worked
+    // example, faded item, unaided item / jigsaw parts / game rounds).
+    const practice = math ? takeConcreteMathBatch(isWarmup ? 1 : 3, topic, kb, lang, 'medium') : [];
 
-    if (lang === 'ar') {
-      const groupLabel: Record<string, string> = {
-        individual: 'فردي', group: `3-4 طلاب`, discussion: 'الصف كامل',
-        'hands-on': 'ثنائي أو رباعي', game: 'فرق من 4 طلاب',
-      };
-      const steps: ActivityStep[] = math && practice.length >= 2
-        ? [
-            { stepNumber: 1, title: 'التمهيد', description: `اعرض المسألة التالية على السبورة واطلب من الطلاب محاولة سريعة فردية (دقيقتان):\n${practice[0].text}\n(الإجابة المتوقعة للمعلم: ${practice[0].answer})`, durationMin: 5 },
-            { stepNumber: 2, title: 'النشاط الرئيسي', description: `قسّم الطلاب حسب ${groupLabel[actType] ?? 'مجموعات'}. تحل كل مجموعة المسألتين:\n1) ${practice[1]?.text ?? practice[0].text}\n2) ${practice[2]?.text ?? practice[0].text}\nيكتب المقرر خطوات الحل كاملة.`, durationMin: stepDur },
-            { stepNumber: 3, title: 'العرض والمناقشة', description: `تعرض مجموعتان حلولهما. قارن الطرق (جبري / بياني إن لزم) وصحّح الأخطاء الشائعة دون إعطاء الإجابة مباشرة أولًا.`, durationMin: stepDur },
-            { stepNumber: 4, title: 'التلخيص والتقييم', description: `بطاقة خروج: اكتب حلًا مختصرًا لمسألة شبيهة أو أعد صياغة خطوة واحدة من حل اليوم. الإجابات المرجعية: ${practice.map(p => p.answer).join(' ؛ ')}`, durationMin: 5 },
-          ]
-        : [
-            { stepNumber: 1, title: 'التمهيد', description: `اطرح على الطلاب سؤالاً تحفيزياً: "أين نصادف ${topic} في حياتنا؟" استمع لإجابات 3-4 طلاب وسجّلها على السبورة لبناء الفضول.`, durationMin: 5 },
-            { stepNumber: 2, title: 'النشاط الرئيسي', description: `قسّم الطلاب حسب ${groupLabel[actType] ?? 'مجموعات'}. يتعاون أفراد كل مجموعة على استكشاف ${topic} من خلال المهمة المطروحة، مع تدوين ملاحظاتهم وتوزيع الأدوار بينهم (قائد، كاتب، مقرر).`, durationMin: stepDur },
-            { stepNumber: 3, title: 'العرض والمناقشة', description: `تعرض كل مجموعة نتائجها في 90 ثانية. يسجّل المعلم النقاط الرئيسية على السبورة ويفتح نقاشاً مختصراً حول الاختلافات بين المجموعات.`, durationMin: stepDur },
-            { stepNumber: 4, title: 'التلخيص والتقييم', description: `يكتب كل طالب جملةً واحدة تلخّص أهم ما تعلّمه. تُجمع الأوراق كبطاقة خروج للتقييم البنائي.`, durationMin: 5 },
-          ];
-      return {
-        title: `نشاط "${topic}" – ${actType === 'game' ? 'لعبة تعليمية' : actType === 'discussion' ? 'نقاش' : 'تعلم تعاوني'}`,
-        activityType: actType,
-        totalDuration: duration,
-        objective: req.objectives?.trim() || (math
-          ? `أن يحل الطلاب مسائل محددة حول ${topic} ويشرحوا خطوات الحل`
-          : `أن يطبق الطلاب مفاهيم ${topic} ويناقشوها مع زملائهم لتعزيز الفهم`),
-        groupSize: groupLabel[actType] ?? '3-4 طلاب',
-        materials: ['الكتاب المدرسي', 'أوراق عمل مطبوعة', 'أقلام ملونة', 'لاصق ورقي للبطاقات'],
-        steps,
-        teacherTips: [
-          'وزّع الأدوار داخل كل مجموعة قبل البدء لضمان مشاركة الجميع.',
-          'تجوّل بين المجموعات كل 3 دقائق وقدّم توجيهاً خفيفاً دون إعطاء الإجابات.',
-          'استخدم مؤقتاً مرئياً على السبورة لإدارة الوقت.',
-        ],
-        differentiation: 'للطلاب المتقدمين: قدّم تحدياً إضافياً أو اطلب منهم ربط الموضوع بدرس سابق. للطلاب المحتاجين لدعم: قدّم بطاقة مرجعية تحتوي المصطلحات والصيغ الأساسية.',
-        assessment: math
-          ? `تحقق من صحة حلول المسائل المعروضة. الإجابات: ${practice.map(p => p.answer).join(' ؛ ')}`
-          : 'راقب جودة النقاش داخل المجموعات، وقيّم بطاقات الخروج للتحقق من الفهم، وسجّل ملاحظات عن الطلاب الذين يحتاجون دعماً إضافياً.',
-      };
-    }
+    const blueprint = buildActivityBlueprint(actType, {
+      topic, lang, math, practice, kb, duration,
+    });
 
-    const groupLabel: Record<string, string> = {
-      individual: 'Individual', group: '3-4 students', discussion: 'Whole class',
-      'hands-on': 'Pairs or groups of 4', game: 'Teams of 4',
-    };
-    const steps: ActivityStep[] = math && practice.length >= 2
-      ? [
-          { stepNumber: 1, title: 'Warm-up', description: `Put this problem on the board for a 2-minute individual try:\n${practice[0].text}\n(Teacher key: ${practice[0].answer})`, durationMin: 5 },
-          { stepNumber: 2, title: 'Main Activity', description: `Divide into ${groupLabel[actType] ?? 'groups'}. Each group solves:\n1) ${practice[1]?.text ?? practice[0].text}\n2) ${practice[2]?.text ?? practice[0].text}\nRecorder writes full working.`, durationMin: stepDur },
-          { stepNumber: 3, title: 'Share & Discuss', description: `Two groups present. Compare methods and surface common errors before revealing answers.`, durationMin: stepDur },
-          { stepNumber: 4, title: 'Wrap-up', description: `Exit ticket: briefly solve a similar item or rewrite one solution step. Keys: ${practice.map(p => p.answer).join(' ; ')}`, durationMin: 5 },
-        ]
-      : [
-          { stepNumber: 1, title: 'Warm-up', description: `Ask a thought-provoking question: "Where do we encounter ${topic} in daily life?" Take responses from 3-4 students and note them on the board to build curiosity.`, durationMin: 5 },
-          { stepNumber: 2, title: 'Main Activity', description: `Divide students into ${groupLabel[actType] ?? 'groups'}. Groups collaborate to explore ${topic} through the assigned task, noting findings and distributing roles (leader, recorder, presenter).`, durationMin: stepDur },
-          { stepNumber: 3, title: 'Share & Discuss', description: `Each group presents findings in 90 seconds. Record key points on the board and facilitate a brief discussion around differences between groups.`, durationMin: stepDur },
-          { stepNumber: 4, title: 'Wrap-up', description: `Each student writes one sentence summarising their main learning. Collect as an exit ticket for formative assessment.`, durationMin: 5 },
-        ];
     return {
-      title: `${topic} – ${actType === 'game' ? 'Learning Game' : actType === 'discussion' ? 'Discussion' : 'Collaborative Activity'}`,
+      title: `${topic} – ${blueprint.titleSuffix}`,
+      // Report the type the caller asked for, verbatim. `activityTypeLabel`
+      // already falls back to the raw value for anything the form never
+      // offered, so an unrecognised type stays honest instead of being
+      // relabelled as the `group` fallback the blueprint used.
       activityType: actType,
-      totalDuration: duration,
-      objective: req.objectives?.trim() || (math
-        ? `Students will solve concrete ${topic} problems and explain their steps`
-        : `Students will apply and discuss concepts of ${topic} with peers to deepen understanding`),
-      groupSize: groupLabel[actType] ?? '3-4 students',
-      materials: ['Textbook', 'Printed worksheets', 'Coloured markers', 'Sticky notes'],
-      steps,
-      teacherTips: [
-        'Assign roles inside each group before starting to ensure full participation.',
-        'Circulate every 3 minutes and give light guidance without giving answers.',
-        'Display a visible timer on the board to help manage pacing.',
-      ],
-      differentiation: 'Advanced students: offer an extension challenge or ask them to connect the topic to a previous lesson. Students needing support: provide a reference card with key terms and formulas.',
-      assessment: math
-        ? `Check accuracy of the assigned problems. Keys: ${practice.map(p => p.answer).join(' ; ')}`
-        : 'Monitor quality of group discussion, review exit tickets for comprehension, and note students who need follow-up support.',
+      // Taken from the steps, not from `duration`: the two disagreed before
+      // (a "10 minute" warm-up whose steps summed to 20), and a request for
+      // fewer minutes than the format has steps cannot be honoured exactly.
+      totalDuration: blueprint.steps.reduce((sum, s) => sum + s.durationMin, 0),
+      objective: req.objectives?.trim() || blueprint.objective,
+      groupSize: blueprint.groupSize,
+      materials: blueprint.materials,
+      steps: blueprint.steps,
+      teacherTips: blueprint.teacherTips,
+      differentiation: blueprint.differentiation,
+      assessment: blueprint.assessment,
     };
   }
 
