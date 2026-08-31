@@ -8388,6 +8388,27 @@ code-reviewed and unit-tested at the boundary (`lessonMediaUpload.test.ts`
 covers the parsing/validation logic that doesn't need a DB), not as
 confirmed working end to end.
 
+## Lesson attachments follow-up: schema push done, feature is live, 2026-08-31
+
+Closes the first of the three "Deploy is not done by this PR" steps above.
+`pnpm --filter @workspace/db run push` ran against production
+(`ep-bold-bar-asvxvxjr-pooler.c-4.eu-central-1.aws.neon.tech`), then
+`pnpm --filter @workspace/db run verify-schema` confirmed:
+
+```
+27 of 27 tables present
+ok  lessonMedia.ts   1/1
+Every declared table exists.
+```
+
+`lesson_media` exists in production. The 503 (`lesson_media_unavailable`)
+path is gone — upload/list/delete now hit a real table instead of the
+graceful-missing-schema fallback. Steps 2 (R2 env vars) and 3 (PR
+description) were already satisfied at merge time. The "verification gap"
+noted above still stands as written: the click-through (attach a photo, see
+it list, delete it) has still not been done against a real logged-in
+session — this entry closes the *schema* gap, not that one.
+
 ## «تجهيزات الصف» changed almost nothing, 2026-08-31
 
 Reported from the builder screen: a teacher toggled «شاشة عرض» / «سبورة فقط»,
