@@ -151,7 +151,22 @@ export interface WorksheetOutput {
 }
 
 export interface WorksheetSection {
-  type: 'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false' | 'word_problem';
+  /**
+   * The question type this section contains, or `'mixed'` when it holds more
+   * than one.
+   *
+   * Sections are grouped by DIFFICULTY, not by type, so a section genuinely
+   * can be mixed — the generator rotates through the teacher's selected types
+   * within each difficulty bucket. This field used to be set to whichever type
+   * happened to come last in the bucket, so a section of 2 MCQs and 2 short
+   * answers reported `short_answer`.
+   *
+   * Server-generated worksheets are shaped by the model against the prompt in
+   * `artifacts/api-server/src/lib/prompts.ts`, which does not yet offer
+   * `'mixed'` — so a live-generated mixed section can still carry a single
+   * type. Fix that there if this field ever gains a consumer.
+   */
+  type: 'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false' | 'word_problem' | 'mixed';
   title: string;
   questions: WorksheetQuestion[];
 }

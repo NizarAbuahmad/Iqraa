@@ -46,7 +46,7 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     because the count was repeatedly described as "all in
     `lib/integrations-openai-ai-server`", which is wrong by a factor of three
     and would send someone looking in the wrong package.
-- Mobile test suite: 1094 tests, 0 failures, 10 skipped (re-counted 2026-08-31
+- Mobile test suite: 1104 tests, 0 failures, 10 skipped (re-counted 2026-08-31
   on an installed workspace, after merging main; 1070 before that merge and
   1046 before the activity-format work the same day,
   981 on 2026-08-26; 975, 971 and 962 earlier the same day/day before,
@@ -322,6 +322,84 @@ gains a column: `pnpm --filter @workspace/db run push`, then
 to "generate every time", which is the old behaviour, and
 `/healthz/ai-budget` reports it under `cacheFailure` rather than failing
 silently.
+
+## The difficulty picker does something now, 2026-08-31
+
+Same shape as the activity-format defect below, found by checking whether that
+pattern — *a picker that changes a label but not the output* — sat in the
+sibling generators. It did.
+
+**`req.difficulty` was never read.** Not by `generateWorksheet`, not by
+`generateQuiz`; the only two matches in either function body were comments.
+Both screens show the picker and both send the value
+(`app/ai-tools/worksheet.tsx:214`, `quiz.tsx:285`).
+
+**The quiz factories hard-coded the tier** — the literal `'medium'` at six call
+sites. On the math path `tryMathPractice` forwards the tier to
+`takeConcreteMath`, which filters the bank by `item.diff`, so **an "easy" quiz
+and a "difficult" quiz drew from the identical medium slice.**
+
+**On the non-math path the tier reached only the points number.** `mcPts` /
+`saPts` / `fbPts` returned 2/4/6 and `tfPts` ignored it entirely — its
+parameter was `_diff`. The same 32 Arabic and 32 English templates served all
+three tiers, so a chemistry worksheet's «تمارين تمهيدية (سهل)» and «تحدٍّ سريع
+(أصعب)» came from one pool and differed by heading and points alone.
+
+**Measured before**, requesting easy/medium/hard for one lesson: the math
+worksheet produced **1 distinct question set out of 3**, quiz points were
+identical across all three tiers, and section titles never moved. Chemistry
+showed 3/3 distinct — but that was random template selection, not tiering, and
+is exactly why the new tests assert tier *membership* rather than difference.
+
+**Now:**
+
+- Every question template carries the tier it actually is
+  (`TieredTemplate`), and `pickTiered` selects from that slice with an
+  adjacent-tier fallback mirroring `takeConcreteMath`. The tier lives on each
+  template rather than in a parallel index list, which would silently
+  mismatch the first time someone reordered one.
+- The six quiz factories take the requested tier. `mixed` spreads tiers across
+  the paper instead of collapsing to medium.
+- **The worksheet SHIFTS its band rather than flattening it** — `easy` →
+  easy/easy/medium, `medium` → easy/medium/hard, `hard` → medium/hard/hard.
+  The easy→hard progression is deliberate scaffolding and honouring "hard" by
+  making all three sections hard would throw it away. Section titles now name
+  the tier they actually contain.
+- A worksheet section reports `'mixed'` when it holds more than one question
+  type. `sectionType` was assigned inside the per-question loop, so a section
+  was tagged by whichever question came last. Nothing reads
+  `WorksheetSection.type` today (grepped — no consumer in app or export code),
+  so this was wrong data rather than a visible break; it is stored in the
+  workspace and, since the shared pool landed, served to other teachers.
+
+**The live path had the same hole, twice over.** The worksheet prompt
+interpolated the level name and stopped; **the quiz prompt never mentioned
+`difficulty` at all.** Both now carry a clause saying what each tier means, and
+the worksheet's states the band explicitly so the live paper matches the
+offline one. `PROMPT_VERSION` → `2026-08-31.2`.
+
+**Checked, and deliberately not changed:**
+
+- `difficulty` stays in `SLICED_FIELDS` (strict key only, out of the coarse
+  key). `docs/ai-cost-savings-plan.md` says phase 1 serves on the **strict**
+  key precisely so the pool cannot answer "5 easy questions" with a
+  15-question hard paper. Correct as it stands.
+- `fill_blank` and `word_problem` fall into the quiz's short-answer branch.
+  The quiz picker offers only three types, so no teacher can reach it; the
+  question produced is an honest short answer, correctly labelled. Recorded in
+  a comment at the branch rather than fixed, to keep this change contained.
+- The math bank's `trig_apps` family holds exactly **one item per tier**, so a
+  six-question quiz on «قانون الجيوب» exhausts it and `takeConcreteMath` falls
+  back across tiers by design. That is a bank-content limit, not a tiering
+  bug — the tests use an `exp_eq` lesson (6 easy / 6 medium / 5 hard) where the
+  tier can actually be observed.
+
+**Pinned by** `services/__tests__/questionDifficulty.test.ts` and
+`artifacts/api-server/src/lib/__tests__/difficultyPrompts.test.ts`. Before this
+there were **no tests invoking `generateWorksheet` or `generateQuiz` at all** —
+the only references were stubs in `lessonFlowRunner.test.ts`. Verified the new
+suite fails on the pre-fix code: **6 of its 10 mobile cases fail** when the
+generator changes are reverted.
 
 ## The five activity types stopped being one template, 2026-08-31
 

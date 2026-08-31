@@ -135,8 +135,9 @@ export function worksheetPromptAr(b: any): string {
     ? b.priorKnowledge
     : null;
   return `أنشئ ${isHW ? "واجبًا منزليًا" : "ورقة عمل"} لمادة ${b.subject} للصف ${b.grade} حول "${b.topic}".
-عدد الأسئلة: ${n}، المستوى: ${b.difficulty ?? "متوسط"}
+عدد الأسئلة: ${n}
 أنواع الأسئلة المطلوبة: ${types.join(", ")}
+${difficultyClauseAr(b)}
 ${wantsWP ? "\nيجب تضمين مسألة حياتية واحدة على الأقل (سيناريو واقعي يتطلب تطبيق مفاهيم الدرس، بأسلوب «حل مسائل حياتية»)." : ""}
 ${prior ? `\nابدأ بقسم «مراجعة سابقة» فيه سؤالان أو ثلاثة فقط مبنية حرفيًا على هذه المفاهيم السابقة (لا تختلق غيرها):\n- ${prior.join("\n- ")}` : ""}
 ${b.additionalContext ? `\nسياق الكتاب المدرسي (استخدمه لصياغة أسئلة دقيقة ومرتبطة بالمنهج):\n${b.additionalContext}` : ""}
@@ -169,7 +170,8 @@ export function worksheetPromptEn(b: any): string {
     ? b.priorKnowledge
     : null;
   return `Create a ${isHW ? "homework assignment" : "worksheet"} for ${b.subject}, ${b.grade}, on "${b.topic}".
-Number of questions: ${n}, difficulty: ${b.difficulty ?? "medium"}
+Number of questions: ${n}
+${difficultyClauseEn(b)}
 Question types: ${types.join(", ")}
 ${wantsWP ? "\nInclude at least one real-life word problem (a realistic scenario that requires applying the lesson concepts)." : ""}
 ${prior ? `\nStart with a "Prior knowledge review" section of 2–3 questions drawn only from these concepts (do not invent others):\n- ${prior.join("\n- ")}` : ""}
@@ -200,6 +202,7 @@ export function quizPromptAr(b: any): string {
   return `أنشئ اختبارًا لمادة ${b.subject} للصف ${b.grade} حول "${b.topic}".
 عدد الأسئلة: ${n}، العلامة الكاملة: ${marks}
 أنواع الأسئلة: ${(b.questionTypes ?? ["multiple_choice", "true_false"]).join(", ")}
+${quizDifficultyClauseAr(b)}
 ${b.additionalContext ? `\nسياق الكتاب المدرسي (استخدمه لصياغة أسئلة دقيقة ومرتبطة بالمنهج):\n${b.additionalContext}` : ""}
 أعد JSON بالشكل الآتي (بالعربية):
 {
@@ -226,6 +229,7 @@ export function quizPromptEn(b: any): string {
   return `Create a quiz for ${b.subject}, ${b.grade}, on "${b.topic}".
 Number of questions: ${n}, total marks: ${marks}
 Question types: ${(b.questionTypes ?? ["multiple_choice", "true_false"]).join(", ")}
+${quizDifficultyClauseEn(b)}
 ${b.additionalContext ? `\nTextbook context (use this to craft accurate, curriculum-aligned questions):\n${b.additionalContext}` : ""}
 Return JSON in this exact shape:
 {
@@ -244,6 +248,77 @@ Return JSON in this exact shape:
     }
   ]
 }`;
+}
+
+// ─── Difficulty ──────────────────────────────────────────────────────────────
+/**
+ * What a difficulty tier actually means, and how it lands on each artifact.
+ *
+ * The worksheet prompt used to interpolate the level name and stop; the quiz
+ * prompt never mentioned `difficulty` at all. So the live path ignored the
+ * picker exactly as the offline generator did — see the matching tiering in
+ * `artifacts/mobile/services/ai/generators.ts` (`pickTiered`, and the
+ * worksheet's `BANDS`). Keep the two in step: a teacher must not get a
+ * different paper depending on whether live generation was on.
+ *
+ * A worksheet SHIFTS its band rather than flattening it — the easy → hard
+ * progression is the scaffolding, and a "hard" worksheet that opens at hard
+ * has thrown it away. A quiz is a flat assessment and takes the tier straight.
+ */
+const DIFFICULTY_MEANING_AR: Record<string, string> = {
+  easy: "استرجاع وتعريف مباشر، خطوة واحدة، أرقام بسيطة.",
+  medium: "تطبيق القاعدة على موقف مألوف، خطوتان أو ثلاث.",
+  hard: "مقارنة أو تحليل أو موقف غير مألوف يتطلب اختيار الأسلوب المناسب أولًا.",
+  mixed: "وزّع الأسئلة على المستويات الثلاثة (سهل / متوسط / صعب) بدل أن تجعلها كلها متوسطة.",
+};
+
+const DIFFICULTY_MEANING_EN: Record<string, string> = {
+  easy: "Direct recall or definition; one step; simple numbers.",
+  medium: "Apply the rule to a familiar situation; two or three steps.",
+  hard: "Comparison, analysis, or an unfamiliar situation where the method must be chosen first.",
+  mixed: "Spread the questions across all three levels rather than making them all medium.",
+};
+
+/** The three worksheet sections' tiers for a requested level — shifted, not flattened. */
+const WORKSHEET_BAND: Record<string, [string, string, string]> = {
+  easy: ["easy", "easy", "medium"],
+  medium: ["easy", "medium", "hard"],
+  hard: ["medium", "hard", "hard"],
+};
+
+function difficultyKey(b: any): string {
+  const d = b.difficulty;
+  return d === "easy" || d === "hard" || d === "mixed" ? d : "medium";
+}
+
+export function difficultyClauseAr(b: any): string {
+  const key = difficultyKey(b);
+  if (key === "mixed") return `\nالمستوى: متنوّع. ${DIFFICULTY_MEANING_AR.mixed}`;
+  const band = WORKSHEET_BAND[key];
+  const label: Record<string, string> = { easy: "سهل", medium: "متوسط", hard: "صعب" };
+  return `\nالمستوى المطلوب: ${label[key]} — ${DIFFICULTY_MEANING_AR[key]}
+تدرّج الورقة (التزم به): القسم الأول ${label[band[0]]}، الثاني ${label[band[1]]}، الثالث ${label[band[2]]}.
+لا تجعل الأقسام الثلاثة بالمستوى نفسه — التدرّج هو الهدف، والمستوى المطلوب ينقل النطاق لا يلغيه.`;
+}
+
+export function difficultyClauseEn(b: any): string {
+  const key = difficultyKey(b);
+  if (key === "mixed") return `\nDifficulty: mixed. ${DIFFICULTY_MEANING_EN.mixed}`;
+  const band = WORKSHEET_BAND[key];
+  return `\nRequested difficulty: ${key} — ${DIFFICULTY_MEANING_EN[key]}
+Worksheet progression (follow it): section 1 ${band[0]}, section 2 ${band[1]}, section 3 ${band[2]}.
+Do not make all three sections the same level — the progression is the point; the requested level shifts the band rather than removing it.`;
+}
+
+export function quizDifficultyClauseAr(b: any): string {
+  const key = difficultyKey(b);
+  const label: Record<string, string> = { easy: "سهل", medium: "متوسط", hard: "صعب", mixed: "متنوّع" };
+  return `\nمستوى الأسئلة: ${label[key]} — ${DIFFICULTY_MEANING_AR[key]}`;
+}
+
+export function quizDifficultyClauseEn(b: any): string {
+  const key = difficultyKey(b);
+  return `\nQuestion difficulty: ${key} — ${DIFFICULTY_MEANING_EN[key]}`;
 }
 
 // ─── Activity prompt builders ────────────────────────────────────────────────

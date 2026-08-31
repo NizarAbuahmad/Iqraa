@@ -119,6 +119,19 @@ Before a live demo: [`docs/demo-checklist.md`](./docs/demo-checklist.md).
   so the tests that pin them apart (`activityBlueprints.test.ts`,
   `activityPrompts.test.ts`) assert *every field differs from every other
   type*; a new format needs its own entry in both files or they fail.
+- **A question's difficulty tier lives on the template, and in two prompts.**
+  Every non-math question template carries its own `tier`
+  (`TieredTemplate` in `artifacts/mobile/services/ai/generators.ts`), and
+  `pickTiered` selects from that slice — the tier is deliberately NOT a
+  parallel list of indices, which would silently mismatch the first time
+  someone reordered a template and would look like "difficulty does nothing".
+  A new template must declare a tier. The live path needs the matching clause
+  in `difficultyClause*` / `quizDifficultyClause*`
+  (`artifacts/api-server/src/lib/prompts.ts`), and the worksheet's `BANDS`
+  table must agree with `WORKSHEET_BAND` there — `difficultyPrompts.test.ts`
+  asserts the two match. `req.difficulty` used to be read by neither
+  generator, and the quiz factories passed a literal `'medium'`, so an easy
+  and a hard quiz drew the same bank slice.
 - **`additionalContext` is not teacher-pasted material — it is usually the
   curriculum.** Every `/ai-tools` screen fills it with `buildGeneratorContext()`
   output derived from the lesson, and the server appends its own book passages
