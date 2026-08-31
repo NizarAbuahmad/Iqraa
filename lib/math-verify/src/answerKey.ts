@@ -67,3 +67,18 @@ export function parseAnswerKeyCheck(raw: unknown): AnswerKeyCheck | null {
 
   return { topic: topic as VerifiableTopic, question: question.trim(), answer: answer.trim() };
 }
+
+/**
+ * The subject id maths papers carry. An **id**, never a display name.
+ *
+ * `isMathContext` matching on the subject's *name* is in CLAUDE.md as a repeat
+ * offender: a label localises, an id does not. Both sides of the app ask this
+ * question — the server to decide whether to press the model for a checkable
+ * key, the app to decide whether "nothing was checked" is worth explaining —
+ * so they share one answer rather than two literals that can drift apart.
+ */
+export const MATHEMATICS_SUBJECT_ID = 'mathematics';
+
+export function isMathematicsSubject(subjectId: string | null | undefined): boolean {
+  return subjectId === MATHEMATICS_SUBJECT_ID;
+}

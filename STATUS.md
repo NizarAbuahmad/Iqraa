@@ -307,6 +307,69 @@ Local-boot note that cost an hour: the API refuses to start without *some*
 `OPENAI_API_KEY` even in demo mode — LOCAL_SETUP.md said "optional", now
 corrected.
 
+## A teacher can see why nothing was verified, 2026-08-30
+
+The first real production test generated a maths exam with live AI and showed
+**nothing at all** — no badges, no explanation. Two unrelated causes were
+invisible behind the same silence:
+
+- production's `MATH_VERIFIER_URL` is misconfigured, so the API cannot reach a
+  verifier that is itself healthy (`/api/healthz/verifier` → `unreachable`
+  while `iqraa-verifier.onrender.com/healthz` → `ok`);
+- the exam was on الاتجاه من الشمال and قانون الجيوب — topics the verifier
+  cannot prove, so zero was the *correct* answer.
+
+**A warning existed and no screen rendered it.** `POST /evaluations/:id/generate`
+returns `warnings[]`, the client type declares it, and nothing reads it. That
+was claimed as visible when it was not.
+
+**The state is now derived from the questions, not from the generate response.**
+`GET /evaluations/:id` already returns each question's `verification` and the
+evaluation's `subjectId`, so `summariseKeyChecks` (mobile,
+`services/keyCheckSummary.ts`, pure, 10 tests) decides what to say and it
+survives a reload — identical after a first generation and after a regenerate,
+with no transient state carried across `router.replace`.
+
+**`verification` gained a `code`** — `verified | no_key | verifier_unreachable |
+undecided` — because the four outcomes were previously distinguishable only by
+English prose written for logs. A screen string-matching those breaks the day
+anyone rewords a sentence, and the app must tell two of them apart: *nobody
+could check this* is a content problem, *the checker was down* is an outage.
+The helper resolves the outage first for that reason; collapsing them would send
+a teacher rewriting good questions.
+
+Three states, three tones, none of which may read as "these answers are wrong" —
+a key the verifier contradicts is dropped during generation and never reaches
+this screen: green «تم التحقق رياضيًا من N من أصل M», amber «تعذّر الوصول إلى
+مدقّق الرياضيات … ولم يُحذف أي سؤال», grey «لا توجد مفاتيح يمكن فحصها آليًا …
+وهذا لا يعني أنها خاطئة». Questions written before key checking exist carry no
+`verification`, and stay **silent**: claiming "nothing here was checkable" of
+them would report a finding from a check that never ran.
+
+`isMathematicsSubject` moved to `lib/math-verify` and `paperIsMathematics` now
+delegates to it, so the server and the app cannot drift on the one question they
+both ask.
+
+**Verified live** on Postgres + the real verifier + the API with a scripted
+model, reading the codes back out of Postgres:
+
+| Scenario | Codes written |
+| --- | --- |
+| checks supplied, verifier up | `verified`, `no_key` |
+| no checks supplied | `no_key` ×3 |
+| checks supplied, **verifier down** | `verifier_unreachable` ×2 — 3 of 3 produced, nothing dropped |
+
+api-server 346, mobile 1056 (1046 pass, 10 expected skips), typecheck clean.
+
+**Not machine-verified:** the rendering itself — synthetic events do not reach
+these React-Native-Web controls, as recorded elsewhere here. The helper is
+tested; the three branches that consume it were read by eye.
+
+**Worth knowing:** `npx tsc` inside `artifacts/mobile` reports phantom errors
+against `@workspace/curriculum` (e.g. `activityPdfUrl` "does not exist"). Those
+are stale declaration files, not real. `pnpm run typecheck` at the root runs
+`tsc --build` on the libs first and is the only reading that means anything.
+
 ## The key check now insists on being usable, 2026-08-29
 
 Key verification shipped correct and unexercised: every test, mine and CI's,

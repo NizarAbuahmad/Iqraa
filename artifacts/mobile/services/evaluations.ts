@@ -65,6 +65,12 @@ export interface EvaluationQuestion {
   verification?: {
     verified: boolean;
     source: 'sympy' | 'unchecked';
+    /**
+     * Why, as a value rather than prose. Absent on every question written
+     * before key checking existed — treat that as "say nothing", never as a
+     * verdict.
+     */
+    code?: 'verified' | 'no_key' | 'verifier_unreachable' | 'undecided';
     computedAnswer?: string | null;
     reason?: string;
     checkedAt?: string;

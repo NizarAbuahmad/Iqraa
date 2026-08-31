@@ -47,6 +47,7 @@ describe("a key the verifier confirms", () => {
     const v = out.kept[0]!.verification;
     assert.equal(v.verified, true);
     assert.equal(v.source, "sympy");
+    assert.equal(v.code, "verified");
     assert.equal(v.computedAnswer, "3*x**2 - 4");
     assert.equal(out.checked, 1);
     assert.equal(out.verified, 1);
@@ -88,6 +89,7 @@ describe("verdicts that are not evidence of a wrong key", () => {
       assert.equal(out.kept.length, 1);
       assert.equal(out.kept[0]!.verification.verified, false);
       assert.equal(out.kept[0]!.verification.source, "unchecked");
+      assert.equal(out.kept[0]!.verification.code, "undecided");
       assert.match(out.kept[0]!.verification.reason ?? "", new RegExp(relation));
     });
   }
@@ -104,6 +106,7 @@ describe("a question with no latin key", () => {
     assert.equal(called, false, "a question with no check must not reach the verifier");
     assert.equal(out.kept.length, 1);
     assert.equal(out.kept[0]!.verification.verified, false);
+    assert.equal(out.kept[0]!.verification.code, "no_key");
     assert.equal(out.checked, 0);
   });
 });
@@ -120,6 +123,12 @@ describe("an unreachable verifier", () => {
     assert.equal(out.kept.length, 2);
     assert.equal(out.checked, 0, "an unreachable verifier has checked nothing");
     assert.equal(out.verified, 0);
+    // The code the UI keys off. "nobody could check this" and "the checker was
+    // down" have different fixes and must never arrive as the same value.
+    assert.ok(
+      out.kept.every(k => k.verification.code === "verifier_unreachable"),
+      "an unreachable verifier must not be reported as no_key",
+    );
     assert.ok(
       out.warnings.some(w => /could not be reached/i.test(w) && /Nothing was removed/i.test(w)),
       `warning did not say the check was skipped: ${JSON.stringify(out.warnings)}`,
