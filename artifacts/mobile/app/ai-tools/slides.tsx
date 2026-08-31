@@ -8,7 +8,7 @@
  * fetched only to fill what the book does not hold (hook, practice, closure),
  * and the screen says which of the two the deck came from.
  */
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -37,6 +37,7 @@ import {
   shouldSearchForVideo, videoCaption,
 } from '@/services/classMedia';
 import { LessonResources } from '@/components/ui/LessonResources';
+import { LessonAttachments } from '@/components/ui/LessonAttachments';
 import type { LessonMediaItem } from '@/services/lessonMedia';
 import type { DeckVideo } from '@/services/youtubeVideo';
 import { summarizeVerification } from '@/services/quizVerification';
@@ -83,6 +84,12 @@ export default function SlidesScreen() {
   const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(params.gradeIdx ?? inferredScope?.gradeIdx, grades.length));
   const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx ?? inferredScope?.subjectIdx, subjects.length));
   const [topic, setTopic] = useState(params.topic ?? '');
+  // Live as the teacher types, not gated behind pressing Generate — same
+  // timing as `LessonResources`' own `topic` prop just below it.
+  const groundedLessonId = useMemo(
+    () => resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en').lesson?.id ?? '',
+    [topic, lang],
+  );
   const [includeExamples, setIncludeExamples] = useState(true);
   const [includePractice, setIncludePractice] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -740,6 +747,7 @@ export default function SlidesScreen() {
               for that lesson carries it — and so does Class Mode, which has
               read this store all along. */}
           <LessonResources topic={topic.trim()} onChange={setAttached} />
+          <LessonAttachments lessonId={groundedLessonId} />
 
           <View style={{ gap: 10, marginBottom: 18 }}>
             <Toggle label={t('slidesIncludeExamples')} value={includeExamples} onChange={setIncludeExamples} />

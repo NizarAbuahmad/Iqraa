@@ -8099,3 +8099,83 @@ skips), unaffected as expected. The local LFS-pointer file that
 committing it would have bypassed LFS and put a 33MB binary straight into
 git history instead of a pointer; R2 is now the source of truth for this
 file going forward, not a second local copy.
+
+## Teacher-uploaded lesson attachments (R2-backed, first version), 2026-08-30
+
+Real feature request, not infrastructure: a teacher wanted to attach a
+photo, a voice note, or a document to a specific lesson and have it stay
+there — the existing `services/lessonMedia.ts` only pins an image/video
+*URL* per topic string, on one device, in AsyncStorage (a reinstall loses
+every pin, and it only ever knew URLs, never a file the teacher actually
+has). New, separate feature (kept `lessonMedia.ts`/`LessonResources.tsx`
+untouched — different capability, different consumer in `startClass.ts`'s
+Class Mode deck, not worth risking a working pipeline to merge):
+
+- `lib/db/src/schema/lessonMedia.ts` — new table, keyed by the lesson's own
+  KB id (`kbl-...`), not a free-text topic. Deliberate: CLAUDE.md already
+  records that a lesson title does not identify a lesson (16 of 63 titles
+  resolve to the wrong lesson under semantic search).
+- `artifacts/api-server/src/lib/r2.ts` — a *runtime* R2 client, separate
+  from `lib/curriculum/scripts/r2.ts` (a dev/CI tool using `node:fs`, wrong
+  lifetime for a live request). `routes/lessonMedia.ts` mounted under
+  `/media`, reusing the `authMiddleware` guard `routes/index.ts` already
+  declares at that mount site rather than adding a second one — same
+  convention `media.ts` (mounted right next to it) already relies on.
+- Files travel as `data:` URLs in the JSON body (`attempts.ts`'s
+  `scan-marks` shape, same 8MB cap) — there is no multipart upload path
+  anywhere in this server, and building one was a bigger change than this
+  feature needed.
+- **A design correction caught before it shipped, not after**: the first
+  version served files through an Express proxy endpoint
+  (`GET /media/lesson/:id/file`), auth-checked per row. That silently fails
+  on Expo web — a plain `<img src>` cannot attach an `Authorization`
+  header, only React Native's native `Image` component can. Replaced with
+  R2 presigned GET URLs (`presignedGetUrl`, 1-hour expiry): unguessable and
+  time-limited without needing a header at all, so the same `url` works on
+  both platforms. The proxy endpoint was deleted, not kept as a fallback.
+- Client: `services/lessonMediaApi.ts` (list/upload/delete),
+  `services/lessonMediaPick.ts` (photo via `expo-image-picker`, same
+  downscale `pickMarkSheetPhoto` already uses; audio/PDF via
+  `expo-document-picker` + a new cross-platform uri→base64 helper), and
+  `components/ui/LessonAttachments.tsx`, wired into `slides.tsx` right
+  under the existing `LessonResources` panel, gated on the topic actually
+  resolving to a real lesson id (`resolveGeneratorGrounding(...).lesson?.id`,
+  memoized live off the topic field, not gated behind pressing Generate).
+- Hit and fixed a real dependency-version bug on the way: `expo-file-system`
+  19.x dropped `readAsStringAsync`/`EncodingType` from its root export in
+  favor of a class-based File/Directory API; `expo-file-system/legacy` is
+  the still-typed, still-supported entry that keeps the old function —
+  `documents/extract.ts` already duck-types around this at runtime, this
+  is the typed equivalent for a new call site.
+
+**Deploy is not done by this PR — three steps this repo's own tooling
+requires, none of them mine to run:**
+1. `pnpm --filter @workspace/db run push` against production `DATABASE_URL`
+   — the new table does not exist until this runs (see this file's
+   2026-08-19/25 entries on why that push is manual and easy to forget).
+   Until it does, every route here answers a graceful 503
+   (`lesson_media_unavailable`), the same `isSchemaMissing` pattern
+   `workspace.ts` already uses — not a crash, but not usable either.
+2. The `R2_ACCESS_KEY_ID`/`R2_SECRET_ACCESS_KEY`/`R2_ENDPOINT`/`R2_BUCKET`
+   env vars already set on Render for the extraction pipeline (2026-08-30,
+   earlier this file) cover this feature too — same bucket, a
+   `lesson-media/` key prefix, nothing new to configure there.
+3. This PR's description cannot honestly say `schema-push: done` — no
+   `DATABASE_URL` is set in this sandbox, so the push has not run from
+   here. Whoever merges needs to run it and update the PR description
+   before CI's schema-push check will pass.
+
+**Verification gap, stated plainly rather than assumed away**: `pnpm run
+typecheck` clean across the whole monorepo, curriculum/api-server/mobile
+suites all pass with no regressions (api-server 350/350, mobile
+1036/1046 — 10 pre-existing skips, both unchanged from before this PR),
+and the Expo web dev server boots and renders (RTL Arabic, fonts, routing
+all fine, zero console errors beyond the expected "API unreachable" ones
+since no server was running). **What was not verified**: actually clicking
+through the new panel — attaching a photo, seeing it list, deleting it —
+because that needs a logged-in session, which needs a real Postgres this
+sandbox does not have (no `pg_ctl`/`postgres` binary, and the Docker
+daemon is unavailable here too). Treat the upload/list/delete flow as
+code-reviewed and unit-tested at the boundary (`lessonMediaUpload.test.ts`
+covers the parsing/validation logic that doesn't need a DB), not as
+confirmed working end to end.

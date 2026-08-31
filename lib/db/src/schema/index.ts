@@ -28,3 +28,6 @@ export * from "./feedback";
 
 // AI spend + cache-hit measurement — see docs/ai-cost-savings-plan.md
 export * from "./aiGenerations";
+
+// Teacher-uploaded lesson attachments (R2-backed) — see routes/lessonMedia.ts
+export * from "./lessonMedia";
