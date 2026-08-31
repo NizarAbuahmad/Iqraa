@@ -46,8 +46,9 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     because the count was repeatedly described as "all in
     `lib/integrations-openai-ai-server`", which is wrong by a factor of three
     and would send someone looking in the wrong package.
-- Mobile test suite: 1070 tests, 0 failures, 10 skipped (re-counted 2026-08-31
-  on an installed workspace; 1046 before the activity-format work the same day,
+- Mobile test suite: 1094 tests, 0 failures, 10 skipped (re-counted 2026-08-31
+  on an installed workspace, after merging main; 1070 before that merge and
+  1046 before the activity-format work the same day,
   981 on 2026-08-26; 975, 971 and 962 earlier the same day/day before,
   925, 909, 900, 894,
   888, 865 and 855
@@ -390,6 +391,12 @@ differs from every other on every field, in Arabic and English, for a maths and
 a chemistry lesson; each format carries its defining structure; durations sum)
 and `artifacts/api-server/src/lib/__tests__/activityPrompts.test.ts` (all five
 prompts differ, each names its own structure, in both languages).
+
+**Load-bearing on the shared artifact pool** added the same day (the section
+above). The lesson flow sends `contextSource: 'curriculum'`, so its steps are
+pooled — and the warm-up and the main activity both POST to
+`/generate/activity` for the same lesson. `activityVariant` being in the coarse
+key is what keeps them two pool entries instead of one.
 
 ## Exams & tests review: variation, book grounding, purpose separation, 2026-08-28
 
