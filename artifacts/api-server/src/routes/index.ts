@@ -13,6 +13,7 @@ import evaluationsRouter from "./evaluations";
 import attemptsRouter from "./attempts";
 import studentAttemptRouter from "./studentAttempt";
 import mediaRouter from "./media";
+import lessonMediaRouter from "./lessonMedia";
 import feedbackRouter from "./feedback";
 import adminRouter from "./admin";
 
@@ -59,6 +60,7 @@ router.use(chatRouter);
 router.use(generateRouter);
 router.use(verifiedMathRouter);
 router.use(mediaRouter);
+router.use("/media", lessonMediaRouter);
 // feedback.ts and admin.ts declare authMiddleware/requireRole per-route
 // themselves (a mix of any-signed-in-user and admin-only routes lives in the
 // same file), so no blanket guard is needed at this mount site.
