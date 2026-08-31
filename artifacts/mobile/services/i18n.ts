@@ -1025,6 +1025,13 @@ const translations = {
     // مهم أن تُقرأ البقية «غير قابلة للفحص» لا «خاطئة»: أي مفتاح ناقضه
     // المدقّق حُذف سؤاله عند التوليد ولم يصل إلى هنا أصلًا.
     keysVerifiedNote: 'بقية الأسئلة ليس لها إجابة رمزية يفحصها البرنامج — وهذا لا يعني أنها خاطئة.',
+    // حالة عطل مؤقتة وقابلة للإعادة: المهم أن يعرف المعلّم أن لا شيء حُذف.
+    keysVerifierDownTitle: 'تعذّر الوصول إلى مدقّق الرياضيات',
+    keysVerifierDownNote: 'لم يُفحص أي مفتاح إجابة، ولم يُحذف أي سؤال. أعد المحاولة بعد قليل.',
+    // «غير قابلة للفحص» لا «خاطئة»: أي مفتاح ناقضه المدقّق يُحذف سؤاله عند
+    // التوليد ولا يصل إلى هذه الشاشة أصلًا.
+    keysNoneCheckableTitle: 'لا توجد مفاتيح يمكن فحصها آليًا',
+    keysNoneCheckableNote: 'أسئلة هذا الاختبار ليس لها إجابات رمزية يفحصها البرنامج (مثل الاشتقاق أو المعادلات) — وهذا لا يعني أنها خاطئة.',
 
     // Evaluations — attempts & answer entry
     enterAnswersBtn: 'أدخل إجابات الطلاب',
@@ -2061,6 +2068,10 @@ const translations = {
     // "Not checkable", never "wrong": a key the verifier contradicted was
     // dropped at generation and never reached this screen.
     keysVerifiedNote: 'The rest have no symbolic answer to check — that does not mean they are wrong.',
+    keysVerifierDownTitle: 'The maths verifier could not be reached',
+    keysVerifierDownNote: 'No answer key was checked, and no question was removed. Try again shortly.',
+    keysNoneCheckableTitle: 'No keys here could be checked automatically',
+    keysNoneCheckableNote: 'These questions have no symbolic answer the program can check (like derivatives or equations) — that does not mean they are wrong.',
 
     // Evaluations — attempts & answer entry
     enterAnswersBtn: 'Enter student answers',

@@ -27,7 +27,11 @@
 import type { CurriculumObjective } from "@workspace/curriculum";
 import type { Difficulty, QuestionType } from "@workspace/db";
 import { QUESTION_TYPES } from "./questionTypes.ts";
-import { VERIFIABLE_TOPICS, parseAnswerKeyCheck } from "@workspace/math-verify";
+import {
+  VERIFIABLE_TOPICS,
+  isMathematicsSubject,
+  parseAnswerKeyCheck,
+} from "@workspace/math-verify";
 import { competencyForBlooms, type CompetencyKey } from "./competency.ts";
 import type { GeneratedQuestion } from "./mockGenerator.ts";
 
@@ -129,7 +133,7 @@ const DIFFICULTY_NOTE: Record<Difficulty, string> = {
  * chemistry paper for one would produce keys it must then refuse.
  */
 export function paperIsMathematics(objectives: readonly CurriculumObjective[]): boolean {
-  return objectives.some(o => o.subjectId === "mathematics");
+  return objectives.some(o => isMathematicsSubject(o.subjectId));
 }
 
 export function buildGenerationPrompt(req: LlmGenerationRequest): {
