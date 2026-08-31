@@ -55,6 +55,69 @@ Use clear academic English throughout.
 
 ${FIGURE_RULE_EN}`;
 
+// ─── Teaching style ──────────────────────────────────────────────────────────
+/**
+ * What each teaching style commits the WHOLE lesson to.
+ *
+ * Both builders used to interpolate the style's name into one line and stop —
+ * the English one passed the raw enum token. Nothing told the model that
+ * inquiry means students meet the phenomenon before the rule is named, or that
+ * collaborative practice cannot end in "no peer discussion". The offline
+ * generator had the same defect and now carries per-style phases in
+ * `artifacts/mobile/services/ai/lessonPlanBlueprints.ts`; keep the two in step.
+ */
+const LESSON_STYLE_RULES_AR: Record<string, string> = {
+  direct: `أسلوب مباشر (أنا أفعل / نحن نفعل / أنت تفعل). التزم بالتسلسل: شرح بأمثلة محلولة كاملة، ثم حل مشترك يوجّهه الطلاب خطوة بخطوة، ثم عمل فردي صامت.
+هنا فقط يكون التدريب المستقل فرديًا بلا نقاش — لأن النموذج نفسه يقتضي ذلك.`,
+  inquiry: `أسلوب استقصائي. القاعدة تأتي في النهاية لا في البداية:
+- "mainActivity": اطرح سؤال التحقيق دون إعطاء القاعدة، ويستكشف الطلاب أمثلة أو بيانات ويكتبون **تخمينهم** للقاعدة.
+- "guidedPractice": لا تشرح القاعدة. اضغط على التخمينات («ما دليلك؟»، «هل تنطبق على هذه الحالة؟») وقدّم حالة تكسر تخمينًا شائعًا. سمِّ المصطلح العلمي بعد أن يستقر الصف على صياغة.
+- "independentPractice": يختبر كل طالب الاستنتاج على حالة جديدة لم تُناقَش، ويكتب إن صمد أم لا وما الشرط الناقص.
+- "assessment": قيّم جودة الاستدلال والدليل، لا سرعة الوصول إلى القاعدة.
+ممنوع: أن تبدأ الحصة بتعريف القاعدة أو باسم المصطلح.`,
+  collaborative: `أسلوب تعاوني باعتماد متبادل حقيقي:
+- "mainActivity": أربع بطاقات مهمة **مختلفة** لكل مجموعة، بطاقة لكل فرد، ثم يشرح كل فرد بطاقته لمجموعته، ولا تكتمل إجابة المجموعة بغياب أي جزء.
+- "guidedPractice": نقد متبادل بين المجموعات (تبادل الألواح، نقطة قوة وسؤال حقيقي، ثم ردّ أمام الصف) — لا حل نموذجي من المعلم.
+- "independentPractice": مساءلة فردية **بعد** العمل الجماعي: ورقة قصيرة يجيب عنها كل طالب وحده وتغطي البطاقات الأربع كلها.
+ممنوع تمامًا: أي عبارة تمنع النقاش بين الطلاب («المناقشة بين الطلاب مؤجّلة») — فهي تناقض الأسلوب الذي بُنيت عليه الحصة.`,
+};
+
+const LESSON_STYLE_RULES_EN: Record<string, string> = {
+  direct: `Direct instruction (I do / we do / you do). Keep the sequence: teach with fully worked examples, then a shared solve that students direct step by step, then silent individual work.
+Only here is independent practice individual and discussion-free — the model itself requires it.`,
+  inquiry: `Inquiry. The rule comes last, not first:
+- "mainActivity": pose the investigation question WITHOUT giving the rule; students explore examples or data and write their **conjecture** of the rule.
+- "guidedPractice": do not explain the rule. Press on the conjectures ("What is your evidence?", "Does it hold for this case?") and offer a case built to break a common one. Attach the formal term only after the class settles on a wording.
+- "independentPractice": each student tests the conclusion on a new, undiscussed case and writes whether it held and what condition was missing.
+- "assessment": judge the quality of the reasoning and evidence, not the speed of reaching the rule.
+Forbidden: opening the lesson by stating the rule or naming the term.`,
+  collaborative: `Collaborative, with real interdependence:
+- "mainActivity": four **different** task cards per group, one per member; each teaches their card to the group; the group answer cannot be completed if a part is missing.
+- "guidedPractice": group-to-group critique (swap boards, one genuine strength and one genuine question, then answer in front of the class) — not a teacher-modelled solution.
+- "independentPractice": individual accountability AFTER the group work: a short sheet each student answers alone covering all four cards.
+Strictly forbidden: any clause banning peer discussion ("peer discussion is not permitted") — it contradicts the style the lesson was built on.`,
+};
+
+function lessonStyleKey(b: any): string {
+  const st = b.teachingStyle;
+  return st === "inquiry" || st === "collaborative" ? st : "direct";
+}
+
+export function lessonStyleClauseAr(b: any): string {
+  const key = lessonStyleKey(b);
+  const label: Record<string, string> = { direct: "مباشر", inquiry: "استقصائي", collaborative: "تعاوني" };
+  return `أسلوب التدريس: ${label[key]}
+بنية هذا الأسلوب — التزم بها في كل حقول الخطة، لا في "mainActivity" وحده:
+${LESSON_STYLE_RULES_AR[key]}`;
+}
+
+export function lessonStyleClauseEn(b: any): string {
+  const key = lessonStyleKey(b);
+  return `Teaching style: ${key}
+The structure this style requires — follow it across EVERY field of the plan, not just "mainActivity":
+${LESSON_STYLE_RULES_EN[key]}`;
+}
+
 // ─── Prompt builders ─────────────────────────────────────────────────────────
 export function lessonPlanPromptAr(b: any): string {
   const priorConcepts = b.includePriorReview && Array.isArray(b.priorKnowledge) && b.priorKnowledge.length
@@ -65,7 +128,7 @@ export function lessonPlanPromptAr(b: any): string {
   return `أنشئ خطة درس كاملة لمادة ${b.subject} للصف ${b.grade} حول موضوع "${b.topic}"، مدتها ${b.duration ?? 45} دقيقة.
 ${b.objectives ? `الأهداف المحددة:\n${b.objectives}` : ""}
 ${b.additionalContext ? `سياق إضافي: ${b.additionalContext}` : ""}
-أسلوب التدريس: ${b.teachingStyle === "inquiry" ? "استقصائي" : b.teachingStyle === "collaborative" ? "تعاوني" : "مباشر"}
+${lessonStyleClauseAr(b)}
 ${hasPriorReview ? `
 خصّص 5-10 دقائق في بداية الحصة لمراجعة معارف سابقة قد لا يتقنها بعض الطلبة، واكتب خطة هذه المراجعة في حقل "priorReview". هذه مراجعة تمهيدية وليست من أهداف هذا الدرس، فلا تُدرجها ضمن "objectives".
 ${priorConcepts ? `مفاهيم من المنهج يجب مراجعتها حرفيًا (لا تختلق غيرها):\n- ${priorConcepts.join("\n- ")}` : ""}
@@ -100,7 +163,7 @@ export function lessonPlanPromptEn(b: any): string {
   return `Create a complete lesson plan for ${b.subject}, ${b.grade}, on the topic "${b.topic}", duration ${b.duration ?? 45} minutes.
 ${b.objectives ? `Specified objectives:\n${b.objectives}` : ""}
 ${b.additionalContext ? `Additional context: ${b.additionalContext}` : ""}
-Teaching style: ${b.teachingStyle ?? "direct"}
+${lessonStyleClauseEn(b)}
 ${hasPriorReview ? `
 Set aside 5-10 minutes at the start of the lesson to review prior material some students may not have fully grasped, and put that review plan in a "priorReview" field. This is a warm-up review, not one of this lesson's own objectives — do not list it under "objectives".
 ${priorConcepts ? `Curriculum concepts to review verbatim (do not invent others):\n- ${priorConcepts.join("\n- ")}` : ""}

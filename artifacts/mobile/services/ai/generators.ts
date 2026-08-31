@@ -20,6 +20,7 @@ import {
   type DiffTier,
 } from './mathPractice.ts';
 import { buildActivityBlueprint } from './activityBlueprints.ts';
+import { buildLessonStyleBlueprint, type LessonDocContext } from './lessonPlanBlueprints.ts';
 import { classifyVerifiableTopic } from './verifyMathGuards.ts';
 
 /**
@@ -174,12 +175,6 @@ function lpObjectivesAr(topic: string, kb: KBLesson | null, custom?: string): st
     `أن يحل الطالب مسائل متنوعة حول ${topic} بخطوات منهجية`,
   ];
 }
-function lpMaterialsAr(subject: string): string[] {
-  const base = ['الكتاب المدرسي', 'السبورة والأقلام المتعددة الألوان', 'أوراق عمل مطبوعة'];
-  if (/كيمياء|chem/i.test(subject)) return [...base, 'نماذج جزيئية ثلاثية الأبعاد', 'جهاز العرض والشاشة'];
-  if (/رياضيات|math/i.test(subject)) return [...base, 'الآلة الحاسبة العلمية', 'ورق الرسم البياني'];
-  return [...base, 'جهاز العرض والشاشة', 'بطاقات مفاهيم'];
-}
 function lpIntroAr(topic: string, kb: KBLesson | null): string {
   if (kb) return pick([
     `ابدأ بطرح السؤال: "أين نلتقي بـ${topic} في حياتنا اليومية؟" سجّل إجابات الطلاب على السبورة. اعرض صورة ذات صلة بـ${kb.titleAr} وناقش ما يرونه ثم ربط إجاباتهم بأهداف الدرس.`,
@@ -190,23 +185,6 @@ function lpIntroAr(topic: string, kb: KBLesson | null): string {
     `ابدأ بسؤال تحفيزي: "كيف يرتبط ${topic} بحياتنا اليومية؟" استمع لمشاركات 3-4 طلاب وسجّلها على السبورة، ثم ابنِ عليها مدخلًا للدرس.`,
     `"فكّر – زاوج – شارك": يفكر كل طالب 30 ثانية فيما يعرفه عن ${topic}، يشارك زميله، ثم تُطرح بعض الإجابات على الصف.`,
   ]);
-}
-function lpMainActivityAr(topic: string, kb: KBLesson | null, style: string, dur: number): string {
-  const t = Math.round(dur * 0.3);
-  const conceptLines = kb?.keyConceptsAr.slice(0, 3).map((c, i) => `${i + 1}. اشرح ${c} مع مثال مرئي واضح.`).join('\n')
-    ?? `1. اشرح المفهوم الرئيسي لـ${topic}.\n2. قدّم 2-3 أمثلة متدرجة الصعوبة.\n3. اكتب الخطوات على السبورة مع التفكير الصوتي.`;
-  if (style === 'inquiry') return `(${t} دقيقة) – تعلّم استقصائي:\n\n1. اطرح سؤال التحقيق: "كيف يعمل ${topic}؟"\n2. مجموعات ثلاثية تستكشف ${kb?.keyConceptsAr?.[0] ?? topic} باستخدام المصادر المتاحة.\n3. كل مجموعة تسجّل ملاحظاتها واستنتاجاتها.\n4. مناقشة صفية تبني فهمًا مشتركًا.`;
-  if (style === 'collaborative') return `(${t} دقيقة) – تعلّم تعاوني (مجموعات 3-4):\n\n1. كل مجموعة تتلقى بطاقة مهمة تتناول جانبًا مختلفًا من ${topic}.\n2. يتعاون أفراد المجموعة لدراسة المهمة وإعداد عرض قصير.\n3. كل مجموعة تعرض إجابتها للصف (2 دقائق).\n4. المعلم يلخّص ويصحح المفاهيم الخاطئة.`;
-  return `(${t} دقيقة) – شرح مباشر – نموذج "أنا أفعل":\n\n${conceptLines}`;
-}
-function lpGuidedAr(topic: string, kb: KBLesson | null, dur: number): string {
-  const t = Math.round(dur * 0.22);
-  const termExample = kb?.keyTerms?.[0]?.ar ? `مفهوم ${kb.keyTerms[0].ar}` : topic;
-  return `(${t} دقيقة) – "نحن نفعل":\n\n• حل مثال مشترك على ${termExample} مع مشاركة الطلاب في كل خطوة.\n• طرح أسئلة استرشادية: "ماذا نفعل أولًا؟ لماذا اخترنا هذه الطريقة؟"\n• تصحيح الأخطاء الشائعة فور ظهورها بأسلوب إيجابي.`;
-}
-function lpIndependentAr(dur: number): string {
-  const t = Math.round(dur * 0.18);
-  return `(${t} دقيقة) – "أنت تفعل":\n\n• يعمل كل طالب بشكل فردي على التمارين المحددة.\n• يُسمح بمراجعة الملاحظات؛ المناقشة بين الطلاب مؤجّلة.\n• يطُوف المعلم ويقدّم دعمًا صامتًا (تلميحات مكتوبة).\n• من يُنهي مبكرًا يحل تمرين التحدي الإضافي.`;
 }
 function lpClosureAr(topic: string, dur: number): string {
   const t = Math.round(dur * 0.1);
@@ -235,12 +213,6 @@ function lpObjectivesEn(topic: string, kb: KBLesson | null, custom?: string): st
     `Students will solve problems involving ${topic} using systematic methods`,
   ];
 }
-function lpMaterialsEn(subject: string): string[] {
-  const base = ['Textbook', 'Whiteboard and colored markers', 'Printed worksheets'];
-  if (/chem/i.test(subject)) return [...base, '3D molecular models', 'Projector and screen'];
-  if (/math/i.test(subject)) return [...base, 'Scientific calculator', 'Graph paper'];
-  return [...base, 'Projector and screen', 'Concept cards'];
-}
 function lpIntroEn(topic: string, kb: KBLesson | null): string {
   if (kb) return pick([
     `Open with: "Where do we encounter ${topic} in everyday life?" Record 3-4 student responses on the board. Show a visual related to ${kb.titleEn} and bridge to today's objectives.`,
@@ -252,43 +224,12 @@ function lpIntroEn(topic: string, kb: KBLesson | null): string {
     `"Think – Pair – Share": Students think for 30 seconds about what they know about ${topic}, share with a partner, then selected pairs share with the class.`,
   ]);
 }
-function lpMainActivityEn(topic: string, kb: KBLesson | null, style: string, dur: number): string {
-  const t = Math.round(dur * 0.3);
-  const conceptLines = kb?.keyConceptsEn.slice(0, 3).map((c, i) => `${i + 1}. Explain ${c} with a clear worked example.`).join('\n')
-    ?? `1. Introduce the key concept of ${topic}.\n2. Present 3 worked examples with increasing difficulty.\n3. Think aloud as you solve each example on the board.`;
-  if (style === 'inquiry') return `(${t} min) – Inquiry-based learning:\n\n1. Pose: "How does ${topic} work? What factors affect it?"\n2. Groups of 3 explore ${kb?.keyConceptsEn?.[0] ?? topic} using available resources.\n3. Each group records observations and conclusions.\n4. Class discussion synthesises findings.`;
-  if (style === 'collaborative') return `(${t} min) – Collaborative learning (groups of 3-4):\n\n1. Each group gets a task card covering a different aspect of ${topic}.\n2. Group members study their aspect and prepare a 2-minute explanation.\n3. Groups present to the class.\n4. Teacher summarises and corrects misconceptions.`;
-  return `(${t} min) – Direct instruction (I-Do model):\n\n${conceptLines}`;
-}
-function lpGuidedEn(topic: string, kb: KBLesson | null, dur: number): string {
-  const t = Math.round(dur * 0.22);
-  const termExample = kb?.keyTerms?.[0]?.en ? `the concept of ${kb.keyTerms[0].en}` : topic;
-  return `(${t} min) – We Do:\n\n• Work through a problem on ${termExample} together, asking students to guide each step.\n• Use guiding questions: "What do we do first? Why did we choose this approach?"\n• Correct misconceptions immediately and positively.`;
-}
-function lpIndependentEn(dur: number): string {
-  const t = Math.round(dur * 0.18);
-  return `(${t} min) – You Do:\n\n• Students work individually on the assigned exercises.\n• Notes are permitted; peer discussion is not.\n• Teacher circulates and provides silent, targeted support (written hints).\n• Early finishers attempt the extension challenge.`;
-}
 function lpClosureEn(topic: string, dur: number): string {
   const t = Math.round(dur * 0.1);
   return pick([
     `(${t} min) Exit ticket:\n• Most important thing learned about ${topic}.\n• One remaining question.\nCollect at the door.`,
     `(${t} min) "3-2-1" reflection:\n• 3 things learned\n• 2 concepts to explore further\n• 1 question about ${topic}`,
   ]);
-}
-function lpAssessment(topic: string, lang: Lang): string {
-  return pick(lang === 'ar' ? [
-    `تكويني: ملاحظة الأداء أثناء التدريب الموجّه وبطاقات الخروج.\nختامي: اختبار نهاية الوحدة يغطي ${topic}.\nبديل: مشروع تطبيقي يربط ${topic} بظاهرة حياتية.`,
-    `تكويني: أسئلة شفهية خلال الحصة ومراجعة التمارين الصفية.\nختامي: اختبار قصير (5 دقائق) في بداية الحصة القادمة.`,
-  ] : [
-    `Formative: Observation during guided practice; exit ticket review.\nSummative: End-of-unit quiz covering ${topic}.\nAlternative: Project linking ${topic} to a real-world phenomenon.`,
-    `Formative: Oral questioning throughout the lesson; classwork review.\nSummative: 5-minute quiz at the start of the next lesson.`,
-  ]);
-}
-function lpDifferentiation(topic: string, lang: Lang): string {
-  return lang === 'ar'
-    ? `دعم: بطاقات مفاهيم جاهزة ومنظمات بيانية وأمثلة إضافية مبسّطة.\nتحدٍّ: مسائل مفتوحة وبحث إضافي حول تطبيقات ${topic}.\nتنويع: تقديم المحتوى بصريًا وسمعيًا وكتابيًا.`
-    : `Support: Graphic organizers, sentence starters, and additional worked examples.\nChallenge: Open-ended problems and independent research on real-world applications of ${topic}.\nMultiple modalities: Visual, auditory, and written presentation.`;
 }
 function lpHomework(topic: string, lang: Lang): string {
   return pick(lang === 'ar' ? [
@@ -704,6 +645,17 @@ export class MockAIService extends AIService {
     const priorConcepts = req.includePriorReview && req.priorKnowledge?.length ? req.priorKnowledge : [];
     const priorReview = lpPriorReview(priorConcepts, req.priorTopicsNotes ?? '', lang);
 
+    // The teaching style shapes the whole lesson, not just `mainActivity`, and
+    // it does so on BOTH paths. The document-grounded branch below used to
+    // hardcode direct instruction, so attaching a file silently made the style
+    // picker inert — «تعلّم تعاوني» and «شرح مباشر» returned the same plan.
+    const docCtx: LessonDocContext | null = docs.present
+      ? { label: fileLabel, concepts: docs.concepts, example: exampleLine || null }
+      : null;
+    const styleBlueprint = buildLessonStyleBlueprint(style, {
+      topic, kb, lang, subject: req.subject, duration: dur, doc: docCtx,
+    });
+
     // Document-grounded lesson plan (Demo Mode) — prefer uploaded materials over KB soft pin
     if (docs.present) {
       if (lang === 'ar') {
@@ -713,31 +665,22 @@ export class MockAIService extends AIService {
           objectives: docObjectives ?? lpObjectivesAr(topic, null, req.objectives),
           materials: [
             fileLabel.replace(/^الملف /, 'الملف المرفوع: ').replace(/^الملف$/, 'المواد المرفوعة'),
-            ...lpMaterialsAr(req.subject).slice(0, 3),
+            ...styleBlueprint.materials.slice(0, 3),
           ],
           ...(priorReview ? { priorReview } : {}),
           introduction:
             `اعتمادًا على ${fileLabel}: ابدأ بعرض فكرة من الملف واسأل: «ماذا نعرف عن ${topic}؟»`
             + (conceptLine ? ` سجّل المفاهيم الظاهرة: ${conceptLine}.` : '')
             + (docs.summary ? ` ملخص الملف: ${docs.summary}` : ''),
-          mainActivity:
-            `(${Math.round(dur * 0.3)} دقيقة) – شرح مباشر من المواد المرفوعة:\n\n`
-            + (conceptLine
-              ? conceptLine.split(' · ').map((c, i) => `${i + 1}. اشرح «${c}» مع مثال من الملف.`).join('\n')
-              : `1. اشرح المفهوم الرئيسي لـ«${topic}» كما يظهر في الملف.\n2. قدّم مثالين متدرجين.\n3. اكتب الخطوات على السبورة.`)
+          mainActivity: styleBlueprint.mainActivity
             + (exampleLine ? `\n\nمثال جاهز من الملف:\n• ${exampleLine}` : ''),
-          guidedPractice:
-            `(${Math.round(dur * 0.22)} دقيقة) – "نحن نفعل":\n\n`
-            + `• حل مثال مشترك مستمد من ${fileLabel} مع مشاركة الطلاب في كل خطوة.\n`
-            + '• أسئلة استرشادية: ماذا نفعل أولًا؟ كيف يرتبط هذا بهدف الدرس؟\n'
-            + '• صحّح المفاهيم الخاطئة فور ظهورها.',
-          independentPractice: lpIndependentAr(dur),
+          guidedPractice: styleBlueprint.guidedPractice,
+          independentPractice: styleBlueprint.independentPractice,
           closure: lpClosureAr(topic, dur),
-          assessment:
-            `تقويم تكويني مرتبط بـ${fileLabel}: سؤالان قصيران على المفاهيم`
+          assessment: `مرتبط بـ${fileLabel}`
             + (conceptLine ? ` (${docs.concepts.slice(0, 2).join(' / ')})` : '')
-            + ' + بطاقة خروج بجملة واحدة.',
-          differentiation: lpDifferentiation(topic, 'ar'),
+            + `.\n${styleBlueprint.assessment}`,
+          differentiation: styleBlueprint.differentiation,
           homework: `واجب قصير من نفس محور ${fileLabel}: تمرينان + جملة تلخيص عن «${topic}».`,
         };
       }
@@ -747,31 +690,22 @@ export class MockAIService extends AIService {
         objectives: docObjectives ?? lpObjectivesEn(topic, null, req.objectives),
         materials: [
           `Uploaded: ${docs.fileNames[0] ?? 'teacher materials'}`,
-          ...lpMaterialsEn(req.subject).slice(0, 3),
+          ...styleBlueprint.materials.slice(0, 3),
         ],
         ...(priorReview ? { priorReview } : {}),
         introduction:
           `Using ${fileLabel}: open with one idea from the file and ask “What do we already know about ${topic}?”`
           + (conceptLine ? ` Capture visible concepts: ${conceptLine}.` : '')
           + (docs.summary ? ` File summary: ${docs.summary}` : ''),
-        mainActivity:
-          `(${Math.round(dur * 0.3)} min) – Direct teach from uploaded materials:\n\n`
-          + (conceptLine
-            ? conceptLine.split(' · ').map((c, i) => `${i + 1}. Explain “${c}” with an example from the file.`).join('\n')
-            : `1. Teach the core idea of “${topic}” as it appears in the file.\n2. Give two progressive examples.\n3. Model steps on the board.`)
+        mainActivity: styleBlueprint.mainActivity
           + (exampleLine ? `\n\nFile-ready example:\n• ${exampleLine}` : ''),
-        guidedPractice:
-          `(${Math.round(dur * 0.22)} min) – We do:\n\n`
-          + `• Work one shared example drawn from ${fileLabel} with student voices at each step.\n`
-          + '• Prompt: What first? How does this link to today’s objective?\n'
-          + '• Correct misconceptions immediately.',
-        independentPractice: lpIndependentEn(dur),
+        guidedPractice: styleBlueprint.guidedPractice,
+        independentPractice: styleBlueprint.independentPractice,
         closure: lpClosureEn(topic, dur),
-        assessment:
-          `Formative check tied to ${fileLabel}: two short items on`
-          + (conceptLine ? ` ${docs.concepts.slice(0, 2).join(' / ')}` : ' key ideas')
-          + ' + one-sentence exit ticket.',
-        differentiation: lpDifferentiation(topic, 'en'),
+        assessment: `Tied to ${fileLabel}`
+          + (conceptLine ? ` (${docs.concepts.slice(0, 2).join(' / ')})` : '')
+          + `.\n${styleBlueprint.assessment}`,
+        differentiation: styleBlueprint.differentiation,
         homework: `Short homework from the same ${fileLabel} thread: two practice items + one summary sentence on “${topic}”.`,
       };
     }
@@ -781,15 +715,15 @@ export class MockAIService extends AIService {
         title: `${topic} – خطة درس`,
         grade: req.grade, subject: req.subject, duration: dur,
         objectives: lpObjectivesAr(topic, kb, req.objectives),
-        materials: lpMaterialsAr(req.subject),
+        materials: styleBlueprint.materials,
         ...(priorReview ? { priorReview } : {}),
         introduction: lpIntroAr(topic, kb),
-        mainActivity: lpMainActivityAr(topic, kb, style, dur),
-        guidedPractice: lpGuidedAr(topic, kb, dur),
-        independentPractice: lpIndependentAr(dur),
+        mainActivity: styleBlueprint.mainActivity,
+        guidedPractice: styleBlueprint.guidedPractice,
+        independentPractice: styleBlueprint.independentPractice,
         closure: lpClosureAr(topic, dur),
-        assessment: lpAssessment(topic, 'ar'),
-        differentiation: lpDifferentiation(topic, 'ar'),
+        assessment: styleBlueprint.assessment,
+        differentiation: styleBlueprint.differentiation,
         homework: lpHomework(topic, 'ar'),
       };
     }
@@ -797,15 +731,15 @@ export class MockAIService extends AIService {
       title: `${topic} – Lesson Plan`,
       grade: req.grade, subject: req.subject, duration: dur,
       objectives: lpObjectivesEn(topic, kb, req.objectives),
-      materials: lpMaterialsEn(req.subject),
+      materials: styleBlueprint.materials,
       ...(priorReview ? { priorReview } : {}),
       introduction: lpIntroEn(topic, kb),
-      mainActivity: lpMainActivityEn(topic, kb, style, dur),
-      guidedPractice: lpGuidedEn(topic, kb, dur),
-      independentPractice: lpIndependentEn(dur),
+      mainActivity: styleBlueprint.mainActivity,
+      guidedPractice: styleBlueprint.guidedPractice,
+      independentPractice: styleBlueprint.independentPractice,
       closure: lpClosureEn(topic, dur),
-      assessment: lpAssessment(topic, 'en'),
-      differentiation: lpDifferentiation(topic, 'en'),
+      assessment: styleBlueprint.assessment,
+      differentiation: styleBlueprint.differentiation,
       homework: lpHomework(topic, 'en'),
     };
   }
