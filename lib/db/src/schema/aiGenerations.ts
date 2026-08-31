@@ -37,12 +37,27 @@ export const aiGenerations = pgTable(
     promptVersion: text("prompt_version").notNull().default(""),
     coarseKey: text("coarse_key").notNull().default(""),
     strictKey: text("strict_key").notNull().default(""),
-    /** Whether the request carried teacher-pasted `additionalContext`. Such a
-     * request can never enter a globally shared cache, so hit-rate maths has
-     * to be able to exclude it. */
+    /** Whether the request carried context the *teacher* supplied — pasted
+     * notes, an attached document. Such a request can never enter the shared
+     * pool, so hit-rate maths has to be able to exclude it. Curriculum-derived
+     * context does not count: it is a function of the lesson, identical for
+     * every teacher who asks, and treating it as private is what would have
+     * made the cache never hit at all. See `generationKeys`. */
     hasContext: boolean("has_context").notNull().default(false),
-    /** 'miss' for every row until a cache exists — then 'hit' | 'miss'. */
+    /** 'hit' when the request was served from `ai_artifacts` without calling
+     *  the model, 'miss' when it was generated. */
     cacheStatus: text("cache_status").notNull().default("miss"),
+    /**
+     * The `ai_artifacts` row this request was served from or wrote.
+     *
+     * Set on hits and on misses alike, which is what makes it a per-teacher
+     * serve log: "which variants has this teacher already seen for this key"
+     * is a query over these rows, and that is what regeneration excludes from.
+     * Deliberately a plain text id rather than a foreign key — a retired
+     * artifact can be deleted without erasing the history of it being served,
+     * and this table's whole purpose is history that survives.
+     */
+    artifactId: text("artifact_id"),
     promptTokens: integer("prompt_tokens").notNull().default(0),
     completionTokens: integer("completion_tokens").notNull().default(0),
     /** Estimated, from aiBudget's pricing table — not billing-accurate. */
@@ -54,6 +69,9 @@ export const aiGenerations = pgTable(
     index("ai_generations_created_at_idx").on(t.createdAt),
     // Repeat-rate analysis groups by key.
     index("ai_generations_coarse_key_idx").on(t.coarseKey),
+    // "What has this teacher already been served for this key" — the lookup
+    // behind regeneration serving a variant the teacher has not seen.
+    index("ai_generations_user_strict_key_idx").on(t.userId, t.strictKey),
   ],
 );
 

@@ -254,6 +254,74 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Regeneration means something, and one artifact can serve many teachers, 2026-08-31
+
+Two teacher-facing complaints with one mechanism behind them: pressing
+«إعادة التوليد» returned the same paper reworded, and every teacher asking for
+the same lesson paid for their own model call.
+
+**They are the same feature.** A regeneration is what fills a shared pool, and
+the pool is what makes the next teacher's regeneration free. Phase 1 of
+`docs/ai-cost-savings-plan.md` — the shared cache and single-flight — is built;
+phases 2 (superset slicing) and 3 (precomputed catalog) are not.
+
+What is now true, checked against the code and the suites:
+
+- **Regenerate is a different request.** It was not: `onRegenerate={generate}`
+  re-ran the same function with a byte-identical body, and `generateContent`
+  set no seed, no temperature and no directive. The screens now send
+  `regenerate: true`, the stems on screen (`avoid`) and the pool variant they
+  hold (`excludeVariantIds`) — see `services/ai/regeneration.ts`.
+- **The server answers a regeneration from the pool when it can.** A variant
+  this teacher has not seen costs nothing and is certainly different. Only when
+  there is none does it generate, steered by a named variation profile keyed to
+  the pool slot and by an exclusion list of what the teacher already saw.
+- **And it checks.** `overlapRatio` measures how much of the "new" artifact the
+  teacher had already been shown; above half it retries once with a harder
+  directive. Nothing marks an artifact regenerated on the strength of having
+  asked for one — the repo has shipped a flag describing an intention rather
+  than a result before, and this is that shape of claim.
+- **`ai_artifacts` holds up to 5 variants per key**, served least-used-first.
+  Keyed on `strictKey`, not `coarseKey`: the coarse key drops difficulty,
+  question count and duration on the promise that phase 2 will slice a superset
+  down to them, and phase 2 does not exist — serving on it today would hand a
+  teacher who asked for 5 easy questions a 15-question hard paper.
+- **`ai_generations` rows now carry `artifactId`**, which makes them a
+  per-teacher serve log: "which variants has this teacher seen" is a query over
+  rows that were already being written. `cacheStatus` finally moves off `miss`.
+- **A cache hit is served even when the budget is spent.** `assertBudgetAvailable()`
+  now runs after the lookup — it costs nothing to hand over an artifact that
+  was paid for last week. `assertLiveModeEnabled()` still runs first, on
+  purpose: with live mode off this API is meant to make no AI claim at all.
+
+**The finding that decides whether any of this works.** The plan's scope rule
+was "global for requests with no `additionalContext`". Every generator screen
+sends `additionalContext` — it is `buildGeneratorContext()` output, curriculum
+text the app derives from the lesson — so that rule would have excluded
+essentially every request from the pool and the hit rate would have been zero
+for reasons no dashboard would have explained. Requests now declare
+`contextSource`; only `'teacher'` (a pasted note, an attached document, typed
+objectives or adaptations) stays private, and an absent value is read as
+`'teacher'` so a screen that forgets fails closed.
+
+**Not built, and worth knowing:**
+- `POST /generate/variants/:id/retire` exists and nothing in the app calls it.
+  It is the safety valve for sharing — one bad worksheet now reaches every
+  teacher who asks for that lesson — and until a screen offers it, retiring a
+  variant is a curl an operator has to run.
+- The hit rate has not been observed on real traffic. Everything above is what
+  the code does, verified by tests; the first number that means anything comes
+  from `select cache_status, count(*) from ai_generations` after a week.
+- Nothing precomputes the catalog, so a teacher is still the one paying for the
+  first request on any lesson. That is phase 3, ~$1 for all of math S1.
+
+**Needs the manual push** — `ai_artifacts` is a new table and `ai_generations`
+gains a column: `pnpm --filter @workspace/db run push`, then
+`pnpm --filter @workspace/db run verify-schema`. Without it the pool degrades
+to "generate every time", which is the old behaviour, and
+`/healthz/ai-budget` reports it under `cacheFailure` rather than failing
+silently.
+
 ## The five activity types stopped being one template, 2026-08-31
 
 **The Activity generator produced one activity with five names.** Measured
@@ -376,6 +444,69 @@ offline fallback (server decides mock/live — by design, but stated nowhere).
 Local-boot note that cost an hour: the API refuses to start without *some*
 `OPENAI_API_KEY` even in demo mode — LOCAL_SETUP.md said "optional", now
 corrected.
+
+## A teacher can see why nothing was verified, 2026-08-30
+
+The first real production test generated a maths exam with live AI and showed
+**nothing at all** — no badges, no explanation. Two unrelated causes were
+invisible behind the same silence:
+
+- production's `MATH_VERIFIER_URL` is misconfigured, so the API cannot reach a
+  verifier that is itself healthy (`/api/healthz/verifier` → `unreachable`
+  while `iqraa-verifier.onrender.com/healthz` → `ok`);
+- the exam was on الاتجاه من الشمال and قانون الجيوب — topics the verifier
+  cannot prove, so zero was the *correct* answer.
+
+**A warning existed and no screen rendered it.** `POST /evaluations/:id/generate`
+returns `warnings[]`, the client type declares it, and nothing reads it. That
+was claimed as visible when it was not.
+
+**The state is now derived from the questions, not from the generate response.**
+`GET /evaluations/:id` already returns each question's `verification` and the
+evaluation's `subjectId`, so `summariseKeyChecks` (mobile,
+`services/keyCheckSummary.ts`, pure, 10 tests) decides what to say and it
+survives a reload — identical after a first generation and after a regenerate,
+with no transient state carried across `router.replace`.
+
+**`verification` gained a `code`** — `verified | no_key | verifier_unreachable |
+undecided` — because the four outcomes were previously distinguishable only by
+English prose written for logs. A screen string-matching those breaks the day
+anyone rewords a sentence, and the app must tell two of them apart: *nobody
+could check this* is a content problem, *the checker was down* is an outage.
+The helper resolves the outage first for that reason; collapsing them would send
+a teacher rewriting good questions.
+
+Three states, three tones, none of which may read as "these answers are wrong" —
+a key the verifier contradicts is dropped during generation and never reaches
+this screen: green «تم التحقق رياضيًا من N من أصل M», amber «تعذّر الوصول إلى
+مدقّق الرياضيات … ولم يُحذف أي سؤال», grey «لا توجد مفاتيح يمكن فحصها آليًا …
+وهذا لا يعني أنها خاطئة». Questions written before key checking exist carry no
+`verification`, and stay **silent**: claiming "nothing here was checkable" of
+them would report a finding from a check that never ran.
+
+`isMathematicsSubject` moved to `lib/math-verify` and `paperIsMathematics` now
+delegates to it, so the server and the app cannot drift on the one question they
+both ask.
+
+**Verified live** on Postgres + the real verifier + the API with a scripted
+model, reading the codes back out of Postgres:
+
+| Scenario | Codes written |
+| --- | --- |
+| checks supplied, verifier up | `verified`, `no_key` |
+| no checks supplied | `no_key` ×3 |
+| checks supplied, **verifier down** | `verifier_unreachable` ×2 — 3 of 3 produced, nothing dropped |
+
+api-server 346, mobile 1056 (1046 pass, 10 expected skips), typecheck clean.
+
+**Not machine-verified:** the rendering itself — synthetic events do not reach
+these React-Native-Web controls, as recorded elsewhere here. The helper is
+tested; the three branches that consume it were read by eye.
+
+**Worth knowing:** `npx tsc` inside `artifacts/mobile` reports phantom errors
+against `@workspace/curriculum` (e.g. `activityPdfUrl` "does not exist"). Those
+are stale declaration files, not real. `pnpm run typecheck` at the root runs
+`tsc --build` on the libs first and is the only reading that means anything.
 
 ## The key check now insists on being usable, 2026-08-29
 
@@ -8249,3 +8380,59 @@ daemon is unavailable here too). Treat the upload/list/delete flow as
 code-reviewed and unit-tested at the boundary (`lessonMediaUpload.test.ts`
 covers the parsing/validation logic that doesn't need a DB), not as
 confirmed working end to end.
+
+## «تجهيزات الصف» changed almost nothing, 2026-08-31
+
+Reported from the builder screen: a teacher toggled «شاشة عرض» / «سبورة فقط»,
+regenerated, and could not see a difference. They were mostly right, and the
+reasons were worth writing down.
+
+`classroomSetup` reached two places — `classroomSetupClause()` in the server
+prompt, and `applyClassroomSetup()` in `services/classroomRouting.ts` — and the
+second one, the only deterministic half, touched exactly two fields:
+`materials` and `teacherPreparation`. Running every activity type through the
+generator both ways showed what that came to:
+
+- **`slides` were byte-identical every time,** for all seven activity types.
+  The deck you present is what the toggle never reached.
+- **`teacherPreparation` is rendered nowhere.** Not in the builder, not in the
+  presentation screen, not in either exporter. So for `escape-challenge` and
+  `error-detective` — the two types with a real override — the larger half of
+  the change was invisible by construction.
+- **`quick-check` produced identical output in both modes.** Its own materials
+  already name «شاشة عرض», so the screen path's "already there" check skipped,
+  and the board path was a documented no-op. A teacher who answered «سبورة
+  فقط» was handed a projector as a required material.
+- What was left was one bullet appearing in «المواد اللازمة».
+
+Four changes, all in the mobile app:
+
+1. `teacherPreparation` now renders on the result card as «تحضير المعلّم». It
+   was generated all along.
+2. `PillSelector` takes a `hint`, and the setup row uses it to say what the
+   choice changes — and, as importantly, that it does **not** change the
+   questions.
+3. `SCREEN_SETUP` covers `bingo`, `relay` and `exit-ticket` as well. Each keeps
+   the artifact a student writes on and drops only what the slides take over —
+   the teacher's printouts, the board copy of a question, the physical timer
+   the deck already runs. `exit-ticket` on a screen now needs nothing printed
+   at all. `gallery-walk` is deliberately still on the default projector-line
+   path: five sheets taped to the walls are the activity and a screen replaces
+   none of them.
+4. Board mode is no longer a pure no-op. It strips materials lines that are
+   only about a projector (keeping mini-whiteboards, which name a screen but
+   are not one), names the class board if removing the projector left the
+   questions nowhere to appear, and rewrites intro-slide copy that tells
+   students to watch a screen — «وقت محدّد يظهر على الشاشة» becomes «وقت محدّد
+   يعلنه معلّمك». **Intro slides only**: challenge and question slides carry
+   the maths, and rewriting those would be editing content, not staging.
+
+Verified by running the mock generator for all seven types both ways again:
+every one now differs in materials, six of seven in teacher prep, and
+`escape-challenge` in its rules slide. `pnpm run typecheck` clean;
+1042 mobile tests pass.
+
+Still true, and deliberate: the toggle does not change the questions. That is
+the honest behaviour — the same activity in a different room — and the hint
+under the pills now says so rather than leaving a teacher to infer it from two
+generations that look alike.

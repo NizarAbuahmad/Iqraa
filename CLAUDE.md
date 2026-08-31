@@ -119,6 +119,22 @@ Before a live demo: [`docs/demo-checklist.md`](./docs/demo-checklist.md).
   so the tests that pin them apart (`activityBlueprints.test.ts`,
   `activityPrompts.test.ts`) assert *every field differs from every other
   type*; a new format needs its own entry in both files or they fail.
+- **`additionalContext` is not teacher-pasted material — it is usually the
+  curriculum.** Every `/ai-tools` screen fills it with `buildGeneratorContext()`
+  output derived from the lesson, and the server appends its own book passages
+  to the same field. The shared artifact pool (`ai_artifacts`) treats
+  teacher-supplied context as unshareable, so reading "context present" as
+  "private" would exclude essentially every request and pin the hit rate at
+  zero, with nothing in the logs to say why. Provenance is declared, not
+  inferred: `contextSource: 'curriculum' | 'teacher'`, absent read as
+  `'teacher'` so a screen that forgets fails closed rather than leaking. If you
+  add a generator screen, say which it is.
+- **A shared artifact makes every generator bug everybody's bug.** A pooled
+  worksheet is served to every teacher who asks for that lesson, so anything
+  that used to cost one teacher a regeneration now costs all of them.
+  `assertUsableGeneration` runs before anything is stored, and
+  `POST /generate/variants/:id/retire` is the way back out — but nothing in the
+  app calls it yet.
 - **Extensionless relative imports only work through esbuild.** Anything loaded
   directly by `node --test` needs an explicit `.ts` extension.
 - **The OpenAI client throws at module scope without a key**, which makes

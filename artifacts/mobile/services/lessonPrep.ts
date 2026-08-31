@@ -263,6 +263,11 @@ export function buildLessonPrepRequest(args: {
       teachingStyle: args.teachingStyle ?? 'direct',
       objectives: context.objectives || undefined,
       additionalContext,
+      lessonId: grounding.lesson?.id,
+      // Adaptations and prior-topic notes are the teacher's own words and end
+      // up in the plan verbatim, so a request carrying either is theirs alone.
+      // Objectives come from the curriculum context here, not a text box.
+      contextSource: (args.adaptations?.trim() || priorTopicsNotes) ? 'teacher' : 'curriculum',
       includePriorReview: usePrior || undefined,
       priorKnowledge: usePrior ? unitPrior : undefined,
       priorTopicsNotes,

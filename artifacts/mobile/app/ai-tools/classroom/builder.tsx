@@ -14,7 +14,7 @@ import {
 } from '@/services/curriculumData';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { ClassroomActivity } from '@/services/ai/AIService';
-import { buildGeneratorContext, generatorUnitId } from '@/services/kbContext';
+import { buildGeneratorContext, generatorLessonId, generatorUnitId } from '@/services/kbContext';
 import { groundedSubjectConflict } from '@/services/lessonPrep';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { ACTIVITY_CARDS, ClassroomSetup, resolveActivityType } from '@/services/classroomRouting';
@@ -88,6 +88,8 @@ export default function ClassroomBuilderScreen() {
         language: lang === 'ar' ? 'arabic' : 'english',
         additionalContext,
         unitId: generatorUnitId(topic.trim(), lang as 'ar' | 'en'),
+        lessonId: generatorLessonId(topic.trim(), lang as 'ar' | 'en'),
+        contextSource: 'curriculum',
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setResult(out);
@@ -120,6 +122,16 @@ export default function ClassroomBuilderScreen() {
     { value: 'screen', label: lang === 'ar' ? 'شاشة عرض' : 'Projector' },
     { value: 'board', label: lang === 'ar' ? 'سبورة فقط' : 'Board only' },
   ];
+  // Says what the choice changes, because it does not change the questions.
+  // Without this the row looked decorative: both options produce the same
+  // slides, and the difference lands in «المواد اللازمة» and «تحضير المعلّم».
+  const setupHint = classroomSetup === 'screen'
+    ? (lang === 'ar'
+      ? 'الأسئلة تُعرض من الشرائح، فلا يُطلب منك طباعة ما تعرضه الشاشة. تتغيّر المواد اللازمة وتحضير المعلّم — لا الأسئلة نفسها.'
+      : 'Questions come off the slides, so you are not asked to print what the screen shows. Changes the materials and teacher prep — not the questions themselves.')
+    : (lang === 'ar'
+      ? 'يُبنى النشاط للسبورة والأوراق المطبوعة، ولا يُذكر جهاز العرض ضمن المواد. تتغيّر المواد اللازمة وتحضير المعلّم — لا الأسئلة نفسها.'
+      : 'The activity is built for the board and printed handouts, and no projector is listed. Changes the materials and teacher prep — not the questions themselves.');
   const goalOpts: { value: TeachingGoal; label: string }[] = [
     { value: 'warm-up', label: t('teachingGoalWarmup') },
     { value: 'practice', label: t('teachingGoalPractice') },
@@ -209,6 +221,7 @@ export default function ClassroomBuilderScreen() {
           options={setupOpts}
           value={classroomSetup}
           onChange={setClassroomSetup}
+          hint={setupHint}
           colors={colors}
           isRTL={isRTL}
           accent={ACCENT}
@@ -273,6 +286,21 @@ export default function ClassroomBuilderScreen() {
             ))}
           </View>
 
+          {/* Teacher prep — the other half of what «تجهيزات الصف» rewrites.
+              Generated all along and rendered nowhere, so a teacher who
+              switched between projector and board saw one bullet move and
+              concluded the setting did nothing. */}
+          {result.teacherPreparation ? (
+            <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
+              <Text style={[styles.sectionLabel, { color: ACCENT, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+                {lang === 'ar' ? 'تحضير المعلّم' : 'Teacher prep'}
+              </Text>
+              <Text style={[styles.prepText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+                {result.teacherPreparation}
+              </Text>
+            </View>
+          ) : null}
+
           {/* CTA */}
           <Pressable
             onPress={handleStartPresentation}
@@ -322,6 +350,9 @@ const styles = StyleSheet.create({
   bullet: { gap: 8, marginBottom: 5, alignItems: 'flex-start' },
   dot: { width: 5, height: 5, borderRadius: 3, marginTop: 8, flexShrink: 0 },
   bulletText: { flex: 1, fontSize: 13, lineHeight: 20 },
+  // No `flex: 1`: this one is a paragraph in a column, not a bullet's second
+  // child in a row, and flexing it there collapses its height.
+  prepText: { fontSize: 13, lineHeight: 20 },
   ctaBtn: { alignItems: 'center', justifyContent: 'center', gap: 10, padding: 16, marginBottom: 10 },
   ctaText: { color: '#fff', fontSize: 16 },
   regenBtn: { alignItems: 'center', gap: 8, padding: 14, borderWidth: 1.5 },

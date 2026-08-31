@@ -26,6 +26,7 @@ import {
   type EvaluationQuestion,
   type QuestionType,
 } from '@/services/evaluations';
+import { summariseKeyChecks, type KeyCheckSummary } from '@/services/keyCheckSummary';
 import { copyToClipboard } from '@/services/share';
 import { ClassPickerSheet } from '@/components/ui/ClassPickerSheet';
 import type { TranslationKey } from '@/services/i18n';
@@ -76,9 +77,10 @@ export default function EvaluationDetailScreen() {
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
   const [pickingClass, setPickingClass] = useState(false);
   const [questions, setQuestions] = useState<EvaluationQuestion[]>([]);
-  // Only the verifier's own confirmations are counted — never inferred from
-  // a question looking fine.
-  const verifiedCount = questions.filter(q => q.verification?.verified).length;
+  // Silence used to be the answer for three different situations — keys
+  // verified, verifier unreachable, nothing checkable — and a teacher cannot
+  // act on silence. Derived from the questions so it survives a reload.
+  const keyChecks = summariseKeyChecks(questions, evaluation?.subjectId);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState<'generate' | 'publish' | null>(null);
@@ -245,19 +247,9 @@ export default function EvaluationDetailScreen() {
         </View>
       )}
 
-      {verifiedCount > 0 && (
+      {keyChecks.kind !== 'silent' && (
         <View style={{ paddingHorizontal: 20, paddingTop: 4 }}>
-          <View style={[styles.verifySummary, { backgroundColor: '#05966912', borderColor: '#05966933' }]}>
-            <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }}>
-              <Ionicons name="shield-checkmark" size={15} color="#059669" />
-              <Text style={{ color: '#059669', fontFamily: 'Cairo_600SemiBold', fontSize: 12.5, textAlign: align }}>
-                {t('keysVerifiedSummary', String(verifiedCount), String(questions.length))}
-              </Text>
-            </View>
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11.5, marginTop: 4, textAlign: align, lineHeight: 18 }}>
-              {t('keysVerifiedNote')}
-            </Text>
-          </View>
+          <KeyCheckNotice summary={keyChecks} colors={colors} isRTL={isRTL} align={align} t={t} />
         </View>
       )}
 
@@ -343,6 +335,58 @@ export default function EvaluationDetailScreen() {
  * student picks their name from *is* the class. Rather than hide the card or
  * show a link that 404s, it says which step is missing.
  */
+/**
+ * One notice, three states, deliberately three different tones.
+ *
+ * Green is a claim: SymPy confirmed these keys. Amber is an outage the teacher
+ * can retry, and its most important word is that nothing was removed. Grey is
+ * not a complaint about the paper at all — most questions have no symbolic
+ * answer, and a paper of them is perfectly good. None of the three may read as
+ * "these answers are wrong": a key the verifier contradicts is dropped during
+ * generation and never reaches this screen.
+ */
+function KeyCheckNotice({
+  summary, colors, isRTL, align, t,
+}: {
+  summary: KeyCheckSummary;
+  colors: ReturnType<typeof useColors>;
+  isRTL: boolean;
+  align: 'left' | 'right';
+  t: (key: TranslationKey, ...args: any[]) => string;
+}) {
+  const tone = summary.kind === 'verified'
+    ? { fg: '#059669', bg: '#05966912', border: '#05966933', icon: 'shield-checkmark' as const }
+    : summary.kind === 'verifier-down'
+      ? { fg: '#B45309', bg: '#F59E0B14', border: '#F59E0B38', icon: 'cloud-offline-outline' as const }
+      : { fg: colors.mutedForeground, bg: colors.card, border: colors.border, icon: 'information-circle-outline' as const };
+
+  const title = summary.kind === 'verified'
+    ? t('keysVerifiedSummary', String(summary.verified), String(summary.total))
+    : summary.kind === 'verifier-down'
+      ? t('keysVerifierDownTitle')
+      : t('keysNoneCheckableTitle');
+
+  const note = summary.kind === 'verified'
+    ? t('keysVerifiedNote')
+    : summary.kind === 'verifier-down'
+      ? t('keysVerifierDownNote')
+      : t('keysNoneCheckableNote');
+
+  return (
+    <View style={[styles.verifySummary, { backgroundColor: tone.bg, borderColor: tone.border }]}>
+      <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }}>
+        <Ionicons name={tone.icon} size={15} color={tone.fg} />
+        <Text style={{ flex: 1, color: tone.fg, fontFamily: 'Cairo_600SemiBold', fontSize: 12.5, textAlign: align }}>
+          {title}
+        </Text>
+      </View>
+      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11.5, marginTop: 4, textAlign: align, lineHeight: 18 }}>
+        {note}
+      </Text>
+    </View>
+  );
+}
+
 function ShareLinkCard({
   shareCode, attachedToClass, onAttach, colors, isRTL, align, t,
 }: {

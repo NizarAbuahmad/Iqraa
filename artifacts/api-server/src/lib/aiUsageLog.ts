@@ -37,6 +37,10 @@ export type GenerationRecord = {
   strictKey: string;
   hasContext: boolean;
   cacheStatus: "hit" | "miss";
+  /** The `ai_artifacts` row served or written. Set on hits and misses alike —
+   *  it is what makes these rows a per-teacher serve log, which is what
+   *  regeneration reads to find a variant this teacher has not seen. */
+  artifactId?: string | null;
   promptTokens: number;
   completionTokens: number;
   costUsd: number;
@@ -86,6 +90,7 @@ export async function recordGeneration(row: GenerationRecord): Promise<void> {
       strictKey: row.strictKey,
       hasContext: row.hasContext,
       cacheStatus: row.cacheStatus,
+      artifactId: row.artifactId ?? null,
       promptTokens: row.promptTokens,
       completionTokens: row.completionTokens,
       costUsd: row.costUsd.toFixed(6),

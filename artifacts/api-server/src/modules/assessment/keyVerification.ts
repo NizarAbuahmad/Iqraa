@@ -49,9 +49,25 @@ export type RelateKeyFn = (
 // A type alias, not an interface: the `verification` column is typed
 // `Record<string, unknown> | null`, and only an alias gets the implicit index
 // signature that makes this assignable to it.
+/**
+ * Why a question ended up verified or not, as a value a UI can switch on.
+ *
+ * `reason` below is English prose meant for a human reading a log. A screen
+ * that string-matched it would break silently the first time anyone reworded a
+ * sentence — and the app does need to tell these apart, because they have
+ * different fixes: a key nobody could check is a content problem, an
+ * unreachable verifier is an outage.
+ */
+export type KeyVerificationCode =
+  | "verified"
+  | "no_key"
+  | "verifier_unreachable"
+  | "undecided";
+
 export type KeyVerification = {
   verified: boolean;
   source: "sympy" | "unchecked";
+  code: KeyVerificationCode;
   /** Present when the verifier ran: what it derived independently. */
   computedAnswer?: string | null;
   /** Why an unverified question was not verified — never a claim about it. */
@@ -92,7 +108,13 @@ export async function verifyAnswerKeys(
     if (!check) {
       kept.push({
         question,
-        verification: { verified: false, source: "unchecked", reason: NOT_CHECKABLE, checkedAt },
+        verification: {
+          verified: false,
+          source: "unchecked",
+          code: "no_key",
+          reason: NOT_CHECKABLE,
+          checkedAt,
+        },
       });
       continue;
     }
@@ -103,6 +125,7 @@ export async function verifyAnswerKeys(
         verification: {
           verified: false,
           source: "unchecked",
+          code: "verifier_unreachable",
           reason: "the verifier could not be reached",
           checkedAt,
         },
@@ -119,6 +142,7 @@ export async function verifyAnswerKeys(
         verification: {
           verified: false,
           source: "unchecked",
+          code: "verifier_unreachable",
           reason: "the verifier could not be reached",
           checkedAt,
         },
@@ -135,6 +159,7 @@ export async function verifyAnswerKeys(
         verification: {
           verified: true,
           source: "sympy",
+          code: "verified",
           computedAnswer: result.computed_answer,
           checkedAt,
         },
@@ -160,6 +185,7 @@ export async function verifyAnswerKeys(
       verification: {
         verified: false,
         source: "unchecked",
+        code: "undecided",
         computedAnswer: result.computed_answer,
         reason: `the verifier could not decide (${result.relation})`,
         checkedAt,
