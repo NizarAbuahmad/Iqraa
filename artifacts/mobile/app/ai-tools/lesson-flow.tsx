@@ -23,6 +23,7 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { buildGeneratorContext, generatorLessonId, generatorUnitId } from '@/services/kbContext';
+import { isolateForeignRuns } from '@/services/mathRender';
 import {
   ActivityOutput,
   LessonFlowOutput,
@@ -697,7 +698,7 @@ function StepContent({ stepKey, objectives, warmup, activity, guidedPractice, wo
           {(objectives ?? []).map((obj, i) => (
             <View key={i} style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-start' }]}>
               <View style={[styles.bullet, { backgroundColor: NAVY }]} />
-              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }}>{obj}</Text>
+              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(obj)}</Text>
             </View>
           ))}
         </View>
@@ -709,15 +710,15 @@ function StepContent({ stepKey, objectives, warmup, activity, guidedPractice, wo
       if (!act) return null;
       return (
         <View style={{ paddingHorizontal: 14, paddingBottom: 8 }}>
-          <Text style={[{ color: colors.primary, fontFamily: 'Cairo_600SemiBold', fontSize: 13, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{act.title}</Text>
+          <Text style={[{ color: colors.primary, fontFamily: 'Cairo_600SemiBold', fontSize: 13, marginBottom: 8, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>{isolateForeignRuns(act.title)}</Text>
           {act.steps.map((step, i) => (
             <View key={i} style={[styles.activityStep, { backgroundColor: colors.muted }]}>
               <View style={[styles.stepNum, { backgroundColor: stepKey === 'warmup' ? '#E67E22' : '#4F46E5' }]}>
                 <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 10 }}>{i + 1}</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 12.5, textAlign: isRTL ? 'right' : 'left' }}>{step.title}</Text>
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, marginTop: 2, lineHeight: 17, textAlign: isRTL ? 'right' : 'left' }}>{step.description}</Text>
+                <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 12.5, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(step.title)}</Text>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, marginTop: 2, lineHeight: 17, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(step.description)}</Text>
               </View>
             </View>
           ))}
@@ -746,7 +747,7 @@ function StepContent({ stepKey, objectives, warmup, activity, guidedPractice, wo
               <View style={[styles.qNum, { backgroundColor: '#8B5CF6' }]}>
                 <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 10 }}>{i + 1}</Text>
               </View>
-              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12.5, lineHeight: 18, textAlign: isRTL ? 'right' : 'left' }}>{q.text}</Text>
+              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12.5, lineHeight: 18, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(q.text)}</Text>
               <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11 }}>{q.points}pt</Text>
             </View>
           ))}
@@ -764,7 +765,7 @@ function StepContent({ stepKey, objectives, warmup, activity, guidedPractice, wo
               <View style={[styles.qNum, { backgroundColor: '#F59E0B' }]}>
                 <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 10 }}>{i + 1}</Text>
               </View>
-              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12.5, lineHeight: 18, textAlign: isRTL ? 'right' : 'left' }}>{q.text}</Text>
+              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12.5, lineHeight: 18, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(q.text)}</Text>
               <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11 }}>{q.points}pt</Text>
             </View>
           ))}

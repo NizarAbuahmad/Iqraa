@@ -27,6 +27,7 @@ import {
   type QuestionType,
 } from '@/services/evaluations';
 import { summariseKeyChecks, type KeyCheckSummary } from '@/services/keyCheckSummary';
+import { isolateForeignRuns } from '@/services/mathRender';
 import { copyToClipboard } from '@/services/share';
 import { ClassPickerSheet } from '@/components/ui/ClassPickerSheet';
 import type { TranslationKey } from '@/services/i18n';
@@ -54,16 +55,23 @@ const TYPE_LABEL_KEY: Record<QuestionType, TranslationKey> = {
   practical_task: 'typePracticalTask',
 };
 
-/** The one field worth showing per type, regardless of shape. */
+/**
+ * The one field worth showing per type, regardless of shape.
+ *
+ * Isolated here rather than at the render site because every branch below
+ * returns model-written Arabic that can carry an equation, and an unisolated
+ * «f(x) = 2x⁴ - x² + 3» comes out of the bidi algorithm reordered against the
+ * Arabic around it — a wrong question, not just an ugly one.
+ */
 function questionText(q: EvaluationQuestion): string {
   const body = q.body;
   const template = body['template'] as string | undefined;
-  return (
+  return isolateForeignRuns(
     (body['stem'] as string | undefined)
     ?? (body['statement'] as string | undefined)
     ?? (template === undefined ? undefined : showBlanks(template))
     ?? (body['prompt'] as string | undefined)
-    ?? ''
+    ?? '',
   );
 }
 
@@ -280,7 +288,17 @@ export default function EvaluationDetailScreen() {
                 </Text>
               </View>
             ) : null}
-            <Text style={[styles.qText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+            <Text
+              style={[
+                styles.qText,
+                {
+                  color: colors.foreground,
+                  fontFamily: 'Almarai_400Regular',
+                  textAlign: align,
+                  writingDirection: isRTL ? 'rtl' : 'ltr',
+                },
+              ]}
+            >
               {questionText(q) || '—'}
             </Text>
           </View>

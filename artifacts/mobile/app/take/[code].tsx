@@ -48,6 +48,7 @@ import {
   type StudentResponse,
 } from '@/services/studentExam';
 import { showBlanks } from '@/services/evaluations';
+import { isolateForeignRuns } from '@/services/mathRender';
 import type { TranslationKey } from '@/services/i18n';
 
 const ACCENT = '#1B6B62';
@@ -401,11 +402,15 @@ function QuestionCard({
   t: (key: TranslationKey, ...args: any[]) => string;
 }) {
   const body = question.body;
-  const prompt =
+  // Isolated at the source: this is the paper a student actually sits, so an
+  // equation reordered by the bidi algorithm is a wrong question in front of
+  // someone who cannot ask why it looks odd.
+  const prompt = isolateForeignRuns(
     (body['stem'] as string) ??
     (body['statement'] as string) ??
     (body['prompt'] as string) ??
-    showBlanks((body['template'] as string) ?? '');
+    showBlanks((body['template'] as string) ?? ''),
+  );
 
   const options = Array.isArray(body['options']) ? (body['options'] as { id: string; text: string }[]) : [];
   const picked = new Set(Array.isArray(response['optionIds']) ? (response['optionIds'] as string[]) : []);
@@ -415,7 +420,16 @@ function QuestionCard({
 
   return (
     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 16, lineHeight: 26, textAlign: align }}>
+      <Text
+        style={{
+          color: colors.foreground,
+          fontFamily: 'Almarai_400Regular',
+          fontSize: 16,
+          lineHeight: 26,
+          textAlign: align,
+          writingDirection: isRTL ? 'rtl' : 'ltr',
+        }}
+      >
         {prompt}
       </Text>
 
@@ -447,8 +461,17 @@ function QuestionCard({
                   size={20}
                   color={on ? ACCENT : colors.mutedForeground}
                 />
-                <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, flex: 1, textAlign: align }}>
-                  {o.text}
+                <Text
+                  style={{
+                    color: colors.foreground,
+                    fontFamily: 'Almarai_400Regular',
+                    fontSize: 15,
+                    flex: 1,
+                    textAlign: align,
+                    writingDirection: isRTL ? 'rtl' : 'ltr',
+                  }}
+                >
+                  {isolateForeignRuns(o.text)}
                 </Text>
               </Pressable>
             );
