@@ -46,7 +46,7 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     because the count was repeatedly described as "all in
     `lib/integrations-openai-ai-server`", which is wrong by a factor of three
     and would send someone looking in the wrong package.
-- Mobile test suite: 1104 tests, 0 failures, 10 skipped (re-counted 2026-08-31
+- Mobile test suite: 1122 tests, 0 failures, 10 skipped (re-counted 2026-08-31
   on an installed workspace, after merging main; 1070 before that merge and
   1046 before the activity-format work the same day,
   981 on 2026-08-26; 975, 971 and 962 earlier the same day/day before,
@@ -254,6 +254,70 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     deployed. The client's timeout is 2.5s, so the first call after idle fails.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
+
+## A lesson plan follows the style the teacher picked, 2026-08-31
+
+The third instance of the same pattern as the two sections below — *a picker
+that changes a label but not the output*. Found by checking whether the defect
+sat in the remaining generators; it did.
+
+**`teachingStyle` reached exactly one of the plan's eleven fields.** Only
+`mainActivity` branched on it. `guidedPractice`, `independentPractice`,
+`assessment`, `differentiation` and `materials` were style-blind, and
+`objectives`, `title`, `introduction`, `closure` and `homework` never varied by
+style either.
+
+**Careful about what "varies" meant here.** `introduction`, `closure`,
+`assessment` and `homework` looked like they differed across styles (2 of 3
+distinct). They vary identically **within a single style** — six runs of
+`direct` gave 3 distinct introductions and 2 distinct closures. That is the
+`pick()` helper, not the style. Measuring "the three styles differ" on those
+fields would have passed with the style ignored entirely, which is how this hid.
+
+**The plan contradicted itself.** A `collaborative` plan opened with group task
+cards and presentations, then two sections later said
+«يُسمح بمراجعة الملاحظات؛ **المناقشة بين الطلاب مؤجّلة**» — "notes are
+permitted; peer discussion is not". The I-Do/We-Do/You-Do phases were hardcoded
+regardless of the style wrapped around them.
+
+**With an attached document the picker was inert altogether.** The
+document-grounded branch never read `style` and hardcoded
+«شرح مباشر من المواد المرفوعة» / "Direct teach from uploaded materials".
+Verified: with a real document block, `collaborative` and `direct` returned the
+**identical** `mainActivity`.
+
+**Now:** `artifacts/mobile/services/ai/lessonPlanBlueprints.ts` holds per-style
+phases, built on what each style is for:
+
+| Style | The shape it commits to |
+| --- | --- |
+| `direct` | I do → we do → you do; worked examples faded to solo practice |
+| `inquiry` | students meet the phenomenon and record a **conjecture** before the rule is named; the guided phase presses on the evidence instead of demonstrating; independent practice tests the conclusion on a new case |
+| `collaborative` | four different task cards per group, group-to-group critique, then **individual accountability** — which is how assessment stops contradicting the grouping |
+
+Re-measured: **1 of 11 fields → 6 of 11**, three distinct values out of three on
+every style-owned field, **on both the ordinary and the document paths**, and
+the self-contradiction is gone. Only `direct` still describes its independent
+stage as individual, where that is correct by the model's own design.
+
+Ten now-dead helpers (`lpMainActivityAr/En`, `lpGuidedAr/En`,
+`lpIndependentAr/En`, `lpAssessment`, `lpDifferentiation`, `lpMaterialsAr/En`)
+were deleted rather than left beside the blueprints for someone to edit by
+mistake.
+
+**The live path had the same hole.** `lessonPlanPromptAr` interpolated one word;
+`lessonPlanPromptEn` passed the raw enum token (`inquiry`) on a line of its own
+with nothing after it. Both now carry `LESSON_STYLE_RULES_AR`/`_EN`, which state
+what each style requires **across every field** and forbid the exact
+contradiction by name. `PROMPT_VERSION` → `2026-08-31.3`.
+
+**Pinned by** `services/__tests__/lessonPlanStyle.test.ts` and
+`artifacts/api-server/src/lib/__tests__/lessonStylePrompts.test.ts`. Verified
+against the reverted generator: **7 of the 11 mobile cases fail** without the
+fix. The document-path tests use the real block format from
+`buildDocumentPromptBlock` — a block that does not match the parser falls
+through to the ordinary path and proves nothing, which is a mistake made once
+while writing these.
 
 ## Embedded maths stopped being scrambled by RTL, 2026-08-31
 
