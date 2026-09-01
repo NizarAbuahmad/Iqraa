@@ -8443,3 +8443,25 @@ Still true, and deliberate: the toggle does not change the questions. That is
 the honest behaviour — the same activity in a different room — and the hint
 under the pills now says so rather than leaving a teacher to infer it from two
 generations that look alike.
+
+## Deleted 13 orphaned chemistry-S1 crop PNGs, 2026-09-01
+
+`knowledge-base/grade-10-chemistry/figures/chem-s1-student-book/` had 13 PNGs
+with no `index.json` entry: `p001b`, `p013c`, `p017b`, `p047`, `p047b`, `p048`,
+`p056`, `p056b`, `p058`, `p060`, `p060b`, `p063b`, `p072`. Harmless —
+`gen_book_figure_assets.mjs` and `figuresForLesson` only ever read
+`index.json`, never scan the directory — but dead weight, and the opposite
+mistake from the one `bookFigureAssets.test.ts` guards (index pointing at a
+missing file).
+
+Checked each was really dead, not a correct-but-unmapped crop: all 13 had a
+real `index.json` entry (unit/lesson/rect already assigned) as of commit
+`d086e77`, and all 13 were gone from `index.json` by the very next commit,
+`29f2a8c`, which re-ran extraction and reassigned several of those page
+regions to new filenames (e.g. page 47's crop is now `p049.png`). `git log
+--diff-filter=D` on the directory shows no PNG was ever `git rm`'d — the
+extractor's own documented review step
+(`scripts/extract_book_figures.py`: "Deleting a crop means deleting BOTH the
+PNG and its `index.json` entry") was only half-followed. Deleted the 13 files;
+nothing else in the repo referenced them (`bookFigureAssets.ts`'s generated
+`require()` map already only lists what's in `index.json`).
