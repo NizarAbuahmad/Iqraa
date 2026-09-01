@@ -29,35 +29,41 @@ async function uriToDataUrl(uri: string, mimeType: string): Promise<string> {
   return `data:${mimeType};base64,${base64}`;
 }
 
-/** One photo from the library, downscaled the same way `pickMarkSheetPhoto` does. Null on cancel/no permission. */
-export async function pickLessonPhoto(): Promise<string | null> {
+/** One or more photos from the library, downscaled the same way `pickMarkSheetPhoto` does. Empty on cancel/no permission. */
+export async function pickLessonPhotos(): Promise<string[]> {
   const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (!perm.granted) return null;
+  if (!perm.granted) return [];
 
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'],
-    allowsMultipleSelection: false,
+    allowsMultipleSelection: true,
     quality: 0.85,
     base64: true,
   });
-  if (result.canceled || !result.assets?.length) return null;
+  if (result.canceled || !result.assets?.length) return [];
 
-  const asset = result.assets[0]!;
-  if (!asset.base64) return null;
-  const mime = asset.mimeType || 'image/jpeg';
-  return downscaleImage(`data:${mime};base64,${asset.base64}`);
+  const out: string[] = [];
+  for (const asset of result.assets) {
+    if (!asset.base64) continue;
+    const mime = asset.mimeType || 'image/jpeg';
+    out.push(await downscaleImage(`data:${mime};base64,${asset.base64}`));
+  }
+  return out;
 }
 
-/** One audio or document file. Null on cancel. */
-export async function pickLessonFile(): Promise<string | null> {
+/** One or more audio/document files. Empty on cancel. */
+export async function pickLessonFiles(): Promise<string[]> {
   const result = await DocumentPicker.getDocumentAsync({
-    multiple: false,
+    multiple: true,
     copyToCacheDirectory: true,
     type: ['audio/*', 'application/pdf'],
   });
-  if (result.canceled || !result.assets?.length) return null;
+  if (result.canceled || !result.assets?.length) return [];
 
-  const asset = result.assets[0]!;
-  const mime = asset.mimeType || 'application/octet-stream';
-  return uriToDataUrl(asset.uri, mime);
+  const out: string[] = [];
+  for (const asset of result.assets) {
+    const mime = asset.mimeType || 'application/octet-stream';
+    out.push(await uriToDataUrl(asset.uri, mime));
+  }
+  return out;
 }
