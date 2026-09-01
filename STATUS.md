@@ -8597,6 +8597,37 @@ noted above still stands as written: the click-through (attach a photo, see
 it list, delete it) has still not been done against a real logged-in
 session — this entry closes the *schema* gap, not that one.
 
+## Lesson attachments: uploaded photos now reach the deck, multi-select added, 2026-08-31
+
+Real usage on the merged/live feature above surfaced two gaps immediately:
+
+- **Uploaded images never reached the generated deck.** `LessonAttachments`
+  (the new R2-backed panel) uploaded and listed files fine, but nothing fed
+  its items into `buildLessonDeck`/`insertLessonResources` — only
+  `LessonResources` (the older pinned-URL feature) was wired into the
+  `attached` state that `slides.tsx` actually builds the deck from. A teacher
+  who uploaded a photo saw it in the panel and never again. Fixed by lifting
+  `LessonAttachments`' list into `slides.tsx` via a new `onChange` prop (same
+  shape `LessonResources` already used) and merging its `kind: 'image'` items
+  with the pinned-URL ones into one `AttachedResource[]` before calling
+  `insertLessonResources`/`shouldSearchForVideo`. **`audio`/`document`
+  attachments still don't appear in a presented deck** —
+  `ActivitySlide.mediaKind` only renders `'image' | 'video'`, and there is no
+  slide type for a document or a voice note yet. That's a real gap, not
+  silently patched over; worth its own follow-up if teachers start attaching
+  those and expecting them on screen.
+- **Picking was one-at-a-time.** `pickLessonPhoto`/`pickLessonFile` in
+  `lessonMediaPick.ts` hardcoded `allowsMultipleSelection: false` /
+  `multiple: false`. Now `pickLessonPhotos`/`pickLessonFiles`, both
+  multi-select, uploaded one at a time in `LessonAttachments.attach()` — a
+  single failure doesn't stop the rest, and the list refreshes with whatever
+  made it up, with an error shown only if something actually failed.
+
+Verified: `pnpm run typecheck` clean, mobile suite 1084/1084 pass (10
+pre-existing skips, unchanged). **Not verified**: the actual upload → present
+flow end to end in a browser — this sandbox has no logged-in session to test
+against, same limitation as the original feature's entry above.
+
 ## «تجهيزات الصف» changed almost nothing, 2026-08-31
 
 Reported from the builder screen: a teacher toggled «شاشة عرض» / «سبورة فقط»,
