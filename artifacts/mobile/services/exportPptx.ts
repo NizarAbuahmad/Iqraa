@@ -344,6 +344,31 @@ export async function exportDeckAsPptx(
       continue;
     }
 
+    if (slide.type === 'media' && slide.mediaKind === 'audio' && slide.mediaUrl) {
+      // Same reasoning as the video branch: no reliable embedded player, so a
+      // real hyperlink that always works beats an inert placeholder.
+      if (slide.mediaCaption) {
+        s.addText(slide.mediaCaption, {
+          x: 0.8, y: 1.5, w: 8.4, h: 1.2, align: 'center', valign: 'middle',
+          fontSize: 15, color: DECK_TEXT,
+        });
+      }
+      s.addText(`▶ ${L('استمع للتسجيل', 'Listen to the recording')}`, {
+        x: 3.0, y: 2.9, w: 4.0, h: 0.5, align: 'center', valign: 'middle',
+        fontSize: 16, color: 'B45309', bold: true,
+        hyperlink: { url: slide.mediaUrl },
+      });
+      s.addText(slide.mediaUrl, {
+        x: 1.2, y: 3.6, w: 7.6, h: 0.4, align: 'center', fontSize: 9, color: DECK_MUTED,
+      });
+      if (slide.content) {
+        s.addText(slide.content, {
+          x: 1.2, y: 4.05, w: 7.6, h: 0.4, align: 'center', fontSize: 10, color: DECK_MUTED,
+        });
+      }
+      continue;
+    }
+
     if (slide.type === 'challenge') {
       // The stem gives up height to the curve when there is one — the figure
       // is part of the question, so a layout that pushed the answer card off

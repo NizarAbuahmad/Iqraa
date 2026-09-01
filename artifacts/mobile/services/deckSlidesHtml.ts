@@ -245,6 +245,24 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
   };
 
   /**
+   * Audio can't play in a PDF either — same reasoning as `videoSlide`, same
+   * shape: a real clickable link plus the URL as plain text.
+   */
+  const audioSlide = (slide: ActivitySlide, num: number) => {
+    const accent = '#B45309';
+    const url = slide.mediaUrl ?? '';
+    return `<div class="deck-slide">
+      ${deckHeader(slide.title, accent, '🎧')}
+      <div class="deck-body deck-body-center">
+        ${slide.mediaCaption ? `<div class="deck-video-title">${esc(slide.mediaCaption)}</div>` : ''}
+        <a class="deck-video-link" style="border-color:${accent}66;color:${accent}" href="${escAttr(url)}">▶ ${L('استمع للتسجيل', 'Listen to the recording')}</a>
+        <div class="deck-video-url">${escUrlText(url)}</div>
+        ${slide.content ? `<div class="deck-video-note">${esc(slide.content)}</div>` : ''}
+      </div>
+      ${footer(num)}</div>`;
+  };
+
+  /**
    * Whole-class MCQ. Until this existed the exports had no `question` branch
    * at all, so these fell through to the generic content slide and printed as
    * a bare stem: the projected deck asked the class to answer by letter and
@@ -306,6 +324,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
     if (slide.type === 'question') return questionSlide(slide, num);
     if (slide.type === 'media' && slide.mediaKind === 'image') return mediaSlide(slide, num);
     if (slide.type === 'media' && slide.mediaKind === 'video') return videoSlide(slide, num);
+    if (slide.type === 'media' && slide.mediaKind === 'audio') return audioSlide(slide, num);
     if (slide.type === 'divider') return dividerSlide(slide, num);
     return contentSlide(slide, num);
   }).join('\n');

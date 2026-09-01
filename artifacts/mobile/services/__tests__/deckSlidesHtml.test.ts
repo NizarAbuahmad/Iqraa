@@ -163,6 +163,22 @@ describe('buildDeckSlidesHTML — media slide', () => {
     // host on an RTL page — a URL nobody can retype.
     assert.match(html, /deck-video-url">\u2066https:\/\/youtu\.be\/dQw4w9WgXcQ\u2069</);
   });
+
+  it('renders an audio media slide as a real clickable link, not an image', () => {
+    const html = buildDeckSlidesHTML(deck([
+      titleSlide,
+      {
+        slideNumber: 2, type: 'media', title: '\u062a\u0633\u062c\u064a\u0644 \u0635\u0648\u062a\u064a', content: '\u0645\u0644\u0627\u062d\u0638\u0629 \u0635\u0648\u062a\u064a\u0629',
+        mediaKind: 'audio', mediaUrl: 'https://example.com/note.mp3',
+        mediaCaption: '\u0634\u0631\u062d \u0627\u0644\u0645\u0639\u0644\u0645', durationSeconds: 0,
+      },
+    ]), true);
+    assert.doesNotMatch(html, /<img/);
+    assert.match(html, /<a class="deck-video-link"[^>]*href="https:\/\/example\.com\/note\.mp3"/);
+    assert.match(html, /\u0627\u0633\u062a\u0645\u0639 \u0644\u0644\u062a\u0633\u062c\u064a\u0644/);
+    assert.match(html, /\u0634\u0631\u062d \u0627\u0644\u0645\u0639\u0644\u0645/);
+    assert.match(stripIsolates(html), /deck-video-url">https:\/\/example\.com\/note\.mp3/);
+  });
 });
 
 describe('buildDeckSlidesHTML — graph slide', () => {

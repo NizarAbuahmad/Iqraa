@@ -8628,6 +8628,38 @@ pre-existing skips, unchanged). **Not verified**: the actual upload → present
 flow end to end in a browser — this sandbox has no logged-in session to test
 against, same limitation as the original feature's entry above.
 
+## Lesson attachments: audio now reaches the deck too, 2026-09-01
+
+Reported after images started working: audio uploads still didn't show up
+when presenting. `ActivitySlide.mediaKind` was `'image' | 'video'` — audio
+was never a real slide kind, so it fell through every renderer silently.
+Widened to `'image' | 'video' | 'audio'` and threaded through all three
+places that branch on it:
+
+- `presentation.tsx`'s `MediaView` — a real HTML5 `<audio controls>` on web
+  (browsers already render a usable player for free, unlike video where
+  there's no in-app player and the YouTube iframe is the only embed that
+  exists); falls back to the same "open externally" button video uses on
+  native, since there's no native audio-player component here either.
+- `deckSlidesHtml.ts` (PDF export) and `exportPptx.ts` — audio can't play in
+  either format, same as video, so both got a sibling to the existing
+  video-link fallback (clickable link + bare URL text), not a new pattern.
+- `classMedia.ts` — `AttachedResource['kind']` and `buildMediaSlide()` widened
+  to accept `'audio'`; `slides.tsx`'s `attachedResources` merge now admits
+  `kind === 'audio'` uploads alongside images, not just images.
+
+`document` (PDF) attachments are still the one gap left — there is still no
+slide type for a document/handout, and building one (embed vs. link-out, and
+what a "document slide" even looks like on a projector) is its own decision,
+not a small addition like audio was. Flagging it rather than shipping a rushed
+version.
+
+Verified: `pnpm run typecheck` clean, mobile suite 1114/1114 pass (10
+pre-existing skips, unchanged) including new tests for the audio title
+(`classMedia.test.ts`) and the audio PDF-export link
+(`deckSlidesHtml.test.ts`). Not verified: a real audio file presented in a
+browser — same sandbox limitation as above.
+
 ## «تجهيزات الصف» changed almost nothing, 2026-08-31
 
 Reported from the builder screen: a teacher toggled «شاشة عرض» / «سبورة فقط»,
