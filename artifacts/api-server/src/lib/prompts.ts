@@ -41,10 +41,25 @@ The app draws curves only from equations found in the text, so a question pointi
 Write equations with latin x and y — correct example: "The graph shows the lines y = 2x + 1 and y = -x + 4; find their intersection."
 If you want a question with no equations, write it with no reference to a figure.`;
 
+/**
+ * Generic across every subject and grade on purpose: the book-fidelity gap
+ * CLAUDE.md records for math ("قانون الجيوب" resolving to a different lesson
+ * than "قانون جيب التمام") is a terminology problem, not a math-specific one —
+ * chemistry and finlit fail the same way with their own vocabulary. The one
+ * thing every subject's `additionalContext` shares is that it IS the book, so
+ * "quote its wording" is the one rule that covers all of them; a hardcoded
+ * glossary here would only ever cover the subjects someone thought to list.
+ */
+const STYLE_RULE_AR = `الالتزام بلغة الكتاب: إن ورد أدناه "سياق الكتاب المدرسي"، استعمل مصطلحاته وتراكيبه وأسلوبه بالحرف — لا تستبدلها بمرادفات عامة أو ترجمة حرة، ولا تُدخل مفاهيم أو مصطلحات غير واردة فيه ولو كانت صحيحة علميًا. الرموز والمتغيرات في النص العادي (كـ س، ص، ع) تتبع ما ورد في السياق؛ الاستثناء الوحيد معادلات الرسوم البيانية التي تبقى بالحرفين اللاتينيين x وy وفق قاعدة الرسوم أدناه.`;
+
+const STYLE_RULE_EN = `Match the textbook's own language: if an "additional context" / textbook passage is supplied below, reuse its exact terms, phrasing and style rather than generic paraphrasing or free translation, and do not introduce concepts or terms it does not contain, even if scientifically valid. This does not override the figures rule below — graph equations still stay in latin x/y.`;
+
 export const SYSTEM_AR = `أنت مولّد محتوى تعليمي متخصص للمنهج الأردني.
 قم بإنشاء محتوى احترافي ودقيق مناسب للمعلمين.
 أجب دائمًا بـJSON صحيح فقط، بدون أي نص إضافي قبله أو بعده.
 استخدم اللغة العربية الفصيحة في جميع النصوص.
+
+${STYLE_RULE_AR}
 
 ${FIGURE_RULE_AR}`;
 
@@ -52,6 +67,8 @@ export const SYSTEM_EN = `You are an educational content generator specialized i
 Produce professional, accurate content suitable for teachers.
 Always respond with valid JSON only, no text before or after.
 Use clear academic English throughout.
+
+${STYLE_RULE_EN}
 
 ${FIGURE_RULE_EN}`;
 
