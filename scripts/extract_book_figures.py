@@ -93,6 +93,29 @@ BOOKS: dict[str, tuple[str, str]] = {
         "grade-10-chemistry",
         "10th_grade,_alchamy1st_semester_1785071530814.pdf",
     ),
+    # These two are NOT copied into attached_assets/ — that directory predates
+    # the 2026-08-30 switch to R2 for source PDFs (see STATUS.md), and adding
+    # more large binaries there is the exact git-bloat problem R2 replaced.
+    # The figure extractor has no R2 client of its own (only the TS text
+    # pipeline does), and this run's *input* PDF doesn't need to be committed
+    # or uploaded anywhere — only the small PNGs + index.json it writes do. So
+    # these point straight at the local Drive mirror `g10_sources.json`
+    # records (`localRoot`). `pathlib` resolves an absolute right-hand side by
+    # replacing the left entirely, so `ASSETS / filename` below still works
+    # unchanged with these two despite them living well outside `ASSETS`.
+    #
+    # This only reproduces on a checkout with that mirror at that path —
+    # already true of this whole script for anyone besides its author.
+    "chem-s2-student-book": (
+        "grade-10-chemistry",
+        "C:/Users/Lenovo/Downloads/Raya studio/Iqraa/Calude app/Knowledge Base/"
+        "10th grade/alchamy/10th grade, alchamy.2nd semester.pdf",
+    ),
+    "finlit-s1-student-book": (
+        "grade-10-finlit",
+        "C:/Users/Lenovo/Downloads/Raya studio/Iqraa/Calude app/Knowledge Base/"
+        "10th grade/الثقافة المالية 10 ف1 small.pdf",
+    ),
 }
 
 # A real figure sits in a column; one filling the page is a failed detection.
@@ -315,6 +338,31 @@ def outline(doc: pymupdf.Document) -> dict[int, dict]:
             before = [p for p in openers if p <= lesson["startPage"]]
             if before:
                 lesson["unit"] = openers[max(before)]
+
+    # A book with no running header AND no opener the size/position heuristic
+    # can find — financial literacy prints «الوحدة» at 48pt but LOW on a
+    # full-page divider (y≈525), not the top-60pt band `unit_start` checks.
+    # Every one of these lessons is still unit `None` at this point.
+    #
+    # Every NCCD book restarts its lesson count at 1 inside each new unit —
+    # already true of every subject above — so a `الدرسُ` sequence that drops
+    # back to 1 (or merely stops increasing) IS a unit boundary, even when
+    # nothing states the unit number itself. This found financial literacy's
+    # missed boundary (lesson 5 at page 24, lesson 1 again at page 40) without
+    # loosening `unit_start`'s position band — which stays tight on purpose,
+    # per its own docstring, to avoid catching body text on a normal page.
+    #
+    # Guarded to fire only when literally nothing else found a unit anywhere,
+    # so a book the two passes above already handle (maths, chemistry) cannot
+    # regress: this can only ever turn `None` into a number, never overwrite
+    # a real one.
+    if all(lesson["unit"] is None for lesson in lessons):
+        unit, prev = 1, None
+        for lesson in lessons:
+            if prev is not None and lesson["lesson"] <= prev:
+                unit += 1
+            lesson["unit"] = unit
+            prev = lesson["lesson"]
 
     by_page: dict[int, dict] = {}
     for i, lesson in enumerate(lessons):
@@ -586,13 +634,25 @@ def review_sheet(paths: list[Path], out: Path) -> None:
     sheet.save(out)
 
 
-def check_semester(source_id: str, index: list[dict]) -> None:
+#: Which units each semester holds, per subject. Grade 10 numbers units
+#: across the whole year, but subjects disagree on where the year splits:
+#: maths runs semester 1 = units 1-4, semester 2 = 5-8; chemistry runs 1-3
+#: then 4-5. A single hardcoded pair here (maths's) failed chemistry S2 with
+#: "mismatched book" on a correctly-named file — chemistry's own unit 4 read
+#: as a stray, because the check assumed semester 2 always starts at 5.
+#: A subject missing from this table (financial literacy, which prints no
+#: unit headers at all) is simply not checked.
+EXPECTED_UNITS: dict[str, dict[int, range]] = {
+    "grade-10-math": {1: range(1, 5), 2: range(5, 9)},
+    "grade-10-chemistry": {1: range(1, 4), 2: range(4, 6)},
+}
+
+
+def check_semester(source_id: str, subject: str, index: list[dict]) -> None:
     """Fail loudly if a book's figures carry units its semester cannot hold.
 
-    Grade 10 maths numbers its units 1-8 across the year: semester 1 teaches
-    units 1-4, semester 2 teaches 5-8. So the units found in a book are proof
-    of which semester it is, and they are read from the page headers — content,
-    not the filename.
+    The units found in a book are proof of which semester it is, and they are
+    read from the page headers — content, not the filename.
 
     That distinction is the whole point. The maths PDFs are named backwards,
     and taking the id from the filename put every semester-1 figure under
@@ -600,10 +660,13 @@ def check_semester(source_id: str, index: list[dict]) -> None:
     wrong book. Nothing failed; the figures were right and only the label was
     wrong, which is exactly the kind of error that survives review.
 
-    Chemistry has no usable outline, so its figures carry no unit and are not
-    checked — the same reason they are not mapped to lessons.
+    A subject with no entry in `EXPECTED_UNITS` (financial literacy) or a book
+    whose outline yields no units at all (chemistry S1) is not checked — there
+    is nothing to compare against.
     """
-    expected = {1: range(1, 5), 2: range(5, 9)}
+    expected = EXPECTED_UNITS.get(subject)
+    if expected is None:
+        return
     semester = 1 if "-s1-" in source_id else 2 if "-s2-" in source_id else None
     if semester is None:
         return
@@ -659,7 +722,7 @@ def main() -> None:
                     "lessonStartPage": lesson["startPage"] if lesson else None,
                 }
             )
-        check_semester(source_id, index)
+        check_semester(source_id, subject, index)
         (outdir / "index.json").write_text(
             json.dumps({"sourceId": source_id, "figures": index}, ensure_ascii=False, indent=1),
             encoding="utf-8",

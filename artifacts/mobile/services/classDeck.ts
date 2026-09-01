@@ -305,17 +305,24 @@ export function buildDeckFromWorksheet(
 }
 
 /**
- * Deck order for Start Class: intro → objectives → [graph] → questions →
- * [teacher's media] → summary.
+ * Deck order for Start Class: intro → objectives → [book figures] → [graph] →
+ * questions → [teacher's media] → summary.
  *
  * Every part except the intro is optional, and the order is the point: the
  * class sees what it is meant to learn before it sees a question about it.
  * This lived inline in the home screen, where it could not be tested and did
  * not survive that screen being retired.
+ *
+ * Book figures sit where `buildLessonDeck` puts them — after the lesson's own
+ * statement of itself and before the interactive graph, so the sequence reads
+ * "here is the lesson, here is how your book draws it, now watch it move".
+ * They are a separate slot from `media` because that one is the teacher's own
+ * pinned links, which belong after the questions, not before them.
  */
 export function assembleDeckSlides(parts: {
   activitySlides: ActivitySlide[];
   objectives?: ActivitySlide | null;
+  figures?: ActivitySlide[];
   graph?: ActivitySlide | null;
   chart?: ActivitySlide | null;
   media?: ActivitySlide[];
@@ -333,6 +340,7 @@ export function assembleDeckSlides(parts: {
   return [
     intro,
     ...(parts.objectives ? [parts.objectives] : []),
+    ...(parts.figures ?? []),
     ...(parts.graph ? [parts.graph] : []),
     ...(parts.chart ? [parts.chart] : []),
     ...tail,

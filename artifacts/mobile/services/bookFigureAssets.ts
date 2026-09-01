@@ -18,7 +18,9 @@
 export type BookFigureAsset = number | { uri: string; width?: number; height?: number };
 
 export const BOOK_FIGURE_ASSETS: Record<string, BookFigureAsset> = {
+  'chem-s1-student-book/p009.png': require('../../../knowledge-base/grade-10-chemistry/figures/chem-s1-student-book/p009.png'),
   'chem-s1-student-book/p010.png': require('../../../knowledge-base/grade-10-chemistry/figures/chem-s1-student-book/p010.png'),
+  'chem-s1-student-book/p011.png': require('../../../knowledge-base/grade-10-chemistry/figures/chem-s1-student-book/p011.png'),
   'chem-s1-student-book/p012.png': require('../../../knowledge-base/grade-10-chemistry/figures/chem-s1-student-book/p012.png'),
   'chem-s1-student-book/p012b.png': require('../../../knowledge-base/grade-10-chemistry/figures/chem-s1-student-book/p012b.png'),
   'chem-s1-student-book/p013.png': require('../../../knowledge-base/grade-10-chemistry/figures/chem-s1-student-book/p013.png'),
@@ -73,6 +75,30 @@ export const BOOK_FIGURE_ASSETS: Record<string, BookFigureAsset> = {
   'chem-s1-student-book/p074b.png': require('../../../knowledge-base/grade-10-chemistry/figures/chem-s1-student-book/p074b.png'),
   'chem-s1-student-book/p074c.png': require('../../../knowledge-base/grade-10-chemistry/figures/chem-s1-student-book/p074c.png'),
   'chem-s1-student-book/p074d.png': require('../../../knowledge-base/grade-10-chemistry/figures/chem-s1-student-book/p074d.png'),
+  'chem-s2-student-book/p010b.png': require('../../../knowledge-base/grade-10-chemistry/figures/chem-s2-student-book/p010b.png'),
+  'chem-s2-student-book/p010c.png': require('../../../knowledge-base/grade-10-chemistry/figures/chem-s2-student-book/p010c.png'),
+  'chem-s2-student-book/p011.png': require('../../../knowledge-base/grade-10-chemistry/figures/chem-s2-student-book/p011.png'),
+  'chem-s2-student-book/p011b.png': require('../../../knowledge-base/grade-10-chemistry/figures/chem-s2-student-book/p011b.png'),
+  'chem-s2-student-book/p013.png': require('../../../knowledge-base/grade-10-chemistry/figures/chem-s2-student-book/p013.png'),
+  'chem-s2-student-book/p013b.png': require('../../../knowledge-base/grade-10-chemistry/figures/chem-s2-student-book/p013b.png'),
+  'chem-s2-student-book/p018.png': require('../../../knowledge-base/grade-10-chemistry/figures/chem-s2-student-book/p018.png'),
+  'chem-s2-student-book/p038.png': require('../../../knowledge-base/grade-10-chemistry/figures/chem-s2-student-book/p038.png'),
+  'chem-s2-student-book/p045.png': require('../../../knowledge-base/grade-10-chemistry/figures/chem-s2-student-book/p045.png'),
+  'chem-s2-student-book/p045b.png': require('../../../knowledge-base/grade-10-chemistry/figures/chem-s2-student-book/p045b.png'),
+  'chem-s2-student-book/p046.png': require('../../../knowledge-base/grade-10-chemistry/figures/chem-s2-student-book/p046.png'),
+  'chem-s2-student-book/p046b.png': require('../../../knowledge-base/grade-10-chemistry/figures/chem-s2-student-book/p046b.png'),
+  'chem-s2-student-book/p047.png': require('../../../knowledge-base/grade-10-chemistry/figures/chem-s2-student-book/p047.png'),
+  'chem-s2-student-book/p048.png': require('../../../knowledge-base/grade-10-chemistry/figures/chem-s2-student-book/p048.png'),
+  'chem-s2-student-book/p048b.png': require('../../../knowledge-base/grade-10-chemistry/figures/chem-s2-student-book/p048b.png'),
+  'chem-s2-student-book/p051.png': require('../../../knowledge-base/grade-10-chemistry/figures/chem-s2-student-book/p051.png'),
+  'chem-s2-student-book/p052.png': require('../../../knowledge-base/grade-10-chemistry/figures/chem-s2-student-book/p052.png'),
+  'chem-s2-student-book/p067.png': require('../../../knowledge-base/grade-10-chemistry/figures/chem-s2-student-book/p067.png'),
+  'finlit-s1-student-book/p017.png': require('../../../knowledge-base/grade-10-finlit/figures/finlit-s1-student-book/p017.png'),
+  'finlit-s1-student-book/p041.png': require('../../../knowledge-base/grade-10-finlit/figures/finlit-s1-student-book/p041.png'),
+  'finlit-s1-student-book/p041b.png': require('../../../knowledge-base/grade-10-finlit/figures/finlit-s1-student-book/p041b.png'),
+  'finlit-s1-student-book/p053.png': require('../../../knowledge-base/grade-10-finlit/figures/finlit-s1-student-book/p053.png'),
+  'finlit-s1-student-book/p059.png': require('../../../knowledge-base/grade-10-finlit/figures/finlit-s1-student-book/p059.png'),
+  'finlit-s1-student-book/p059b.png': require('../../../knowledge-base/grade-10-finlit/figures/finlit-s1-student-book/p059b.png'),
   'math-s1-student-book/p018.png': require('../../../knowledge-base/grade-10-math/figures/math-s1-student-book/p018.png'),
   'math-s1-student-book/p018b.png': require('../../../knowledge-base/grade-10-math/figures/math-s1-student-book/p018b.png'),
   'math-s1-student-book/p020.png': require('../../../knowledge-base/grade-10-math/figures/math-s1-student-book/p020.png'),
@@ -353,4 +379,4 @@ export const BOOK_FIGURE_ASSETS: Record<string, BookFigureAsset> = {
 };
 
 /** How many figures ship with the app. Asserted by the drift test. */
-export const BOOK_FIGURE_COUNT = 332;
+export const BOOK_FIGURE_COUNT = 358;

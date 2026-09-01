@@ -114,15 +114,47 @@
    "lessonStartPage": null
   },
   {
-   "file": "p010.png",
+   "file": "p009.png",
+   "pdfPage": 9,
+   "rect": [
+    95,
+    478,
+    545,
+    625
+   ],
    "sourceId": "chem-s1-student-book",
+   "unit": 1,
+   "lesson": 1,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "نظريةُ بور لذرَّةِ الهيدروجين",
+   "lessonStartPage": 10
+  },
+  {
+   "file": "p010.png",
    "pdfPage": 10,
    "rect": [
-    379.6,
-    0.0,
-    595.3,
-    98.4
+    45,
+    555,
+    545,
+    770
    ],
+   "sourceId": "chem-s1-student-book",
+   "unit": 1,
+   "lesson": 1,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "نظريةُ بور لذرَّةِ الهيدروجين",
+   "lessonStartPage": 10
+  },
+  {
+   "file": "p011.png",
+   "pdfPage": 11,
+   "rect": [
+    50,
+    36,
+    548,
+    277
+   ],
+   "sourceId": "chem-s1-student-book",
    "unit": 1,
    "lesson": 1,
    "lessonTitleEn": null,

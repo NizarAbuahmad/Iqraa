@@ -27,6 +27,8 @@ import figureMap from '../../../knowledge-base/figure-lesson-map.json' with { ty
 import mathS1 from '../../../knowledge-base/grade-10-math/figures/math-s1-student-book/index.json' with { type: 'json' };
 import mathS2 from '../../../knowledge-base/grade-10-math/figures/math-s2-student-book/index.json' with { type: 'json' };
 import chemS1 from '../../../knowledge-base/grade-10-chemistry/figures/chem-s1-student-book/index.json' with { type: 'json' };
+import chemS2 from '../../../knowledge-base/grade-10-chemistry/figures/chem-s2-student-book/index.json' with { type: 'json' };
+import finlitS1 from '../../../knowledge-base/grade-10-finlit/figures/finlit-s1-student-book/index.json' with { type: 'json' };
 
 export type BookFigure = {
   /** File name inside the book's figure directory, e.g. `p021.png`. */
@@ -56,6 +58,8 @@ const INDEXES: { sourceId: string; figures: BookFigure[] }[] = [
   mathS1 as { sourceId: string; figures: BookFigure[] },
   mathS2 as { sourceId: string; figures: BookFigure[] },
   chemS1 as { sourceId: string; figures: BookFigure[] },
+  chemS2 as { sourceId: string; figures: BookFigure[] },
+  finlitS1 as { sourceId: string; figures: BookFigure[] },
 ];
 
 /** `sourceId|unit|lesson`, the only key both files share. */
@@ -112,7 +116,14 @@ export function lessonsWithFigures(): string[] {
  * — bundled by Metro, or served — is not settled, and baking one answer into
  * the lookup would make the other expensive.
  */
+const SUBJECT_DIR: Record<string, string> = {
+  math: 'grade-10-math',
+  chem: 'grade-10-chemistry',
+  finlit: 'grade-10-finlit',
+};
+
 export function figurePath(figure: BookFigure): string {
-  const subject = figure.sourceId.startsWith('chem') ? 'grade-10-chemistry' : 'grade-10-math';
+  const prefix = figure.sourceId.split('-')[0]!;
+  const subject = SUBJECT_DIR[prefix] ?? 'grade-10-math';
   return `knowledge-base/${subject}/figures/${figure.sourceId}/${figure.file}`;
 }

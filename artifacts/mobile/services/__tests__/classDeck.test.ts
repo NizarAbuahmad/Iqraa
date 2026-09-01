@@ -270,6 +270,23 @@ describe('assembleDeckSlides', () => {
     assert.deepEqual(deck.map(s => s.title), ['i', 'obj', 'graph', 'q1']);
   });
 
+  it('puts book figures after the objectives and before the graph', () => {
+    // "Here is the lesson, here is how your book draws it, now watch it move"
+    // — the same order buildLessonDeck uses. And the teacher's own pinned
+    // media stays after the questions: the two media slots are not one.
+    const deck = assembleDeckSlides({
+      activitySlides: [slide('intro', 'i'), slide('question', 'q1')],
+      objectives: slide('intro', 'obj'),
+      figures: [slide('media', 'fig1'), slide('media', 'fig2')],
+      graph: slide('graph', 'graph'),
+      media: [slide('media', 'pinned')],
+    });
+    assert.deepEqual(
+      deck.map(s => s.title),
+      ['i', 'obj', 'fig1', 'fig2', 'graph', 'q1', 'pinned'],
+    );
+  });
+
   it('keeps a trailing summary last when media is appended', () => {
     // Media appended naively lands after "Well done!", which ends the lesson
     // twice. The summary is moved, not duplicated.

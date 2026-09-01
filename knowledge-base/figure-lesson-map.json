@@ -380,6 +380,80 @@
    "score": 0,
    "why": "احتمالات الحوادث المستقلة والحوادث غير المستقلة = independent and dependent events",
    "matchedBy": "hand-checked against the curriculum Arabic title"
+  },
+  {
+   "sourceId": "chem-s2-student-book",
+   "unit": 4,
+   "lesson": 1,
+   "bookTitleAr": "التفاعلاتُ الكيميائية",
+   "kbLessonId": "kbl-chem-s2-nccd-u4_l1",
+   "score": 1,
+   "matchedBy": "arabic-title"
+  },
+  {
+   "sourceId": "chem-s2-student-book",
+   "unit": 4,
+   "lesson": 3,
+   "bookTitleAr": "الحساباتُ الكيميائية",
+   "kbLessonId": "kbl-chem-s2-nccd-u4_l3",
+   "score": 1,
+   "matchedBy": "arabic-title"
+  },
+  {
+   "sourceId": "chem-s2-student-book",
+   "unit": 5,
+   "lesson": 1,
+   "bookTitleAr": "تغيراتُ الطاقةِ في التفاعلاتِ الكيميائية",
+   "kbLessonId": "kbl-chem-s2-nccd-u5_l1",
+   "score": 1,
+   "matchedBy": "arabic-title"
+  },
+  {
+   "sourceId": "chem-s2-student-book",
+   "unit": 5,
+   "lesson": 3,
+   "bookTitleAr": "حساباتُ الطاقةِ في التفاعلاتِ الكيميائية",
+   "kbLessonId": "kbl-chem-s2-nccd-u5_l3",
+   "score": 1,
+   "matchedBy": "arabic-title",
+   "why": "Units 4-5 are chemistry's own S2 numbering, distinct from maths's 5-8 (see EXPECTED_UNITS in extract_book_figures.py). Titles match the curriculum word for word; lessons 4/2 and 5/2 print in the book but yielded no figures that survived review (their only crops were a section-heading callout and a lesson-review page, not diagrams)."
+  },
+  {
+   "sourceId": "finlit-s1-student-book",
+   "unit": 1,
+   "lesson": 3,
+   "bookTitleAr": "مراحلُ إدارةِ المشروعِ وفريقُ العملِ",
+   "kbLessonId": "kbl-finlit-s1-nccd-u1_l3",
+   "score": 1,
+   "matchedBy": "arabic-title"
+  },
+  {
+   "sourceId": "finlit-s1-student-book",
+   "unit": 2,
+   "lesson": 1,
+   "bookTitleAr": "دراسةُ الجدوى: المفهومُ والأهميةُ",
+   "kbLessonId": "kbl-finlit-s1-nccd-u2_l1",
+   "score": 1,
+   "matchedBy": "arabic-title"
+  },
+  {
+   "sourceId": "finlit-s1-student-book",
+   "unit": 2,
+   "lesson": 3,
+   "bookTitleAr": "الدراسةُ الفنيةُ",
+   "kbLessonId": "kbl-finlit-s1-nccd-u2_l3",
+   "score": 1,
+   "matchedBy": "arabic-title"
+  },
+  {
+   "sourceId": "finlit-s1-student-book",
+   "unit": 2,
+   "lesson": 4,
+   "bookTitleAr": "الدراسةُ الماليةُ",
+   "kbLessonId": "kbl-finlit-s1-nccd-u2_l4",
+   "score": 1,
+   "matchedBy": "arabic-title",
+   "why": "This book prints no `الوحدة` running header or top-band opener — extract_book_figures.py's outline() only found the unit boundary via its lesson-number-restart fallback (added alongside this book), so unit here is inferred from where the book's own `الدرسُ` count drops back to 1, not read directly off the page. Lessons 1/1, 1/2, 1/4, 1/5, 2/2, 2/5 print in the book but yielded no figures that survived review — every crop under them was a decorative divider, callout, or exercise-text fragment, not a diagram."
   }
  ],
  "unitNumbering": "The curriculum's `u{n}_l{m}` matches the number the book PRINTS in every unit except unit 1, where the book has an extra opening lesson («حل معادلات خاصة») and the rest shift by one. Units 1-4 are semester 1 and units 5-8 are semester 2, so the printed unit number also identifies which student book a figure came from — `check_semester` in scripts/extract_book_figures.py enforces that. Note the maths PDFs in attached_assets are named backwards: the file called `1st_semester` is the second-semester book. Source ids follow the books' contents, not their filenames."

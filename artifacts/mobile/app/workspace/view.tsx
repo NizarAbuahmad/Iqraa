@@ -23,6 +23,8 @@ import { MATERIAL_COLOR } from '@/constants/materialKind';
 import { activityTypeLabel } from '@/constants/activityType';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { normalizeQuestionOptions, optionLetter } from '@/services/optionLabels';
+import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
+import { resolveGeneratorGrounding } from '@/services/kbContext';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import {
@@ -120,15 +122,31 @@ export default function WorkspaceViewScreen() {
     if (kind === 'slides') return formatDeckOutline(content as ClassroomActivity, isAr);
     return formatQuizText(content as QuizOutput, item.title, meta, isAr);
   };
+  /**
+   * The book figures for this material's lesson, re-resolved from the saved
+   * `topic` — the same grounding `useGeneratorExport` does on the generator
+   * screens, so a paper printed from موادي carries the same «من الكتاب
+   * المدرسي» appendix as the one printed the moment it was generated.
+   *
+   * It did not, before: these four builders were called without the argument,
+   * so the figures were a property of *when* you exported rather than of the
+   * material — and a quiz saved for next week's exam printed without the
+   * diagrams its own questions refer to. Re-resolved rather than stored,
+   * because a saved material predates the field and would have none.
+   */
+  const getExportFigures = () =>
+    bookFigureRefsForLesson(resolveGeneratorGrounding(item.topic ?? '', lang).lesson?.id, isAr);
+
   const getHTML = () => {
     if (!content) return '<p></p>';
     const meta = { subject: item.subject, grade: item.grade };
-    if (kind === 'lesson') return buildLessonPlanHTML(content as LessonPlanOutput, item.title, meta, isAr);
-    if (kind === 'activity') return buildActivityHTML(content as ActivityOutput, item.title, meta, isAr);
-    if (kind === 'worksheet') return buildWorksheetHTML(content as WorksheetOutput, item.title, meta, isAr);
+    const figures = getExportFigures();
+    if (kind === 'lesson') return buildLessonPlanHTML(content as LessonPlanOutput, item.title, meta, isAr, figures);
+    if (kind === 'activity') return buildActivityHTML(content as ActivityOutput, item.title, meta, isAr, figures);
+    if (kind === 'worksheet') return buildWorksheetHTML(content as WorksheetOutput, item.title, meta, isAr, figures);
     if (kind === 'flow') return buildLessonFlowHTML(content as unknown as LessonFlowOutput, isAr);
     if (kind === 'slides') return buildDeckHTML(content as ClassroomActivity, isAr);
-    return buildQuizHTML(content as QuizOutput, item.title, meta, isAr);
+    return buildQuizHTML(content as QuizOutput, item.title, meta, isAr, figures);
   };
 
   const handleShareText = async () => { await shareAsText(getPlainText(), item.title); };

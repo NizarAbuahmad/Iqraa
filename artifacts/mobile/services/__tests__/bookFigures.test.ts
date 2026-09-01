@@ -47,11 +47,11 @@ describe('figuresForLesson', () => {
   });
 
   it('is empty for a lesson with nothing mapped, and for nothing at all', () => {
-    // Financial literacy, whose book is not in the repo at all — so this stays
-    // empty for a structural reason rather than an incidental one. It used to
-    // be a chemistry lesson, picked when that book yielded five figures; it now
-    // yields 68 and that lesson has eleven, which made the example wrong
-    // without making the behaviour wrong.
+    // Financial literacy's book IS in the repo now, but this particular
+    // lesson («المشروع وإدارته», u1_l1) has no crop that survived review —
+    // every figure the extractor found on its pages was a decorative divider
+    // or a lesson-review text block, not a diagram. Empty for the same
+    // structural reason as before, just a different one.
     assert.deepEqual(figuresForLesson('kbl-finlit-s1-nccd-u1_l1'), []);
     assert.deepEqual(figuresForLesson('no-such-lesson'), []);
     assert.deepEqual(figuresForLesson(null), []);
@@ -68,7 +68,7 @@ describe('figuresForLesson', () => {
     // right lessons and only the book label was wrong, which is why it
     // shipped. Hence a test rather than a comment.
     for (const id of lessonsWithFigures()) {
-      const m = /^kbl-(math|chem)-(s[12])-/.exec(id);
+      const m = /^kbl-(math|chem|finlit)-(s[12])-/.exec(id);
       assert.ok(m, `${id} has a subject and semester`);
       const expected = `${m![1]}-${m![2]}-student-book`;
       for (const f of figuresForLesson(id)) {
