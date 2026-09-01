@@ -119,6 +119,30 @@ Before a live demo: [`docs/demo-checklist.md`](./docs/demo-checklist.md).
   so the tests that pin them apart (`activityBlueprints.test.ts`,
   `activityPrompts.test.ts`) assert *every field differs from every other
   type*; a new format needs its own entry in both files or they fail.
+- **A teaching style shapes the whole lesson plan, in two places.** Per-style
+  phases live in `artifacts/mobile/services/ai/lessonPlanBlueprints.ts` and the
+  matching contract in `LESSON_STYLE_RULES_AR`/`_EN`
+  (`artifacts/api-server/src/lib/prompts.ts`). `teachingStyle` once reached
+  only `mainActivity`, so a collaborative plan opened with group task cards and
+  then banned peer discussion two sections later. Note the plan has TWO return
+  paths — the document-grounded branch had to be fixed separately, and a test
+  for it must use the real block shape from `buildDocumentPromptBlock`
+  (`services/documents/extractMeta.ts`) or it silently exercises the ordinary
+  path instead. `introduction`/`closure`/`assessment`/`homework` vary randomly
+  via `pick()`, so asserting "the styles differ" on them proves nothing.
+- **A question's difficulty tier lives on the template, and in two prompts.**
+  Every non-math question template carries its own `tier`
+  (`TieredTemplate` in `artifacts/mobile/services/ai/generators.ts`), and
+  `pickTiered` selects from that slice — the tier is deliberately NOT a
+  parallel list of indices, which would silently mismatch the first time
+  someone reordered a template and would look like "difficulty does nothing".
+  A new template must declare a tier. The live path needs the matching clause
+  in `difficultyClause*` / `quizDifficultyClause*`
+  (`artifacts/api-server/src/lib/prompts.ts`), and the worksheet's `BANDS`
+  table must agree with `WORKSHEET_BAND` there — `difficultyPrompts.test.ts`
+  asserts the two match. `req.difficulty` used to be read by neither
+  generator, and the quiz factories passed a literal `'medium'`, so an easy
+  and a hard quiz drew the same bank slice.
 - **`additionalContext` is not teacher-pasted material — it is usually the
   curriculum.** Every `/ai-tools` screen fills it with `buildGeneratorContext()`
   output derived from the lesson, and the server appends its own book passages

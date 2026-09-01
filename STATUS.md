@@ -46,7 +46,7 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     because the count was repeatedly described as "all in
     `lib/integrations-openai-ai-server`", which is wrong by a factor of three
     and would send someone looking in the wrong package.
-- Mobile test suite: 1094 tests, 0 failures, 10 skipped (re-counted 2026-08-31
+- Mobile test suite: 1122 tests, 0 failures, 10 skipped (re-counted 2026-08-31
   on an installed workspace, after merging main; 1070 before that merge and
   1046 before the activity-format work the same day,
   981 on 2026-08-26; 975, 971 and 962 earlier the same day/day before,
@@ -255,6 +255,116 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## A lesson plan follows the style the teacher picked, 2026-08-31
+
+The third instance of the same pattern as the two sections below — *a picker
+that changes a label but not the output*. Found by checking whether the defect
+sat in the remaining generators; it did.
+
+**`teachingStyle` reached exactly one of the plan's eleven fields.** Only
+`mainActivity` branched on it. `guidedPractice`, `independentPractice`,
+`assessment`, `differentiation` and `materials` were style-blind, and
+`objectives`, `title`, `introduction`, `closure` and `homework` never varied by
+style either.
+
+**Careful about what "varies" meant here.** `introduction`, `closure`,
+`assessment` and `homework` looked like they differed across styles (2 of 3
+distinct). They vary identically **within a single style** — six runs of
+`direct` gave 3 distinct introductions and 2 distinct closures. That is the
+`pick()` helper, not the style. Measuring "the three styles differ" on those
+fields would have passed with the style ignored entirely, which is how this hid.
+
+**The plan contradicted itself.** A `collaborative` plan opened with group task
+cards and presentations, then two sections later said
+«يُسمح بمراجعة الملاحظات؛ **المناقشة بين الطلاب مؤجّلة**» — "notes are
+permitted; peer discussion is not". The I-Do/We-Do/You-Do phases were hardcoded
+regardless of the style wrapped around them.
+
+**With an attached document the picker was inert altogether.** The
+document-grounded branch never read `style` and hardcoded
+«شرح مباشر من المواد المرفوعة» / "Direct teach from uploaded materials".
+Verified: with a real document block, `collaborative` and `direct` returned the
+**identical** `mainActivity`.
+
+**Now:** `artifacts/mobile/services/ai/lessonPlanBlueprints.ts` holds per-style
+phases, built on what each style is for:
+
+| Style | The shape it commits to |
+| --- | --- |
+| `direct` | I do → we do → you do; worked examples faded to solo practice |
+| `inquiry` | students meet the phenomenon and record a **conjecture** before the rule is named; the guided phase presses on the evidence instead of demonstrating; independent practice tests the conclusion on a new case |
+| `collaborative` | four different task cards per group, group-to-group critique, then **individual accountability** — which is how assessment stops contradicting the grouping |
+
+Re-measured: **1 of 11 fields → 6 of 11**, three distinct values out of three on
+every style-owned field, **on both the ordinary and the document paths**, and
+the self-contradiction is gone. Only `direct` still describes its independent
+stage as individual, where that is correct by the model's own design.
+
+Ten now-dead helpers (`lpMainActivityAr/En`, `lpGuidedAr/En`,
+`lpIndependentAr/En`, `lpAssessment`, `lpDifferentiation`, `lpMaterialsAr/En`)
+were deleted rather than left beside the blueprints for someone to edit by
+mistake.
+
+**The live path had the same hole.** `lessonPlanPromptAr` interpolated one word;
+`lessonPlanPromptEn` passed the raw enum token (`inquiry`) on a line of its own
+with nothing after it. Both now carry `LESSON_STYLE_RULES_AR`/`_EN`, which state
+what each style requires **across every field** and forbid the exact
+contradiction by name. `PROMPT_VERSION` → `2026-08-31.3`.
+
+**Pinned by** `services/__tests__/lessonPlanStyle.test.ts` and
+`artifacts/api-server/src/lib/__tests__/lessonStylePrompts.test.ts`. Verified
+against the reverted generator: **7 of the 11 mobile cases fail** without the
+fix. The document-path tests use the real block format from
+`buildDocumentPromptBlock` — a block that does not match the parser falls
+through to the ordinary path and proves nothing, which is a mistake made once
+while writing these.
+
+## Embedded maths stopped being scrambled by RTL, 2026-08-31
+
+A generated slide read «إيجاد مشتقة الاقترانات الآتية: f(x) = 2x⁴ - x² + 3»
+and **projected as `x⁴f(x) = 2 - x² + 3`**; on the next line the `t²` of
+`s(t) = 80t - 5t²` was carried off to a line of its own. A teacher was showing
+a class wrong maths.
+
+Bidi, not maths. Arabic prose sets a right-to-left run, and the digits,
+parentheses and operators inside an embedded equation are bidi-*neutral*, so
+the platform reorders them against the surrounding Arabic unless each
+Latin/maths run is explicitly isolated.
+
+**The fix already existed and had never been wired up.** `isolateForeignRuns()`
+landed in `services/mathRender.ts` on 2026-08-27 for exactly this failure, with
+tests — and was applied to the chat bubble and `MathParagraph` only. Eleven
+other screens rendering model-written prose never got it.
+
+Now wired everywhere it applies, following the chat pattern
+(`writingDirection` for the paragraph's base direction, `isolateForeignRuns`
+for the runs inside it):
+
+| Surface | Was |
+| --- | --- |
+| `presentation.tsx` | the reported bug — and it set `textAlign` but never `writingDirection`, in 1349 lines |
+| `evaluations/[id]/index.tsx`, `…/answers/[studentId].tsx`, `take/[code].tsx` | teacher review, grading, and the paper a student actually sits |
+| `lesson-flow`, `activity`, `classroom/builder`, `slides`, `game` | artifact previews |
+| `iqra.tsx:987` | the one chat branch the 2026-08-27 commit missed |
+| `exportHtml.ts`, `deckSlidesHtml.ts` | print/PDF — isolation moved into `esc` so a new builder cannot forget it, with `escAttr` as the explicit opt-out for URLs |
+
+**Two things the export suite caught, worth keeping in mind.** Isolating every
+run the character class matched wrapped a lone `.` and a bare «ص 45» page
+number — which split the abjad option marker «أ.» into «أ⁦.⁩» and cut the page
+out of a citation. A run now earns an isolate only if it holds a Latin letter,
+or a number *and* an operator; a standalone number or punctuation mark is laid
+out correctly on its own. Separately, a URL printed as visible text has to be
+isolated **whole** (`escUrlText`): general run detection cuts it at the `://`,
+because a colon is not a maths character, and the scheme can then swap sides
+with the host.
+
+`exportPptx.ts` and `exportText.ts` are deliberately untouched — invisible
+U+2066/U+2069 can read as corruption in apps that do not honour them.
+
+**Not machine-verified:** the rendering itself. Synthetic events still do not
+reach these React-Native-Web controls. The helper and the exported strings are
+tested (mobile 1091 pass / 0 fail); the screen call sites were read by eye.
+
 ## Regeneration means something, and one artifact can serve many teachers, 2026-08-31
 
 Two teacher-facing complaints with one mechanism behind them: pressing
@@ -322,6 +432,84 @@ gains a column: `pnpm --filter @workspace/db run push`, then
 to "generate every time", which is the old behaviour, and
 `/healthz/ai-budget` reports it under `cacheFailure` rather than failing
 silently.
+
+## The difficulty picker does something now, 2026-08-31
+
+Same shape as the activity-format defect below, found by checking whether that
+pattern — *a picker that changes a label but not the output* — sat in the
+sibling generators. It did.
+
+**`req.difficulty` was never read.** Not by `generateWorksheet`, not by
+`generateQuiz`; the only two matches in either function body were comments.
+Both screens show the picker and both send the value
+(`app/ai-tools/worksheet.tsx:214`, `quiz.tsx:285`).
+
+**The quiz factories hard-coded the tier** — the literal `'medium'` at six call
+sites. On the math path `tryMathPractice` forwards the tier to
+`takeConcreteMath`, which filters the bank by `item.diff`, so **an "easy" quiz
+and a "difficult" quiz drew from the identical medium slice.**
+
+**On the non-math path the tier reached only the points number.** `mcPts` /
+`saPts` / `fbPts` returned 2/4/6 and `tfPts` ignored it entirely — its
+parameter was `_diff`. The same 32 Arabic and 32 English templates served all
+three tiers, so a chemistry worksheet's «تمارين تمهيدية (سهل)» and «تحدٍّ سريع
+(أصعب)» came from one pool and differed by heading and points alone.
+
+**Measured before**, requesting easy/medium/hard for one lesson: the math
+worksheet produced **1 distinct question set out of 3**, quiz points were
+identical across all three tiers, and section titles never moved. Chemistry
+showed 3/3 distinct — but that was random template selection, not tiering, and
+is exactly why the new tests assert tier *membership* rather than difference.
+
+**Now:**
+
+- Every question template carries the tier it actually is
+  (`TieredTemplate`), and `pickTiered` selects from that slice with an
+  adjacent-tier fallback mirroring `takeConcreteMath`. The tier lives on each
+  template rather than in a parallel index list, which would silently
+  mismatch the first time someone reordered one.
+- The six quiz factories take the requested tier. `mixed` spreads tiers across
+  the paper instead of collapsing to medium.
+- **The worksheet SHIFTS its band rather than flattening it** — `easy` →
+  easy/easy/medium, `medium` → easy/medium/hard, `hard` → medium/hard/hard.
+  The easy→hard progression is deliberate scaffolding and honouring "hard" by
+  making all three sections hard would throw it away. Section titles now name
+  the tier they actually contain.
+- A worksheet section reports `'mixed'` when it holds more than one question
+  type. `sectionType` was assigned inside the per-question loop, so a section
+  was tagged by whichever question came last. Nothing reads
+  `WorksheetSection.type` today (grepped — no consumer in app or export code),
+  so this was wrong data rather than a visible break; it is stored in the
+  workspace and, since the shared pool landed, served to other teachers.
+
+**The live path had the same hole, twice over.** The worksheet prompt
+interpolated the level name and stopped; **the quiz prompt never mentioned
+`difficulty` at all.** Both now carry a clause saying what each tier means, and
+the worksheet's states the band explicitly so the live paper matches the
+offline one. `PROMPT_VERSION` → `2026-08-31.2`.
+
+**Checked, and deliberately not changed:**
+
+- `difficulty` stays in `SLICED_FIELDS` (strict key only, out of the coarse
+  key). `docs/ai-cost-savings-plan.md` says phase 1 serves on the **strict**
+  key precisely so the pool cannot answer "5 easy questions" with a
+  15-question hard paper. Correct as it stands.
+- `fill_blank` and `word_problem` fall into the quiz's short-answer branch.
+  The quiz picker offers only three types, so no teacher can reach it; the
+  question produced is an honest short answer, correctly labelled. Recorded in
+  a comment at the branch rather than fixed, to keep this change contained.
+- The math bank's `trig_apps` family holds exactly **one item per tier**, so a
+  six-question quiz on «قانون الجيوب» exhausts it and `takeConcreteMath` falls
+  back across tiers by design. That is a bank-content limit, not a tiering
+  bug — the tests use an `exp_eq` lesson (6 easy / 6 medium / 5 hard) where the
+  tier can actually be observed.
+
+**Pinned by** `services/__tests__/questionDifficulty.test.ts` and
+`artifacts/api-server/src/lib/__tests__/difficultyPrompts.test.ts`. Before this
+there were **no tests invoking `generateWorksheet` or `generateQuiz` at all** —
+the only references were stubs in `lessonFlowRunner.test.ts`. Verified the new
+suite fails on the pre-fix code: **6 of its 10 mobile cases fail** when the
+generator changes are reverted.
 
 ## The five activity types stopped being one template, 2026-08-31
 
@@ -8387,6 +8575,90 @@ daemon is unavailable here too). Treat the upload/list/delete flow as
 code-reviewed and unit-tested at the boundary (`lessonMediaUpload.test.ts`
 covers the parsing/validation logic that doesn't need a DB), not as
 confirmed working end to end.
+
+## Lesson attachments follow-up: schema push done, feature is live, 2026-08-31
+
+Closes the first of the three "Deploy is not done by this PR" steps above.
+`pnpm --filter @workspace/db run push` ran against production
+(`ep-bold-bar-asvxvxjr-pooler.c-4.eu-central-1.aws.neon.tech`), then
+`pnpm --filter @workspace/db run verify-schema` confirmed:
+
+```
+27 of 27 tables present
+ok  lessonMedia.ts   1/1
+Every declared table exists.
+```
+
+`lesson_media` exists in production. The 503 (`lesson_media_unavailable`)
+path is gone — upload/list/delete now hit a real table instead of the
+graceful-missing-schema fallback. Steps 2 (R2 env vars) and 3 (PR
+description) were already satisfied at merge time. The "verification gap"
+noted above still stands as written: the click-through (attach a photo, see
+it list, delete it) has still not been done against a real logged-in
+session — this entry closes the *schema* gap, not that one.
+
+## Lesson attachments: uploaded photos now reach the deck, multi-select added, 2026-08-31
+
+Real usage on the merged/live feature above surfaced two gaps immediately:
+
+- **Uploaded images never reached the generated deck.** `LessonAttachments`
+  (the new R2-backed panel) uploaded and listed files fine, but nothing fed
+  its items into `buildLessonDeck`/`insertLessonResources` — only
+  `LessonResources` (the older pinned-URL feature) was wired into the
+  `attached` state that `slides.tsx` actually builds the deck from. A teacher
+  who uploaded a photo saw it in the panel and never again. Fixed by lifting
+  `LessonAttachments`' list into `slides.tsx` via a new `onChange` prop (same
+  shape `LessonResources` already used) and merging its `kind: 'image'` items
+  with the pinned-URL ones into one `AttachedResource[]` before calling
+  `insertLessonResources`/`shouldSearchForVideo`. **`audio`/`document`
+  attachments still don't appear in a presented deck** —
+  `ActivitySlide.mediaKind` only renders `'image' | 'video'`, and there is no
+  slide type for a document or a voice note yet. That's a real gap, not
+  silently patched over; worth its own follow-up if teachers start attaching
+  those and expecting them on screen.
+- **Picking was one-at-a-time.** `pickLessonPhoto`/`pickLessonFile` in
+  `lessonMediaPick.ts` hardcoded `allowsMultipleSelection: false` /
+  `multiple: false`. Now `pickLessonPhotos`/`pickLessonFiles`, both
+  multi-select, uploaded one at a time in `LessonAttachments.attach()` — a
+  single failure doesn't stop the rest, and the list refreshes with whatever
+  made it up, with an error shown only if something actually failed.
+
+Verified: `pnpm run typecheck` clean, mobile suite 1084/1084 pass (10
+pre-existing skips, unchanged). **Not verified**: the actual upload → present
+flow end to end in a browser — this sandbox has no logged-in session to test
+against, same limitation as the original feature's entry above.
+
+## Lesson attachments: audio now reaches the deck too, 2026-09-01
+
+Reported after images started working: audio uploads still didn't show up
+when presenting. `ActivitySlide.mediaKind` was `'image' | 'video'` — audio
+was never a real slide kind, so it fell through every renderer silently.
+Widened to `'image' | 'video' | 'audio'` and threaded through all three
+places that branch on it:
+
+- `presentation.tsx`'s `MediaView` — a real HTML5 `<audio controls>` on web
+  (browsers already render a usable player for free, unlike video where
+  there's no in-app player and the YouTube iframe is the only embed that
+  exists); falls back to the same "open externally" button video uses on
+  native, since there's no native audio-player component here either.
+- `deckSlidesHtml.ts` (PDF export) and `exportPptx.ts` — audio can't play in
+  either format, same as video, so both got a sibling to the existing
+  video-link fallback (clickable link + bare URL text), not a new pattern.
+- `classMedia.ts` — `AttachedResource['kind']` and `buildMediaSlide()` widened
+  to accept `'audio'`; `slides.tsx`'s `attachedResources` merge now admits
+  `kind === 'audio'` uploads alongside images, not just images.
+
+`document` (PDF) attachments are still the one gap left — there is still no
+slide type for a document/handout, and building one (embed vs. link-out, and
+what a "document slide" even looks like on a projector) is its own decision,
+not a small addition like audio was. Flagging it rather than shipping a rushed
+version.
+
+Verified: `pnpm run typecheck` clean, mobile suite 1114/1114 pass (10
+pre-existing skips, unchanged) including new tests for the audio title
+(`classMedia.test.ts`) and the audio PDF-export link
+(`deckSlidesHtml.test.ts`). Not verified: a real audio file presented in a
+browser — same sandbox limitation as above.
 
 ## «تجهيزات الصف» changed almost nothing, 2026-08-31
 

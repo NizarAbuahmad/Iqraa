@@ -19,7 +19,7 @@
 import { visualForSlide, visualToSvg } from './deckVisuals.ts';
 import { isBulletLine, looksLikeEquation, splitEmoji, stripBullet } from './deckText.ts';
 import type { ActivitySlide, ClassroomActivity } from './ai/AIService.ts';
-import { hasRenderableMath, mathLineToHtml, MATH_HTML_STYLES, prettifySymPy } from './mathRender.ts';
+import { hasRenderableMath, isolateForeignRuns, mathLineToHtml, MATH_HTML_STYLES, prettifySymPy } from './mathRender.ts';
 
 import {
   DECK_ACCENT, DECK_BG, DECK_BLOB, DECK_BORDER, DECK_CARD_BG, DECK_MUTED,
@@ -34,7 +34,24 @@ function deckSlideEmoji(type: ActivitySlide['type']): string {
   return '🎯';
 }
 
-const esc = (s: string) => (s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+/** Escape only. For attribute values — above all the media and video URLs,
+ *  which must not carry the directional isolates `esc` adds. */
+const escAttr = (s: string) => (s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+/**
+ * Escape *and* bidi-isolate. A handout printed from a deck carries the same
+ * model-written Arabic-with-equations the projector shows, and reordering
+ * «f(x) = 2x⁴ - x² + 3» on paper is worse than on screen: nobody in the room
+ * can reload it. `escAttr` is the deliberate opt-out for URL attributes.
+ */
+const esc = (s: string) => escAttr(isolateForeignRuns(s));
+
+/**
+ * A URL printed as visible text — one left-to-right unit, isolated whole.
+ * Run detection would cut it at the `://` (a colon is not a maths character),
+ * leaving the scheme free to swap sides with the host on an RTL page.
+ */
+const escUrlText = (s: string) => `\u2066${escAttr(s)}\u2069`;
 
 /**
  * The slide header: section glyph in a chip, title on the reading edge, accent
@@ -86,8 +103,10 @@ function deckBodyLine(line: string, accent: string): string {
 function deckContentLine(line: string, isEquation: boolean): string {
   if (!line.trim()) return '';
   const cls = isEquation && hasRenderableMath(line) ? 'deck-eq' : 'deck-line';
-  const html = isEquation && hasRenderableMath(line) ? mathLineToHtml(line) : (line ?? '')
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  // The plain-text branch is the printed twin of the projector's plain <Text>
+  // fallback — the one that showed «f(x) = 2x⁴ - x² + 3» reordered. It needs
+  // the same isolation; the mathLineToHtml branch builds its own markup.
+  const html = isEquation && hasRenderableMath(line) ? mathLineToHtml(line) : esc(line);
   return `<div class="${cls}">${html}</div>`;
 }
 
@@ -199,7 +218,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
     return `<div class="deck-slide">
       ${deckHeader(slide.title, accent, '🖼️')}
       <div class="deck-body deck-body-center deck-body-media">
-        <img class="deck-media-img" src="${esc(slide.mediaUrl ?? '')}" alt="${esc(slide.mediaCaption ?? '')}" />
+        <img class="deck-media-img" src="${escAttr(slide.mediaUrl ?? '')}" alt="${esc(slide.mediaCaption ?? '')}" />
         ${slide.mediaCaption ? `<div class="deck-media-caption">${esc(slide.mediaCaption)}</div>` : ''}
       </div>
       ${footer(num)}</div>`;
@@ -218,8 +237,26 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
       ${deckHeader(slide.title, accent, '🎬')}
       <div class="deck-body deck-body-center">
         ${slide.mediaCaption ? `<div class="deck-video-title">${esc(slide.mediaCaption)}</div>` : ''}
-        <a class="deck-video-link" style="border-color:${accent}66;color:${accent}" href="${esc(url)}">▶ ${L('شاهد الفيديو', 'Watch the video')}</a>
-        <div class="deck-video-url">${esc(url)}</div>
+        <a class="deck-video-link" style="border-color:${accent}66;color:${accent}" href="${escAttr(url)}">▶ ${L('شاهد الفيديو', 'Watch the video')}</a>
+        <div class="deck-video-url">${escUrlText(url)}</div>
+        ${slide.content ? `<div class="deck-video-note">${esc(slide.content)}</div>` : ''}
+      </div>
+      ${footer(num)}</div>`;
+  };
+
+  /**
+   * Audio can't play in a PDF either — same reasoning as `videoSlide`, same
+   * shape: a real clickable link plus the URL as plain text.
+   */
+  const audioSlide = (slide: ActivitySlide, num: number) => {
+    const accent = '#B45309';
+    const url = slide.mediaUrl ?? '';
+    return `<div class="deck-slide">
+      ${deckHeader(slide.title, accent, '🎧')}
+      <div class="deck-body deck-body-center">
+        ${slide.mediaCaption ? `<div class="deck-video-title">${esc(slide.mediaCaption)}</div>` : ''}
+        <a class="deck-video-link" style="border-color:${accent}66;color:${accent}" href="${escAttr(url)}">▶ ${L('استمع للتسجيل', 'Listen to the recording')}</a>
+        <div class="deck-video-url">${escUrlText(url)}</div>
         ${slide.content ? `<div class="deck-video-note">${esc(slide.content)}</div>` : ''}
       </div>
       ${footer(num)}</div>`;
@@ -287,6 +324,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
     if (slide.type === 'question') return questionSlide(slide, num);
     if (slide.type === 'media' && slide.mediaKind === 'image') return mediaSlide(slide, num);
     if (slide.type === 'media' && slide.mediaKind === 'video') return videoSlide(slide, num);
+    if (slide.type === 'media' && slide.mediaKind === 'audio') return audioSlide(slide, num);
     if (slide.type === 'divider') return dividerSlide(slide, num);
     return contentSlide(slide, num);
   }).join('\n');

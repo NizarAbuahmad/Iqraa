@@ -139,6 +139,31 @@ describe('RTL layout', () => {
     }
   });
 
+  it('isolates an embedded equation in every Arabic document', () => {
+    // Same failure the screens had, and worse on paper: an unisolated
+    // «f(x) = 2x⁴ - x² + 3» comes out of the bidi algorithm reordered, and a
+    // teacher hands that to a class with no way to reload and check. Every
+    // builder must route its text through the isolating `esc`, so a new
+    // builder that forgets it fails here rather than at a printer.
+    const mathQuiz = quiz();
+    mathQuiz.questions[0]!.text = 'اشتق الاقتران f(x) = 2x⁴ - x² + 3';
+    const mathWorksheet = worksheet();
+    mathWorksheet.sections[0]!.questions[0]!.text = 'اشتق الاقتران f(x) = 2x⁴ - x² + 3';
+
+    const docs: [string, string][] = [
+      ['quiz', buildQuizHTML(mathQuiz, 'اختبار', meta, true)],
+      ['quizSlides', buildQuizSlidesHTML(mathQuiz, 'اختبار', meta, true)],
+      ['worksheet', buildWorksheetHTML(mathWorksheet, 'ورقة عمل', meta, true)],
+      ['worksheetSlides', buildWorksheetSlidesHTML(mathWorksheet, 'ورقة عمل', meta, true)],
+    ];
+    for (const [name, html] of docs) {
+      assert.ok(
+        html.includes('\u2066f(x) = 2x⁴ - x² + 3\u2069'),
+        `${name} emitted the equation without directional isolates`,
+      );
+    }
+  });
+
   it('leaves the English documents left-to-right', () => {
     const html = buildQuizHTML(quiz(), 'Quiz', { subject: 'Math', grade: 'Grade 10' }, false);
     assert.match(html, /dir="ltr"/);

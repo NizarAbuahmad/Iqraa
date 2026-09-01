@@ -22,6 +22,7 @@
  * `row-reverse` is correct because RN has no document direction to inherit.
  */
 import { labelAnswer, labelOption, labelOptionLine } from './optionLabels.ts';
+import { isolateForeignRuns } from './mathRender.ts';
 import type {
   ActivityOutput,
   LessonFlowOutput,
@@ -100,8 +101,24 @@ function htmlBase(content: string, isRTL: boolean, title: string): string {
 </html>`;
 }
 
-function esc(s: string): string {
+/** Escape only. For attribute values — above all URLs, which must not carry
+ *  the directional isolates `esc` adds. */
+function escAttr(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+/**
+ * Escape *and* bidi-isolate. Every text node in this file is model-written
+ * Arabic that can carry an equation, and a printed worksheet reordering
+ * «f(x) = 2x⁴ - x² + 3» is the same bug the screens had — a teacher hands it
+ * to a class on paper, where nobody can reload to check. Isolation belongs
+ * here rather than at the 57 call sites so a new builder cannot forget it;
+ * `escAttr` is the deliberate opt-out for the one URL attribute.
+ */
+function esc(s: string): string {
+  // Null-safe via isolateForeignRuns, which two builders here relied on when
+  // they each carried their own `s ?? ''` copy of this function.
+  return escAttr(isolateForeignRuns(s));
 }
 
 /**
@@ -154,7 +171,7 @@ function figuresSectionHTML(figures: readonly BookFigureRef[], isAr: boolean): s
   const shown = figures.slice(0, EXPORT_FIGURE_MAX);
   const cards = shown.map(f => `
       <div style="break-inside:avoid;page-break-inside:avoid;border:1px solid #e5e7eb;border-radius:6px;padding:10px;text-align:center;background:#fafafa">
-        <img src="${esc(f.uri)}" alt="${esc(f.caption)}" style="max-width:100%;max-height:260px;object-fit:contain" />
+        <img src="${escAttr(f.uri)}" alt="${esc(f.caption)}" style="max-width:100%;max-height:260px;object-fit:contain" />
         <div style="font-size:11px;color:#666;margin-top:6px">${esc(f.caption)}</div>
       </div>`).join('');
   const note = isAr
@@ -301,7 +318,9 @@ export function buildActivityHTML(
   const align = isAr ? 'right' : 'left';
   const ACCENT = '#E67E22';
   const L = (ar: string, en: string) => isAr ? ar : en;
-  const e = (s: string) => (s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  // Text only in this builder — no attribute or URL goes through `e`, so it
+  // is the isolating `esc` under a shorter name.
+  const e = esc;
 
   const stepsHtml = activity.steps.map(s => `
     <div style="border:1px solid #e5e7eb;border-radius:8px;padding:14px;margin-bottom:10px;">
@@ -368,7 +387,6 @@ export function buildLessonPlanSlidesHTML(
 ): string {
   const dir = isAr ? 'rtl' : 'ltr';
   const ACCENT = '#1B6B62';
-  const esc = (s: string) => (s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const bullets = (items: string[]) => items.map(i => `<li>${esc(i)}</li>`).join('');
   const L = (ar: string, en: string) => isAr ? ar : en;
 
@@ -508,7 +526,6 @@ export function buildActivitySlidesHTML(
 ): string {
   const dir = isAr ? 'rtl' : 'ltr';
   const ACCENT = '#E67E22';
-  const esc = (s: string) => (s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const L = (ar: string, en: string) => isAr ? ar : en;
 
   const TOTAL = 3 + Math.ceil(activity.steps.length / 2);
@@ -640,7 +657,9 @@ export function buildWorksheetSlidesHTML(
 ): string {
   const dir = isAr ? 'rtl' : 'ltr';
   const ACCENT = '#8B5CF6';
-  const e = (s: string) => (s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  // Text only in this builder — no attribute or URL goes through `e`, so it
+  // is the isolating `esc` under a shorter name.
+  const e = esc;
   const L = (ar: string, en: string) => isAr ? ar : en;
 
   // Total: title + (instructions if present: 1) + sections + answer key
@@ -774,7 +793,9 @@ export function buildQuizSlidesHTML(
 ): string {
   const dir = isAr ? 'rtl' : 'ltr';
   const ACCENT = '#F59E0B';
-  const e = (s: string) => (s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  // Text only in this builder — no attribute or URL goes through `e`, so it
+  // is the isolating `esc` under a shorter name.
+  const e = esc;
   const L = (ar: string, en: string) => isAr ? ar : en;
   const typeLabel = (t: string) =>
     t === 'multiple_choice' ? L('اختيار متعدد', 'MCQ')

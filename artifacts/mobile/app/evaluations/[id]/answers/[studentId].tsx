@@ -49,6 +49,7 @@ import {
   type Recommendation,
   type RecommendationKind,
 } from '@/services/evaluations';
+import { isolateForeignRuns } from '@/services/mathRender';
 import type { TranslationKey } from '@/services/i18n';
 
 const ACCENT = '#1B6B62';
@@ -777,7 +778,16 @@ function MultipleChoiceInput({
 
   return (
     <View>
-      <Text style={[styles.qText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: align, marginBottom: 10 }]}>{stem}</Text>
+      <Text style={[
+          styles.qText,
+          {
+            color: colors.foreground,
+            fontFamily: 'Almarai_400Regular',
+            textAlign: align,
+            writingDirection: align === 'right' ? 'rtl' : 'ltr',
+            marginBottom: 10,
+          },
+        ]}>{isolateForeignRuns(stem)}</Text>
       <View style={{ gap: 8 }}>
         {options.map(o => {
           const selected = picked.has(o.id);
@@ -788,7 +798,18 @@ function MultipleChoiceInput({
               style={[styles.optRow, { borderColor: selected ? ACCENT : colors.border, backgroundColor: selected ? ACCENT + '12' : 'transparent', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
             >
               <Ionicons name={selected ? (multi ? 'checkbox' : 'radio-button-on') : (multi ? 'square-outline' : 'radio-button-off')} size={18} color={selected ? ACCENT : colors.mutedForeground} />
-              <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: align }}>{o.text}</Text>
+              <Text
+                style={{
+                  color: colors.foreground,
+                  fontFamily: 'Almarai_400Regular',
+                  fontSize: 14,
+                  flex: 1,
+                  textAlign: align,
+                  writingDirection: align === 'right' ? 'rtl' : 'ltr',
+                }}
+              >
+                {isolateForeignRuns(o.text)}
+              </Text>
             </Pressable>
           );
         })}
@@ -808,7 +829,16 @@ function TrueFalseInput({
 
   return (
     <View>
-      <Text style={[styles.qText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: align, marginBottom: 10 }]}>{statement}</Text>
+      <Text style={[
+          styles.qText,
+          {
+            color: colors.foreground,
+            fontFamily: 'Almarai_400Regular',
+            textAlign: align,
+            writingDirection: align === 'right' ? 'rtl' : 'ltr',
+            marginBottom: 10,
+          },
+        ]}>{isolateForeignRuns(statement)}</Text>
       <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 10 }}>
         {[{ v: true, key: 'trueLabel' as TranslationKey }, { v: false, key: 'falseLabel' as TranslationKey }].map(opt => {
           const selected = value === opt.v;
@@ -901,8 +931,17 @@ function FillBlankInput({
 
   return (
     <View>
-      <Text style={[styles.qText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: align, marginBottom: 10 }]}>
-        {showBlanks(template)}
+      <Text style={[
+          styles.qText,
+          {
+            color: colors.foreground,
+            fontFamily: 'Almarai_400Regular',
+            textAlign: align,
+            writingDirection: align === 'right' ? 'rtl' : 'ltr',
+            marginBottom: 10,
+          },
+        ]}>
+        {isolateForeignRuns(showBlanks(template))}
       </Text>
       <View style={{ gap: 8 }}>
         {Array.from({ length: count }, (_, i) => (
@@ -932,7 +971,16 @@ function OpenTextInput({
 
   return (
     <View>
-      <Text style={[styles.qText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: align, marginBottom: 10 }]}>{prompt}</Text>
+      <Text style={[
+          styles.qText,
+          {
+            color: colors.foreground,
+            fontFamily: 'Almarai_400Regular',
+            textAlign: align,
+            writingDirection: align === 'right' ? 'rtl' : 'ltr',
+            marginBottom: 10,
+          },
+        ]}>{isolateForeignRuns(prompt)}</Text>
       <TextInput
         value={text}
         onChangeText={v => onChange({ text: v })}

@@ -8,6 +8,7 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { buildGeneratorContext, generatorLessonId, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
+import { isolateForeignRuns } from '@/services/mathRender';
 import { regenerationFields } from '@/services/ai/regeneration';
 import { ActivityOutput, ActivityStep } from '@/services/ai/AIService';
 import {
@@ -497,15 +498,36 @@ function StepCard({ step, colors, isRTL, t }: {
         <View style={[styles.stepNum, { backgroundColor: ACCENT_LOCAL }]}>
           <Text style={{ color: '#fff', fontSize: 12, fontFamily: 'Cairo_700Bold' }}>{step.stepNumber}</Text>
         </View>
-        <Text style={[styles.stepTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>
-          {step.title}
+        <Text
+          style={[
+            styles.stepTitle,
+            {
+              color: colors.foreground,
+              fontFamily: 'Cairo_600SemiBold',
+              flex: 1,
+              textAlign: isRTL ? 'right' : 'left',
+              writingDirection: isRTL ? 'rtl' : 'ltr',
+            },
+          ]}
+        >
+          {isolateForeignRuns(step.title)}
         </Text>
         <Text style={[styles.stepDur, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
           {step.durationMin} {t('activityMin')}
         </Text>
       </View>
-      <Text style={[styles.stepDesc, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
-        {step.description}
+      <Text
+        style={[
+          styles.stepDesc,
+          {
+            color: colors.foreground,
+            fontFamily: 'Almarai_400Regular',
+            textAlign: isRTL ? 'right' : 'left',
+            writingDirection: isRTL ? 'rtl' : 'ltr',
+          },
+        ]}
+      >
+        {isolateForeignRuns(step.description)}
       </Text>
     </View>
   );
@@ -533,13 +555,13 @@ function BulletItem({ text, colors, isRTL }: { text: string; colors: ReturnType<
   return (
     <View style={[styles.bulletRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
       <View style={[styles.bulletDot, { backgroundColor: ACCENT }]} />
-      <Text style={[styles.bulletText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{text}</Text>
+      <Text style={[styles.bulletText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>{isolateForeignRuns(text)}</Text>
     </View>
   );
 }
 
 function BodyText({ text, colors, isRTL }: { text: string; colors: ReturnType<typeof useColors>; isRTL: boolean }) {
-  return <Text style={[styles.bodyText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{text}</Text>;
+  return <Text style={[styles.bodyText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>{isolateForeignRuns(text)}</Text>;
 }
 
 const styles = StyleSheet.create({

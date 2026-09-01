@@ -28,6 +28,7 @@ import { Button } from '@/components/ui/Button';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { isAbortError } from '@/services/ai/aiProvenance';
+import { isolateForeignRuns } from '@/services/mathRender';
 import type { ClassroomActivity } from '@/services/ai/AIService';
 import { buildGeneratorContext, generatorLessonId, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
 import { buildGameDeckFromQuiz } from '@/services/classDeck';
@@ -355,8 +356,18 @@ export default function ClassGameScreen() {
               {deck.materials.map((m, i) => (
                 <View key={i} style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-start', marginTop: 5 }}>
                   <View style={[styles.dot, { backgroundColor: ACCENT }]} />
-                  <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }}>
-                    {m}
+                  <Text
+                    style={{
+                      flex: 1,
+                      color: colors.foreground,
+                      fontFamily: 'Almarai_400Regular',
+                      fontSize: 13,
+                      lineHeight: 20,
+                      textAlign: isRTL ? 'right' : 'left',
+                      writingDirection: isRTL ? 'rtl' : 'ltr',
+                    }}
+                  >
+                    {isolateForeignRuns(m)}
                   </Text>
                 </View>
               ))}

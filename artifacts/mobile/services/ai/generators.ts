@@ -20,6 +20,7 @@ import {
   type DiffTier,
 } from './mathPractice.ts';
 import { buildActivityBlueprint } from './activityBlueprints.ts';
+import { buildLessonStyleBlueprint, type LessonDocContext } from './lessonPlanBlueprints.ts';
 import { classifyVerifiableTopic } from './verifyMathGuards.ts';
 
 /**
@@ -92,6 +93,39 @@ function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+/**
+ * A question template plus the difficulty tier it actually is.
+ *
+ * The tier lives ON each template rather than in a separate index list: a
+ * parallel list of indices silently mismatches the moment someone reorders or
+ * inserts a template, and the failure would look like "difficulty does nothing"
+ * — which is the bug this was written to fix.
+ */
+type TieredTemplate = { tier: DiffTier; make: () => WQ };
+
+/**
+ * Pick a template from the requested tier.
+ *
+ * Falls back to the adjacent tier when a slice is empty, mirroring the shape
+ * `takeConcreteMath` already uses for the math bank (`mathPractice.ts`): a
+ * question from the neighbouring tier beats no question at all, and beats
+ * silently serving every tier from one pool — which is what these factories
+ * did before, with `diff` reaching only the points value.
+ */
+function pickTiered(templates: TieredTemplate[], diff: string): () => WQ {
+  const tier: DiffTier = diff === 'easy' || diff === 'hard' ? diff : 'medium';
+  const fallback: Record<DiffTier, DiffTier[]> = {
+    easy: ['easy', 'medium', 'hard'],
+    medium: ['medium', 'easy', 'hard'],
+    hard: ['hard', 'medium', 'easy'],
+  };
+  for (const t of fallback[tier]) {
+    const slice = templates.filter(x => x.tier === t);
+    if (slice.length > 0) return pick(slice).make;
+  }
+  return templates[0].make;
+}
+
 /** Place `correct` at a random position among the wrongs for MC questions */
 function placeCorrect(correct: string, wrongs: string[]): string[] {
   const pos = Math.floor(Math.random() * (wrongs.length + 1));
@@ -141,12 +175,6 @@ function lpObjectivesAr(topic: string, kb: KBLesson | null, custom?: string): st
     `أن يحل الطالب مسائل متنوعة حول ${topic} بخطوات منهجية`,
   ];
 }
-function lpMaterialsAr(subject: string): string[] {
-  const base = ['الكتاب المدرسي', 'السبورة والأقلام المتعددة الألوان', 'أوراق عمل مطبوعة'];
-  if (/كيمياء|chem/i.test(subject)) return [...base, 'نماذج جزيئية ثلاثية الأبعاد', 'جهاز العرض والشاشة'];
-  if (/رياضيات|math/i.test(subject)) return [...base, 'الآلة الحاسبة العلمية', 'ورق الرسم البياني'];
-  return [...base, 'جهاز العرض والشاشة', 'بطاقات مفاهيم'];
-}
 function lpIntroAr(topic: string, kb: KBLesson | null): string {
   if (kb) return pick([
     `ابدأ بطرح السؤال: "أين نلتقي بـ${topic} في حياتنا اليومية؟" سجّل إجابات الطلاب على السبورة. اعرض صورة ذات صلة بـ${kb.titleAr} وناقش ما يرونه ثم ربط إجاباتهم بأهداف الدرس.`,
@@ -157,23 +185,6 @@ function lpIntroAr(topic: string, kb: KBLesson | null): string {
     `ابدأ بسؤال تحفيزي: "كيف يرتبط ${topic} بحياتنا اليومية؟" استمع لمشاركات 3-4 طلاب وسجّلها على السبورة، ثم ابنِ عليها مدخلًا للدرس.`,
     `"فكّر – زاوج – شارك": يفكر كل طالب 30 ثانية فيما يعرفه عن ${topic}، يشارك زميله، ثم تُطرح بعض الإجابات على الصف.`,
   ]);
-}
-function lpMainActivityAr(topic: string, kb: KBLesson | null, style: string, dur: number): string {
-  const t = Math.round(dur * 0.3);
-  const conceptLines = kb?.keyConceptsAr.slice(0, 3).map((c, i) => `${i + 1}. اشرح ${c} مع مثال مرئي واضح.`).join('\n')
-    ?? `1. اشرح المفهوم الرئيسي لـ${topic}.\n2. قدّم 2-3 أمثلة متدرجة الصعوبة.\n3. اكتب الخطوات على السبورة مع التفكير الصوتي.`;
-  if (style === 'inquiry') return `(${t} دقيقة) – تعلّم استقصائي:\n\n1. اطرح سؤال التحقيق: "كيف يعمل ${topic}؟"\n2. مجموعات ثلاثية تستكشف ${kb?.keyConceptsAr?.[0] ?? topic} باستخدام المصادر المتاحة.\n3. كل مجموعة تسجّل ملاحظاتها واستنتاجاتها.\n4. مناقشة صفية تبني فهمًا مشتركًا.`;
-  if (style === 'collaborative') return `(${t} دقيقة) – تعلّم تعاوني (مجموعات 3-4):\n\n1. كل مجموعة تتلقى بطاقة مهمة تتناول جانبًا مختلفًا من ${topic}.\n2. يتعاون أفراد المجموعة لدراسة المهمة وإعداد عرض قصير.\n3. كل مجموعة تعرض إجابتها للصف (2 دقائق).\n4. المعلم يلخّص ويصحح المفاهيم الخاطئة.`;
-  return `(${t} دقيقة) – شرح مباشر – نموذج "أنا أفعل":\n\n${conceptLines}`;
-}
-function lpGuidedAr(topic: string, kb: KBLesson | null, dur: number): string {
-  const t = Math.round(dur * 0.22);
-  const termExample = kb?.keyTerms?.[0]?.ar ? `مفهوم ${kb.keyTerms[0].ar}` : topic;
-  return `(${t} دقيقة) – "نحن نفعل":\n\n• حل مثال مشترك على ${termExample} مع مشاركة الطلاب في كل خطوة.\n• طرح أسئلة استرشادية: "ماذا نفعل أولًا؟ لماذا اخترنا هذه الطريقة؟"\n• تصحيح الأخطاء الشائعة فور ظهورها بأسلوب إيجابي.`;
-}
-function lpIndependentAr(dur: number): string {
-  const t = Math.round(dur * 0.18);
-  return `(${t} دقيقة) – "أنت تفعل":\n\n• يعمل كل طالب بشكل فردي على التمارين المحددة.\n• يُسمح بمراجعة الملاحظات؛ المناقشة بين الطلاب مؤجّلة.\n• يطُوف المعلم ويقدّم دعمًا صامتًا (تلميحات مكتوبة).\n• من يُنهي مبكرًا يحل تمرين التحدي الإضافي.`;
 }
 function lpClosureAr(topic: string, dur: number): string {
   const t = Math.round(dur * 0.1);
@@ -202,12 +213,6 @@ function lpObjectivesEn(topic: string, kb: KBLesson | null, custom?: string): st
     `Students will solve problems involving ${topic} using systematic methods`,
   ];
 }
-function lpMaterialsEn(subject: string): string[] {
-  const base = ['Textbook', 'Whiteboard and colored markers', 'Printed worksheets'];
-  if (/chem/i.test(subject)) return [...base, '3D molecular models', 'Projector and screen'];
-  if (/math/i.test(subject)) return [...base, 'Scientific calculator', 'Graph paper'];
-  return [...base, 'Projector and screen', 'Concept cards'];
-}
 function lpIntroEn(topic: string, kb: KBLesson | null): string {
   if (kb) return pick([
     `Open with: "Where do we encounter ${topic} in everyday life?" Record 3-4 student responses on the board. Show a visual related to ${kb.titleEn} and bridge to today's objectives.`,
@@ -219,43 +224,12 @@ function lpIntroEn(topic: string, kb: KBLesson | null): string {
     `"Think – Pair – Share": Students think for 30 seconds about what they know about ${topic}, share with a partner, then selected pairs share with the class.`,
   ]);
 }
-function lpMainActivityEn(topic: string, kb: KBLesson | null, style: string, dur: number): string {
-  const t = Math.round(dur * 0.3);
-  const conceptLines = kb?.keyConceptsEn.slice(0, 3).map((c, i) => `${i + 1}. Explain ${c} with a clear worked example.`).join('\n')
-    ?? `1. Introduce the key concept of ${topic}.\n2. Present 3 worked examples with increasing difficulty.\n3. Think aloud as you solve each example on the board.`;
-  if (style === 'inquiry') return `(${t} min) – Inquiry-based learning:\n\n1. Pose: "How does ${topic} work? What factors affect it?"\n2. Groups of 3 explore ${kb?.keyConceptsEn?.[0] ?? topic} using available resources.\n3. Each group records observations and conclusions.\n4. Class discussion synthesises findings.`;
-  if (style === 'collaborative') return `(${t} min) – Collaborative learning (groups of 3-4):\n\n1. Each group gets a task card covering a different aspect of ${topic}.\n2. Group members study their aspect and prepare a 2-minute explanation.\n3. Groups present to the class.\n4. Teacher summarises and corrects misconceptions.`;
-  return `(${t} min) – Direct instruction (I-Do model):\n\n${conceptLines}`;
-}
-function lpGuidedEn(topic: string, kb: KBLesson | null, dur: number): string {
-  const t = Math.round(dur * 0.22);
-  const termExample = kb?.keyTerms?.[0]?.en ? `the concept of ${kb.keyTerms[0].en}` : topic;
-  return `(${t} min) – We Do:\n\n• Work through a problem on ${termExample} together, asking students to guide each step.\n• Use guiding questions: "What do we do first? Why did we choose this approach?"\n• Correct misconceptions immediately and positively.`;
-}
-function lpIndependentEn(dur: number): string {
-  const t = Math.round(dur * 0.18);
-  return `(${t} min) – You Do:\n\n• Students work individually on the assigned exercises.\n• Notes are permitted; peer discussion is not.\n• Teacher circulates and provides silent, targeted support (written hints).\n• Early finishers attempt the extension challenge.`;
-}
 function lpClosureEn(topic: string, dur: number): string {
   const t = Math.round(dur * 0.1);
   return pick([
     `(${t} min) Exit ticket:\n• Most important thing learned about ${topic}.\n• One remaining question.\nCollect at the door.`,
     `(${t} min) "3-2-1" reflection:\n• 3 things learned\n• 2 concepts to explore further\n• 1 question about ${topic}`,
   ]);
-}
-function lpAssessment(topic: string, lang: Lang): string {
-  return pick(lang === 'ar' ? [
-    `تكويني: ملاحظة الأداء أثناء التدريب الموجّه وبطاقات الخروج.\nختامي: اختبار نهاية الوحدة يغطي ${topic}.\nبديل: مشروع تطبيقي يربط ${topic} بظاهرة حياتية.`,
-    `تكويني: أسئلة شفهية خلال الحصة ومراجعة التمارين الصفية.\nختامي: اختبار قصير (5 دقائق) في بداية الحصة القادمة.`,
-  ] : [
-    `Formative: Observation during guided practice; exit ticket review.\nSummative: End-of-unit quiz covering ${topic}.\nAlternative: Project linking ${topic} to a real-world phenomenon.`,
-    `Formative: Oral questioning throughout the lesson; classwork review.\nSummative: 5-minute quiz at the start of the next lesson.`,
-  ]);
-}
-function lpDifferentiation(topic: string, lang: Lang): string {
-  return lang === 'ar'
-    ? `دعم: بطاقات مفاهيم جاهزة ومنظمات بيانية وأمثلة إضافية مبسّطة.\nتحدٍّ: مسائل مفتوحة وبحث إضافي حول تطبيقات ${topic}.\nتنويع: تقديم المحتوى بصريًا وسمعيًا وكتابيًا.`
-    : `Support: Graphic organizers, sentence starters, and additional worked examples.\nChallenge: Open-ended problems and independent research on real-world applications of ${topic}.\nMultiple modalities: Visual, auditory, and written presentation.`;
 }
 function lpHomework(topic: string, lang: Lang): string {
   return pick(lang === 'ar' ? [
@@ -307,17 +281,17 @@ function makeMCQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: 
   const c1 = kb?.keyConceptsAr?.[1] ?? `تطبيق ${topic}`;
 
   const correct0 = t0?.definitionAr?.substring(0, 55) ?? `الوصف الصحيح لـ${topic}`;
-  const templates: Array<() => WQ> = [
-    () => ({ text: `أيّ مما يلي يُعرِّف ${t0?.ar ?? topic} بشكل صحيح؟`, options: placeCorrect(correct0, [`مفهوم يختلف عن ${topic}`, 'وصف لظاهرة أخرى', 'لا شيء مما ذُكر']), answer: correct0, points: pts }),
-    () => ({ text: `عند تطبيق ${topic} في مسألة حياتية، ما الخطوة الأولى الصحيحة؟`, options: placeCorrect('تحديد المعطيات والمطلوب بدقة', ['كتابة الإجابة النهائية مباشرة', 'تخمين النتيجة دون تحليل', 'تجاهل البيانات الناقصة']), answer: 'تحديد المعطيات والمطلوب بدقة', points: pts }),
-    () => ({ text: `أيّ مما يلي ليس من خصائص ${c0}؟`, options: placeCorrect('لا يحتاج إلى تدريب سابق', ['له قواعد منهجية ثابتة', 'يرتبط بالمعرفة السابقة', 'يُطبَّق في مواقف متعددة']), answer: 'لا يحتاج إلى تدريب سابق', points: pts }),
-    () => ({ text: `ما الأداة الأنسب لتحليل مسألة تتعلق بـ${topic}؟`, options: placeCorrect('التحليل المنهجي خطوة بخطوة', ['التخمين والتجربة العشوائية', 'الاعتماد الكلي على الذاكرة', 'تجنّب القواعد الأساسية']), answer: 'التحليل المنهجي خطوة بخطوة', points: pts }),
-    () => ({ text: `ما الفرق الرئيسي بين ${c0} و${c1}؟`, options: placeCorrect('يختلفان في الآلية والتطبيق', ['لا فرق بينهما', 'أحدهما أكثر أهمية دائمًا', 'غير مترابطَين بالموضوع']), answer: 'يختلفان في الآلية والتطبيق', points: pts }),
-    () => ({ text: `أيّ العبارات التالية تصف بشكل أدق تطبيق ${topic}؟`, options: placeCorrect('يُستخدم لحل مشكلات حقيقية ومتنوعة', ['مقتصر على النظريات فقط', 'لا يرتبط بمادة أخرى', 'لا يُطبَّق خارج الكتاب']), answer: 'يُستخدم لحل مشكلات حقيقية ومتنوعة', points: pts }),
-    () => ({ text: `إذا أردت إثبات إتقانك لـ${topic}، ما الأسلوب الأفضل؟`, options: placeCorrect('حل مسائل جديدة وشرح خطوات التفكير', ['حفظ التعريفات دون فهم', 'نسخ الأمثلة من الكتاب', 'مشاهدة فيديو حول الموضوع فقط']), answer: 'حل مسائل جديدة وشرح خطوات التفكير', points: pts }),
-    () => ({ text: `أيّ مما يلي يُعدّ مثالًا صحيحًا على تطبيق ${topic}؟`, options: placeCorrect(t1 ? `استخدام ${t1.ar} في تفسير ظاهرة` : `تطبيقه في حل مسألة عملية`, ['مثال غير مرتبط بالموضوع', 'مثال من موضوع مختلف', 'لا يوجد تطبيق حقيقي']), answer: t1 ? `استخدام ${t1.ar} في تفسير ظاهرة` : `تطبيقه في حل مسألة عملية`, points: pts }),
+  const templates: TieredTemplate[] = [
+    { tier: 'easy', make: () => ({ text: `أيّ مما يلي يُعرِّف ${t0?.ar ?? topic} بشكل صحيح؟`, options: placeCorrect(correct0, [`مفهوم يختلف عن ${topic}`, 'وصف لظاهرة أخرى', 'لا شيء مما ذُكر']), answer: correct0, points: pts }) },
+    { tier: 'medium', make: () => ({ text: `عند تطبيق ${topic} في مسألة حياتية، ما الخطوة الأولى الصحيحة؟`, options: placeCorrect('تحديد المعطيات والمطلوب بدقة', ['كتابة الإجابة النهائية مباشرة', 'تخمين النتيجة دون تحليل', 'تجاهل البيانات الناقصة']), answer: 'تحديد المعطيات والمطلوب بدقة', points: pts }) },
+    { tier: 'medium', make: () => ({ text: `أيّ مما يلي ليس من خصائص ${c0}؟`, options: placeCorrect('لا يحتاج إلى تدريب سابق', ['له قواعد منهجية ثابتة', 'يرتبط بالمعرفة السابقة', 'يُطبَّق في مواقف متعددة']), answer: 'لا يحتاج إلى تدريب سابق', points: pts }) },
+    { tier: 'medium', make: () => ({ text: `ما الأداة الأنسب لتحليل مسألة تتعلق بـ${topic}؟`, options: placeCorrect('التحليل المنهجي خطوة بخطوة', ['التخمين والتجربة العشوائية', 'الاعتماد الكلي على الذاكرة', 'تجنّب القواعد الأساسية']), answer: 'التحليل المنهجي خطوة بخطوة', points: pts }) },
+    { tier: 'hard', make: () => ({ text: `ما الفرق الرئيسي بين ${c0} و${c1}؟`, options: placeCorrect('يختلفان في الآلية والتطبيق', ['لا فرق بينهما', 'أحدهما أكثر أهمية دائمًا', 'غير مترابطَين بالموضوع']), answer: 'يختلفان في الآلية والتطبيق', points: pts }) },
+    { tier: 'hard', make: () => ({ text: `أيّ العبارات التالية تصف بشكل أدق تطبيق ${topic}؟`, options: placeCorrect('يُستخدم لحل مشكلات حقيقية ومتنوعة', ['مقتصر على النظريات فقط', 'لا يرتبط بمادة أخرى', 'لا يُطبَّق خارج الكتاب']), answer: 'يُستخدم لحل مشكلات حقيقية ومتنوعة', points: pts }) },
+    { tier: 'hard', make: () => ({ text: `إذا أردت إثبات إتقانك لـ${topic}، ما الأسلوب الأفضل؟`, options: placeCorrect('حل مسائل جديدة وشرح خطوات التفكير', ['حفظ التعريفات دون فهم', 'نسخ الأمثلة من الكتاب', 'مشاهدة فيديو حول الموضوع فقط']), answer: 'حل مسائل جديدة وشرح خطوات التفكير', points: pts }) },
+    { tier: 'easy', make: () => ({ text: `أيّ مما يلي يُعدّ مثالًا صحيحًا على تطبيق ${topic}؟`, options: placeCorrect(t1 ? `استخدام ${t1.ar} في تفسير ظاهرة` : `تطبيقه في حل مسألة عملية`, ['مثال غير مرتبط بالموضوع', 'مثال من موضوع مختلف', 'لا يوجد تطبيق حقيقي']), answer: t1 ? `استخدام ${t1.ar} في تفسير ظاهرة` : `تطبيقه في حل مسألة عملية`, points: pts }) },
   ];
-  return pick(templates)();
+  return pickTiered(templates, diff)();
 }
 
 function makeSAQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: string): WQ {
@@ -328,16 +302,16 @@ function makeSAQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: 
   const t1 = kb?.keyTerms?.[1];
   const c0 = kb?.keyConceptsAr?.[0] ?? topic;
   const c1 = kb?.keyConceptsAr?.[1] ?? `تطبيق ${topic}`;
-  const templates: Array<() => WQ> = [
-    () => ({ text: `اشرح بأسلوبك الخاص مفهوم ${t0?.ar ?? topic} مع إعطاء مثال تطبيقي.`, answer: t0 ? `التعريف: ${t0.definitionAr.substring(0, 60)}... + مثال حياتي.` : `التعريف الدقيق + مثال واضح.`, points: pts }),
-    () => ({ text: `صِف الخطوات المنهجية التي تتبعها لحل مسألة تتعلق بـ${topic}. استخدم قائمة مرقّمة.`, answer: 'الخطوات: 1. تحديد المعطيات 2. اختيار الأسلوب 3. التنفيذ 4. التحقق.', points: pts }),
-    () => ({ text: `كيف يرتبط ${topic} بما درسناه سابقًا؟ اذكر ارتباطًا واحدًا على الأقل وفسّره.`, answer: 'ارتباط منطقي موثّق مع وحدة أو مادة سابقة.', points: pts }),
-    () => ({ text: `ما أهمية دراسة ${topic}؟ اذكر فائدتين على الأقل وأعطِ مثالًا لكل منهما.`, answer: 'فائدتان: 1. بناء مهارة… 2. تطبيق على… مع مثالين.', points: pts }),
-    () => ({ text: `قارن بين ${c0} و${c1} من حيث التعريف والتطبيق.`, answer: `${c0} يختلف عن ${c1} في: الآلية / التطبيق / النتيجة.`, points: pts }),
-    () => ({ text: `أعطِ مثالًا حياتيًا على تطبيق ${topic} وفسّر كيف يرتبط بالمفهوم العلمي.`, answer: 'مثال واضح + ربط بالمفهوم: المبدأ العلمي الذي يفسّره.', points: pts }),
-    () => ({ text: t1 ? `ما العلاقة بين ${t0?.ar ?? c0} و${t1.ar}؟ اشرح بمثال.` : `اشرح كيف يساعدك فهم ${topic} في حل مسائل من الحياة اليومية.`, answer: t1 ? `العلاقة: ${t0?.ar ?? c0} يؤدي إلى / يُسبب / يرتبط بـ${t1.ar}.` : 'وصف تطبيق حياتي ملموس مع تفسير.', points: pts }),
+  const templates: TieredTemplate[] = [
+    { tier: 'easy', make: () => ({ text: `اشرح بأسلوبك الخاص مفهوم ${t0?.ar ?? topic} مع إعطاء مثال تطبيقي.`, answer: t0 ? `التعريف: ${t0.definitionAr.substring(0, 60)}... + مثال حياتي.` : `التعريف الدقيق + مثال واضح.`, points: pts }) },
+    { tier: 'easy', make: () => ({ text: `صِف الخطوات المنهجية التي تتبعها لحل مسألة تتعلق بـ${topic}. استخدم قائمة مرقّمة.`, answer: 'الخطوات: 1. تحديد المعطيات 2. اختيار الأسلوب 3. التنفيذ 4. التحقق.', points: pts }) },
+    { tier: 'medium', make: () => ({ text: `كيف يرتبط ${topic} بما درسناه سابقًا؟ اذكر ارتباطًا واحدًا على الأقل وفسّره.`, answer: 'ارتباط منطقي موثّق مع وحدة أو مادة سابقة.', points: pts }) },
+    { tier: 'medium', make: () => ({ text: `ما أهمية دراسة ${topic}؟ اذكر فائدتين على الأقل وأعطِ مثالًا لكل منهما.`, answer: 'فائدتان: 1. بناء مهارة… 2. تطبيق على… مع مثالين.', points: pts }) },
+    { tier: 'hard', make: () => ({ text: `قارن بين ${c0} و${c1} من حيث التعريف والتطبيق.`, answer: `${c0} يختلف عن ${c1} في: الآلية / التطبيق / النتيجة.`, points: pts }) },
+    { tier: 'medium', make: () => ({ text: `أعطِ مثالًا حياتيًا على تطبيق ${topic} وفسّر كيف يرتبط بالمفهوم العلمي.`, answer: 'مثال واضح + ربط بالمفهوم: المبدأ العلمي الذي يفسّره.', points: pts }) },
+    { tier: 'hard', make: () => ({ text: t1 ? `ما العلاقة بين ${t0?.ar ?? c0} و${t1.ar}؟ اشرح بمثال.` : `اشرح كيف يساعدك فهم ${topic} في حل مسائل من الحياة اليومية.`, answer: t1 ? `العلاقة: ${t0?.ar ?? c0} يؤدي إلى / يُسبب / يرتبط بـ${t1.ar}.` : 'وصف تطبيق حياتي ملموس مع تفسير.', points: pts }) },
   ];
-  return pick(templates)();
+  return pickTiered(templates, diff)();
 }
 
 function makeFBQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: string): WQ {
@@ -347,34 +321,34 @@ function makeFBQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: 
   const t0 = kb?.keyTerms?.[0];
   const t1 = kb?.keyTerms?.[1];
   const c0 = kb?.keyConceptsAr?.[0] ?? topic;
-  const templates: Array<() => WQ> = [
-    () => ({ text: `${t0?.ar ?? topic} هو __________ يُعرَّف بأنه __________.`, answer: `${t0?.ar ?? topic} / ${t0?.definitionAr?.split(' ').slice(0, 4).join(' ') ?? 'الإجابة في الكتاب'}`, points: pts }),
-    () => ({ text: `عند تطبيق ${topic}، فإن __________ يتغير نتيجة __________.`, answer: 'المتغير / السبب (راجع الكتاب المدرسي)', points: pts }),
-    () => ({ text: `الخطوات الثلاث الرئيسية لتطبيق ${topic} هي: __________، __________، __________.`, answer: '1. تحديد المعطيات 2. التطبيق 3. التحقق', points: pts }),
-    () => ({ text: `${c0} يرتبط بـ__________ ويؤدي إلى __________.`, answer: `${c0} / الظاهرة أو النتيجة المرتبطة به`, points: pts }),
-    () => ({ text: t1 ? `الفرق الرئيسي بين ${t0?.ar ?? c0} و${t1.ar} هو أن __________ بينما __________.` : `القاعدة الأساسية في ${topic} تنص على أن __________ يؤدي إلى __________.`, answer: t1 ? `${t0?.ar ?? c0}: … / ${t1.ar}: …` : 'القاعدة / النتيجة (راجع الكتاب)', points: pts }),
-    () => ({ text: `عندما يزداد __________ في سياق ${topic}، يتغير __________ وفقًا لذلك.`, answer: 'المتغير المستقل / المتغير التابع', points: pts }),
+  const templates: TieredTemplate[] = [
+    { tier: 'easy', make: () => ({ text: `${t0?.ar ?? topic} هو __________ يُعرَّف بأنه __________.`, answer: `${t0?.ar ?? topic} / ${t0?.definitionAr?.split(' ').slice(0, 4).join(' ') ?? 'الإجابة في الكتاب'}`, points: pts }) },
+    { tier: 'medium', make: () => ({ text: `عند تطبيق ${topic}، فإن __________ يتغير نتيجة __________.`, answer: 'المتغير / السبب (راجع الكتاب المدرسي)', points: pts }) },
+    { tier: 'easy', make: () => ({ text: `الخطوات الثلاث الرئيسية لتطبيق ${topic} هي: __________، __________، __________.`, answer: '1. تحديد المعطيات 2. التطبيق 3. التحقق', points: pts }) },
+    { tier: 'medium', make: () => ({ text: `${c0} يرتبط بـ__________ ويؤدي إلى __________.`, answer: `${c0} / الظاهرة أو النتيجة المرتبطة به`, points: pts }) },
+    { tier: 'hard', make: () => ({ text: t1 ? `الفرق الرئيسي بين ${t0?.ar ?? c0} و${t1.ar} هو أن __________ بينما __________.` : `القاعدة الأساسية في ${topic} تنص على أن __________ يؤدي إلى __________.`, answer: t1 ? `${t0?.ar ?? c0}: … / ${t1.ar}: …` : 'القاعدة / النتيجة (راجع الكتاب)', points: pts }) },
+    { tier: 'hard', make: () => ({ text: `عندما يزداد __________ في سياق ${topic}، يتغير __________ وفقًا لذلك.`, answer: 'المتغير المستقل / المتغير التابع', points: pts }) },
   ];
-  return pick(templates)();
+  return pickTiered(templates, diff)();
 }
 
-function makeTFQ_ar(topic: string, kb: KBLesson | null, _diff: string, subject?: string): WQ {
-  const pts = tfPts(_diff);
-  const math = tryMathPractice('true_false', topic, kb, _diff, 'ar', pts, subject);
+function makeTFQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: string): WQ {
+  const pts = tfPts(diff);
+  const math = tryMathPractice('true_false', topic, kb, diff, 'ar', pts, subject);
   if (math) return math;
   const c0 = kb?.keyConceptsAr?.[0] ?? topic;
   const c1 = kb?.keyConceptsAr?.[1] ?? `تطبيق ${topic}`;
-  const templates: Array<() => WQ> = [
-    () => ({ text: `${c0} يُعدّ من الأسس الجوهرية في ${topic}.`, options: ['صح', 'خطأ'], answer: 'صح', points: pts }),
-    () => ({ text: `يمكن إتقان ${topic} دون فهم ${c1}.`, options: ['صح', 'خطأ'], answer: 'خطأ', points: pts }),
-    () => ({ text: `${topic} له تطبيقات واسعة في الحياة اليومية خارج الفصل الدراسي.`, options: ['صح', 'خطأ'], answer: 'صح', points: pts }),
-    () => ({ text: `المعرفة السابقة غير ضرورية لفهم ${topic}.`, options: ['صح', 'خطأ'], answer: 'خطأ', points: pts }),
-    () => ({ text: `إتقان ${topic} يتطلب الفهم العميق قبل الحفظ.`, options: ['صح', 'خطأ'], answer: 'صح', points: pts }),
-    () => ({ text: `${topic} مستقل تمامًا ولا يرتبط بمواضيع الوحدات الأخرى.`, options: ['صح', 'خطأ'], answer: 'خطأ', points: pts }),
-    () => ({ text: `تطبيق ${topic} في مسائل جديدة يُعدّ دليلًا على الإتقان الحقيقي.`, options: ['صح', 'خطأ'], answer: 'صح', points: pts }),
-    () => ({ text: `جميع مسائل ${topic} لها أسلوب حل واحد فقط.`, options: ['صح', 'خطأ'], answer: 'خطأ', points: pts }),
+  const templates: TieredTemplate[] = [
+    { tier: 'easy', make: () => ({ text: `${c0} يُعدّ من الأسس الجوهرية في ${topic}.`, options: ['صح', 'خطأ'], answer: 'صح', points: pts }) },
+    { tier: 'medium', make: () => ({ text: `يمكن إتقان ${topic} دون فهم ${c1}.`, options: ['صح', 'خطأ'], answer: 'خطأ', points: pts }) },
+    { tier: 'easy', make: () => ({ text: `${topic} له تطبيقات واسعة في الحياة اليومية خارج الفصل الدراسي.`, options: ['صح', 'خطأ'], answer: 'صح', points: pts }) },
+    { tier: 'easy', make: () => ({ text: `المعرفة السابقة غير ضرورية لفهم ${topic}.`, options: ['صح', 'خطأ'], answer: 'خطأ', points: pts }) },
+    { tier: 'medium', make: () => ({ text: `إتقان ${topic} يتطلب الفهم العميق قبل الحفظ.`, options: ['صح', 'خطأ'], answer: 'صح', points: pts }) },
+    { tier: 'medium', make: () => ({ text: `${topic} مستقل تمامًا ولا يرتبط بمواضيع الوحدات الأخرى.`, options: ['صح', 'خطأ'], answer: 'خطأ', points: pts }) },
+    { tier: 'hard', make: () => ({ text: `تطبيق ${topic} في مسائل جديدة يُعدّ دليلًا على الإتقان الحقيقي.`, options: ['صح', 'خطأ'], answer: 'صح', points: pts }) },
+    { tier: 'hard', make: () => ({ text: `جميع مسائل ${topic} لها أسلوب حل واحد فقط.`, options: ['صح', 'خطأ'], answer: 'خطأ', points: pts }) },
   ];
-  return pick(templates)();
+  return pickTiered(templates, diff)();
 }
 
 /** Real-life word problem aligned with "حل مسائل حياتية" curriculum phrasing. */
@@ -384,26 +358,26 @@ function makeWPQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: 
   if (math) return math;
   const c0 = kb?.keyConceptsAr?.[0] ?? topic;
   const obj = kb?.objectives?.find(o => /حياتي|مسألة|نمذج/.test(o));
-  const templates: Array<() => WQ> = [
-    () => ({
+  const templates: TieredTemplate[] = [
+    { tier: 'easy', make: () => ({
       text: `مسألة حياتية: يحتاج محلّ تجاري إلى تطبيق «${topic}» لحساب تكلفة عرض ترويجي. اكتب المعطيات اللازمة، ثم حل المسألة مبيّنًا خطواتك.`,
       answer: `نمذجة الموقف بمفاهيم ${topic}، ثم الحل خطوة بخطوة والتحقق من المعقولية.`,
       points: pts,
-    }),
-    () => ({
+    }) },
+    { tier: 'medium', make: () => ({
       text: `مسألة حياتية: تريد عائلة تخطيط ميزانية أسبوعية باستخدام ${c0}. صِغ مسألة من واقع الحياة تتطلب ${topic}، ثم حلّها.`,
       answer: `صياغة موقف حقيقي + تطبيق ${topic} + إجابة عددية مع وحدات إن لزم.`,
       points: pts,
-    }),
-    () => ({
+    }) },
+    { tier: 'hard', make: () => ({
       text: obj
         ? `مسألة حياتية مرتبطة بنتاج الدرس («${obj}»): صف موقفًا يوميًا، ثم حلّه باستعمال ${topic}.`
         : `مسألة حياتية: مهندس يحتاج ${topic} لتقدير كمية مواد لمشروع صغير. اكتب المعطيات وحل المسألة.`,
       answer: `تحديد المعطيات والمطلوب، اختيار الأسلوب المناسب لـ${topic}، الحل والتحقق.`,
       points: pts,
-    }),
+    }) },
   ];
-  return pick(templates)();
+  return pickTiered(templates, diff)();
 }
 
 function makePriorReviewQ_ar(concept: string): WQ {
@@ -425,17 +399,17 @@ function makeMCQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: 
   const c0 = kb?.keyConceptsEn?.[0] ?? topic;
   const c1 = kb?.keyConceptsEn?.[1] ?? `application of ${topic}`;
   const correct0 = t0?.definitionEn?.substring(0, 60) ?? `The correct description of ${topic}`;
-  const templates: Array<() => WQ> = [
-    () => ({ text: `Which of the following correctly defines ${t0?.en ?? topic}?`, options: placeCorrect(correct0, [`An unrelated concept`, 'A description of a different phenomenon', 'None of the above']), answer: correct0, points: pts }),
-    () => ({ text: `When applying ${topic} to a real-world problem, what is the first step?`, options: placeCorrect('Identify what is given and what is asked', ['Write the final answer immediately', 'Guess the answer without analysis', 'Ignore any missing data']), answer: 'Identify what is given and what is asked', points: pts }),
-    () => ({ text: `Which of the following is NOT a characteristic of ${c0}?`, options: placeCorrect('It requires no prior practice', ['It has consistent rules', 'It builds on prior knowledge', 'It applies across multiple contexts']), answer: 'It requires no prior practice', points: pts }),
-    () => ({ text: `What is the most effective approach when analysing a problem involving ${topic}?`, options: placeCorrect('Systematic step-by-step analysis', ['Random guessing', 'Relying solely on memory', 'Avoiding fundamental rules']), answer: 'Systematic step-by-step analysis', points: pts }),
-    () => ({ text: `What is the main difference between ${c0} and ${c1}?`, options: placeCorrect('They differ in mechanism and application', ['There is no difference', 'One is always more important', 'They are unrelated to this topic']), answer: 'They differ in mechanism and application', points: pts }),
-    () => ({ text: `Which statement best captures the application of ${topic}?`, options: placeCorrect('Used to solve real, diverse problems', ['Limited to theory only', 'Unrelated to other subjects', 'Cannot be applied outside the textbook']), answer: 'Used to solve real, diverse problems', points: pts }),
-    () => ({ text: `What is the best way to demonstrate mastery of ${topic}?`, options: placeCorrect('Solve new problems and explain your reasoning', ['Memorise definitions without understanding', 'Copy examples from the textbook', 'Watch a video about the topic only']), answer: 'Solve new problems and explain your reasoning', points: pts }),
-    () => ({ text: `Which of the following is a valid real-world example of ${topic}?`, options: placeCorrect(t1 ? `Using ${t1.en} to explain a phenomenon` : `Applying it to solve a practical problem`, ['An unrelated example', 'An example from a different topic', 'There are no real applications']), answer: t1 ? `Using ${t1.en} to explain a phenomenon` : `Applying it to solve a practical problem`, points: pts }),
+  const templates: TieredTemplate[] = [
+    { tier: 'easy', make: () => ({ text: `Which of the following correctly defines ${t0?.en ?? topic}?`, options: placeCorrect(correct0, [`An unrelated concept`, 'A description of a different phenomenon', 'None of the above']), answer: correct0, points: pts }) },
+    { tier: 'medium', make: () => ({ text: `When applying ${topic} to a real-world problem, what is the first step?`, options: placeCorrect('Identify what is given and what is asked', ['Write the final answer immediately', 'Guess the answer without analysis', 'Ignore any missing data']), answer: 'Identify what is given and what is asked', points: pts }) },
+    { tier: 'medium', make: () => ({ text: `Which of the following is NOT a characteristic of ${c0}?`, options: placeCorrect('It requires no prior practice', ['It has consistent rules', 'It builds on prior knowledge', 'It applies across multiple contexts']), answer: 'It requires no prior practice', points: pts }) },
+    { tier: 'medium', make: () => ({ text: `What is the most effective approach when analysing a problem involving ${topic}?`, options: placeCorrect('Systematic step-by-step analysis', ['Random guessing', 'Relying solely on memory', 'Avoiding fundamental rules']), answer: 'Systematic step-by-step analysis', points: pts }) },
+    { tier: 'hard', make: () => ({ text: `What is the main difference between ${c0} and ${c1}?`, options: placeCorrect('They differ in mechanism and application', ['There is no difference', 'One is always more important', 'They are unrelated to this topic']), answer: 'They differ in mechanism and application', points: pts }) },
+    { tier: 'hard', make: () => ({ text: `Which statement best captures the application of ${topic}?`, options: placeCorrect('Used to solve real, diverse problems', ['Limited to theory only', 'Unrelated to other subjects', 'Cannot be applied outside the textbook']), answer: 'Used to solve real, diverse problems', points: pts }) },
+    { tier: 'hard', make: () => ({ text: `What is the best way to demonstrate mastery of ${topic}?`, options: placeCorrect('Solve new problems and explain your reasoning', ['Memorise definitions without understanding', 'Copy examples from the textbook', 'Watch a video about the topic only']), answer: 'Solve new problems and explain your reasoning', points: pts }) },
+    { tier: 'easy', make: () => ({ text: `Which of the following is a valid real-world example of ${topic}?`, options: placeCorrect(t1 ? `Using ${t1.en} to explain a phenomenon` : `Applying it to solve a practical problem`, ['An unrelated example', 'An example from a different topic', 'There are no real applications']), answer: t1 ? `Using ${t1.en} to explain a phenomenon` : `Applying it to solve a practical problem`, points: pts }) },
   ];
-  return pick(templates)();
+  return pickTiered(templates, diff)();
 }
 
 function makeSAQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: string): WQ {
@@ -446,16 +420,16 @@ function makeSAQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: 
   const t1 = kb?.keyTerms?.[1];
   const c0 = kb?.keyConceptsEn?.[0] ?? topic;
   const c1 = kb?.keyConceptsEn?.[1] ?? `application of ${topic}`;
-  const templates: Array<() => WQ> = [
-    () => ({ text: `Explain in your own words what ${t0?.en ?? topic} means and give one real-world example.`, answer: t0 ? `Definition: ${t0.definitionEn.substring(0, 60)}... + real example.` : 'Accurate definition + concrete example.', points: pts }),
-    () => ({ text: `Describe the systematic steps you would follow to solve a problem involving ${topic}. Use a numbered list.`, answer: 'Steps: 1. Identify given/asked 2. Choose method 3. Execute 4. Verify.', points: pts }),
-    () => ({ text: `How is ${topic} connected to what we have studied previously? Give at least one documented connection.`, answer: 'Logical, documented connection to a prior unit or subject.', points: pts }),
-    () => ({ text: `State two benefits of studying ${topic} and give a real-world example for each.`, answer: 'Benefit 1: … example. Benefit 2: … example.', points: pts }),
-    () => ({ text: `Compare ${c0} and ${c1} in terms of definition and application.`, answer: `${c0} differs from ${c1} in: mechanism / application / outcome.`, points: pts }),
-    () => ({ text: `Give a real-world example of ${topic} and explain how it relates to the scientific concept.`, answer: 'Clear example + explanation of the scientific principle it illustrates.', points: pts }),
-    () => ({ text: t1 ? `Explain the relationship between ${t0?.en ?? c0} and ${t1.en}. Illustrate with an example.` : `Explain how understanding ${topic} helps solve everyday problems.`, answer: t1 ? `${t0?.en ?? c0} leads to / causes / relates to ${t1.en}.` : 'Concrete real-world application with explanation.', points: pts }),
+  const templates: TieredTemplate[] = [
+    { tier: 'easy', make: () => ({ text: `Explain in your own words what ${t0?.en ?? topic} means and give one real-world example.`, answer: t0 ? `Definition: ${t0.definitionEn.substring(0, 60)}... + real example.` : 'Accurate definition + concrete example.', points: pts }) },
+    { tier: 'easy', make: () => ({ text: `Describe the systematic steps you would follow to solve a problem involving ${topic}. Use a numbered list.`, answer: 'Steps: 1. Identify given/asked 2. Choose method 3. Execute 4. Verify.', points: pts }) },
+    { tier: 'medium', make: () => ({ text: `How is ${topic} connected to what we have studied previously? Give at least one documented connection.`, answer: 'Logical, documented connection to a prior unit or subject.', points: pts }) },
+    { tier: 'medium', make: () => ({ text: `State two benefits of studying ${topic} and give a real-world example for each.`, answer: 'Benefit 1: … example. Benefit 2: … example.', points: pts }) },
+    { tier: 'hard', make: () => ({ text: `Compare ${c0} and ${c1} in terms of definition and application.`, answer: `${c0} differs from ${c1} in: mechanism / application / outcome.`, points: pts }) },
+    { tier: 'medium', make: () => ({ text: `Give a real-world example of ${topic} and explain how it relates to the scientific concept.`, answer: 'Clear example + explanation of the scientific principle it illustrates.', points: pts }) },
+    { tier: 'hard', make: () => ({ text: t1 ? `Explain the relationship between ${t0?.en ?? c0} and ${t1.en}. Illustrate with an example.` : `Explain how understanding ${topic} helps solve everyday problems.`, answer: t1 ? `${t0?.en ?? c0} leads to / causes / relates to ${t1.en}.` : 'Concrete real-world application with explanation.', points: pts }) },
   ];
-  return pick(templates)();
+  return pickTiered(templates, diff)();
 }
 
 function makeFBQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: string): WQ {
@@ -465,34 +439,34 @@ function makeFBQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: 
   const t0 = kb?.keyTerms?.[0];
   const t1 = kb?.keyTerms?.[1];
   const c0 = kb?.keyConceptsEn?.[0] ?? topic;
-  const templates: Array<() => WQ> = [
-    () => ({ text: `${t0?.en ?? topic} is __________ characterised by __________.`, answer: `${t0?.en ?? topic} / ${t0?.definitionEn?.split(' ').slice(0, 4).join(' ') ?? 'see textbook'}`, points: pts }),
-    () => ({ text: `When applying ${topic}, __________ changes as a result of __________.`, answer: 'The dependent variable / the cause (see textbook)', points: pts }),
-    () => ({ text: `The three main steps for applying ${topic} are: __________, __________, and __________.`, answer: '1. Identify given 2. Apply method 3. Verify', points: pts }),
-    () => ({ text: `${c0} is related to __________ and leads to __________.`, answer: `${c0} / related phenomenon or outcome`, points: pts }),
-    () => ({ text: t1 ? `The main difference between ${t0?.en ?? c0} and ${t1.en} is that __________ while __________.` : `The fundamental rule of ${topic} states that __________ results in __________.`, answer: t1 ? `${t0?.en ?? c0}: … / ${t1.en}: …` : 'The rule / the outcome (see textbook)', points: pts }),
-    () => ({ text: `When __________ increases in the context of ${topic}, __________ changes proportionally.`, answer: 'The independent variable / the dependent variable', points: pts }),
+  const templates: TieredTemplate[] = [
+    { tier: 'easy', make: () => ({ text: `${t0?.en ?? topic} is __________ characterised by __________.`, answer: `${t0?.en ?? topic} / ${t0?.definitionEn?.split(' ').slice(0, 4).join(' ') ?? 'see textbook'}`, points: pts }) },
+    { tier: 'medium', make: () => ({ text: `When applying ${topic}, __________ changes as a result of __________.`, answer: 'The dependent variable / the cause (see textbook)', points: pts }) },
+    { tier: 'easy', make: () => ({ text: `The three main steps for applying ${topic} are: __________, __________, and __________.`, answer: '1. Identify given 2. Apply method 3. Verify', points: pts }) },
+    { tier: 'medium', make: () => ({ text: `${c0} is related to __________ and leads to __________.`, answer: `${c0} / related phenomenon or outcome`, points: pts }) },
+    { tier: 'hard', make: () => ({ text: t1 ? `The main difference between ${t0?.en ?? c0} and ${t1.en} is that __________ while __________.` : `The fundamental rule of ${topic} states that __________ results in __________.`, answer: t1 ? `${t0?.en ?? c0}: … / ${t1.en}: …` : 'The rule / the outcome (see textbook)', points: pts }) },
+    { tier: 'hard', make: () => ({ text: `When __________ increases in the context of ${topic}, __________ changes proportionally.`, answer: 'The independent variable / the dependent variable', points: pts }) },
   ];
-  return pick(templates)();
+  return pickTiered(templates, diff)();
 }
 
-function makeTFQ_en(topic: string, kb: KBLesson | null, _diff: string, subject?: string): WQ {
-  const pts = tfPts(_diff);
-  const math = tryMathPractice('true_false', topic, kb, _diff, 'en', pts, subject);
+function makeTFQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: string): WQ {
+  const pts = tfPts(diff);
+  const math = tryMathPractice('true_false', topic, kb, diff, 'en', pts, subject);
   if (math) return math;
   const c0 = kb?.keyConceptsEn?.[0] ?? topic;
   const c1 = kb?.keyConceptsEn?.[1] ?? `application of ${topic}`;
-  const templates: Array<() => WQ> = [
-    () => ({ text: `${c0} is one of the core foundations of ${topic}.`, options: ['True', 'False'], answer: 'True', points: pts }),
-    () => ({ text: `${topic} can be mastered without understanding ${c1}.`, options: ['True', 'False'], answer: 'False', points: pts }),
-    () => ({ text: `${topic} has broad applications in daily life beyond the classroom.`, options: ['True', 'False'], answer: 'True', points: pts }),
-    () => ({ text: `Prior knowledge is unnecessary for understanding ${topic}.`, options: ['True', 'False'], answer: 'False', points: pts }),
-    () => ({ text: `Mastering ${topic} requires deep understanding before memorisation.`, options: ['True', 'False'], answer: 'True', points: pts }),
-    () => ({ text: `${topic} is completely independent and unrelated to other topics in this unit.`, options: ['True', 'False'], answer: 'False', points: pts }),
-    () => ({ text: `Successfully applying ${topic} to unfamiliar problems demonstrates genuine mastery.`, options: ['True', 'False'], answer: 'True', points: pts }),
-    () => ({ text: `All problems involving ${topic} can be solved using only one fixed method.`, options: ['True', 'False'], answer: 'False', points: pts }),
+  const templates: TieredTemplate[] = [
+    { tier: 'easy', make: () => ({ text: `${c0} is one of the core foundations of ${topic}.`, options: ['True', 'False'], answer: 'True', points: pts }) },
+    { tier: 'medium', make: () => ({ text: `${topic} can be mastered without understanding ${c1}.`, options: ['True', 'False'], answer: 'False', points: pts }) },
+    { tier: 'easy', make: () => ({ text: `${topic} has broad applications in daily life beyond the classroom.`, options: ['True', 'False'], answer: 'True', points: pts }) },
+    { tier: 'easy', make: () => ({ text: `Prior knowledge is unnecessary for understanding ${topic}.`, options: ['True', 'False'], answer: 'False', points: pts }) },
+    { tier: 'medium', make: () => ({ text: `Mastering ${topic} requires deep understanding before memorisation.`, options: ['True', 'False'], answer: 'True', points: pts }) },
+    { tier: 'medium', make: () => ({ text: `${topic} is completely independent and unrelated to other topics in this unit.`, options: ['True', 'False'], answer: 'False', points: pts }) },
+    { tier: 'hard', make: () => ({ text: `Successfully applying ${topic} to unfamiliar problems demonstrates genuine mastery.`, options: ['True', 'False'], answer: 'True', points: pts }) },
+    { tier: 'hard', make: () => ({ text: `All problems involving ${topic} can be solved using only one fixed method.`, options: ['True', 'False'], answer: 'False', points: pts }) },
   ];
-  return pick(templates)();
+  return pickTiered(templates, diff)();
 }
 
 /** Real-life word problem aligned with curriculum "solve real-life problems" outcomes. */
@@ -501,24 +475,24 @@ function makeWPQ_en(topic: string, kb: KBLesson | null, diff: string, subject?: 
   const math = tryMathPractice('word_problem', topic, kb, diff, 'en', pts, subject);
   if (math) return math;
   const c0 = kb?.keyConceptsEn?.[0] ?? topic;
-  const templates: Array<() => WQ> = [
-    () => ({
+  const templates: TieredTemplate[] = [
+    { tier: 'easy', make: () => ({
       text: `Real-life problem: A shop needs to apply “${topic}” to price a promotion. List the given information, then solve step by step.`,
       answer: `Model the situation with ${topic}, solve step by step, and check reasonableness.`,
       points: pts,
-    }),
-    () => ({
+    }) },
+    { tier: 'medium', make: () => ({
       text: `Real-life problem: A family is planning a weekly budget using ${c0}. Write a everyday scenario that requires ${topic}, then solve it.`,
       answer: `Clear real-world setup + application of ${topic} + numerical answer with units if needed.`,
       points: pts,
-    }),
-    () => ({
+    }) },
+    { tier: 'hard', make: () => ({
       text: `Real-life problem: An engineer needs ${topic} to estimate materials for a small project. State the givens and solve.`,
       answer: `Identify givens and goal, choose a ${topic} method, solve and verify.`,
       points: pts,
-    }),
+    }) },
   ];
-  return pick(templates)();
+  return pickTiered(templates, diff)();
 }
 
 function makePriorReviewQ_en(concept: string): WQ {
@@ -551,31 +525,36 @@ function sectionTitleEn(type: QType, pts: number): string {
 }
 
 // ─── Quiz question factories ──────────────────────────────────────────────────
+// Each takes the tier the teacher asked for. These used to pass the literal
+// 'medium' at all six call sites, so the quiz difficulty picker changed
+// nothing at all: on the math path `tryMathPractice` forwards the tier to
+// `takeConcreteMath`, which filters the bank by `item.diff`, so an "easy" quiz
+// and a "difficult" quiz drew from the identical medium slice.
 
-function makeQuizMCQ_ar(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string): QuizQuestion {
-  const q = makeMCQ_ar(topic, kb, 'medium', subject);
+function makeQuizMCQ_ar(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string, diff: DiffTier = 'medium'): QuizQuestion {
+  const q = makeMCQ_ar(topic, kb, diff, subject);
   return { id, type: 'multiple_choice', text: q.text, options: q.options, correctAnswer: q.answer, points: pts, explanation: `${q.answer} — راجع ${kb?.titleAr ?? topic} في الكتاب المدرسي.` };
 }
-function makeQuizMCQ_en(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string): QuizQuestion {
-  const q = makeMCQ_en(topic, kb, 'medium', subject);
+function makeQuizMCQ_en(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string, diff: DiffTier = 'medium'): QuizQuestion {
+  const q = makeMCQ_en(topic, kb, diff, subject);
   return { id, type: 'multiple_choice', text: q.text, options: q.options, correctAnswer: q.answer, points: pts, explanation: `${q.answer} — See ${kb?.titleEn ?? topic} in the textbook.` };
 }
 
-function makeQuizTF_ar(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string): QuizQuestion {
-  const q = makeTFQ_ar(topic, kb, 'medium', subject);
+function makeQuizTF_ar(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string, diff: DiffTier = 'medium'): QuizQuestion {
+  const q = makeTFQ_ar(topic, kb, diff, subject);
   return { id, type: 'true_false', text: q.text, options: ['صح', 'خطأ'], correctAnswer: q.answer, points: pts, explanation: `الإجابة "${q.answer}" — ${q.text}` };
 }
-function makeQuizTF_en(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string): QuizQuestion {
-  const q = makeTFQ_en(topic, kb, 'medium', subject);
+function makeQuizTF_en(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string, diff: DiffTier = 'medium'): QuizQuestion {
+  const q = makeTFQ_en(topic, kb, diff, subject);
   return { id, type: 'true_false', text: q.text, options: ['True', 'False'], correctAnswer: q.answer, points: pts, explanation: `The answer is "${q.answer}" — ${q.text}` };
 }
 
-function makeQuizSA_ar(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string): QuizQuestion {
-  const q = makeSAQ_ar(topic, kb, 'medium', subject);
+function makeQuizSA_ar(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string, diff: DiffTier = 'medium'): QuizQuestion {
+  const q = makeSAQ_ar(topic, kb, diff, subject);
   return { id, type: 'short_answer', text: q.text, correctAnswer: q.answer, points: pts, explanation: `إجابة كاملة: ${q.answer}` };
 }
-function makeQuizSA_en(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string): QuizQuestion {
-  const q = makeSAQ_en(topic, kb, 'medium', subject);
+function makeQuizSA_en(topic: string, kb: KBLesson | null, pts: number, id: string, subject?: string, diff: DiffTier = 'medium'): QuizQuestion {
+  const q = makeSAQ_en(topic, kb, diff, subject);
   return { id, type: 'short_answer', text: q.text, correctAnswer: q.answer, points: pts, explanation: `Full answer: ${q.answer}` };
 }
 
@@ -666,6 +645,17 @@ export class MockAIService extends AIService {
     const priorConcepts = req.includePriorReview && req.priorKnowledge?.length ? req.priorKnowledge : [];
     const priorReview = lpPriorReview(priorConcepts, req.priorTopicsNotes ?? '', lang);
 
+    // The teaching style shapes the whole lesson, not just `mainActivity`, and
+    // it does so on BOTH paths. The document-grounded branch below used to
+    // hardcode direct instruction, so attaching a file silently made the style
+    // picker inert — «تعلّم تعاوني» and «شرح مباشر» returned the same plan.
+    const docCtx: LessonDocContext | null = docs.present
+      ? { label: fileLabel, concepts: docs.concepts, example: exampleLine || null }
+      : null;
+    const styleBlueprint = buildLessonStyleBlueprint(style, {
+      topic, kb, lang, subject: req.subject, duration: dur, doc: docCtx,
+    });
+
     // Document-grounded lesson plan (Demo Mode) — prefer uploaded materials over KB soft pin
     if (docs.present) {
       if (lang === 'ar') {
@@ -675,31 +665,22 @@ export class MockAIService extends AIService {
           objectives: docObjectives ?? lpObjectivesAr(topic, null, req.objectives),
           materials: [
             fileLabel.replace(/^الملف /, 'الملف المرفوع: ').replace(/^الملف$/, 'المواد المرفوعة'),
-            ...lpMaterialsAr(req.subject).slice(0, 3),
+            ...styleBlueprint.materials.slice(0, 3),
           ],
           ...(priorReview ? { priorReview } : {}),
           introduction:
             `اعتمادًا على ${fileLabel}: ابدأ بعرض فكرة من الملف واسأل: «ماذا نعرف عن ${topic}؟»`
             + (conceptLine ? ` سجّل المفاهيم الظاهرة: ${conceptLine}.` : '')
             + (docs.summary ? ` ملخص الملف: ${docs.summary}` : ''),
-          mainActivity:
-            `(${Math.round(dur * 0.3)} دقيقة) – شرح مباشر من المواد المرفوعة:\n\n`
-            + (conceptLine
-              ? conceptLine.split(' · ').map((c, i) => `${i + 1}. اشرح «${c}» مع مثال من الملف.`).join('\n')
-              : `1. اشرح المفهوم الرئيسي لـ«${topic}» كما يظهر في الملف.\n2. قدّم مثالين متدرجين.\n3. اكتب الخطوات على السبورة.`)
+          mainActivity: styleBlueprint.mainActivity
             + (exampleLine ? `\n\nمثال جاهز من الملف:\n• ${exampleLine}` : ''),
-          guidedPractice:
-            `(${Math.round(dur * 0.22)} دقيقة) – "نحن نفعل":\n\n`
-            + `• حل مثال مشترك مستمد من ${fileLabel} مع مشاركة الطلاب في كل خطوة.\n`
-            + '• أسئلة استرشادية: ماذا نفعل أولًا؟ كيف يرتبط هذا بهدف الدرس؟\n'
-            + '• صحّح المفاهيم الخاطئة فور ظهورها.',
-          independentPractice: lpIndependentAr(dur),
+          guidedPractice: styleBlueprint.guidedPractice,
+          independentPractice: styleBlueprint.independentPractice,
           closure: lpClosureAr(topic, dur),
-          assessment:
-            `تقويم تكويني مرتبط بـ${fileLabel}: سؤالان قصيران على المفاهيم`
+          assessment: `مرتبط بـ${fileLabel}`
             + (conceptLine ? ` (${docs.concepts.slice(0, 2).join(' / ')})` : '')
-            + ' + بطاقة خروج بجملة واحدة.',
-          differentiation: lpDifferentiation(topic, 'ar'),
+            + `.\n${styleBlueprint.assessment}`,
+          differentiation: styleBlueprint.differentiation,
           homework: `واجب قصير من نفس محور ${fileLabel}: تمرينان + جملة تلخيص عن «${topic}».`,
         };
       }
@@ -709,31 +690,22 @@ export class MockAIService extends AIService {
         objectives: docObjectives ?? lpObjectivesEn(topic, null, req.objectives),
         materials: [
           `Uploaded: ${docs.fileNames[0] ?? 'teacher materials'}`,
-          ...lpMaterialsEn(req.subject).slice(0, 3),
+          ...styleBlueprint.materials.slice(0, 3),
         ],
         ...(priorReview ? { priorReview } : {}),
         introduction:
           `Using ${fileLabel}: open with one idea from the file and ask “What do we already know about ${topic}?”`
           + (conceptLine ? ` Capture visible concepts: ${conceptLine}.` : '')
           + (docs.summary ? ` File summary: ${docs.summary}` : ''),
-        mainActivity:
-          `(${Math.round(dur * 0.3)} min) – Direct teach from uploaded materials:\n\n`
-          + (conceptLine
-            ? conceptLine.split(' · ').map((c, i) => `${i + 1}. Explain “${c}” with an example from the file.`).join('\n')
-            : `1. Teach the core idea of “${topic}” as it appears in the file.\n2. Give two progressive examples.\n3. Model steps on the board.`)
+        mainActivity: styleBlueprint.mainActivity
           + (exampleLine ? `\n\nFile-ready example:\n• ${exampleLine}` : ''),
-        guidedPractice:
-          `(${Math.round(dur * 0.22)} min) – We do:\n\n`
-          + `• Work one shared example drawn from ${fileLabel} with student voices at each step.\n`
-          + '• Prompt: What first? How does this link to today’s objective?\n'
-          + '• Correct misconceptions immediately.',
-        independentPractice: lpIndependentEn(dur),
+        guidedPractice: styleBlueprint.guidedPractice,
+        independentPractice: styleBlueprint.independentPractice,
         closure: lpClosureEn(topic, dur),
-        assessment:
-          `Formative check tied to ${fileLabel}: two short items on`
-          + (conceptLine ? ` ${docs.concepts.slice(0, 2).join(' / ')}` : ' key ideas')
-          + ' + one-sentence exit ticket.',
-        differentiation: lpDifferentiation(topic, 'en'),
+        assessment: `Tied to ${fileLabel}`
+          + (conceptLine ? ` (${docs.concepts.slice(0, 2).join(' / ')})` : '')
+          + `.\n${styleBlueprint.assessment}`,
+        differentiation: styleBlueprint.differentiation,
         homework: `Short homework from the same ${fileLabel} thread: two practice items + one summary sentence on “${topic}”.`,
       };
     }
@@ -743,15 +715,15 @@ export class MockAIService extends AIService {
         title: `${topic} – خطة درس`,
         grade: req.grade, subject: req.subject, duration: dur,
         objectives: lpObjectivesAr(topic, kb, req.objectives),
-        materials: lpMaterialsAr(req.subject),
+        materials: styleBlueprint.materials,
         ...(priorReview ? { priorReview } : {}),
         introduction: lpIntroAr(topic, kb),
-        mainActivity: lpMainActivityAr(topic, kb, style, dur),
-        guidedPractice: lpGuidedAr(topic, kb, dur),
-        independentPractice: lpIndependentAr(dur),
+        mainActivity: styleBlueprint.mainActivity,
+        guidedPractice: styleBlueprint.guidedPractice,
+        independentPractice: styleBlueprint.independentPractice,
         closure: lpClosureAr(topic, dur),
-        assessment: lpAssessment(topic, 'ar'),
-        differentiation: lpDifferentiation(topic, 'ar'),
+        assessment: styleBlueprint.assessment,
+        differentiation: styleBlueprint.differentiation,
         homework: lpHomework(topic, 'ar'),
       };
     }
@@ -759,15 +731,15 @@ export class MockAIService extends AIService {
       title: `${topic} – Lesson Plan`,
       grade: req.grade, subject: req.subject, duration: dur,
       objectives: lpObjectivesEn(topic, kb, req.objectives),
-      materials: lpMaterialsEn(req.subject),
+      materials: styleBlueprint.materials,
       ...(priorReview ? { priorReview } : {}),
       introduction: lpIntroEn(topic, kb),
-      mainActivity: lpMainActivityEn(topic, kb, style, dur),
-      guidedPractice: lpGuidedEn(topic, kb, dur),
-      independentPractice: lpIndependentEn(dur),
+      mainActivity: styleBlueprint.mainActivity,
+      guidedPractice: styleBlueprint.guidedPractice,
+      independentPractice: styleBlueprint.independentPractice,
       closure: lpClosureEn(topic, dur),
-      assessment: lpAssessment(topic, 'en'),
-      differentiation: lpDifferentiation(topic, 'en'),
+      assessment: styleBlueprint.assessment,
+      differentiation: styleBlueprint.differentiation,
       homework: lpHomework(topic, 'en'),
     };
   }
@@ -866,31 +838,56 @@ export class MockAIService extends AIService {
     const easyN = Math.max(1, Math.floor(mainTotal * 0.35));
     const hardN = Math.max(1, Math.floor(mainTotal * 0.25));
     const midN = Math.max(1, mainTotal - easyN - hardN);
+
+    // `req.difficulty` SHIFTS the band; it does not flatten it.
+    //
+    // The easy → medium → hard progression is deliberate (worked example →
+    // fading → independent), so honouring "hard" by making all three sections
+    // hard would throw away the scaffolding. It shifts instead — and before
+    // this, `req.difficulty` was not read at all, so the picker on
+    // `app/ai-tools/worksheet.tsx` moved nothing.
+    const BANDS: Record<'easy' | 'medium' | 'hard', [DiffTier, DiffTier, DiffTier]> = {
+      easy: ['easy', 'easy', 'medium'],
+      medium: ['easy', 'medium', 'hard'],
+      hard: ['medium', 'hard', 'hard'],
+    };
+    const requested = req.difficulty === 'easy' || req.difficulty === 'hard' ? req.difficulty : 'medium';
+    const band = BANDS[requested];
+
+    // Titles name the tier the section actually contains, so a "hard"
+    // worksheet does not head its first section «تمارين تمهيدية (سهل)».
+    const TIER_LABEL_AR: Record<DiffTier, string> = { easy: 'سهل', medium: 'متوسط', hard: 'أصعب' };
+    const TIER_LABEL_EN: Record<DiffTier, string> = { easy: 'Easy', medium: 'Medium', hard: 'Harder' };
+    const counts = [easyN, midN, hardN];
     const buckets: Array<{ count: number; diff: DiffTier; title: string }> = lang === 'ar'
       ? [
-          { count: easyN, diff: 'easy', title: 'أ) تمارين تمهيدية (سهل)' },
-          { count: midN, diff: 'medium', title: 'ب) تمارين صفية (متوسط)' },
-          { count: hardN, diff: 'hard', title: 'ج) تحدٍّ سريع (أصعب)' },
+          { count: counts[0], diff: band[0], title: `أ) تمارين تمهيدية (${TIER_LABEL_AR[band[0]]})` },
+          { count: counts[1], diff: band[1], title: `ب) تمارين صفية (${TIER_LABEL_AR[band[1]]})` },
+          { count: counts[2], diff: band[2], title: `ج) تحدٍّ سريع (${TIER_LABEL_AR[band[2]]})` },
         ]
       : [
-          { count: easyN, diff: 'easy', title: 'A) Warm-up practice (Easy)' },
-          { count: midN, diff: 'medium', title: 'B) Class practice (Medium)' },
-          { count: hardN, diff: 'hard', title: 'C) Quick stretch (Harder)' },
+          { count: counts[0], diff: band[0], title: `A) Warm-up practice (${TIER_LABEL_EN[band[0]]})` },
+          { count: counts[1], diff: band[1], title: `B) Class practice (${TIER_LABEL_EN[band[1]]})` },
+          { count: counts[2], diff: band[2], title: `C) Quick stretch (${TIER_LABEL_EN[band[2]]})` },
         ];
 
     let typeIdx = 0;
     for (const bucket of buckets) {
       const questions: WQ[] = [];
-      let sectionType: QType = mainTypes[0];
+      // Types rotate WITHIN a bucket, so a section can hold more than one.
+      // `sectionType` used to be reassigned on every iteration and ended up
+      // naming whichever question came last.
+      const typesUsed = new Set<QType>();
       for (let i = 0; i < bucket.count; i++) {
         const type = mainTypes[typeIdx % mainTypes.length];
         typeIdx += 1;
-        sectionType = type;
+        typesUsed.add(type);
         const q = pushQuestion(type, makeQ(type, bucket.diff), true);
         questions.push(q);
         answerKey.push({ num: qNum++, answer: q.answer ?? '—' });
       }
       if (questions.length > 0) {
+        const sectionType = typesUsed.size === 1 ? [...typesUsed][0] : 'mixed';
         sections.push({ type: sectionType, title: bucket.title, questions });
       }
     }
@@ -927,6 +924,14 @@ export class MockAIService extends AIService {
     const totalMarks = req.totalMarks ?? 20;
     const duration = req.duration ?? 20;
     const types: QType[] = (req.questionTypes as QType[]) ?? ['multiple_choice', 'true_false', 'short_answer'];
+    // A quiz is a flat assessment, so the requested tier applies to every
+    // question — unlike the worksheet, which keeps an easy→hard progression.
+    // `mixed` spreads the tiers across the paper instead of collapsing to
+    // medium, which is what an unrecognised value used to do silently.
+    const quizTier = (t: number): DiffTier => {
+      if (req.difficulty === 'mixed') return (['easy', 'medium', 'hard'] as const)[t % 3];
+      return req.difficulty === 'easy' || req.difficulty === 'hard' ? req.difficulty : 'medium';
+    };
 
     // 2 questions per selected type, marks distributed evenly
     const numQuestions = types.length * 2;
@@ -959,14 +964,20 @@ export class MockAIService extends AIService {
         const pts = isLast ? Math.max(1, totalMarks - usedPts) : basePts;
         usedPts += pts;
 
+        const tier = quizTier(qIdx - 2);
+        // NOTE: `fill_blank` and `word_problem` fall into the short-answer
+        // branch. The quiz picker (`app/ai-tools/quiz.tsx`) offers only the
+        // three types handled here, so no teacher can reach it today; a caller
+        // that sent one would get an honest short-answer question, correctly
+        // labelled as such. Add real branches here before offering them.
         if (lang === 'ar') {
-          if (type === 'multiple_choice') questions.push(pushUnique(() => makeQuizMCQ_ar(topic, kb, pts, id, req.subject)));
-          else if (type === 'true_false') questions.push(pushUnique(() => makeQuizTF_ar(topic, kb, pts, id, req.subject)));
-          else questions.push(pushUnique(() => makeQuizSA_ar(topic, kb, pts, id, req.subject)));
+          if (type === 'multiple_choice') questions.push(pushUnique(() => makeQuizMCQ_ar(topic, kb, pts, id, req.subject, tier)));
+          else if (type === 'true_false') questions.push(pushUnique(() => makeQuizTF_ar(topic, kb, pts, id, req.subject, tier)));
+          else questions.push(pushUnique(() => makeQuizSA_ar(topic, kb, pts, id, req.subject, tier)));
         } else {
-          if (type === 'multiple_choice') questions.push(pushUnique(() => makeQuizMCQ_en(topic, kb, pts, id, req.subject)));
-          else if (type === 'true_false') questions.push(pushUnique(() => makeQuizTF_en(topic, kb, pts, id, req.subject)));
-          else questions.push(pushUnique(() => makeQuizSA_en(topic, kb, pts, id, req.subject)));
+          if (type === 'multiple_choice') questions.push(pushUnique(() => makeQuizMCQ_en(topic, kb, pts, id, req.subject, tier)));
+          else if (type === 'true_false') questions.push(pushUnique(() => makeQuizTF_en(topic, kb, pts, id, req.subject, tier)));
+          else questions.push(pushUnique(() => makeQuizSA_en(topic, kb, pts, id, req.subject, tier)));
         }
       }
     }

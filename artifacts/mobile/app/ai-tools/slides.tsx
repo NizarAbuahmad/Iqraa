@@ -26,6 +26,7 @@ import { Toast } from '@/components/ui/Toast';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
+import { isolateForeignRuns } from '@/services/mathRender';
 import type { ActivitySlide, ClassroomActivity, LessonPlanOutput } from '@/services/ai/AIService';
 import { buildGeneratorContext, generatorLessonId, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
 import {
@@ -36,9 +37,11 @@ import {
   applyMediaEdit, extractGraphCommands, insertLessonResources, nextVideoSuggestion,
   shouldSearchForVideo, videoCaption,
 } from '@/services/classMedia';
+import type { AttachedResource } from '@/services/classMedia';
 import { LessonResources } from '@/components/ui/LessonResources';
 import { LessonAttachments } from '@/components/ui/LessonAttachments';
 import type { LessonMediaItem } from '@/services/lessonMedia';
+import type { LessonMediaItem as UploadedAttachment } from '@/services/lessonMediaApi';
 import type { DeckVideo } from '@/services/youtubeVideo';
 import { summarizeVerification } from '@/services/quizVerification';
 import { confirm } from '@/services/confirm';
@@ -151,6 +154,21 @@ export default function SlidesScreen() {
   const [loadingSuggestion, setLoadingSuggestion] = useState(false);
   /** What the teacher has pinned to this lesson, kept in sync by the picker. */
   const [attached, setAttached] = useState<LessonMediaItem[]>([]);
+  /** The teacher's own uploaded photos/files for this lesson (server-side, R2-backed). */
+  const [uploadedAttachments, setUploadedAttachments] = useState<UploadedAttachment[]>([]);
+  /**
+   * Uploaded *images* and *audio* can both go on a slide now; `document`
+   * (PDF) still has no renderer — `ActivitySlide.mediaKind` only covers
+   * `'image' | 'video' | 'audio'`. Merged with the pinned-URL resources so
+   * both sources land in the deck the same way, in one call.
+   */
+  const attachedResources = useMemo<AttachedResource[]>(() => [
+    ...attached,
+    ...uploadedAttachments
+      .filter((m): m is UploadedAttachment & { url: string } =>
+        (m.kind === 'image' || m.kind === 'audio') && !!m.url)
+      .map(m => ({ kind: m.kind as 'image' | 'audio', url: m.url, caption: m.caption })),
+  ], [attached, uploadedAttachments]);
   /** True once the example-verification pass has resolved — the summary row
       stays silent while a check is still in flight. */
   const [verifyDone, setVerifyDone] = useState(false);
@@ -389,7 +407,7 @@ export default function SlidesScreen() {
       // nothing to wait for and no reason to make the deck flicker.
       const built = {
         ...builtBase,
-        slides: insertLessonResources(builtBase.slides, attached, isAr),
+        slides: insertLessonResources(builtBase.slides, attachedResources, isAr),
       };
       setDeck(built);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -455,7 +473,7 @@ export default function SlidesScreen() {
           // The search fills a gap, it does not compete with the teacher. A
           // pinned video means no call at all — one fewer thing on the
           // projector, and 100 units of a 10,000/day quota unspent.
-          const wantVideo = shouldSearchForVideo(attached);
+          const wantVideo = shouldSearchForVideo(attachedResources);
           const [titlePhoto, dividerPhoto, videos] = await Promise.all([
             searchDeckPhoto(titleQuery),
             searchDeckPhoto(dividerQuery),
@@ -749,7 +767,7 @@ export default function SlidesScreen() {
               for that lesson carries it — and so does Class Mode, which has
               read this store all along. */}
           <LessonResources topic={topic.trim()} onChange={setAttached} />
-          <LessonAttachments lessonId={groundedLessonId} />
+          <LessonAttachments lessonId={groundedLessonId} onChange={setUploadedAttachments} />
 
           <View style={{ gap: 10, marginBottom: 18 }}>
             <Toggle label={t('slidesIncludeExamples')} value={includeExamples} onChange={setIncludeExamples} />
@@ -864,10 +882,17 @@ export default function SlidesScreen() {
                         <Text style={{ color: ACCENT, fontFamily: 'Cairo_700Bold', fontSize: 11 }}>{i + 1}</Text>
                       </View>
                       <Text
-                        style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }}
+                        style={{
+                          flex: 1,
+                          color: colors.foreground,
+                          fontFamily: 'Almarai_400Regular',
+                          fontSize: 13,
+                          textAlign: isRTL ? 'right' : 'left',
+                          writingDirection: isRTL ? 'rtl' : 'ltr',
+                        }}
                         numberOfLines={1}
                       >
-                        {s.title}
+                        {isolateForeignRuns(s.title)}
                       </Text>
                       {/* The projector's own rule, so the editor cannot advertise a
                           timer the presentation screen then refuses to run. */}

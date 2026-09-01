@@ -222,11 +222,36 @@ export function hasRenderableMath(line: string): boolean {
  * starts or ends on a space, so it never eats into the Arabic word-spacing
  * around it.
  */
-const FOREIGN_CHAR = "A-Za-z0-9()=+\\-./^√×÷∘′'¹²³⁰⁴-⁹⁺⁻ⁿ";
+// Subscripts and comparison operators belong to the run for the same reason
+// the superscripts do: «قيمة x₁ ≤ 5» split into three isolates renders its
+// pieces in three different places. Deliberately excluded: `,` (Arabic prose
+// uses the latin comma), and `*` / `_` (markdown emphasis, which would change
+// already-shipped chat rendering to no benefit here).
+const FOREIGN_CHAR = "A-Za-z0-9()=+\\-./^√×÷∘′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉<>≤≥≠≈±∞";
 const FOREIGN_RUN_RE = new RegExp(`[${FOREIGN_CHAR}](?:[${FOREIGN_CHAR} ]*[${FOREIGN_CHAR}])?`, 'g');
 
+/**
+ * A run only earns an isolate if it could actually be reordered against the
+ * Arabic around it: it holds a Latin letter, or a number *and* an operator.
+ *
+ * Without this test the pass wraps a lone `.` or a bare «ص 45» page number,
+ * because `.` and the digits are in the class above. That is not merely
+ * useless — it broke the abjad option marker «أ.» into «أ⁦.⁩» and split the
+ * page citation, which is how it was caught. A standalone number or a
+ * standalone punctuation mark is laid out correctly by the bidi algorithm on
+ * its own; only a mixed run of them needs help.
+ */
+const HAS_LATIN = /[A-Za-z]/;
+const HAS_DIGIT = /[0-9₀-₉¹²³⁰⁴-⁹]/;
+const HAS_OPERATOR = /[=+\-/^√×÷∘<>≤≥≠≈±∞]/;
+
+function worthIsolating(run: string): boolean {
+  if (HAS_LATIN.test(run)) return true;
+  return HAS_DIGIT.test(run) && HAS_OPERATOR.test(run);
+}
+
 export function isolateForeignRuns(line: string): string {
-  return (line ?? '').replace(FOREIGN_RUN_RE, m => `⁦${m}⁩`);
+  return (line ?? '').replace(FOREIGN_RUN_RE, m => (worthIsolating(m) ? `⁦${m}⁩` : m));
 }
 
 /**

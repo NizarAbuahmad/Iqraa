@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { pickLessonFile, pickLessonPhoto } from '@/services/lessonMediaPick';
+import { pickLessonFiles, pickLessonPhotos } from '@/services/lessonMediaPick';
 import {
   deleteLessonMedia, listLessonMedia, uploadLessonMedia, type LessonMediaItem,
 } from '@/services/lessonMediaApi';
@@ -14,6 +14,8 @@ const TEAL = '#1B6B62';
 type Props = {
   /** The lesson's own KB id (e.g. `kbl-math-s1-nccd-u2_l1`) — empty when the topic isn't a grounded lesson yet, in which case nothing renders. */
   lessonId: string;
+  /** Told when the list changes, so a generator can pull the images into the deck it builds. */
+  onChange?: (items: LessonMediaItem[]) => void;
 };
 
 /**
@@ -25,7 +27,7 @@ type Props = {
  * pattern) — see `lib/db/src/schema/lessonMedia.ts` for why: a lesson title
  * can resolve to the wrong lesson, an id can't.
  */
-export function LessonAttachments({ lessonId }: Props) {
+export function LessonAttachments({ lessonId, onChange }: Props) {
   const colors = useColors();
   const { t, isRTL } = useLanguage();
   const [items, setItems] = useState<LessonMediaItem[]>([]);
@@ -34,25 +36,34 @@ export function LessonAttachments({ lessonId }: Props) {
   const [error, setError] = useState('');
 
   const refresh = useCallback(async (id: string) => {
-    setItems(id.trim() ? await listLessonMedia(id) : []);
+    const next = id.trim() ? await listLessonMedia(id) : [];
+    setItems(next);
+    onChange?.(next);
+    // `onChange` is a fresh closure each render; depending on it would reload
+    // the list on every keystroke in the parent's form.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => { void refresh(lessonId); }, [lessonId, refresh]);
 
-  const attach = async (pick: () => Promise<string | null>) => {
+  /** Uploads each picked file in turn — one failure doesn't stop the rest, and the list refreshes with whatever made it up. */
+  const attach = async (pick: () => Promise<string[]>) => {
     setError('');
-    const dataUrl = await pick();
-    if (!dataUrl) return; // cancelled
+    const dataUrls = await pick();
+    if (dataUrls.length === 0) return; // cancelled
     setBusy(true);
-    try {
-      await uploadLessonMedia(lessonId, dataUrl, '');
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      await refresh(lessonId);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('lessonAttachmentsUploadFailed'));
-    } finally {
-      setBusy(false);
+    let failures = 0;
+    for (const dataUrl of dataUrls) {
+      try {
+        await uploadLessonMedia(lessonId, dataUrl, '');
+      } catch {
+        failures += 1;
+      }
     }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await refresh(lessonId);
+    if (failures > 0) setError(t('lessonAttachmentsUploadFailed'));
+    setBusy(false);
   };
 
   const drop = async (id: string) => {
@@ -132,7 +143,7 @@ export function LessonAttachments({ lessonId }: Props) {
 
           <View style={[styles.actions, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Pressable
-              onPress={() => { void attach(pickLessonPhoto); }}
+              onPress={() => { void attach(pickLessonPhotos); }}
               disabled={busy}
               style={[styles.addBtn, { borderColor: TEAL, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: busy ? 0.6 : 1 }]}
               accessibilityRole="button"
@@ -143,7 +154,7 @@ export function LessonAttachments({ lessonId }: Props) {
               </Text>
             </Pressable>
             <Pressable
-              onPress={() => { void attach(pickLessonFile); }}
+              onPress={() => { void attach(pickLessonFiles); }}
               disabled={busy}
               style={[styles.addBtn, { borderColor: TEAL, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: busy ? 0.6 : 1 }]}
               accessibilityRole="button"

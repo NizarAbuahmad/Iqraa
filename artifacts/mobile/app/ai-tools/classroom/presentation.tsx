@@ -38,7 +38,7 @@ import {
 } from '@/services/classGame';
 import { AwardRow, PodiumView, ScoreStrip, ScoreboardView } from '@/components/classroom/GameBoard';
 import { MathText } from '@/components/classroom/MathText';
-import { hasRenderableMath, prettifySymPy } from '@/services/mathRender';
+import { hasRenderableMath, isolateForeignRuns, prettifySymPy } from '@/services/mathRender';
 
 /** Open a media URL outside the app (native fallback — no WebView dep). */
 async function openExternalMedia(url: string): Promise<void> {
@@ -196,7 +196,7 @@ function GraphView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; 
   );
 }
 
-// ─── Media slide (image / YouTube) ────────────────────────────────────────────
+// ─── Media slide (image / YouTube / audio) ────────────────────────────────────
 function MediaView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; t: (k: any, arg?: any) => string }) {
   const url = slide.mediaUrl ?? '';
   const embed = slide.mediaKind === 'video' ? youtubeEmbedUrl(url) : null;
@@ -233,6 +233,18 @@ function MediaView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; 
             title: slide.mediaCaption || 'video',
           })}
         </View>
+      ) : slide.mediaKind === 'audio' && Platform.OS === 'web' ? (
+        // A native `<audio>` control — unlike the YouTube embed above, there is
+        // no player component to fall back to, and browsers already render a
+        // usable one for free.
+        <View style={mediaStyles.audioFrame}>
+          <Ionicons name="musical-notes" size={28} color={ACCENT} />
+          {React.createElement('audio', {
+            src: url,
+            controls: true,
+            style: { width: '100%' },
+          })}
+        </View>
       ) : (
         <Pressable
           onPress={() => { void openExternalMedia(url); }}
@@ -266,7 +278,7 @@ function MediaView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; 
           />
           {!!slide.mediaCaption && (
             <Text style={[mediaStyles.zoomCaption, { fontFamily: 'Cairo_400Regular' }]}>
-              {slide.mediaCaption}
+              {isolateForeignRuns(slide.mediaCaption)}
             </Text>
           )}
           <Pressable
@@ -292,9 +304,13 @@ function HeroSlideView({ slide, accent }: { slide: ActivitySlide; accent: string
   const hasPhoto = !!slide.mediaUrl;
   const body = (
     <View style={heroStyles.textWrap}>
-      <Text style={[heroStyles.title, { fontFamily: 'Cairo_700Bold' }]}>{slide.title}</Text>
+      <Text style={[heroStyles.title, { fontFamily: 'Cairo_700Bold' }]}>
+        {isolateForeignRuns(slide.title)}
+      </Text>
       {!!slide.content && (
-        <Text style={[heroStyles.subtitle, { fontFamily: 'Almarai_400Regular' }]}>{slide.content}</Text>
+        <Text style={[heroStyles.subtitle, { fontFamily: 'Almarai_400Regular' }]}>
+          {isolateForeignRuns(slide.content)}
+        </Text>
       )}
     </View>
   );
@@ -341,7 +357,14 @@ function TeacherPanel({
   const Section = ({ label, content }: { label: string; content: string }) => (
     <View style={panelStyles.section}>
       <Text style={[panelStyles.sectionLabel, { textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
-      <Text style={[panelStyles.sectionText, { textAlign: isRTL ? 'right' : 'left' }]}>{content}</Text>
+      <Text
+        style={[
+          panelStyles.sectionText,
+          { textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' },
+        ]}
+      >
+        {isolateForeignRuns(content)}
+      </Text>
     </View>
   );
 
@@ -366,7 +389,16 @@ function TeacherPanel({
             <View style={panelStyles.section}>
               <Text style={[panelStyles.sectionLabel, { textAlign: isRTL ? 'right' : 'left' }]}>{t('suggestedQuestionsLabel')}</Text>
               {teacher.suggestedQuestions.map((q, i) => (
-                <Text key={i} style={[panelStyles.bulletQ, { textAlign: isRTL ? 'right' : 'left' }]}>{'• '}{q}</Text>
+                <Text
+                  key={i}
+                  style={[
+                    panelStyles.bulletQ,
+                    { textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' },
+                  ]}
+                >
+                  {'• '}
+                  {isolateForeignRuns(q)}
+                </Text>
               ))}
             </View>
           ) : null}
@@ -433,10 +465,14 @@ function QuestionOptions({
               <Text
                 style={[
                   qStyles.optionText,
-                  { textAlign: isRTL ? 'right' : 'left', fontFamily: isCorrect ? 'Cairo_700Bold' : 'Cairo_500Medium' },
+                  {
+                    textAlign: isRTL ? 'right' : 'left',
+                    writingDirection: isRTL ? 'rtl' : 'ltr',
+                    fontFamily: isCorrect ? 'Cairo_700Bold' : 'Cairo_500Medium',
+                  },
                 ]}
               >
-                {opt}
+                {isolateForeignRuns(opt)}
               </Text>
               {isCorrect && <Ionicons name="checkmark-circle" size={26} color={TIMER_GREEN} />}
             </View>
@@ -492,7 +528,7 @@ function QuestionOptions({
                 { fontFamily: 'Almarai_400Regular', color: TEXT_MUTED, textAlign: 'center' },
               ]}
             >
-              {t('verifiedComputed', prettifySymPy(slide.computedAnswer))}
+              {isolateForeignRuns(t('verifiedComputed', prettifySymPy(slide.computedAnswer)))}
             </Text>
           )}
         </View>
@@ -513,6 +549,14 @@ function SlideView({ slide, isRTL: appIsRTL }: { slide: ActivitySlide; isRTL: bo
   const isRTL = isEnglishSlideContent(slide.content, ...(slide.options ?? [])) ? false : appIsRTL;
   const accent = slideTypeAccent(slide.type);
   const align = isRTL ? ('right' as const) : ('left' as const);
+  // Alignment is not direction. Every body line here is model-written prose
+  // that can carry an equation, and on web the document is pinned to
+  // dir="ltr" even in Arabic (see LanguageContext), so without an explicit
+  // writingDirection the paragraph resolves base-LTR and the bidi algorithm
+  // reorders the Arabic clauses against the maths. isolateForeignRuns then
+  // keeps each Latin/maths run whole inside that paragraph — «f(x) = 2x⁴ -
+  // x² + 3» projected as «x⁴f(x) = 2 - x² + 3» is what these two fix.
+  const dir = isRTL ? ('rtl' as const) : ('ltr' as const);
   const edge = isRTL ? ('flex-end' as const) : ('flex-start' as const);
   const lines = slide.content.split('\n').map(l => l.trim()).filter(Boolean);
   const [glyph, heading] = splitEmoji(slide.title);
@@ -525,16 +569,24 @@ function SlideView({ slide, isRTL: appIsRTL }: { slide: ActivitySlide; isRTL: bo
   if (slide.slideNumber === 1 && slide.type === 'intro') {
     return (
       <View style={slideStyles.cover}>
-        <Text style={[slideStyles.coverTitle, { textAlign: align, fontFamily: 'Cairo_700Bold' }]}>
-          {heading}
+        <Text
+          style={[
+            slideStyles.coverTitle,
+            { textAlign: align, writingDirection: dir, fontFamily: 'Cairo_700Bold' },
+          ]}
+        >
+          {isolateForeignRuns(heading)}
         </Text>
         <View style={[slideStyles.rule, { alignSelf: edge }]} />
         {lines.map((line, i) => (
           <Text
             key={i}
-            style={[slideStyles.coverSub, { textAlign: align, fontFamily: 'Almarai_400Regular' }]}
+            style={[
+              slideStyles.coverSub,
+              { textAlign: align, writingDirection: dir, fontFamily: 'Almarai_400Regular' },
+            ]}
           >
-            {line}
+            {isolateForeignRuns(line)}
           </Text>
         ))}
       </View>
@@ -551,8 +603,13 @@ function SlideView({ slide, isRTL: appIsRTL }: { slide: ActivitySlide; isRTL: bo
             <Text style={slideStyles.glyph}>{glyph}</Text>
           </View>
         )}
-        <Text style={[slideStyles.title, { color: accent, textAlign: align, fontFamily: 'Cairo_700Bold' }]}>
-          {heading}
+        <Text
+          style={[
+            slideStyles.title,
+            { color: accent, textAlign: align, writingDirection: dir, fontFamily: 'Cairo_700Bold' },
+          ]}
+        >
+          {isolateForeignRuns(heading)}
         </Text>
       </View>
       <View style={[slideStyles.rule, { alignSelf: edge }]} />
@@ -570,8 +627,13 @@ function SlideView({ slide, isRTL: appIsRTL }: { slide: ActivitySlide; isRTL: bo
             return (
               <View key={i} style={[slideStyles.card, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <View style={[slideStyles.cardBar, { backgroundColor: accent }]} />
-                <Text style={[slideStyles.cardText, { textAlign: align, fontFamily: 'Almarai_400Regular' }]}>
-                  {text}
+                <Text
+                  style={[
+                    slideStyles.cardText,
+                    { textAlign: align, writingDirection: dir, fontFamily: 'Almarai_400Regular' },
+                  ]}
+                >
+                  {isolateForeignRuns(text)}
                 </Text>
               </View>
             );
@@ -598,7 +660,19 @@ function SlideView({ slide, isRTL: appIsRTL }: { slide: ActivitySlide; isRTL: bo
           if (isEquation) {
             return (
               <View key={i} style={slideStyles.formulaBox}>
-                <Text style={[slideStyles.formula, { fontFamily: 'Cairo_700Bold' }]}>{text}</Text>
+                {/* The parser found no fraction/radical/caret to lay out, but
+                    the line still reads as an equation — often Arabic prose
+                    wrapped around one, which is exactly the case that
+                    scrambled. Isolation keeps the equation whole; the isolate
+                    itself carries the run left-to-right inside it. */}
+                <Text
+                  style={[
+                    slideStyles.formula,
+                    { writingDirection: dir, fontFamily: 'Cairo_700Bold' },
+                  ]}
+                >
+                  {isolateForeignRuns(text)}
+                </Text>
               </View>
             );
           }
@@ -613,11 +687,12 @@ function SlideView({ slide, isRTL: appIsRTL }: { slide: ActivitySlide; isRTL: bo
                   // itself centred and width-capped, so a margin-aligned caption
                   // floats away from the thing it describes.
                   textAlign: slide.type === 'media' ? 'center' : align,
+                  writingDirection: dir,
                   fontFamily: 'Almarai_400Regular',
                 },
               ]}
             >
-              {text}
+              {isolateForeignRuns(text)}
             </Text>
           );
         })}
@@ -1035,8 +1110,17 @@ export default function PresentationScreen() {
               </Pressable>
               {hintVisible && (
                 <View style={[styles.revealContent, { borderColor: TIMER_AMBER + '40', backgroundColor: TIMER_AMBER + '10' }]}>
-                  <Text style={[styles.revealText, { textAlign: isRTL ? 'right' : 'left', fontFamily: 'Almarai_400Regular' }]}>
-                    {slide.hint}
+                  <Text
+                    style={[
+                      styles.revealText,
+                      {
+                        textAlign: isRTL ? 'right' : 'left',
+                        writingDirection: isRTL ? 'rtl' : 'ltr',
+                        fontFamily: 'Almarai_400Regular',
+                      },
+                    ]}
+                  >
+                    {isolateForeignRuns(slide.hint)}
                   </Text>
                 </View>
               )}
@@ -1066,8 +1150,17 @@ export default function PresentationScreen() {
                       isRTL={isRTL}
                     />
                   ) : (
-                    <Text style={[styles.revealText, { textAlign: isRTL ? 'right' : 'left', fontFamily: 'Cairo_700Bold' }]}>
-                      {slide.answer}
+                    <Text
+                      style={[
+                        styles.revealText,
+                        {
+                          textAlign: isRTL ? 'right' : 'left',
+                          writingDirection: isRTL ? 'rtl' : 'ltr',
+                          fontFamily: 'Cairo_700Bold',
+                        },
+                      ]}
+                    >
+                      {isolateForeignRuns(slide.answer)}
                     </Text>
                   )}
                   {/* Same trust moment as question slides: state only what
@@ -1092,7 +1185,9 @@ export default function PresentationScreen() {
                         <Text style={[qStyles.verifiedText, {
                           fontFamily: 'Almarai_400Regular', color: TEXT_MUTED, textAlign: 'center',
                         }]}>
-                          {t('verifiedComputed', prettifySymPy(slide.computedAnswer))}
+                          {isolateForeignRuns(
+                            t('verifiedComputed', prettifySymPy(slide.computedAnswer)),
+                          )}
                         </Text>
                       )}
                     </View>
@@ -1288,6 +1383,19 @@ const mediaStyles = StyleSheet.create({
     borderColor: BORDER,
   },
   image: { width: '100%', height: 460, borderRadius: 14, backgroundColor: CARD_BG },
+  audioFrame: {
+    width: '100%',
+    maxWidth: 560,
+    alignSelf: 'center',
+    borderRadius: 14,
+    backgroundColor: CARD_BG,
+    borderWidth: 1,
+    borderColor: BORDER,
+    paddingVertical: 28,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    gap: 14,
+  },
   zoomHint: {
     position: 'absolute', bottom: 10, right: 10,
     width: 34, height: 34, borderRadius: 17,
