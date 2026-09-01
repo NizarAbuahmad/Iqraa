@@ -195,13 +195,20 @@ export function buildChartSlide(
   };
 }
 
+const MEDIA_SLIDE_TITLE: Record<'image' | 'video' | 'audio', [ar: string, en: string]> = {
+  video: ['فيديو', 'Video'],
+  audio: ['تسجيل صوتي', 'Audio'],
+  image: ['صورة', 'Image'],
+};
+
 export function buildMediaSlide(
-  kind: 'image' | 'video',
+  kind: 'image' | 'video' | 'audio',
   url: string,
   caption: string,
   isAr: boolean,
   slideNumber: number,
 ): ActivitySlide {
+  const [titleAr, titleEn] = MEDIA_SLIDE_TITLE[kind];
   return {
     slideNumber,
     type: 'media',
@@ -209,9 +216,7 @@ export function buildMediaSlide(
     // (presentation.tsx's badge, deckSlidesHtml's header, the PPTX header
     // bar) prepends its own type emoji, so carrying one here printed it
     // twice — "🎬  🎬 فيديو".
-    title: kind === 'video'
-      ? (isAr ? 'فيديو' : 'Video')
-      : (isAr ? 'صورة' : 'Image'),
+    title: isAr ? titleAr : titleEn,
     content: caption,
     mediaKind: kind,
     mediaUrl: url,
@@ -277,7 +282,7 @@ export function insertVideoSlide(
 }
 
 /** What a teacher pinned to a lesson — the shape `lessonMedia` stores. */
-export type AttachedResource = { kind: 'image' | 'video'; url: string; caption: string };
+export type AttachedResource = { kind: 'image' | 'video' | 'audio'; url: string; caption: string };
 
 /**
  * Put the teacher's own resources into a generated deck.

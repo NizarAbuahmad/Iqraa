@@ -196,7 +196,7 @@ function GraphView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; 
   );
 }
 
-// ─── Media slide (image / YouTube) ────────────────────────────────────────────
+// ─── Media slide (image / YouTube / audio) ────────────────────────────────────
 function MediaView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; t: (k: any, arg?: any) => string }) {
   const url = slide.mediaUrl ?? '';
   const embed = slide.mediaKind === 'video' ? youtubeEmbedUrl(url) : null;
@@ -231,6 +231,18 @@ function MediaView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; 
             allow: 'accelerometer; clipboard-write; encrypted-media; picture-in-picture; fullscreen',
             allowFullScreen: true,
             title: slide.mediaCaption || 'video',
+          })}
+        </View>
+      ) : slide.mediaKind === 'audio' && Platform.OS === 'web' ? (
+        // A native `<audio>` control — unlike the YouTube embed above, there is
+        // no player component to fall back to, and browsers already render a
+        // usable one for free.
+        <View style={mediaStyles.audioFrame}>
+          <Ionicons name="musical-notes" size={28} color={ACCENT} />
+          {React.createElement('audio', {
+            src: url,
+            controls: true,
+            style: { width: '100%' },
           })}
         </View>
       ) : (
@@ -1371,6 +1383,19 @@ const mediaStyles = StyleSheet.create({
     borderColor: BORDER,
   },
   image: { width: '100%', height: 460, borderRadius: 14, backgroundColor: CARD_BG },
+  audioFrame: {
+    width: '100%',
+    maxWidth: 560,
+    alignSelf: 'center',
+    borderRadius: 14,
+    backgroundColor: CARD_BG,
+    borderWidth: 1,
+    borderColor: BORDER,
+    paddingVertical: 28,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    gap: 14,
+  },
   zoomHint: {
     position: 'absolute', bottom: 10, right: 10,
     width: 34, height: 34, borderRadius: 17,
