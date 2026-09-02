@@ -282,8 +282,8 @@ export interface ActivitySlide {
    * the picture too.
    */
   visual?: import('../deckVisuals.ts').VisualBlock;
-  /** Media payload for type 'media' — projected image, video, or audio. */
-  mediaKind?: 'image' | 'video' | 'audio';
+  /** Media payload for type 'media' — projected image, video, audio, or a linked document. */
+  mediaKind?: 'image' | 'video' | 'audio' | 'document';
   /**
    * Image URL / data URI, or a YouTube watch/share link.
    * Also doubles as a full-bleed background photo on the title slide

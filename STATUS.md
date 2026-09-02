@@ -8660,6 +8660,40 @@ pre-existing skips, unchanged) including new tests for the audio title
 (`deckSlidesHtml.test.ts`). Not verified: a real audio file presented in a
 browser — same sandbox limitation as above.
 
+## Lesson attachments: document slides, and a privacy check, 2026-09-01
+
+Closes the last gap from the two entries above: `document` (PDF) attachments
+now get a slide, same `'image' | 'video' | 'audio' | 'document'` `mediaKind`
+pattern. No in-app or PDF/PPTX-native PDF viewer exists, so it follows the
+same link-out shape audio/video already use — a clickable link, the bare URL
+as text, and (in `presentation.tsx`) a document icon and label instead of the
+"▶ play" one, since a play glyph on a handout read as a broken player.
+
+**Before building it, checked something that mattered more: could a
+teacher's own uploaded file ever be shown to a DIFFERENT teacher** — via the
+shared `ai_artifacts` generation pool this repo already uses to serve one
+generated worksheet to every teacher who asks for the same lesson (see the
+"shared artifact pool" entries elsewhere in this file). Traced it end to end:
+`attachedResources` (built from `lesson_media` rows, each `userId`-scoped in
+Postgres and filtered by `req.user!.id` in every route) never appears in the
+`/generate/lesson-plan` request body, the pool's cache key
+(`generationKeys()` in `generationKey.ts`), or the stored pooled payload —
+`insertLessonResources` splices attachments into the deck client-side,
+*after* the network round trip for the lesson plan is already done. Checked
+the other places a deck could leak too: `workspace` saves are `userId`-scoped
+server-side (`routes/workspace.ts`), there's no shared/team workspace
+feature, and PDF/PPTX export is fully on-device with no upload step. No leak
+found — documented here rather than left as an unstated assumption, since
+the next person extending this path needs to know the property to preserve:
+never add a field to `AIRequest`/`ClassroomActivityRequest` that carries
+attachment content or URLs into the generation request body.
+
+Verified: `pnpm run typecheck` clean, mobile suite 1116/1116 pass (10
+pre-existing skips, unchanged), including new tests for the document slide
+title and the document PDF-export link. Not verified: a real PDF attached and
+opened from a presented deck in a browser — same sandbox limitation as the
+rest of this feature's entries.
+
 ## «تجهيزات الصف» changed almost nothing, 2026-08-31
 
 Reported from the builder screen: a teacher toggled «شاشة عرض» / «سبورة فقط»,

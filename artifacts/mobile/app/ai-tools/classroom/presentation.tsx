@@ -196,7 +196,7 @@ function GraphView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; 
   );
 }
 
-// ─── Media slide (image / YouTube / audio) ────────────────────────────────────
+// ─── Media slide (image / YouTube / audio / document) ─────────────────────────
 function MediaView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; t: (k: any, arg?: any) => string }) {
   const url = slide.mediaUrl ?? '';
   const embed = slide.mediaKind === 'video' ? youtubeEmbedUrl(url) : null;
@@ -246,13 +246,17 @@ function MediaView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; 
           })}
         </View>
       ) : (
+        // Also where 'document' lands — no in-app viewer exists for a PDF,
+        // native or web, so it gets the same "open externally" treatment as
+        // video/audio on native. The icon and label are the one thing that
+        // change: a "play" glyph on a document read as a broken player.
         <Pressable
           onPress={() => { void openExternalMedia(url); }}
           style={[mediaStyles.openBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
         >
-          <Ionicons name="play-circle" size={20} color="#fff" />
+          <Ionicons name={slide.mediaKind === 'document' ? 'document-text' : 'play-circle'} size={20} color="#fff" />
           <Text style={[mediaStyles.openBtnText, { fontFamily: 'Cairo_700Bold' }]}>
-            {t('openMedia')}
+            {slide.mediaKind === 'document' ? t('openDocument') : t('openMedia')}
           </Text>
         </Pressable>
       )}
