@@ -280,7 +280,7 @@ function makeMCQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: 
   const c0 = kb?.keyConceptsAr?.[0] ?? topic;
   const c1 = kb?.keyConceptsAr?.[1] ?? `تطبيق ${topic}`;
 
-  const correct0 = t0?.definitionAr?.substring(0, 55) ?? `الوصف الصحيح لـ${topic}`;
+  const correct0 = t0?.definitionAr?.split(' ').slice(0, 9).join(' ') ?? `الوصف الصحيح لـ${topic}`;
   const templates: TieredTemplate[] = [
     { tier: 'easy', make: () => ({ text: `أيّ مما يلي يُعرِّف ${t0?.ar ?? topic} بشكل صحيح؟`, options: placeCorrect(correct0, [`مفهوم يختلف عن ${topic}`, 'وصف لظاهرة أخرى', 'لا شيء مما ذُكر']), answer: correct0, points: pts }) },
     { tier: 'medium', make: () => ({ text: `عند تطبيق ${topic} في مسألة حياتية، ما الخطوة الأولى الصحيحة؟`, options: placeCorrect('تحديد المعطيات والمطلوب بدقة', ['كتابة الإجابة النهائية مباشرة', 'تخمين النتيجة دون تحليل', 'تجاهل البيانات الناقصة']), answer: 'تحديد المعطيات والمطلوب بدقة', points: pts }) },
@@ -303,7 +303,7 @@ function makeSAQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: 
   const c0 = kb?.keyConceptsAr?.[0] ?? topic;
   const c1 = kb?.keyConceptsAr?.[1] ?? `تطبيق ${topic}`;
   const templates: TieredTemplate[] = [
-    { tier: 'easy', make: () => ({ text: `اشرح بأسلوبك الخاص مفهوم ${t0?.ar ?? topic} مع إعطاء مثال تطبيقي.`, answer: t0 ? `التعريف: ${t0.definitionAr.substring(0, 60)}... + مثال حياتي.` : `التعريف الدقيق + مثال واضح.`, points: pts }) },
+    { tier: 'easy', make: () => ({ text: `اشرح بأسلوبك الخاص مفهوم ${t0?.ar ?? topic} مع إعطاء مثال تطبيقي.`, answer: t0 ? `التعريف: ${t0.definitionAr.split(' ').slice(0, 10).join(' ')}... + مثال حياتي.` : `التعريف الدقيق + مثال واضح.`, points: pts }) },
     { tier: 'easy', make: () => ({ text: `صِف الخطوات المنهجية التي تتبعها لحل مسألة تتعلق بـ${topic}. استخدم قائمة مرقّمة.`, answer: 'الخطوات: 1. تحديد المعطيات 2. اختيار الأسلوب 3. التنفيذ 4. التحقق.', points: pts }) },
     { tier: 'medium', make: () => ({ text: `كيف يرتبط ${topic} بما درسناه سابقًا؟ اذكر ارتباطًا واحدًا على الأقل وفسّره.`, answer: 'ارتباط منطقي موثّق مع وحدة أو مادة سابقة.', points: pts }) },
     { tier: 'medium', make: () => ({ text: `ما أهمية دراسة ${topic}؟ اذكر فائدتين على الأقل وأعطِ مثالًا لكل منهما.`, answer: 'فائدتان: 1. بناء مهارة… 2. تطبيق على… مع مثالين.', points: pts }) },
@@ -322,11 +322,11 @@ function makeFBQ_ar(topic: string, kb: KBLesson | null, diff: string, subject?: 
   const t1 = kb?.keyTerms?.[1];
   const c0 = kb?.keyConceptsAr?.[0] ?? topic;
   const templates: TieredTemplate[] = [
-    { tier: 'easy', make: () => ({ text: `${t0?.ar ?? topic} هو __________ يُعرَّف بأنه __________.`, answer: `${t0?.ar ?? topic} / ${t0?.definitionAr?.split(' ').slice(0, 4).join(' ') ?? 'الإجابة في الكتاب'}`, points: pts }) },
+    { tier: 'easy', make: () => ({ text: `أكمل: ${t0?.ar ?? topic} يُعرَّف بأنه __________.`, answer: `${t0?.definitionAr?.split(' ').slice(0, 6).join(' ') ?? 'راجع تعريف الكتاب المدرسي'}`, points: pts }) },
     { tier: 'medium', make: () => ({ text: `عند تطبيق ${topic}، فإن __________ يتغير نتيجة __________.`, answer: 'المتغير / السبب (راجع الكتاب المدرسي)', points: pts }) },
     { tier: 'easy', make: () => ({ text: `الخطوات الثلاث الرئيسية لتطبيق ${topic} هي: __________، __________، __________.`, answer: '1. تحديد المعطيات 2. التطبيق 3. التحقق', points: pts }) },
-    { tier: 'medium', make: () => ({ text: `${c0} يرتبط بـ__________ ويؤدي إلى __________.`, answer: `${c0} / الظاهرة أو النتيجة المرتبطة به`, points: pts }) },
-    { tier: 'hard', make: () => ({ text: t1 ? `الفرق الرئيسي بين ${t0?.ar ?? c0} و${t1.ar} هو أن __________ بينما __________.` : `القاعدة الأساسية في ${topic} تنص على أن __________ يؤدي إلى __________.`, answer: t1 ? `${t0?.ar ?? c0}: … / ${t1.ar}: …` : 'القاعدة / النتيجة (راجع الكتاب)', points: pts }) },
+    { tier: 'medium', make: () => ({ text: `${c0} يرتبط بمفهوم أساسي ويؤدي إلى نتيجة محددة — اذكرهما.`, answer: 'يذكر الطالب المفهوم المرتبط والنتيجة المترتبة عليه (راجع الكتاب المدرسي)', points: pts }) },
+    { tier: 'hard', make: () => ({ text: t1 ? `الفرق الرئيسي بين ${t0?.ar ?? c0} و${t1.ar} هو أن __________ بينما __________.` : `القاعدة الأساسية في ${topic} تنص على أن __________ يؤدي إلى __________.`, answer: t1 ? `يختلف ${t0?.ar ?? c0} عن ${t1.ar} في التعريف والتطبيق (راجع تعريف كل منهما في الكتاب المدرسي)` : 'القاعدة / النتيجة (راجع الكتاب)', points: pts }) },
     { tier: 'hard', make: () => ({ text: `عندما يزداد __________ في سياق ${topic}، يتغير __________ وفقًا لذلك.`, answer: 'المتغير المستقل / المتغير التابع', points: pts }) },
   ];
   return pickTiered(templates, diff)();
@@ -1676,8 +1676,8 @@ export class MockAIService extends AIService {
           slides: [
             { slideNumber: 1, type: 'intro', title: '🖼️ جولة المعارض', content: `مرحبًا بكم في معرض ${topic}!\n\n5 محطات تعليمية حول الفصل.\nكل مجموعة تتنقل بين المحطات وتناقش المسألة.\nوقت كل محطة: 3-4 دقائق.\n\nاستعدوا — الجولة تبدأ الآن!`, durationSeconds: 0 },
             { slideNumber: 2, type: 'challenge', title: '📌 المحطة 1 – الأساس', content: `المسألة الأساسية:\nطبّق التعريف الأساسي لـ${topic} لحل هذه المسألة.\n\nاكتبوا حلّكم الجماعي على الورقة.\nأضيفوا: هل تتفقون مع المجموعة السابقة؟`, hint: 'ابدأ بتحديد ما يُطلب', answer: 'انظر إلى الورقة الكبيرة في المحطة', durationSeconds: slideDuration, teacher: { expectedAnswer: `تطبيق مباشر للتعريف الأساسي لـ${topic}`, teachingTips: 'تأكد أن المجموعات تكتب على الورقة وليس فقط تناقش شفهيًا' } },
-            { slideNumber: 3, type: 'challenge', title: '📌 المحطة 2 – التطبيق', content: `مسألة تطبيقية:\nكيف يُستخدم ${topic} لحل هذا الموقف الحياتي؟\n\nناقش مع مجموعتك وسجّل خطوات الحل.\nما الفرق بين هذه المسألة والمحطة 1؟`, hint: 'ابحث عن الرابط بين ${topic} والموقف الحياتي', answer: 'انظر إلى الورقة الكبيرة في المحطة', durationSeconds: slideDuration, teacher: { expectedAnswer: `ربط ${topic} بسياق حياتي حقيقي`, teachingTips: 'شجّع المجموعات على ذكر أمثلة خاصة بهم' } },
-            { slideNumber: 4, type: 'challenge', title: '📌 المحطة 3 – التحليل', content: `مسألة تحليلية:\nما أوجه التشابه والاختلاف بين مفهومين رئيسيين في ${topic}؟\n\narسم مخطط فِن (Venn) على الورقة.\nأضف على الأقل 2 تشابه و2 اختلاف.`, hint: 'فكّر في التعريفات والخصائص', answer: 'انظر إلى الورقة الكبيرة في المحطة', durationSeconds: slideDuration, teacher: { expectedAnswer: `مقارنة المفاهيم الرئيسية في ${topic}`, teachingTips: 'ساعد المجموعات على بدء مخطط فِن إذا احتاجوا' } },
+            { slideNumber: 3, type: 'challenge', title: '📌 المحطة 2 – التطبيق', content: `مسألة تطبيقية:\nكيف يُستخدم ${topic} لحل هذا الموقف الحياتي؟\n\nناقش مع مجموعتك وسجّل خطوات الحل.\nما الفرق بين هذه المسألة والمحطة 1؟`, hint: `ابحث عن الرابط بين ${topic} والموقف الحياتي`, answer: 'انظر إلى الورقة الكبيرة في المحطة', durationSeconds: slideDuration, teacher: { expectedAnswer: `ربط ${topic} بسياق حياتي حقيقي`, teachingTips: 'شجّع المجموعات على ذكر أمثلة خاصة بهم' } },
+            { slideNumber: 4, type: 'challenge', title: '📌 المحطة 3 – التحليل', content: `مسألة تحليلية:\nما أوجه التشابه والاختلاف بين مفهومين رئيسيين في ${topic}؟\n\nارسم مخطط فِن (Venn) على الورقة.\nأضف على الأقل 2 تشابه و2 اختلاف.`, hint: 'فكّر في التعريفات والخصائص', answer: 'انظر إلى الورقة الكبيرة في المحطة', durationSeconds: slideDuration, teacher: { expectedAnswer: `مقارنة المفاهيم الرئيسية في ${topic}`, teachingTips: 'ساعد المجموعات على بدء مخطط فِن إذا احتاجوا' } },
             { slideNumber: 5, type: 'challenge', title: '📌 المحطة 4 – التقييم', content: `مسألة تقييمية:\nهل الحل التالي صحيح أم خاطئ؟ اشرح لماذا.\n\nحل مقترح لمسألة في ${topic}:\n[انظر الورقة الكبيرة]\n\nقيّم الحل وصحّح أي خطأ.`, hint: 'تحقق خطوة بخطوة', answer: 'انظر إلى الورقة الكبيرة في المحطة', durationSeconds: slideDuration, teacher: { expectedAnswer: `تقييم نقدي لحل خاطئ في ${topic}`, teachingTips: 'تعمّد وضع خطأ شائع في الحل المقترح' } },
             { slideNumber: 6, type: 'challenge', title: '📌 المحطة 5 – الإبداع', content: `تحدي إبداعي:\nصمّم مسألتك الخاصة في ${topic}!\n\nاكتب مسألة جديدة وقدّم حلّها.\nستقرأ المجموعات الأخرى مسألتك!`, hint: 'اختر موقفًا حياتيًا مثيرًا للاهتمام', answer: 'المسائل الإبداعية تختلف لكل مجموعة', durationSeconds: slideDuration, teacher: { expectedAnswer: `مسألة إبداعية ذات صلة بـ${topic}`, teachingTips: 'اطلب من المجموعات قراءة مسائل بعضها في الختام' } },
             { slideNumber: 7, type: 'summary', title: '🎨 الجولة اكتملت!', content: `أحسنتم! زرتم جميع محطات معرض ${topic}.\n\nلنستعرض أبرز ما كتبتموه:\n• أجمل إجابة في المحطة 1؟\n• أكثر مسألة حياتية في المحطة 2؟\n• أفضل مسألة إبداعية في المحطة 5؟\n\nناقشوا معًا: ما أكثر ما تعلمتم؟`, durationSeconds: 0 },

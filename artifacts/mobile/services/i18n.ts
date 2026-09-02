@@ -4,6 +4,8 @@
  * Usage: const { t } = useLanguage(); then t('key')
  */
 
+import { arCountPhrase } from './arCount.ts';
+
 export type Lang = 'ar' | 'en';
 
 /**
@@ -224,7 +226,7 @@ const translations = {
     jordanCurriculum: 'المنهاج الأردني',
     searchSubjects: 'ابحث في المواد...',
     grade: 'الصف',
-    subjects_count: (n: number) => `${n} مادة`,
+    subjects_count: (n: number) => arCountPhrase(n, 'مادة', 'مادتان', 'مواد'),
     noSubjectsFound: 'لا توجد مواد مطابقة',
     books: 'الكتب',
     units: 'الوحدات',
@@ -240,7 +242,7 @@ const translations = {
     prepInlineOpenFullTool: 'افتح أداة خطة الدرس لموضوع آخر',
 
     // Curriculum — subjects / semester screen
-    booksAvailable: (n: number) => `${n} كتاب`,
+    booksAvailable: (n: number) => arCountPhrase(n, 'كتاب', 'كتابان', 'كتب'),
     noBooks: 'لا كتب بعد',
     noBooksDesc: (sub: string, grade: string) => `ستظهر هنا كتب ${sub} في ${grade}`,
     selectSemester: 'اختر الفصل',
@@ -255,10 +257,10 @@ const translations = {
 
     // Curriculum — lessons screen
     unitLabel: 'الوحدة',
-    unitsAvailable: (n: number) => `${n} وحدة`,
-    lessonsCount: (n: number) => `${n} درس`,
+    unitsAvailable: (n: number) => arCountPhrase(n, 'وحدة', 'وحدتان', 'وحدات'),
+    lessonsCount: (n: number) => arCountPhrase(n, 'درس', 'درسان', 'دروس'),
     noUnitsOrLessons: 'لا وحدات أو دروس بعد',
-    objectivesCount: (n: number) => `${n} هدف`,
+    objectivesCount: (n: number) => arCountPhrase(n, 'هدف', 'هدفان', 'أهداف'),
 
     // Curriculum — lesson detail
     lessonNotFound: 'لم نجد هذا الدرس',
@@ -267,10 +269,10 @@ const translations = {
     shelfTitle: 'مكتبة الدرس',
     shelfCount: (n: number) => (n === 1 ? 'ملف واحد' : n === 2 ? 'ملفان' : n <= 10 ? `${n} ملفات` : `${n} ملفًا`),
     shelfUnitScoped: (n: number) => `خاص بهذه الوحدة (${n})`,
-    shelfSemesterScoped: 'مواد الفصل كاملًا',
+    shelfSemesterScoped: 'مواد الفصل كاملة',
     shelfEmpty: 'لا توجد مواد في المكتبة لهذا الدرس بعد.',
     shelfReferenceOnly: (n: number) =>
-      `${n} من إعداد معلمين — للاستئناس في التحضير، لا لإعادة نشرها.`,
+      `${arCountPhrase(n, 'ملف', 'ملفان', 'ملفات')} من إعداد معلمين — للاستئناس في التحضير، لا لإعادة نشرها.`,
     shelfNotInApp: 'الملفات نفسها ليست داخل التطبيق. اسأل اقرأ ليحضّر لك اعتمادًا عليها.',
     shelfAsk: 'اسأل عنه',
     shelfShowSemester: (n: number) => `إظهار مواد الفصل (${n})`,
@@ -409,7 +411,7 @@ const translations = {
     // Deliberately not 'المساعد الذكي'. Prose generation is still mocked, and
     // the product is careful elsewhere to separate what is verified from what
     // is judged; the front door should not oversell what the rest labels.
-    iqraAgentName: 'مساعد إقرأ',
+    iqraAgentName: 'مساعد اقرأ',
     iqraAgentPitch: 'أساعدك في التخطيط، واقتراح الأفكار، وإعداد الاختبارات. كيف أدعمك اليوم؟',
     // Grounding: whether generated material is anchored to a curriculum lesson.
     groundedInCurriculum: (lesson: string) => `مرتبط بالمنهاج الأردني — ${lesson}`,
@@ -473,8 +475,8 @@ const translations = {
     changeLesson: 'تغيير الدرس',
     lessonUploadedFiles: (n: number) => `الملفات المرفوعة: ${n}`,
     lessonGeneratedLabel: 'جاهز:',
-    teacherMode: 'معلم',
-    studentMode: 'طالب',
+    teacherMode: 'وضع المعلم',
+    studentMode: 'وضع الطالب',
 
     // Profile
     profileTitle: 'حسابي',
@@ -507,7 +509,7 @@ const translations = {
     notificationsTitle: 'التنبيهات',
     markAllRead: 'علّم الكل مقروءاً',
     noNotifications: 'لا توجد تنبيهات',
-    unread: (n: number) => `${n} غير مقروء`,
+    unread: (n: number) => `${arCountPhrase(n, 'إشعار غير مقروء', 'إشعاران غير مقروءين', 'إشعارات غير مقروءة')}`,
 
     // Settings screen sections
     languageSection: 'اللغة',
@@ -681,7 +683,7 @@ const translations = {
 
     // Slides export
     exportSlides: 'تصدير شرائح',
-    exportSlidesSub: 'ملف PDF كشرائح عرض',
+    exportSlidesSub: 'ملف PDF بشرائح جاهزة للعرض — وليس ملف PowerPoint',
     // The NotebookLM hand-off row in ExportMenu. Added here because the feature
     // shipped calling t() for keys that were never defined, which broke
     // `pnpm run typecheck` on main.
@@ -838,8 +840,8 @@ const translations = {
     generatingClassroom: 'يعمل اقرأ على بناء النشاط...',
     classroomReady: 'النشاط جاهز للعرض',
     startPresentation: 'ابدأ العرض',
-    slideCount: (n: number) => `${n} شريحة`,
-    challengeCount: (n: number) => `${n} تحدٍّ`,
+    slideCount: (n: number) => arCountPhrase(n, 'شريحة', 'شريحتان', 'شرائح'),
+    challengeCount: (n: number) => arCountPhrase(n, 'تحدٍّ', 'تحدّيان', 'تحديات'),
     // Slides Maker
     slidesTitle: 'شرائح الدرس',
     slidesSubtitle: 'حوّل الدرس إلى عرض جاهز للشاشة — نتاجات ومفردات وشرح وأمثلة.',
@@ -847,6 +849,7 @@ const translations = {
     slidesBuilding: 'يعمل اقرأ على بناء الشرائح...',
     slidesIncludeExamples: 'أضف أمثلة محلولة (مع وقت للتفكير)',
     slidesIncludePractice: 'أضف تدريبًا وواجبًا',
+    slidesIncludeAttachments: 'أضف مرفقاتي لهذا الدرس (صور وتسجيلات) إلى الشرائح',
     slidesSaved: 'حُفظت الشرائح في مساحتك',
     slidesUnsaved: 'أزلت الشرائح من مساحتك',
     // Class Challenge (phone-free team game)
@@ -862,13 +865,13 @@ const translations = {
     gameBuild: 'جهّز التحدي',
     gameBuilding: 'يعمل اقرأ على بناء التحدي...',
     gameStart: 'ابدأ التحدي',
-    gameQuestionsReady: (n: number) => `${n} سؤالًا`,
+    gameQuestionsReady: (n: number) => arCountPhrase(n, 'سؤال', 'سؤالان', 'أسئلة'),
     gameTeamsReady: (n: number) => `${n} فرق`,
     gameNoQuestions: 'تعذّر بناء أسئلة اختيار من متعدد لهذا الموضوع — جرّب موضوعًا آخر.',
     gameWhoScored: 'من أجاب إجابة صحيحة؟',
     gameAwardAll: 'الجميع أصابوا',
     gamePoints: 'نقطة',
-    gameStreak: (n: number) => `${n} متتالية 🔥`,
+    gameStreak: (n: number) => `${arCountPhrase(n, 'إجابة متتالية', 'إجابتان متتاليتان', 'إجابات متتالية')} 🔥`,
     gameNoScores: 'لم تُسجَّل أي نقاط في هذه الجولة.',
     gamePlayAgain: 'أعِد الجولة بالفرق نفسها',
     // Presentation mode
@@ -1897,6 +1900,7 @@ const translations = {
     slidesBuilding: 'Building your slides…',
     slidesIncludeExamples: 'Include worked examples (with think time)',
     slidesIncludePractice: 'Include practice and homework',
+    slidesIncludeAttachments: 'Include my attachments for this lesson (photos and recordings)',
     slidesSaved: 'Slides saved to your workspace',
     slidesUnsaved: 'Slides removed from your workspace',
     // Class Challenge (phone-free team game)

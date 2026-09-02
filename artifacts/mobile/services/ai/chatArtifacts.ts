@@ -140,8 +140,8 @@ function leadIn(
 ): string {
   if (fromDocuments) {
     return isAr
-      ? `جهّزت خطة الدرس اعتمادًا على الملفات التي رفعتها — موضوع «${topic}».\n\n`
-      : `Prepared the lesson plan from your uploaded files — topic “${topic}”.\n\n`;
+      ? `جهّزت المادة اعتمادًا على الملفات التي رفعتها — موضوع «${topic}».\n\n`
+      : `Prepared the material from your uploaded files — topic “${topic}”.\n\n`;
   }
   if (fromSoftPin) {
     return isAr

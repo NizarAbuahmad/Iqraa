@@ -19,6 +19,7 @@ import type {
   DocumentSourceKind,
   SessionDocument,
 } from './types';
+import { arCountPhrase } from '../arCount.ts';
 
 const PROMPT_CHAR_BUDGET = 6000;
 
@@ -75,7 +76,7 @@ function metaFromPlainText(
     activities: [],
     plainText: plain.slice(0, PROMPT_CHAR_BUDGET),
     summary: isAr
-      ? `تم استخراج نص حقيقي من «${title}» (${lines.length} سطرًا) — جاهز لخطة الدرس.`
+      ? `تم استخراج نص حقيقي من «${title}» (${arCountPhrase(lines.length, 'سطرًا', 'سطران', 'أسطر')}) — جاهز لخطة الدرس.`
       : `Extracted real text from “${title}” (${lines.length} lines) — ready for a lesson plan.`,
     extractQuality: quality,
   };
@@ -118,7 +119,7 @@ export function demoExtractFromName(
   // What survives is what is actually known: the filename, and the words in
   // it. Those are the teacher's own words about their own file — a hint, and
   // labelled as one. Everything that would state a curriculum fact is empty.
-  const kindLabel = kind === 'pdf' ? 'PDF' : kind === 'docx' ? 'Word' : kind === 'pptx' || kind === 'ppt' ? 'PowerPoint' : kind === 'image' ? (isAr ? 'صورة' : 'Image') : 'Document';
+  const kindLabel = kind === 'pdf' ? 'PDF' : kind === 'docx' ? 'Word' : kind === 'pptx' || kind === 'ppt' ? 'PowerPoint' : kind === 'image' ? (isAr ? 'صورة' : 'Image') : (isAr ? 'مستند' : 'Document');
   const unreadNote = isAr
     ? `لم يُقرأ محتوى هذا الملف (${kindLabel}). المعروف عنه هو اسمه فقط.`
     : `The contents of this ${kindLabel} were not read. Only its name is known.`;

@@ -15,6 +15,7 @@ import {
   QuizOutput, WorksheetOutput,
 } from '@/services/ai/AIService';
 import { looksLikeActivityContent } from '@/services/materialShape';
+import { arCountPhrase } from '@/services/arCount';
 // One map, not two. This screen kept its own copy of the same five colours;
 // adding a sixth to a private copy is exactly the drift `materialKind.ts` was
 // extracted to stop — a card in موادي and the material it opens must not
@@ -619,7 +620,7 @@ function SlidesDeckView({ deck, colors, isRTL, isAr, accent }: {
   return (
     <View style={{ gap: 10 }}>
       <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 12, textAlign: isRTL ? 'right' : 'left' }}>
-        {isAr ? `${deck.slides.length} شريحة` : `${deck.slides.length} slides`}
+        {isAr ? arCountPhrase(deck.slides.length, 'شريحة', 'شريحتان', 'شرائح') : `${deck.slides.length} slides`}
       </Text>
       {deck.slides.map(s => (
         <View
@@ -754,7 +755,7 @@ function FlowView({ flow, colors, isRTL, lang, accent }: {
     <>
       {/* Meta badge */}
       <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, marginBottom: 16, flexWrap: 'wrap' }]}>
-        {[flow.grade, flow.subject, `${flow.duration} ${lang === 'ar' ? 'دقيقة' : 'min'}`].map(tag => (
+        {[flow.grade, flow.subject, lang === 'ar' ? arCountPhrase(flow.duration, 'دقيقة', 'دقيقتان', 'دقائق') : `${flow.duration} min`].map(tag => (
           <View key={tag} style={{ backgroundColor: FLOW_TEAL + '15', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 }}>
             <Text style={{ color: FLOW_TEAL, fontFamily: 'Cairo_500Medium', fontSize: 12 }}>{tag}</Text>
           </View>
