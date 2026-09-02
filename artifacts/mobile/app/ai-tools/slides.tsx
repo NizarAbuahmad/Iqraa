@@ -95,6 +95,14 @@ export default function SlidesScreen() {
   );
   const [includeExamples, setIncludeExamples] = useState(true);
   const [includePractice, setIncludePractice] = useState(true);
+  /**
+   * Off by default, and deliberately: a teacher's attachments are their own
+   * files pinned to the lesson, not deck content. Merging them in
+   * unconditionally meant every regeneration of the same lesson came back
+   * with the same photos and voice notes re-inserted as slides, which reads
+   * as the generator inventing media it did not make. They go in when asked.
+   */
+  const [includeAttachments, setIncludeAttachments] = useState(false);
   const [loading, setLoading] = useState(false);
   /**
    * Held across renders so Cancel can reach the in-flight requests — plural
@@ -164,12 +172,14 @@ export default function SlidesScreen() {
    * files never appear in a request body, so they never enter the shared
    * generation cache another teacher's request could be served from.
    */
-  const attachedResources = useMemo<AttachedResource[]>(() => [
+  const attachedResources = useMemo<AttachedResource[]>(() => (includeAttachments ? [
     ...attached,
     ...uploadedAttachments
       .filter((m): m is UploadedAttachment & { url: string } => !!m.url)
       .map(m => ({ kind: m.kind, url: m.url, caption: m.caption })),
-  ], [attached, uploadedAttachments]);
+  ] : []), [attached, uploadedAttachments, includeAttachments]);
+  /** Whether there is anything to offer — no attachments, no switch. */
+  const hasAttachments = attached.length + uploadedAttachments.length > 0;
   /** True once the example-verification pass has resolved — the summary row
       stays silent while a check is still in flight. */
   const [verifyDone, setVerifyDone] = useState(false);
@@ -591,7 +601,7 @@ export default function SlidesScreen() {
       const item = await saveItem({
         ...deckIdentity(deck),
         content,
-        formState: { gradeIdx, subjectIdx, topic: topic.trim(), includeExamples, includePractice },
+        formState: { gradeIdx, subjectIdx, topic: topic.trim(), includeExamples, includePractice, includeAttachments },
       });
       savedContentRef.current = content;
       setSavedId(item.id);
@@ -773,6 +783,9 @@ export default function SlidesScreen() {
           <View style={{ gap: 10, marginBottom: 18 }}>
             <Toggle label={t('slidesIncludeExamples')} value={includeExamples} onChange={setIncludeExamples} />
             <Toggle label={t('slidesIncludePractice')} value={includePractice} onChange={setIncludePractice} />
+            {hasAttachments ? (
+              <Toggle label={t('slidesIncludeAttachments')} value={includeAttachments} onChange={setIncludeAttachments} />
+            ) : null}
           </View>
 
           {/*
