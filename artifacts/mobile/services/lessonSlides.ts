@@ -389,15 +389,22 @@ export function buildLessonDeck(
     const warm = splitWarmup(intro);
     const tip = L('اسأل ثم انتظر بصمت خمس ثوانٍ قبل استقبال أي إجابة.',
       'Ask, then wait five silent seconds before taking any answer.');
+    // splitWarmup only lifts a clean line when the model quoted a question or
+    // introduced one with a colon (notes non-empty then). Anything else — a
+    // narrated "ابدأ بسؤال عن…" — is the teacher's own planning text, same
+    // failure as guidedPractice/independentPractice below, so it goes to the
+    // teacher panel instead of standing in as the question itself.
+    const hasQuestion = warm.notes.length > 0;
     push({
       type: 'intro',
       title: T('✨ تمهيد', '✨ Warm-up'),
-      content: warm.projected,
+      content: hasQuestion ? warm.projected
+        : L('لنبدأ بسؤال يهيّئنا لموضوع اليوم.', "Let's start with a question about today's topic."),
       durationSeconds: 0,
       teacher: {
         expectedAnswer: L('لا توجد إجابة واحدة — الهدف تفعيل المعرفة السابقة.',
           'No single answer — the point is to activate prior knowledge.'),
-        teachingTips: warm.notes ? `${warm.notes}\n\n${tip}` : tip,
+        teachingTips: hasQuestion ? `${warm.notes}\n\n${tip}` : `${intro}\n\n${tip}`,
       },
     });
   }
@@ -552,14 +559,26 @@ export function buildLessonDeck(
   });
 
   // ── 8. Practice ─────────────────────────────────────────────────────────
+  // plan.guidedPractice/independentPractice are the teacher's facilitation
+  // notes — LESSON_STYLE_RULES_AR/EN in prompts.ts write them as pedagogy
+  // ("swap boards, then answer in front of the class"), never as a line meant
+  // for a student to read off a screen. This used to push that narration
+  // straight into `content`, so the class saw the teacher's own script.
+  // The class gets a plain, static prompt; the narration moves to the teacher
+  // panel, same split already used for the hook and the worked examples.
   if (includePractice) {
     const guided = nonEmpty(plan?.guidedPractice);
     if (guided) {
       push({
         type: 'intro',
         title: T('🤝 تدريب موجّه', '🤝 Guided Practice'),
-        content: guided,
+        content: L('لنحلّ هذا معًا خطوة بخطوة.', "Let's work through this together, step by step."),
         durationSeconds: 0,
+        teacher: {
+          expectedAnswer: L('لا توجد إجابة واحدة ثابتة — راقب تنفيذ الطلبة ووجّههم أثناء العمل.',
+            'There is no single fixed answer — monitor the class and guide them as they work.'),
+          teachingTips: guided,
+        },
       });
     }
     const independent = nonEmpty(plan?.independentPractice);
@@ -567,22 +586,38 @@ export function buildLessonDeck(
       push({
         type: 'intro',
         title: T('✍️ تدريب مستقل', '✍️ Independent Practice'),
-        content: independent,
+        content: L('حان دوركم — حاولوا بمفردكم.', "Now it's your turn — try it on your own."),
         durationSeconds: 0,
+        teacher: {
+          expectedAnswer: L('تختلف الإجابات باختلاف النظام أو المسألة المطروحة — راجعها بعد وقت العمل الفردي.',
+            'Answers vary with the system or problem given — review them after independent work time.'),
+          teachingTips: independent,
+        },
       });
     }
   }
 
   // ── 9. Closure ──────────────────────────────────────────────────────────
+  // plan.closure carries the same risk as guidedPractice/independentPractice
+  // and introduction's fallback above: nothing tells the model it is writing
+  // for a projector rather than a teacher's plan. The synthesized summary is
+  // always safe to project; the model's own closing text — if any — goes to
+  // the teacher panel instead of standing in for it.
   const closure = nonEmpty(plan?.closure);
+  const closureSummary = objectives.length > 0
+    ? L(`راجعنا اليوم:\n${objectives.map(o => `• ${o}`).join('\n')}`,
+        `Today we covered:\n${objectives.map(o => `• ${o}`).join('\n')}`)
+    : L(`أنهينا درس «${title}».`, `We finished “${title}”.`);
   push({
     type: 'summary',
     title: T('🎉 ملخص الدرس', '🎉 Lesson Summary'),
-    content: closure || (objectives.length > 0
-      ? L(`راجعنا اليوم:\n${objectives.map(o => `• ${o}`).join('\n')}`,
-          `Today we covered:\n${objectives.map(o => `• ${o}`).join('\n')}`)
-      : L(`أنهينا درس «${title}».`, `We finished “${title}”.`)),
+    content: closureSummary,
     durationSeconds: 0,
+    teacher: closure ? {
+      expectedAnswer: L('لا حاجة لإجابة محددة هنا — راجع الأهداف مع الصف.',
+        'No specific answer needed — walk the class through the objectives.'),
+      teachingTips: closure,
+    } : undefined,
   });
 
   // ── 9b. Exit ticket — the last thing before they leave ──────────────────
