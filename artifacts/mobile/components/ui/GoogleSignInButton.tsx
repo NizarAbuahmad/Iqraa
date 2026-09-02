@@ -52,7 +52,12 @@ interface GoogleSignInButtonProps {
 export function GoogleSignInButton({ onCredential, locale }: GoogleSignInButtonProps) {
   const containerRef = useRef<View>(null);
   const [width, setWidth] = useState(300);
+  const onCredentialRef = useRef(onCredential);
+  onCredentialRef.current = onCredential;
 
+  // Load + initialize exactly once — re-running initialize() on every
+  // locale/width change (this used to be one effect) logs a GIS warning and
+  // risks losing in-flight state in the account chooser it's driving.
   useEffect(() => {
     if (Platform.OS !== 'web') return;
 
@@ -60,14 +65,23 @@ export function GoogleSignInButton({ onCredential, locale }: GoogleSignInButtonP
     if (!clientId) return; // Unset means no button — matches the API's own 503 when unconfigured.
 
     loadGoogleScript(() => {
+      window.google?.accounts.id.initialize({
+        client_id: clientId,
+        callback: (response) => onCredentialRef.current(response.credential),
+      });
+    });
+  }, []);
+
+  // Redraw the button itself whenever locale or measured width changes.
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    if (!process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID) return;
+
+    loadGoogleScript(() => {
       const google = window.google;
       const node = containerRef.current as unknown as HTMLElement | null;
       if (!google || !node) return;
 
-      google.accounts.id.initialize({
-        client_id: clientId,
-        callback: (response) => onCredential(response.credential),
-      });
       google.accounts.id.renderButton(node, {
         type: 'standard',
         theme: 'outline',
@@ -79,7 +93,7 @@ export function GoogleSignInButton({ onCredential, locale }: GoogleSignInButtonP
         width: Math.min(400, Math.max(200, width)),
       });
     });
-  }, [locale, onCredential, width]);
+  }, [locale, width]);
 
   if (Platform.OS !== 'web') return null;
 
