@@ -44,6 +44,7 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: (credential: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
@@ -176,6 +177,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(toUser(data.user));
   }, []);
 
+  const loginWithGoogle = useCallback(async (credential: string) => {
+    const data = await apiJson<{ accessToken: string; refreshToken: string; user: ApiUser }>(
+      '/auth/google',
+      {
+        method: 'POST',
+        body: JSON.stringify({ credential }),
+      },
+    );
+
+    await storeTokens(data.accessToken, data.refreshToken);
+    setUser(toUser(data.user));
+  }, []);
+
   const register = useCallback(async (payload: RegisterData) => {
     if (!payload.firstName?.trim()) throw new Error('First name is required');
     if (!payload.lastName?.trim()) throw new Error('Last name is required');
@@ -254,6 +268,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         isLoading,
         login,
+        loginWithGoogle,
         register,
         logout,
         forgotPassword,

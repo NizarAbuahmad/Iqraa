@@ -114,6 +114,7 @@ const translations = {
     passwordPlaceholder: 'كلمة مرورك',
     forgotPassword: 'نسيت كلمة المرور؟',
     signIn: 'تسجيل الدخول',
+    orDivider: 'أو',
     newToIqra: 'جديد على اقرأ؟',
     createAccount: 'إنشاء حساب',
 
@@ -1192,6 +1193,7 @@ const translations = {
     passwordPlaceholder: 'Your password',
     forgotPassword: 'Forgot password?',
     signIn: 'Sign In',
+    orDivider: 'OR',
     newToIqra: 'New to IQRA?',
     createAccount: 'Create account',
 

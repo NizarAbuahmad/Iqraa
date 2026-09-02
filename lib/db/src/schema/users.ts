@@ -7,7 +7,9 @@ export const users = pgTable("users", {
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
   email: text("email").unique().notNull(),
-  passwordHash: text("password_hash").notNull(),
+  // Nullable: a Google-only account never sets one.
+  passwordHash: text("password_hash"),
+  googleId: text("google_id").unique(),
   preferredLanguage: text("preferred_language").notNull().default("en"),
   role: text("role").notNull().default("teacher"),
   emailVerified: boolean("email_verified").notNull().default(false),

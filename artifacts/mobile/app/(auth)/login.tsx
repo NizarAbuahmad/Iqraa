@@ -13,6 +13,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 import { Button } from '@/components/ui/Button';
+import { GoogleSignInButton } from '@/components/ui/GoogleSignInButton';
 import { Input } from '@/components/ui/Input';
 
 const NAVY = '#081B3A';
@@ -23,7 +24,7 @@ export default function LoginScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const { t, lang, isRTL, toggleLang } = useLanguage();
 
   const [email, setEmail] = useState('');
@@ -46,6 +47,8 @@ export default function LoginScreen() {
 
   const isWide = viewportW >= 900;
 
+  const [googleLoading, setGoogleLoading] = useState(false);
+
   const handleLogin = async () => {
     setError('');
     setLoading(true);
@@ -55,6 +58,18 @@ export default function LoginScreen() {
       setError(e.message ?? (lang === 'ar' ? 'تعذّر تسجيل الدخول' : 'Login failed'));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleCredential = async (credential: string) => {
+    setError('');
+    setGoogleLoading(true);
+    try {
+      await loginWithGoogle(credential);
+    } catch (e: any) {
+      setError(e.message ?? (lang === 'ar' ? 'تعذّر تسجيل الدخول عبر Google' : 'Google sign-in failed'));
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -194,6 +209,21 @@ export default function LoginScreen() {
             </Text>
           </View>
         ) : null}
+
+        <GoogleSignInButton onCredential={handleGoogleCredential} locale={lang} />
+        {googleLoading ? (
+          <Text style={[styles.googleLoadingText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
+            {lang === 'ar' ? 'جارٍ تسجيل الدخول…' : 'Signing in…'}
+          </Text>
+        ) : null}
+
+        <View style={[styles.dividerRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+          <Text style={[styles.dividerText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
+            {t('orDivider')}
+          </Text>
+          <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+        </View>
 
         <Input
           label={t('emailAddress')}
@@ -371,6 +401,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   errorText: { flex: 1, fontSize: 13 },
+  dividerRow: { alignItems: 'center', gap: 10, marginVertical: 2 },
+  dividerLine: { flex: 1, height: 1 },
+  dividerText: { fontSize: 12 },
+  googleLoadingText: { fontSize: 12, textAlign: 'center', marginTop: -6 },
   forgotRow: { marginTop: -2, marginBottom: 4 },
   forgotText: { fontSize: 13 },
   signInBtn: { marginTop: 4 },
