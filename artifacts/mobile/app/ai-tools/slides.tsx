@@ -216,8 +216,8 @@ export default function SlidesScreen() {
       try {
         const { searchDeckVideos } = await import('@/services/youtubeVideo');
         const query = isAr
-          ? `شرح ${deck.lesson} ${subjects[subjectIdx].nameAr} للصف العاشر`
-          : `${deck.lesson} ${subjects[subjectIdx].name} grade 10 explained`;
+          ? `شرح ${deck.lesson} ${subjects[subjectIdx].nameAr} لطلاب ${grades[gradeIdx].nameAr}`
+          : `${deck.lesson} ${subjects[subjectIdx].name} ${grades[gradeIdx].name} explained`;
         options = await searchDeckVideos(query, isAr ? 'ar' : 'en');
         setVideoOptions(options);
       } finally {
@@ -478,8 +478,8 @@ export default function SlidesScreen() {
           // "mathematics" video is no use mid-lesson, where the point is to
           // explain THIS concept.
           const videoQuery = isAr
-            ? `شرح ${trimmed} ${subjects[subjectIdx].nameAr} للصف العاشر`
-            : `${trimmed} ${subjects[subjectIdx].name} grade 10 explained`;
+            ? `شرح ${trimmed} ${subjects[subjectIdx].nameAr} لطلاب ${grades[gradeIdx].nameAr}`
+            : `${trimmed} ${subjects[subjectIdx].name} ${grades[gradeIdx].name} explained`;
 
           // The search fills a gap, it does not compete with the teacher. A
           // pinned video means no call at all — one fewer thing on the

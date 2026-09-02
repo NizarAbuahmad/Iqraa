@@ -10,6 +10,7 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { ACTIVITY_CARDS, ActivityCard, buildBuilderRoute } from '@/services/classroomRouting';
+import { arCountPhrase } from '@/services/arCount';
 
 const ACCENT = '#4F46E5';
 
@@ -81,7 +82,7 @@ export default function ClassroomHubScreen() {
           </Text>
           <Text style={[styles.headerSub, { fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
             {lang === 'ar'
-              ? `${ACTIVITY_CARDS.length} أنشطة تفاعلية جاهزة — اختر نشاطاً وابدأ الحصة`
+              ? `${arCountPhrase(ACTIVITY_CARDS.length, 'نشاط تفاعلي جاهز', 'نشاطان تفاعليان جاهزان', 'أنشطة تفاعلية جاهزة')} — اختر نشاطاً وابدأ الحصة`
               : `${ACTIVITY_CARDS.length} interactive activities — pick one and launch in seconds`}
           </Text>
 
@@ -165,7 +166,7 @@ export default function ClassroomHubScreen() {
           <Text style={[styles.sectionLabel, { color: colors.foreground, fontFamily: 'Cairo_700Bold', marginBottom: 12 }]}>
             {filter === 'all' && !query.trim()
               ? t('marketplaceActivities' as any)
-              : `${filtered.length} ${lang === 'ar' ? 'نشاط' : filtered.length === 1 ? 'activity' : 'activities'}`}
+              : lang === 'ar' ? arCountPhrase(filtered.length, 'نشاط', 'نشاطان', 'أنشطة') : `${filtered.length} ${filtered.length === 1 ? 'activity' : 'activities'}`}
           </Text>
 
           {filtered.length === 0 ? (

@@ -649,7 +649,7 @@ function LessonPrepProgressCard({
               },
             ]}
           >
-            {isRTL ? 'ما تبقّى للحصة:' : 'Still needed for the lesson:'}
+            {isRTL ? 'ما تبقّى للدرس:' : 'Still needed for the lesson:'}
           </Text>
           {progress.remaining.map(item => (
             <Text

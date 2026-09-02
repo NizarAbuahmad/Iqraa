@@ -9,6 +9,7 @@ import * as Haptics from 'expo-haptics';
 import { confirm } from '@/services/confirm';
 import { listClasses, type ClassGroup } from '@/services/roster';
 import { classNameFor } from '@/services/materialClass';
+import { arCountPhrase } from '@/services/arCount';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import {
@@ -333,7 +334,7 @@ export default function WorkspaceScreen() {
           </Text>
         </Pressable>
         <Text style={[styles.countText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
-          {filtered.length} {lang === 'ar' ? 'مادة' : filtered.length === 1 ? 'item' : 'items'}
+          {lang === 'ar' ? arCountPhrase(filtered.length, 'مادة', 'مادتان', 'مواد') : `${filtered.length} ${filtered.length === 1 ? 'item' : 'items'}`}
         </Text>
       </View>
 

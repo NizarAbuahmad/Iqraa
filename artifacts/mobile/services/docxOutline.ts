@@ -11,7 +11,7 @@
  * Arabic is caseless, so that predicate is `true` for every Arabic line, and
  * the Word export promoted essentially the whole document to Heading 2 — a
  * 145-character paragraph of teacher instructions, the assessment notes, the
- * homework, and the "أُنشئ بواسطة إقرأ" footer all rendered as bold headings.
+ * homework, and the "أُنشئ بواسطة اقرأ" footer all rendered as bold headings.
  * In an Arabic-first product a case heuristic cannot work; it silently did
  * nothing useful in English either, since these formatters never upper-case
  * their section labels.

@@ -746,7 +746,7 @@ const HARDCODED_KB_LESSONS: HardcodedKBLesson[] = [
       { ar: 'المدى', en: 'Range', definitionAr: 'الفرق بين أكبر قيمة وأصغر قيمة في مجموعة البيانات', definitionEn: 'The difference between the maximum and minimum values in a dataset' },
       { ar: 'الانحراف المعياري', en: 'Standard Deviation', definitionAr: 'مقياس لمتوسط انحراف القيم عن الوسط الحسابي', definitionEn: 'A measure of the average deviation of values from the mean' },
     ],
-    rulesAr: ['المدى = أكبر قيمة − أصغر قيمة', 'الوسط الحسابي للمبوبة = Σ(fₓ · xᵢ) / Σfₓ حيث xᵢ منتصف الفئة'],
+    rulesAr: ['المدى = أكبر قيمة − أصغر قيمة', 'الوسط الحسابي للمبوبة = Σ(fᵢ · xᵢ) / Σfᵢ حيث xᵢ منتصف الفئة'],
     rulesEn: ['Range = max value − min value', 'Mean for grouped data = Σ(fᵢ · xᵢ) / Σfᵢ where xᵢ is the class midpoint'],
   },
   {
@@ -928,7 +928,7 @@ const HARDCODED_KB_LESSONS: HardcodedKBLesson[] = [
       'الزاوية المركزية رأسها مركز الدائرة وتساوي القوس الذي تحصره. الزاوية المحيطية رأسها على الدائرة وتساوي نصف الزاوية المركزية المقابلة لنفس القوس. الزاوية في نصف دائرة = 90°. الزوايا المحيطية المبنية على نفس القوس متساوية.',
     summaryEn:
       'A central angle has its vertex at the center and equals the intercepted arc. An inscribed angle has its vertex on the circle and equals half the central angle subtending the same arc. Angle in a semicircle = 90°. Inscribed angles subtending the same arc are equal.',
-    keyConceptsAr: ['الزاوية المركزية = القوس الذي تحصره', 'الزاوية المحيطية = نصف الزاوية المركزية', 'الزاوية في نصف دائرة = 90°', 'زوايا محيطية على نفس القوس متساوية', 'الزوايا المقابلة في رباعي منتظم على الدائرة تكملان 180°'],
+    keyConceptsAr: ['الزاوية المركزية = القوس الذي تحصره', 'الزاوية المحيطية = نصف الزاوية المركزية', 'الزاوية في نصف دائرة = 90°', 'زوايا محيطية على نفس القوس متساوية', 'مجموع الزوايا المتقابلة في الرباعي الدائري = 180°'],
     keyConceptsEn: ['Central angle = intercepted arc', 'Inscribed angle = half the central angle', 'Angle in semicircle = 90°', 'Inscribed angles on same arc are equal', 'Opposite angles in cyclic quadrilateral sum to 180°'],
     keyTerms: [
       { ar: 'الزاوية المركزية', en: 'Central Angle', definitionAr: 'زاوية رأسها مركز الدائرة وضلعاها نصفا قطر', definitionEn: 'An angle with its vertex at the center of the circle and sides as radii' },
@@ -1081,8 +1081,8 @@ const HARDCODED_KB_LESSONS: HardcodedKBLesson[] = [
     ],
     rulesAr: ['a/sin A = b/sin B = c/sin C', 'يُستخدم عند توفر (زاوية + ضلعها المقابل + زاوية أو ضلع آخر)'],
     rulesEn: ['a/sin A = b/sin B = c/sin C', 'Use when you know one angle-side pair and one other element'],
-    examplesAr: ['مثلث: A=40°، B=75°، a=8.3 → C=65°، b=8.3×sin75°/sin40°≈12.2'],
-    examplesEn: ['Triangle: A=40°, B=75°, a=8.3 → C=65°, b=8.3×sin75°/sin40°≈12.2'],
+    examplesAr: ['مثلث: A=40°، B=75°، a=8.3 → C=65°، b=8.3×sin75°/sin40°≈12.5'],
+    examplesEn: ['Triangle: A=40°, B=75°, a=8.3 → C=65°, b=8.3×sin75°/sin40°≈12.5'],
   },
   {
     id: 'kbl-math-s2-4-3',

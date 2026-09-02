@@ -119,7 +119,7 @@ export default function LessonDetailScreen() {
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               const msgText = lang === 'ar'
-                ? `ما الذي يجب أن أعرفه قبل تدريس: ${lessonTitle}؟`
+                ? `ما الذي يجب أن أعرفه قبل تدريس «${lessonTitle}»؟`
                 : `What should I know before teaching: ${lessonTitle}?`;
               router.push({
                 pathname: '/(tabs)/iqra',
