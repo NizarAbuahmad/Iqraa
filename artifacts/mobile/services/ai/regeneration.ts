@@ -83,3 +83,20 @@ export function regenerationFields(
     ...(typeof variantId === 'string' && variantId ? { excludeVariantIds: [variantId] } : {}),
   };
 }
+
+/**
+ * The shared-pool id of an artifact, when it has one.
+ *
+ * Present only on an artifact that came from — or was written to — the shared
+ * pool. Absent when the request carried the teacher's own material (never
+ * pooled), when the pool was unreachable, or when the result came from
+ * `MockAIService` after a failure. The screens use it to decide whether to
+ * offer "report a problem" at all: withdrawing something no other teacher can
+ * ever be served is a button that does nothing, and a button that does nothing
+ * teaches teachers to distrust the ones that do.
+ */
+export function pooledVariantId(result: unknown): string | undefined {
+  if (!result || typeof result !== 'object') return undefined;
+  const id = (result as { variantId?: unknown }).variantId;
+  return typeof id === 'string' && id.trim() ? id : undefined;
+}
