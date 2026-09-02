@@ -454,6 +454,259 @@
    "score": 1,
    "matchedBy": "arabic-title",
    "why": "This book prints no `الوحدة` running header or top-band opener — extract_book_figures.py's outline() only found the unit boundary via its lesson-number-restart fallback (added alongside this book), so unit here is inferred from where the book's own `الدرسُ` count drops back to 1, not read directly off the page. Lessons 1/1, 1/2, 1/4, 1/5, 2/2, 2/5 print in the book but yielded no figures that survived review — every crop under them was a decorative divider, callout, or exercise-text fragment, not a diagram."
+  },
+  {
+   "sourceId": "g9-math-s1-student-book",
+   "unit": 1,
+   "lesson": 1,
+   "bookTitleEn": "Sets and Intervals",
+   "kbLessonId": "kbl-g9-math-s1-nccd-u1_l1",
+   "score": 1,
+   "matchedBy": "title-overlap",
+   "why": "Both G9 books number units 1-8 across the year the same way G10 maths does (S1=1-4, S2=5-8), and every one of the 28 lesson titles the book states matches the curriculum's own title exactly, unlike G10 maths's unit-1 offset (see EXPECTED_UNITS['grade-9-math'] in extract_book_figures.py). Titles the extractor could not read (u7_l3, u8_l1, u8_l3) are still placed by position: each sits between two lessons whose titles DID match, with no unaccounted-for lesson number in between."
+  },
+  {
+   "sourceId": "g9-math-s1-student-book",
+   "unit": 1,
+   "lesson": 3,
+   "bookTitleEn": "Graphing Linear Inequalities in Two Variables",
+   "kbLessonId": "kbl-g9-math-s1-nccd-u1_l3",
+   "score": 1,
+   "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "g9-math-s1-student-book",
+   "unit": 2,
+   "lesson": 1,
+   "bookTitleEn": "Functions",
+   "kbLessonId": "kbl-g9-math-s1-nccd-u2_l1",
+   "score": 1,
+   "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "g9-math-s1-student-book",
+   "unit": 2,
+   "lesson": 2,
+   "bookTitleEn": "Interpreting Graphs",
+   "kbLessonId": "kbl-g9-math-s1-nccd-u2_l2",
+   "score": 1,
+   "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "g9-math-s1-student-book",
+   "unit": 2,
+   "lesson": 3,
+   "bookTitleEn": "Quadratic Function",
+   "kbLessonId": "kbl-g9-math-s1-nccd-u2_l3",
+   "score": 1,
+   "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "g9-math-s1-student-book",
+   "unit": 2,
+   "lesson": 4,
+   "bookTitleEn": "Transformations of Quadratic Function",
+   "kbLessonId": "kbl-g9-math-s1-nccd-u2_l4",
+   "score": 1,
+   "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "g9-math-s1-student-book",
+   "unit": 3,
+   "lesson": 1,
+   "bookTitleEn": "Solving Quadratic Equations by Graphing",
+   "kbLessonId": "kbl-g9-math-s1-nccd-u3_l1",
+   "score": 1,
+   "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "g9-math-s1-student-book",
+   "unit": 3,
+   "lesson": 2,
+   "bookTitleEn": "Solving Quadratic Equations by Factoring",
+   "kbLessonId": "kbl-g9-math-s1-nccd-u3_l2",
+   "score": 1,
+   "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "g9-math-s1-student-book",
+   "unit": 3,
+   "lesson": 3,
+   "bookTitleEn": "Solving Quadratic Equations by Completing the Square",
+   "kbLessonId": "kbl-g9-math-s1-nccd-u3_l3",
+   "score": 1,
+   "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "g9-math-s1-student-book",
+   "unit": 3,
+   "lesson": 4,
+   "bookTitleEn": "Solving Quadratic Equations Using the Quadratic Formula",
+   "kbLessonId": "kbl-g9-math-s1-nccd-u3_l4",
+   "score": 1,
+   "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "g9-math-s1-student-book",
+   "unit": 4,
+   "lesson": 1,
+   "bookTitleEn": "Distance in the Coordinate Plane",
+   "kbLessonId": "kbl-g9-math-s1-nccd-u4_l1",
+   "score": 1,
+   "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "g9-math-s1-student-book",
+   "unit": 4,
+   "lesson": 2,
+   "bookTitleEn": "Distance between a Point and a Line",
+   "kbLessonId": "kbl-g9-math-s1-nccd-u4_l2",
+   "score": 1,
+   "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "g9-math-s2-student-book",
+   "unit": 5,
+   "lesson": 1,
+   "bookTitleEn": "Proportional Parts in Triangles",
+   "kbLessonId": "kbl-g9-math-s2-nccd-u5_l1",
+   "score": 1,
+   "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "g9-math-s2-student-book",
+   "unit": 5,
+   "lesson": 2,
+   "bookTitleEn": "Bisectors in Triangle",
+   "kbLessonId": "kbl-g9-math-s2-nccd-u5_l2",
+   "score": 1,
+   "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "g9-math-s2-student-book",
+   "unit": 5,
+   "lesson": 3,
+   "bookTitleEn": "Medians and Altitudes in Triangle",
+   "kbLessonId": "kbl-g9-math-s2-nccd-u5_l3",
+   "score": 1,
+   "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "g9-math-s2-student-book",
+   "unit": 5,
+   "lesson": 4,
+   "bookTitleEn": "Trigonometric Ratios",
+   "kbLessonId": "kbl-g9-math-s2-nccd-u5_l4",
+   "score": 1,
+   "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "g9-math-s2-student-book",
+   "unit": 5,
+   "lesson": 5,
+   "bookTitleEn": "Applications of Trigonometric Ratios",
+   "kbLessonId": "kbl-g9-math-s2-nccd-u5_l5",
+   "score": 1,
+   "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "g9-math-s2-student-book",
+   "unit": 6,
+   "lesson": 1,
+   "bookTitleEn": "Simplifying Exponential Expressions",
+   "kbLessonId": "kbl-g9-math-s2-nccd-u6_l1",
+   "score": 1,
+   "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "g9-math-s2-student-book",
+   "unit": 6,
+   "lesson": 2,
+   "bookTitleEn": "Operations with Radical Expressions",
+   "kbLessonId": "kbl-g9-math-s2-nccd-u6_l2",
+   "score": 1,
+   "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "g9-math-s2-student-book",
+   "unit": 6,
+   "lesson": 3,
+   "bookTitleEn": "Solving Radical Equations",
+   "kbLessonId": "kbl-g9-math-s2-nccd-u6_l3",
+   "score": 1,
+   "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "g9-math-s2-student-book",
+   "unit": 7,
+   "lesson": 1,
+   "bookTitleEn": "Multiplying and Dividing Rational Algebraic Expressions",
+   "kbLessonId": "kbl-g9-math-s2-nccd-u7_l1",
+   "score": 1,
+   "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "g9-math-s2-student-book",
+   "unit": 7,
+   "lesson": 2,
+   "bookTitleEn": "Adding and Subtracting Rational Algebraic Expressions",
+   "kbLessonId": "kbl-g9-math-s2-nccd-u7_l2",
+   "score": 1,
+   "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "g9-math-s2-student-book",
+   "unit": 7,
+   "lesson": 3,
+   "bookTitleEn": "Solving Rational Equations",
+   "kbLessonId": "kbl-g9-math-s2-nccd-u7_l3",
+   "score": 1,
+   "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "g9-math-s2-student-book",
+   "unit": 8,
+   "lesson": 1,
+   "bookTitleEn": "Measures of Dispersion",
+   "kbLessonId": "kbl-g9-math-s2-nccd-u8_l1",
+   "score": 1,
+   "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "g9-math-s2-student-book",
+   "unit": 8,
+   "lesson": 2,
+   "bookTitleEn": "Frequency Tables with Class Intervals",
+   "kbLessonId": "kbl-g9-math-s2-nccd-u8_l2",
+   "score": 1,
+   "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "g9-math-s2-student-book",
+   "unit": 8,
+   "lesson": 3,
+   "bookTitleEn": "Histograms",
+   "kbLessonId": "kbl-g9-math-s2-nccd-u8_l3",
+   "score": 1,
+   "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "g9-math-s2-student-book",
+   "unit": 8,
+   "lesson": 4,
+   "bookTitleEn": "Probabilities and Venn Diagrams",
+   "kbLessonId": "kbl-g9-math-s2-nccd-u8_l4",
+   "score": 1,
+   "matchedBy": "title-overlap"
+  },
+  {
+   "sourceId": "g9-math-s2-student-book",
+   "unit": 8,
+   "lesson": 5,
+   "bookTitleEn": "Geometric Probability",
+   "kbLessonId": "kbl-g9-math-s2-nccd-u8_l5",
+   "score": 1,
+   "matchedBy": "title-overlap"
   }
  ],
  "unitNumbering": "The curriculum's `u{n}_l{m}` matches the number the book PRINTS in every unit except unit 1, where the book has an extra opening lesson («حل معادلات خاصة») and the rest shift by one. Units 1-4 are semester 1 and units 5-8 are semester 2, so the printed unit number also identifies which student book a figure came from — `check_semester` in scripts/extract_book_figures.py enforces that. Note the maths PDFs in attached_assets are named backwards: the file called `1st_semester` is the second-semester book. Source ids follow the books' contents, not their filenames."

@@ -95,14 +95,6 @@ export default function SlidesScreen() {
   );
   const [includeExamples, setIncludeExamples] = useState(true);
   const [includePractice, setIncludePractice] = useState(true);
-  /**
-   * Off by default, and deliberately: a teacher's attachments are their own
-   * files pinned to the lesson, not deck content. Merging them in
-   * automatically meant every regeneration of the same lesson came back with
-   * the same photos and voice notes re-inserted as slides, which reads as the
-   * generator inventing media it did not make. They go in when asked for.
-   */
-  const [includeAttachments, setIncludeAttachments] = useState(false);
   const [loading, setLoading] = useState(false);
   /**
    * Held across renders so Cancel can reach the in-flight requests — plural
@@ -165,20 +157,19 @@ export default function SlidesScreen() {
   /** The teacher's own uploaded photos/files for this lesson (server-side, R2-backed). */
   const [uploadedAttachments, setUploadedAttachments] = useState<UploadedAttachment[]>([]);
   /**
-   * Uploaded *images* and *audio* can both go on a slide now; `document`
-   * (PDF) still has no renderer — `ActivitySlide.mediaKind` only covers
-   * `'image' | 'video' | 'audio'`. Merged with the pinned-URL resources so
-   * both sources land in the deck the same way, in one call.
+   * Every uploaded kind — image, audio, document — now has a slide renderer.
+   * Merged with the pinned-URL resources so both sources land in the deck
+   * the same way, in one call. This merge is purely client-side and runs
+   * after the lesson-plan fetch has already returned — the teacher's own
+   * files never appear in a request body, so they never enter the shared
+   * generation cache another teacher's request could be served from.
    */
-  const attachedResources = useMemo<AttachedResource[]>(() => (includeAttachments ? [
+  const attachedResources = useMemo<AttachedResource[]>(() => [
     ...attached,
     ...uploadedAttachments
-      .filter((m): m is UploadedAttachment & { url: string } =>
-        (m.kind === 'image' || m.kind === 'audio') && !!m.url)
-      .map(m => ({ kind: m.kind as 'image' | 'audio', url: m.url, caption: m.caption })),
-  ] : []), [attached, uploadedAttachments, includeAttachments]);
-  /** Whether there is anything to offer — no attachments, no switch. */
-  const hasAttachments = attached.length + uploadedAttachments.length > 0;
+      .filter((m): m is UploadedAttachment & { url: string } => !!m.url)
+      .map(m => ({ kind: m.kind, url: m.url, caption: m.caption })),
+  ], [attached, uploadedAttachments]);
   /** True once the example-verification pass has resolved — the summary row
       stays silent while a check is still in flight. */
   const [verifyDone, setVerifyDone] = useState(false);
@@ -600,7 +591,7 @@ export default function SlidesScreen() {
       const item = await saveItem({
         ...deckIdentity(deck),
         content,
-        formState: { gradeIdx, subjectIdx, topic: topic.trim(), includeExamples, includePractice, includeAttachments },
+        formState: { gradeIdx, subjectIdx, topic: topic.trim(), includeExamples, includePractice },
       });
       savedContentRef.current = content;
       setSavedId(item.id);
@@ -782,9 +773,6 @@ export default function SlidesScreen() {
           <View style={{ gap: 10, marginBottom: 18 }}>
             <Toggle label={t('slidesIncludeExamples')} value={includeExamples} onChange={setIncludeExamples} />
             <Toggle label={t('slidesIncludePractice')} value={includePractice} onChange={setIncludePractice} />
-            {hasAttachments ? (
-              <Toggle label={t('slidesIncludeAttachments')} value={includeAttachments} onChange={setIncludeAttachments} />
-            ) : null}
           </View>
 
           {/*

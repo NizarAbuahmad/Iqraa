@@ -8,7 +8,7 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { buildAdaptationsDirective, generatorLessonId, generatorUnitId, getUnitPriorKnowledge, resolveGeneratorGrounding } from '@/services/kbContext';
-import { regenerationFields } from '@/services/ai/regeneration';
+import { pooledVariantId, regenerationFields } from '@/services/ai/regeneration';
 import { LessonPlanOutput } from '@/services/ai/AIService';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
@@ -562,6 +562,7 @@ export default function LessonPlanScreen() {
           favorite={{ favorited, onToggle: handleToggleFavorite }}
           onExport={() => setShowExport(true)}
           onRegenerate={() => generate({ regenerate: true })}
+          variantId={pooledVariantId(result)}
           materialType="lesson"
           toolId={isSimplify ? 'simplify' : 'lesson-plan'}
           topic={topic.trim()}

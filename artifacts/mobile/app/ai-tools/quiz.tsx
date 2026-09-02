@@ -8,7 +8,7 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { buildGeneratorContext, generatorLessonId, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
-import { regenerationFields } from '@/services/ai/regeneration';
+import { pooledVariantId, regenerationFields } from '@/services/ai/regeneration';
 import { QuizOutput, QuizQuestion } from '@/services/ai/AIService';
 import { buildDeckFromQuiz } from '@/services/classDeck';
 import { summarizeVerification, type VerifyOutcome } from '@/services/quizVerification';
@@ -745,6 +745,7 @@ export default function QuizScreen() {
           favorite={{ favorited, onToggle: handleToggleFavorite }}
           onExport={() => setShowExport(true)}
           onRegenerate={() => generate({ regenerate: true })}
+          variantId={pooledVariantId(result)}
           materialType="quiz"
           toolId="quiz"
           topic={topic.trim()}

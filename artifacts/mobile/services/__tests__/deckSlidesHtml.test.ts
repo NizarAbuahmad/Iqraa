@@ -179,6 +179,22 @@ describe('buildDeckSlidesHTML — media slide', () => {
     assert.match(html, /\u0634\u0631\u062d \u0627\u0644\u0645\u0639\u0644\u0645/);
     assert.match(stripIsolates(html), /deck-video-url">https:\/\/example\.com\/note\.mp3/);
   });
+
+  it('renders a document media slide as a real clickable link, not an image', () => {
+    const html = buildDeckSlidesHTML(deck([
+      titleSlide,
+      {
+        slideNumber: 2, type: 'media', title: 'مستند', content: 'ورقة عمل',
+        mediaKind: 'document', mediaUrl: 'https://example.com/handout.pdf',
+        mediaCaption: 'ورقة عمل الوحدة الثانية', durationSeconds: 0,
+      },
+    ]), true);
+    assert.doesNotMatch(html, /<img/);
+    assert.match(html, /<a class="deck-video-link"[^>]*href="https:\/\/example\.com\/handout\.pdf"/);
+    assert.match(html, /افتح المستند/);
+    assert.match(html, /ورقة عمل الوحدة الثانية/);
+    assert.match(stripIsolates(html), /deck-video-url">https:\/\/example\.com\/handout\.pdf/);
+  });
 });
 
 describe('buildDeckSlidesHTML — graph slide', () => {

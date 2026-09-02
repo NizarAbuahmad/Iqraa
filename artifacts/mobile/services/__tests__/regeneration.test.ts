@@ -8,7 +8,7 @@
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { avoidSignatures, regenerationFields } from '../ai/regeneration.ts';
+import { avoidSignatures, pooledVariantId, regenerationFields } from '../ai/regeneration.ts';
 
 const QUIZ = {
   title: 'اختبار في كثيرات الحدود',
@@ -76,5 +76,32 @@ describe('regenerationFields', () => {
     assert.equal(fields.regenerate, true);
     assert.equal(fields.excludeVariantIds, undefined);
     assert.ok((fields.avoid ?? []).length >= 2);
+  });
+});
+
+describe('pooledVariantId', () => {
+  it('returns the id of an artifact that came from the shared pool', () => {
+    assert.equal(pooledVariantId(QUIZ), 'variant-uuid-1');
+  });
+
+  it('returns nothing for an artifact nobody else can be served', () => {
+    // A mock-generator fallback, an unreachable pool, or a request carrying the
+    // teacher's own material — none of them are in the pool, so offering to
+    // withdraw one would be a button that does nothing. A button that does
+    // nothing teaches teachers to distrust the ones that do.
+    const { variantId, ...notPooled } = QUIZ;
+    assert.equal(pooledVariantId(notPooled), undefined);
+  });
+
+  it('ignores a variantId that is not a usable string', () => {
+    assert.equal(pooledVariantId({ variantId: '' }), undefined);
+    assert.equal(pooledVariantId({ variantId: '   ' }), undefined);
+    assert.equal(pooledVariantId({ variantId: 42 }), undefined);
+  });
+
+  it('survives whatever a failed generation leaves on screen', () => {
+    assert.equal(pooledVariantId(null), undefined);
+    assert.equal(pooledVariantId(undefined), undefined);
+    assert.equal(pooledVariantId('a string'), undefined);
   });
 });

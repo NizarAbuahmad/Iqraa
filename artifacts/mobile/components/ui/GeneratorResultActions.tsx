@@ -21,6 +21,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { remoteAIService } from '@/services/ai/RemoteAIService';
+import { confirm } from '@/services/confirm';
 import { MaterialClassField } from './MaterialClassField';
 import { FeedbackWidget } from './FeedbackWidget';
 import { RelatedResourcesPanel } from './RelatedResourcesPanel';
@@ -39,6 +41,15 @@ export interface GeneratorResultActionsProps {
   /** Opens the screen's own ExportMenu. */
   onExport: () => void;
   onRegenerate: () => void;
+  /**
+   * The shared-pool id of the artifact on screen, from `pooledVariantId()`.
+   *
+   * Its presence is what decides whether "report a problem" is offered:
+   * without it this artifact was never pooled and no other teacher can be
+   * served it, so withdrawing it would do nothing. Omit for a screen with no
+   * pooled result.
+   */
+  variantId?: string;
   /** Matches workspace.ts's MaterialType — 'lesson' | 'worksheet' | 'quiz' | 'activity' | ... */
   materialType: string;
   /** toolCatalog id, e.g. 'lesson-plan', 'worksheet', 'quiz', 'activity'. */
@@ -57,6 +68,7 @@ export function GeneratorResultActions({
   favorite,
   onExport,
   onRegenerate,
+  variantId,
   materialType,
   toolId,
   topic,
@@ -64,6 +76,43 @@ export function GeneratorResultActions({
 }: GeneratorResultActionsProps) {
   const colors = useColors();
   const { t, isRTL } = useLanguage();
+  const [reporting, setReporting] = React.useState(false);
+
+  /**
+   * Withdraw this artifact from the shared pool, then regenerate.
+   *
+   * Both halves matter. Withdrawing alone would leave the teacher holding the
+   * paper they just reported and no replacement; regenerating alone would give
+   * them a good one and leave the bad one being served to everybody else.
+   *
+   * A failed withdrawal does NOT go on to regenerate. The teacher would get a
+   * fresh artifact and reasonably conclude the bad one was dealt with, when it
+   * is still in the pool — the report has to fail visibly or not at all.
+   */
+  const reportProblem = async () => {
+    if (!variantId || reporting) return;
+    const ok = await confirm({
+      title: t('reportArtifactTitle'),
+      message: t('reportArtifactMsg'),
+      confirmLabel: t('reportArtifactConfirm'),
+      cancelLabel: t('cancel'),
+      destructive: true,
+    });
+    if (!ok) return;
+    setReporting(true);
+    try {
+      const retired = await remoteAIService.retireVariant(variantId);
+      // Already gone counts as done — the teacher wanted it out of the pool
+      // and it is out of the pool. Said differently so a second report on the
+      // same artifact does not look like the first one silently failed.
+      onToast(retired ? t('reportArtifactDone') : t('reportArtifactGone'));
+      onRegenerate();
+    } catch {
+      onToast(t('reportArtifactFailed'));
+    } finally {
+      setReporting(false);
+    }
+  };
 
   const saveDone = saveState === 'saved' || saveState === 'updated';
   const saveBtnLabel =
@@ -134,6 +183,30 @@ export function GeneratorResultActions({
           <Ionicons name="refresh-outline" size={16} color={accent} />
           <Text style={[styles.actionText, { color: accent, fontFamily: 'Cairo_600SemiBold' }]}>{t('regenerateBtn')}</Text>
         </Pressable>
+
+        {/* Report a problem — only for an artifact that is actually shared.
+            Deliberately last and in muted red: it is the rarest action here and
+            the only one that affects other teachers' material. */}
+        {!!variantId && (
+          <Pressable
+            onPress={reportProblem}
+            disabled={reporting}
+            style={({ pressed }) => [
+              styles.actionBtn,
+              {
+                borderColor: colors.destructive,
+                borderRadius: colors.radius,
+                flexDirection: isRTL ? 'row-reverse' : 'row',
+                opacity: reporting ? 0.5 : pressed ? 0.8 : 1,
+              },
+            ]}
+          >
+            <Ionicons name="flag-outline" size={16} color={colors.destructive} />
+            <Text style={[styles.actionText, { color: colors.destructive, fontFamily: 'Cairo_600SemiBold' }]}>
+              {t('reportArtifactBtn')}
+            </Text>
+          </Pressable>
+        )}
       </View>
 
       <FeedbackWidget materialType={materialType} toolId={toolId} />

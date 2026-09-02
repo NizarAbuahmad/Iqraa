@@ -156,9 +156,12 @@ Before a live demo: [`docs/demo-checklist.md`](./docs/demo-checklist.md).
 - **A shared artifact makes every generator bug everybody's bug.** A pooled
   worksheet is served to every teacher who asks for that lesson, so anything
   that used to cost one teacher a regeneration now costs all of them.
-  `assertUsableGeneration` runs before anything is stored, and
-  `POST /generate/variants/:id/retire` is the way back out — but nothing in the
-  app calls it yet.
+  `assertUsableGeneration` runs before anything is stored — but it can only
+  catch a *malformed* artifact, never a well-formed worksheet with a wrong
+  answer. The way back out is `POST /generate/variants/:id/retire`, offered to
+  teachers since 2026-09-02 as «بلّغ عن مشكلة» in `GeneratorResultActions`. It
+  is deliberately open to any authenticated teacher, and it retires
+  immediately rather than queuing a review.
 - **Extensionless relative imports only work through esbuild.** Anything loaded
   directly by `node --test` needs an explicit `.ts` extension.
 - **The OpenAI client throws at module scope without a key**, which makes

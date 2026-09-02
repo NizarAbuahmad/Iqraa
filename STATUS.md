@@ -415,11 +415,28 @@ for reasons no dashboard would have explained. Requests now declare
 objectives or adaptations) stays private, and an absent value is read as
 `'teacher'` so a screen that forgets fails closed.
 
+**A teacher can pull a bad artifact out of the pool, 2026-09-02.** The four
+generator screens now show «بلّغ عن مشكلة في هذه النسخة» beneath Regenerate,
+and it withdraws the artifact for everybody and regenerates a replacement in
+one action. This was the gap the section below recorded: the endpoint existed
+and nothing called it, which in practice meant a bad worksheet stayed in
+circulation until an operator ran a curl nobody was going to run.
+
+Three decisions worth knowing:
+- **Any authenticated teacher can retire any variant.** The person holding the
+  bad paper is the one who knows it is bad, and routing it through an admin
+  leaves it being served meanwhile. The cost of a wrong call is one wasted
+  generation; the cost of the delay is every teacher who asks for that lesson
+  in between.
+- **The button only appears for a pooled artifact** (`pooledVariantId()` finds
+  a `variantId`). A mock-generator fallback or a request carrying the teacher's
+  own material was never shared, so withdrawing it would do nothing — and a
+  button that does nothing teaches teachers to distrust the ones that do.
+- **A failed withdrawal does not regenerate.** The teacher would get a fresh
+  artifact and reasonably conclude the bad one was dealt with, while it is
+  still in the pool.
+
 **Not built, and worth knowing:**
-- `POST /generate/variants/:id/retire` exists and nothing in the app calls it.
-  It is the safety valve for sharing — one bad worksheet now reaches every
-  teacher who asks for that lesson — and until a screen offers it, retiring a
-  variant is a curl an operator has to run.
 - The hit rate has not been observed on real traffic. Everything above is what
   the code does, verified by tests; the first number that means anything comes
   from `select cache_status, count(*) from ai_generations` after a week.
@@ -8659,6 +8676,40 @@ pre-existing skips, unchanged) including new tests for the audio title
 (`classMedia.test.ts`) and the audio PDF-export link
 (`deckSlidesHtml.test.ts`). Not verified: a real audio file presented in a
 browser — same sandbox limitation as above.
+
+## Lesson attachments: document slides, and a privacy check, 2026-09-01
+
+Closes the last gap from the two entries above: `document` (PDF) attachments
+now get a slide, same `'image' | 'video' | 'audio' | 'document'` `mediaKind`
+pattern. No in-app or PDF/PPTX-native PDF viewer exists, so it follows the
+same link-out shape audio/video already use — a clickable link, the bare URL
+as text, and (in `presentation.tsx`) a document icon and label instead of the
+"▶ play" one, since a play glyph on a handout read as a broken player.
+
+**Before building it, checked something that mattered more: could a
+teacher's own uploaded file ever be shown to a DIFFERENT teacher** — via the
+shared `ai_artifacts` generation pool this repo already uses to serve one
+generated worksheet to every teacher who asks for the same lesson (see the
+"shared artifact pool" entries elsewhere in this file). Traced it end to end:
+`attachedResources` (built from `lesson_media` rows, each `userId`-scoped in
+Postgres and filtered by `req.user!.id` in every route) never appears in the
+`/generate/lesson-plan` request body, the pool's cache key
+(`generationKeys()` in `generationKey.ts`), or the stored pooled payload —
+`insertLessonResources` splices attachments into the deck client-side,
+*after* the network round trip for the lesson plan is already done. Checked
+the other places a deck could leak too: `workspace` saves are `userId`-scoped
+server-side (`routes/workspace.ts`), there's no shared/team workspace
+feature, and PDF/PPTX export is fully on-device with no upload step. No leak
+found — documented here rather than left as an unstated assumption, since
+the next person extending this path needs to know the property to preserve:
+never add a field to `AIRequest`/`ClassroomActivityRequest` that carries
+attachment content or URLs into the generation request body.
+
+Verified: `pnpm run typecheck` clean, mobile suite 1116/1116 pass (10
+pre-existing skips, unchanged), including new tests for the document slide
+title and the document PDF-export link. Not verified: a real PDF attached and
+opened from a presented deck in a browser — same sandbox limitation as the
+rest of this feature's entries.
 
 ## «تجهيزات الصف» changed almost nothing, 2026-08-31
 
