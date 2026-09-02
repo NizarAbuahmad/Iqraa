@@ -195,14 +195,15 @@ export function buildChartSlide(
   };
 }
 
-const MEDIA_SLIDE_TITLE: Record<'image' | 'video' | 'audio', [ar: string, en: string]> = {
+const MEDIA_SLIDE_TITLE: Record<'image' | 'video' | 'audio' | 'document', [ar: string, en: string]> = {
   video: ['فيديو', 'Video'],
   audio: ['تسجيل صوتي', 'Audio'],
   image: ['صورة', 'Image'],
+  document: ['مستند', 'Document'],
 };
 
 export function buildMediaSlide(
-  kind: 'image' | 'video' | 'audio',
+  kind: 'image' | 'video' | 'audio' | 'document',
   url: string,
   caption: string,
   isAr: boolean,
@@ -282,7 +283,7 @@ export function insertVideoSlide(
 }
 
 /** What a teacher pinned to a lesson — the shape `lessonMedia` stores. */
-export type AttachedResource = { kind: 'image' | 'video' | 'audio'; url: string; caption: string };
+export type AttachedResource = { kind: 'image' | 'video' | 'audio' | 'document'; url: string; caption: string };
 
 /**
  * Put the teacher's own resources into a generated deck.

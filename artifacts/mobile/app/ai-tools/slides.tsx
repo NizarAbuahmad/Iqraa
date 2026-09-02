@@ -157,17 +157,18 @@ export default function SlidesScreen() {
   /** The teacher's own uploaded photos/files for this lesson (server-side, R2-backed). */
   const [uploadedAttachments, setUploadedAttachments] = useState<UploadedAttachment[]>([]);
   /**
-   * Uploaded *images* and *audio* can both go on a slide now; `document`
-   * (PDF) still has no renderer — `ActivitySlide.mediaKind` only covers
-   * `'image' | 'video' | 'audio'`. Merged with the pinned-URL resources so
-   * both sources land in the deck the same way, in one call.
+   * Every uploaded kind — image, audio, document — now has a slide renderer.
+   * Merged with the pinned-URL resources so both sources land in the deck
+   * the same way, in one call. This merge is purely client-side and runs
+   * after the lesson-plan fetch has already returned — the teacher's own
+   * files never appear in a request body, so they never enter the shared
+   * generation cache another teacher's request could be served from.
    */
   const attachedResources = useMemo<AttachedResource[]>(() => [
     ...attached,
     ...uploadedAttachments
-      .filter((m): m is UploadedAttachment & { url: string } =>
-        (m.kind === 'image' || m.kind === 'audio') && !!m.url)
-      .map(m => ({ kind: m.kind as 'image' | 'audio', url: m.url, caption: m.caption })),
+      .filter((m): m is UploadedAttachment & { url: string } => !!m.url)
+      .map(m => ({ kind: m.kind, url: m.url, caption: m.caption })),
   ], [attached, uploadedAttachments]);
   /** True once the example-verification pass has resolved — the summary row
       stays silent while a check is still in flight. */
