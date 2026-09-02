@@ -68,7 +68,7 @@ describe('figuresForLesson', () => {
     // right lessons and only the book label was wrong, which is why it
     // shipped. Hence a test rather than a comment.
     for (const id of lessonsWithFigures()) {
-      const m = /^kbl-(math|chem|finlit)-(s[12])-/.exec(id);
+      const m = /^kbl-(math|chem|finlit|g9-math)-(s[12])-/.exec(id);
       assert.ok(m, `${id} has a subject and semester`);
       const expected = `${m![1]}-${m![2]}-student-book`;
       for (const f of figuresForLesson(id)) {

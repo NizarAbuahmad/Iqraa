@@ -116,6 +116,22 @@ BOOKS: dict[str, tuple[str, str]] = {
         "C:/Users/Lenovo/Downloads/Raya studio/Iqraa/Calude app/Knowledge Base/"
         "10th grade/الثقافة المالية 10 ف1 small.pdf",
     ),
+    # Grade 9 maths: same local-mirror reasoning as chem-s2/finlit above.
+    # Unlike the Grade 10 maths pair, these filenames are NOT swapped — the
+    # «الفصل الأول» file's own headers print units 1-4 and «الفصل الثاني»
+    # prints units 5-8, matching their names. Checked by content, not assumed
+    # from the name, for the same reason the G10 pair's docstring insists on
+    # it: a filename is a claim, not a fact.
+    "g9-math-s1-student-book": (
+        "grade-9-math",
+        "C:/Users/Lenovo/Downloads/Raya studio/Iqraa/Calude app/Knowledge Base/"
+        "9th grade/Math/كتاب الطالب لمادة الرياضيات الصف التاسع الفصل الأول.pdf",
+    ),
+    "g9-math-s2-student-book": (
+        "grade-9-math",
+        "C:/Users/Lenovo/Downloads/Raya studio/Iqraa/Calude app/Knowledge Base/"
+        "9th grade/Math/كتاب الطالب لمادة الرياضيات الصف التاسع الفصل الثاني.pdf",
+    ),
 }
 
 # A real figure sits in a column; one filling the page is a failed detection.
@@ -210,6 +226,12 @@ def lesson_start(page: pymupdf.Page) -> dict | None:
       siblings put it at 47, so a `< 60` ceiling found five of six. The ceiling
       is 90. The number band is deliberately left tighter: it is what tells an
       opener apart from a page that merely mentions the word.
+    * Grade 9 maths semester 2 sets its number at y=61 — every one of its 13
+      openers, not a one-off — where G10's sits above 60. Found by grepping
+      the raw spans on a known opener page after `< 60` returned zero openers
+      for the whole book. Widened to 65: enough for this book, still well
+      short of the 77 that a page merely mentioning «الدرس» could plausibly
+      reach in body text.
     """
     if not any(
         _bare(s["text"]) == "\u0627\u0644\u062F\u0631\u0633" and s["size"] >= 20 and s["bbox"][1] < 90
@@ -225,7 +247,7 @@ def lesson_start(page: pymupdf.Page) -> dict | None:
     heading_parts: list[tuple[float, float, str]] = []
     for s in _spans(page):
         t = s["text"].strip()
-        if s["size"] >= 40 and s["bbox"][1] < 60 and t.translate(ARABIC_DIGITS).isdigit():
+        if s["size"] >= 40 and s["bbox"][1] < 65 and t.translate(ARABIC_DIGITS).isdigit():
             number = int(t.translate(ARABIC_DIGITS))
         # The Arabic lesson title: the largest text in the very top band. It is
         # the only identifier chemistry states plainly, and it is what the
@@ -645,6 +667,7 @@ def review_sheet(paths: list[Path], out: Path) -> None:
 EXPECTED_UNITS: dict[str, dict[int, range]] = {
     "grade-10-math": {1: range(1, 5), 2: range(5, 9)},
     "grade-10-chemistry": {1: range(1, 4), 2: range(4, 6)},
+    "grade-9-math": {1: range(1, 5), 2: range(5, 9)},
 }
 
 
