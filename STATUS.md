@@ -415,11 +415,28 @@ for reasons no dashboard would have explained. Requests now declare
 objectives or adaptations) stays private, and an absent value is read as
 `'teacher'` so a screen that forgets fails closed.
 
+**A teacher can pull a bad artifact out of the pool, 2026-09-02.** The four
+generator screens now show «بلّغ عن مشكلة في هذه النسخة» beneath Regenerate,
+and it withdraws the artifact for everybody and regenerates a replacement in
+one action. This was the gap the section below recorded: the endpoint existed
+and nothing called it, which in practice meant a bad worksheet stayed in
+circulation until an operator ran a curl nobody was going to run.
+
+Three decisions worth knowing:
+- **Any authenticated teacher can retire any variant.** The person holding the
+  bad paper is the one who knows it is bad, and routing it through an admin
+  leaves it being served meanwhile. The cost of a wrong call is one wasted
+  generation; the cost of the delay is every teacher who asks for that lesson
+  in between.
+- **The button only appears for a pooled artifact** (`pooledVariantId()` finds
+  a `variantId`). A mock-generator fallback or a request carrying the teacher's
+  own material was never shared, so withdrawing it would do nothing — and a
+  button that does nothing teaches teachers to distrust the ones that do.
+- **A failed withdrawal does not regenerate.** The teacher would get a fresh
+  artifact and reasonably conclude the bad one was dealt with, while it is
+  still in the pool.
+
 **Not built, and worth knowing:**
-- `POST /generate/variants/:id/retire` exists and nothing in the app calls it.
-  It is the safety valve for sharing — one bad worksheet now reaches every
-  teacher who asks for that lesson — and until a screen offers it, retiring a
-  variant is a curl an operator has to run.
 - The hit rate has not been observed on real traffic. Everything above is what
   the code does, verified by tests; the first number that means anything comes
   from `select cache_status, count(*) from ai_generations` after a week.

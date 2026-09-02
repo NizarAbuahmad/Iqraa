@@ -9,7 +9,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { buildGeneratorContext, generatorLessonId, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
 import { isolateForeignRuns } from '@/services/mathRender';
-import { regenerationFields } from '@/services/ai/regeneration';
+import { pooledVariantId, regenerationFields } from '@/services/ai/regeneration';
 import { ActivityOutput, ActivityStep } from '@/services/ai/AIService';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
@@ -382,6 +382,7 @@ export default function ActivityScreen() {
           onSave={handleSave}
           onExport={() => setShowExport(true)}
           onRegenerate={() => generate({ regenerate: true })}
+          variantId={pooledVariantId(result)}
           materialType="activity"
           toolId="activity"
           topic={topic.trim()}
