@@ -96,12 +96,11 @@
       "status": "ingested",
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-30",
+        "extractedAt": "2026-09-02",
         "pages": 212,
-        "chars": 513822,
+        "chars": 513732,
         "localPath": "attached_assets/TE010_Book-teacher_guiede,_10th_grade,_semster_one_1785147998881.pdf",
-        "sha256": "ba0892fbae697c76dadce9b5c384c59378ca651d204f04147537b37a1c2012b0",
-        "bytesDifferFromManifest": { "manifest": 58371821, "local": 33225440 }
+        "sha256": "56fac019e4302ac92920f2d1bc7a2c9e760c806ee43d10353fd769b4b9753aab"
       },
       "filename": "teacher guiede, 10th grade, semster one.pdf",
       "authorAr": null,
@@ -336,7 +335,7 @@
       "semester": 1,
       "kind": "ministry-support",
       "authority": "nccd",
-      "status": "pending",
+      "status": "ingested",
       "filename": "المادة المساندة لمادة الرياضيات الصف العاشر الفصل الأول.pdf",
       "authorAr": null,
       "unitTags": [
@@ -348,7 +347,15 @@
         "math",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-02",
+        "pages": 80,
+        "chars": 101175,
+        "localPath": "knowledge-base/grade-10-math/support-pdfs/المادة المساندة لمادة الرياضيات الصف العاشر الفصل الأول.pdf",
+        "sha256": "51dfb4306d812f4aa1eb2ebdec9048c01a4fdc3ec526a3a3549bb0ee4dd79692"
+      }
     },
     {
       "id": "math-s2-support-worksheets",
@@ -1486,7 +1493,15 @@
         "كيمياء",
         "عاشر"
       ],
-      "notes": "Units 4-5: التفاعلات والحسابات الكيميائية / الطاقة الكيميائية — three lessons each, plus a تجربة استهلالية, an إثراء وتوسع and a مراجعة per unit. Unit numbering continues from S1, so the two semesters are one course, not two editions. 84 pages, Adobe original: prefer for extraction. Ingested 2026-08-24 into iqra_curriculum_g10_chem_sem2.json: main ideas, outcomes and bilingual vocabulary from the six lesson openers."
+      "notes": "Units 4-5: التفاعلات والحسابات الكيميائية / الطاقة الكيميائية — three lessons each, plus a تجربة استهلالية, an إثراء وتوسع and a مراجعة per unit. Unit numbering continues from S1, so the two semesters are one course, not two editions. 84 pages, Adobe original: prefer for extraction. Ingested 2026-08-24 into iqra_curriculum_g10_chem_sem2.json: main ideas, outcomes and bilingual vocabulary from the six lesson openers.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-02",
+        "pages": 84,
+        "chars": 131290,
+        "localPath": "knowledge-base/grade-10-chemistry/support-pdfs/10th grade, alchamy.2nd semester.pdf",
+        "sha256": "b3285eb5104b9e0249d5593569dd66497d50185420172baa9db1a69f05d899c8"
+      }
     },
     {
       "id": "chem-s2-student-book-compressed",
@@ -1535,7 +1550,15 @@
         "كيمياء",
         "عاشر"
       ],
-      "notes": "132 pages. مخطط الوحدة tables at guide pages 7A / 29A / 59A gave the catalog its period counts (3 per lesson), per-unit prior knowledge with the grade each outcome was taught in, the named activities, and unit 3's finer-grained outcomes (6 and 5, against the book's 1 and 2). Ingested 2026-08-24. Its per-lesson teaching notes, misconceptions and worksheet answer keys (appendix A1+) are NOT mined yet — that is the depth pass."
+      "notes": "132 pages. مخطط الوحدة tables at guide pages 7A / 29A / 59A gave the catalog its period counts (3 per lesson), per-unit prior knowledge with the grade each outcome was taught in, the named activities, and unit 3's finer-grained outcomes (6 and 5, against the book's 1 and 2). Ingested 2026-08-24. Its per-lesson teaching notes, misconceptions and worksheet answer keys (appendix A1+) are NOT mined yet — that is the depth pass.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-02",
+        "pages": 132,
+        "chars": 346066,
+        "localPath": "knowledge-base/grade-10-chemistry/support-pdfs/دليل المعلم لمادة الكيمياء الصف العاشر الفصل الأول.pdf",
+        "sha256": "7e75bb025dc82ea48dcd28d12ced061c2a8606dec1d3318da6fac7b17eebc367"
+      }
     },
     {
       "id": "chem-s2-teacher-guide",
@@ -1559,7 +1582,15 @@
         "كيمياء",
         "عاشر"
       ],
-      "notes": "مخطط الوحدة at guide pages 7A and 41A gave the period counts (2-4 per lesson, 9 per unit), the per-unit prior knowledge, and the named activities. Its per-lesson teaching notes and the answer appendix (M1+) are not mined yet."
+      "notes": "مخطط الوحدة at guide pages 7A and 41A gave the period counts (2-4 per lesson, 9 per unit), the per-unit prior knowledge, and the named activities. Its per-lesson teaching notes and the answer appendix (M1+) are not mined yet.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-02",
+        "pages": 96,
+        "chars": 256460,
+        "localPath": "knowledge-base/grade-10-chemistry/support-pdfs/دليل المعلم لمادة الكيمياء الصف العاشر الفصل الثاني.pdf",
+        "sha256": "9c929cbee187334ae9a084061920a39157578dc88a59122d92e2395e5f7e7041"
+      }
     },
     {
       "id": "chem-s1-activity-book",

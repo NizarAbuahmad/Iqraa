@@ -122,10 +122,12 @@ describe('passagesForUnit', () => {
 
   it('knows which sources have text', () => {
     assert.ok(hasExtractedText('math-s1-student-book'));
-    // Still pending as of 2026-08-26: the file is 17 MB, over the 10 MB
-    // single-call ceiling of the tool used to fetch the support pack — see
-    // STATUS.md. Pick a fresh still-pending id here if this one gets fetched.
-    assert.ok(!hasExtractedText('math-s1-support-material'));
+    // math-s1-support-material used to stand here as the un-fetched case; it
+    // was extracted on 2026-09-02, so this needs an id that stays without text.
+    // This one is a deliberate skip rather than a backlog item: the PDF has no
+    // text layer at all and OCR is not something this project has, so it will
+    // not go stale the way a pending fetch does.
+    assert.ok(!hasExtractedText('math-u1-answers-alkhatib'));
   });
 });
 

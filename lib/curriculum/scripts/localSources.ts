@@ -103,4 +103,22 @@ export const LOCAL_FILES: Record<string, string> = {
   'chem-ws-planck-almasri': 'attached_assets/knowledge-base-pending/chem-ws-planck-almasri.pdf',
   'chem-u1-test-shawata': 'attached_assets/knowledge-base-pending/chem-u1-test-shawata.pdf',
   'chem-s2-month1-tareq': 'attached_assets/knowledge-base-pending/chem-s2-month1-tareq.pdf',
+
+  // These nine already sat in `knowledge-base/**/support-pdfs/`, which is
+  // gitignored (.gitignore:59) — so they were invisible to every audit that
+  // walked this map, and were wrongly recorded as never-fetched. They are
+  // named here by their real on-disk paths: extraction reads them directly in
+  // a checkout that has them, and falls back to R2 as `<sourceId>.pdf` in one
+  // that does not. The six `duplicate` files alongside them are deliberately
+  // NOT listed — each is an iLovePDF re-compression of a source already
+  // mapped above, with downsampled images these page-render extractions need.
+  'math-loss-recovery': 'knowledge-base/grade-10-math/support-pdfs/المادة المقررة لتعويض الفاقد التعليمي لمادة الرياضيات الصف العاشر.pdf',
+  'math-s1-support-material': 'knowledge-base/grade-10-math/support-pdfs/المادة المساندة لمادة الرياضيات الصف العاشر الفصل الأول.pdf',
+  'math-u1-answers-almasri': 'knowledge-base/grade-10-math/support-pdfs/إجابات أول درسين من الوحدة الأولى الرياضيات الصف العاشر أ. أحمد المصري.pdf',
+  'math-u1-answers-alkhatib': 'knowledge-base/grade-10-math/support-pdfs/إجابات الوحدة الأولى (الأسس والمعادلات) رياضيات الصف العاشر أ. سلسبيل الخطيب.pdf',
+  'math-u2-answers-alkhatib': 'knowledge-base/grade-10-math/support-pdfs/إجابات الوحدة الثانية (الدائرة) رياضيات الصف العاشر أ. سلسبيل الخطيب.pdf',
+  'math-u1-summary-alkhamayseh': 'knowledge-base/grade-10-math/support-pdfs/ملخص الوحدة الأولى الاقترانات الرياضيات الصف العاشر أ. رعد الخمايسة.pdf',
+  'chem-s2-student-book': 'knowledge-base/grade-10-chemistry/support-pdfs/10th grade, alchamy.2nd semester.pdf',
+  'chem-s1-teacher-guide': 'knowledge-base/grade-10-chemistry/support-pdfs/دليل المعلم لمادة الكيمياء الصف العاشر الفصل الأول.pdf',
+  'chem-s2-teacher-guide': 'knowledge-base/grade-10-chemistry/support-pdfs/دليل المعلم لمادة الكيمياء الصف العاشر الفصل الثاني.pdf',
 };
