@@ -854,6 +854,7 @@ const translations = {
     slidesBuilding: 'يعمل اقرأ على بناء الشرائح...',
     slidesIncludeExamples: 'أضف أمثلة محلولة (مع وقت للتفكير)',
     slidesIncludePractice: 'أضف تدريبًا وواجبًا',
+    slidesIncludeAttachments: 'أضف مرفقاتي لهذا الدرس (صور وتسجيلات) إلى الشرائح',
     slidesSaved: 'حُفظت الشرائح في مساحتك',
     slidesUnsaved: 'أزلت الشرائح من مساحتك',
     // Class Challenge (phone-free team game)
@@ -1911,6 +1912,7 @@ const translations = {
     slidesBuilding: 'Building your slides…',
     slidesIncludeExamples: 'Include worked examples (with think time)',
     slidesIncludePractice: 'Include practice and homework',
+    slidesIncludeAttachments: 'Include my attachments for this lesson (photos and recordings)',
     slidesSaved: 'Slides saved to your workspace',
     slidesUnsaved: 'Slides removed from your workspace',
     // Class Challenge (phone-free team game)
