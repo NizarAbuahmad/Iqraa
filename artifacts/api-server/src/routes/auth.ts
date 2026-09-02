@@ -2,6 +2,7 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
+import { OAuth2Client } from "google-auth-library";
 import { db } from "@workspace/db";
 import {
   users,
@@ -25,6 +26,13 @@ const forgotPasswordLimiter = createRateLimiter({
   max: 5,
   name: "forgot-password",
 });
+const googleLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, name: "google-auth" });
+
+// Unset means the endpoint answers 503 and the client-side button never
+// renders (see GoogleSignInButton) — never a failure, just no button, same
+// shape as the Unsplash/YouTube "no key" pattern elsewhere in this app.
+const googleClientId = process.env.GOOGLE_CLIENT_ID;
+const googleClient = googleClientId ? new OAuth2Client(googleClientId) : null;
 
 function getSecret(): string {
   const secret = process.env.SESSION_SECRET;
@@ -153,7 +161,10 @@ router.post("/login", loginLimiter, async (req, res) => {
       .where(eq(users.email, email.toLowerCase().trim()))
       .limit(1);
 
-    if (!user) {
+    if (!user || !user.passwordHash) {
+      // No account, or a Google-only account with no password set — same
+      // generic message either way so this can't be used to enumerate emails
+      // (matches forgot-password's reasoning below).
       res.status(401).json({ error: "Invalid email or password" });
       return;
     }
@@ -190,6 +201,94 @@ router.post("/login", loginLimiter, async (req, res) => {
   } catch (err) {
     logger.error({ err }, "login failed");
     res.status(500).json({ error: "Login failed" });
+  }
+});
+
+// POST /auth/google
+router.post("/google", googleLimiter, async (req, res) => {
+  try {
+    if (!googleClient || !googleClientId) {
+      res.status(503).json({ error: "Google sign-in is not configured" });
+      return;
+    }
+
+    const { credential } = req.body as { credential?: string };
+    if (!credential) {
+      res.status(400).json({ error: "Google credential is required" });
+      return;
+    }
+
+    let payload;
+    try {
+      const ticket = await googleClient.verifyIdToken({ idToken: credential, audience: googleClientId });
+      payload = ticket.getPayload();
+    } catch {
+      res.status(401).json({ error: "Invalid Google credential" });
+      return;
+    }
+
+    if (!payload?.sub || !payload.email) {
+      res.status(401).json({ error: "Invalid Google credential" });
+      return;
+    }
+
+    const email = payload.email.toLowerCase().trim();
+
+    let [user] = await db.select().from(users).where(eq(users.googleId, payload.sub)).limit(1);
+
+    if (!user) {
+      // Link to an existing password account with the same email if one
+      // exists, otherwise create a fresh Google-only account.
+      [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+
+      [user] = user
+        ? await db
+            .update(users)
+            .set({ googleId: payload.sub, emailVerified: true })
+            .where(eq(users.id, user.id))
+            .returning()
+        : await db
+            .insert(users)
+            .values({
+              firstName: payload.given_name?.trim() || email.split("@")[0],
+              lastName: payload.family_name?.trim() || "",
+              email,
+              googleId: payload.sub,
+              role: "teacher",
+              preferredLanguage: "en",
+              emailVerified: true,
+            })
+            .returning();
+    }
+
+    if (!user) throw new Error("Failed to resolve Google user");
+
+    await db.update(users).set({ lastLogin: new Date() }).where(eq(users.id, user.id));
+
+    const { accessToken, refreshTokenValue } = generateTokens(user.id, user.email, user.role);
+    await storeRefreshToken(user.id, refreshTokenValue);
+
+    res.json({
+      accessToken,
+      refreshToken: refreshTokenValue,
+      user: {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
+        preferredLanguage: user.preferredLanguage,
+        createdAt: user.createdAt,
+        lastLogin: user.lastLogin,
+      },
+    });
+  } catch (err: any) {
+    if (err.code === "23505") {
+      res.status(409).json({ error: "An account with this email already exists" });
+      return;
+    }
+    logger.error({ err }, "google auth failed");
+    res.status(500).json({ error: "Google sign-in failed" });
   }
 });
 

@@ -10,14 +10,15 @@ import { useColors } from '@/hooks/useColors';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { Button } from '@/components/ui/Button';
+import { GoogleSignInButton, isGoogleSignInAvailable } from '@/components/ui/GoogleSignInButton';
 import { Input } from '@/components/ui/Input';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function RegisterScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { register } = useAuth();
-  const { t, isRTL } = useLanguage();
+  const { register, loginWithGoogle } = useAuth();
+  const { t, lang, isRTL } = useLanguage();
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -27,7 +28,21 @@ export default function RegisterScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const handleGoogleCredential = async (credential: string) => {
+    setError('');
+    setGoogleLoading(true);
+    try {
+      await loginWithGoogle(credential);
+      router.replace('/(tabs)');
+    } catch (e: any) {
+      setError(e.message ?? (lang === 'ar' ? 'تعذّر تسجيل الدخول عبر Google' : 'Google sign-in failed'));
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   const handleRegister = async () => {
     setError('');
@@ -90,6 +105,25 @@ export default function RegisterScreen() {
               <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text>
             </View>
           ) : null}
+
+          {isGoogleSignInAvailable() && (
+            <>
+              <GoogleSignInButton onCredential={handleGoogleCredential} locale={lang} />
+              {googleLoading ? (
+                <Text style={[styles.googleLoadingText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
+                  {lang === 'ar' ? 'جارٍ تسجيل الدخول…' : 'Signing in…'}
+                </Text>
+              ) : null}
+
+              <View style={[styles.dividerRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+                <Text style={[styles.dividerText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
+                  {t('orDivider')}
+                </Text>
+                <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+              </View>
+            </>
+          )}
 
           <View style={[styles.nameRow, isRTL && { flexDirection: 'row-reverse' }]}>
             <View style={styles.nameField}>
@@ -192,6 +226,10 @@ const styles = StyleSheet.create({
   card: { padding: 24, borderWidth: 1, marginBottom: 24, gap: 16 },
   errorBanner: { alignItems: 'center', gap: 8, padding: 12, borderWidth: 1 },
   errorText: { flex: 1, fontSize: 13 },
+  dividerRow: { alignItems: 'center', gap: 10, marginVertical: 2 },
+  dividerLine: { flex: 1, height: 1 },
+  dividerText: { fontSize: 12 },
+  googleLoadingText: { fontSize: 12, textAlign: 'center', marginTop: -6 },
   nameRow: { flexDirection: 'row', gap: 12 },
   nameField: { flex: 1 },
   terms: { fontSize: 11, textAlign: 'center', lineHeight: 17 },

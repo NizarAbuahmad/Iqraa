@@ -71,6 +71,12 @@ services:
         sync: false
       - key: OPENAI_API_KEY
         sync: false
+      # Google Sign-In web client ID, used to verify the audience of tokens
+      # POST /auth/google receives. Must match EXPO_PUBLIC_GOOGLE_CLIENT_ID on
+      # iqraa-web below — same client ID, two services. Unset means the route
+      # answers 503 rather than failing to verify anything.
+      - key: GOOGLE_CLIENT_ID
+        sync: false
       # Points the API's mathVerifierClient at the deployed verifier below.
       # fromService keeps the URL correct even if Render suffixes the name.
       - key: MATH_VERIFIER_URL
@@ -129,6 +135,12 @@ services:
       # so Render assigned this suffixed hostname on first deploy.
       - key: EXPO_PUBLIC_API_BASE_URL
         value: https://iqraa-api-dfxu.onrender.com/api
+      # Same Google OAuth web client ID as GOOGLE_CLIENT_ID on iqraa-api above.
+      # sync: false (not a hardcoded value like the PostHog key below) only
+      # because the client ID doesn't exist yet — once created it is not
+      # secret, EXPO_PUBLIC_* is inlined into the JS bundle at build time regardless.
+      - key: EXPO_PUBLIC_GOOGLE_CLIENT_ID
+        sync: false
       # PostHog ingest token. A plain value rather than `sync: false` on
       # purpose: `EXPO_PUBLIC_*` is inlined into the JS bundle at BUILD time,
       # so this string is public the moment the site deploys — a `phc_` token
