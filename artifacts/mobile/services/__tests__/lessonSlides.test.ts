@@ -144,6 +144,66 @@ describe('worked examples', () => {
   });
 });
 
+describe('practice slides', () => {
+  // guidedPractice/independentPractice are the teacher's facilitation notes
+  // (LESSON_STYLE_RULES_AR/EN in prompts.ts write them as pedagogy, never as
+  // a line meant for a student to read off the screen). Projecting that
+  // narration used to be exactly what this deck did.
+  it('never projects the teacher narration onto the class-facing content', () => {
+    const deck = buildLessonDeck('x', true, { lesson: LESSON, plan: PLAN });
+    const guided = deck.slides.find(s => s.title.includes('تدريب موجّه'));
+    const independent = deck.slides.find(s => s.title.includes('تدريب مستقل'));
+    assert.ok(guided);
+    assert.ok(independent);
+    assert.equal(guided!.content.includes(PLAN.guidedPractice), false);
+    assert.equal(independent!.content.includes(PLAN.independentPractice), false);
+  });
+
+  it('keeps the full narration available to the teacher panel', () => {
+    const deck = buildLessonDeck('x', true, { lesson: LESSON, plan: PLAN });
+    const guided = deck.slides.find(s => s.title.includes('تدريب موجّه'));
+    const independent = deck.slides.find(s => s.title.includes('تدريب مستقل'));
+    assert.equal(guided!.teacher?.teachingTips, PLAN.guidedPractice);
+    assert.equal(independent!.teacher?.teachingTips, PLAN.independentPractice);
+  });
+});
+
+describe('hook / introduction', () => {
+  // PLAN.introduction ('ابدأ بسؤال عن مساحة حديقة.') has no quoted or
+  // colon-introduced question, so splitWarmup falls through — the same
+  // "narration, not a class-facing line" case as guidedPractice above.
+  it('falls back to a generic prompt instead of the teacher narration when nothing can be lifted', () => {
+    const deck = buildLessonDeck('x', true, { lesson: LESSON, plan: PLAN });
+    const warmup = deck.slides.find(s => s.title.includes('تمهيد'));
+    assert.ok(warmup);
+    assert.equal(warmup!.content.includes(PLAN.introduction), false);
+    assert.ok(warmup!.teacher?.teachingTips?.includes(PLAN.introduction));
+  });
+
+  it('still projects a lifted question directly, unchanged', () => {
+    const quoted: LessonPlanOutput = { ...PLAN, introduction: 'اسأل الطلاب: "كم يساوي محيط المربع؟" ثم استمع لإجاباتهم.' };
+    const deck = buildLessonDeck('x', true, { lesson: LESSON, plan: quoted });
+    const warmup = deck.slides.find(s => s.title.includes('تمهيد'));
+    assert.equal(warmup!.content, 'كم يساوي محيط المربع؟');
+  });
+});
+
+describe('closure', () => {
+  it('projects the synthesized summary, not the teacher narration', () => {
+    const deck = buildLessonDeck('x', true, { lesson: LESSON, plan: PLAN });
+    const summary = deck.slides.find(s => s.type === 'summary');
+    assert.ok(summary);
+    assert.equal(summary!.content.includes(PLAN.closure), false);
+    assert.equal(summary!.teacher?.teachingTips, PLAN.closure);
+  });
+
+  it('needs no teacher panel when the plan has no closure text', () => {
+    const deck = buildLessonDeck('x', true, { lesson: LESSON, plan: { ...PLAN, closure: '' } });
+    const summary = deck.slides.find(s => s.type === 'summary');
+    assert.equal(summary!.teacher, undefined);
+  });
+});
+
 describe('missing sections', () => {
   it('omits rather than pads when there is no plan', () => {
     const deck = buildLessonDeck('x', true, { lesson: LESSON, plan: null });
