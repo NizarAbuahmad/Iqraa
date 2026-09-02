@@ -40,6 +40,10 @@ function loadGoogleScript(onLoad: () => void) {
   document.head.appendChild(script);
 }
 
+export function isGoogleSignInAvailable(): boolean {
+  return Platform.OS === 'web' && Boolean(process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID);
+}
+
 interface GoogleSignInButtonProps {
   onCredential: (credential: string) => void;
   locale: 'ar' | 'en';

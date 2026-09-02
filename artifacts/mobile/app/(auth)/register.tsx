@@ -10,7 +10,7 @@ import { useColors } from '@/hooks/useColors';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { Button } from '@/components/ui/Button';
-import { GoogleSignInButton } from '@/components/ui/GoogleSignInButton';
+import { GoogleSignInButton, isGoogleSignInAvailable } from '@/components/ui/GoogleSignInButton';
 import { Input } from '@/components/ui/Input';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -106,20 +106,24 @@ export default function RegisterScreen() {
             </View>
           ) : null}
 
-          <GoogleSignInButton onCredential={handleGoogleCredential} locale={lang} />
-          {googleLoading ? (
-            <Text style={[styles.googleLoadingText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
-              {lang === 'ar' ? 'جارٍ تسجيل الدخول…' : 'Signing in…'}
-            </Text>
-          ) : null}
+          {isGoogleSignInAvailable() && (
+            <>
+              <GoogleSignInButton onCredential={handleGoogleCredential} locale={lang} />
+              {googleLoading ? (
+                <Text style={[styles.googleLoadingText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
+                  {lang === 'ar' ? 'جارٍ تسجيل الدخول…' : 'Signing in…'}
+                </Text>
+              ) : null}
 
-          <View style={[styles.dividerRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-            <Text style={[styles.dividerText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
-              {t('orDivider')}
-            </Text>
-            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-          </View>
+              <View style={[styles.dividerRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+                <Text style={[styles.dividerText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
+                  {t('orDivider')}
+                </Text>
+                <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+              </View>
+            </>
+          )}
 
           <View style={[styles.nameRow, isRTL && { flexDirection: 'row-reverse' }]}>
             <View style={styles.nameField}>

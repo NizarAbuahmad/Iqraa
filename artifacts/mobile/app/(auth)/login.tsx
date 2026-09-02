@@ -13,7 +13,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 import { Button } from '@/components/ui/Button';
-import { GoogleSignInButton } from '@/components/ui/GoogleSignInButton';
+import { GoogleSignInButton, isGoogleSignInAvailable } from '@/components/ui/GoogleSignInButton';
 import { Input } from '@/components/ui/Input';
 
 const NAVY = '#081B3A';
@@ -210,20 +210,24 @@ export default function LoginScreen() {
           </View>
         ) : null}
 
-        <GoogleSignInButton onCredential={handleGoogleCredential} locale={lang} />
-        {googleLoading ? (
-          <Text style={[styles.googleLoadingText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
-            {lang === 'ar' ? 'جارٍ تسجيل الدخول…' : 'Signing in…'}
-          </Text>
-        ) : null}
+        {isGoogleSignInAvailable() && (
+          <>
+            <GoogleSignInButton onCredential={handleGoogleCredential} locale={lang} />
+            {googleLoading ? (
+              <Text style={[styles.googleLoadingText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
+                {lang === 'ar' ? 'جارٍ تسجيل الدخول…' : 'Signing in…'}
+              </Text>
+            ) : null}
 
-        <View style={[styles.dividerRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-          <Text style={[styles.dividerText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
-            {t('orDivider')}
-          </Text>
-          <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-        </View>
+            <View style={[styles.dividerRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+              <Text style={[styles.dividerText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
+                {t('orDivider')}
+              </Text>
+              <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+            </View>
+          </>
+        )}
 
         <Input
           label={t('emailAddress')}
