@@ -38,6 +38,7 @@ export type SubjectSlug =
   | 'math'
   | 'chem'
   | 'phys'
+  | 'earth-science'
   | 'finlit'
   | 'eng-commerce'
   | 'eng-agri'
