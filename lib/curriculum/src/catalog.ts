@@ -19,6 +19,10 @@ import {
   buildChemSem1BrowserCatalog,
 } from './catalogs/g10ChemSem1.ts';
 import {
+  buildPhysSem1BrowserCatalog,
+  PHYS_S1_CURRICULUM_BOOK_ID,
+} from './catalogs/g10PhysSem1.ts';
+import {
   CHEM_S2_CURRICULUM_BOOK_ID,
   buildChemSem2BrowserCatalog,
 } from './catalogs/g10ChemSem2.ts';
@@ -179,7 +183,13 @@ export const INVESTOR_MVP_CURRICULUM = true;
  * iqra_curriculum_g9_math_sem2.json.
  */
 export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9'];
-export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy', 'english'];
+// Appended, never inserted: these positions are persisted as bare indices in
+// formState and route URLs, so inserting shifts what a saved URL resolves to.
+// 'physics' joined on 2026-09-03 with the Grade 10 S1 curriculum. Without it,
+// isPickerCurriculumVisible gates every physics lesson invisible and
+// getLessonById returns undefined for all of them — the book would be listed
+// in MVP_BOOK_IDS while its lessons resolved to nothing.
+export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy', 'english', 'physics'];
 /** Main semester books only (guides/exercises stay in data, hidden from UI). */
 export const MVP_BOOK_IDS: readonly string[] = [
   'book-math-10',
@@ -202,6 +212,10 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // honestly-thin-rather-than-hidden precedent as Grade 9 Math S2 above.
   'book-english-10-s1',
   'book-english-10-s2',
+  // Physics S1 — the first subject from the 2026-09-03 intake to have a
+  // curriculum behind it. Appended, never inserted: these positions are
+  // persisted in formState and route URLs (see CLAUDE.md on picker order).
+  PHYS_S1_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -377,6 +391,23 @@ export const BOOKS: Book[] = [
     edition: '3rd',
     hasKnowledgeBase: true,
     audience: 'student',
+  },
+  // ── Physics Grade 10 – Semester 1 ──────────────────────────────────────────
+  // First subject added from the 2026-09-03 local intake. NCCD publishes no
+  // direct PDF link for this edition that we hold, so no pdfUrl: the download
+  // chip is absent rather than pointing somewhere that 404s.
+  {
+    id: PHYS_S1_CURRICULUM_BOOK_ID,
+    title: 'Physics – Grade 10, Semester 1',
+    titleAr: 'الفيزياء – الصف العاشر – الفصل الأول',
+    subjectId: 'physics',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
   },
   // ── Financial Literacy Grade 10 – Semester 1 ───────────────────────────────
   {
@@ -1376,6 +1407,7 @@ const _nccdSem1Browser = buildNccdSem1BrowserCatalog();
 const _nccdSem2Browser = buildNccdSem2BrowserCatalog();
 const _finlitSem1Browser = buildFinlitSem1BrowserCatalog();
 const _chemSem1Browser = buildChemSem1BrowserCatalog();
+const _physSem1Browser = buildPhysSem1BrowserCatalog();
 const _chemSem2Browser = buildChemSem2BrowserCatalog();
 const _g9MathSem1Browser = buildG9MathSem1BrowserCatalog();
 const _g9MathSem2Browser = buildG9MathSem2BrowserCatalog();
@@ -1492,6 +1524,7 @@ export const UNMATCHED_AUTHORED_LESSON_TITLES: readonly string[] = [
 export const UNITS: Unit[] = [
   ..._HARDCODED_UNITS.filter(u => !_legacyBookIds.has(u.bookId)),
   ..._chemSem1Browser.units,
+  ..._physSem1Browser.units,
   ..._chemSem2Browser.units,
   ..._nccdSem1Browser.units,
   ..._nccdSem2Browser.units,
@@ -1508,6 +1541,7 @@ export const UNITS: Unit[] = [
 export const LESSONS: Lesson[] = [
   ..._HARDCODED_LESSONS.filter(l => !_legacyUnitIds.has(l.unitId)),
   ..._chemSem1Merged.lessons,
+  ..._physSem1Browser.lessons,
   ..._chemSem2Merged.lessons,
   ..._nccdSem1Browser.lessons,
   ..._nccdSem2Browser.lessons,
