@@ -121,4 +121,35 @@ export const LOCAL_FILES: Record<string, string> = {
   'chem-s2-student-book': 'knowledge-base/grade-10-chemistry/support-pdfs/10th grade, alchamy.2nd semester.pdf',
   'chem-s1-teacher-guide': 'knowledge-base/grade-10-chemistry/support-pdfs/دليل المعلم لمادة الكيمياء الصف العاشر الفصل الأول.pdf',
   'chem-s2-teacher-guide': 'knowledge-base/grade-10-chemistry/support-pdfs/دليل المعلم لمادة الكيمياء الصف العاشر الفصل الثاني.pdf',
+
+  // Grade 10 physics, biology, earth science and Arabic — handed over as a
+  // local folder on 2026-09-03, not through Drive, so these carry no driveId.
+  // Physics first because it is the subject being built out; the rest are
+  // ingested now so the text exists before anyone needs it. Same gitignored
+  // support-pdfs/ home as the chemistry set above: read from disk here, from
+  // R2 as `<sourceId>.pdf` in a checkout that does not have them.
+  'phys-s1-student-book': 'knowledge-base/grade-10-physics/support-pdfs/كتاب الطالب لمادة الفيزياء للصف العاشر الفصل الأول.pdf',
+  'phys-s2-student-book': 'knowledge-base/grade-10-physics/support-pdfs/كتاب الطالب لمادة الفيزياء للصف العاشر الفصل الثاني.pdf',
+  'phys-s1-teacher-guide': 'knowledge-base/grade-10-physics/support-pdfs/دليل المعلم لمادة الفيزياء الصف العاشر الفصل الأول.pdf',
+  'phys-s2-teacher-guide': 'knowledge-base/grade-10-physics/support-pdfs/دليل المعلم لمادة الفيزياء الصف العاشر الفصل الثاني.pdf',
+  'phys-s1-activity-book': 'knowledge-base/grade-10-physics/support-pdfs/كتاب الأنشطة لمادة الفيزياء للصف العاشر الفصل الأول.pdf',
+  'phys-s2-exercise-book': 'knowledge-base/grade-10-physics/support-pdfs/كتاب التمارين لمادة الفيزياء للصف العاشر الفصل الثاني.pdf',
+  'bio-s1-student-book': 'knowledge-base/grade-10-biology/support-pdfs/كتاب الطالب لمادة العلوم الحياتية للصف العاشر الفصل الأول.pdf',
+  'bio-s2-student-book': 'knowledge-base/grade-10-biology/support-pdfs/كتاب الطالب لمادة العلوم الحياتية للصف العاشر الفصل الثاني.pdf',
+  'bio-s1-teacher-guide': 'knowledge-base/grade-10-biology/support-pdfs/دليل المعلم العلوم الحياتية الصف العاشر الفصل الأول.pdf',
+  'bio-s2-teacher-guide': 'knowledge-base/grade-10-biology/support-pdfs/دليل المعلم لمادة العلوم الحياتية الصف العاشر الفصل الثاني.pdf',
+  'bio-s1-activity-book': 'knowledge-base/grade-10-biology/support-pdfs/كتاب الأنشطة والتجارب العملية لمادة العلوم الحياتية للصف العاشر الفصل الأول.pdf',
+  'bio-s2-activity-book': 'knowledge-base/grade-10-biology/support-pdfs/كتاب الأنشطة والتجارب العملية لمادة العلوم الحياتية للصف العاشر الفصل الثاني.pdf',
+  'bio-worksheet-answers': 'knowledge-base/grade-10-biology/support-pdfs/إجابات أسئلة أوراق العمل من دليل المعلم العلوم الحياتية الصف العاشر.pdf',
+  'earth-s2-student-book': 'knowledge-base/grade-10-earth-science/support-pdfs/كتاب الطالب لمادة علوم الأرض والبيئة الصف العاشر الفصل الثاني.pdf',
+  'earth-s1-teacher-guide': 'knowledge-base/grade-10-earth-science/support-pdfs/دليل المعلم لمادة علوم الأرض والبيئة الصف العاشر الفصل الأول.pdf',
+  'earth-s2-teacher-guide': 'knowledge-base/grade-10-earth-science/support-pdfs/دليل المعلم لمادة علوم الأرض والبيئة الصف العاشر الفصل الثاني.pdf',
+  'earth-s1-activity-book': 'knowledge-base/grade-10-earth-science/support-pdfs/كتاب الأنشطة والتجارب العملية لمادة علوم الأرض الصف العاشر الفصل الأول.pdf',
+  'earth-s2-activity-book': 'knowledge-base/grade-10-earth-science/support-pdfs/كتاب الأنشطة والتجارب العملية لمادة علوم الأرض الصف العاشر الفصل الثاني.pdf',
+  'arabic-s1-student-book': 'knowledge-base/grade-10-arabic/support-pdfs/كتاب الطالب لمادة العربية لغتي للصف العاشر الفصل الأول.pdf',
+  'arabic-s2-student-book': 'knowledge-base/grade-10-arabic/support-pdfs/كتاب الطالب لمادة اللغة العربية للصف العاشر الفصل الثاني.pdf',
+  'arabic-s1-teacher-guide': 'knowledge-base/grade-10-arabic/support-pdfs/دليل المعلم لمادة العربية لغتي الصف العاشر الفصل الأول.pdf',
+  'arabic-s1-exercise-book': 'knowledge-base/grade-10-arabic/support-pdfs/كتاب التمارين لمادة اللغة العربية (العربية لغتي) للصف العاشر الفصل الأول.pdf',
+  'arabic-s2-exercise-book': 'knowledge-base/grade-10-arabic/support-pdfs/كتاب التمارين لمادة اللغة العربية (العربية لغتي) للصف العاشر الفصل الثاني.pdf',
+  'finlit-s1-student-book': 'knowledge-base/grade-10-finlit/support-pdfs/الثقافة المالية 10 ف1 small.pdf',
 };

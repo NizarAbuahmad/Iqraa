@@ -114,9 +114,12 @@ describe('passagesForUnit', () => {
   });
 
   it('is empty rather than approximate when nothing is extracted', () => {
-    // Financial literacy has no extracted text. Returning something loosely
-    // related from another book would be worse than returning nothing.
-    assert.deepEqual(passagesForUnit({ unitId: 'kbu-finlit-s1-nccd-u1' }), []);
+    // A unit with no text behind it must return nothing rather than something
+    // loosely related from another book. This used to use a financial-literacy
+    // unit, but finlit-s1 was extracted on 2026-09-03 and the assertion went
+    // stale. A Grade 9 unit is the durable case: this manifest is Grade 10 only
+    // (`g10_sources.json`), so no Grade 9 unit can acquire text through it.
+    assert.deepEqual(passagesForUnit({ unitId: 'kbu-g9-math-s1-nccd-u1' }), []);
     assert.deepEqual(passagesForUnit({ unitId: 'not-a-unit' }), []);
   });
 
