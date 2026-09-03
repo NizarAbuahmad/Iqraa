@@ -38,6 +38,7 @@ import { PDFParse } from 'pdf-parse';
 import { G10_SOURCES } from '../src/sources.ts';
 import { downloadFromR2, isLfsPointer, isR2Configured } from './r2.ts';
 import { LOCAL_FILES } from './localSources.ts';
+import { lamTranspositionRate, LAM_TRANSPOSITION_LIMIT } from './textQuality.ts';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '../../..');
@@ -46,6 +47,7 @@ const outDir = path.resolve(here, '../src/data/extracted');
 const CONTROL_CHAR_RE = /[\x00-\x08\x0e-\x1f]/g;
 const ARABIC_PRESENTATION_FORMS_RE = /[ﭐ-﷿ﹰ-﻿]/g;
 const BASIC_ARABIC_RE = /[؀-ۿ]/g;
+
 
 export interface ExtractedPage {
   page: number;
@@ -148,6 +150,15 @@ async function extractOne(sourceId: string, rel: string): Promise<ExtractedDocum
     const basicArabic = (allText.match(BASIC_ARABIC_RE) ?? []).length;
     if (presentationForms > basicArabic) {
       return `Arabic in reversed presentation-form glyphs, not the base Arabic block — unusable without un-shaping: ${rel}`;
+    }
+    // Subtler than the two checks above, and it slips past both: the text is
+    // real base-block Arabic with no control characters, only with the
+    // definite article’s ل moved one letter right. Found on the physics S1
+    // teacher guide after 391,551 characters of it had been extracted, marked
+    // `ingested`, and trusted — caught only when a human read a line of it.
+    const lamRate = lamTranspositionRate(allText);
+    if (lamRate !== null && lamRate > LAM_TRANSPOSITION_LIMIT) {
+      return `Arabic with the definite article transposed (الحركة ← احلركة) in ${(lamRate * 100).toFixed(0)}% of samples — readable by eye, not quotable: ${rel}`;
     }
 
     const manifest = G10_SOURCES.find(s => s.id === sourceId);
