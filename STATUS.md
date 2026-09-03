@@ -8788,3 +8788,143 @@ extractor's own documented review step
 PNG and its `index.json` entry") was only half-followed. Deleted the 13 files;
 nothing else in the repo referenced them (`bookFigureAssets.ts`'s generated
 `require()` map already only lists what's in `index.json`).
+
+## Review of content and media pools, 2026-09-02
+
+Full-project pass over what exists, how a book gets in, and what media each
+result type can carry. Procedure written up as `docs/adding-a-book.md` (there
+was none; the steps were reconstructed from source comments and this file).
+
+Fixed in the same pass:
+
+- `objectives.ts` matched derived objective ids against a literal list that
+  missed `o-g9-…` and `o-eng-…`, so 170 of 366 objectives (all Grade 9 maths,
+  all English vocational) reported `bloomsSource: 'authored'` while carrying
+  the builder's stamped `'Understand'`. Now matched by the shapes
+  `objectiveId()` emits; `__tests__/objectives.test.ts` pins every scope.
+- `knowledge-base/grade-10-financial-literacy/` never existed (the directory
+  is `grade-10-finlit`); corrected in `iqra_curriculum_g10_finlit_sem1.json`
+  and `services/knowledgeBase.ts`.
+- Both `knowledge-base/*/README.md` still told you to run the hard-disabled
+  `import_g10_*_support.py`; they now point at the guide.
+
+Found and not fixed (ranked):
+
+1. `lib/curriculum/src/data/extracted-g9/` is dead data: two files in reversed
+   presentation-form Arabic with a different schema, read by nothing. Grade 9
+   has no manifest rows and no passage grounding at all.
+2. `scripts/extract_book_figures.py` points 4 of 7 books at absolute paths on
+   one machine; chem-s2, finlit and both Grade 9 figure sets cannot be
+   regenerated elsewhere.
+3. `UNSPLASH_ACCESS_KEY`, `YOUTUBE_API_KEY` and `R2_*` are set nowhere in-repo
+   (not `.env`, not `render.yaml`). Missing keys are silent no-ops, so the
+   only media that appears in any result today is book figures.
+4. No audio at all (no TTS, STT or recorder), and no uploaded-video support;
+   `lesson_media.kind` is image / audio / document.
+5. Two incompatible teacher-media stores: topic-string AsyncStorage URLs
+   (`services/lessonMedia.ts`) and KB-id R2 files (`services/lessonMediaApi.ts`).
+6. Bank PDFs are listed by title but not openable in-app; `driveId` is used
+   only by a uniqueness test.
+7. Figures reach 6 of 10 generators; chat, lesson flow, game and parent
+   message get none.
+8. `iqra_curriculum_g10_english_industry.json` has 12 units and 0 lessons but
+   ships in `MVP_BOOK_IDS`. `validateCurriculum` also reports 18 false gaps
+   for the other English tracks because it looks for `lessons[].objectives`
+   and the vocational schema synthesises them.
+9. Stale prose: `bank.ts:188` ("63 pending", actual 13), `passages.ts:145`
+   ("six documents read", actual 57), `gen_book_figure_assets.mjs:11`
+   ("63 files", actual 600+), `.agents/memory/iqra-architecture.md` (pre-NCCD
+   id scheme). `attached_assets/g9/` holds 1.6 MB of PDFs referenced by nothing.
+10. The `iqraa-media` R2 bucket is still public (flagged 2026-08-30, twice).
+    **No longer true, verified 2026-09-03** — see the entry below.
+
+
+## `iqraa-media` is no longer publicly readable, verified 2026-09-03
+
+Probed `https://pub-59ecbec8df5a4adc80bf8f7d1084fdd5.r2.dev/<key>` from a
+machine that can reach `*.r2.dev` (the sandbox that first raised this could
+not, which is why it stayed "not verified" through three entries). Four keys —
+`math-s1-student-book.pdf`, `math-s1-teacher-guide.pdf`,
+`chem-s1-student-book.pdf` and a deliberately non-existent one — all answer
+**401**. A bucket with Public Development URL still on answers 404 for a key
+that isn't there and 200 for one that is, so a uniform 401 across both is the
+signature of the toggle being off, not of the objects having moved.
+
+The split done in `16b22e4` is therefore complete: `iqraa-public`
+(`pub-d9ddd8f7…`) serves the four public English download links and answers
+**206** on a ranged GET, while `iqraa-media` now refuses anonymous reads.
+`math-s1-teacher-guide.pdf`, the restricted NCCD material that made this
+urgent, is no longer reachable without credentials.
+
+Two things this does **not** settle: the objects were never re-keyed or
+rotated, so anyone who fetched one while the bucket was open still has it;
+and the check is an HTTP probe from outside, not a read of the bucket's
+settings — re-run it rather than trusting this line.
+
+## Four new subjects have sources and text; none of them has a curriculum yet, 2026-09-03
+
+Grade 10 physics, biology (العلوم الحياتية), earth science (علوم الأرض
+والبيئة) and Arabic arrived as a local folder — 23 PDFs, 790 MB — and are now
+manifest rows, extracted text and R2 objects. The manifest is 101 sources, up
+from 78. Physics was prioritised because it is the subject being built out
+next.
+
+All six physics sources extracted clean: 616 pages, 1,343,223 characters —
+both student books, both teacher guides at 154pp, both workbooks. That is a
+larger corpus than the chemistry set the app currently teaches from. Totals
+for the rest: biology 350pp / 602,443 chars (6 of 7), earth science 384pp /
+948,430, Arabic 643pp / 1,257,081.
+
+**Twenty-three of twenty-four extracted.** `bio-s1-teacher-guide` is scanned
+with no text layer and this project has no OCR, so it is `pending` with a note
+saying why rather than counted as ingested — the S2 guide extracted fine at
+100pp, so it is that file's export, not the series. It is in R2 regardless, so
+an OCR pass later needs no re-fetch.
+
+**`finlit-s1-student-book` was never Drive-only.** This file has claimed since
+August to be reachable only through Drive, and the forty catalog objectives
+mined from it rested on that. It was on disk the whole time, byte-exact
+(5,521,575), in `Knowledge Base/10th grade/` — a folder no audit had walked,
+because every audit walked `LOCAL_FILES` and that map had never heard of it.
+Now ingested: 80pp / 113,520 chars. The same folder also holds the
+18,630,721-byte math student book that was previously only in R2, so the
+three-way discrepancy between that export, the 33,429,449-byte local file
+mapped as `math-s1-student-book`, and the manifest's own byte counts is now
+resolvable by comparing files rather than guessing. Not resolved here.
+
+**`driveId` is optional now.** These came from a folder, not Drive. The
+manifest asserts Drive ids are unique, so the convenient move was to invent
+some; that would make `driveUrl` hand out links that 404. It returns `null`
+instead, uniqueness is asserted only across sources that have an id, and the
+backlog check accepts "reachable through `LOCAL_FILES`" as the alternative.
+
+**Widening the `subject` union found three incomplete maps** the compiler had
+been guarding: Arabic labels, English labels, and `BANK_SUBJECT_IDS`. The last
+had no earth-science target at all, and the tempting fix — mapping it onto the
+existing `science` id — would have been wrong, because that is the Grade 1-9
+course. `catalog.ts` gains a real `earth-science` subject, **appended** and
+kept out of `MVP_SUBJECT_IDS` per the picker-order trap in CLAUDE.md.
+
+Two fixtures went stale and were fixed at the root, not loosened.
+`bio-worksheet-answers` has `semester: null`, which generated a bare `biology`
+unit tag; `BANK_UNIT_TAGS` derives from unitTags, so that made the keyword
+`biology` structural and failed the keyword check. Tags now follow the
+subject-prefixed convention the test exists to enforce. And `passages.test.ts`
+used a financial-literacy unit as its "nothing extracted" case, which stopped
+being true the moment finlit-s1 extracted — moved to a Grade 9 unit, which
+this Grade 10 manifest cannot give text to.
+
+**What this does not do.** Ingesting a source is not teaching a subject. These
+four have text and nothing else: no catalog units, no lesson data, no
+objectives. The app can list their books and cannot generate from them. That
+is the next piece of work, and physics is where it starts — mining the S1
+teacher guide's مخطط الوحدة tables the way chemistry's were on 2026-08-24.
+
+Still missing after this: the earth-science S1 student book and the Arabic S2
+teacher guide (neither is in the folder), `finlit-s2` (now the only Drive-only
+source left), and OCR for the biology S1 guide.
+
+Verified: curriculum suite 90/90, `verify` 0 errors, monorepo typecheck clean.
+All 94 mapped sources confirmed in `iqraa-media` by listing the bucket rather
+than trusting the upload log — 106 objects, 1.32 GB, every source byte-equal
+to its file on disk, none missing.
