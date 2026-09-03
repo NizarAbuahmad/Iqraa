@@ -286,6 +286,62 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Cloud Run answers the cold-start question: ~1-3s, not 51s, 2026-09-03
+
+Both Render services sleep on the free plan. The verifier waking from sleep
+took **51 seconds** against a 2.5s client timeout (`VERIFY_TIMEOUT_MS`), which
+means the first generation after any idle period cannot verify a key — the
+badges shipped that morning would silently show nothing. Paying Render is
+$14/mo for the two services; the question was whether Cloud Run does better
+for less.
+
+**It does.** Both services now run on Cloud Run in `iqraa-auth-507315`,
+`europe-west1` (the nearest Google region to Neon in Frankfurt):
+
+| | Render free | Cloud Run |
+| --- | --- | --- |
+| Verifier cold start | 51s | ~1-3s |
+| Verifier warm | 0.39s | 0.21s |
+| Cost at ~500 teachers | $14/mo (paid tier) | likely $0 (free tier: 2M req, 180k vCPU-s/mo) |
+
+Verified live: `GET /api/healthz` ok, `/api/healthz/ai-budget` reads the shared
+Neon database (same `spentUsd` as Render, so both point at one database),
+`/api/healthz/verifier` returns `{"verifier":"ok","selfTest":"pass"}`, and a
+real `POST /verify/derivative` returns `{"verified":true,"computed_answer":"2*x"}`.
+
+**The 1.1s figure is not a clean cold start, and the distinction matters.** An
+earlier health check had already woken the container — it timed out at the
+API's 2.5s limit, but the verifier kept booting anyway, so the request 30s
+later hit a warming instance. What is certain: a genuinely cold verifier
+exceeded 2.5s, and shortly after took 1.1s. So the real cold start is low
+single-digit seconds — categorically different from 51, but possibly still
+over the client timeout. **That now makes `VERIFY_TIMEOUT_MS` worth raising**
+(2.5s to ~8s in `mathVerifierClient.ts`): against 51 seconds that knob was
+useless, against ~3 it closes the gap entirely. Not done.
+
+**Nothing is switched over.** Render still serves the live app, untouched.
+`EXPO_PUBLIC_API_BASE_URL` in `render.yaml` still points `iqraa-web` at
+`iqraa-api-dfxu.onrender.com/api`; changing that line and rebuilding the web
+service is the entire cutover. Deliberately not done, because the health
+checks above never call OpenAI or R2 — those env values were transcribed from
+screenshots, and a single misread character would pass every check here and
+fail only when a teacher generates a worksheet or opens a lesson image.
+
+**Two things worth knowing before anyone touches this again:**
+- **`/healthz` does not work on Cloud Run.** Google Front End reserves that
+  path and answers it with its own generic 404 before the container sees the
+  request — the app's other routes are fine (`/` returns FastAPI's own JSON
+  404). Cloud Run needs no health path declared, so this is cosmetic, but it
+  will look like a broken deploy to anyone who tests with `/healthz` first.
+- **Production secrets now exist in two places.** The Cloud Run services hold
+  their own copies of `DATABASE_URL`, `OPENAI_API_KEY` and the R2 keys. Any
+  rotation has to happen in both, or delete the Cloud Run services to shrink
+  the surface. `SESSION_SECRET` there is freshly generated, not Render's.
+
+Dockerfiles live on `claude/cloud-run-test` (unmerged, deliberately). They
+mirror `render.yaml`'s own build and start commands rather than optimizing —
+same pnpm version, same `--filter`, same Python pin, same seed-then-start.
+
 ## The verifier went unreachable again, and the blueprint was the trap, 2026-09-03
 
 Checked against the live API right after the quick-wins merge, because that
