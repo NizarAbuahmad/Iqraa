@@ -153,4 +153,8 @@ export const LOCAL_FILES: Record<string, string> = {
   'arabic-s2-exercise-book': 'knowledge-base/grade-10-arabic/support-pdfs/كتاب التمارين لمادة اللغة العربية (العربية لغتي) للصف العاشر الفصل الثاني.pdf',
   'finlit-s1-student-book': 'knowledge-base/grade-10-finlit/support-pdfs/الثقافة المالية 10 ف1 small.pdf',
   'earth-s1-student-book': 'knowledge-base/grade-10-earth-science/support-pdfs/كتاب الطالب لمادة علوم الأرض والبيئة الصف العاشر الفصل الأول.pdf',
+  'islamic-s1-teacher-guide': 'knowledge-base/grade-10-islamic/support-pdfs/دليل المعلم لمادة التربية الإسلامية الصف العاشر الفصل الأول.pdf',
+  'islamic-s2-teacher-guide': 'knowledge-base/grade-10-islamic/support-pdfs/دليل المعلم لمادة التربية الإسلامية الصف العاشر الفصل الثاني.pdf',
+  'islamic-s1-student-book': 'knowledge-base/grade-10-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف العاشر الفصل الأول.pdf',
+  'islamic-s2-student-book': 'knowledge-base/grade-10-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف العاشر الفصل الثاني.pdf',
 };

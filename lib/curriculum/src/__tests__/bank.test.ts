@@ -62,6 +62,7 @@ describe('manifest shape', () => {
       biology: /^(bio-s[12]|bio-g10-general)$/,
       'earth-science': /^earth-s[12]$/,
       arabic: /^arabic-s[12]$/,
+      islamic: /^islamic-s[12]$/,
     };
     for (const s of G10_SOURCES) {
       for (const t of s.unitTags) {
