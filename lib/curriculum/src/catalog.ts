@@ -35,6 +35,14 @@ import {
   EARTH_S2_CURRICULUM_BOOK_ID,
 } from './catalogs/g10EarthSem2.ts';
 import {
+  buildBioSem1BrowserCatalog,
+  BIO_S1_CURRICULUM_BOOK_ID,
+} from './catalogs/g10BioSem1.ts';
+import {
+  buildBioSem2BrowserCatalog,
+  BIO_S2_CURRICULUM_BOOK_ID,
+} from './catalogs/g10BioSem2.ts';
+import {
   CHEM_S2_CURRICULUM_BOOK_ID,
   buildChemSem2BrowserCatalog,
 } from './catalogs/g10ChemSem2.ts';
@@ -201,7 +209,7 @@ export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9'];
 // isPickerCurriculumVisible gates every physics lesson invisible and
 // getLessonById returns undefined for all of them — the book would be listed
 // in MVP_BOOK_IDS while its lessons resolved to nothing.
-export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy', 'english', 'physics', 'earth-science'];
+export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy', 'english', 'physics', 'earth-science', 'biology'];
 /** Main semester books only (guides/exercises stay in data, hidden from UI). */
 export const MVP_BOOK_IDS: readonly string[] = [
   'book-math-10',
@@ -233,6 +241,8 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // physics: appended, never inserted.
   EARTH_S1_CURRICULUM_BOOK_ID,
   EARTH_S2_CURRICULUM_BOOK_ID,
+  BIO_S1_CURRICULUM_BOOK_ID,
+  BIO_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -458,6 +468,33 @@ export const BOOKS: Book[] = [
     title: 'Earth and Environmental Science – Grade 10, Semester 2',
     titleAr: 'علوم الأرض والبيئة – الصف العاشر – الفصل الثاني',
     subjectId: 'earth-science',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── Biology Grade 10 ───────────────────────────────────────────────────────
+  {
+    id: BIO_S1_CURRICULUM_BOOK_ID,
+    title: 'Biology – Grade 10, Semester 1',
+    titleAr: 'العلوم الحياتية – الصف العاشر – الفصل الأول',
+    subjectId: 'biology',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: BIO_S2_CURRICULUM_BOOK_ID,
+    title: 'Biology – Grade 10, Semester 2',
+    titleAr: 'العلوم الحياتية – الصف العاشر – الفصل الثاني',
+    subjectId: 'biology',
     gradeId: 'grade-10',
     academicYear: '2025-2026',
     language: 'Arabic',
@@ -1468,6 +1505,8 @@ const _physSem1Browser = buildPhysSem1BrowserCatalog();
 const _physSem2Browser = buildPhysSem2BrowserCatalog();
 const _earthSem1Browser = buildEarthSem1BrowserCatalog();
 const _earthSem2Browser = buildEarthSem2BrowserCatalog();
+const _bioSem1Browser = buildBioSem1BrowserCatalog();
+const _bioSem2Browser = buildBioSem2BrowserCatalog();
 const _chemSem2Browser = buildChemSem2BrowserCatalog();
 const _g9MathSem1Browser = buildG9MathSem1BrowserCatalog();
 const _g9MathSem2Browser = buildG9MathSem2BrowserCatalog();
@@ -1588,6 +1627,8 @@ export const UNITS: Unit[] = [
   ..._physSem2Browser.units,
   ..._earthSem1Browser.units,
   ..._earthSem2Browser.units,
+  ..._bioSem1Browser.units,
+  ..._bioSem2Browser.units,
   ..._chemSem2Browser.units,
   ..._nccdSem1Browser.units,
   ..._nccdSem2Browser.units,
@@ -1608,6 +1649,8 @@ export const LESSONS: Lesson[] = [
   ..._physSem2Browser.lessons,
   ..._earthSem1Browser.lessons,
   ..._earthSem2Browser.lessons,
+  ..._bioSem1Browser.lessons,
+  ..._bioSem2Browser.lessons,
   ..._chemSem2Merged.lessons,
   ..._nccdSem1Browser.lessons,
   ..._nccdSem2Browser.lessons,
