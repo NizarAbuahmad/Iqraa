@@ -27,6 +27,14 @@ import {
   PHYS_S2_CURRICULUM_BOOK_ID,
 } from './catalogs/g10PhysSem2.ts';
 import {
+  buildEarthSem1BrowserCatalog,
+  EARTH_S1_CURRICULUM_BOOK_ID,
+} from './catalogs/g10EarthSem1.ts';
+import {
+  buildEarthSem2BrowserCatalog,
+  EARTH_S2_CURRICULUM_BOOK_ID,
+} from './catalogs/g10EarthSem2.ts';
+import {
   CHEM_S2_CURRICULUM_BOOK_ID,
   buildChemSem2BrowserCatalog,
 } from './catalogs/g10ChemSem2.ts';
@@ -193,7 +201,7 @@ export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9'];
 // isPickerCurriculumVisible gates every physics lesson invisible and
 // getLessonById returns undefined for all of them — the book would be listed
 // in MVP_BOOK_IDS while its lessons resolved to nothing.
-export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy', 'english', 'physics'];
+export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy', 'english', 'physics', 'earth-science'];
 /** Main semester books only (guides/exercises stay in data, hidden from UI). */
 export const MVP_BOOK_IDS: readonly string[] = [
   'book-math-10',
@@ -221,6 +229,10 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // persisted in formState and route URLs (see CLAUDE.md on picker order).
   PHYS_S1_CURRICULUM_BOOK_ID,
   PHYS_S2_CURRICULUM_BOOK_ID,
+  // Earth and Environmental Science — built 2026-09-03, same treatment as
+  // physics: appended, never inserted.
+  EARTH_S1_CURRICULUM_BOOK_ID,
+  EARTH_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -419,6 +431,33 @@ export const BOOKS: Book[] = [
     title: 'Physics – Grade 10, Semester 2',
     titleAr: 'الفيزياء – الصف العاشر – الفصل الثاني',
     subjectId: 'physics',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── Earth and Environmental Science Grade 10 ───────────────────────────────
+  {
+    id: EARTH_S1_CURRICULUM_BOOK_ID,
+    title: 'Earth and Environmental Science – Grade 10, Semester 1',
+    titleAr: 'علوم الأرض والبيئة – الصف العاشر – الفصل الأول',
+    subjectId: 'earth-science',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: EARTH_S2_CURRICULUM_BOOK_ID,
+    title: 'Earth and Environmental Science – Grade 10, Semester 2',
+    titleAr: 'علوم الأرض والبيئة – الصف العاشر – الفصل الثاني',
+    subjectId: 'earth-science',
     gradeId: 'grade-10',
     academicYear: '2025-2026',
     language: 'Arabic',
@@ -1427,6 +1466,8 @@ const _finlitSem1Browser = buildFinlitSem1BrowserCatalog();
 const _chemSem1Browser = buildChemSem1BrowserCatalog();
 const _physSem1Browser = buildPhysSem1BrowserCatalog();
 const _physSem2Browser = buildPhysSem2BrowserCatalog();
+const _earthSem1Browser = buildEarthSem1BrowserCatalog();
+const _earthSem2Browser = buildEarthSem2BrowserCatalog();
 const _chemSem2Browser = buildChemSem2BrowserCatalog();
 const _g9MathSem1Browser = buildG9MathSem1BrowserCatalog();
 const _g9MathSem2Browser = buildG9MathSem2BrowserCatalog();
@@ -1545,6 +1586,8 @@ export const UNITS: Unit[] = [
   ..._chemSem1Browser.units,
   ..._physSem1Browser.units,
   ..._physSem2Browser.units,
+  ..._earthSem1Browser.units,
+  ..._earthSem2Browser.units,
   ..._chemSem2Browser.units,
   ..._nccdSem1Browser.units,
   ..._nccdSem2Browser.units,
@@ -1563,6 +1606,8 @@ export const LESSONS: Lesson[] = [
   ..._chemSem1Merged.lessons,
   ..._physSem1Browser.lessons,
   ..._physSem2Browser.lessons,
+  ..._earthSem1Browser.lessons,
+  ..._earthSem2Browser.lessons,
   ..._chemSem2Merged.lessons,
   ..._nccdSem1Browser.lessons,
   ..._nccdSem2Browser.lessons,
@@ -1631,14 +1676,14 @@ export function getSemesterLabel(book: Book, lang: 'ar' | 'en'): string {
 export function getBooksForSubjectGrade(
   subjectId: string,
   gradeId: string,
-  role?: 'teacher' | 'student' | 'school_admin' | 'system_admin',
+  role?: 'teacher' | 'student' | 'parent' | 'school_admin' | 'system_admin',
 ): Book[] {
   return BOOKS.filter(b => {
     if (b.subjectId !== subjectId || b.gradeId !== gradeId) return false;
     if (INVESTOR_MVP_CURRICULUM && !MVP_BOOK_IDS.includes(b.id)) return false;
     const aud = b.audience ?? 'all';
     if (aud === 'all') return true;
-    // teachers and admins see everything; students only see 'student' + 'all'
+    // teachers and admins see everything; students and parents only see 'student' + 'all'
     if (!role || role === 'teacher' || role === 'school_admin' || role === 'system_admin') return true;
     return aud === 'student';
   });

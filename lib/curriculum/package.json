@@ -18,6 +18,8 @@
     "./catalogs/g10ChemSem1": "./src/catalogs/g10ChemSem1.ts",
     "./catalogs/g10PhysSem1": "./src/catalogs/g10PhysSem1.ts",
     "./catalogs/g10PhysSem2": "./src/catalogs/g10PhysSem2.ts",
+    "./catalogs/g10EarthSem1": "./src/catalogs/g10EarthSem1.ts",
+    "./catalogs/g10EarthSem2": "./src/catalogs/g10EarthSem2.ts",
     "./catalogs/g10ChemSem2": "./src/catalogs/g10ChemSem2.ts",
     "./catalogs/g10FinlitSem1": "./src/catalogs/g10FinlitSem1.ts",
     "./catalogs/g10EnglishVocational": "./src/catalogs/g10EnglishVocational.ts",
