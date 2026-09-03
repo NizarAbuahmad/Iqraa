@@ -157,7 +157,7 @@ export interface CurriculumSource {
     sha256: string;
     bytesDifferFromManifest?: { manifest: number; local: number };
   };
-  subject: 'math' | 'chemistry' | 'financial-literacy' | 'physics' | 'biology' | 'earth-science' | 'arabic' | 'islamic' | 'history' | 'english';
+  subject: 'math' | 'chemistry' | 'financial-literacy' | 'physics' | 'biology' | 'earth-science' | 'arabic' | 'islamic' | 'history' | 'english' | 'geography' | 'digital-literacy' | 'civic' | 'art' | 'vocational';
   /** null when the document spans both semesters or names none. */
   semester: 1 | 2 | null;
   kind: SourceKind;

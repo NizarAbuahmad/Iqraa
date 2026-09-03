@@ -67,6 +67,11 @@ export const BANK_SUBJECT_IDS: Record<CurriculumSource['subject'], string> = {
   islamic: 'islamic',
   history: 'history',
   english: 'english',
+  geography: 'geography',
+  'digital-literacy': 'digital-literacy',
+  civic: 'civic',
+  art: 'art',
+  vocational: 'vocational',
 };
 
 export function appSubjectId(subject: CurriculumSource['subject']): string {
@@ -324,6 +329,11 @@ const SUBJECT_LABEL_AR: Record<CurriculumSource['subject'], string> = {
   islamic: 'التربية الإسلامية',
   history: 'التاريخ',
   english: 'اللغة الإنجليزية',
+  geography: 'الجغرافيا',
+  'digital-literacy': 'المهارات الرقمية',
+  civic: 'التربية الوطنية والمدنية',
+  art: 'التربية الفنية',
+  vocational: 'التربية المهنية',
 };
 
 const SUBJECT_LABEL_EN: Record<CurriculumSource['subject'], string> = {
@@ -337,6 +347,11 @@ const SUBJECT_LABEL_EN: Record<CurriculumSource['subject'], string> = {
   islamic: 'Islamic Studies',
   history: 'History',
   english: 'English',
+  geography: 'Geography',
+  'digital-literacy': 'Digital Literacy',
+  civic: 'National and Civic Education',
+  art: 'Art Education',
+  vocational: 'Vocational Education',
 };
 
 /**
