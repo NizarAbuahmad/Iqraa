@@ -2936,6 +2936,37 @@
         "localPath": "knowledge-base/grade-10-arabic/support-pdfs/كتاب التمارين لمادة اللغة العربية (العربية لغتي) للصف العاشر الفصل الثاني.pdf",
         "sha256": "efbe54284fe8ddf8f54d51ea8934628532bf15d01de9261997e5d5ed2926f8d7"
       }
+    },
+    {
+      "id": "earth-s1-student-book",
+      "title": "كتاب الطالب لمادة علوم الأرض والبيئة الصف العاشر الفصل الأول.pdf",
+      "bytes": 20302336,
+      "subject": "earth-science",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة علوم الأرض والبيئة الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "earth-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "earth-science",
+        "علوم الأرض",
+        "البيئة",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 64,
+        "chars": 104690,
+        "localPath": "knowledge-base/grade-10-earth-science/support-pdfs/كتاب الطالب لمادة علوم الأرض والبيئة الصف العاشر الفصل الأول.pdf",
+        "sha256": "471202b6960d63b877c9634cc10dfa4a36720e1a39fd0d7df6b732b3fdb98c4e"
+      }
     }
   ],
   "mergedAt": "2026-08-25"
