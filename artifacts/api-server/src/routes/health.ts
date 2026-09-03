@@ -39,6 +39,16 @@ router.get("/healthz/verifier", async (_req, res) => {
     // A reachable verifier that disagrees about 2x is broken in a different,
     // louder way — surface it rather than reporting a bare "ok".
     selfTest: check.verified ? "pass" : "fail",
+    // Why it failed, when it did. A bare "fail" reads as "SymPy got the
+    // derivative wrong" and sends the reader into verify_core.py — but the
+    // common cause is far duller: Render answers 5xx while a free-tier
+    // service wakes, and `isVerifierUnreachable` deliberately does not treat
+    // 5xx as unreachable (a reachable-but-erroring verifier is a real and
+    // different state). Observed 2026-09-03: `{"verifier":"ok","selfTest":
+    // "fail"}` while the verifier, asked directly, answered `2*x` correctly
+    // in 32s — it had simply been asleep. The error string is the difference
+    // between "the maths is broken" and "the box was cold".
+    ...(check.verified ? {} : { detail: check.error ?? "no error reported" }),
   });
 });
 
