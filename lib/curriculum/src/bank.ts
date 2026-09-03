@@ -66,6 +66,7 @@ export const BANK_SUBJECT_IDS: Record<CurriculumSource['subject'], string> = {
   arabic: 'arabic',
   islamic: 'islamic',
   history: 'history',
+  english: 'english',
 };
 
 export function appSubjectId(subject: CurriculumSource['subject']): string {
@@ -322,6 +323,7 @@ const SUBJECT_LABEL_AR: Record<CurriculumSource['subject'], string> = {
   arabic: 'اللغة العربية',
   islamic: 'التربية الإسلامية',
   history: 'التاريخ',
+  english: 'اللغة الإنجليزية',
 };
 
 const SUBJECT_LABEL_EN: Record<CurriculumSource['subject'], string> = {
@@ -334,6 +336,7 @@ const SUBJECT_LABEL_EN: Record<CurriculumSource['subject'], string> = {
   arabic: 'Arabic',
   islamic: 'Islamic Studies',
   history: 'History',
+  english: 'English',
 };
 
 /**

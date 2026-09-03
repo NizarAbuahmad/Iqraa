@@ -3133,6 +3133,114 @@
         "localPath": "knowledge-base/grade-10-history/support-pdfs/كتاب الطالب لمادة التاريخ للصف العاشر الفصل الثاني.pdf",
         "sha256": "2ce354159d52e0c2addf793b99a18b16413f9a37498084d027177a0d454f034b"
       }
+    },
+    {
+      "id": "eng-s1-student-book",
+      "title": "كتاب الطالب لمادة اللغة الإنجليزية الصف العاشر الفصل الأول.pdf",
+      "bytes": 12568357,
+      "subject": "english",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة اللغة الإنجليزية الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "eng-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "english",
+        "اللغة الإنجليزية",
+        "عاشر"
+      ],
+      "notes": "المصدر غير مؤكد: لم يُعثر على نسخة NCCD معتمدة لهذه الطبعة (انظر STATUS.md، 2026-08-30)؛ الكتالوج يصفها بأنها «نسخة على مساحة تخزين المشروع». لذلك authority = third-party وليس nccd — لا يُدّعى مصدر لم يُتحقق منه.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 78,
+        "chars": 183110,
+        "localPath": "knowledge-base/grade-10-english/support-pdfs/كتاب الطالب لمادة اللغة الإنجليزية الصف العاشر الفصل الأول.pdf",
+        "sha256": "4c4c8d69503ab16c4a7278c9748d6771b2157b6b695f5d01a18e0af5200f5b62"
+      }
+    },
+    {
+      "id": "eng-s1-activity-book",
+      "title": "كتاب الأنشطة لمادة اللغة الإنجليزية للصف العاشر الفصل الأول.pdf",
+      "bytes": 4085295,
+      "subject": "english",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة لمادة اللغة الإنجليزية للصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "eng-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "english",
+        "اللغة الإنجليزية",
+        "عاشر"
+      ],
+      "notes": "المصدر غير مؤكد: لم يُعثر على نسخة NCCD معتمدة لهذه الطبعة (انظر STATUS.md، 2026-08-30)؛ الكتالوج يصفها بأنها «نسخة على مساحة تخزين المشروع». لذلك authority = third-party وليس nccd — لا يُدّعى مصدر لم يُتحقق منه.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 52,
+        "chars": 110720,
+        "localPath": "knowledge-base/grade-10-english/support-pdfs/كتاب الأنشطة لمادة اللغة الإنجليزية للصف العاشر الفصل الأول.pdf",
+        "sha256": "850316cac0d8ef948d9bc9e00f17b7a2c0184a9a345235732522aef6a2728345"
+      }
+    },
+    {
+      "id": "eng-s2-student-book",
+      "title": "كتاب الطالب لمادة اللغة الإنجليزية الصف العاشر الفصل الثاني.pdf",
+      "bytes": 9319268,
+      "subject": "english",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "third-party",
+      "status": "pending",
+      "filename": "كتاب الطالب لمادة اللغة الإنجليزية الصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "eng-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "english",
+        "اللغة الإنجليزية",
+        "عاشر"
+      ],
+      "notes": "المصدر غير مؤكد: لم يُعثر على نسخة NCCD معتمدة لهذه الطبعة (انظر STATUS.md، 2026-08-30)؛ الكتالوج يصفها بأنها «نسخة على مساحة تخزين المشروع». لذلك authority = third-party وليس nccd — لا يُدّعى مصدر لم يُتحقق منه. استخراج هذا الملف يعيد العربية بأشكال العرض المتصلة (Arabic Presentation Forms) معكوسة الحروف بدل الكتلة العربية الأساسية؛ رفضته بوابة الجودة في 2026-09-03 ولم يُستخرج. الملف نفسه سليم؛ يحتاج استخراجًا أفضل أو OCR. لاحظ أن هذا عطب مختلف عن قلب أداة التعريف الذي يصيب بقية المواد."
+    },
+    {
+      "id": "eng-s2-activity-book",
+      "title": "كتاب الأنشطة لمادة اللغة الإنجليزية للصف العاشر الفصل الثاني.pdf",
+      "bytes": 3854743,
+      "subject": "english",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "third-party",
+      "status": "pending",
+      "filename": "كتاب الأنشطة لمادة اللغة الإنجليزية للصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "eng-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "english",
+        "اللغة الإنجليزية",
+        "عاشر"
+      ],
+      "notes": "المصدر غير مؤكد: لم يُعثر على نسخة NCCD معتمدة لهذه الطبعة (انظر STATUS.md، 2026-08-30)؛ الكتالوج يصفها بأنها «نسخة على مساحة تخزين المشروع». لذلك authority = third-party وليس nccd — لا يُدّعى مصدر لم يُتحقق منه. استخراج هذا الملف يعيد العربية بأشكال العرض المتصلة (Arabic Presentation Forms) معكوسة الحروف بدل الكتلة العربية الأساسية؛ رفضته بوابة الجودة في 2026-09-03 ولم يُستخرج. الملف نفسه سليم؛ يحتاج استخراجًا أفضل أو OCR. لاحظ أن هذا عطب مختلف عن قلب أداة التعريف الذي يصيب بقية المواد."
     }
   ],
   "mergedAt": "2026-08-25"

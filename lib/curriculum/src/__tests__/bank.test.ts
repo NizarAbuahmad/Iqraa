@@ -64,6 +64,7 @@ describe('manifest shape', () => {
       arabic: /^arabic-s[12]$/,
       islamic: /^islamic-s[12]$/,
       history: /^history-s[12]$/,
+      english: /^eng-s[12]$/,
     };
     for (const s of G10_SOURCES) {
       for (const t of s.unitTags) {
