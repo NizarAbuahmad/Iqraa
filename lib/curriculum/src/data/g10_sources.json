@@ -3080,6 +3080,59 @@
         "localPath": "knowledge-base/grade-10-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف العاشر الفصل الثاني.pdf",
         "sha256": "1861736bed6e6fef034ed524e1efcd84d47b3b4f3eccc77d36862848087c0447"
       }
+    },
+    {
+      "id": "history-s1-student-book",
+      "title": "كتاب الطالب لمادة التاريخ للصف العاشر الفصل الأول.pdf",
+      "bytes": 14308255,
+      "subject": "history",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "كتاب الطالب لمادة التاريخ للصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "history-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "history",
+        "التاريخ",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) بنسبة 42%؛ رفضه بوابة الجودة تلقائيًا في 2026-09-03 ولم يُستخرج. الملف نفسه سليم؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "history-s2-student-book",
+      "title": "كتاب الطالب لمادة التاريخ للصف العاشر الفصل الثاني.pdf",
+      "bytes": 30987187,
+      "subject": "history",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التاريخ للصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "history-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "history",
+        "التاريخ",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 94,
+        "chars": 108889,
+        "localPath": "knowledge-base/grade-10-history/support-pdfs/كتاب الطالب لمادة التاريخ للصف العاشر الفصل الثاني.pdf",
+        "sha256": "2ce354159d52e0c2addf793b99a18b16413f9a37498084d027177a0d454f034b"
+      }
     }
   ],
   "mergedAt": "2026-08-25"
