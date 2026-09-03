@@ -9,6 +9,7 @@
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { LOCAL_FILES } from '../../scripts/localSources.ts';
 
 import {
   CAPTURED_AT,
@@ -28,10 +29,13 @@ describe('manifest integrity', () => {
     for (const s of G10_SOURCES) {
       assert.ok(s.id.length > 0, 'empty id');
       assert.ok(!ids.has(s.id), `duplicate id: ${s.id}`);
-      assert.ok(!driveIds.has(s.driveId), `same Drive file listed twice: ${s.title}`);
+      // Only sources that came through Drive have an id to collide on.
+      if (s.driveId) {
+        assert.ok(!driveIds.has(s.driveId), `same Drive file listed twice: ${s.title}`);
+        driveIds.add(s.driveId);
+      }
       assert.ok(s.bytes > 0, `${s.id} has no size`);
       ids.add(s.id);
-      driveIds.add(s.driveId);
     }
   });
 
@@ -111,6 +115,11 @@ describe('what the manifest says about the backlog', () => {
   it('still has a backlog, and every entry in it is a real file', () => {
     const pending = pendingSources();
     assert.ok(pending.length > 0, 'nothing left to mine — suspicious, check the statuses');
-    for (const s of pending) assert.ok(s.driveId.length > 0);
+    // A pending source must be findable: either a Drive id, or a local file
+    // this checkout can actually open. Before the 2026-09-03 local intake
+    // every source had the former, so this only checked that.
+    for (const s of pending) {
+      assert.ok(s.driveId ? s.driveId.length > 0 : !!LOCAL_FILES[s.id], `${s.id} is pending but unreachable`);
+    }
   });
 });

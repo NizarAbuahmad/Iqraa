@@ -58,6 +58,10 @@ describe('manifest shape', () => {
       math: /^(s[12](-u\d+|-matrices)?|g10-math-general)$/,
       chemistry: /^(chem-s[12](-u\d+)?|chem-g10-general)$/,
       'financial-literacy': /^finlit-s[12]$/,
+      physics: /^phys-s[12]$/,
+      biology: /^(bio-s[12]|bio-g10-general)$/,
+      'earth-science': /^earth-s[12]$/,
+      arabic: /^arabic-s[12]$/,
     };
     for (const s of G10_SOURCES) {
       for (const t of s.unitTags) {
@@ -115,7 +119,11 @@ describe('manifest shape', () => {
 
   it('has no repeated id or Drive id', () => {
     assert.equal(new Set(G10_SOURCES.map(s => s.id)).size, G10_SOURCES.length);
-    assert.equal(new Set(G10_SOURCES.map(s => s.driveId)).size, G10_SOURCES.length);
+    // Sources handed over as local files carry no Drive id (see `driveId`),
+    // so uniqueness is asserted over the ones that have one — counting
+    // `undefined` as a value made every such source collide with the next.
+    const drive = G10_SOURCES.map(s => s.driveId).filter((d): d is string => !!d);
+    assert.equal(new Set(drive).size, drive.length);
   });
 });
 

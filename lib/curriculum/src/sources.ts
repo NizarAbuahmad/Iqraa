@@ -87,8 +87,14 @@ export type SourceStatus =
 export interface CurriculumSource {
   /** Stable slug used to cite this document from curriculum data. */
   id: string;
-  /** Google Drive file id — the only durable handle; titles get renamed. */
-  driveId: string;
+  /**
+   * Google Drive file id — the durable handle for anything that came through
+   * Drive, since titles get renamed. Absent on sources handed over as local
+   * files instead (the 2026-09-03 physics / biology / earth-science / Arabic
+   * intake): they have no Drive handle, and inventing one would make
+   * `driveUrl` hand out a link that 404s.
+   */
+  driveId?: string;
   /** Filename exactly as it appears in Drive, so it can be found by search. */
   title: string;
   bytes: number;
@@ -151,7 +157,7 @@ export interface CurriculumSource {
     sha256: string;
     bytesDifferFromManifest?: { manifest: number; local: number };
   };
-  subject: 'math' | 'chemistry' | 'financial-literacy';
+  subject: 'math' | 'chemistry' | 'financial-literacy' | 'physics' | 'biology' | 'earth-science' | 'arabic';
   /** null when the document spans both semesters or names none. */
   semester: 1 | 2 | null;
   kind: SourceKind;
@@ -173,8 +179,9 @@ export const FOLDERS: Record<string, string> = raw.folders;
 /** The date the Drive listing this was written from was taken. */
 export const CAPTURED_AT: string = raw.capturedAt;
 
-export function driveUrl(source: CurriculumSource): string {
-  return `https://drive.google.com/file/d/${source.driveId}/view`;
+/** Null for a source with no Drive id — see `driveId`. */
+export function driveUrl(source: CurriculumSource): string | null {
+  return source.driveId ? `https://drive.google.com/file/d/${source.driveId}/view` : null;
 }
 
 export function getSource(id: string): CurriculumSource | undefined {

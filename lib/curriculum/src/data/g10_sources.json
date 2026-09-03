@@ -2308,7 +2308,15 @@
         "عاشر",
         "كتاب الطالب"
       ],
-      "notes": "40 objectives in the catalog came from this file."
+      "notes": "40 objectives in the catalog came from this file.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 80,
+        "chars": 113520,
+        "localPath": "knowledge-base/grade-10-finlit/support-pdfs/الثقافة المالية 10 ف1 small.pdf",
+        "sha256": "fd3a9fd692a01ce77827816f50e5029f471d5e117924da8a1c1f417987ed27f2"
+      }
     },
     {
       "id": "finlit-s2-student-book",
@@ -2335,6 +2343,706 @@
       ],
       "conflictWith": "finlit-s1-student-book",
       "notes": "The known edition split: the S1 file in the catalog and this S2 book are not the same edition of the course, so their unit/lesson sequences do not line up. Nothing should be generated across both until one edition is chosen."
+    },
+    {
+      "id": "phys-s1-student-book",
+      "title": "كتاب الطالب لمادة الفيزياء للصف العاشر الفصل الأول.pdf",
+      "bytes": 20553673,
+      "subject": "physics",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة الفيزياء للصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "phys-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "physics",
+        "فيزياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 88,
+        "chars": 130931,
+        "localPath": "knowledge-base/grade-10-physics/support-pdfs/كتاب الطالب لمادة الفيزياء للصف العاشر الفصل الأول.pdf",
+        "sha256": "95fda6fdfdd99324fd5777d7e0563b05f346512d0f67ba41181203f5beb53b63"
+      }
+    },
+    {
+      "id": "phys-s2-student-book",
+      "title": "كتاب الطالب لمادة الفيزياء للصف العاشر الفصل الثاني.pdf",
+      "bytes": 52926341,
+      "subject": "physics",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة الفيزياء للصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "phys-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "physics",
+        "فيزياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 132,
+        "chars": 226951,
+        "localPath": "knowledge-base/grade-10-physics/support-pdfs/كتاب الطالب لمادة الفيزياء للصف العاشر الفصل الثاني.pdf",
+        "sha256": "6320adc51501e6b60f08b8200f1765247aff2664189de9081fe607d0e4eed88b"
+      }
+    },
+    {
+      "id": "phys-s1-teacher-guide",
+      "title": "دليل المعلم لمادة الفيزياء الصف العاشر الفصل الأول.pdf",
+      "bytes": 48454458,
+      "subject": "physics",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة الفيزياء الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "phys-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "physics",
+        "فيزياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 154,
+        "chars": 391551,
+        "localPath": "knowledge-base/grade-10-physics/support-pdfs/دليل المعلم لمادة الفيزياء الصف العاشر الفصل الأول.pdf",
+        "sha256": "0f40a7a3aac211054fe1441677f4a571dceda788bbb49640d826a4a3f4741f3a"
+      }
+    },
+    {
+      "id": "phys-s2-teacher-guide",
+      "title": "دليل المعلم لمادة الفيزياء الصف العاشر الفصل الثاني.pdf",
+      "bytes": 75967769,
+      "subject": "physics",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة الفيزياء الصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "phys-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "physics",
+        "فيزياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 154,
+        "chars": 446224,
+        "localPath": "knowledge-base/grade-10-physics/support-pdfs/دليل المعلم لمادة الفيزياء الصف العاشر الفصل الثاني.pdf",
+        "sha256": "3bb020b99d803906a9dc6c7b74f72f897fc46d4039e9eb8de07a061c33227fd0"
+      }
+    },
+    {
+      "id": "phys-s1-activity-book",
+      "title": "كتاب الأنشطة لمادة الفيزياء للصف العاشر الفصل الأول.pdf",
+      "bytes": 3922425,
+      "subject": "physics",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة لمادة الفيزياء للصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "phys-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "physics",
+        "فيزياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 36,
+        "chars": 55773,
+        "localPath": "knowledge-base/grade-10-physics/support-pdfs/كتاب الأنشطة لمادة الفيزياء للصف العاشر الفصل الأول.pdf",
+        "sha256": "fd9a3bda70353cc81392114fe44f8a5ba4421c5ac6f4e5d5fcd026ec4ac710a0"
+      }
+    },
+    {
+      "id": "phys-s2-exercise-book",
+      "title": "كتاب التمارين لمادة الفيزياء للصف العاشر الفصل الثاني.pdf",
+      "bytes": 20062584,
+      "subject": "physics",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب التمارين لمادة الفيزياء للصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "phys-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "physics",
+        "فيزياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 52,
+        "chars": 91793,
+        "localPath": "knowledge-base/grade-10-physics/support-pdfs/كتاب التمارين لمادة الفيزياء للصف العاشر الفصل الثاني.pdf",
+        "sha256": "b815e584e4af0a4272557ae44dc23c79f2e13b7866a528c06aed96cce3ec6c99"
+      }
+    },
+    {
+      "id": "bio-s1-student-book",
+      "title": "كتاب الطالب لمادة العلوم الحياتية للصف العاشر الفصل الأول.pdf",
+      "bytes": 79946226,
+      "subject": "biology",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة العلوم الحياتية للصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "bio-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "biology",
+        "العلوم الحياتية",
+        "أحياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 84,
+        "chars": 100250,
+        "localPath": "knowledge-base/grade-10-biology/support-pdfs/كتاب الطالب لمادة العلوم الحياتية للصف العاشر الفصل الأول.pdf",
+        "sha256": "4e7a1e23d5b3012590624322b52fdd3e5d3e811301b2e68efe8d2214e0b905d4"
+      }
+    },
+    {
+      "id": "bio-s2-student-book",
+      "title": "كتاب الطالب لمادة العلوم الحياتية للصف العاشر الفصل الثاني.pdf",
+      "bytes": 74954829,
+      "subject": "biology",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة العلوم الحياتية للصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "bio-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "biology",
+        "العلوم الحياتية",
+        "أحياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 84,
+        "chars": 121357,
+        "localPath": "knowledge-base/grade-10-biology/support-pdfs/كتاب الطالب لمادة العلوم الحياتية للصف العاشر الفصل الثاني.pdf",
+        "sha256": "ba6402b35aa079cef91788ef56e390e5b2fcafced7656db86d2f42008b3421f9"
+      }
+    },
+    {
+      "id": "bio-s1-teacher-guide",
+      "title": "دليل المعلم العلوم الحياتية الصف العاشر الفصل الأول.pdf",
+      "bytes": 16013386,
+      "subject": "biology",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "دليل المعلم العلوم الحياتية الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "bio-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "biology",
+        "العلوم الحياتية",
+        "أحياء",
+        "عاشر"
+      ],
+      "notes": "Scanned with no text layer — pdf-parse returns nothing, and this project has no OCR, so it stays `pending` rather than being recorded as ingested. The only source in the 2026-09-03 intake that failed; the S2 guide (100pp) extracted fine, so this is this file’s export, not the series. Uploaded to R2 regardless, so an OCR pass later needs no re-fetch."
+    },
+    {
+      "id": "bio-s2-teacher-guide",
+      "title": "دليل المعلم لمادة العلوم الحياتية الصف العاشر الفصل الثاني.pdf",
+      "bytes": 95166443,
+      "subject": "biology",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة العلوم الحياتية الصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "bio-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "biology",
+        "العلوم الحياتية",
+        "أحياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 100,
+        "chars": 262394,
+        "localPath": "knowledge-base/grade-10-biology/support-pdfs/دليل المعلم لمادة العلوم الحياتية الصف العاشر الفصل الثاني.pdf",
+        "sha256": "bb0b3a566b68f97aff10d3277a0e64b2cb686090db2e0693b9b1b104d9edfe21"
+      }
+    },
+    {
+      "id": "bio-s1-activity-book",
+      "title": "كتاب الأنشطة والتجارب العملية لمادة العلوم الحياتية للصف العاشر الفصل الأول.pdf",
+      "bytes": 3811065,
+      "subject": "biology",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة والتجارب العملية لمادة العلوم الحياتية للصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "bio-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "biology",
+        "العلوم الحياتية",
+        "أحياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 32,
+        "chars": 49506,
+        "localPath": "knowledge-base/grade-10-biology/support-pdfs/كتاب الأنشطة والتجارب العملية لمادة العلوم الحياتية للصف العاشر الفصل الأول.pdf",
+        "sha256": "40767a4855ad34c3a66ad8f95a9fe9cf3d757a02b9eff977be3f14d8cba7d45c"
+      }
+    },
+    {
+      "id": "bio-s2-activity-book",
+      "title": "كتاب الأنشطة والتجارب العملية لمادة العلوم الحياتية للصف العاشر الفصل الثاني.pdf",
+      "bytes": 3066786,
+      "subject": "biology",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة والتجارب العملية لمادة العلوم الحياتية للصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "bio-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "biology",
+        "العلوم الحياتية",
+        "أحياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 40,
+        "chars": 55367,
+        "localPath": "knowledge-base/grade-10-biology/support-pdfs/كتاب الأنشطة والتجارب العملية لمادة العلوم الحياتية للصف العاشر الفصل الثاني.pdf",
+        "sha256": "f15a3484a5fc1526b71e91678efd73bfda6f2c48df2d26e7137a0be0e8b947ef"
+      }
+    },
+    {
+      "id": "bio-worksheet-answers",
+      "title": "إجابات أسئلة أوراق العمل من دليل المعلم العلوم الحياتية الصف العاشر.pdf",
+      "bytes": 346627,
+      "subject": "biology",
+      "semester": null,
+      "kind": "answer-key",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "إجابات أسئلة أوراق العمل من دليل المعلم العلوم الحياتية الصف العاشر.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "bio-g10-general"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "biology",
+        "العلوم الحياتية",
+        "أحياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 10,
+        "chars": 13569,
+        "localPath": "knowledge-base/grade-10-biology/support-pdfs/إجابات أسئلة أوراق العمل من دليل المعلم العلوم الحياتية الصف العاشر.pdf",
+        "sha256": "34e123b5943a519182de262f712bb78f49b62a33e6b55cf9030cca975a3333e4"
+      }
+    },
+    {
+      "id": "earth-s2-student-book",
+      "title": "كتاب الطالب لمادة علوم الأرض والبيئة الصف العاشر الفصل الثاني.pdf",
+      "bytes": 87975922,
+      "subject": "earth-science",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة علوم الأرض والبيئة الصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "earth-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "earth-science",
+        "علوم الأرض",
+        "البيئة",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 92,
+        "chars": 155561,
+        "localPath": "knowledge-base/grade-10-earth-science/support-pdfs/كتاب الطالب لمادة علوم الأرض والبيئة الصف العاشر الفصل الثاني.pdf",
+        "sha256": "b5ac4142754f97756ffc1f7431eaa83b6caf5306fa6922ed40e1ebb1e7867280"
+      }
+    },
+    {
+      "id": "earth-s1-teacher-guide",
+      "title": "دليل المعلم لمادة علوم الأرض والبيئة الصف العاشر الفصل الأول.pdf",
+      "bytes": 48517066,
+      "subject": "earth-science",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة علوم الأرض والبيئة الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "earth-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "earth-science",
+        "علوم الأرض",
+        "البيئة",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 106,
+        "chars": 312775,
+        "localPath": "knowledge-base/grade-10-earth-science/support-pdfs/دليل المعلم لمادة علوم الأرض والبيئة الصف العاشر الفصل الأول.pdf",
+        "sha256": "3b61f52f334e6c64d878ceb6842d9da554a4c5ba9506b468dafcb1d11bd5f001"
+      }
+    },
+    {
+      "id": "earth-s2-teacher-guide",
+      "title": "دليل المعلم لمادة علوم الأرض والبيئة الصف العاشر الفصل الثاني.pdf",
+      "bytes": 81782623,
+      "subject": "earth-science",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة علوم الأرض والبيئة الصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "earth-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "earth-science",
+        "علوم الأرض",
+        "البيئة",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 116,
+        "chars": 358621,
+        "localPath": "knowledge-base/grade-10-earth-science/support-pdfs/دليل المعلم لمادة علوم الأرض والبيئة الصف العاشر الفصل الثاني.pdf",
+        "sha256": "72a307a059b654611ea114bb4676b0e1f6fb58eae7c7bc57f1f96a8341321a1f"
+      }
+    },
+    {
+      "id": "earth-s1-activity-book",
+      "title": "كتاب الأنشطة والتجارب العملية لمادة علوم الأرض الصف العاشر الفصل الأول.pdf",
+      "bytes": 3586042,
+      "subject": "earth-science",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة والتجارب العملية لمادة علوم الأرض الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "earth-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "earth-science",
+        "علوم الأرض",
+        "البيئة",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 30,
+        "chars": 48931,
+        "localPath": "knowledge-base/grade-10-earth-science/support-pdfs/كتاب الأنشطة والتجارب العملية لمادة علوم الأرض الصف العاشر الفصل الأول.pdf",
+        "sha256": "93b9e34c8256e7ee3001a7b767c2546155c574342e32c8e54e338412571ea2ae"
+      }
+    },
+    {
+      "id": "earth-s2-activity-book",
+      "title": "كتاب الأنشطة والتجارب العملية لمادة علوم الأرض الصف العاشر الفصل الثاني.pdf",
+      "bytes": 3330804,
+      "subject": "earth-science",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة والتجارب العملية لمادة علوم الأرض الصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "earth-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "earth-science",
+        "علوم الأرض",
+        "البيئة",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 40,
+        "chars": 72542,
+        "localPath": "knowledge-base/grade-10-earth-science/support-pdfs/كتاب الأنشطة والتجارب العملية لمادة علوم الأرض الصف العاشر الفصل الثاني.pdf",
+        "sha256": "f2243dba4e3ff2e3e0cba1489b705ec8fc0ed6b14fea1c137ab2baa17055b987"
+      }
+    },
+    {
+      "id": "arabic-s1-student-book",
+      "title": "كتاب الطالب لمادة العربية لغتي للصف العاشر الفصل الأول.pdf",
+      "bytes": 11501482,
+      "subject": "arabic",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة العربية لغتي للصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "arabic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "arabic",
+        "اللغة العربية",
+        "العربية لغتي",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 144,
+        "chars": 207585,
+        "localPath": "knowledge-base/grade-10-arabic/support-pdfs/كتاب الطالب لمادة العربية لغتي للصف العاشر الفصل الأول.pdf",
+        "sha256": "9caec4fbe79d9d63cf75c91792e4d93226183965f125ddd026f77116844cd5ee"
+      }
+    },
+    {
+      "id": "arabic-s2-student-book",
+      "title": "كتاب الطالب لمادة اللغة العربية للصف العاشر الفصل الثاني.pdf",
+      "bytes": 10742310,
+      "subject": "arabic",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة اللغة العربية للصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "arabic-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "arabic",
+        "اللغة العربية",
+        "العربية لغتي",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 140,
+        "chars": 223841,
+        "localPath": "knowledge-base/grade-10-arabic/support-pdfs/كتاب الطالب لمادة اللغة العربية للصف العاشر الفصل الثاني.pdf",
+        "sha256": "99f4cbd774161d075638b4db644229721a7cc9f670f0578e7784980485c7bd26"
+      }
+    },
+    {
+      "id": "arabic-s1-teacher-guide",
+      "title": "دليل المعلم لمادة العربية لغتي الصف العاشر الفصل الأول.pdf",
+      "bytes": 34986295,
+      "subject": "arabic",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة العربية لغتي الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "arabic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "arabic",
+        "اللغة العربية",
+        "العربية لغتي",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 255,
+        "chars": 674930,
+        "localPath": "knowledge-base/grade-10-arabic/support-pdfs/دليل المعلم لمادة العربية لغتي الصف العاشر الفصل الأول.pdf",
+        "sha256": "d0859534d64cd2a3edc3cc8cd1ef3b6a09c341910dd666e6e61d6e52db801add"
+      }
+    },
+    {
+      "id": "arabic-s1-exercise-book",
+      "title": "كتاب التمارين لمادة اللغة العربية (العربية لغتي) للصف العاشر الفصل الأول.pdf",
+      "bytes": 4074619,
+      "subject": "arabic",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب التمارين لمادة اللغة العربية (العربية لغتي) للصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "arabic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "arabic",
+        "اللغة العربية",
+        "العربية لغتي",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 51,
+        "chars": 72370,
+        "localPath": "knowledge-base/grade-10-arabic/support-pdfs/كتاب التمارين لمادة اللغة العربية (العربية لغتي) للصف العاشر الفصل الأول.pdf",
+        "sha256": "1e051f0f783f0bf6059f5705e7faf31f51d5272167d743754db73fdde07cab88"
+      }
+    },
+    {
+      "id": "arabic-s2-exercise-book",
+      "title": "كتاب التمارين لمادة اللغة العربية (العربية لغتي) للصف العاشر الفصل الثاني.pdf",
+      "bytes": 3003701,
+      "subject": "arabic",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب التمارين لمادة اللغة العربية (العربية لغتي) للصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "arabic-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "arabic",
+        "اللغة العربية",
+        "العربية لغتي",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 53,
+        "chars": 78355,
+        "localPath": "knowledge-base/grade-10-arabic/support-pdfs/كتاب التمارين لمادة اللغة العربية (العربية لغتي) للصف العاشر الفصل الثاني.pdf",
+        "sha256": "efbe54284fe8ddf8f54d51ea8934628532bf15d01de9261997e5d5ed2926f8d7"
+      }
     }
   ],
   "mergedAt": "2026-08-25"
