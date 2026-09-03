@@ -17,7 +17,7 @@
  * so a checkout without R2 configured behaves exactly as it did before this
  * file existed.
  */
-import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { GetObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 
 let cachedClient: S3Client | null | undefined;
 
@@ -84,6 +84,35 @@ export async function uploadToR2(key: string, body: Buffer, contentType = 'appli
     ContentType: contentType,
   }));
   return true;
+}
+
+/**
+ * Every object key in the bucket, paginated.
+ *
+ * The other helpers address one key at a time, which is fine for extraction
+ * (it knows the `<sourceId>.pdf` it wants) but useless for the opposite
+ * question — *what is in there that the manifest has never heard of?* A book
+ * uploaded through the Cloudflare dashboard leaves no trace in the repo, so
+ * without a listing the only way to notice it is to already know its name.
+ * `audit-r2.ts` turns this into that answer.
+ *
+ * Returns `null` — not `[]` — when R2 is unconfigured, so a caller can tell
+ * "no credentials" apart from "bucket is empty".
+ */
+export async function listR2Keys(bucketName = bucket()): Promise<string[] | null> {
+  const client = r2Client();
+  if (!client) return null;
+
+  const keys: string[] = [];
+  let ContinuationToken: string | undefined;
+  do {
+    const page = await client.send(
+      new ListObjectsV2Command({ Bucket: bucketName, ContinuationToken }),
+    );
+    for (const o of page.Contents ?? []) if (o.Key) keys.push(o.Key);
+    ContinuationToken = page.IsTruncated ? page.NextContinuationToken : undefined;
+  } while (ContinuationToken);
+  return keys.sort();
 }
 
 /** True when all three R2 env vars are set — the same check `r2Client()` makes, exposed for callers that want to log/skip up front. */

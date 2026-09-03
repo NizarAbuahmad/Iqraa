@@ -24,6 +24,7 @@ Older audits live in `docs/archive/` — historical snapshots, do not act on the
 | `lib/curriculum` | NCCD curriculum data, shared by app and API |
 | `lib/math-verify` | Gates deciding what may claim symbolic verification — shared by app and API |
 | `lib/db` | Drizzle schema |
+| `docs/adding-a-book.md` | How a book / PDF enters the system (manifest, text, catalog, figures) |
 
 ## Commands
 
