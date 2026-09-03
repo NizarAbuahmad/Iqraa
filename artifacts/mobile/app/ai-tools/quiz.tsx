@@ -13,6 +13,7 @@ import { QuizOutput, QuizQuestion } from '@/services/ai/AIService';
 import { buildDeckFromQuiz } from '@/services/classDeck';
 import { summarizeVerification, type VerifyOutcome } from '@/services/quizVerification';
 import { normalizeQuestionOptions, optionLetter } from '@/services/optionLabels';
+import { isolateForeignRuns, prettifySymPy } from '@/services/mathRender';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
@@ -602,6 +603,7 @@ export default function QuizScreen() {
 
           {result.questions.map((q, i) => {
             const tc = TYPE_COLOR[q.type as QType] ?? ACCENT;
+            const o = effectiveOutcomes[i];
             return (
               <View key={q.id} style={[styles.qCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
                 <View style={[styles.qTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -637,6 +639,22 @@ export default function QuizScreen() {
                     </Pressable>
                   </View>
                 </View>
+                {/* Symbolic only, per question: `bank` is also the verifier-down
+                    fallback, so naming it per item would vouch for a key nothing
+                    checked. The aggregate row above still covers the rest. */}
+                {o?.verifiedBy === 'symbolic' ? (
+                  <View style={[styles.verifyRow, { marginTop: 0, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                    <Ionicons name="shield-checkmark" size={13} color="#10B981" />
+                    <Text style={[styles.verifyText, { color: '#10B981', textAlign: isRTL ? 'right' : 'left' }]}>
+                      {t('verifiedBySymbolic')}
+                    </Text>
+                  </View>
+                ) : null}
+                {showAnswers && o?.verifiedBy === 'symbolic' && o.computedAnswer ? (
+                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, textAlign: isRTL ? 'right' : 'left' }}>
+                    {isolateForeignRuns(t('verifiedComputed', prettifySymPy(o.computedAnswer)))}
+                  </Text>
+                ) : null}
                 <View style={styles.qText}>
                   <EditableText
                     value={q.text}

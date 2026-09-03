@@ -67,7 +67,7 @@ export const HOME_AI_TOOLS: HomeToolDef[] = [
   },
   {
     id: 'simplify', emoji: '💡', labelAr: 'تبسيط الشرح', labelEn: 'Simplify explanation',
-    route: '/ai-tools/lesson-plan', status: 'enabled', enabled: false,
+    route: '/ai-tools/lesson-plan', status: 'enabled', enabled: true,
     simplify: true,
     topicHintAr: 'تبسيط الشرح',
     topicHintEn: 'Simplify explanation',

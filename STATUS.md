@@ -30,11 +30,24 @@ Vision screens (student/parent/school dashboards) are deprioritized.
 > while still reporting `computed_answer: 12*x**3 - 2`. It does not merely
 > reject a wrong key; it derives the right one independently.
 >
-> What remains is surfacing that in the UI (blocker below). The verifier being
-> live is not the same as a teacher being able to see that it ran.
+> A teacher can see that it ran, everywhere a key appears (as of 2026-09-03):
+> per-question shield on quiz cards and worksheet answer-key rows, badge plus
+> the independently computed answer on the projector and on the evaluation
+> review screen, and the generator's own warnings ("N questions removed: the
+> verifier contradicted their key") on that review screen. The line this
+> replaced pointed at a blocker closed on 2026-08-15 and stayed stale for
+> three weeks — see «Verification is visible wherever a key is, 2026-09-03».
 
 ## What works today (verified, not assumed)
 
+- **Answer-key verification is visible on every teacher-facing surface**
+  (2026-09-03): quiz cards and worksheet answer-key rows badge each
+  symbolically proved key and, with answers shown, print the verifier's own
+  computed answer; the evaluation review screen does the same and lists the
+  generator's warnings after a (re)generate. Only `symbolic` outcomes earn a
+  per-item badge — `bank` is also the verifier-down fallback and stays on the
+  aggregate row. Verified by typecheck and the existing verification suites;
+  the rendering itself is not machine-tested (no screen tests exist).
 - `pnpm install` and full `pnpm run typecheck` pass clean (checked on Windows
   2026-08-06 and on Linux 2026-08-10).
   - **Without a complete `pnpm install`, `typecheck` reports 79 errors** and
@@ -254,6 +267,76 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     deployed. The client's timeout is 2.5s, so the first call after idle fails.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
+
+## Four teacher-facing quick wins, 2026-09-03
+
+Picked from a "what would make this interesting for teachers now" pass,
+filtered by learning value per unit of build. Mobile suite after: 1140 tests,
+0 failures, 10 skipped (the chemistry KB-search cases). Typecheck clean.
+
+**Verification is visible wherever a key is.** The top-of-file line saying
+"what remains is surfacing that in the UI" had been stale since 2026-08-15.
+What was actually missing, and is now in:
+- `app/ai-tools/quiz.tsx` and `worksheet.tsx` computed a per-question
+  outcome and showed only the aggregate count. Each quiz card and each
+  worksheet answer-key row now carries the shield when the verifier proved
+  that key, and (with answers shown) the verifier's independently computed
+  answer via the existing `verifiedComputed` string. **Symbolic only** — the
+  `bank` outcome doubles as the verifier-down fallback, so a per-item «من بنك
+  الأسئلة» would vouch for a key nothing checked. The worksheet badges the
+  answer-key rows, not the question cards: outcomes are flat and positional,
+  `answerKey[].num` is that same flat position, and the question cards use a
+  section-local index.
+- `app/evaluations/[id]/index.tsx` read only `verification.verified`; it now
+  prints `computedAnswer` under the badge, and shows the generator's
+  `warnings[]` (e.g. how many questions were dropped because the verifier
+  contradicted their key). `new.tsx` generates and then `router.replace`s, so
+  it forwards those warnings as a route param — the only way create-time
+  notes survive the redirect; the screen re-derives everything else from the
+  questions, which by construction cannot show a question that was dropped.
+- Not done: nothing tests the rendering (no screen tests exist), and the two
+  production facts from 2026-08-30 — `MATH_VERIFIER_URL` reachability and
+  `keysChecked > 0` after one funded generation — are still unverified.
+
+**«ابدأ الحصة القادمة بتهيئة على الفجوة» on the class results dashboard.**
+The dashboard already knew which objective the class missed most, and its
+only action pushed a *title string* to the worksheet screen — the objective
+id was discarded at the navigation boundary. `buildGapWarmupRequest` in
+`services/lessonPrep.ts` (tested) goes objective id → `getObjectiveById` →
+its lesson → `resolveLessonPrepContext`, and builds an 8-minute
+`activityVariant: 'warmup'` request with the objective text as the stated
+aim. The button generates in place (the `home.tsx` `startClass` pattern),
+saves it as an `activity` material and opens `/ai-tools/activity?savedId=`
+on the lesson's own picker indices. Two traps designed around: the request
+declares `contextSource: 'curriculum'` (the objective is catalog text, not a
+text box — `activity.tsx` would have flipped it to `'teacher'` and dropped
+the request out of the pool), and the topic is the *lesson title*, because
+the offline generator picks content by topic and would otherwise only
+relabel the same activity. `ponytail:` Regenerate on the activity screen
+rebuilds it as a plain group activity (its form has no warm-up slot).
+
+**«ثلاثة مستويات دفعة واحدة» on the worksheet screen.** Three
+`generateWorksheet` calls fanned out with `Promise.all` at easy/medium/hard
+(difficulty is in the server's strict key, so three independent, shareable
+pool slots; one abort signal covers all three). A tab row switches the paper
+on screen; `diffIdx` follows the tab, so save, export, present and the
+verify summary needed no changes — they already read `result` + `diffIdx`.
+Each level keeps its own `savedId` and outcomes; titles get the level label
+appended so three saves are three materials in موادي. Verification re-runs
+on first visit to a level, and a result arriving after the teacher switched
+tabs is dropped rather than badging the wrong paper. Cost: the first teacher
+on a lesson pays 3× once; everyone after is served from the pools.
+Regenerate inside this mode regenerates the active level and collapses back
+to a single paper. Screen-only, no test.
+
+**`simplify` and `parent-msg` unparked.** One `hidden` line each in
+`toolCatalog.ts`, `simplify` mirrored to `enabled: true` in `homeAiTools.ts`
+(which also lets its smart template and hero chip through), and the test's
+`OFFERED_TOOLS` / `PARKED_TOOLS` lists moved deliberately. The audit's
+objection to `simplify` was its subtitle promising examples and
+misconceptions the output lacks; the subtitle now describes the output
+(a simpler lesson plan). The parent message is a pure offline composer and
+had no finding against it.
 
 ## A lesson plan follows the style the teacher picked, 2026-08-31
 
@@ -3790,6 +3873,10 @@ worksheet is on screen (never blocks generation), the same badge component
 appears once it resolves, and Class Mode now passes per-question `outcomes`
 instead of the old blanket `verified: false`.
 
+> **Correction, 2026-09-03:** "the same badge component" was the aggregate
+> row only («تم التحقق من N من M»). Neither quiz nor worksheet badged a
+> single question on its own screen until 2026-09-03; only the projector did.
+
 **Found and fixed a real, dormant bug while wiring this up.** A worksheet
 question doesn't carry its own answer — the generator only ever fills in
 the top-level `answerKey`, keyed by 1-based position across the flattened
@@ -5270,6 +5357,9 @@ are still true and will need deciding eventually:
 - `simplify` is not a tool. It routes to `lesson-plan` with a flag,
   produces the identical `LessonPlanOutput`, and its description promises
   "examples and misconceptions" that do not exist in that type.
+  **Unparked 2026-09-03 with an honest subtitle** («خطة الدرس نفسها بلغة
+  أبسط وخطوات أقصر…»); still not a distinct output type. `parent-msg` came
+  back the same day — an offline composer with no audit finding against it.
 - `activity`'s description is **backwards**. It says "an in-class
   experience… not a printable worksheet"; the code generates a printable
   PDF/Word document with no live-presentation capability at all.

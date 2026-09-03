@@ -21,6 +21,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  buildGapWarmupRequest,
   buildLessonPrepRequest,
   groundedSubjectConflict,
   lessonPickerParams,
@@ -29,7 +30,7 @@ import {
   scopePickerParams,
   topicPickerParams,
 } from '../lessonPrep.ts';
-import { getPickerGrades, getPickerSubjects, getLessonById } from '../curriculumData.ts';
+import { getObjectivesForLesson, getPickerGrades, getPickerSubjects, getLessonById } from '../curriculumData.ts';
 
 /**
  * Chemistry G10 S1 — has distinct Arabic and English titles, and is in the KB.
@@ -314,5 +315,31 @@ describe('groundedSubjectConflict', () => {
   it('is silent for an ungrounded topic — nothing to contradict', () => {
     assert.equal(groundedSubjectConflict('موضوع حر لا يطابق أي درس', 'ar', 'english'), null);
     assert.equal(groundedSubjectConflict('', 'ar', 'english'), null);
+  });
+});
+
+describe('buildGapWarmupRequest', () => {
+  // The results dashboard's "teach the gap" button. It must land on the weak
+  // objective's OWN lesson (carrying the KB id, not a title), as a warm-up,
+  // with the objective text as the stated aim — and stay shareable, since
+  // nothing in it was typed by the teacher.
+  it('builds an 8-minute warm-up on the objective\'s own lesson', () => {
+    const objective = getObjectivesForLesson(MATH_LESSON_ID)[0];
+    assert.ok(objective, 'the demo math lesson should have objectives');
+    const built = buildGapWarmupRequest(objective.id, 'ar');
+    assert.ok(built, 'a known objective should resolve');
+    assert.equal(built.context.lessonId, MATH_LESSON_ID);
+    assert.equal(built.request.topic, getLessonById(MATH_LESSON_ID)!.titleAr);
+    assert.equal(built.request.subject, 'Mathematics');
+    assert.equal(built.request.activityVariant, 'warmup');
+    assert.equal(built.request.duration, 8);
+    assert.equal(built.request.contextSource, 'curriculum');
+    assert.equal(built.request.objectives, objective.descriptionAr);
+    assert.equal(built.objectiveText, objective.descriptionAr);
+    assert.ok(built.request.lessonId, 'the request should carry the grounded lesson id');
+  });
+
+  it('returns null for an unknown objective, so the button stays hidden', () => {
+    assert.equal(buildGapWarmupRequest('o-no-such-objective', 'ar'), null);
   });
 });

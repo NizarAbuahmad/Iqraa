@@ -66,7 +66,6 @@ const BEFORE_CLASS_ALL: ToolDef[] = [
   },
   {
     id: 'simplify',
-    hidden: true,
     titleKey: 'simplifyExplanationTitle',
     descKey: 'simplifyExplanationSubtitle',
     icon: 'bulb-outline',
@@ -186,7 +185,6 @@ const AFTER_CLASS_ALL: ToolDef[] = [
   },
   {
     id: 'parent-msg',
-    hidden: true,
     titleKey: 'toolParentMsgTitle',
     descKey: 'toolParentMsgDesc',
     icon: 'mail-outline',
