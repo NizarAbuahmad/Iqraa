@@ -48,6 +48,9 @@ Vision screens (student/parent/school dashboards) are deprioritized.
   per-item badge — `bank` is also the verifier-down fallback and stays on the
   aggregate row. Verified by typecheck and the existing verification suites;
   the rendering itself is not machine-tested (no screen tests exist).
+  **In production it currently shows nothing**: the API cannot reach the
+  verifier (2026-09-03, see the hosted-services section above), so every key
+  degrades to the reviewed-bank label. The UI is correct; the wiring is not.
 - `pnpm install` and full `pnpm run typecheck` pass clean (checked on Windows
   2026-08-06 and on Linux 2026-08-10).
   - **Without a complete `pnpm install`, `typecheck` reports 79 errors** and
@@ -242,6 +245,18 @@ Vision screens (student/parent/school dashboards) are deprioritized.
       the public URL `https://iqraa-verifier.onrender.com`. Verified end to end
       2026-08-10: correct key → `verified: true`; wrong key → `verified: false`,
       `error: answer_mismatch`, `computed_answer: 12*x**3 - 2`.
+    - **No longer true, re-checked 2026-09-03: the API cannot reach it again.**
+      `GET /api/healthz/verifier` answers 503
+      `{"verifier":"unreachable","detail":"client_error:fetch failed"}` while
+      the verifier itself is healthy — `/healthz` lists all eight topics and a
+      cold start took 51s. This is precisely the trap the bullet below named:
+      the dashboard value was set by hand in August, and the blueprint kept
+      `fromService … hostport`, so a re-sync restored an address the free plan
+      has no private network to route. **The blueprint now hardcodes the public
+      URL**, which closes the trap in the repo — but Render still has to pick
+      the change up (re-sync the Blueprint, or set `MATH_VERIFIER_URL` on
+      `iqraa-api` by hand). Until it does, every verification badge shipped on
+      2026-09-03 renders nothing in production.
     - **Why it was broken, and why the diagnosis took three days.** The
       blueprint sets `MATH_VERIFIER_URL` via `fromService … property: hostport`,
       which yields Render's *internal* address `iqraa-verifier:10000`, and
@@ -267,6 +282,44 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     deployed. The client's timeout is 2.5s, so the first call after idle fails.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
+
+## The verifier went unreachable again, and the blueprint was the trap, 2026-09-03
+
+Checked against the live API right after the quick-wins merge, because that
+PR ships verification UI and nothing had confirmed the verifier was reachable
+since 2026-08-10:
+
+| Probe | Answer |
+| --- | --- |
+| `GET /api/healthz/verifier` | 503 `{"verifier":"unreachable","detail":"client_error:fetch failed"}` |
+| `GET /healthz` on the verifier | `{"status":"ok","topics":[…8 topics]}` |
+| Verifier cold start | 51s |
+| `GET /api/healthz/ai-budget` | `liveMode: true`, `gpt-5.4-mini`, $0.22 of $5 |
+
+So the verifier is up and doing maths, and the API cannot talk to it — the
+same split state that took three days to diagnose in August, when this file
+asserted "NOT DEPLOYED" and was wrong.
+
+**The August entry predicted this in writing.** It said hardcoding the public
+URL in the dashboard worked, but that leaving `fromService … property:
+hostport` in the blueprint meant "a re-sync that restores `hostport` would
+silently break verification again". It did. `render.yaml` now sets the public
+URL literally, so the repo no longer carries the trap.
+
+**What this does not fix.** A blueprint is not a deploy. Render still holds
+whatever value it last synced, so `MATH_VERIFIER_URL` on `iqraa-api` has to be
+re-synced or set by hand before any of this reaches a teacher. Until then the
+badges merged earlier today render nothing — correctly, and silently, because
+an unreachable verifier degrades to the reviewed-bank label rather than
+claiming anything.
+
+**Worth deciding separately: the cold start.** The verifier sleeps on the free
+plan and took 51 seconds to wake, against a 2.5s client timeout
+(`VERIFY_TIMEOUT_MS`). Even with the URL fixed, the first generation after an
+idle period cannot verify. `warmUpVerifier` exists in
+`services/ai/verifyMath.ts`; whether it fires early enough to cover a
+51-second wake has not been measured, and one teacher opening the app is not
+a long enough runway to assume it does.
 
 ## Four teacher-facing quick wins, 2026-09-03
 

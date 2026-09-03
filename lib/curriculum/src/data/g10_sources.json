@@ -1550,15 +1550,7 @@
         "كيمياء",
         "عاشر"
       ],
-      "notes": "132 pages. مخطط الوحدة tables at guide pages 7A / 29A / 59A gave the catalog its period counts (3 per lesson), per-unit prior knowledge with the grade each outcome was taught in, the named activities, and unit 3's finer-grained outcomes (6 and 5, against the book's 1 and 2). Ingested 2026-08-24. Its per-lesson teaching notes, misconceptions and worksheet answer keys (appendix A1+) are NOT mined yet — that is the depth pass.",
-      "extraction": {
-        "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-02",
-        "pages": 132,
-        "chars": 346066,
-        "localPath": "knowledge-base/grade-10-chemistry/support-pdfs/دليل المعلم لمادة الكيمياء الصف العاشر الفصل الأول.pdf",
-        "sha256": "7e75bb025dc82ea48dcd28d12ced061c2a8606dec1d3318da6fac7b17eebc367"
-      }
+      "notes": "132 pages. مخطط الوحدة tables at guide pages 7A / 29A / 59A gave the catalog its period counts (3 per lesson), per-unit prior knowledge with the grade each outcome was taught in, the named activities, and unit 3's finer-grained outcomes (6 and 5, against the book's 1 and 2). Ingested 2026-08-24. Its per-lesson teaching notes, misconceptions and worksheet answer keys (appendix A1+) are NOT mined yet — that is the depth pass. استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
     },
     {
       "id": "chem-s2-teacher-guide",
@@ -1582,15 +1574,7 @@
         "كيمياء",
         "عاشر"
       ],
-      "notes": "مخطط الوحدة at guide pages 7A and 41A gave the period counts (2-4 per lesson, 9 per unit), the per-unit prior knowledge, and the named activities. Its per-lesson teaching notes and the answer appendix (M1+) are not mined yet.",
-      "extraction": {
-        "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-02",
-        "pages": 96,
-        "chars": 256460,
-        "localPath": "knowledge-base/grade-10-chemistry/support-pdfs/دليل المعلم لمادة الكيمياء الصف العاشر الفصل الثاني.pdf",
-        "sha256": "9c929cbee187334ae9a084061920a39157578dc88a59122d92e2395e5f7e7041"
-      }
+      "notes": "مخطط الوحدة at guide pages 7A and 41A gave the period counts (2-4 per lesson, 9 per unit), the per-unit prior knowledge, and the named activities. Its per-lesson teaching notes and the answer appendix (M1+) are not mined yet. استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
     },
     {
       "id": "chem-s1-activity-book",
@@ -1749,7 +1733,7 @@
       "semester": 1,
       "kind": "study-pack",
       "authority": "teacher",
-      "status": "ingested",
+      "status": "pending",
       "filename": "دوسية الوحدة الأولى الكيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
       "authorAr": "مريم السرطاوي",
       "unitTags": [
@@ -1763,14 +1747,7 @@
         "كيمياء",
         "عاشر"
       ],
-      "extraction": {
-        "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
-        "pages": 67,
-        "chars": 75516,
-        "localPath": "attached_assets/knowledge-base-pending/chem-s1-u1-pack-sartawi.pdf",
-        "sha256": "0a11b9bf7f59907cd58f875ff739e9dab1afe0009d7e71175c2f4f14cf5be1ad"
-      }
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
     },
     {
       "id": "chem-s1-u2-pack-sartawi",
@@ -1781,7 +1758,7 @@
       "semester": 1,
       "kind": "study-pack",
       "authority": "teacher",
-      "status": "ingested",
+      "status": "pending",
       "filename": "دوسية الوحدة الثانية الكيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
       "authorAr": "مريم السرطاوي",
       "unitTags": [
@@ -1795,14 +1772,7 @@
         "كيمياء",
         "عاشر"
       ],
-      "extraction": {
-        "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
-        "pages": 65,
-        "chars": 71809,
-        "localPath": "attached_assets/knowledge-base-pending/chem-s1-u2-pack-sartawi.pdf",
-        "sha256": "40420967f96cd9cb6789eb43985365e8b4c7619af5498670f4677f39f4ca67f2"
-      }
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
     },
     {
       "id": "chem-s1-u3-pack-sartawi",
@@ -1813,7 +1783,7 @@
       "semester": 1,
       "kind": "study-pack",
       "authority": "teacher",
-      "status": "ingested",
+      "status": "pending",
       "filename": "دوسية الوحدة الثالثة الكيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
       "authorAr": "مريم السرطاوي",
       "unitTags": [
@@ -1827,14 +1797,7 @@
         "كيمياء",
         "عاشر"
       ],
-      "extraction": {
-        "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
-        "pages": 68,
-        "chars": 66827,
-        "localPath": "attached_assets/knowledge-base-pending/chem-s1-u3-pack-sartawi.pdf",
-        "sha256": "206af4678164d726f5e9221e30f6a5a1fbf33f9947d77143a0c7d80aa19eb827"
-      }
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
     },
     {
       "id": "chem-s1-pack-almasri",
@@ -1907,7 +1870,7 @@
       "semester": 2,
       "kind": "study-pack",
       "authority": "teacher",
-      "status": "ingested",
+      "status": "pending",
       "filename": "دوسية الكيمياء الصف العاشر الفصل الثاني إعداد م. مريم السرطاوي.pdf",
       "authorAr": "مريم السرطاوي",
       "unitTags": [
@@ -1920,14 +1883,7 @@
         "كيمياء",
         "عاشر"
       ],
-      "extraction": {
-        "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
-        "pages": 141,
-        "chars": 159330,
-        "localPath": "attached_assets/knowledge-base-pending/chem-s2-pack-sartawi.pdf",
-        "sha256": "538ba9d599845a8c7fab8401b75a718524407cdb28ba53e82c7f7b60ca768199"
-      }
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
     },
     {
       "id": "chem-s2-pack-shawata",
@@ -2000,7 +1956,7 @@
       "semester": 2,
       "kind": "summary",
       "authority": "teacher",
-      "status": "ingested",
+      "status": "pending",
       "filename": "ملخص الوحدة الرابعة الكيمياء الصف العاشر إعداد م. مريم السرطاوي.pdf",
       "authorAr": "مريم السرطاوي",
       "unitTags": [
@@ -2014,14 +1970,7 @@
         "كيمياء",
         "عاشر"
       ],
-      "extraction": {
-        "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
-        "pages": 86,
-        "chars": 79483,
-        "localPath": "attached_assets/knowledge-base-pending/chem-u4-summary-sartawi.pdf",
-        "sha256": "08b5aea4cd80efad07d1a0f0b669ec27e2a69b835a40acd5d8c73e2a169fc094"
-      }
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
     },
     {
       "id": "chem-u5-summary-sartawi",
@@ -2032,7 +1981,7 @@
       "semester": 2,
       "kind": "summary",
       "authority": "teacher",
-      "status": "ingested",
+      "status": "pending",
       "filename": "ملخص الوحدة الخامسة الكيمياء الصف العاشر إعداد م. مريم السرطاوي.pdf",
       "authorAr": "مريم السرطاوي",
       "unitTags": [
@@ -2046,14 +1995,7 @@
         "كيمياء",
         "عاشر"
       ],
-      "extraction": {
-        "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
-        "pages": 71,
-        "chars": 78304,
-        "localPath": "attached_assets/knowledge-base-pending/chem-u5-summary-sartawi.pdf",
-        "sha256": "c6bc50b5381e51b2a1abdb12608f5e19812f345f31b25ffb45c3b91c1ceb2a66"
-      }
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
     },
     {
       "id": "chem-s1-question-bank-sartawi",
@@ -2064,7 +2006,7 @@
       "semester": 1,
       "kind": "question-bank",
       "authority": "teacher",
-      "status": "ingested",
+      "status": "pending",
       "filename": "بنك أسئلة الكيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
       "authorAr": "مريم السرطاوي",
       "unitTags": [
@@ -2077,14 +2019,7 @@
         "كيمياء",
         "عاشر"
       ],
-      "extraction": {
-        "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
-        "pages": 21,
-        "chars": 14413,
-        "localPath": "attached_assets/knowledge-base-pending/chem-s1-question-bank-sartawi.pdf",
-        "sha256": "6bfae1bf8c53dcc446c95f0a113891f7029e5026a2d22001b4c1ac0f366876bd"
-      }
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
     },
     {
       "id": "chem-s1-mixed-questions-sartawi",
@@ -2412,7 +2347,7 @@
       "semester": 1,
       "kind": "teacher-guide",
       "authority": "nccd",
-      "status": "ingested",
+      "status": "pending",
       "filename": "دليل المعلم لمادة الفيزياء الصف العاشر الفصل الأول.pdf",
       "authorAr": null,
       "unitTags": [
@@ -2425,14 +2360,7 @@
         "فيزياء",
         "عاشر"
       ],
-      "extraction": {
-        "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-03",
-        "pages": 154,
-        "chars": 391551,
-        "localPath": "knowledge-base/grade-10-physics/support-pdfs/دليل المعلم لمادة الفيزياء الصف العاشر الفصل الأول.pdf",
-        "sha256": "0f40a7a3aac211054fe1441677f4a571dceda788bbb49640d826a4a3f4741f3a"
-      }
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
     },
     {
       "id": "phys-s2-teacher-guide",
@@ -2442,7 +2370,7 @@
       "semester": 2,
       "kind": "teacher-guide",
       "authority": "nccd",
-      "status": "ingested",
+      "status": "pending",
       "filename": "دليل المعلم لمادة الفيزياء الصف العاشر الفصل الثاني.pdf",
       "authorAr": null,
       "unitTags": [
@@ -2455,14 +2383,7 @@
         "فيزياء",
         "عاشر"
       ],
-      "extraction": {
-        "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-03",
-        "pages": 154,
-        "chars": 446224,
-        "localPath": "knowledge-base/grade-10-physics/support-pdfs/دليل المعلم لمادة الفيزياء الصف العاشر الفصل الثاني.pdf",
-        "sha256": "3bb020b99d803906a9dc6c7b74f72f897fc46d4039e9eb8de07a061c33227fd0"
-      }
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
     },
     {
       "id": "phys-s1-activity-book",
@@ -2618,7 +2539,7 @@
       "semester": 2,
       "kind": "teacher-guide",
       "authority": "nccd",
-      "status": "ingested",
+      "status": "pending",
       "filename": "دليل المعلم لمادة العلوم الحياتية الصف العاشر الفصل الثاني.pdf",
       "authorAr": null,
       "unitTags": [
@@ -2632,14 +2553,7 @@
         "أحياء",
         "عاشر"
       ],
-      "extraction": {
-        "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-03",
-        "pages": 100,
-        "chars": 262394,
-        "localPath": "knowledge-base/grade-10-biology/support-pdfs/دليل المعلم لمادة العلوم الحياتية الصف العاشر الفصل الثاني.pdf",
-        "sha256": "bb0b3a566b68f97aff10d3277a0e64b2cb686090db2e0693b9b1b104d9edfe21"
-      }
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
     },
     {
       "id": "bio-s1-activity-book",
@@ -2711,7 +2625,7 @@
       "semester": null,
       "kind": "answer-key",
       "authority": "nccd",
-      "status": "ingested",
+      "status": "pending",
       "filename": "إجابات أسئلة أوراق العمل من دليل المعلم العلوم الحياتية الصف العاشر.pdf",
       "authorAr": null,
       "unitTags": [
@@ -2725,14 +2639,7 @@
         "أحياء",
         "عاشر"
       ],
-      "extraction": {
-        "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-03",
-        "pages": 10,
-        "chars": 13569,
-        "localPath": "knowledge-base/grade-10-biology/support-pdfs/إجابات أسئلة أوراق العمل من دليل المعلم العلوم الحياتية الصف العاشر.pdf",
-        "sha256": "34e123b5943a519182de262f712bb78f49b62a33e6b55cf9030cca975a3333e4"
-      }
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
     },
     {
       "id": "earth-s2-student-book",
@@ -2773,7 +2680,7 @@
       "semester": 1,
       "kind": "teacher-guide",
       "authority": "nccd",
-      "status": "ingested",
+      "status": "pending",
       "filename": "دليل المعلم لمادة علوم الأرض والبيئة الصف العاشر الفصل الأول.pdf",
       "authorAr": null,
       "unitTags": [
@@ -2787,14 +2694,7 @@
         "البيئة",
         "عاشر"
       ],
-      "extraction": {
-        "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-03",
-        "pages": 106,
-        "chars": 312775,
-        "localPath": "knowledge-base/grade-10-earth-science/support-pdfs/دليل المعلم لمادة علوم الأرض والبيئة الصف العاشر الفصل الأول.pdf",
-        "sha256": "3b61f52f334e6c64d878ceb6842d9da554a4c5ba9506b468dafcb1d11bd5f001"
-      }
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
     },
     {
       "id": "earth-s2-teacher-guide",
@@ -2804,7 +2704,7 @@
       "semester": 2,
       "kind": "teacher-guide",
       "authority": "nccd",
-      "status": "ingested",
+      "status": "pending",
       "filename": "دليل المعلم لمادة علوم الأرض والبيئة الصف العاشر الفصل الثاني.pdf",
       "authorAr": null,
       "unitTags": [
@@ -2818,14 +2718,7 @@
         "البيئة",
         "عاشر"
       ],
-      "extraction": {
-        "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-03",
-        "pages": 116,
-        "chars": 358621,
-        "localPath": "knowledge-base/grade-10-earth-science/support-pdfs/دليل المعلم لمادة علوم الأرض والبيئة الصف العاشر الفصل الثاني.pdf",
-        "sha256": "72a307a059b654611ea114bb4676b0e1f6fb58eae7c7bc57f1f96a8341321a1f"
-      }
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
     },
     {
       "id": "earth-s1-activity-book",
