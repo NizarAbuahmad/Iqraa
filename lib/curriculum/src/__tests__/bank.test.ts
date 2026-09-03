@@ -65,6 +65,11 @@ describe('manifest shape', () => {
       islamic: /^islamic-s[12]$/,
       history: /^history-s[12]$/,
       english: /^eng-s[12]$/,
+      geography: /^geo-s[12]$/,
+      'digital-literacy': /^digital-s[12]$/,
+      civic: /^civic-s[12]$/,
+      art: /^art-g10-general$/,
+      vocational: /^vocational-s[12]$/,
     };
     for (const s of G10_SOURCES) {
       for (const t of s.unitTags) {

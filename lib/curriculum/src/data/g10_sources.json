@@ -3241,6 +3241,264 @@
         "عاشر"
       ],
       "notes": "المصدر غير مؤكد: لم يُعثر على نسخة NCCD معتمدة لهذه الطبعة (انظر STATUS.md، 2026-08-30)؛ الكتالوج يصفها بأنها «نسخة على مساحة تخزين المشروع». لذلك authority = third-party وليس nccd — لا يُدّعى مصدر لم يُتحقق منه. استخراج هذا الملف يعيد العربية بأشكال العرض المتصلة (Arabic Presentation Forms) معكوسة الحروف بدل الكتلة العربية الأساسية؛ رفضته بوابة الجودة في 2026-09-03 ولم يُستخرج. الملف نفسه سليم؛ يحتاج استخراجًا أفضل أو OCR. لاحظ أن هذا عطب مختلف عن قلب أداة التعريف الذي يصيب بقية المواد."
+    },
+    {
+      "id": "geo-s1-student-book",
+      "title": "كتاب الطالب لمادة الجغرافيا للصف العاشر الفصل الأول.pdf",
+      "bytes": 74034315,
+      "subject": "geography",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "كتاب الطالب لمادة الجغرافيا للصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "geo-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "geography",
+        "الجغرافيا",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة)؛ رفضته بوابة الجودة تلقائيًا في 2026-09-03 ولم يُستخرج. الملف نفسه سليم؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "geo-s2-student-book",
+      "title": "كتاب الطالب لمادة الجغرافيا للصف العاشر الفصل الثاني.pdf",
+      "bytes": 75200687,
+      "subject": "geography",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "كتاب الطالب لمادة الجغرافيا للصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "geo-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "geography",
+        "الجغرافيا",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة)؛ رفضته بوابة الجودة تلقائيًا في 2026-09-03 ولم يُستخرج. الملف نفسه سليم؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "digital-s1-student-book",
+      "title": "كتاب الطالب لمادة المهارات الرقمية الصف العاشر الفصل الأول.pdf",
+      "bytes": 6674271,
+      "subject": "digital-literacy",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة المهارات الرقمية الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "digital-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "digital-literacy",
+        "المهارات الرقمية",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 208,
+        "chars": 327833,
+        "localPath": "knowledge-base/grade-10-digital-literacy/support-pdfs/كتاب الطالب لمادة المهارات الرقمية الصف العاشر الفصل الأول.pdf",
+        "sha256": "3a76f254361b50b30df39e01e0f10aeb252b4d7d5c594730182d9242078a61b4"
+      }
+    },
+    {
+      "id": "digital-s2-student-book",
+      "title": "كتاب الطالب لمادة المهارات الرقمية الصف العاشر الفصل الثاني.pdf",
+      "bytes": 5960705,
+      "subject": "digital-literacy",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة المهارات الرقمية الصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "digital-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "digital-literacy",
+        "المهارات الرقمية",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 149,
+        "chars": 277553,
+        "localPath": "knowledge-base/grade-10-digital-literacy/support-pdfs/كتاب الطالب لمادة المهارات الرقمية الصف العاشر الفصل الثاني.pdf",
+        "sha256": "f9d37c035a0576db2b49fe2fb2699616dffac2877ca62dcfd1efe1f60e2bdd00"
+      }
+    },
+    {
+      "id": "civic-s1-student-book",
+      "title": "كتاب الطالب لمادة التربية الوطنية والمدنية للصف العاشر الفصل الأول.pdf",
+      "bytes": 18700226,
+      "subject": "civic",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "كتاب الطالب لمادة التربية الوطنية والمدنية للصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "civic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "civic",
+        "التربية الوطنية والمدنية",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة)؛ رفضته بوابة الجودة تلقائيًا في 2026-09-03 ولم يُستخرج. الملف نفسه سليم؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "civic-s2-student-book",
+      "title": "كتاب الطالب لمادة التربية الوطنية والمدنية للصف العاشر الفصل الثاني.pdf",
+      "bytes": 7184270,
+      "subject": "civic",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "كتاب الطالب لمادة التربية الوطنية والمدنية للصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "civic-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "civic",
+        "التربية الوطنية والمدنية",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة)؛ رفضته بوابة الجودة تلقائيًا في 2026-09-03 ولم يُستخرج. الملف نفسه سليم؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "art-teacher-guide",
+      "title": "دليل المعلم التربية الفنية الصف العاشر.pdf",
+      "bytes": 9321957,
+      "subject": "art",
+      "semester": null,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "دليل المعلم التربية الفنية الصف العاشر.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "art-g10-general"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "art",
+        "التربية الفنية",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة)؛ رفضته بوابة الجودة تلقائيًا في 2026-09-03 ولم يُستخرج. الملف نفسه سليم؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "art-student-book",
+      "title": "كتاب الطالب لمادة التربية الفنية للصف العاشر.pdf",
+      "bytes": 9288059,
+      "subject": "art",
+      "semester": null,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "كتاب الطالب لمادة التربية الفنية للصف العاشر.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "art-g10-general"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "art",
+        "التربية الفنية",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة)؛ رفضته بوابة الجودة تلقائيًا في 2026-09-03 ولم يُستخرج. الملف نفسه سليم؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "vocational-p1-student-book",
+      "title": "كتاب الطالب لمادة التربية المهنية الصف العاشر الجزء الأول.pdf",
+      "bytes": 3731369,
+      "subject": "vocational",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التربية المهنية الصف العاشر الجزء الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "vocational-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "vocational",
+        "التربية المهنية",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 131,
+        "chars": 124463,
+        "localPath": "knowledge-base/grade-10-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية الصف العاشر الجزء الأول.pdf",
+        "sha256": "7862ab652cceebea3e72dc63814639d24d894a4c1f8a0d9108152954d8478ab0"
+      }
+    },
+    {
+      "id": "vocational-p2-student-book",
+      "title": "كتاب الطالب لمادة التربية المهنية الصف العاشر الجزء الثاني.pdf",
+      "bytes": 5681052,
+      "subject": "vocational",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التربية المهنية الصف العاشر الجزء الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "vocational-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "vocational",
+        "التربية المهنية",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 101,
+        "chars": 103861,
+        "localPath": "knowledge-base/grade-10-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية الصف العاشر الجزء الثاني.pdf",
+        "sha256": "ecc9eeb9d18a35ef53056181e4d1a49523c2b3f0dea5c86aae2c68b767b70560"
+      }
     }
   ],
   "mergedAt": "2026-08-25"
