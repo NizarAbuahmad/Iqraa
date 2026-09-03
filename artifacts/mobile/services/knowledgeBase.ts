@@ -55,6 +55,8 @@ import {
 import {
   buildEarthSem2Catalog,
 } from './curriculumG10EarthSem2.ts';
+import { buildBioSem1Catalog } from './curriculumG10BioSem1.ts';
+import { buildBioSem2Catalog } from './curriculumG10BioSem2.ts';
 import {
   CHEM_S2_BOOK_ID,
   buildChemSem2Catalog,
@@ -158,6 +160,24 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Earth and Environmental Science – Grade 10 – Semester 2',
     semester: 2,
     source: 'كتاب الطالب لمادة علوم الأرض والبيئة الصف العاشر الفصل الثاني.pdf',
+  },
+  {
+    id: 'kb-bio-10-s1',
+    gradeId: 'grade-10',
+    subjectId: 'biology',
+    titleAr: 'العلوم الحياتية – الصف العاشر – الفصل الأول',
+    titleEn: 'Biology – Grade 10 – Semester 1',
+    semester: 1,
+    source: 'كتاب الطالب لمادة العلوم الحياتية للصف العاشر الفصل الأول.pdf',
+  },
+  {
+    id: 'kb-bio-10-s2',
+    gradeId: 'grade-10',
+    subjectId: 'biology',
+    titleAr: 'العلوم الحياتية – الصف العاشر – الفصل الثاني',
+    titleEn: 'Biology – Grade 10 – Semester 2',
+    semester: 2,
+    source: 'كتاب الطالب لمادة العلوم الحياتية للصف العاشر الفصل الثاني.pdf',
   },
   {
     id: 'kb-chem-10-s1',
@@ -1205,6 +1225,8 @@ const _physSem1 = buildPhysSem1Catalog();
 const _physSem2 = buildPhysSem2Catalog();
 const _earthSem1 = buildEarthSem1Catalog();
 const _earthSem2 = buildEarthSem2Catalog();
+const _bioSem1 = buildBioSem1Catalog();
+const _bioSem2 = buildBioSem2Catalog();
 const _chemSem2 = buildChemSem2Catalog();
 const _finlitSem1 = buildFinlitSem1Catalog();
 const _g9MathSem1 = buildG9MathSem1Catalog();
@@ -1335,6 +1357,8 @@ export const KB_UNITS: KBUnit[] = [
   ..._physSem2.units,
   ..._earthSem1.units,
   ..._earthSem2.units,
+  ..._bioSem1.units,
+  ..._bioSem2.units,
   ..._chemSem2.units,
   ..._finlitSem1.units,
   ..._nccdSem1.units,
@@ -1365,6 +1389,8 @@ export const KB_LESSONS: KBLesson[] = [
   ..._physSem2.lessons,
   ..._earthSem1.lessons,
   ..._earthSem2.lessons,
+  ..._bioSem1.lessons,
+  ..._bioSem2.lessons,
   ..._g9MathSem1.lessons,
   ..._g9MathSem2.lessons,
   // No hand-authored rows exist for English either — these carry only what
