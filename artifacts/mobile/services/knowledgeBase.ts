@@ -43,6 +43,10 @@ import {
   buildChemSem1Catalog,
 } from './curriculumG10ChemSem1.ts';
 import {
+  PHYS_S1_BOOK_ID,
+  buildPhysSem1Catalog,
+} from './curriculumG10PhysSem1.ts';
+import {
   CHEM_S2_BOOK_ID,
   buildChemSem2Catalog,
 } from './curriculumG10ChemSem2.ts';
@@ -111,6 +115,15 @@ type HardcodedKBLesson = Omit<KBLesson, 'objectives' | 'periods'> & {
 // ─────────────────────────────────────────────────────
 export const KB_BOOKS: KBBook[] = [
   {
+    id: 'kb-phys-10-s1',
+    gradeId: 'grade-10',
+    subjectId: 'physics',
+    titleAr: 'الفيزياء – الصف العاشر – الفصل الأول',
+    titleEn: 'Physics – Grade 10 – Semester 1',
+    semester: 1,
+    source: 'كتاب الطالب لمادة الفيزياء للصف العاشر الفصل الأول.pdf',
+  },
+  {
     id: 'kb-chem-10-s1',
     gradeId: 'grade-10',
     subjectId: 'chemistry',
@@ -135,7 +148,7 @@ export const KB_BOOKS: KBBook[] = [
     titleAr: 'الثقافة المالية – الصف العاشر – الفصل الأول',
     titleEn: 'Financial Literacy – Grade 10 – Semester 1',
     semester: 1,
-    source: 'knowledge-base/grade-10-financial-literacy/الثقافة المالية 10 ف1.pdf',
+    source: 'knowledge-base/grade-10-finlit/الثقافة المالية 10 ف1.pdf',
   },
   {
     id: ENGLISH_COMMERCE_S1_KB_BOOK_ID,
@@ -1152,6 +1165,7 @@ const HARDCODED_KB_LESSONS: HardcodedKBLesson[] = [
 const _nccdSem1 = buildNccdSem1Catalog();
 const _nccdSem2 = buildNccdSem2Catalog();
 const _chemSem1 = buildChemSem1Catalog();
+const _physSem1 = buildPhysSem1Catalog();
 const _chemSem2 = buildChemSem2Catalog();
 const _finlitSem1 = buildFinlitSem1Catalog();
 const _g9MathSem1 = buildG9MathSem1Catalog();
@@ -1278,6 +1292,7 @@ export const KB_UNITS: KBUnit[] = [
       && u.bookId !== CHEM_S2_BOOK_ID,
   ),
   ..._chemSem1.units,
+  ..._physSem1.units,
   ..._chemSem2.units,
   ..._finlitSem1.units,
   ..._nccdSem1.units,
@@ -1302,6 +1317,9 @@ export const KB_LESSONS: KBLesson[] = [
   ..._nccdSem2.lessons.map(enrichLesson),
   // No hand-authored G9 rows exist to enrich from — these carry only what
   // the NCCD JSON has (title-only lessons keep an empty summary/objectives).
+  // Physics has no hand-authored rows to enrich from either — it arrived
+  // with the 2026-09-03 intake and never had a hardcoded predecessor.
+  ..._physSem1.lessons,
   ..._g9MathSem1.lessons,
   ..._g9MathSem2.lessons,
   // No hand-authored rows exist for English either — these carry only what
