@@ -2229,7 +2229,7 @@
       "semester": 1,
       "kind": "student-book",
       "authority": "nccd",
-      "status": "ingested",
+      "status": "pending",
       "filename": "الثقافة المالية 10 ف1 small.pdf",
       "authorAr": null,
       "unitTags": [
@@ -2243,15 +2243,7 @@
         "عاشر",
         "كتاب الطالب"
       ],
-      "notes": "40 objectives in the catalog came from this file.",
-      "extraction": {
-        "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-03",
-        "pages": 80,
-        "chars": 113520,
-        "localPath": "knowledge-base/grade-10-finlit/support-pdfs/الثقافة المالية 10 ف1 small.pdf",
-        "sha256": "fd3a9fd692a01ce77827816f50e5029f471d5e117924da8a1c1f417987ed27f2"
-      }
+      "notes": "استخراج هذا الملف مفكك الكلمات: تتناثر حروف الكلمة الواحدة وتُعاد ترتيبها مع مسافات (مثال ص 11: «ةالصحيح ع ة اإلجاب زرم ه رأختا» بدل «أختار رمز الإجابة الصحيحة»). حُذف الاستخراج في 2026-09-04 لأن passagesForUnit كان يقدّم 8 من كل 10 فقرات مفككة للمعلمين. بيانات المنهاج نفسها سليمة: نُقلت من صفحات افتتاح الدروس مباشرة لا من هذا الاستخراج. الملف في R2؛ يحتاج استخراجًا أفضل أو OCR."
     },
     {
       "id": "finlit-s2-student-book",
