@@ -22,8 +22,25 @@ import {
 
 export { isDerivativeQuestion, latinExpressionFrom };
 
-/** Verification budget per question; class prep must stay responsive. */
-const VERIFY_TIMEOUT_MS = 2500;
+/**
+ * Verification budget per question, sized for the whole chain.
+ *
+ * This request is app → API → verifier, so it can be waiting on **two** cold
+ * starts, not one. Measured 2026-09-03 on Cloud Run after ~45 min idle: the
+ * API takes 5.97s to boot (it runs the assessment seed before listening) and
+ * the verifier 4.59s — about 10.5s worst case, against 0.24s and 0.60s once
+ * both are warm.
+ *
+ * 15s covers that. It reads alarming next to the old 2500, but nothing waits
+ * on it: verification runs *after* the paper is on screen, so this only
+ * decides whether a badge appears a few seconds late or never appears at all.
+ * Class prep stays responsive either way — the paper is already there.
+ *
+ * `warmUpVerifier` below is what usually makes this moot: it fires at login,
+ * so by the time a teacher has filled in a form both containers are awake.
+ * That mechanism was hopeless when the wake took 51s; at ~5s it wins easily.
+ */
+const VERIFY_TIMEOUT_MS = 15000;
 
 export type VerifyOutcome = {
   verifiedBy: 'symbolic' | 'bank';
@@ -40,11 +57,17 @@ const BANK: VerifyOutcome = { verifiedBy: 'bank' };
 /**
  * Wake the verifier ahead of time.
  *
- * On Render's free tier the verifier sleeps after ~15 min idle and takes
- * 30-60s to wake — far beyond VERIFY_TIMEOUT_MS. Without this, the first
- * lesson prep after an idle period silently falls back to the 'bank' label
- * and the symbolic badge never appears: an invisible failure, precisely in
- * the demo where the proof matters most.
+ * Both hosts sleep an idle verifier, so without this the first lesson prep
+ * after a quiet period silently falls back to the 'bank' label and the
+ * symbolic badge never appears — an invisible failure, precisely where the
+ * proof matters most.
+ *
+ * What changed is whether the head start is enough to matter. On Render's
+ * free tier the wake takes 30-60s (51s measured 2026-09-03), so a teacher
+ * generating within a minute of opening the app lost either way. On Cloud
+ * Run it is 4.59s, comfortably inside the time it takes to fill in a form —
+ * so this call is now the mechanism that makes verification work on the
+ * first paper, not a hopeful gesture.
  *
  * Fire-and-forget: no timeout, no error surface, no effect on the UI. It
  * simply gives the service a head start.
