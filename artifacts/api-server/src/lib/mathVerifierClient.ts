@@ -34,7 +34,26 @@ export function normaliseVerifierUrl(raw: string | undefined): string {
 }
 
 const DEFAULT_URL = normaliseVerifierUrl(process.env.MATH_VERIFIER_URL);
-const VERIFY_TIMEOUT_MS = 2_500;
+/**
+ * Budget for one API→verifier call, sized to survive a cold start.
+ *
+ * Measured 2026-09-03 against the Cloud Run verifier after ~45 min idle:
+ * **4.59s cold, 0.60s warm.** At the old 2.5s every first request after an
+ * idle period aborted before the container finished booting — the keys came
+ * back unchecked and the badges silently showed nothing, which is exactly
+ * the failure this value exists to prevent.
+ *
+ * 8s is that 4.59 plus room, not a guess. It is deliberately not higher:
+ * `verifyAnswerKeys` blocks evaluation generation, so this is time a teacher
+ * waits. The cost is bounded — the first unreachable result sets
+ * `verifierDown` and every remaining question short-circuits, so a paper pays
+ * this once, never per question.
+ *
+ * On Render (51s cold) 8s still cannot win; it only fails slower. That is
+ * accepted: the number is sized for where the service is going, and the
+ * short-circuit keeps the regression to one call.
+ */
+const VERIFY_TIMEOUT_MS = 8_000;
 
 export type VerifyResult = {
   verified: boolean;
