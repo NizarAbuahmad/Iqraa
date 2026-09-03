@@ -16,6 +16,7 @@
 import {
   getBookById,
   getLessonById,
+  getObjectiveById,
   getPickerGrades,
   getPickerSubjects,
   getUnitById,
@@ -23,7 +24,14 @@ import {
 import type { Subject } from './curriculumData.ts';
 import { getBookForLesson } from './knowledgeBase.ts';
 import type { AIRequest } from './ai/AIService.ts';
-import { buildAdaptationsDirective, getUnitPriorKnowledge, resolveGeneratorGrounding } from './kbContext.ts';
+import {
+  buildAdaptationsDirective,
+  buildGeneratorContext,
+  generatorLessonId,
+  generatorUnitId,
+  getUnitPriorKnowledge,
+  resolveGeneratorGrounding,
+} from './kbContext.ts';
 
 export type TeachingStyle = 'direct' | 'inquiry' | 'collaborative';
 
@@ -271,6 +279,47 @@ export function buildLessonPrepRequest(args: {
       includePriorReview: usePrior || undefined,
       priorKnowledge: usePrior ? unitPrior : undefined,
       priorTopicsNotes,
+    },
+  };
+}
+
+/**
+ * An 8-minute retrieval warm-up aimed at one weak objective, built on that
+ * objective's own lesson — the results dashboard's "teach the gap" button.
+ *
+ * The dashboard holds objective ids and an objective knows its lesson, so the
+ * hand-off carries the KB id rather than a title string (a title does not
+ * identify a lesson — see CLAUDE.md). The objective text is curriculum text,
+ * not something the teacher typed, so the request stays shareable.
+ *
+ * Returns `null` when the objective or its lesson is unknown, so the caller
+ * hides the button rather than generating on a guess.
+ */
+export function buildGapWarmupRequest(
+  objectiveId: string,
+  lang: 'ar' | 'en',
+): { context: LessonPrepContext; objectiveText: string; request: AIRequest } | null {
+  const objective = getObjectiveById(objectiveId);
+  const context = objective ? resolveLessonPrepContext(objective.lessonId, lang) : null;
+  if (!objective || !context) return null;
+  const objectiveText =
+    (lang === 'ar' ? objective.descriptionAr : objective.description) || objective.description;
+  return {
+    context,
+    objectiveText,
+    request: {
+      grade: context.gradeName,
+      subject: context.subjectName,
+      topic: context.topic,
+      language: lang === 'ar' ? 'arabic' : 'english',
+      activityType: 'individual',
+      duration: 8,
+      activityVariant: 'warmup',
+      objectives: objectiveText,
+      additionalContext: buildGeneratorContext(context.topic, lang),
+      unitId: generatorUnitId(context.topic, lang),
+      lessonId: generatorLessonId(context.topic, lang),
+      contextSource: 'curriculum',
     },
   };
 }

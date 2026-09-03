@@ -27,7 +27,7 @@ import {
   type QuestionType,
 } from '@/services/evaluations';
 import { summariseKeyChecks, type KeyCheckSummary } from '@/services/keyCheckSummary';
-import { isolateForeignRuns } from '@/services/mathRender';
+import { isolateForeignRuns, prettifySymPy } from '@/services/mathRender';
 import { copyToClipboard } from '@/services/share';
 import { ClassPickerSheet } from '@/components/ui/ClassPickerSheet';
 import type { TranslationKey } from '@/services/i18n';
@@ -80,7 +80,9 @@ export default function EvaluationDetailScreen() {
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
   const align = isRTL ? 'right' : 'left';
-  const { id } = useLocalSearchParams<{ id: string }>();
+  // `warnings` rides in from new.tsx, which generates and then replaces the
+  // route — the only way the create-time notes survive the redirect.
+  const { id, warnings: warningsParam } = useLocalSearchParams<{ id: string; warnings?: string }>();
 
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
   const [pickingClass, setPickingClass] = useState(false);
@@ -92,6 +94,12 @@ export default function EvaluationDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState<'generate' | 'publish' | null>(null);
+  // What the generator said while producing this paper ("2 questions removed:
+  // the verifier contradicted their key"). The questions cannot show a
+  // question that was dropped, so this is the only place the teacher hears it.
+  const [genWarnings, setGenWarnings] = useState<string[]>(
+    () => (warningsParam ?? '').split('\n').filter(Boolean),
+  );
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -118,7 +126,9 @@ export default function EvaluationDetailScreen() {
     setBusy('generate');
     setError('');
     try {
-      await generateEvaluation(id);
+      setGenWarnings([]);
+      const gen = await generateEvaluation(id);
+      setGenWarnings(gen.warnings ?? []);
       await load();
     } catch (err) {
       setError(err instanceof EvaluationError ? err.message : t('evaluationGenerateFailed'));
@@ -261,6 +271,21 @@ export default function EvaluationDetailScreen() {
         </View>
       )}
 
+      {genWarnings.length > 0 && (
+        <View style={{ paddingHorizontal: 20, paddingTop: 8 }}>
+          <View style={[styles.verifySummary, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'flex-start', gap: 8 }]}>
+            <Ionicons name="information-circle-outline" size={16} color={colors.mutedForeground} />
+            <View style={{ flex: 1, gap: 4 }}>
+              {genWarnings.map((w, i) => (
+                <Text key={i} style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: align }}>
+                  {`• ${w}`}
+                </Text>
+              ))}
+            </View>
+          </View>
+        </View>
+      )}
+
       <View style={{ padding: 20, gap: 10 }}>
         {questions.map((q, i) => (
           <View key={q.id} style={[styles.qCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -287,6 +312,13 @@ export default function EvaluationDetailScreen() {
                   {t('keyVerifiedBadge')}
                 </Text>
               </View>
+            ) : null}
+            {/* The strongest evidence there is: the verifier's own answer,
+                derived independently of the key it agreed with. */}
+            {q.verification?.verified && q.verification.computedAnswer ? (
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, marginBottom: 6, textAlign: align }}>
+                {isolateForeignRuns(t('verifiedComputed', prettifySymPy(q.verification.computedAnswer)))}
+              </Text>
             ) : null}
             <Text
               style={[

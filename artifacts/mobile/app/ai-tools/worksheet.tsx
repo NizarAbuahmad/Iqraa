@@ -31,6 +31,7 @@ import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
 import { MathParagraph } from '@/components/ui/MathParagraph';
+import { isolateForeignRuns, prettifySymPy } from '@/services/mathRender';
 import { buildWorksheetHTML, buildWorksheetSlidesHTML, formatWorksheetText } from '@/services/share';
 
 const ACCENT = '#8B5CF6';
@@ -47,6 +48,11 @@ const DIFFICULTY_MAP: Record<DifficultyLevel, Difficulty> = {
 };
 const NUM_Q_OPTIONS = [5, 8, 10, 12, 15, 20];
 const ALL_Q_TYPES: QType[] = ['multiple_choice', 'short_answer', 'fill_blank', 'true_false', 'word_problem'];
+
+type Level = 'easy' | 'medium' | 'hard';
+/** Index-aligned with DIFFICULTY_IDS, so `diffIdx` doubles as the active level tab. */
+const LEVELS: Level[] = ['easy', 'medium', 'hard'];
+type LevelEntry = { result: WorksheetOutput; outcomes: VerifyOutcome[] | null; savedId?: string };
 
 export default function WorksheetScreen() {
   const colors = useColors();
@@ -110,6 +116,13 @@ export default function WorksheetScreen() {
   const [result, setResult] = useState<WorksheetOutput | null>(null);
   /** null = not checked yet (or the check failed); [] onwards = per question. */
   const [outcomes, setOutcomes] = useState<VerifyOutcome[] | null>(null);
+  /**
+   * Set only by «ثلاثة مستويات»: the same paper at each difficulty, keyed by
+   * level. The active level lives in `result` / `outcomes` / `savedId` as
+   * usual, so save, export, present and the verify summary need no changes;
+   * this only holds the two the teacher is not looking at.
+   */
+  const [levels, setLevels] = useState<Partial<Record<Level, LevelEntry>> | null>(null);
   /** null until first generate; then whether the worksheet used a confident KB lesson. */
   const [curriculumGrounded, setCurriculumGrounded] = useState<boolean | null>(null);
   /** Title of the curriculum lesson the output was anchored to, when grounded. */
@@ -170,6 +183,41 @@ export default function WorksheetScreen() {
   const verification = summarizeVerification(outcomes ?? []);
 
   /**
+   * Same pattern as the quiz tool: verification runs after the worksheet is
+   * on screen, against a service that may be asleep or absent. The summary
+   * appears when it resolves; until then the screen makes no claim. The ref
+   * drops a result that arrives after the teacher has switched to another
+   * level — it would otherwise badge the wrong paper.
+   */
+  const verifyForRef = useRef<WorksheetOutput | null>(null);
+  const verifyKeys = (out: WorksheetOutput) => {
+    verifyForRef.current = out;
+    setOutcomes(null);
+    void (async () => {
+      const { verifyWorksheetAnswers } = await import('@/services/quizVerification');
+      const { verifyMathItem } = await import('@/services/ai/verifyMath');
+      const checked = await verifyWorksheetAnswers(out, verifyMathItem);
+      if (verifyForRef.current === out) setOutcomes(checked);
+    })().catch(() => { if (verifyForRef.current === out) setOutcomes(null); });
+  };
+
+  /** Swap the paper on screen; everything below reads `result` + `diffIdx`. */
+  const showLevel = (i: number) => {
+    if (!levels || !result || i === diffIdx) return;
+    const cur = LEVELS[diffIdx]!;
+    const next: Partial<Record<Level, LevelEntry>> = { ...levels, [cur]: { result, outcomes, savedId } };
+    const entry = next[LEVELS[i]!];
+    if (!entry) return;
+    setLevels(next);
+    setDiffIdx(i);
+    setResult(entry.result);
+    setSavedId(entry.savedId);
+    // null = never checked, or the check failed — ask again rather than show nothing.
+    if (entry.outcomes) { verifyForRef.current = entry.result; setOutcomes(entry.outcomes); }
+    else verifyKeys(entry.result);
+  };
+
+  /**
    * `regenerate` is the teacher asking for a replacement, not another copy.
    *
    * It used to be the same call: the button re-ran this function with an
@@ -178,7 +226,7 @@ export default function WorksheetScreen() {
    * paid for — free, and certain to be different — and steer a fresh
    * generation away from what is on screen when it cannot.
    */
-  const generate = async (opts?: { regenerate?: boolean }) => {
+  const generate = async (opts?: { regenerate?: boolean; levels?: boolean }) => {
     // Read before any setState clears it — this is what the teacher is
     // looking at, and what a regeneration must not hand back.
     const previous = result;
@@ -192,6 +240,10 @@ export default function WorksheetScreen() {
     const controller = new AbortController();
     abortRef.current = controller;
     setLoading(true); setResult(null); setOutcomes(null); setCurriculumGrounded(null); setGroundedLesson(null);
+    // ponytail: Regenerate inside three-level mode regenerates the active
+    // level only and drops back to a single paper. Regenerating all three at
+    // once is a `levels: true` regenerate if teachers ask for it.
+    setLevels(null);
     setSaveLabel('save');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
@@ -223,9 +275,25 @@ export default function WorksheetScreen() {
         priorKnowledge: usePrior ? unitPrior : undefined,
       };
       // Homework uses a distinct generator — not a worksheet clone.
-      const out = isHomework
-        ? await aiService.generateHomework(baseReq, { signal: controller.signal })
-        : await aiService.generateWorksheet(baseReq, { signal: controller.signal });
+      const call = (req: typeof baseReq) => isHomework
+        ? aiService.generateHomework(req, { signal: controller.signal })
+        : aiService.generateWorksheet(req, { signal: controller.signal });
+      let out: WorksheetOutput;
+      if (opts?.levels) {
+        // Difficulty is part of the server's strict cache key, so these are
+        // three independent pool slots — fanned out, not queued. One abort
+        // signal covers all three.
+        const outs = await Promise.all(LEVELS.map(d => call({ ...baseReq, difficulty: d })));
+        const entries = Object.fromEntries(
+          LEVELS.map((d, i) => [d, { result: outs[i]!, outcomes: null }]),
+        ) as Record<Level, LevelEntry>;
+        setLevels(entries);
+        setDiffIdx(0);
+        setSavedId(undefined);
+        out = entries.easy.result;
+      } else {
+        out = await call(baseReq);
+      }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setCurriculumGrounded(grounding.grounded);
       setGroundedLesson(
@@ -233,16 +301,7 @@ export default function WorksheetScreen() {
       );
       setResult(out);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
-
-      // Same pattern as the quiz tool: verification runs after the worksheet
-      // is on screen, against a service that may be asleep or absent. The
-      // summary appears when it resolves; until then the screen makes no claim.
-      setOutcomes(null);
-      void (async () => {
-        const { verifyWorksheetAnswers } = await import('@/services/quizVerification');
-        const { verifyMathItem } = await import('@/services/ai/verifyMath');
-        setOutcomes(await verifyWorksheetAnswers(out, verifyMathItem));
-      })().catch(() => setOutcomes(null));
+      verifyKeys(out);
     } catch (e) {
       // A cancel is the teacher's own doing, so it is reported as a stop, not
       // as a failure they need to diagnose or retry out of. The raw error text
@@ -261,11 +320,14 @@ export default function WorksheetScreen() {
     abortRef.current?.abort();
   };
 
+  // Three papers on one topic need three titles in موادي and in the export.
+  const levelSuffix = levels ? ` — ${diffLabels[diffIdx]}` : '';
+
   const handleSave = async () => {
     if (!result) return;
-    const title = isHomework
+    const title = (isHomework
       ? (lang === 'ar' ? `واجب منزلي: ${topic.trim()}` : `Homework: ${topic.trim()}`)
-      : (lang === 'ar' ? `ورقة عمل: ${topic.trim()}` : `Worksheet: ${topic.trim()}`);
+      : (lang === 'ar' ? `ورقة عمل: ${topic.trim()}` : `Worksheet: ${topic.trim()}`)) + levelSuffix;
     const formState = {
       gradeIdx, subjectIdx, topic: topic.trim(),
       diffIdx, numQIdx, selectedTypes: JSON.stringify(Array.from(selectedTypes)),
@@ -306,7 +368,7 @@ export default function WorksheetScreen() {
 
   const topPad = insets.top + (insets.top === 0 ? 67 : 0);
 
-  const getExportTitle = () => lang === 'ar' ? `ورقة عمل: ${topic.trim()}` : `Worksheet: ${topic.trim()}`;
+  const getExportTitle = () => (lang === 'ar' ? `ورقة عمل: ${topic.trim()}` : `Worksheet: ${topic.trim()}`) + levelSuffix;
   // Localised, like the picker above it. Taking `.name` straight off the
   // catalog put "Mathematics | Grade 10" at the top of an otherwise Arabic
   // material — the screen showed الرياضيات and the exported file disagreed.
@@ -427,6 +489,18 @@ export default function WorksheetScreen() {
         */}
         {error && !topic.trim() ? <Text style={[{ color: colors.destructive, fontSize: 13, fontFamily: 'Almarai_400Regular', marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
         <Button label={loading ? t('generating') : t('createWorksheetBtn')} onPress={() => generate()} loading={loading} disabled={!topic.trim()} fullWidth />
+        {/* The same paper at every difficulty, for a class that is not one
+            level. Costs three generations the first time a lesson is asked
+            for; every teacher after that is served from the pools. */}
+        <Button
+          label={loading ? t('generating') : t('worksheetThreeLevelsBtn')}
+          onPress={() => generate({ levels: true })}
+          loading={loading}
+          disabled={!topic.trim()}
+          variant="secondary"
+          fullWidth
+          style={{ marginTop: 8 }}
+        />
         {/*
           A greyed-out primary button with nothing next to it reads as a broken
           product rather than an unmet precondition. It says which one.
@@ -510,6 +584,24 @@ export default function WorksheetScreen() {
       {/* Result */}
       {result && (
         <View style={{ paddingHorizontal: 20 }}>
+          {levels ? (
+            <View style={[styles.levelTabs, { borderColor: ACCENT + '40', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              {diffLabels.map((label, i) => {
+                const active = i === diffIdx;
+                return (
+                  <Pressable
+                    key={label}
+                    onPress={() => showLevel(i)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: active }}
+                    style={[styles.levelTab, { backgroundColor: active ? ACCENT : 'transparent', borderRadius: colors.radius }]}
+                  >
+                    <Text style={{ color: active ? '#fff' : ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>{label}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          ) : null}
           <View style={[styles.successBanner, { backgroundColor: ACCENT + '15', borderColor: ACCENT + '30', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Ionicons name="document-text" size={18} color={ACCENT} />
             <Text style={[{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{result.title}</Text>
@@ -591,17 +683,38 @@ export default function WorksheetScreen() {
                 <Text style={[styles.akTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>{t('answerKeyTitle')}</Text>
               </View>
               <View style={[styles.akBody, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-                {result.answerKey.map(item => (
+                {result.answerKey.map(item => {
+                  // Outcomes are flat and positional; `item.num` is the same
+                  // flat position, 1-based. Symbolic only — `bank` is also the
+                  // verifier-down fallback and must not read as a per-key claim.
+                  const o = outcomes?.[item.num - 1];
+                  const proved = o?.verifiedBy === 'symbolic';
+                  return (
                   <View key={item.num} style={[styles.akRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                     <Text style={[styles.akNum, { color: ACCENT, fontFamily: 'Cairo_600SemiBold' }]}>{item.num}.</Text>
-                    <MathParagraph
-                      text={item.answer}
-                      style={{ fontSize: styles.akAnswer.fontSize, lineHeight: styles.akAnswer.lineHeight, color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }}
-                      containerStyle={{ flex: 1 }}
-                      isRTL={isRTL}
-                    />
+                    <View style={{ flex: 1 }}>
+                      <MathParagraph
+                        text={item.answer}
+                        style={{ fontSize: styles.akAnswer.fontSize, lineHeight: styles.akAnswer.lineHeight, color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }}
+                        isRTL={isRTL}
+                      />
+                      {proved ? (
+                        <View style={[styles.verifyRow, { marginTop: 2, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                          <Ionicons name="shield-checkmark" size={12} color="#10B981" />
+                          <Text style={[styles.verifyText, { fontSize: 11, color: '#10B981', textAlign: isRTL ? 'right' : 'left' }]}>
+                            {t('verifiedBySymbolic')}
+                          </Text>
+                        </View>
+                      ) : null}
+                      {proved && o?.computedAnswer ? (
+                        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, textAlign: isRTL ? 'right' : 'left' }}>
+                          {isolateForeignRuns(t('verifiedComputed', prettifySymPy(o.computedAnswer)))}
+                        </Text>
+                      ) : null}
+                    </View>
                   </View>
-                ))}
+                  );
+                })}
               </View>
             </View>
           )}
@@ -713,6 +826,8 @@ const styles = StyleSheet.create({
   checkRow: { alignItems: 'center', gap: 10, paddingVertical: 6 },
   checkbox: { width: 20, height: 20, borderRadius: 4, borderWidth: 2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   successBanner: { alignItems: 'center', gap: 10, padding: 14, borderWidth: 1, marginBottom: 12 },
+  levelTabs: { borderWidth: 1, padding: 4, gap: 4, marginBottom: 12 },
+  levelTab: { flex: 1, alignItems: 'center', paddingVertical: 8 },
   secTitle: { fontSize: 14, marginBottom: 10 },
   presentBtn: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, marginBottom: 16 },
   qCard: { padding: 14, borderWidth: 1, gap: 10, marginBottom: 8 },

@@ -206,6 +206,7 @@ export default function NewEvaluationScreen() {
         difficulty,
         titleAr: title.trim() || undefined,
       });
+      let warnings: string[] = [];
       if (mode === 'paper') {
         await setPaperQuestions(
           evaluation.id,
@@ -217,9 +218,14 @@ export default function NewEvaluationScreen() {
           })),
         );
       } else {
-        await generateEvaluation(evaluation.id);
+        warnings = (await generateEvaluation(evaluation.id)).warnings ?? [];
       }
-      router.replace({ pathname: '/evaluations/[id]', params: { id: evaluation.id } });
+      // The detail screen re-derives everything else from the questions; the
+      // generator's warnings are the one thing it cannot, so they ride along.
+      router.replace({
+        pathname: '/evaluations/[id]',
+        params: { id: evaluation.id, ...(warnings.length ? { warnings: warnings.join('\n') } : {}) },
+      });
     } catch (err) {
       if (err instanceof EvaluationError && err.code === 'no_level_scale') {
         setError(t('evaluationSetupNotReady'));
