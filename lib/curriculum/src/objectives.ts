@@ -12,16 +12,19 @@
  * builders stamp every derived outcome `'Understand'` with no skills, because
  * the source JSON has objective *text* but no cognitive classification.
  *
- * That covers Math S1, Math S2 and Financial Literacy — i.e. most of what the
- * product actually ships. Treating those as genuine 'Understand' would collapse
- * the whole competency breakdown into a single bar, so this module reports where
- * the value came from instead of hiding the difference.
+ * That covers every subject built from NCCD JSON — 502 of the 507 objectives
+ * in the catalog, i.e. essentially everything the product ships. Only five are
+ * hand-classified (`o-chem-1`, `o-chem-2`, `o-chem-s2-5`, `o-sci-1`). Treating
+ * the rest as genuine 'Understand' would collapse the whole competency
+ * breakdown into a single bar, so this module reports where the value came from
+ * instead of hiding the difference.
  *
  * Classifying the derived objectives properly (Arabic action verb → Bloom's
  * level) belongs with the generator that needs it. Until then, consumers must
  * branch on `bloomsSource` rather than assume.
  */
 import { classifyBlooms, type BloomsLevel } from './blooms.ts';
+import { isDerivedObjectiveId } from './curriculumIds.ts';
 import {
   BOOKS,
   LESSONS,
@@ -65,24 +68,19 @@ export interface CurriculumObjective extends LearningOutcome {
 }
 
 /**
- * Outcome-id prefixes emitted by the NCCD browser-catalog builders, which
- * hardcode `bloomsLevel: 'Understand'`. Kept in sync with:
- *   catalogs/g10MathSem1.ts   → `o-nccd-s1-…`
- *   catalogs/g10MathSem2.ts   → `o-nccd-…`
- *   catalogs/g10ChemSem2.ts   → `o-nccd-chem-s2-…`
- *   catalogs/g10FinlitSem1.ts → `o-finlit-s1-…`
+ * All 14 NCCD catalog builders mint their outcome ids through `objectiveId`
+ * and hardcode `bloomsLevel: 'Understand'`, so asking that function what it
+ * emits is the whole test — see `isDerivedObjectiveId`.
  *
- * A builder whose prefix is missing here silently claims `authored` for a
- * level no human ever chose. Chemistry S2 first shipped as `o-chem-s2-…`,
- * which both missed this list and collided with the hand-authored
- * `o-chem-s2-5-1`; hence the `o-nccd-` prefix on every generated id.
+ * This was a literal list of prefixes maintained here by hand, and a builder
+ * whose prefix was missing silently claimed `authored` for a level no human
+ * ever chose. It went wrong twice. Note the shape it has to get right:
+ * chemistry S2 first shipped as `o-chem-s2-…`, which collided with the
+ * hand-authored `o-chem-s2-5-1`; hence the `o-nccd-` prefix on generated ids
+ * and hence a prefix check rather than a subject check.
  */
-const DERIVED_OUTCOME_PREFIXES = ['o-nccd-', 'o-finlit-'] as const;
-
 function bloomsSourceOf(outcomeId: string): BloomsSource {
-  return DERIVED_OUTCOME_PREFIXES.some(p => outcomeId.startsWith(p))
-    ? 'defaulted'
-    : 'authored';
+  return isDerivedObjectiveId(outcomeId) ? 'defaulted' : 'authored';
 }
 
 function expand(lesson: Lesson): CurriculumObjective[] {

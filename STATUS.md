@@ -286,6 +286,52 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Unifying a regex did not unify what was inside it, 2026-09-04
+
+The 2026-08 refactor below replaced three copies of the unit-id regex with one
+`isNccdUnitId`. That fixed the copies and left the *contents* hand-maintained:
+the subject alternation inside the surviving pattern, `DERIVED_OUTCOME_PREFIXES`
+in `objectives.ts`, and the tag vocabulary in `bankTagsForParsedUnit` still
+enumerated the subjects separately. One list became one list plus two others.
+
+Physics, earth science and biology were added on 2026-09-03 to none of them:
+
+- **Grounding was off for all three.** All 15 of their units failed
+  `isNccdUnitId`, so `grounding.ts` dropped them from its unit list and resolved
+  no book passages, and `bankTagsForUnit` returned `[]`. The subjects rendered
+  fine and simply had no textbook behind them.
+- **141 of their objectives reported `bloomsSource: 'authored'`** while carrying
+  the builder's blanket `'Understand'` — a human classification that never
+  happened, feeding the competency breakdown. `DERIVED_OUTCOME_PREFIXES` had
+  already missed the Grade 9 and English vocational shapes, so 311 of 507
+  objectives were misreporting when this was measured.
+
+Both are the same failure the two content bugs on 2026-09-02/03 were: output
+that passes every check and is worthless to a reader. Nothing errored either
+time.
+
+Now one `SUBJECTS` table in `curriculumIds.ts` — a row per subject with its
+bank-tag stem and whether the bank holds unit-level material. `SubjectSlug` is
+`keyof typeof` it, `UNIT_ID_RE` is built from its keys, and
+`isDerivedObjectiveId` asks `objectiveId` what it emits instead of restating it.
+Adding a subject is one row the compiler demands.
+
+No existing tag moved: maths bare (`s1-u2`), chemistry prefixed
+(`chem-s1-u2`), financial literacy and the English tracks semester-only. The
+three sciences emit their real manifest stems — `phys-s1`, `bio-s1`, `earth-s1`,
+abbreviations of the slug rather than the slug — and resolve 3 documents each.
+
+**Note what let it through.** Both guards started from the thing under test.
+`bankTagsForUnit`'s loop iterated `UNITS.filter(isNccdUnitId)`, so a subject the
+predicate did not know about was filtered out before the assertion could see it;
+`objectives.test.ts` listed scopes by hand. The new unit-id test matches on the
+id's *shape* independently and asserts the predicate agrees. A test that selects
+its cases with the code it is checking can only confirm what that code already
+believes.
+
+`lib/curriculum` 96/96, mobile 1131/1131, `verify-curriculum` 17 files / 155
+lessons / 0 errors.
+
 ## Cloud Run answers the cold-start question: ~1-3s, not 51s, 2026-09-03
 
 Both Render services sleep on the free plan. The verifier waking from sleep
