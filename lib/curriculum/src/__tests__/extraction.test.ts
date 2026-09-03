@@ -109,14 +109,29 @@ describe('extracted text', () => {
     // 0.32; the reversed-glyph and broken-cmap files this same run's quality
     // gate now rejects before they reach disk measured 0.00-0.12. 0.2 sits in
     // the gap with margin on both sides, not picked to just barely pass today.
+    // The English books added on 2026-09-03 broke the premise above: they are
+    // genuinely English, so an Arabic floor would fail them for being exactly
+    // what they are. Exempting them outright would leave their extractions
+    // unchecked, which loses the point of the test — so the same question is
+    // asked of the alphabet each source is actually written in. Measured
+    // across every extraction on disk: English sources are 74.0% and 74.3%
+    // Latin, while the highest Latin density among Arabic-language documents
+    // is 15.1% (`chem-ws-planck-almasri`, a worksheet dense with formula
+    // symbols). 0.4 sits in that gap the same way 0.2 sits in the Arabic one.
     const ARABIC = /[؀-ۿ]/g;
+    const LATIN = /[A-Za-z]/g;
+    const subjectOf = new Map(G10_SOURCES.map(s => [s.id, s.subject]));
     const failures: string[] = [];
     for (const f of files) {
       const doc = load(f);
-      const arabicChars = doc.text.reduce((n, p) => n + (p.text.match(ARABIC) ?? []).length, 0);
-      const ratio = doc.chars > 0 ? arabicChars / doc.chars : 0;
-      if (ratio <= 0.2) {
-        failures.push(`${doc.sourceId}: only ${(ratio * 100).toFixed(1)}% of extracted characters are Arabic`);
+      const isEnglish = subjectOf.get(doc.sourceId) === 'english';
+      const script = isEnglish ? LATIN : ARABIC;
+      const floor = isEnglish ? 0.4 : 0.2;
+      const label = isEnglish ? 'Latin' : 'Arabic';
+      const scriptChars = doc.text.reduce((n, p) => n + (p.text.match(script) ?? []).length, 0);
+      const ratio = doc.chars > 0 ? scriptChars / doc.chars : 0;
+      if (ratio <= floor) {
+        failures.push(`${doc.sourceId}: only ${(ratio * 100).toFixed(1)}% of extracted characters are ${label}`);
       }
     }
     // Every file is checked before asserting — a loop that throws on the

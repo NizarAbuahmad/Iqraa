@@ -159,4 +159,8 @@ export const LOCAL_FILES: Record<string, string> = {
   'islamic-s2-student-book': 'knowledge-base/grade-10-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف العاشر الفصل الثاني.pdf',
   'history-s1-student-book': 'knowledge-base/grade-10-history/support-pdfs/كتاب الطالب لمادة التاريخ للصف العاشر الفصل الأول.pdf',
   'history-s2-student-book': 'knowledge-base/grade-10-history/support-pdfs/كتاب الطالب لمادة التاريخ للصف العاشر الفصل الثاني.pdf',
+  'eng-s1-student-book': 'knowledge-base/grade-10-english/support-pdfs/كتاب الطالب لمادة اللغة الإنجليزية الصف العاشر الفصل الأول.pdf',
+  'eng-s1-activity-book': 'knowledge-base/grade-10-english/support-pdfs/كتاب الأنشطة لمادة اللغة الإنجليزية للصف العاشر الفصل الأول.pdf',
+  'eng-s2-student-book': 'knowledge-base/grade-10-english/support-pdfs/كتاب الطالب لمادة اللغة الإنجليزية الصف العاشر الفصل الثاني.pdf',
+  'eng-s2-activity-book': 'knowledge-base/grade-10-english/support-pdfs/كتاب الأنشطة لمادة اللغة الإنجليزية للصف العاشر الفصل الثاني.pdf',
 };
