@@ -48,9 +48,10 @@ Vision screens (student/parent/school dashboards) are deprioritized.
   per-item badge — `bank` is also the verifier-down fallback and stays on the
   aggregate row. Verified by typecheck and the existing verification suites;
   the rendering itself is not machine-tested (no screen tests exist).
-  **In production it currently shows nothing**: the API cannot reach the
-  verifier (2026-09-03, see the hosted-services section above), so every key
-  degrades to the reviewed-bank label. The UI is correct; the wiring is not.
+  It was dark in production for a few hours after that merge, then fixed the
+  same day: `MATH_VERIFIER_URL` on `iqraa-api` now holds the public URL and
+  `/api/healthz/verifier` answers `{"verifier":"ok","selfTest":"pass"}` in
+  0.8s. See the hosted-services section above.
 - `pnpm install` and full `pnpm run typecheck` pass clean (checked on Windows
   2026-08-06 and on Linux 2026-08-10).
   - **Without a complete `pnpm install`, `typecheck` reports 79 errors** and
@@ -255,8 +256,10 @@ Vision screens (student/parent/school dashboards) are deprioritized.
       has no private network to route. **The blueprint now hardcodes the public
       URL**, which closes the trap in the repo — but Render still has to pick
       the change up (re-sync the Blueprint, or set `MATH_VERIFIER_URL` on
-      `iqraa-api` by hand). Until it does, every verification badge shipped on
-      2026-09-03 renders nothing in production.
+      `iqraa-api` by hand). **Done the same day** — the dashboard value was
+      set to the public URL and `/api/healthz/verifier` went from 503
+      `unreachable` to `{"verifier":"ok","selfTest":"pass"}` in 0.8s, so the
+      badges shipped on 2026-09-03 are live.
     - **Why it was broken, and why the diagnosis took three days.** The
       blueprint sets `MATH_VERIFIER_URL` via `fromService … property: hostport`,
       which yields Render's *internal* address `iqraa-verifier:10000`, and
@@ -312,6 +315,19 @@ re-synced or set by hand before any of this reaches a teacher. Until then the
 badges merged earlier today render nothing — correctly, and silently, because
 an unreachable verifier degrades to the reviewed-bank label rather than
 claiming anything.
+
+**Fixed the same day, 2026-09-03.** `MATH_VERIFIER_URL` on `iqraa-api` was
+set by hand to `https://iqraa-verifier.onrender.com` in the Render dashboard,
+and the blueprint change landed on main in PR #225, so a future re-sync writes
+the same value rather than restoring the trap. Confirmed after the redeploy:
+`GET /api/healthz/verifier` → `{"verifier":"ok","selfTest":"pass"}` in 0.8s.
+`selfTest` is the part that matters — the API sent a real derivative and got
+the right answer back, so this is the whole chain, not just a socket opening.
+
+**Still unproven:** whether a real generated paper comes back with
+`keysChecked > 0`. Reachability is necessary, not sufficient; that number
+still needs one live generation on a funded key to settle, exactly as the
+2026-08-29 entry said.
 
 **Worth deciding separately: the cold start.** The verifier sleeps on the free
 plan and took 51 seconds to wake, against a 2.5s client timeout
