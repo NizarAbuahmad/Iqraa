@@ -65,6 +65,7 @@ export const BANK_SUBJECT_IDS: Record<CurriculumSource['subject'], string> = {
   'earth-science': 'earth-science',
   arabic: 'arabic',
   islamic: 'islamic',
+  history: 'history',
 };
 
 export function appSubjectId(subject: CurriculumSource['subject']): string {
@@ -320,6 +321,7 @@ const SUBJECT_LABEL_AR: Record<CurriculumSource['subject'], string> = {
   'earth-science': 'علوم الأرض والبيئة',
   arabic: 'اللغة العربية',
   islamic: 'التربية الإسلامية',
+  history: 'التاريخ',
 };
 
 const SUBJECT_LABEL_EN: Record<CurriculumSource['subject'], string> = {
@@ -331,6 +333,7 @@ const SUBJECT_LABEL_EN: Record<CurriculumSource['subject'], string> = {
   'earth-science': 'Earth and environmental science',
   arabic: 'Arabic',
   islamic: 'Islamic Studies',
+  history: 'History',
 };
 
 /**
