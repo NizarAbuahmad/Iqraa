@@ -78,12 +78,25 @@ services:
       - key: GOOGLE_CLIENT_ID
         sync: false
       # Points the API's mathVerifierClient at the deployed verifier below.
-      # fromService keeps the URL correct even if Render suffixes the name.
+      #
+      # A literal public URL, not `fromService ... property: hostport`. That
+      # property yields Render's *internal* address (`iqraa-verifier:10000`),
+      # and the free plan has no private network to route it on — so every
+      # verify call the API made died as `client_error:fetch failed` while the
+      # verifier itself sat there healthy, answering /healthz with all eight
+      # topics. Confirmed live on 2026-09-03: `/api/healthz/verifier` returned
+      # 503 "unreachable" against a verifier that was up and doing maths.
+      #
+      # The failure is silent by design — an unreachable verifier degrades to
+      # the reviewed-bank label rather than making a claim — so nothing
+      # surfaced it except that no generated key ever earned a badge.
+      #
+      # Hardcoding the hostname is the cost, and it is the smaller one: if the
+      # service is renamed this must move with it, but a name that is wrong is
+      # loud where an address that cannot be routed is not.
+      # `normaliseVerifierUrl` passes a value with a scheme through untouched.
       - key: MATH_VERIFIER_URL
-        fromService:
-          type: web
-          name: iqraa-verifier
-          property: hostport
+        value: https://iqraa-verifier.onrender.com
 
   - type: web
     name: iqraa-verifier
