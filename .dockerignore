@@ -1,0 +1,26 @@
+# For the root Dockerfile (iqraa-api). Cloud Build uploads whatever survives
+# this as the build context, so the big irrelevant directories go first —
+# without them this context was 3.5GB.
+node_modules
+**/node_modules
+.git
+dist
+**/dist
+.expo
+**/.expo
+
+# 1.2GB of source PDFs/media the API build never reads — the build only
+# copies lib/curriculum/src/data/extracted (see build.mjs), not this.
+knowledge-base
+# 246MB, teacher-uploaded assets awaiting ingestion — same story.
+attached_assets
+
+# Python service's own venv/cache — irrelevant to the Node build, and 117MB.
+artifacts/math-verifier/.venv
+artifacts/math-verifier/__pycache__
+**/__pycache__
+
+# ponytail: this list covers what's actually big (confirmed with `du -sh`),
+# not a guess at everything unused. If the context is still slow to upload,
+# trim further (docs/, cqv-reports/, artifacts/mobile source) once that's
+# an observed problem, not a preemptive one.
