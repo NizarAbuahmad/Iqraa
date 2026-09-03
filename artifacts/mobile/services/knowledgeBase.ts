@@ -47,6 +47,9 @@ import {
   buildPhysSem1Catalog,
 } from './curriculumG10PhysSem1.ts';
 import {
+  buildPhysSem2Catalog,
+} from './curriculumG10PhysSem2.ts';
+import {
   CHEM_S2_BOOK_ID,
   buildChemSem2Catalog,
 } from './curriculumG10ChemSem2.ts';
@@ -122,6 +125,15 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Physics – Grade 10 – Semester 1',
     semester: 1,
     source: 'كتاب الطالب لمادة الفيزياء للصف العاشر الفصل الأول.pdf',
+  },
+  {
+    id: 'kb-phys-10-s2',
+    gradeId: 'grade-10',
+    subjectId: 'physics',
+    titleAr: 'الفيزياء – الصف العاشر – الفصل الثاني',
+    titleEn: 'Physics – Grade 10 – Semester 2',
+    semester: 2,
+    source: 'كتاب الطالب لمادة الفيزياء للصف العاشر الفصل الثاني.pdf',
   },
   {
     id: 'kb-chem-10-s1',
@@ -1166,6 +1178,7 @@ const _nccdSem1 = buildNccdSem1Catalog();
 const _nccdSem2 = buildNccdSem2Catalog();
 const _chemSem1 = buildChemSem1Catalog();
 const _physSem1 = buildPhysSem1Catalog();
+const _physSem2 = buildPhysSem2Catalog();
 const _chemSem2 = buildChemSem2Catalog();
 const _finlitSem1 = buildFinlitSem1Catalog();
 const _g9MathSem1 = buildG9MathSem1Catalog();
@@ -1293,6 +1306,7 @@ export const KB_UNITS: KBUnit[] = [
   ),
   ..._chemSem1.units,
   ..._physSem1.units,
+  ..._physSem2.units,
   ..._chemSem2.units,
   ..._finlitSem1.units,
   ..._nccdSem1.units,
@@ -1320,6 +1334,7 @@ export const KB_LESSONS: KBLesson[] = [
   // Physics has no hand-authored rows to enrich from either — it arrived
   // with the 2026-09-03 intake and never had a hardcoded predecessor.
   ..._physSem1.lessons,
+  ..._physSem2.lessons,
   ..._g9MathSem1.lessons,
   ..._g9MathSem2.lessons,
   // No hand-authored rows exist for English either — these carry only what
