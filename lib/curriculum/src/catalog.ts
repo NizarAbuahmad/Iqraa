@@ -23,6 +23,10 @@ import {
   PHYS_S1_CURRICULUM_BOOK_ID,
 } from './catalogs/g10PhysSem1.ts';
 import {
+  buildPhysSem2BrowserCatalog,
+  PHYS_S2_CURRICULUM_BOOK_ID,
+} from './catalogs/g10PhysSem2.ts';
+import {
   CHEM_S2_CURRICULUM_BOOK_ID,
   buildChemSem2BrowserCatalog,
 } from './catalogs/g10ChemSem2.ts';
@@ -216,6 +220,7 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // curriculum behind it. Appended, never inserted: these positions are
   // persisted in formState and route URLs (see CLAUDE.md on picker order).
   PHYS_S1_CURRICULUM_BOOK_ID,
+  PHYS_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -408,6 +413,19 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+  },
+  {
+    id: PHYS_S2_CURRICULUM_BOOK_ID,
+    title: 'Physics – Grade 10, Semester 2',
+    titleAr: 'الفيزياء – الصف العاشر – الفصل الثاني',
+    subjectId: 'physics',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
   },
   // ── Financial Literacy Grade 10 – Semester 1 ───────────────────────────────
   {
@@ -1408,6 +1426,7 @@ const _nccdSem2Browser = buildNccdSem2BrowserCatalog();
 const _finlitSem1Browser = buildFinlitSem1BrowserCatalog();
 const _chemSem1Browser = buildChemSem1BrowserCatalog();
 const _physSem1Browser = buildPhysSem1BrowserCatalog();
+const _physSem2Browser = buildPhysSem2BrowserCatalog();
 const _chemSem2Browser = buildChemSem2BrowserCatalog();
 const _g9MathSem1Browser = buildG9MathSem1BrowserCatalog();
 const _g9MathSem2Browser = buildG9MathSem2BrowserCatalog();
@@ -1525,6 +1544,7 @@ export const UNITS: Unit[] = [
   ..._HARDCODED_UNITS.filter(u => !_legacyBookIds.has(u.bookId)),
   ..._chemSem1Browser.units,
   ..._physSem1Browser.units,
+  ..._physSem2Browser.units,
   ..._chemSem2Browser.units,
   ..._nccdSem1Browser.units,
   ..._nccdSem2Browser.units,
@@ -1542,6 +1562,7 @@ export const LESSONS: Lesson[] = [
   ..._HARDCODED_LESSONS.filter(l => !_legacyUnitIds.has(l.unitId)),
   ..._chemSem1Merged.lessons,
   ..._physSem1Browser.lessons,
+  ..._physSem2Browser.lessons,
   ..._chemSem2Merged.lessons,
   ..._nccdSem1Browser.lessons,
   ..._nccdSem2Browser.lessons,
