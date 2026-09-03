@@ -300,8 +300,9 @@ for less.
 
 | | Render free | Cloud Run |
 | --- | --- | --- |
-| Verifier cold start | 51s | ~1-3s |
-| Verifier warm | 0.39s | 0.21s |
+| Verifier cold start | 51s | 4.59s |
+| API cold start | not measured | 5.97s |
+| Verifier warm | 0.39s | 0.21-0.60s |
 | Cost at ~500 teachers | $14/mo (paid tier) | likely $0 (free tier: 2M req, 180k vCPU-s/mo) |
 
 Verified live: `GET /api/healthz` ok, `/api/healthz/ai-budget` reads the shared
@@ -309,15 +310,16 @@ Neon database (same `spentUsd` as Render, so both point at one database),
 `/api/healthz/verifier` returns `{"verifier":"ok","selfTest":"pass"}`, and a
 real `POST /verify/derivative` returns `{"verified":true,"computed_answer":"2*x"}`.
 
-**The 1.1s figure is not a clean cold start, and the distinction matters.** An
-earlier health check had already woken the container — it timed out at the
-API's 2.5s limit, but the verifier kept booting anyway, so the request 30s
-later hit a warming instance. What is certain: a genuinely cold verifier
-exceeded 2.5s, and shortly after took 1.1s. So the real cold start is low
-single-digit seconds — categorically different from 51, but possibly still
-over the client timeout. **That now makes `VERIFY_TIMEOUT_MS` worth raising**
-(2.5s to ~8s in `mathVerifierClient.ts`): against 51 seconds that knob was
-useless, against ~3 it closes the gap entirely. Not done.
+**Measured cleanly a few hours later, and the earlier caveat resolved against
+us.** The 1.1s first reported was not a cold start — a health check had
+already woken the container. Left genuinely idle ~45 minutes, the real
+figures are **4.59s for the verifier** (0.60s warm) and **5.97s for the API**
+(0.24s warm); the API is slower because it runs the assessment seed before it
+listens. So a cold verifier does exceed the old 2.5s timeout, every time —
+which means that timeout was aborting every first verification after an idle
+period, exactly as suspected. **Fixed:** 8s server-side, 15s client-side,
+the latter because that request is app to API to verifier and can be waiting
+on two cold starts (~10.5s worst case) — PR #235.
 
 **Nothing is switched over.** Render still serves the live app, untouched.
 `EXPO_PUBLIC_API_BASE_URL` in `render.yaml` still points `iqraa-web` at
