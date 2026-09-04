@@ -286,6 +286,46 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The extraction reversed a ligature and retrieval lost 90% of its pages, 2026-09-04
+
+Checking that the grounding the entry below switched on actually serves
+readable text. It does — physics, earth science and biology return four
+passages per unit of real Arabic. But every document carries a defect nothing
+was repairing.
+
+`repairExtractionArtifacts` undoes the reversed lam-alef ligature for the bare
+form («االقتران» → «الاقتران») and did nothing for the three hamza-carrying
+ones. «الألوان» is stored as «األلوان» — `U+0627 U+0623 U+0644` where the book
+prints `U+0627 U+0644 U+0623`. 26,626 occurrences across 1.4M words, all 69
+extracted documents, about one word in seventy.
+
+**Retrieval was losing most pages for ordinary words.** Pages matched, before →
+after: «الإنسان» 31 → 314, «الأرض» 37 → 297, «الآلة» 52 → 151, «الأعداد» 28 →
+118. A correctly-spelled Arabic query could not see roughly 90% of the corpus
+containing it, and this had been true of maths and chemistry since grounding
+first shipped.
+
+The rule needs no dictionary, which is what separates it from the
+transposition class that remains unfixable here: an alef followed by a
+hamza-carrying alef is not a sequence Arabic orthography produces, so it cannot
+misfire on a real word the way a bare «ال» rule would. «ألوان» and «ألف» begin
+with the exact pair being swapped and are pinned untouched. Mid-word reversals
+with no alef before them — «ملاءمة» stored as «مالءمة» — are still left alone,
+because telling that «ال» from a definite article does need a dictionary.
+
+`Passage.text` now carries the repair instead of raw text. Its one consumer is
+`grounding.ts`, whose prompt says «استند إلى النص أعلاه في الصياغة والأمثلة
+والمصطلحات» — so serving it raw was inviting the model to reproduce «األلوان»
+in front of a teacher. Not a fidelity loss: the PDF page the citation points at
+prints the word correctly, and the defect is in its text layer. The repair
+still has no business in the grading path and stays out of it.
+
+**Verified in the code points, not the rendering.** RTL text in a terminal
+reorders glyphs, so a visual check would have looked identical whether the
+bytes were right or wrong.
+
+`lib/curriculum` 98/98, mobile 1131/1131, `verify-curriculum` 0 errors.
+
 ## Unifying a regex did not unify what was inside it, 2026-09-04
 
 The 2026-08 refactor below replaced three copies of the unit-id regex with one
