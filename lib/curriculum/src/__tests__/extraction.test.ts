@@ -73,6 +73,23 @@ describe('extracted text', () => {
     }
   });
 
+  it('has not regenerated an extraction that was blocked on purpose', () => {
+    // The guard that was missing. `extract-text.ts` decided what to do by
+    // whether the output file existed, so purging a corrupt extraction made it
+    // look un-extracted and the next run wrote it straight back: the scrambled
+    // financial-literacy text removed on 2026-09-03 was on disk again on
+    // 2026-09-04, serving teachers, with nothing red. The quality gate cannot
+    // catch these — both blocked files passed it — so the judgement is recorded
+    // on the manifest and this asserts the record is honoured.
+    const onDisk = new Set(files.map(f => load(f).sourceId));
+    const blocked = G10_SOURCES.filter(s => s.extractionBlocked);
+    assert.ok(blocked.length > 0, 'nothing is blocked — has the field been dropped?');
+    for (const s of blocked) {
+      assert.ok(!onDisk.has(s.id), `${s.id} is blocked but has an extraction on disk: ${s.extractionBlocked}`);
+      assert.ok(!s.extraction, `${s.id} is blocked but the manifest claims an extraction`);
+    }
+  });
+
   it('is internally consistent', () => {
     for (const f of files) {
       const doc = load(f);
