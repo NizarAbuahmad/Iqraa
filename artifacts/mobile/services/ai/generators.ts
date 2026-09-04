@@ -8,6 +8,7 @@ import type {
 } from './AIService.ts';
 import type { KBLesson } from '../knowledgeBase.ts';
 import { getUnitForLesson, resolveGroundedKbLesson } from '../knowledgeBase.ts';
+import { figuresForLesson } from '../bookFigures.ts';
 import {
   parseDocumentGrounding,
   type DocumentGrounding,
@@ -175,9 +176,32 @@ function lpObjectivesAr(topic: string, kb: KBLesson | null, custom?: string): st
     `أن يحل الطالب مسائل متنوعة حول ${topic} بخطوات منهجية`,
   ];
 }
+/**
+ * What the plan may tell a teacher to put on the screen.
+ *
+ * These generators used to say «اعرض صورة ذات صلة» / "Show a visual related
+ * to X" unconditionally — an instruction to go and find a picture the app
+ * never supplied, in the one section a teacher reads while the class is
+ * already sitting down. It is the demo path's version of the same defect the
+ * figure rule fixes on the live path: promising a visual that does not exist.
+ *
+ * It exists now, for the lessons that have one. The deck puts the book's own
+ * figures on their own slides and the export prints them in the «من الكتاب
+ * المدرسي» appendix, so the instruction can name that instead of sending the
+ * teacher looking. Where there are no figures — most subjects; only both
+ * maths, both chemistry and financial literacy have any — it returns '' and
+ * the sentence is simply left out rather than asking for something nobody has.
+ */
+function bookFigureCue(kb: KBLesson | null, lang: Lang): string {
+  if (!kb?.id || figuresForLesson(kb.id).length === 0) return '';
+  return lang === 'ar'
+    ? ' اعرض شكل الكتاب المدرسي في شريحة «من كتاب الطالب» وناقش ما يراه الطلاب فيه.'
+    : " Show the student-book figure on the “From the Student Book” slide and discuss what students notice in it.";
+}
+
 function lpIntroAr(topic: string, kb: KBLesson | null): string {
   if (kb) return pick([
-    `ابدأ بطرح السؤال: "أين نلتقي بـ${topic} في حياتنا اليومية؟" سجّل إجابات الطلاب على السبورة. اعرض صورة ذات صلة بـ${kb.titleAr} وناقش ما يرونه ثم ربط إجاباتهم بأهداف الدرس.`,
+    `ابدأ بطرح السؤال: "أين نلتقي بـ${topic} في حياتنا اليومية؟" سجّل إجابات الطلاب على السبورة.${bookFigureCue(kb, 'ar')} ثم اربط إجاباتهم بأهداف الدرس.`,
     `لعبة "ما أعرفه / ما أريد تعلّمه": يكتب الطلاب على ورقة ما يعرفونه عن ${kb.titleAr} (دقيقتان). تُشارك بعض الإجابات ثم يُحدد المعلم ما سنكتشفه معًا.`,
     `"التنبؤ والاستكشاف": اعرض موقفًا حياتيًا مرتبطًا بـ${topic} واطلب من الطلاب التنبؤ بالتفسير. استخدم تنبؤاتهم كنقطة انطلاق لأهداف الدرس.`,
   ]);
@@ -215,7 +239,7 @@ function lpObjectivesEn(topic: string, kb: KBLesson | null, custom?: string): st
 }
 function lpIntroEn(topic: string, kb: KBLesson | null): string {
   if (kb) return pick([
-    `Open with: "Where do we encounter ${topic} in everyday life?" Record 3-4 student responses on the board. Show a visual related to ${kb.titleEn} and bridge to today's objectives.`,
+    `Open with: "Where do we encounter ${topic} in everyday life?" Record 3-4 student responses on the board.${bookFigureCue(kb, 'en')} Then bridge to today's objectives.`,
     `"Know / Want to Know" activity: Students write what they already know about ${kb.titleEn} (2 min). Share responses, then identify what we'll discover together.`,
     `"Predict & Explore": Present a real-world scenario related to ${topic}. Ask students to predict the explanation. Use their predictions to motivate the lesson.`,
   ]);

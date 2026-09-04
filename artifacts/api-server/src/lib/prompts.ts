@@ -42,6 +42,82 @@ Write equations with latin x and y — correct example: "The graph shows the lin
 If you want a question with no equations, write it with no reference to a figure.`;
 
 /**
+ * What the model may say about the book's OWN figures, and only when there
+ * are some.
+ *
+ * The rule above was written for coordinate graphs the app plots from
+ * equations, but it was phrased as "a graph OR figure" and so also banned
+ * «في الشكل المجاور» — the sentence the ministry's own books use for every
+ * circle-geometry, vector, solid-geometry and apparatus question. That put
+ * an entire class of question out of scope on a technicality, at the same
+ * time as 648 crops of those very figures were being printed in the export
+ * appendix and the on-screen panel with nobody allowed to refer to them.
+ *
+ * Conditional because the appendix is only real for four subjects. Grade-10
+ * maths, grade-9 maths, chemistry and financial literacy have extracted
+ * figures; physics, biology, Arabic, English and the rest have none, and
+ * there letting the model write «انظر الشكل المجاور» would produce exactly
+ * the empty-reference bug the graph rule exists to prevent — in a new place.
+ * So the caller says whether this lesson actually has figures, and the clause
+ * is absent when it does not. Fail closed: an absent flag is read as "no
+ * figures", so a caller that forgets gets the old, stricter behaviour.
+ *
+ * "Do not number them" is load-bearing. The appendix is lesson-level and
+ * ordered by page, never per question — the model cannot see these images, so
+ * «الشكل ٣» would be a citation it invented. `exportHtml.ts`'s
+ * `figuresSectionHTML` documents the same reasoning from the other side.
+ */
+const BOOK_FIGURE_RULE_AR = `استثناء على قاعدة الرسوم أعلاه — أشكال الكتاب المدرسي: يحتوي هذا الدرس تحديدًا على أشكال ثابتة مأخوذة من كتاب الطالب (دائرة وأوتارها، جهاز مختبر، مجسّم، مخطط فِن…)، تُطبع مع الورقة في ملحق «من الكتاب المدرسي» وتظهر للمعلّم على الشاشة.
+لذلك يجوز لك هنا أن تكتب سؤالًا يقول «في الشكل المجاور» أو «انظر الشكل» كما يكتبه الكتاب نفسه، دون ذكر معادلات. تبقى قاعدة الرسوم البيانية كما هي: أي منحنى يرسمه التطبيق يحتاج معادلته بالحرفين x و y.
+ولا ترقّم الأشكال ولا تصفها ولا تدّعِ ما فيها («الشكل ٣»، «الشكل الذي يظهر مثلثًا قائمًا») — فأنت لا ترى هذه الصور، والمعلّم هو من يطابقها بعينه.`;
+
+const BOOK_FIGURE_RULE_EN = `Exception to the figure rule above — student-book figures: this particular lesson has static figures taken from the student book (a circle with its chords, lab apparatus, a solid, a Venn diagram…). They are printed with the paper in a "From the Student Book" appendix and shown to the teacher on screen.
+So here you may write a question that says "in the figure opposite" or "see the figure", exactly as the book itself writes them, without stating any equations. The graph rule is unchanged: any curve the app has to plot still needs its equation in latin x and y.
+Do not number the figures, describe them, or claim what they contain ("Figure 3", "the figure showing a right triangle") — you cannot see these images; the teacher matches them by eye.`;
+
+/**
+ * The one rule in this file that asks for a visual rather than forbidding one.
+ *
+ * Until it was added, every mention of a picture in the whole prompt layer was
+ * a prohibition, and the product's complaint was that generated material came
+ * out as walls of text. The reason it stayed that way is sound — the model
+ * cannot draw, and the app refuses to invent a picture — but the conclusion
+ * drawn from it was too strong. Two of the app's three visual paths are fed
+ * *by the model's prose*, and neither was ever asked for:
+ *
+ * - `extractGraphCommands` (`classMedia.ts`) turns latin equations in the text
+ *   into a plotted curve. The figure rule above mentions this only as a
+ *   constraint on questions that already reference a graph.
+ * - `extractChartData` / `chartForLesson` (`deckVisuals.ts`) turns labelled
+ *   quantities in the prose into a bar or pie chart. Nothing anywhere ever
+ *   told the model that writing «الترفيه ٢٠٪، الادخار ٣٠٪، الطعام ٥٠٪» is what
+ *   produces a chart, so financial-literacy and statistics decks — the ones
+ *   that path exists for — almost never got one.
+ *
+ * Deliberately concrete about the format each miner needs, because both fail
+ * closed: `extractChartData` refuses anything under three self-labelled values
+ * (a mean-and-median exercise is a list of bare numbers, not a dataset), and a
+ * near-miss silently yields no chart rather than a wrong one. A vague "use
+ * visuals where helpful" would change nothing measurable.
+ *
+ * It asks for tables and worked structure too. Those are not charts, but they
+ * are the difference between a wall of prose and something a teacher can
+ * project — and unlike a `visual` field, they need no renderer that does not
+ * already exist.
+ */
+const VISUAL_RULE_AR = `اجعل المحتوى قابلًا للعرض لا كتلةً من النثر:
+• إن كان في الدرس بيانات مسمّاة (نسب، حصص، تكرارات) فاذكرها صراحةً بصيغة «الاسم: العدد» وبثلاثة بنود على الأقل — عندها يرسمها التطبيق تلقائيًا مخططًا بيانيًا. مثال: «توزيع المصروف: الطعام 50، الادخار 30، الترفيه 20».
+• إن كان في الدرس اقتران أو علاقة يمكن رسمها، فاذكر معادلتها بالحرفين اللاتينيين x و y في النص — عندها يرسم التطبيق منحناها.
+• استعمل المقارنات على هيئة جدول (صف لكل حالة) بدل فقرة تسرد الفروق.
+• قسّم الشرح إلى خطوات مرقّمة قصيرة بدل فقرة واحدة طويلة.`;
+
+const VISUAL_RULE_EN = `Make the content projectable rather than a wall of prose:
+• If the lesson carries labelled data (percentages, shares, frequencies), state it explicitly as "label: number" with at least three items — the app then draws it as a chart automatically. Example: "Monthly budget: food 50, savings 30, leisure 20".
+• If the lesson carries a function or relation that can be drawn, state its equation in the text using latin x and y — the app then plots the curve.
+• Use a table for comparisons (one row per case) instead of a paragraph listing differences.
+• Break explanations into short numbered steps rather than one long paragraph.`;
+
+/**
  * Generic across every subject and grade on purpose: the book-fidelity gap
  * CLAUDE.md records for math ("قانون الجيوب" resolving to a different lesson
  * than "قانون جيب التمام") is a terminology problem, not a math-specific one —
@@ -61,7 +137,9 @@ export const SYSTEM_AR = `أنت مولّد محتوى تعليمي متخصص �
 
 ${STYLE_RULE_AR}
 
-${FIGURE_RULE_AR}`;
+${FIGURE_RULE_AR}
+
+${VISUAL_RULE_AR}`;
 
 export const SYSTEM_EN = `You are an educational content generator specialized in the Jordanian curriculum.
 Produce professional, accurate content suitable for teachers.
@@ -70,7 +148,31 @@ Use clear academic English throughout.
 
 ${STYLE_RULE_EN}
 
-${FIGURE_RULE_EN}`;
+${FIGURE_RULE_EN}
+
+${VISUAL_RULE_EN}`;
+
+/**
+ * The system prompt for one request.
+ *
+ * `SYSTEM_AR` / `SYSTEM_EN` remain the base and are still exported: the
+ * provider-eval script and the prompt tests read them directly, and comparing
+ * models against a prompt assembled for the comparison would measure the
+ * wrong thing (see this file's header).
+ *
+ * The only thing this adds is the book-figure permission, and only when the
+ * caller says the lesson has figures. Read as `false` when absent, so a route
+ * or a caller that forgets the flag gets the stricter prompt rather than
+ * permission to cite pictures that will not be printed.
+ */
+export function systemPrompt(
+  isAr: boolean,
+  opts?: { hasBookFigures?: boolean },
+): string {
+  const base = isAr ? SYSTEM_AR : SYSTEM_EN;
+  if (!opts?.hasBookFigures) return base;
+  return `${base}\n\n${isAr ? BOOK_FIGURE_RULE_AR : BOOK_FIGURE_RULE_EN}`;
+}
 
 // ─── Teaching style ──────────────────────────────────────────────────────────
 /**

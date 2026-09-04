@@ -25,6 +25,7 @@ import { activityTypeLabel } from '@/constants/activityType';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { normalizeQuestionOptions, optionLetter } from '@/services/optionLabels';
 import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
+import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { resolveGeneratorGrounding } from '@/services/kbContext';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
@@ -145,7 +146,7 @@ export default function WorkspaceViewScreen() {
     if (kind === 'lesson') return buildLessonPlanHTML(content as LessonPlanOutput, item.title, meta, isAr, figures);
     if (kind === 'activity') return buildActivityHTML(content as ActivityOutput, item.title, meta, isAr, figures);
     if (kind === 'worksheet') return buildWorksheetHTML(content as WorksheetOutput, item.title, meta, isAr, figures);
-    if (kind === 'flow') return buildLessonFlowHTML(content as unknown as LessonFlowOutput, isAr);
+    if (kind === 'flow') return buildLessonFlowHTML(content as unknown as LessonFlowOutput, isAr, figures);
     if (kind === 'slides') return buildDeckHTML(content as ClassroomActivity, isAr);
     return buildQuizHTML(content as QuizOutput, item.title, meta, isAr, figures);
   };
@@ -290,6 +291,26 @@ export default function WorkspaceViewScreen() {
           <SlidesDeckView deck={content as ClassroomActivity} colors={colors} isRTL={isRTL} isAr={isAr} accent={accent} />
         ) : (
           <QuizView quiz={content as QuizOutput} colors={colors} isRTL={isRTL} t={t} accent={accent} lang={lang} />
+        )}
+
+        {/* The same «من الكتاب المدرسي» figures the export appendix prints,
+            shown before you export rather than only after. `getExportFigures`
+            already resolved them above for the PDF; this screen was the one
+            place that computed them and then showed the teacher nothing, so
+            a saved worksheet looked like it had lost its diagrams until you
+            exported it to find out otherwise.
+
+            Only the four kinds whose exports carry the appendix. A `slides`
+            deck already has the figures as its own slides, and
+            so claiming them here would promise what the export does not
+            deliver. */}
+        {content && ['lesson', 'activity', 'worksheet', 'quiz', 'flow'].includes(kind) && (
+          <BookFiguresPanel
+            figures={getExportFigures()}
+            isRTL={isRTL}
+            colors={colors}
+            labels={{ title: t('bookFiguresTitle'), note: t('bookFiguresNote') }}
+          />
         )}
       </View>
     </ScrollView>

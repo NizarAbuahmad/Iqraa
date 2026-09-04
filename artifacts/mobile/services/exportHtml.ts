@@ -191,6 +191,64 @@ function figuresSectionHTML(figures: readonly BookFigureRef[], isAr: boolean): s
  * byte-identical copies of this line — the kind of duplication that lets one
  * export get fixed and the other keep printing A/B/C/D.
  */
+/**
+ * The «من الكتاب المدرسي» appendix as a *projector* slide, for the four
+ * `*SlidesHTML` builders.
+ *
+ * `figuresSectionHTML` above is the A4-portrait version those same four
+ * documents print. This is the landscape one, because the slide builders lay
+ * out 297×210mm pages with their own `.slide` / `.slide-header` /
+ * `.slide-body` chrome, and a figure grid sized for a printed page overflows
+ * a projected one.
+ *
+ * Why this exists at all: the print and project paths of the same worksheet
+ * disagreed. `buildWorksheetHTML` ended with the figure appendix while
+ * `buildWorksheetSlidesHTML` was marked "Text only in this builder" and took
+ * no figures argument — so a teacher who printed the paper got the book's
+ * diagrams and the same teacher projecting the same worksheet got none, with
+ * nothing to say why. The two call sites sit two lines apart in
+ * `useGeneratorExport.ts`.
+ *
+ * Returns '' for no figures, so a builder can interpolate it unconditionally
+ * and a lesson without figures renders exactly as it did before.
+ */
+function figureGridHTML(figures: readonly BookFigureRef[]): string {
+  const shown = figures.slice(0, EXPORT_FIGURE_MAX);
+  // Three across at most: beyond that each crop is too small to read from the
+  // back row, which is the only reason to put one on a projector at all. Four
+  // is the exception — three across leaves one figure alone on a second row,
+  // so it goes 2×2. (The portrait appendix always uses two columns; it can
+  // spend as many rows as it likes on a page that scrolls.)
+  const cols = shown.length === 4 ? 2 : Math.min(shown.length, 3);
+  const cards = shown.map(f => `
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;min-width:0">
+          <img src="${escAttr(f.uri)}" alt="${esc(f.caption)}" style="max-width:100%;max-height:110mm;object-fit:contain" />
+          <div style="font-size:10px;color:#6b7280;text-align:center">${esc(f.caption)}</div>
+        </div>`).join('');
+  return `<div class="slide-body">
+      <div style="height:100%;display:grid;grid-template-columns:repeat(${cols},1fr);gap:14px;align-items:end">${cards}</div>
+    </div>`;
+}
+
+/**
+ * The whole slide, for the three builders that emit `<div class="slide">`
+ * blocks themselves and number their own footers. `buildLessonPlanSlidesHTML`
+ * assembles an array and numbers it afterwards, so that one takes
+ * `figureGridHTML` directly and lets the loop supply the footer.
+ */
+function figuresSlideHTML(
+  figures: readonly BookFigureRef[],
+  isAr: boolean,
+  header: (sub: string) => string,
+  footerHTML: string,
+): string {
+  if (!figures.length) return '';
+  return `<div class="slide">
+    ${header(isAr ? 'من الكتاب المدرسي' : 'From the Student Book')}
+    ${figureGridHTML(figures)}
+    ${footerHTML}</div>`;
+}
+
 function optionRowHTML(text: string, index: number, isAr: boolean): string {
   const { letter, text: body } = labelOption(text, index, isAr);
   return `<div class="q-option"><span>${esc(letter)}</span> <span>${esc(body)}</span></div>`;
@@ -385,6 +443,12 @@ export function buildLessonPlanSlidesHTML(
   title: string,
   meta: { subject: string; grade: string; duration?: number },
   isAr: boolean,
+  /**
+   * The lesson's book figures, appended as a final slide. Optional so
+   * existing four-argument callers keep working; passing none renders
+   * exactly what this builder rendered before.
+   */
+  figures: readonly BookFigureRef[] = [],
 ): string {
   const dir = isAr ? 'rtl' : 'ltr';
   const ACCENT = '#1B6B62';
@@ -465,9 +529,17 @@ export function buildLessonPlanSlidesHTML(
 
   // Numbered after assembly so an optional slide never desyncs the footer
   // count from how many slides actually render.
-  const slides = [slide1, priorReviewSlide, slide2, slide3, slide4, slide5, slide6].filter(
-    (s): s is string => s !== null,
-  );
+  const figuresSlide = figures.length
+    ? `${slideOpen()}
+    ${header(L('من الكتاب المدرسي', 'From the Student Book'))}
+    ${figureGridHTML(figures)}`
+    : null;
+
+  // Numbered after assembly so an optional slide never desyncs the footer
+  // count from how many slides actually render.
+  const slides = [
+    slide1, priorReviewSlide, slide2, slide3, slide4, slide5, slide6, figuresSlide,
+  ].filter((s): s is string => s !== null);
   const total = slides.length;
   const body = slides.map((s, i) => `${s}\n    ${footer(i + 1, total)}</div>`).join('\n');
 
@@ -524,12 +596,18 @@ export function buildActivitySlidesHTML(
   title: string,
   meta: { subject: string; grade: string },
   isAr: boolean,
+  /**
+   * The lesson's book figures, appended as a final slide. Optional so
+   * existing four-argument callers keep working; passing none renders
+   * exactly what this builder rendered before.
+   */
+  figures: readonly BookFigureRef[] = [],
 ): string {
   const dir = isAr ? 'rtl' : 'ltr';
   const ACCENT = '#E67E22';
   const L = (ar: string, en: string) => isAr ? ar : en;
 
-  const TOTAL = 3 + Math.ceil(activity.steps.length / 2);
+  const TOTAL = 3 + Math.ceil(activity.steps.length / 2) + (figures.length ? 1 : 0);
 
   const footer = (num: number) => `
     <div class="slide-footer">
@@ -644,6 +722,7 @@ ${slide1}
 ${slide2}
 ${stepSlides.join('\n')}
 ${lastSlide}
+${figuresSlideHTML(figures, isAr, header, footer(TOTAL))}
 </body>
 </html>`;
 }
@@ -655,6 +734,12 @@ export function buildWorksheetSlidesHTML(
   title: string,
   meta: { subject: string; grade: string },
   isAr: boolean,
+  /**
+   * The lesson's book figures, appended as a final slide. Optional so
+   * existing four-argument callers keep working; passing none renders
+   * exactly what this builder rendered before.
+   */
+  figures: readonly BookFigureRef[] = [],
 ): string {
   const dir = isAr ? 'rtl' : 'ltr';
   const ACCENT = '#8B5CF6';
@@ -665,7 +750,8 @@ export function buildWorksheetSlidesHTML(
 
   // Total: title + (instructions if present: 1) + sections + answer key
   const hasInstructions = !!ws.instructions;
-  const TOTAL = 1 + (hasInstructions ? 1 : 0) + ws.sections.length + (ws.answerKey && ws.answerKey.length > 0 ? 1 : 0);
+  const TOTAL = 1 + (hasInstructions ? 1 : 0) + ws.sections.length
+    + (ws.answerKey && ws.answerKey.length > 0 ? 1 : 0) + (figures.length ? 1 : 0);
 
   const footer = (num: number) => `
     <div class="slide-footer">
@@ -780,6 +866,7 @@ ${slide1}
 ${instrSlide}
 ${sectionSlides.join('\n')}
 ${akSlide}
+${figuresSlideHTML(figures, isAr, header, footer(TOTAL))}
 </body>
 </html>`;
 }
@@ -791,6 +878,12 @@ export function buildQuizSlidesHTML(
   title: string,
   meta: { subject: string; grade: string },
   isAr: boolean,
+  /**
+   * The lesson's book figures, appended as a final slide. Optional so
+   * existing four-argument callers keep working; passing none renders
+   * exactly what this builder rendered before.
+   */
+  figures: readonly BookFigureRef[] = [],
 ): string {
   const dir = isAr ? 'rtl' : 'ltr';
   const ACCENT = '#F59E0B';
@@ -809,7 +902,8 @@ export function buildQuizSlidesHTML(
     questionGroups.push(quiz.questions.slice(i, i + GROUP_SIZE));
   }
 
-  const TOTAL = 1 + questionGroups.length + 1; // title + groups + answer key
+  // title + groups + answer key + the optional book-figures slide
+  const TOTAL = 1 + questionGroups.length + 1 + (figures.length ? 1 : 0);
   let slideNum = 1;
 
   const footer = (num: number) => `
@@ -911,13 +1005,27 @@ body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','
 ${slide1}
 ${qSlides.join('\n')}
 ${akSlide}
+${figuresSlideHTML(figures, isAr, header, footer(TOTAL))}
 </body>
 </html>`;
 }
 
 // ─── Lesson Flow HTML (all-in-one PDF) ───────────────────────────────────────
 
-export function buildLessonFlowHTML(flow: LessonFlowOutput, isAr: boolean): string {
+export function buildLessonFlowHTML(
+  flow: LessonFlowOutput,
+  isAr: boolean,
+  /**
+   * The lesson's book figures. Optional so the existing two-argument callers
+   * keep working; passing none prints no appendix, exactly as before.
+   *
+   * The flow PDF is the one document that bundles a worksheet and an exit
+   * ticket into a single hand-out, so it was the odd one out among the five:
+   * printing the same worksheet on its own carried «من الكتاب المدرسي» and
+   * printing it inside the flow did not.
+   */
+  figures: readonly BookFigureRef[] = [],
+): string {
   const dir = isAr ? 'rtl' : 'ltr';
   const font = isAr ? `'Amiri', 'Noto Naskh Arabic', serif` : `'Inter', 'Helvetica Neue', sans-serif`;
   const TEAL = '#00A99D';
@@ -1048,6 +1156,8 @@ export function buildLessonFlowHTML(flow: LessonFlowOutput, isAr: boolean): stri
   <!-- 6. Exit Ticket -->
   ${secHeader(isAr ? 'بطاقة الخروج' : 'Exit Ticket', '🎫', '#F59E0B')}
   ${etBody}
+
+  ${figuresSectionHTML(figures, isAr)}
 
   <div class="footer">${isAr ? 'اقرأ — مساعد التدريس الذكي' : 'IQRA Teaching Assistant'} · ${esc(flow.topic)} · ${new Date().toLocaleDateString(isAr ? 'ar-JO' : 'en-GB')}</div>
 </div>

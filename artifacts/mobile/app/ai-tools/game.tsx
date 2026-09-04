@@ -32,6 +32,7 @@ import { isolateForeignRuns } from '@/services/mathRender';
 import type { ClassroomActivity } from '@/services/ai/AIService';
 import { buildGeneratorContext, generatorLessonId, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
 import { buildGameDeckFromQuiz } from '@/services/classDeck';
+import { bookFigureUri } from '@/services/bookFigureUri';
 import { createGame, MAX_TEAMS, MIN_TEAMS } from '@/services/classGame';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import {
@@ -136,6 +137,7 @@ export default function ClassGameScreen() {
         teamCount,
         lesson: grounding.lesson,
         verified: false,
+        figureUri: bookFigureUri,
       });
 
       // A deck with no scoreable questions is a game that cannot be played —

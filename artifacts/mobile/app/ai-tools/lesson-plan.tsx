@@ -7,7 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
-import { buildAdaptationsDirective, generatorLessonId, generatorUnitId, getUnitPriorKnowledge, resolveGeneratorGrounding } from '@/services/kbContext';
+import { buildAdaptationsDirective, generatorFigureCount, generatorLessonId, generatorUnitId, getUnitPriorKnowledge, resolveGeneratorGrounding } from '@/services/kbContext';
 import { pooledVariantId, regenerationFields } from '@/services/ai/regeneration';
 import { LessonPlanOutput } from '@/services/ai/AIService';
 import {
@@ -217,6 +217,7 @@ export default function LessonPlanScreen() {
         additionalContext,
         unitId: generatorUnitId(topic.trim(), lang as 'ar' | 'en'),
         lessonId: generatorLessonId(topic.trim(), lang as 'ar' | 'en'),
+        bookFigureCount: generatorFigureCount(topic.trim(), lang as 'ar' | 'en'),
         // Objectives, adaptations and prior-topic notes are all free text the
         // teacher typed, and all three are carried into the plan verbatim. A
         // plan built from any of them is that teacher's and is never pooled;

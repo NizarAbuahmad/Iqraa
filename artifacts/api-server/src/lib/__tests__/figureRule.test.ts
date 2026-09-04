@@ -17,7 +17,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-import { SYSTEM_AR, SYSTEM_EN } from "../prompts.ts";
+import { SYSTEM_AR, SYSTEM_EN, systemPrompt } from "../prompts.ts";
 
 describe("figure rule", () => {
   it("reaches every generator, being in the shared system prompt", () => {
@@ -50,5 +50,90 @@ describe("figure rule", () => {
     // entirely, which costs the deck a whole class of question.
     assert.match(SYSTEM_AR, /فاكتبه بلا أي إشارة إلى رسم/);
     assert.match(SYSTEM_EN, /write it with no reference to a figure/);
+  });
+});
+
+/**
+ * The exception, and the flag that gates it.
+ *
+ * The rule above bans «في الشكل المجاور» — correctly, when the app has no
+ * picture to show. But four subjects DO have the book's own crops printed in
+ * the export appendix and the on-screen panel, and there the ban silently put
+ * every circle-geometry, apparatus and Venn-diagram question out of scope.
+ *
+ * These assert the gate, not the wording, because the gate is the part that is
+ * dangerous when wrong. Permission granted for a lesson with no figures
+ * reproduces the original empty-reference bug in a new place, so the default
+ * has to be denial and every non-count has to read as none.
+ */
+describe("book-figure exception", () => {
+  const AR = { ar: true, en: false };
+
+  it("is absent by default — a caller that says nothing gets the strict prompt", () => {
+    assert.equal(systemPrompt(AR.ar), SYSTEM_AR);
+    assert.equal(systemPrompt(AR.en), SYSTEM_EN);
+    assert.equal(systemPrompt(AR.ar, {}), SYSTEM_AR);
+  });
+
+  it("is present only when the lesson actually has figures", () => {
+    const withFigs = systemPrompt(AR.ar, { hasBookFigures: true });
+    assert.match(withFigs, /أشكال الكتاب المدرسي/);
+    assert.match(withFigs, /في الشكل المجاور/);
+    assert.doesNotMatch(systemPrompt(AR.ar, { hasBookFigures: false }), /أشكال الكتاب المدرسي/);
+
+    const en = systemPrompt(AR.en, { hasBookFigures: true });
+    assert.match(en, /student-book figures/i);
+    assert.match(en, /in the figure opposite/);
+    assert.doesNotMatch(systemPrompt(AR.en, { hasBookFigures: false }), /student-book figures/i);
+  });
+
+  it("keeps the whole base prompt — the exception adds, never replaces", () => {
+    // A rewrite that dropped the style rule or the latin-variable clause while
+    // "loosening" the figure rule would pass every assertion above.
+    const withFigs = systemPrompt(AR.ar, { hasBookFigures: true });
+    assert.ok(withFigs.startsWith(SYSTEM_AR), "base prompt is intact and first");
+    assert.match(withFigs, /y = 2x \+ 1/);
+  });
+
+  it("still refuses to let the model name or describe a figure it cannot see", () => {
+    // The appendix is lesson-level and ordered by page, so «الشكل ٣» would be
+    // a citation the model invented — the failure `figuresSectionHTML`
+    // documents from the rendering side.
+    assert.match(systemPrompt(AR.ar, { hasBookFigures: true }), /لا ترقّم الأشكال/);
+    assert.match(systemPrompt(AR.en, { hasBookFigures: true }), /do not number the figures/i);
+  });
+});
+
+/**
+ * The one rule that asks for a visual instead of forbidding one.
+ *
+ * Both clauses name a format because both feed a miner that fails closed:
+ * `extractChartData` refuses anything under three self-labelled values, and
+ * `extractGraphCommands` matches `[a-z]` only. A vague "use visuals where
+ * helpful" would satisfy a reader and change nothing measurable, which is
+ * why these assert the specifics rather than the intent.
+ */
+describe("visual rule", () => {
+  it("reaches every generator, being in the shared system prompt", () => {
+    assert.match(SYSTEM_AR, /قابلًا للعرض/);
+    assert.match(SYSTEM_EN, /projectable/i);
+  });
+
+  it("names the chart miner's actual threshold, not just 'use data'", () => {
+    assert.match(SYSTEM_AR, /ثلاثة بنود على الأقل/);
+    assert.match(SYSTEM_EN, /at least three items/i);
+  });
+
+  it("repeats the latin-variable requirement where it asks for a curve", () => {
+    // The plot miner is the same `[a-z]` matcher as the figure rule's, so an
+    // invitation to "state the equation" without this produces compliant
+    // prose that plots nothing.
+    assert.match(SYSTEM_AR, /بالحرفين اللاتينيين x و y/);
+    assert.match(SYSTEM_EN, /using latin x and y/i);
+  });
+
+  it("asks for structure the renderers already have — tables and steps", () => {
+    assert.match(SYSTEM_AR, /جدول/);
+    assert.match(SYSTEM_EN, /table for comparisons/i);
   });
 });

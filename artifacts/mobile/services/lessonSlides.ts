@@ -22,8 +22,8 @@ import type {
   LessonPlanOutput,
 } from './ai/AIService.ts';
 import { getBookForLesson, type KBLesson } from './knowledgeBase.ts';
-import { buildGraphSlide, referencesShownVisual, scanGraphCommands } from './classMedia.ts';
-import { visualForSlide } from './deckVisuals.ts';
+import { buildChartSlide, buildGraphSlide, referencesShownVisual, scanGraphCommands } from './classMedia.ts';
+import { chartForLesson, visualForSlide } from './deckVisuals.ts';
 import { type BookFigure, figuresForLesson } from './bookFigures.ts';
 import { exerciseReference, exercisesForLesson } from './bookExercises.ts';
 
@@ -289,6 +289,53 @@ export function bookFigureCaption(figure: BookFigure, isAr: boolean): string {
     : `Student Book · ${semester} · page ${page}`;
 }
 
+/**
+ * A lesson's book figures as media slides, ready to splice into any deck.
+ *
+ * The slide-side twin of `bookFigureRefsForLesson()` (`bookFigureUri.ts`),
+ * which does the same three-step lookup for the document exports. This one
+ * lives here rather than there because `bookFigureUri.ts` imports
+ * `react-native` to resolve an asset, and every deck builder that needs these
+ * (`buildLessonDeck` here, `buildDeckFromQuiz`/`buildDeckFromWorksheet` in
+ * `classDeck.ts`) is exercised under `node --test`. Hence the injected
+ * `figureUri` rather than an import — the same shape `buildLessonDeck` already
+ * took for it.
+ *
+ * Extracted because it had exactly one caller while three deck builders needed
+ * it: a quiz or worksheet projected through Class Mode showed no figure at
+ * all, and a lesson deck built from chat showed none either, purely because
+ * this loop lived inline in the one builder that had it.
+ *
+ * `slideNumber` is left to the caller — `buildLessonDeck` pushes through its
+ * own counter and `assembleDeckSlides` renumbers the whole deck at the end.
+ *
+ * Omitting `figureUri` yields nothing, exactly as before figures existed.
+ */
+export function bookFigureSlides(
+  kbLessonId: string | null | undefined,
+  isAr: boolean,
+  figureUri?: (figure: BookFigure) => string | null,
+  max: number = BOOK_FIGURE_MAX,
+): Omit<ActivitySlide, 'slideNumber'>[] {
+  if (!figureUri) return [];
+  const out: Omit<ActivitySlide, 'slideNumber'>[] = [];
+  for (const figure of figuresForLesson(kbLessonId).slice(0, max)) {
+    const uri = figureUri(figure);
+    if (!uri) continue;
+    const caption = bookFigureCaption(figure, isAr);
+    out.push({
+      type: 'media',
+      title: isAr ? 'من كتاب الطالب' : 'From the Student Book',
+      content: caption,
+      mediaKind: 'image',
+      mediaUrl: uri,
+      mediaCaption: caption,
+      durationSeconds: 0,
+    });
+  }
+  return out;
+}
+
 export function buildLessonDeck(
   lessonTitle: string,
   isAr: boolean,
@@ -480,22 +527,7 @@ export function buildLessonDeck(
   //
   // `figureUri` returning null means the figure exists in the index but was
   // never bundled; the slide is dropped rather than rendered broken.
-  const figures = opts.figureUri
-    ? figuresForLesson(lesson?.id).slice(0, BOOK_FIGURE_MAX)
-    : [];
-  for (const figure of figures) {
-    const uri = opts.figureUri!(figure);
-    if (!uri) continue;
-    push({
-      type: 'media',
-      title: T('من كتاب الطالب', 'From the Student Book'),
-      content: bookFigureCaption(figure, isAr),
-      mediaKind: 'image',
-      mediaUrl: uri,
-      mediaCaption: bookFigureCaption(figure, isAr),
-      durationSeconds: 0,
-    });
-  }
+  for (const slide of bookFigureSlides(lesson?.id, isAr, opts.figureUri)) push(slide);
 
   // ── 6b. Live graph — the concept made draggable ─────────────────────────
   // Between the rule and the examples: the class sees the curve respond to a
@@ -506,6 +538,36 @@ export function buildLessonDeck(
   if (graphCommands.length > 0) {
     push(buildGraphSlide(graphCommands, title, isAr, 0));
   }
+
+  // A chart when the lesson's own text states a dataset — a budget split, a
+  // set of shares, a frequency table. Beside the graph rather than instead of
+  // it: a graph is a function, a chart is data, and a statistics lesson can
+  // legitimately want both.
+  //
+  // Start Class has done this since it was written (`startClass.ts`); this
+  // builder never has, so the *same lesson* produced a chart when a teacher
+  // pressed «ابدأ الحصة» and no chart when they generated slides for it — the
+  // Slides Maker had no reference to `chart` anywhere. Financial literacy and
+  // statistics were the subjects that lost most: their lessons carry the
+  // labelled quantities this reads and no plottable function at all, so the
+  // equation-driven graph slide above could never fire for them.
+  //
+  // `chartForLesson` refuses far more than it accepts — a bare list of numbers
+  // in a mean-and-median exercise is not a dataset — so most lessons still get
+  // nothing here, which is the intended outcome. An invented chart is a claim
+  // about data that nothing checked.
+  const chartVisual = chartForLesson(
+    [
+      ...(pickLang(lesson?.examplesAr, lesson?.examplesEn, isAr) ?? []),
+      ...(pickLang(lesson?.keyConceptsAr, lesson?.keyConceptsEn, isAr) ?? []),
+      nonEmpty(pickLang(lesson?.summaryAr, lesson?.summaryEn, isAr)),
+      plan?.mainActivity ?? '',
+      plan?.guidedPractice ?? '',
+    ]
+      .filter(Boolean)
+      .join('\n'),
+  );
+  if (chartVisual) push(buildChartSlide(chartVisual, title, isAr, 0));
 
   // ── 6c. First check — before anyone has seen a worked example ───────────
   // Placed here on purpose: the class has been told the idea and the rule but
