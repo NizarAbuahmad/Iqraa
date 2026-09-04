@@ -30,7 +30,7 @@ export function useGeneratorExport<TResult, TMeta extends GeneratorExportMeta>(c
   getMeta: () => TMeta;
   formatText: (result: TResult, title: string, meta: TMeta, isAr: boolean) => string;
   buildHTML: (result: TResult, title: string, meta: TMeta, isAr: boolean, figures: readonly BookFigureRef[]) => string;
-  buildSlidesHTML: (result: TResult, title: string, meta: TMeta, isAr: boolean) => string;
+  buildSlidesHTML: (result: TResult, title: string, meta: TMeta, isAr: boolean, figures: readonly BookFigureRef[]) => string;
   onError: (key: TranslationKey) => void;
   onCopied: (key: TranslationKey) => void;
 }) {
@@ -92,14 +92,14 @@ export function useGeneratorExport<TResult, TMeta extends GeneratorExportMeta>(c
     setLoadingSlides(true);
     try {
       const title = getTitle();
-      const html = buildSlidesHTML(result, title, getMeta(), isAr);
+      const html = buildSlidesHTML(result, title, getMeta(), isAr, getExportFigures());
       await exportAsPDF(html, filenameOf(title, '-slides'));
     } catch {
       onError('generationFailed');
     } finally {
       setLoadingSlides(false);
     }
-  }, [result, getTitle, getMeta, buildSlidesHTML, isAr, onError]);
+  }, [result, getTitle, getMeta, buildSlidesHTML, isAr, getExportFigures, onError]);
 
   return {
     getExportFigures,

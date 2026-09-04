@@ -327,3 +327,73 @@ describe('book figure appendix', () => {
     assert.ok(en.includes('From the Student Book'));
   });
 });
+
+/**
+ * The projected worksheet carries the same figures the printed one does.
+ *
+ * These four builders took no figures argument at all —
+ * `buildWorksheetSlidesHTML` was even commented "Text only in this builder" —
+ * while their print-path twins ended with the «من الكتاب المدرسي» appendix.
+ * So the same worksheet, from the same screen, showed the book's diagrams on
+ * paper and none on the projector, with nothing to say why. The two call
+ * sites sit seven lines apart in `useGeneratorExport.ts`.
+ */
+describe('book figures on the projector builders', () => {
+  const imgs = (h: string) => (h.match(/<img /g) ?? []).length;
+  // `class="slide title-slide"` is a slide too — matching only `slide"`
+  // undercounts by exactly the title slide, which reads as an off-by-one in
+  // the footer rather than as a miscount here.
+  const slideCount = (h: string) => (h.match(/class="slide[ "]/g) ?? []).length;
+  const figures = (n: number): BookFigureRef[] =>
+    Array.from({ length: n }, (_, i) => ({
+      uri: `file:///figs/p0${i}.png`,
+      page: 21 + i,
+      caption: `كتاب الطالب · صفحة ${21 + i}`,
+    }));
+
+  const builders: [string, (f?: BookFigureRef[]) => string][] = [
+    ['worksheet', f => buildWorksheetSlidesHTML(worksheet(), 'ورقة', meta, true, f)],
+    ['quiz', f => buildQuizSlidesHTML(quiz(), 'اختبار', meta, true, f)],
+    ['lesson plan', f => buildLessonPlanSlidesHTML(plan(), 'خطة', meta, true, f)],
+    ['activity', f => buildActivitySlidesHTML(activity(), 'نشاط', meta, true, f)],
+  ];
+
+  for (const [name, build] of builders) {
+    it(`${name}: renders them and adds exactly one slide, not one per figure`, () => {
+      const without = build();
+      const withFigs = build(figures(2));
+      assert.equal(imgs(without), 0, 'no figures passed, none rendered');
+      assert.equal(imgs(withFigs), 2);
+      assert.equal(slideCount(withFigs), slideCount(without) + 1);
+      assert.match(withFigs, /من الكتاب المدرسي/);
+      // The page citation has to survive into the markup, not only the alt.
+      assert.match(withFigs, /صفحة ٢١|صفحة 21/);
+    });
+
+    it(`${name}: counts the extra slide in the footer total`, () => {
+      // A footer reading "5 / 4" is how a teacher learns not to trust the deck.
+      const html = build(figures(2));
+      const totals = [...html.matchAll(/(\d+) \/ (\d+)</g)].map(m => Number(m[2]));
+      assert.ok(totals.length > 0, 'the deck numbers its slides');
+      assert.ok(
+        totals.every(t => t === slideCount(html)),
+        `footer total ${totals[0]} should equal ${slideCount(html)} rendered slides`,
+      );
+    });
+  }
+
+  it('caps at EXPORT_FIGURE_MAX, like the printed appendix', () => {
+    const html = buildWorksheetSlidesHTML(
+      worksheet(), 'ورقة', meta, true, figures(EXPORT_FIGURE_MAX + 4),
+    );
+    assert.equal(imgs(html), EXPORT_FIGURE_MAX);
+  });
+
+  it('gives the lesson-flow PDF the appendix too', () => {
+    // The one document that bundles a worksheet and an exit ticket together,
+    // and so the one where the missing appendix was least obvious.
+    const withFigs = buildLessonFlowHTML(flow(), true, figures(2));
+    assert.equal(imgs(withFigs), 2);
+    assert.equal(imgs(buildLessonFlowHTML(flow(), true)), 0);
+  });
+});

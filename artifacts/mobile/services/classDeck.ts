@@ -17,6 +17,8 @@ import type {
   WorksheetOutput,
 } from './ai/AIService.ts';
 import type { KBLesson } from './knowledgeBase.ts';
+import type { BookFigure } from './bookFigures.ts';
+import { bookFigureSlides } from './lessonSlides.ts';
 
 const THINK_SECONDS = 45;
 
@@ -109,6 +111,26 @@ export function objectivesSlide(
 }
 
 /**
+ * Append the lesson's book figures, numbered to follow what is already there.
+ *
+ * Placed right after the objectives slide, which is where `buildLessonDeck`
+ * and `assembleDeckSlides` both put them — "here is the lesson, here is how
+ * your book draws it, now answer". Keeping the position identical across the
+ * three deck builders is the point: a teacher who projects a worksheet and
+ * then a quiz should not find the diagrams in a different place each time.
+ */
+function pushFigures(
+  slides: ActivitySlide[],
+  kbLessonId: string | null | undefined,
+  isAr: boolean,
+  figureUri?: (figure: BookFigure) => string | null,
+): void {
+  for (const slide of bookFigureSlides(kbLessonId, isAr, figureUri)) {
+    slides.push({ ...slide, slideNumber: slides.length + 1 } as ActivitySlide);
+  }
+}
+
+/**
  * Quiz → projectable deck. Multiple-choice questions become whole-class
  * response slides; open-ended ones become think-and-write prompts.
  */
@@ -130,11 +152,18 @@ export function buildDeckFromQuiz(
       | { verifiedBy: 'symbolic' | 'bank'; computedAnswer?: string }
       | undefined
     )[];
+    /**
+     * Resolves a book figure to a loadable URI. Injected rather than imported
+     * for the reason `bookFigureSlides` documents; omitting it yields no
+     * figure slides, exactly as before.
+     */
+    figureUri?: (figure: BookFigure) => string | null;
   },
 ): ClassroomActivity {
   const slides: ActivitySlide[] = [introSlide(quiz.title, lessonTitle, isAr)];
   const objSlide = objectivesSlide(opts?.lesson ?? null, lessonTitle, isAr, slides.length + 1);
   if (objSlide) slides.push(objSlide);
+  pushFigures(slides, opts?.lesson?.id, isAr, opts?.figureUri);
 
   quiz.questions.forEach((q, i) => {
     const hasOptions = Array.isArray(q.options) && q.options.length >= 2;
@@ -221,11 +250,14 @@ export function buildDeckFromWorksheet(
       | { verifiedBy: 'symbolic' | 'bank'; computedAnswer?: string }
       | undefined
     )[];
+    /** See `buildDeckFromQuiz`. */
+    figureUri?: (figure: BookFigure) => string | null;
   },
 ): ClassroomActivity {
   const slides: ActivitySlide[] = [introSlide(ws.title, lessonTitle, isAr)];
   const objSlide = objectivesSlide(opts?.lesson ?? null, lessonTitle, isAr, slides.length + 1);
   if (objSlide) slides.push(objSlide);
+  pushFigures(slides, opts?.lesson?.id, isAr, opts?.figureUri);
 
   // A worksheet question carries no answer of its own — the generator only
   // ever fills in the top-level answerKey, keyed by 1-based position across
@@ -368,7 +400,13 @@ export function buildGameDeckFromQuiz(
   quiz: QuizOutput,
   lessonTitle: string,
   isAr: boolean,
-  opts: { teamCount: number; lesson?: KBLesson | null; verified?: boolean },
+  opts: {
+    teamCount: number;
+    lesson?: KBLesson | null;
+    verified?: boolean;
+    /** See `buildDeckFromQuiz`. */
+    figureUri?: (figure: BookFigure) => string | null;
+  },
 ): ClassroomActivity {
   const teamCount = Math.max(2, Math.min(6, Math.floor(opts.teamCount) || 2));
   const scoreable = quiz.questions.filter(q => Array.isArray(q.options) && q.options.length >= 2);
@@ -385,6 +423,7 @@ export function buildGameDeckFromQuiz(
 
   const objSlide = objectivesSlide(opts.lesson ?? null, lessonTitle, isAr, slides.length + 1);
   if (objSlide) slides.push(objSlide);
+  pushFigures(slides, opts.lesson?.id, isAr, opts.figureUri);
 
   scoreable.forEach((q, i) => {
     slides.push({

@@ -15,6 +15,7 @@
 import type { ClassroomActivity } from './ai/AIService.ts';
 import type { ChatArtifactData } from './ai/chatArtifacts.ts';
 import type { KBLesson } from './knowledgeBase.ts';
+import type { BookFigure } from './bookFigures.ts';
 import type { MaterialType } from './workspace.ts';
 import { buildDeckFromQuiz, buildDeckFromWorksheet } from './classDeck.ts';
 import { buildLessonDeck } from './lessonSlides.ts';
@@ -89,6 +90,16 @@ export type ArtifactDeckOptions = {
   lesson?: KBLesson | null;
   subject?: string;
   grade?: string;
+  /**
+   * Resolves a book figure to a loadable URI — `bookFigureUri` from the
+   * screen. Injected rather than imported to keep this module free of
+   * `react-native`, per the note at the top of the file.
+   *
+   * Without it a deck built from chat carried no book figure at all, while
+   * the same lesson opened from the Slides screen did. Chat was the only
+   * `buildLessonDeck` caller that never passed one.
+   */
+  figureUri?: (figure: BookFigure) => string | null;
 };
 
 /**
@@ -103,7 +114,7 @@ export function deckForArtifact(
   data: ChatArtifactData,
   opts: ArtifactDeckOptions,
 ): ClassroomActivity | null {
-  const { topic, isAr, lesson = null } = opts;
+  const { topic, isAr, lesson = null, figureUri } = opts;
   switch (data.kind) {
     case 'lesson-plan':
       return buildLessonDeck(topic, isAr, {
@@ -111,11 +122,12 @@ export function deckForArtifact(
         plan: data.plan,
         subject: opts.subject,
         grade: opts.grade,
+        figureUri,
       });
     case 'worksheet':
-      return buildDeckFromWorksheet(data.worksheet, topic, isAr, { lesson });
+      return buildDeckFromWorksheet(data.worksheet, topic, isAr, { lesson, figureUri });
     case 'quiz':
-      return buildDeckFromQuiz(data.quiz, topic, isAr, { lesson });
+      return buildDeckFromQuiz(data.quiz, topic, isAr, { lesson, figureUri });
     case 'activity':
       return null;
   }

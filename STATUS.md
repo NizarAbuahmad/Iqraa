@@ -296,6 +296,104 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The book's figures reach the surfaces that were quietly skipping them, 2026-09-04
+
+Six hundred bundled crops, seventy-three joined lessons, and a renderer for
+every one of them — reaching four screens. The rest of the app resolved
+figures and then didn't show them, or never asked. **Every gap failed
+silently**: no error, no log, nothing missing from a build, just text.
+
+What was skipping them, and now doesn't:
+
+| Surface | Was | Now |
+| --- | --- | --- |
+| Worksheet/quiz/plan/activity **projected** (`*SlidesHTML`) | no `figures` param at all; `buildWorksheetSlidesHTML` was commented "Text only in this builder" | a captioned figures slide, counted in the footer total |
+| Class Mode decks from a **quiz or worksheet** (`buildDeckFromQuiz/Worksheet`) | no figure slot | figure slides after the objectives, same place `buildLessonDeck` puts them |
+| **Class Challenge** deck (`buildGameDeckFromQuiz`) | same | same |
+| Decks built from **chat** (`deckForArtifact`) | `buildLessonDeck` called without `figureUri` — the only caller that never passed one | passes it |
+| **موادي** viewer (`workspace/view.tsx`) | resolved figures for export, rendered none on screen | `BookFiguresPanel`, like the four generator screens |
+| **Lesson-flow PDF** (`buildLessonFlowHTML`) | no `figures` param | the «من الكتاب المدرسي» appendix |
+
+Print and project disagreed about the same worksheet, from the same screen,
+with the two call sites seven lines apart in `useGeneratorExport.ts`.
+
+**One helper, not four copies.** `bookFigureSlides()` (`lessonSlides.ts`) is
+the slide-side twin of `bookFigureRefsForLesson()`; `classDeck.ts` calls it
+through `pushFigures`. It keeps the injected-`figureUri` shape rather than
+importing the resolver, because that reaches into `react-native` and all three
+builders run under `node --test`. Omitting it still yields nothing, so a
+caller that forgets gets exactly the old behaviour.
+
+**The Slides Maker gated graphs on the subject name.** `slides.tsx` read
+`subjects[subjectIdx].id === 'mathematics'` — the identical branch
+`startClass.ts` documents having removed, for the identical reason. It now
+keys off what the lesson *contains*, and scans the generated checks too, which
+is where a maths deck's equations actually live. Measured over 20 mock decks:
+maths graph slides 1 → 3.
+
+**`buildLessonDeck` never asked for a chart.** `chartForLesson()` worked and
+had one caller (`startClass.ts`), so the same lesson charted from «ابدأ الحصة»
+and not from Slides. Now wired — but see the honest number below.
+
+### The prompt stopped forbidding figures and started asking for visuals
+
+`FIGURE_RULE_AR`/`EN` was the **only** mention of a picture anywhere in the
+prompt layer, and it was a prohibition. Grepping all four prompt files for
+`image|icon|figure|shape|graphic|visual|svg|diagram|صورة|شكل|رسم|أيقونة` returns
+that ban, its style-rule cross-reference, and nothing else.
+
+- `BOOK_FIGURE_RULE_AR`/`EN` lifts it — «في الشكل المجاور» is how the ministry's
+  books write every circle-geometry, apparatus and Venn question — **only when
+  the lesson has figures**. `systemPrompt(isAr, { hasBookFigures })`; the client
+  sends `bookFigureCount` (`generatorFigureCount` in `kbContext.ts`) because the
+  crops and the map are bundled and the API has no copy. Absent reads as none,
+  so a caller that forgets gets the stricter prompt. It still forbids numbering
+  or describing a figure the model cannot see.
+- `VISUAL_RULE_AR`/`EN` asks for what the miners actually consume: labelled
+  `label: number` data with **at least three items** (`extractChartData`'s real
+  threshold), equations in latin `x`/`y`, comparison tables, numbered steps. No
+  `visual` field — nothing reads one on these types.
+- `PROMPT_VERSION` → `2026-09-04.1`, so the shared pool partitions.
+
+### The honest number, and what it says
+
+Across 20 DEMO_MODE decks (231 → 316 slides): **maths graph 1 → 3, charts 0,
+book figures 21.** Charts stay at zero and that is not a bug to fix in code:
+
+- **0 of 167 KB lessons yield a chart** from their own text, and only 4 yield a
+  curve. `chartForLesson` refusing is correct — Grade-10 financial literacy
+  semester 1 is *project management* (roles, stages, stakeholders), with no
+  dataset in it. Wiring is necessary and not sufficient; the content has to
+  carry the data, which is what the new prompt rule asks the live model for.
+- So the mock generators were **not** given invented datasets. What they lost
+  is the promise: `lpIntroAr`/`En` said «اعرض صورة ذات صلة» / "Show a visual
+  related to X" unconditionally — go find a picture the app never supplied.
+  `bookFigureCue()` now names the deck's own figure slide for the 73 lessons
+  that have one and says nothing for the rest.
+
+### Still true, and out of scope here
+
+Per-question figure binding (needs a vision pass over the crops; the refusal is
+documented at `exportHtml.ts`'s `figuresSectionHTML`). Word export still
+carries no images — no `ImageRun` anywhere in the repo. Students sitting an
+exam still see none: `app/take/[code].tsx` reads only
+`body.stem/statement/prompt/template` out of a free-form jsonb. Every content
+slide is still a single column, so a picture cannot sit beside its text. And
+**12 of 16 subjects have no extracted figures at all** — physics, biology,
+Arabic, English and the rest — so no wiring puts a diagram on those lessons.
+
+**Not a lost-figures bug, checked:** `math-s2-student-book` has 144 PNGs and
+105 index entries. All 39 orphans were indexed *before* commit `29f2a8c`
+("Stop cropping figures through their own labels"), which dropped 45 entries
+and added 14 — they are the rejected old crops, kept on disk. Nothing
+references them; `gen_book_figure_assets.mjs` re-runs to a no-op at 600.
+Deleting the files is the documented cleanup and has not been done.
+
+Verified: typecheck clean; mobile 1156 tests / 0 fail / 10 known skips;
+api-server 442 / 0 fail. The projected worksheet was rendered with four real
+crops and read in a browser — 4 `<img>`, one extra slide, footer 5/5, no
+overflow, 2×2 grid.
+
 ## In-app messaging ships, and a group is an announcement by default, 2026-09-04
 
 Teachers can message parents and students inside Iqraa (PR #245). Until now the
@@ -1434,7 +1532,11 @@ slides path, so an unreviewed bad crop ships.
 Lesson plans, worksheets and exams do not touch `figuresForLesson`, and the
 system prompt still tells the model never to reference a figure unless the
 question text states its equations — a rule written for graphs that silently
-puts every circle-geometry question out of scope. Per-question binding also
+puts every circle-geometry question out of scope.
+**Both closed since:** the appendix landed 2026-08-26 (next section), the
+remaining six surfaces and the prompt rule on 2026-09-04. Exams are the
+exception and are still untouched — a student sitting one sees no figure at
+all. Per-question binding also
 needs care: the model cannot see these images, so letting it choose which
 diagram belongs to which question is the fabrication failure the filename
 fence closed earlier today, in a new place.
@@ -1482,12 +1584,15 @@ so four callers do not grow four copies.
 
 Scoped deliberately narrow. Per-question figure binding is still not done, and
 still needs either a vision model or per-exercise extraction metadata neither
-of which exists. The `FIGURE_RULE_AR`/`EN` system-prompt rule — never
+of which exists. ~~The `FIGURE_RULE_AR`/`EN` system-prompt rule — never
 reference a figure unless the question states its equations — is untouched;
 it was written for graphs and still silently excludes every circle-geometry
-question a live model would write. Word export carries no images at all: it
-goes through `docx` paragraphs with no image support, a pre-existing
-limitation this does not touch.
+question a live model would write.~~ **Fixed 2026-09-04** — see «The book's
+figures reach the surfaces that were quietly skipping them»: the ban now
+applies to plotted graphs only, and `BOOK_FIGURE_RULE_AR`/`EN` permits «في
+الشكل المجاور» for the lessons that actually have figures. Word export still
+carries no images: it goes through `docx` paragraphs with no image support, a
+pre-existing limitation neither pass touched.
 
 971 mobile tests pass; typecheck clean. New tests were checked against two
 regressions, not just written to pass: removing the cap turns "caps at

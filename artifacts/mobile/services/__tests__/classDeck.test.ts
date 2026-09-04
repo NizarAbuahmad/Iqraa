@@ -407,3 +407,73 @@ describe('buildGameDeckFromQuiz', () => {
     assert.doesNotMatch(deck.slides[0]!.content, /مقسوم إلى 99 فرق/);
   });
 });
+
+/**
+ * Book figures on the question decks.
+ *
+ * These builders had no figure slot at all: a worksheet or quiz projected
+ * through Class Mode showed none of the book's diagrams, while the *same*
+ * worksheet printed from the same screen carried them in its appendix. Chat
+ * decks were the third caller and got nothing either.
+ *
+ * `figureUri` is injected for the reason `bookFigureSlides` documents — the
+ * real resolver reaches into `react-native`, which this suite cannot load.
+ * That makes it also the switch under test: absent means no figures, which is
+ * what every caller got before and what a caller that forgets still gets.
+ */
+describe('book figures on quiz and worksheet decks', () => {
+  // A lesson that genuinely has crops in the checked-in index.
+  const WITH_FIGURES = { id: 'kbl-math-s1-nccd-u1_l1', objectives: [] } as unknown as KBLesson;
+  const uri = (f: { file: string }) => `asset://${f.file}`;
+  const figs = (d: { slides: ActivitySlide[] }) =>
+    d.slides.filter(s => s.type === 'media' && s.mediaUrl?.startsWith('asset://'));
+
+  it('shows none unless a resolver is passed — the old behaviour, unchanged', () => {
+    assert.equal(figs(buildDeckFromQuiz(QUIZ, 'الدوائر', true, { lesson: WITH_FIGURES })).length, 0);
+    assert.equal(
+      figs(buildDeckFromWorksheet(WORKSHEET, 'الدوائر', true, { lesson: WITH_FIGURES })).length,
+      0,
+    );
+  });
+
+  it("shows the lesson's figures on every deck kind once one is", () => {
+    for (const deck of [
+      buildDeckFromQuiz(QUIZ, 'الدوائر', true, { lesson: WITH_FIGURES, figureUri: uri }),
+      buildDeckFromWorksheet(WORKSHEET, 'الدوائر', true, { lesson: WITH_FIGURES, figureUri: uri }),
+      buildGameDeckFromQuiz(QUIZ, 'الدوائر', true, {
+        teamCount: 3, lesson: WITH_FIGURES, figureUri: uri,
+      }),
+    ]) {
+      const shown = figs(deck);
+      assert.ok(shown.length > 0, 'figures reached the deck');
+      // The page citation is the whole point: it is what lets a teacher hold
+      // the projected figure against the printed book.
+      for (const s of shown) assert.match(s.mediaCaption ?? '', /صفحة/);
+    }
+  });
+
+  it('places them before the first question, not after the answers', () => {
+    const deck = buildDeckFromQuiz(QUIZ, 'الدوائر', true, { lesson: WITH_FIGURES, figureUri: uri });
+    const firstFigure = deck.slides.findIndex(s => s.mediaUrl?.startsWith('asset://'));
+    const firstQuestion = deck.slides.findIndex(s => s.type === 'question' || s.type === 'challenge');
+    assert.ok(firstFigure > 0 && firstQuestion > 0);
+    assert.ok(firstFigure < firstQuestion, "the class sees the book's diagram before being asked");
+  });
+
+  it('keeps slideNumbers consecutive — the progress dots depend on it', () => {
+    const deck = buildDeckFromWorksheet(WORKSHEET, 'الدوائر', true, {
+      lesson: WITH_FIGURES, figureUri: uri,
+    });
+    assert.deepEqual(
+      deck.slides.map(s => s.slideNumber),
+      deck.slides.map((_, i) => i + 1),
+    );
+  });
+
+  it('drops a figure the bundler never shipped rather than rendering it broken', () => {
+    const deck = buildDeckFromQuiz(QUIZ, 'الدوائر', true, {
+      lesson: WITH_FIGURES, figureUri: () => null,
+    });
+    assert.equal(deck.slides.filter(s => s.type === 'media').length, 0);
+  });
+});

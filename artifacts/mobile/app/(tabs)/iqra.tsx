@@ -123,6 +123,7 @@ import {
   shareAsText,
 } from '@/services/share';
 import { buildClassDeck } from '@/services/startClass';
+import { bookFigureUri } from '@/services/bookFigureUri';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { ClassPickerSheet, type ClassPick } from '@/components/ui/ClassPickerSheet';
 import { describeAttachResult } from '@/services/classAttach';
@@ -1394,6 +1395,7 @@ export default function IqraScreen() {
           : null,
         subject: meta.subject,
         grade: meta.grade,
+        figureUri: bookFigureUri,
       });
       if (!deck) return;
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
