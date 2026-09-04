@@ -32,6 +32,25 @@ describe('repairExtractionArtifacts', () => {
     assert.equal(repairExtractionArtifacts('االسس'), 'الاسس');
   });
 
+  it('rejoins it in its hamza-carrying forms too', () => {
+    // لأ, لإ and لآ reverse exactly as لا does, and used to be missed: 26,626
+    // words of the corpus, every document. «الإنسان» went from matching 31 pages
+    // to 314 once this was added — retrieval had been missing ~90% of them.
+    assert.equal(repairExtractionArtifacts('األلوان'), 'الألوان');
+    assert.equal(repairExtractionArtifacts('اإلنسان'), 'الإنسان');
+    assert.equal(repairExtractionArtifacts('اآللة'), 'الآلة');
+  });
+
+  it('needs no dictionary, because the sequence it keys on is not Arabic', () => {
+    // An alef immediately followed by a hamza-carrying alef is not something
+    // Arabic orthography produces, so this rule cannot misfire on a real word
+    // the way a bare ال rule would — «ألوان» and «ألف» are ordinary words
+    // that begin with the very pair being swapped, and must survive untouched.
+    for (const ok of ['ألوان', 'ألف', 'إلى', 'ألم', 'للأطفال']) {
+      assert.equal(repairExtractionArtifacts(ok), ok);
+    }
+  });
+
   it('leaves text that never had the defect alone', () => {
     for (const ok of ['الدائرة', 'المشتقات', 'بنية الذرة', 'Bohr model']) {
       assert.equal(repairExtractionArtifacts(ok), ok);
