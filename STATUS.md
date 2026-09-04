@@ -1583,6 +1583,33 @@ For the next schema change, prefer generating the SQL and applying it where
 you can see the connection, over swapping a URL into a file that four
 directories share.
 
+## Deleted 39 orphaned math-S2 crop PNGs, 2026-09-04
+
+`knowledge-base/grade-10-math/figures/math-s2-student-book/` held 144 `p*.png`
+against 105 `index.json` entries. The 39 extras are 1.44 MB of unreachable
+files — the same half-followed review step as the 13 chemistry-S1 crops below,
+in a second book.
+
+Not "never indexed". All 39 had a real `index.json` entry immediately before
+`29f2a8c` ("Stop cropping figures through their own labels, and let them be
+enlarged"), which removed 45 entries and added 14. These are the old crops that
+cut through their own labels — deliberately rejected by that re-extraction,
+which dropped the index entries and left the PNGs on disk. That is the reverse
+of `docs/adding-a-book.md` step 19: delete **both** the PNG and its
+`index.json` entry.
+
+Nothing referenced them. `figuresForLesson` and `gen_book_figure_assets.mjs`
+read `index.json` and never scan the directory; the generator re-runs to a
+no-op with `BOOK_FIGURE_COUNT` still 600 and no diff to `bookFigureAssets.ts`.
+
+**One grep here is a trap worth recording.** Searching the asset map for
+`math-s2-student-book/` matches every Grade 9 key too — `g9-math-s2-student-book/`
+ends with that string. It reported 6 of the 39 as still referenced; all six were
+substring hits on Grade 9 files. Match on the full quoted key
+(`'math-s2-student-book/p012.png'`), not the directory fragment.
+
+mobile 1131/1131, typecheck clean.
+
 ## The book's figures reach the surfaces that were quietly skipping them, 2026-09-04
 
 Six hundred bundled crops, seventy-three joined lessons, and a renderer for
