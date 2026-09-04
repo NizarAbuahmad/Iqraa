@@ -166,5 +166,17 @@ export async function archiveClass(classId: string): Promise<void> {
   await readJson(res, 'Archiving class');
 }
 
+/**
+ * Mints a fresh code so a parent or the student can link to this exact
+ * roster row when they sign up — see services/messaging.ts. Regenerating
+ * invalidates any code shared before.
+ */
+export async function generateClaimCode(
+  studentId: string,
+): Promise<{ claimCode: string; claimCodeExpiresAt: string }> {
+  const res = await apiFetch(`/students/${studentId}/claim-code`, { method: 'POST' });
+  return readJson(res, 'Generating class code');
+}
+
 /** Re-exported so screens have one roster import. Lives apart to stay testable. */
 export { parseStudentNames } from './rosterNames.ts';

@@ -8,12 +8,14 @@ import {
   users,
   refreshTokens,
   passwordResetTokens,
+  rosterLinks,
 } from "@workspace/db";
 import { eq, and, gt } from "drizzle-orm";
 import { authMiddleware, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { logger } from "../lib/logger.js";
 import { createRateLimiter } from "../lib/rateLimit.js";
 import { isStrongPassword, PASSWORD_POLICY_MESSAGE } from "../lib/passwordPolicy.js";
+import { resolveClaimCode, type ClaimRole } from "../lib/rosterClaim.js";
 
 const router = Router();
 
@@ -63,13 +65,18 @@ async function storeRefreshToken(userId: string, tokenValue: string): Promise<vo
 // POST /auth/register
 router.post("/register", registerLimiter, async (req, res) => {
   try {
-    const { firstName, lastName, email, password, confirmPassword } = req.body as {
-      firstName?: string;
-      lastName?: string;
-      email?: string;
-      password?: string;
-      confirmPassword?: string;
-    };
+    const { firstName, lastName, email, password, confirmPassword, role: rawRole, claimCode } =
+      req.body as {
+        firstName?: string;
+        lastName?: string;
+        email?: string;
+        password?: string;
+        confirmPassword?: string;
+        /** Defaults to 'teacher' — the only role that needed no signup step until now. */
+        role?: string;
+        /** Required for role 'student'/'parent' — see /students/:id/claim-code in roster.ts. */
+        claimCode?: string;
+      };
 
     if (!firstName?.trim()) {
       res.status(400).json({ error: "First name is required" });
@@ -92,6 +99,26 @@ router.post("/register", registerLimiter, async (req, res) => {
       return;
     }
 
+    const role: "teacher" | ClaimRole =
+      rawRole === "student" || rawRole === "parent" ? rawRole : "teacher";
+
+    // Resolved before any write: a student/parent account must never be
+    // created dangling off an invalid code.
+    let claim: { studentId: string; relation: "self" | "guardian" } | null = null;
+    if (role !== "teacher") {
+      const code = claimCode?.trim();
+      if (!code) {
+        res.status(400).json({ error: "A class code is required to sign up as a parent or student" });
+        return;
+      }
+      const resolved = await resolveClaimCode(code, role);
+      if (!resolved.ok) {
+        res.status(resolved.status).json({ error: resolved.error });
+        return;
+      }
+      claim = { studentId: resolved.studentId, relation: resolved.relation };
+    }
+
     // Check duplicate email
     const [existing] = await db
       .select({ id: users.id })
@@ -112,12 +139,19 @@ router.post("/register", registerLimiter, async (req, res) => {
         lastName: lastName.trim(),
         email: email.toLowerCase().trim(),
         passwordHash,
-        role: "teacher",
+        role,
         preferredLanguage: "en",
       })
       .returning();
 
     if (!user) throw new Error("Failed to create user");
+
+    if (claim) {
+      await db
+        .insert(rosterLinks)
+        .values({ studentId: claim.studentId, userId: user.id, relation: claim.relation })
+        .onConflictDoNothing();
+    }
 
     const { accessToken, refreshTokenValue } = generateTokens(user.id, user.email, user.role);
     await storeRefreshToken(user.id, refreshTokenValue);
@@ -142,6 +176,44 @@ router.post("/register", registerLimiter, async (req, res) => {
     }
     logger.error({ err }, "register failed");
     res.status(500).json({ error: "Registration failed" });
+  }
+});
+
+/**
+ * Links an already-signed-in parent or student to one more roster row — a
+ * second child for the same parent, a second parent for the same child, or a
+ * second teacher's roster for the same student. Same resolver as /register,
+ * just without creating a user row first.
+ */
+router.post("/claim", authMiddleware, async (req: AuthenticatedRequest, res) => {
+  try {
+    const role = req.user!.role;
+    if (role !== "student" && role !== "parent") {
+      res.status(400).json({ error: "Only a student or parent account can claim a roster code" });
+      return;
+    }
+
+    const code = (req.body as { claimCode?: string })?.claimCode?.trim();
+    if (!code) {
+      res.status(400).json({ error: "A class code is required" });
+      return;
+    }
+
+    const resolved = await resolveClaimCode(code, role);
+    if (!resolved.ok) {
+      res.status(resolved.status).json({ error: resolved.error });
+      return;
+    }
+
+    await db
+      .insert(rosterLinks)
+      .values({ studentId: resolved.studentId, userId: req.user!.id, relation: resolved.relation })
+      .onConflictDoNothing();
+
+    res.status(201).json({ studentId: resolved.studentId, relation: resolved.relation });
+  } catch (err) {
+    logger.error({ err }, "claim failed");
+    res.status(500).json({ error: "Failed to link account" });
   }
 });
 

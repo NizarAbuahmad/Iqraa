@@ -375,13 +375,14 @@ export default function ClassDetailScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.hero, { backgroundColor: ACCENT, paddingTop: insets.top + 12 }]}>
-        <Pressable
-          onPress={() => router.back()}
-          hitSlop={12}
-          style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start' }}
-        >
-          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
-        </Pressable>
+        <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Pressable onPress={() => router.back()} hitSlop={12}>
+            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
+          </Pressable>
+          <Pressable onPress={() => router.push(`/messaging/class/${id}`)} hitSlop={12}>
+            <Ionicons name="chatbubbles-outline" size={22} color="#fff" />
+          </Pressable>
+        </View>
         <Text style={[styles.heroTitle, { fontFamily: 'Cairo_700Bold', textAlign: align }]}>
           {title}
         </Text>
@@ -464,6 +465,12 @@ export default function ClassDetailScreen() {
                 size={18}
                 color={item.teacherNote ? ACCENT : colors.mutedForeground}
               />
+              <Pressable
+                onPress={() => router.push(`/messaging/claim/${item.id}?studentName=${encodeURIComponent(item.displayName)}`)}
+                hitSlop={10}
+              >
+                <Ionicons name="chatbubble-outline" size={18} color={colors.mutedForeground} />
+              </Pressable>
               <Pressable onPress={() => { void onRemove(item); }} hitSlop={10}>
                 <Ionicons name="close" size={20} color={colors.mutedForeground} />
               </Pressable>

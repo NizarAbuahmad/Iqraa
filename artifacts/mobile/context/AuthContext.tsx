@@ -11,8 +11,9 @@ import {
 import { setActiveLessonContextUser } from '@/services/lessonContext';
 import { setActiveMediaUser } from '@/services/lessonMedia';
 import { warmUpVerifier } from '@/services/ai/verifyMath';
+import { registerPushToken, unregisterPushToken } from '@/services/pushTokens';
 
-export type UserRole = 'teacher' | 'school_admin' | 'system_admin';
+export type UserRole = 'teacher' | 'school_admin' | 'system_admin' | 'student' | 'parent';
 
 export interface User {
   id: string;
@@ -38,6 +39,10 @@ export interface RegisterData {
   email: string;
   password: string;
   confirmPassword?: string;
+  /** Defaults to 'teacher' server-side when omitted. */
+  role?: 'teacher' | 'student' | 'parent';
+  /** Required when role is 'student' or 'parent' — see services/messaging.ts. */
+  claimCode?: string;
 }
 
 interface AuthContextType {
@@ -97,7 +102,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // the sleeping verifier now so the symbolic badge is available when they
     // do, instead of silently degrading to the bank label. The route needs a
     // token, so this cannot run any earlier than here.
-    if (user?.id) warmUpVerifier();
+    if (user?.id) {
+      warmUpVerifier();
+      void registerPushToken();
+    }
   }, [user?.id]);
 
   // Register redirect callback so token-refresh failures can navigate to login
@@ -198,6 +206,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error('Password must be at least 8 characters');
     if (payload.confirmPassword && payload.confirmPassword !== payload.password)
       throw new Error('Passwords do not match');
+    if (payload.role && payload.role !== 'teacher' && !payload.claimCode?.trim())
+      throw new Error('A class code is required');
 
     const data = await apiJson<{ accessToken: string; refreshToken: string; user: ApiUser }>(
       '/auth/register',
@@ -209,6 +219,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           email: payload.email.trim(),
           password: payload.password,
           confirmPassword: payload.confirmPassword,
+          role: payload.role,
+          claimCode: payload.claimCode?.trim(),
         }),
       },
     );
@@ -218,6 +230,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
+    await unregisterPushToken();
     try {
       const refreshToken = await getRefreshToken();
       await apiJson('/auth/logout', {

@@ -66,6 +66,16 @@ export const students = pgTable(
      * child changed across the term.
      */
     teacherNote: text("teacher_note").notNull().default(""),
+    /**
+     * A short code the teacher hands to a parent or the student themself, so
+     * their self-serve signup can link to this exact roster row instead of
+     * creating a dangling account. Mirrors `classGroups.joinCode`. Plain text,
+     * not hashed like `attempts.accessTokenHash` — this grants a chat-linking
+     * claim, not exam-answering access, so it's shared the same low-stakes
+     * way a teacher already shares a join code.
+     */
+    claimCode: text("claim_code").unique(),
+    claimCodeExpiresAt: timestamp("claim_code_expires_at", { withTimezone: true }),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),

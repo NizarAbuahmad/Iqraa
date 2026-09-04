@@ -2,7 +2,12 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { savedMaterials } from "@workspace/db";
 import { eq, and, desc } from "drizzle-orm";
-import { authMiddleware, type AuthenticatedRequest } from "../middlewares/auth.js";
+import {
+  authMiddleware,
+  requireRole,
+  TEACHER_ROLES,
+  type AuthenticatedRequest,
+} from "../middlewares/auth.js";
 import { logger } from "../lib/logger.js";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
 import { pickDefined } from "../lib/pickDefined.js";
@@ -36,8 +41,9 @@ function failWorkspace(
   res.status(500).json({ error: message });
 }
 
-// All workspace routes require auth
-router.use(authMiddleware);
+// All workspace routes require auth, and — since a workspace item belongs to
+// a teacher's own class — must be a teacher, not just any authenticated user.
+router.use(authMiddleware, requireRole(...TEACHER_ROLES));
 
 // GET /workspace/items
 router.get("/items", async (req: AuthenticatedRequest, res) => {

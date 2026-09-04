@@ -20,7 +20,12 @@ import {
 } from "@workspace/db";
 import type { Attempt, EvaluationQuestion } from "@workspace/db";
 import { and, eq, ne } from "drizzle-orm";
-import { authMiddleware, type AuthenticatedRequest } from "../middlewares/auth.js";
+import {
+  authMiddleware,
+  requireRole,
+  TEACHER_ROLES,
+  type AuthenticatedRequest,
+} from "../middlewares/auth.js";
 import { logger } from "../lib/logger";
 import {
   gradeAttempt,
@@ -58,7 +63,9 @@ const router = Router();
 // Path-scoped — see the note in roster.ts and evaluations.ts. This router
 // owns only /attempts; it must not re-declare a guard for /evaluations, which
 // evaluations.ts already covers, or every request there would run auth twice.
-router.use("/attempts", authMiddleware);
+// requireRole closes the gap where any authenticated user, not just a
+// teacher, could review or grade attempts.
+router.use("/attempts", authMiddleware, requireRole(...TEACHER_ROLES));
 
 async function ownedAttempt(attemptId: string, teacherId: string) {
   const [row] = await db

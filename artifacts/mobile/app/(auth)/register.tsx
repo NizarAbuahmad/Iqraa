@@ -12,7 +12,10 @@ import { useLanguage } from '@/context/LanguageContext';
 import { Button } from '@/components/ui/Button';
 import { GoogleSignInButton, isGoogleSignInAvailable } from '@/components/ui/GoogleSignInButton';
 import { Input } from '@/components/ui/Input';
+import { PillSelector } from '@/components/ui/PillSelector';
 import { Ionicons } from '@expo/vector-icons';
+
+type SignupRole = 'teacher' | 'parent' | 'student';
 
 export default function RegisterScreen() {
   const colors = useColors();
@@ -20,6 +23,8 @@ export default function RegisterScreen() {
   const { register, loginWithGoogle } = useAuth();
   const { t, lang, isRTL } = useLanguage();
 
+  const [role, setRole] = useState<SignupRole>('teacher');
+  const [claimCode, setClaimCode] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -54,6 +59,8 @@ export default function RegisterScreen() {
         email: email.trim(),
         password,
         confirmPassword,
+        role,
+        claimCode: role === 'teacher' ? undefined : claimCode.trim(),
       });
       router.replace('/(tabs)');
     } catch (e: any) {
@@ -69,7 +76,8 @@ export default function RegisterScreen() {
     lastName.trim().length > 0 &&
     email.includes('@') &&
     password.length >= 8 &&
-    (confirmPassword === '' || confirmPassword === password);
+    (confirmPassword === '' || confirmPassword === password) &&
+    (role === 'teacher' || claimCode.trim().length > 0);
 
   return (
     <KeyboardAvoidingView
@@ -104,6 +112,34 @@ export default function RegisterScreen() {
               <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
               <Text style={[styles.errorText, { color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text>
             </View>
+          ) : null}
+
+          <PillSelector
+            label={t('iAmA')}
+            options={[
+              { value: 'teacher', label: t('roleTeacher') },
+              { value: 'parent', label: t('roleParent') },
+              { value: 'student', label: t('roleStudent') },
+            ]}
+            value={role}
+            onChange={setRole}
+            colors={colors}
+            isRTL={isRTL}
+            accent={colors.primary}
+            haptics
+          />
+
+          {role !== 'teacher' ? (
+            <Input
+              label={t('classCode')}
+              placeholder={t('classCodePlaceholder')}
+              hint={t('classCodeHint')}
+              value={claimCode}
+              onChangeText={text => setClaimCode(text.toUpperCase())}
+              leftIcon="key-outline"
+              autoCapitalize="characters"
+              isRTL={isRTL}
+            />
           ) : null}
 
           {isGoogleSignInAvailable() && (
