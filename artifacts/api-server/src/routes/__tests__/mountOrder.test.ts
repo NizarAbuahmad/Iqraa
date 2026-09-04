@@ -193,8 +193,15 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     }
   });
 
-  it("guards roster, evaluation and attempt routes", async () => {
-    for (const route of ["/students", "/classes", "/evaluations", "/attempts"]) {
+  it("guards roster, evaluation, attempt and workspace routes", async () => {
+    for (const route of ["/students", "/classes", "/evaluations", "/attempts", "/workspace/items"]) {
+      const res = await fetch(`${base}${route}`);
+      assert.equal(res.status, 401, `${route} must require a token`);
+    }
+  });
+
+  it("guards messaging routes — signed-in only, not teacher-only", async () => {
+    for (const route of ["/messaging/threads", "/messaging/contacts"]) {
       const res = await fetch(`${base}${route}`);
       assert.equal(res.status, 401, `${route} must require a token`);
     }

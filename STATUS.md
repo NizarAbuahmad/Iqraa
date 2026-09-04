@@ -384,6 +384,153 @@ api-server 442 / 0 fail. The projected worksheet was rendered with four real
 crops and read in a browser — 4 `<img>`, one extra slide, footer 5/5, no
 overflow, 2×2 grid.
 
+## The extraction reversed a ligature and retrieval lost 90% of its pages, 2026-09-04
+
+Checking that the grounding the entry below switched on actually serves
+readable text. It does — physics, earth science and biology return four
+passages per unit of real Arabic. But every document carries a defect nothing
+was repairing.
+
+`repairExtractionArtifacts` undoes the reversed lam-alef ligature for the bare
+form («االقتران» → «الاقتران») and did nothing for the three hamza-carrying
+ones. «الألوان» is stored as «األلوان» — `U+0627 U+0623 U+0644` where the book
+prints `U+0627 U+0644 U+0623`. 26,626 occurrences across 1.4M words, all 69
+extracted documents, about one word in seventy.
+
+**Retrieval was losing most pages for ordinary words.** Pages matched, before →
+after: «الإنسان» 31 → 314, «الأرض» 37 → 297, «الآلة» 52 → 151, «الأعداد» 28 →
+118. A correctly-spelled Arabic query could not see roughly 90% of the corpus
+containing it, and this had been true of maths and chemistry since grounding
+first shipped.
+
+The rule needs no dictionary, which is what separates it from the
+transposition class that remains unfixable here: an alef followed by a
+hamza-carrying alef is not a sequence Arabic orthography produces, so it cannot
+misfire on a real word the way a bare «ال» rule would. «ألوان» and «ألف» begin
+with the exact pair being swapped and are pinned untouched. Mid-word reversals
+with no alef before them — «ملاءمة» stored as «مالءمة» — are still left alone,
+because telling that «ال» from a definite article does need a dictionary.
+
+`Passage.text` now carries the repair instead of raw text. Its one consumer is
+`grounding.ts`, whose prompt says «استند إلى النص أعلاه في الصياغة والأمثلة
+والمصطلحات» — so serving it raw was inviting the model to reproduce «األلوان»
+in front of a teacher. Not a fidelity loss: the PDF page the citation points at
+prints the word correctly, and the defect is in its text layer. The repair
+still has no business in the grading path and stays out of it.
+
+**Verified in the code points, not the rendering.** RTL text in a terminal
+reorders glyphs, so a visual check would have looked identical whether the
+bytes were right or wrong.
+
+`lib/curriculum` 98/98, mobile 1131/1131, `verify-curriculum` 0 errors.
+
+## Unifying a regex did not unify what was inside it, 2026-09-04
+
+The 2026-08 refactor below replaced three copies of the unit-id regex with one
+`isNccdUnitId`. That fixed the copies and left the *contents* hand-maintained:
+the subject alternation inside the surviving pattern, `DERIVED_OUTCOME_PREFIXES`
+in `objectives.ts`, and the tag vocabulary in `bankTagsForParsedUnit` still
+enumerated the subjects separately. One list became one list plus two others.
+
+Physics, earth science and biology were added on 2026-09-03 to none of them:
+
+- **Grounding was off for all three.** All 15 of their units failed
+  `isNccdUnitId`, so `grounding.ts` dropped them from its unit list and resolved
+  no book passages, and `bankTagsForUnit` returned `[]`. The subjects rendered
+  fine and simply had no textbook behind them.
+- **141 of their objectives reported `bloomsSource: 'authored'`** while carrying
+  the builder's blanket `'Understand'` — a human classification that never
+  happened, feeding the competency breakdown. `DERIVED_OUTCOME_PREFIXES` had
+  already missed the Grade 9 and English vocational shapes, so 311 of 507
+  objectives were misreporting when this was measured.
+
+Both are the same failure the two content bugs on 2026-09-02/03 were: output
+that passes every check and is worthless to a reader. Nothing errored either
+time.
+
+Now one `SUBJECTS` table in `curriculumIds.ts` — a row per subject with its
+bank-tag stem and whether the bank holds unit-level material. `SubjectSlug` is
+`keyof typeof` it, `UNIT_ID_RE` is built from its keys, and
+`isDerivedObjectiveId` asks `objectiveId` what it emits instead of restating it.
+Adding a subject is one row the compiler demands.
+
+No existing tag moved: maths bare (`s1-u2`), chemistry prefixed
+(`chem-s1-u2`), financial literacy and the English tracks semester-only. The
+three sciences emit their real manifest stems — `phys-s1`, `bio-s1`, `earth-s1`,
+abbreviations of the slug rather than the slug — and resolve 3 documents each.
+
+**Note what let it through.** Both guards started from the thing under test.
+`bankTagsForUnit`'s loop iterated `UNITS.filter(isNccdUnitId)`, so a subject the
+predicate did not know about was filtered out before the assertion could see it;
+`objectives.test.ts` listed scopes by hand. The new unit-id test matches on the
+id's *shape* independently and asserts the predicate agrees. A test that selects
+its cases with the code it is checking can only confirm what that code already
+believes.
+
+`lib/curriculum` 96/96, mobile 1131/1131, `verify-curriculum` 17 files / 155
+lessons / 0 errors.
+
+## A pasted key arrived as bullets, and three things hid it, 2026-09-04
+
+Cloud Run could not generate. Every health check was green — `/api/healthz`
+ok, the database readable, `/api/healthz/verifier` reporting
+`{"verifier":"ok","selfTest":"pass"}` — and `POST /generate/quiz` still
+returned 500 in 0.34s. Render, same request, same account, same database,
+worked.
+
+**The cause.** The Cloud Run deploy command was pasted from a chat message,
+and the two longest values lost their middles to `•` (U+2022) somewhere in
+transit: `OPENAI_API_KEY=sk-proj-••••••••` and `YOUTUBE_API_KEY=AIzaSyAx••••`.
+Nothing else was touched — the Neon URL, both R2 keys and the client ID all
+arrived intact, which is why everything except OpenAI worked. The console's
+own diff made it unarguable: the stored value was `sk-proj-` followed by five
+lines of bullets.
+
+The failure is loud once you see it and invisible until then:
+
+```
+TypeError: Cannot convert argument to a ByteString because the character
+at index 15 has a value of 8226 which is greater than 255
+  at OpenAI.bearerAuth (openai/src/client.ts:608)
+```
+
+The SDK throws while building the `Authorization` header, before any socket
+opens. Hence 0.34s, and hence no spend.
+
+**Three things hid it, and each is worth knowing on its own.**
+
+- **Health checks never touch OpenAI.** `/api/healthz/ai-budget` reports
+  `liveMode`, the model and the spend — all of which read correctly from
+  config and the database with a completely broken key. A deployment can be
+  green on every probe and unable to generate a single paper.
+- **The shared artifact pool masked the first test.** The first generation
+  "succeeded" and returned a quiz identical to Render's, carrying a
+  `variantId` — a pool hit, not a generation. Testing a topic another
+  deployment has already generated tests the database, not the model. Only a
+  topic that cannot be cached exercises the real path.
+- **`spentUsd` is the honest signal.** It sat at `0.2243` through every
+  green check. A generation that does not move it did not happen. Render's
+  moved to `0.2295` on the same request; Cloud Run's did not move at all.
+
+**How it was fixed.** Not through the terminal — a second paste corrupted it
+identically, and a third attempt failed differently when bracketed-paste
+markers (`^[[200~`) were injected into the command itself. The value went
+Render's copy button → the Cloud Run console's own env-var form → deploy.
+A browser form field survived what two terminal pastes did not.
+
+**Confirmed working 2026-09-04:** a quiz on an uncacheable topic returned
+correct Arabic mathematics, and spend moved `0.2336 → 0.2359`. That is the
+first real end-to-end proof that Cloud Run can serve a teacher, as opposed
+to answer a probe.
+
+**Still wrong there:** `YOUTUBE_API_KEY` carries the same bullet corruption
+and needs the same fix. It only affects lesson-video lookup, so nothing is
+blocked, but it will fail silently. `ADMIN_DEBUG_KEY` is unset on Cloud Run,
+so `/api/healthz/errors` — which would have shown that stack trace in one
+request instead of a log hunt — is unreachable there.
+
+**Nothing is switched over.** The cutover remains one line and a web rebuild.
+
 ## Cloud Run answers the cold-start question: ~1-3s, not 51s, 2026-09-03
 
 Both Render services sleep on the free plan. The verifier waking from sleep

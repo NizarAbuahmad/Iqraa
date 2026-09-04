@@ -79,6 +79,15 @@ export async function authMiddleware(
 }
 
 /**
+ * Every role a teacher-facing route (roster, evaluations, attempts,
+ * workspace, generate) was implicitly built for, back when `authenticated`
+ * and `teacher` were the same thing. Now that student/parent accounts can
+ * exist too, these routes must gate to this explicitly — see
+ * `requireRole(...TEACHER_ROLES)` below.
+ */
+export const TEACHER_ROLES = ["teacher", "school_admin", "system_admin"];
+
+/**
  * Gate a route to specific roles. Must run after `authMiddleware` — it only
  * reads `req.user`, never verifies the token itself. 403 (not 404): unlike
  * the debug-key admin route, a signed-in non-admin knowing this route exists

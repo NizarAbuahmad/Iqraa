@@ -14,9 +14,15 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { classGroups, classMemberships, students } from "@workspace/db";
 import { and, asc, count, eq, inArray, isNull } from "drizzle-orm";
-import { authMiddleware, type AuthenticatedRequest } from "../middlewares/auth.js";
+import {
+  authMiddleware,
+  requireRole,
+  TEACHER_ROLES,
+  type AuthenticatedRequest,
+} from "../middlewares/auth.js";
 import { logger } from "../lib/logger";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
+import { generateShareCode } from "../modules/assessment/studentView.ts";
 
 const router = Router();
 
@@ -24,7 +30,9 @@ const router = Router();
 // matches every path, and because this router is mounted at the root of /api it
 // then answered 401 for routers mounted after it — chat, generate and the math
 // verifier were all guarded by accident of ordering rather than by intent.
-router.use(["/classes", "/students"], authMiddleware);
+// requireRole closes the gap where any authenticated user, not just a
+// teacher, could read or edit a roster.
+router.use(["/classes", "/students"], authMiddleware, requireRole(...TEACHER_ROLES));
 
 const MAX_BULK_STUDENTS = 200;
 
@@ -465,6 +473,35 @@ router.patch("/students/:id", async (req: AuthenticatedRequest, res) => {
     res.json({ student: row });
   } catch (err) {
     failRoster(res, err, "update student", "Failed to update student");
+  }
+});
+
+/**
+ * Mints a fresh claim code so the teacher can hand it to a parent or the
+ * student themself for self-serve signup — see /auth/register and
+ * /auth/claim. Regenerating overwrites the previous code rather than
+ * allowing several live at once: a code the teacher no longer trusts just
+ * stops working the moment they ask for a new one.
+ */
+router.post("/students/:id/claim-code", async (req: AuthenticatedRequest, res) => {
+  try {
+    const studentId = req.params["id"] as string;
+    const claimCode = generateShareCode();
+    const claimCodeExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+    const [row] = await db
+      .update(students)
+      .set({ claimCode, claimCodeExpiresAt, updatedAt: new Date() })
+      .where(and(eq(students.id, studentId), eq(students.teacherId, req.user!.id)))
+      .returning({ id: students.id });
+
+    if (!row) {
+      res.status(404).json({ error: "Student not found" });
+      return;
+    }
+    res.status(201).json({ claimCode, claimCodeExpiresAt });
+  } catch (err) {
+    failRoster(res, err, "generate claim code", "Failed to generate claim code");
   }
 });
 

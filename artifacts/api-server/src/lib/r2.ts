@@ -57,6 +57,11 @@ export function newLessonMediaKey(extension: string): string {
   return `lesson-media/${randomUUID()}${extension}`;
 }
 
+/** Same reasoning as newLessonMediaKey, its own prefix so chat attachments never collide with lesson media in the bucket. */
+export function newChatMediaKey(extension: string): string {
+  return `chat-media/${randomUUID()}${extension}`;
+}
+
 export async function putObject(key: string, body: Buffer, contentType: string): Promise<void> {
   const client = r2Client();
   if (!client) throw new Error("R2 is not configured");

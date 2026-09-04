@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { authMiddleware } from "../middlewares/auth.js";
+import { authMiddleware, requireRole, TEACHER_ROLES } from "../middlewares/auth.js";
 import healthRouter from "./health";
 import chatRouter from "./chat";
 import generateRouter from "./generate";
@@ -16,6 +16,7 @@ import mediaRouter from "./media";
 import lessonMediaRouter from "./lessonMedia";
 import feedbackRouter from "./feedback";
 import adminRouter from "./admin";
+import messagingRouter from "./messaging";
 
 const router: IRouter = Router();
 
@@ -51,7 +52,10 @@ router.use(studentAttemptRouter);
 // paths no router owns. The prefixes below cover every route these four
 // declare: /chat, /generate/*, /verify/*, and /media/*.
 router.use("/chat", authMiddleware);
-router.use("/generate", authMiddleware);
+// /generate produces teacher materials from a teacher's own class/roster
+// context, so — unlike /chat — it also requires the teacher role, not just
+// any authenticated user.
+router.use("/generate", authMiddleware, requireRole(...TEACHER_ROLES));
 router.use("/verify", authMiddleware);
 // Unsplash lookup shares one server-side access key across every teacher —
 // unauthenticated callers could otherwise exhaust the whole app's rate limit.
@@ -66,5 +70,8 @@ router.use("/media", lessonMediaRouter);
 // same file), so no blanket guard is needed at this mount site.
 router.use(feedbackRouter);
 router.use(adminRouter);
+// messaging.ts self-guards too (see its own note) — deliberately signed-in-only,
+// not teacher-only, since parents and students must reach it.
+router.use(messagingRouter);
 
 export default router;
