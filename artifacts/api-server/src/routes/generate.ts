@@ -4,6 +4,7 @@ import { openai } from "@workspace/integrations-openai-ai-server";
 import { logger } from "../lib/logger";
 import {
   SYSTEM_AR,
+  systemPrompt,
   SYSTEM_EN,
   activityPromptAr,
   activityPromptEn,
@@ -316,6 +317,27 @@ function dedupe(lines: string[]): string[] {
   return [...new Set(lines)];
 }
 
+/**
+ * Whether this lesson has student-book figures that will actually be printed.
+ *
+ * The client knows; the server cannot. The crops live in
+ * `knowledge-base/<grade>-<subject>/figures/` and are joined to a lesson by
+ * `figure-lesson-map.json`, both of which are bundled into the app — the API
+ * has no copy of either and no way to resolve one. So the generator screens
+ * send the count they already compute for the export appendix, and this reads
+ * it.
+ *
+ * Fail closed on anything unexpected. Missing, zero or non-numeric means "no
+ * figures", which selects the stricter prompt — the one that forbids referring
+ * to a figure at all. Wrong in the permissive direction would print «انظر
+ * الشكل المجاور» on a paper with no figure anywhere on it, which is the exact
+ * bug the graph rule was written to stop.
+ */
+function hasBookFigures(body: Record<string, unknown>): boolean {
+  const n = body.bookFigureCount;
+  return typeof n === "number" && Number.isFinite(n) && n > 0;
+}
+
 /** How the pool is browsed by a human — the lesson this artifact belongs to.
  *  Not part of the key, so an imperfect value costs nothing but readability. */
 function lessonRefOf(body: Record<string, unknown>): string {
@@ -373,7 +395,7 @@ generateRouter.post("/generate/lesson-plan", async (req: AuthenticatedRequest, r
     const { body, grounding } = withGrounding(req.body, isAr);
     const prompt = isAr ? lessonPlanPromptAr(body) : lessonPlanPromptEn(body);
     const { content, variantId } = await generateContent({
-      kind: "lesson-plan", systemPrompt: isAr ? SYSTEM_AR : SYSTEM_EN, userPrompt: prompt,
+      kind: "lesson-plan", systemPrompt: systemPrompt(isAr, { hasBookFigures: hasBookFigures(body) }), userPrompt: prompt,
       maxCompletionTokens: GENERATION_TOKENS, body, isAr, userId: req.user?.id,
     });
     res.json(withMeta(content, grounding, variantId));
@@ -389,7 +411,7 @@ generateRouter.post("/generate/worksheet", async (req: AuthenticatedRequest, res
     const { body, grounding } = withGrounding(req.body, isAr);
     const prompt = isAr ? worksheetPromptAr(body) : worksheetPromptEn(body);
     const { content, variantId } = await generateContent({
-      kind: "worksheet", systemPrompt: isAr ? SYSTEM_AR : SYSTEM_EN, userPrompt: prompt,
+      kind: "worksheet", systemPrompt: systemPrompt(isAr, { hasBookFigures: hasBookFigures(body) }), userPrompt: prompt,
       maxCompletionTokens: GENERATION_TOKENS, body, isAr, userId: req.user?.id,
     });
     res.json(withMeta(content, grounding, variantId));
@@ -405,7 +427,7 @@ generateRouter.post("/generate/quiz", async (req: AuthenticatedRequest, res) => 
     const { body, grounding } = withGrounding(req.body, isAr);
     const prompt = isAr ? quizPromptAr(body) : quizPromptEn(body);
     const { content, variantId } = await generateContent({
-      kind: "quiz", systemPrompt: isAr ? SYSTEM_AR : SYSTEM_EN, userPrompt: prompt,
+      kind: "quiz", systemPrompt: systemPrompt(isAr, { hasBookFigures: hasBookFigures(body) }), userPrompt: prompt,
       maxCompletionTokens: GENERATION_TOKENS, body, isAr, userId: req.user?.id,
     });
     res.json(withMeta(content, grounding, variantId));
@@ -424,7 +446,7 @@ generateRouter.post("/generate/homework", async (req: AuthenticatedRequest, res)
     // and a worksheet for one lesson are different artifacts, and the pool must
     // not hand one out for the other.
     const { content, variantId } = await generateContent({
-      kind: "homework", systemPrompt: isAr ? SYSTEM_AR : SYSTEM_EN, userPrompt: prompt,
+      kind: "homework", systemPrompt: systemPrompt(isAr, { hasBookFigures: hasBookFigures(body) }), userPrompt: prompt,
       maxCompletionTokens: GENERATION_TOKENS, body: { ...body, homework: true }, isAr,
       userId: req.user?.id,
     });
@@ -441,7 +463,7 @@ generateRouter.post("/generate/activity", async (req: AuthenticatedRequest, res)
     const { body, grounding } = withGrounding(req.body, isAr);
     const prompt = isAr ? activityPromptAr(body) : activityPromptEn(body);
     const { content, variantId } = await generateContent({
-      kind: "activity", systemPrompt: isAr ? SYSTEM_AR : SYSTEM_EN, userPrompt: prompt,
+      kind: "activity", systemPrompt: systemPrompt(isAr, { hasBookFigures: hasBookFigures(body) }), userPrompt: prompt,
       maxCompletionTokens: GENERATION_TOKENS, body, isAr, userId: req.user?.id,
     });
     res.json(withMeta(content, grounding, variantId));
@@ -464,7 +486,7 @@ generateRouter.post('/generate/classroom-activity', async (req: AuthenticatedReq
     const prompt = (isAr ? classroomPromptAr(body) : classroomPromptEn(body))
       + classroomSetupClause(body, isAr);
     const { content, variantId } = await generateContent({
-      kind: "classroom-activity", systemPrompt: isAr ? SYSTEM_AR : SYSTEM_EN, userPrompt: prompt,
+      kind: "classroom-activity", systemPrompt: systemPrompt(isAr, { hasBookFigures: hasBookFigures(body) }), userPrompt: prompt,
       maxCompletionTokens: GENERATION_TOKENS, body, isAr, userId: req.user?.id,
     });
     // Applied on the way out, to pooled and freshly generated decks alike —

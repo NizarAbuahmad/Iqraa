@@ -7,10 +7,11 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
-import { generatorLessonId, generatorUnitId, getUnitPriorKnowledge, resolveGeneratorGrounding } from '@/services/kbContext';
+import { generatorFigureCount, generatorLessonId, generatorUnitId, getUnitPriorKnowledge, resolveGeneratorGrounding } from '@/services/kbContext';
 import { pooledVariantId, regenerationFields } from '@/services/ai/regeneration';
 import { WorksheetOutput } from '@/services/ai/AIService';
 import { buildDeckFromWorksheet } from '@/services/classDeck';
+import { bookFigureUri } from '@/services/bookFigureUri';
 import { summarizeVerification, type VerifyOutcome } from '@/services/quizVerification';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import {
@@ -269,6 +270,7 @@ export default function WorksheetScreen() {
         additionalContext,
         unitId: generatorUnitId(topic.trim(), lang as 'ar' | 'en'),
         lessonId: generatorLessonId(topic.trim(), lang as 'ar' | 'en'),
+        bookFigureCount: generatorFigureCount(topic.trim(), lang as 'ar' | 'en'),
         contextSource: 'curriculum' as const,
         ...regenerationFields(opts?.regenerate === true, previous),
         includePriorReview: usePrior,
@@ -625,6 +627,7 @@ export default function WorksheetScreen() {
                   // verifier had actually proved. Per question now, so the
                   // projector badges exactly what was checked.
                   outcomes: outcomes ?? undefined,
+                  figureUri: bookFigureUri,
                 }),
               );
               router.push('/ai-tools/classroom/presentation' as any);

@@ -28,7 +28,7 @@ import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { isolateForeignRuns } from '@/services/mathRender';
 import type { ActivitySlide, ClassroomActivity, LessonPlanOutput } from '@/services/ai/AIService';
-import { buildGeneratorContext, generatorLessonId, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
+import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
 import {
   buildLessonDeck, EXIT_TICKET_MAX, MID_LESSON_CHECK_MAX, rebuildAnswerKey, withoutSlide,
 } from '@/services/lessonSlides';
@@ -372,6 +372,7 @@ export default function SlidesScreen() {
           additionalContext: buildGeneratorContext(trimmed, lang as 'ar' | 'en'),
           unitId: generatorUnitId(trimmed, lang as 'ar' | 'en'),
           lessonId: generatorLessonId(trimmed, lang as 'ar' | 'en'),
+          bookFigureCount: generatorFigureCount(trimmed, lang as 'ar' | 'en'),
           contextSource: 'curriculum',
         }, { signal: controller.signal });
       } catch (e) {
@@ -389,19 +390,36 @@ export default function SlidesScreen() {
       }
 
       setPlan(lessonPlan);
+      const checks = await checksPromise;
       // A live graph slide when the lesson's own text carries plottable
       // functions — same conservative extractor Start Class already uses.
-      const graphCommands = subjects[subjectIdx].id === 'mathematics'
-        ? extractGraphCommands([
-            trimmed,
-            ...(grounding.lesson?.examplesAr ?? []),
-            ...(grounding.lesson?.examplesEn ?? []),
-            ...(grounding.lesson?.rulesAr ?? []),
-            ...(grounding.lesson?.rulesEn ?? []),
-            lessonPlan?.mainActivity ?? '',
-          ].join(' \n '))
-        : [];
-      const checks = await checksPromise;
+      //
+      // Keyed off what the lesson CONTAINS, not off its subject id. This read
+      // `subjects[subjectIdx].id === 'mathematics'` until now, which is the
+      // exact branch `startClass.ts` documents having removed for the same
+      // reason: chemistry and financial-literacy decks got no functional
+      // visual at all, silently, because nothing fails when a branch simply
+      // never runs. `extractGraphCommands` is already conservative enough to
+      // be the only filter — it returns nothing for text with no plottable
+      // function, whatever subject that text belongs to, and every subject
+      // added later inherits that instead of needing another branch here.
+      //
+      // The generated checks are scanned too. They are where a maths deck's
+      // equations actually live — the lesson's own prose states rules far more
+      // often than it states a function — and `lessonSlides.ts` already
+      // expects a check that claims a visual to carry the commands for it
+      // (`referencesShownVisual`), so leaving them out of the extraction is
+      // what made those checks droppable.
+      const graphCommands = extractGraphCommands([
+        trimmed,
+        ...(grounding.lesson?.examplesAr ?? []),
+        ...(grounding.lesson?.examplesEn ?? []),
+        ...(grounding.lesson?.rulesAr ?? []),
+        ...(grounding.lesson?.rulesEn ?? []),
+        lessonPlan?.mainActivity ?? '',
+        lessonPlan?.guidedPractice ?? '',
+        ...checks.map(c => c.content ?? ''),
+      ].join(' \n '));
       const builtBase = buildLessonDeck(trimmed, isAr, {
         lesson: grounding.lesson,
         plan: lessonPlan,

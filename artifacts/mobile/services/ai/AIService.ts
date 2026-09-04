@@ -34,6 +34,20 @@ export interface AIRequest {
    */
   lessonId?: string;
   /**
+   * How many student-book figures this lesson has (`figuresForLesson().length`).
+   *
+   * The server cannot work this out: the crops and `figure-lesson-map.json`
+   * are bundled into the app, not shipped to the API. It uses the count to
+   * decide one thing — whether the model is allowed to write «في الشكل
+   * المجاور». With figures, that sentence lands on a paper whose appendix
+   * prints them; without, it points at nothing.
+   *
+   * Only four subjects have any figures at all (both maths, both chemistry,
+   * financial literacy), so this is `0` or absent for most lessons and the
+   * server falls back to the stricter prompt. Omitted is read as none.
+   */
+  bookFigureCount?: number;
+  /**
    * Who wrote `additionalContext`.
    *
    * `'curriculum'` — the app derived it from the KB for this lesson. It is the
@@ -361,6 +375,7 @@ export interface ClassroomActivityRequest {
    *  reasons; this request type predates the shared one and has never been
    *  merged with it. */
   lessonId?: string;
+  bookFigureCount?: number;
   contextSource?: 'curriculum' | 'teacher';
   regenerate?: boolean;
   avoid?: string[];

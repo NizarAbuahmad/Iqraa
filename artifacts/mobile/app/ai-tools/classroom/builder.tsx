@@ -15,7 +15,7 @@ import {
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { ClassroomActivity } from '@/services/ai/AIService';
 import { isolateForeignRuns } from '@/services/mathRender';
-import { buildGeneratorContext, generatorLessonId, generatorUnitId } from '@/services/kbContext';
+import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generatorUnitId } from '@/services/kbContext';
 import { groundedSubjectConflict } from '@/services/lessonPrep';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { ACTIVITY_CARDS, ClassroomSetup, resolveActivityType } from '@/services/classroomRouting';
@@ -90,6 +90,7 @@ export default function ClassroomBuilderScreen() {
         additionalContext,
         unitId: generatorUnitId(topic.trim(), lang as 'ar' | 'en'),
         lessonId: generatorLessonId(topic.trim(), lang as 'ar' | 'en'),
+        bookFigureCount: generatorFigureCount(topic.trim(), lang as 'ar' | 'en'),
         contextSource: 'curriculum',
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

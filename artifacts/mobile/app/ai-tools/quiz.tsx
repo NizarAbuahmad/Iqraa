@@ -7,10 +7,11 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
-import { buildGeneratorContext, generatorLessonId, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
+import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
 import { pooledVariantId, regenerationFields } from '@/services/ai/regeneration';
 import { QuizOutput, QuizQuestion } from '@/services/ai/AIService';
 import { buildDeckFromQuiz } from '@/services/classDeck';
+import { bookFigureUri } from '@/services/bookFigureUri';
 import { summarizeVerification, type VerifyOutcome } from '@/services/quizVerification';
 import { normalizeQuestionOptions, optionLetter } from '@/services/optionLabels';
 import { isolateForeignRuns, prettifySymPy } from '@/services/mathRender';
@@ -287,6 +288,7 @@ export default function QuizScreen() {
         additionalContext,
         unitId,
         lessonId: generatorLessonId(topic.trim(), lang as 'ar' | 'en'),
+        bookFigureCount: generatorFigureCount(topic.trim(), lang as 'ar' | 'en'),
         // Curriculum-derived, so the artifact may be shared with any teacher
         // who asks the same question — see AIRequest.contextSource.
         contextSource: 'curriculum',
@@ -570,6 +572,7 @@ export default function QuizScreen() {
                   // verifier had actually proved. Per question now, so the
                   // projector badges exactly what was checked.
                   outcomes: effectiveOutcomes,
+                  figureUri: bookFigureUri,
                 }),
               );
               router.push('/ai-tools/classroom/presentation' as any);

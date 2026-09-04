@@ -22,7 +22,7 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
-import { buildGeneratorContext, generatorLessonId, generatorUnitId } from '@/services/kbContext';
+import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
 import { isolateForeignRuns } from '@/services/mathRender';
 import {
   ActivityOutput,
@@ -49,6 +49,7 @@ import { Toast } from '@/components/ui/Toast';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
 import { buildLessonFlowHTML, exportAsPDF } from '@/services/share';
+import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -203,6 +204,7 @@ export default function LessonFlowScreen() {
       const req = {
         grade, subject, topic, language, duration, additionalContext: kbCtx, unitId,
         lessonId: generatorLessonId(topic, lang === 'ar' ? 'ar' : 'en'),
+        bookFigureCount: generatorFigureCount(topic, lang === 'ar' ? 'ar' : 'en'),
         // Every step of the flow is built from the lesson alone, so each one
         // can be served from — and fill — the shared pool.
         contextSource: 'curriculum' as const,
@@ -300,7 +302,14 @@ export default function LessonFlowScreen() {
         topic, grade, subject, duration,
         objectives, warmup, activity, guidedPractice, worksheet, exitTicket,
       };
-      const html = buildLessonFlowHTML(flow, lang === 'ar');
+      const html = buildLessonFlowHTML(
+        flow,
+        lang === 'ar',
+        bookFigureRefsForLesson(
+          resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en').lesson?.id,
+          lang === 'ar',
+        ),
+      );
       await exportAsPDF(html, `lesson-flow-${topic}`);
     } catch {
       showToast(t('generationFailed'));

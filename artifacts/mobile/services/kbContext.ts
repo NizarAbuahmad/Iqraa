@@ -22,6 +22,7 @@ import {
   findNccdLessonByKbId,
   findNccdUnitByLessonKbId,
 } from './curriculumG10MathSem2.ts';
+import { figuresForLesson } from './bookFigures.ts';
 import { buildSupportResourcesContext } from './mathSupportResources.ts';
 import { isNccdUnitId } from '@workspace/curriculum';
 
@@ -285,6 +286,28 @@ export function generatorUnitId(topic: string, lang: 'ar' | 'en'): string | unde
  */
 export function generatorLessonId(topic: string, lang: 'ar' | 'en'): string | undefined {
   return resolveGeneratorGrounding(topic, lang).lesson?.id;
+}
+
+/**
+ * How many student-book figures this topic's lesson has — the `AIRequest`
+ * field of the same name.
+ *
+ * Sits beside `generatorLessonId` because it answers the same question from
+ * the same grounding, and every screen that sends one should send the other:
+ * the server uses it to decide whether the model may write «في الشكل
+ * المجاور», and that is only true when the paper's appendix will carry a
+ * figure to look at.
+ *
+ * Counts the index, not the bundle. `figuresForLesson` is the same lookup
+ * `bookFigureRefsForLesson` starts from, minus the `react-native` asset
+ * resolution — which this module must stay clear of, and which can only ever
+ * *reduce* the count (an unbundled crop is dropped at render). Over-counting
+ * by an unbundled figure would at worst permit a reference the appendix does
+ * not honour, so the drift test on `bookFigureAssets.ts` is what keeps the two
+ * in step; there is no cheap way to ask the bundler from here.
+ */
+export function generatorFigureCount(topic: string, lang: 'ar' | 'en'): number {
+  return figuresForLesson(generatorLessonId(topic, lang)).length;
 }
 
 /**
