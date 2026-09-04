@@ -21,7 +21,10 @@ math answer keys (`artifacts/math-verifier`), RTL/Arabic-first UX.
 Investor demo with **real, visible math verification**; all prose/content
 generation stays mocked (`DEMO_MODE = true` in
 `artifacts/mobile/services/ai/demoMode.ts` — do not flip it without a decision).
-Vision screens (student/parent/school dashboards) are deprioritized.
+Vision screens (student/parent/school dashboards) are deprioritized — though
+students and parents stopped being purely notional on 2026-09-04, when
+messaging gave them real accounts. See «In-app messaging ships, and a group is
+an announcement by default» below.
 
 > **Verification is live on the hosted demo as of 2026-08-10.** Confirmed
 > end to end against `iqraa-api-dfxu.onrender.com`, both directions:
@@ -40,6 +43,13 @@ Vision screens (student/parent/school dashboards) are deprioritized.
 
 ## What works today (verified, not assumed)
 
+- **In-app messaging between teachers, parents and students** (2026-09-04):
+  claim-code signup, teacher↔parent and teacher↔student direct threads,
+  class-group and teacher-made custom groups, image attachments, block and
+  report. Groups are announcement-only unless the owning teacher enables
+  student posting. Verified live in a browser and by scripted API runs; **real
+  push delivery is not verified** (needs an EAS build), and **the production
+  schema push had not been run** when this was written — see the entry below.
 - **Answer-key verification is visible on every teacher-facing surface**
   (2026-09-03): quiz cards and worksheet answer-key rows badge each
   symbolically proved key and, with answers shown, print the verifier's own
@@ -383,6 +393,66 @@ Verified: typecheck clean; mobile 1156 tests / 0 fail / 10 known skips;
 api-server 442 / 0 fail. The projected worksheet was rendered with four real
 crops and read in a browser — 4 `<img>`, one extra slide, footer 5/5, no
 overflow, 2×2 grid.
+
+## In-app messaging ships, and a group is an announcement by default, 2026-09-04
+
+Teachers can message parents and students inside Iqraa (PR #245). Until now the
+closest thing was `ai-tools/parent-message`, a composer that hands off to
+WhatsApp — one-way, unpersisted, and outside the product. Students and parents
+now hold real `users` accounts, claimed against a roster row with a code the
+teacher mints (`students.claimCode` → `rosterLinks`).
+
+**The role gap had to close first, and did.** Before this, `requireRole` was
+used in exactly two files (`admin.ts`, `feedback.ts`); every other router —
+roster, evaluations, attempts, workspace, generate — trusted "authenticated ⇒
+teacher". That is harmless while every account is a teacher's and exploitable
+the moment one is not, so the guards landed in the same PR as the accounts
+rather than after them. `mountOrder.test.ts` pins them, 22/22.
+
+**Two rules carry the safety design, both server-side.** A direct thread must
+have exactly one teacher-role participant, so there is no code path that
+creates an unsupervised parent↔student or student↔student DM. A class group's
+membership is derived from the roster rather than edited, and the owning
+teacher is the one row the sync will never remove.
+
+**A group is announcement-only until its teacher opens it.**
+`chat_threads.student_posting_enabled` defaults to false: teachers post,
+everyone else reads, and a student who tries gets `403 group_read_only` — the
+composer is hidden too, but hiding a button is not the rule. So minor-to-minor
+messaging exists nowhere unless one named teacher deliberately enables it on
+one named group. That narrows the consent question to a per-group decision a
+teacher owns; **it does not answer it**, and whether enabling a group should
+itself require parental consent is still undecided.
+
+Block hides rather than removes, and never filters for the owning teacher —
+a block that could hide activity from the teacher's oversight would defeat the
+oversight. Report is an accountability log, not a moderation queue, since the
+teacher already sees the content as a permanent participant.
+
+Push notifications go through Expo as one HTTPS POST (no server dependency
+added), fire-and-forget after the response so a push failure cannot fail a
+message send. Attachments are images to R2 under `chat-media/`, reusing
+`lessonMedia`'s mime allowlist and size cap.
+
+**Verified against a running stack**, not just typecheck: scripted API runs per
+phase (17, 14, 21 and 22 assertions), plus live browser passes for claim-code
+signup, direct and group threads, block, report, group creation, member
+add/remove, self-leave, and the read-only notice against the teacher's toggle.
+Two paths this environment cannot exercise and which are therefore **unproven**:
+real push delivery to a device (needs an EAS build) and picking an image
+through the OS file dialog (browser automation cannot drive it) — the upload
+itself is exercised server-side.
+
+**The production schema push is still outstanding at time of writing.** Seven
+new tables (`roster_links`, `chat_threads`, `chat_participants`,
+`chat_messages`, `chat_blocks`, `chat_reports`, `device_push_tokens`) plus
+`students.claim_code`/`claim_code_expires_at` exist in the local dev database
+only. Until `pnpm --filter @workspace/db run push` runs against production,
+every messaging endpoint answers 503 there. Note `verify-schema` will report
+`ok students.ts` regardless of whether those two *columns* landed, because it
+checks table names — and that is precisely the half that needed a manual
+`ALTER TABLE` locally, drizzle-kit having prompted interactively for the unique
+constraint.
 
 ## The extraction reversed a ligature and retrieval lost 90% of its pages, 2026-09-04
 

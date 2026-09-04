@@ -1,12 +1,18 @@
 /**
  * Roster — classes and students.
  *
- * Students deliberately have **no account**: no email, no password hash, no row
- * in `users`. A student is a name a teacher wrote down. Authenticating minors
- * would buy consent handling, password recovery for fifteen-year-olds and a
- * parent-facing support surface, none of which helps anyone learn anything.
- * When evaluations are delivered by link (a later phase), the link itself is
- * the identity — see `attempts.accessTokenHash`.
+ * A student row is still, first, **a name a teacher wrote down**: it needs no
+ * account to exist and most never have one. That was once the whole story —
+ * authenticating minors buys consent handling, password recovery for
+ * fifteen-year-olds and a parent-facing support surface, none of which helps
+ * anyone learn anything — and it is why an evaluation is delivered by link,
+ * with the link itself as the identity (see `attempts.accessTokenHash`).
+ *
+ * Since 2026-09-04 a student or parent *may additionally* claim a row and get
+ * a real `users` account: `claimCode` below is minted by the teacher, and
+ * `rosterLinks` (schema/messaging.ts) records who claimed what. That exists so
+ * in-app messaging has someone to address, and nothing else here depends on
+ * it — a roster whose rows are all unclaimed behaves exactly as it did before.
  *
  * Everything here is owned by a teacher. There is no school or tenant layer
  * yet; add one below `users` when a school actually asks for it.
