@@ -52,7 +52,10 @@ const extractedDir = path.join(
 /**
  * Undo the two systematic defects of the extracted text layer.
  *
- * Matching only — never applied to text that is stored or shown.
+ * Never stored. Applied to the search index, and to the passage text served
+ * into prompts — see `Passage.text`. Kept out of the grading path, which is
+ * what it must never touch: a student typing an answer never produces the
+ * defect, so repairing their input would fold two different things together.
  */
 export function repairExtractionArtifacts(input: string): string {
   return input
@@ -60,7 +63,17 @@ export function repairExtractionArtifacts(input: string): string {
     // the wrong order, which reads as a doubled alef after the definite article.
     .replace(/اال/g, 'الا')
     // The same collision mid-word, where a doubled alef is otherwise unheard of.
-    .replace(/(\S)اا/g, '$1ا');
+    .replace(/(\S)اا/g, '$1ا')
+    // «الألوان» stored as «األلوان». The same reversal as above, for the three
+    // hamza-carrying ligatures (لأ لإ لآ) rather than the bare لا — and the one the
+    // two rules above miss entirely, which is 26,626 words of the corpus, every
+    // document affected. An alef followed by a hamza-carrying alef is not a
+    // sequence Arabic orthography produces, so this needs no dictionary to be
+    // safe; 97.4% of them are followed by the ل this puts back in front.
+    //
+    // Runs last on purpose: collapsing a doubled alef above can leave a fresh
+    // اأ adjacency behind it, 39 of them across the corpus.
+    .replace(/ا([أإآ])ل/g, 'ال$1');
 }
 
 /** The form everything is compared in. Repair first, then fold. */
@@ -72,7 +85,12 @@ export interface Passage {
   sourceId: string;
   /** 1-based page in the source document, for a citation a teacher can check. */
   page: number;
-  /** Raw extracted text. Unrepaired and unnormalised — see the module note. */
+  /**
+   * Page text with the extraction's reversed ligatures repaired, and nothing
+   * else done to it — not normalised, not folded. `repairExtractionArtifacts`
+   * is safe to show because it only rewrites sequences Arabic orthography
+   * cannot produce; `normalizeArabic` is not, and stays out of here.
+   */
   text: string;
   /** Higher is a better match. Comparable only within one query. */
   score: number;
@@ -184,7 +202,14 @@ export function passagesForUnit(query: PassageQuery): Passage[] {
       scored.push({
         sourceId: source.id,
         page: page.page,
-        text: page.raw,
+        // Repaired, not raw. This text goes into a prompt that tells the model
+        // to take its wording and terminology from it, so shipping a reversed
+        // ligature invites the model to reproduce «األلوان» in front of a
+        // teacher. The repair keys on a sequence Arabic does not produce, and
+        // the page a citation sends the teacher to prints the word correctly —
+        // the defect is in the extraction, not the book, so this moves the
+        // passage toward the source rather than away from it.
+        text: repairExtractionArtifacts(page.raw),
         score,
         usePolicy: policy,
         authority: source.authority,
