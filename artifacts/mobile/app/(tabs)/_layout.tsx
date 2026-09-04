@@ -115,19 +115,22 @@ function ClassicTabLayout() {
         }}
       />
 
-      {/*
-        ── Notifications (hidden from the tab bar) ──────────
-        The screen renders "no notifications" and nothing else — there is no
-        source feeding it. A tab that has never shown anything does not read as
-        "empty today", it teaches teachers there is nothing there, and it takes
-        a fifth of the bar from the four that work. The screen stays so the tab
-        is one line to restore the day notifications exist.
-      */}
+      {/* ── Messages (was "Notifications", hidden until there was a real
+        source — person-to-person chat is that source now) ────────── */}
       <Tabs.Screen
         name="notifications"
         options={{
-          tabBarButton: () => null,
-          tabBarItemStyle: { display: 'none' },
+          title: t('tabAlerts'),
+          tabBarIcon: ({ color, focused }) =>
+            isIOS ? (
+              <SymbolView
+                name={focused ? 'bubble.left.fill' : 'bubble.left'}
+                tintColor={color}
+                size={22}
+              />
+            ) : (
+              <Ionicons name={focused ? 'chatbubble' : 'chatbubble-outline'} size={22} color={color} />
+            ),
         }}
       />
 

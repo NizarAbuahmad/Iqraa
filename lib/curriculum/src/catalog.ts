@@ -1631,14 +1631,14 @@ export function getSemesterLabel(book: Book, lang: 'ar' | 'en'): string {
 export function getBooksForSubjectGrade(
   subjectId: string,
   gradeId: string,
-  role?: 'teacher' | 'student' | 'school_admin' | 'system_admin',
+  role?: 'teacher' | 'student' | 'parent' | 'school_admin' | 'system_admin',
 ): Book[] {
   return BOOKS.filter(b => {
     if (b.subjectId !== subjectId || b.gradeId !== gradeId) return false;
     if (INVESTOR_MVP_CURRICULUM && !MVP_BOOK_IDS.includes(b.id)) return false;
     const aud = b.audience ?? 'all';
     if (aud === 'all') return true;
-    // teachers and admins see everything; students only see 'student' + 'all'
+    // teachers and admins see everything; students and parents only see 'student' + 'all'
     if (!role || role === 'teacher' || role === 'school_admin' || role === 'system_admin') return true;
     return aud === 'student';
   });

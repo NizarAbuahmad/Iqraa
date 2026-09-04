@@ -28,7 +28,12 @@ import {
   objectivesAreWithinBook,
   resolveObjectiveIds,
 } from "@workspace/curriculum";
-import { authMiddleware, type AuthenticatedRequest } from "../middlewares/auth.js";
+import {
+  authMiddleware,
+  requireRole,
+  TEACHER_ROLES,
+  type AuthenticatedRequest,
+} from "../middlewares/auth.js";
 import { logger } from "../lib/logger";
 import {
   bankContextFor,
@@ -68,7 +73,9 @@ import type { ObjectiveScore } from "../modules/assessment/scoring";
 const router = Router();
 // Path-scoped — see the note in roster.ts. Unscoped, this swallowed every
 // request reaching it, including routes belonging to later routers.
-router.use("/evaluations", authMiddleware);
+// requireRole closes the gap where any authenticated user, not just a
+// teacher, could author or read evaluations.
+router.use("/evaluations", authMiddleware, requireRole(...TEACHER_ROLES));
 
 const ALL_TYPES = Object.keys(QUESTION_TYPES) as QuestionType[];
 const DIFFICULTIES: Difficulty[] = ["basic", "standard", "advanced"];
