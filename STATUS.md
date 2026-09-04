@@ -332,6 +332,67 @@ believes.
 `lib/curriculum` 96/96, mobile 1131/1131, `verify-curriculum` 17 files / 155
 lessons / 0 errors.
 
+## A pasted key arrived as bullets, and three things hid it, 2026-09-04
+
+Cloud Run could not generate. Every health check was green — `/api/healthz`
+ok, the database readable, `/api/healthz/verifier` reporting
+`{"verifier":"ok","selfTest":"pass"}` — and `POST /generate/quiz` still
+returned 500 in 0.34s. Render, same request, same account, same database,
+worked.
+
+**The cause.** The Cloud Run deploy command was pasted from a chat message,
+and the two longest values lost their middles to `•` (U+2022) somewhere in
+transit: `OPENAI_API_KEY=sk-proj-••••••••` and `YOUTUBE_API_KEY=AIzaSyAx••••`.
+Nothing else was touched — the Neon URL, both R2 keys and the client ID all
+arrived intact, which is why everything except OpenAI worked. The console's
+own diff made it unarguable: the stored value was `sk-proj-` followed by five
+lines of bullets.
+
+The failure is loud once you see it and invisible until then:
+
+```
+TypeError: Cannot convert argument to a ByteString because the character
+at index 15 has a value of 8226 which is greater than 255
+  at OpenAI.bearerAuth (openai/src/client.ts:608)
+```
+
+The SDK throws while building the `Authorization` header, before any socket
+opens. Hence 0.34s, and hence no spend.
+
+**Three things hid it, and each is worth knowing on its own.**
+
+- **Health checks never touch OpenAI.** `/api/healthz/ai-budget` reports
+  `liveMode`, the model and the spend — all of which read correctly from
+  config and the database with a completely broken key. A deployment can be
+  green on every probe and unable to generate a single paper.
+- **The shared artifact pool masked the first test.** The first generation
+  "succeeded" and returned a quiz identical to Render's, carrying a
+  `variantId` — a pool hit, not a generation. Testing a topic another
+  deployment has already generated tests the database, not the model. Only a
+  topic that cannot be cached exercises the real path.
+- **`spentUsd` is the honest signal.** It sat at `0.2243` through every
+  green check. A generation that does not move it did not happen. Render's
+  moved to `0.2295` on the same request; Cloud Run's did not move at all.
+
+**How it was fixed.** Not through the terminal — a second paste corrupted it
+identically, and a third attempt failed differently when bracketed-paste
+markers (`^[[200~`) were injected into the command itself. The value went
+Render's copy button → the Cloud Run console's own env-var form → deploy.
+A browser form field survived what two terminal pastes did not.
+
+**Confirmed working 2026-09-04:** a quiz on an uncacheable topic returned
+correct Arabic mathematics, and spend moved `0.2336 → 0.2359`. That is the
+first real end-to-end proof that Cloud Run can serve a teacher, as opposed
+to answer a probe.
+
+**Still wrong there:** `YOUTUBE_API_KEY` carries the same bullet corruption
+and needs the same fix. It only affects lesson-video lookup, so nothing is
+blocked, but it will fail silently. `ADMIN_DEBUG_KEY` is unset on Cloud Run,
+so `/api/healthz/errors` — which would have shown that stack trace in one
+request instead of a log hunt — is unreachable there.
+
+**Nothing is switched over.** The cutover remains one line and a web rebuild.
+
 ## Cloud Run answers the cold-start question: ~1-3s, not 51s, 2026-09-03
 
 Both Render services sleep on the free plan. The verifier waking from sleep
