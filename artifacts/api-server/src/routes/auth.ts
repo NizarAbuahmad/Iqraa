@@ -9,11 +9,14 @@ import {
   refreshTokens,
   passwordResetTokens,
   rosterLinks,
+  lessonMedia,
+  chatMessages,
 } from "@workspace/db";
-import { eq, and, gt } from "drizzle-orm";
+import { eq, and, gt, isNotNull } from "drizzle-orm";
 import { authMiddleware, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { logger } from "../lib/logger.js";
 import { createRateLimiter } from "../lib/rateLimit.js";
+import { deleteObject } from "../lib/r2.js";
 import { isStrongPassword, PASSWORD_POLICY_MESSAGE } from "../lib/passwordPolicy.js";
 import { resolveClaimCode, type ClaimRole } from "../lib/rosterClaim.js";
 
@@ -458,6 +461,12 @@ router.get("/me", authMiddleware, async (req: AuthenticatedRequest, res) => {
       role: user.role,
       preferredLanguage: user.preferredLanguage,
       emailVerified: user.emailVerified,
+      // Which proof `DELETE /auth/users/me` will accept from this account: a
+      // password, or — for a Google-only account, which has no hash to check
+      // — its own email address retyped. Deliberately only here and not on the
+      // six other places this object is serialised: the delete screen fetches
+      // /me itself, so one site cannot drift out of step with the others.
+      hasPassword: user.passwordHash !== null,
       createdAt: user.createdAt,
       lastLogin: user.lastLogin,
     });
@@ -628,5 +637,110 @@ router.patch("/users/profile", authMiddleware, async (req: AuthenticatedRequest,
     res.status(500).json({ error: "Failed to update profile" });
   }
 });
+
+// DELETE /auth/users/me
+//
+// Apple 5.1.1(v) and Google Play both require an in-app route that actually
+// deletes the account. A support address does not satisfy either.
+//
+// The schema does almost all of the work: every table referencing `users.id`
+// declares `onDelete: "cascade"`, so removing one row takes the roster,
+// classes, evaluations, saved materials, chat participation, blocks, reports
+// and push tokens with it. Two things a cascade cannot reach:
+//
+//   - R2 objects, which are not rows. Their keys are read *before* the delete,
+//     because a key read afterwards is a key that no longer exists.
+//   - `aiGenerations.userId`, which is `set null` by design rather than
+//     cascade. It is cost accounting; what survives is a spend row with no
+//     person attached to it.
+//
+// Re-authentication is required. For a teacher the cascade reaches the whole
+// roster — other people's children — and a stolen access token must not be
+// enough to erase it.
+const deleteAccountLimiter = createRateLimiter({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  name: "delete-account",
+});
+
+router.delete(
+  "/users/me",
+  authMiddleware,
+  deleteAccountLimiter,
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = req.user!.id;
+      const [account] = await db.select().from(users).where(eq(users.id, userId));
+      if (!account) {
+        res.status(404).json({ error: "Account not found" });
+        return;
+      }
+
+      // A password account proves itself with its password. A Google-only
+      // account has no hash to check, so it retypes its own email address:
+      // weaker, but it is the strongest thing that account actually holds,
+      // and it still stops deletion by token alone.
+      const { password, confirmEmail } = req.body as {
+        password?: string;
+        confirmEmail?: string;
+      };
+      if (account.passwordHash) {
+        const ok = password
+          ? await bcrypt.compare(password, account.passwordHash)
+          : false;
+        if (!ok) {
+          res.status(401).json({ error: "Password is incorrect" });
+          return;
+        }
+      } else if (
+        confirmEmail?.trim().toLowerCase() !== account.email.toLowerCase()
+      ) {
+        res.status(401).json({ error: "Email confirmation does not match" });
+        return;
+      }
+
+      const media = await db
+        .select({ key: lessonMedia.r2Key })
+        .from(lessonMedia)
+        .where(eq(lessonMedia.userId, userId));
+      const attachments = await db
+        .select({ key: chatMessages.attachmentKey })
+        .from(chatMessages)
+        .where(
+          and(
+            eq(chatMessages.senderId, userId),
+            isNotNull(chatMessages.attachmentKey),
+          ),
+        );
+
+      await db.delete(users).where(eq(users.id, userId));
+
+      // Deliberately after the row is gone: the deletion the user asked for is
+      // the database one, and it must not fail because object storage is
+      // unreachable. A failure here leaves an unreferenced blob behind —
+      // logged at error level because nothing else will ever notice it.
+      // ponytail: no retry queue. Add one if these lines actually appear.
+      const keys = [
+        ...media.map(m => m.key),
+        ...attachments.map(a => a.key as string),
+      ];
+      let orphaned = 0;
+      for (const key of keys) {
+        try {
+          await deleteObject(key);
+        } catch (err) {
+          orphaned += 1;
+          logger.error({ err, key, userId }, "account deleted but R2 object remains");
+        }
+      }
+
+      logger.info({ userId, r2Objects: keys.length, orphaned }, "account deleted");
+      res.json({ ok: true });
+    } catch (err) {
+      logger.error({ err }, "account deletion failed");
+      res.status(500).json({ error: "Failed to delete account" });
+    }
+  },
+);
 
 export default router;

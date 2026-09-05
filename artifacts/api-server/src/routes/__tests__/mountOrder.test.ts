@@ -193,6 +193,16 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     }
   });
 
+  it("mounts account deletion, and refuses it without a token", async () => {
+    // Apple 5.1.1(v) and Play both require this route to exist, so the thing
+    // worth pinning is that it is *mounted* — a 404 here is a submission
+    // blocker, and would look identical to a typo in the path. 401 says the
+    // route resolved and the guard ran; anything past that needs a database,
+    // which this suite deliberately does not have.
+    const res = await fetch(`${base}/auth/users/me`, { method: "DELETE" });
+    assert.equal(res.status, 401, "account deletion must exist and require a token");
+  });
+
   it("guards roster, evaluation, attempt and workspace routes", async () => {
     for (const route of ["/students", "/classes", "/evaluations", "/attempts", "/workspace/items"]) {
       const res = await fetch(`${base}${route}`);

@@ -297,6 +297,74 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## An account can be deleted, and the policy links go somewhere, 2026-09-05
+
+Two of the four compliance blockers named in the entry below. Both are
+store-mandated and neither existed: `grep` for account deletion returned
+nothing across the whole repo, and the privacy-policy and terms rows in
+`app/settings.tsx` were `onPress={() => {}}` — against copy at registration
+that already told every new user they were agreeing to both documents.
+
+**`DELETE /auth/users/me`.** Almost all of the work was already done by the
+schema and nobody had noticed: every table referencing `users.id` declares
+`onDelete: "cascade"`, so one row delete takes the roster, classes,
+evaluations, saved materials, chat participation, blocks, reports and push
+tokens with it. What a cascade cannot reach is the two things that are not
+rows —
+
+- R2 objects. `lessonMedia.r2Key` and `chatMessages.attachmentKey` are read
+  **before** the delete, because a key read afterwards is a key that no longer
+  exists, and the blobs are removed after. Deliberately after: the deletion
+  the user asked for is the database one and must not fail because object
+  storage is unreachable. A failure there logs at error level and leaves an
+  unreferenced blob — no retry queue, which is a stated ceiling, not an
+  oversight.
+- `aiGenerations.userId`, which is `set null` by design. It is cost
+  accounting; what survives is a spend row with nobody attached.
+
+Re-authentication is required, because for a teacher the cascade reaches the
+whole roster — other people's children — and a stolen access token must not be
+enough to erase it. A password account types its password; a Google-only
+account has no hash to check, so it retypes its own email. Which one gets
+asked for comes from `hasPassword` on `GET /auth/me`, added there **and
+nowhere else**: that object is serialised at seven sites in `routes/auth.ts`
+and the delete screen fetches `/me` itself, so one field cannot drift out of
+step with six copies.
+
+**The documents exist.** `constants/legal.ts` holds a privacy policy and terms
+of service in both languages, and `app/legal/[doc].tsx` renders either —
+one dynamic route, not two near-identical screens. Every factual claim in the
+policy was written from the code rather than from a template: the
+subprocessor list is `lib/r2.ts`, `lib/db`, `services/analytics.ts`,
+`services/pushTokens.ts`, `routes/auth.ts` and the OpenAI client, and the data
+inventory is `lib/db/src/schema`. **That makes it part of the blast radius of
+those files** — a policy describing a system that no longer exists is worse
+than a missing one, because it is a published false statement.
+
+`/legal` joins `/take` in `PUBLIC_ROUTES`, for a different reason than
+`/take` has: not that its visitor has no account, but that a store reviewer
+opens the policy URL cold, in a browser with no session. Verified in a real
+browser on the web build — `/legal/privacy` and `/legal/terms` both render
+signed out with no console errors, and `/delete-account` correctly bounces a
+signed-out visitor to onboarding.
+
+Not verified: the deletion itself end to end. The only database this checkout
+can reach is production, and a test that deletes a real account against it is
+not a test. The route is pinned as *mounted and guarded* in
+`mountOrder.test.ts` — a 404 there would be a submission blocker and would
+look identical to a typo in the path — and the rest needs a throwaway
+database.
+
+Two things still need a person, not a commit: `LEGAL_CONTACT_EMAIL` in
+`constants/legal.ts` is `privacy@iqraa.app` and **no such mailbox is known to
+exist** — a reviewer may write to it and a data-subject request has a
+statutory clock. And no lawyer has read either document; the children's-data
+section and the governing-law clause are the two that most need one, given
+students reach this app through a teacher with no age recorded anywhere in the
+schema.
+
+Green: typecheck clean, mobile 1172/1172 (10 skipped), API 453/453.
+
 ## A release build would have shipped broken, 2026-09-05
 
 A store-readiness review of the mobile app. The app itself is native-safe —
@@ -352,10 +420,11 @@ Green after all of it: typecheck clean, mobile 1165/1165 (10 skipped), API
 452/452.
 
 **None of this makes the app publishable.** The blockers that remain are
-compliance and process, not configuration: there is no account deletion
+compliance and process, not configuration: ~~there is no account deletion
 anywhere in the app or API (Apple 5.1.1(v) and Play both require it), the
 privacy-policy and terms rows in `app/settings.tsx` are `onPress={() => {}}`
-against copy at registration that already claims both documents exist,
+against copy at registration that already claims both documents exist,~~
+**both closed the same day — see the entry above,**
 messaging carries image attachments with block and report endpoints but
 nothing that can act on a report or eject a user (`routes/admin.ts` has one
 route, `usage-summary`), and students get accounts by claim code with no
