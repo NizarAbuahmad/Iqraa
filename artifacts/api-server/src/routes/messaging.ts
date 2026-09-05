@@ -304,14 +304,52 @@ router.get("/messaging/contacts", async (req: AuthenticatedRequest, res) => {
         .where(and(eq(students.teacherId, req.user!.id), isNull(students.archivedAt)))
         .orderBy(asc(students.displayName));
 
+      // Which classes each student sits in, so the picker can offer "everyone
+      // in 10-أ" rather than thirty individual ticks. A separate query and not
+      // a join on `rows` above: a student belongs to many classes by design
+      // (see the comment on classMemberships), so joining would multiply every
+      // contact row by that student's class count and the grouping below would
+      // have to undo it.
+      const classRows = await db
+        .select({
+          studentId: classMemberships.studentId,
+          id: classGroups.id,
+          name: classGroups.name,
+          nameAr: classGroups.nameAr,
+        })
+        .from(classMemberships)
+        .innerJoin(classGroups, eq(classGroups.id, classMemberships.classGroupId))
+        .innerJoin(students, eq(students.id, classMemberships.studentId))
+        .where(and(eq(students.teacherId, req.user!.id), isNull(classGroups.archivedAt)))
+        .orderBy(asc(classGroups.name));
+
+      const classesByStudent = new Map<string, { id: string; name: string; nameAr: string }[]>();
+      for (const row of classRows) {
+        const list = classesByStudent.get(row.studentId);
+        const entry = { id: row.id, name: row.name, nameAr: row.nameAr };
+        if (list) list.push(entry);
+        else classesByStudent.set(row.studentId, [entry]);
+      }
+
       const byStudent = new Map<
         string,
-        { studentId: string; studentName: string; contacts: typeof rows }
+        {
+          studentId: string;
+          studentName: string;
+          classes: { id: string; name: string; nameAr: string }[];
+          contacts: typeof rows;
+        }
       >();
       for (const row of rows) {
         const entry = byStudent.get(row.studentId);
         if (entry) entry.contacts.push(row);
-        else byStudent.set(row.studentId, { studentId: row.studentId, studentName: row.studentName, contacts: [row] });
+        else
+          byStudent.set(row.studentId, {
+            studentId: row.studentId,
+            studentName: row.studentName,
+            classes: classesByStudent.get(row.studentId) ?? [],
+            contacts: [row],
+          });
       }
       res.json({ students: [...byStudent.values()] });
       return;

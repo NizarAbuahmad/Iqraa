@@ -72,6 +72,16 @@ export interface ChatThreadSummary {
 export interface ContactStudent {
   studentId: string;
   studentName: string;
+  /**
+   * Every class of this teacher's that the student sits in — a student can be
+   * in several. Drives the picker's "select a whole class".
+   *
+   * Optional because the API is deployed by hand while the web app deploys on
+   * merge (see docs/deploying.md), so the client will meet a server that
+   * predates this field. Callers must treat it as possibly absent; the picker
+   * simply shows no class chips.
+   */
+  classes?: Array<{ id: string; name: string; nameAr: string }>;
   /** The people this user may start a thread with about this student. */
   contacts: Array<{ userId: string; firstName: string; lastName: string; role: ChatRole }>;
 }
