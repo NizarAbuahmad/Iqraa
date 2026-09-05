@@ -89,9 +89,9 @@ export default function WorksheetScreen() {
       : null,
   );
   const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(params.gradeIdx ?? inferredScope?.gradeIdx, grades.length));
-  // Index-aligned with `subjects`. Subjects with no book for the picked grade
-  // stay in the list — their positions are persisted — but are not pickable.
-  const subjectDisabled = subjectsWithoutCurriculum(grades[gradeIdx].id);
+  // Index-aligned flags rather than a pre-filtered `subjects`: these positions
+  // are persisted as subjectIdx, so entries are dropped at render time only.
+  const subjectHidden = subjectsWithoutCurriculum(grades[gradeIdx].id);
   const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx ?? inferredScope?.subjectIdx, subjects.length));
   const [topic, setTopic] = useState(params.topic ?? '');
   const [diffIdx, setDiffIdx] = useState(params.diffIdx ? parseInt(params.diffIdx, 10) : 0);
@@ -441,7 +441,7 @@ export default function WorksheetScreen() {
       {/* Form */}
       <View style={{ padding: 20 }}>
         <PickerField label={t('grade')} value={gradeNames[gradeIdx]} options={gradeNames} onChange={setGradeIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
-        <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} disabled={subjectDisabled} disabledNote={t('noCurriculumOption')} />
+        <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} hidden={subjectHidden} />
 
         <TopicSelector
           subjectId={subjects[subjectIdx].id}
@@ -794,12 +794,12 @@ function CheckboxRow({ label, checked, onToggle, accent, colors, isRTL, disabled
  * how the 45-line copy this replaces drifted away from
  * components/ui/PickerField in the first place.
  *
- * quiz's copy also tinted the trigger border while open and this one did not,
- * which is drift rather than intent; left as-is here so this commit changes
- * nothing visually.
+ * The trigger tints its border violet while open. quiz's copy did this and
+ * this screen's did not, which was drift; the de-duplication preserved the
+ * asymmetry rather than decide it, and Nizar has since asked for the tint.
  */
 function PickerField(props: React.ComponentProps<typeof SharedPickerField>) {
-  return <SharedPickerField maxHeight={180} selectedTint={ACCENT + '15'} {...props} />;
+  return <SharedPickerField maxHeight={180} selectedTint={ACCENT + '15'} highlightBorderWhenOpen {...props} />;
 }
 
 const styles = StyleSheet.create({
