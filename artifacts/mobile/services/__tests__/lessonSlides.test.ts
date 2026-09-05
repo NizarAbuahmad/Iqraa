@@ -637,15 +637,53 @@ describe('book figures on the deck', () => {
   const uri = (f: { file: string }) => `asset://${f.file}`;
   const figureSlides = (deck: { slides: ActivitySlide[] }) =>
     deck.slides.filter(s => s.type === 'media' && s.mediaUrl?.startsWith('asset://'));
+  /**
+   * A figure attached BESIDE a slide's text rather than given its own slide.
+   *
+   * The rule slide takes the first figure this way, so counting only
+   * standalone `media` slides now under-counts what a lesson actually shows —
+   * which is the whole point of the change and the reason these assertions
+   * moved rather than being deleted.
+   */
+  const sideFigures = (deck: { slides: ActivitySlide[] }) =>
+    deck.slides.filter(s => s.sideImageUrl?.startsWith('asset://'));
+  const allFigures = (deck: { slides: ActivitySlide[] }) =>
+    [...sideFigures(deck).map(s => s.sideImageUrl), ...figureSlides(deck).map(s => s.mediaUrl)];
 
   it('shows the lesson\'s own figures, captioned with the page', () => {
     const deck = buildLessonDeck('نظام معادلات', true, { lesson: WITH_FIGURES, figureUri: uri });
-    const shown = figureSlides(deck);
+    const shown = allFigures(deck);
     assert.ok(shown.length > 0, 'the lesson has figures and they reached the deck');
     const expected = figuresForLesson(WITH_FIGURES.id).slice(0, BOOK_FIGURE_MAX);
-    assert.deepEqual(shown.map(s => s.mediaUrl), expected.map(uri));
-    // The page number is what lets a teacher check the slide against the book.
-    for (const s of shown) assert.match(s.mediaCaption ?? '', /صفحة/);
+    assert.deepEqual(shown, expected.map(uri));
+    // The page number is what lets a teacher check the slide against the book,
+    // whether it is beside the text or on a slide of its own.
+    for (const s of figureSlides(deck)) assert.match(s.mediaCaption ?? '', /صفحة/);
+    for (const s of sideFigures(deck)) assert.match(s.sideImageCaption ?? '', /صفحة/);
+  });
+
+  it('puts the first one BESIDE the rule it illustrates, not on the next slide', () => {
+    // The deck was a single column throughout, so «العمود النازل من المركز
+    // ينصّف الوتر» and the book's drawing of exactly that were a click apart.
+    const deck = buildLessonDeck('نظام معادلات', true, { lesson: WITH_FIGURES, figureUri: uri });
+    const rule = deck.slides.find(s => s.title.includes('القاعدة'));
+    assert.ok(rule, 'the fixture lesson states a rule');
+    assert.ok(rule!.sideImageUrl?.startsWith('asset://'), 'the rule slide carries the figure');
+    assert.match(rule!.sideImageCaption ?? '', /صفحة/);
+    // And it is not ALSO a slide of its own.
+    assert.ok(
+      !figureSlides(deck).some(s => s.mediaUrl === rule!.sideImageUrl),
+      'the same figure must not appear twice',
+    );
+  });
+
+  it('leaves every figure standalone when the lesson states no rule', () => {
+    // Nothing to sit beside, so nothing is attached and the deck is exactly
+    // what it was before the split layout existed.
+    const noRule: KBLesson = { ...WITH_FIGURES, rulesAr: [], rulesEn: [] };
+    const deck = buildLessonDeck('نظام معادلات', true, { lesson: noRule, figureUri: uri });
+    assert.equal(sideFigures(deck).length, 0);
+    assert.equal(figureSlides(deck).length, BOOK_FIGURE_MAX);
   });
 
   it('caps them, so a six-figure lesson is not six slides of looking', () => {
@@ -654,24 +692,30 @@ describe('book figures on the deck', () => {
     const deck = buildLessonDeck('اقترانات نسبية', true, {
       lesson: { ...LESSON, id: 'kbl-math-s2-nccd-u5_l2' }, figureUri: uri,
     });
-    assert.equal(figureSlides(deck).length, BOOK_FIGURE_MAX);
+    // The cap is on figures shown, not on slides spent — one of them may now
+    // be riding along beside the rule instead of occupying a slide.
+    assert.equal(allFigures(deck).length, BOOK_FIGURE_MAX);
   });
 
   it('adds nothing when no resolver is passed — the pre-figures deck', () => {
     const before = buildLessonDeck('نظام معادلات', true, { lesson: WITH_FIGURES });
-    assert.equal(figureSlides(before).length, 0);
+    assert.equal(allFigures(before).length, 0);
   });
 
   it('drops a figure the bundler never got, rather than rendering it broken', () => {
     const deck = buildLessonDeck('نظام معادلات', true, {
       lesson: WITH_FIGURES, figureUri: () => null,
     });
-    assert.equal(figureSlides(deck).length, 0);
+    assert.equal(allFigures(deck).length, 0);
+    // And the rule slide stays a plain single column rather than reserving
+    // half its width for a picture that never arrives.
+    const rule = deck.slides.find(s => s.title.includes('القاعدة'));
+    assert.equal(rule?.sideImageUrl, undefined);
   });
 
   it('adds nothing for a lesson with no figures at all', () => {
     const deck = buildLessonDeck('درس بلا أشكال', true, { lesson: LESSON, figureUri: uri });
-    assert.equal(figureSlides(deck).length, 0);
+    assert.equal(allFigures(deck).length, 0);
   });
 
   it('keeps slide numbers consecutive with figures inserted', () => {

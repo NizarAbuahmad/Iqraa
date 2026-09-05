@@ -621,7 +621,10 @@ function SlideView({ slide, isRTL: appIsRTL }: { slide: ActivitySlide; isRTL: bo
       {/* Body. Bullets become cards and equations become a boxed formula: the
           content already carries that structure as "• " prefixes and maths
           glyphs, it was just being flattened into identical paragraphs. */}
-      <View style={slideStyles.body}>
+      <View style={slide.sideImageUrl
+        ? [slideStyles.splitRow, { flexDirection: isRTL ? 'row-reverse' as const : 'row' as const }]
+        : undefined}>
+      <View style={[slideStyles.body, slide.sideImageUrl ? slideStyles.splitText : null]}>
         {lines.map((line, i) => {
           const isBullet = isBulletLine(line);
           const text = isBullet ? stripBullet(line) : line;
@@ -700,6 +703,27 @@ function SlideView({ slide, isRTL: appIsRTL }: { slide: ActivitySlide; isRTL: bo
             </Text>
           );
         })}
+      </View>
+      {/* The book's own diagram of this rule, beside it rather than a click
+          later. React Native has no document direction to inherit, so
+          `row-reverse` IS correct here — the opposite of the rule the printed
+          exports live by, and the reason that rule is written down twice in
+          exportHtml.ts. */}
+      {slide.sideImageUrl && (
+        <View style={slideStyles.splitFig}>
+          <Image
+            source={{ uri: slide.sideImageUrl }}
+            style={slideStyles.splitImg}
+            resizeMode="contain"
+            accessibilityLabel={slide.sideImageCaption}
+          />
+          {!!slide.sideImageCaption && (
+            <Text style={[slideStyles.splitCaption, { fontFamily: 'Almarai_400Regular' }]}>
+              {slide.sideImageCaption}
+            </Text>
+          )}
+        </View>
+      )}
       </View>
 
       {/* Unlock code badge */}
@@ -1339,6 +1363,13 @@ const slideStyles = StyleSheet.create({
   glyph: { fontSize: 21 },
   title: { flex: 1, fontSize: 31, lineHeight: 48 },
   body: { gap: 12 },
+  // Two columns when the slide carries its own figure; untouched otherwise,
+  // so every slide without one renders exactly as before.
+  splitRow: { alignItems: 'center', gap: 20 },
+  splitText: { flex: 1, minWidth: 0 },
+  splitFig: { flex: 0.8, alignItems: 'center', gap: 8 },
+  splitImg: { width: '100%', height: 340, borderRadius: 12 },
+  splitCaption: { fontSize: 13, color: '#7C6A65', textAlign: 'center' },
   bodyLine: { fontSize: 21, color: TEXT_PRIMARY, lineHeight: 36 },
   card: { alignItems: 'center', gap: 14, backgroundColor: CARD_BG, borderRadius: 14, borderWidth: 1, borderColor: BORDER, paddingVertical: 15, paddingHorizontal: 16 },
   cardBar: { width: 5, alignSelf: 'stretch', borderRadius: 3 },

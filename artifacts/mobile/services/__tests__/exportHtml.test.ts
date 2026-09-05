@@ -22,6 +22,7 @@ import {
   buildQuizSlidesHTML,
   buildWorksheetHTML,
   buildWorksheetSlidesHTML,
+  DOC_ACCENT,
   EXPORT_FIGURE_MAX,
   type BookFigureRef,
 } from '../exportHtml.ts';
@@ -395,5 +396,101 @@ describe('book figures on the projector builders', () => {
     const withFigs = buildLessonFlowHTML(flow(), true, figures(2));
     assert.equal(imgs(withFigs), 2);
     assert.equal(imgs(buildLessonFlowHTML(flow(), true)), 0);
+  });
+});
+
+/**
+ * The printed documents look like one designed product.
+ *
+ * They did not. The worksheet, quiz and lesson plan were a grey hairline and
+ * one teal accent; the activity built its own document with a five-rule
+ * stylesheet and inline styles on every element; and `buildLessonFlowHTML`
+ * — the only one anybody had designed — had coloured section bands, step
+ * cards and real webfonts that none of the others could reach.
+ */
+describe('printed document design', () => {
+  const printDocuments = (): [string, string][] => [
+    ['quiz', buildQuizHTML(quiz(), 'اختبار', meta, true)],
+    ['worksheet', buildWorksheetHTML(worksheet(), 'ورقة عمل', meta, true)],
+    ['lessonPlan', buildLessonPlanHTML(plan(), 'خطة', meta, true)],
+    ['activity', buildActivityHTML(activity(), 'نشاط', meta, true)],
+  ];
+
+  it('actually LOADS the Arabic typeface it names', () => {
+    // The bug this replaces: the stack named 'Amiri' and nothing ever fetched
+    // it. Amiri ships on none of the platforms we target, so every printed
+    // worksheet fell through to system Arial while the projector deck
+    // rendered in Cairo/Almarai — one product, two typographies. Naming a
+    // font is not loading it, which is exactly what made this invisible.
+    for (const [name, html] of printDocuments()) {
+      assert.match(html, /fonts\.googleapis\.com/, `${name} loads no webfont`);
+      assert.match(html, /family=Almarai/, `${name} does not request Almarai`);
+      assert.ok(
+        html.includes("'Almarai'") || html.includes('Almarai,'),
+        `${name} requests Almarai but does not use it`,
+      );
+      assert.ok(!html.includes('Amiri'), `${name} still names the font it never loads`);
+    }
+  });
+
+  it('gives each document its own accent, matching its projected twin', () => {
+    const docs = printDocuments();
+    assert.match(docs[0]![1], new RegExp(DOC_ACCENT.quiz));
+    assert.match(docs[1]![1], new RegExp(DOC_ACCENT.worksheet));
+    assert.match(docs[2]![1], new RegExp(DOC_ACCENT.lesson));
+    assert.match(docs[3]![1], new RegExp(DOC_ACCENT.activity));
+  });
+
+  it('builds the activity from the shared base, not its own document', () => {
+    // It had its own <!DOCTYPE>, its own five CSS rules and inline styles
+    // everywhere — which is the reason `figuresSectionHTML` is inline-styled
+    // for all five callers. One <!DOCTYPE> and the shared classes now.
+    const html = printDocuments()[3]![1];
+    assert.equal((html.match(/<!DOCTYPE html>/g) ?? []).length, 1);
+    assert.match(html, /class="step-card"/);
+    assert.match(html, /class="sec-band"/);
+    assert.match(html, /class="page"/);
+  });
+
+  it('bands every section with an icon rather than a grey hairline', () => {
+    for (const [name, html] of printDocuments()) {
+      assert.match(html, /class="sec-band"/, `${name} has no section bands`);
+      assert.match(html, /class="sec-icon"/, `${name} has no section icons`);
+    }
+  });
+
+  it('leaves room to write on a question with no options, and not on one with', () => {
+    // A worksheet is the one document a student fills in, and it printed the
+    // stem and then the next stem. The shared `worksheet()` fixture is
+    // all-MCQ, so this builds its own pair rather than widening a fixture
+    // eight other assertions depend on.
+    const withShortAnswer = {
+      ...worksheet(),
+      sections: [{
+        type: 'short_answer' as const,
+        title: 'القسم الأول',
+        questions: [
+          { text: 'اشرح بخطواتك.', points: 3 },
+          { text: 'أي مما يلي صحيح؟', options: ['أ', 'ب'], points: 1 },
+        ],
+      }],
+    } as unknown as WorksheetOutput;
+    const html = buildWorksheetHTML(withShortAnswer, 'ورقة', meta, true);
+    assert.equal(
+      (html.match(/class="q-rule"/g) ?? []).length, 3,
+      'three rules for the one option-less question, none for the MCQ',
+    );
+
+    // An all-MCQ paper gets none at all — the answer goes in the margin.
+    const mcqOnly = buildWorksheetHTML(worksheet(), 'ورقة', meta, true);
+    assert.equal((mcqOnly.match(/class="q-rule"/g) ?? []).length, 0);
+  });
+
+  it('keeps the print-colour rule every background depends on', () => {
+    // Chrome and WebKit drop every background when printing without it —
+    // the bands and cards would print as blank white space.
+    for (const [name, html] of printDocuments()) {
+      assert.match(html, /print-color-adjust:\s*exact/, `${name} will print colourless`);
+    }
   });
 });

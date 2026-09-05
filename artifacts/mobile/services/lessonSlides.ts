@@ -504,13 +504,32 @@ export function buildLessonDeck(
   });
 
   // ── 6. Rules / formulas ─────────────────────────────────────────────────
+  //
+  // The book's own diagram of the rule rides ALONGSIDE it when the lesson has
+  // one, rather than following as a separate slide. Every content slide in
+  // this deck was a single column, so «العمود النازل من المركز ينصّف الوتر»
+  // and the picture of that exact fact were a click apart — the class read
+  // the sentence, then looked at the drawing, and had to hold one in their
+  // head to understand the other.
+  //
+  // Only the first figure, and only onto this slide: the rule is the one
+  // piece of prose in the deck a diagram is *about*. The rest stay standalone
+  // (§6a) because they illustrate the lesson generally, not one sentence.
+  const figures = bookFigureSlides(lesson?.id, isAr, opts.figureUri);
   const rules = bullets(pickLang(lesson?.rulesAr, lesson?.rulesEn, isAr), 5);
+  const ruleFigure = rules.length > 0 ? figures.shift() : undefined;
   if (rules.length > 0) {
     push({
       type: 'intro',
       title: T('📐 القاعدة', '📐 The Rule'),
       content: rules.map(r => `• ${r}`).join('\n'),
       durationSeconds: 0,
+      ...(ruleFigure?.mediaUrl
+        ? {
+            sideImageUrl: ruleFigure.mediaUrl,
+            sideImageCaption: ruleFigure.mediaCaption,
+          }
+        : {}),
     });
   }
 
@@ -527,7 +546,11 @@ export function buildLessonDeck(
   //
   // `figureUri` returning null means the figure exists in the index but was
   // never bundled; the slide is dropped rather than rendered broken.
-  for (const slide of bookFigureSlides(lesson?.id, isAr, opts.figureUri)) push(slide);
+  //
+  // Whatever the rule slide above did not take. With no rule slide — a lesson
+  // whose book states none — nothing was taken and this is every figure, so
+  // the deck is exactly what it was.
+  for (const slide of figures) push(slide);
 
   // ── 6b. Live graph — the concept made draggable ─────────────────────────
   // Between the rule and the examples: the class sees the curve respond to a
