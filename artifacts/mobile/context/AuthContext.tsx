@@ -15,6 +15,18 @@ import { registerPushToken, unregisterPushToken } from '@/services/pushTokens';
 
 export type UserRole = 'teacher' | 'school_admin' | 'system_admin' | 'student' | 'parent';
 
+/**
+ * The roles the teacher-facing product is for. Mirrors TEACHER_ROLES in the
+ * server's middlewares/auth.ts — the server is what actually enforces this
+ * (every generation and roster route rejects the others); the client uses it
+ * to avoid offering a door that only leads to a 403.
+ */
+export const TEACHER_ROLES: UserRole[] = ['teacher', 'school_admin', 'system_admin'];
+
+export function isTeacherRole(role: UserRole | null | undefined): boolean {
+  return !!role && TEACHER_ROLES.includes(role);
+}
+
 export interface User {
   id: string;
   firstName: string;
