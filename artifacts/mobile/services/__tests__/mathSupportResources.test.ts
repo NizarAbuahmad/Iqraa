@@ -28,7 +28,14 @@ describe('mathSupportResources', () => {
     // iLovePDF re-compression, under different titles.
     const all = listAllSupportResources();
     assert.equal(new Set(all.map(r => r.id)).size, all.length);
-    assert.equal(new Set(all.map(r => r.driveId)).size, all.length);
+    // driveId dedup only among sources that have one: `driveId` is undefined
+    // for a source handed over as a local file (see sources.ts), and the
+    // Grade 9 maths books added 2026-09-05 are the first `math`/`chemistry`
+    // sources here without one. A bare `Set` over the whole list would
+    // collapse every driveId-less source into one `undefined` entry and flag
+    // two distinct local PDFs as duplicates of each other.
+    const withDriveId = all.filter(r => r.driveId != null);
+    assert.equal(new Set(withDriveId.map(r => r.driveId)).size, withDriveId.length);
   });
 
   it('marks a teacher\'s work reference-only and NCCD\'s quotable', () => {

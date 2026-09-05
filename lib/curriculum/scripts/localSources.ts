@@ -173,4 +173,12 @@ export const LOCAL_FILES: Record<string, string> = {
   'art-student-book': 'knowledge-base/grade-10-art/support-pdfs/كتاب الطالب لمادة التربية الفنية للصف العاشر.pdf',
   'vocational-p1-student-book': 'knowledge-base/grade-10-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية الصف العاشر الجزء الأول.pdf',
   'vocational-p2-student-book': 'knowledge-base/grade-10-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية الصف العاشر الجزء الثاني.pdf',
+  // Added 2026-09-05, closing the gap flagged in objectives.test.ts and
+  // curriculumIds.test.ts: the Grade 9 maths catalog shipped with 0 sources
+  // behind it. Filenames verified against content, not trusted blind — see
+  // the note on the Grade 10 math pair above; both books here print their
+  // own units in the table of contents and it matches the semester in the
+  // filename.
+  'g9-math-s1-student-book': 'knowledge-base/grade-9-math/support-pdfs/كتاب الطالب لمادة الرياضيات الصف التاسع الفصل الأول.pdf',
+  'g9-math-s2-student-book': 'knowledge-base/grade-9-math/support-pdfs/كتاب الطالب لمادة الرياضيات الصف التاسع الفصل الثاني.pdf',
 };
