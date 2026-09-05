@@ -28,6 +28,26 @@ export const users = pgTable("users", {
   suspendedAt: timestamp("suspended_at", { withTimezone: true }),
   /** Shown to the suspended person. Without it they only see a door that stopped opening. */
   suspendedReason: text("suspended_reason").notNull().default(""),
+  /**
+   * When this teacher confirmed their school holds the parental consent that
+   * lets them enter student information here — see `lib/rosterConsent.ts`.
+   *
+   * On the teacher, not on each student row, and not on a class: a teacher
+   * types thirty names in one sitting, and a per-name checkbox is a checkbox
+   * nobody reads. Schools obtain consent in a blanket form, so one
+   * attestation at the point of first entry is both the honest shape and the
+   * one a teacher will actually take seriously.
+   *
+   * ponytail: per-teacher, not per-class. Move it to classGroups if a school
+   * ever needs to say yes for one class and no for another.
+   */
+  rosterConsentAt: timestamp("roster_consent_at", { withTimezone: true }),
+  /**
+   * Which wording they agreed to. A consent record that cannot say what was
+   * consented to is close to worthless when someone asks, and legal wording
+   * changes more often than schemas do.
+   */
+  rosterConsentVersion: text("roster_consent_version").notNull().default(""),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   lastLogin: timestamp("last_login", { withTimezone: true }),
 });

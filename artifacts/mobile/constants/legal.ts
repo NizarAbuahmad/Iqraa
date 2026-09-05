@@ -16,10 +16,16 @@
  * that describes a system that no longer exists is worse than none, because
  * it is a published false statement rather than a missing one.
  *
- * NOT LEGAL ADVICE, AND NOT REVIEWED BY A LAWYER. Two areas in particular
- * need one before submission: the children's-data section (students reach
- * this app through a teacher, with no age collected anywhere in the schema)
- * and the governing-law clause.
+ * NOT LEGAL ADVICE, AND NOT REVIEWED BY A LAWYER. The governing-law clause
+ * most needs one.
+ *
+ * **These documents describe a teacher-only release.** Student and parent
+ * accounts are refused by the server unless `STUDENT_ACCOUNTS=true`
+ * (`api-server/src/lib/features.ts`), which is why the children's-data
+ * section can say no minor holds an account and the conduct section can say
+ * there is no user-to-user messaging. **Both statements become false the
+ * moment that flag is turned on**, so flipping it is not a config change —
+ * it is a change to a published legal document, and this file moves with it.
  */
 
 /**
@@ -48,7 +54,7 @@ const PRIVACY_AR: LegalDoc = {
         'بيانات الحساب: الاسم الأول واسم العائلة، والبريد الإلكتروني، وكلمة المرور مخزَّنة بصيغة مشفَّرة لا يمكن الرجوع منها إلى الكلمة الأصلية (bcrypt)، ولغتك المفضَّلة، وصفتك في التطبيق (معلّم أو وليّ أمر أو طالب)، وتاريخ آخر دخول. وإن اخترت الدخول بحساب Google فإننا نحفظ المعرّف الذي تزوّدنا به Google بدلاً من كلمة مرور.',
         'بيانات الصفّ التي يُدخلها المعلّم: أسماء الطلبة كما يكتبها المعلّم، ورقم القيد إن أضافه، وملاحظته المكتوبة عن الطالب، وتوزيع الطلبة على الشُّعَب. هذه بيانات يُدخلها المعلّم عن طلبته، ومسؤوليته تجاهها موضَّحة في شروط الخدمة.',
         'سجلّات التعلّم: الاختبارات وأوراق العمل التي يُنشئها المعلّم، وإجابات الطلبة عليها، والعلامات والتقديرات الناتجة عنها.',
-        'الرسائل: نصّ الرسائل المتبادَلة بين المعلّم وأولياء الأمور والطلبة داخل التطبيق، والصور المرفقة بها، وبلاغات الإساءة وقوائم الحظر.',
+        'الرسائل: المراسلة داخل التطبيق معطَّلة في هذا الإصدار لأنّها تتطلّب حسابات لأولياء الأمور والطلبة، وهي غير متاحة. فلا تُجمع رسائل ولا صور مرفقة.',
         'الملفات: ما يرفعه المعلّم من صور أو مستندات ويربطه بدرس.',
         'بيانات تقنية: رمز الإشعارات الخاص بجهازك إن فعّلت الإشعارات، وأحداث استخدام مجهّلة نسبيًا (أيّ شاشة فُتحت، وأيّ أداة استُخدمت) — وهذه الأخيرة لا تُجمع إطلاقًا ما لم يكن مفتاح التحليلات مضبوطًا في النسخة التي تستخدمها.',
         'لا نجمع موقعك الجغرافي، ولا نصل إلى الكاميرا أو الميكروفون. التطبيق يطلب الإذن بالوصول إلى صور جهازك فقط، وفقط عند إرفاق صورة بنفسك.',
@@ -82,8 +88,10 @@ const PRIVACY_AR: LegalDoc = {
     {
       heading: '٥) الطلبة والقاصرون',
       body: [
-        'التطبيق موجَّه في المقام الأول إلى المعلّمين. ويصل إليه الطالب أو وليّ الأمر عبر رمز يمنحه المعلّم، ولا يستطيع أحد إنشاء حساب طالب من تلقاء نفسه.',
-        'لا يطلب التطبيق تاريخ ميلاد ولا يتحقّق من العمر، ولا يجمع من الطالب أكثر ممّا يلزم للمراسلة مع معلّمه ولتسجيل إجاباته.',
+        'التطبيق للمعلّمين وحدهم. لا توجد حسابات للطلبة ولا لأولياء الأمور في هذا الإصدار، ولا يمكن إنشاؤها، فلا يُنشئ أيّ قاصر حسابًا هنا ولا يسجّل الدخول إليه.',
+        'ومع ذلك يُدخل المعلّم بيانات عن طلبته: أسماءهم، ورقم القيد إن أضافه، وملاحظته عن الطالب. هذه بيانات شخصية تخصّ قاصرين وإن لم يكن لهم حساب.',
+        'قبل أن يُدخل المعلّم أيّ اسم، يُقرّ داخل التطبيق بأنّ مدرسته حصلت على موافقة وليّ الأمر اللازمة. نحفظ وقت الإقرار ونصّه، ونمنع إدخال بيانات الطلبة قبله.',
+        'لا يطلب التطبيق تاريخ ميلاد ولا يتحقّق من العمر، لأنّه لا يحتاج إليهما: جمع تاريخ ميلاد طفل دون حاجة إليه زيادة في البيانات لا نقصان.',
         'إن كنت وليّ أمر وتريد الاطّلاع على بيانات ابنك أو حذفها، فالطريق الأقصر هو معلّمه — فهو من أنشأ سجلّ الطالب ويملك حذفه — ويمكنك أيضًا مراسلتنا مباشرةً.',
       ],
     },
@@ -134,7 +142,7 @@ const PRIVACY_EN: LegalDoc = {
         'Account data: first and last name, email address, your password stored as a one-way bcrypt hash, your preferred language, your role (teacher, parent or student), and the time you last signed in. If you sign in with Google we store the identifier Google gives us instead of a password.',
         'Class data entered by a teacher: student names as the teacher types them, a register number if they add one, the teacher\'s written note about a student, and which classes a student belongs to. This is data a teacher enters about their own students; their responsibility for it is set out in the Terms of Service.',
         'Learning records: the tests and worksheets a teacher creates, students\' answers to them, and the marks and levels that result.',
-        'Messages: the text of messages exchanged between teachers, parents and students in the app, images attached to them, and any abuse reports or blocks.',
+        'Messages: in-app messaging is inactive in this release, because it requires parent and student accounts and those do not exist. No messages or attached images are collected.',
         'Files: images or documents a teacher uploads and attaches to a lesson.',
         'Technical data: your device\'s push notification token if you enable notifications, and usage events (which screen was opened, which tool was used). Usage events are not collected at all unless an analytics key is configured in the build you are using.',
         'We do not collect your location, and we do not access your camera or microphone. The app asks for photo library access only, and only when you attach an image yourself.',
@@ -168,8 +176,10 @@ const PRIVACY_EN: LegalDoc = {
     {
       heading: '5) Students and minors',
       body: [
-        'The app is aimed primarily at teachers. A student or parent reaches it through a code their teacher gives them; nobody can create a student account on their own.',
-        'The app does not ask for a date of birth and does not verify age, and it collects no more from a student than is needed to message their teacher and record their answers.',
+        'The app is for teachers only. There are no student or parent accounts in this release and none can be created, so no minor signs up for or signs in to IQRA.',
+        'Teachers do, however, enter data about their students: names, a register number if they add one, and the teacher\'s note. That is personal data about a minor whether or not the child has an account.',
+        'Before a teacher can enter any name, they confirm in the app that their school has obtained the parental consent required. We record when they confirmed and the wording they were shown, and we block student data from being entered until they do.',
+        'The app does not ask for a date of birth and does not verify age, because it needs neither. Collecting a birthdate we have no use for would be more data held about a child, not less.',
         'If you are a parent and want to see or delete your child\'s data, the shortest route is their teacher — the teacher created the student record and can delete it — and you can also write to us directly.',
       ],
     },
@@ -217,8 +227,8 @@ const TERMS_AR: LegalDoc = {
     {
       heading: '١) من يستطيع استخدام التطبيق',
       body: [
-        'التطبيق موجَّه إلى معلّمي المنهاج الوطني الأردني. ويستخدمه أولياء الأمور والطلبة للمراسلة ولتقديم الاختبارات، عبر رمز يمنحه المعلّم.',
-        'إن كنت دون سنّ الرشد في بلدك، فلا تستخدم التطبيق إلّا بعلم وليّ أمرك وموافقته.',
+        'التطبيق لمعلّمي المنهاج الوطني الأردني وحدهم. لا توجد حسابات للطلبة ولا لأولياء الأمور في هذا الإصدار.',
+        'يجب أن تكون بالغًا سنّ الرشد في بلدك لإنشاء حساب.',
         'أنت مسؤول عن سرّية كلمة مرورك وعن كلّ ما يجري عبر حسابك.',
       ],
     },
@@ -226,6 +236,7 @@ const TERMS_AR: LegalDoc = {
       heading: '٢) مسؤولية المعلّم عن بيانات طلبته',
       body: [
         'حين تُدخل أسماء طلبتك وملاحظاتك عنهم، فأنت من يقرّر ما يُدخَل ولماذا، ونحن نعالجه نيابةً عنك.',
+        'قبل أن تُدخل أيّ اسم، يطلب التطبيق إقرارك بأنّ مدرستك حصلت على موافقة وليّ الأمر اللازمة. الإقرار عنك أنت، ونحن نحفظ وقته ونصّه.',
         'أَدخِل الحدّ الأدنى اللازم، والتزم بما تفرضه مدرستك ووزارة التربية والتعليم من قواعد بشأن بيانات الطلبة.',
       ],
     },
@@ -233,8 +244,8 @@ const TERMS_AR: LegalDoc = {
       heading: '٣) قواعد السلوك',
       body: [
         'يُمنع نشر ما هو مسيء أو تهديديّ أو مخلّ أو غير قانونيّ، ويُمنع التحرّش بأيّ مستخدم، ويُمنع انتحال صفة غيرك.',
-        'في كلّ محادثة زرّان: «حظر» و«إبلاغ». نراجع البلاغات، ولنا أن نحذف المحتوى المخالف وأن نوقف الحساب المخالف أو نحذفه.',
-        'المجموعات الصفّية مخصّصة للإعلانات افتراضيًّا: لا يستطيع الطلبة الكتابة فيها ما لم يفتح المعلّم صاحب المجموعة ذلك.',
+        'لا يحتوي هذا الإصدار على مراسلة بين المستخدمين، فهي تتطلّب حسابات لأولياء الأمور والطلبة وهي غير متاحة. تنطبق هذه القواعد متى فُعِّلت.',
+        'وحين تُفعَّل: في كلّ محادثة زرّان «حظر» و«إبلاغ»، ونراجع البلاغات، ولنا أن نحذف المحتوى المخالف وأن نوقف الحساب المخالف أو نحذفه.',
       ],
     },
     {
@@ -291,8 +302,8 @@ const TERMS_EN: LegalDoc = {
     {
       heading: '1) Who may use the app',
       body: [
-        'The app is intended for teachers of the Jordanian national curriculum. Parents and students use it for messaging and for sitting tests, through a code their teacher gives them.',
-        'If you are under the age of majority where you live, use the app only with the knowledge and consent of your parent or guardian.',
+        'The app is for teachers of the Jordanian national curriculum only. There are no student or parent accounts in this release.',
+        'You must be of the age of majority where you live to create an account.',
         'You are responsible for keeping your password confidential and for everything done through your account.',
       ],
     },
@@ -300,6 +311,7 @@ const TERMS_EN: LegalDoc = {
       heading: '2) A teacher\'s responsibility for student data',
       body: [
         'When you enter your students\' names and your notes about them, you decide what is entered and why, and we process it on your behalf.',
+        'Before you can enter any name, the app asks you to confirm that your school has obtained the parental consent required. That confirmation is yours to give, and we record when you gave it and the wording you were shown.',
         'Enter the minimum you need, and follow whatever rules your school and the Ministry of Education set for student data.',
       ],
     },
@@ -307,8 +319,8 @@ const TERMS_EN: LegalDoc = {
       heading: '3) Rules of conduct',
       body: [
         'Do not post anything abusive, threatening, obscene or unlawful, do not harass any user, and do not impersonate anyone.',
-        'Every conversation has two buttons: Block and Report. We review reports, and we may remove offending content and suspend or delete an offending account.',
-        'Class groups are announcement-only by default: students cannot post in them unless the owning teacher enables it.',
+        'This release carries no user-to-user messaging: it requires parent and student accounts, and those do not exist. These rules apply whenever it is enabled.',
+        'When it is: every conversation has Block and Report, we review reports, and we may remove offending content and suspend or delete an offending account.',
       ],
     },
     {

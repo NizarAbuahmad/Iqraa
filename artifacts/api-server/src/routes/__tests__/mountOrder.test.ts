@@ -203,6 +203,44 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(res.status, 401, "account deletion must exist and require a token");
   });
 
+  it("reports that student accounts are off, and refuses one", async () => {
+    // v1 is teacher-only, and the app reads this endpoint rather than a
+    // build-time copy so the two cannot disagree about which doors to show.
+    const features = await fetch(`${base}/healthz/features`);
+    assert.equal(features.status, 200);
+    const body = (await features.json()) as { studentAccounts: boolean };
+    assert.equal(body.studentAccounts, false, "the suite must run with the shipping default");
+
+    // The refusal is the enforcement; hiding the option in the app is not.
+    // 403 before any database work, which is why this passes with no DB.
+    const res = await fetch(`${base}/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        firstName: "A",
+        lastName: "B",
+        email: "child@example.com",
+        password: "Sufficiently1Strong!",
+        role: "student",
+        claimCode: "ABC123",
+      }),
+    });
+    assert.equal(res.status, 403, "a student registration must be refused");
+    const refusal = (await res.json()) as { code?: string };
+    assert.equal(refusal.code, "student_accounts_disabled");
+  });
+
+  it("publishes the roster consent statement without a token", async () => {
+    // The app renders a translation of this; serving it keeps the wording a
+    // teacher agrees to and the wording the version stamp identifies as one
+    // thing rather than two.
+    const res = await fetch(`${base}/auth/roster-consent`);
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as { version: string; statement: string };
+    assert.ok(body.version, "the statement must carry a version");
+    assert.ok(body.statement.length > 40, "the statement must actually be the statement");
+  });
+
   it("mounts the moderation queue, and refuses it without a token", async () => {
     // The report button has always worked; until 2026-09-05 nothing read the
     // rows. These are the routes that make a report actionable, so a 404

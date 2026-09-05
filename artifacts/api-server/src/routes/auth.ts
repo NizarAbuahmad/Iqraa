@@ -17,6 +17,11 @@ import { authMiddleware, type AuthenticatedRequest } from "../middlewares/auth.j
 import { logger } from "../lib/logger.js";
 import { createRateLimiter } from "../lib/rateLimit.js";
 import { deleteObject } from "../lib/r2.js";
+import { studentAccountsEnabled } from "../lib/features.js";
+import {
+  ROSTER_CONSENT_STATEMENT_EN,
+  ROSTER_CONSENT_VERSION,
+} from "../lib/rosterConsent.js";
 import { isStrongPassword, PASSWORD_POLICY_MESSAGE } from "../lib/passwordPolicy.js";
 import { resolveClaimCode, type ClaimRole } from "../lib/rosterClaim.js";
 
@@ -109,6 +114,17 @@ router.post("/register", registerLimiter, async (req, res) => {
     // created dangling off an invalid code.
     let claim: { studentId: string; relation: "self" | "guardian" } | null = null;
     if (role !== "teacher") {
+      // v1 is teacher-only. A student account is an account for a minor, and
+      // the consent posture around one needs a lawyer and a matching store
+      // declaration — see lib/features.ts. Refused here rather than hidden in
+      // the app, because the app is not the security boundary.
+      if (!studentAccountsEnabled()) {
+        res.status(403).json({
+          code: "student_accounts_disabled",
+          error: "Parent and student accounts are not available yet.",
+        });
+        return;
+      }
       const code = claimCode?.trim();
       if (!code) {
         res.status(400).json({ error: "A class code is required to sign up as a parent or student" });
@@ -190,6 +206,18 @@ router.post("/register", registerLimiter, async (req, res) => {
  */
 router.post("/claim", authMiddleware, async (req: AuthenticatedRequest, res) => {
   try {
+    // Closed for the same reason /register is. No such account can exist
+    // while the flag is off, so this is unreachable in v1 — but leaving it
+    // open would mean turning the flag off later did not actually close the
+    // door for accounts created while it was on.
+    if (!studentAccountsEnabled()) {
+      res.status(403).json({
+        code: "student_accounts_disabled",
+        error: "Parent and student accounts are not available yet.",
+      });
+      return;
+    }
+
     const role = req.user!.role;
     if (role !== "student" && role !== "parent") {
       res.status(400).json({ error: "Only a student or parent account can claim a roster code" });
@@ -493,6 +521,13 @@ router.get("/me", authMiddleware, async (req: AuthenticatedRequest, res) => {
       // six other places this object is serialised: the delete screen fetches
       // /me itself, so one site cannot drift out of step with the others.
       hasPassword: user.passwordHash !== null,
+      // Whether this teacher has attested to their school's parental consent,
+      // and which wording they saw. Null means the roster is read-only for
+      // them until they do — the app reads this to show the statement rather
+      // than waiting for a write to come back 403. Absent here would be read
+      // as "not consented", which is the safe direction.
+      rosterConsentAt: user.rosterConsentAt,
+      rosterConsentVersion: user.rosterConsentVersion,
       createdAt: user.createdAt,
       lastLogin: user.lastLogin,
     });
@@ -768,5 +803,61 @@ router.delete(
     }
   },
 );
+
+/**
+ * POST /auth/roster-consent
+ *
+ * Records the teacher's attestation that their school holds the parental
+ * consent that lets them enter student information — see
+ * `lib/rosterConsent.ts` for why this sits on the teacher rather than on each
+ * student row, and why it gates writes only.
+ *
+ * Idempotent by re-stamping: pressing it twice moves the timestamp, which is
+ * the honest record of the most recent time they agreed, and re-agreeing
+ * after the wording changes is exactly the case that has to work.
+ */
+router.post("/roster-consent", authMiddleware, async (req: AuthenticatedRequest, res) => {
+  try {
+    // The client sends back the version it displayed. A mismatch means the
+    // app is showing wording this server no longer considers current, and
+    // recording agreement to text nobody can now identify is worse than
+    // refusing — that is the failure the version column exists to prevent.
+    const { version } = req.body as { version?: string };
+    if (version && version !== ROSTER_CONSENT_VERSION) {
+      res.status(409).json({
+        code: "roster_consent_version_mismatch",
+        error: "This consent statement is out of date. Reload the app and try again.",
+        consentVersion: ROSTER_CONSENT_VERSION,
+      });
+      return;
+    }
+
+    const [updated] = await db
+      .update(users)
+      .set({ rosterConsentAt: new Date(), rosterConsentVersion: ROSTER_CONSENT_VERSION })
+      .where(eq(users.id, req.user!.id))
+      .returning({ at: users.rosterConsentAt, version: users.rosterConsentVersion });
+
+    logger.info(
+      { userId: req.user!.id, version: ROSTER_CONSENT_VERSION },
+      "roster consent recorded",
+    );
+    res.json({ rosterConsentAt: updated.at, rosterConsentVersion: updated.version });
+  } catch (err) {
+    logger.error({ err }, "record roster consent failed");
+    res.status(500).json({ error: "Failed to record consent" });
+  }
+});
+
+/**
+ * GET /auth/roster-consent — the current wording and version, unauthenticated.
+ *
+ * Served rather than duplicated in the app so the statement a teacher agrees
+ * to and the statement this server records agreement *to* cannot drift apart.
+ * The app holds translations of it; this is the text they translate.
+ */
+router.get("/roster-consent", (_req, res) => {
+  res.json({ version: ROSTER_CONSENT_VERSION, statement: ROSTER_CONSENT_STATEMENT_EN });
+});
 
 export default router;

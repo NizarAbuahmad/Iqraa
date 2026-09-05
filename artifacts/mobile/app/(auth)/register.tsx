@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/Button';
 import { GoogleSignInButton, isGoogleSignInAvailable } from '@/components/ui/GoogleSignInButton';
 import { Input } from '@/components/ui/Input';
 import { PillSelector } from '@/components/ui/PillSelector';
+import { useStudentAccountsEnabled } from '@/services/features';
 import { Ionicons } from '@expo/vector-icons';
 
 type SignupRole = 'teacher' | 'parent' | 'student';
@@ -22,6 +23,11 @@ export default function RegisterScreen() {
   const insets = useSafeAreaInsets();
   const { register, loginWithGoogle } = useAuth();
   const { t, lang, isRTL } = useLanguage();
+
+  // v1 is teacher-only; the server refuses a student or parent registration
+  // outright (see lib/features.ts there). Asked of the server rather than
+  // mirrored into a build-time constant so the two cannot disagree.
+  const studentAccounts = useStudentAccountsEnabled();
 
   const [role, setRole] = useState<SignupRole>('teacher');
   const [claimCode, setClaimCode] = useState('');
@@ -59,8 +65,10 @@ export default function RegisterScreen() {
         email: email.trim(),
         password,
         confirmPassword,
-        role,
-        claimCode: role === 'teacher' ? undefined : claimCode.trim(),
+        // Never trust the local selection: the flag can flip while this
+        // screen is open, and the server would refuse it anyway.
+        role: studentAccounts ? role : 'teacher',
+        claimCode: !studentAccounts || role === 'teacher' ? undefined : claimCode.trim(),
       });
       router.replace('/(tabs)');
     } catch (e: any) {
@@ -77,7 +85,7 @@ export default function RegisterScreen() {
     email.includes('@') &&
     password.length >= 8 &&
     (confirmPassword === '' || confirmPassword === password) &&
-    (role === 'teacher' || claimCode.trim().length > 0);
+    (!studentAccounts || role === 'teacher' || claimCode.trim().length > 0);
 
   return (
     <KeyboardAvoidingView
@@ -114,22 +122,27 @@ export default function RegisterScreen() {
             </View>
           ) : null}
 
-          <PillSelector
-            label={t('iAmA')}
-            options={[
-              { value: 'teacher', label: t('roleTeacher') },
-              { value: 'parent', label: t('roleParent') },
-              { value: 'student', label: t('roleStudent') },
-            ]}
-            value={role}
-            onChange={setRole}
-            colors={colors}
-            isRTL={isRTL}
-            accent={colors.primary}
-            haptics
-          />
+          {/* One option is not a choice — with student accounts off the whole
+              selector is noise, and a disabled pill invites the question
+              "when?" that this screen cannot answer. */}
+          {studentAccounts ? (
+            <PillSelector
+              label={t('iAmA')}
+              options={[
+                { value: 'teacher', label: t('roleTeacher') },
+                { value: 'parent', label: t('roleParent') },
+                { value: 'student', label: t('roleStudent') },
+              ]}
+              value={role}
+              onChange={setRole}
+              colors={colors}
+              isRTL={isRTL}
+              accent={colors.primary}
+              haptics
+            />
+          ) : null}
 
-          {role !== 'teacher' ? (
+          {studentAccounts && role !== 'teacher' ? (
             <Input
               label={t('classCode')}
               placeholder={t('classCodePlaceholder')}

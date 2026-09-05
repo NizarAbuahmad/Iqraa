@@ -297,6 +297,91 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## v1 is teacher-only, and a roster now needs a consent to exist, 2026-09-05
+
+The last of the four compliance blockers, and the only one that was a
+decision rather than a gap. Two answers shaped it: **student and parent
+accounts are off in v1**, and consent for student data is **teacher
+attestation of school-held parental consent** — not an in-app age gate.
+
+**No minor holds an account.** `STUDENT_ACCOUNTS` (default false, and the
+default *is* the decision) makes `/auth/register` and `/auth/claim` refuse a
+student or parent outright, and `/students/:id/claim-code` refuse to mint a
+code nobody could redeem. Refused server-side, not merely hidden: the app is
+not the security boundary. Note what else this switches off — no chat thread
+can be created at all, because `createDirectThread` needs a teacher on one
+side and a parent or student on the other, and a class group needs members.
+Messaging is *inert* in v1, not hidden, which is the honest answer when App
+Review asks whether the app carries user-generated content. Turning it back
+on is one environment variable; the code is written and tested, including the
+moderation queue built for exactly the content this currently prevents.
+
+**But the roster still holds children's data, and that is the surface that
+stays live.** A teacher types names, register numbers and a written note
+about a child before any account for that child exists — the earliest consent
+surface in the product, and the one a "no student accounts" answer does not
+touch. So `users.rosterConsentAt` / `rosterConsentVersion`, and
+`lib/rosterConsent.ts` refuses roster **writes** without it. Reads pass:
+the exposure is entering child data, not looking at data already entered, and
+blocking reads would show every existing teacher what looks like an outage.
+The gate attaches at the roster router's single existing mount, so a roster
+route added later is gated without anyone remembering.
+
+Three deliberate shapes, each with a cheaper alternative that is worse:
+
+- **On the teacher, not on each student row.** A teacher enters thirty names
+  in one sitting and a per-name checkbox is a checkbox nobody reads. Schools
+  obtain consent in a blanket form, so one attestation at the point of first
+  entry is both the honest shape and the one a teacher takes seriously.
+  ponytail: move it to `classGroups` if a school ever needs to say yes for one
+  class and no for another.
+- **No birthdate, anywhere.** Not an oversight — collecting a child's date of
+  birth the product has no use for is *more* data held about them, not less,
+  and a self-entered birthdate is unverifiable anyway. The privacy policy now
+  says this in as many words.
+- **The wording is versioned and served.** `GET /auth/roster-consent` returns
+  the statement and `ROSTER_CONSENT_VERSION`; the app posts the version back
+  and a mismatch is refused. A consent record that cannot say *what* was
+  agreed to is close to worthless, and recording agreement to text nobody can
+  later identify is worse than refusing.
+
+**The legal documents were rewritten to match.** They now state that no minor
+holds an account, that messaging is inactive, that a teacher attests before
+entering any name, and that no birthdate is collected. `constants/legal.ts`
+carries a header saying it plainly: **flipping `STUDENT_ACCOUNTS` makes two
+published statements false**, so it is not a config change — it is a change to
+a legal document, and that file moves with it.
+
+`schema-push: done.` `users` gained `roster_consent_at` and
+`roster_consent_version` — verified absent beforehand, present after, same
+transaction-wrapped `add column if not exists` as the suspension pair (33
+users, 0 consented). Unlike that one this degrades safely without the push:
+`requireRosterConsent` catches and answers 503 rather than crashing, so a
+missed push costs the roster, not the whole API. **All 33 existing teachers
+will meet the gate on their next roster visit** — intended, and worth knowing
+before someone reports it as a bug.
+
+The client reads the flag from `GET /healthz/features` rather than an
+`EXPO_PUBLIC_*` constant. A build-time copy is the drift this repo has been
+bitten by before and worse here: it is inlined at build time while the
+server's own value changes with a restart, a missing key is a silent no-op,
+and the register screen needs the answer before anyone has signed in. Fails
+closed — offering a signup door that answers 403 beats hiding one that works.
+
+Verified in a real browser: the register screen renders with no role selector
+and no class-code field, straight to the teacher form. The API suite asserts
+`/healthz/features` reports it off and that a student registration comes back
+403 `student_accounts_disabled`, against the built bundle over HTTP. Not
+verified: a teacher accepting the gate end to end — that needs a signed-in
+teacher against a throwaway database.
+
+Still needing a person, not a commit: `LEGAL_CONTACT_EMAIL`
+(`privacy@iqraa.app`) is still not a real mailbox, and it is now the appeal
+address a suspended user is shown. And no lawyer has read either document —
+the governing-law clause most needs one.
+
+Green: typecheck clean, mobile 1172/1172 (10 skipped), API 466/466.
+
 ## The report button now reaches someone, 2026-09-05
 
 The third of the four compliance blockers. `POST /messaging/reports` has
@@ -508,8 +593,11 @@ against copy at registration that already claims both documents exist,~~
 ~~messaging carries image attachments with block and report endpoints but
 nothing that can act on a report or eject a user (`routes/admin.ts` has one
 route, `usage-summary`),~~ **also closed the same day — see «The report button
-now reaches someone»** — and students get accounts by claim code with no
-birthdate, age or guardian-consent field anywhere in the schema. **No EAS
+now reaches someone»** — and ~~students get accounts by claim code with no
+birthdate, age or guardian-consent field anywhere in the schema~~ **the last
+one closed the same day too: v1 has no student accounts at all, and a teacher
+now attests to school-held parental consent before entering any child's name.
+See «v1 is teacher-only, and a roster now needs a consent to exist».** **No EAS
 build has ever been made**, so push delivery, image picking and the app icon
 remain unverified on a device, and `newArchEnabled` + `reactCompiler` are both
 experimental — Expo Go over LAN is not evidence that a release build runs.
