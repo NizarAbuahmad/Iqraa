@@ -297,6 +297,45 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The Cloud Run cutover happened, and this file did not say so, 2026-09-05
+
+**Production topology, current:** the web app is served by `iqraa-web` on
+Render and calls the **Cloud Run** API. `render.yaml` now contains only
+`iqraa-web` — the Render API and verifier were removed from the blueprint by
+`a25469a`, after the web build was pointed at Cloud Run by `1e305f4`.
+
+Read the two sections below this one and you would conclude the opposite. Both
+still end with «**Nothing is switched over.** Render still serves the live app,
+untouched», which was true when written on 2026-09-03 and false two days later.
+Nothing superseded them, so the most recent word this file had on the subject
+was wrong — and it is the file `CLAUDE.md` sends people to. Confirmed the other
+way before writing this: the deployed bundle at `iqraa-web.onrender.com` has
+`iqraa-api-613126375862.europe-west1.run.app/api` compiled into it, so this is
+the running system's answer and not the blueprint's.
+
+The same section closes with «Dockerfiles live on `claude/cloud-run-test`
+(unmerged, deliberately)». They are on `main` — `00b3c9a` is an ancestor of it,
+and `Dockerfile` plus `artifacts/math-verifier/Dockerfile` are both there,
+each carrying its own `gcloud run deploy` line in the header.
+
+**What this cost, concretely.** Acting on those lines, an agent asked to ship a
+merged API change reported that the change was blocked on unmerged Dockerfiles
+and an undocumented deploy — when the Dockerfiles were merged and the commands
+were sitting in their headers. The stale entry did not merely go unread; it was
+read, believed, and acted on.
+
+**Two things that follow, and neither is about Cloud Run:**
+
+- **A merge no longer means a deploy, and this file never marked the change.**
+  When Render ran all three services, «merged» and «deployed» were close
+  enough to the same word. Now merging ships the web app only; the API and the
+  verifier are hand-deployed. Every «shipped» claim written since 2026-09-05
+  should be read with that split in mind.
+- **The deploy procedure now has a findable home:** [`docs/deploying.md`](./docs/deploying.md).
+  It existed before, spread across two Dockerfile headers and a `render.yaml`
+  comment — none of which is where anyone looks to answer "how do I deploy
+  this". The Dockerfiles stay the source of truth for the commands themselves.
+
 ## A student sitting an exam can see the book's diagrams, 2026-09-05
 
 The last surface with no figures at all. A worksheet, quiz, lesson plan,
@@ -735,6 +774,8 @@ so `/api/healthz/errors` — which would have shown that stack trace in one
 request instead of a log hunt — is unreachable there.
 
 **Nothing is switched over.** The cutover remains one line and a web rebuild.
+_(Superseded 2026-09-05: it happened. See «The Cloud Run cutover happened, and
+this file did not say so» at the top.)_
 
 ## Cloud Run answers the cold-start question: ~1-3s, not 51s, 2026-09-03
 
@@ -771,7 +812,11 @@ period, exactly as suspected. **Fixed:** 8s server-side, 15s client-side,
 the latter because that request is app to API to verifier and can be waiting
 on two cold starts (~10.5s worst case) — PR #235.
 
-**Nothing is switched over.** Render still serves the live app, untouched.
+**Nothing is switched over.** _(Superseded 2026-09-05: it was switched over —
+`EXPO_PUBLIC_API_BASE_URL` points at Cloud Run and the Render API and verifier
+have been retired from the blueprint. See the top of this file. The paragraph
+stands as written for its reasoning, not its status.)_ Render still serves the
+live app, untouched.
 `EXPO_PUBLIC_API_BASE_URL` in `render.yaml` still points `iqraa-web` at
 `iqraa-api-dfxu.onrender.com/api`; changing that line and rebuilding the web
 service is the entire cutover. Deliberately not done, because the health
@@ -793,6 +838,8 @@ fail only when a teacher generates a worksheet or opens a lesson image.
 Dockerfiles live on `claude/cloud-run-test` (unmerged, deliberately). They
 mirror `render.yaml`'s own build and start commands rather than optimizing —
 same pnpm version, same `--filter`, same Python pin, same seed-then-start.
+_(Superseded 2026-09-05: they are on `main` — `00b3c9a`, both files, each with
+its `gcloud run deploy` line in the header. See [`docs/deploying.md`](./docs/deploying.md).)_
 
 ## The verifier went unreachable again, and the blueprint was the trap, 2026-09-03
 
