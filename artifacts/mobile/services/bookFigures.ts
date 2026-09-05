@@ -37,6 +37,8 @@ import bioS1 from '../../../knowledge-base/grade-10-biology/figures/bio-s1-stude
 import bioS2 from '../../../knowledge-base/grade-10-biology/figures/bio-s2-student-book/index.json' with { type: 'json' };
 import earthS1 from '../../../knowledge-base/grade-10-earth-science/figures/earth-s1-student-book/index.json' with { type: 'json' };
 import earthS2 from '../../../knowledge-base/grade-10-earth-science/figures/earth-s2-student-book/index.json' with { type: 'json' };
+import engS1 from '../../../knowledge-base/grade-10-english/figures/eng-s1-student-book/index.json' with { type: 'json' };
+import engS2 from '../../../knowledge-base/grade-10-english/figures/eng-s2-student-book/index.json' with { type: 'json' };
 
 export type BookFigure = {
   /** File name inside the book's figure directory, e.g. `p021.png`. */
@@ -78,6 +80,8 @@ const INDEXES: { sourceId: string; figures: BookFigure[] }[] = [
   bioS2 as { sourceId: string; figures: BookFigure[] },
   earthS1 as { sourceId: string; figures: BookFigure[] },
   earthS2 as { sourceId: string; figures: BookFigure[] },
+  engS1 as { sourceId: string; figures: BookFigure[] },
+  engS2 as { sourceId: string; figures: BookFigure[] },
 ];
 
 /** `sourceId|unit|lesson`, the only key both files share. */

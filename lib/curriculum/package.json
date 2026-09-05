@@ -29,6 +29,8 @@
     "./catalogs/g10IslamicSem1": "./src/catalogs/g10IslamicSem1.ts",
     "./catalogs/g10IslamicSem2": "./src/catalogs/g10IslamicSem2.ts",
     "./catalogs/g10EnglishVocational": "./src/catalogs/g10EnglishVocational.ts",
+    "./catalogs/g10EnglishSem1": "./src/catalogs/g10EnglishSem1.ts",
+    "./catalogs/g10EnglishSem2": "./src/catalogs/g10EnglishSem2.ts",
     "./validateCurriculum": "./src/validateCurriculum.ts"
   },
   "scripts": {

@@ -1,0 +1,252 @@
+{
+  "meta": {
+    "grade": "الصف العاشر",
+    "grade_en": "Grade 10",
+    "subject": "اللغة الإنجليزية",
+    "subject_en": "English",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 2,
+    "provenance_note": "Every English field is copied from the two-page 'Contents' scope-and-sequence spread printed on pages 4-5 of the student book — the columns are UNIT, GRAMMAR, VOCABULARY, READING, LISTENING, SPEAKING, WRITING, and each entry keeps the book's own page references. Arabic titles and topic labels are OUR OWN TRANSLATIONS: this book is English-only and prints no Arabic beyond its cover and its draft stamp, exactly as the four vocational English catalogs record for the same reason. Each unit is represented as ONE lesson at scope-and-sequence depth. Unit numbering continues the year: this book prints units 06-10, and those printed numbers are kept rather than renumbered from 1, the same convention the physics and chemistry semester-2 catalogs follow.",
+    "source_books": {
+      "student_book_s2": "كتاب الطالب لمادة اللغة الإنجليزية الصف العاشر الفصل الثاني.pdf — 80 pages, sourceId eng-s2-student-book. Contents spread: pages 4-5."
+    },
+    "schema_version": "1.0",
+    "known_gaps": [
+      "THIS BOOK IS A DRAFT. 79 of its 80 pages carry the stamp «نسخة قيد الإعداد والتجهيز» (a copy under preparation); the semester-1 book carries it on none. Everything here is transcribed from that draft and may not match the final printed edition. Re-check this file against the final book when it is published. The stamp is only findable in extracted text as Arabic presentation forms, not as normal codepoints — a plain search for «قيد الإعداد» returns nothing.",
+      "One lesson per unit, at scope-and-sequence depth — same reason as semester 1: the book prints seven lesson slots per unit (LESSON 1A..7A) named only by a skill banner whose order varies, so a seven-lesson breakdown cannot be derived from the PDF without judgement.",
+      "No learning outcomes (نتاجات التعلم). This book prints none, so objectives[] is empty rather than invented.",
+      "No period counts — the English teacher's guide is not in the repo.",
+      "The LIFE SKILLS spreads (after units 6 and 8) and the end matter — Grammar Reference pp69-73, Irregular Verbs p74, Communication pp75-76 — are recorded on the units they follow but are not modelled as lessons of their own."
+    ]
+  },
+  "units": [
+    {
+      "id": "u6",
+      "number": 6,
+      "title_en": "Do the right thing",
+      "title_ar": "افعل الصواب",
+      "data_tier": "textbook-scope-sequence",
+      "total_periods": null,
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u6_l1",
+          "order": 1,
+          "title_en": "Do the right thing",
+          "title_ar": "افعل الصواب",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [],
+          "grammar_topic": {
+            "en": "pp4-5 The first and second conditionals; p9 The zero conditional and alternatives to if",
+            "ar": "الجملة الشرطية الأولى والثانية؛ الشرطية الصفرية وبدائل if"
+          },
+          "vocabulary_topic": {
+            "en": "pp4-5 Dos and don'ts of using a mobile phone in public; pp6-7 Communicating; p8 Emotions; p9 Relationships and caring for others",
+            "ar": "ما يُفعل وما لا يُفعل عند استخدام الهاتف في الأماكن العامة؛ التواصل؛ المشاعر؛ العلاقات ورعاية الآخرين"
+          },
+          "reading_topic": {
+            "en": "pp6-7 If we kept it, we'd be rich",
+            "ar": "لو احتفظنا به لأصبحنا أثرياء"
+          },
+          "listening_topic": {
+            "en": "p8 A radio programme about being rich; Pronunciation: The schwa /ə/ sound",
+            "ar": "برنامج إذاعي عن الثراء؛ اللفظ: صوت الشوا"
+          },
+          "speaking_topic": {
+            "en": "p10 Asking for, giving and reacting to advice",
+            "ar": "طلب النصيحة وتقديمها والتجاوب معها"
+          },
+          "writing_task": {
+            "en": "pp12-13 A for-and-against essay",
+            "ar": "مقال يعرض الرأي والرأي المضاد"
+          },
+          "life_skill": {
+            "en": "pp14-15 How to set SMART goals",
+            "ar": "كيف تضع أهدافًا ذكية"
+          }
+        }
+      ]
+    },
+    {
+      "id": "u7",
+      "number": 7,
+      "title_en": "In the spotlight",
+      "title_ar": "تحت الأضواء",
+      "data_tier": "textbook-scope-sequence",
+      "total_periods": null,
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u7_l1",
+          "order": 1,
+          "title_en": "In the spotlight",
+          "title_ar": "تحت الأضواء",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [],
+          "grammar_topic": {
+            "en": "pp16-17 Reported speech; p22 Reported questions",
+            "ar": "الكلام المنقول؛ الأسئلة المنقولة"
+          },
+          "vocabulary_topic": {
+            "en": "pp16-17 TV news; p18 Viewing habits; Pronunciation: Syllable stress; p19 Success and failure; pp20-21 Describing visual arts",
+            "ar": "الأخبار التلفزيونية؛ عادات المشاهدة؛ اللفظ: نبر المقاطع؛ النجاح والإخفاق؛ وصف الفنون البصرية"
+          },
+          "reading_topic": {
+            "en": "pp20-21 What is and isn't art?",
+            "ar": "ما هو الفن وما ليس فنًا؟"
+          },
+          "listening_topic": {
+            "en": "p19 A radio programme about promoting your work on social media",
+            "ar": "برنامج إذاعي عن الترويج لعملك على وسائل التواصل"
+          },
+          "speaking_topic": {
+            "en": "p23 Describing a personal experience",
+            "ar": "وصف تجربة شخصية"
+          },
+          "writing_task": {
+            "en": "pp24-25 A review of a play",
+            "ar": "مراجعة نقدية لمسرحية"
+          }
+        }
+      ]
+    },
+    {
+      "id": "u8",
+      "number": 8,
+      "title_en": "The evolution of advertising",
+      "title_ar": "تطوّر الإعلان",
+      "data_tier": "textbook-scope-sequence",
+      "total_periods": null,
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u8_l1",
+          "order": 1,
+          "title_en": "The evolution of advertising",
+          "title_ar": "تطوّر الإعلان",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [],
+          "grammar_topic": {
+            "en": "pp26-27 The passive; p33 have/get something done",
+            "ar": "المبني للمجهول؛ have/get something done"
+          },
+          "vocabulary_topic": {
+            "en": "pp26-27 Advertising; p28 Spending habits; p29 Money; pp30-31 Payments, trading and banking",
+            "ar": "الإعلان؛ عادات الإنفاق؛ المال؛ المدفوعات والتجارة والصيرفة"
+          },
+          "reading_topic": {
+            "en": "pp30-31 The way we pay; Active Reading: Understanding links in a text",
+            "ar": "الطريقة التي ندفع بها؛ القراءة النشطة: فهم الروابط في النص"
+          },
+          "listening_topic": {
+            "en": "p28 A podcast about spending and saving money",
+            "ar": "بودكاست عن الإنفاق وادخار المال"
+          },
+          "speaking_topic": {
+            "en": "p32 Complaints; Pronunciation: Sounds /eɪ/ and /aɪ/",
+            "ar": "الشكاوى؛ اللفظ"
+          },
+          "writing_task": {
+            "en": "pp34-35 An opinion essay",
+            "ar": "مقال رأي"
+          },
+          "life_skill": {
+            "en": "pp36-37 How to be more creative",
+            "ar": "كيف تكون أكثر إبداعًا"
+          }
+        }
+      ]
+    },
+    {
+      "id": "u9",
+      "number": 9,
+      "title_en": "The power of nature",
+      "title_ar": "قوة الطبيعة",
+      "data_tier": "textbook-scope-sequence",
+      "total_periods": null,
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u9_l1",
+          "order": 1,
+          "title_en": "The power of nature",
+          "title_ar": "قوة الطبيعة",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [],
+          "grammar_topic": {
+            "en": "pp38-39 The third conditional; p42 I wish/If only for regrets",
+            "ar": "الجملة الشرطية الثالثة؛ I wish/If only للتعبير عن الندم"
+          },
+          "vocabulary_topic": {
+            "en": "pp38-39 Water and the ocean; p40 Natural disasters and dealing with them; p41 Environmental responsibility; pp44-45 Urban and rural life; pp46-47 Sustainable homes",
+            "ar": "الماء والمحيط؛ الكوارث الطبيعية والتعامل معها؛ المسؤولية البيئية؛ الحياة في المدينة والريف؛ المنازل المستدامة"
+          },
+          "reading_topic": {
+            "en": "pp44-45 How a wildlife documentary changed my life; Active Reading: Summarising texts",
+            "ar": "كيف غيّر فيلم وثائقي عن الحياة البرية حياتي؛ القراءة النشطة: تلخيص النصوص"
+          },
+          "listening_topic": {
+            "en": "p40 An interview about surviving an earthquake",
+            "ar": "مقابلة عن النجاة من زلزال"
+          },
+          "speaking_topic": {
+            "en": "p43 Expressing and responding to regrets; Pronunciation: unstressed have/not have",
+            "ar": "التعبير عن الندم والتجاوب معه؛ اللفظ"
+          },
+          "writing_task": {
+            "en": "pp46-47 An article",
+            "ar": "مقال"
+          }
+        }
+      ]
+    },
+    {
+      "id": "u10",
+      "number": 10,
+      "title_en": "Food for thought",
+      "title_ar": "مادة للتفكير",
+      "data_tier": "textbook-scope-sequence",
+      "total_periods": null,
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u10_l1",
+          "order": 1,
+          "title_en": "Food for thought",
+          "title_ar": "مادة للتفكير",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [],
+          "grammar_topic": {
+            "en": "pp48-49 Modal verbs for speculating about the present; p51 Modal verbs for speculating about the past",
+            "ar": "الأفعال الناقصة للتخمين في الحاضر؛ الأفعال الناقصة للتخمين في الماضي"
+          },
+          "vocabulary_topic": {
+            "en": "p48 Food tastes; p50 Ways of cooking and cooking equipment; pp52-53 Dining and restaurants; p55 Healthy eating",
+            "ar": "مذاقات الطعام؛ طرائق الطهي وأدواته؛ تناول الطعام والمطاعم؛ الأكل الصحي"
+          },
+          "reading_topic": {
+            "en": "pp52-53 Dining with a difference!",
+            "ar": "تناول الطعام على نحو مختلف!"
+          },
+          "listening_topic": {
+            "en": "p55 A radio discussion about healthy food and nutrition; Active Listening: Facts, opinions and speculation",
+            "ar": "نقاش إذاعي عن الغذاء الصحي والتغذية؛ الاستماع النشط: الحقائق والآراء والتخمين"
+          },
+          "speaking_topic": {
+            "en": "p54 Comparing and contrasting photographs",
+            "ar": "المقارنة والمقابلة بين الصور"
+          },
+          "writing_task": {
+            "en": "pp56-57 A formal letter",
+            "ar": "رسالة رسمية"
+          }
+        }
+      ]
+    }
+  ]
+}

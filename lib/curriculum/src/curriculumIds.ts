@@ -61,6 +61,11 @@ const SUBJECTS = {
   'finlit': { tag: 'finlit-', unitLevel: false },
   'arabic': { tag: 'arabic-', unitLevel: false },
   'islamic': { tag: 'islamic-', unitLevel: false },
+  // General English, distinct from the four vocational ESP tracks below. The
+  // manifest already tags its books `eng-s1` / `eng-s2`, so the stem matches.
+  // `UNIT_ID_RE` sorts these keys longest-first precisely so this shorter slug
+  // never shadows `eng-commerce` and friends.
+  'eng': { tag: 'eng-', unitLevel: false },
   'eng-commerce': { tag: 'eng-commerce-', unitLevel: false },
   'eng-agri': { tag: 'eng-agri-', unitLevel: false },
   'eng-hospitality': { tag: 'eng-hospitality-', unitLevel: false },
