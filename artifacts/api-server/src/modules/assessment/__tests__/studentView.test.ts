@@ -15,6 +15,7 @@ import {
   normalizeShareCode,
   sanitizeQuestionForStudent,
 } from "../studentView.ts";
+import { QUESTION_TYPES } from "../questionTypes.ts";
 
 describe("share codes", () => {
   it("never contains a character that can be read two ways", () => {
@@ -68,14 +69,14 @@ describe("sanitizeQuestionForStudent", () => {
   };
 
   it("keeps what the student needs to answer", () => {
-    const out = sanitizeQuestionForStudent(mcq);
+    const out = sanitizeQuestionForStudent(mcq, "attempt-1");
     assert.equal(out.id, "q1");
     assert.equal(out.body["stem"], "ما ناتج ٢+٢؟");
     assert.equal((out.body["options"] as unknown[]).length, 2);
   });
 
   it("strips correctness from inside each option", () => {
-    const out = sanitizeQuestionForStudent(mcq);
+    const out = sanitizeQuestionForStudent(mcq, "attempt-1");
     const options = out.body["options"] as Record<string, unknown>[];
     for (const o of options) {
       assert.deepEqual(Object.keys(o).sort(), ["id", "text"]);
@@ -83,7 +84,7 @@ describe("sanitizeQuestionForStudent", () => {
   });
 
   it("drops body fields that are not on the allowlist", () => {
-    const out = sanitizeQuestionForStudent(mcq);
+    const out = sanitizeQuestionForStudent(mcq, "attempt-1");
     assert.equal("correctOptionId" in out.body, false);
   });
 
@@ -94,7 +95,7 @@ describe("sanitizeQuestionForStudent", () => {
       type: "some_future_type",
       marks: "1",
       body: { prompt: "اشرح", expectedAnswer: "الجواب", secretRubric: { a: 1 } },
-    });
+    }, "attempt-1");
     assert.equal(out.body["prompt"], "اشرح");
     assert.equal("expectedAnswer" in out.body, false);
     assert.equal("secretRubric" in out.body, false);
@@ -121,7 +122,7 @@ describe("sanitizeQuestionForStudent", () => {
         body: { template: "{{1}} + ٢ = ٤", blanks: ["٢"], wordBank: ["١", "٢", "٣"] },
         expectedAnswer: { blanks: [{ accept: ["٢"] }] },
       },
-    ].map(sanitizeQuestionForStudent);
+    ].map(q => sanitizeQuestionForStudent(q, "attempt-1"));
 
     const serialised = JSON.stringify({ questions });
     for (const forbidden of [
@@ -140,5 +141,124 @@ describe("sanitizeQuestionForStudent", () => {
         `"${forbidden}" reached the student payload`,
       );
     }
+  });
+});
+
+/**
+ * A matching question is answerable without reading it if the right column
+ * arrives in the same order as the left — which is how a generator asked for
+ * `pairs` in order writes them. The delivered order has to differ from the
+ * stored one, and then has to stop moving: a student sees this list on claim
+ * and again on every resume.
+ */
+describe("matching: the order the student is given", () => {
+  const stored = {
+    left: [
+      { id: "l1", text: "الجزيء" },
+      { id: "l2", text: "الذرة" },
+      { id: "l3", text: "الأيون" },
+      { id: "l4", text: "النظير" },
+      { id: "l5", text: "المركب" },
+    ],
+    right: [
+      { id: "r1", text: "١" },
+      { id: "r2", text: "٢" },
+      { id: "r3", text: "٣" },
+      { id: "r4", text: "٤" },
+      { id: "r5", text: "٥" },
+    ],
+  };
+  const question = (id: string) => ({
+    id,
+    orderIndex: 0,
+    type: "matching",
+    marks: "5",
+    body: structuredClone(stored),
+  });
+  const rightIds = (attemptId: string, questionId: string) =>
+    (sanitizeQuestionForStudent(question(questionId), attemptId).body["right"] as { id: string }[])
+      .map(r => r.id)
+      .join(",");
+  const asStored = stored.right.map(r => r.id).join(",");
+
+  it("does not hand the column over in stored order", () => {
+    // Counted over many sittings rather than asserted on one: a shuffle is
+    // allowed to return some paper to its stored order — 1 in 120 for five
+    // items — and a test that forbids that is pinning the hash, not the
+    // property. What must not happen is stored order being the general case.
+    const unshuffled = Array.from({ length: 40 }, (_, i) => `attempt-${i}`).filter(
+      a => rightIds(a, "q1") === asStored,
+    ).length;
+    assert.ok(unshuffled <= 3, `${unshuffled} of 40 sittings kept the stored order`);
+  });
+
+  it("gives one student the same order every time, so a resume does not reshuffle", () => {
+    // The claim route and the state route sanitise separately. If this ever
+    // depends on Math.random, the column reorders under a student who reloads.
+    assert.equal(rightIds("attempt-a", "q1"), rightIds("attempt-a", "q1"));
+    assert.equal(rightIds("attempt-a", "q1"), rightIds("attempt-a", "q1"));
+  });
+
+  it("gives two students different orders for the same question", () => {
+    // The whole point of seeding on the attempt: the pupil at the next desk is
+    // answering a differently ordered column, so a copied third pick is just a
+    // wrong answer.
+    const orders = new Set(
+      Array.from({ length: 20 }, (_, i) => rightIds(`attempt-${i}`, "q1")),
+    );
+    assert.ok(orders.size > 1, "every student got the same order");
+  });
+
+  it("gives one student different orders across the questions on their paper", () => {
+    // Seeding on the attempt alone would apply one permutation to the whole
+    // paper: work it out on question 1 and you have it for every other matching
+    // question in the exam.
+    const orders = new Set(
+      Array.from({ length: 20 }, (_, i) => rightIds("attempt-a", `q${i}`)),
+    );
+    assert.ok(orders.size > 1, "one permutation was reused across the paper");
+  });
+
+  it("keeps every right item, exactly once", () => {
+    const delivered = (
+      sanitizeQuestionForStudent(question("q-set"), "attempt-a").body["right"] as {
+        id: string;
+      }[]
+    ).map(r => r.id);
+    assert.deepEqual([...delivered].sort(), ["r1", "r2", "r3", "r4", "r5"]);
+  });
+
+  it("leaves the left column alone", () => {
+    // Reordering one side is all it takes to break the alignment, and moving
+    // both would churn the prompts the student is reading down.
+    const out = sanitizeQuestionForStudent(question("q-left"), "attempt-a");
+    assert.deepEqual(out.body["left"], stored.left);
+  });
+
+  it("still marks correct when the student answers the shuffled list", () => {
+    // The round trip, and the reason shuffling is safe at all: the student
+    // picks ids off the reordered column, `pairs` carries ids, and grading
+    // never looks at a position.
+    const delivered = sanitizeQuestionForStudent(question("q-grade"), "attempt-a");
+    const right = delivered.body["right"] as { id: string }[];
+    const key = [
+      { left: "l1", right: "r1" },
+      { left: "l2", right: "r2" },
+      { left: "l3", right: "r3" },
+      { left: "l4", right: "r4" },
+      { left: "l5", right: "r5" },
+    ];
+    // A student who knows the subject: for each left item, find the right item
+    // in the column as delivered and pick it.
+    const answered = key.map(k => ({
+      left: k.left,
+      right: right.find(r => r.id === k.right)!.id,
+    }));
+    const graded = QUESTION_TYPES.matching.grade!(
+      { type: "matching", body: stored, expectedAnswer: { pairs: key } },
+      { pairs: answered },
+    );
+    assert.equal(graded.fraction, 1);
+    assert.equal(graded.status, "correct");
   });
 });

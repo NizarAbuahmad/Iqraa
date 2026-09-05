@@ -375,6 +375,45 @@ lesson-id prefix by string surgery, which silently excluded every new subject �
 the slugs differ (`biology` → `bio`, `earth-science` → `earth`) and are now a
 written-down map.
 
+## The Cloud Run cutover happened, and this file did not say so, 2026-09-05
+
+**Production topology, current:** the web app is served by `iqraa-web` on
+Render and calls the **Cloud Run** API. `render.yaml` now contains only
+`iqraa-web` — the Render API and verifier were removed from the blueprint by
+`a25469a`, after the web build was pointed at Cloud Run by `1e305f4`.
+
+Read the two sections below this one and you would conclude the opposite. Both
+still end with «**Nothing is switched over.** Render still serves the live app,
+untouched», which was true when written on 2026-09-03 and false two days later.
+Nothing superseded them, so the most recent word this file had on the subject
+was wrong — and it is the file `CLAUDE.md` sends people to. Confirmed the other
+way before writing this: the deployed bundle at `iqraa-web.onrender.com` has
+`iqraa-api-613126375862.europe-west1.run.app/api` compiled into it, so this is
+the running system's answer and not the blueprint's.
+
+The same section closes with «Dockerfiles live on `claude/cloud-run-test`
+(unmerged, deliberately)». They are on `main` — `00b3c9a` is an ancestor of it,
+and `Dockerfile` plus `artifacts/math-verifier/Dockerfile` are both there,
+each carrying its own `gcloud run deploy` line in the header.
+
+**What this cost, concretely.** Acting on those lines, an agent asked to ship a
+merged API change reported that the change was blocked on unmerged Dockerfiles
+and an undocumented deploy — when the Dockerfiles were merged and the commands
+were sitting in their headers. The stale entry did not merely go unread; it was
+read, believed, and acted on.
+
+**Two things that follow, and neither is about Cloud Run:**
+
+- **A merge no longer means a deploy, and this file never marked the change.**
+  When Render ran all three services, «merged» and «deployed» were close
+  enough to the same word. Now merging ships the web app only; the API and the
+  verifier are hand-deployed. Every «shipped» claim written since 2026-09-05
+  should be read with that split in mind.
+- **The deploy procedure now has a findable home:** [`docs/deploying.md`](./docs/deploying.md).
+  It existed before, spread across two Dockerfile headers and a `render.yaml`
+  comment — none of which is where anyone looks to answer "how do I deploy
+  this". The Dockerfiles stay the source of truth for the commands themselves.
+
 ## A student sitting an exam can see the book's diagrams, 2026-09-05
 
 The last surface with no figures at all. A worksheet, quiz, lesson plan,
@@ -813,6 +852,8 @@ so `/api/healthz/errors` — which would have shown that stack trace in one
 request instead of a log hunt — is unreachable there.
 
 **Nothing is switched over.** The cutover remains one line and a web rebuild.
+_(Superseded 2026-09-05: it happened. See «The Cloud Run cutover happened, and
+this file did not say so» at the top.)_
 
 ## Cloud Run answers the cold-start question: ~1-3s, not 51s, 2026-09-03
 
@@ -849,7 +890,11 @@ period, exactly as suspected. **Fixed:** 8s server-side, 15s client-side,
 the latter because that request is app to API to verifier and can be waiting
 on two cold starts (~10.5s worst case) — PR #235.
 
-**Nothing is switched over.** Render still serves the live app, untouched.
+**Nothing is switched over.** _(Superseded 2026-09-05: it was switched over —
+`EXPO_PUBLIC_API_BASE_URL` points at Cloud Run and the Render API and verifier
+have been retired from the blueprint. See the top of this file. The paragraph
+stands as written for its reasoning, not its status.)_ Render still serves the
+live app, untouched.
 `EXPO_PUBLIC_API_BASE_URL` in `render.yaml` still points `iqraa-web` at
 `iqraa-api-dfxu.onrender.com/api`; changing that line and rebuilding the web
 service is the entire cutover. Deliberately not done, because the health
@@ -871,6 +916,8 @@ fail only when a teacher generates a worksheet or opens a lesson image.
 Dockerfiles live on `claude/cloud-run-test` (unmerged, deliberately). They
 mirror `render.yaml`'s own build and start commands rather than optimizing —
 same pnpm version, same `--filter`, same Python pin, same seed-then-start.
+_(Superseded 2026-09-05: they are on `main` — `00b3c9a`, both files, each with
+its `gcloud run deploy` line in the header. See [`docs/deploying.md`](./docs/deploying.md).)_
 
 ## The verifier went unreachable again, and the blueprint was the trap, 2026-09-03
 
@@ -9680,3 +9727,63 @@ Verified: curriculum suite 90/90, `verify` 0 errors, monorepo typecheck clean.
 All 94 mapped sources confirmed in `iqraa-media` by listing the bucket rather
 than trusting the upload log — 106 objects, 1.32 GB, every source byte-equal
 to its file on disk, none missing.
+
+## OCR fallback added; the biology S1 guide and two other stuck sources are ingested, 2026-09-05
+
+Closes the gap the previous entry left open. `extract-text.ts` had four gates
+(no text layer, broken font cmap, unshaped presentation forms, transposed
+definite article) and no recovery from any of them — a source that failed one
+stayed `pending` forever. All four are failures of the PDF's own embedded
+text, none of which exist in a rendered page image, so
+`lib/curriculum/scripts/ocr.ts` rasterizes the page with `pdftoppm` and reads
+it with Tesseract, and `extract-text.ts` now tries that whenever pdf-parse
+rejects a source, checking the OCR output against the same four gates rather
+than assuming a clean pass.
+
+Tesseract + the Arabic language model are **not** committed or fetched
+automatically — a checkout without them behaves exactly as before, rejecting
+with the same message. Setup is in `LOCAL_SETUP.md` ("OCR fallback for
+scanned PDFs"): `winget install tesseract-ocr.tesseract`, then the Arabic
+model by hand into `~/.config/tessdata` (Program Files is usually not
+writable without elevation, so this project keeps its own copy rather than
+depending on the install's own `tessdata/`).
+
+Three biology sources that were stuck now have real text:
+
+| sourceId | why it was stuck | pages | chars |
+|---|---|---|---|
+| `bio-s1-teacher-guide` | scanned, no text layer at all | 132 | 218,551 |
+| `bio-s2-teacher-guide` | definite article transposed in 89% of samples | 100 | 207,322 |
+| `bio-worksheet-answers` | definite article transposed in 91% of samples | 10 | 11,706 |
+
+Verified end to end, not just "the script ran": `passagesForUnit` for
+`kbu-biology-s1-nccd-u1` now returns three passages, two of them from
+`bio-s1-teacher-guide` — the same lookup a live generation request makes.
+
+**Cost, and it is real:** roughly 15-20 seconds per page at the default
+300 DPI, so the 132-page guide alone took 41 minutes. `extract-text.ts` now
+accepts positional `sourceId`s to scope a run to just the sources that need
+it, rather than re-attempting OCR against everything `LOCAL_FILES` lists —
+the four science subjects' pending backlog alone is ~30 sources, hours of
+wall-clock at this rate.
+
+**Quality is not verified character-for-character.** Spot-checked the
+teacher guide's OCR output against a page render: coherent, on-topic Arabic
+(lab safety instructions, teaching notes), with occasional garbled words
+around small decorative page elements (unit-badge numerals, icons) —
+`tesseract-ocr` was chosen for both PNG page images. Treat it as one notch
+below a clean digital extraction; the `tool` field on each `extraction`
+block records `tesseract-ocr (pdf-parse rejected: <why>)` rather than a bare
+tool name, so which sources are OCR'd stays visible without opening each
+JSON.
+
+The four gates themselves moved into `textQuality.ts` (renamed the local
+function to the exported `rejectReason`) so they are shared verbatim between
+the pdf-parse attempt and the OCR attempt, and so they are testable at all —
+`extract-text.ts` ends in a top-level `await main()`, the same reason
+`localSources.ts` and `textQuality.ts` were split out before. New test file:
+`rejectReason.test.ts`, 6 cases, one per gate plus a "two gates fail at once"
+case.
+
+Verified: curriculum suite 105/105 (was 90), `verify` 0 errors, monorepo
+typecheck clean.

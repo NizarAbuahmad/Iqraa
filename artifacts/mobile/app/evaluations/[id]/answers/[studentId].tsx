@@ -30,13 +30,11 @@ import { pickMarkSheetPhoto } from '@/services/documents/pick';
 import { Toast } from '@/components/ui/Toast';
 import {
   EvaluationError,
-  countBlanks,
   getAttempt,
   saveAnswer,
   scanMarks,
   setQuestionGrade,
   setTeacherComment,
-  showBlanks,
   startAttempt,
   submitAttempt,
   type AttemptEvaluationSummary,
@@ -50,6 +48,7 @@ import {
   type RecommendationKind,
 } from '@/services/evaluations';
 import { isolateForeignRuns } from '@/services/mathRender';
+import { FillBlankInput, MatchingInput } from '@/components/QuestionInputs';
 import type { TranslationKey } from '@/services/i18n';
 
 const ACCENT = '#1B6B62';
@@ -668,7 +667,7 @@ function QuestionInput({
         <MatchingInput body={body} response={response} onChange={r => { onChange(r); onCommit(r); }} colors={colors} isRTL={isRTL} align={align} t={t} />
       )}
       {question.type === 'fill_blank' && (
-        <FillBlankInput body={body} response={response} onChange={onChange} onCommit={onCommit} colors={colors} isRTL={isRTL} align={align} t={t} />
+        <FillBlankInput body={body} response={response} onChange={onChange} onCommit={onCommit} colors={colors} align={align} t={t} />
       )}
       {isPaperQuestion(question) ? (
         // A paper exam holds no question text and no answer to transcribe —
@@ -852,109 +851,6 @@ function TrueFalseInput({
             </Pressable>
           );
         })}
-      </View>
-    </View>
-  );
-}
-
-function MatchingInput({
-  body, response, onChange, colors, isRTL, align, t,
-}: {
-  body: Record<string, unknown>; response: Response; onChange: (r: Response) => void;
-  colors: ReturnType<typeof useColors>; isRTL: boolean; align: 'left' | 'right'; t: (key: TranslationKey) => string;
-}) {
-  const left = Array.isArray(body['left']) ? (body['left'] as { id: string; text?: string }[]) : [];
-  const right = Array.isArray(body['right']) ? (body['right'] as { id: string; text?: string }[]) : [];
-  const pairs = Array.isArray(response['pairs']) ? (response['pairs'] as { left: string; right: string }[]) : [];
-  const [openFor, setOpenFor] = useState<string | null>(null);
-
-  const rightFor = (leftId: string) => pairs.find(p => p.left === leftId)?.right;
-  const setPair = (leftId: string, rightId: string) => {
-    const next = [...pairs.filter(p => p.left !== leftId), { left: leftId, right: rightId }];
-    onChange({ pairs: next });
-    setOpenFor(null);
-  };
-
-  return (
-    <View style={{ gap: 8 }}>
-      {left.map(l => {
-        const chosen = rightFor(l.id);
-        const chosenText = right.find(r => r.id === chosen)?.text ?? chosen;
-        return (
-          <View key={l.id}>
-            <View style={[styles.matchRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-              <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, flex: 1, textAlign: align }}>
-                {l.text ?? l.id}
-              </Text>
-              <Pressable
-                onPress={() => setOpenFor(openFor === l.id ? null : l.id)}
-                style={[styles.matchPicker, { borderColor: chosen ? ACCENT : colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-              >
-                <Text style={{ color: chosen ? ACCENT : colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12 }}>
-                  {chosenText ?? t('matchingPickPlaceholder')}
-                </Text>
-                <Ionicons name={openFor === l.id ? 'chevron-up' : 'chevron-down'} size={14} color={colors.mutedForeground} />
-              </Pressable>
-            </View>
-            {openFor === l.id && (
-              <View style={[styles.matchOptions, { borderColor: colors.border, backgroundColor: colors.card }]}>
-                {right.map(r => (
-                  <Pressable key={r.id} onPress={() => setPair(l.id, r.id)} style={{ paddingVertical: 8, paddingHorizontal: 10 }}>
-                    <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align }}>{r.text ?? r.id}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            )}
-          </View>
-        );
-      })}
-    </View>
-  );
-}
-
-function FillBlankInput({
-  body, response, onChange, onCommit, colors, align, t,
-}: {
-  body: Record<string, unknown>; response: Response; onChange: (r: Response) => void; onCommit: (r: Response) => void;
-  colors: ReturnType<typeof useColors>; isRTL: boolean; align: 'left' | 'right'; t: (key: TranslationKey, ...args: any[]) => string;
-}) {
-  const template = (body['template'] as string) ?? '';
-  const count = countBlanks(template);
-  const blanks = Array.isArray(response['blanks']) ? (response['blanks'] as string[]) : [];
-
-  const setBlank = (i: number, value: string) => {
-    const next = [...blanks];
-    while (next.length < count) next.push('');
-    next[i] = value;
-    onChange({ blanks: next });
-  };
-
-  return (
-    <View>
-      <Text style={[
-          styles.qText,
-          {
-            color: colors.foreground,
-            fontFamily: 'Almarai_400Regular',
-            textAlign: align,
-            writingDirection: align === 'right' ? 'rtl' : 'ltr',
-            marginBottom: 10,
-          },
-        ]}>
-        {isolateForeignRuns(showBlanks(template))}
-      </Text>
-      <View style={{ gap: 8 }}>
-        {Array.from({ length: count }, (_, i) => (
-          <TextInput
-            key={i}
-            value={blanks[i] ?? ''}
-            onChangeText={v => setBlank(i, v)}
-            onBlur={() => onCommit({ blanks: blanks.length ? blanks : Array.from({ length: count }, (_, j) => (j === i ? blanks[i] ?? '' : '')) })}
-            placeholder={t('fillBlankLabel', i + 1)}
-            placeholderTextColor={colors.mutedForeground}
-            style={[styles.textInput, { color: colors.foreground, borderColor: colors.border, textAlign: align }]}
-          />
-        ))}
       </View>
     </View>
   );
