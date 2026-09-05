@@ -309,11 +309,32 @@ export function getVisibleGrades(): Grade[] {
   return inMvpOrder(GRADES, MVP_GRADE_IDS);
 }
 
+/**
+ * Subjects the curriculum browser offers for a grade.
+ *
+ * A subject is listed in SUBJECTS for every grade it exists in nationally,
+ * which is not the same as "we have its book for that grade". English is in
+ * the MVP subject list for its Grade 10 books, and `SUBJECTS` says english
+ * spans grade-9 too, but no Grade 9 English book was ever ingested — so
+ * الصف التاسع showed an اللغة الإنجليزية tile that opened on an empty book
+ * list. The subject/grade pair is what has to resolve, not either alone.
+ *
+ * The book check goes here rather than in the two callers (the browser screen
+ * and `GET /curriculum/grades/:id/subjects`) so a third surface cannot miss
+ * it, and it asks `hasCurriculumForSubjectGrade` — the same predicate the
+ * AI-tools pickers grey their entries with — so the two surfaces cannot drift
+ * into disagreeing about which pairs exist.
+ *
+ * Deliberately NOT applied to `getPickerSubjects()` — that list's positions
+ * are persisted as bare `subjectIdx` values, so it stays an explicit array,
+ * and MVP_SUBJECT_IDS stays the place a subject is switched on.
+ */
 export function getSubjectsForGrade(gradeId: string): Subject[] {
   const subjects = SUBJECTS.filter(s => s.grades.includes(gradeId));
   if (!INVESTOR_MVP_CURRICULUM) return subjects;
   if (!MVP_GRADE_IDS.includes(gradeId)) return [];
-  return inMvpOrder(subjects, MVP_SUBJECT_IDS);
+  return inMvpOrder(subjects, MVP_SUBJECT_IDS)
+    .filter(s => hasCurriculumForSubjectGrade(s.id, gradeId));
 }
 
 /** Grades shown in AI tools, chat, and other curriculum pickers. */
