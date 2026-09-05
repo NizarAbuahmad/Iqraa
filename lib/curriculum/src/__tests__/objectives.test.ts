@@ -11,7 +11,7 @@ import {
   getAllObjectives,
   lessonIdsForObjectiveIds,
 } from '../objectives.ts';
-import { getLessonById, MVP_SUBJECT_IDS } from '../catalog.ts';
+import { BOOKS, LESSONS, UNITS, getLessonById, MVP_SUBJECT_IDS } from '../catalog.ts';
 import { objectiveId, type CurriculumIdScope } from '../curriculumIds.ts';
 
 /** One scope per id shape `objectiveId()` can emit. */
@@ -121,5 +121,34 @@ describe('lessonIdsForObjectiveIds', () => {
     const lessonIds = lessonIdsForObjectiveIds(mvp.map(o => o.id));
     assert.ok(lessonIds.length > 50, 'the MVP subjects carry plenty of lessons');
     for (const id of lessonIds) assert.match(id, /^kbl-/);
+  });
+});
+
+describe('general English is not a dead end', () => {
+  // `book-english-10-s1` and `-s2` existed from the day this catalog was
+  // written and carried zero lessons until 2026-09-05: a teacher who picked
+  // English and opened either saw an empty book. That is one level below the
+  // MVP-subject check in finlitCurriculum.test.ts, which only asks whether a
+  // subject resolves to a *book*.
+  it('every English book leads somewhere', () => {
+    const books = BOOKS.filter(b => b.subjectId === 'english');
+    assert.ok(books.length >= 6, 'general English plus the vocational tracks');
+    for (const book of books) {
+      const units = UNITS.filter(u => u.bookId === book.id);
+      const lessons = LESSONS.filter(l => units.some(u => u.id === l.unitId));
+      assert.ok(units.length > 0, `${book.id} has no units`);
+      assert.ok(lessons.length > 0, `${book.id} has no lessons — dead end`);
+    }
+  });
+
+  it('keeps the year\'s printed unit numbering across the two books', () => {
+    // The book prints units 01-05 in semester 1 and 06-10 in semester 2, and
+    // the catalog keeps those numbers rather than restarting — the same
+    // convention physics and chemistry semester 2 follow. A teacher looking
+    // for «Unit 8» must not be shown semester 2's third unit.
+    const numbers = (bookId: string) =>
+      UNITS.filter(u => u.bookId === bookId).map(u => u.order).sort((a, b) => a - b);
+    assert.deepEqual(numbers('book-english-10-s1'), [1, 2, 3, 4, 5]);
+    assert.deepEqual(numbers('book-english-10-s2'), [6, 7, 8, 9, 10]);
   });
 });

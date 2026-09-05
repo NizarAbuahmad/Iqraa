@@ -16,7 +16,7 @@ import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { ClassroomActivity } from '@/services/ai/AIService';
 import { isolateForeignRuns } from '@/services/mathRender';
 import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generatorUnitId } from '@/services/kbContext';
-import { groundedSubjectConflict } from '@/services/lessonPrep';
+import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum } from '@/services/lessonPrep';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { ACTIVITY_CARDS, ClassroomSetup, resolveActivityType } from '@/services/classroomRouting';
 
@@ -42,6 +42,9 @@ export default function ClassroomBuilderScreen() {
   const subjects = getPickerSubjects();
 
   const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(undefined, grades.length));
+  // Index-aligned flags rather than a pre-filtered `subjects`: these positions
+  // are persisted as subjectIdx, so entries are dropped at render time only.
+  const subjectHidden = subjectsWithoutCurriculum(grades[gradeIdx].id);
   const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(undefined, subjects.length));
   const [topic, setTopic] = useState('');
   const [durationIdx, setDurationIdx] = useState(1); // 20 min default
@@ -70,6 +73,8 @@ export default function ClassroomBuilderScreen() {
     // A topic that grounds to another subject's lesson cannot make an honest
     // activity — the KB serves that lesson's own content while the header
     // claims the picked subject. Refuse and name the real subject instead.
+    const scope = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, lang as 'ar' | 'en');
+    if (scope) { setError(t('scopeNoCurriculum', scope.grade, scope.subject)); return; }
     const conflict = groundedSubjectConflict(topic.trim(), lang as 'ar' | 'en', subjects[subjectIdx].id);
     if (conflict) { setError(t('subjectTopicMismatch', lang === 'ar' ? conflict.nameAr : conflict.name)); return; }
     setError(''); setLoading(true); setResult(null);
@@ -182,7 +187,7 @@ export default function ClassroomBuilderScreen() {
         {/* Subject */}
         <PillSelector
           label={t('subjects')}
-          options={subjects.map((s, i) => ({ value: i, label: lang === 'ar' ? s.nameAr : s.name }))}
+          options={subjects.map((s, i) => ({ value: i, label: lang === 'ar' ? s.nameAr : s.name })).filter(o => !subjectHidden[o.value])}
           value={subjectIdx}
           onChange={setSubjectIdx}
           colors={colors}

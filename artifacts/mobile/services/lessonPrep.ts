@@ -20,6 +20,7 @@ import {
   getPickerGrades,
   getPickerSubjects,
   getUnitById,
+  hasCurriculumForSubjectGrade,
 } from './curriculumData.ts';
 import type { Subject } from './curriculumData.ts';
 import { getBookForLesson } from './knowledgeBase.ts';
@@ -200,6 +201,45 @@ export function groundedSubjectConflict(
   const book = getBookForLesson(lesson);
   if (!book || book.subjectId === pickedSubjectId) return null;
   return getPickerSubjects().find(s => s.id === book.subjectId) ?? null;
+}
+
+/**
+ * Which picker subjects have no book for this grade — index-aligned with
+ * `getPickerSubjects()`, for greying out entries that cannot be chosen.
+ *
+ * The list itself never shrinks: its positions are persisted as bare
+ * `subjectIdx` values in formState and route URLs, and `getPickerSubjects()`
+ * deliberately ignores a gradeId so every screen rebuilds the identical list
+ * (see `scopePickerParams` above). So the fix is to keep every entry and mark
+ * the unusable ones, never to filter them out.
+ */
+export function subjectsWithoutCurriculum(gradeId: string): boolean[] {
+  return getPickerSubjects().map(s => !hasCurriculumForSubjectGrade(s.id, gradeId));
+}
+
+/**
+ * The picked grade/subject pair when no book covers it — the scope sibling of
+ * `groundedSubjectConflict`, which only ever sees the subject and so cannot
+ * tell that english/grade-9 has no curriculum while english/grade-10 does.
+ *
+ * The pickers grey these pairs out, but `gradeIdx`/`subjectIdx` also arrive
+ * from formState and bookmarked URLs saved before they did, so generation asks
+ * again rather than inventing a paper for a curriculum that does not exist.
+ * Returns the pair's display names for the message, or null when it is fine.
+ */
+export function scopeWithoutCurriculum(
+  gradeId: string,
+  subjectId: string,
+  lang: 'ar' | 'en',
+): { grade: string; subject: string } | null {
+  if (hasCurriculumForSubjectGrade(subjectId, gradeId)) return null;
+  const grade = getPickerGrades().find(g => g.id === gradeId);
+  const subject = getPickerSubjects().find(s => s.id === subjectId);
+  if (!grade || !subject) return null;
+  return {
+    grade: lang === 'ar' ? grade.nameAr : grade.name,
+    subject: lang === 'ar' ? subject.nameAr : subject.name,
+  };
 }
 
 /**

@@ -56,6 +56,18 @@ import {
   buildArabicSem1BrowserCatalog,
 } from './catalogs/g10ArabicSem1.ts';
 import {
+  ARABIC_S2_CURRICULUM_BOOK_ID,
+  buildArabicSem2BrowserCatalog,
+} from './catalogs/g10ArabicSem2.ts';
+import {
+  ISLAMIC_S1_CURRICULUM_BOOK_ID,
+  buildIslamicSem1BrowserCatalog,
+} from './catalogs/g10IslamicSem1.ts';
+import {
+  ISLAMIC_S2_CURRICULUM_BOOK_ID,
+  buildIslamicSem2BrowserCatalog,
+} from './catalogs/g10IslamicSem2.ts';
+import {
   G9_MATH_S1_CURRICULUM_BOOK_ID,
   buildG9MathSem1BrowserCatalog,
   isG9MathSem1TitleOnlyUnit,
@@ -77,6 +89,14 @@ import {
   buildEnglishHospitalityBrowserCatalog,
   buildEnglishIndustryBrowserCatalog,
 } from './catalogs/g10EnglishVocational.ts';
+import {
+  ENG_S1_CURRICULUM_BOOK_ID,
+  buildEngSem1BrowserCatalog,
+} from './catalogs/g10EnglishSem1.ts';
+import {
+  ENG_S2_CURRICULUM_BOOK_ID,
+  buildEngSem2BrowserCatalog,
+} from './catalogs/g10EnglishSem2.ts';
 
 export interface Grade {
   id: string;
@@ -214,20 +234,18 @@ export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9'];
 // getLessonById returns undefined for all of them — the book would be listed
 // in MVP_BOOK_IDS while its lessons resolved to nothing.
 // 'arabic', 'islamic' and 'computer' were appended on 2026-09-05 as tiles with
-// no book behind any of them, and the "no books" empty state they fell through
-// to reads as a broken subject rather than an honest one. App Review reads a
-// placeholder section the same way — an incomplete app, guideline 2.1 — which
-// is the other half of why they came back off.
-//
-// 'arabic' earned its place back the same day, when the Semester 1 student
-// book was catalogued. 'islamic' and 'computer' stay off until theirs exist:
-// the Islamic Education S1 student book is on file but not extracted, and no
-// computer-science PDF has been sourced at all.
-//
-// Removing from the TAIL is what made that reversible — no existing picker
-// index moved — and `finlitCurriculum.test.ts` fails the moment a subject is
-// offered here with nothing to open.
-export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy', 'english', 'physics', 'earth-science', 'biology', 'arabic'];
+// no book behind any of them; the "no books" empty state they fell through to
+// reads as a broken subject, not an honest one — and App Review reads a
+// placeholder section the same way, as an incomplete app, guideline 2.1. All
+// three came back off, and each returns only once it has something to open:
+// 'arabic' the same day (both semesters of the student book), 'islamic'
+// likewise (both semesters, from the teacher guides — the student books are
+// still unextracted). 'computer' stays out: no computer-science PDF has been
+// sourced at all. Note this is an APPEND — 'islamic' is back at the tail,
+// where it was, so no existing index moves. `finlitCurriculum.test.ts` fails
+// the moment a subject is offered here with nothing to open, and now also the
+// reverse.
+export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy', 'english', 'physics', 'earth-science', 'biology', 'arabic', 'islamic'];
 /** Main semester books only (guides/exercises stay in data, hidden from UI). */
 export const MVP_BOOK_IDS: readonly string[] = [
   'book-math-10',
@@ -261,10 +279,14 @@ export const MVP_BOOK_IDS: readonly string[] = [
   EARTH_S2_CURRICULUM_BOOK_ID,
   BIO_S1_CURRICULUM_BOOK_ID,
   BIO_S2_CURRICULUM_BOOK_ID,
-  // Arabic — Semester 1 only. The S2 student book is extracted but not yet
-  // catalogued into units/lessons, so listing a book for it would offer a
-  // shell with nothing inside.
+  // Arabic — both semesters. S2 carries units 6-10, continuing S1's numbering.
   ARABIC_S1_CURRICULUM_BOOK_ID,
+  ARABIC_S2_CURRICULUM_BOOK_ID,
+  // Islamic Education — both semesters, sourced from the teacher guides
+  // (the student books are registered but unextracted). Units restart at 1
+  // each semester here, because these books do.
+  ISLAMIC_S1_CURRICULUM_BOOK_ID,
+  ISLAMIC_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -579,6 +601,53 @@ export const BOOKS: Book[] = [
     audience: 'all',
     semester: 1,
   },
+  // ── Arabic Grade 10 – Semester 2 ───────────────────────────────────────────
+  // Units 6-10, continuing S1's numbering. Same missing download link as S1.
+  {
+    id: ARABIC_S2_CURRICULUM_BOOK_ID,
+    title: 'Arabic – Grade 10, Semester 2',
+    titleAr: 'اللغة العربية (العربية لغتي) – الصف العاشر – الفصل الثاني',
+    subjectId: 'arabic',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── Islamic Education Grade 10 – Semesters 1 & 2 ───────────────────────────
+  // hasKnowledgeBase is true and honest, but note what it is built from: the
+  // teacher guides. The student books are registered in g10_sources.json with
+  // status `pending` and have never been extracted, so there is no student-book
+  // text behind these two rows — and no verified NCCD URL either, hence no
+  // download chip.
+  {
+    id: ISLAMIC_S1_CURRICULUM_BOOK_ID,
+    title: 'Islamic Education – Grade 10, Semester 1',
+    titleAr: 'التربية الإسلامية – الصف العاشر – الفصل الأول',
+    subjectId: 'islamic',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: ISLAMIC_S2_CURRICULUM_BOOK_ID,
+    title: 'Islamic Education – Grade 10, Semester 2',
+    titleAr: 'التربية الإسلامية – الصف العاشر – الفصل الثاني',
+    subjectId: 'islamic',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
   // ── Math Grade 9 – Semester 1 ───────────────────────────────────────────────
   // Distinct id from the pre-existing inert `book-math-9` stub below (no real
   // content, never referenced) — kept separate rather than reused so this
@@ -633,6 +702,7 @@ export const BOOKS: Book[] = [
   // project's own storage, hence downloadNote overriding the NCCD line.
   {
     id: 'book-english-10-s1',
+    hasKnowledgeBase: true,
     title: 'English for Jordan 10',
     titleAr: 'اللغة الإنجليزية للصف العاشر',
     subjectId: 'english',
@@ -649,6 +719,7 @@ export const BOOKS: Book[] = [
   },
   {
     id: 'book-english-10-s2',
+    hasKnowledgeBase: true,
     title: 'English for Jordan 10 (Semester 2)',
     titleAr: 'اللغة الإنجليزية للصف العاشر – الفصل الثاني',
     subjectId: 'english',
@@ -913,15 +984,11 @@ const _HARDCODED_UNITS: Unit[] = [
   },
 
   // Other books
-  {
-    id: 'unit-eng-10-1',
-    bookId: 'book-english-10-s1',
-    name: 'Communication Skills',
-    nameAr: 'مهارات التواصل',
-    description: 'Reading, writing, and speaking skills',
-    descriptionAr: 'مهارات القراءة والكتابة والتحدث',
-    order: 1,
-  },
+  // `unit-eng-10-1` ('Communication Skills') used to sit here: a hand-written
+  // placeholder with no lessons under it, which is why English was a
+  // lesson-level dead end for as long as the catalog has existed. Replaced
+  // 2026-09-05 by the five real units the student book prints, built from
+  // data/iqra_curriculum_g10_english_sem1.json. Nothing referenced its id.
   {
     id: 'unit-sci-8-1',
     bookId: 'book-science-8',
@@ -1570,6 +1637,9 @@ const _nccdSem1Browser = buildNccdSem1BrowserCatalog();
 const _nccdSem2Browser = buildNccdSem2BrowserCatalog();
 const _finlitSem1Browser = buildFinlitSem1BrowserCatalog();
 const _arabicSem1Browser = buildArabicSem1BrowserCatalog();
+const _arabicSem2Browser = buildArabicSem2BrowserCatalog();
+const _islamicSem1Browser = buildIslamicSem1BrowserCatalog();
+const _islamicSem2Browser = buildIslamicSem2BrowserCatalog();
 const _chemSem1Browser = buildChemSem1BrowserCatalog();
 const _physSem1Browser = buildPhysSem1BrowserCatalog();
 const _physSem2Browser = buildPhysSem2BrowserCatalog();
@@ -1584,6 +1654,12 @@ const _engCommerceBrowser = buildEnglishCommerceBrowserCatalog();
 const _engAgricultureBrowser = buildEnglishAgricultureBrowserCatalog();
 const _engHospitalityBrowser = buildEnglishHospitalityBrowserCatalog();
 const _engIndustryBrowser = buildEnglishIndustryBrowserCatalog();
+// General English. `book-english-10-s1` and `-s2` are the two rows that
+// have existed since this file was written and carried ZERO lessons until
+// 2026-09-05 — a teacher who picked English and opened either saw an empty
+// book, one level below the dead end the MVP-subject test catches.
+const _engSem1Browser = buildEngSem1BrowserCatalog();
+const _engSem2Browser = buildEngSem2BrowserCatalog();
 
 // ─── Authored-Bloom's enrichment for NCCD browser rows ───────────────────────
 //
@@ -1704,12 +1780,17 @@ export const UNITS: Unit[] = [
   ..._nccdSem2Browser.units,
   ..._finlitSem1Browser.units,
   ..._arabicSem1Browser.units,
+  ..._arabicSem2Browser.units,
+  ..._islamicSem1Browser.units,
+  ..._islamicSem2Browser.units,
   ..._g9MathSem1Browser.units,
   ..._g9MathSem2Browser.units,
   ..._engCommerceBrowser.units,
   ..._engAgricultureBrowser.units,
   ..._engHospitalityBrowser.units,
   ..._engIndustryBrowser.units,
+  ..._engSem1Browser.units,
+  ..._engSem2Browser.units,
 ];
 
 /** Active lessons — legacy Math/Chem G10 rows replaced by NCCD-sourced browser rows. */
@@ -1727,12 +1808,17 @@ export const LESSONS: Lesson[] = [
   ..._nccdSem2Browser.lessons,
   ..._finlitSem1Browser.lessons,
   ..._arabicSem1Browser.lessons,
+  ..._arabicSem2Browser.lessons,
+  ..._islamicSem1Browser.lessons,
+  ..._islamicSem2Browser.lessons,
   ..._g9MathSem1Browser.lessons,
   ..._g9MathSem2Browser.lessons,
   ..._engCommerceBrowser.lessons,
   ..._engAgricultureBrowser.lessons,
   ..._engHospitalityBrowser.lessons,
   ..._engIndustryBrowser.lessons,
+  ..._engSem1Browser.lessons,
+  ..._engSem2Browser.lessons,
 ];
 
 /** Math Grade 10 Semester 1 book id (NCCD-backed). */
@@ -1802,6 +1888,22 @@ export function getBooksForSubjectGrade(
     if (!role || role === 'teacher' || role === 'school_admin' || role === 'system_admin') return true;
     return aud === 'student';
   });
+}
+
+/**
+ * True when a subject/grade pair has a visible book behind it.
+ *
+ * The pair is the unit that matters, and neither half answers alone: SUBJECTS
+ * lists english for grade-9 because the subject exists there nationally, while
+ * MVP_BOOK_IDS holds no Grade 9 English book. The AI-tools pickers offer grades
+ * and subjects as two independent lists — `getPickerSubjects()` deliberately
+ * ignores its gradeId so every screen rebuilds the identical list (see
+ * `scopePickerParams` in the app's lessonPrep) — so a teacher can land on a
+ * combination that no book covers. This is what the pickers ask before letting
+ * one be chosen, and what generation re-checks for URLs saved before it did.
+ */
+export function hasCurriculumForSubjectGrade(subjectId: string, gradeId: string): boolean {
+  return getBooksForSubjectGrade(subjectId, gradeId).length > 0;
 }
 
 /** True when a book id is allowed in the current curriculum UI surface. */

@@ -68,6 +68,7 @@ export function PillSelector<T extends string | number>({
           return (
             <Pressable
               key={o.value}
+              accessibilityState={{ selected: active }}
               onPress={() => {
                 if (haptics) Haptics.selectionAsync();
                 onChange(o.value);

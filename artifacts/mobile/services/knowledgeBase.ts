@@ -46,6 +46,8 @@ import {
   PHYS_S1_BOOK_ID,
   buildPhysSem1Catalog,
 } from './curriculumG10PhysSem1.ts';
+import { buildEngSem1Catalog } from './curriculumG10EnglishSem1.ts';
+import { buildEngSem2Catalog } from './curriculumG10EnglishSem2.ts';
 import {
   buildPhysSem2Catalog,
 } from './curriculumG10PhysSem2.ts';
@@ -69,6 +71,18 @@ import {
   ARABIC_S1_BOOK_ID,
   buildArabicSem1Catalog,
 } from './curriculumG10ArabicSem1.ts';
+import {
+  ARABIC_S2_BOOK_ID,
+  buildArabicSem2Catalog,
+} from './curriculumG10ArabicSem2.ts';
+import {
+  ISLAMIC_S1_BOOK_ID,
+  buildIslamicSem1Catalog,
+} from './curriculumG10IslamicSem1.ts';
+import {
+  ISLAMIC_S2_BOOK_ID,
+  buildIslamicSem2Catalog,
+} from './curriculumG10IslamicSem2.ts';
 import {
   ENGLISH_COMMERCE_S1_KB_BOOK_ID,
   ENGLISH_AGRICULTURE_S1_KB_BOOK_ID,
@@ -129,6 +143,24 @@ type HardcodedKBLesson = Omit<KBLesson, 'objectives' | 'periods'> & {
 // BOOKS
 // ─────────────────────────────────────────────────────
 export const KB_BOOKS: KBBook[] = [
+  {
+    id: 'kb-eng-10-s1',
+    gradeId: 'grade-10',
+    subjectId: 'english',
+    titleAr: 'اللغة الإنجليزية – الصف العاشر – الفصل الأول',
+    titleEn: 'English – Grade 10 – Semester 1',
+    semester: 1,
+    source: 'كتاب الطالب لمادة اللغة الإنجليزية الصف العاشر الفصل الأول.pdf',
+  },
+  {
+    id: 'kb-eng-10-s2',
+    gradeId: 'grade-10',
+    subjectId: 'english',
+    titleAr: 'اللغة الإنجليزية – الصف العاشر – الفصل الثاني',
+    titleEn: 'English – Grade 10 – Semester 2',
+    semester: 2,
+    source: 'كتاب الطالب لمادة اللغة الإنجليزية الصف العاشر الفصل الثاني.pdf (نسخة قيد الإعداد والتجهيز)',
+  },
   {
     id: 'kb-phys-10-s1',
     gradeId: 'grade-10',
@@ -218,6 +250,33 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Arabic – Grade 10 – Semester 1',
     semester: 1,
     source: 'knowledge-base/grade-10-arabic/support-pdfs/كتاب الطالب لمادة العربية لغتي للصف العاشر الفصل الأول.pdf',
+  },
+  {
+    id: ARABIC_S2_BOOK_ID,
+    gradeId: 'grade-10',
+    subjectId: 'arabic',
+    titleAr: 'اللغة العربية (العربية لغتي) – الصف العاشر – الفصل الثاني',
+    titleEn: 'Arabic – Grade 10 – Semester 2',
+    semester: 2,
+    source: 'knowledge-base/grade-10-arabic/support-pdfs/كتاب الطالب لمادة اللغة العربية للصف العاشر الفصل الثاني.pdf',
+  },
+  {
+    id: ISLAMIC_S1_BOOK_ID,
+    gradeId: 'grade-10',
+    subjectId: 'islamic',
+    titleAr: 'التربية الإسلامية – الصف العاشر – الفصل الأول',
+    titleEn: 'Islamic Education – Grade 10 – Semester 1',
+    semester: 1,
+    source: 'دليل المعلم لمادة التربية الإسلامية الصف العاشر الفصل الأول.pdf',
+  },
+  {
+    id: ISLAMIC_S2_BOOK_ID,
+    gradeId: 'grade-10',
+    subjectId: 'islamic',
+    titleAr: 'التربية الإسلامية – الصف العاشر – الفصل الثاني',
+    titleEn: 'Islamic Education – Grade 10 – Semester 2',
+    semester: 2,
+    source: 'دليل المعلم لمادة التربية الإسلامية الصف العاشر الفصل الثاني.pdf',
   },
   {
     id: ENGLISH_COMMERCE_S1_KB_BOOK_ID,
@@ -1243,8 +1302,16 @@ const _bioSem2 = buildBioSem2Catalog();
 const _chemSem2 = buildChemSem2Catalog();
 const _finlitSem1 = buildFinlitSem1Catalog();
 const _arabicSem1 = buildArabicSem1Catalog();
+const _arabicSem2 = buildArabicSem2Catalog();
+const _islamicSem1 = buildIslamicSem1Catalog();
+const _islamicSem2 = buildIslamicSem2Catalog();
 const _g9MathSem1 = buildG9MathSem1Catalog();
 const _g9MathSem2 = buildG9MathSem2Catalog();
+// General English — the two books that had a catalog row and no lessons
+// under it until 2026-09-05. Distinct from the four vocational ESP tracks
+// below, which are separate books with their own subject slugs.
+const _engSem1 = buildEngSem1Catalog();
+const _engSem2 = buildEngSem2Catalog();
 const _engCommerce = buildEnglishCommerceKbCatalog();
 const _engAgriculture = buildEnglishAgricultureKbCatalog();
 const _engHospitality = buildEnglishHospitalityKbCatalog();
@@ -1367,6 +1434,8 @@ export const KB_UNITS: KBUnit[] = [
       && u.bookId !== CHEM_S2_BOOK_ID,
   ),
   ..._chemSem1.units,
+  ..._engSem1.units,
+  ..._engSem2.units,
   ..._physSem1.units,
   ..._physSem2.units,
   ..._earthSem1.units,
@@ -1376,6 +1445,9 @@ export const KB_UNITS: KBUnit[] = [
   ..._chemSem2.units,
   ..._finlitSem1.units,
   ..._arabicSem1.units,
+  ..._arabicSem2.units,
+  ..._islamicSem1.units,
+  ..._islamicSem2.units,
   ..._nccdSem1.units,
   ..._nccdSem2.units,
   ..._g9MathSem1.units,
@@ -1395,12 +1467,17 @@ export const KB_LESSONS: KBLesson[] = [
   ..._chemSem2.lessons.map(enrichLesson),
   ..._finlitSem1.lessons.map(enrichLesson),
   ..._arabicSem1.lessons.map(enrichLesson),
+  ..._arabicSem2.lessons.map(enrichLesson),
+  ..._islamicSem1.lessons.map(enrichLesson),
+  ..._islamicSem2.lessons.map(enrichLesson),
   ..._nccdSem1.lessons.map(enrichLesson),
   ..._nccdSem2.lessons.map(enrichLesson),
   // No hand-authored G9 rows exist to enrich from — these carry only what
   // the NCCD JSON has (title-only lessons keep an empty summary/objectives).
   // Physics has no hand-authored rows to enrich from either — it arrived
   // with the 2026-09-03 intake and never had a hardcoded predecessor.
+  ..._engSem1.lessons,
+  ..._engSem2.lessons,
   ..._physSem1.lessons,
   ..._physSem2.lessons,
   ..._earthSem1.lessons,

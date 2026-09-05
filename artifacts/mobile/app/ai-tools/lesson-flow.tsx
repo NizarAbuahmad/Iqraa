@@ -40,7 +40,7 @@ import {
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
 } from '@/services/curriculumData';
-import { groundedSubjectConflict, topicPickerParams } from '@/services/lessonPrep';
+import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, topicPickerParams } from '@/services/lessonPrep';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { Button } from '@/components/ui/Button';
 import { saveItem, updateItem } from '@/services/workspace';
@@ -108,6 +108,9 @@ export default function LessonFlowScreen() {
       : null,
   );
   const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(params.gradeIdx ?? inferredScope?.gradeIdx, grades.length));
+  // Index-aligned flags rather than a pre-filtered `subjects`: these positions
+  // are persisted as subjectIdx, so entries are dropped at render time only.
+  const subjectHidden = subjectsWithoutCurriculum(grades[gradeIdx].id);
   const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx ?? inferredScope?.subjectIdx, subjects.length));
   const [durationIdx, setDurationIdx] = useState(0);
 
@@ -161,6 +164,8 @@ export default function LessonFlowScreen() {
     // A topic that grounds to another subject's lesson cannot make an honest
     // flow — the KB serves that lesson's own content while the header claims
     // the picked subject. Refuse and name the real subject instead.
+    const scope = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, lang as 'ar' | 'en');
+    if (scope) { setError(t('scopeNoCurriculum', scope.grade, scope.subject)); return; }
     const conflict = groundedSubjectConflict(topic.trim(), lang as 'ar' | 'en', subjects[subjectIdx].id);
     if (conflict) { setError(t('subjectTopicMismatch', lang === 'ar' ? conflict.nameAr : conflict.name)); return; }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -440,12 +445,21 @@ export default function LessonFlowScreen() {
               {lang === 'ar' ? 'المادة' : 'Subject'}
             </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', gap: 8 }}>
-              {subjectNames.map((s, i) => (
-                <Pressable key={i} onPress={() => setSubjectIdx(i)}
-                  style={[styles.chip, { flexShrink: 0, backgroundColor: subjectIdx === i ? colors.primary : colors.muted, borderColor: subjectIdx === i ? colors.primary : colors.border }]}>
-                  <Text style={[styles.chipText, { color: subjectIdx === i ? colors.primaryForeground : colors.foreground, fontFamily: 'Cairo_500Medium' }]}>{s}</Text>
-                </Pressable>
-              ))}
+              {/* `i` survives the filter on purpose — it is the index stored as
+                  subjectIdx, not the chip's position in the visible row. */}
+              {subjectNames
+                .map((s, i) => ({ s, i }))
+                .filter(({ i }) => !subjectHidden[i])
+                .map(({ s, i }) => {
+                  const active = subjectIdx === i;
+                  return (
+                    <Pressable key={i} accessibilityState={{ selected: active }}
+                      onPress={() => setSubjectIdx(i)}
+                      style={[styles.chip, { flexShrink: 0, backgroundColor: active ? colors.primary : colors.muted, borderColor: active ? colors.primary : colors.border }]}>
+                      <Text style={[styles.chipText, { color: active ? colors.primaryForeground : colors.foreground, fontFamily: 'Cairo_500Medium' }]}>{s}</Text>
+                    </Pressable>
+                  );
+                })}
             </ScrollView>
 
             {/* Duration */}

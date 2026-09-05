@@ -216,30 +216,77 @@ an announcement by default» below.
 - Financial Literacy G10 S1 is browsable (2 units / 10 lessons, NCCD-sourced).
   It was previously offered as a subject tile with no book behind it, so the
   subject dead-ended on the "no semesters" empty state.
-- Arabic G10 S1 is browsable (2026-09-05): 5 units / 25 lessons / 74 outcomes,
-  from the NCCD student book (`arabic-s1-student-book`, on file since
-  2026-09-03). Every unit runs the same five skills in the same order — أستمع /
-  أتحدّث / أقرأ / أكتب محتوًى / أبني لغتي — so **the lesson title does not
-  identify the lesson here**: «أستمعُ بانتباهٍ وتركيزٍ» is five different
-  lessons. Ids do; `arabicCurriculum.test.ts` pins that five distinct rows
-  survive under one title.
+- Arabic G10 is browsable in **both semesters** (S1 2026-09-05, S2 same day):
+  10 units / 50 lessons, from the two NCCD student books
+  (`arabic-s1-student-book` and `arabic-s2-student-book`, both on file since
+  2026-09-03). S1 is units 1-5 / 74 outcomes, S2 units 6-10 / 75 outcomes —
+  S2 continues S1's numbering, so its ids are `…-s2-nccd-u6`…`u10`, not a
+  restart at u1 under a different semester segment. Every unit in both books
+  runs the same five skills in the same order — أستمع / أتحدّث / أقرأ / أكتب
+  محتوًى / أبني لغتي — so **the lesson title does not identify the lesson
+  here**: «أستمعُ بانتباهٍ وتركيزٍ» is ten different lessons. Ids do;
+  `arabicCurriculum.test.ts` pins that ten distinct rows survive under one
+  title, and that an S1 lookup handed an S2 id answers null rather than a
+  same-shaped lesson from its own book.
   - The unit→lesson mapping was NOT taken from the book's table of contents:
     the extracted TOC is RTL-scrambled (it lists units 1, 3, 2) and one unit's
     title comes out garbled. Each unit's own «محتويات الوحدة» page was used
     instead, and unit 2's title («يَرْحَلونَ ونَبْقى») confirmed against its
     body page. Extraction corruption on this PDF measures 15.3%, so titles were
     verified rather than pasted.
-  - No حصص counts (the student book prints none — the teacher guide is on file
-    but unread for this), no per-lesson term list (the book prints none), and
-    no download chip (no NCCD hosted URL for these three PDFs has been
-    verified). S2 is extracted but not yet catalogued. All recorded in the data
-    file's `known_gaps`.
+  - S2's own table of contents disagrees with unit 10's own page on two lesson
+    titles («المفكّر العربيّ إدوارد سعيد» / «تقرير علميّ عن شخصيّة» versus
+    «إدوارد سعيد (سيرة غيريّة)» / «توثيق المراجع، والأمانة العلميّة»). The unit
+    page won, and was **checked against the lesson bodies** — p118-124 is the
+    Edward Said text, p125 is about citation and academic integrity. The same
+    TOC also lists unit 10 before unit 9.
+  - **S1 has real حصص since 2026-09-05** — 2-5 per lesson, 71 across the
+    semester — read from `arabic-s1-teacher-guide`'s «مخطط الوحدة», which
+    prints the count inside each lesson heading (and prints «أبني لغتي» as two
+    lettered parts with separate counts, so that lesson's total is their sum).
+    **S2 keeps `periods: null`**, and will until an S2 guide exists — there is
+    no such file in the repo. The test pins both sides so a regression that
+    flattened S1 back to the 45-minute floor would fail rather than blend in.
+  - Reading that guide also caught a shipped error: unit 3's reading text was
+    catalogued as «من الأدب الدّانماركيّ» (Danish). It is **الدّاغستانيّ** —
+    Dagestani — in both the student book and the guide, and p72 of the student
+    book says «بلد داغستان» outright. Fixed, with its own assertion. All 25 S1
+    lesson titles were cross-checked against the guide in the same pass; 24
+    matched.
+  - Still missing: no per-lesson term list (neither book prints one) and no
+    download chip (no NCCD hosted URL for any of these PDFs has been
+    verified). Recorded in each data file's `known_gaps`.
   - `islamic` and `computer` came back OUT of `MVP_SUBJECT_IDS` in the same
-    change. All three were appended as tiles on 2026-09-05 with no book behind
+    change. `islamic` returned on 2026-09-05 (see below); `computer` has not. All three were appended as tiles on 2026-09-05 with no book behind
     any of them; Arabic earned its place, the other two have nothing to open —
     the Islamic Education S1 student book is on file unextracted, and no
     computer-science PDF has been sourced at all. `finlitCurriculum.test.ts`
     was already red on `main` for exactly this reason.
+- Islamic Education G10 is browsable in both semesters (2026-09-05): 8 units /
+  50 lessons (S1 4x6, S2 7/6/7/6 — that book genuinely varies). Both units
+  restart at الوحدة الأولى each semester, unlike Arabic's, because these books
+  do; the `s1`/`s2` id segment is the only thing separating `u1_l1` from
+  `u1_l1`, and `islamicCurriculum.test.ts` pins that an S1 lookup handed an S2
+  id answers null.
+  - **The only catalog built from a teacher guide rather than a student book.**
+    Both student books (`islamic-s1-student-book`, `islamic-s2-student-book`)
+    are registered `pending` in `g10_sources.json` and have never been
+    extracted; the two guides were, on 2026-09-03. That turned out to be an
+    upgrade: the guides print «الزمن المقترح لتنفيذ الدرس» on every lesson
+    page, so **this is the first Arabic-side book with real `periods`** (1-3
+    حصص) instead of the one-45-minute-period floor every other one falls back
+    to. A test asserts the durations stay whole multiples of 45 and that most
+    exceed one period, because a regression that dropped them would look
+    exactly like the rest of the catalog.
+  - Outcomes come from each lesson's own «نتاجات التعلم» block, **not** from
+    the «مخطط الوحدة» summary table — that table abbreviates: it prints 3 of
+    «الحديث الشريف: حفظ اللسان»'s 6 outcomes. Its «المفاهيم» column is
+    abbreviated the same way and has no second source to check against, so no
+    vocabulary is carried for this subject at all rather than half a term list.
+  - These units carry **no thematic title** — the book names them by ordinal
+    only, over a Qur'anic epigraph — so `title_ar` is «الوحدة الأولى» etc.,
+    which is what the book says, not a placeholder. Also noted in the S2 data
+    file: the guide misprints «دروس الوحدة الثالثة» above unit 4's lesson list.
 - English G10 S1 is browsable (added 2026-08-27): four vocational-track books
   — Commerce (6 units), Agriculture (6 units), Hospitality and Tourism
   (6 units), Industrial/Technical (12 units) — one lesson per unit, sourced
@@ -680,6 +727,84 @@ build has ever been made**, so push delivery, image picking and the app icon
 remain unverified on a device, and `newArchEnabled` + `reactCompiler` are both
 experimental — Expo Go over LAN is not evidence that a release build runs.
 There are no store assets and no `google-services.json` for Android FCM.
+
+## English teaches something at last, and its book photographs reach it, 2026-09-05
+
+Asked for "the English figures", the honest answer turned out to be that
+extraction was never the blocker. `book-english-10-s1` and `-s2` have existed
+since this catalog was written and carried **zero lessons** between them: a
+teacher who picked English and opened either saw an empty book. One level below
+the MVP-subject dead end #267 fixed, which only asks whether a subject resolves
+to a *book*. The 30 English lessons that did exist belong to the four vocational
+ESP tracks, all `hasKnowledgeBase: false` with no PDFs in the repo.
+
+So figures first needed a curriculum. Extracting without one would have produced
+crops nothing could ever ask for — the "unmapped figures go unused" dead end
+`bookFigures.ts` documents.
+
+**The curriculum comes from the book's own contents spread.** Pages 4-5 of each
+student book print a scope-and-sequence table — UNIT, GRAMMAR, VOCABULARY,
+READING, LISTENING, SPEAKING, WRITING — with the book's own page references.
+Ten units across the year: 01 Looking good … 10 Food for thought. Semester 2
+keeps its printed numbering (06-10) rather than restarting, the convention
+physics and chemistry semester 2 already follow.
+
+**One lesson per unit, and that is forced by the book.** It prints seven lesson
+slots per unit (LESSON 1A..7A, 18pt, page header) and titles none of them —
+only a skill banner whose order changes between units, and in semester 1 two
+slots share page 52 with competing banners. A seven-lesson split would be a
+guess about which slot owns which page. The four vocational English catalogs
+already model a unit as one lesson for the same kind of reason.
+
+Two things are recorded rather than invented: **no learning outcomes** (this
+series prints none, unlike the science books' lesson openers, so `objectives`
+is empty and `verify --gaps` says so), and **Arabic titles are our own
+translations** — the book is English-only, exactly as the vocational catalogs
+declare.
+
+**The semester-2 book is a DRAFT.** 79 of its 80 pages carry «نسخة قيد الإعداد
+والتجهيز»; semester 1 carries it on none, and its manifest row is `pending`
+where s1's is `ingested`. Everything transcribed from it may change in the final
+edition. Worth knowing that the stamp is invisible to a plain text search: it
+extracts as Arabic presentation forms, so grepping «قيد الإعداد» returns nothing.
+
+**A second extractor, because this book photographs rather than draws.**
+Measured before writing it: across 60 pages the English student book carries
+~3.4k vector drawing operations against physics's ~509k. `extract_book_figures.py`
+seeds on vector geometry and would have found page furniture.
+`scripts/extract_book_photos.py` enumerates the embedded rasters instead and
+throws away chrome three ways — reuse across pages (a border is used dozens of
+times), size, and aspect ratio. Output format is deliberately identical, so
+`bookFigures.ts` reads these with no idea they came from a different pipeline.
+
+43 photos out; 3 deleted in the review pass (a Literature Spot extract, an
+earthquake map and a strip — all pages of prose rendered as images, unreadable
+at slide size). **40 kept, covering all 10 units.** `BOOK_FIGURE_COUNT` 841 →
+881.
+
+**The join has an offset worth its own test.** The extractor numbers units by
+counting LESSON-header resets inside one PDF, so the semester-2 book's units
+come out 1-5; the curriculum keeps the printed 6-10. Reversing that would file
+every semester-2 photo under a real lesson about something else and nothing
+would fail, so `bookFigures.test.ts` pins u6→book-unit-1 and u10→book-unit-5.
+
+Verified: typecheck clean; mobile 1198 / 0 fail / 10 known skips; api-server
+452 / 0 fail; curriculum 113 / 0 fail and `verify` 0 errors across 20 files;
+SymPy 72/72. Coverage is now 122 of 203 catalog lessons.
+
+**Two tests moved because they were relying on ordering.** `lessonSlides.test.ts`
+took `getUnitsForSubjectGrade('english','grade-10')[0]` and assumed a
+vocational lesson; general English now sorts in front of those, and that lesson
+has no `keyTerms` (the contents page gives vocabulary *topics*, not
+term/definition pairs), so the vocabulary slide it asserted on stopped
+existing. It names its lesson now. And `bookFigures.test.ts`'s source-id map
+needed an `eng` entry — that map exists precisely so a new subject fails loudly
+instead of being skipped, and it did.
+
+**Still nothing for the four vocational tracks.** They hold 30 of English's 40
+lessons and have no PDFs in the repo; the two `grade-10-vocational` files are
+التربية المهنية, a different subject.
+
 ## Physics, biology and earth science get the book's figures, 2026-09-05
 
 41 lessons across three subjects had curriculum content and **zero** figures

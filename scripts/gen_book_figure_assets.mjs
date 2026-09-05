@@ -42,6 +42,8 @@ const indexes = [
   'knowledge-base/grade-10-biology/figures/bio-s2-student-book/index.json',
   'knowledge-base/grade-10-earth-science/figures/earth-s1-student-book/index.json',
   'knowledge-base/grade-10-earth-science/figures/earth-s2-student-book/index.json',
+  'knowledge-base/grade-10-english/figures/eng-s1-student-book/index.json',
+  'knowledge-base/grade-10-english/figures/eng-s2-student-book/index.json',
 ];
 
 const rows = [];
