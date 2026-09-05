@@ -46,6 +46,8 @@ import {
   PHYS_S1_BOOK_ID,
   buildPhysSem1Catalog,
 } from './curriculumG10PhysSem1.ts';
+import { buildEngSem1Catalog } from './curriculumG10EnglishSem1.ts';
+import { buildEngSem2Catalog } from './curriculumG10EnglishSem2.ts';
 import {
   buildPhysSem2Catalog,
 } from './curriculumG10PhysSem2.ts';
@@ -129,6 +131,24 @@ type HardcodedKBLesson = Omit<KBLesson, 'objectives' | 'periods'> & {
 // BOOKS
 // ─────────────────────────────────────────────────────
 export const KB_BOOKS: KBBook[] = [
+  {
+    id: 'kb-eng-10-s1',
+    gradeId: 'grade-10',
+    subjectId: 'english',
+    titleAr: 'اللغة الإنجليزية – الصف العاشر – الفصل الأول',
+    titleEn: 'English – Grade 10 – Semester 1',
+    semester: 1,
+    source: 'كتاب الطالب لمادة اللغة الإنجليزية الصف العاشر الفصل الأول.pdf',
+  },
+  {
+    id: 'kb-eng-10-s2',
+    gradeId: 'grade-10',
+    subjectId: 'english',
+    titleAr: 'اللغة الإنجليزية – الصف العاشر – الفصل الثاني',
+    titleEn: 'English – Grade 10 – Semester 2',
+    semester: 2,
+    source: 'كتاب الطالب لمادة اللغة الإنجليزية الصف العاشر الفصل الثاني.pdf (نسخة قيد الإعداد والتجهيز)',
+  },
   {
     id: 'kb-phys-10-s1',
     gradeId: 'grade-10',
@@ -1245,6 +1265,11 @@ const _finlitSem1 = buildFinlitSem1Catalog();
 const _arabicSem1 = buildArabicSem1Catalog();
 const _g9MathSem1 = buildG9MathSem1Catalog();
 const _g9MathSem2 = buildG9MathSem2Catalog();
+// General English — the two books that had a catalog row and no lessons
+// under it until 2026-09-05. Distinct from the four vocational ESP tracks
+// below, which are separate books with their own subject slugs.
+const _engSem1 = buildEngSem1Catalog();
+const _engSem2 = buildEngSem2Catalog();
 const _engCommerce = buildEnglishCommerceKbCatalog();
 const _engAgriculture = buildEnglishAgricultureKbCatalog();
 const _engHospitality = buildEnglishHospitalityKbCatalog();
@@ -1367,6 +1392,8 @@ export const KB_UNITS: KBUnit[] = [
       && u.bookId !== CHEM_S2_BOOK_ID,
   ),
   ..._chemSem1.units,
+  ..._engSem1.units,
+  ..._engSem2.units,
   ..._physSem1.units,
   ..._physSem2.units,
   ..._earthSem1.units,
@@ -1401,6 +1428,8 @@ export const KB_LESSONS: KBLesson[] = [
   // the NCCD JSON has (title-only lessons keep an empty summary/objectives).
   // Physics has no hand-authored rows to enrich from either — it arrived
   // with the 2026-09-03 intake and never had a hardcoded predecessor.
+  ..._engSem1.lessons,
+  ..._engSem2.lessons,
   ..._physSem1.lessons,
   ..._physSem2.lessons,
   ..._earthSem1.lessons,

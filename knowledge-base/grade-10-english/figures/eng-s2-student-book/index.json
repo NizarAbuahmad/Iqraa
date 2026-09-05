@@ -1,0 +1,341 @@
+{
+  "sourceId": "eng-s2-student-book",
+  "figures": [
+    {
+      "file": "p008.png",
+      "sourceId": "eng-s2-student-book",
+      "pdfPage": 8,
+      "rect": [
+        315.9,
+        589.0,
+        624.0,
+        869.2
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p009.png",
+      "sourceId": "eng-s2-student-book",
+      "pdfPage": 9,
+      "rect": [
+        -0.3,
+        559.6,
+        308.5,
+        870.4
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p014.png",
+      "sourceId": "eng-s2-student-book",
+      "pdfPage": 14,
+      "rect": [
+        280.6,
+        557.4,
+        567.0,
+        805.2
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p018.png",
+      "sourceId": "eng-s2-student-book",
+      "pdfPage": 18,
+      "rect": [
+        315.9,
+        658.1,
+        609.5,
+        870.4
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p022.png",
+      "sourceId": "eng-s2-student-book",
+      "pdfPage": 22,
+      "rect": [
+        2.8,
+        593.7,
+        300.9,
+        870.3
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p022b.png",
+      "sourceId": "eng-s2-student-book",
+      "pdfPage": 22,
+      "rect": [
+        300.4,
+        593.4,
+        609.7,
+        870.4
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p025.png",
+      "sourceId": "eng-s2-student-book",
+      "pdfPage": 25,
+      "rect": [
+        316.0,
+        602.2,
+        623.8,
+        805.5
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p026.png",
+      "sourceId": "eng-s2-student-book",
+      "pdfPage": 26,
+      "rect": [
+        283.3,
+        61.7,
+        610.0,
+        441.3
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p030.png",
+      "sourceId": "eng-s2-student-book",
+      "pdfPage": 30,
+      "rect": [
+        -0.1,
+        -0.0,
+        314.0,
+        212.2
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p031.png",
+      "sourceId": "eng-s2-student-book",
+      "pdfPage": 31,
+      "rect": [
+        14.1,
+        656.6,
+        623.7,
+        869.4
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p036.png",
+      "sourceId": "eng-s2-student-book",
+      "pdfPage": 36,
+      "rect": [
+        316.0,
+        396.5,
+        609.8,
+        869.2
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p038.png",
+      "sourceId": "eng-s2-student-book",
+      "pdfPage": 38,
+      "rect": [
+        -16.9,
+        31.4,
+        344.4,
+        371.9
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p038b.png",
+      "sourceId": "eng-s2-student-book",
+      "pdfPage": 38,
+      "rect": [
+        296.3,
+        30.8,
+        619.9,
+        254.8
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p038c.png",
+      "sourceId": "eng-s2-student-book",
+      "pdfPage": 38,
+      "rect": [
+        307.3,
+        218.7,
+        619.6,
+        435.6
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p046.png",
+      "sourceId": "eng-s2-student-book",
+      "pdfPage": 46,
+      "rect": [
+        -9.1,
+        196.0,
+        319.8,
+        385.4
+      ],
+      "unit": 4,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p048.png",
+      "sourceId": "eng-s2-student-book",
+      "pdfPage": 48,
+      "rect": [
+        5.7,
+        661.6,
+        295.8,
+        870.2
+      ],
+      "unit": 4,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p048b.png",
+      "sourceId": "eng-s2-student-book",
+      "pdfPage": 48,
+      "rect": [
+        295.6,
+        663.2,
+        609.5,
+        870.3
+      ],
+      "unit": 4,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p053.png",
+      "sourceId": "eng-s2-student-book",
+      "pdfPage": 53,
+      "rect": [
+        317.0,
+        -0.3,
+        623.9,
+        308.9
+      ],
+      "unit": 5,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p057.png",
+      "sourceId": "eng-s2-student-book",
+      "pdfPage": 57,
+      "rect": [
+        330.7,
+        -0.1,
+        623.9,
+        283.5
+      ],
+      "unit": 5,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p062.png",
+      "sourceId": "eng-s2-student-book",
+      "pdfPage": 62,
+      "rect": [
+        323.5,
+        610.9,
+        566.9,
+        870.3
+      ],
+      "unit": 5,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p063.png",
+      "sourceId": "eng-s2-student-book",
+      "pdfPage": 63,
+      "rect": [
+        318.1,
+        574.7,
+        608.8,
+        798.7
+      ],
+      "unit": 5,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    }
+  ]
+}

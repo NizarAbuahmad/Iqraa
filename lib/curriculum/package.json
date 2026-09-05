@@ -26,6 +26,8 @@
     "./catalogs/g10FinlitSem1": "./src/catalogs/g10FinlitSem1.ts",
     "./catalogs/g10ArabicSem1": "./src/catalogs/g10ArabicSem1.ts",
     "./catalogs/g10EnglishVocational": "./src/catalogs/g10EnglishVocational.ts",
+    "./catalogs/g10EnglishSem1": "./src/catalogs/g10EnglishSem1.ts",
+    "./catalogs/g10EnglishSem2": "./src/catalogs/g10EnglishSem2.ts",
     "./validateCurriculum": "./src/validateCurriculum.ts"
   },
   "scripts": {

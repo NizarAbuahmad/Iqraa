@@ -82,6 +82,9 @@ describe('figuresForLesson', () => {
       finlit: 'finlit',
       'g9-math': 'g9-math',
       phys: 'phys',
+      // General English, added 2026-09-05. Its books are `eng-s1-student-book`
+      // / `-s2`, matching the manifest, so slug and prefix agree here.
+      eng: 'eng',
       biology: 'bio',
       'earth-science': 'earth',
     };
@@ -189,6 +192,58 @@ describe('the three sciences carry figures', () => {
       if (!/^kbl-(phys|biology|earth-science)-/.test(id)) continue;
       for (const f of figuresForLesson(id)) {
         assert.match(f.sourceId, /-student-book$/, `${id} cites ${f.sourceId}`);
+      }
+    }
+  });
+});
+
+describe('general English carries its book photographs', () => {
+  // English was the last subject with no figures, and the reason was not
+  // extraction: `book-english-10-s1` and `-s2` were catalog rows with ZERO
+  // lessons under them, so there was nothing for a figure to attach to. Both
+  // halves landed 2026-09-05 — the curriculum from the book's contents spread,
+  // the photos from a raster extractor (`scripts/extract_book_photos.py`),
+  // since this book draws almost nothing and photographs almost everything.
+  const LESSONS = [
+    'kbl-eng-s1-nccd-u1_l1',
+    'kbl-eng-s1-nccd-u5_l1',
+    'kbl-eng-s2-nccd-u6_l1',
+    'kbl-eng-s2-nccd-u10_l1',
+  ];
+
+  for (const id of LESSONS) {
+    it(`${id} resolves to photographs from its own semester's book`, () => {
+      const figs = figuresForLesson(id);
+      assert.ok(figs.length > 0, `${id} has no figures`);
+      const semester = id.includes('-s1-') ? 's1' : 's2';
+      for (const f of figs) {
+        assert.equal(f.sourceId, `eng-${semester}-student-book`, `${id} cites ${f.sourceId}`);
+      }
+    });
+  }
+
+  it('maps semester-2 book units 1-5 onto curriculum units 6-10', () => {
+    // The offset worth a test of its own. `extract_book_photos.py` numbers
+    // units by counting LESSON-header resets inside one PDF, so the s2 book's
+    // units come out 1..5; the curriculum keeps the numbers the book PRINTS on
+    // its contents page, 06..10. Reversing this would file every semester-2
+    // photo under a real lesson about something else, and nothing would fail.
+    const u6 = figuresForLesson('kbl-eng-s2-nccd-u6_l1');
+    assert.ok(u6.length > 0);
+    assert.ok(u6.every(f => f.unit === 1), 'curriculum u6 is the book\'s unit 1');
+
+    const u10 = figuresForLesson('kbl-eng-s2-nccd-u10_l1');
+    assert.ok(u10.length > 0);
+    assert.ok(u10.every(f => f.unit === 5), 'curriculum u10 is the book\'s unit 5');
+  });
+
+  it('files every English photo on lesson 1, because a unit IS one lesson', () => {
+    // The catalog models one lesson per unit — the book prints seven lesson
+    // slots and titles none of them. Any other lesson number here would mean
+    // the extractor and the catalog had drifted apart about that.
+    for (const id of LESSONS) {
+      for (const f of figuresForLesson(id)) {
+        assert.equal(f.lesson, 1, `${f.file} is on lesson ${f.lesson}`);
       }
     }
   });
