@@ -300,10 +300,22 @@ an announcement by default» below.
     - The new limit is **0.5, deliberately not 0.4**: measured across all 80
       extractions, everything trusted sits at or below 12.3%, then history-s2
       at 18.0%, the Arabic exercise books at ~29%, and **the two Islamic
-      teacher guides at ~42%**. Those are genuinely a grade below clean, but
-      they are the source of this shipped curriculum; re-extracting them is its
-      own change with its own verification, so their rate is recorded rather
-      than acted on by a threshold nobody chose deliberately.
+      teacher guides at ~42%**. Those are genuinely a grade below clean, but a
+      threshold is for unambiguous cases — so rather than move it until it
+      caught them, `extract-text.ts` gained an explicit `--ocr` flag for
+      "I have read this and judged it too poor to quote". It refuses to run
+      corpus-wide and its output is held to the same gates.
+  - **Both guides were then re-read that way** (2026-09-05), taking them from
+    44.8% → 8.0% and 47.0% → 7.6%. All four Islamic sources now sit at 7.6-8.5%.
+    Every one of the 221 catalogued outcomes was re-checked against the new
+    text: **nothing changed**.
+    - The OCR pass is **not uniformly better**, which is worth knowing before
+      reaching for it again. It is far better on prose and *worse* on short
+      tokens: pdf-parse read the «الزمن المقترح لتنفيذ الدرس» line on 23 and 25
+      pages, OCR on only 8 and 12, because it drops the «حص» from «حصتان». The
+      catalogue's `periods` therefore come from the pdf-parse reading —
+      corroborated by OCR on all 20 pages both could read, with no
+      disagreement.
   - Outcomes come from each lesson's own «نتاجات التعلم» block, **not** from
     the «مخطط الوحدة» summary table — that table abbreviates: it prints 3 of
     «الحديث الشريف: حفظ اللسان»'s 6 outcomes. Its «المفاهيم» column is
