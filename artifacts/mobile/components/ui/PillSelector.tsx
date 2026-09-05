@@ -15,12 +15,6 @@ import * as Haptics from 'expo-haptics';
 export interface PillOption<T extends string | number> {
   value: T;
   label: string;
-  /**
-   * Renders the pill but refuses the press. For lists whose positions are
-   * persisted elsewhere as bare indices and so must keep every entry — a
-   * subject the picked grade has no book for is shown, greyed, unpickable.
-   */
-  disabled?: boolean;
 }
 
 interface Colors {
@@ -70,15 +64,12 @@ export function PillSelector<T extends string | number>({
       </Text>
       <View style={[styles.pillRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         {options.map(o => {
-          const off = o.disabled === true;
-          const active = !off && o.value === value;
+          const active = o.value === value;
           return (
             <Pressable
               key={o.value}
-              disabled={off}
-              accessibilityState={{ disabled: off, selected: active }}
+              accessibilityState={{ selected: active }}
               onPress={() => {
-                if (off) return;
                 if (haptics) Haptics.selectionAsync();
                 onChange(o.value);
               }}
@@ -89,7 +80,6 @@ export function PillSelector<T extends string | number>({
                   backgroundColor: active ? accent : colors.card,
                   borderColor: active ? accent : colors.border,
                   borderRadius: colors.radius,
-                  opacity: off ? 0.4 : 1,
                 },
               ]}
             >
