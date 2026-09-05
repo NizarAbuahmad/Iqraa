@@ -34,6 +34,11 @@
 #     reaches main. Read-only; needs a DATABASE_URL repository secret.
 
 services:
+  # NOT the live API since 2026-09-05 — `iqraa-web` below now builds
+  # against Cloud Run. Kept running as a fallback for a few days so a bad
+  # cutover can be undone by changing one line back and rebuilding the web
+  # service. Delete both this and iqraa-verifier once Cloud Run has proven
+  # itself, and remember the Cloud Run copies hold their own secrets.
   - type: web
     name: iqraa-api
     runtime: node
@@ -143,11 +148,23 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 24.15.0
-      # Baked into the JS bundle at build time. Must be the API service's
-      # public URL + /api. The plain iqraa-api.onrender.com name was taken,
-      # so Render assigned this suffixed hostname on first deploy.
+      # Baked into the JS bundle at build time, so changing it needs a web
+      # rebuild, not just a redeploy of the API.
+      #
+      # Points at Cloud Run, not Render, since 2026-09-05. The reason is the
+      # verifier's cold start, measured on both: Render's free tier takes
+      # 31-51s to wake a sleeping service, Cloud Run 4.59s. No client timeout
+      # can survive the first, and 15s clears the second comfortably — so on
+      # Render a teacher's first quiz of the day silently got zero verified
+      # answers, every morning, with no error to explain it. Observed live on
+      # 2026-09-04: same lesson, same question types, 0 of 6 verified against
+      # a cold verifier and several against a warm one.
+      #
+      # `iqraa-web` itself stays on Render: it is a static site, free, and
+      # never sleeps, so it has nothing to gain from moving. Neon and R2 stay
+      # too. Only the two services that sleep moved.
       - key: EXPO_PUBLIC_API_BASE_URL
-        value: https://iqraa-api-dfxu.onrender.com/api
+        value: https://iqraa-api-613126375862.europe-west1.run.app/api
       # Same Google OAuth web client ID as GOOGLE_CLIENT_ID on iqraa-api above.
       # sync: false (not a hardcoded value like the PostHog key below) only
       # because the client ID doesn't exist yet — once created it is not
