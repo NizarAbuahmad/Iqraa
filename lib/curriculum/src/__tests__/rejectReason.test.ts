@@ -1,5 +1,5 @@
 /**
- * The four gates `extract-text.ts` runs on any candidate text — from
+ * The five gates `extract-text.ts` runs on any candidate text — from
  * pdf-parse or from the OCR fallback alike, which is why this lives beside
  * `lamTranspositionRate` in `textQuality.ts` rather than inside
  * `extract-text.ts` itself (that file ends in a top-level `await main()`;
@@ -7,7 +7,7 @@
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { rejectReason } from '../../scripts/textQuality.ts';
+import { rejectReason, wordTranspositionRate } from '../../scripts/textQuality.ts';
 
 const CLEAN = 'المتجهات هي كميات فيزيائية لها مقدار واتجاه، وتستخدم في وصف الحركة والقوى في الفضاء.'.repeat(20);
 
@@ -36,6 +36,30 @@ describe('rejectReason', () => {
   it('rejects text whose definite article is transposed past the threshold', () => {
     const transposed = 'احلركة امليكانيكا املعلم املتجهات اجلسم '.repeat(30);
     assert.match(rejectReason(transposed)!, /definite article transposed/);
+  });
+
+  it('rejects letters transposed inside common words, which the article probe misses', () => {
+    // The real shape of islamic-s2-student-book: «في»→«يف», «على»→«عىل»,
+    // «الله»→«اهلل». It scored 18% on lamTranspositionRate — under that
+    // gate's 40% limit — and was marked `ingested` before this check existed.
+    const transposed = 'يف عىل اهلل يف عىل اهلل '.repeat(30);
+    assert.match(rejectReason(transposed)!, /transposed inside common words/);
+  });
+
+  it('does not condemn clean Arabic that uses those words honestly', () => {
+    const honest = 'في المدرسة على الطاولة الله أعلم في البيت على الطريق '.repeat(30);
+    assert.equal(wordTranspositionRate(honest), 0);
+    assert.equal(rejectReason(honest), null);
+  });
+
+  it('needs 100 samples before it will judge, like the article probe', () => {
+    assert.equal(wordTranspositionRate('يف عىل اهلل'), null);
+    assert.equal(rejectReason('يف عىل اهلل ' + CLEAN), null);
+  });
+
+  it('matches whole words only — «يفعل» is not evidence of transposition', () => {
+    // A prefix probe would read every «يفعل»/«يفهم» as a broken «في».
+    assert.equal(wordTranspositionRate('يفعل يفهم يفتح '.repeat(60)), null);
   });
 
   it('does not let one gate mask another — control chars checked before transposition', () => {

@@ -63,7 +63,8 @@ The two are independent — same PDF, two uploads, two different names.
 
 ## B. Extract page text
 
-6. `pnpm --filter @workspace/curriculum run extract-text` writes `src/data/extracted/<sourceId>.json`. It refuses, with a reason, PDFs with no text layer, a broken font cmap, or reversed presentation-form Arabic. Leave `status: "pending"` if it refuses.
+6. `pnpm --filter @workspace/curriculum run extract-text` writes `src/data/extracted/<sourceId>.json`. It refuses, with a reason, PDFs with no text layer, a broken font cmap, reversed presentation-form Arabic, or Arabic whose letters are transposed past a threshold — either around the definite article (`الحركة` → `احلركة`) or inside common words (`في` → `يف`). A refusal falls back to rasterize-and-OCR automatically; if that is rejected too, leave `status: "pending"`.
+   - Those thresholds decide *automatic* rejection and sit where the evidence is unambiguous, so a file can be poor without tripping one. When you have read it and judged it too poor to quote, `run extract-text --force --ocr <sourceId>` skips pdf-parse and rasterizes. It requires explicit sourceIds — it will not OCR the corpus — and its output is held to the same gates, so a bad OCR pass cannot overwrite what is on disk. Record the judgement in the manifest row's `notes`; the two Islamic teacher guides were done this way on 2026-09-05 at ~42% transposition.
 7. By hand, flip the manifest row to `status: "ingested"` and paste the `extraction` block the script prints (`tool`, `extractedAt`, `pages`, `chars`, `localPath`, `sha256`). Nothing automates this; `extraction.test.ts` fails if the manifest and the file disagree.
 8. Optional: `pnpm --filter @workspace/curriculum run upload-r2 <sourceId>` to back a local file up to R2.
 9. `pnpm --filter @workspace/curriculum test`.

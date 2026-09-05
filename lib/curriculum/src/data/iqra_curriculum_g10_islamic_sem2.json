@@ -6,16 +6,16 @@
     "subject_en": "Islamic Education",
     "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
     "semester_covered": 2,
-    "provenance_note": "المصدر هنا دليل المعلم، لا كتاب الطالب: كتاب الطالب مسجَّل في المستودع ولم يُستخرَج نصُّه بعد. أسماء الدروس منسوخة من صفحة «دروس الوحدة» في مفتتح كل وحدة، ونتاجات التعلم من كتلة «نتاجات التعلم» في صفحة كل درس لا من عمود النتاجات في مخطط الوحدة (فذلك العمود يختصر، كما ثبت في دليل الفصل الأول). عدد الحصص منسوخ من سطر «الزمن المقترح لتنفيذ الدرس» في صفحة كل درس. لا اجتهاد ولا توليد.",
+    "provenance_note": "نتاجات التعلم وعدد الحصص من دليل المعلم: من كتلة «نتاجات التعلم» ومن سطر «الزمن المقترح لتنفيذ الدرس» في صفحة كل درس، لا من عمود النتاجات في مخطط الوحدة (فذلك العمود يختصر، كما ثبت في دليل الفصل الأول). وأسماء الدروس من صفحة «دروس الوحدة» في مفتتح كل وحدة. وفي 2026-09-05 استُخرج كتاب الطالب بـ OCR وقوبلت به الستة والعشرون كلُّها فطابقت جميعًا، كما طابق فهرسُه توزيعَها على الوحدات (7/6/7/6) وترتيبَها. لا اجتهاد ولا توليد. وفي 2026-09-05 أُعيد استخراج الدليل بـ OCR فنزلت نسبة قلب الحروف فيه من ~45% إلى ~8%، وأُعيدت قراءة النتاجات كلِّها عليه فلم يتغيّر منها شيء. أمّا عدد الحصص فمصدرُه قراءةُ pdf-parse الأولى، لأن الـ OCR يُسقط «حص» من «حصتان» في كثير من الصفحات؛ وحيثما قرأ الاثنان السطرَ نفسه تطابقا في العشرين موضعًا كلِّها.",
     "source_books": {
-      "units_1_4": "دليل المعلم - التربية الإسلامية - الصف العاشر - الفصل الدراسي الثاني - sourceId: islamic-s2-teacher-guide (232 صفحة)"
+      "units_1_4_outcomes_and_periods": "دليل المعلم - التربية الإسلامية - الصف العاشر - الفصل الدراسي الثاني - sourceId: islamic-s2-teacher-guide (232 صفحة)",
+      "units_1_4_lesson_titles_verified_against": "كتاب الطالب - التربية الإسلامية - الصف العاشر - الفصل الدراسي الثاني - sourceId: islamic-s2-student-book (182 صفحة)"
     },
     "schema_version": "1.0",
     "known_gaps": [
       "الوحدات لا تحمل عنوانًا موضوعيًّا، كما في الفصل الأول: يعنونها الدليل بالترتيب وحده. والوحدة الرابعة يطبع الدليل فوق قائمة دروسها «دروس الوحدة الثالثة» — خطأ مطبعي في الدليل، والوحدة نفسها معنونة «الوحدة الرابعة» ودروسها غير دروس الثالثة.",
       "عدد الدروس يختلف بين الوحدات: 7 في الأولى والثالثة، و6 في الثانية والرابعة — بخلاف الفصل الأول الذي فيه 6 دروس لكل وحدة.",
       "لم تُدرَج قوائم المفاهيم (vocabulary) للسبب نفسه المذكور في ملف الفصل الأول: مخطط الوحدة يختصر، ولا مصدر آخر للتحقق.",
-      "كتاب الطالب (islamic-s2-student-book) مسجَّل في g10_sources.json بحالة pending — لم يُستخرَج نصُّه.",
       "لا توجد عناوين إنجليزية مطبوعة في الكتاب — العناوين الإنجليزية هنا ترجمة أمينة للعناوين العربية.",
       "prior_knowledge غير مذكورة في الدليل بصيغة قابلة للنسخ، فتُركت فارغة."
     ]
@@ -28,7 +28,7 @@
       "title_en": "Unit One",
       "general_idea_ar": "",
       "total_periods": 13,
-      "data_tier": "lesson-level (teacher guide: outcomes and periods printed per lesson)",
+      "data_tier": "lesson-level (teacher guide: outcomes + periods; student book: titles verified)",
       "prior_knowledge": [],
       "lessons": [
         {
@@ -151,7 +151,7 @@
       "title_en": "Unit Two",
       "general_idea_ar": "",
       "total_periods": 13,
-      "data_tier": "lesson-level (teacher guide: outcomes and periods printed per lesson)",
+      "data_tier": "lesson-level (teacher guide: outcomes + periods; student book: titles verified)",
       "prior_knowledge": [],
       "lessons": [
         {
@@ -256,7 +256,7 @@
       "title_en": "Unit Three",
       "general_idea_ar": "",
       "total_periods": 13,
-      "data_tier": "lesson-level (teacher guide: outcomes and periods printed per lesson)",
+      "data_tier": "lesson-level (teacher guide: outcomes + periods; student book: titles verified)",
       "prior_knowledge": [],
       "lessons": [
         {
@@ -372,7 +372,7 @@
       "title_en": "Unit Four",
       "general_idea_ar": "",
       "total_periods": 11,
-      "data_tier": "lesson-level (teacher guide: outcomes and periods printed per lesson)",
+      "data_tier": "lesson-level (teacher guide: outcomes + periods; student book: titles verified)",
       "prior_knowledge": [],
       "lessons": [
         {
