@@ -2,14 +2,18 @@
  * Grade 10 Arabic (العربية لغتي) — Semester 1 curriculum (NCCD).
  * Source of truth: data/iqra_curriculum_g10_arabic_sem1.json
  *
- * Structurally identical to financial literacy — unit openers print نتاجات
- * التعلم and no حصص counts — with two differences worth knowing:
+ * Unit openers print نتاجات التعلم, the way financial literacy's do. Three
+ * things about this book are worth knowing:
  *
  * - Every unit runs the same five skills in the same order (أستمع / أتحدّث /
  *   أقرأ / أكتب محتوًى / أبني لغتي), so `title_ar` alone does not identify a
  *   lesson across units. Ids do; nothing here derives a lesson from its title.
  * - The book prints no per-lesson term list, so `vocabulary` is empty for every
  *   lesson and `keyConcepts*` come out empty rather than invented.
+ * - Since 2026-09-05 every lesson carries a real `periods` (2-5 حصص) read from
+ *   the teacher guide's «مخطط الوحدة», which prints the count inside each
+ *   lesson heading. Semester 2 still has none — there is no S2 teacher guide in
+ *   the repo — so the two books differ on this and only this.
  *
  * Note: does not import knowledgeBase (avoids circular dependency).
  */
@@ -195,9 +199,9 @@ type ArabicBrowserLesson = {
  * book-arabic-10-s1. Same ids as the KB catalog above, so a lesson picked in
  * the browser and the same lesson pulled from the KB agree.
  *
- * The student book prints no حصص counts (periods is null for every lesson), so
- * estimatedDuration falls back to one 45-minute period — same convention as
- * the math and financial-literacy catalogs.
+ * `periods` comes from the teacher guide, so estimatedDuration is a real
+ * multiple of 45 here; the `?? 1` fallback is kept only because the S2 catalog
+ * next door still needs it.
  */
 export function buildArabicSem1BrowserCatalog(): {
   units: ArabicBrowserUnit[];

@@ -3,11 +3,16 @@
  * Source of truth: data/iqra_curriculum_g10_arabic_sem2.json
  *
  * Semester 2 carries units 6–10, continuing S1's numbering, and repeats S1's
- * shape exactly: the same five skills in the same order in every unit
- * (أستمع / أتحدّث / أقرأ / أكتب محتوًى / أبني لغتي), no حصص counts, and no
- * per-lesson term list. So `title_ar` identifies a lesson no better here than
- * it does there — «أستمعُ بانتباهٍ وتركيزٍ» is ten different lessons across the
- * two semesters. Ids do; nothing here derives a lesson from its title.
+ * shape: the same five skills in the same order in every unit (أستمع / أتحدّث /
+ * أقرأ / أكتب محتوًى / أبني لغتي), and no per-lesson term list. So `title_ar`
+ * identifies a lesson no better here than it does there — «أستمعُ بانتباهٍ
+ * وتركيزٍ» is ten different lessons across the two semesters. Ids do; nothing
+ * here derives a lesson from its title.
+ *
+ * One thing does NOT carry over: S1 gained real `periods` from its teacher
+ * guide on 2026-09-05, and this book keeps `periods: null` because **no S2
+ * teacher guide exists in the repo** — not because it was skipped. Every
+ * lesson here falls back to one 45-minute period.
  *
  * Note: does not import knowledgeBase (avoids circular dependency).
  */
