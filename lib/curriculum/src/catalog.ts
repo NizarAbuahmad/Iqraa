@@ -209,7 +209,11 @@ export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9'];
 // isPickerCurriculumVisible gates every physics lesson invisible and
 // getLessonById returns undefined for all of them — the book would be listed
 // in MVP_BOOK_IDS while its lessons resolved to nothing.
-export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy', 'english', 'physics', 'earth-science', 'biology'];
+// 'arabic', 'islamic' and 'computer' joined on 2026-09-05: modeled in SUBJECTS
+// since the MVP list existed, but never surfaced. No book/catalog exists for
+// any of the three yet — the curriculum screens fall through to their
+// existing "no books"/"no lessons" empty states rather than a broken list.
+export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy', 'english', 'physics', 'earth-science', 'biology', 'arabic', 'islamic', 'computer'];
 /** Main semester books only (guides/exercises stay in data, hidden from UI). */
 export const MVP_BOOK_IDS: readonly string[] = [
   'book-math-10',
