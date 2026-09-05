@@ -1,7 +1,13 @@
 /**
  * A labelled dropdown: a pressable value row that expands into a scrollable
- * option list. Moved out of activity.tsx, which was the only screen using
- * this pattern (the pill-row pattern used elsewhere lives in PillSelector).
+ * option list. Used by the AI-tools generator screens for grade, subject,
+ * difficulty, duration and the rest; the pill-row pattern used elsewhere
+ * lives in PillSelector.
+ *
+ * This said "activity.tsx was the only screen using this pattern" for a long
+ * time, and it was never true: quiz, lesson-plan and worksheet each kept a
+ * private copy. The four drifted, so adding one prop meant editing four
+ * files. New screens import this — do not copy it.
  */
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
