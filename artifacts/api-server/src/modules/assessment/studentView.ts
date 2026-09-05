@@ -96,19 +96,25 @@ function safeOption(option: unknown): unknown {
  * unchanged, the question is answerable straight down the list by a student who
  * has not read it — which is the whole of what it was meant to measure.
  *
- * Keyed on the question id rather than drawn from `Math.random`, because the
- * student sees this list twice: once on claim and again on every resume, and a
- * column that reorders under a student mid-exam is its own kind of unfair. It
- * is also why this is a sort on a keyed hash rather than a Fisher–Yates on a
- * seeded PRNG — same result, no generator state to carry, and nothing to keep
- * in step between the two routes.
+ * Keyed on the attempt and the question rather than drawn from `Math.random`,
+ * which settles two things at once:
+ *
+ * - **The attempt**, so the pupil at the next desk is answering a differently
+ *   ordered column. Copying a neighbour's third pick is then just a wrong
+ *   answer, which is the point of shuffling at all.
+ * - **The question**, so one paper is not a single permutation applied to every
+ *   matching question on it — spot the order once and you would have it for the
+ *   rest of the paper.
+ *
+ * Derived rather than stored, and derived from an id the student already holds
+ * an attempt on: the same list is served on claim and again on every resume,
+ * through two routes that sanitise separately, and a column that reorders under
+ * a student mid-exam is its own kind of unfair. That is also why this is a sort
+ * on a keyed hash rather than a Fisher–Yates on a seeded PRNG — same result, no
+ * generator state to carry and nothing to keep in step between the routes.
  *
  * Safe against grading by construction: `matching.grade` matches pairs by id,
  * and ids travel with their items.
- *
- * ponytail: one order per question, so a whole class sees the same one — it
- * defeats reading the key off the layout, not copying from the next desk. Seed
- * with the attempt id instead if papers need to differ per student.
  */
 function shuffleForDelivery(right: readonly unknown[], seed: string): unknown[] {
   const keyed = right.map((item, i) => {
@@ -125,13 +131,21 @@ function shuffleForDelivery(right: readonly unknown[], seed: string): unknown[] 
   return keyed.map(k => k.item);
 }
 
-export function sanitizeQuestionForStudent(question: {
-  id: string;
-  orderIndex: number;
-  type: string;
-  marks: unknown;
-  body: Record<string, unknown> | null | undefined;
-}): StudentQuestion {
+/**
+ * `attemptId` is required rather than optional so that a caller cannot get a
+ * class-wide ordering by forgetting it — and so that `.map(sanitize…)`, which
+ * would quietly hand the array index over as the seed, does not compile.
+ */
+export function sanitizeQuestionForStudent(
+  question: {
+    id: string;
+    orderIndex: number;
+    type: string;
+    marks: unknown;
+    body: Record<string, unknown> | null | undefined;
+  },
+  attemptId: string,
+): StudentQuestion {
   const source = question.body ?? {};
   const typeModule = QUESTION_TYPES[question.type as keyof typeof QUESTION_TYPES];
 
@@ -161,7 +175,10 @@ export function sanitizeQuestionForStudent(question: {
   // away, and there is no point hiding the order of fields that should not have
   // been sent at all.
   if (question.type === "matching" && Array.isArray(body["right"])) {
-    body["right"] = shuffleForDelivery(body["right"] as unknown[], question.id);
+    body["right"] = shuffleForDelivery(
+      body["right"] as unknown[],
+      `${attemptId} ${question.id}`,
+    );
   }
 
   return {

@@ -69,14 +69,14 @@ describe("sanitizeQuestionForStudent", () => {
   };
 
   it("keeps what the student needs to answer", () => {
-    const out = sanitizeQuestionForStudent(mcq);
+    const out = sanitizeQuestionForStudent(mcq, "attempt-1");
     assert.equal(out.id, "q1");
     assert.equal(out.body["stem"], "ما ناتج ٢+٢؟");
     assert.equal((out.body["options"] as unknown[]).length, 2);
   });
 
   it("strips correctness from inside each option", () => {
-    const out = sanitizeQuestionForStudent(mcq);
+    const out = sanitizeQuestionForStudent(mcq, "attempt-1");
     const options = out.body["options"] as Record<string, unknown>[];
     for (const o of options) {
       assert.deepEqual(Object.keys(o).sort(), ["id", "text"]);
@@ -84,7 +84,7 @@ describe("sanitizeQuestionForStudent", () => {
   });
 
   it("drops body fields that are not on the allowlist", () => {
-    const out = sanitizeQuestionForStudent(mcq);
+    const out = sanitizeQuestionForStudent(mcq, "attempt-1");
     assert.equal("correctOptionId" in out.body, false);
   });
 
@@ -95,7 +95,7 @@ describe("sanitizeQuestionForStudent", () => {
       type: "some_future_type",
       marks: "1",
       body: { prompt: "اشرح", expectedAnswer: "الجواب", secretRubric: { a: 1 } },
-    });
+    }, "attempt-1");
     assert.equal(out.body["prompt"], "اشرح");
     assert.equal("expectedAnswer" in out.body, false);
     assert.equal("secretRubric" in out.body, false);
@@ -122,7 +122,7 @@ describe("sanitizeQuestionForStudent", () => {
         body: { template: "{{1}} + ٢ = ٤", blanks: ["٢"], wordBank: ["١", "٢", "٣"] },
         expectedAnswer: { blanks: [{ accept: ["٢"] }] },
       },
-    ].map(sanitizeQuestionForStudent);
+    ].map(q => sanitizeQuestionForStudent(q, "attempt-1"));
 
     const serialised = JSON.stringify({ questions });
     for (const forbidden of [
@@ -175,37 +175,55 @@ describe("matching: the order the student is given", () => {
     marks: "5",
     body: structuredClone(stored),
   });
-  const rightIds = (id: string) =>
-    (sanitizeQuestionForStudent(question(id)).body["right"] as { id: string }[])
+  const rightIds = (attemptId: string, questionId: string) =>
+    (sanitizeQuestionForStudent(question(questionId), attemptId).body["right"] as { id: string }[])
       .map(r => r.id)
       .join(",");
   const asStored = stored.right.map(r => r.id).join(",");
 
   it("does not hand the column over in stored order", () => {
-    // Counted over many questions rather than asserted on one: a shuffle is
-    // allowed to return some question to its stored order — 1 in 120 for five
+    // Counted over many sittings rather than asserted on one: a shuffle is
+    // allowed to return some paper to its stored order — 1 in 120 for five
     // items — and a test that forbids that is pinning the hash, not the
     // property. What must not happen is stored order being the general case.
-    const ids = Array.from({ length: 40 }, (_, i) => `question-${i}`);
-    const unshuffled = ids.filter(id => rightIds(id) === asStored).length;
-    assert.ok(unshuffled <= 3, `${unshuffled} of 40 questions kept the stored order`);
+    const unshuffled = Array.from({ length: 40 }, (_, i) => `attempt-${i}`).filter(
+      a => rightIds(a, "q1") === asStored,
+    ).length;
+    assert.ok(unshuffled <= 3, `${unshuffled} of 40 sittings kept the stored order`);
   });
 
   it("gives one student the same order every time, so a resume does not reshuffle", () => {
     // The claim route and the state route sanitise separately. If this ever
     // depends on Math.random, the column reorders under a student who reloads.
-    assert.equal(rightIds("q-abc"), rightIds("q-abc"));
-    assert.equal(rightIds("q-abc"), rightIds("q-abc"));
+    assert.equal(rightIds("attempt-a", "q1"), rightIds("attempt-a", "q1"));
+    assert.equal(rightIds("attempt-a", "q1"), rightIds("attempt-a", "q1"));
   });
 
-  it("gives different questions different orders", () => {
-    const orders = new Set(Array.from({ length: 20 }, (_, i) => rightIds(`another-${i}`)));
-    assert.ok(orders.size > 1, "every question came back in the same order");
+  it("gives two students different orders for the same question", () => {
+    // The whole point of seeding on the attempt: the pupil at the next desk is
+    // answering a differently ordered column, so a copied third pick is just a
+    // wrong answer.
+    const orders = new Set(
+      Array.from({ length: 20 }, (_, i) => rightIds(`attempt-${i}`, "q1")),
+    );
+    assert.ok(orders.size > 1, "every student got the same order");
+  });
+
+  it("gives one student different orders across the questions on their paper", () => {
+    // Seeding on the attempt alone would apply one permutation to the whole
+    // paper: work it out on question 1 and you have it for every other matching
+    // question in the exam.
+    const orders = new Set(
+      Array.from({ length: 20 }, (_, i) => rightIds("attempt-a", `q${i}`)),
+    );
+    assert.ok(orders.size > 1, "one permutation was reused across the paper");
   });
 
   it("keeps every right item, exactly once", () => {
     const delivered = (
-      sanitizeQuestionForStudent(question("q-set")).body["right"] as { id: string }[]
+      sanitizeQuestionForStudent(question("q-set"), "attempt-a").body["right"] as {
+        id: string;
+      }[]
     ).map(r => r.id);
     assert.deepEqual([...delivered].sort(), ["r1", "r2", "r3", "r4", "r5"]);
   });
@@ -213,7 +231,7 @@ describe("matching: the order the student is given", () => {
   it("leaves the left column alone", () => {
     // Reordering one side is all it takes to break the alignment, and moving
     // both would churn the prompts the student is reading down.
-    const out = sanitizeQuestionForStudent(question("q-left"));
+    const out = sanitizeQuestionForStudent(question("q-left"), "attempt-a");
     assert.deepEqual(out.body["left"], stored.left);
   });
 
@@ -221,7 +239,7 @@ describe("matching: the order the student is given", () => {
     // The round trip, and the reason shuffling is safe at all: the student
     // picks ids off the reordered column, `pairs` carries ids, and grading
     // never looks at a position.
-    const delivered = sanitizeQuestionForStudent(question("q-grade"));
+    const delivered = sanitizeQuestionForStudent(question("q-grade"), "attempt-a");
     const right = delivered.body["right"] as { id: string }[];
     const key = [
       { left: "l1", right: "r1" },
