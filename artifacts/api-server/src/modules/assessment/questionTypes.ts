@@ -165,7 +165,9 @@ const matching: TypeModule = {
     return errors;
   },
   sanitizeForStudent(q) {
-    // Right-hand items are shuffled for delivery; order here is the stored one.
+    // Order here is the stored one. `shuffleForDelivery` in `studentView.ts`
+    // reorders the right-hand column on the way out — it needs the question id
+    // to keep that order stable across a resume, and a draft has no id.
     return { left: q.body["left"], right: q.body["right"] };
   },
   grade(q, response) {

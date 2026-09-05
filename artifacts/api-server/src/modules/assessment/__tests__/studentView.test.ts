@@ -15,6 +15,7 @@ import {
   normalizeShareCode,
   sanitizeQuestionForStudent,
 } from "../studentView.ts";
+import { QUESTION_TYPES } from "../questionTypes.ts";
 
 describe("share codes", () => {
   it("never contains a character that can be read two ways", () => {
@@ -140,5 +141,106 @@ describe("sanitizeQuestionForStudent", () => {
         `"${forbidden}" reached the student payload`,
       );
     }
+  });
+});
+
+/**
+ * A matching question is answerable without reading it if the right column
+ * arrives in the same order as the left — which is how a generator asked for
+ * `pairs` in order writes them. The delivered order has to differ from the
+ * stored one, and then has to stop moving: a student sees this list on claim
+ * and again on every resume.
+ */
+describe("matching: the order the student is given", () => {
+  const stored = {
+    left: [
+      { id: "l1", text: "الجزيء" },
+      { id: "l2", text: "الذرة" },
+      { id: "l3", text: "الأيون" },
+      { id: "l4", text: "النظير" },
+      { id: "l5", text: "المركب" },
+    ],
+    right: [
+      { id: "r1", text: "١" },
+      { id: "r2", text: "٢" },
+      { id: "r3", text: "٣" },
+      { id: "r4", text: "٤" },
+      { id: "r5", text: "٥" },
+    ],
+  };
+  const question = (id: string) => ({
+    id,
+    orderIndex: 0,
+    type: "matching",
+    marks: "5",
+    body: structuredClone(stored),
+  });
+  const rightIds = (id: string) =>
+    (sanitizeQuestionForStudent(question(id)).body["right"] as { id: string }[])
+      .map(r => r.id)
+      .join(",");
+  const asStored = stored.right.map(r => r.id).join(",");
+
+  it("does not hand the column over in stored order", () => {
+    // Counted over many questions rather than asserted on one: a shuffle is
+    // allowed to return some question to its stored order — 1 in 120 for five
+    // items — and a test that forbids that is pinning the hash, not the
+    // property. What must not happen is stored order being the general case.
+    const ids = Array.from({ length: 40 }, (_, i) => `question-${i}`);
+    const unshuffled = ids.filter(id => rightIds(id) === asStored).length;
+    assert.ok(unshuffled <= 3, `${unshuffled} of 40 questions kept the stored order`);
+  });
+
+  it("gives one student the same order every time, so a resume does not reshuffle", () => {
+    // The claim route and the state route sanitise separately. If this ever
+    // depends on Math.random, the column reorders under a student who reloads.
+    assert.equal(rightIds("q-abc"), rightIds("q-abc"));
+    assert.equal(rightIds("q-abc"), rightIds("q-abc"));
+  });
+
+  it("gives different questions different orders", () => {
+    const orders = new Set(Array.from({ length: 20 }, (_, i) => rightIds(`another-${i}`)));
+    assert.ok(orders.size > 1, "every question came back in the same order");
+  });
+
+  it("keeps every right item, exactly once", () => {
+    const delivered = (
+      sanitizeQuestionForStudent(question("q-set")).body["right"] as { id: string }[]
+    ).map(r => r.id);
+    assert.deepEqual([...delivered].sort(), ["r1", "r2", "r3", "r4", "r5"]);
+  });
+
+  it("leaves the left column alone", () => {
+    // Reordering one side is all it takes to break the alignment, and moving
+    // both would churn the prompts the student is reading down.
+    const out = sanitizeQuestionForStudent(question("q-left"));
+    assert.deepEqual(out.body["left"], stored.left);
+  });
+
+  it("still marks correct when the student answers the shuffled list", () => {
+    // The round trip, and the reason shuffling is safe at all: the student
+    // picks ids off the reordered column, `pairs` carries ids, and grading
+    // never looks at a position.
+    const delivered = sanitizeQuestionForStudent(question("q-grade"));
+    const right = delivered.body["right"] as { id: string }[];
+    const key = [
+      { left: "l1", right: "r1" },
+      { left: "l2", right: "r2" },
+      { left: "l3", right: "r3" },
+      { left: "l4", right: "r4" },
+      { left: "l5", right: "r5" },
+    ];
+    // A student who knows the subject: for each left item, find the right item
+    // in the column as delivered and pick it.
+    const answered = key.map(k => ({
+      left: k.left,
+      right: right.find(r => r.id === k.right)!.id,
+    }));
+    const graded = QUESTION_TYPES.matching.grade!(
+      { type: "matching", body: stored, expectedAnswer: { pairs: key } },
+      { pairs: answered },
+    );
+    assert.equal(graded.fraction, 1);
+    assert.equal(graded.status, "correct");
   });
 });
