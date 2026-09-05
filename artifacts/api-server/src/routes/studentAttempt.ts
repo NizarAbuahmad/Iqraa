@@ -37,6 +37,7 @@ import {
 } from "@workspace/db";
 import type { EvaluationQuestion } from "@workspace/db";
 import { and, asc, eq, isNull } from "drizzle-orm";
+import { lessonIdsForObjectiveIds } from "@workspace/curriculum";
 import { logger } from "../lib/logger";
 import { createRateLimiter } from "../lib/rateLimit";
 import {
@@ -78,6 +79,24 @@ async function evaluationByCode(rawCode: unknown) {
   // exist.
   if (!row || row.status !== "published") return undefined;
   return row;
+}
+
+/**
+ * The curriculum lessons a paper covers, for the student's figure panel.
+ *
+ * Sends lesson **ids**, not figures and not URIs. The figures are bundled into
+ * the app by Metro at build time (`bookFigureAssets.ts`), so the client
+ * resolves them locally and needs no bytes from here; and the URIs are
+ * build-time bundle paths that differ between web and native, which this
+ * server has no way to know. A short string is the whole contract.
+ *
+ * Objective ids themselves stay server-side: `sanitizeQuestionForStudent`
+ * projects only `{id, orderIndex, type, marks, body}`, and widening that
+ * allowlist to ship curriculum internals to an unauthenticated share-code
+ * holder would be a bigger change than this feature earns.
+ */
+function lessonIdsForPaper(questions: readonly { objectiveId: string }[]): string[] {
+  return lessonIdsForObjectiveIds(questions.map(q => q.objectiveId));
 }
 
 async function liveQuestions(evaluationId: string) {
@@ -244,6 +263,7 @@ router.post("/take/:code/claim", async (req, res) => {
       token,
       student: { id: member.id, displayName: member.displayName },
       questions: questions.map(sanitizeQuestionForStudent),
+      lessonIds: lessonIdsForPaper(questions),
     });
   } catch (err) {
     logger.error({ err }, "claim student attempt failed");
@@ -284,6 +304,10 @@ router.get("/take/attempt/state", async (req, res) => {
       submittedAt: attempt.submittedAt,
       questions: snapshot.map(sanitizeQuestionForStudent),
       answers: saved,
+      // Also here, not just on claim: a student who reloads mid-exam resumes
+      // through this route, and a figure panel that vanished on refresh would
+      // read as the diagrams having been withdrawn.
+      lessonIds: lessonIdsForPaper(snapshot),
     });
   } catch (err) {
     logger.error({ err }, "student attempt state failed");

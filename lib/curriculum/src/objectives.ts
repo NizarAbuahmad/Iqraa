@@ -149,6 +149,43 @@ export function getObjectivesForLesson(lessonId: string): CurriculumObjective[] 
   return lesson ? expand(lesson) : [];
 }
 
+/**
+ * The lessons a set of objectives covers, in the order they name them.
+ *
+ * The derivation an evaluation needs. An exam is scoped by **objectives**, not
+ * by a lesson: `evaluations.lessonId` is a real column and is always null,
+ * because no client has ever sent it. Anything that wants an evaluation's
+ * lesson — the book-figure panel on the student's paper and on the teacher's
+ * review screen — has to come through here.
+ *
+ * Deriving it rather than reading that column is deliberate. `objectiveIds` is
+ * validated at create time (`objectivesAreWithinBook`) and generation refuses
+ * to run unscoped, whereas `lessonId` is free text nothing checks. Filing the
+ * wrong book's diagram onto an exam paper is the failure this avoids.
+ *
+ * Lives here rather than beside either caller because both the API and the app
+ * need it and they cannot import each other — the duplication this replaces
+ * was six identical lines in `routes/studentAttempt.ts` and
+ * `artifacts/mobile/services/bookFigures.ts`.
+ *
+ * Unknown ids are skipped, not thrown on: an objective can be retired from the
+ * curriculum while an old evaluation still names it, and an exam that renders
+ * without a picture beats one that will not open.
+ */
+export function lessonIdsForObjectiveIds(
+  objectiveIds: readonly string[] | null | undefined,
+): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const id of objectiveIds ?? []) {
+    const lessonId = OBJECTIVE_INDEX.get(id)?.lessonId;
+    if (!lessonId || seen.has(lessonId)) continue;
+    seen.add(lessonId);
+    out.push(lessonId);
+  }
+  return out;
+}
+
 /** Objectives across every lesson in a unit. */
 export function getObjectivesForUnit(unitId: string): CurriculumObjective[] {
   return LESSONS.filter(l => l.unitId === unitId).flatMap(expand);

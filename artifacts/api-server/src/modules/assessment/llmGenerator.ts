@@ -170,9 +170,26 @@ export function buildGenerationPrompt(req: LlmGenerationRequest): {
       + "include \"check\", in Latin notation. It is verified by a computer algebra system before any "
       + "teacher sees the question, so a key you are not sure of is worth more to us checked than omitted. "
       + "Written in Arabic it cannot be checked at all, and the question goes out unverified.",
+    // The figure rule the deck generator has had since decks shipped checks
+    // reading «يمثل الرسم البياني…» beside an empty slide (`FIGURE_RULE_AR` in
+    // `lib/prompts.ts`). The exam generator never had one, so nothing stopped
+    // a stem pointing at a picture that was not on the paper.
+    //
+    // Deliberately NOT the same rule. The deck's is a flat ban, because that
+    // path can only draw a curve it can derive from equations in the text.
+    // The exam paper now carries the lesson's own book figures in a panel, so
+    // a general reference is honest here — what is not honest is a *specific*
+    // one. The panel shows every figure the lesson has, in book order, chosen
+    // by nothing; a stem saying «الشكل ٣» or "the figure below" names one the
+    // model never saw and cannot have picked.
+    "7. The paper shows the lesson's own textbook diagrams together, in one panel, in book order. "
+      + "You may write a question that refers to them in general (\"استعن بأشكال الدرس\"). "
+      + "Never name or number a specific one — not \"الشكل ٣\", not \"the figure below\", not \"الشكل المجاور\" — "
+      + "and never describe what one contains. You have not seen these images. "
+      + "A question that depends on identifying one of them cannot be answered from this paper.",
     ...(isMaths
       ? [
-        "7. This is a mathematics paper. Every question here whose answer is an expression, a value, a "
+        "8. This is a mathematics paper. Every question here whose answer is an expression, a value, a "
           + "solution set or a point has a \"check\" — that is most of them. A maths question without one "
           + "is a question nobody can verify.",
       ]

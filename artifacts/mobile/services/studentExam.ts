@@ -88,7 +88,18 @@ export function openExam(code: string): Promise<{ evaluation: ExamSummary; stude
 export function claimName(
   code: string,
   studentId: string,
-): Promise<{ token: string; student: { id: string; displayName: string }; questions: StudentQuestion[] }> {
+): Promise<{
+  token: string;
+  student: { id: string; displayName: string };
+  questions: StudentQuestion[];
+  /**
+   * Curriculum lessons this paper covers, for the book-figure panel. The
+   * server sends ids only; the figures themselves are bundled into this app,
+   * so `bookFigureRefsForObjectives`' sibling resolves them with no network.
+   * Optional so a client running against an older API simply shows none.
+   */
+  lessonIds?: string[];
+}> {
   return call(`/take/${encodeURIComponent(code)}/claim`, {
     method: 'POST',
     body: JSON.stringify({ studentId }),
@@ -100,6 +111,8 @@ export function getExamState(token: string): Promise<{
   submittedAt: string | null;
   questions: StudentQuestion[];
   answers: { questionId: string; response: StudentResponse }[];
+  /** See `claimName` — present on resume too, so a reload keeps the panel. */
+  lessonIds?: string[];
 }> {
   return call('/take/attempt/state', { token });
 }
