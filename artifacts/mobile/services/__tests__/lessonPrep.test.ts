@@ -111,7 +111,7 @@ describe('buildLessonPrepRequest', () => {
       .find(b => b && !b.grounded);
     assert.ok(ungrounded, 'expected at least one non-KB lesson fixture');
     assert.equal(ungrounded.groundedLessonTitle, null);
-    assert.match(ungrounded.request.additionalContext ?? '', /غير موجود في المنهج/);
+    assert.match(ungrounded.request.additionalContext ?? '', /غير موجود في المنهاج/);
   });
 
   it('returns null for an unknown lesson', () => {

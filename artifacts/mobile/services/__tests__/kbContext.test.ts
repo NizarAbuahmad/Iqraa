@@ -306,13 +306,13 @@ describe('generator grounding: teacher objectives', () => {
     // curriculum-grounded than leaving the box empty, and nothing said so.
     const plain = resolveGeneratorGrounding(TOPIC, 'ar');
     assert.equal(plain.grounded, true);
-    assert.match(plain.context, /النتاجات \(من المنهج الرسمي\)/);
+    assert.match(plain.context, /النتاجات \(من المنهاج الرسمي\)/);
 
     const withTeacher = resolveGeneratorGrounding(TOPIC, 'ar', {
       teacherObjectives: 'أن يخطط الطالب لمشروع صغير.',
     });
     assert.match(withTeacher.context, /النتاجات \(من المعلم\)/);
-    assert.match(withTeacher.context, /النتاجات \(من المنهج الرسمي\)/);
+    assert.match(withTeacher.context, /النتاجات \(من المنهاج الرسمي\)/);
     // Every official outcome that survived without the teacher line must still
     // be there with it — the teacher adds, never replaces.
     for (const line of plain.context.split('\n').filter(l => l.startsWith('• '))) {

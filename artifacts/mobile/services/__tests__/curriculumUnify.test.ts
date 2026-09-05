@@ -97,7 +97,7 @@ describe('Math G10 S1 browser catalog — NCCD unify', () => {
   it('Unit 1 generator context includes per-lesson objectives', () => {
     const g = resolveGeneratorGrounding('حل المعادلة الأسية', 'ar');
     assert.equal(g.grounded, true);
-    assert.ok(g.context.includes('النتاجات (من المنهج الرسمي):'));
+    assert.ok(g.context.includes('النتاجات (من المنهاج الرسمي):'));
     assert.ok(g.context.includes('حل معادلات أسية'));
     assert.ok(!g.context.includes('على مستوى الوحدة'));
   });
@@ -105,7 +105,7 @@ describe('Math G10 S1 browser catalog — NCCD unify', () => {
   it('Unit 2 generator context now uses per-lesson objectives', () => {
     const g = resolveGeneratorGrounding('أوتار الدائرة وأقطارها ومماساتها', 'ar');
     assert.equal(g.grounded, true);
-    assert.ok(g.context.includes('النتاجات (من المنهج الرسمي):'));
+    assert.ok(g.context.includes('النتاجات (من المنهاج الرسمي):'));
     assert.ok(g.context.includes('الوتر'));
     // No longer falls back to the coarser unit-level wording.
     assert.ok(!g.context.includes('على مستوى الوحدة'));

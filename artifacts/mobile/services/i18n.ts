@@ -99,7 +99,7 @@ const translations = {
 
     // Tabs
     tabHome: 'الرئيسية',
-    tabCurriculum: 'المنهج',
+    tabCurriculum: 'المنهاج',
     tabIqra: 'اقرأ',
     tabTools: 'الأدوات',
     tabAlerts: 'الرسائل',
@@ -164,7 +164,7 @@ const translations = {
     goodEvening: 'مساء النور',
     teacher: 'معلم',
     welcomeBackNamed: (name: string) => `مرحبًا بعودتك، ${name}`,
-    currentCurriculum: 'المنهج الحالي',
+    currentCurriculum: 'المنهاج الحالي',
     curriculumFocusG10Math: 'الرياضيات — الصف العاشر',
     todaysFocus: 'تركيز اليوم',
     todaysFocusDefault: 'رياضيات الصف العاشر · الفصل الأول',
@@ -172,8 +172,8 @@ const translations = {
     createWorksheet: 'ورقة عمل',
     createQuiz: 'اختبار قصير',
     createHomework: 'واجب منزلي',
-    openCurriculum: 'عرض المنهج',
-    curriculumShortcutTitle: 'اختصار المنهج',
+    openCurriculum: 'عرض المنهاج',
+    curriculumShortcutTitle: 'اختصار المنهاج',
     curriculumShortcutSub: 'الصف العاشر · الرياضيات · الفصلان ١ و ٢',
     semester1Short: 'الفصل الأول',
     semester2Short: 'الفصل الثاني',
@@ -208,7 +208,7 @@ const translations = {
     lessonPlan: 'خطة درس',
     worksheet: 'ورقة عمل',
     quiz: 'اختبار قصير',
-    curriculum: 'المنهج',
+    curriculum: 'المنهاج',
     // Homepage AI-first (Phase 4)
     homeHeroTitle: 'ماذا سنحضّر لحصة اليوم؟',
     homeHeroSubtitle: 'اكتب ما تحتاجه، وسيتولى اقرأ إعداد المواد التعليمية خلال دقائق.',
@@ -222,7 +222,7 @@ const translations = {
     relatedCreateAll: '✨ أنشئ الكل',
 
     // Curriculum — top level
-    curriculumTitle: 'المنهج',
+    curriculumTitle: 'المنهاج',
     jordanCurriculum: 'المنهاج الأردني',
     searchSubjects: 'ابحث في المواد...',
     grade: 'الصف',
@@ -359,8 +359,8 @@ const translations = {
     subjectTopicMismatch: (subject: string) =>
       `هذا الموضوع درسٌ من مادة «${subject}». غيّر المادة إلى «${subject}»، أو اختر موضوعًا من المادة المحددة.`,
     generationFailed: 'تعذر إتمام العملية. حاول مرة أخرى.',
-    curriculumUngroundedNotice: 'هذا الموضوع غير موجود في المنهج المتاح حالياً. الخطة عامة وليست مبنية على نتاجات درس محدد من الكتاب.',
-    curriculumUngroundedNoticeWorksheet: 'هذا الموضوع غير موجود في المنهج المتاح حالياً. ورقة العمل عامة وليست مبنية على نتاجات درس محدد من الكتاب.',
+    curriculumUngroundedNotice: 'هذا الموضوع غير موجود في المنهاج المتاح حالياً. الخطة عامة وليست مبنية على نتاجات درس محدد من الكتاب.',
+    curriculumUngroundedNoticeWorksheet: 'هذا الموضوع غير موجود في المنهاج المتاح حالياً. ورقة العمل عامة وليست مبنية على نتاجات درس محدد من الكتاب.',
     includePriorReviewLabel: 'تضمين أسئلة مراجعة سابقة',
     priorReviewUnavailableNote: 'لا توجد معارف سابقة مرتبطة بهذه الوحدة في المنهاج — ستُبنى الورقة من الدرس نفسه.',
     needTopicHint: 'اكتب عنوان الدرس أعلاه ليصبح الزر جاهزاً.',
@@ -417,7 +417,7 @@ const translations = {
     // Grounding: whether generated material is anchored to a curriculum lesson.
     groundedInCurriculum: (lesson: string) => `مرتبط بالمنهاج الأردني — ${lesson}`,
     notGroundedTitle: 'محتوى عام، غير مرتبط بدرس من المنهاج',
-    notGroundedHint: 'لم نجد درسًا مطابقًا في المنهاج لهذا الموضوع، فوُلِّد المحتوى بصورة عامة. اختر الدرس من «المنهج» لربطه بنتاجات الدرس ومصطلحاته.',
+    notGroundedHint: 'لم نجد درسًا مطابقًا في المنهاج لهذا الموضوع، فوُلِّد المحتوى بصورة عامة. اختر الدرس من «المنهاج» لربطه بنتاجات الدرس ومصطلحاته.',
     bookFiguresTitle: 'من الكتاب المدرسي',
     bookFiguresNote: 'أشكالٌ من الكتاب المدرسي لهذا الدرس، ليطابقها المعلّم بعينه مع أيّ سؤال يشير إلى شكل.',
     iqraWelcome: 'مرحبًا — أنا اقرأ، رفيقك في تحضير الحصص.',
@@ -445,8 +445,8 @@ const translations = {
 
     iqraSend: 'أرسل',
     iqraSuggested: 'اقتراحات سريعة',
-    iqraNoResults: 'لم أجد هذا في الكتب المتوفرة حالياً. جرّب صياغة أخرى أو موضوعاً من المنهج.',
-    iqraOutOfScope: 'لم أجد هذا الموضوع في المنهج المتاح.\n\nيمكنني المساعدة في هذه المواضيع — اختر ما يناسبك:',
+    iqraNoResults: 'لم أجد هذا في الكتب المتوفرة حالياً. جرّب صياغة أخرى أو موضوعاً من المنهاج.',
+    iqraOutOfScope: 'لم أجد هذا الموضوع في المنهاج المتاح.\n\nيمكنني المساعدة في هذه المواضيع — اختر ما يناسبك:',
     iqraClarifySubject: 'سؤالك قد يخص أكثر من مادة. أيّ مادة تقصد؟',
     iqraDidYouMean: 'تقصد هذا الدرس؟',
     iqraWhichLesson: 'لم أتأكد من الدرس المقصود — أيّ واحد تعني؟',
