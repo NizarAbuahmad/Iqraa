@@ -108,9 +108,9 @@ export default function LessonFlowScreen() {
       : null,
   );
   const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(params.gradeIdx ?? inferredScope?.gradeIdx, grades.length));
-  // Index-aligned with `subjects`. Subjects with no book for the picked grade
-  // stay in the list — their positions are persisted — but are not pickable.
-  const subjectDisabled = subjectsWithoutCurriculum(grades[gradeIdx].id);
+  // Index-aligned flags rather than a pre-filtered `subjects`: these positions
+  // are persisted as subjectIdx, so entries are dropped at render time only.
+  const subjectHidden = subjectsWithoutCurriculum(grades[gradeIdx].id);
   const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx ?? inferredScope?.subjectIdx, subjects.length));
   const [durationIdx, setDurationIdx] = useState(0);
 
@@ -445,17 +445,21 @@ export default function LessonFlowScreen() {
               {lang === 'ar' ? 'المادة' : 'Subject'}
             </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', gap: 8 }}>
-              {subjectNames.map((s, i) => {
-                const off = subjectDisabled[i] === true;
-                const active = !off && subjectIdx === i;
-                return (
-                  <Pressable key={i} disabled={off} accessibilityState={{ disabled: off, selected: active }}
-                    onPress={() => { if (off) return; setSubjectIdx(i); }}
-                    style={[styles.chip, { flexShrink: 0, opacity: off ? 0.4 : 1, backgroundColor: active ? colors.primary : colors.muted, borderColor: active ? colors.primary : colors.border }]}>
-                    <Text style={[styles.chipText, { color: active ? colors.primaryForeground : colors.foreground, fontFamily: 'Cairo_500Medium' }]}>{s}</Text>
-                  </Pressable>
-                );
-              })}
+              {/* `i` survives the filter on purpose — it is the index stored as
+                  subjectIdx, not the chip's position in the visible row. */}
+              {subjectNames
+                .map((s, i) => ({ s, i }))
+                .filter(({ i }) => !subjectHidden[i])
+                .map(({ s, i }) => {
+                  const active = subjectIdx === i;
+                  return (
+                    <Pressable key={i} accessibilityState={{ selected: active }}
+                      onPress={() => setSubjectIdx(i)}
+                      style={[styles.chip, { flexShrink: 0, backgroundColor: active ? colors.primary : colors.muted, borderColor: active ? colors.primary : colors.border }]}>
+                      <Text style={[styles.chipText, { color: active ? colors.primaryForeground : colors.foreground, fontFamily: 'Cairo_500Medium' }]}>{s}</Text>
+                    </Pressable>
+                  );
+                })}
             </ScrollView>
 
             {/* Duration */}

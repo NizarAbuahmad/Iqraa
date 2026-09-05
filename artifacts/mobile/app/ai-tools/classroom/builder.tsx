@@ -42,9 +42,9 @@ export default function ClassroomBuilderScreen() {
   const subjects = getPickerSubjects();
 
   const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(undefined, grades.length));
-  // Index-aligned with `subjects`. Subjects with no book for the picked grade
-  // stay in the list — their positions are persisted — but are not pickable.
-  const subjectDisabled = subjectsWithoutCurriculum(grades[gradeIdx].id);
+  // Index-aligned flags rather than a pre-filtered `subjects`: these positions
+  // are persisted as subjectIdx, so entries are dropped at render time only.
+  const subjectHidden = subjectsWithoutCurriculum(grades[gradeIdx].id);
   const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(undefined, subjects.length));
   const [topic, setTopic] = useState('');
   const [durationIdx, setDurationIdx] = useState(1); // 20 min default
@@ -187,7 +187,7 @@ export default function ClassroomBuilderScreen() {
         {/* Subject */}
         <PillSelector
           label={t('subjects')}
-          options={subjects.map((s, i) => ({ value: i, label: lang === 'ar' ? s.nameAr : s.name, disabled: subjectDisabled[i] }))}
+          options={subjects.map((s, i) => ({ value: i, label: lang === 'ar' ? s.nameAr : s.name })).filter(o => !subjectHidden[o.value])}
           value={subjectIdx}
           onChange={setSubjectIdx}
           colors={colors}

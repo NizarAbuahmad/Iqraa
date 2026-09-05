@@ -64,9 +64,9 @@ export default function ActivityScreen() {
       : null,
   );
   const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(params.gradeIdx ?? inferredScope?.gradeIdx, grades.length));
-  // Index-aligned with `subjects`. Subjects with no book for the picked grade
-  // stay in the list — their positions are persisted — but are not pickable.
-  const subjectDisabled = subjectsWithoutCurriculum(grades[gradeIdx].id);
+  // Index-aligned flags rather than a pre-filtered `subjects`: these positions
+  // are persisted as subjectIdx, so entries are dropped at render time only.
+  const subjectHidden = subjectsWithoutCurriculum(grades[gradeIdx].id);
   const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx ?? inferredScope?.subjectIdx, subjects.length));
   const [topic, setTopic] = useState(params.topic ?? '');
   const [activityTypeIdx, setActivityTypeIdx] = useState(params.activityTypeIdx ? parseInt(params.activityTypeIdx, 10) : 1);
@@ -288,7 +288,7 @@ export default function ActivityScreen() {
       {/* Form */}
       <View style={styles.form}>
         <PickerField label={t('grade')} value={gradeNames[gradeIdx]} options={gradeNames} onChange={setGradeIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
-        <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} disabled={subjectDisabled} disabledNote={t('noCurriculumOption')} />
+        <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} hidden={subjectHidden} />
 
         <TopicSelector
           subjectId={subjects[subjectIdx].id}

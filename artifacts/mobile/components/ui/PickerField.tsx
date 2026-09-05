@@ -31,13 +31,16 @@ interface Props {
   isRTL: boolean;
   accent: string;
   /**
-   * Index-aligned with `options`: true marks an option that exists in the list
-   * but cannot be chosen right now. The entry is still rendered, because the
-   * list's positions are persisted as bare indices elsewhere and must not
-   * shift — it is greyed and made unpressable, with `disabledNote` saying why.
+   * Index-aligned with `options`: true marks an option that is not offered
+   * right now and is left out of the dropdown entirely.
+   *
+   * The array is index-aligned rather than the caller pre-filtering `options`
+   * because these positions are persisted as bare indices elsewhere
+   * (`subjectIdx` in formState and route URLs). Hiding is a rendering
+   * decision only — `onChange` still reports the option's ORIGINAL index, so
+   * a shorter visible list never shifts what a stored index means.
    */
-  disabled?: boolean[];
-  disabledNote?: string;
+  hidden?: boolean[];
   /** Scrollable height of the open dropdown. quiz and worksheet use 180. */
   maxHeight?: number;
   /**
@@ -51,7 +54,7 @@ interface Props {
   highlightBorderWhenOpen?: boolean;
 }
 
-export function PickerField({ label, value, options, onChange, colors, isRTL, accent, disabled, disabledNote, maxHeight = 200, selectedTint, highlightBorderWhenOpen }: Props) {
+export function PickerField({ label, value, options, onChange, colors, isRTL, accent, hidden, maxHeight = 200, selectedTint, highlightBorderWhenOpen }: Props) {
   const [open, setOpen] = useState(false);
   return (
     <View style={{ marginBottom: 16 }}>
@@ -66,23 +69,22 @@ export function PickerField({ label, value, options, onChange, colors, isRTL, ac
       {open && (
         <View style={[styles.pickerDropdown, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
           <ScrollView nestedScrollEnabled style={{ maxHeight }}>
-            {options.map((o, i) => {
-              const isOff = disabled?.[i] === true;
-              return (
+            {/* `i` is carried through the filter deliberately: it is the index
+                onChange must report, not the position in the visible list. */}
+            {options
+              .map((o, i) => ({ o, i }))
+              .filter(({ i }) => hidden?.[i] !== true)
+              .map(({ o, i }) => (
                 <Pressable
                   key={i}
-                  disabled={isOff}
-                  accessibilityState={{ disabled: isOff, selected: o === value }}
-                  onPress={() => { if (isOff) return; onChange(i); setOpen(false); }}
-                  style={[styles.pickerOption, { borderBottomColor: colors.border, backgroundColor: !isOff && o === value ? selectedTint ?? colors.secondary : 'transparent', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+                  accessibilityState={{ selected: o === value }}
+                  onPress={() => { onChange(i); setOpen(false); }}
+                  style={[styles.pickerOption, { borderBottomColor: colors.border, backgroundColor: o === value ? selectedTint ?? colors.secondary : 'transparent', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
                 >
-                  <Text style={[{ color: isOff ? colors.mutedForeground : (o === value ? accent : colors.foreground), fontFamily: o === value && !isOff ? 'Cairo_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{o}</Text>
-                  {isOff && disabledNote
-                    ? <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12 }]}>{disabledNote}</Text>
-                    : o === value && <Ionicons name="checkmark" size={16} color={accent} />}
+                  <Text style={[{ color: o === value ? accent : colors.foreground, fontFamily: o === value ? 'Cairo_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{o}</Text>
+                  {o === value && <Ionicons name="checkmark" size={16} color={accent} />}
                 </Pressable>
-              );
-            })}
+              ))}
           </ScrollView>
         </View>
       )}
