@@ -24,9 +24,17 @@ interface Props {
   colors: Colors;
   isRTL: boolean;
   accent: string;
+  /**
+   * Index-aligned with `options`: true marks an option that exists in the list
+   * but cannot be chosen right now. The entry is still rendered, because the
+   * list's positions are persisted as bare indices elsewhere and must not
+   * shift — it is greyed and made unpressable, with `disabledNote` saying why.
+   */
+  disabled?: boolean[];
+  disabledNote?: string;
 }
 
-export function PickerField({ label, value, options, onChange, colors, isRTL, accent }: Props) {
+export function PickerField({ label, value, options, onChange, colors, isRTL, accent, disabled, disabledNote }: Props) {
   const [open, setOpen] = useState(false);
   return (
     <View style={{ marginBottom: 16 }}>
@@ -41,16 +49,23 @@ export function PickerField({ label, value, options, onChange, colors, isRTL, ac
       {open && (
         <View style={[styles.pickerDropdown, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
           <ScrollView nestedScrollEnabled style={{ maxHeight: 200 }}>
-            {options.map((o, i) => (
-              <Pressable
-                key={i}
-                onPress={() => { onChange(i); setOpen(false); }}
-                style={[styles.pickerOption, { borderBottomColor: colors.border, backgroundColor: o === value ? colors.secondary : 'transparent', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-              >
-                <Text style={[{ color: o === value ? accent : colors.foreground, fontFamily: o === value ? 'Cairo_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{o}</Text>
-                {o === value && <Ionicons name="checkmark" size={16} color={accent} />}
-              </Pressable>
-            ))}
+            {options.map((o, i) => {
+              const isOff = disabled?.[i] === true;
+              return (
+                <Pressable
+                  key={i}
+                  disabled={isOff}
+                  accessibilityState={{ disabled: isOff, selected: o === value }}
+                  onPress={() => { if (isOff) return; onChange(i); setOpen(false); }}
+                  style={[styles.pickerOption, { borderBottomColor: colors.border, backgroundColor: !isOff && o === value ? colors.secondary : 'transparent', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+                >
+                  <Text style={[{ color: isOff ? colors.mutedForeground : (o === value ? accent : colors.foreground), fontFamily: o === value && !isOff ? 'Cairo_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{o}</Text>
+                  {isOff && disabledNote
+                    ? <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12 }]}>{disabledNote}</Text>
+                    : o === value && <Ionicons name="checkmark" size={16} color={accent} />}
+                </Pressable>
+              );
+            })}
           </ScrollView>
         </View>
       )}

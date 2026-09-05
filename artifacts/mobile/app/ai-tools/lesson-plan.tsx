@@ -13,7 +13,7 @@ import { LessonPlanOutput } from '@/services/ai/AIService';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
 } from '@/services/curriculumData';
-import { groundedSubjectConflict, topicPickerParams } from '@/services/lessonPrep';
+import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, topicPickerParams } from '@/services/lessonPrep';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { Button } from '@/components/ui/Button';
 import { getItem, saveItem, updateItem } from '@/services/workspace';
@@ -66,6 +66,9 @@ export default function LessonPlanScreen() {
       : null,
   );
   const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(params.gradeIdx ?? inferredScope?.gradeIdx, grades.length));
+  // Index-aligned with `subjects`. Subjects with no book for the picked grade
+  // stay in the list — their positions are persisted — but are not pickable.
+  const subjectDisabled = subjectsWithoutCurriculum(grades[gradeIdx].id);
   const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx ?? inferredScope?.subjectIdx, subjects.length));
   const [topic, setTopic] = useState(params.topic ?? '');
 
@@ -173,6 +176,8 @@ export default function LessonPlanScreen() {
     // A topic that grounds to another subject's lesson cannot make an honest
     // plan — the KB serves that lesson's own content while the header claims
     // the picked subject. Refuse and name the real subject instead.
+    const scope = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, lang as 'ar' | 'en');
+    if (scope) { setError(t('scopeNoCurriculum', scope.grade, scope.subject)); return; }
     const conflict = groundedSubjectConflict(topic.trim(), lang as 'ar' | 'en', subjects[subjectIdx].id);
     if (conflict) { setError(t('subjectTopicMismatch', lang === 'ar' ? conflict.nameAr : conflict.name)); return; }
     setError('');
@@ -388,7 +393,7 @@ export default function LessonPlanScreen() {
       {/* Form */}
       <View style={styles.form}>
         <PickerField label={t('grade')} value={gradeNames[gradeIdx]} options={gradeNames} onChange={setGradeIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
-        <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
+        <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} disabled={subjectDisabled} disabledNote={t('noCurriculumOption')} />
 
         {/* Topic / lesson selector */}
         <TopicSelector
@@ -641,9 +646,11 @@ function CheckboxRow({ label, checked, onToggle, accent, colors, isRTL, disabled
   );
 }
 
-function PickerField({ label, value, options, onChange, colors, isRTL, accent }: {
+function PickerField({ label, value, options, onChange, colors, isRTL, accent, disabled, disabledNote }: {
   label: string; value: string; options: string[]; onChange: (i: number) => void;
   colors: ReturnType<typeof useColors>; isRTL: boolean; accent: string;
+  /** Index-aligned with `options`: shown, greyed, unpressable. */
+  disabled?: boolean[]; disabledNote?: string;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -659,16 +666,24 @@ function PickerField({ label, value, options, onChange, colors, isRTL, accent }:
       {open && (
         <View style={[styles.pickerDropdown, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
           <ScrollView nestedScrollEnabled style={{ maxHeight: 200 }}>
-            {options.map((o, i) => (
-              <Pressable
-                key={i}
-                onPress={() => { onChange(i); setOpen(false); }}
-                style={[styles.pickerOption, { borderBottomColor: colors.border, backgroundColor: o === value ? colors.secondary : 'transparent', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-              >
-                <Text style={[{ color: o === value ? accent : colors.foreground, fontFamily: o === value ? 'Cairo_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{o}</Text>
-                {o === value && <Ionicons name="checkmark" size={16} color={accent} />}
-              </Pressable>
-            ))}
+            {options.map((o, i) => {
+              const off = disabled?.[i] === true;
+              const on = !off && o === value;
+              return (
+                <Pressable
+                  key={i}
+                  disabled={off}
+                  accessibilityState={{ disabled: off, selected: on }}
+                  onPress={() => { if (off) return; onChange(i); setOpen(false); }}
+                  style={[styles.pickerOption, { borderBottomColor: colors.border, backgroundColor: on ? colors.secondary : 'transparent', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+                >
+                  <Text style={[{ color: off ? colors.mutedForeground : (on ? accent : colors.foreground), fontFamily: on ? 'Cairo_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{o}</Text>
+                  {off && disabledNote
+                    ? <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12 }]}>{disabledNote}</Text>
+                    : on && <Ionicons name="checkmark" size={16} color={accent} />}
+                </Pressable>
+              );
+            })}
           </ScrollView>
         </View>
       )}
