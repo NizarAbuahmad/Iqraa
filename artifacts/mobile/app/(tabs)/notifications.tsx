@@ -96,6 +96,18 @@ export default function NotificationsScreen() {
       contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
       showsVerticalScrollIndicator={false}
       ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+      // Same reason as ParticipantPickerSheet's: these are people holding an
+      // account, not people on the roster, and "none yet" needs to say so.
+      ListEmptyComponent={
+        <View style={{ paddingVertical: 20, gap: 6 }}>
+          <Text style={[styles.threadName, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: 'center' }]}>
+            {t('messagingNoContactsTitle')}
+          </Text>
+          <Text style={[styles.threadPreview, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center', lineHeight: 20 }]}>
+            {t('messagingNoContactsDesc')}
+          </Text>
+        </View>
+      }
       renderItem={({ item }) => (
         <View
           style={[
@@ -153,11 +165,15 @@ export default function NotificationsScreen() {
               <Ionicons name="people-circle-outline" size={26} color={colors.primary} />
             </Pressable>
           )}
-          {contacts.length > 0 && (
-            <Pressable onPress={() => setNewChatOpen(true)} hitSlop={10}>
-              <Ionicons name="create-outline" size={24} color={colors.primary} />
-            </Pressable>
-          )}
+          {/*
+            Shown even with no contacts. Hiding it left a teacher whose
+            students have not signed up yet with no compose button and nothing
+            explaining why — indistinguishable from the feature being broken.
+            The sheet now says what is missing and how to fix it.
+          */}
+          <Pressable onPress={() => setNewChatOpen(true)} hitSlop={10}>
+            <Ionicons name="create-outline" size={24} color={colors.primary} />
+          </Pressable>
         </View>
       </View>
 
@@ -228,7 +244,7 @@ export default function NotificationsScreen() {
             </Text>
           </View>
 
-          {contacts.length > 0 && contactsList(openContact)}
+          {contactsList(openContact)}
         </View>
       )}
 

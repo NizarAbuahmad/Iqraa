@@ -1207,6 +1207,9 @@ const translations = {
     messagingCodeCopied: 'تم نسخ الرمز',
     messagingGuardiansTitle: 'الحسابات المرتبطة',
     messagingNoGuardiansYet: 'لا يوجد حساب مرتبط بعد',
+    messagingNoContactsTitle: 'لا يوجد حساب مرتبط بعد',
+    messagingNoContactsDesc:
+      'لا يملك الطلاب في قائمتك حسابات بعد. افتح صفّك واضغط أيقونة المحادثة بجانب اسم الطالب لإنشاء رمز ربط، ثم شاركه مع وليّ الأمر أو الطالب ليُنشئ حسابه.',
     messagingClassChat: 'محادثة الصف',
     messagingBlock: 'حظر',
     messagingUnblock: 'إلغاء الحظر',
@@ -2302,6 +2305,9 @@ const translations = {
     messagingCodeCopied: 'Code copied',
     messagingGuardiansTitle: 'Linked accounts',
     messagingNoGuardiansYet: 'No linked account yet',
+    messagingNoContactsTitle: 'No linked accounts yet',
+    messagingNoContactsDesc:
+      'The students on your roster do not have accounts yet. Open your class, tap the chat icon next to a student to create a class code, and share it with their parent or the student so they can sign up.',
     messagingClassChat: 'Class chat',
     messagingBlock: 'Block',
     messagingUnblock: 'Unblock',
