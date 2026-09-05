@@ -375,17 +375,35 @@ export default function ClassDetailScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.hero, { backgroundColor: ACCENT, paddingTop: insets.top + 12 }]}>
-        <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center' }}>
           <Pressable onPress={() => router.back()} hitSlop={12}>
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color="#fff" />
           </Pressable>
-          <Pressable onPress={() => router.push(`/messaging/class/${id}`)} hitSlop={12}>
-            <Ionicons name="chatbubbles-outline" size={22} color="#fff" />
+        </View>
+        {/*
+          The chat button sits on the title row, not opposite the back arrow.
+          Alone in a space-between header it was stranded in the far corner
+          with the class name on the line below, so nothing said which class it
+          would open — and a bare speech bubble does not say who you would be
+          talking to. Labelled, beside the name, it reads as one phrase.
+          Deliberately not a fourth tab: the three tabs swap what this screen
+          shows, this leaves the screen.
+        */}
+        <View style={[styles.heroTitleRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <Text style={[styles.heroTitle, { fontFamily: 'Cairo_700Bold', textAlign: align, flexShrink: 1 }]} numberOfLines={1}>
+            {title}
+          </Text>
+          <Pressable
+            onPress={() => router.push(`/messaging/class/${id}`)}
+            hitSlop={8}
+            style={[styles.classChatPill, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+          >
+            <Ionicons name="chatbubbles-outline" size={15} color="#fff" />
+            <Text style={[styles.classChatPillText, { fontFamily: 'Cairo_500Medium' }]}>
+              {t('messagingClassChat')}
+            </Text>
           </Pressable>
         </View>
-        <Text style={[styles.heroTitle, { fontFamily: 'Cairo_700Bold', textAlign: align }]}>
-          {title}
-        </Text>
         <View style={[styles.tabs, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           {renderTab('students', t('classTabStudents'), countStudents(students.length, lang))}
           {renderTab('materials', t('classTabMaterials'), countMaterials(materials.length, lang))}
@@ -962,6 +980,18 @@ export default function ClassDetailScreen() {
 const styles = StyleSheet.create({
   hero: { paddingHorizontal: 20, paddingBottom: 0, gap: 8 },
   heroTitle: { fontSize: 24, color: '#fff' },
+  heroTitleRow: { alignItems: 'center', gap: 10, marginTop: 2 },
+  // Translucent white rather than a solid fill: it has to read as a control on
+  // the teal hero without competing with the class name beside it.
+  classChatPill: {
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+  },
+  classChatPillText: { fontSize: 12, color: '#fff' },
   tabs: { marginTop: 6 },
   tab: { paddingVertical: 10, paddingHorizontal: 14, borderBottomWidth: 2, alignItems: 'center', gap: 2 },
   tabLabel: { fontSize: 15 },

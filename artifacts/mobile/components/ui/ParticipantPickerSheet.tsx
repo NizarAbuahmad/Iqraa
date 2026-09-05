@@ -110,10 +110,30 @@ export function ParticipantPickerSheet({
               keyExtractor={c => c.userId}
               style={{ maxHeight: 360 }}
               contentContainerStyle={{ paddingHorizontal: 16, gap: 6 }}
+              /*
+                This list is people who hold an account, not people on the
+                roster. It used to say "no students in this class", which is
+                false the moment a teacher has a roster — they do have
+                students, those students just have not signed up. Read as
+                "adding is broken" rather than "they need a code first", so it
+                now says what is actually missing and where to get it.
+              */
               ListEmptyComponent={
-                <Text style={[styles.hint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
-                  {t('noStudentsYet')}
-                </Text>
+                <View style={{ paddingVertical: 24, paddingHorizontal: 16, gap: 6 }}>
+                  <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: 'center' }]}>
+                    {t('messagingNoContactsTitle')}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.hint,
+                      // styles.hint carries its own vertical padding for the
+                      // failure message above; the wrapper supplies it here.
+                      { paddingVertical: 0, lineHeight: 20, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' },
+                    ]}
+                  >
+                    {t('messagingNoContactsDesc')}
+                  </Text>
+                </View>
               }
               renderItem={({ item }) => {
                 const checked = selected.has(item.userId);
@@ -166,6 +186,7 @@ const styles = StyleSheet.create({
   head: { alignItems: 'center', paddingHorizontal: 16 },
   title: { fontSize: 17 },
   hint: { fontSize: 13, paddingVertical: 28, paddingHorizontal: 16 },
+  emptyTitle: { fontSize: 14 },
   row: { alignItems: 'center', gap: 10, paddingVertical: 11, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1 },
   actions: { justifyContent: 'flex-end', gap: 8, paddingHorizontal: 16, paddingVertical: 14 },
   btn: { paddingHorizontal: 16, paddingVertical: 11, borderRadius: 10 },
