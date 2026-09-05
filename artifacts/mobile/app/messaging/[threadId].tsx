@@ -27,7 +27,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { useAuth } from '@/context/AuthContext';
+import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import {
   MessagingError,
   addGroupMembers,
@@ -49,7 +49,6 @@ import { Avatar } from '@/components/ui/Avatar';
 import { ParticipantPickerSheet } from '@/components/ui/ParticipantPickerSheet';
 
 const REPORT_REASON_KEYS = ['reportReasonInappropriate', 'reportReasonBullying', 'reportReasonSpam', 'reportReasonOther'] as const;
-const TEACHER_ROLES = ['teacher', 'school_admin', 'system_admin'];
 
 export default function ThreadScreen() {
   const { threadId } = useLocalSearchParams<{ threadId: string }>();
@@ -228,7 +227,7 @@ export default function ThreadScreen() {
   const align = isRTL ? 'right' : 'left';
   const isGroup = thread?.type !== 'direct';
   const headerTitle = isGroup ? (lang === 'ar' ? thread?.titleAr : thread?.title) || thread?.title : '';
-  const isTeacher = !!user && TEACHER_ROLES.includes(user.role);
+  const isTeacher = isTeacherRole(user?.role);
   // The server enforces this too (see routes/messaging.ts) — hiding the
   // composer is the courtesy, not the rule.
   const canPost = !thread || !isGroup || isTeacher || thread.studentPostingEnabled;

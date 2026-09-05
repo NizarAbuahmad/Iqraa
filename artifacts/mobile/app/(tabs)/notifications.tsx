@@ -25,10 +25,8 @@ import {
   type ChatThreadSummary,
   type ChatRole,
 } from '@/services/messaging';
-import { useAuth } from '@/context/AuthContext';
+import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import { Avatar } from '@/components/ui/Avatar';
-
-const TEACHER_ROLES: ChatRole[] = ['teacher', 'school_admin', 'system_admin'];
 
 interface Contact {
   userId: string;
@@ -58,7 +56,7 @@ export default function NotificationsScreen() {
     try {
       const [list, myContacts] = await Promise.all([
         listThreads(),
-        user && TEACHER_ROLES.includes(user.role)
+        isTeacherRole(user?.role)
           ? getTeacherContacts().then(byStudent =>
               byStudent.flatMap(s => s.contacts.map(c => ({ ...c, studentName: s.studentName }))),
             )
@@ -150,7 +148,7 @@ export default function NotificationsScreen() {
           )}
         </View>
         <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 16, paddingBottom: 6 }]}>
-          {user && TEACHER_ROLES.includes(user.role) && (
+          {isTeacherRole(user?.role) && (
             <Pressable onPress={() => router.push('/messaging/new-group')} hitSlop={10}>
               <Ionicons name="people-circle-outline" size={26} color={colors.primary} />
             </Pressable>
