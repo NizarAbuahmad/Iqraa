@@ -47,9 +47,10 @@ an announcement by default» below.
   claim-code signup, teacher↔parent and teacher↔student direct threads,
   class-group and teacher-made custom groups, image attachments, block and
   report. Groups are announcement-only unless the owning teacher enables
-  student posting. Verified live in a browser and by scripted API runs; **real
-  push delivery is not verified** (needs an EAS build), and **the production
-  schema push had not been run** when this was written — see the entry below.
+  student posting. Verified live in a browser and by scripted API runs.
+  **Live in production since 2026-09-05**: the schema landed and `Schema check`
+  #20 passes against it. Still not verified: **real push delivery** (needs an
+  EAS build) and picking an attachment through the OS file dialog.
 - **Answer-key verification is visible on every teacher-facing surface**
   (2026-09-03): quiz cards and worksheet answer-key rows badge each
   symbolically proved key and, with answers shown, print the verifier's own
@@ -295,6 +296,45 @@ an announcement by default» below.
     deployed. The client's timeout is 2.5s, so the first call after idle fails.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
+
+## The messaging schema reached production — by SQL, not by push, 2026-09-05
+
+The entry below closed with the production push outstanding. It has landed:
+`Schema check` #20 passes, and `neondb` on the Neon **production** branch
+reports 7 of 7 new tables and both `students.claim_code` columns.
+
+**It took three attempts, and the first two failed silently.** The documented
+procedure — put the production URL in the repo-root `.env`, run
+`pnpm --filter @workspace/db run push`, put the URL back — was followed and
+production still had *nothing*: 0 tables, 0 columns, and no error anywhere to
+say so. That is the part worth writing down. `push.mjs` deliberately reads the
+`.env` of **whichever checkout you are standing in**, and since worktrees
+arrived there are four of those files. A push aimed at the wrong one connects,
+finds its target already matches, reports `Changes applied`, and changes
+nothing in production. Success and total no-op are the same output.
+
+**What worked instead was not running `push` against production at all.**
+`drizzle-kit generate` emitted the full schema as SQL; that was filtered to
+only the objects production lacked, wrapped in one transaction, and run in the
+Neon console — the same editor already demonstrably connected to the right
+database, which removes the entire question of which `.env` was in play. The
+SQL was tested first against a throwaway local database built to match
+production's state (everything except the seven tables, and `students` without
+its claim columns), and checked for idempotency by running it twice.
+
+**Two checks were needed, because one of them cannot see half the change.**
+`verify-schema` asks `to_regclass` for table *names*, so it reports
+`ok students.ts` whether or not the two `claim_code` columns exist. The
+columns had to be confirmed by a separate `information_schema` query. A green
+`Schema check` on its own would not have proved claim codes work.
+
+Still unproven at time of writing: **Render's** `DATABASE_URL` is a different
+value from the Actions secret, and only the secret's database has been
+verified. The app's own Messages tab is the check that covers the third one.
+
+For the next schema change, prefer generating the SQL and applying it where
+you can see the connection, over swapping a URL into a file that four
+directories share.
 
 ## The book's figures reach the surfaces that were quietly skipping them, 2026-09-04
 
