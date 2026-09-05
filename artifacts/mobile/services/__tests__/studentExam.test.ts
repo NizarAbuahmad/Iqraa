@@ -7,7 +7,7 @@
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { isAnswered } from '../studentAnswers.ts';
+import { isAnswered, setBlankAt, setMatchPair } from '../studentAnswers.ts';
 
 describe('isAnswered', () => {
   it('treats an untouched question as unanswered', () => {
@@ -44,5 +44,52 @@ describe('isAnswered', () => {
     // Fail closed: warning a student about a question they did answer is a
     // smaller harm than letting them hand in one they missed.
     assert.equal(isAnswered({ somethingNew: 'x' }), false);
+  });
+});
+
+/**
+ * These two build the response the exam screen saves, and the shapes are the
+ * whole point: `matching.grade` reads `pairs[].left`/`.right` as ids, and
+ * `fill_blank.grade` reads `blanks[i]` against the i-th `{{n}}`. Get either
+ * wrong and a student who answered correctly is marked zero, silently — the
+ * screen shows the answer as saved, because it was saved, just unreadably.
+ */
+describe('setMatchPair', () => {
+  it('records a link as a left/right id pair', () => {
+    assert.deepEqual(setMatchPair([], 'l1', 'r2'), [{ left: 'l1', right: 'r2' }]);
+  });
+
+  it('replaces an earlier link from the same left item', () => {
+    // The trap: appending leaves the abandoned link in the answer, and
+    // `matching.grade` marks every entry it is given.
+    const first = setMatchPair([], 'l1', 'r1');
+    const changed = setMatchPair(first, 'l1', 'r3');
+    assert.deepEqual(changed, [{ left: 'l1', right: 'r3' }]);
+  });
+
+  it('leaves the other left items alone', () => {
+    const pairs = setMatchPair(setMatchPair([], 'l1', 'r1'), 'l2', 'r2');
+    assert.deepEqual(setMatchPair(pairs, 'l2', 'r3').sort((a, b) => a.left.localeCompare(b.left)), [
+      { left: 'l1', right: 'r1' },
+      { left: 'l2', right: 'r3' },
+    ]);
+  });
+});
+
+describe('setBlankAt', () => {
+  it('pads to the blank count so answers land on the right blank', () => {
+    // Filling in only the second blank must send ['', '…']: a one-element
+    // array would be graded against the first {{n}}.
+    assert.deepEqual(setBlankAt([], 1, 'ثمانية', 2), ['', 'ثمانية']);
+  });
+
+  it('keeps the blanks already filled in', () => {
+    assert.deepEqual(setBlankAt(['٢', ''], 1, '٣', 2), ['٢', '٣']);
+  });
+
+  it('does not drop answers when the count is smaller than what is stored', () => {
+    // Defensive: an edited template that lost a placeholder must not silently
+    // truncate a student's saved work.
+    assert.deepEqual(setBlankAt(['أ', 'ب', 'ج'], 0, 'د', 2), ['د', 'ب', 'ج']);
   });
 });
