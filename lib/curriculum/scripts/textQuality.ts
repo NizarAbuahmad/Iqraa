@@ -57,12 +57,70 @@ export function lamTranspositionRate(text: string): number | null {
 /** Above this share of transposed article-starts, the text is not quotable. */
 export const LAM_TRANSPOSITION_LIMIT = 0.4;
 
+/**
+ * Whole words that transpose into very nearly non-words.
+ *
+ * `LAM_PAIRS` above probes the *start* of a word, which catches the article
+ * being moved but nothing else. A file can transpose adjacent letters far
+ * more widely than that: `islamic-s2-student-book` renders «في» as «يف»,
+ * «على» as «عىل» and «الله» as «اهلل» throughout, and scored **18%** on
+ * `lamTranspositionRate` — comfortably under its 40% limit — because only
+ * «الله»→«اهلل» is an article at all and even that pair is not in the four.
+ * It was marked `ingested` off the back of that pass.
+ *
+ * These three separate for the same reason the article pairs do, only harder:
+ * في/على/الله are among the commonest words in Arabic, while يف/عىل/اهلل are
+ * words in neither Arabic nor anything else. Matched as whole words, not
+ * prefixes, so «يفعل» and «عىلاء» cannot be mistaken for evidence.
+ */
+const TRANSPOSED_WORDS: ReadonlyArray<readonly [string, string]> = [
+  ['في', 'يف'],
+  ['على', 'عىل'],
+  ['الله', 'اهلل'],
+];
+
+/**
+ * The share of those three words that came out transposed, or `null` under
+ * 100 samples — same reasoning as `lamTranspositionRate`.
+ */
+export function wordTranspositionRate(text: string): number | null {
+  let good = 0;
+  let bad = 0;
+  for (const w of text.replace(/[ً-ْٰـ]/g, '').split(/\s+/)) {
+    for (const [ok, swapped] of TRANSPOSED_WORDS) {
+      if (w === ok) good++;
+      else if (w === swapped) bad++;
+    }
+  }
+  if (good + bad < 100) return null;
+  return bad / (good + bad);
+}
+
+/**
+ * Above this share, the text is not quotable.
+ *
+ * Deliberately looser than `LAM_TRANSPOSITION_LIMIT`. Measured across all 80
+ * extracted documents on file: every one a human has read and trusted sits at
+ * or below 12.3%, then history-s2 at 18.0%, the two Arabic exercise books at
+ * ~29%, the two Islamic teacher guides at ~42%, and then nothing at all until
+ * `islamic-s2-student-book` at **98.8%**.
+ *
+ * 0.5 sits in that empty stretch with a wide margin on both sides. It is not
+ * 0.4, which would also condemn the two Islamic teacher guides — those are
+ * partly transposed and genuinely a grade below clean, but they are the source
+ * of a curriculum already shipped, and re-extracting them is its own change
+ * with its own verification rather than a side effect of this one. Their rate
+ * is recorded in `g10_sources.json` so the decision is visible rather than
+ * implied by a threshold.
+ */
+export const WORD_TRANSPOSITION_LIMIT = 0.5;
+
 const CONTROL_CHAR_RE = /[\x00-\x08\x0e-\x1f]/g;
 const ARABIC_PRESENTATION_FORMS_RE = /[ﭐ-﷿ﹰ-﻿]/g;
 const BASIC_ARABIC_RE = /[؀-ۿ]/g;
 
 /**
- * Whichever of the four quality gates the text fails, or `null` when it
+ * Whichever of the five quality gates the text fails, or `null` when it
  * passes all of them. Shared between `extract-text.ts`'s pdf-parse attempt
  * and its OCR fallback so both are held to the same bar — OCR output that
  * happens to be garbage gets rejected exactly like a broken font cmap would
@@ -100,6 +158,14 @@ export function rejectReason(allText: string): string | null {
   const lamRate = lamTranspositionRate(allText);
   if (lamRate !== null && lamRate > LAM_TRANSPOSITION_LIMIT) {
     return `Arabic with the definite article transposed (الحركة ← احلركة) in ${(lamRate * 100).toFixed(0)}% of samples — readable by eye, not quotable`;
+  }
+  // The same corruption, wider than the article: this file moves letters in
+  // pairs the four article probes never look at. Caught only after
+  // `islamic-s2-student-book` passed every gate above at 18% and was marked
+  // `ingested` with 98.8% of its في/على/الله transposed.
+  const wordRate = wordTranspositionRate(allText);
+  if (wordRate !== null && wordRate > WORD_TRANSPOSITION_LIMIT) {
+    return `Arabic with letters transposed inside common words (في ← يف) in ${(wordRate * 100).toFixed(0)}% of samples — readable by eye, not quotable`;
   }
   return null;
 }

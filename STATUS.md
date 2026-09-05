@@ -268,16 +268,42 @@ an announcement by default» below.
   do; the `s1`/`s2` id segment is the only thing separating `u1_l1` from
   `u1_l1`, and `islamicCurriculum.test.ts` pins that an S1 lookup handed an S2
   id answers null.
-  - **The only catalog built from a teacher guide rather than a student book.**
-    Both student books (`islamic-s1-student-book`, `islamic-s2-student-book`)
-    are registered `pending` in `g10_sources.json` and have never been
-    extracted; the two guides were, on 2026-09-03. That turned out to be an
-    upgrade: the guides print «الزمن المقترح لتنفيذ الدرس» on every lesson
-    page, so **this is the first Arabic-side book with real `periods`** (1-3
-    حصص) instead of the one-45-minute-period floor every other one falls back
-    to. A test asserts the durations stay whole multiples of 45 and that most
-    exceed one period, because a regression that dropped them would look
-    exactly like the rest of the catalog.
+  - **Outcomes and periods come from the teacher guides; lesson titles from
+    the student books.** The guides print «الزمن المقترح لتنفيذ الدرس» on
+    every lesson page, so **this is the first Arabic-side book with real
+    `periods`** (1-3 حصص) instead of the one-45-minute-period floor. A test
+    asserts the durations stay whole multiples of 45 and that most exceed one
+    period, because a regression that dropped them would look exactly like the
+    rest of the catalog.
+  - The student books were extracted on 2026-09-05, having sat `pending` since
+    2026-09-03, and cross-checking all 50 titles against them **moved five**.
+    All five are S1, and each is printed in two independent places in the book
+    (the فهرس and its unit's «دروس الوحدة» page):
+    «البيع في الفقه الإسلاميّ» (guide: «البيع: مشروعيته وأحكامه»),
+    «من مقاصد الشريعة الإسلاميّة (حفظ الدين)» (guide: without «الإسلاميّة»),
+    «موقف الشريعة الإسلاميّة من الرِّبا» (guide: «الرِّبا وأحكامه في الفقه
+    الإسلامي»), «القدس والمسجد الأقصى المبارك» (guide: «المسجد الأقصى
+    المبارك»), «موقف الشريعة الإسلاميّة من القمار» (guide: «القمار وأحكامه في
+    الفقه الإسلامي»). The book wins — it is what a teacher and student hold —
+    and the guide's wording is kept in `known_gaps` rather than erased, since
+    the two may be different editions. All 26 S2 titles matched.
+  - Both student books needed **OCR**, and the second one exposed a hole in
+    the extraction quality gate. `islamic-s2-student-book` is 98.8%
+    letter-transposed (في→يف, على→عىل, الله→اهلل) yet scored 18% on
+    `lamTranspositionRate`, whose four probes only look at definite-article
+    prefixes — so it passed as a clean `pdf-parse@2` extraction. A whole-word
+    probe (`wordTranspositionRate`) now sits beside it, and re-extracting
+    through OCR took that file from **92.2% → 8.5%** transposed. Its
+    `extractionBlocked` flag — set 2026-09-04, saying "needs OCR" — is cleared,
+    which is what `extraction.test.ts` demands and what caught the first
+    attempt that skipped the step.
+    - The new limit is **0.5, deliberately not 0.4**: measured across all 80
+      extractions, everything trusted sits at or below 12.3%, then history-s2
+      at 18.0%, the Arabic exercise books at ~29%, and **the two Islamic
+      teacher guides at ~42%**. Those are genuinely a grade below clean, but
+      they are the source of this shipped curriculum; re-extracting them is its
+      own change with its own verification, so their rate is recorded rather
+      than acted on by a threshold nobody chose deliberately.
   - Outcomes come from each lesson's own «نتاجات التعلم» block, **not** from
     the «مخطط الوحدة» summary table — that table abbreviates: it prints 3 of
     «الحديث الشريف: حفظ اللسان»'s 6 outcomes. Its «المفاهيم» column is

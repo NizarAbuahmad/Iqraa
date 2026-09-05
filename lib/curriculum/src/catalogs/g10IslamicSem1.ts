@@ -2,16 +2,22 @@
  * Grade 10 Islamic Education (التربية الإسلامية) — Semester 1 curriculum (NCCD).
  * Source of truth: data/iqra_curriculum_g10_islamic_sem1.json
  *
- * The one catalog sourced from a **teacher guide** rather than a student book —
- * the student book is registered but its text has never been extracted. That
- * turns out to be an upgrade, not a compromise: the guide prints نتاجات التعلم
- * and «الزمن المقترح لتنفيذ الدرس» on every lesson page, so this is the first
- * Arabic-side catalog whose `periods` are real rather than a 1-period floor.
+ * Two books feed this one catalog, and it matters which field comes from which.
  *
- * The outcomes come from each lesson's own page, NOT from the «مخطط الوحدة»
- * summary table — that table abbreviates (it shows 3 of «حفظ اللسان»'s 6
- * outcomes). Its «المفاهيم» column is abbreviated for the same reason and has
+ * **Outcomes and periods: the teacher guide.** It prints نتاجات التعلم and
+ * «الزمن المقترح لتنفيذ الدرس» on every lesson page, which is why this subject
+ * has real `periods` at all. They come from those lesson pages, NOT from the
+ * «مخطط الوحدة» summary table — that table abbreviates (it shows 3 of «حفظ
+ * اللسان»'s 6 outcomes). Its «المفاهيم» column is abbreviated the same way with
  * no second source to check against, so no vocabulary is carried at all.
+ *
+ * **Lesson titles: the student book**, extracted 2026-09-05 (by OCR — its text
+ * layer transposes the definite article in 96% of samples). Cross-checking all
+ * 24 against the guide found **five that genuinely differ**, e.g. the guide's
+ * «الرِّبا وأحكامه في الفقه الإسلامي» is «موقف الشريعة الإسلاميّة من الرِّبا» in
+ * the book. The book wins — it is what a teacher and student hold — and the
+ * guide's wording is recorded in the data file's `known_gaps` rather than
+ * erased, since the two may simply be different editions.
  *
  * Note: does not import knowledgeBase (avoids circular dependency).
  */

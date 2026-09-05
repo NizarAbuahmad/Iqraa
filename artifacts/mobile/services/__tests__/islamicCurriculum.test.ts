@@ -2,12 +2,15 @@
  * Islamic Education G10 must be reachable from the curriculum browser in both
  * semesters, and must keep the one thing that makes it different.
  *
- * It is the only catalog built from a **teacher guide** instead of a student
- * book, which is why it is also the only one with real `periods` — the guide
- * prints «الزمن المقترح لتنفيذ الدرس» on every lesson page. Every other
- * Arabic-side book falls back to a single 45-minute period, so a regression
- * that dropped the guide's counts would look exactly like the rest of the
- * catalog and go unnoticed. The duration assertions below are the guard.
+ * Its outcomes and periods come from the **teacher guides**, which is why it
+ * has real `periods` at all — the guides print «الزمن المقترح لتنفيذ الدرس» on
+ * every lesson page. A regression that dropped those counts would leave every
+ * lesson at the 45-minute floor and look exactly like every other book, so the
+ * duration assertions below are the guard.
+ *
+ * Its lesson titles come from the **student books**, extracted later; where the
+ * two sources disagreed the book won, and the five S1 titles that moved are
+ * pinned below so a re-import from the guide alone cannot quietly undo them.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -72,6 +75,24 @@ describe('Islamic Education G10 — curriculum browser', () => {
       'periods collapsed to the one-period fallback',
     );
     assert.equal(new Set(lessons.map(l => l.id)).size, 50, 'duplicate lesson ids');
+  });
+
+  it('uses the student book’s lesson titles where it differs from the guide', () => {
+    // The catalogue was first built from the teacher guides alone. Extracting
+    // the student books on 2026-09-05 found five S1 titles that genuinely
+    // differ; the book wins, and each of the five is printed in two
+    // independent places in it (the فهرس and its unit's «دروس الوحدة» page).
+    const byId = new Map(lessonsOf(S1).map(l => [l.id.replace(/^.*nccd-/, ''), l.titleAr]));
+    const expected: Record<string, string> = {
+      u1_l2: 'البيعُ في الفقهِ الإسلاميِّ',
+      u2_l5: 'مِنْ مقاصدِ الشريعةِ الإسلاميّةِ (حفظُ الدّين)',
+      u3_l2: 'موقفُ الشريعةِ الإسلاميّةِ مِنَ الرِّبا',
+      u3_l3: 'القدسُ والمسجدُ الأقصى المبارك',
+      u4_l3: 'موقفُ الشريعةِ الإسلاميّةِ مِنَ القمار',
+    };
+    for (const [id, title] of Object.entries(expected)) {
+      assert.equal(byId.get(id), title, `${id} should use the student book's title`);
+    }
   });
 
   it('shares lesson ids with the knowledge base catalogs, and keeps them apart', async () => {

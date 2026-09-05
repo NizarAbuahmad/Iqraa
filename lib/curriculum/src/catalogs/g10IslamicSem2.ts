@@ -2,10 +2,16 @@
  * Grade 10 Islamic Education (التربية الإسلامية) — Semester 2 curriculum (NCCD).
  * Source of truth: data/iqra_curriculum_g10_islamic_sem2.json
  *
- * Same shape and same source kind as Semester 1 — the teacher guide, with real
- * per-lesson حصص — with two differences: the units restart at الوحدة الأولى
- * (they do NOT continue S1's numbering the way Arabic's do, because this book
- * doesn't), and the lesson count per unit varies (7/6/7/6 against S1's flat 6).
+ * Same shape and same sources as Semester 1 — outcomes and حصص from the teacher
+ * guide, titles checked against the student book — with two differences: the
+ * units restart at الوحدة الأولى (they do NOT continue S1's numbering the way
+ * Arabic's do, because this book doesn't), and the lesson count per unit varies
+ * (7/6/7/6 against S1's flat 6).
+ *
+ * Unlike S1, the cross-check found **no divergence**: all 26 titles matched,
+ * and so did the 7/6/7/6 split and the unit order. Worth noting the book's
+ * index only *looked* scrambled while its text layer was broken — reading it
+ * again after OCR put the units back in 1, 2, 3, 4.
  *
  * Note: does not import knowledgeBase (avoids circular dependency).
  */
