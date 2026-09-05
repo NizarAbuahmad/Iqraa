@@ -60,6 +60,7 @@ const SUBJECTS = {
   'biology': { tag: 'bio-', unitLevel: false },
   'finlit': { tag: 'finlit-', unitLevel: false },
   'arabic': { tag: 'arabic-', unitLevel: false },
+  'islamic': { tag: 'islamic-', unitLevel: false },
   'eng-commerce': { tag: 'eng-commerce-', unitLevel: false },
   'eng-agri': { tag: 'eng-agri-', unitLevel: false },
   'eng-hospitality': { tag: 'eng-hospitality-', unitLevel: false },
