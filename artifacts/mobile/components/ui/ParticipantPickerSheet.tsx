@@ -9,22 +9,24 @@
  * deep (class, then name); this needs a flat, checkbox-multi-select list of
  * *contacts* (parents and students both), so the two share no useful shape.
  */
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { getTeacherContacts, type ChatRole } from '@/services/messaging';
+import { getTeacherContacts } from '@/services/messaging';
+import {
+  buildPickerContacts,
+  matchesQuery,
+  toggleClassSelection,
+  type PickerClass,
+  type PickerContact,
+} from '@/services/participantPicker';
 
 const ACCENT = '#8B5CF6';
 
-interface Contact {
-  userId: string;
-  firstName: string;
-  lastName: string;
-  role: ChatRole;
-  studentName: string;
-}
+type Contact = PickerContact;
+type ClassOption = PickerClass;
 
 export function ParticipantPickerSheet({
   visible,
@@ -39,8 +41,10 @@ export function ParticipantPickerSheet({
   excludeUserIds?: string[];
 }) {
   const colors = useColors();
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, lang } = useLanguage();
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [classes, setClasses] = useState<ClassOption[]>([]);
+  const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [selected, setSelected] = useState<Map<string, Contact>>(new Map());
@@ -49,18 +53,16 @@ export function ParticipantPickerSheet({
     if (!visible) return;
     let cancelled = false;
     setSelected(new Map());
+    setQuery('');
     setLoading(true);
     setFailed(false);
     void (async () => {
       try {
-        const byStudent = await getTeacherContacts();
-        const seen = new Map<string, Contact>();
-        for (const s of byStudent) {
-          for (const c of s.contacts) {
-            if (!seen.has(c.userId)) seen.set(c.userId, { ...c, studentName: s.studentName });
-          }
+        const built = buildPickerContacts(await getTeacherContacts());
+        if (!cancelled) {
+          setContacts(built.contacts);
+          setClasses(built.classes);
         }
-        if (!cancelled) setContacts([...seen.values()]);
       } catch {
         if (!cancelled) setFailed(true);
       } finally {
@@ -72,9 +74,41 @@ export function ParticipantPickerSheet({
     };
   }, [visible]);
 
-  const excluded = new Set(excludeUserIds);
-  const visible_ = contacts.filter(c => !excluded.has(c.userId));
+  const excluded = useMemo(() => new Set(excludeUserIds), [excludeUserIds]);
   const align = isRTL ? 'right' : 'left';
+
+  /** Everyone addable, before the search box narrows it. Class selection works off this, not the filtered view. */
+  const addable = useMemo(
+    () => contacts.filter(c => !excluded.has(c.userId)),
+    [contacts, excluded],
+  );
+
+  const visible_ = useMemo(
+    () => (query ? addable.filter(c => matchesQuery(c, query)) : addable),
+    [addable, query],
+  );
+
+  /**
+   * A class chip selects everyone in that class, ignoring the search box: the
+   * two controls answer different questions ("find one person" vs "add all of
+   * 10-أ"), and intersecting them would silently add a subset while the chip
+   * still read as the whole class.
+   *
+   * Empty classes are dropped — a chip that selects nobody looks broken. That
+   * is common here, since a class only appears once one of its students or
+   * parents holds an account.
+   */
+  const classChips = useMemo(
+    () =>
+      classes
+        .map(cl => ({ ...cl, members: addable.filter(c => c.classIds.includes(cl.id)) }))
+        .filter(cl => cl.members.length > 0),
+    [classes, addable],
+  );
+
+  const toggleClass = (members: Contact[]) => {
+    setSelected(prev => toggleClassSelection(prev, members));
+  };
 
   const toggle = (c: Contact) => {
     setSelected(prev => {
@@ -98,6 +132,76 @@ export function ParticipantPickerSheet({
             </Pressable>
           </View>
 
+          {/* Search and class chips only once there is a list worth narrowing —
+              on an empty or failed load they would be controls over nothing. */}
+          {!loading && !failed && addable.length > 0 ? (
+            <View style={{ gap: 10 }}>
+              <View
+                style={[
+                  styles.searchWrap,
+                  { borderColor: colors.border, backgroundColor: colors.muted, flexDirection: isRTL ? 'row-reverse' : 'row' },
+                ]}
+              >
+                <Ionicons name="search" size={16} color={colors.mutedForeground} />
+                <TextInput
+                  value={query}
+                  onChangeText={setQuery}
+                  placeholder={t('messagingSearchContacts')}
+                  placeholderTextColor={colors.mutedForeground}
+                  style={[styles.searchInput, { color: colors.foreground, textAlign: align }]}
+                  autoCorrect={false}
+                />
+                {query ? (
+                  <Pressable onPress={() => setQuery('')} hitSlop={8}>
+                    <Ionicons name="close-circle" size={16} color={colors.mutedForeground} />
+                  </Pressable>
+                ) : null}
+              </View>
+
+              {classChips.length > 0 ? (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={[styles.chipRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+                >
+                  {classChips.map(cl => {
+                    const allPicked = cl.members.every(m => selected.has(m.userId));
+                    return (
+                      <Pressable
+                        key={cl.id}
+                        onPress={() => toggleClass(cl.members)}
+                        style={[
+                          styles.chip,
+                          {
+                            borderColor: allPicked ? ACCENT : colors.border,
+                            backgroundColor: allPicked ? `${ACCENT}14` : 'transparent',
+                            flexDirection: isRTL ? 'row-reverse' : 'row',
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name={allPicked ? 'checkmark-circle' : 'add-circle-outline'}
+                          size={14}
+                          color={allPicked ? ACCENT : colors.mutedForeground}
+                        />
+                        <Text
+                          style={{
+                            color: allPicked ? ACCENT : colors.foreground,
+                            fontFamily: 'Cairo_500Medium',
+                            fontSize: 12,
+                          }}
+                          numberOfLines={1}
+                        >
+                          {(lang === 'ar' && cl.nameAr ? cl.nameAr : cl.name)} ({cl.members.length})
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+              ) : null}
+            </View>
+          ) : null}
+
           {loading ? (
             <ActivityIndicator color={ACCENT} style={{ paddingVertical: 32 }} />
           ) : failed ? (
@@ -108,7 +212,11 @@ export function ParticipantPickerSheet({
             <FlatList
               data={visible_}
               keyExtractor={c => c.userId}
-              style={{ maxHeight: 360 }}
+              // flexShrink so the list yields first when the sheet hits its 75%
+              // cap. Without it, adding the search box and class chips above
+              // pushes the confirm button off the bottom on a short screen —
+              // the sheet does not scroll as a whole, so it would just be gone.
+              style={{ maxHeight: 360, flexShrink: 1 }}
               contentContainerStyle={{ paddingHorizontal: 16, gap: 6 }}
               /*
                 This list is people who hold an account, not people on the
@@ -119,21 +227,34 @@ export function ParticipantPickerSheet({
                 now says what is actually missing and where to get it.
               */
               ListEmptyComponent={
-                <View style={{ paddingVertical: 24, paddingHorizontal: 16, gap: 6 }}>
-                  <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: 'center' }]}>
-                    {t('messagingNoContactsTitle')}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.hint,
-                      // styles.hint carries its own vertical padding for the
-                      // failure message above; the wrapper supplies it here.
-                      { paddingVertical: 0, lineHeight: 20, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' },
-                    ]}
-                  >
-                    {t('messagingNoContactsDesc')}
-                  </Text>
-                </View>
+                // "Nobody has an account yet" and "your search matched nobody"
+                // are opposite problems that both render as a blank list. Only
+                // the first one is about claim codes; telling a teacher who
+                // mistyped a name to go and mint a code sends them away from a
+                // list that does contain the person they want.
+                query ? (
+                  <View style={{ paddingVertical: 24, paddingHorizontal: 16 }}>
+                    <Text style={[styles.hint, { paddingVertical: 0, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
+                      {t('messagingNoSearchMatch')}
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={{ paddingVertical: 24, paddingHorizontal: 16, gap: 6 }}>
+                    <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: 'center' }]}>
+                      {t('messagingNoContactsTitle')}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.hint,
+                        // styles.hint carries its own vertical padding for the
+                        // failure message above; the wrapper supplies it here.
+                        { paddingVertical: 0, lineHeight: 20, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' },
+                      ]}
+                    >
+                      {t('messagingNoContactsDesc')}
+                    </Text>
+                  </View>
+                )
               }
               renderItem={({ item }) => {
                 const checked = selected.has(item.userId);
@@ -187,6 +308,12 @@ const styles = StyleSheet.create({
   title: { fontSize: 17 },
   hint: { fontSize: 13, paddingVertical: 28, paddingHorizontal: 16 },
   emptyTitle: { fontSize: 14 },
+  searchWrap: { alignItems: 'center', gap: 8, marginHorizontal: 16, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 10, borderWidth: 1 },
+  // No explicit height: the row sizes to the input, and a fixed one clips
+  // Cairo's Arabic descenders.
+  searchInput: { flex: 1, fontFamily: 'Almarai_400Regular', fontSize: 14, padding: 0 },
+  chipRow: { gap: 6, paddingHorizontal: 16 },
+  chip: { alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14, borderWidth: 1 },
   row: { alignItems: 'center', gap: 10, paddingVertical: 11, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1 },
   actions: { justifyContent: 'flex-end', gap: 8, paddingHorizontal: 16, paddingVertical: 14 },
   btn: { paddingHorizontal: 16, paddingVertical: 11, borderRadius: 10 },
