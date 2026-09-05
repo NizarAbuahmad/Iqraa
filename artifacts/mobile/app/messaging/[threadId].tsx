@@ -47,6 +47,8 @@ import {
 import { MessageBubble } from '@/components/ui/MessageBubble';
 import { Avatar } from '@/components/ui/Avatar';
 import { ParticipantPickerSheet } from '@/components/ui/ParticipantPickerSheet';
+import { mergeNewMessages } from '@/services/messageMerge';
+import { usePollingRefresh } from '@/hooks/usePollingRefresh';
 
 const REPORT_REASON_KEYS = ['reportReasonInappropriate', 'reportReasonBullying', 'reportReasonSpam', 'reportReasonOther'] as const;
 
@@ -94,6 +96,29 @@ export default function ThreadScreen() {
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));
 
+  /*
+   * The polling counterpart to load(). Deliberately NOT load() itself: that
+   * assigns the newest page over `messages`, which would throw away every
+   * older page the reader had scrolled back through and yank the thread
+   * forward under them every few seconds. This merges instead, and stays
+   * silent on failure — the reader did not ask for this fetch, so they must
+   * not be shown it failing.
+   *
+   * Faster than the inbox's default: this is a thread someone is looking at
+   * while a reply is being typed.
+   */
+  const refresh = useCallback(async () => {
+    if (!threadId) return;
+    try {
+      const polled = await listMessages(threadId);
+      setMessages(prev => mergeNewMessages(prev, polled));
+    } catch {
+      // Leave the open thread exactly as it was.
+    }
+  }, [threadId]);
+
+  usePollingRefresh(refresh, 10000);
+
   const participantsById = useMemo(() => {
     const map = new Map<string, ChatParticipantInfo>();
     for (const p of thread?.participants ?? []) map.set(p.userId, p);
@@ -125,7 +150,10 @@ export default function ThreadScreen() {
     setSending(true);
     try {
       const message = await sendMessageApi(threadId, body, pendingAttachment ?? undefined);
-      setMessages(prev => [message, ...prev]);
+      // Merged, not prepended: a poll can land between the server storing this
+      // message and this line running, in which case it is already on screen
+      // and a bare prepend would show it twice.
+      setMessages(prev => mergeNewMessages(prev, [message]));
       setError('');
     } catch (e) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);

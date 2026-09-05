@@ -269,6 +269,8 @@ export async function listMessages(
   return data.messages;
 }
 
+/** Merging a polled page into what is on screen lives in ./messageMerge.ts — see the note there on why it is not in this file. */
+
 /** `attachmentDataUrl` is a `data:<mime>;base64,...` string — see services/lessonMediaPick.ts for how one gets built. */
 export async function sendMessage(
   threadId: string,
