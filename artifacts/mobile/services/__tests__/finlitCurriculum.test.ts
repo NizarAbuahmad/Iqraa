@@ -9,6 +9,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  BOOKS,
+  MVP_BOOK_IDS,
   MVP_SUBJECT_IDS,
   getBooksForSubjectGrade,
   getLessonsForUnit,
@@ -26,6 +28,24 @@ describe('Financial Literacy G10 S1 — curriculum browser', () => {
       assert.ok(
         books.length > 0,
         `subject "${subjectId}" is offered in pickers but has no book — dead end`,
+      );
+    }
+  });
+
+  // The mirror of the assertion above. That one catches a subject offered with
+  // no book; this one catches a book catalogued under a subject the pickers no
+  // longer offer — the book becomes unreachable and nothing else notices,
+  // because getBooksForSubjectGrade is never asked about that subject. The two
+  // directions fail on opposite edits to MVP_SUBJECT_IDS, so both are needed:
+  // dropping 'arabic' from the tail while ARABIC_S1_CURRICULUM_BOOK_ID stays in
+  // MVP_BOOK_IDS passes the forward check and is caught only here.
+  it('every MVP book belongs to an MVP subject', () => {
+    for (const bookId of MVP_BOOK_IDS) {
+      const book = BOOKS.find(b => b.id === bookId);
+      assert.ok(book, `MVP_BOOK_IDS lists "${bookId}" but BOOKS has no such book`);
+      assert.ok(
+        MVP_SUBJECT_IDS.includes(book.subjectId),
+        `book "${bookId}" is in MVP_BOOK_IDS but its subject "${book.subjectId}" is not in MVP_SUBJECT_IDS — the book is unreachable`,
       );
     }
   });
