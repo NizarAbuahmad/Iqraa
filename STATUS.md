@@ -297,6 +297,38 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## One email is one role: a teacher cannot also be a parent, 2026-09-05
+
+Found while inviting the first parent: the teacher's own email could not be
+reused to make a parent account. That is the design, and it is enforced twice
+— `users.email` is unique, and `POST /auth/claim` refuses any role that is not
+`student` or `parent`, so a teacher cannot claim a code even for their own
+child.
+
+**Deliberately not built:** multi-role accounts. A teacher who is also a parent
+at the same school — an ordinary situation, teachers have children — needs a
+second email today. The workaround for testing is a plus-alias
+(`name+parent@gmail.com`), which the signup form accepts.
+
+**What it would actually cost, when someone asks for it.** Less schema than
+expected: `rosterLinks` already links *any* `users` row to a student as
+`guardian`, and nothing structural stops a teacher's row being one. What blocks
+it is the safety rule — a direct thread requires **exactly one side to be a
+teacher-role** (see routes/messaging.ts), so a teacher-parent messaging their
+child's teacher is two teachers and is refused.
+
+Lifting it means restating that rule from role-based to relationship-based:
+*one side must be the teacher who owns the student that connects them*. That is
+arguably more correct — today's rule permits two unrelated teachers to DM,
+which the relationship form would not — but it is the single rule carrying the
+minor-safety design, and its current form is a sentence that fits in one's
+head. Worth trading only for a real user, not a hypothetical one.
+
+**The trigger to revisit:** the first teacher at a pilot school who says their
+own child is in one of these classes. At that point the change is contained —
+the direct-thread rule and `GET /messaging/contacts`, no migration — and there
+is someone real to test it against.
+
 ## The messaging schema reached production — by SQL, not by push, 2026-09-05
 
 The entry below closed with the production push outstanding. It has landed:
