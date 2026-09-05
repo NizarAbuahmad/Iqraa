@@ -102,7 +102,7 @@ function serializeLessonContext(
   }
   if (curriculumObjectives.length > 0) {
     lines.push('');
-    lines.push(isAr ? 'النتاجات (من المنهج الرسمي):' : 'Official curriculum outcomes:');
+    lines.push(isAr ? 'النتاجات (من المنهاج الرسمي):' : 'Official curriculum outcomes:');
     curriculumObjectives.forEach(o => lines.push(`• ${o}`));
   } else if (titleOnlyUnit && unitObjectives.length > 0) {
     // Sem1 units 2–4: real lesson title, but outcomes are unit-level only
@@ -213,7 +213,7 @@ export function resolveGeneratorGrounding(
       score: 0,
       context: '',
       ungroundedNote: isAr
-        ? 'تنبيه: الموضوع غير موجود في المنهج المتاح حالياً. أنشئ خطة عامة دون الادعاء أنها مبنية على نتاجات درس محدد من الكتاب.'
+        ? 'تنبيه: الموضوع غير موجود في المنهاج المتاح حالياً. أنشئ خطة عامة دون الادعاء أنها مبنية على نتاجات درس محدد من الكتاب.'
         : 'NOTE: topic not found in the available curriculum KB. Generate a generic plan; do not claim textbook grounding.',
     };
   }

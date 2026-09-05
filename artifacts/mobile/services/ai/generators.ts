@@ -276,7 +276,7 @@ function lpPriorReview(priorConcepts: string[], notes: string, lang: Lang): stri
   if (!hasConcepts && !hasNotes) return undefined;
   if (lang === 'ar') {
     const parts = ['خصّص 5-10 دقائق في بداية الحصة لمراجعة سريعة قبل الانتقال إلى الدرس الجديد.'];
-    if (hasConcepts) parts.push(`راجع هذه المفاهيم من المنهج: ${priorConcepts.join('، ')}.`);
+    if (hasConcepts) parts.push(`راجع هذه المفاهيم من المنهاج: ${priorConcepts.join('، ')}.`);
     if (hasNotes) parts.push(`بحسب ملاحظات المعلم: ${notes.trim()}`);
     return parts.join(' ');
   }
