@@ -27,6 +27,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { getObjectivesForBook, type CurriculumObjective } from '@/services/curriculumData';
+import { PickerField as SharedPickerField } from '@/components/ui/PickerField';
 import {
   EvaluationError,
   createEvaluation,
@@ -550,48 +551,27 @@ function CheckboxRow({
   );
 }
 
-function PickerField({
-  label, value, options, onChange, colors, isRTL, accent,
-}: {
-  label: string; value: string; options: string[]; onChange: (i: number) => void;
-  colors: ReturnType<typeof useColors>; isRTL: boolean; accent: string;
-}) {
-  const [open, setOpen] = useState(false);
+/**
+ * The shared dropdown wearing this screen's skin, replacing a 43-line copy of
+ * it: a teal-tinted selected row and a trigger that tints its border while
+ * open, both of which the copy had.
+ *
+ * `radius` is overridden rather than left to the theme because this screen
+ * rounds everything to 10 by hand — the text input, book rows, mode chips,
+ * checkbox group and submit button all say `borderRadius: 10`, against a
+ * `colors.radius` of 12. So 10 is this screen's convention, not picker drift,
+ * and letting the picker take 12 would round its corners differently from the
+ * input directly above it. Passing the screen's real radius through the prop
+ * the component already reads keeps that local and needs no new API.
+ */
+function PickerField(props: React.ComponentProps<typeof SharedPickerField>) {
   return (
-    <View style={{ marginBottom: 16 }}>
-      <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
-        {label}
-      </Text>
-      <Pressable
-        onPress={() => setOpen(o => !o)}
-        style={[styles.pickerInput, { backgroundColor: colors.card, borderColor: open ? accent : colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-      >
-        <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, textAlign: isRTL ? 'right' : 'left' }}>
-          {value}
-        </Text>
-        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
-      </Pressable>
-      {open && (
-        <View style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 10, backgroundColor: colors.card, marginTop: -8, marginBottom: 8, overflow: 'hidden' }}>
-          {options.map((o, i) => (
-            <Pressable
-              key={i}
-              onPress={() => { onChange(i); setOpen(false); }}
-              style={{
-                paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: colors.border,
-                backgroundColor: o === value ? accent + '15' : 'transparent',
-                flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between',
-              }}
-            >
-              <Text style={{ color: o === value ? accent : colors.foreground, fontFamily: o === value ? 'Cairo_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }}>
-                {o}
-              </Text>
-              {o === value && <Ionicons name="checkmark" size={16} color={accent} />}
-            </Pressable>
-          ))}
-        </View>
-      )}
-    </View>
+    <SharedPickerField
+      {...props}
+      colors={{ ...props.colors, radius: 10 }}
+      selectedTint={ACCENT + '15'}
+      highlightBorderWhenOpen
+    />
   );
 }
 
@@ -611,6 +591,5 @@ const styles = StyleSheet.create({
   checkboxGroup: { borderWidth: 1, borderRadius: 10, padding: 14, marginBottom: 16, gap: 4 },
   checkRow: { alignItems: 'center', gap: 10, paddingVertical: 6 },
   checkbox: { width: 20, height: 20, borderRadius: 4, borderWidth: 2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  pickerInput: { borderWidth: 1.5, borderRadius: 10, padding: 14, alignItems: 'center' },
   submitBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: 15, borderRadius: 10, marginTop: 4 },
 });
