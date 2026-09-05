@@ -12,9 +12,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isR2Configured, uploadToR2 } from './r2.ts';
 import { LOCAL_FILES } from './localSources.ts';
+import { loadEnvFile } from '../../../scripts/load-env.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '../../..');
+loadEnvFile(path.join(repoRoot, '.env'));
 
 async function main(): Promise<void> {
   if (!isR2Configured()) {
