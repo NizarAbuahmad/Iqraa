@@ -70,6 +70,10 @@ import {
   buildArabicSem1Catalog,
 } from './curriculumG10ArabicSem1.ts';
 import {
+  ARABIC_S2_BOOK_ID,
+  buildArabicSem2Catalog,
+} from './curriculumG10ArabicSem2.ts';
+import {
   ENGLISH_COMMERCE_S1_KB_BOOK_ID,
   ENGLISH_AGRICULTURE_S1_KB_BOOK_ID,
   ENGLISH_HOSPITALITY_S1_KB_BOOK_ID,
@@ -218,6 +222,15 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Arabic – Grade 10 – Semester 1',
     semester: 1,
     source: 'knowledge-base/grade-10-arabic/support-pdfs/كتاب الطالب لمادة العربية لغتي للصف العاشر الفصل الأول.pdf',
+  },
+  {
+    id: ARABIC_S2_BOOK_ID,
+    gradeId: 'grade-10',
+    subjectId: 'arabic',
+    titleAr: 'اللغة العربية (العربية لغتي) – الصف العاشر – الفصل الثاني',
+    titleEn: 'Arabic – Grade 10 – Semester 2',
+    semester: 2,
+    source: 'knowledge-base/grade-10-arabic/support-pdfs/كتاب الطالب لمادة اللغة العربية للصف العاشر الفصل الثاني.pdf',
   },
   {
     id: ENGLISH_COMMERCE_S1_KB_BOOK_ID,
@@ -1243,6 +1256,7 @@ const _bioSem2 = buildBioSem2Catalog();
 const _chemSem2 = buildChemSem2Catalog();
 const _finlitSem1 = buildFinlitSem1Catalog();
 const _arabicSem1 = buildArabicSem1Catalog();
+const _arabicSem2 = buildArabicSem2Catalog();
 const _g9MathSem1 = buildG9MathSem1Catalog();
 const _g9MathSem2 = buildG9MathSem2Catalog();
 const _engCommerce = buildEnglishCommerceKbCatalog();
@@ -1376,6 +1390,7 @@ export const KB_UNITS: KBUnit[] = [
   ..._chemSem2.units,
   ..._finlitSem1.units,
   ..._arabicSem1.units,
+  ..._arabicSem2.units,
   ..._nccdSem1.units,
   ..._nccdSem2.units,
   ..._g9MathSem1.units,
@@ -1395,6 +1410,7 @@ export const KB_LESSONS: KBLesson[] = [
   ..._chemSem2.lessons.map(enrichLesson),
   ..._finlitSem1.lessons.map(enrichLesson),
   ..._arabicSem1.lessons.map(enrichLesson),
+  ..._arabicSem2.lessons.map(enrichLesson),
   ..._nccdSem1.lessons.map(enrichLesson),
   ..._nccdSem2.lessons.map(enrichLesson),
   // No hand-authored G9 rows exist to enrich from — these carry only what

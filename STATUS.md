@@ -216,24 +216,35 @@ an announcement by default» below.
 - Financial Literacy G10 S1 is browsable (2 units / 10 lessons, NCCD-sourced).
   It was previously offered as a subject tile with no book behind it, so the
   subject dead-ended on the "no semesters" empty state.
-- Arabic G10 S1 is browsable (2026-09-05): 5 units / 25 lessons / 74 outcomes,
-  from the NCCD student book (`arabic-s1-student-book`, on file since
-  2026-09-03). Every unit runs the same five skills in the same order — أستمع /
-  أتحدّث / أقرأ / أكتب محتوًى / أبني لغتي — so **the lesson title does not
-  identify the lesson here**: «أستمعُ بانتباهٍ وتركيزٍ» is five different
-  lessons. Ids do; `arabicCurriculum.test.ts` pins that five distinct rows
-  survive under one title.
+- Arabic G10 is browsable in **both semesters** (S1 2026-09-05, S2 same day):
+  10 units / 50 lessons, from the two NCCD student books
+  (`arabic-s1-student-book` and `arabic-s2-student-book`, both on file since
+  2026-09-03). S1 is units 1-5 / 74 outcomes, S2 units 6-10 / 75 outcomes —
+  S2 continues S1's numbering, so its ids are `…-s2-nccd-u6`…`u10`, not a
+  restart at u1 under a different semester segment. Every unit in both books
+  runs the same five skills in the same order — أستمع / أتحدّث / أقرأ / أكتب
+  محتوًى / أبني لغتي — so **the lesson title does not identify the lesson
+  here**: «أستمعُ بانتباهٍ وتركيزٍ» is ten different lessons. Ids do;
+  `arabicCurriculum.test.ts` pins that ten distinct rows survive under one
+  title, and that an S1 lookup handed an S2 id answers null rather than a
+  same-shaped lesson from its own book.
   - The unit→lesson mapping was NOT taken from the book's table of contents:
     the extracted TOC is RTL-scrambled (it lists units 1, 3, 2) and one unit's
     title comes out garbled. Each unit's own «محتويات الوحدة» page was used
     instead, and unit 2's title («يَرْحَلونَ ونَبْقى») confirmed against its
     body page. Extraction corruption on this PDF measures 15.3%, so titles were
     verified rather than pasted.
-  - No حصص counts (the student book prints none — the teacher guide is on file
-    but unread for this), no per-lesson term list (the book prints none), and
-    no download chip (no NCCD hosted URL for these three PDFs has been
-    verified). S2 is extracted but not yet catalogued. All recorded in the data
-    file's `known_gaps`.
+  - S2's own table of contents disagrees with unit 10's own page on two lesson
+    titles («المفكّر العربيّ إدوارد سعيد» / «تقرير علميّ عن شخصيّة» versus
+    «إدوارد سعيد (سيرة غيريّة)» / «توثيق المراجع، والأمانة العلميّة»). The unit
+    page won, and was **checked against the lesson bodies** — p118-124 is the
+    Edward Said text, p125 is about citation and academic integrity. The same
+    TOC also lists unit 10 before unit 9.
+  - No حصص counts in either book (they print none; the S1 teacher guide is on
+    file but unread for this and no S2 guide is registered at all), no
+    per-lesson term list (neither book prints one), and no download chip (no
+    NCCD hosted URL for any of these PDFs has been verified). All recorded in
+    each data file's `known_gaps`.
   - `islamic` and `computer` came back OUT of `MVP_SUBJECT_IDS` in the same
     change. All three were appended as tiles on 2026-09-05 with no book behind
     any of them; Arabic earned its place, the other two have nothing to open —

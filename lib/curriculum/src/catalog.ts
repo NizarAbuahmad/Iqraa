@@ -56,6 +56,10 @@ import {
   buildArabicSem1BrowserCatalog,
 } from './catalogs/g10ArabicSem1.ts';
 import {
+  ARABIC_S2_CURRICULUM_BOOK_ID,
+  buildArabicSem2BrowserCatalog,
+} from './catalogs/g10ArabicSem2.ts';
+import {
   G9_MATH_S1_CURRICULUM_BOOK_ID,
   buildG9MathSem1BrowserCatalog,
   isG9MathSem1TitleOnlyUnit,
@@ -256,10 +260,9 @@ export const MVP_BOOK_IDS: readonly string[] = [
   EARTH_S2_CURRICULUM_BOOK_ID,
   BIO_S1_CURRICULUM_BOOK_ID,
   BIO_S2_CURRICULUM_BOOK_ID,
-  // Arabic — Semester 1 only. The S2 student book is extracted but not yet
-  // catalogued into units/lessons, so listing a book for it would offer a
-  // shell with nothing inside.
+  // Arabic — both semesters. S2 carries units 6-10, continuing S1's numbering.
   ARABIC_S1_CURRICULUM_BOOK_ID,
+  ARABIC_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -573,6 +576,21 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+  },
+  // ── Arabic Grade 10 – Semester 2 ───────────────────────────────────────────
+  // Units 6-10, continuing S1's numbering. Same missing download link as S1.
+  {
+    id: ARABIC_S2_CURRICULUM_BOOK_ID,
+    title: 'Arabic – Grade 10, Semester 2',
+    titleAr: 'اللغة العربية (العربية لغتي) – الصف العاشر – الفصل الثاني',
+    subjectId: 'arabic',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
   },
   // ── Math Grade 9 – Semester 1 ───────────────────────────────────────────────
   // Distinct id from the pre-existing inert `book-math-9` stub below (no real
@@ -1565,6 +1583,7 @@ const _nccdSem1Browser = buildNccdSem1BrowserCatalog();
 const _nccdSem2Browser = buildNccdSem2BrowserCatalog();
 const _finlitSem1Browser = buildFinlitSem1BrowserCatalog();
 const _arabicSem1Browser = buildArabicSem1BrowserCatalog();
+const _arabicSem2Browser = buildArabicSem2BrowserCatalog();
 const _chemSem1Browser = buildChemSem1BrowserCatalog();
 const _physSem1Browser = buildPhysSem1BrowserCatalog();
 const _physSem2Browser = buildPhysSem2BrowserCatalog();
@@ -1699,6 +1718,7 @@ export const UNITS: Unit[] = [
   ..._nccdSem2Browser.units,
   ..._finlitSem1Browser.units,
   ..._arabicSem1Browser.units,
+  ..._arabicSem2Browser.units,
   ..._g9MathSem1Browser.units,
   ..._g9MathSem2Browser.units,
   ..._engCommerceBrowser.units,
@@ -1722,6 +1742,7 @@ export const LESSONS: Lesson[] = [
   ..._nccdSem2Browser.lessons,
   ..._finlitSem1Browser.lessons,
   ..._arabicSem1Browser.lessons,
+  ..._arabicSem2Browser.lessons,
   ..._g9MathSem1Browser.lessons,
   ..._g9MathSem2Browser.lessons,
   ..._engCommerceBrowser.lessons,
