@@ -49,7 +49,7 @@ import {
   type StudentQuestion,
   type StudentResponse,
 } from '@/services/studentExam';
-import { showBlanks } from '@/services/evaluations';
+import { FillBlankInput, MatchingInput } from '@/components/QuestionInputs';
 import { isolateForeignRuns } from '@/services/mathRender';
 import type { TranslationKey } from '@/services/i18n';
 
@@ -435,11 +435,14 @@ function QuestionCard({
   // Isolated at the source: this is the paper a student actually sits, so an
   // equation reordered by the bidi algorithm is a wrong question in front of
   // someone who cannot ask why it looks odd.
+  // Matching and fill-blank are absent here on purpose: neither body carries a
+  // prompt field, and their inputs below render their own text. Falling back to
+  // an empty string used to leave a matching question as a blank card.
   const prompt = isolateForeignRuns(
     (body['stem'] as string) ??
     (body['statement'] as string) ??
     (body['prompt'] as string) ??
-    showBlanks((body['template'] as string) ?? ''),
+    '',
   );
 
   const options = Array.isArray(body['options']) ? (body['options'] as { id: string; text: string }[]) : [];
@@ -450,18 +453,20 @@ function QuestionCard({
 
   return (
     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <Text
-        style={{
-          color: colors.foreground,
-          fontFamily: 'Almarai_400Regular',
-          fontSize: 16,
-          lineHeight: 26,
-          textAlign: align,
-          writingDirection: isRTL ? 'rtl' : 'ltr',
-        }}
-      >
-        {prompt}
-      </Text>
+      {prompt ? (
+        <Text
+          style={{
+            color: colors.foreground,
+            fontFamily: 'Almarai_400Regular',
+            fontSize: 16,
+            lineHeight: 26,
+            textAlign: align,
+            writingDirection: isRTL ? 'rtl' : 'ltr',
+          }}
+        >
+          {prompt}
+        </Text>
+      ) : null}
 
       {question.type === 'multiple_choice' && (
         <View style={{ gap: 10, marginTop: 16 }}>
@@ -528,7 +533,38 @@ function QuestionCard({
         </View>
       )}
 
-      {['short_answer', 'open_ended', 'problem_solving', 'practical_task', 'fill_blank'].includes(question.type) && (
+      {question.type === 'matching' && (
+        <View style={{ marginTop: 4 }}>
+          <MatchingInput
+            body={body}
+            response={response}
+            onChange={onAnswer}
+            colors={colors}
+            isRTL={isRTL}
+            align={align}
+            t={t}
+          />
+        </View>
+      )}
+
+      {question.type === 'fill_blank' && (
+        // Was in the text-area list below, which saves `{text}` — a shape
+        // `fill_blank.grade` does not read, so every one of these marked as
+        // unanswered however well the student had filled it in.
+        <View style={{ marginTop: 4 }}>
+          <FillBlankInput
+            body={body}
+            response={response}
+            onChange={onAnswer}
+            onCommit={onAnswer}
+            colors={colors}
+            align={align}
+            t={t}
+          />
+        </View>
+      )}
+
+      {['short_answer', 'open_ended', 'problem_solving', 'practical_task'].includes(question.type) && (
         <TextInput
           value={text}
           onChangeText={v => onAnswer({ text: v })}

@@ -73,8 +73,19 @@ function questionText(q: EvaluationQuestion): string {
     ?? (body['statement'] as string | undefined)
     ?? (template === undefined ? undefined : showBlanks(template))
     ?? (body['prompt'] as string | undefined)
+    // A matching body has none of the four above, so it used to fall through
+    // to '' and print as a dash — a teacher reviewing a paper could see that a
+    // matching question existed but not what it asked. The left column is what
+    // it asks about.
+    ?? matchingLeftText(body['left'])
     ?? '',
   );
+}
+
+function matchingLeftText(left: unknown): string | undefined {
+  if (!Array.isArray(left)) return undefined;
+  const labels = left.map(l => (l as { text?: string })?.text).filter(Boolean);
+  return labels.length > 0 ? labels.join(' · ') : undefined;
 }
 
 export default function EvaluationDetailScreen() {

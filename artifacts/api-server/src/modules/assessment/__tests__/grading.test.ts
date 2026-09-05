@@ -135,6 +135,21 @@ describe("matching grading", () => {
       "incorrect",
     );
   });
+
+  it("marks the answer the exam screen actually sends", () => {
+    // The student screen appends each new link and drops the superseded one
+    // (`setMatchPair` in the mobile app), so a student who revisits their first
+    // row hands in the same links in a different order. Order must not matter,
+    // and only a test says so — the two halves are in different packages and
+    // agree by nothing else.
+    const asSaved = [
+      { left: "2", right: "b" },
+      { left: "3", right: "c" },
+      { left: "4", right: "d" },
+      { left: "1", right: "a" },
+    ];
+    assert.equal(matching.grade!(q, { pairs: asSaved }).fraction, 1);
+  });
 });
 
 describe("fill-in-the-blank grading", () => {
@@ -173,6 +188,15 @@ describe("fill-in-the-blank grading", () => {
 
   it("treats all-blank as unanswered", () => {
     assert.equal(fillBlank.grade!(q, { blanks: ["", "  "] }).status, "unanswered");
+  });
+
+  it("marks a partly-filled answer against the blank it was written in", () => {
+    // The student screen pads to the placeholder count (`setBlankAt`), so
+    // answering only the second blank sends ['', 'سم']. Sending ['سم'] instead
+    // would be graded against {{1}} and scored zero for a correct answer —
+    // which is what the screen did while it saved `{text}` and no blanks at all.
+    assert.equal(fillBlank.grade!(q, { blanks: ["", "سم"] }).fraction, 0.5);
+    assert.equal(fillBlank.grade!(q, { blanks: ["سم"] }).fraction, 0);
   });
 });
 
