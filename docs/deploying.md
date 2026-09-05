@@ -94,6 +94,30 @@ say `schema-push: done` or `schema-push: n/a` in its description
 (`.github/workflows/ci.yml`), and `schema-check.yml` verifies production
 against the schema daily.
 
+## Point-of-no-return changes go up as drafts
+
+Some changes cannot be undone by reverting the commit — removing a service
+block from `render.yaml`, deleting a service in a dashboard, anything whose
+rollback needs secrets re-entered by hand. **Open those as draft PRs.** GitHub
+refuses to merge a draft, so the constraint holds by itself; mark it ready only
+once the condition in the body is actually met.
+
+Writing "do not merge yet" in the body does not work here, and there is a
+worked example. PR #251 retired the Render API and verifier from the blueprint.
+Its own body opened with *"merging this is the point of no return, so merge it
+only once Cloud Run has served real teachers through a few genuine cold
+mornings"*. It was opened at 06:00:44Z and merged at 06:00:53Z — **nine
+seconds**, self-merged, no reviews. The web build had been pointed at Cloud Run
+51 minutes earlier, so not one cold morning had passed, let alone a few.
+
+That is not carelessness on one PR; it is what the workflow does. Across the
+twenty merged PRs around it the median time from opening to merge was about
+twelve seconds. A sentence in a body has nothing to act on in that window — a
+draft does. What it cost: reverting to Render was one line and a web rebuild
+before #251, and after it means restoring the blocks from history **and**
+re-entering every secret by hand — the same hand re-entry that produced the
+bullet-corrupted `OPENAI_API_KEY` the day before.
+
 ## When to deploy
 
 Iqraa's users are Jordanian teachers and their classes, so the school week is
