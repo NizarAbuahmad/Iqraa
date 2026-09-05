@@ -1,20 +1,20 @@
-# Render Blueprint — free-tier demo deployment.
+# Render Blueprint — the static web app only.
 #
-# Three services:
-#   iqraa-api      — Express API (free web service; sleeps after ~15 min idle,
-#                    first request after sleep takes ~30-60s to wake)
+# One service:
 #   iqraa-web      — Expo web static export (always awake; static files)
-#   iqraa-verifier — SymPy math verifier (FastAPI). The API proxies it at
-#                    /api/verify/derivative. Without it deployed, the app
-#                    cannot symbolically verify anything in production and
-#                    honestly falls back to the "reviewed bank" label.
-# Database lives on Neon (free Postgres), NOT on Render — Render's free
-# Postgres is deleted after 30 days, Neon's free tier persists.
 #
-# Both DATABASE_URL and OPENAI_API_KEY are set by hand in the Render
-# dashboard on first deploy (sync: false below). OPENAI_API_KEY can be a
-# placeholder while the app runs with DEMO_MODE = true — the AI endpoints
-# are not exercised by the demo.
+# Compute moved to Google Cloud Run on 2026-09-05 — see the note in the
+# services block below for why, and for how to roll it back. What runs where
+# now:
+#   iqraa-web      — Render (this file)
+#   iqraa-api      — Cloud Run, project iqraa-auth-507315, europe-west1
+#   iqraa-verifier — Cloud Run, same project and region
+#   database       — Neon (unchanged; free Postgres, persists — Render's free
+#                    Postgres is deleted after 30 days)
+#   media          — Cloudflare R2 (unchanged)
+#
+# Secrets for the two Cloud Run services live in the Cloud Run console, not
+# here. Nothing in this file needs DATABASE_URL or OPENAI_API_KEY any more.
 #
 # SCHEMA IS NOT DEPLOYED. No build step here touches the database — the
 # tables come from `pnpm --filter @workspace/db run push`, run by hand
@@ -34,108 +34,29 @@
 #     reaches main. Read-only; needs a DATABASE_URL repository secret.
 
 services:
-  # NOT the live API since 2026-09-05 — `iqraa-web` below now builds
-  # against Cloud Run. Kept running as a fallback for a few days so a bad
-  # cutover can be undone by changing one line back and rebuilding the web
-  # service. Delete both this and iqraa-verifier once Cloud Run has proven
-  # itself, and remember the Cloud Run copies hold their own secrets.
-  - type: web
-    name: iqraa-api
-    runtime: node
-    plan: free
-    # `--filter @workspace/api-server...` (trailing dots = "and its workspace
-    # dependencies") installs 5 of the 11 projects instead of all of them. The
-    # unfiltered form pulled the entire Expo/React Native/pptxgenjs tree —
-    # ~665MB of node_modules the API never imports — into a free-tier builder,
-    # which is slow and a plausible OOM/timeout source on a constrained box.
-    buildCommand: corepack enable && corepack prepare pnpm@11.18.0 --activate && pnpm install --frozen-lockfile --filter @workspace/api-server... && pnpm --filter @workspace/api-server run build
-    # The seed runs before the server, on every boot. It is idempotent and
-    # matches on natural keys, so re-running never duplicates and never
-    # overwrites a school's edited thresholds — see seed-assessment.mjs.
-    #
-    # Why here and not once by hand: production went live with `level_scales`
-    # empty, so every evaluation was created with a null scale and answer entry
-    # refused with "No level scale is configured" — a failure three screens
-    # away from its cause. Nothing deployed the seed, exactly as nothing
-    # deploys the schema.
-    #
-    # A failure here stops the boot rather than being swallowed. That is the
-    # intended trade: every route needs the database anyway, so a server that
-    # cannot reach it has nothing to serve, and a silent half-configured start
-    # is what produced this bug in the first place.
-    startCommand: pnpm --filter @workspace/db run seed:assessment && pnpm --filter @workspace/api-server run start
-    healthCheckPath: /api/healthz
-    envVars:
-      - key: NODE_VERSION
-        value: 24.15.0
-      - key: NODE_ENV
-        value: production
-      - key: SESSION_SECRET
-        generateValue: true
-      - key: DATABASE_URL
-        sync: false
-      - key: OPENAI_API_KEY
-        sync: false
-      # Google Sign-In web client ID, used to verify the audience of tokens
-      # POST /auth/google receives. Must match EXPO_PUBLIC_GOOGLE_CLIENT_ID on
-      # iqraa-web below — same client ID, two services. Unset means the route
-      # answers 503 rather than failing to verify anything.
-      - key: GOOGLE_CLIENT_ID
-        sync: false
-      # Points the API's mathVerifierClient at the deployed verifier below.
-      #
-      # A literal public URL, not `fromService ... property: hostport`. That
-      # property yields Render's *internal* address (`iqraa-verifier:10000`),
-      # and the free plan has no private network to route it on — so every
-      # verify call the API made died as `client_error:fetch failed` while the
-      # verifier itself sat there healthy, answering /healthz with all eight
-      # topics. Confirmed live on 2026-09-03: `/api/healthz/verifier` returned
-      # 503 "unreachable" against a verifier that was up and doing maths.
-      #
-      # The failure is silent by design — an unreachable verifier degrades to
-      # the reviewed-bank label rather than making a claim — so nothing
-      # surfaced it except that no generated key ever earned a badge.
-      #
-      # Hardcoding the hostname is the cost, and it is the smaller one: if the
-      # service is renamed this must move with it, but a name that is wrong is
-      # loud where an address that cannot be routed is not.
-      # `normaliseVerifierUrl` passes a value with a scheme through untouched.
-      - key: MATH_VERIFIER_URL
-        value: https://iqraa-verifier.onrender.com
-
-  - type: web
-    name: iqraa-verifier
-    runtime: python
-    plan: free
-    rootDir: artifacts/math-verifier
-    # `--retries`/`--timeout` are the point of this line. A deploy failed with
-    # "too many 502 error responses" fetching uvicorn's wheel metadata from
-    # files.pythonhosted.org — PyPI's CDN, not this repo. pip's defaults gave
-    # up too early on a blip that a few more attempts would have ridden out.
-    buildCommand: pip install --retries 10 --timeout 30 -r requirements.txt
-    # Single worker: the service forks a ProcessPoolExecutor per request so a
-    # runaway SymPy job can be killed on timeout.
-    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT --workers 1
-    healthCheckPath: /healthz
-    envVars:
-      # This service was the only one of the three pinning no runtime version —
-      # both Node services pin NODE_VERSION, this pinned nothing. The build log
-      # shows what that meant in practice: "Using Python version 3.14.3
-      # (default)", a version nothing in CI has ever exercised.
-      #
-      # `uvicorn[standard]` pulls uvloop, httptools and watchfiles (C
-      # extensions) plus pydantic-core (Rust). Those install as wheels on a
-      # supported Python and compile from source on one without — which the
-      # free-tier builder cannot do. Whether 3.14 has wheels for all of them is
-      # exactly the question nobody should have to ask on a deploy.
-      #
-      # To be clear about what this did NOT fix: the 2026-08-18 failure was a
-      # PyPI 502, not an interpreter problem. This pin is hardening, chosen
-      # because 3.12.13 is what CI resolves against — so a green `math
-      # verifier` job means the deploy ran on the same interpreter.
-      - key: PYTHON_VERSION
-        value: 3.12.13
-
+  # iqraa-api and iqraa-verifier used to be defined here. They moved to
+  # Cloud Run on 2026-09-05 and were deleted from Render once it had proven
+  # itself under real traffic.
+  #
+  # Why they moved: Render free-tier sleeps a service after 15 minutes and
+  # takes 31-51s to wake it. The verifier is behind a client timeout, so a
+  # teacher opening the app in the morning got zero verified answers, every
+  # morning, with no error to explain it. Cloud Run wakes in 4.59s, which
+  # fits inside the timeout. Measured on both, not assumed.
+  #
+  # They are NOT defined here any more on purpose. Leaving the blocks in
+  # place would let a Blueprint sync quietly recreate both services --
+  # the same trap that kept MATH_VERIFIER_URL pointing at a dead address
+  # for three weeks. The file is the source of truth; deleting in the
+  # dashboard alone does not stick.
+  #
+  # To bring them back (rollback): restore these blocks from git history,
+  # re-enter every secret in the Render dashboard, and point
+  # EXPO_PUBLIC_API_BASE_URL below back at the Render API. Note the secrets
+  # do not come back with the file -- they never lived here.
+  #
+  # iqraa-web stays on Render: static, free, never sleeps, nothing to gain
+  # from moving. Neon and R2 are unaffected by where compute runs.
   - type: web
     name: iqraa-web
     runtime: static
@@ -165,7 +86,8 @@ services:
       # too. Only the two services that sleep moved.
       - key: EXPO_PUBLIC_API_BASE_URL
         value: https://iqraa-api-613126375862.europe-west1.run.app/api
-      # Same Google OAuth web client ID as GOOGLE_CLIENT_ID on iqraa-api above.
+      # Same Google OAuth web client ID as GOOGLE_CLIENT_ID on the Cloud Run
+      # api service (set there, not here).
       # sync: false (not a hardcoded value like the PostHog key below) only
       # because the client ID doesn't exist yet — once created it is not
       # secret, EXPO_PUBLIC_* is inlined into the JS bundle at build time regardless.
