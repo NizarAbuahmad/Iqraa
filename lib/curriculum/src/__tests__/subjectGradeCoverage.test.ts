@@ -9,10 +9,15 @@
  * pickers offer every MVP subject against every MVP grade.
  *
  * The answer turned out to be worse than the single pair that prompted this:
- * of the 16 MVP pairs, 7 have no book, and all 7 are grade-9 — the grade has
+ * of the 18 MVP pairs, 8 have no book, and all 8 are grade-9 — the grade has
  * mathematics and nothing else. That is a fact about the catalogue that was
  * true and unwritten, which is why it is spelled out below rather than
  * skipped or derived.
+ *
+ * The counts move as subjects are catalogued, and the list below is the thing
+ * that has to move with them: it grew by `islamic:grade-9` within a day, when
+ * Islamic Education was catalogued for Grade 10 and rejoined MVP_SUBJECT_IDS
+ * while its grade-9 half stayed empty. That failure is the feature.
  *
  * An allowlist, not a skip: a skip would let the bookless set grow silently,
  * and a derived set would assert nothing at all. Listing them means adding a
@@ -40,6 +45,7 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   'earth-science:grade-9',
   'biology:grade-9',
   'arabic:grade-9',
+  'islamic:grade-9',
 ]);
 
 describe('subject/grade coverage across the MVP lists', () => {
