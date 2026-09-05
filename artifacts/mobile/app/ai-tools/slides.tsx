@@ -54,7 +54,7 @@ import { buildDeckSlidesHTML, exportAsPDF } from '@/services/share';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
 } from '@/services/curriculumData';
-import { groundedSubjectConflict, topicPickerParams } from '@/services/lessonPrep';
+import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, topicPickerParams } from '@/services/lessonPrep';
 
 const ACCENT = '#0EA5E9';
 
@@ -85,6 +85,9 @@ export default function SlidesScreen() {
       : null,
   );
   const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(params.gradeIdx ?? inferredScope?.gradeIdx, grades.length));
+  // Index-aligned with `subjects`. Subjects with no book for the picked grade
+  // stay in the list — their positions are persisted — but are not pickable.
+  const subjectDisabled = subjectsWithoutCurriculum(grades[gradeIdx].id);
   const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx ?? inferredScope?.subjectIdx, subjects.length));
   const [topic, setTopic] = useState(params.topic ?? '');
   // Live as the teacher types, not gated behind pressing Generate — same
@@ -315,6 +318,8 @@ export default function SlidesScreen() {
     // A topic that grounds to another subject's lesson cannot make an honest
     // deck — the book serves that lesson's own content while the header claims
     // the picked subject. Refuse and name the real subject instead.
+    const scope = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, lang as 'ar' | 'en');
+    if (scope) { setError(t('scopeNoCurriculum', scope.grade, scope.subject)); return; }
     const conflict = groundedSubjectConflict(trimmed, lang as 'ar' | 'en', subjects[subjectIdx].id);
     if (conflict) { setError(t('subjectTopicMismatch', isAr ? conflict.nameAr : conflict.name)); return; }
     setError(''); setCancelled(false);
@@ -770,7 +775,7 @@ export default function SlidesScreen() {
           />
           <PillSelector
             label={t('subjects')}
-            options={subjects.map((s, i) => ({ value: i, label: isAr ? s.nameAr : s.name }))}
+            options={subjects.map((s, i) => ({ value: i, label: isAr ? s.nameAr : s.name, disabled: subjectDisabled[i] }))}
             value={subjectIdx}
             onChange={setSubjectIdx}
             colors={colors}

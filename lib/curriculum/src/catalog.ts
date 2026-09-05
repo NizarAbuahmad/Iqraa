@@ -1872,6 +1872,22 @@ export function getBooksForSubjectGrade(
   });
 }
 
+/**
+ * True when a subject/grade pair has a visible book behind it.
+ *
+ * The pair is the unit that matters, and neither half answers alone: SUBJECTS
+ * lists english for grade-9 because the subject exists there nationally, while
+ * MVP_BOOK_IDS holds no Grade 9 English book. The AI-tools pickers offer grades
+ * and subjects as two independent lists — `getPickerSubjects()` deliberately
+ * ignores its gradeId so every screen rebuilds the identical list (see
+ * `scopePickerParams` in the app's lessonPrep) — so a teacher can land on a
+ * combination that no book covers. This is what the pickers ask before letting
+ * one be chosen, and what generation re-checks for URLs saved before it did.
+ */
+export function hasCurriculumForSubjectGrade(subjectId: string, gradeId: string): boolean {
+  return getBooksForSubjectGrade(subjectId, gradeId).length > 0;
+}
+
 /** True when a book id is allowed in the current curriculum UI surface. */
 export function isCurriculumBookVisible(bookId: string): boolean {
   if (!INVESTOR_MVP_CURRICULUM) return BOOKS.some(b => b.id === bookId);
