@@ -55,7 +55,10 @@ describe('manifest shape', () => {
     // A maths `s1-u1` on a chemistry pack is how a lesson ends up offered a
     // document from a subject it does not teach.
     const prefixFor: Record<CurriculumSource['subject'], RegExp> = {
-      math: /^(s[12](-u\d+|-matrices)?|g10-math-general)$/,
+      // Grade 10 keeps its bare `s1-u2` vocabulary; Grade 9 (2026-09-05) is
+      // explicit — `g9-math-s1` — because `subject` here doesn't carry grade
+      // and a bare tag would be ambiguous between the two.
+      math: /^(s[12](-u\d+|-matrices)?|g10-math-general|g\d+-math-s[12])$/,
       chemistry: /^(chem-s[12](-u\d+)?|chem-g10-general)$/,
       'financial-literacy': /^finlit-s[12]$/,
       physics: /^phys-s[12]$/,

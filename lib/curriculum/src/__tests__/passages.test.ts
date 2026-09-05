@@ -134,11 +134,22 @@ describe('passagesForUnit', () => {
 
   it('is empty rather than approximate when nothing is extracted', () => {
     // A unit with no text behind it must return nothing rather than something
-    // loosely related from another book. This used to use a financial-literacy
-    // unit, but finlit-s1 was extracted on 2026-09-03 and the assertion went
-    // stale. A Grade 9 unit is the durable case: this manifest is Grade 10 only
-    // (`g10_sources.json`), so no Grade 9 unit can acquire text through it.
-    assert.deepEqual(passagesForUnit({ unitId: 'kbu-g9-math-s1-nccd-u1' }), []);
+    // loosely related from another book. This has gone stale picking "a
+    // subject nothing has ingested yet" twice: first a financial-literacy
+    // unit (finlit-s1 got extracted 2026-09-03), then a Grade 9 unit reasoned
+    // to be durable because the manifest was Grade 10 only — ingesting the
+    // Grade 9 maths books on 2026-09-05 broke that reasoning the same way.
+    // Both were the shallow branch anyway: `bankTagsForUnit` returning [] and
+    // `passagesForUnit` returning before it ever looks for a source.
+    //
+    // English vocational is the deeper branch and the more durable pick:
+    // `kbu-eng-agri-s1-nccd-u1` is a real catalog unit whose tags resolve to
+    // `['eng-agri-s1']` — a non-empty tag, so this exercises "found no source
+    // carrying the tag", not "found no tag" — and it stays true by design
+    // rather than by omission: `curriculumIds.ts` documents these four
+    // tracks as having "no bank material at all yet", so nothing is expected
+    // to ever tag a document this way.
+    assert.deepEqual(passagesForUnit({ unitId: 'kbu-eng-agri-s1-nccd-u1' }), []);
     assert.deepEqual(passagesForUnit({ unitId: 'not-a-unit' }), []);
   });
 

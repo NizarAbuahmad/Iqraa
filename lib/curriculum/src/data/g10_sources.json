@@ -3486,6 +3486,72 @@
         "localPath": "knowledge-base/grade-10-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية الصف العاشر الجزء الثاني.pdf",
         "sha256": "ecc9eeb9d18a35ef53056181e4d1a49523c2b3f0dea5c86aae2c68b767b70560"
       }
+    },
+    {
+      "id": "g9-math-s1-student-book",
+      "title": "كتاب الطالب لمادة الرياضيات الصف التاسع الفصل الأول.pdf",
+      "bytes": 8883077,
+      "subject": "math",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة الرياضيات الصف التاسع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g9-math-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-9",
+        "math",
+        "رياضيات",
+        "تاسع",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "ISBN 978-9923-41-408-8, 151ص. يطابق الطبعة المذكورة في source_books.student_book بملف iqra_curriculum_g9_math_sem1.json (نفس ISBN). محتوى الوحدة 2 (العلاقات والاقترانات) يطابق ترتيب الدروس الموجود فعلاً في المنهاج: الاقترانات، تفسير التمثيلات البيانية، الاقتران التربيعي، معمل جيوجبرا، التحويلات الهندسية للاقترانات التربيعية — الوحيدة التي لم يُعثر لها على جدول مخطط وحدة في أي مصدر متاح سابقًا.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-05",
+        "pages": 151,
+        "chars": 206330,
+        "localPath": "knowledge-base/grade-9-math/support-pdfs/كتاب الطالب لمادة الرياضيات الصف التاسع الفصل الأول.pdf",
+        "sha256": "87d9fdf3de414e3282407e9df1bc3a4c89b18c6344412edfcafe21e6d80f488b"
+      }
+    },
+    {
+      "id": "g9-math-s2-student-book",
+      "title": "كتاب الطالب لمادة الرياضيات الصف التاسع الفصل الثاني.pdf",
+      "bytes": 27091457,
+      "subject": "math",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة الرياضيات الصف التاسع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g9-math-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-9",
+        "math",
+        "رياضيات",
+        "تاسع",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "ISBN 978-9923-41-407-1, 174ص. الوحدات 5-8 تطابق ترتيب المنهاج الموجود فعلاً في iqra_curriculum_g9_math_sem2.json.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-05",
+        "pages": 174,
+        "chars": 222781,
+        "localPath": "knowledge-base/grade-9-math/support-pdfs/كتاب الطالب لمادة الرياضيات الصف التاسع الفصل الثاني.pdf",
+        "sha256": "c6c31ebc326dadb947d22233c71ef2c41477699743fc501f49d47153e9bb5a65"
+      }
     }
   ],
   "mergedAt": "2026-08-25"
