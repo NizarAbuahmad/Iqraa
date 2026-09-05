@@ -33,13 +33,18 @@ forgotten, because nothing on screen depends on it visibly.
 
 ```powershell
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-$api = "https://iqraa-api-dfxu.onrender.com/api"
+$api = "https://iqraa-api-613126375862.europe-west1.run.app/api"
 
-Invoke-RestMethod "$api/healthz"            # wakes the API — may take 60s
+Invoke-RestMethod "$api/healthz"            # wakes the API — a few seconds
 Invoke-RestMethod "$api/healthz/verifier"   # wakes the verifier via the API
 ```
 
 Expect `status : ok` from the first. The second is step 2.
+
+Both services moved to Cloud Run on 2026-09-05, so this is far less urgent
+than it was on Render: cold start is 4.59s for the verifier and 5.97s for
+the API, against 31-51s before. Warming is now a courtesy to the first
+click, not the difference between a working demo and a silent one.
 
 ## 2. Confirm the verifier is actually there
 
