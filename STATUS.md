@@ -216,6 +216,30 @@ an announcement by default» below.
 - Financial Literacy G10 S1 is browsable (2 units / 10 lessons, NCCD-sourced).
   It was previously offered as a subject tile with no book behind it, so the
   subject dead-ended on the "no semesters" empty state.
+- Arabic G10 S1 is browsable (2026-09-05): 5 units / 25 lessons / 74 outcomes,
+  from the NCCD student book (`arabic-s1-student-book`, on file since
+  2026-09-03). Every unit runs the same five skills in the same order — أستمع /
+  أتحدّث / أقرأ / أكتب محتوًى / أبني لغتي — so **the lesson title does not
+  identify the lesson here**: «أستمعُ بانتباهٍ وتركيزٍ» is five different
+  lessons. Ids do; `arabicCurriculum.test.ts` pins that five distinct rows
+  survive under one title.
+  - The unit→lesson mapping was NOT taken from the book's table of contents:
+    the extracted TOC is RTL-scrambled (it lists units 1, 3, 2) and one unit's
+    title comes out garbled. Each unit's own «محتويات الوحدة» page was used
+    instead, and unit 2's title («يَرْحَلونَ ونَبْقى») confirmed against its
+    body page. Extraction corruption on this PDF measures 15.3%, so titles were
+    verified rather than pasted.
+  - No حصص counts (the student book prints none — the teacher guide is on file
+    but unread for this), no per-lesson term list (the book prints none), and
+    no download chip (no NCCD hosted URL for these three PDFs has been
+    verified). S2 is extracted but not yet catalogued. All recorded in the data
+    file's `known_gaps`.
+  - `islamic` and `computer` came back OUT of `MVP_SUBJECT_IDS` in the same
+    change. All three were appended as tiles on 2026-09-05 with no book behind
+    any of them; Arabic earned its place, the other two have nothing to open —
+    the Islamic Education S1 student book is on file unextracted, and no
+    computer-science PDF has been sourced at all. `finlitCurriculum.test.ts`
+    was already red on `main` for exactly this reason.
 - English G10 S1 is browsable (added 2026-08-27): four vocational-track books
   — Commerce (6 units), Agriculture (6 units), Hospitality and Tourism
   (6 units), Industrial/Technical (12 units) — one lesson per unit, sourced
