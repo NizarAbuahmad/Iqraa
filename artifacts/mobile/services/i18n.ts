@@ -358,7 +358,6 @@ const translations = {
     topicRequired: 'أدخل موضوع الدرس أولاً.',
     subjectTopicMismatch: (subject: string) =>
       `هذا الموضوع درسٌ من مادة «${subject}». غيّر المادة إلى «${subject}»، أو اختر موضوعًا من المادة المحددة.`,
-    noCurriculumOption: 'لا يوجد منهاج',
     scopeNoCurriculum: (grade: string, subject: string) =>
       `لا يوجد منهاج لمادة «${subject}» في «${grade}». اختر صفًا أو مادة أخرى.`,
     generationFailed: 'تعذر إتمام العملية. حاول مرة أخرى.',
@@ -1485,7 +1484,6 @@ const translations = {
     topicRequired: 'Please enter a topic.',
     subjectTopicMismatch: (subject: string) =>
       `This topic is a ${subject} lesson. Switch the subject to ${subject}, or pick a topic from the selected subject.`,
-    noCurriculumOption: 'no curriculum',
     scopeNoCurriculum: (grade: string, subject: string) =>
       `No curriculum for ${subject} in ${grade}. Pick another grade or subject.`,
     generationFailed: 'Generation failed. Please try again.',
