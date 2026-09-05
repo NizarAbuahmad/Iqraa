@@ -57,6 +57,7 @@ from __future__ import annotations
 import json
 import re
 import sys
+import os
 from pathlib import Path
 
 try:
@@ -66,6 +67,36 @@ except ImportError:  # pragma: no cover - operator-facing
 
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / "attached_assets"
+
+# Where repo-relative source PDFs are read from. Defaults to this checkout.
+#
+# `knowledge-base/**/support-pdfs/` is gitignored, so those PDFs exist in the
+# main checkout and in NO worktree — and this script is most naturally run from
+# a worktree, since its output is a large commit. Rather than answer that with
+# yet another absolute path baked into BOOKS (see the four below, which only
+# resolve on their author's machine), the root is a knob:
+#
+#     IQRAA_PDF_ROOT=/path/to/main/checkout python scripts/extract_book_figures.py
+#
+# Unset, it is this checkout, which is what an operator with the PDFs in place
+# wants and what `docs/adding-a-book.md` describes.
+PDF_ROOT = Path(os.environ.get("IQRAA_PDF_ROOT") or ROOT)
+
+
+def resolve_pdf(filename: str) -> Path:
+    """Where a BOOKS entry's PDF actually lives.
+
+    Three shapes, because the entries below have accumulated three:
+    an absolute path (the local-mirror books), a repo-relative path with a
+    separator in it (`knowledge-base/…`, resolved against `PDF_ROOT`), and a
+    bare filename (`attached_assets/`, the original convention).
+    """
+    path = Path(filename)
+    if path.is_absolute():
+        return path
+    if "/" in filename:
+        return PDF_ROOT / filename
+    return ASSETS / filename
 
 # Source id → the PDF in attached_assets. Ids match lib/curriculum's
 # g10_sources.json so a figure can be traced back to the book it was cut from.
@@ -80,6 +111,10 @@ ASSETS = ROOT / "attached_assets"
 # then flowed into every figure's `sourceId`, and from there into a caption
 # telling teachers to look in the wrong book. `check_semester` below is the
 # guard so it cannot happen quietly again.
+KB_PHYS = "knowledge-base/grade-10-physics/support-pdfs/"
+KB_BIO = "knowledge-base/grade-10-biology/support-pdfs/"
+KB_EARTH = "knowledge-base/grade-10-earth-science/support-pdfs/"
+
 BOOKS: dict[str, tuple[str, str]] = {
     "math-s1-student-book": (
         "grade-10-math",
@@ -131,6 +166,44 @@ BOOKS: dict[str, tuple[str, str]] = {
         "grade-9-math",
         "C:/Users/Lenovo/Downloads/Raya studio/Iqraa/Calude app/Knowledge Base/"
         "9th grade/Math/كتاب الطالب لمادة الرياضيات الصف التاسع الفصل الثاني.pdf",
+    ),
+    # ── The three sciences, added 2026-09-05 ─────────────────────────────────
+    # Repo-relative, as docs/adding-a-book.md asks, resolved against PDF_ROOT
+    # because `support-pdfs/` is gitignored and therefore absent from any
+    # worktree. These filenames are NOT swapped — «الفصل الأول» really is
+    # semester 1 for all six — but that is asserted by `check_semester`
+    # against the units printed in each book rather than trusted from the name,
+    # for the reason the maths pair above exists to warn about.
+    #
+    # English is deliberately absent. Measured before writing this: its student
+    # book carries ~3.4k vector drawing ops across 60 pages against physics's
+    # ~509k, because its content is photographs and layout art rather than
+    # drawn diagrams. This extractor seeds on vector geometry and would return
+    # almost nothing; extracting English needs raster detection, a different
+    # tool, not another entry here.
+    "phys-s1-student-book": (
+        "grade-10-physics",
+        KB_PHYS + "كتاب الطالب لمادة الفيزياء للصف العاشر الفصل الأول.pdf",
+    ),
+    "phys-s2-student-book": (
+        "grade-10-physics",
+        KB_PHYS + "كتاب الطالب لمادة الفيزياء للصف العاشر الفصل الثاني.pdf",
+    ),
+    "bio-s1-student-book": (
+        "grade-10-biology",
+        KB_BIO + "كتاب الطالب لمادة العلوم الحياتية للصف العاشر الفصل الأول.pdf",
+    ),
+    "bio-s2-student-book": (
+        "grade-10-biology",
+        KB_BIO + "كتاب الطالب لمادة العلوم الحياتية للصف العاشر الفصل الثاني.pdf",
+    ),
+    "earth-s1-student-book": (
+        "grade-10-earth-science",
+        KB_EARTH + "كتاب الطالب لمادة علوم الأرض والبيئة الصف العاشر الفصل الأول.pdf",
+    ),
+    "earth-s2-student-book": (
+        "grade-10-earth-science",
+        KB_EARTH + "كتاب الطالب لمادة علوم الأرض والبيئة الصف العاشر الفصل الثاني.pdf",
     ),
 }
 
@@ -470,6 +543,23 @@ def curve_seeds(page: pymupdf.Page, gap: float = 6) -> list[pymupdf.Rect]:
     return rects
 
 
+def edge_density(path: Path) -> float:
+    """Mean edge magnitude of a rendered crop; ~0 for a flat fill.
+
+    Reads the PNG back rather than working from the pixmap, because the thing
+    being judged is what actually got written — the same bytes the reviewer
+    will look at in `_review.png`.
+    """
+    from PIL import Image, ImageFilter
+
+    with Image.open(path) as im:
+        grey = im.convert("L")
+        grey.thumbnail((320, 320))
+        edges = grey.filter(ImageFilter.FIND_EDGES)
+        data = list(edges.getdata())
+    return sum(data) / len(data) if data else 0.0
+
+
 def text_fraction(page: pymupdf.Page, r: pymupdf.Rect) -> float:
     """How much of a rect is covered by text spans.
 
@@ -530,6 +620,27 @@ def with_labels(page: pymupdf.Page, r: pymupdf.Rect, pad: float = 7) -> pymupdf.
 
 #: Above this share of text, a curve cluster is a callout panel, not a figure.
 MAX_TEXT_SHARE = 0.30
+
+# Reject a crop with almost no detail in it.
+#
+# The seed is vector geometry, and in the SCIENCE books that also matches the
+# page furniture: a biology chapter's teal header band, a physics unit opener's
+# orange panel, the wash behind a page number. Those are large flat fills drawn
+# with the same operations a diagram is, so no amount of geometry tuning
+# separates them — but a flat fill has almost no edges and a diagram is nothing
+# but edges.
+#
+# Measured before choosing: on 57 hand-labelled phys-s1 crops the junk ran
+# 4.8-34.7 (median 10.7) and the real figures 11.2-38.0 (median 17.4). 11.0
+# sits just under the lowest real figure, so it removed 14 of 23 junk crops
+# with zero false positives. Deliberately set at that floor rather than at the
+# medians: a lost figure is invisible, while surviving junk is caught by the
+# `_review.png` pass that follows.
+#
+# It cannot catch everything, and is not meant to. Dense Arabic prose has a
+# high edge count too, so text blocks that slip past MAX_TEXT_SHARE still need
+# the human pass — see this file's docstring.
+MIN_EDGE_DENSITY = 11.0
 
 
 def uncut_labels(page: pymupdf.Page, r: pymupdf.Rect) -> pymupdf.Rect:
@@ -668,6 +779,14 @@ EXPECTED_UNITS: dict[str, dict[int, range]] = {
     "grade-10-math": {1: range(1, 5), 2: range(5, 9)},
     "grade-10-chemistry": {1: range(1, 4), 2: range(4, 6)},
     "grade-9-math": {1: range(1, 5), 2: range(5, 9)},
+    # Read off the curriculum catalog, not guessed. Two of these are irregular
+    # and the irregularity is real, not a data bug to "fix":
+    #   physics skips unit 3 entirely — s1 is 1-2, s2 is 4-6;
+    #   biology repeats unit 3 across the split — s1 is 1-3, s2 is 3-4.
+    # A range that tidied either would reject the book's own honest numbering.
+    "grade-10-physics": {1: range(1, 3), 2: range(4, 7)},
+    "grade-10-biology": {1: range(1, 4), 2: range(3, 5)},
+    "grade-10-earth-science": {1: range(1, 3), 2: range(3, 6)},
 }
 
 
@@ -705,14 +824,29 @@ def check_semester(source_id: str, subject: str, index: list[dict]) -> None:
 
 
 def main() -> None:
+    # Optional source-id arguments run only those books.
+    #
+    # Re-running everything rewrites the seven already-committed books too, and
+    # their output moves — the current script finds more in chem-s2, finlit and
+    # both Grade 9 maths books than the committed index holds, because those
+    # were extracted before later detector work. That is a real improvement and
+    # a separate change; sweeping it into an unrelated commit would bury it.
+    only = set(sys.argv[1:])
+    unknown = only - BOOKS.keys()
+    if unknown:
+        sys.exit(f"unknown source id(s): {', '.join(sorted(unknown))}")
+
     for source_id, (subject, filename) in BOOKS.items():
-        pdf = ASSETS / filename
+        if only and source_id not in only:
+            continue
+        pdf = resolve_pdf(filename)
         if not pdf.exists():
             print(f"{source_id}: missing {filename} — skipped")
             continue
         outdir = ROOT / "knowledge-base" / subject / "figures" / source_id
         outdir.mkdir(parents=True, exist_ok=True)
         index, written = [], []
+        flat = 0
         # A page can now yield several figures, so the page number alone is no
         # longer a unique name. The first keeps the bare `p035.png` it has
         # always had; the rest get a letter. Filenames are referenced from the
@@ -726,6 +860,16 @@ def main() -> None:
             name = f"p{n + 1:03d}{suffix}.png"
             path = outdir / name
             page.get_pixmap(clip=r, dpi=DPI).save(path)
+            # Rendered, measured, and dropped again if it turned out to be a
+            # flat decorative panel. Judged after rendering because that is
+            # what the measure needs; the file is unlinked and the page's
+            # suffix counter rewound so the next real figure keeps the
+            # unbroken `p035`, `p035b`, `p035c` naming.
+            if edge_density(path) < MIN_EDGE_DENSITY:
+                path.unlink()
+                seen_on_page[n] = k
+                flat += 1
+                continue
             written.append(path)
             index.append(
                 {
@@ -752,8 +896,9 @@ def main() -> None:
         )
         review_sheet(written, outdir / "_review.png")
         placed = sum(1 for f in index if f["unit"] is not None)
-        print(f"{source_id}: {len(index)} figures ({placed} placed in a lesson)"
-              f" → {outdir.relative_to(ROOT)}")
+        flat_note = f", {flat} flat panels dropped" if flat else ""
+        print(f"{source_id}: {len(index)} figures ({placed} placed in a lesson"
+              f"{flat_note}) → {outdir.relative_to(ROOT)}")
     print("\nReview each _review.png and delete any crop that grabbed the wrong")
     print("thing before wiring these into the app.")
 

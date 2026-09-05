@@ -297,6 +297,84 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Physics, biology and earth science get the book's figures, 2026-09-05
+
+41 lessons across three subjects had curriculum content and **zero** figures
+between them. Every visual feature built over the last week — the two-column
+slide, the printed appendix, the exam panel — could only ever fire on maths,
+chemistry and financial literacy. This is the supply side of that.
+
+**English was measured and rejected, not forgotten.** The extractor seeds on
+vector drawing operations; its docstring records that these books draw their
+diagrams rather than embed them. That is true of the sciences and false of
+English: across 60 pages the English student book carries ~3.4k vector ops
+against physics's ~509k, because its content is photographs and layout art.
+Running it would have produced crops of page furniture. Extracting English
+needs raster detection — a different tool, not another `BOOKS` entry.
+
+| book | crops | lessons | note |
+| --- | --- | --- | --- |
+| phys-s1 | 39 | 5 | vectors, kinematics graphs, projectiles |
+| phys-s2 | 84 | 7 | free-body diagrams, Archimedes, Bernoulli, waves |
+| bio-s1 | 30 | 5 | virus structure, bacterial cell, protists, fungi |
+| bio-s2 | 47 | 8 | plant anatomy, stem/root sections, populations |
+| earth-s1 | 21 | 6 | volcano sections, rock cycle, stellar evolution |
+| earth-s2 | 30 | 8 | pressure systems, isobars, ocean profiles |
+
+**Coverage: physics 0 → 12/12, earth science 0 → 14/14, biology 0 → 13/15.**
+Overall 73 → 112 lessons with figures. `BOOK_FIGURE_COUNT` 600 → 841.
+
+**A flat-panel filter, because the seed cannot tell a diagram from a header
+band.** These books' unit openers and section bands are large vector fills
+drawn with the same operations a diagram is, so no geometry tuning separates
+them — but a flat fill has almost no edges. On 57 hand-labelled phys-s1 crops
+the junk ran 4.8-34.7 edge density and the real figures 11.2-38.0;
+`MIN_EDGE_DENSITY = 11.0` sits just under the lowest real figure and removed
+14 of 23 junk crops with zero false positives. Set at that floor deliberately
+rather than between the medians: a lost figure is invisible, surviving junk is
+caught by the review that follows. It dropped 159 panels across the six books.
+
+It cannot catch everything and is not meant to — dense Arabic prose has a high
+edge count too. **The human pass still ran**: all six `_review.png` contact
+sheets were read and 122 further crops deleted (front matter, «مراجعة الدرس»
+banners, tip boxes, page-number badges, the closing calligraphy page). 373 →
+251, both PNG and index entry, as the docstring requires.
+
+**The join is 1:1 for all six, which maths and chemistry never were.** Those
+disagreed because the book opened a unit with a lesson the curriculum does not
+carry. Here the curriculum ids are minted `u{k}_l{m}` against the book's own
+printed numbering, so «الوحدة 3 / الدرس 2» is `…-u3_l2` by construction — and
+each was then confirmed against what the figures actually show, which is the
+part that would have caught a silent off-by-one: «الفيروسات» carries the virus
+structures, «الطلائعيات» the Euglena and Paramecium, «أنظمة الضغط الجوي» all
+twelve pressure diagrams. Physics is the near-miss: its curriculum adds a
+`_lab` lesson per unit for the تجربة استهلالية that the book does not number
+as «الدرس», so book lesson 1 is `_l1` and NOT the lab.
+
+**Two things the run exposed, both left alone on purpose.** Re-running the
+whole extractor rewrites the seven already-committed books, and their output
+moves — chem-s2 18 → 59 figures, finlit 6 → 18, g9-math-s1 115 → 136 — because
+those were extracted before later detector work. That is a real improvement and
+a separate change; `extract_book_figures.py` now takes optional source-id
+arguments so a subset can be run without sweeping it in. And
+`IQRAA_PDF_ROOT` exists because `support-pdfs/` is gitignored and therefore
+absent from every worktree, which is why four older `BOOKS` entries are
+absolute paths on one machine.
+
+**Cost: +28.4 MB of PNGs**, roughly doubling the repo's figure weight, and all
+of it is bundled by Metro into the app. Biology is two thirds of it — its
+pages are photographs, ~166 KB a crop against ~41 KB for maths line art. Not
+addressed here; if it matters, the lever is per-book DPI or palette
+quantisation, not fewer figures.
+
+Verified: typecheck clean; mobile 1176 / 0 fail / 10 known skips; api-server
+443 / 0 fail; curriculum 105 / 0 fail and `verify` 0 errors; SymPy 72/72.
+`bookFigures.test.ts` gained a per-subject floor and a "student book, never a
+teacher guide" assertion; its source-id check used to derive the book from the
+lesson-id prefix by string surgery, which silently excluded every new subject —
+the slugs differ (`biology` → `bio`, `earth-science` → `earth`) and are now a
+written-down map.
+
 ## A student sitting an exam can see the book's diagrams, 2026-09-05
 
 The last surface with no figures at all. A worksheet, quiz, lesson plan,

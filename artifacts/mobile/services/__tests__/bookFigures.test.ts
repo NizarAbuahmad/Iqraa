@@ -67,10 +67,31 @@ describe('figuresForLesson', () => {
     // filenames that are backwards. Nothing failed — the figures were on the
     // right lessons and only the book label was wrong, which is why it
     // shipped. Hence a test rather than a comment.
+    //
+    // A lesson id's subject slug is NOT always the source id's prefix. Both
+    // are deliberate and neither is free to change: the lesson slug comes from
+    // `SubjectSlug` in curriculumIds.ts, the source id from the row in
+    // `g10_sources.json`, and `docs/adding-a-book.md` makes that row the
+    // contract. They happen to agree for maths, chemistry and finlit, and
+    // disagree for the two sciences added in 2026-09 — so the join is written
+    // down rather than derived by string surgery, which is what this test used
+    // to do and what quietly excluded every new subject from the check.
+    const SOURCE_PREFIX: Record<string, string> = {
+      math: 'math',
+      chem: 'chem',
+      finlit: 'finlit',
+      'g9-math': 'g9-math',
+      phys: 'phys',
+      biology: 'bio',
+      'earth-science': 'earth',
+    };
+
     for (const id of lessonsWithFigures()) {
-      const m = /^kbl-(math|chem|finlit|g9-math)-(s[12])-/.exec(id);
+      const m = /^kbl-(.+)-(s[12])-nccd-/.exec(id);
       assert.ok(m, `${id} has a subject and semester`);
-      const expected = `${m![1]}-${m![2]}-student-book`;
+      const prefix = SOURCE_PREFIX[m![1]!];
+      assert.ok(prefix, `${id}: no source-id prefix known for subject "${m![1]}"`);
+      const expected = `${prefix}-${m![2]}-student-book`;
       for (const f of figuresForLesson(id)) {
         assert.equal(f.sourceId, expected, `${id} is illustrated from ${f.sourceId}`);
       }
@@ -131,5 +152,44 @@ describe('figurePath', () => {
       figurePath(figure!),
       `knowledge-base/grade-10-math/figures/math-s1-student-book/${figure!.file}`,
     );
+  });
+});
+
+describe('the three sciences carry figures', () => {
+  // Added 2026-09-05. Before this, physics, biology and earth science had
+  // curriculum lessons and zero figures between them — 41 lessons that could
+  // never show a diagram on a slide, a worksheet or an exam paper.
+  //
+  // Pinned as a floor rather than an exact count: the review pass is a human
+  // one, so a later reviewer deleting a bad crop must not turn this red. What
+  // it catches is the join breaking — a renamed source id, a dropped
+  // figure-lesson-map entry, an index.json that stopped being imported.
+  const FLOOR: Record<string, number> = {
+    'kbl-phys-s1-nccd-u1_l1': 5,
+    'kbl-phys-s2-nccd-u5_l2': 15,
+    'kbl-biology-s1-nccd-u3_l3': 3,
+    'kbl-biology-s2-nccd-u3_l6': 12,
+    'kbl-earth-science-s1-nccd-u1_l1': 4,
+    'kbl-earth-science-s2-nccd-u3_l2': 8,
+  };
+
+  for (const [lessonId, floor] of Object.entries(FLOOR)) {
+    it(`${lessonId} has at least ${floor}`, () => {
+      const n = figuresForLesson(lessonId).length;
+      assert.ok(n >= floor, `${lessonId} has ${n}, expected >= ${floor}`);
+    });
+  }
+
+  it('every science figure comes from a student book, not a guide', () => {
+    // The manifest carries teacher guides and activity books for all three
+    // subjects under the same `phys-`/`bio-`/`earth-` prefix. Only the student
+    // book is extracted, because that is the copy on the student's desk — a
+    // caption citing a page of the teacher's guide is uncheckable.
+    for (const id of lessonsWithFigures()) {
+      if (!/^kbl-(phys|biology|earth-science)-/.test(id)) continue;
+      for (const f of figuresForLesson(id)) {
+        assert.match(f.sourceId, /-student-book$/, `${id} cites ${f.sourceId}`);
+      }
+    }
   });
 });
