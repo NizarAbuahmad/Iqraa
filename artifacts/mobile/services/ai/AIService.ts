@@ -297,6 +297,28 @@ export interface ActivitySlide {
    */
   visual?: import('../deckVisuals.ts').VisualBlock;
   /** Media payload for type 'media' — projected image, video, audio, or a linked document. */
+  /**
+   * A picture that sits BESIDE this slide's text rather than replacing it.
+   *
+   * Distinct from `mediaUrl` on purpose. That field is already overloaded —
+   * on a `media` slide it is the subject of the slide, and on slide 1 or a
+   * `divider` it is a full-bleed background (see `attachBackgroundImage`) —
+   * so a third meaning on the same key would be unreadable at the call site
+   * and impossible to render unambiguously.
+   *
+   * Set only when there is a real figure to show. Every content slide in the
+   * deck was a single vertical column, so the book's diagram of a rule became
+   * its own slide *after* the rule, and a class saw the statement and the
+   * picture of it a click apart. With this the two share a slide.
+   *
+   * The renderers must treat it as optional and fall back to the single
+   * column when it is absent — most lessons have no figure at all (four of
+   * sixteen subjects have any), and a two-column layout with an empty column
+   * is worse than the one column it replaced.
+   */
+  sideImageUrl?: string;
+  /** Book and page for `sideImageUrl`, same provenance rule as `mediaCaption`. */
+  sideImageCaption?: string;
   mediaKind?: 'image' | 'video' | 'audio' | 'document';
   /**
    * Image URL / data URI, or a YouTube watch/share link.

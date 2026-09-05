@@ -53,6 +53,35 @@ const deckSlideAccent = (type: ActivitySlide['type']): string =>
  * up front means a failed photo degrades to "no photo on this slide",
  * matching the unconfigured-key fallback, rather than losing the export.
  */
+/**
+ * The slide's own figure, in the column the caller reserved for it.
+ *
+ * Degrades to nothing when the fetch fails, for the reason `fetchAsDataUrl`
+ * documents: a rejected image would otherwise reject the whole `pptx.write()`
+ * and cost the teacher the entire export rather than one picture. The text
+ * column is already laid out narrow by then, which leaves whitespace — the
+ * honest outcome, and the same one the on-screen and HTML renderers reach
+ * when a figure was never bundled.
+ */
+async function addSideImage(
+  s: PptxSlide,
+  slide: ActivitySlide,
+  x: number,
+  w: number,
+): Promise<void> {
+  const dataUrl = await fetchAsDataUrl(slide.sideImageUrl!);
+  if (!dataUrl) return;
+  const h = 2.9;
+  const y = 1.35;
+  s.addImage({ data: dataUrl, x, y, w, h, sizing: { type: 'contain', w, h } });
+  if (slide.sideImageCaption) {
+    s.addText(slide.sideImageCaption, {
+      x, y: y + h + 0.1, w, h: 0.35,
+      align: 'center', fontSize: 10, color: DECK_MUTED,
+    });
+  }
+}
+
 async function fetchAsDataUrl(url: string): Promise<string | null> {
   try {
     const res = await fetch(url);
@@ -504,10 +533,35 @@ export async function exportDeckAsPptx(
     const lines = slide.content.split('\n').map(l => l.trim()).filter(Boolean);
     const BODY_TOP = 1.05;
     const BODY_BOTTOM = 5.2;
+    /**
+     * A figure the slide carries sits beside the text instead of under it.
+     *
+     * The whole block below positions with hard-coded inches against a 10in
+     * canvas, so a second column is a matter of narrowing every x/w — hence
+     * one factor rather than a rewrite. 0.56 leaves the text a little over
+     * half and the picture a little under, which is the split the on-screen
+     * and HTML renderers use too.
+     *
+     * `rowsFor`'s 64-character constant is calibrated to the FULL width, so
+     * it has to narrow with the column or the overflow guard stops guarding —
+     * it would under-count rows, under-estimate the stack, and lay out a
+     * column that runs off the bottom edge. This file has no test (it imports
+     * react-native at module scope, so `node --test` cannot load it), which
+     * is exactly why the arithmetic is written down rather than inlined.
+     */
+    const hasSide = typeof slide.sideImageUrl === 'string' && slide.sideImageUrl.length > 0;
+    const COL = hasSide ? 0.56 : 1;
+    const CHARS_PER_ROW = Math.round(64 * COL);
+    // The figure takes the far edge: the reading edge keeps the text, so a
+    // right-to-left deck reads text-then-picture exactly as a left-to-right
+    // one does.
+    const sideX = isAr ? 0.8 : 0.8 + 8.4 * COL + 0.3;
+    const sideW = 8.4 * (1 - COL) - 0.3;
+    const textX0 = hasSide && isAr ? 0.8 + sideW + 0.3 : 0.8;
     // ponytail: character count, not text metrics — pptxgenjs exposes no way to
     // measure a run, and ~64 characters is what one 15pt line fits across a
     // card this wide. The overflow fallback below is what makes it safe.
-    const rowsFor = (l: string) => Math.max(1, Math.ceil(l.length / 64));
+    const rowsFor = (l: string) => Math.max(1, Math.ceil(l.length / CHARS_PER_ROW));
     const heightFor = (l: string) =>
       looksLikeEquation(l) ? 0.95 : isBulletLine(l) ? 0.3 + rowsFor(l) * 0.32 : rowsFor(l) * 0.34;
     const GAP = 0.14;
@@ -520,8 +574,9 @@ export async function exportDeckAsPptx(
           text: pptxLine(l, false),
           options: { fontSize: 14, color: DECK_TEXT, breakLine: true, paraSpaceAfter: 10 },
         })),
-        { x: 0.8, y: 1.15, w: 8.4, h: 4.0, align: rtlAlign, valign: 'top' },
+        { x: textX0, y: 1.15, w: 8.4 * COL, h: 4.0, align: rtlAlign, valign: 'top' },
       );
+      if (hasSide) await addSideImage(s, slide, sideX, sideW);
       continue;
     }
 
@@ -531,35 +586,40 @@ export async function exportDeckAsPptx(
     for (const line of lines) {
       const h = heightFor(line);
       if (looksLikeEquation(line)) {
+        const eqX = textX0 + 0.6 * COL;
+        const eqW = 8.4 * COL - 1.2 * COL;
         s.addShape('roundRect', {
-          x: 1.4, y, w: 7.2, h,
+          x: eqX, y, w: eqW, h,
           fill: { color: DECK_CARD }, line: { color: DECK_BORDER, width: 1 }, rectRadius: 0.1,
         });
         s.addText(pptxLine(line, true), {
-          x: 1.4, y, w: 7.2, h, align: 'center', valign: 'middle',
-          fontSize: 20, color: DECK_TEXT, bold: true, fontFace: HEAD_FONT,
+          x: eqX, y, w: eqW, h, align: 'center', valign: 'middle',
+          fontSize: hasSide ? 16 : 20, color: DECK_TEXT, bold: true, fontFace: HEAD_FONT,
         });
       } else if (isBulletLine(line)) {
+        const cardW = 8.4 * COL;
         s.addShape('roundRect', {
-          x: 0.8, y, w: 8.4, h,
+          x: textX0, y, w: cardW, h,
           fill: { color: DECK_CARD }, line: { color: DECK_BORDER, width: 1 }, rectRadius: 0.08,
         });
         // Accent bar on the reading edge: right in Arabic, left in English.
         s.addShape('rect', {
-          x: isAr ? 9.06 : 0.86, y: y + 0.07, w: 0.07, h: h - 0.14, fill: { color: accent },
+          x: isAr ? textX0 + cardW - 0.13 : textX0 + 0.06,
+          y: y + 0.07, w: 0.07, h: h - 0.14, fill: { color: accent },
         });
         s.addText(stripBullet(line), {
-          x: 1.05, y, w: 7.9, h, align: rtlAlign, valign: 'middle',
-          fontSize: 15, color: DECK_TEXT,
+          x: textX0 + 0.25, y, w: cardW - 0.5, h, align: rtlAlign, valign: 'middle',
+          fontSize: hasSide ? 13 : 15, color: DECK_TEXT,
         });
       } else {
         s.addText(pptxLine(line, false), {
-          x: 0.9, y, w: 8.2, h, align: rtlAlign, valign: 'middle',
-          fontSize: 15, color: DECK_TEXT,
+          x: textX0 + 0.1, y, w: 8.4 * COL - 0.2, h, align: rtlAlign, valign: 'middle',
+          fontSize: hasSide ? 13 : 15, color: DECK_TEXT,
         });
       }
       y += h + GAP;
     }
+    if (hasSide) await addSideImage(s, slide, sideX, sideW);
   }
 
   const outFilename = `${filename}.pptx`;

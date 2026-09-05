@@ -322,14 +322,31 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
   const contentSlide = (slide: ActivitySlide, num: number) => {
     const accent = deckSlideAccent(slide.type);
     const lines = slide.content.split('\n').filter(Boolean);
-    return `<div class="deck-slide">
-      ${deckHeader(slide.title, accent, deckSlideEmoji(slide.type))}
-      <div class="deck-body">
-        ${lines.map(l => deckBodyLine(l, accent)).join('')}
+    const body = `${lines.map(l => deckBodyLine(l, accent)).join('')}
         ${/* Any slide may carry a visual, not just graph slides. A chart
              attached to a content slide rendered nowhere in the exports until
              this existed — the drawing was only ever wired into the graph
-             branch. */ slidePlot(slide)}
+             branch. */ slidePlot(slide)}`;
+    // A figure the slide carries sits beside its text, not under it. The
+    // column order follows the document's own `direction` — never
+    // `row-reverse`, which would cancel it (see exportHtml.ts's header for
+    // the printed-page version of the same rule).
+    if (slide.sideImageUrl) {
+      return `<div class="deck-slide">
+      ${deckHeader(slide.title, accent, deckSlideEmoji(slide.type))}
+      <div class="deck-body split">
+        <div class="split-text">${body}</div>
+        <figure class="split-fig">
+          <img src="${escAttr(slide.sideImageUrl)}" alt="${esc(slide.sideImageCaption ?? '')}"/>
+          ${slide.sideImageCaption ? `<figcaption>${esc(slide.sideImageCaption)}</figcaption>` : ''}
+        </figure>
+      </div>
+      ${footer(num)}</div>`;
+    }
+    return `<div class="deck-slide">
+      ${deckHeader(slide.title, accent, deckSlideEmoji(slide.type))}
+      <div class="deck-body">
+        ${body}
       </div>
       ${footer(num)}</div>`;
   };
@@ -405,6 +422,18 @@ body { font-family: 'Almarai','Arial','Tahoma',sans-serif; background:${DECK_BOR
 .deck-emoji { font-size:20px; }
 .deck-eyebrow { font-size:16px; font-weight:700; }
 .deck-body { position:relative; z-index:2; flex:1; padding:28px 40px; overflow:hidden; display:flex; flex-direction:column; justify-content:center; gap:10px; }
+/* Two columns when the slide carries its own figure. flex-direction:row
+   only - the document's dir attribute already lays these right-to-left in
+   Arabic, and row-reverse would reverse a reversal.
+   Named "split" rather than reusing the slide class prefix: a test counts
+   that prefix to count slides, so a prefixed child class would inflate it -
+   and so would naming it in this comment, which is why it is not named here.
+   No backticks either: this whole stylesheet is one template literal. */
+.deck-body.split { flex-direction:row; align-items:center; gap:28px; }
+.split-text { flex:1 1 55%; min-width:0; display:flex; flex-direction:column; gap:10px; }
+.split-fig { flex:0 1 42%; margin:0; display:flex; flex-direction:column; align-items:center; gap:8px; }
+.split-fig img { max-width:100%; max-height:120mm; object-fit:contain; border-radius:10px; }
+.split-fig figcaption { font-size:12px; color:#6b7280; text-align:center; }
 .deck-body-center { align-items:center; text-align:center; }
 .deck-line { font-size:17px; line-height:1.8; color:${DECK_TEXT}; }
 .deck-card { display:flex; align-items:center; gap:14px; background:${DECK_CARD_BG}; border:1px solid ${DECK_BORDER}; border-radius:14px; padding:14px 18px; }
