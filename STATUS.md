@@ -297,6 +297,86 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The report button now reaches someone, 2026-09-05
+
+The third of the four compliance blockers. `POST /messaging/reports` has
+existed since messaging shipped and **nothing ever read the rows**: no route
+listed them, nothing moved `status` off `open`, and nothing had ever written
+`chatMessages.archivedAt` — even though every thread read already filters on
+it. So the button worked, the table filled up, and no report could be acted
+on. Apple's guideline 1.2 asks four things of an app carrying user content:
+filtering, reporting, blocking, and the developer removing content and
+ejecting the offender within 24 hours. Only the middle two existed.
+
+`routes/moderation.ts`, admin-only throughout. Deliberately not a per-teacher
+queue: the teacher who owns a thread already sees every message in it, so that
+would add no visibility — what was missing is the operator-level power 1.2
+asks of the developer.
+
+- `GET /moderation/reports` — newest first, filterable by status, carrying the
+  reported message's own body and attachment kind so a moderator can read what
+  they are judging without opening the thread as somebody they are not. Two
+  aliased joins onto `users`, because one join would silently read the same
+  person's row for both sides of the report. `openCount` comes back whatever
+  the filter is: that number is what says whether the 24-hour obligation is
+  being met.
+- `POST /moderation/reports/:id/resolve` — the whole decision in one call
+  (hide the message, suspend the author, both, or neither), because a
+  moderator opens a report and decides once, and two calls can leave a hidden
+  message beside an open report. `dismissed` with actions attached is refused
+  rather than quietly honoured — a queue that accepts "nothing was wrong here"
+  alongside "I suspended them" has stopped being an audit trail. Hiding sets
+  `archivedAt`; it never deletes, so evidence survives an appeal.
+- `POST /moderation/users/:id/unsuspend`, separate, because by the time
+  someone appeals the report that caused it is closed. An admin cannot be
+  suspended from here — that would lock every moderator out of the tool that
+  reverses it.
+
+**Suspension enforces in `authMiddleware`, and that is the load-bearing
+detail.** It already re-read the user row on every request, so a suspension
+takes effect on the next call rather than whenever the access token expires,
+and putting the check there means a route added tomorrow is closed to a
+suspended account by default. The opposite arrangement fails open, and the one
+route someone forgets is the one an ejected user still has. Login refuses too
+— after the password check, never before, or the response becomes an oracle
+for which addresses are suspended.
+
+Two things a suspended account may still reach, in `lib/suspension.ts` with
+its own tests: `GET /auth/me`, so the app can say *why* everything stopped
+(an ejected user who only sees failures has nothing to appeal against), and
+`DELETE /auth/users/me`, because the right to erasure does not pause during a
+suspension and the privacy policy shipped this morning promises deletion
+without conditions. That predicate is split out and tested rather than
+eyeballed because both directions fail silently: too wide and an ejected user
+keeps a route, too narrow and a published promise becomes false.
+
+**The schema change was applied to production, by hand, before this merged.**
+`users` gained `suspended_at` and `suspended_reason`; verified absent
+beforehand and present after (32 users, 0 suspended). Two
+`add column if not exists` statements inside a transaction rather than
+`pnpm --filter @workspace/db run push` — additive only, idempotent, and
+incapable of the column drops render.yaml warns that drizzle-kit push resolves
+drift with. **Note the ordering is not optional here and the usual "endpoints
+answer 503" description understates it:** `authMiddleware` selects both
+columns on every request, so this code deployed against a database without
+them would fail *every authenticated call in the app*, not one endpoint. Also
+note `verify-schema` cannot catch that — it asks whether a table *name*
+exists, so a table with a stale column set still reports `ok`.
+
+Not verified: the queue driven end to end as a signed-in admin. That needs
+either a throwaway database or test reports in production, and manufacturing
+abuse reports in a live database to look at a screen is not a test. What is
+pinned is that all three routes are mounted and refuse an anonymous caller
+(`mountOrder.test.ts`) and that the suspension allowlist matches the exact
+paths it should (`lib/__tests__/suspension.test.ts`).
+
+Still open from the original four: no age or guardian-consent handling
+anywhere in the schema. And the moderator's suspension notice is one fixed
+sentence pointing at `LEGAL_CONTACT_EMAIL` — a mailbox that still does not
+exist.
+
+Green: typecheck clean, mobile 1172/1172 (10 skipped), API 460/460.
+
 ## An account can be deleted, and the policy links go somewhere, 2026-09-05
 
 Two of the four compliance blockers named in the entry below. Both are
@@ -425,9 +505,10 @@ anywhere in the app or API (Apple 5.1.1(v) and Play both require it), the
 privacy-policy and terms rows in `app/settings.tsx` are `onPress={() => {}}`
 against copy at registration that already claims both documents exist,~~
 **both closed the same day — see the entry above,**
-messaging carries image attachments with block and report endpoints but
+~~messaging carries image attachments with block and report endpoints but
 nothing that can act on a report or eject a user (`routes/admin.ts` has one
-route, `usage-summary`), and students get accounts by claim code with no
+route, `usage-summary`),~~ **also closed the same day — see «The report button
+now reaches someone»** — and students get accounts by claim code with no
 birthdate, age or guardian-consent field anywhere in the schema. **No EAS
 build has ever been made**, so push delivery, image picking and the app icon
 remain unverified on a device, and `newArchEnabled` + `reactCompiler` are both

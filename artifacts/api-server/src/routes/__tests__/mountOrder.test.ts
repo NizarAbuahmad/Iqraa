@@ -203,6 +203,26 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(res.status, 401, "account deletion must exist and require a token");
   });
 
+  it("mounts the moderation queue, and refuses it without a token", async () => {
+    // The report button has always worked; until 2026-09-05 nothing read the
+    // rows. These are the routes that make a report actionable, so a 404
+    // here is the same submission blocker as a missing delete route.
+    const res = await fetch(`${base}/moderation/reports`);
+    assert.equal(res.status, 401, "the moderation queue must exist and require a token");
+
+    for (const route of [
+      "/moderation/reports/00000000-0000-0000-0000-000000000000/resolve",
+      "/moderation/users/00000000-0000-0000-0000-000000000000/unsuspend",
+    ]) {
+      const post = await fetch(`${base}${route}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      });
+      assert.equal(post.status, 401, `${route} must require a token`);
+    }
+  });
+
   it("guards roster, evaluation, attempt and workspace routes", async () => {
     for (const route of ["/students", "/classes", "/evaluations", "/attempts", "/workspace/items"]) {
       const res = await fetch(`${base}${route}`);

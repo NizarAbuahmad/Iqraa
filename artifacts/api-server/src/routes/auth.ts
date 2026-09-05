@@ -250,6 +250,21 @@ router.post("/login", loginLimiter, async (req, res) => {
       return;
     }
 
+    // Checked after the password, not before: answering differently to a
+    // suspended account before proving who is asking would turn this into an
+    // oracle for which addresses are suspended. Past the password there is no
+    // one left to leak it to.
+    //
+    // `authMiddleware` would refuse every subsequent call anyway; saying so
+    // here is what turns "the app is broken" into a reason they can appeal.
+    if (user.suspendedAt) {
+      res.status(403).json({
+        error: user.suspendedReason || "This account has been suspended.",
+        code: "account_suspended",
+      });
+      return;
+    }
+
     // Update last_login
     await db
       .update(users)
@@ -337,6 +352,17 @@ router.post("/google", googleLimiter, async (req, res) => {
     }
 
     if (!user) throw new Error("Failed to resolve Google user");
+
+    // Same check as the password path, for the same reason — and here it is
+    // after Google has already proved who is asking. Without it, a suspended
+    // teacher with a Google account keeps a working sign-in button.
+    if (user.suspendedAt) {
+      res.status(403).json({
+        error: user.suspendedReason || "This account has been suspended.",
+        code: "account_suspended",
+      });
+      return;
+    }
 
     await db.update(users).set({ lastLogin: new Date() }).where(eq(users.id, user.id));
 
