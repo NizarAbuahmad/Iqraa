@@ -980,6 +980,76 @@
       "lesson": 3,
       "kbLessonId": "kbl-earth-science-s2-nccd-u5_l3",
       "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "eng-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "kbLessonId": "kbl-eng-s1-nccd-u1_l1",
+      "matchedBy": "hand-checked: one lesson per unit; s2 book units 1-5 are curriculum units 6-10"
+    },
+    {
+      "sourceId": "eng-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "kbLessonId": "kbl-eng-s1-nccd-u2_l1",
+      "matchedBy": "hand-checked: one lesson per unit; s2 book units 1-5 are curriculum units 6-10"
+    },
+    {
+      "sourceId": "eng-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "kbLessonId": "kbl-eng-s1-nccd-u3_l1",
+      "matchedBy": "hand-checked: one lesson per unit; s2 book units 1-5 are curriculum units 6-10"
+    },
+    {
+      "sourceId": "eng-s1-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "kbLessonId": "kbl-eng-s1-nccd-u4_l1",
+      "matchedBy": "hand-checked: one lesson per unit; s2 book units 1-5 are curriculum units 6-10"
+    },
+    {
+      "sourceId": "eng-s1-student-book",
+      "unit": 5,
+      "lesson": 1,
+      "kbLessonId": "kbl-eng-s1-nccd-u5_l1",
+      "matchedBy": "hand-checked: one lesson per unit; s2 book units 1-5 are curriculum units 6-10"
+    },
+    {
+      "sourceId": "eng-s2-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "kbLessonId": "kbl-eng-s2-nccd-u6_l1",
+      "matchedBy": "hand-checked: one lesson per unit; s2 book units 1-5 are curriculum units 6-10"
+    },
+    {
+      "sourceId": "eng-s2-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "kbLessonId": "kbl-eng-s2-nccd-u7_l1",
+      "matchedBy": "hand-checked: one lesson per unit; s2 book units 1-5 are curriculum units 6-10"
+    },
+    {
+      "sourceId": "eng-s2-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "kbLessonId": "kbl-eng-s2-nccd-u8_l1",
+      "matchedBy": "hand-checked: one lesson per unit; s2 book units 1-5 are curriculum units 6-10"
+    },
+    {
+      "sourceId": "eng-s2-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "kbLessonId": "kbl-eng-s2-nccd-u9_l1",
+      "matchedBy": "hand-checked: one lesson per unit; s2 book units 1-5 are curriculum units 6-10"
+    },
+    {
+      "sourceId": "eng-s2-student-book",
+      "unit": 5,
+      "lesson": 1,
+      "kbLessonId": "kbl-eng-s2-nccd-u10_l1",
+      "matchedBy": "hand-checked: one lesson per unit; s2 book units 1-5 are curriculum units 6-10"
     }
   ],
   "unitNumbering": "The curriculum's `u{n}_l{m}` matches the number the book PRINTS in every unit except unit 1, where the book has an extra opening lesson («حل معادلات خاصة») and the rest shift by one. Units 1-4 are semester 1 and units 5-8 are semester 2, so the printed unit number also identifies which student book a figure came from — `check_semester` in scripts/extract_book_figures.py enforces that. Note the maths PDFs in attached_assets are named backwards: the file called `1st_semester` is the second-semester book. Source ids follow the books' contents, not their filenames."

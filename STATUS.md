@@ -394,6 +394,83 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## English teaches something at last, and its book photographs reach it, 2026-09-05
+
+Asked for "the English figures", the honest answer turned out to be that
+extraction was never the blocker. `book-english-10-s1` and `-s2` have existed
+since this catalog was written and carried **zero lessons** between them: a
+teacher who picked English and opened either saw an empty book. One level below
+the MVP-subject dead end #267 fixed, which only asks whether a subject resolves
+to a *book*. The 30 English lessons that did exist belong to the four vocational
+ESP tracks, all `hasKnowledgeBase: false` with no PDFs in the repo.
+
+So figures first needed a curriculum. Extracting without one would have produced
+crops nothing could ever ask for — the "unmapped figures go unused" dead end
+`bookFigures.ts` documents.
+
+**The curriculum comes from the book's own contents spread.** Pages 4-5 of each
+student book print a scope-and-sequence table — UNIT, GRAMMAR, VOCABULARY,
+READING, LISTENING, SPEAKING, WRITING — with the book's own page references.
+Ten units across the year: 01 Looking good … 10 Food for thought. Semester 2
+keeps its printed numbering (06-10) rather than restarting, the convention
+physics and chemistry semester 2 already follow.
+
+**One lesson per unit, and that is forced by the book.** It prints seven lesson
+slots per unit (LESSON 1A..7A, 18pt, page header) and titles none of them —
+only a skill banner whose order changes between units, and in semester 1 two
+slots share page 52 with competing banners. A seven-lesson split would be a
+guess about which slot owns which page. The four vocational English catalogs
+already model a unit as one lesson for the same kind of reason.
+
+Two things are recorded rather than invented: **no learning outcomes** (this
+series prints none, unlike the science books' lesson openers, so `objectives`
+is empty and `verify --gaps` says so), and **Arabic titles are our own
+translations** — the book is English-only, exactly as the vocational catalogs
+declare.
+
+**The semester-2 book is a DRAFT.** 79 of its 80 pages carry «نسخة قيد الإعداد
+والتجهيز»; semester 1 carries it on none, and its manifest row is `pending`
+where s1's is `ingested`. Everything transcribed from it may change in the final
+edition. Worth knowing that the stamp is invisible to a plain text search: it
+extracts as Arabic presentation forms, so grepping «قيد الإعداد» returns nothing.
+
+**A second extractor, because this book photographs rather than draws.**
+Measured before writing it: across 60 pages the English student book carries
+~3.4k vector drawing operations against physics's ~509k. `extract_book_figures.py`
+seeds on vector geometry and would have found page furniture.
+`scripts/extract_book_photos.py` enumerates the embedded rasters instead and
+throws away chrome three ways — reuse across pages (a border is used dozens of
+times), size, and aspect ratio. Output format is deliberately identical, so
+`bookFigures.ts` reads these with no idea they came from a different pipeline.
+
+43 photos out; 3 deleted in the review pass (a Literature Spot extract, an
+earthquake map and a strip — all pages of prose rendered as images, unreadable
+at slide size). **40 kept, covering all 10 units.** `BOOK_FIGURE_COUNT` 841 →
+881.
+
+**The join has an offset worth its own test.** The extractor numbers units by
+counting LESSON-header resets inside one PDF, so the semester-2 book's units
+come out 1-5; the curriculum keeps the printed 6-10. Reversing that would file
+every semester-2 photo under a real lesson about something else and nothing
+would fail, so `bookFigures.test.ts` pins u6→book-unit-1 and u10→book-unit-5.
+
+Verified: typecheck clean; mobile 1198 / 0 fail / 10 known skips; api-server
+452 / 0 fail; curriculum 113 / 0 fail and `verify` 0 errors across 20 files;
+SymPy 72/72. Coverage is now 122 of 203 catalog lessons.
+
+**Two tests moved because they were relying on ordering.** `lessonSlides.test.ts`
+took `getUnitsForSubjectGrade('english','grade-10')[0]` and assumed a
+vocational lesson; general English now sorts in front of those, and that lesson
+has no `keyTerms` (the contents page gives vocabulary *topics*, not
+term/definition pairs), so the vocabulary slide it asserted on stopped
+existing. It names its lesson now. And `bookFigures.test.ts`'s source-id map
+needed an `eng` entry — that map exists precisely so a new subject fails loudly
+instead of being skipped, and it did.
+
+**Still nothing for the four vocational tracks.** They hold 30 of English's 40
+lessons and have no PDFs in the repo; the two `grade-10-vocational` files are
+التربية المهنية, a different subject.
+
 ## Physics, biology and earth science get the book's figures, 2026-09-05
 
 41 lessons across three subjects had curriculum content and **zero** figures

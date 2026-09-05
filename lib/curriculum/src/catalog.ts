@@ -89,6 +89,14 @@ import {
   buildEnglishHospitalityBrowserCatalog,
   buildEnglishIndustryBrowserCatalog,
 } from './catalogs/g10EnglishVocational.ts';
+import {
+  ENG_S1_CURRICULUM_BOOK_ID,
+  buildEngSem1BrowserCatalog,
+} from './catalogs/g10EnglishSem1.ts';
+import {
+  ENG_S2_CURRICULUM_BOOK_ID,
+  buildEngSem2BrowserCatalog,
+} from './catalogs/g10EnglishSem2.ts';
 
 export interface Grade {
   id: string;
@@ -692,6 +700,7 @@ export const BOOKS: Book[] = [
   // project's own storage, hence downloadNote overriding the NCCD line.
   {
     id: 'book-english-10-s1',
+    hasKnowledgeBase: true,
     title: 'English for Jordan 10',
     titleAr: 'اللغة الإنجليزية للصف العاشر',
     subjectId: 'english',
@@ -708,6 +717,7 @@ export const BOOKS: Book[] = [
   },
   {
     id: 'book-english-10-s2',
+    hasKnowledgeBase: true,
     title: 'English for Jordan 10 (Semester 2)',
     titleAr: 'اللغة الإنجليزية للصف العاشر – الفصل الثاني',
     subjectId: 'english',
@@ -972,15 +982,11 @@ const _HARDCODED_UNITS: Unit[] = [
   },
 
   // Other books
-  {
-    id: 'unit-eng-10-1',
-    bookId: 'book-english-10-s1',
-    name: 'Communication Skills',
-    nameAr: 'مهارات التواصل',
-    description: 'Reading, writing, and speaking skills',
-    descriptionAr: 'مهارات القراءة والكتابة والتحدث',
-    order: 1,
-  },
+  // `unit-eng-10-1` ('Communication Skills') used to sit here: a hand-written
+  // placeholder with no lessons under it, which is why English was a
+  // lesson-level dead end for as long as the catalog has existed. Replaced
+  // 2026-09-05 by the five real units the student book prints, built from
+  // data/iqra_curriculum_g10_english_sem1.json. Nothing referenced its id.
   {
     id: 'unit-sci-8-1',
     bookId: 'book-science-8',
@@ -1646,6 +1652,12 @@ const _engCommerceBrowser = buildEnglishCommerceBrowserCatalog();
 const _engAgricultureBrowser = buildEnglishAgricultureBrowserCatalog();
 const _engHospitalityBrowser = buildEnglishHospitalityBrowserCatalog();
 const _engIndustryBrowser = buildEnglishIndustryBrowserCatalog();
+// General English. `book-english-10-s1` and `-s2` are the two rows that
+// have existed since this file was written and carried ZERO lessons until
+// 2026-09-05 — a teacher who picked English and opened either saw an empty
+// book, one level below the dead end the MVP-subject test catches.
+const _engSem1Browser = buildEngSem1BrowserCatalog();
+const _engSem2Browser = buildEngSem2BrowserCatalog();
 
 // ─── Authored-Bloom's enrichment for NCCD browser rows ───────────────────────
 //
@@ -1775,6 +1787,8 @@ export const UNITS: Unit[] = [
   ..._engAgricultureBrowser.units,
   ..._engHospitalityBrowser.units,
   ..._engIndustryBrowser.units,
+  ..._engSem1Browser.units,
+  ..._engSem2Browser.units,
 ];
 
 /** Active lessons — legacy Math/Chem G10 rows replaced by NCCD-sourced browser rows. */
@@ -1801,6 +1815,8 @@ export const LESSONS: Lesson[] = [
   ..._engAgricultureBrowser.lessons,
   ..._engHospitalityBrowser.lessons,
   ..._engIndustryBrowser.lessons,
+  ..._engSem1Browser.lessons,
+  ..._engSem2Browser.lessons,
 ];
 
 /** Math Grade 10 Semester 1 book id (NCCD-backed). */

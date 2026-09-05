@@ -27,7 +27,7 @@ import {
   splitWarmup, withoutSlide,
 } from '../lessonSlides.ts';
 import { figuresForLesson } from '../bookFigures.ts';
-import { getLessonsForUnit, getUnitsForSubjectGrade } from '../knowledgeBase.ts';
+import { KB_LESSONS, getUnitsForSubjectGrade } from '../knowledgeBase.ts';
 import type { ActivitySlide, LessonPlanOutput } from '../ai/AIService.ts';
 import type { KBLesson } from '../knowledgeBase.ts';
 
@@ -771,11 +771,19 @@ describe('bilingual chrome titles for the English subject', () => {
   });
 
   it('trusts the lesson\'s own book over the subject string when both are present', () => {
-    // A real English-track KB lesson (Grade 10 Agriculture, Unit 1) rather
-    // than a fabricated unitId — getBookForLesson resolves through the real
-    // KB_UNITS/KB_BOOKS tables, so a made-up id would just resolve to nothing.
-    const unit = getUnitsForSubjectGrade('english', 'grade-10')[0]!;
-    const englishLesson = getLessonsForUnit(unit.id)[0]!;
+    // A real English-track KB lesson rather than a fabricated unitId —
+    // getBookForLesson resolves through the real KB_UNITS/KB_BOOKS tables, so
+    // a made-up id would just resolve to nothing.
+    //
+    // Named explicitly rather than taken as `getUnitsForSubjectGrade(...)[0]`,
+    // which is what this used to do. That worked only while the vocational
+    // tracks were the sole English books; general English arrived in front of
+    // them on 2026-09-05 and the [0] silently became a lesson with no key
+    // terms, so the vocabulary slide this asserts on stopped existing. The
+    // test is about bilingual chrome, not about which lesson — so it says
+    // which lesson.
+    const englishLesson = KB_LESSONS.find(l => l.id === 'kbl-eng-agri-s1-nccd-u1_l1')!;
+    assert.ok(englishLesson, 'the agriculture-track lesson still exists');
     const deck = buildLessonDeck(englishLesson.titleAr, true, {
       lesson: englishLesson, plan: ENGLISH_PLAN,
       // Deliberately wrong subject string — a mismatched caller must not

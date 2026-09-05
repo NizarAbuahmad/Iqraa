@@ -15,6 +15,7 @@ import {
 } from '@/services/curriculumData';
 import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, topicPickerParams } from '@/services/lessonPrep';
 import { TopicSelector } from '@/components/ui/TopicSelector';
+import { PickerField } from '@/components/ui/PickerField';
 import { Button } from '@/components/ui/Button';
 import { getItem, saveItem, updateItem } from '@/services/workspace';
 import { useFavorite } from '@/hooks/useFavorite';
@@ -646,51 +647,6 @@ function CheckboxRow({ label, checked, onToggle, accent, colors, isRTL, disabled
   );
 }
 
-function PickerField({ label, value, options, onChange, colors, isRTL, accent, disabled, disabledNote }: {
-  label: string; value: string; options: string[]; onChange: (i: number) => void;
-  colors: ReturnType<typeof useColors>; isRTL: boolean; accent: string;
-  /** Index-aligned with `options`: shown, greyed, unpressable. */
-  disabled?: boolean[]; disabledNote?: string;
-}) {
-  const [open, setOpen] = useState(false);
-  return (
-    <View style={{ marginBottom: 16 }}>
-      <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
-      <Pressable
-        onPress={() => setOpen(o => !o)}
-        style={[styles.pickerBtn, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-      >
-        <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{value}</Text>
-        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
-      </Pressable>
-      {open && (
-        <View style={[styles.pickerDropdown, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-          <ScrollView nestedScrollEnabled style={{ maxHeight: 200 }}>
-            {options.map((o, i) => {
-              const off = disabled?.[i] === true;
-              const on = !off && o === value;
-              return (
-                <Pressable
-                  key={i}
-                  disabled={off}
-                  accessibilityState={{ disabled: off, selected: on }}
-                  onPress={() => { if (off) return; onChange(i); setOpen(false); }}
-                  style={[styles.pickerOption, { borderBottomColor: colors.border, backgroundColor: on ? colors.secondary : 'transparent', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-                >
-                  <Text style={[{ color: off ? colors.mutedForeground : (on ? accent : colors.foreground), fontFamily: on ? 'Cairo_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{o}</Text>
-                  {off && disabledNote
-                    ? <Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12 }]}>{disabledNote}</Text>
-                    : on && <Ionicons name="checkmark" size={16} color={accent} />}
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        </View>
-      )}
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 28 },
   backBtn: { width: 40, height: 40, justifyContent: 'center', marginBottom: 8 },
@@ -704,9 +660,6 @@ const styles = StyleSheet.create({
   checkboxGroup: { borderWidth: 1, padding: 14, marginBottom: 16, gap: 4 },
   checkRow: { alignItems: 'center', gap: 10, paddingVertical: 6 },
   checkbox: { width: 20, height: 20, borderRadius: 4, borderWidth: 2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  pickerBtn: { alignItems: 'center', borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 13 },
-  pickerDropdown: { borderWidth: 1, marginTop: -8, marginBottom: 8, overflow: 'hidden' },
-  pickerOption: { alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1 },
   resultHeader: { alignItems: 'center', gap: 8, padding: 14, borderWidth: 1, marginBottom: 20 },
   resultHeaderText: { fontSize: 14 },
   resultSectionHeader: { alignItems: 'center', gap: 6, marginBottom: 8 },
