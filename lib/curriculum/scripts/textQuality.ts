@@ -56,3 +56,50 @@ export function lamTranspositionRate(text: string): number | null {
 
 /** Above this share of transposed article-starts, the text is not quotable. */
 export const LAM_TRANSPOSITION_LIMIT = 0.4;
+
+const CONTROL_CHAR_RE = /[\x00-\x08\x0e-\x1f]/g;
+const ARABIC_PRESENTATION_FORMS_RE = /[ﭐ-﷿ﹰ-﻿]/g;
+const BASIC_ARABIC_RE = /[؀-ۿ]/g;
+
+/**
+ * Whichever of the four quality gates the text fails, or `null` when it
+ * passes all of them. Shared between `extract-text.ts`'s pdf-parse attempt
+ * and its OCR fallback so both are held to the same bar — OCR output that
+ * happens to be garbage gets rejected exactly like a broken font cmap would
+ * be.
+ */
+export function rejectReason(allText: string): string | null {
+  if (!allText.trim()) {
+    return 'no text layer';
+  }
+  // pdf-parse decoding a PDF's embedded font against the wrong cmap does not
+  // throw — it returns text, just not text. Found on two real files: 28-37%
+  // of the "extracted" characters were C0 control codes (\x00-\x1F), which
+  // essentially never appear in real prose. A silent pass here would have
+  // shipped noise into a teacher's prompt labelled as a citable page.
+  const controlChars = (allText.match(CONTROL_CHAR_RE) ?? []).length;
+  if (controlChars / allText.length > 0.05) {
+    return 'decoded to mostly non-printable control characters (font cmap likely broken)';
+  }
+  // Found on three files from the same author: real Arabic, but the PDF
+  // encodes it as Arabic Presentation Forms (isolated per-glyph shapes,
+  // U+FB50-FEFF) instead of the base Arabic block, and pdf-parse returns
+  // them unshaped and with each word's letters in reverse order. Technically
+  // decodable by a person turning the page sideways; unusable as a citation
+  // or as text handed to a model.
+  const presentationForms = (allText.match(ARABIC_PRESENTATION_FORMS_RE) ?? []).length;
+  const basicArabic = (allText.match(BASIC_ARABIC_RE) ?? []).length;
+  if (presentationForms > basicArabic) {
+    return 'Arabic in reversed presentation-form glyphs, not the base Arabic block — unusable without un-shaping';
+  }
+  // Subtler than the two checks above, and it slips past both: the text is
+  // real base-block Arabic with no control characters, only with the
+  // definite article’s ل moved one letter right. Found on the physics S1
+  // teacher guide after 391,551 characters of it had been extracted, marked
+  // `ingested`, and trusted — caught only when a human read a line of it.
+  const lamRate = lamTranspositionRate(allText);
+  if (lamRate !== null && lamRate > LAM_TRANSPOSITION_LIMIT) {
+    return `Arabic with the definite article transposed (الحركة ← احلركة) in ${(lamRate * 100).toFixed(0)}% of samples — readable by eye, not quotable`;
+  }
+  return null;
+}

@@ -228,6 +228,58 @@ without R2 configured behaves exactly as it did before this existed.
 
 ---
 
+## OCR fallback for scanned PDFs
+
+`extract-text.ts` reads a source through `pdf-parse` first and checks the
+result against four gates (no text layer, broken font cmap, unshaped
+presentation forms, transposed definite article). A source that fails any of
+them falls back to `lib/curriculum/scripts/ocr.ts`, which rasterizes each
+page and reads it with Tesseract — all four gate failures are bugs in the
+PDF's own embedded text, and none of them exist in a rendered page image.
+
+This needs two tools this project didn't previously depend on. Both are
+optional at the project level: `extract-text.ts` runs exactly as it always
+did (rejects the source with the same message) when either is missing.
+
+1. **Poppler**, for `pdftoppm` — already needed for `pdftotext` (see the
+   poppler landmine in `CLAUDE.md`: install the winget build, not
+   `/mingw64/bin/pdftotext`, which returns almost no Arabic from these PDFs).
+   `ocr.ts` finds it on `PATH`, then globs the winget package directory, then
+   `POPPLER_BIN` if set (the `pdftoppm(.exe)` binary itself, not a directory).
+2. **Tesseract**, with the Arabic language model:
+   ```powershell
+   winget install --id tesseract-ocr.tesseract -e
+   ```
+   Windows' package ships English only. Fetch Arabic separately (Program
+   Files is usually not writable without elevation, so this project keeps its
+   own copy rather than the tesseract install's own `tessdata/`):
+   ```powershell
+   mkdir "$HOME\.config\tessdata" -Force
+   curl.exe -L -o "$HOME\.config\tessdata\ara.traineddata" `
+     https://github.com/tesseract-ocr/tessdata/raw/main/ara.traineddata
+   ```
+   `ocr.ts` finds `tesseract` on `PATH`, then the standard
+   `C:\Program Files\Tesseract-OCR\tesseract.exe`, then `TESSERACT_BIN` if
+   set. It reads the language model from `TESSDATA_DIR` (default
+   `~/.config/tessdata`) — override either env var for a different setup.
+
+**Cost, in wall-clock time, not money:** OCR is slow — roughly 15-20 seconds
+per page at the default 300 DPI (`OCR_DPI`), so a 130-page scanned book takes
+the better part of an hour. Run it scoped to just the sources that need it:
+
+```powershell
+pnpm --filter @workspace/curriculum run extract-text -- bio-s1-teacher-guide
+```
+
+**Quality is not verified character-for-character.** Spot-checked on a real
+scanned NCCD teacher guide: coherent, on-topic Arabic came back (lab safety
+instructions, teaching notes), with occasional garbled words around small
+decorative page elements (unit-badge numerals, icons). Treat OCR'd text as
+one notch below a clean digital extraction, and read anything a teacher will
+see quoted before trusting it.
+
+---
+
 ## Run the backend
 
 ```powershell

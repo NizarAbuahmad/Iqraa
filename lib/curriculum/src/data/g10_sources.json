@@ -2508,7 +2508,7 @@
       "semester": 1,
       "kind": "teacher-guide",
       "authority": "nccd",
-      "status": "pending",
+      "status": "ingested",
       "filename": "دليل المعلم العلوم الحياتية الصف العاشر الفصل الأول.pdf",
       "authorAr": null,
       "unitTags": [
@@ -2522,7 +2522,14 @@
         "أحياء",
         "عاشر"
       ],
-      "notes": "Scanned with no text layer — pdf-parse returns nothing, and this project has no OCR, so it stays `pending` rather than being recorded as ingested. The only source in the 2026-09-03 intake that failed; the S2 guide (100pp) extracted fine, so this is this file’s export, not the series. Uploaded to R2 regardless, so an OCR pass later needs no re-fetch."
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: no text layer)",
+        "extractedAt": "2026-09-05",
+        "pages": 132,
+        "chars": 218551,
+        "localPath": "knowledge-base/grade-10-biology/support-pdfs/دليل المعلم العلوم الحياتية الصف العاشر الفصل الأول.pdf",
+        "sha256": "4e6d45eccee619e93cc6a79d5c99998b30d2d9f8294d478c237cf12c1e81107e"
+      }
     },
     {
       "id": "bio-s2-teacher-guide",
@@ -2532,7 +2539,7 @@
       "semester": 2,
       "kind": "teacher-guide",
       "authority": "nccd",
-      "status": "pending",
+      "status": "ingested",
       "filename": "دليل المعلم لمادة العلوم الحياتية الصف العاشر الفصل الثاني.pdf",
       "authorAr": null,
       "unitTags": [
@@ -2546,7 +2553,14 @@
         "أحياء",
         "عاشر"
       ],
-      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic with the definite article transposed (الحركة ← احلركة) in 89% of samples — readable by eye, not quotable)",
+        "extractedAt": "2026-09-05",
+        "pages": 100,
+        "chars": 207322,
+        "localPath": "knowledge-base/grade-10-biology/support-pdfs/دليل المعلم لمادة العلوم الحياتية الصف العاشر الفصل الثاني.pdf",
+        "sha256": "bb0b3a566b68f97aff10d3277a0e64b2cb686090db2e0693b9b1b104d9edfe21"
+      }
     },
     {
       "id": "bio-s1-activity-book",
@@ -2618,7 +2632,7 @@
       "semester": null,
       "kind": "answer-key",
       "authority": "nccd",
-      "status": "pending",
+      "status": "ingested",
       "filename": "إجابات أسئلة أوراق العمل من دليل المعلم العلوم الحياتية الصف العاشر.pdf",
       "authorAr": null,
       "unitTags": [
@@ -2632,7 +2646,14 @@
         "أحياء",
         "عاشر"
       ],
-      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic with the definite article transposed (الحركة ← احلركة) in 91% of samples — readable by eye, not quotable)",
+        "extractedAt": "2026-09-05",
+        "pages": 10,
+        "chars": 11706,
+        "localPath": "knowledge-base/grade-10-biology/support-pdfs/إجابات أسئلة أوراق العمل من دليل المعلم العلوم الحياتية الصف العاشر.pdf",
+        "sha256": "34e123b5943a519182de262f712bb78f49b62a33e6b55cf9030cca975a3333e4"
+      }
     },
     {
       "id": "earth-s2-student-book",

@@ -28,7 +28,10 @@
  * exact failure the two source catalogs were merged to end. Callers normalize
  * on load.
  *
- * Run: pnpm --filter @workspace/curriculum run extract-text [--force]
+ * Run: pnpm --filter @workspace/curriculum run extract-text [--force] [<sourceId> ...]
+ * Positional sourceIds restrict the run to just those — useful when only a
+ * handful of the many pending sources need a (slow) OCR pass and the rest
+ * should wait.
  */
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
@@ -38,15 +41,14 @@ import { PDFParse } from 'pdf-parse';
 import { G10_SOURCES } from '../src/sources.ts';
 import { downloadFromR2, isLfsPointer, isR2Configured } from './r2.ts';
 import { LOCAL_FILES } from './localSources.ts';
-import { lamTranspositionRate, LAM_TRANSPOSITION_LIMIT } from './textQuality.ts';
+import { rejectReason } from './textQuality.ts';
+import { ocrPdf } from './ocr.ts';
+import { loadEnvFile } from '../../../scripts/load-env.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '../../..');
+loadEnvFile(path.join(repoRoot, '.env'));
 const outDir = path.resolve(here, '../src/data/extracted');
-
-const CONTROL_CHAR_RE = /[\x00-\x08\x0e-\x1f]/g;
-const ARABIC_PRESENTATION_FORMS_RE = /[ﭐ-﷿ﹰ-﻿]/g;
-const BASIC_ARABIC_RE = /[؀-ۿ]/g;
 
 
 export interface ExtractedPage {
@@ -103,14 +105,7 @@ async function ensureLocal(sourceId: string, abs: string): Promise<string | null
   return null;
 }
 
-async function extractOne(sourceId: string, rel: string): Promise<ExtractedDocument | string> {
-  const abs = path.join(repoRoot, rel);
-  const fetchError = await ensureLocal(sourceId, abs);
-  if (fetchError) return fetchError;
-
-  const buf = readFileSync(abs);
-  if (isLfsPointer(buf)) return `Git-LFS pointer, run \`git lfs pull\`: ${rel}`;
-
+async function parseWithPdfParse(buf: Buffer): Promise<{ pages: ExtractedPage[]; reason: string | null }> {
   const parser = new PDFParse({ data: new Uint8Array(buf) });
   try {
     const result = await parser.getText();
@@ -126,70 +121,81 @@ async function extractOne(sourceId: string, rel: string): Promise<ExtractedDocum
     if (!pages.length && result.text) {
       pages.push({ page: 1, text: result.text.trim() });
     }
-    if (!pages.some(p => p.text.length > 0)) {
-      return `no text layer — needs OCR, which this project does not have: ${rel}`;
-    }
-
-    const allText = pages.map(p => p.text).join('');
-    // pdf-parse decoding a PDF's embedded font against the wrong cmap does not
-    // throw — it returns text, just not text. Found on two real files: 28-37%
-    // of the "extracted" characters were C0 control codes (\x00-\x1F), which
-    // essentially never appear in real prose. A silent pass here would have
-    // shipped noise into a teacher's prompt labelled as a citable page.
-    const controlChars = (allText.match(CONTROL_CHAR_RE) ?? []).length;
-    if (allText.length > 0 && controlChars / allText.length > 0.05) {
-      return `decoded to mostly non-printable control characters (font cmap likely broken) — not usable: ${rel}`;
-    }
-    // Found on three files from the same author: real Arabic, but the PDF
-    // encodes it as Arabic Presentation Forms (isolated per-glyph shapes,
-    // U+FB50-FEFF) instead of the base Arabic block, and pdf-parse returns
-    // them unshaped and with each word's letters in reverse order. Technically
-    // decodable by a person turning the page sideways; unusable as a citation
-    // or as text handed to a model.
-    const presentationForms = (allText.match(ARABIC_PRESENTATION_FORMS_RE) ?? []).length;
-    const basicArabic = (allText.match(BASIC_ARABIC_RE) ?? []).length;
-    if (presentationForms > basicArabic) {
-      return `Arabic in reversed presentation-form glyphs, not the base Arabic block — unusable without un-shaping: ${rel}`;
-    }
-    // Subtler than the two checks above, and it slips past both: the text is
-    // real base-block Arabic with no control characters, only with the
-    // definite article’s ل moved one letter right. Found on the physics S1
-    // teacher guide after 391,551 characters of it had been extracted, marked
-    // `ingested`, and trusted — caught only when a human read a line of it.
-    const lamRate = lamTranspositionRate(allText);
-    if (lamRate !== null && lamRate > LAM_TRANSPOSITION_LIMIT) {
-      return `Arabic with the definite article transposed (الحركة ← احلركة) in ${(lamRate * 100).toFixed(0)}% of samples — readable by eye, not quotable: ${rel}`;
-    }
-
-    const manifest = G10_SOURCES.find(s => s.id === sourceId);
-    const doc: ExtractedDocument = {
-      sourceId,
-      localPath: rel,
-      bytes: buf.length,
-      sha256: createHash('sha256').update(buf).digest('hex'),
-      tool: 'pdf-parse@2',
-      extractedAt: new Date().toISOString().slice(0, 10),
-      pages: pages.length,
-      chars: pages.reduce((n, p) => n + p.text.length, 0),
-      text: pages,
-    };
-    if (manifest && manifest.bytes !== buf.length) {
-      doc.bytesDifferFromManifest = { manifest: manifest.bytes, local: buf.length };
-    }
-    return doc;
+    return { pages, reason: rejectReason(pages.map(p => p.text).join('')) };
   } finally {
     await parser.destroy();
   }
 }
 
+/**
+ * Rasterize-and-read fallback for a PDF whose embedded text failed one of
+ * the gates above. All of them are failures of the PDF's own embedded text
+ * — a missing text layer, a broken font cmap, unshaped presentation forms, a
+ * transposed definite article — none of which exist in a rendered page
+ * image, so OCR output is checked against the same `rejectReason` gate
+ * rather than assumed clean.
+ */
+async function tryOcr(abs: string): Promise<{ pages: ExtractedPage[]; reason: string | null } | null> {
+  const ocred = await ocrPdf(abs);
+  if (!ocred) return null;
+  const pages: ExtractedPage[] = ocred.map(p => ({ page: p.page, text: p.text.trim() }));
+  return { pages, reason: rejectReason(pages.map(p => p.text).join('')) };
+}
+
+async function extractOne(sourceId: string, rel: string): Promise<ExtractedDocument | string> {
+  const abs = path.join(repoRoot, rel);
+  const fetchError = await ensureLocal(sourceId, abs);
+  if (fetchError) return fetchError;
+
+  const buf = readFileSync(abs);
+  if (isLfsPointer(buf)) return `Git-LFS pointer, run \`git lfs pull\`: ${rel}`;
+
+  let { pages, reason } = await parseWithPdfParse(buf);
+  let tool = 'pdf-parse@2';
+
+  if (reason) {
+    const pdfParseReason = reason;
+    const ocrResult = await tryOcr(abs);
+    if (ocrResult && !ocrResult.reason) {
+      ({ pages, reason } = ocrResult);
+      tool = `tesseract-ocr (pdf-parse rejected: ${pdfParseReason})`;
+    } else {
+      const ocrNote = ocrResult
+        ? ` OCR fallback also rejected: ${ocrResult.reason}.`
+        : ' OCR unavailable or produced nothing — see lib/curriculum/scripts/ocr.ts.';
+      return `${pdfParseReason} — not usable:${ocrNote} ${rel}`;
+    }
+  }
+
+  const manifest = G10_SOURCES.find(s => s.id === sourceId);
+  const doc: ExtractedDocument = {
+    sourceId,
+    localPath: rel,
+    bytes: buf.length,
+    sha256: createHash('sha256').update(buf).digest('hex'),
+    tool,
+    extractedAt: new Date().toISOString().slice(0, 10),
+    pages: pages.length,
+    chars: pages.reduce((n, p) => n + p.text.length, 0),
+    text: pages,
+  };
+  if (manifest && manifest.bytes !== buf.length) {
+    doc.bytesDifferFromManifest = { manifest: manifest.bytes, local: buf.length };
+  }
+  return doc;
+}
+
 async function main(): Promise<void> {
+  const args = process.argv.slice(2).filter(a => a !== '--force');
   const force = process.argv.includes('--force');
+  const only = args.length ? new Set(args) : null;
   mkdirSync(outDir, { recursive: true });
 
   const done: ExtractedDocument[] = [];
   const skipped: Array<{ id: string; why: string }> = [];
 
   for (const [sourceId, rel] of Object.entries(LOCAL_FILES)) {
+    if (only && !only.has(sourceId)) continue;
     const out = path.join(outDir, `${sourceId}.json`);
     if (existsSync(out) && !force) {
       console.log(`· ${sourceId} — already extracted (use --force to redo)`);

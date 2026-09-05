@@ -9467,3 +9467,63 @@ Verified: curriculum suite 90/90, `verify` 0 errors, monorepo typecheck clean.
 All 94 mapped sources confirmed in `iqraa-media` by listing the bucket rather
 than trusting the upload log — 106 objects, 1.32 GB, every source byte-equal
 to its file on disk, none missing.
+
+## OCR fallback added; the biology S1 guide and two other stuck sources are ingested, 2026-09-05
+
+Closes the gap the previous entry left open. `extract-text.ts` had four gates
+(no text layer, broken font cmap, unshaped presentation forms, transposed
+definite article) and no recovery from any of them — a source that failed one
+stayed `pending` forever. All four are failures of the PDF's own embedded
+text, none of which exist in a rendered page image, so
+`lib/curriculum/scripts/ocr.ts` rasterizes the page with `pdftoppm` and reads
+it with Tesseract, and `extract-text.ts` now tries that whenever pdf-parse
+rejects a source, checking the OCR output against the same four gates rather
+than assuming a clean pass.
+
+Tesseract + the Arabic language model are **not** committed or fetched
+automatically — a checkout without them behaves exactly as before, rejecting
+with the same message. Setup is in `LOCAL_SETUP.md` ("OCR fallback for
+scanned PDFs"): `winget install tesseract-ocr.tesseract`, then the Arabic
+model by hand into `~/.config/tessdata` (Program Files is usually not
+writable without elevation, so this project keeps its own copy rather than
+depending on the install's own `tessdata/`).
+
+Three biology sources that were stuck now have real text:
+
+| sourceId | why it was stuck | pages | chars |
+|---|---|---|---|
+| `bio-s1-teacher-guide` | scanned, no text layer at all | 132 | 218,551 |
+| `bio-s2-teacher-guide` | definite article transposed in 89% of samples | 100 | 207,322 |
+| `bio-worksheet-answers` | definite article transposed in 91% of samples | 10 | 11,706 |
+
+Verified end to end, not just "the script ran": `passagesForUnit` for
+`kbu-biology-s1-nccd-u1` now returns three passages, two of them from
+`bio-s1-teacher-guide` — the same lookup a live generation request makes.
+
+**Cost, and it is real:** roughly 15-20 seconds per page at the default
+300 DPI, so the 132-page guide alone took 41 minutes. `extract-text.ts` now
+accepts positional `sourceId`s to scope a run to just the sources that need
+it, rather than re-attempting OCR against everything `LOCAL_FILES` lists —
+the four science subjects' pending backlog alone is ~30 sources, hours of
+wall-clock at this rate.
+
+**Quality is not verified character-for-character.** Spot-checked the
+teacher guide's OCR output against a page render: coherent, on-topic Arabic
+(lab safety instructions, teaching notes), with occasional garbled words
+around small decorative page elements (unit-badge numerals, icons) —
+`tesseract-ocr` was chosen for both PNG page images. Treat it as one notch
+below a clean digital extraction; the `tool` field on each `extraction`
+block records `tesseract-ocr (pdf-parse rejected: <why>)` rather than a bare
+tool name, so which sources are OCR'd stays visible without opening each
+JSON.
+
+The four gates themselves moved into `textQuality.ts` (renamed the local
+function to the exported `rejectReason`) so they are shared verbatim between
+the pdf-parse attempt and the OCR attempt, and so they are testable at all —
+`extract-text.ts` ends in a top-level `await main()`, the same reason
+`localSources.ts` and `textQuality.ts` were split out before. New test file:
+`rejectReason.test.ts`, 6 cases, one per gate plus a "two gates fail at once"
+case.
+
+Verified: curriculum suite 105/105 (was 90), `verify` 0 errors, monorepo
+typecheck clean.
