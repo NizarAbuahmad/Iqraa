@@ -26,6 +26,7 @@ import {
   type ChatRole,
 } from '@/services/messaging';
 import { isTeacherRole, useAuth } from '@/context/AuthContext';
+import { usePollingRefresh } from '@/hooks/usePollingRefresh';
 import { Avatar } from '@/components/ui/Avatar';
 
 interface Contact {
@@ -75,6 +76,8 @@ export default function NotificationsScreen() {
   }, [t, user]);
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));
+  // Keeps the inbox current without a manual reload — see hooks/usePollingRefresh.ts.
+  usePollingRefresh(load);
 
   const openContact = async (userId: string) => {
     setStartingUserId(userId);

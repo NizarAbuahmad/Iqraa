@@ -1,0 +1,1349 @@
+{
+  "sourceId": "phys-s2-student-book",
+  "figures": [
+    {
+      "file": "p009b.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 9,
+      "rect": [
+        56.8,
+        231.7,
+        127.2,
+        492.6
+      ],
+      "unit": null,
+      "lesson": null,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p011.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 11,
+      "rect": [
+        189.8,
+        0.8,
+        299.9,
+        72.1
+      ],
+      "unit": 4,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p011b.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 11,
+      "rect": [
+        0.0,
+        7.7,
+        187.9,
+        410.9
+      ],
+      "unit": 4,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p012.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 12,
+      "rect": [
+        388.3,
+        67.4,
+        537.8,
+        216.9
+      ],
+      "unit": 4,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p014.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 14,
+      "rect": [
+        75.0,
+        614.3,
+        415.3,
+        729.0
+      ],
+      "unit": 4,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p015.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 15,
+      "rect": [
+        49.2,
+        373.4,
+        204.5,
+        528.7
+      ],
+      "unit": 4,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p017.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 17,
+      "rect": [
+        208.3,
+        46.7,
+        548.6,
+        243.4
+      ],
+      "unit": 4,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p018.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 18,
+      "rect": [
+        86.2,
+        469.4,
+        171.6,
+        647.1
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "تطبيقاتٌ على القوى",
+      "lessonStartPage": 18
+    },
+    {
+      "file": "p020.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 20,
+      "rect": [
+        301.6,
+        35.2,
+        373.1,
+        111.3
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "تطبيقاتٌ على القوى",
+      "lessonStartPage": 18
+    },
+    {
+      "file": "p020b.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 20,
+      "rect": [
+        249.7,
+        86.8,
+        406.9,
+        222.6
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "تطبيقاتٌ على القوى",
+      "lessonStartPage": 18
+    },
+    {
+      "file": "p020c.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 20,
+      "rect": [
+        97.5,
+        101.8,
+        254.7,
+        222.6
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "تطبيقاتٌ على القوى",
+      "lessonStartPage": 18
+    },
+    {
+      "file": "p022.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 22,
+      "rect": [
+        456.5,
+        171.1,
+        566.5,
+        284.6
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "تطبيقاتٌ على القوى",
+      "lessonStartPage": 18
+    },
+    {
+      "file": "p022b.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 22,
+      "rect": [
+        456.5,
+        332.6,
+        568.4,
+        464.9
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "تطبيقاتٌ على القوى",
+      "lessonStartPage": 18
+    },
+    {
+      "file": "p023.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 23,
+      "rect": [
+        169.6,
+        165.8,
+        300.2,
+        246.2
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "تطبيقاتٌ على القوى",
+      "lessonStartPage": 18
+    },
+    {
+      "file": "p027.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 27,
+      "rect": [
+        212.1,
+        77.8,
+        510.6,
+        215.0
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "تطبيقاتٌ على القوى",
+      "lessonStartPage": 18
+    },
+    {
+      "file": "p027b.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 27,
+      "rect": [
+        73.6,
+        414.5,
+        152.6,
+        493.8
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "تطبيقاتٌ على القوى",
+      "lessonStartPage": 18
+    },
+    {
+      "file": "p028.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 28,
+      "rect": [
+        143.9,
+        92.5,
+        347.8,
+        221.7
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "تطبيقاتٌ على القوى",
+      "lessonStartPage": 18
+    },
+    {
+      "file": "p029.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 29,
+      "rect": [
+        180.7,
+        183.5,
+        255.0,
+        256.1
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "تطبيقاتٌ على القوى",
+      "lessonStartPage": 18
+    },
+    {
+      "file": "p030.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 30,
+      "rect": [
+        422.9,
+        422.5,
+        535.3,
+        534.0
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "تطبيقاتٌ على القوى",
+      "lessonStartPage": 18
+    },
+    {
+      "file": "p031.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 31,
+      "rect": [
+        53.8,
+        538.7,
+        177.2,
+        636.7
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "تطبيقاتٌ على القوى",
+      "lessonStartPage": 18
+    },
+    {
+      "file": "p034.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 34,
+      "rect": [
+        157.4,
+        268.1,
+        272.5,
+        385.2
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "تطبيقاتٌ على القوى",
+      "lessonStartPage": 18
+    },
+    {
+      "file": "p034b.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 34,
+      "rect": [
+        101.8,
+        559.7,
+        182.7,
+        633.0
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "تطبيقاتٌ على القوى",
+      "lessonStartPage": 18
+    },
+    {
+      "file": "p037.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 37,
+      "rect": [
+        17.1,
+        630.5,
+        330.7,
+        702.2
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "تطبيقاتٌ على القوى",
+      "lessonStartPage": 18
+    },
+    {
+      "file": "p039.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 39,
+      "rect": [
+        46.3,
+        55.6,
+        204.2,
+        159.4
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "تطبيقاتٌ على القوى",
+      "lessonStartPage": 18
+    },
+    {
+      "file": "p039b.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 39,
+      "rect": [
+        86.6,
+        247.0,
+        161.3,
+        403.0
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "تطبيقاتٌ على القوى",
+      "lessonStartPage": 18
+    },
+    {
+      "file": "p039c.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 39,
+      "rect": [
+        446.1,
+        575.8,
+        564.2,
+        659.9
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "تطبيقاتٌ على القوى",
+      "lessonStartPage": 18
+    },
+    {
+      "file": "p039d.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 39,
+      "rect": [
+        377.5,
+        579.3,
+        465.9,
+        659.9
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "تطبيقاتٌ على القوى",
+      "lessonStartPage": 18
+    },
+    {
+      "file": "p043.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 43,
+      "rect": [
+        246.2,
+        1.8,
+        623.6,
+        216.6
+      ],
+      "unit": 4,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "ُالقوةُ املركزية",
+      "lessonStartPage": 42
+    },
+    {
+      "file": "p047.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 47,
+      "rect": [
+        49.9,
+        47.8,
+        163.8,
+        242.1
+      ],
+      "unit": 4,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "ُالقوةُ املركزية",
+      "lessonStartPage": 42
+    },
+    {
+      "file": "p050.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 50,
+      "rect": [
+        449.3,
+        255.4,
+        525.9,
+        348.6
+      ],
+      "unit": 4,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "ُالقوةُ املركزية",
+      "lessonStartPage": 42
+    },
+    {
+      "file": "p050b.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 50,
+      "rect": [
+        408.0,
+        345.3,
+        576.4,
+        785.9
+      ],
+      "unit": 4,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "ُالقوةُ املركزية",
+      "lessonStartPage": 42
+    },
+    {
+      "file": "p051.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 51,
+      "rect": [
+        44.4,
+        576.2,
+        186.8,
+        719.8
+      ],
+      "unit": 4,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "ُالقوةُ املركزية",
+      "lessonStartPage": 42
+    },
+    {
+      "file": "p052.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 52,
+      "rect": [
+        450.9,
+        604.1,
+        530.1,
+        727.6
+      ],
+      "unit": 4,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "ُالقوةُ املركزية",
+      "lessonStartPage": 42
+    },
+    {
+      "file": "p059.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 59,
+      "rect": [
+        0.0,
+        65.8,
+        203.9,
+        279.7
+      ],
+      "unit": 5,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 58
+    },
+    {
+      "file": "p060.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 60,
+      "rect": [
+        415.7,
+        466.4,
+        571.1,
+        655.8
+      ],
+      "unit": 5,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 58
+    },
+    {
+      "file": "p061b.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 61,
+      "rect": [
+        62.3,
+        652.0,
+        192.9,
+        741.1
+      ],
+      "unit": 5,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 58
+    },
+    {
+      "file": "p062.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 62,
+      "rect": [
+        120.5,
+        91.2,
+        205.0,
+        187.4
+      ],
+      "unit": 5,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 58
+    },
+    {
+      "file": "p062b.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 62,
+      "rect": [
+        94.7,
+        184.8,
+        268.2,
+        295.6
+      ],
+      "unit": 5,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 58
+    },
+    {
+      "file": "p063.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 63,
+      "rect": [
+        42.3,
+        75.2,
+        352.3,
+        337.1
+      ],
+      "unit": 5,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 58
+    },
+    {
+      "file": "p063b.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 63,
+      "rect": [
+        0.0,
+        368.0,
+        202.2,
+        620.4
+      ],
+      "unit": 5,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 58
+    },
+    {
+      "file": "p065.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 65,
+      "rect": [
+        153.2,
+        147.7,
+        302.0,
+        268.8
+      ],
+      "unit": 5,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 58
+    },
+    {
+      "file": "p065b.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 65,
+      "rect": [
+        49.6,
+        187.9,
+        173.0,
+        268.8
+      ],
+      "unit": 5,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 58
+    },
+    {
+      "file": "p067.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 67,
+      "rect": [
+        145.0,
+        177.4,
+        238.4,
+        304.0
+      ],
+      "unit": 5,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 58
+    },
+    {
+      "file": "p067b.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 67,
+      "rect": [
+        246.1,
+        177.4,
+        339.5,
+        303.4
+      ],
+      "unit": 5,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 58
+    },
+    {
+      "file": "p067c.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 67,
+      "rect": [
+        347.1,
+        177.4,
+        440.6,
+        303.4
+      ],
+      "unit": 5,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 58
+    },
+    {
+      "file": "p069.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 69,
+      "rect": [
+        76.0,
+        76.6,
+        178.8,
+        201.3
+      ],
+      "unit": 5,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 58
+    },
+    {
+      "file": "p072b.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 72,
+      "rect": [
+        229.4,
+        645.1,
+        416.5,
+        791.8
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 72
+    },
+    {
+      "file": "p073.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 73,
+      "rect": [
+        46.8,
+        396.9,
+        209.6,
+        467.0
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 72
+    },
+    {
+      "file": "p073b.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 73,
+      "rect": [
+        246.4,
+        613.2,
+        498.3,
+        737.2
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 72
+    },
+    {
+      "file": "p076.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 76,
+      "rect": [
+        79.3,
+        95.9,
+        289.8,
+        275.4
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 72
+    },
+    {
+      "file": "p077.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 77,
+      "rect": [
+        188.4,
+        573.7,
+        529.1,
+        728.0
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 72
+    },
+    {
+      "file": "p080.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 80,
+      "rect": [
+        81.4,
+        393.0,
+        267.1,
+        536.5
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 72
+    },
+    {
+      "file": "p081.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 81,
+      "rect": [
+        233.5,
+        535.4,
+        474.9,
+        730.1
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 72
+    },
+    {
+      "file": "p082.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 82,
+      "rect": [
+        119.4,
+        581.2,
+        419.2,
+        738.3
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 72
+    },
+    {
+      "file": "p084.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 84,
+      "rect": [
+        79.8,
+        107.8,
+        220.8,
+        217.6
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 72
+    },
+    {
+      "file": "p085.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 85,
+      "rect": [
+        47.2,
+        219.0,
+        208.1,
+        305.8
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 72
+    },
+    {
+      "file": "p085b.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 85,
+      "rect": [
+        45.4,
+        473.9,
+        209.3,
+        598.5
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 72
+    },
+    {
+      "file": "p086.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 86,
+      "rect": [
+        123.5,
+        388.3,
+        366.9,
+        561.5
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 72
+    },
+    {
+      "file": "p086b.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 86,
+      "rect": [
+        120.9,
+        643.3,
+        373.8,
+        715.6
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 72
+    },
+    {
+      "file": "p087.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 87,
+      "rect": [
+        71.7,
+        250.1,
+        158.7,
+        394.4
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 72
+    },
+    {
+      "file": "p088.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 88,
+      "rect": [
+        264.4,
+        508.2,
+        537.0,
+        734.7
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 72
+    },
+    {
+      "file": "p089c.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 89,
+      "rect": [
+        300.6,
+        382.7,
+        401.8,
+        454.3
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 72
+    },
+    {
+      "file": "p089d.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 89,
+      "rect": [
+        409.8,
+        382.7,
+        511.0,
+        454.3
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 72
+    },
+    {
+      "file": "p089e.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 89,
+      "rect": [
+        48.4,
+        660.5,
+        186.0,
+        742.5
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 72
+    },
+    {
+      "file": "p092.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 92,
+      "rect": [
+        430.1,
+        29.3,
+        614.2,
+        118.2
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 72
+    },
+    {
+      "file": "p093.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 93,
+      "rect": [
+        203.9,
+        4.6,
+        314.1,
+        75.8
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 72
+    },
+    {
+      "file": "p093b.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 93,
+      "rect": [
+        46.3,
+        153.0,
+        242.4,
+        376.6
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 72
+    },
+    {
+      "file": "p097.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 97,
+      "rect": [
+        268.9,
+        82.9,
+        471.7,
+        227.7
+      ],
+      "unit": 6,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 94
+    },
+    {
+      "file": "p101.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 101,
+      "rect": [
+        239.6,
+        88.1,
+        498.0,
+        180.2
+      ],
+      "unit": 6,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 94
+    },
+    {
+      "file": "p101b.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 101,
+      "rect": [
+        241.7,
+        616.6,
+        517.4,
+        708.7
+      ],
+      "unit": 6,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 94
+    },
+    {
+      "file": "p102.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 102,
+      "rect": [
+        91.4,
+        499.8,
+        261.1,
+        584.7
+      ],
+      "unit": 6,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 94
+    },
+    {
+      "file": "p103.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 103,
+      "rect": [
+        57.8,
+        182.0,
+        238.6,
+        285.4
+      ],
+      "unit": 6,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 94
+    },
+    {
+      "file": "p110.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 110,
+      "rect": [
+        94.6,
+        634.3,
+        234.9,
+        725.5
+      ],
+      "unit": 6,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 94
+    },
+    {
+      "file": "p112.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 112,
+      "rect": [
+        113.7,
+        145.2,
+        203.8,
+        238.5
+      ],
+      "unit": 6,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 111
+    },
+    {
+      "file": "p116.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 116,
+      "rect": [
+        104.5,
+        142.3,
+        194.6,
+        235.7
+      ],
+      "unit": 6,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 111
+    },
+    {
+      "file": "p117.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 117,
+      "rect": [
+        57.4,
+        246.5,
+        195.2,
+        377.7
+      ],
+      "unit": 6,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 111
+    },
+    {
+      "file": "p117b.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 117,
+      "rect": [
+        57.4,
+        411.3,
+        187.7,
+        556.3
+      ],
+      "unit": 6,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 111
+    },
+    {
+      "file": "p119.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 119,
+      "rect": [
+        45.1,
+        91.5,
+        244.6,
+        191.9
+      ],
+      "unit": 6,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 111
+    },
+    {
+      "file": "p120.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 120,
+      "rect": [
+        409.1,
+        393.5,
+        582.9,
+        752.9
+      ],
+      "unit": 6,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 111
+    },
+    {
+      "file": "p121.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 121,
+      "rect": [
+        15.6,
+        594.0,
+        318.6,
+        775.3
+      ],
+      "unit": 6,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 111
+    },
+    {
+      "file": "p122.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 122,
+      "rect": [
+        88.5,
+        549.8,
+        323.3,
+        718.2
+      ],
+      "unit": 6,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 111
+    },
+    {
+      "file": "p122b.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 122,
+      "rect": [
+        325.1,
+        554.7,
+        560.0,
+        682.1
+      ],
+      "unit": 6,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 111
+    },
+    {
+      "file": "p124.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 124,
+      "rect": [
+        88.4,
+        271.6,
+        194.2,
+        402.2
+      ],
+      "unit": 6,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 111
+    },
+    {
+      "file": "p124b.png",
+      "sourceId": "phys-s2-student-book",
+      "pdfPage": 124,
+      "rect": [
+        96.5,
+        566.9,
+        265.4,
+        717.0
+      ],
+      "unit": 6,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 111
+    }
+  ]
+}

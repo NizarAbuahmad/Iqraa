@@ -52,6 +52,10 @@ import {
   buildFinlitSem1BrowserCatalog,
 } from './catalogs/g10FinlitSem1.ts';
 import {
+  ARABIC_S1_CURRICULUM_BOOK_ID,
+  buildArabicSem1BrowserCatalog,
+} from './catalogs/g10ArabicSem1.ts';
+import {
   G9_MATH_S1_CURRICULUM_BOOK_ID,
   buildG9MathSem1BrowserCatalog,
   isG9MathSem1TitleOnlyUnit,
@@ -209,15 +213,21 @@ export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9'];
 // isPickerCurriculumVisible gates every physics lesson invisible and
 // getLessonById returns undefined for all of them — the book would be listed
 // in MVP_BOOK_IDS while its lessons resolved to nothing.
-// 'arabic', 'islamic' and 'computer' were appended on 2026-09-05 and removed
-// again the same day. No book or catalog exists for any of the three, so every
-// tile bottomed out in the "no books" empty state — honest in a demo, but App
-// Review reads three placeholder sections as an incomplete app (guideline 2.1),
-// and `finlitCurriculum.test.ts` already pinned "every MVP subject resolves to
-// at least one visible book". Append them back the day a book lands; they stay
-// in SUBJECTS, so nothing else has to change. Appending to the tail is what
-// makes this reversible — the seven positions below never move.
-export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy', 'english', 'physics', 'earth-science', 'biology'];
+// 'arabic', 'islamic' and 'computer' were appended on 2026-09-05 as tiles with
+// no book behind any of them, and the "no books" empty state they fell through
+// to reads as a broken subject rather than an honest one. App Review reads a
+// placeholder section the same way — an incomplete app, guideline 2.1 — which
+// is the other half of why they came back off.
+//
+// 'arabic' earned its place back the same day, when the Semester 1 student
+// book was catalogued. 'islamic' and 'computer' stay off until theirs exist:
+// the Islamic Education S1 student book is on file but not extracted, and no
+// computer-science PDF has been sourced at all.
+//
+// Removing from the TAIL is what made that reversible — no existing picker
+// index moved — and `finlitCurriculum.test.ts` fails the moment a subject is
+// offered here with nothing to open.
+export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy', 'english', 'physics', 'earth-science', 'biology', 'arabic'];
 /** Main semester books only (guides/exercises stay in data, hidden from UI). */
 export const MVP_BOOK_IDS: readonly string[] = [
   'book-math-10',
@@ -251,6 +261,10 @@ export const MVP_BOOK_IDS: readonly string[] = [
   EARTH_S2_CURRICULUM_BOOK_ID,
   BIO_S1_CURRICULUM_BOOK_ID,
   BIO_S2_CURRICULUM_BOOK_ID,
+  // Arabic — Semester 1 only. The S2 student book is extracted but not yet
+  // catalogued into units/lessons, so listing a book for it would offer a
+  // shell with nothing inside.
+  ARABIC_S1_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -546,6 +560,24 @@ export const BOOKS: Book[] = [
     audience: 'all',
     semester: 1,
     pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Financial%20culture/G10/1/%D8%A7%D9%84%D8%AB%D9%82%D8%A7%D9%81%D8%A9%20%D8%A7%D9%84%D9%85%D8%A7%D9%84%D9%8A%D8%A9%2010%20%D9%811%20small%20.pdf',
+  },
+  // ── Arabic Grade 10 – Semester 1 ───────────────────────────────────────────
+  // No pdfUrl/guidePdfUrl: the three S1 PDFs (student book, teacher guide,
+  // exercise book) are on file locally and registered in g10_sources.json, but
+  // no NCCD hosted URL for them has been verified. A download chip is left off
+  // rather than pointed at a guessed link.
+  {
+    id: ARABIC_S1_CURRICULUM_BOOK_ID,
+    title: 'Arabic – Grade 10, Semester 1',
+    titleAr: 'اللغة العربية (العربية لغتي) – الصف العاشر – الفصل الأول',
+    subjectId: 'arabic',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
   },
   // ── Math Grade 9 – Semester 1 ───────────────────────────────────────────────
   // Distinct id from the pre-existing inert `book-math-9` stub below (no real
@@ -1537,6 +1569,7 @@ const _MATH_G10_S2_BOOK_ID = 'book-math-10-s2';
 const _nccdSem1Browser = buildNccdSem1BrowserCatalog();
 const _nccdSem2Browser = buildNccdSem2BrowserCatalog();
 const _finlitSem1Browser = buildFinlitSem1BrowserCatalog();
+const _arabicSem1Browser = buildArabicSem1BrowserCatalog();
 const _chemSem1Browser = buildChemSem1BrowserCatalog();
 const _physSem1Browser = buildPhysSem1BrowserCatalog();
 const _physSem2Browser = buildPhysSem2BrowserCatalog();
@@ -1670,6 +1703,7 @@ export const UNITS: Unit[] = [
   ..._nccdSem1Browser.units,
   ..._nccdSem2Browser.units,
   ..._finlitSem1Browser.units,
+  ..._arabicSem1Browser.units,
   ..._g9MathSem1Browser.units,
   ..._g9MathSem2Browser.units,
   ..._engCommerceBrowser.units,
@@ -1692,6 +1726,7 @@ export const LESSONS: Lesson[] = [
   ..._nccdSem1Browser.lessons,
   ..._nccdSem2Browser.lessons,
   ..._finlitSem1Browser.lessons,
+  ..._arabicSem1Browser.lessons,
   ..._g9MathSem1Browser.lessons,
   ..._g9MathSem2Browser.lessons,
   ..._engCommerceBrowser.lessons,

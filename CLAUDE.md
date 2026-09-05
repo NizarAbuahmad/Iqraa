@@ -45,11 +45,16 @@ cd artifacts/api-server && pnpm build && pnpm test   # build first — see below
 
 Local setup, env vars and troubleshooting: [`LOCAL_SETUP.md`](./LOCAL_SETUP.md).
 Before a live demo: [`docs/demo-checklist.md`](./docs/demo-checklist.md).
+Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
 
 ## Conventions
 
 - Feature branches + PRs. `main` is merge-only, and **only `main` is deployed** —
   if a change "isn't showing", check it is merged before debugging anything visual.
+  Merged is necessary but **no longer sufficient**: since the 2026-09-05 Cloud
+  Run cutover a merge auto-deploys the web app only, and the API and verifier
+  are deployed by hand ([`docs/deploying.md`](./docs/deploying.md)). A merged
+  server change that "isn't showing" has probably just not been deployed.
 - Arabic is the product language; the UI is RTL-first. Compute maths in latin
   `x` and convert to `س` / Arabic digits **only at display time**.
 - `DEMO_MODE = true` in `artifacts/mobile/services/ai/demoMode.ts` mocks all

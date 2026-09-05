@@ -216,6 +216,30 @@ an announcement by default» below.
 - Financial Literacy G10 S1 is browsable (2 units / 10 lessons, NCCD-sourced).
   It was previously offered as a subject tile with no book behind it, so the
   subject dead-ended on the "no semesters" empty state.
+- Arabic G10 S1 is browsable (2026-09-05): 5 units / 25 lessons / 74 outcomes,
+  from the NCCD student book (`arabic-s1-student-book`, on file since
+  2026-09-03). Every unit runs the same five skills in the same order — أستمع /
+  أتحدّث / أقرأ / أكتب محتوًى / أبني لغتي — so **the lesson title does not
+  identify the lesson here**: «أستمعُ بانتباهٍ وتركيزٍ» is five different
+  lessons. Ids do; `arabicCurriculum.test.ts` pins that five distinct rows
+  survive under one title.
+  - The unit→lesson mapping was NOT taken from the book's table of contents:
+    the extracted TOC is RTL-scrambled (it lists units 1, 3, 2) and one unit's
+    title comes out garbled. Each unit's own «محتويات الوحدة» page was used
+    instead, and unit 2's title («يَرْحَلونَ ونَبْقى») confirmed against its
+    body page. Extraction corruption on this PDF measures 15.3%, so titles were
+    verified rather than pasted.
+  - No حصص counts (the student book prints none — the teacher guide is on file
+    but unread for this), no per-lesson term list (the book prints none), and
+    no download chip (no NCCD hosted URL for these three PDFs has been
+    verified). S2 is extracted but not yet catalogued. All recorded in the data
+    file's `known_gaps`.
+  - `islamic` and `computer` came back OUT of `MVP_SUBJECT_IDS` in the same
+    change. All three were appended as tiles on 2026-09-05 with no book behind
+    any of them; Arabic earned its place, the other two have nothing to open —
+    the Islamic Education S1 student book is on file unextracted, and no
+    computer-science PDF has been sourced at all. `finlitCurriculum.test.ts`
+    was already red on `main` for exactly this reason.
 - English G10 S1 is browsable (added 2026-08-27): four vocational-track books
   — Commerce (6 units), Agriculture (6 units), Hospitality and Tourism
   (6 units), Industrial/Technical (12 units) — one lesson per unit, sourced
@@ -602,6 +626,122 @@ build has ever been made**, so push delivery, image picking and the app icon
 remain unverified on a device, and `newArchEnabled` + `reactCompiler` are both
 experimental — Expo Go over LAN is not evidence that a release build runs.
 There are no store assets and no `google-services.json` for Android FCM.
+## Physics, biology and earth science get the book's figures, 2026-09-05
+
+41 lessons across three subjects had curriculum content and **zero** figures
+between them. Every visual feature built over the last week — the two-column
+slide, the printed appendix, the exam panel — could only ever fire on maths,
+chemistry and financial literacy. This is the supply side of that.
+
+**English was measured and rejected, not forgotten.** The extractor seeds on
+vector drawing operations; its docstring records that these books draw their
+diagrams rather than embed them. That is true of the sciences and false of
+English: across 60 pages the English student book carries ~3.4k vector ops
+against physics's ~509k, because its content is photographs and layout art.
+Running it would have produced crops of page furniture. Extracting English
+needs raster detection — a different tool, not another `BOOKS` entry.
+
+| book | crops | lessons | note |
+| --- | --- | --- | --- |
+| phys-s1 | 39 | 5 | vectors, kinematics graphs, projectiles |
+| phys-s2 | 84 | 7 | free-body diagrams, Archimedes, Bernoulli, waves |
+| bio-s1 | 30 | 5 | virus structure, bacterial cell, protists, fungi |
+| bio-s2 | 47 | 8 | plant anatomy, stem/root sections, populations |
+| earth-s1 | 21 | 6 | volcano sections, rock cycle, stellar evolution |
+| earth-s2 | 30 | 8 | pressure systems, isobars, ocean profiles |
+
+**Coverage: physics 0 → 12/12, earth science 0 → 14/14, biology 0 → 13/15.**
+Overall 73 → 112 lessons with figures. `BOOK_FIGURE_COUNT` 600 → 841.
+
+**A flat-panel filter, because the seed cannot tell a diagram from a header
+band.** These books' unit openers and section bands are large vector fills
+drawn with the same operations a diagram is, so no geometry tuning separates
+them — but a flat fill has almost no edges. On 57 hand-labelled phys-s1 crops
+the junk ran 4.8-34.7 edge density and the real figures 11.2-38.0;
+`MIN_EDGE_DENSITY = 11.0` sits just under the lowest real figure and removed
+14 of 23 junk crops with zero false positives. Set at that floor deliberately
+rather than between the medians: a lost figure is invisible, surviving junk is
+caught by the review that follows. It dropped 159 panels across the six books.
+
+It cannot catch everything and is not meant to — dense Arabic prose has a high
+edge count too. **The human pass still ran**: all six `_review.png` contact
+sheets were read and 122 further crops deleted (front matter, «مراجعة الدرس»
+banners, tip boxes, page-number badges, the closing calligraphy page). 373 →
+251, both PNG and index entry, as the docstring requires.
+
+**The join is 1:1 for all six, which maths and chemistry never were.** Those
+disagreed because the book opened a unit with a lesson the curriculum does not
+carry. Here the curriculum ids are minted `u{k}_l{m}` against the book's own
+printed numbering, so «الوحدة 3 / الدرس 2» is `…-u3_l2` by construction — and
+each was then confirmed against what the figures actually show, which is the
+part that would have caught a silent off-by-one: «الفيروسات» carries the virus
+structures, «الطلائعيات» the Euglena and Paramecium, «أنظمة الضغط الجوي» all
+twelve pressure diagrams. Physics is the near-miss: its curriculum adds a
+`_lab` lesson per unit for the تجربة استهلالية that the book does not number
+as «الدرس», so book lesson 1 is `_l1` and NOT the lab.
+
+**Two things the run exposed, both left alone on purpose.** Re-running the
+whole extractor rewrites the seven already-committed books, and their output
+moves — chem-s2 18 → 59 figures, finlit 6 → 18, g9-math-s1 115 → 136 — because
+those were extracted before later detector work. That is a real improvement and
+a separate change; `extract_book_figures.py` now takes optional source-id
+arguments so a subset can be run without sweeping it in. And
+`IQRAA_PDF_ROOT` exists because `support-pdfs/` is gitignored and therefore
+absent from every worktree, which is why four older `BOOKS` entries are
+absolute paths on one machine.
+
+**Cost: +28.4 MB of PNGs**, roughly doubling the repo's figure weight, and all
+of it is bundled by Metro into the app. Biology is two thirds of it — its
+pages are photographs, ~166 KB a crop against ~41 KB for maths line art. Not
+addressed here; if it matters, the lever is per-book DPI or palette
+quantisation, not fewer figures.
+
+Verified: typecheck clean; mobile 1176 / 0 fail / 10 known skips; api-server
+443 / 0 fail; curriculum 105 / 0 fail and `verify` 0 errors; SymPy 72/72.
+`bookFigures.test.ts` gained a per-subject floor and a "student book, never a
+teacher guide" assertion; its source-id check used to derive the book from the
+lesson-id prefix by string surgery, which silently excluded every new subject —
+the slugs differ (`biology` → `bio`, `earth-science` → `earth`) and are now a
+written-down map.
+
+## The Cloud Run cutover happened, and this file did not say so, 2026-09-05
+
+**Production topology, current:** the web app is served by `iqraa-web` on
+Render and calls the **Cloud Run** API. `render.yaml` now contains only
+`iqraa-web` — the Render API and verifier were removed from the blueprint by
+`a25469a`, after the web build was pointed at Cloud Run by `1e305f4`.
+
+Read the two sections below this one and you would conclude the opposite. Both
+still end with «**Nothing is switched over.** Render still serves the live app,
+untouched», which was true when written on 2026-09-03 and false two days later.
+Nothing superseded them, so the most recent word this file had on the subject
+was wrong — and it is the file `CLAUDE.md` sends people to. Confirmed the other
+way before writing this: the deployed bundle at `iqraa-web.onrender.com` has
+`iqraa-api-613126375862.europe-west1.run.app/api` compiled into it, so this is
+the running system's answer and not the blueprint's.
+
+The same section closes with «Dockerfiles live on `claude/cloud-run-test`
+(unmerged, deliberately)». They are on `main` — `00b3c9a` is an ancestor of it,
+and `Dockerfile` plus `artifacts/math-verifier/Dockerfile` are both there,
+each carrying its own `gcloud run deploy` line in the header.
+
+**What this cost, concretely.** Acting on those lines, an agent asked to ship a
+merged API change reported that the change was blocked on unmerged Dockerfiles
+and an undocumented deploy — when the Dockerfiles were merged and the commands
+were sitting in their headers. The stale entry did not merely go unread; it was
+read, believed, and acted on.
+
+**Two things that follow, and neither is about Cloud Run:**
+
+- **A merge no longer means a deploy, and this file never marked the change.**
+  When Render ran all three services, «merged» and «deployed» were close
+  enough to the same word. Now merging ships the web app only; the API and the
+  verifier are hand-deployed. Every «shipped» claim written since 2026-09-05
+  should be read with that split in mind.
+- **The deploy procedure now has a findable home:** [`docs/deploying.md`](./docs/deploying.md).
+  It existed before, spread across two Dockerfile headers and a `render.yaml`
+  comment — none of which is where anyone looks to answer "how do I deploy
+  this". The Dockerfiles stay the source of truth for the commands themselves.
 
 ## A student sitting an exam can see the book's diagrams, 2026-09-05
 
@@ -1041,6 +1181,8 @@ so `/api/healthz/errors` — which would have shown that stack trace in one
 request instead of a log hunt — is unreachable there.
 
 **Nothing is switched over.** The cutover remains one line and a web rebuild.
+_(Superseded 2026-09-05: it happened. See «The Cloud Run cutover happened, and
+this file did not say so» at the top.)_
 
 ## Cloud Run answers the cold-start question: ~1-3s, not 51s, 2026-09-03
 
@@ -1077,7 +1219,11 @@ period, exactly as suspected. **Fixed:** 8s server-side, 15s client-side,
 the latter because that request is app to API to verifier and can be waiting
 on two cold starts (~10.5s worst case) — PR #235.
 
-**Nothing is switched over.** Render still serves the live app, untouched.
+**Nothing is switched over.** _(Superseded 2026-09-05: it was switched over —
+`EXPO_PUBLIC_API_BASE_URL` points at Cloud Run and the Render API and verifier
+have been retired from the blueprint. See the top of this file. The paragraph
+stands as written for its reasoning, not its status.)_ Render still serves the
+live app, untouched.
 `EXPO_PUBLIC_API_BASE_URL` in `render.yaml` still points `iqraa-web` at
 `iqraa-api-dfxu.onrender.com/api`; changing that line and rebuilding the web
 service is the entire cutover. Deliberately not done, because the health
@@ -1099,6 +1245,8 @@ fail only when a teacher generates a worksheet or opens a lesson image.
 Dockerfiles live on `claude/cloud-run-test` (unmerged, deliberately). They
 mirror `render.yaml`'s own build and start commands rather than optimizing —
 same pnpm version, same `--filter`, same Python pin, same seed-then-start.
+_(Superseded 2026-09-05: they are on `main` — `00b3c9a`, both files, each with
+its `gcloud run deploy` line in the header. See [`docs/deploying.md`](./docs/deploying.md).)_
 
 ## The verifier went unreachable again, and the blueprint was the trap, 2026-09-03
 

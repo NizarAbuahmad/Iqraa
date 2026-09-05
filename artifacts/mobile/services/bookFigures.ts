@@ -31,6 +31,12 @@ import chemS2 from '../../../knowledge-base/grade-10-chemistry/figures/chem-s2-s
 import finlitS1 from '../../../knowledge-base/grade-10-finlit/figures/finlit-s1-student-book/index.json' with { type: 'json' };
 import g9MathS1 from '../../../knowledge-base/grade-9-math/figures/g9-math-s1-student-book/index.json' with { type: 'json' };
 import g9MathS2 from '../../../knowledge-base/grade-9-math/figures/g9-math-s2-student-book/index.json' with { type: 'json' };
+import physS1 from '../../../knowledge-base/grade-10-physics/figures/phys-s1-student-book/index.json' with { type: 'json' };
+import physS2 from '../../../knowledge-base/grade-10-physics/figures/phys-s2-student-book/index.json' with { type: 'json' };
+import bioS1 from '../../../knowledge-base/grade-10-biology/figures/bio-s1-student-book/index.json' with { type: 'json' };
+import bioS2 from '../../../knowledge-base/grade-10-biology/figures/bio-s2-student-book/index.json' with { type: 'json' };
+import earthS1 from '../../../knowledge-base/grade-10-earth-science/figures/earth-s1-student-book/index.json' with { type: 'json' };
+import earthS2 from '../../../knowledge-base/grade-10-earth-science/figures/earth-s2-student-book/index.json' with { type: 'json' };
 
 export type BookFigure = {
   /** File name inside the book's figure directory, e.g. `p021.png`. */
@@ -66,6 +72,12 @@ const INDEXES: { sourceId: string; figures: BookFigure[] }[] = [
   finlitS1 as { sourceId: string; figures: BookFigure[] },
   g9MathS1 as { sourceId: string; figures: BookFigure[] },
   g9MathS2 as { sourceId: string; figures: BookFigure[] },
+  physS1 as { sourceId: string; figures: BookFigure[] },
+  physS2 as { sourceId: string; figures: BookFigure[] },
+  bioS1 as { sourceId: string; figures: BookFigure[] },
+  bioS2 as { sourceId: string; figures: BookFigure[] },
+  earthS1 as { sourceId: string; figures: BookFigure[] },
+  earthS2 as { sourceId: string; figures: BookFigure[] },
 ];
 
 /** `sourceId|unit|lesson`, the only key both files share. */
