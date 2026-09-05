@@ -209,11 +209,15 @@ export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9'];
 // isPickerCurriculumVisible gates every physics lesson invisible and
 // getLessonById returns undefined for all of them — the book would be listed
 // in MVP_BOOK_IDS while its lessons resolved to nothing.
-// 'arabic', 'islamic' and 'computer' joined on 2026-09-05: modeled in SUBJECTS
-// since the MVP list existed, but never surfaced. No book/catalog exists for
-// any of the three yet — the curriculum screens fall through to their
-// existing "no books"/"no lessons" empty states rather than a broken list.
-export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy', 'english', 'physics', 'earth-science', 'biology', 'arabic', 'islamic', 'computer'];
+// 'arabic', 'islamic' and 'computer' were appended on 2026-09-05 and removed
+// again the same day. No book or catalog exists for any of the three, so every
+// tile bottomed out in the "no books" empty state — honest in a demo, but App
+// Review reads three placeholder sections as an incomplete app (guideline 2.1),
+// and `finlitCurriculum.test.ts` already pinned "every MVP subject resolves to
+// at least one visible book". Append them back the day a book lands; they stay
+// in SUBJECTS, so nothing else has to change. Appending to the tail is what
+// makes this reversible — the seven positions below never move.
+export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy', 'english', 'physics', 'earth-science', 'biology'];
 /** Main semester books only (guides/exercises stay in data, hidden from UI). */
 export const MVP_BOOK_IDS: readonly string[] = [
   'book-math-10',

@@ -297,6 +297,74 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## A release build would have shipped broken, 2026-09-05
+
+A store-readiness review of the mobile app. The app itself is native-safe —
+every `document`/`localStorage`/`window` use is behind a `Platform.OS === 'web'`
+guard and the native branches (share sheet, cache writes, print) are written —
+but the *release configuration* was not, in four ways that a checked-in test or
+a resolved-config dump could each have caught. `expo-doctor` now reports 18/18.
+
+- **`eas.json` declared no `env`, so a production build inlined nothing.**
+  `EXPO_PUBLIC_*` values are baked in at build time; with none set,
+  `getApiBaseUrl()` falls through to the relative string `/api`
+  (`services/apiClient.ts`), which is not a resolvable URL on native. Every
+  request would have failed on first launch, and the same gap left
+  `DEMO_MODE` at its `true` default — the whole app mocked, and mock content
+  is indistinguishable from real. Both `preview` and `production` now set
+  `EXPO_PUBLIC_API_BASE_URL` (Cloud Run) and `EXPO_PUBLIC_DEMO_MODE=false`.
+  `artifacts/mobile/.env` is gitignored, so EAS never uploaded it and the
+  profile `env` is the only source — do not assume the local `.env` reaches a
+  build.
+- **The build asked for permissions the app does not use.** `expo-location`
+  was a dependency with no callers anywhere in app code, and autolinking is
+  enough: it put `NSLocationWhenInUseUsageDescription` plus
+  `ACCESS_FINE_LOCATION`/`ACCESS_COARSE_LOCATION` into the manifest, which
+  Play gates behind a Location Permission Declaration and rejects when it is
+  not core functionality. Removed. Separately, every `expo-image-picker` call
+  is `launchImageLibraryAsync` with `mediaTypes: ['images']` — there is no
+  camera or recording path — so the plugin now sets `cameraPermission: false`
+  and `microphonePermission: false`, dropping `NSCameraUsageDescription`,
+  `NSMicrophoneUsageDescription` and `RECORD_AUDIO`, and gives the photos
+  prompt a purpose string that names the actual use. Read the resolved
+  manifest with `npx expo config --type introspect`, not `app.json` — none of
+  these appeared in `app.json`.
+- **ATS allowed cleartext to anywhere.** Expo's default
+  `NSAllowsArbitraryLoads: true` was reaching the build; App Review asks about
+  it. Now `false`, with `NSAllowsLocalNetworking: true` so a dev client can
+  still reach a LAN API over http, plus the localhost exception.
+- **Three subject tiles dead-ended.** `arabic`, `islamic` and `computer` were
+  appended to `MVP_SUBJECT_IDS` earlier the same day; no book or catalog
+  exists for any of them, so each bottomed out in the "no books" empty state.
+  Honest in a demo, but App Review reads placeholder sections as an incomplete
+  app (guideline 2.1) — and `finlitCurriculum.test.ts` already asserted "every
+  MVP subject resolves to at least one visible book", so `main` would have
+  gone red. Removed from the tail, which is what keeps the change reversible:
+  the seven remaining positions never move, and the three can be appended back
+  the day a book lands. They stay in `SUBJECTS`.
+
+Also: three Expo packages were a patch behind, and bumping them split
+`expo-constants` into two installed copies (`expo-asset` pins `~18.0.13`) —
+a duplicate native module is a build error, not a warning. `pnpm dedupe`
+collapsed it; no override was needed.
+
+Green after all of it: typecheck clean, mobile 1165/1165 (10 skipped), API
+452/452.
+
+**None of this makes the app publishable.** The blockers that remain are
+compliance and process, not configuration: there is no account deletion
+anywhere in the app or API (Apple 5.1.1(v) and Play both require it), the
+privacy-policy and terms rows in `app/settings.tsx` are `onPress={() => {}}`
+against copy at registration that already claims both documents exist,
+messaging carries image attachments with block and report endpoints but
+nothing that can act on a report or eject a user (`routes/admin.ts` has one
+route, `usage-summary`), and students get accounts by claim code with no
+birthdate, age or guardian-consent field anywhere in the schema. **No EAS
+build has ever been made**, so push delivery, image picking and the app icon
+remain unverified on a device, and `newArchEnabled` + `reactCompiler` are both
+experimental — Expo Go over LAN is not evidence that a release build runs.
+There are no store assets and no `google-services.json` for Android FCM.
+
 ## A student sitting an exam can see the book's diagrams, 2026-09-05
 
 The last surface with no figures at all. A worksheet, quiz, lesson plan,
