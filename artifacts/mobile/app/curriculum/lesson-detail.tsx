@@ -155,7 +155,10 @@ export default function LessonDetailScreen() {
           ))}
         </Section>
 
-        {/* Keywords */}
+        {/* Keywords — the NCCD books don't all print a per-lesson term list
+            (Arabic prints none at all), and an empty card under a heading
+            reads as a loading failure rather than "the book says nothing". */}
+        {keywordsArr.length > 0 && (
         <Section title={t('keyTerms')} icon="pricetag-outline" color={color} isRTL={isRTL}>
           <View style={[styles.keywords, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             {keywordsArr.map(k => (
@@ -165,13 +168,16 @@ export default function LessonDetailScreen() {
             ))}
           </View>
         </Section>
+        )}
 
         {/* Teacher Notes */}
+        {!!noteText && (
         <Section title={t('teacherNotes')} icon="clipboard-outline" color={color} isRTL={isRTL}>
           <Text style={[styles.noteText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
             {noteText}
           </Text>
         </Section>
+        )}
 
         {/* Learning Outcomes */}
         <Section title={t('learningOutcomes')} icon="trophy-outline" color={color} isRTL={isRTL}>
