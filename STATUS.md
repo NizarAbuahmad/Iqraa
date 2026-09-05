@@ -297,6 +297,69 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## A student sitting an exam can see the book's diagrams, 2026-09-05
+
+The last surface with no figures at all. A worksheet, quiz, lesson plan,
+activity, deck and workspace item all carried the lesson's textbook diagrams;
+the exam — the one paper a student is graded on — carried none, on either side.
+`app/take/[code].tsx` did not import `Image`.
+
+**The blocker was that an exam does not know its lesson.** `evaluations.lessonId`
+is a real column and is **always null**: the route reads it, `new.tsx` never
+sends it, and `services/evaluations.ts` does not mention it. Same for `unitId`.
+
+What an exam always has is `objectiveIds` — at least one, validated against the
+book at create time (`objectivesAreWithinBook`), and generation refuses to run
+unscoped. And every `CurriculumObjective` carries `lessonId`, in the same
+`kbl-…` namespace `figuresForLesson` keys on. So the lesson is *derived*, and
+deriving it is better than reading the column would have been: one path is
+checked, the other is free text nothing validates. Filing another book's
+diagram onto an exam paper is the failure that avoids.
+
+`lessonIdsForObjectiveIds()` lives in `lib/curriculum/src/objectives.ts` rather
+than beside either caller, because the API and the app both need it and cannot
+import each other. It was written twice before it was written once.
+
+**An exam spans several lessons — every other figure caller holds exactly one.**
+So the refs are round-robined across them, not concatenated: the circle-chords
+lesson alone has 25 figures, and concatenating would spend the whole cap of 6 on
+the first lesson and show nothing from the second, which reads as "the rest of
+this exam has no diagrams" rather than "the cap was reached". Verified on a real
+two-lesson chemistry exam: p009, p021, p010, p024, p011, p025 — alternating.
+
+**Ids on the wire, never URIs.** The server adds `lessonIds` to
+`POST /take/:code/claim` and to `/take/attempt/state` (the resume path — a panel
+that vanished on refresh would read as the diagrams being withdrawn). The
+figures are Metro-bundled, so the client resolves them locally with no network;
+and the URIs are build-time bundle paths that differ between web and native,
+which the server cannot know. Objective ids stay server-side:
+`sanitizeQuestionForStudent` projects only `{id, orderIndex, type, marks, body}`,
+and widening that allowlist to ship curriculum internals to an unauthenticated
+share-code holder is a bigger change than this earns.
+
+**The exam generator had no figure rule.** The deck generator has had
+`FIGURE_RULE_AR` since decks shipped checks reading «يمثل الرسم البياني…» beside
+an empty slide; `llmGenerator.ts` had nothing, so a stem could point at a
+picture that was not on the paper. It has one now, and deliberately not the same
+one: the deck's is a flat ban because that path can only draw what it derives
+from equations in the text, whereas the exam paper now really does carry the
+lesson's figures. A general reference is honest; naming or numbering a specific
+one is not, because the panel shows all of them in book order, chosen by
+nothing, and the model has never seen them.
+
+Verified: typecheck clean; mobile 1164 / 0 fail / 10 known skips; api-server
+443 / 0 fail; curriculum 105 / 0 fail. The derivation was exercised end to end
+against real data — objective ids → lessons → crops on disk — rather than
+against fixtures, which would only agree with themselves.
+
+**Found in passing, not fixed here:** `matching` questions render as a bare
+prompt with no pairs in `take/[code].tsx` — a student gets a question they
+cannot answer. And `lesson-sci-1` (grade-8 science, `catalog.ts` «Other books»)
+is the one lesson id in the catalog not minted through `lessonKbId()`; it is
+outside `MVP_SUBJECT_IDS` and carries no figures, so nothing reads it, but a
+blanket `/^kbl-/` assertion fails on it — `objectives.test.ts` asserts per-MVP-
+subject and says why, rather than loosening to hide it.
+
 ## One email is one role: a teacher cannot also be a parent, 2026-09-05
 
 Found while inviting the first parent: the teacher's own email could not be

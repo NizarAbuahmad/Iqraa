@@ -30,6 +30,8 @@ import { summariseKeyChecks, type KeyCheckSummary } from '@/services/keyCheckSum
 import { isolateForeignRuns, prettifySymPy } from '@/services/mathRender';
 import { copyToClipboard } from '@/services/share';
 import { ClassPickerSheet } from '@/components/ui/ClassPickerSheet';
+import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
+import { bookFigureRefsForObjectives } from '@/services/bookFigureUri';
 import type { TranslationKey } from '@/services/i18n';
 
 const ACCENT = '#1B6B62';
@@ -91,6 +93,19 @@ export default function EvaluationDetailScreen() {
   // verified, verifier unreachable, nothing checkable — and a teacher cannot
   // act on silence. Derived from the questions so it survives a reload.
   const keyChecks = summariseKeyChecks(questions, evaluation?.subjectId);
+  // Prefer the objectives the *questions* actually target over the
+  // evaluation's own scope: a generated paper can come back covering fewer
+  // objectives than were requested (a type the generator could not produce for
+  // one of them, an item the verifier contradicted and dropped), and showing a
+  // diagram for a lesson no question asks about invites a teacher to look for
+  // a question that is not there. Falls back to the evaluation's scope for a
+  // paper exam, whose questions carry objectives but no generated body.
+  const examFigures = bookFigureRefsForObjectives(
+    questions.length > 0
+      ? questions.map(q => q.objectiveId)
+      : (evaluation?.objectiveIds ?? []),
+    lang === 'ar',
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState<'generate' | 'publish' | null>(null);
@@ -336,6 +351,28 @@ export default function EvaluationDetailScreen() {
           </View>
         ))}
       </View>
+
+      {/* The book's own diagrams for the lessons this exam covers.
+
+          Lesson-level, never bound to a question, for the reason
+          `exportHtml.ts`'s `figuresSectionHTML` documents: the model that
+          wrote these questions never saw the figures, so it cannot know which
+          one belongs to which item, and letting it choose would be a citation
+          it invented. A teacher reviewing the paper matches them by eye.
+
+          The lesson comes from `objectiveIds`, not from `evaluation.lessonId`
+          — that column exists and is always null, because no client has ever
+          sent it. */}
+      {questions.length > 0 && (
+        <View style={{ paddingHorizontal: 20 }}>
+          <BookFiguresPanel
+            figures={examFigures}
+            isRTL={isRTL}
+            colors={colors}
+            labels={{ title: t('bookFiguresTitle'), note: t('bookFiguresNote') }}
+          />
+        </View>
+      )}
 
       {evaluation?.status === 'draft' && (
         <View style={{ paddingHorizontal: 20, gap: 10 }}>

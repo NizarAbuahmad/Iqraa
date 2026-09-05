@@ -34,6 +34,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
+import { bookFigureRefsForLessons } from '@/services/bookFigureUri';
 import {
   StudentExamError,
   claimName,
@@ -69,6 +71,10 @@ export default function TakeExamScreen() {
   const [chosen, setChosen] = useState<RosterName | null>(null);
   const [token, setToken] = useState('');
   const [questions, setQuestions] = useState<StudentQuestion[]>([]);
+  // Curriculum lessons this paper covers, sent by the server as ids only. The
+  // figures are bundled into this app, so they resolve locally with no network
+  // and nothing student-facing crosses the wire but a few short strings.
+  const [lessonIds, setLessonIds] = useState<string[]>([]);
   const [answers, setAnswers] = useState<Record<string, StudentResponse>>({});
   const [index, setIndex] = useState(0);
   const [saveFailed, setSaveFailed] = useState(false);
@@ -99,11 +105,15 @@ export default function TakeExamScreen() {
       const claimed = await claimName(code, chosen.id);
       setToken(claimed.token);
       setQuestions(claimed.questions);
+      setLessonIds(claimed.lessonIds ?? []);
       // A claim can only happen once, so there is nothing saved yet — but read
       // the state back anyway rather than assuming, so resume and first-start
       // share one code path.
       const state = await getExamState(claimed.token);
       setAnswers(Object.fromEntries(state.answers.map(a => [a.questionId, a.response])));
+      // Resume wins over claim: an older API answers neither and the panel
+      // simply stays empty, which is what this screen did before figures.
+      if (state.lessonIds) setLessonIds(state.lessonIds);
       setPhase('answering');
     } catch (err) {
       setError(err instanceof StudentExamError ? err.message : t('takeStartFailed'));
@@ -330,6 +340,7 @@ export default function TakeExamScreen() {
   }
 
   const question = questions[index];
+  const examFigures = bookFigureRefsForLessons(lessonIds, lang === 'ar');
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       {header}
@@ -359,6 +370,25 @@ export default function TakeExamScreen() {
             t={t}
           />
         ) : null}
+
+        {/* The book's own diagrams for the lessons this paper covers.
+
+            Under the question rather than on its own screen, because a student
+            reading «انظر الشكل المجاور» — which is how the book itself writes
+            such a question — needs to look at it without losing their place.
+            Lesson-level, never bound to one question: the model that wrote
+            these never saw the figures, so picking one per item would be a
+            citation it invented, the same refusal `exportHtml.ts` documents.
+
+            Same panel the teacher sees on the review screen, so the paper a
+            student sits and the paper a teacher checked show the same
+            diagrams. */}
+        <BookFiguresPanel
+          figures={examFigures}
+          isRTL={isRTL}
+          colors={colors}
+          labels={{ title: t('bookFiguresTitle'), note: t('bookFiguresStudentNote') }}
+        />
 
         <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 10, marginTop: 8 }}>
           <Pressable
