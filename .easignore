@@ -1,0 +1,96 @@
+# What EAS Build uploads. NOT an addition to .gitignore — a REPLACEMENT.
+#
+# When this file exists, EAS CLI ignores .gitignore entirely and uses only
+# what is here. That is the footgun: drop a line and node_modules goes up with
+# the archive. Everything below the marker is a verbatim copy of .gitignore
+# for exactly that reason — edit .gitignore and copy the change down here.
+#
+# Why it exists: the first build (2026-09-05, commit 71f484b) uploaded 424 MB,
+# of which 231 MB was attached_assets — the source curriculum PDFs, referenced
+# only by lib/curriculum/scripts/localSources.ts, an extraction script that
+# never runs on a build machine. knowledge-base is NOT excluded and must not
+# be: services/bookFigureAssets.ts static-requires those PNGs, so Metro bundles
+# them and a build without them fails to resolve.
+
+# ── Build-irrelevant, excluded on top of .gitignore ──────────────────────────
+attached_assets/
+cqv-reports/
+docs/
+artifacts/mockup-sandbox/
+.github/
+
+# ── Verbatim copy of .gitignore below this line ──────────────────────────────
+# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+
+# compiled output
+dist
+tmp
+out-tsc
+*.tsbuildinfo
+.expo
+.expo-shared
+
+# dependencies
+node_modules
+
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# misc
+/.sass-cache
+/connect.lock
+/coverage
+/libpeerconnection.log
+npm-debug.log
+yarn-error.log
+testem.log
+/typings
+
+# System Files
+.DS_Store
+Thumbs.db
+
+.cursor/rules/nx-rules.mdc
+.github/instructions/nx.instructions.md
+
+# Local env
+.env
+.env.local
+.env.*.local
+
+# Math verifier local artifacts
+artifacts/math-verifier/.venv/
+artifacts/math-verifier/prove_slice_report.json
+artifacts/math-verifier/__pycache__/
+artifacts/math-verifier/**/__pycache__/
+
+# Large teacher PDF support packs (catalog JSON is committed; binaries stay local)
+knowledge-base/**/support-pdfs/
+knowledge-base/**/*.pdf
+
+# Replit
+.cache/
+.local/
+.config/
+
+# Provider-evaluation output (generated content + raw model responses)
+eval-out/
+
+# Claude Code local state
+.claude/
+
+# Byte-compiled helpers for scripts/ — regenerated on every run.
+scripts/__pycache__/

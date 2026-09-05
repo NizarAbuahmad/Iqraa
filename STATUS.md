@@ -321,6 +321,60 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The app has been built for a real device, 2026-09-05
+
+The first EAS build in the project's life. `artifacts/mobile` has always been
+an Expo app that nothing had ever compiled — every earlier note that something
+was "unverified on device" traced back to that. Android `preview`, build
+`5c38a5fb-3eb3-459b-9b5a-7452f8e6cf99`, commit 71f484b, **finished** in 22
+minutes. Installable APK:
+https://expo.dev/artifacts/eas/3rXtdVfq1c1aV--xlpAx0rGAanGywjGy4ZuwAgKHSRo.apk
+
+Most of the setup turned out to be already done — `eas-cli` is authenticated
+as `nizar.62` and the project has always been linked as `@nizar.62/mobile`
+(id `83fc6522…`, matching `app.json`). What was missing was anyone running it.
+
+Two things the run confirmed that could not be confirmed any other way:
+
+- **The `eas.json` env fix works.** The build log says
+  `Environment variables loaded from the "preview" build profile "env"
+  configuration: EXPO_PUBLIC_API_BASE_URL, EXPO_PUBLIC_DEMO_MODE`. Before that
+  block existed a release build inlined nothing and resolved its API base to
+  the relative string `/api` — see «A release build would have shipped broken».
+- **An Android keystore now exists**, generated on Expo's servers during this
+  build. It is a durable credential on the account, not a local file, and it
+  is what every future Android build and Play upload is signed with.
+
+`versionCode` initialised to 1 under `appVersionSource: "remote"`, so EAS owns
+the number from here and `autoIncrement` on the production profile will move
+it.
+
+**Build from the branch, not from whatever is checked out.** This was built in
+a scratch worktree at `origin/claude/store-readiness-release-config` on
+purpose: the shared checkout was on `main`, PR #269 is unmerged, and a build
+from there would have used the old `eas.json` — the exact broken configuration
+the branch exists to fix, silently.
+
+`.easignore` added after the build, and **not yet exercised by one**. That
+first archive was 424 MB, 231 MB of it `attached_assets` — source curriculum
+PDFs referenced only by `lib/curriculum/scripts/localSources.ts`, an
+extraction script that never runs on a build machine. Note the footgun the
+file's own header records: `.easignore` **replaces** `.gitignore` for the
+archive rather than adding to it, so it carries a verbatim copy of
+`.gitignore` beneath its own excludes. `knowledge-base` is deliberately NOT
+excluded — `services/bookFigureAssets.ts` static-requires those PNGs and Metro
+bundles them.
+
+What this does NOT establish. **Nobody has installed the APK.** Push delivery,
+image picking and the app icon are still exactly as unverified as before —
+a build existing is not a build running. `newArchEnabled` and `reactCompiler`
+are both experimental and this is the first time either has been compiled.
+
+iOS is untouched and is blocked on a person: it needs an Apple Developer
+Program membership and an Apple ID sign-in. Android push also still needs an
+FCM service account key uploaded to EAS — not a build blocker, but until it is
+there `expo-notifications` will register tokens that nothing can deliver to.
+
 ## v1 is teacher-only, and a roster now needs a consent to exist, 2026-09-05
 
 The last of the four compliance blockers, and the only one that was a
