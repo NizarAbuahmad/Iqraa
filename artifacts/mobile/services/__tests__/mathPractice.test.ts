@@ -51,12 +51,12 @@ describe('isMathContext — real KB lesson (kb subject is authoritative)', () =>
 
 describe('isMathContext — no KB lesson (subject is the only signal)', () => {
   it('falls back to the caller-supplied subject', () => {
-    assert.equal(isMathContext('موضوع حر غير موجود في المنهج', null, 'Mathematics'), true);
-    assert.equal(isMathContext('موضوع حر غير موجود في المنهج', null, 'Chemistry'), false);
+    assert.equal(isMathContext('موضوع حر غير موجود في المنهاج', null, 'Mathematics'), true);
+    assert.equal(isMathContext('موضوع حر غير موجود في المنهاج', null, 'Chemistry'), false);
   });
 
   it('falls back to the topic-text heuristic when no subject is given either', () => {
     assert.equal(isMathContext('حل معادلة تربيعية', null), true);
-    assert.equal(isMathContext('موضوع حر غير موجود في المنهج', null), false);
+    assert.equal(isMathContext('موضوع حر غير موجود في المنهاج', null), false);
   });
 });

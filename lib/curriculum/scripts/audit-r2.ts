@@ -22,8 +22,10 @@ import { fileURLToPath } from 'node:url';
 import { G10_SOURCES } from '../src/sources.ts';
 import { LOCAL_FILES } from './localSources.ts';
 import { listR2Keys } from './r2.ts';
+import { loadEnvFile } from '../../../scripts/load-env.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
+loadEnvFile(path.join(HERE, '..', '..', '..', '.env'));
 const EXTRACTED = path.join(HERE, '..', 'src', 'data', 'extracted');
 
 const bucketArg = process.argv.indexOf('--bucket');
