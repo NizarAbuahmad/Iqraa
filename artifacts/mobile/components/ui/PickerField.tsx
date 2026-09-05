@@ -38,23 +38,34 @@ interface Props {
    */
   disabled?: boolean[];
   disabledNote?: string;
+  /** Scrollable height of the open dropdown. quiz and worksheet use 180. */
+  maxHeight?: number;
+  /**
+   * Background of the selected row. Defaults to `colors.secondary`, a fixed
+   * teal. quiz and worksheet pass `accent + '15'` instead, because their
+   * accents are amber and violet and a teal row on those screens looks like
+   * a bug — the tint is keyed to the screen, not to the theme.
+   */
+  selectedTint?: string;
+  /** Tint the closed trigger's border with `accent` while open. quiz only. */
+  highlightBorderWhenOpen?: boolean;
 }
 
-export function PickerField({ label, value, options, onChange, colors, isRTL, accent, disabled, disabledNote }: Props) {
+export function PickerField({ label, value, options, onChange, colors, isRTL, accent, disabled, disabledNote, maxHeight = 200, selectedTint, highlightBorderWhenOpen }: Props) {
   const [open, setOpen] = useState(false);
   return (
     <View style={{ marginBottom: 16 }}>
       <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
       <Pressable
         onPress={() => setOpen(o => !o)}
-        style={[styles.pickerBtn, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+        style={[styles.pickerBtn, { backgroundColor: colors.card, borderColor: highlightBorderWhenOpen && open ? accent : colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
       >
         <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{value}</Text>
         <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
       </Pressable>
       {open && (
         <View style={[styles.pickerDropdown, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-          <ScrollView nestedScrollEnabled style={{ maxHeight: 200 }}>
+          <ScrollView nestedScrollEnabled style={{ maxHeight }}>
             {options.map((o, i) => {
               const isOff = disabled?.[i] === true;
               return (
@@ -63,7 +74,7 @@ export function PickerField({ label, value, options, onChange, colors, isRTL, ac
                   disabled={isOff}
                   accessibilityState={{ disabled: isOff, selected: o === value }}
                   onPress={() => { if (isOff) return; onChange(i); setOpen(false); }}
-                  style={[styles.pickerOption, { borderBottomColor: colors.border, backgroundColor: !isOff && o === value ? colors.secondary : 'transparent', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+                  style={[styles.pickerOption, { borderBottomColor: colors.border, backgroundColor: !isOff && o === value ? selectedTint ?? colors.secondary : 'transparent', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
                 >
                   <Text style={[{ color: isOff ? colors.mutedForeground : (o === value ? accent : colors.foreground), fontFamily: o === value && !isOff ? 'Cairo_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{o}</Text>
                   {isOff && disabledNote
