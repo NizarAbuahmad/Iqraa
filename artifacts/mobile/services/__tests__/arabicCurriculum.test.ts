@@ -73,7 +73,6 @@ describe('Arabic G10 — curriculum browser', () => {
     for (const l of lessons) {
       assert.ok(l.titleAr.length > 0, `${l.id} has no Arabic title`);
       assert.ok(l.objectives.length > 0, `${l.id} has no objectives`);
-      // Neither student book prints حصص counts; one 45-min period is the floor.
       assert.ok(l.estimatedDuration >= 45, `${l.id} has no duration`);
     }
     assert.equal(new Set(lessons.map(l => l.id)).size, 50, 'duplicate lesson ids');
@@ -95,6 +94,36 @@ describe('Arabic G10 — curriculum browser', () => {
         assert.ok(find(l.id), `browser lesson ${l.id} has no matching KB lesson`);
       }
     }
+  });
+
+  it('takes S1 durations from the teacher guide, and S2 from the floor', () => {
+    // S1's guide prints حصص in each lesson heading (2-5); S2 has no guide in
+    // the repo at all, so its lessons sit on the one-period fallback. The two
+    // books differ here on purpose, and a regression that flattened S1 back to
+    // 45 everywhere would otherwise be invisible.
+    const s1 = lessonsOf(S1).map(l => l.estimatedDuration);
+    assert.deepEqual(s1, [
+      90, 90, 180, 90, 225,
+      90, 90, 180, 90, 180,
+      90, 90, 180, 90, 180,
+      90, 90, 180, 90, 180,
+      90, 90, 180, 90, 180,
+    ]);
+    assert.equal(s1.reduce((a, b) => a + b, 0) / 45, 71, 'total حصص');
+    assert.deepEqual(
+      [...new Set(lessonsOf(S2).map(l => l.estimatedDuration))],
+      [45],
+      'S2 has no teacher guide — every lesson should be the 45-minute floor',
+    );
+  });
+
+  it('names the unit 3 reading text as Dagestani, not Danish', () => {
+    // Shipped wrong once. Both the student book and the teacher guide say
+    // «الدّاغستانيّ», and p72 of the student book says «بلد داغستان» outright.
+    const lesson = lessonsOf(S1).find(l => l.id.endsWith('u3_l3'));
+    assert.ok(lesson, 'unit 3 reading lesson missing');
+    assert.match(lesson.titleAr, /الدّاغستانيّ/);
+    assert.doesNotMatch(lesson.titleAr, /دانمارك/);
   });
 
   it('keeps the two semesters in separate id namespaces', async () => {

@@ -240,11 +240,22 @@ an announcement by default» below.
     page won, and was **checked against the lesson bodies** — p118-124 is the
     Edward Said text, p125 is about citation and academic integrity. The same
     TOC also lists unit 10 before unit 9.
-  - No حصص counts in either book (they print none; the S1 teacher guide is on
-    file but unread for this and no S2 guide is registered at all), no
-    per-lesson term list (neither book prints one), and no download chip (no
-    NCCD hosted URL for any of these PDFs has been verified). All recorded in
-    each data file's `known_gaps`.
+  - **S1 has real حصص since 2026-09-05** — 2-5 per lesson, 71 across the
+    semester — read from `arabic-s1-teacher-guide`'s «مخطط الوحدة», which
+    prints the count inside each lesson heading (and prints «أبني لغتي» as two
+    lettered parts with separate counts, so that lesson's total is their sum).
+    **S2 keeps `periods: null`**, and will until an S2 guide exists — there is
+    no such file in the repo. The test pins both sides so a regression that
+    flattened S1 back to the 45-minute floor would fail rather than blend in.
+  - Reading that guide also caught a shipped error: unit 3's reading text was
+    catalogued as «من الأدب الدّانماركيّ» (Danish). It is **الدّاغستانيّ** —
+    Dagestani — in both the student book and the guide, and p72 of the student
+    book says «بلد داغستان» outright. Fixed, with its own assertion. All 25 S1
+    lesson titles were cross-checked against the guide in the same pass; 24
+    matched.
+  - Still missing: no per-lesson term list (neither book prints one) and no
+    download chip (no NCCD hosted URL for any of these PDFs has been
+    verified). Recorded in each data file's `known_gaps`.
   - `islamic` and `computer` came back OUT of `MVP_SUBJECT_IDS` in the same
     change. `islamic` returned on 2026-09-05 (see below); `computer` has not. All three were appended as tiles on 2026-09-05 with no book behind
     any of them; Arabic earned its place, the other two have nothing to open —
