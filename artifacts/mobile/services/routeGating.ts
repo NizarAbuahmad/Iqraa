@@ -30,6 +30,41 @@ export function isPublicRoute(pathname: string | null | undefined): boolean {
   return PUBLIC_ROUTES.some(p => pathname === p || pathname.startsWith(`${p}/`));
 }
 
+/**
+ * Where a signed-in parent or student is allowed to go.
+ *
+ * An allowlist, not a list of teacher routes, because the two churn at very
+ * different rates: teacher screens are added constantly, non-teacher ones
+ * almost never. Naming the small stable set means a screen added tomorrow is
+ * teacher-only by default — which is the right default — and the cost of
+ * getting it wrong is a parent bounced to Messages, never a teacher route
+ * left standing open.
+ *
+ * This is not the enforcement. Every generation and roster route already
+ * rejects these roles server-side (middlewares/auth.ts); the tab bar already
+ * hides the tabs (see app/(tabs)/_layout.tsx). This is for arriving *without*
+ * the tab bar — a bookmark, a typed URL, a shared link — so the app stops
+ * rendering a screen whose every call is going to come back 403.
+ */
+const NON_TEACHER_ROUTES = ['/notifications', '/messaging', '/curriculum', '/profile'];
+
+/**
+ * Teacher-only despite sitting under an allowed prefix: this is the screen
+ * that mints a student's claim code, and it reads and writes the roster.
+ */
+const NON_TEACHER_EXCEPTIONS = ['/messaging/claim'];
+
+function matchesPrefix(pathname: string, prefixes: string[]): boolean {
+  return prefixes.some(p => pathname === p || pathname.startsWith(`${p}/`));
+}
+
+export function isNonTeacherRoute(pathname: string | null | undefined): boolean {
+  // Fails closed, like isPublicRoute: an unknown path is not somewhere a
+  // non-teacher may be, so they get sent back to Messages.
+  if (!pathname) return false;
+  return matchesPrefix(pathname, NON_TEACHER_ROUTES) && !matchesPrefix(pathname, NON_TEACHER_EXCEPTIONS);
+}
+
 /** Routes whose whole purpose is to lead somewhere else once you're signed in. */
 const ENTRY_ROUTES = ['/login', '/register', '/forgot-password', '/onboarding'];
 
