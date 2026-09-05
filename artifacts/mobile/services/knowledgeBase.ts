@@ -74,6 +74,14 @@ import {
   buildArabicSem2Catalog,
 } from './curriculumG10ArabicSem2.ts';
 import {
+  ISLAMIC_S1_BOOK_ID,
+  buildIslamicSem1Catalog,
+} from './curriculumG10IslamicSem1.ts';
+import {
+  ISLAMIC_S2_BOOK_ID,
+  buildIslamicSem2Catalog,
+} from './curriculumG10IslamicSem2.ts';
+import {
   ENGLISH_COMMERCE_S1_KB_BOOK_ID,
   ENGLISH_AGRICULTURE_S1_KB_BOOK_ID,
   ENGLISH_HOSPITALITY_S1_KB_BOOK_ID,
@@ -231,6 +239,24 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Arabic – Grade 10 – Semester 2',
     semester: 2,
     source: 'knowledge-base/grade-10-arabic/support-pdfs/كتاب الطالب لمادة اللغة العربية للصف العاشر الفصل الثاني.pdf',
+  },
+  {
+    id: ISLAMIC_S1_BOOK_ID,
+    gradeId: 'grade-10',
+    subjectId: 'islamic',
+    titleAr: 'التربية الإسلامية – الصف العاشر – الفصل الأول',
+    titleEn: 'Islamic Education – Grade 10 – Semester 1',
+    semester: 1,
+    source: 'دليل المعلم لمادة التربية الإسلامية الصف العاشر الفصل الأول.pdf',
+  },
+  {
+    id: ISLAMIC_S2_BOOK_ID,
+    gradeId: 'grade-10',
+    subjectId: 'islamic',
+    titleAr: 'التربية الإسلامية – الصف العاشر – الفصل الثاني',
+    titleEn: 'Islamic Education – Grade 10 – Semester 2',
+    semester: 2,
+    source: 'دليل المعلم لمادة التربية الإسلامية الصف العاشر الفصل الثاني.pdf',
   },
   {
     id: ENGLISH_COMMERCE_S1_KB_BOOK_ID,
@@ -1257,6 +1283,8 @@ const _chemSem2 = buildChemSem2Catalog();
 const _finlitSem1 = buildFinlitSem1Catalog();
 const _arabicSem1 = buildArabicSem1Catalog();
 const _arabicSem2 = buildArabicSem2Catalog();
+const _islamicSem1 = buildIslamicSem1Catalog();
+const _islamicSem2 = buildIslamicSem2Catalog();
 const _g9MathSem1 = buildG9MathSem1Catalog();
 const _g9MathSem2 = buildG9MathSem2Catalog();
 const _engCommerce = buildEnglishCommerceKbCatalog();
@@ -1391,6 +1419,8 @@ export const KB_UNITS: KBUnit[] = [
   ..._finlitSem1.units,
   ..._arabicSem1.units,
   ..._arabicSem2.units,
+  ..._islamicSem1.units,
+  ..._islamicSem2.units,
   ..._nccdSem1.units,
   ..._nccdSem2.units,
   ..._g9MathSem1.units,
@@ -1411,6 +1441,8 @@ export const KB_LESSONS: KBLesson[] = [
   ..._finlitSem1.lessons.map(enrichLesson),
   ..._arabicSem1.lessons.map(enrichLesson),
   ..._arabicSem2.lessons.map(enrichLesson),
+  ..._islamicSem1.lessons.map(enrichLesson),
+  ..._islamicSem2.lessons.map(enrichLesson),
   ..._nccdSem1.lessons.map(enrichLesson),
   ..._nccdSem2.lessons.map(enrichLesson),
   // No hand-authored G9 rows exist to enrich from — these carry only what

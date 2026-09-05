@@ -246,11 +246,36 @@ an announcement by default» below.
     NCCD hosted URL for any of these PDFs has been verified). All recorded in
     each data file's `known_gaps`.
   - `islamic` and `computer` came back OUT of `MVP_SUBJECT_IDS` in the same
-    change. All three were appended as tiles on 2026-09-05 with no book behind
+    change. `islamic` returned on 2026-09-05 (see below); `computer` has not. All three were appended as tiles on 2026-09-05 with no book behind
     any of them; Arabic earned its place, the other two have nothing to open —
     the Islamic Education S1 student book is on file unextracted, and no
     computer-science PDF has been sourced at all. `finlitCurriculum.test.ts`
     was already red on `main` for exactly this reason.
+- Islamic Education G10 is browsable in both semesters (2026-09-05): 8 units /
+  50 lessons (S1 4x6, S2 7/6/7/6 — that book genuinely varies). Both units
+  restart at الوحدة الأولى each semester, unlike Arabic's, because these books
+  do; the `s1`/`s2` id segment is the only thing separating `u1_l1` from
+  `u1_l1`, and `islamicCurriculum.test.ts` pins that an S1 lookup handed an S2
+  id answers null.
+  - **The only catalog built from a teacher guide rather than a student book.**
+    Both student books (`islamic-s1-student-book`, `islamic-s2-student-book`)
+    are registered `pending` in `g10_sources.json` and have never been
+    extracted; the two guides were, on 2026-09-03. That turned out to be an
+    upgrade: the guides print «الزمن المقترح لتنفيذ الدرس» on every lesson
+    page, so **this is the first Arabic-side book with real `periods`** (1-3
+    حصص) instead of the one-45-minute-period floor every other one falls back
+    to. A test asserts the durations stay whole multiples of 45 and that most
+    exceed one period, because a regression that dropped them would look
+    exactly like the rest of the catalog.
+  - Outcomes come from each lesson's own «نتاجات التعلم» block, **not** from
+    the «مخطط الوحدة» summary table — that table abbreviates: it prints 3 of
+    «الحديث الشريف: حفظ اللسان»'s 6 outcomes. Its «المفاهيم» column is
+    abbreviated the same way and has no second source to check against, so no
+    vocabulary is carried for this subject at all rather than half a term list.
+  - These units carry **no thematic title** — the book names them by ordinal
+    only, over a Qur'anic epigraph — so `title_ar` is «الوحدة الأولى» etc.,
+    which is what the book says, not a placeholder. Also noted in the S2 data
+    file: the guide misprints «دروس الوحدة الثالثة» above unit 4's lesson list.
 - English G10 S1 is browsable (added 2026-08-27): four vocational-track books
   — Commerce (6 units), Agriculture (6 units), Hospitality and Tourism
   (6 units), Industrial/Technical (12 units) — one lesson per unit, sourced

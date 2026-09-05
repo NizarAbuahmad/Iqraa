@@ -60,6 +60,14 @@ import {
   buildArabicSem2BrowserCatalog,
 } from './catalogs/g10ArabicSem2.ts';
 import {
+  ISLAMIC_S1_CURRICULUM_BOOK_ID,
+  buildIslamicSem1BrowserCatalog,
+} from './catalogs/g10IslamicSem1.ts';
+import {
+  ISLAMIC_S2_CURRICULUM_BOOK_ID,
+  buildIslamicSem2BrowserCatalog,
+} from './catalogs/g10IslamicSem2.ts';
+import {
   G9_MATH_S1_CURRICULUM_BOOK_ID,
   buildG9MathSem1BrowserCatalog,
   isG9MathSem1TitleOnlyUnit,
@@ -219,14 +227,15 @@ export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9'];
 // in MVP_BOOK_IDS while its lessons resolved to nothing.
 // 'arabic', 'islamic' and 'computer' were appended on 2026-09-05 as tiles with
 // no book behind any of them; the "no books" empty state they fell through to
-// reads as a broken subject, not an honest one. 'arabic' earned its place the
-// same day when the Semester 1 student book was catalogued. 'islamic' and
-// 'computer' came back off until theirs exist — the Islamic Education S1
-// student book is on file but not extracted, and no computer-science PDF has
-// been sourced at all. Removing them from the TAIL shifts no existing index,
-// and `finlitCurriculum.test.ts` fails the moment a subject is offered here
-// with nothing to open.
-export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy', 'english', 'physics', 'earth-science', 'biology', 'arabic'];
+// reads as a broken subject, not an honest one. All three came back off, and
+// each returns only once it has something to open: 'arabic' the same day (both
+// semesters of the student book), 'islamic' likewise (both semesters, from the
+// teacher guides — the student books are still unextracted). 'computer' stays
+// out: no computer-science PDF has been sourced at all. Note this is an APPEND
+// — 'islamic' is back at the tail, where it was, so no existing index moves.
+// `finlitCurriculum.test.ts` fails the moment a subject is offered here with
+// nothing to open, and now also the reverse.
+export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy', 'english', 'physics', 'earth-science', 'biology', 'arabic', 'islamic'];
 /** Main semester books only (guides/exercises stay in data, hidden from UI). */
 export const MVP_BOOK_IDS: readonly string[] = [
   'book-math-10',
@@ -263,6 +272,11 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // Arabic — both semesters. S2 carries units 6-10, continuing S1's numbering.
   ARABIC_S1_CURRICULUM_BOOK_ID,
   ARABIC_S2_CURRICULUM_BOOK_ID,
+  // Islamic Education — both semesters, sourced from the teacher guides
+  // (the student books are registered but unextracted). Units restart at 1
+  // each semester here, because these books do.
+  ISLAMIC_S1_CURRICULUM_BOOK_ID,
+  ISLAMIC_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -584,6 +598,38 @@ export const BOOKS: Book[] = [
     title: 'Arabic – Grade 10, Semester 2',
     titleAr: 'اللغة العربية (العربية لغتي) – الصف العاشر – الفصل الثاني',
     subjectId: 'arabic',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── Islamic Education Grade 10 – Semesters 1 & 2 ───────────────────────────
+  // hasKnowledgeBase is true and honest, but note what it is built from: the
+  // teacher guides. The student books are registered in g10_sources.json with
+  // status `pending` and have never been extracted, so there is no student-book
+  // text behind these two rows — and no verified NCCD URL either, hence no
+  // download chip.
+  {
+    id: ISLAMIC_S1_CURRICULUM_BOOK_ID,
+    title: 'Islamic Education – Grade 10, Semester 1',
+    titleAr: 'التربية الإسلامية – الصف العاشر – الفصل الأول',
+    subjectId: 'islamic',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: ISLAMIC_S2_CURRICULUM_BOOK_ID,
+    title: 'Islamic Education – Grade 10, Semester 2',
+    titleAr: 'التربية الإسلامية – الصف العاشر – الفصل الثاني',
+    subjectId: 'islamic',
     gradeId: 'grade-10',
     academicYear: '2025-2026',
     language: 'Arabic',
@@ -1584,6 +1630,8 @@ const _nccdSem2Browser = buildNccdSem2BrowserCatalog();
 const _finlitSem1Browser = buildFinlitSem1BrowserCatalog();
 const _arabicSem1Browser = buildArabicSem1BrowserCatalog();
 const _arabicSem2Browser = buildArabicSem2BrowserCatalog();
+const _islamicSem1Browser = buildIslamicSem1BrowserCatalog();
+const _islamicSem2Browser = buildIslamicSem2BrowserCatalog();
 const _chemSem1Browser = buildChemSem1BrowserCatalog();
 const _physSem1Browser = buildPhysSem1BrowserCatalog();
 const _physSem2Browser = buildPhysSem2BrowserCatalog();
@@ -1719,6 +1767,8 @@ export const UNITS: Unit[] = [
   ..._finlitSem1Browser.units,
   ..._arabicSem1Browser.units,
   ..._arabicSem2Browser.units,
+  ..._islamicSem1Browser.units,
+  ..._islamicSem2Browser.units,
   ..._g9MathSem1Browser.units,
   ..._g9MathSem2Browser.units,
   ..._engCommerceBrowser.units,
@@ -1743,6 +1793,8 @@ export const LESSONS: Lesson[] = [
   ..._finlitSem1Browser.lessons,
   ..._arabicSem1Browser.lessons,
   ..._arabicSem2Browser.lessons,
+  ..._islamicSem1Browser.lessons,
+  ..._islamicSem2Browser.lessons,
   ..._g9MathSem1Browser.lessons,
   ..._g9MathSem2Browser.lessons,
   ..._engCommerceBrowser.lessons,
