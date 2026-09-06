@@ -19,6 +19,27 @@
  * Shared across all three picker surfaces — PickerField, PillSelector and
  * lesson-flow's chip row — so the rule for when the note appears lives in one
  * place rather than in eight screens.
+ *
+ * ## Why it sits between the two pickers
+ *
+ * It is keyed off the SUBJECT being hidden but rendered under the GRADE
+ * picker, which looks misplaced until you notice the condition is a fact about
+ * the pair: a subject is hidden exactly when the selected grade has no book
+ * for it, which is exactly what generation refuses. `pickerScope.test.ts` pins
+ * that equality.
+ *
+ * So there is one fact and two fields that can fix it, and either field alone
+ * is the wrong home — a note under the subject picker invites the reader to
+ * change the subject when the grade is as likely the thing they got wrong.
+ * Every screen orders grade then subject, so this position is simultaneously
+ * below the grade and above the subject, and reaches a reader looking at
+ * either. Duplicating it under both said the same sentence twice.
+ *
+ * The grade picker itself is deliberately NOT filtered to match. Grade 9 has
+ * mathematics and nothing else, so hiding grades with no book for the selected
+ * subject would drop Grade 9 for eight of the nine subjects and leave no way
+ * to discover it exists. Hiding is worth it where it removes clutter — one
+ * pickable subject in nine — and not where it removes an option in two.
  */
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';

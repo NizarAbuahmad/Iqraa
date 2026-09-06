@@ -230,6 +230,7 @@ export default function ClassGameScreen() {
             accent={ACCENT}
             pillStyle={styles.pill}
           />
+          <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t('scopeNoCurriculumHint')} isRTL={isRTL} colors={colors} />
           <PillSelector
             label={t('subjects')}
             options={subjects.map((s, i) => ({ value: i, label: isAr ? s.nameAr : s.name })).filter(o => !subjectHidden[o.value])}
@@ -240,7 +241,6 @@ export default function ClassGameScreen() {
             accent={ACCENT}
             pillStyle={styles.pill}
           />
-          <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t('scopeNoCurriculumHint')} isRTL={isRTL} colors={colors} />
 
           <TopicSelector
             subjectId={subjects[subjectIdx].id}
