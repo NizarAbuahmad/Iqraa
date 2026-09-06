@@ -184,6 +184,7 @@ export default function ClassroomBuilderScreen() {
           isRTL={isRTL}
           accent={ACCENT}
         />
+        <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t('scopeNoCurriculumHint')} isRTL={isRTL} colors={colors} />
 
         {/* Subject */}
         <PillSelector
@@ -195,7 +196,6 @@ export default function ClassroomBuilderScreen() {
           isRTL={isRTL}
           accent={ACCENT}
         />
-        <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t('scopeNoCurriculumHint')} isRTL={isRTL} colors={colors} />
 
         {/* Topic */}
         <TopicSelector

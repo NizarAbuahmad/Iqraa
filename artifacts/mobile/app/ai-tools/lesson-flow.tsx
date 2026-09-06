@@ -440,6 +440,7 @@ export default function LessonFlowScreen() {
                 </Pressable>
               ))}
             </ScrollView>
+            <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t('scopeNoCurriculumHint')} isRTL={isRTL} colors={colors} />
 
             {/* Subject */}
             <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', marginTop: 16, textAlign: isRTL ? 'right' : 'left' }]}>
@@ -462,7 +463,6 @@ export default function LessonFlowScreen() {
                   );
                 })}
             </ScrollView>
-            <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t('scopeNoCurriculumHint')} isRTL={isRTL} colors={colors} />
 
             {/* Duration */}
             <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', marginTop: 16, textAlign: isRTL ? 'right' : 'left' }]}>
