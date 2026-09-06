@@ -429,6 +429,25 @@ export default function ThreadScreen() {
                     </Text>
                   </Pressable>
                 ) : null}
+                {/*
+                  The link code lives on the roster, one per student, behind a
+                  small icon on the class screen — teachers could not find it,
+                  which read as "the feature is missing". This is the way back
+                  to it from the one screen they are already on when they want
+                  to invite someone. Not a code of its own: a class-wide join
+                  code is a separate, deliberately-parked decision.
+                */}
+                {thread?.type === 'class_group' && thread.isOwner && thread.classGroupId ? (
+                  <Pressable
+                    onPress={() => { setMenuOpen(false); router.push(`/classes/${thread.classGroupId}`); }}
+                    style={styles.menuRow}
+                  >
+                    <Ionicons name="key-outline" size={18} color={colors.foreground} />
+                    <Text style={[styles.menuText, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align }]}>
+                      {t('messagingStudentCodes')}
+                    </Text>
+                  </Pressable>
+                ) : null}
                 {isOwnerOfGroup ? (
                   <Pressable onPress={() => { setMenuOpen(false); setManageOpen(true); }} style={styles.menuRow}>
                     <Ionicons name="people-outline" size={18} color={colors.foreground} />

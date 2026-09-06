@@ -165,6 +165,8 @@ export interface ThreadDetail {
   titleAr: string;
   /** The creator for a direct/custom_group thread; null for a class_group. */
   createdBy: string | null;
+  /** The class this thread belongs to; null for direct/custom_group threads. */
+  classGroupId: string | null;
   /** Set only for type='direct'. */
   otherParticipant: ChatParticipantInfo | null;
   /** Set only for non-direct (group) threads. */
@@ -183,6 +185,7 @@ interface ApiThread {
   title: string;
   titleAr: string;
   createdBy: string | null;
+  classGroupId: string | null;
   studentPostingEnabled: boolean;
 }
 
