@@ -22,7 +22,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { RosterError, createClass, listClasses, type ClassGroup } from '@/services/roster';
+import { RosterError, archiveClass, createClass, listClasses, type ClassGroup } from '@/services/roster';
+import { confirm } from '@/services/confirm';
 import { countStudents, type TranslationKey } from '@/services/i18n';
 import { getPickerGrades } from '@/services/curriculumData';
 import { RosterConsentGate } from '@/components/RosterConsentGate';
@@ -57,6 +58,7 @@ function ClassesList() {
   const [newName, setNewName] = useState('');
   const [newGradeId, setNewGradeId] = useState('grade-10');
   const [creating, setCreating] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const pickerGrades = getPickerGrades();
 
   /**
@@ -91,6 +93,32 @@ function ClassesList() {
       void load();
     }, [load]),
   );
+
+  const onDelete = async (group: ClassGroup) => {
+    const name = lang === 'ar' && group.nameAr ? group.nameAr : group.name;
+    const ok = await confirm({
+      title: t('deleteClass'),
+      message: t('deleteClassConfirm', name),
+      confirmLabel: t('remove'),
+      cancelLabel: t('cancel'),
+      destructive: true,
+    });
+    if (!ok || deletingId) return;
+    setDeletingId(group.id);
+    setError('');
+    try {
+      await archiveClass(group.id);
+      // Drop it only once the archive actually persisted. Removing it
+      // optimistically made a failed delete look done until the next focus
+      // put the class straight back — the same trap the materials list hit.
+      setClasses(prev => prev.filter(c => c.id !== group.id));
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (err) {
+      setError(describe(err, 'rosterLoadFailed'));
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const onCreate = async () => {
     const name = newName.trim();
@@ -208,6 +236,23 @@ function ClassesList() {
                   {countStudents(item.studentCount, lang)}
                 </Text>
               </View>
+              {/* Deleting a class was reachable from nowhere: archiveClass has
+                  existed in services/roster.ts since the roster shipped and no
+                  screen ever called it, so a class created by mistake stayed on
+                  this list forever. Put here rather than inside the class
+                  screen — this is where you look at a class you no longer want,
+                  and it saves opening the thing you are trying to get rid of. */}
+              <Pressable
+                onPress={() => { void onDelete(item); }}
+                disabled={deletingId === item.id}
+                hitSlop={10}
+              >
+                {deletingId === item.id ? (
+                  <ActivityIndicator size="small" color={colors.mutedForeground} />
+                ) : (
+                  <Ionicons name="trash-outline" size={18} color={colors.mutedForeground} />
+                )}
+              </Pressable>
               <Ionicons
                 name={isRTL ? 'chevron-back' : 'chevron-forward'}
                 size={20}
