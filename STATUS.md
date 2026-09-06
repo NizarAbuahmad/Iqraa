@@ -891,6 +891,63 @@ still unverified on a device because that build has not been installed and
 driven, and** `newArchEnabled` + `reactCompiler` are both experimental.
 There are no store assets and no `google-services.json` for Android FCM.
 
+## Arabic and Islamic Studies do not carry extractable figures, 2026-09-05
+
+Measured, then abandoned. Recording it so the next person does not spend the
+same afternoon rediscovering it — everything below is a count, not an
+impression.
+
+**These are text-and-ornament books, not diagram-bearing ones.** Both
+extractors misfire on them in the same way: the vector tool captures whole
+pages of Quranic text, ruled exercise boxes and «الدَّرْسُ الأوَّل» banners; the
+raster tool finds page-background washes. What each actually yielded:
+
+| | vector crops | usable | raster candidates | usable | lesson outline |
+| --- | --- | --- | --- | --- | --- |
+| Arabic s1+s2 | 173 | ~20 of the 105 reviewed | 56 | ~8 of the 26 reviewed | **none** |
+| Islamic s1+s2 | 106 | ~10 of the 36 reviewed | 14 | ~6 of the 8 reviewed | readable, wrong shape |
+
+For scale, physics semester 2 alone yields **84** usable crops across 7
+lessons. Islamic would yield roughly 12 across 50.
+
+**Arabic cannot be placed at lesson level at all.** Its lesson headers are
+*rendered as images*, not text — which is why the opener detector returns
+nothing and why those banners turn up as crops in the contact sheet. No font
+threshold reaches them. Its UNIT openers are text and detectable
+(«الوحدة الأولى» at 18-20pt, 5 per book, matching the catalog's units 1-5 and
+6-10 exactly), so unit-level placement is possible — but
+`figure-lesson-map.json` keys on `(sourceId, unit, lesson)` and a unit here
+spans five lessons, so that needs a model change, not a map entry.
+
+**Islamic prints a third opener layout the detector does not know.** It is the
+better of the two — 24 opener pages against the catalog's 24 lessons in
+semester 1, and 26 against 26 in semester 2, an exact join with no offset —
+but every threshold in `lesson_start` is tuned for the maths and science
+layouts. Measured on its own pages, what it would need:
+
+| | maths / science | Islamic |
+| --- | --- | --- |
+| «الدرس» size | ≥20pt | **15.9pt**, y=48-57 |
+| lesson number | ≥40pt, bare digits, y<65 | **15.9pt, parenthesised `(1)`**, y=75 |
+| lesson title | ≥24pt, y<60 | **21.9pt**, y=62 |
+
+Raising only the first (tried, as a per-subject override) still placed zero,
+because `lesson_start` returns `None` when it cannot read a number. Supporting
+Islamic means a per-subject opener *profile* — three geometry facts, not one
+threshold — and the payoff is ~12 photographs.
+
+**Nothing was kept.** The `BOOKS` entries, the per-subject opener size and 279
+crops were all reverted; only this note survives. That is the point: the
+figures pipeline was built for books that draw their content, and this is the
+edge of where it pays.
+
+**If it is ever revisited**, start from the table above rather than from the
+extractors — and note the one thing both books genuinely do have is a good
+unit-opener illustration card (scales, the Kaaba, a gavel on a Quran, a
+microscope; a caravan, Jerusalem, manuscript pages). Ten of those, one per
+unit, is a smaller and much better-defined target than "the figures in this
+book".
+
 ## English teaches something at last, and its book photographs reach it, 2026-09-05
 
 Asked for "the English figures", the honest answer turned out to be that
