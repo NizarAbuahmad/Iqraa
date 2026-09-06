@@ -1,0 +1,16 @@
+{
+  "note": "Lifted verbatim from the UNIT_RULES list inside scripts/import_g10_math_support.py, so the generic importer reproduces the 37 unit tags that script had baked into itself. Order matters: every matching rule contributes its tags, so the broad الفصل الأول / الفصل الثاني rules sit last and only add a semester tag on top of whatever unit already matched.",
+  "rules": [
+    { "pattern": "المصفوفات", "tags": ["s1-matrices"] },
+    { "pattern": "الأسس والمعادلات|أنظمة المعادلات|كثيرات الحدود|معادلة خطية ومعادلة تربيعية", "tags": ["s1-u1"] },
+    { "pattern": "الدائرة|أوتار|مماسات|الزاوية المركزية|الزاوية المحيطية|الشكل الرباعي الدائري|الزاوية المماسية", "tags": ["s1-u2"] },
+    { "pattern": "حساب المثلثات", "tags": ["s1-u3"] },
+    { "pattern": "الاقترانات|اقتران", "tags": ["s2-u5"] },
+    { "pattern": "الاشتقاق|مشتق", "tags": ["s2-u6"] },
+    { "pattern": "هندس|الأشكال الهندسية", "tags": ["geometry-ref"] },
+    { "pattern": "الوحدة السادسة", "tags": ["s2-u6"] },
+    { "pattern": "الوحدة السابعة", "tags": ["s2-u7"] },
+    { "pattern": "الفصل الثاني", "tags": ["s2"] },
+    { "pattern": "الفصل الأول|تشخيص|علاجي|فاقد|مساندة|تأسيس|أسس الرياضيات|البرنامج العلاجي", "tags": ["s1", "remedial"] }
+  ]
+}
