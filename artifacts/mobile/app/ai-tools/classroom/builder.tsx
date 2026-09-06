@@ -8,6 +8,7 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { PillSelector } from '@/components/ui/PillSelector';
+import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
 import { Button } from '@/components/ui/Button';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
@@ -183,6 +184,7 @@ export default function ClassroomBuilderScreen() {
           isRTL={isRTL}
           accent={ACCENT}
         />
+        <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t('scopeNoCurriculumHint')} isRTL={isRTL} colors={colors} />
 
         {/* Subject */}
         <PillSelector
