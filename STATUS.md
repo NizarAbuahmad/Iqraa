@@ -399,12 +399,78 @@ an announcement by default» below.
       `GET /api/healthz/verifier` → `{"verifier":"ok"|"unreachable"}`
       (needs PR #27 merged).
   - DB: Neon free Postgres, project "iqraa", eu-central-1 (Frankfurt).
-    Schema pushed; register/login verified end-to-end against it.
+    Schema pushed; register/login verified end-to-end against it. **Read
+    "pushed" as "the tables exist", not "every column the code selects
+    exists"** — on 2026-09-06 four `users` columns were missing while this
+    line, `verify-schema` and two STATUS entries all read as green. See «The
+    schema push that was recorded twice and never ran».
   - Demo account: demo@iqraa.app / IqraaDemo2026
   - Note the verifier is free-tier too, so it will sleep after ~15 min once
     deployed. The client's timeout is 2.5s, so the first call after idle fails.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
+
+## The schema push that was recorded twice and never ran, 2026-09-06
+
+**Production has no `suspended_at`, `suspended_reason`, `roster_consent_at` or
+`roster_consent_version`.** Two entries below said it did. Both were wrong, and
+PR #269 shipped the code that depends on them, which took the API down for
+every user until traffic was rolled back.
+
+What it looked like. `/api/healthz` `200`, `/api/healthz/verifier` `200`,
+`/api/auth/roster-consent` `200`, `/api/moderation/reports` `401` — a clean
+sweep. Every one of those is either a constant or an auth refusal that returns
+before any query. The first request that actually touched the database was a
+login, and it answered `500`:
+
+```
+column "suspended_at" does not exist
+```
+
+`db.select()` on `users` names every schema column, so the query fails whether
+or not a row matches — and `authMiddleware` selects the same two on every
+request. Not one endpoint degrading: **every login and every authenticated
+call in the app**, which is exactly what the suspension entry below predicted
+would happen if the push were skipped. The prose was right about the
+consequence and wrong about the fact.
+
+Why it survived review. The claim existed in three places that all traced to
+one unverified assertion: two STATUS entries, and `schema-push: done` in the
+PR description. `ci.yml`'s `schema push acknowledged` job greps the body for
+that string — by design it "cannot verify you ran the push; it makes the
+decision explicit". So the gate was answered honestly-in-form by someone
+reading the STATUS entries, and the entries were the thing being checked.
+**Two records agreeing is not corroboration when one was copied from the
+other.**
+
+`verify-schema` would not have caught it either, for the reason recorded under
+the production-schema entry: it asks whether a table *name* exists, so `users`
+with a stale column set still reports `ok`.
+
+Mitigation, not a fix. Traffic is on `iqraa-api-00008-9kz` (2026-09-05, before
+the columns existed) and login works again. `00009-kt7` holds the merged code
+and is correct — it is the database that is behind. The delete-account and
+roster-consent endpoints are `404` again meanwhile, which is the lesser harm:
+the web app still carries their UI, so the button fails until the push runs.
+
+**Still outstanding: the push itself.** `lib/db/scripts/push.mjs` deliberately
+discards `DATABASE_URL` from the shell and reads only the repo-root `.env` —
+and that file points at `localhost:5432`, so running it as-is would report
+success against a local database and change nothing in production. That near
+miss is worth more attention than the original omission. Put the Neon URL in
+the root `.env`, push, verify against the tagged revision URL rather than
+production, shift traffic to `00009-kt7`, then take the URL back out.
+
+The probe that settles it in one call, and the only one here that touches the
+database:
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" -X POST \
+  https://iqraa-api-613126375862.europe-west1.run.app/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"probe@example.invalid","password":"x"}'
+# 401 = columns exist   500 = they do not
+```
 
 ## Android push has the credentials it needs, 2026-09-06
 
@@ -513,14 +579,10 @@ a build existing is not a build running. `newArchEnabled` and `reactCompiler`
 are both experimental and this is the first time either has been compiled.
 
 iOS is untouched and is blocked on a person: it needs an Apple Developer
-<<<<<<< HEAD
 Program membership and an Apple ID sign-in. ~~Android push also still needs an
 FCM service account key uploaded to EAS~~ — **done 2026-09-06, see «Android
 push has the credentials it needs» below.**
-=======
-Program membership and an Apple ID sign-in. Android push also still needs an
-FCM service account key uploaded to EAS — not a build blocker, but until it is
-there `expo-notifications` will register tokens that nothing can deliver to.
+
 ## One join code per class, and the two buttons nobody could find, 2026-09-06
 
 **Built 2026-09-05, parked the same day, un-parked 2026-09-06 on Nizar's call.**
@@ -631,7 +693,6 @@ rebuilds, but custom-group membership and any existing direct thread do not.
 Those were a teacher's explicit choice rather than a derivation, and dropping a
 parent out of «أولياء أمور ١٠-أ» over a roster correction is a product
 decision, not a cleanup.
->>>>>>> origin
 
 ## v1 is teacher-only, and a roster now needs a consent to exist, 2026-09-05
 
@@ -688,10 +749,13 @@ carries a header saying it plainly: **flipping `STUDENT_ACCOUNTS` makes two
 published statements false**, so it is not a config change — it is a change to
 a legal document, and that file moves with it.
 
-`schema-push: done.` `users` gained `roster_consent_at` and
-`roster_consent_version` — verified absent beforehand, present after, same
-transaction-wrapped `add column if not exists` as the suspension pair (33
-users, 0 consented). Unlike that one this degrades safely without the push:
+~~`schema-push: done.`~~ **`schema-push: NOT done` — corrected 2026-09-06.**
+`users` was to gain `roster_consent_at` and `roster_consent_version` by the
+same transaction-wrapped `add column if not exists` as the suspension pair.
+Neither pair was ever applied; both entries claimed a verification that did
+not happen, and the two claims corroborating each other is what made them
+convincing. See «The schema push that was recorded twice and never ran».
+Unlike that one this degrades safely without the push:
 `requireRosterConsent` catches and answers 503 rather than crashing, so a
 missed push costs the roster, not the whole API. **All 33 existing teachers
 will meet the gate on their next roster visit** — intended, and worth knowing
@@ -771,13 +835,19 @@ without conditions. That predicate is split out and tested rather than
 eyeballed because both directions fail silently: too wide and an ejected user
 keeps a route, too narrow and a published promise becomes false.
 
-**The schema change was applied to production, by hand, before this merged.**
-`users` gained `suspended_at` and `suspended_reason`; verified absent
-beforehand and present after (32 users, 0 suspended). Two
-`add column if not exists` statements inside a transaction rather than
+**~~The schema change was applied to production, by hand, before this
+merged.~~ THAT WAS NEVER TRUE, and it caused an outage on 2026-09-06 — see
+«The schema push that was recorded twice and never ran».** `users` was to gain
+`suspended_at` and `suspended_reason` via two `add column if not exists`
+statements inside a transaction rather than
 `pnpm --filter @workspace/db run push` — additive only, idempotent, and
 incapable of the column drops render.yaml warns that drizzle-kit push resolves
-drift with. **Note the ordering is not optional here and the usual "endpoints
+drift with. That is still the right shape for the change. **It has not been
+run.** Production has neither column, proven by
+`column "suspended_at" does not exist` from the live API.
+
+The rest of this paragraph was right, and is the reason the omission cost what
+it did. **Note the ordering is not optional here and the usual "endpoints
 answer 503" description understates it:** `authMiddleware` selects both
 columns on every request, so this code deployed against a database without
 them would fail *every authenticated call in the app*, not one endpoint. Also
