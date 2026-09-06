@@ -410,6 +410,75 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Financial literacy and English S2 have readable text at last, 2026-09-06
+
+Three books whose PDFs were on file and whose text nobody could read are now
+extracted, by OCR rather than by parsing their text layer. **Every NCCD unit in
+the catalog now has book text behind it** — 56 of 56, where financial literacy
+was 0 of 2 the day before.
+
+| source | pages | chars | model | was |
+| --- | --- | --- | --- | --- |
+| `finlit-s1-student-book` | 80 | 77,833 | `ara` | `pending`, `extractionBlocked` |
+| `eng-s2-student-book` | 80 | 198,311 | `eng` | `pending` |
+| `eng-s2-activity-book` | 56 | 116,394 | `eng` | `pending` |
+
+**Nothing new was built.** `scripts/ocr.ts` and the `--ocr` flag already
+existed, tesseract and poppler were already installed, and `ara.traineddata`
+was already in `~/.config/tessdata` from the Islamic teacher guides. The only
+setup was copying `eng.traineddata` in beside it. What was missing was somebody
+running it.
+
+**The financial-literacy book was the point.** Its text layer scattered the
+letters of each word — p.11 read «ةالصحيح ع ة اإلجاب زرم ه رأختا» for «أختار
+رمز الإجابة الصحيحة» — which is why the extraction was purged twice and the
+`extractionBlocked` field was invented to stop a third regeneration. That field
+is now clear on every source, exactly as `sources.ts` said it should be when
+OCR landed. The same page now reads «السؤال الأول: أختارٌ رمرٌ الإجابةٍ الصحيحة
+فى كل مما يأتى».
+
+**OCR text is noisier, and it is mid-pack, not an outlier.** Measured as the
+share of Arabic tokens that come out as 1-2 character fragments, against files
+this project already treats as usable:
+
+| source | tool | fragment rate |
+| --- | --- | --- |
+| `bio-s1-student-book` | pdf-parse | 11.8% |
+| `chem-s1-student-book` | pdf-parse | 12.5% |
+| **`finlit-s1-student-book`** | **tesseract** | **16.6%** |
+| `islamic-s2-student-book` | tesseract | 26.5% |
+| `math-s1-student-book` | pdf-parse | 27.0% |
+| `arabic-s1-student-book` | pdf-parse | 40.7% |
+
+It never reaches a teacher verbatim: passages go into the prompt block, which
+already opens «نص مستخرَج آليًّا من ملف PDF: قد تتداخل الأسطر وتنقلب بعض الحروف
+— اقرأ المعنى ولا تنسخ أخطاء الاستخراج». The model paraphrases; the citation a
+teacher sees is a book title and a page number.
+
+**The English books are English-only, measured.** The first pass ran `ara+eng`
+on the assumption that an English course for Arabic speakers carries Arabic
+instructions. It does not: the output was 99.6% Latin, and re-running with
+`eng` alone recovered **766 more Latin characters, 996 more real words, cut the
+junk-token rate from 8.5% to 4.8%, and took stray Arabic from 627 characters to
+zero**. Every one of those 627 was the Arabic model misreading a pronunciation
+arrow. Both books shipped from the `eng` run.
+
+**What this does not fix.** `finlit-s2-student-book` is untouched and stays
+`conflict`: it is a different edition of the course from S1, their unit
+sequences do not line up, and `finlitCurriculum.test.ts` pins «exposes semester
+1 only» on purpose. That is an edition decision, not an extraction problem —
+OCR would not move it, because `status: conflict` excludes it from
+`readableSources()` however clean its text is.
+
+**Two tests changed, both because their example expired.**
+`extraction.test.ts` asserted `blocked.length > 0` as a canary against somebody
+deleting `extractionBlocked` to make a test pass; clearing the last blocked
+entry legitimately is indistinguishable from that, so the canary now asserts
+the field is still *declared* in `sources.ts` — which unblocking a source
+honestly cannot satisfy. `grounding.test.ts` used financial literacy as its
+stand-in for "in the catalog, nothing read for it", and there is no longer any
+such unit, so it uses a well-formed non-existent unit id and pins finlit's new
+grounding positively instead.
 ## The schema push that was recorded twice and never ran, 2026-09-06
 
 **Production has no `suspended_at`, `suspended_reason`, `roster_consent_at` or
