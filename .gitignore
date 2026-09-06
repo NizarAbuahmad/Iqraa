@@ -67,8 +67,20 @@ knowledge-base/**/*.pdf
 # Provider-evaluation output (generated content + raw model responses)
 eval-out/
 
-# Claude Code local state
-.claude/
+# Claude Code — local state is ignored, checked-in shared config is not.
+# `.claude/skills/` holds the vendored Superpowers skills and
+# `.claude/hooks/` + `.claude/settings.json` wire them up; see
+# `.claude/SUPERPOWERS.md`. Everything else under `.claude/` is per-machine —
+# `worktrees/` and `plugins/` included, which is why this is `.claude/*` plus
+# negations rather than an un-ignore of the whole directory.
+.claude/*
+!.claude/settings.json
+!.claude/skills/
+!.claude/hooks/
+!.claude/scripts/
+!.claude/SUPERPOWERS.md
+!.claude/LICENSE-superpowers
+.claude/settings.local.json
 
 # Byte-compiled helpers for scripts/ — regenerated on every run.
 scripts/__pycache__/

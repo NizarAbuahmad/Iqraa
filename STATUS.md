@@ -4951,6 +4951,37 @@ recorded on 2026-08-19 and again here — and this entry is being written *with*
 its fix rather than three days later, which is the actual lesson from last
 time.
 
+## Superpowers skills are vendored into the repo, 2026-08-22
+
+[Superpowers](https://github.com/obra/superpowers) (v6.3.0, MIT) now lives in
+`.claude/skills/` — 14 agent skills covering spec-before-code, TDD,
+root-cause-before-fix, plan writing, and verification-before-claiming-done. A
+`SessionStart` hook in `.claude/settings.json` injects the `using-superpowers`
+skill so the rest trigger on their own.
+
+**Why vendored rather than installed as a plugin.** Claude Code web sessions run
+in throwaway containers — anything written to `~/.claude/` there is gone when the
+container is reclaimed. Checked into the repo, the skills are active for every
+session and every contributor without a per-machine install step.
+
+**The one modification to upstream:** as a plugin, its skills are addressed as
+`superpowers:brainstorming`; as project skills they are addressed by bare name,
+so every `superpowers:<name>` cross-reference in the skill text was rewritten.
+Without that, each skill-to-skill handoff resolves to nothing.
+`.claude/scripts/sync-superpowers.sh` re-syncs from upstream and reapplies it.
+
+`.gitignore` previously ignored all of `.claude/` as local state; it now ignores
+`.claude/*` and re-includes the shared config only, so per-machine files
+(`settings.local.json`, `worktrees/`, `plugins/`) stay untracked. Provenance,
+version and the upstream commit are recorded in `.claude/SUPERPOWERS.md`.
+
+**This is dev tooling — no product code changed.** Nothing under `.claude/` is a
+pnpm workspace package or reachable from any `tsconfig`, so it is outside both
+the build and `pnpm run typecheck` (confirmed green after the change).
+
+_(Merged 2026-09-06, two weeks after it was written. The vendored commit
+`b36e0829` was still upstream's HEAD at merge time, so nothing was re-synced.)_
+
 ## Off-topic questions are declined, not answered, 2026-08-22
 
 "ما أخبار الحرب في إيران؟" used to reach the teaching pipeline. `isTeaching()`
