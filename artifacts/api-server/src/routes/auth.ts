@@ -20,6 +20,7 @@ import { authMiddleware, type AuthenticatedRequest } from "../middlewares/auth.j
 import { logger } from "../lib/logger.js";
 import { createRateLimiter } from "../lib/rateLimit.js";
 import { deleteObject } from "../lib/r2.js";
+import { googleClientIds } from "../lib/googleClients.js";
 import { studentAccountsEnabled } from "../lib/features.js";
 import {
   ROSTER_CONSENT_STATEMENT_EN,
@@ -45,8 +46,16 @@ const googleLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, nam
 // Unset means the endpoint answers 503 and the client-side button never
 // renders (see GoogleSignInButton) — never a failure, just no button, same
 // shape as the Unsplash/YouTube "no key" pattern elsewhere in this app.
-const googleClientId = process.env.GOOGLE_CLIENT_ID;
-const googleClient = googleClientId ? new OAuth2Client(googleClientId) : null;
+//
+// A list, not one value: an ID token carries the client that minted it, so
+// native sign-in and web sign-in present different audiences — and the move of
+// Google sign-in into the Firebase project puts two *projects* in play at once.
+// See lib/googleClients.ts for why swapping a single value would sign every
+// existing web user out. Read once at module scope like the original, so
+// changing it still needs a redeploy (the API is deployed by hand — see
+// docs/deploying.md).
+const googleClientIdList = googleClientIds();
+const googleClient = googleClientIdList.length > 0 ? new OAuth2Client(googleClientIdList[0]) : null;
 
 function getSecret(): string {
   const secret = process.env.SESSION_SECRET;
@@ -436,7 +445,7 @@ router.post("/login", loginLimiter, async (req, res) => {
 // POST /auth/google
 router.post("/google", googleLimiter, async (req, res) => {
   try {
-    if (!googleClient || !googleClientId) {
+    if (!googleClient || googleClientIdList.length === 0) {
       res.status(503).json({ error: "Google sign-in is not configured" });
       return;
     }
@@ -449,9 +458,20 @@ router.post("/google", googleLimiter, async (req, res) => {
 
     let payload;
     try {
-      const ticket = await googleClient.verifyIdToken({ idToken: credential, audience: googleClientId });
+      const ticket = await googleClient.verifyIdToken({
+        idToken: credential,
+        audience: googleClientIdList,
+      });
       payload = ticket.getPayload();
-    } catch {
+    } catch (err) {
+      // Logged, because this catch swallows two very different things: a
+      // genuinely bad token, and a client ID this server does not accept. Both
+      // answered 401 with nothing written down, so a misconfigured audience was
+      // indistinguishable from an ordinary failed sign-in — and that is exactly
+      // the failure mode a client-ID migration produces. `warn`, not `error`:
+      // a bad token is routine, and the accepted list is included so the log
+      // line alone settles which of the two it was.
+      logger.warn({ err, acceptedAudiences: googleClientIdList }, "google id token rejected");
       res.status(401).json({ error: "Invalid Google credential" });
       return;
     }
