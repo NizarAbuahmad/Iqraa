@@ -92,7 +92,14 @@ services:
       # because the client ID doesn't exist yet — once created it is not
       # secret, EXPO_PUBLIC_* is inlined into the JS bundle at build time regardless.
       - key: EXPO_PUBLIC_GOOGLE_CLIENT_ID
-        sync: false
+        # Web client in the Firebase project iqraa-95dd1. Moved here from the
+        # older iqraa-auth-507315 project when Google sign-in gained a native
+        # path — the same value is the library's `webClientId` on Android.
+        # Not secret: EXPO_PUBLIC_* is inlined into the JS bundle at build
+        # time, so a change needs a web REBUILD, not just a redeploy. The API
+        # must already accept it (GOOGLE_CLIENT_IDS on Cloud Run) or sign-in
+        # 401s the moment this ships.
+        value: 784063967007-86omgnji0cg28iaav1o1celb8cm9je26.apps.googleusercontent.com
       # PostHog ingest token. A plain value rather than `sync: false` on
       # purpose: `EXPO_PUBLIC_*` is inlined into the JS bundle at BUILD time,
       # so this string is public the moment the site deploys — a `phc_` token
