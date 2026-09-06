@@ -487,7 +487,10 @@ export default function ClassDetailScreen() {
                 onPress={() => router.push(`/messaging/claim/${item.id}?studentName=${encodeURIComponent(item.displayName)}`)}
                 hitSlop={10}
               >
-                <Ionicons name="chatbubble-outline" size={18} color={colors.mutedForeground} />
+                {/* A key, not a speech bubble: this opens the student's link
+                    code. The bubble read as "chat with them" and hid the one
+                    thing teachers were hunting for. */}
+                <Ionicons name="key-outline" size={18} color={colors.mutedForeground} />
               </Pressable>
               <Pressable onPress={() => { void onRemove(item); }} hitSlop={10}>
                 <Ionicons name="close" size={20} color={colors.mutedForeground} />
@@ -647,6 +650,17 @@ export default function ClassDetailScreen() {
                 {t('willAddCount', parsedNames.length)}
               </Text>
             ) : null}
+            {/* The code is minted per student and only after the name exists,
+                so this dialog cannot show one — it can say where to find it,
+                which is the whole complaint. */}
+            <Text
+              style={[
+                styles.modalHint,
+                { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align, marginTop: 10 },
+              ]}
+            >
+              {t('addStudentsCodeHint')}
+            </Text>
             <View style={styles.modalActions}>
               <Pressable onPress={() => setShowAdd(false)} style={styles.modalBtn}>
                 <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }}>
