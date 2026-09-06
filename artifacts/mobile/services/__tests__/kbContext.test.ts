@@ -20,6 +20,7 @@ import {
   buildLessonBlock,
   buildAdaptationsDirective,
   resolveGeneratorGrounding,
+  sourceCitationLine,
   TRIM_TIERS,
   CONTEXT_CHAR_BUDGET,
   deduplicateByUnit,
@@ -305,13 +306,13 @@ describe('generator grounding: teacher objectives', () => {
     // curriculum-grounded than leaving the box empty, and nothing said so.
     const plain = resolveGeneratorGrounding(TOPIC, 'ar');
     assert.equal(plain.grounded, true);
-    assert.match(plain.context, /النتاجات \(من المنهج الرسمي\)/);
+    assert.match(plain.context, /النتاجات \(من المنهاج الرسمي\)/);
 
     const withTeacher = resolveGeneratorGrounding(TOPIC, 'ar', {
       teacherObjectives: 'أن يخطط الطالب لمشروع صغير.',
     });
     assert.match(withTeacher.context, /النتاجات \(من المعلم\)/);
-    assert.match(withTeacher.context, /النتاجات \(من المنهج الرسمي\)/);
+    assert.match(withTeacher.context, /النتاجات \(من المنهاج الرسمي\)/);
     // Every official outcome that survived without the teacher line must still
     // be there with it — the teacher adds, never replaces.
     for (const line of plain.context.split('\n').filter(l => l.startsWith('• '))) {
@@ -341,5 +342,32 @@ describe('buildAdaptationsDirective', () => {
     const out = buildAdaptationsDirective('adapt for a student with ADHD', 'en');
     assert.match(out, /differentiation/);
     assert.match(out, /not learning\s+outcomes/);
+  });
+});
+
+describe('sourceCitationLine', () => {
+  it('renders the page in Arabic-Indic digits with a middle dot separator', () => {
+    const out = sourceCitationLine([{ titleAr: 'كتاب الرياضيات - الفصل الأول', page: 35 }], true);
+    assert.equal(out, 'كتاب الرياضيات - الفصل الأول · صفحة ٣٥');
+  });
+
+  it('renders plain digits in English', () => {
+    const out = sourceCitationLine([{ titleAr: 'Math Book — Semester 1', page: 35 }], false);
+    assert.equal(out, 'Math Book — Semester 1 · page 35');
+  });
+
+  it('joins multiple sources, each with its own page', () => {
+    const out = sourceCitationLine(
+      [
+        { titleAr: 'كتاب الرياضيات - الفصل الأول', page: 34 },
+        { titleAr: 'كتاب الرياضيات - الفصل الأول', page: 35 },
+      ],
+      true,
+    );
+    assert.equal(out, 'كتاب الرياضيات - الفصل الأول · صفحة ٣٤، كتاب الرياضيات - الفصل الأول · صفحة ٣٥');
+  });
+
+  it('is empty for no sources so callers can render conditionally', () => {
+    assert.equal(sourceCitationLine([], true), '');
   });
 });

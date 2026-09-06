@@ -11,6 +11,14 @@
  */
 
 import raw from '../data/iqra_curriculum_g10_chem_sem1.json' with { type: 'json' };
+import {
+  lessonKbId,
+  lessonKbPrefix,
+  objectiveId,
+  unitKbId,
+  unitKbPrefix,
+  type CurriculumIdScope,
+} from '../curriculumIds.ts';
 
 /** Book id in KB_BOOKS that this JSON supersedes. */
 export const CHEM_S1_BOOK_ID = 'kb-chem-10-s1';
@@ -71,19 +79,29 @@ type ChemKbLesson = {
   periods: number | null;
 };
 
+/**
+ * What this catalog's ids are scoped to.
+ *
+ * The prefix used to be interpolated inline here and repeated as a string
+ * literal wherever an id had to be parsed back apart. It now comes from
+ * `curriculumIds.ts`, which is the only thing that knows a Grade 10 id has no
+ * grade segment and a Grade 9 one does.
+ */
+const SCOPE: CurriculumIdScope = { gradeId: 'grade-10', subject: 'chem', semester: 1 };
+
 /** Stable KB unit id (e.g. u1 → kbu-chem-s1-nccd-u1). */
 export function chemSem1UnitKbId(jsonUnitId: string): string {
-  return `kbu-chem-s1-nccd-${jsonUnitId}`;
+  return unitKbId(SCOPE, jsonUnitId);
 }
 
 /** Stable KB lesson id (e.g. u1_l1 → kbl-chem-s1-nccd-u1_l1). */
 export function chemSem1LessonKbId(jsonLessonId: string): string {
-  return `kbl-chem-s1-nccd-${jsonLessonId}`;
+  return lessonKbId(SCOPE, jsonLessonId);
 }
 
 /** Look up a JSON lesson by mapped KB lesson id. */
 export function findChemSem1LessonByKbId(kbLessonId: string): ChemSem1Lesson | null {
-  const prefix = 'kbl-chem-s1-nccd-';
+  const prefix = lessonKbPrefix(SCOPE);
   if (!kbLessonId.startsWith(prefix)) return null;
   const jsonId = kbLessonId.slice(prefix.length);
   for (const u of nccdG10ChemSem1.units) {
@@ -139,6 +157,105 @@ export function buildChemSem1Catalog(): { units: ChemKbUnit[]; lessons: ChemKbLe
         })),
         objectives: [...objectives],
         periods: lesson.periods ?? null,
+      });
+    }
+  }
+
+  return { units, lessons };
+}
+
+/** Book id in curriculumData.BOOKS this catalog fills (browser id space). */
+export const CHEM_S1_CURRICULUM_BOOK_ID = 'book-chem-10';
+
+/** Shape compatible with Unit / Lesson in curriculumData.ts */
+type ChemBrowserUnit = {
+  id: string;
+  bookId: string;
+  name: string;
+  nameAr: string;
+  description: string;
+  descriptionAr: string;
+  order: number;
+};
+
+type ChemBrowserLesson = {
+  id: string;
+  unitId: string;
+  title: string;
+  titleAr: string;
+  estimatedDuration: number;
+  objectives: string[];
+  objectivesAr: string[];
+  keywords: string[];
+  keywordsAr: string[];
+  teacherNotes: string;
+  teacherNotesAr: string;
+  outcomes: Array<{
+    id: string;
+    lessonId: string;
+    description: string;
+    descriptionAr: string;
+    bloomsLevel: 'Understand';
+    skills: string[];
+  }>;
+};
+
+/**
+ * Map the chemistry S1 JSON into curriculum-browser Unit/Lesson rows for
+ * book-chem-10. Until this existed the browser served three hand-written units
+ * with one lesson each, mislabelled unit 2 as «الجدول الدوري وخواص العناصر»
+ * (the book says «التوزيع الإلكتروني والدورية»), and rendered unit 2 with zero
+ * lessons — while the KB already served the real nine from this same JSON.
+ *
+ * Every outcome here is a `'Understand'` default, so ids carry the `o-nccd-`
+ * prefix that objectives.ts uses to stamp `bloomsSource: 'defaulted'`. The
+ * hand-authored Bloom's levels those rows carried are merged back in by
+ * catalog.ts, which owns the hand-authored lessons.
+ */
+export function buildChemSem1BrowserCatalog(): {
+  units: ChemBrowserUnit[];
+  lessons: ChemBrowserLesson[];
+} {
+  const units: ChemBrowserUnit[] = nccdG10ChemSem1.units.map(u => {
+    const lessonTitles = u.lessons.map(l => l.title_ar).join(' · ');
+    return {
+      id: chemSem1UnitKbId(u.id),
+      bookId: CHEM_S1_CURRICULUM_BOOK_ID,
+      name: u.title_en,
+      nameAr: u.title_ar,
+      description: lessonTitles,
+      descriptionAr: lessonTitles,
+      order: u.number,
+    };
+  });
+
+  const lessons: ChemBrowserLesson[] = [];
+  for (const u of nccdG10ChemSem1.units) {
+    const unitKbId = chemSem1UnitKbId(u.id);
+    for (const lesson of u.lessons) {
+      const objectives = [...(lesson.objectives ?? [])];
+      const vocabulary = (lesson.vocabulary ?? []).map(v => v.ar);
+      const lessonKbId = chemSem1LessonKbId(lesson.id);
+      lessons.push({
+        id: lessonKbId,
+        unitId: unitKbId,
+        title: lesson.title_en,
+        titleAr: lesson.title_ar,
+        estimatedDuration: (lesson.periods ?? 1) * 45,
+        objectives,
+        objectivesAr: [...objectives],
+        keywords: [...vocabulary],
+        keywordsAr: [...vocabulary],
+        teacherNotes: '',
+        teacherNotesAr: '',
+        outcomes: objectives.map((o, i) => ({
+          id: objectiveId(SCOPE, lesson.id, i),
+          lessonId: lessonKbId,
+          description: o,
+          descriptionAr: o,
+          bloomsLevel: 'Understand' as const,
+          skills: [] as string[],
+        })),
       });
     }
   }

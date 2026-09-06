@@ -4,14 +4,32 @@
  * routes unreached in production; this is the server-side switch + spend cap
  * for testing against a real key without DEMO_MODE.
  *
- * Both AI_LIVE_MODE and the running spend total are process-memory only —
- * they reset on every server restart and are not shared across instances.
- * That's fine for local/single-instance testing; it is not a substitute for
- * the hard usage limit you should also set on the OpenAI account itself
- * (Settings → Billing → Usage limits), which is the only cap that survives a
- * restart or a bug in this file.
+ * The spend total is now month-to-date, summed from the `ai_generations`
+ * table, so it survives a restart. It used to be a module-scope variable —
+ * and because the free tier sleeps after ~15 minutes idle, every wake reset it
+ * to zero, which made AI_BUDGET_USD a per-wake allowance rather than a cap.
+ *
+ * It still is not the last line of defence, and is not meant to be. The
+ * OpenAI project spend limit is (checked 2026-08-22: $50/month on the Iqraa
+ * project, $100/month on the organization, with only gpt-5.4-mini and
+ * gpt-5.4-nano permitted). This guard exists so the *app* can see its own
+ * spend, refuse work before the provider has to, and later enforce per-user
+ * quotas — none of which the console can do.
+ *
+ * When the table is unreachable the total silently falls back to this
+ * process's own counter. `getBudgetStatus().persisted` reports which of the
+ * two you are looking at, because a guard that has quietly stopped guarding
+ * should not look identical to one that works.
  */
 import { logger } from "./logger.ts";
+import { getCacheFailure, type CacheOperation } from "./artifactCache.ts";
+import {
+  currentPeriodStart,
+  getPersistenceFailure,
+  readPeriodSpendUsd,
+  readUserPeriodSpendUsd,
+  recordGeneration,
+} from "./aiUsageLog.ts";
 
 export class AiLiveModeOffError extends Error {
   constructor() {
@@ -92,9 +110,56 @@ export function pricedModels(): string[] {
   return Object.keys(PRICING_PER_MILLION_USD);
 }
 
+/**
+ * Month-to-date spend. Seeded from the store by hydrateSpendFromStore() and
+ * incremented in memory thereafter, so the hot path stays synchronous and
+ * costs no query per request.
+ */
 let spentUsd = 0;
+/** Whether `spentUsd` was ever seeded from the store — reported, not assumed. */
+let hydrated = false;
+/** Which UTC month `spentUsd` covers, so a rollover zeroes it. */
+let periodStart = currentPeriodStart();
 
 const DEFAULT_MODEL = "gpt-4o-mini";
+
+/**
+ * Load the month's spend from `ai_generations`. Call once at startup, before
+ * the server accepts traffic.
+ *
+ * Failure is not fatal: the guard degrades to per-process counting, which is
+ * exactly what it did before this existed. Being unable to read the total is a
+ * reason to log loudly, not a reason to refuse to serve teachers.
+ */
+export async function hydrateSpendFromStore(): Promise<void> {
+  periodStart = currentPeriodStart();
+  const total = await readPeriodSpendUsd();
+  if (total === null) {
+    logger.warn(
+      { limitUsd: getBudgetLimitUsd() },
+      "ai spend total could not be loaded — counting from zero for this process only",
+    );
+    return;
+  }
+  spentUsd = total;
+  hydrated = true;
+  logger.info(
+    { spentUsd: Number(spentUsd.toFixed(4)), limitUsd: getBudgetLimitUsd(), periodStart },
+    "ai spend total loaded for the current month",
+  );
+}
+
+/** Zero the counter when the UTC month rolls over, matching how the OpenAI
+ *  project spend limit resets. Without this a long-lived process would carry
+ *  last month's spend into this month's budget. */
+function rollPeriodIfNeeded(): void {
+  const current = currentPeriodStart();
+  if (current.getTime() === periodStart.getTime()) return;
+  periodStart = current;
+  spentUsd = 0;
+  hydrated = false;
+  logger.info({ periodStart }, "ai budget period rolled over; spend total reset");
+}
 
 /**
  * Generation and chat are different jobs and want different models.
@@ -130,14 +195,82 @@ export function assertLiveModeEnabled(): void {
 }
 
 /** Throws AiBudgetExceededError once the running total meets the configured cap. */
+export class AiUserQuotaExceededError extends Error {
+  constructor(spentUsd: number, limitUsd: number) {
+    super(
+      `This teacher has used $${spentUsd.toFixed(4)} of their $${limitUsd.toFixed(2)} monthly ` +
+        `allowance. Raise AI_USER_BUDGET_USD to change it.`,
+    );
+    this.name = "AiUserQuotaExceededError";
+  }
+}
+
+/**
+ * Per-teacher monthly allowance. Zero or unset means no per-teacher cap, which
+ * is the right default for a single-teacher deployment and the wrong one for a
+ * pilot — with fifty teachers sharing a single project budget, one enthusiastic
+ * user can spend everyone else's month in an afternoon.
+ */
+export function getUserBudgetLimitUsd(): number {
+  const raw = Number(process.env["AI_USER_BUDGET_USD"]);
+  return Number.isFinite(raw) && raw > 0 ? raw : 0;
+}
+
+/**
+ * Refuse if this teacher is over their own allowance.
+ *
+ * Async because it reads the ledger rather than a process counter — a per-user
+ * total cannot live in memory when the free tier restarts on every wake, which
+ * is the exact bug that made `AI_BUDGET_USD` a per-wake allowance once before.
+ *
+ * A ledger that cannot be read does **not** block the call. The global cap is
+ * still in force underneath, and refusing every teacher because a query failed
+ * turns a database blip into a total outage.
+ */
+export async function assertUserQuotaAvailable(userId: string | null | undefined): Promise<void> {
+  const limit = getUserBudgetLimitUsd();
+  if (!limit || !userId) return;
+  const spent = await readUserPeriodSpendUsd(userId);
+  if (spent === null) return;
+  if (spent >= limit) throw new AiUserQuotaExceededError(spent, limit);
+}
+
 export function assertBudgetAvailable(): void {
+  rollPeriodIfNeeded();
   const limit = getBudgetLimitUsd();
   if (spentUsd >= limit) throw new AiBudgetExceededError(spentUsd, limit);
 }
 
 /**
+ * What a completion was for.
+ *
+ * The keys are optional, and leaving them out is the right call for any
+ * workload that cannot be cached — chat, whose turns never repeat, and the
+ * derivative drill generator, whose prompt asks for a *fresh, varied* item and
+ * takes no inputs at all. Handing those a key computed from an empty body
+ * would give every such row the same hash, and the repeat-rate analysis this
+ * table exists for would read that as a 100% hit rate on a workload that can
+ * never hit. An empty key is obviously "no key"; a constant one silently reads
+ * as "the same request, every time".
+ *
+ * So: `kind` is always recorded, because cost-by-workload is worth knowing for
+ * every call. Keys are recorded only where a cache could actually serve the
+ * request.
+ */
+export type GenerationDetail = {
+  kind: string;
+  promptVersion: string;
+  coarseKey?: string;
+  strictKey?: string;
+  hasContext?: boolean;
+  userId?: string | null;
+  cacheStatus?: "hit" | "miss";
+  artifactId?: string | null;
+};
+
+/**
  * Call once per completion, after a successful response, to add its cost to
- * the running total.
+ * the running total, and to record the row behind it.
  *
  * `model` is required rather than looked up. Once generation and chat can run
  * different models, pricing a completion by a single global would bill every
@@ -147,17 +280,67 @@ export function assertBudgetAvailable(): void {
 export function recordUsage(
   usage: { prompt_tokens?: number; completion_tokens?: number } | undefined | null,
   model: string,
+  detail?: GenerationDetail,
 ): void {
   if (!usage) return;
+  rollPeriodIfNeeded();
   const { input, output } = getPricing(model);
+  const promptTokens = usage.prompt_tokens ?? 0;
+  const completionTokens = usage.completion_tokens ?? 0;
   const cost =
-    ((usage.prompt_tokens ?? 0) / 1_000_000) * input +
-    ((usage.completion_tokens ?? 0) / 1_000_000) * output;
+    (promptTokens / 1_000_000) * input +
+    (completionTokens / 1_000_000) * output;
   spentUsd += cost;
   logger.info(
     { spentUsd: Number(spentUsd.toFixed(4)), limitUsd: getBudgetLimitUsd(), model },
-    "ai test budget updated",
+    "ai spend updated",
   );
+
+  if (!detail) return;
+  // Deliberately not awaited. The completion is already paid for and the
+  // artifact is already in hand; making the teacher wait on a metrics insert,
+  // or failing their request when it errors, would trade something that
+  // matters for something that does not. recordGeneration never rejects.
+  void recordGeneration({
+    userId: detail.userId ?? null,
+    kind: detail.kind,
+    model,
+    promptVersion: detail.promptVersion,
+    coarseKey: detail.coarseKey ?? "",
+    strictKey: detail.strictKey ?? "",
+    hasContext: detail.hasContext ?? false,
+    cacheStatus: detail.cacheStatus ?? "miss",
+    artifactId: detail.artifactId ?? null,
+    promptTokens,
+    completionTokens,
+    costUsd: cost,
+  });
+}
+
+/**
+ * Record a request served from the shared variant pool.
+ *
+ * A separate entry point from `recordUsage` because a hit has no `usage` to
+ * price and must not touch the spend total — and because that is the whole
+ * point of it. It still writes a row: without one, the hit rate is invisible,
+ * and so is which variant this teacher has now seen, which is what stops the
+ * next regeneration handing them the same paper back.
+ */
+export function recordCacheHit(model: string, detail: GenerationDetail): void {
+  void recordGeneration({
+    userId: detail.userId ?? null,
+    kind: detail.kind,
+    model,
+    promptVersion: detail.promptVersion,
+    coarseKey: detail.coarseKey ?? "",
+    strictKey: detail.strictKey ?? "",
+    hasContext: detail.hasContext ?? false,
+    cacheStatus: "hit",
+    artifactId: detail.artifactId ?? null,
+    promptTokens: 0,
+    completionTokens: 0,
+    costUsd: 0,
+  });
 }
 
 export function getBudgetStatus(): {
@@ -167,11 +350,20 @@ export function getBudgetStatus(): {
   spentUsd: number;
   limitUsd: number;
   remainingUsd: number;
+  periodStart: string;
+  persisted: boolean;
+  persistenceFailure: "read" | "insert" | null;
+  cacheFailure: CacheOperation | null;
 } {
+  rollPeriodIfNeeded();
   const limitUsd = getBudgetLimitUsd();
-  // Reports both, not one `model`. The single field was accurate only while
-  // the two workloads were guaranteed to share a model; naming them separately
-  // is what makes "which model answered that?" checkable from the endpoint.
+  // Reports both models, not one `model`. The single field was accurate only
+  // while the two workloads were guaranteed to share a model; naming them
+  // separately is what makes "which model answered that?" checkable here.
+  //
+  // `persisted` is the field to read first. False means the total covers this
+  // process only — the pre-2026-08-22 behaviour, where a restart wiped it —
+  // and any spend figure below is a floor, not a total.
   return {
     liveMode: isAiLiveModeOn(),
     generationModel: getGenerationModel(),
@@ -179,5 +371,12 @@ export function getBudgetStatus(): {
     spentUsd: Number(spentUsd.toFixed(4)),
     limitUsd,
     remainingUsd: Number(Math.max(0, limitUsd - spentUsd).toFixed(4)),
+    periodStart: periodStart.toISOString(),
+    persisted: hydrated,
+    persistenceFailure: getPersistenceFailure(),
+    // A shared cache that silently never hits looks exactly like a cache
+    // working on a quiet day. This is the difference, and the bill is the only
+    // other place it would ever show up.
+    cacheFailure: getCacheFailure(),
   };
 }

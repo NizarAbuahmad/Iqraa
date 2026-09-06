@@ -95,6 +95,14 @@ export const attempts = pgTable(
     /** Level scale frozen at start — see assessmentConfig.ts for why. */
     levelScaleSnapshot: jsonb("level_scale_snapshot").$type<Record<string, unknown>>().notNull().default({}),
 
+    /**
+     * The teacher's note on this sitting as a whole — how the student did, not
+     * how one answer did. Per-answer comments live on the grade row's
+     * `rationaleAr`, because a comment about an answer belongs next to that
+     * answer's mark and has to survive being re-marked with it.
+     */
+    teacherComment: text("teacher_comment").notNull().default(""),
+
     startedAt: timestamp("started_at", { withTimezone: true }),
     submittedAt: timestamp("submitted_at", { withTimezone: true }),
     gradedAt: timestamp("graded_at", { withTimezone: true }),
@@ -106,6 +114,16 @@ export const attempts = pgTable(
     index("attempts_evaluation_idx").on(t.evaluationId),
     index("attempts_student_idx").on(t.studentId),
     index("attempts_status_idx").on(t.status),
+    /**
+     * One sitting per student per exam, enforced here rather than by the
+     * check-then-insert in the route.
+     *
+     * Thirty students press start within the same few seconds, which is the
+     * textbook shape for that race: two devices claiming the same name both
+     * pass the "is it taken?" query before either has inserted, and one child
+     * ends up with two papers. Only the database can decide this, so it does.
+     */
+    unique("attempts_evaluation_student_unique").on(t.evaluationId, t.studentId),
   ],
 );
 

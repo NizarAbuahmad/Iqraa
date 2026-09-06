@@ -4,6 +4,7 @@
  * falls back to abstract meta-prompts ("اشرح كيف يساعدك فهم X").
  */
 import type { KBLesson } from '../knowledgeBase.ts';
+import { getBookForLesson } from '../knowledgeBase.ts';
 
 export type Lang = 'ar' | 'en';
 export type QType = 'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false' | 'word_problem';
@@ -68,11 +69,44 @@ export function lessonTextBlob(topic: string, kb: KBLesson | null): string {
   ].join(' ');
 }
 
+/**
+ * Subject names — `Subject.name`/`.nameAr` from `lib/curriculum/src/catalog.ts` —
+ * that are known and are NOT mathematics. Matched, not imported: this file has
+ * no dependency on `@workspace/curriculum`, and duplicating the handful of
+ * names as a regex is cheaper than adding one for a single lookup.
+ */
+const KNOWN_NON_MATH_SUBJECT = /^(chemistry|الكيمياء|physics|الفيزياء|biology|الأحياء|science|العلوم|financial literacy|الثقافة المالية|arabic|اللغة العربية|english|اللغة الإنجليزية|islamic studies|التربية الإسلامية|social studies|الدراسات الاجتماعية|computer|الحاسوب)$/i;
+
+const MATH_TEXT_RE = /رياضيات|math|kbl-math|kbu-math|kb-math|معادل|أسي|أسس|دائر|مثلث|جيوب|جيب|اقتران|مشتق|متجه|احتمال|إحصاء|جيوجبرا|geogebra|quadratic|trigon|derivative|vector|circle|exponent|polynomial|sequence|statistic|probabilit/i;
+
+/**
+ * Is this generation for a maths lesson?
+ *
+ * Subject is authoritative, not additive: a chemistry lesson on «المعادلة
+ * الكيميائية» (chemical *equation*) or a finance lesson mentioning «تراكم
+ * أسي» (exponential growth) used to still flip this to `true`, because the
+ * old version only ever appended `subject` to the same blob it ran one regex
+ * over — the topic/lesson text could still out-vote a correctly-passed
+ * non-math subject. See CLAUDE.md: "Generators branch on the subject NAME."
+ *
+ * `kb`, when present, is the ground truth — its own book's `subjectId` is
+ * looked up directly rather than trusting the caller's `subject` string a
+ * second time. `subject` is the fallback for an ungrounded topic (no KB
+ * lesson resolved) where nothing else names the subject. Only when neither
+ * gives a real answer does this fall back to the old topic/lesson-text
+ * heuristic, which is still what free-text topics with no picked lesson need.
+ */
 export function isMathContext(topic: string, kb: KBLesson | null, subject?: string): boolean {
-  const blob = `${subject ?? ''} ${lessonTextBlob(topic, kb)}`;
-  return /رياضيات|math|kbl-math|kbu-math|kb-math|معادل|أسي|أسس|دائر|مثلث|جيوب|جيب|اقتران|مشتق|متجه|احتمال|إحصاء|جيوجبرا|geogebra|quadratic|trigon|derivative|vector|circle|exponent|polynomial|sequence|statistic|probabilit/i.test(
-    blob,
-  );
+  const kbSubjectId = kb ? getBookForLesson(kb)?.subjectId : undefined;
+  if (kbSubjectId) return kbSubjectId === 'mathematics';
+
+  const s = subject?.trim();
+  if (s) {
+    if (KNOWN_NON_MATH_SUBJECT.test(s)) return false;
+    if (/^(mathematics|رياضيات|math)$/i.test(s)) return true;
+  }
+
+  return MATH_TEXT_RE.test(lessonTextBlob(topic, kb));
 }
 
 export function detectMathFamily(topic: string, kb: KBLesson | null): MathFamily {
@@ -175,7 +209,7 @@ const BANK: ConcreteItem[] = [
   { id: 'lq-e1', family: 'linear_quad', diff: 'easy', eq: 'y = x', eq2: 'y = x²', answer: '(0 ، 0) و (1 ، 1)', wrongs: ['(2 ، 2)', 'لا حل', '(−1 ، −1)'], kind: 'system', promptAr: 'حل النظام:\ny = x\ny = x²', promptEn: 'Solve:\ny = x\ny = x²' },
   { id: 'lq-e2', family: 'linear_quad', diff: 'easy', eq: 'y = 2', eq2: 'y = x² − 2', answer: '(−2 ، 2) و (2 ، 2)', wrongs: ['(0 ، −2)', '(1 ، 2)', 'لا حل'], kind: 'system', promptAr: 'حل النظام:\ny = 2\ny = x² − 2', promptEn: 'Solve:\ny = 2\ny = x² − 2' },
   { id: 'lq-m1', family: 'linear_quad', diff: 'medium', eq: 'y = x + 1', eq2: 'y = x² − 3x + 4', answer: '(1 ، 2) و (3 ، 4)', wrongs: ['(0 ، 1)', '(2 ، 3)', 'لا حل'], kind: 'system', promptAr: 'حل النظام:\ny = x + 1\ny = x² − 3x + 4', promptEn: 'Solve:\ny = x + 1\ny = x² − 3x + 4' },
-  { id: 'lq-m2', family: 'linear_quad', diff: 'medium', eq: 'y = −x + 4', eq2: 'y = x² − 2x', answer: '(−2 ، 6) و (2 ، 2)', wrongs: ['(0 ، 4)', '(1 ، 3)', 'لا حل'], kind: 'system' },
+  { id: 'lq-m2', family: 'linear_quad', diff: 'medium', eq: 'y = −x + 4', eq2: 'y = x² − x', answer: '(−2 ، 6) و (2 ، 2)', wrongs: ['(0 ، 4)', '(1 ، 3)', 'لا حل'], kind: 'system' },
   { id: 'lq-h1', family: 'linear_quad', diff: 'hard', eq: 'y = 3x − 1', eq2: 'y = x² + x − 1', answer: '(0 ، −1) و (2 ، 5)', wrongs: ['(1 ، 2)', '(−1 ، −4)', 'لا حل'], kind: 'system' },
   { id: 'lq-h2', family: 'linear_quad', diff: 'hard', eq: 'x + y = 5', eq2: 'y = x² − 1', answer: '(2 ، 3) و (−3 ، 8)', wrongs: ['(1 ، 4)', '(0 ، 5)', 'لا حل'], kind: 'system', promptAr: 'حل النظام:\nx + y = 5\ny = x² − 1', promptEn: 'Solve:\nx + y = 5\ny = x² − 1' },
 
@@ -249,7 +283,7 @@ const BANK: ConcreteItem[] = [
   { id: 'a-e3', family: 'algebra', diff: 'easy', eq: 'x/2 = 9', answer: 'x = 18', wrongs: ['x = 4.5', 'x = 11', 'x = 9'] },
   { id: 'a-m1', family: 'algebra', diff: 'medium', eq: 'x² − 5x + 6 = 0', answer: 'x = 2 أو x = 3', wrongs: ['x = −2 أو −3', 'x = 1 أو 6', 'x = 0'] },
   { id: 'a-m2', family: 'algebra', diff: 'medium', eq: 'x² = 49', answer: 'x = ±7', wrongs: ['x = 7 فقط', 'x = 24.5', 'x = ±49'] },
-  { id: 'a-m3', family: 'algebra', diff: 'medium', eq: '2x + y = 7, y = 3', answer: 'x = 2 ، y = 3', wrongs: ['x = 3 ، y = 2', 'x = 7', 'x = 5'] },
+  { id: 'a-m3', family: 'algebra', diff: 'medium', eq: '2x + y = 7', eq2: 'y = 3', answer: 'x = 2 ، y = 3', wrongs: ['x = 3 ، y = 2', 'x = 7', 'x = 5'], kind: 'system' },
   { id: 'a-h1', family: 'algebra', diff: 'hard', eq: 'x² − 4x + 1 = 0', answer: 'x = 2 ± √3', wrongs: ['x = ±2', 'x = 4', 'x = 1'], promptAr: 'حل بالقانون العام: x² − 4x + 1 = 0', promptEn: 'Solve with the quadratic formula: x² − 4x + 1 = 0' },
   { id: 'a-h2', family: 'algebra', diff: 'hard', eq: 'x² − 9 = 0', answer: 'x = ±3', wrongs: ['x = 9', 'x = 3 فقط', 'x = 0'] },
   {
@@ -387,14 +421,33 @@ export function takeConcreteMath(
   const pickFrom = (fam: MathFamily): ConcreteItem | null => {
     const pool = BANK.filter(i => matches(i, fam));
     if (pool.length === 0) return null;
-    const ranked = [
-      ...pool.filter(i => i.diff === diff),
-      ...pool.filter(i => i.diff !== diff),
-    ];
-    return ranked[0] ?? null;
+    // Random within the difficulty-preferred slice, not `ranked[0]`: taking
+    // the first unused item in bank order meant every fresh session served
+    // the identical quiz for a topic — "regenerate" only looked alive until
+    // the page reloaded. `usedIds` still guarantees no repeats within a pass.
+    const sameDiff = pool.filter(i => i.diff === diff);
+    const candidates = sameDiff.length > 0 ? sameDiff : pool;
+    return candidates[Math.floor(Math.random() * candidates.length)] ?? null;
   };
 
-  let item = pickFrom(family) ?? pickFrom('algebra');
+  /**
+   * A worksheet/quiz asking for more items than a lesson's family has (e.g.
+   * `functions` has 5) used to fall straight through to the unrelated
+   * `algebra` family here — a teacher who picked one exact lesson would get
+   * a quadratic-formula or linear-system item with no connection to it. A
+   * repeat from the *same* family, reformatted under a different question
+   * type, stays on-topic; only the generic algebra family (or true
+   * exhaustion of the whole bank) should ever leave the detected family.
+   */
+  const pickFromRepeating = (fam: MathFamily): ConcreteItem | null => {
+    const pool = BANK.filter(i => i.family === fam);
+    if (pool.length === 0) return null;
+    const sameDiff = pool.filter(i => i.diff === diff);
+    const ranked = sameDiff.length > 0 ? sameDiff : pool;
+    return ranked[Math.floor(Math.random() * ranked.length)] ?? null;
+  };
+
+  let item = pickFrom(family) ?? pickFromRepeating(family) ?? pickFrom('algebra');
   if (!item) {
     // Exhausted — allow any unused item
     item = BANK.find(i => !usedIds.has(i.id)) ?? null;

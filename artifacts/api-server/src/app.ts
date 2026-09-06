@@ -31,7 +31,20 @@ app.use(
   }),
 );
 app.use(cors());
-app.use(express.json());
+/**
+ * 12MB, not the 100KB default.
+ *
+ * A teacher photographing a marked exam paper sends the image inline as a data
+ * URL — there is no object storage in this app — and a phone photo is several
+ * megabytes before base64 inflates it by a third. At the default limit the
+ * body parser rejected it *before any route ran*, so the teacher got
+ * "Internal server error" from the handler below with nothing to act on.
+ *
+ * The ceiling is still real: `scan-marks` refuses anything over 8MB itself,
+ * with a message that says to retake the photo. This limit only has to be
+ * high enough that the refusal comes from a place that can explain itself.
+ */
+app.use(express.json({ limit: "12mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
@@ -43,10 +56,21 @@ app.use("/api", router);
 // same recent-errors buffer as every logger.error() call (see lib/logger.ts),
 // so anything caught here shows up at GET /api/healthz/errors too.
 app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
-  logger.error({ err, url: req.url }, "unhandled error");
   if (res.headersSent) {
     return;
   }
+  // A body over the limit is the caller's problem, not a server fault, and
+  // answering 500 tells them nothing they can act on. Named explicitly because
+  // it is now reachable by ordinary use: a teacher photographing a paper.
+  if ((err as { type?: string })?.type === "entity.too.large") {
+    logger.warn({ url: req.url }, "request body too large");
+    res.status(413).json({
+      error: "That upload is too large. Try again at a lower quality.",
+      code: "payload_too_large",
+    });
+    return;
+  }
+  logger.error({ err, url: req.url }, "unhandled error");
   res.status(500).json({ error: "Internal server error" });
 });
 

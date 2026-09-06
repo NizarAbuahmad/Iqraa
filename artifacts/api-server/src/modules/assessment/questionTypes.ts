@@ -165,7 +165,9 @@ const matching: TypeModule = {
     return errors;
   },
   sanitizeForStudent(q) {
-    // Right-hand items are shuffled for delivery; order here is the stored one.
+    // Order here is the stored one. `shuffleForDelivery` in `studentView.ts`
+    // reorders the right-hand column on the way out — it needs the question id
+    // to keep that order stable across a resume, and a draft has no id.
     return { left: q.body["left"], right: q.body["right"] };
   },
   grade(q, response) {
@@ -215,7 +217,13 @@ const fillBlank: TypeModule = {
     return errors;
   },
   sanitizeForStudent(q) {
-    return { template: q.body["template"], blanks: q.body["blanks"] };
+    // `template` only. The answers live in `expectedAnswer.blanks` and never
+    // come near this projection, but `body.blanks` was passed through
+    // unexamined and nothing renders it — the student screen builds its inputs
+    // by counting {{n}} placeholders in the template. That made it a free
+    // parking space for a generator to leave answers in, which stops being
+    // hypothetical the moment a model writes these bodies.
+    return { template: q.body["template"] };
   },
   grade(q, response) {
     const blanks = asList(q.expectedAnswer["blanks"]);

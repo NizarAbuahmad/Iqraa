@@ -16,27 +16,66 @@ import {
   evaluationQuestions,
   levelBands,
   levelScales,
+  classGroups,
   students,
 } from "@workspace/db";
 import type { Difficulty, QuestionType } from "@workspace/db";
 import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import {
   getBookById,
+  getEvaluableBookIds,
   getObjectivesForBook,
   objectivesAreWithinBook,
   resolveObjectiveIds,
 } from "@workspace/curriculum";
-import { authMiddleware, type AuthenticatedRequest } from "../middlewares/auth.js";
+import {
+  authMiddleware,
+  requireRole,
+  TEACHER_ROLES,
+  type AuthenticatedRequest,
+} from "../middlewares/auth.js";
 import { logger } from "../lib/logger";
-import { generateMockEvaluation } from "../modules/assessment/mockGenerator";
+import {
+  bankContextFor,
+  generateMockEvaluation,
+  type GenerationResult,
+} from "../modules/assessment/mockGenerator";
 import { validateGenerated } from "../modules/assessment/validator";
+import { verifyAnswerKeys } from "../modules/assessment/keyVerification.ts";
+import { relateAnswerKey } from "../lib/mathVerifierClient.ts";
 import { QUESTION_TYPES } from "../modules/assessment/questionTypes";
 import { COMPETENCY_KEYS, type CompetencyKey } from "../modules/assessment/competency";
+import { isPaperQuestion, parsePaperRows } from "../modules/assessment/paperExam";
+import { aggregateClass } from "../modules/assessment/classInsights";
+import { generateShareCode } from "../modules/assessment/studentView";
+import {
+  GENERATION_PROMPT_VERSION,
+  generateWithModel,
+  paperIsMathematics,
+} from "../modules/assessment/llmGenerator";
+import {
+  AiBudgetExceededError,
+  AiLiveModeOffError,
+  AiUserQuotaExceededError,
+  assertBudgetAvailable,
+  assertLiveModeEnabled,
+  assertUserQuotaAvailable,
+  getGenerationModel,
+  isAiLiveModeOn,
+  recordUsage,
+} from "../lib/aiBudget.ts";
+import { extractJSON } from "../lib/generationShape.ts";
+import { groundingForObjectives } from "../lib/grounding.ts";
+import { openai } from "@workspace/integrations-openai-ai-server";
+import { recommendationsFor } from "../modules/assessment/recommend";
+import type { ObjectiveScore } from "../modules/assessment/scoring";
 
 const router = Router();
 // Path-scoped — see the note in roster.ts. Unscoped, this swallowed every
 // request reaching it, including routes belonging to later routers.
-router.use("/evaluations", authMiddleware);
+// requireRole closes the gap where any authenticated user, not just a
+// teacher, could author or read evaluations.
+router.use("/evaluations", authMiddleware, requireRole(...TEACHER_ROLES));
 
 const ALL_TYPES = Object.keys(QUESTION_TYPES) as QuestionType[];
 const DIFFICULTIES: Difficulty[] = ["basic", "standard", "advanced"];
@@ -133,6 +172,19 @@ router.post("/evaluations", async (req: AuthenticatedRequest, res) => {
       .from(levelScales)
       .where(and(eq(levelScales.scope, "system"), eq(levelScales.isDefault, true)))
       .limit(1);
+    // Refuse here rather than storing a null scale and failing later.
+    // Without this an evaluation is created happily, and the teacher only
+    // finds out three screens on — at answer entry, where the attempt cannot
+    // be graded against a scale that does not exist. An error belongs where
+    // its cause is.
+    if (!defaultScale) {
+      res.status(409).json({
+        error:
+          "No level scale is configured. Seed the assessment configuration before creating evaluations.",
+        code: "no_level_scale",
+      });
+      return;
+    }
 
     const [row] = await db
       .insert(evaluations)
@@ -150,7 +202,7 @@ router.post("/evaluations", async (req: AuthenticatedRequest, res) => {
         targetQuestionCount: count,
         assessmentTypes: requestedTypes,
         language: trimmed(req.body?.language) || "ar",
-        levelScaleId: defaultScale?.id ?? null,
+        levelScaleId: defaultScale.id,
       })
       .returning();
 
@@ -163,9 +215,12 @@ router.post("/evaluations", async (req: AuthenticatedRequest, res) => {
 
 router.get("/evaluations", async (req: AuthenticatedRequest, res) => {
   try {
+    const classId = trimmed(req.query["classId"]);
     const rows = await db
       .select({
         id: evaluations.id,
+        classGroupId: evaluations.classGroupId,
+        shareCode: evaluations.shareCode,
         title: evaluations.title,
         titleAr: evaluations.titleAr,
         subjectId: evaluations.subjectId,
@@ -178,9 +233,35 @@ router.get("/evaluations", async (req: AuthenticatedRequest, res) => {
           SELECT count(*)::int FROM evaluation_questions eq
           WHERE eq.evaluation_id = evaluations.id AND eq.deleted_at IS NULL
         )`,
+        /**
+         * How many papers are actually marked. Counted from `attempt_results`
+         * rather than from attempt status, because an attempt can sit in
+         * `needs_review` with real marks on it — status answers "is it
+         * finished", and the teacher's question here is "how many are done".
+         */
+        markedCount: sql<number>`(
+          SELECT count(*)::int FROM attempt_results ar
+          JOIN attempts a ON a.id = ar.attempt_id
+          WHERE a.evaluation_id = evaluations.id
+            AND ar.total_marks > 0
+        )`,
       })
       .from(evaluations)
-      .where(eq(evaluations.teacherId, req.user!.id))
+      .where(
+        and(
+          eq(evaluations.teacherId, req.user!.id),
+          // `?classId=` filters to one class; `?classId=none` is how the attach
+          // sheet asks for exams that belong to no class yet. Without the
+          // second form the sheet would have to fetch everything and filter
+          // client-side, which is the shape that made "already attached
+          // elsewhere" look attachable in the materials sheet.
+          classId === "none"
+            ? isNull(evaluations.classGroupId)
+            : classId
+              ? eq(evaluations.classGroupId, classId)
+              : undefined,
+        ),
+      )
       .orderBy(asc(evaluations.createdAt));
     res.json({ evaluations: rows });
   } catch (err) {
@@ -207,6 +288,57 @@ router.get("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
 
 // ─── Generation ──────────────────────────────────────────────────────────────
 
+/**
+ * Attach this exam to a class, or detach it.
+ *
+ * Attaching happens here rather than at authoring time for the same reason it
+ * does for materials: a teacher does not know which section a paper is for
+ * while they are writing it, and putting a class picker in the authoring flow
+ * would mean answering that question before it can be answered.
+ *
+ * `classGroupId: null` detaches. The check is `!== undefined`, not truthiness —
+ * treating null as "not provided" would make attach work and detach silently
+ * do nothing, which is exactly the bug `pickDefined` was extracted to prevent.
+ */
+router.patch("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
+  try {
+    const evaluation = await ownedEvaluation(req.params["id"] as string, req.user!.id);
+    if (!evaluation) {
+      res.status(404).json({ error: "Evaluation not found" });
+      return;
+    }
+
+    const raw = req.body?.classGroupId;
+    if (raw === undefined) {
+      res.status(400).json({ error: "classGroupId is required" });
+      return;
+    }
+    const classGroupId = raw === null ? null : trimmed(raw);
+    if (classGroupId) {
+      const [group] = await db
+        .select({ id: classGroups.id })
+        .from(classGroups)
+        .where(and(eq(classGroups.id, classGroupId), eq(classGroups.teacherId, req.user!.id)))
+        .limit(1);
+      if (!group) {
+        res.status(404).json({ error: "Class not found" });
+        return;
+      }
+    }
+
+    const [updated] = await db
+      .update(evaluations)
+      .set({ classGroupId: classGroupId || null, updatedAt: new Date() })
+      .where(eq(evaluations.id, evaluation.id))
+      .returning();
+
+    res.json({ evaluation: updated });
+  } catch (err) {
+    logger.error({ err }, "attach evaluation to class failed");
+    res.status(500).json({ error: "Failed to update the evaluation" });
+  }
+});
+
 router.post("/evaluations/:id/generate", async (req: AuthenticatedRequest, res) => {
   try {
     const evaluation = await ownedEvaluation(req.params["id"] as string, req.user!.id);
@@ -228,17 +360,163 @@ router.post("/evaluations/:id/generate", async (req: AuthenticatedRequest, res) 
       return;
     }
 
-    const result = generateMockEvaluation({
-      objectives,
+    /**
+     * Which generator wrote this paper, and the one rule about it.
+     *
+     * With live mode off, the mock runs — four Arabic templates that cannot
+     * produce a single self-marking question type. With it on, a model writes
+     * them properly.
+     *
+     * **A failed model call does not quietly become the mock.** This repo has
+     * been bitten once by mock output that looked identical to real output;
+     * four template questions appearing where a teacher asked for a real paper
+     * is the same bug wearing a different hat. The failure is reported and the
+     * teacher decides.
+     */
+    const live = isAiLiveModeOn();
+    let result: GenerationResult;
+    let generator: "mock" | "llm" = "mock";
+    let modelId: string | null = null;
+    const generationNotes: string[] = [];
+
+    // The exact request handed to the generator, stored on the evaluation —
+    // the schema has promised this since Phase 3 and nothing ever wrote it.
+    const generationParams: Record<string, unknown> = {
+      objectiveIds: evaluation.objectiveIds,
       assessmentTypes: evaluation.assessmentTypes,
       count: evaluation.targetQuestionCount,
       difficulty: evaluation.difficulty,
-    });
+      language: evaluation.language,
+    };
+
+    if (live) {
+      assertLiveModeEnabled();
+      assertBudgetAvailable();
+      await assertUserQuotaAvailable(req.user!.id);
+
+      // The book, where there is one. Exam questions written from an
+      // objective's title alone are the thing this whole path exists to stop
+      // being the ceiling; `null` when nothing has been read for these units,
+      // and the prompt then omits the section entirely.
+      const grounding = groundingForObjectives(objectives, evaluation.language !== "en");
+      if (grounding) {
+        generationNotes.push(
+          `Grounded on ${grounding.sources.map(s => `${s.titleAr} p${s.page}`).join(", ")}.`,
+        );
+      } else {
+        // Say so, loudly. A paper written without the book reading exactly
+        // like one written from it is how ungrounded content slips through.
+        generationNotes.push(
+          "No official-book passages are extracted for these objectives' units — "
+            + "the model wrote from the objectives alone. Review against the book "
+            + "before publishing.",
+        );
+      }
+
+      const llm = await generateWithModel(
+        {
+          objectives,
+          assessmentTypes: evaluation.assessmentTypes,
+          count: evaluation.targetQuestionCount,
+          difficulty: evaluation.difficulty,
+          language: evaluation.language,
+          bookExcerpts: grounding?.block,
+        },
+        async prompt => {
+          const model = getGenerationModel();
+          const completion = await openai.chat.completions.create({
+            model,
+            // Room for a full paper of questions with options and rubrics. A
+            // truncated response parses to something plausible, which is worse
+            // than an error.
+            max_completion_tokens: 8000,
+            messages: [
+              { role: "system", content: prompt.system },
+              { role: "user", content: prompt.user },
+            ],
+          });
+          recordUsage(completion.usage, model, {
+            kind: "quiz",
+            promptVersion: GENERATION_PROMPT_VERSION,
+            userId: req.user!.id,
+          });
+          return {
+            parsed: extractJSON(completion.choices[0]?.message?.content ?? "{}"),
+            model,
+          };
+        },
+      );
+
+      generator = "llm";
+      modelId = llm.model;
+      generationParams["promptVersion"] = GENERATION_PROMPT_VERSION;
+      generationParams["grounded"] = Boolean(grounding);
+      generationParams["groundingSources"] = grounding
+        ? grounding.sources.map(s => ({ sourceId: s.sourceId, page: s.page }))
+        : [];
+      generationNotes.push(...llm.notes);
+      result = {
+        questions: llm.questions,
+        // The model was asked for every requested type, so nothing is
+        // "unavailable" the way it is for the mock — a type that came back
+        // wrong is a discard, and llm.notes already says so.
+        unavailableTypes: [],
+        shortfall: Math.max(0, evaluation.targetQuestionCount - llm.questions.length),
+        notes: [],
+        // Still worth carrying: the bank pointer answers "where else could I
+        // look", which is useful whether or not the generator declined
+        // anything. It just is not a consolation prize here.
+        bankContext: bankContextFor(objectives),
+      };
+    } else {
+      result = generateMockEvaluation({
+        objectives,
+        assessmentTypes: evaluation.assessmentTypes,
+        count: evaluation.targetQuestionCount,
+        difficulty: evaluation.difficulty,
+      });
+      // The seed the template variation ran on — with it, this exact paper
+      // can be regenerated; without it, "reproducible" would be a lie.
+      generationParams["seed"] = result.seed;
+    }
 
     const validation = validateGenerated(result.questions, {
       allowedObjectiveIds: evaluation.objectiveIds,
       allowedTypes: evaluation.assessmentTypes,
     });
+
+    /**
+     * SymPy checks every key that states one, before a teacher sees the paper.
+     *
+     * Placed after the structural validator and before the insert because a
+     * contradicted key means the question should never have existed — dropping
+     * it here keeps `rejected` the single place a teacher reads for "why is
+     * this 14 questions and not 15". A key the verifier cannot judge, or a
+     * verifier that cannot be reached, removes nothing.
+     */
+    const keyCheck = await verifyAnswerKeys(validation.accepted, relateAnswerKey);
+    generationParams["keysChecked"] = keyCheck.checked;
+    generationParams["keysVerified"] = keyCheck.verified;
+
+    /**
+     * A maths paper where nothing was checkable is the quiet failure mode of
+     * this whole feature: everything succeeds, and not one key was verified.
+     * Say it out loud rather than leaving it to be discovered by reading
+     * `generationParams` in the database. `keyCheck.warnings` already covers
+     * the verifier being unreachable, which is a different cause and says so.
+     */
+    if (
+      live
+      && keyCheck.kept.length > 0
+      && keyCheck.checked === 0
+      && keyCheck.warnings.length === 0
+      && paperIsMathematics(objectives)
+    ) {
+      generationNotes.push(
+        "No answer key on this maths paper could be checked — the generator supplied none in a form "
+          + "the verifier reads, so every question here is unverified.",
+      );
+    }
 
     // Replace rather than append: generating twice should not silently double
     // the length of the evaluation.
@@ -252,9 +530,9 @@ router.post("/evaluations/:id/generate", async (req: AuthenticatedRequest, res) 
         ),
       );
 
-    if (validation.accepted.length > 0) {
+    if (keyCheck.kept.length > 0) {
       await db.insert(evaluationQuestions).values(
-        validation.accepted.map((q, i) => ({
+        keyCheck.kept.map(({ question: q, verification }, i) => ({
           evaluationId: evaluation.id,
           orderIndex: i,
           type: q.type,
@@ -268,27 +546,148 @@ router.post("/evaluations/:id/generate", async (req: AuthenticatedRequest, res) 
           marks: q.marks.toFixed(2),
           gradingMode: q.gradingMode as never,
           source: "ai" as const,
+          // The column the schema has described since Phase 3 and nothing
+          // wrote. `verified` is the verifier's own word or false — never an
+          // inference from the question having looked fine.
+          verification,
           aiMetadata: q.aiMetadata,
         })),
       );
     }
+
+    // Recorded on the evaluation, not just in each question's aiMetadata, so
+    // "was this paper written by a model or by four templates?" is answerable
+    // without opening a question.
+    await db
+      .update(evaluations)
+      .set({ generator, modelId, generationParams, updatedAt: new Date() })
+      .where(eq(evaluations.id, evaluation.id));
 
     const totalMarks = await recomputeTotal(evaluation.id);
 
     res.json({
       questions: await liveQuestions(evaluation.id),
       totalMarks,
+      generator,
+      modelId,
       requested: evaluation.targetQuestionCount,
-      produced: validation.accepted.length,
+      produced: keyCheck.kept.length,
       // Everything the generator declined or the validator dropped, stated
       // plainly. A teacher seeing 12 of 15 should know why, not wonder.
       unavailableTypes: result.unavailableTypes,
-      rejected: validation.rejected,
-      warnings: [...result.notes, ...validation.warnings],
+      // What the library holds for these units. Pairs with unavailableTypes:
+      // the types we declined, and where real items for them would come from.
+      bankContext: result.bankContext,
+      rejected: [...validation.rejected, ...keyCheck.dropped],
+      warnings: [
+        ...result.notes,
+        ...generationNotes,
+        ...validation.warnings,
+        ...keyCheck.warnings,
+      ],
     });
   } catch (err) {
+    // Four different things a teacher can do something about, and they are not
+    // the same thing. "Generation failed" for all of them is the message that
+    // makes a spend cap look like an outage and an outage look like a bug.
+    if (err instanceof AiUserQuotaExceededError) {
+      res.status(429).json({ error: err.message, code: "user_quota_exceeded" });
+      return;
+    }
+    if (err instanceof AiBudgetExceededError) {
+      res.status(429).json({ error: err.message, code: "budget_exceeded" });
+      return;
+    }
+    if (err instanceof AiLiveModeOffError) {
+      res.status(503).json({ error: err.message, code: "live_mode_off" });
+      return;
+    }
     logger.error({ err }, "generate evaluation failed");
-    res.status(500).json({ error: "Generation failed" });
+    res.status(502).json({
+      // Says which half failed. Nothing was written — the questions are only
+      // replaced after a successful generation — so retrying is safe, and
+      // saying so stops a teacher wondering whether they now have half a paper.
+      error:
+        "The question generator did not respond. Nothing was changed — try again, "
+        + "or switch this evaluation to a paper exam.",
+      code: "generator_unavailable",
+    });
+  }
+});
+
+/**
+ * Replace this evaluation's questions with a paper-exam grid.
+ *
+ * For an exam the teacher set themselves: no question text, because the paper
+ * has it — just marks, objective and competency per question. That is the
+ * minimum the app needs to mark the paper, score it, and afterwards say which
+ * objectives the class is weak on.
+ *
+ * Questions land as `open_ended` with an empty body and `gradingMode: 'manual'`.
+ * The type is the honest one available: nothing here can be marked
+ * automatically, so the deterministic pass leaves every question alone and the
+ * teacher marks each by hand. An empty `body` is also what tells the answer
+ * screen there is no prompt to show and no student answer to transcribe.
+ *
+ * Replace, not append — same as generate. Sending the grid twice must not
+ * double the length of the paper.
+ */
+router.put("/evaluations/:id/questions/paper", async (req: AuthenticatedRequest, res) => {
+  try {
+    const evaluation = await ownedEvaluation(req.params["id"] as string, req.user!.id);
+    if (!evaluation) {
+      res.status(404).json({ error: "Evaluation not found" });
+      return;
+    }
+    if (evaluation.status !== "draft") {
+      res.status(409).json({ error: "Only a draft can be edited" });
+      return;
+    }
+
+    const parsed = parsePaperRows(req.body?.questions, {
+      allowedObjectiveIds: evaluation.objectiveIds,
+      maxQuestions: MAX_QUESTIONS,
+    });
+    if (!parsed.ok) {
+      res.status(400).json({
+        error: parsed.error,
+        code: "invalid_paper_grid",
+        ...(parsed.index === undefined ? {} : { questionIndex: parsed.index }),
+      });
+      return;
+    }
+
+    await db
+      .update(evaluationQuestions)
+      .set({ deletedAt: new Date() })
+      .where(
+        and(
+          eq(evaluationQuestions.evaluationId, evaluation.id),
+          isNull(evaluationQuestions.deletedAt),
+        ),
+      );
+
+    await db.insert(evaluationQuestions).values(
+      parsed.rows.map((q, i) => ({
+        evaluationId: evaluation.id,
+        orderIndex: i,
+        type: "open_ended" as QuestionType,
+        body: {},
+        expectedAnswer: {},
+        objectiveId: q.objectiveId,
+        competencyKey: q.competencyKey,
+        difficulty: q.difficulty,
+        marks: q.marks.toFixed(2),
+        gradingMode: "manual" as const,
+        source: "teacher" as const,
+      })),
+    );
+
+    const totalMarks = await recomputeTotal(evaluation.id);
+    res.json({ questions: await liveQuestions(evaluation.id), totalMarks });
+  } catch (err) {
+    logger.error({ err }, "save paper questions failed");
+    res.status(500).json({ error: "Failed to save the paper" });
   }
 });
 
@@ -517,6 +916,9 @@ router.post("/evaluations/:id/publish", async (req: AuthenticatedRequest, res) =
     if (questions.length === 0) blockers.push("Add at least one question before publishing");
     if (total <= 0) blockers.push("Total marks must be greater than zero");
     for (const q of questions) {
+      // A paper exam's questions are on paper. There is no body to validate,
+      // and demanding one would make a paper exam unpublishable.
+      if (isPaperQuestion(q)) continue;
       const problems = QUESTION_TYPES[q.type].validate({
         type: q.type,
         body: q.body,
@@ -531,16 +933,36 @@ router.post("/evaluations/:id/publish", async (req: AuthenticatedRequest, res) =
       return;
     }
 
-    const [updated] = await db
-      .update(evaluations)
-      .set({
-        status: "published",
-        publishedAt: new Date(),
-        updatedAt: new Date(),
-        totalMarks: total.toFixed(2),
-      })
-      .where(eq(evaluations.id, evaluation.id))
-      .returning();
+    // The share code is issued once and kept. Re-publishing after an edit must
+    // not invalidate a link a teacher has already written on the board.
+    //
+    // The retry is for the unique index, not for luck: 31^6 codes make a
+    // collision vanishingly rare, and silently failing a publish because of one
+    // would be a bug nobody could reproduce.
+    let updated;
+    for (let attempt = 0; attempt < 5 && !updated; attempt++) {
+      try {
+        [updated] = await db
+          .update(evaluations)
+          .set({
+            status: "published",
+            publishedAt: new Date(),
+            updatedAt: new Date(),
+            totalMarks: total.toFixed(2),
+            shareCode: evaluation.shareCode ?? generateShareCode(),
+          })
+          .where(eq(evaluations.id, evaluation.id))
+          .returning();
+      } catch (err) {
+        const code = (err as { code?: string })?.code;
+        if (code !== "23505" || evaluation.shareCode) throw err;
+        logger.warn({ evaluationId: evaluation.id }, "share code collision, retrying");
+      }
+    }
+    if (!updated) {
+      res.status(500).json({ error: "Failed to publish" });
+      return;
+    }
 
     res.json({ evaluation: updated });
   } catch (err) {
@@ -691,9 +1113,81 @@ router.post("/evaluations/:id/attempts", async (req: AuthenticatedRequest, res) 
  * a teacher in front of a generator with no curriculum behind it. Better to say
  * the unit is not ready than to invent questions for it.
  */
+/**
+ * What the class as a whole missed, and what to do about it.
+ *
+ * The per-student view answers "how did Sara do". After marking thirty papers
+ * a teacher has one question, not thirty: what do I go back over tomorrow.
+ *
+ * Only marked attempts count. An attempt nobody has entered marks for carries
+ * an empty objective breakdown, and letting those into the aggregate would
+ * quietly drag every class percentage toward zero as the roster grows —
+ * "the class is at 31%" would mean "you have not finished marking".
+ */
+router.get("/evaluations/:id/insights", async (req: AuthenticatedRequest, res) => {
+  try {
+    const evaluation = await ownedEvaluation(req.params["id"] as string, req.user!.id);
+    if (!evaluation) {
+      res.status(404).json({ error: "Evaluation not found" });
+      return;
+    }
+
+    const rows = await db
+      .select({ objectiveScores: attemptResults.objectiveScores })
+      .from(attemptResults)
+      .innerJoin(attempts, eq(attempts.id, attemptResults.attemptId))
+      .where(eq(attempts.evaluationId, evaluation.id));
+
+    const marked = rows
+      .map(r => ({ objectiveScores: (r.objectiveScores as ObjectiveScore[]) ?? [] }))
+      .filter(a => a.objectiveScores.length > 0);
+
+    const insights = aggregateClass(marked);
+
+    const { found } = resolveObjectiveIds(insights.objectiveScores.map(o => o.objectiveId));
+    const byId = new Map(found.map(o => [o.id, o]));
+    const nextSteps = recommendationsFor(insights, id => {
+      const objective = byId.get(id);
+      if (!objective) return undefined;
+      return {
+        title: objective.description ?? "",
+        titleAr: objective.descriptionAr || objective.description || "",
+      };
+    });
+
+    res.json({
+      insights: {
+        ...insights,
+        objectiveScores: insights.objectiveScores.map(o => ({
+          ...o,
+          title: byId.get(o.objectiveId)?.description ?? "",
+          titleAr:
+            byId.get(o.objectiveId)?.descriptionAr ||
+            byId.get(o.objectiveId)?.description ||
+            "",
+        })),
+      },
+      // Computed per request, not stored: `recommendations` is keyed by
+      // attempt, and a class has no attempt to hang these off. They are also
+      // cheap and change the moment one more paper is marked.
+      recommendations: nextSteps,
+      scope: {
+        gradeId: evaluation.gradeId,
+        subjectId: evaluation.subjectId,
+        bookId: evaluation.bookId,
+      },
+    });
+  } catch (err) {
+    logger.error({ err }, "class insights failed");
+    res.status(500).json({ error: "Failed to load class insights" });
+  }
+});
+
 router.get("/evaluations/meta/evaluable", async (_req: AuthenticatedRequest, res) => {
   try {
-    const books = ["book-math-10", "book-math-10-s2", "book-chem-10", "book-finlit-10"]
+    // Every book with at least one objective, from the curriculum catalog —
+    // a hand-kept list here silently dropped chemistry S2 when it was added.
+    const books = getEvaluableBookIds()
       .map(id => ({ book: getBookById(id), objectives: getObjectivesForBook(id) }))
       .filter(b => b.book)
       .map(b => ({

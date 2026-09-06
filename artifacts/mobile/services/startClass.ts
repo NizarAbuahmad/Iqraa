@@ -11,8 +11,11 @@ import { remoteAIService as aiService } from './ai/RemoteAIService.ts';
 import { assembleDeckSlides, objectivesSlide } from './classDeck.ts';
 import { buildChartSlide, buildGraphSlide, buildMediaSlide, extractGraphCommands } from './classMedia.ts';
 import { chartForLesson } from './deckVisuals.ts';
+import { bookFigureRefsForLesson } from './bookFigureUri.ts';
+import { BOOK_FIGURE_MAX } from './lessonSlides.ts';
 import { getLessonMedia } from './lessonMedia.ts';
 import { resolveGeneratorGrounding } from './kbContext.ts';
+import { getLessonById } from './knowledgeBase.ts';
 import type { ClassroomActivity } from './ai/AIService.ts';
 
 export type StartClassInput = {
@@ -20,6 +23,17 @@ export type StartClassInput = {
   lang: 'ar' | 'en';
   subjectId?: string;
   subjectName?: string;
+  /**
+   * The KB id of the lesson to ground on, when the caller knows it.
+   *
+   * `resolveGeneratorGrounding` resolves an exact lesson title correctly
+   * (checked: 63/63 of the picker's titles), so this is not a fix for a
+   * drifting deck — it is the caller saying which lesson it means instead of
+   * hoping a string round-trips. It matters where the string is not a lesson
+   * title at all: an entire-unit pick, a free-typed topic, a title the
+   * teacher has since edited.
+   */
+  lessonId?: string | null;
 };
 
 /**
@@ -32,10 +46,12 @@ export async function buildClassDeck({
   lang,
   subjectId = 'mathematics',
   subjectName = 'Mathematics',
+  lessonId,
 }: StartClassInput): Promise<ClassroomActivity> {
   const topic = rawTopic.trim();
   const isAr = lang === 'ar';
-  const grounding = resolveGeneratorGrounding(topic, lang);
+  const groundedLesson = (lessonId ? getLessonById(lessonId) : null)
+    ?? resolveGeneratorGrounding(topic, lang).lesson;
 
   const activity = await aiService.generateClassroomActivity({
     grade: '10',
@@ -49,7 +65,7 @@ export async function buildClassDeck({
     language: isAr ? 'arabic' : 'english',
   });
 
-  const objSlide = objectivesSlide(grounding.lesson, topic, isAr, 0);
+  const objSlide = objectivesSlide(groundedLesson, topic, isAr, 0);
 
   // Plot what the class is actually about: the lesson's own examples AND the
   // functions inside the generated questions. Curriculum objectives are prose
@@ -65,8 +81,8 @@ export async function buildClassDeck({
   const graphCommands = extractGraphCommands(
     [
       topic,
-      ...(grounding.lesson?.examplesAr ?? []),
-      ...(grounding.lesson?.objectives ?? []),
+      ...(groundedLesson?.examplesAr ?? []),
+      ...(groundedLesson?.objectives ?? []),
       ...activity.slides.map(s => s.content),
     ].join(' \n '),
   );
@@ -85,12 +101,26 @@ export async function buildClassDeck({
   // most lessons get nothing here and that is the intended outcome.
   const chartVisual = chartForLesson(
     [
-      ...(grounding.lesson?.examplesAr ?? []),
-      ...(grounding.lesson?.keyConceptsAr ?? []),
+      ...(groundedLesson?.examplesAr ?? []),
+      ...(groundedLesson?.keyConceptsAr ?? []),
       ...activity.slides.map(s => s.content),
     ].join('\n'),
   );
   const chartSlide = chartVisual ? buildChartSlide(chartVisual, topic, isAr, 0) : null;
+
+  // The book's own diagrams for this lesson — the same figures the Slides
+  // generator and the printed appendix show, cut out of the ministry's student
+  // book and captioned with their page. Start Class had none of this: the deck
+  // a teacher starts cold from was the one deck with no picture of the thing
+  // it teaches, purely because this path never asked for them.
+  //
+  // Capped at BOOK_FIGURE_MAX for the same reason `buildLessonDeck` caps it —
+  // a 15-minute warm-up cannot spend six slides looking at pictures. An
+  // ungrounded topic, an unmapped lesson, or a figure that was never bundled
+  // all yield nothing here, and the deck is exactly what it was before.
+  const figureSlides = bookFigureRefsForLesson(groundedLesson?.id, isAr)
+    .slice(0, BOOK_FIGURE_MAX)
+    .map(f => buildMediaSlide('image', f.uri, f.caption, isAr, 0));
 
   const media = await getLessonMedia(topic);
   const mediaSlides = media.map(m => buildMediaSlide(m.kind, m.url, m.caption, isAr, 0));
@@ -100,6 +130,7 @@ export async function buildClassDeck({
     slides: assembleDeckSlides({
       activitySlides: activity.slides,
       objectives: objSlide,
+      figures: figureSlides,
       graph: graphSlide,
       chart: chartSlide,
       media: mediaSlides,

@@ -20,6 +20,8 @@ import {
   classifyMediaUrl,
   deckPhotoQueries,
   extractGraphCommands,
+  referencesShownVisual,
+  scanGraphCommands,
   geogebraCommandUrl,
   insertVideoSlide,
   isLikelyImageUrl,
@@ -115,6 +117,29 @@ describe('extractGraphCommands', () => {
 
   it('rejects expressions with unsafe characters', () => {
     assert.deepEqual(extractGraphCommands('f(x)=<script>alert(1)</script>'), []);
+  });
+
+  it('keeps a negative leading coefficient', () => {
+    // `-x + 3` used to match nothing: the term charset had no place for a
+    // leading sign, so half of every two-line system went unplotted.
+    assert.deepEqual(extractGraphCommands('y = -x + 3'), ['y=-x + 3']);
+    assert.deepEqual(extractGraphCommands('f(x) = −2x + 1'), ['f(x)=-2x + 1']);
+  });
+
+  it('reads the general form, not just `y = …`', () => {
+    // Straight from the Grade 10 book's linear-quadratic system figure.
+    assert.deepEqual(
+      extractGraphCommands('يمثل الرسم البياني y − x² = 7 − 5x و 4y − 8x = −21'),
+      ['y - x^2 = 7 - 5x', '4y - 8x = -21'],
+    );
+    assert.deepEqual(extractGraphCommands('المستقيمان x − y = 1 و y + x = 5'), ['x - y = 1', 'y + x = 5']);
+  });
+
+  it('emits nothing it cannot actually draw', () => {
+    // GeoGebra would plot the circle; this build's static renderers cannot,
+    // and a command nothing can draw would let a slide claim a figure it has
+    // not got.
+    assert.deepEqual(extractGraphCommands('x² + y² = 5'), []);
   });
 
   it('de-duplicates and respects the max', () => {
@@ -363,6 +388,8 @@ describe('insertLessonResources', () => {
   const items = [
     { kind: 'video' as const, url: 'https://youtu.be/dQw4w9WgXcQ', caption: 'فيديو المعلم' },
     { kind: 'image' as const, url: 'https://example.com/diagram.png', caption: 'مخطط' },
+    { kind: 'audio' as const, url: 'https://example.com/note.mp3', caption: 'ملاحظة صوتية' },
+    { kind: 'document' as const, url: 'https://example.com/handout.pdf', caption: 'ورقة عمل' },
   ];
 
   it('lands after the teaching and before the worked examples', () => {
@@ -378,7 +405,7 @@ describe('insertLessonResources', () => {
     // first `challenge` slide.
     const out = insertLessonResources(deck, items, true);
     const kinds = out.filter(s => s.type === 'media').map(s => s.mediaKind);
-    assert.deepEqual(kinds, ['video', 'image']);
+    assert.deepEqual(kinds, ['video', 'image', 'audio', 'document']);
   });
 
   it('renumbers so the deck stays consecutive', () => {
@@ -396,6 +423,19 @@ describe('insertLessonResources', () => {
 
   it('changes nothing when nothing is attached', () => {
     assert.deepEqual(insertLessonResources(deck, [], true), deck);
+  });
+});
+
+describe('buildMediaSlide', () => {
+  it('titles every kind distinctly from the others', () => {
+    const kinds = ['image', 'video', 'audio', 'document'] as const;
+    const titles = kinds.map(k => buildMediaSlide(k, 'https://x', 'caption', true, 1).title);
+    assert.equal(new Set(titles).size, kinds.length, 'every title is unique');
+  });
+
+  it('sets mediaKind to document for a document attachment', () => {
+    const doc = buildMediaSlide('document', 'https://example.com/handout.pdf', 'caption', true, 1);
+    assert.equal(doc.mediaKind, 'document');
   });
 });
 
@@ -417,5 +457,116 @@ describe('shouldSearchForVideo', () => {
       { kind: 'video', url: 'https://youtu.be/dQw4w9WgXcQ', caption: '' },
       { kind: 'image', url: 'https://example.com/a.png', caption: '' },
     ]), false);
+  });
+});
+
+describe('referencesShownVisual', () => {
+  it('catches an Arabic question that points at a figure on the slide', () => {
+    assert.ok(referencesShownVisual('في الرسم البياني الظاهر، يلتقي المستقيمان عند نقطة الحل.'));
+    assert.ok(referencesShownVisual('من الشكل المجاور، أوجد الميل.'));
+    assert.ok(referencesShownVisual('انظر إلى المنحنى أعلاه.'));
+    assert.ok(referencesShownVisual('باستعمال التمثيل البياني الآتي، أوجد الجذور.'));
+  });
+
+  it('catches the English forms', () => {
+    assert.ok(referencesShownVisual('From the graph shown, read the intersection.'));
+    assert.ok(referencesShownVisual('Use the figure below to find the slope.'));
+    assert.ok(referencesShownVisual('The above diagram shows two lines.'));
+  });
+
+  it('catches the verb-led claim, which carries no pointing word at all', () => {
+    // Both of these projected live, past the pointing-word test, as questions
+    // about a graph the slide never drew. Arabic is verb-first, so the
+    // assertion sits in «يمثل» / «يوضح» rather than in a demonstrative.
+    assert.ok(referencesShownVisual(
+      'يمثل الرسم البياني خطين مستقيمين يتقاطعان عند النقطة التي تحقق النظام. ما حل النظام بيانياً؟',
+    ));
+    assert.ok(referencesShownVisual(
+      'يوضح الرسم البياني خطين مستقيمين متوازيين لا يتقاطعان أبداً. ما عدد حلول هذا النظام؟',
+    ));
+    assert.ok(referencesShownVisual('يبيّن الشكل مثلثاً قائم الزاوية.'));
+    assert.ok(referencesShownVisual('The graph shows two parallel lines.'));
+  });
+
+  it('reads a definition as a definition, not as a claim about this slide', () => {
+    // «A scatter plot shows ordered pairs» explains what a scatter plot IS.
+    // It was the single false positive in a sweep of the whole curriculum
+    // corpus, and `the` is what tells the two apart in English.
+    assert.equal(
+      referencesShownVisual('A scatter plot shows ordered pairs (x,y) to reveal a relationship.'),
+      false,
+    );
+    // Arabic verb-led forms still need a GRAPH noun after the verb.
+    assert.equal(referencesShownVisual('يمثل الميل تغير y بالنسبة إلى x.'), false);
+    assert.equal(referencesShownVisual('الخط الأول يمثل معادلة، والخط الثاني يمثل معادلة أخرى.'), false);
+  });
+
+  it('is not fooled by an instruction to DRAW one', () => {
+    // The deixis is the whole test — matching the noun alone would flag every
+    // graphing exercise in the corpus and delete it from the deck.
+    assert.equal(referencesShownVisual('ارسم الرسم البياني للاقتران f(x) = x²'), false);
+    assert.equal(referencesShownVisual('مثّل النظام بيانيًا ثم أوجد الحل.'), false);
+    assert.equal(referencesShownVisual('Sketch the graph of y = 2x - 3.'), false);
+    assert.equal(referencesShownVisual('اكتب الصيغة العامة للمعادلة التربيعية.'), false);
+  });
+
+  it('handles empty input', () => {
+    assert.equal(referencesShownVisual(''), false);
+    assert.equal(referencesShownVisual('   '), false);
+  });
+});
+
+describe('scanGraphCommands', () => {
+  it('reports what it had to refuse alongside what it kept', () => {
+    const scan = scanGraphCommands('x² + y² = 5 و x − y = 1');
+    assert.deepEqual(scan.commands, ['x - y = 1']);
+    assert.deepEqual(scan.unplottable, ['x^2 + y^2 = 5']);
+  });
+
+  it('refuses nothing when every equation is drawable', () => {
+    const scan = scanGraphCommands('y − x² = 7 − 5x و 4y − 8x = −21');
+    assert.equal(scan.commands.length, 2);
+    assert.deepEqual(scan.unplottable, []);
+  });
+
+  it('handles empty input', () => {
+    assert.deepEqual(scanGraphCommands(''), { commands: [], unplottable: [] });
+  });
+});
+
+describe('the shape the prompt teaches the model to write', () => {
+  /**
+   * Copied verbatim from FIGURE_RULE_AR / FIGURE_RULE_EN in
+   * artifacts/api-server/src/lib/prompts.ts. The prompt tells the model to
+   * imitate these sentences; this asserts that imitating them actually yields
+   * a drawn graph rather than a dropped question.
+   *
+   * The two halves must agree across packages and nothing enforces that at
+   * build time, so if the prompt's example changes, change these too — a rule
+   * teaching a form that extracts nothing is the original bug wearing a
+   * better sentence.
+   */
+  const AR = 'يمثل الرسم البياني المستقيمين y = 2x + 1 و y = -x + 4، جد نقطة تقاطعهما';
+  const EN = 'The graph shows the lines y = 2x + 1 and y = -x + 4; find their intersection.';
+
+  it('is recognised as claiming a visual, in both languages', () => {
+    assert.equal(referencesShownVisual(AR), true);
+    assert.equal(referencesShownVisual(EN), true);
+  });
+
+  it('yields both curves, so the claim is honoured rather than dropped', () => {
+    for (const text of [AR, EN]) {
+      const { commands, unplottable } = scanGraphCommands(text);
+      assert.deepEqual(unplottable, [], text);
+      assert.equal(commands.length, 2, text);
+    }
+  });
+
+  it('would extract nothing had the rule allowed Arabic variables', () => {
+    // Why the prompt insists on latin x and y: this is the same sentence with
+    // «س» for x, and it is indistinguishable from naming no equations at all.
+    const arabicVars = 'يمثل الرسم البياني المستقيمين y = 2س + 1 و y = -س + 4';
+    assert.equal(referencesShownVisual(arabicVars), true);
+    assert.deepEqual(scanGraphCommands(arabicVars).commands, []);
   });
 });

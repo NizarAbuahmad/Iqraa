@@ -245,6 +245,13 @@ needs student-owned history across terms.
 the hook for a future "one shared link, type your name" mode. Per-student links
 are the shipping path.
 
+> **Reversed 2026-09-05.** The join code is now built: one code per class, the
+> joiner picks their own name off the roster. Per-student claim codes still
+> work and are unchanged — this is an addition, not a replacement. The
+> wrong-name objection above is answered by refusing a name a student account
+> already holds, plus an unlink route for when it happens anyway. See «One join
+> code per class, and the two buttons nobody could find» in STATUS.md.
+
 ```ts
 class_groups
   id, teacher_id → users(cascade), name, name_ar,
@@ -706,8 +713,9 @@ keeps it specific instead of generic.
 **Rule-based floor:** even with AI off, recommendations are produced
 deterministically — every objective below the proficiency threshold yields
 "راجع {objective}" plus practice items pulled from the existing lesson resources
-(`g10_math_support_resources.json`). The AI layer *enriches* this; it is not the
-only source. The feature must never return an empty recommendations panel.
+(the knowledge bank — `bankItems()` in `@workspace/curriculum`; this named
+`g10_math_support_resources.json`, which was absorbed into the manifest on
+2026-08-25). The AI layer *enriches* this; it is not the only source. The feature must never return an empty recommendations panel.
 
 ---
 

@@ -3,13 +3,13 @@
  * Demo Mode: fully local KB grounding. No OpenAI / network.
  */
 
-import type { KBLesson } from '../knowledgeBase';
-import { getBookForLesson, getUnitForLesson } from '../knowledgeBase';
-import { SUBJECTS } from '../curriculumData';
+import type { KBLesson } from '../knowledgeBase.ts';
+import { getBookForLesson, getUnitForLesson } from '../knowledgeBase.ts';
+import { GRADES, SUBJECTS } from '../curriculumData.ts';
 import {
   formatSupportResourcesBlock,
   searchSupportResources,
-} from '../mathSupportResources';
+} from '../mathSupportResources.ts';
 
 export type TeachingAssistantMode = 'teacher' | 'student';
 
@@ -358,14 +358,16 @@ export function resolveCurriculumContext(lesson: KBLesson): CurriculumContext {
   const book = getBookForLesson(lesson);
   const unit = getUnitForLesson(lesson);
   const semester = (book?.semester === 2 ? 2 : 1) as 1 | 2;
-  // Subject follows the lesson's book — this used to hardcode الرياضيات,
-  // which stamped chemistry/finlit replies with the wrong subject line.
+  // Subject and grade both follow the lesson's book — this used to hardcode
+  // الرياضيات and الصف العاشر, which stamped every non-Grade-10-Math reply
+  // (chemistry, finlit, and now Grade 9) with the wrong subject/grade line.
   const subject = book ? SUBJECTS.find(s => s.id === book.subjectId) : undefined;
+  const grade = book ? GRADES.find(g => g.id === book.gradeId) : undefined;
   return {
     curriculumAr: 'المنهاج الأردني',
     curriculumEn: 'Jordan Curriculum',
-    gradeAr: 'الصف العاشر',
-    gradeEn: 'Grade 10',
+    gradeAr: grade?.nameAr ?? 'الصف العاشر',
+    gradeEn: grade?.name ?? 'Grade 10',
     subjectAr: subject?.nameAr ?? 'الرياضيات',
     subjectEn: subject?.name ?? 'Mathematics',
     semester,
@@ -1068,10 +1070,13 @@ export function buildTeachingAssistantReply(
       query,
       lesson,
       limit: 3,
-      types:
-        intent === 'worksheet' ? ['worksheet']
-          : intent === 'quiz' ? ['quiz', 'answer_key']
-            : intent === 'lesson_plan' ? ['summary', 'worksheet', 'quiz']
+      // A quiz intent now reaches the real test papers. Under the old
+      // vocabulary `quiz` covered practice sheets and past papers alike, so
+      // asking for quiz material could not prefer either.
+      kinds:
+        intent === 'worksheet' ? (['worksheet'] as const)
+          : intent === 'quiz' ? (['question-bank', 'exam', 'answer-key'] as const)
+            : intent === 'lesson_plan' ? (['summary', 'worksheet', 'question-bank'] as const)
               : undefined,
     });
     const packBlock = formatSupportResourcesBlock(pack, isAr ? 'ar' : 'en');

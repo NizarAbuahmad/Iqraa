@@ -22,18 +22,24 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { TopicSelector } from '@/components/ui/TopicSelector';
+import { PillSelector } from '@/components/ui/PillSelector';
+import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { Button } from '@/components/ui/Button';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
+import { isAbortError } from '@/services/ai/aiProvenance';
+import { isolateForeignRuns } from '@/services/mathRender';
 import type { ClassroomActivity } from '@/services/ai/AIService';
-import { buildGeneratorContext, resolveGeneratorGrounding } from '@/services/kbContext';
+import { buildGeneratorContext, generatorLessonId, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
 import { buildGameDeckFromQuiz } from '@/services/classDeck';
+import { bookFigureUri } from '@/services/bookFigureUri';
 import { createGame, MAX_TEAMS, MIN_TEAMS } from '@/services/classGame';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
 } from '@/services/curriculumData';
+import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, topicPickerParams } from '@/services/lessonPrep';
 
 const ACCENT = '#F59E0B';
 const QUESTION_COUNTS = [5, 8, 10, 12];
@@ -55,8 +61,20 @@ export default function ClassGameScreen() {
   const params = useLocalSearchParams<{
     gradeIdx?: string; subjectIdx?: string; topic?: string;
   }>();
-  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(params.gradeIdx, grades.length));
-  const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx, subjects.length));
+  // A bare `topic` param (old bookmarks, callers without picker params) says
+  // which grade and subject it belongs to better than picker index 0 does —
+  // ground it instead of opening a math lesson under whatever subject sits
+  // first in the list.
+  const [inferredScope] = useState(() =>
+    params.gradeIdx == null && params.subjectIdx == null
+      ? topicPickerParams(params.topic, lang as 'ar' | 'en')
+      : null,
+  );
+  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(params.gradeIdx ?? inferredScope?.gradeIdx, grades.length));
+  // Index-aligned flags rather than a pre-filtered `subjects`: these positions
+  // are persisted as subjectIdx, so entries are dropped at render time only.
+  const subjectHidden = subjectsWithoutCurriculum(grades[gradeIdx].id);
+  const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx ?? inferredScope?.subjectIdx, subjects.length));
   const [topic, setTopic] = useState(params.topic ?? '');
   const [teamCount, setTeamCount] = useState(4);
   const [questionCount, setQuestionCount] = useState(8);
@@ -65,6 +83,7 @@ export default function ClassGameScreen() {
   const [grounded, setGrounded] = useState(false);
   const [groundedLesson, setGroundedLesson] = useState('');
   const [error, setError] = useState('');
+  const abortRef = useRef<AbortController | null>(null);
 
   // Preview teams with the same factory the game uses, so the names, emojis and
   // colours a teacher sees here are exactly the ones that appear on the board.
@@ -84,8 +103,17 @@ export default function ClassGameScreen() {
   const generate = async () => {
     const trimmed = topic.trim();
     if (!trimmed) { setError(t('topicRequired')); return; }
+    // A topic that grounds to another subject's lesson cannot make an honest
+    // game — the KB serves that lesson's own content while the header claims
+    // the picked subject. Refuse and name the real subject instead.
+    const scope = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, lang as 'ar' | 'en');
+    if (scope) { setError(t('scopeNoCurriculum', scope.grade, scope.subject)); return; }
+    const conflict = groundedSubjectConflict(trimmed, lang as 'ar' | 'en', subjects[subjectIdx].id);
+    if (conflict) { setError(t('subjectTopicMismatch', isAr ? conflict.nameAr : conflict.name)); return; }
     setError(''); setLoading(true); setDeck(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     const grounding = resolveGeneratorGrounding(trimmed, lang as 'ar' | 'en');
     setGrounded(grounding.grounded);
@@ -93,19 +121,29 @@ export default function ClassGameScreen() {
 
     try {
       const quiz = await aiService.generateQuiz({
-        grade: grades[gradeIdx].name,
+        // Localised like quiz.tsx: `grade` is display-only and rides into the
+        // generated content verbatim — an Arabic deck should not read
+        // «الصف: Grade 10». `subject` stays English on purpose: it feeds
+        // isMathContext and the other subject-name branches.
+        grade: isAr ? grades[gradeIdx].nameAr : grades[gradeIdx].name,
         subject: subjects[subjectIdx].name,
         topic: trimmed,
         numQuestions: questionCount,
         questionTypes: ['multiple_choice'],
         language: isAr ? 'arabic' : 'english',
-        additionalContext: buildGeneratorContext(trimmed, lang as 'ar' | 'en') || undefined,
-      });
+        additionalContext: buildGeneratorContext(trimmed, lang as 'ar' | 'en'),
+        unitId: generatorUnitId(trimmed, lang as 'ar' | 'en'),
+        lessonId: generatorLessonId(trimmed, lang as 'ar' | 'en'),
+        // Nothing here but the lesson the teacher picked, so the quiz behind
+        // the deck can be shared with every other teacher who picks it.
+        contextSource: 'curriculum',
+      }, { signal: controller.signal });
 
       const built = buildGameDeckFromQuiz(quiz, trimmed, isAr, {
         teamCount,
         lesson: grounding.lesson,
         verified: false,
+        figureUri: bookFigureUri,
       });
 
       // A deck with no scoreable questions is a game that cannot be played —
@@ -119,11 +157,17 @@ export default function ClassGameScreen() {
       setDeck(built);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
-    } catch {
-      setError(t('generationFailed'));
+    } catch (e) {
+      // A cancel is the teacher's own action, not a failure to report.
+      if (!isAbortError(e)) setError(t('generationFailed'));
     } finally {
+      abortRef.current = null;
       setLoading(false);
     }
+  };
+
+  const cancelGenerate = () => {
+    abortRef.current?.abort();
   };
 
   const start = () => {
@@ -176,21 +220,26 @@ export default function ClassGameScreen() {
         </View>
 
         <View style={styles.form}>
-          <PickerRow
+          <PillSelector
             label={t('grade')}
-            items={grades.map(g => (isAr ? g.nameAr : g.name))}
-            index={gradeIdx}
+            options={grades.map((g, i) => ({ value: i, label: isAr ? g.nameAr : g.name }))}
+            value={gradeIdx}
             onChange={setGradeIdx}
             colors={colors}
             isRTL={isRTL}
+            accent={ACCENT}
+            pillStyle={styles.pill}
           />
-          <PickerRow
+          <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t('scopeNoCurriculumHint')} isRTL={isRTL} colors={colors} />
+          <PillSelector
             label={t('subjects')}
-            items={subjects.map(s => (isAr ? s.nameAr : s.name))}
-            index={subjectIdx}
+            options={subjects.map((s, i) => ({ value: i, label: isAr ? s.nameAr : s.name })).filter(o => !subjectHidden[o.value])}
+            value={subjectIdx}
             onChange={setSubjectIdx}
             colors={colors}
             isRTL={isRTL}
+            accent={ACCENT}
+            pillStyle={styles.pill}
           />
 
           <TopicSelector
@@ -208,32 +257,18 @@ export default function ClassGameScreen() {
 
           {/* Teams */}
           <View style={{ marginBottom: 18 }}>
-            <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
-              {t('gameTeamCount')}
-            </Text>
-            <View style={[styles.pillRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-              {Array.from({ length: MAX_TEAMS - MIN_TEAMS + 1 }, (_, i) => MIN_TEAMS + i).map(n => {
-                const active = n === teamCount;
-                return (
-                  <Pressable
-                    key={n}
-                    onPress={() => { setTeamCount(n); Haptics.selectionAsync(); }}
-                    style={[styles.pill, {
-                      backgroundColor: active ? ACCENT : colors.card,
-                      borderColor: active ? ACCENT : colors.border,
-                      borderRadius: colors.radius,
-                    }]}
-                  >
-                    <Text style={[styles.pillText, {
-                      color: active ? '#fff' : colors.mutedForeground,
-                      fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
-                    }]}>
-                      {n}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+            <PillSelector
+              label={t('gameTeamCount')}
+              options={Array.from({ length: MAX_TEAMS - MIN_TEAMS + 1 }, (_, i) => MIN_TEAMS + i).map(n => ({ value: n, label: String(n) }))}
+              value={teamCount}
+              onChange={setTeamCount}
+              colors={colors}
+              isRTL={isRTL}
+              accent={ACCENT}
+              haptics
+              pillStyle={styles.pill}
+              containerStyle={{ marginBottom: 0 }}
+            />
 
             {/* Which teams the class will actually be split into */}
             <View style={[styles.teamPreview, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -254,34 +289,17 @@ export default function ClassGameScreen() {
           </View>
 
           {/* Questions */}
-          <View style={{ marginBottom: 18 }}>
-            <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
-              {t('gameQuestionCount')}
-            </Text>
-            <View style={[styles.pillRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-              {QUESTION_COUNTS.map(n => {
-                const active = n === questionCount;
-                return (
-                  <Pressable
-                    key={n}
-                    onPress={() => { setQuestionCount(n); Haptics.selectionAsync(); }}
-                    style={[styles.pill, {
-                      backgroundColor: active ? ACCENT : colors.card,
-                      borderColor: active ? ACCENT : colors.border,
-                      borderRadius: colors.radius,
-                    }]}
-                  >
-                    <Text style={[styles.pillText, {
-                      color: active ? '#fff' : colors.mutedForeground,
-                      fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
-                    }]}>
-                      {n}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
+          <PillSelector
+            label={t('gameQuestionCount')}
+            options={QUESTION_COUNTS.map(n => ({ value: n, label: String(n) }))}
+            value={questionCount}
+            onChange={setQuestionCount}
+            colors={colors}
+            isRTL={isRTL}
+            accent={ACCENT}
+            haptics
+            pillStyle={styles.pill}
+          />
 
           {error ? (
             <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }}>
@@ -300,9 +318,14 @@ export default function ClassGameScreen() {
         {loading && (
           <View style={[styles.loadingBox, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <ActivityIndicator color={ACCENT} />
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14 }}>
+            <Text style={{ flex: 1, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14, textAlign: isRTL ? 'right' : 'left' }}>
               {t('gameBuilding')}
             </Text>
+            <Pressable onPress={cancelGenerate} hitSlop={8}>
+              <Text style={{ color: colors.destructive, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+                {t('cancel')}
+              </Text>
+            </Pressable>
           </View>
         )}
 
@@ -333,7 +356,7 @@ export default function ClassGameScreen() {
               </View>
             </View>
 
-            {/* Materials — the printed letter cards are the one thing that must
+            {/* Materials — the one thing that must
                 exist in the room before the game starts. */}
             <View style={[styles.materialsCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
               <Text style={[styles.sectionLabel, { color: ACCENT, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
@@ -342,8 +365,18 @@ export default function ClassGameScreen() {
               {deck.materials.map((m, i) => (
                 <View key={i} style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-start', marginTop: 5 }}>
                   <View style={[styles.dot, { backgroundColor: ACCENT }]} />
-                  <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }}>
-                    {m}
+                  <Text
+                    style={{
+                      flex: 1,
+                      color: colors.foreground,
+                      fontFamily: 'Almarai_400Regular',
+                      fontSize: 13,
+                      lineHeight: 20,
+                      textAlign: isRTL ? 'right' : 'left',
+                      writingDirection: isRTL ? 'rtl' : 'ltr',
+                    }}
+                  >
+                    {isolateForeignRuns(m)}
                   </Text>
                 </View>
               ))}
@@ -380,48 +413,6 @@ function Stat({ icon, label }: { icon: keyof typeof Ionicons.glyphMap; label: st
   );
 }
 
-function PickerRow({
-  label, items, index, onChange, colors, isRTL,
-}: {
-  label: string;
-  items: string[];
-  index: number;
-  onChange: (i: number) => void;
-  colors: any;
-  isRTL: boolean;
-}) {
-  return (
-    <View style={{ marginBottom: 18 }}>
-      <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
-        {label}
-      </Text>
-      <View style={[styles.pillRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        {items.map((item, i) => {
-          const active = i === index;
-          return (
-            <Pressable
-              key={item + i}
-              onPress={() => onChange(i)}
-              style={[styles.pill, {
-                backgroundColor: active ? ACCENT : colors.card,
-                borderColor: active ? ACCENT : colors.border,
-                borderRadius: colors.radius,
-              }]}
-            >
-              <Text style={[styles.pillText, {
-                color: active ? '#fff' : colors.mutedForeground,
-                fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
-              }]}>
-                {item}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 24 },
   backBtn: { width: 40, height: 40, justifyContent: 'center', marginBottom: 8 },
@@ -429,10 +420,7 @@ const styles = StyleSheet.create({
   howTitle: { fontSize: 14, marginBottom: 4 },
   stepNum: { width: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center', marginTop: 2, flexShrink: 0 },
   form: { padding: 20 },
-  fieldLabel: { fontSize: 13, marginBottom: 8 },
-  pillRow: { flexWrap: 'wrap', gap: 8 },
   pill: { paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1.5, minWidth: 46, alignItems: 'center' },
-  pillText: { fontSize: 13 },
   teamPreview: { flexWrap: 'wrap', gap: 6, marginTop: 10 },
   teamChip: { alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 16, borderWidth: 1 },
   loadingBox: { alignItems: 'center', gap: 12, padding: 20, borderWidth: 1, marginHorizontal: 20, marginBottom: 16 },

@@ -3,6 +3,7 @@ import {
   Animated,
   Image,
   Linking,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -16,12 +17,20 @@ import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import {
+  DECK_BG as BG, DECK_BLOB as BLOB, DECK_BORDER as BORDER, DECK_CARD_BG as CARD_BG,
+  DECK_MUTED as TEXT_MUTED, DECK_PINK as PINK, DECK_TEXT as TEXT_PRIMARY,
+  DECK_ACCENT as ACCENT, slideTypeAccent, TIMER_AMBER, TIMER_GREEN, TIMER_RED,
+} from '@/services/deckTheme';
 import { useLanguage } from '@/context/LanguageContext';
 import { ActivitySlide, ClassroomActivity } from '@/services/ai/AIService';
 import { getPendingClassroomActivity, clearClassroomActivity } from '@/services/classroomStore';
-import { timerColor } from '@/services/presentationUtils';
+import { timerColor, timerSecondsForSlide } from '@/services/presentationUtils';
 import Svg, { Line, Polyline, Rect } from 'react-native-svg';
 import { plotGeometry, visualForSlide } from '@/services/deckVisuals';
+// Shared with both exports so the projected slide and the exported one cannot
+// disagree about what a bullet, an equation or a section glyph is.
+import { isBulletLine, isEnglishSlideContent, looksLikeEquation, splitEmoji, stripBullet } from '@/services/deckText';
 import { geogebraCommandUrl, openGeogebraWithCommands } from '@/services/geogebra';
 import { youtubeEmbedUrl } from '@/services/classMedia';
 import {
@@ -29,7 +38,7 @@ import {
 } from '@/services/classGame';
 import { AwardRow, PodiumView, ScoreStrip, ScoreboardView } from '@/components/classroom/GameBoard';
 import { MathText } from '@/components/classroom/MathText';
-import { hasRenderableMath, prettifySymPy } from '@/services/mathRender';
+import { hasRenderableMath, isolateForeignRuns, prettifySymPy } from '@/services/mathRender';
 
 /** Open a media URL outside the app (native fallback — no WebView dep). */
 async function openExternalMedia(url: string): Promise<void> {
@@ -45,38 +54,26 @@ async function openExternalMedia(url: string): Promise<void> {
   }
 }
 
-// ─── Color constants ──────────────────────────────────────────────────────────
-// Light, warm, print-like. A projected deck sits next to a whiteboard in a lit
-// room, where a near-black background washes out and reads as "a screen someone
-// forgot to close". Cream + teal + magenta is the deck palette; the chrome
-// borrows the same tokens so nothing looks bolted on.
-const BG = '#FDF1EC';
-const CARD_BG = '#FFFFFF';
-const BORDER = '#EFDCD4';
-const TEXT_PRIMARY = '#22303C';
-const TEXT_MUTED = '#7C6A65';
-const ACCENT = '#1E8E8E';
-/** Second accent — section rules, kickers, the "look here" mark. */
-const PINK = '#D6206B';
-/** The soft shapes behind the slide. Low-contrast on purpose. */
-const BLOB = '#F8DCD2';
-const TIMER_GREEN = '#16A34A';
-const TIMER_AMBER = '#D97706';
-const TIMER_RED = '#DC2626';
+// The deck palette and slideTypeAccent live in services/deckTheme.ts — the PDF
+// and the PPTX import the same values, so the three renderings cannot drift.
 
-function slideTypeAccent(type: ActivitySlide['type']): string {
-  if (type === 'challenge') return '#C2410C';
-  if (type === 'reveal') return TIMER_GREEN;
-  if (type === 'summary') return PINK;
-  if (type === 'bingo-call') return '#7E22CE';
-  if (type === 'relay-problem') return '#BE123C';
-  if (type === 'question') return '#1D4ED8';
-  if (type === 'graph') return '#0E7490';
-  if (type === 'media') return '#B45309';
-  if (type === 'scoreboard') return '#B45309';
-  if (type === 'podium') return '#A16207';
-  if (type === 'divider') return ACCENT;
-  return '#8B8CA4';
+/**
+ * Projector fullscreen (web only — a native app is already fullscreen).
+ * Without this the browser chrome stays on the projector until the teacher
+ * finds F11, which is the first thing every classroom test noticed.
+ */
+const canFullscreen = Platform.OS === 'web' && typeof document !== 'undefined';
+
+function toggleFullscreen(): void {
+  if (!canFullscreen) return;
+  const el = document.documentElement;
+  // Older Safari only has the webkit-prefixed pair; if neither exists there is
+  // nothing to do but stay windowed.
+  const req = el.requestFullscreen ?? (el as any).webkitRequestFullscreen;
+  const exit = document.exitFullscreen ?? (document as any).webkitExitFullscreen;
+  const isFull = document.fullscreenElement ?? (document as any).webkitFullscreenElement;
+  const run = isFull ? exit?.call(document) : req?.call(el);
+  if (run && typeof run.catch === 'function') run.catch(() => {});
 }
 
 // ─── Visual block (plot / chart) ──────────────────────────────────────────────
@@ -199,20 +196,33 @@ function GraphView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; 
   );
 }
 
-// ─── Media slide (image / YouTube) ────────────────────────────────────────────
+// ─── Media slide (image / YouTube / audio / document) ─────────────────────────
 function MediaView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; t: (k: any, arg?: any) => string }) {
   const url = slide.mediaUrl ?? '';
   const embed = slide.mediaKind === 'video' ? youtubeEmbedUrl(url) : null;
+  const [zoomed, setZoomed] = useState(false);
 
   return (
     <View style={mediaStyles.wrap}>
       {slide.mediaKind === 'image' ? (
-        <Image
-          source={{ uri: url }}
-          style={mediaStyles.image}
-          resizeMode="contain"
-          accessibilityLabel={slide.mediaCaption || ''}
-        />
+        // Tap to enlarge. A book figure is a diagram with point labels on it,
+        // and at slide size «J» or «٣٦٠°» is a few pixels — legible from a
+        // laptop, not from the back of a classroom.
+        <Pressable
+          onPress={() => setZoomed(true)}
+          accessibilityRole="button"
+          accessibilityLabel={t('enlargeImage')}
+        >
+          <Image
+            source={{ uri: url }}
+            style={mediaStyles.image}
+            resizeMode="contain"
+            accessibilityLabel={slide.mediaCaption || ''}
+          />
+          <View style={mediaStyles.zoomHint} pointerEvents="none">
+            <Ionicons name="expand" size={18} color="#fff" />
+          </View>
+        </Pressable>
       ) : Platform.OS === 'web' && embed ? (
         <View style={mediaStyles.frame}>
           {React.createElement('iframe', {
@@ -223,17 +233,68 @@ function MediaView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; 
             title: slide.mediaCaption || 'video',
           })}
         </View>
+      ) : slide.mediaKind === 'audio' && Platform.OS === 'web' ? (
+        // A native `<audio>` control — unlike the YouTube embed above, there is
+        // no player component to fall back to, and browsers already render a
+        // usable one for free.
+        <View style={mediaStyles.audioFrame}>
+          <Ionicons name="musical-notes" size={28} color={ACCENT} />
+          {React.createElement('audio', {
+            src: url,
+            controls: true,
+            style: { width: '100%' },
+          })}
+        </View>
       ) : (
+        // Also where 'document' lands — no in-app viewer exists for a PDF,
+        // native or web, so it gets the same "open externally" treatment as
+        // video/audio on native. The icon and label are the one thing that
+        // change: a "play" glyph on a document read as a broken player.
         <Pressable
           onPress={() => { void openExternalMedia(url); }}
           style={[mediaStyles.openBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
         >
-          <Ionicons name="play-circle" size={20} color="#fff" />
+          <Ionicons name={slide.mediaKind === 'document' ? 'document-text' : 'play-circle'} size={20} color="#fff" />
           <Text style={[mediaStyles.openBtnText, { fontFamily: 'Cairo_700Bold' }]}>
-            {t('openMedia')}
+            {slide.mediaKind === 'document' ? t('openDocument') : t('openMedia')}
           </Text>
         </Pressable>
       )}
+
+      {/* Full-screen viewer. `transparent` over a near-opaque backdrop rather
+          than an opaque Modal: the slide stays faintly visible behind, so it
+          reads as a zoom of this figure and not a navigation away from the
+          deck. Dismissed by tapping anywhere, which is the gesture people try
+          first, with an explicit button for anyone who does not. */}
+      <Modal
+        visible={zoomed}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setZoomed(false)}
+        supportedOrientations={['portrait', 'landscape']}
+      >
+        <Pressable style={mediaStyles.zoomBackdrop} onPress={() => setZoomed(false)}>
+          <Image
+            source={{ uri: url }}
+            style={mediaStyles.zoomImage}
+            resizeMode="contain"
+            accessibilityLabel={slide.mediaCaption || ''}
+          />
+          {!!slide.mediaCaption && (
+            <Text style={[mediaStyles.zoomCaption, { fontFamily: 'Cairo_400Regular' }]}>
+              {isolateForeignRuns(slide.mediaCaption)}
+            </Text>
+          )}
+          <Pressable
+            style={mediaStyles.zoomClose}
+            onPress={() => setZoomed(false)}
+            accessibilityRole="button"
+            accessibilityLabel={t('closeImage')}
+          >
+            <Ionicons name="close" size={26} color="#fff" />
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -247,9 +308,13 @@ function HeroSlideView({ slide, accent }: { slide: ActivitySlide; accent: string
   const hasPhoto = !!slide.mediaUrl;
   const body = (
     <View style={heroStyles.textWrap}>
-      <Text style={[heroStyles.title, { fontFamily: 'Cairo_700Bold' }]}>{slide.title}</Text>
+      <Text style={[heroStyles.title, { fontFamily: 'Cairo_700Bold' }]}>
+        {isolateForeignRuns(slide.title)}
+      </Text>
       {!!slide.content && (
-        <Text style={[heroStyles.subtitle, { fontFamily: 'Almarai_400Regular' }]}>{slide.content}</Text>
+        <Text style={[heroStyles.subtitle, { fontFamily: 'Almarai_400Regular' }]}>
+          {isolateForeignRuns(slide.content)}
+        </Text>
       )}
     </View>
   );
@@ -296,7 +361,14 @@ function TeacherPanel({
   const Section = ({ label, content }: { label: string; content: string }) => (
     <View style={panelStyles.section}>
       <Text style={[panelStyles.sectionLabel, { textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
-      <Text style={[panelStyles.sectionText, { textAlign: isRTL ? 'right' : 'left' }]}>{content}</Text>
+      <Text
+        style={[
+          panelStyles.sectionText,
+          { textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' },
+        ]}
+      >
+        {isolateForeignRuns(content)}
+      </Text>
     </View>
   );
 
@@ -321,7 +393,16 @@ function TeacherPanel({
             <View style={panelStyles.section}>
               <Text style={[panelStyles.sectionLabel, { textAlign: isRTL ? 'right' : 'left' }]}>{t('suggestedQuestionsLabel')}</Text>
               {teacher.suggestedQuestions.map((q, i) => (
-                <Text key={i} style={[panelStyles.bulletQ, { textAlign: isRTL ? 'right' : 'left' }]}>{'• '}{q}</Text>
+                <Text
+                  key={i}
+                  style={[
+                    panelStyles.bulletQ,
+                    { textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' },
+                  ]}
+                >
+                  {'• '}
+                  {isolateForeignRuns(q)}
+                </Text>
               ))}
             </View>
           ) : null}
@@ -334,7 +415,7 @@ function TeacherPanel({
 
 // ─── Question Slide (whole-class ABCD response) ──────────────────────────────
 function QuestionOptions({
-  slide, isRTL, t, revealed, onToggleReveal,
+  slide, isRTL: appIsRTL, t, revealed, onToggleReveal,
 }: {
   slide: ActivitySlide;
   isRTL: boolean;
@@ -344,7 +425,12 @@ function QuestionOptions({
 }) {
   const options = slide.options ?? [];
   if (options.length === 0) return null;
-  // Response letters students answer with by holding up that many fingers
+  // Same reasoning as SlideView: an English-subject check's own options can
+  // be English regardless of the app's UI language, and calling out "ج" over
+  // an English option nobody printed أبجد cards for is not the letter a
+  // student reading it in English would say.
+  const isRTL = isEnglishSlideContent(slide.content, ...options) ? false : appIsRTL;
+  // Response letters — students raise a hand and call out the letter
   // (أ = 1, ب = 2, …). No printed cards — the app never had a way to make them.
   const letters = isRTL ? ['أ', 'ب', 'ج', 'د', 'هـ'] : ['A', 'B', 'C', 'D', 'E'];
 
@@ -383,10 +469,14 @@ function QuestionOptions({
               <Text
                 style={[
                   qStyles.optionText,
-                  { textAlign: isRTL ? 'right' : 'left', fontFamily: isCorrect ? 'Cairo_700Bold' : 'Cairo_500Medium' },
+                  {
+                    textAlign: isRTL ? 'right' : 'left',
+                    writingDirection: isRTL ? 'rtl' : 'ltr',
+                    fontFamily: isCorrect ? 'Cairo_700Bold' : 'Cairo_500Medium',
+                  },
                 ]}
               >
-                {opt}
+                {isolateForeignRuns(opt)}
               </Text>
               {isCorrect && <Ionicons name="checkmark-circle" size={26} color={TIMER_GREEN} />}
             </View>
@@ -442,7 +532,7 @@ function QuestionOptions({
                 { fontFamily: 'Almarai_400Regular', color: TEXT_MUTED, textAlign: 'center' },
               ]}
             >
-              {t('verifiedComputed', prettifySymPy(slide.computedAnswer))}
+              {isolateForeignRuns(t('verifiedComputed', prettifySymPy(slide.computedAnswer)))}
             </Text>
           )}
         </View>
@@ -452,27 +542,25 @@ function QuestionOptions({
 }
 
 // ─── Slide Content ────────────────────────────────────────────────────────────
-/**
- * Pull a leading emoji off a deck heading.
- *
- * The builders write titles like "🎯 نتاجات التعلم" — the glyph is a section
- * marker, not part of the sentence, so it belongs in a chip beside the heading
- * rather than inline, where it sets the line height for the whole title.
- * Codepoint ranges rather than \p{Extended_Pictographic}: unicode property
- * escapes are not safe to assume across Hermes versions.
- */
-function splitEmoji(title: string): [glyph: string, heading: string] {
-  const text = (title ?? '').trim();
-  const cp = text.codePointAt(0) ?? 0;
-  const isEmoji = cp >= 0x1f300 || (cp >= 0x2190 && cp <= 0x27bf);
-  if (!isEmoji) return ['', text];
-  const glyph = String.fromCodePoint(cp);
-  return [glyph, text.slice(glyph.length).replace(/^\uFE0F/, '').trim()];
-}
-
-function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
+function SlideView({ slide, isRTL: appIsRTL }: { slide: ActivitySlide; isRTL: boolean }) {
+  // A slide's own question/options can be in English regardless of the app's
+  // UI language: the deck's chrome is picked once at build time from that UI
+  // language, but an English-subject check comes back from the model in
+  // English no matter what. Laying an English question out right-to-left with
+  // the reading edge on the right is asking the class to read it backwards —
+  // so direction here follows the slide's actual payload (its body, not its
+  // title, which is deliberately bilingual and would always read as Arabic).
+  const isRTL = isEnglishSlideContent(slide.content, ...(slide.options ?? [])) ? false : appIsRTL;
   const accent = slideTypeAccent(slide.type);
   const align = isRTL ? ('right' as const) : ('left' as const);
+  // Alignment is not direction. Every body line here is model-written prose
+  // that can carry an equation, and on web the document is pinned to
+  // dir="ltr" even in Arabic (see LanguageContext), so without an explicit
+  // writingDirection the paragraph resolves base-LTR and the bidi algorithm
+  // reorders the Arabic clauses against the maths. isolateForeignRuns then
+  // keeps each Latin/maths run whole inside that paragraph — «f(x) = 2x⁴ -
+  // x² + 3» projected as «x⁴f(x) = 2 - x² + 3» is what these two fix.
+  const dir = isRTL ? ('rtl' as const) : ('ltr' as const);
   const edge = isRTL ? ('flex-end' as const) : ('flex-start' as const);
   const lines = slide.content.split('\n').map(l => l.trim()).filter(Boolean);
   const [glyph, heading] = splitEmoji(slide.title);
@@ -485,16 +573,24 @@ function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
   if (slide.slideNumber === 1 && slide.type === 'intro') {
     return (
       <View style={slideStyles.cover}>
-        <Text style={[slideStyles.coverTitle, { textAlign: align, fontFamily: 'Cairo_700Bold' }]}>
-          {heading}
+        <Text
+          style={[
+            slideStyles.coverTitle,
+            { textAlign: align, writingDirection: dir, fontFamily: 'Cairo_700Bold' },
+          ]}
+        >
+          {isolateForeignRuns(heading)}
         </Text>
         <View style={[slideStyles.rule, { alignSelf: edge }]} />
         {lines.map((line, i) => (
           <Text
             key={i}
-            style={[slideStyles.coverSub, { textAlign: align, fontFamily: 'Almarai_400Regular' }]}
+            style={[
+              slideStyles.coverSub,
+              { textAlign: align, writingDirection: dir, fontFamily: 'Almarai_400Regular' },
+            ]}
           >
-            {line}
+            {isolateForeignRuns(line)}
           </Text>
         ))}
       </View>
@@ -511,8 +607,13 @@ function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
             <Text style={slideStyles.glyph}>{glyph}</Text>
           </View>
         )}
-        <Text style={[slideStyles.title, { color: accent, textAlign: align, fontFamily: 'Cairo_700Bold' }]}>
-          {heading}
+        <Text
+          style={[
+            slideStyles.title,
+            { color: accent, textAlign: align, writingDirection: dir, fontFamily: 'Cairo_700Bold' },
+          ]}
+        >
+          {isolateForeignRuns(heading)}
         </Text>
       </View>
       <View style={[slideStyles.rule, { alignSelf: edge }]} />
@@ -520,20 +621,26 @@ function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
       {/* Body. Bullets become cards and equations become a boxed formula: the
           content already carries that structure as "• " prefixes and maths
           glyphs, it was just being flattened into identical paragraphs. */}
-      <View style={slideStyles.body}>
+      <View style={slide.sideImageUrl
+        ? [slideStyles.splitRow, { flexDirection: isRTL ? 'row-reverse' as const : 'row' as const }]
+        : undefined}>
+      <View style={[slideStyles.body, slide.sideImageUrl ? slideStyles.splitText : null]}>
         {lines.map((line, i) => {
-          const isBullet = /^[•\-–]\s+/.test(line);
-          const text = isBullet ? line.replace(/^[•\-–]\s+/, '') : line;
-          const isEquation =
-            !isBullet
-            && (/[=²³√±×÷^]/.test(text) || /\d+x/.test(text) || /\/[0-9٠-٩]/.test(text));
+          const isBullet = isBulletLine(line);
+          const text = isBullet ? stripBullet(line) : line;
+          const isEquation = looksLikeEquation(line);
 
           if (isBullet) {
             return (
               <View key={i} style={[slideStyles.card, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <View style={[slideStyles.cardBar, { backgroundColor: accent }]} />
-                <Text style={[slideStyles.cardText, { textAlign: align, fontFamily: 'Almarai_400Regular' }]}>
-                  {text}
+                <Text
+                  style={[
+                    slideStyles.cardText,
+                    { textAlign: align, writingDirection: dir, fontFamily: 'Almarai_400Regular' },
+                  ]}
+                >
+                  {isolateForeignRuns(text)}
                 </Text>
               </View>
             );
@@ -560,7 +667,19 @@ function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
           if (isEquation) {
             return (
               <View key={i} style={slideStyles.formulaBox}>
-                <Text style={[slideStyles.formula, { fontFamily: 'Cairo_700Bold' }]}>{text}</Text>
+                {/* The parser found no fraction/radical/caret to lay out, but
+                    the line still reads as an equation — often Arabic prose
+                    wrapped around one, which is exactly the case that
+                    scrambled. Isolation keeps the equation whole; the isolate
+                    itself carries the run left-to-right inside it. */}
+                <Text
+                  style={[
+                    slideStyles.formula,
+                    { writingDirection: dir, fontFamily: 'Cairo_700Bold' },
+                  ]}
+                >
+                  {isolateForeignRuns(text)}
+                </Text>
               </View>
             );
           }
@@ -575,14 +694,36 @@ function SlideView({ slide, isRTL }: { slide: ActivitySlide; isRTL: boolean }) {
                   // itself centred and width-capped, so a margin-aligned caption
                   // floats away from the thing it describes.
                   textAlign: slide.type === 'media' ? 'center' : align,
+                  writingDirection: dir,
                   fontFamily: 'Almarai_400Regular',
                 },
               ]}
             >
-              {text}
+              {isolateForeignRuns(text)}
             </Text>
           );
         })}
+      </View>
+      {/* The book's own diagram of this rule, beside it rather than a click
+          later. React Native has no document direction to inherit, so
+          `row-reverse` IS correct here — the opposite of the rule the printed
+          exports live by, and the reason that rule is written down twice in
+          exportHtml.ts. */}
+      {slide.sideImageUrl && (
+        <View style={slideStyles.splitFig}>
+          <Image
+            source={{ uri: slide.sideImageUrl }}
+            style={slideStyles.splitImg}
+            resizeMode="contain"
+            accessibilityLabel={slide.sideImageCaption}
+          />
+          {!!slide.sideImageCaption && (
+            <Text style={[slideStyles.splitCaption, { fontFamily: 'Almarai_400Regular' }]}>
+              {slide.sideImageCaption}
+            </Text>
+          )}
+        </View>
+      )}
       </View>
 
       {/* Unlock code badge */}
@@ -615,6 +756,7 @@ export default function PresentationScreen() {
   const [timerRunning, setTimerRunning] = useState(false);
   const [timerTotal, setTimerTotal] = useState(0);
   const [celebrationVisible, setCelebrationVisible] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const celebrationAnim = useRef(new Animated.Value(0)).current;
   const celebrationScale = useRef(new Animated.Value(0.5)).current;
@@ -661,10 +803,13 @@ export default function PresentationScreen() {
     setHintVisible(false);
     setAnswerVisible(false);
     setTeacherPanelOpen(false);
-    if (slide.durationSeconds > 0) {
+    // Not `slide.durationSeconds` — an intro, a reveal or a summary is read to
+    // the class, so a duration on one is model noise rather than a task to time.
+    const seconds = timerSecondsForSlide(slide);
+    if (seconds > 0) {
       clearIntervalIfRunning();
-      setTimerSec(slide.durationSeconds);
-      setTimerTotal(slide.durationSeconds);
+      setTimerSec(seconds);
+      setTimerTotal(seconds);
       setTimerRunning(true);
     } else {
       clearIntervalIfRunning();
@@ -750,6 +895,15 @@ export default function PresentationScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
+  // The browser can leave fullscreen without us (Esc, F11), so read the state
+  // back rather than tracking our own toggles.
+  useEffect(() => {
+    if (!canFullscreen) return;
+    const sync = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', sync);
+    return () => document.removeEventListener('fullscreenchange', sync);
+  }, []);
+
   // Keyboard + presentation-clicker control (web/projector). A teacher runs
   // the class from the front of the room, not from the laptop: clickers send
   // PageDown/PageUp or arrows, and Space is the universal "advance".
@@ -765,8 +919,15 @@ export default function PresentationScreen() {
       } else if (backKeys.includes(e.key)) {
         e.preventDefault();
         setSlideIndexSafely(-1);
+      } else if (e.code === 'KeyF') {
+        // e.code, not e.key — an Arabic layout reports 'ب' for this key.
+        e.preventDefault();
+        toggleFullscreen();
       } else if (e.key === 'Escape') {
-        router.back();
+        // Esc mid-class must not dump the deck just because the teacher wanted
+        // the browser chrome back.
+        if (document.fullscreenElement) toggleFullscreen();
+        else router.back();
       }
     };
     window.addEventListener('keydown', onKey);
@@ -786,11 +947,11 @@ export default function PresentationScreen() {
 
   const restartTimer = () => {
     if (!activity) return;
-    const s = activity.slides[slideIndex];
-    if (s.durationSeconds > 0) {
+    const seconds = timerSecondsForSlide(activity.slides[slideIndex]);
+    if (seconds > 0) {
       clearIntervalIfRunning();
-      setTimerSec(s.durationSeconds);
-      setTimerTotal(s.durationSeconds);
+      setTimerSec(seconds);
+      setTimerTotal(seconds);
       setTimerRunning(true);
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -828,6 +989,18 @@ export default function PresentationScreen() {
         <Pressable onPress={() => router.back()} style={styles.exitBtn} hitSlop={12}>
           <Ionicons name="close" size={22} color={TEXT_MUTED} />
         </Pressable>
+
+        {/* Fullscreen — the projector's own control, so the teacher never has
+            to go hunting for F11 in front of the class. */}
+        {canFullscreen && (
+          <Pressable onPress={toggleFullscreen} style={styles.exitBtn} hitSlop={12}>
+            <Ionicons
+              name={isFullscreen ? 'contract-outline' : 'expand-outline'}
+              size={20}
+              color={TEXT_MUTED}
+            />
+          </Pressable>
+        )}
 
         {/* Progress dots — each wrapped in a real touch target (the bare 6px
             dots were unhittable, which stranded teachers on slide 1). */}
@@ -965,8 +1138,17 @@ export default function PresentationScreen() {
               </Pressable>
               {hintVisible && (
                 <View style={[styles.revealContent, { borderColor: TIMER_AMBER + '40', backgroundColor: TIMER_AMBER + '10' }]}>
-                  <Text style={[styles.revealText, { textAlign: isRTL ? 'right' : 'left', fontFamily: 'Almarai_400Regular' }]}>
-                    {slide.hint}
+                  <Text
+                    style={[
+                      styles.revealText,
+                      {
+                        textAlign: isRTL ? 'right' : 'left',
+                        writingDirection: isRTL ? 'rtl' : 'ltr',
+                        fontFamily: 'Almarai_400Regular',
+                      },
+                    ]}
+                  >
+                    {isolateForeignRuns(slide.hint)}
                   </Text>
                 </View>
               )}
@@ -996,8 +1178,17 @@ export default function PresentationScreen() {
                       isRTL={isRTL}
                     />
                   ) : (
-                    <Text style={[styles.revealText, { textAlign: isRTL ? 'right' : 'left', fontFamily: 'Cairo_700Bold' }]}>
-                      {slide.answer}
+                    <Text
+                      style={[
+                        styles.revealText,
+                        {
+                          textAlign: isRTL ? 'right' : 'left',
+                          writingDirection: isRTL ? 'rtl' : 'ltr',
+                          fontFamily: 'Cairo_700Bold',
+                        },
+                      ]}
+                    >
+                      {isolateForeignRuns(slide.answer)}
                     </Text>
                   )}
                   {/* Same trust moment as question slides: state only what
@@ -1022,7 +1213,9 @@ export default function PresentationScreen() {
                         <Text style={[qStyles.verifiedText, {
                           fontFamily: 'Almarai_400Regular', color: TEXT_MUTED, textAlign: 'center',
                         }]}>
-                          {t('verifiedComputed', prettifySymPy(slide.computedAnswer))}
+                          {isolateForeignRuns(
+                            t('verifiedComputed', prettifySymPy(slide.computedAnswer)),
+                          )}
                         </Text>
                       )}
                     </View>
@@ -1136,7 +1329,9 @@ const styles = StyleSheet.create({
   blob: { position: 'absolute', borderRadius: 999, backgroundColor: BLOB },
   blobTop: { width: 260, height: 260, top: -96, left: -84 },
   blobBottom: { width: 330, height: 330, bottom: -132, right: -116 },
-  slideScroll: { paddingHorizontal: 24, paddingBottom: 20 },
+  // flexGrow so the content box is at least the height of the stage: the cover
+  // below centres itself inside it instead of hugging the top edge.
+  slideScroll: { paddingHorizontal: 24, paddingBottom: 20, flexGrow: 1 },
   revealSection: { marginTop: 12, gap: 8 },
   revealBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 10, borderWidth: 1 },
   revealBtnText: { fontSize: 14 },
@@ -1156,7 +1351,10 @@ const styles = StyleSheet.create({
 
 const slideStyles = StyleSheet.create({
   container: { paddingTop: 8 },
-  cover: { paddingTop: 48, paddingBottom: 32 },
+  // Centred vertically. Left top-aligned, a three-line mission sat under the
+  // header with two-thirds of the projector empty below it, which reads as a
+  // slide that failed to load rather than one that is simply short.
+  cover: { flexGrow: 1, justifyContent: 'center', paddingTop: 48, paddingBottom: 32 },
   coverTitle: { fontSize: 40, lineHeight: 62, color: ACCENT },
   coverSub: { fontSize: 20, lineHeight: 34, color: TEXT_MUTED, marginBottom: 6 },
   rule: { width: 64, height: 5, borderRadius: 3, backgroundColor: PINK, marginTop: 14, marginBottom: 24 },
@@ -1165,6 +1363,13 @@ const slideStyles = StyleSheet.create({
   glyph: { fontSize: 21 },
   title: { flex: 1, fontSize: 31, lineHeight: 48 },
   body: { gap: 12 },
+  // Two columns when the slide carries its own figure; untouched otherwise,
+  // so every slide without one renders exactly as before.
+  splitRow: { alignItems: 'center', gap: 20 },
+  splitText: { flex: 1, minWidth: 0 },
+  splitFig: { flex: 0.8, alignItems: 'center', gap: 8 },
+  splitImg: { width: '100%', height: 340, borderRadius: 12 },
+  splitCaption: { fontSize: 13, color: '#7C6A65', textAlign: 'center' },
   bodyLine: { fontSize: 21, color: TEXT_PRIMARY, lineHeight: 36 },
   card: { alignItems: 'center', gap: 14, backgroundColor: CARD_BG, borderRadius: 14, borderWidth: 1, borderColor: BORDER, paddingVertical: 15, paddingHorizontal: 16 },
   cardBar: { width: 5, alignSelf: 'stretch', borderRadius: 3 },
@@ -1213,6 +1418,39 @@ const mediaStyles = StyleSheet.create({
     borderColor: BORDER,
   },
   image: { width: '100%', height: 460, borderRadius: 14, backgroundColor: CARD_BG },
+  audioFrame: {
+    width: '100%',
+    maxWidth: 560,
+    alignSelf: 'center',
+    borderRadius: 14,
+    backgroundColor: CARD_BG,
+    borderWidth: 1,
+    borderColor: BORDER,
+    paddingVertical: 28,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    gap: 14,
+  },
+  zoomHint: {
+    position: 'absolute', bottom: 10, right: 10,
+    width: 34, height: 34, borderRadius: 17,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: 'rgba(15,23,42,0.55)',
+  },
+  zoomBackdrop: {
+    flex: 1, backgroundColor: 'rgba(8,12,20,0.94)',
+    alignItems: 'center', justifyContent: 'center', padding: 24, gap: 14,
+  },
+  // A figure is mostly white, so it needs its own ground against the dark
+  // backdrop or the strokes float in the void.
+  zoomImage: { width: '100%', flex: 1, borderRadius: 12, backgroundColor: '#fff' },
+  zoomCaption: { fontSize: 16, color: '#E2E8F0', textAlign: 'center' },
+  zoomClose: {
+    position: 'absolute', top: 18, right: 18,
+    width: 44, height: 44, borderRadius: 22,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.16)',
+  },
   openBtn: {
     alignItems: 'center',
     justifyContent: 'center',

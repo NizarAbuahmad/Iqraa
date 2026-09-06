@@ -117,10 +117,11 @@ function arBody(input: ParentMessageInput): string {
   const did = g === 'male' ? 'أظهر' : 'أظهرت';
   const hasNot = g === 'male' ? 'لم يُنجز' : 'لم تُنجز';
   const wasAbsent = g === 'male' ? 'تغيّب' : 'تغيّبت';
+  const attendance = g === 'male' ? 'حضوره' : 'حضورها';
 
   switch (input.kind) {
     case 'praise':
-      return `يسعدني أن أشارككم تميّز ${child} ${n}${inSubject}. فقد ${did} اجتهادًا واضحًا والتزامًا يستحق الثناء، وكان لحضوره الفاعل أثر طيب في الصف.`;
+      return `يسعدني أن أشارككم تميّز ${child} ${n}${inSubject}. فقد ${did} اجتهادًا واضحًا والتزامًا يستحق الثناء، وكان ل${attendance} الفاعل أثر طيب في الصف.`;
     case 'progress':
       return `أودّ إطلاعكم على تقرير موجز حول مستوى ${child} ${n}${inSubject} خلال الفترة الماضية.`;
     case 'missing-homework':
@@ -136,10 +137,12 @@ function arBody(input: ParentMessageInput): string {
   }
 }
 
-function arNextStep(kind: MessageKind): string {
+function arNextStep(kind: MessageKind, g: Gender): string {
   switch (kind) {
     case 'praise':
-      return 'أرجو أن تشاركوه/تشاركوها هذا التقدير في المنزل، فله أثر كبير في الدافعية.';
+      return g === 'male'
+        ? 'أرجو أن تشاركوه هذا التقدير في المنزل، فله أثر كبير في الدافعية.'
+        : 'أرجو أن تشاركوها هذا التقدير في المنزل، فله أثر كبير في الدافعية.';
     case 'progress':
       return 'وأنا على استعداد لتزويدكم بأي تفصيل إضافي عند الحاجة.';
     case 'missing-homework':
@@ -174,7 +177,7 @@ function composeArabic(input: ParentMessageInput): string {
     greeting,
     arBody(input),
     input.details?.trim(),
-    arNextStep(input.kind),
+    arNextStep(input.kind, input.studentGender),
     arSignOff(input),
   ]
     .filter(Boolean)
@@ -238,6 +241,22 @@ function composeEnglish(input: ParentMessageInput): string {
   ]
     .filter(Boolean)
     .join('\n\n');
+}
+
+/**
+ * What the details box should hold after the teacher picks a student off the
+ * roster: their standing note on that child, unless they are already writing.
+ *
+ * Separate from the screen because the losing case is silent. A teacher types
+ * three sentences about a specific incident, realises they should attach the
+ * right student, picks them from the class — and a naive prefill replaces what
+ * they wrote with last term's note. Nothing errors, and they may well send it.
+ *
+ * Whitespace-only counts as empty: a stray newline in the box is not writing.
+ */
+export function seedDetailsFromNote(currentDetails: string, teacherNote: string): string {
+  if (currentDetails.trim()) return currentDetails;
+  return teacherNote.trim() ? teacherNote : currentDetails;
 }
 
 /**

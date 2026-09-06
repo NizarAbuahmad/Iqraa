@@ -23,7 +23,7 @@ import React from 'react';
 import { Text, View } from 'react-native';
 import type { TextStyle, ViewStyle } from 'react-native';
 import { MathText } from '@/components/classroom/MathText';
-import { hasRenderableMath } from '@/services/mathRender';
+import { hasRenderableMath, isolateForeignRuns } from '@/services/mathRender';
 
 type LineStyle = Pick<TextStyle, 'fontSize' | 'color' | 'fontFamily' | 'lineHeight' | 'textAlign' | 'writingDirection'>;
 
@@ -51,7 +51,7 @@ export function MathParagraph({ text, style, isRTL, containerStyle }: Props) {
             isRTL={isRTL}
           />
         ) : (
-          <Text key={i} style={style}>{line}</Text>
+          <Text key={i} style={style}>{isolateForeignRuns(line)}</Text>
         ),
       )}
     </View>

@@ -15,6 +15,7 @@ import {
   resolveCurriculumContext,
   type SessionArtifact,
 } from '@/services/ai/teachingAssistant';
+import { buildGeneratorContext, nccdUnitId } from '@/services/kbContext';
 import type { KBLesson } from '@/services/knowledgeBase';
 import {
   formatActivityText,
@@ -114,7 +115,20 @@ function buildRequest(
     questionTypes: ['multiple_choice', 'short_answer', 'true_false'],
     totalMarks: 20,
     activityType: 'group',
-    additionalContext: documentContext?.trim() || undefined,
+    // Chat was the one generation path sending no curriculum context at all:
+    // whatever a teacher had attached, and nothing about the lesson itself. The
+    // teacher's own documents stay first — they are the more specific source —
+    // and the curriculum block (or the note saying there isn't one) follows.
+    additionalContext: [documentContext?.trim(), buildGeneratorContext(topic, lang)]
+      .filter(Boolean)
+      .join('\n\n') || undefined,
+    unitId: nccdUnitId(lesson?.unitId),
+    lessonId: lesson?.id,
+    // The one generation path that can carry a teacher's own document. When it
+    // does, the artifact is derived from their material and must never be
+    // pooled for anyone else; with no attachment it is the lesson like every
+    // other screen. See AIRequest.contextSource.
+    contextSource: documentContext?.trim() ? 'teacher' : 'curriculum',
   };
 }
 
@@ -126,8 +140,8 @@ function leadIn(
 ): string {
   if (fromDocuments) {
     return isAr
-      ? `جهّزت خطة الدرس اعتمادًا على الملفات التي رفعتها — موضوع «${topic}».\n\n`
-      : `Prepared the lesson plan from your uploaded files — topic “${topic}”.\n\n`;
+      ? `جهّزت المادة اعتمادًا على الملفات التي رفعتها — موضوع «${topic}».\n\n`
+      : `Prepared the material from your uploaded files — topic “${topic}”.\n\n`;
   }
   if (fromSoftPin) {
     return isAr
@@ -254,55 +268,12 @@ export async function generateChatArtifact(opts: {
   };
 }
 
-/** Resolve topic string for generation from lesson / docs / query. */
-export function resolveArtifactTopic(opts: {
-  lang: 'ar' | 'en';
-  query: string;
-  lesson: KBLesson | null;
-  activeTopicAr: string | null;
-  activeTopicEn: string | null;
-  docTopic?: string | null;
-  /** When true, uploaded materials beat a soft-pinned curriculum lesson. */
-  preferDocuments?: boolean;
-}): string {
-  const {
-    lang,
-    query,
-    lesson,
-    activeTopicAr,
-    activeTopicEn,
-    docTopic,
-    preferDocuments = false,
-  } = opts;
-
-  if (preferDocuments && docTopic?.trim()) return docTopic.trim();
-
-  // Explicit topic left in the query after stripping artifact verbs
-  // Include حضر/جهز without shadda — teachers often type without tashkeel.
-  const stripped = query
-    .replace(
-      /خطة(\s*درس)?|ورقة(\s*عمل)?|اختبار(\s*قصير)?|واجب(\s*منزلي)?|نشاط(\s*صفي)?|lesson\s*plan|worksheet|quiz|homework|activity|أنشئ|انشئ|ولّد|ولد|اعمل|أعمل|حضّ?ر|جهز|جهّز|أعد|اعد|إعداد|اعداد|كاملة|كامل|prepare|create|make|generate|build/gi,
-      ' ',
-    )
-    .replace(/^(عن|حول|about|for)\s+/i, '')
-    .replace(/\b(عن|حول|about|for)\b/gi, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  // Prefer an explicit topic in the message over soft-pinned / default lesson
-  if (stripped && stripped.length >= 3) {
-    const lessonTitle = lesson
-      ? (lang === 'ar' ? lesson.titleAr : lesson.titleEn)
-      : '';
-    const looksLikeBareVerbOnly = /^(حضّ?ر|أنشئ|جهز|أعد|prepare|create)$/i.test(stripped);
-    if (!looksLikeBareVerbOnly && stripped !== lessonTitle) {
-      return stripped;
-    }
-  }
-
-  if (docTopic?.trim()) return docTopic.trim();
-  if (lesson) return lang === 'ar' ? lesson.titleAr : lesson.titleEn;
-  if (lang === 'ar' && activeTopicAr) return activeTopicAr;
-  if (lang === 'en' && activeTopicEn) return activeTopicEn;
-  return stripped || query.trim();
-}
+/**
+ * Re-exported so `generateChatArtifact`'s callers keep one import.
+ *
+ * The function itself lives in `artifactTopic.ts` because this module imports
+ * `RemoteAIService` at value level, which `node:test` cannot load — the same
+ * split `routeGating.ts` and `docxOutline.ts` already made. Topic resolution
+ * is pure string work and is worth testing directly.
+ */
+export { resolveArtifactTopic } from './artifactTopic.ts';

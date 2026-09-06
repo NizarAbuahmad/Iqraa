@@ -25,10 +25,10 @@ import { useFonts } from '@expo-google-fonts/inter';
 import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { AuthProvider, isTeacherRole, useAuth } from '@/context/AuthContext';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { hasSeenAppIntro } from '@/services/appIntro';
-import { isEntryRoute } from '@/services/routeGating';
+import { isEntryRoute, isNonTeacherRoute, isPublicRoute } from '@/services/routeGating';
 import { identifyUser, initAnalytics, resetAnalyticsIdentity, trackScreen } from '@/services/analytics';
 
 SplashScreen.preventAutoHideAsync();
@@ -54,6 +54,28 @@ function RootLayoutNav() {
     const onInternalDev = pathname?.startsWith('/dev') ?? false;
 
     if (onInternalDev) {
+      wasLoading.current = false;
+      wasSignedIn.current = signedIn;
+      return;
+    }
+
+    // A student sitting an exam is not a teacher and has no account to be
+    // signed out of. Their link must survive both branches below — the
+    // signed-out one would send them to a login screen they can never pass,
+    // and the signed-in one would yank a teacher testing the link to the tabs.
+    if (isPublicRoute(pathname)) {
+      wasLoading.current = false;
+      wasSignedIn.current = signedIn;
+      return;
+    }
+
+    // A parent or student who arrives at a teacher screen without the tab bar
+    // — a bookmark, a typed URL, browser history — is sent to Messages rather
+    // than shown a screen whose every call the server will refuse. The tabs
+    // already hide these (app/(tabs)/_layout.tsx); this is the other door.
+    // Entry routes are left alone so the sign-in redirect below still runs.
+    if (signedIn && user && !isTeacherRole(user.role) && !isEntryRoute(pathname) && !isNonTeacherRoute(pathname)) {
+      router.replace('/notifications');
       wasLoading.current = false;
       wasSignedIn.current = signedIn;
       return;

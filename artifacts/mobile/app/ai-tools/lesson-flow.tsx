@@ -22,7 +22,8 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
-import { buildGeneratorContext } from '@/services/kbContext';
+import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
+import { isolateForeignRuns } from '@/services/mathRender';
 import {
   ActivityOutput,
   LessonFlowOutput,
@@ -39,13 +40,17 @@ import {
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
 } from '@/services/curriculumData';
+import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, topicPickerParams } from '@/services/lessonPrep';
 import { TopicSelector } from '@/components/ui/TopicSelector';
+import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
 import { Button } from '@/components/ui/Button';
-import { saveItem } from '@/services/workspace';
+import { saveItem, updateItem } from '@/services/workspace';
+import { MaterialClassField } from '@/components/ui/MaterialClassField';
 import { Toast } from '@/components/ui/Toast';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
 import { buildLessonFlowHTML, exportAsPDF } from '@/services/share';
+import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -82,15 +87,32 @@ export default function LessonFlowScreen() {
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
   const scrollRef = useRef<ScrollView>(null);
-  const params = useLocalSearchParams<{ topic?: string }>();
+  const params = useLocalSearchParams<{
+    topic?: string; gradeIdx?: string; subjectIdx?: string;
+  }>();
 
   const grades = getPickerGrades();
   const subjects = getPickerSubjects();
 
   // Form state
   const [topic, setTopic] = useState(params.topic ?? '');
-  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(undefined, grades.length));
-  const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(undefined, subjects.length));
+  // These were pinned to `undefined` — index 0, Grade 10 Mathematics — so this
+  // screen was the one generator a caller could not aim at a subject, however
+  // much it knew. Every sibling screen already reads them.
+  // A bare `topic` param (old bookmarks, callers without picker params) says
+  // which grade and subject it belongs to better than picker index 0 does —
+  // ground it instead of opening a math lesson under whatever subject sits
+  // first in the list.
+  const [inferredScope] = useState(() =>
+    params.gradeIdx == null && params.subjectIdx == null
+      ? topicPickerParams(params.topic, lang as 'ar' | 'en')
+      : null,
+  );
+  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(params.gradeIdx ?? inferredScope?.gradeIdx, grades.length));
+  // Index-aligned flags rather than a pre-filtered `subjects`: these positions
+  // are persisted as subjectIdx, so entries are dropped at render time only.
+  const subjectHidden = subjectsWithoutCurriculum(grades[gradeIdx].id);
+  const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx ?? inferredScope?.subjectIdx, subjects.length));
   const [durationIdx, setDurationIdx] = useState(0);
 
   // Generation state
@@ -140,6 +162,13 @@ export default function LessonFlowScreen() {
 
   const handleBuild = async () => {
     if (!topic.trim()) return;
+    // A topic that grounds to another subject's lesson cannot make an honest
+    // flow — the KB serves that lesson's own content while the header claims
+    // the picked subject. Refuse and name the real subject instead.
+    const scope = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, lang as 'ar' | 'en');
+    if (scope) { setError(t('scopeNoCurriculum', scope.grade, scope.subject)); return; }
+    const conflict = groundedSubjectConflict(topic.trim(), lang as 'ar' | 'en', subjects[subjectIdx].id);
+    if (conflict) { setError(t('subjectTopicMismatch', lang === 'ar' ? conflict.nameAr : conflict.name)); return; }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setPhase('building');
     setError('');
@@ -177,7 +206,15 @@ export default function LessonFlowScreen() {
 
     try {
       const kbCtx = await buildGeneratorContext(topic, lang === 'ar' ? 'ar' : 'en');
-      const req = { grade, subject, topic, language, duration, additionalContext: kbCtx };
+      const unitId = generatorUnitId(topic, lang === 'ar' ? 'ar' : 'en');
+      const req = {
+        grade, subject, topic, language, duration, additionalContext: kbCtx, unitId,
+        lessonId: generatorLessonId(topic, lang === 'ar' ? 'ar' : 'en'),
+        bookFigureCount: generatorFigureCount(topic, lang === 'ar' ? 'ar' : 'en'),
+        // Every step of the flow is built from the lesson alone, so each one
+        // can be served from — and fill — the shared pool.
+        contextSource: 'curriculum' as const,
+      };
 
       await runLessonFlowFrom(startKey, req, aiService, prior, {
         onStepStart: (key) => setStep(key, 'loading'),
@@ -256,6 +293,7 @@ export default function LessonFlowScreen() {
     }
   };
 
+
   // ── Export PDF ──────────────────────────────────────────────────────────────
 
   const handleExportPDF = async () => {
@@ -270,7 +308,14 @@ export default function LessonFlowScreen() {
         topic, grade, subject, duration,
         objectives, warmup, activity, guidedPractice, worksheet, exitTicket,
       };
-      const html = buildLessonFlowHTML(flow, lang === 'ar');
+      const html = buildLessonFlowHTML(
+        flow,
+        lang === 'ar',
+        bookFigureRefsForLesson(
+          resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en').lesson?.id,
+          lang === 'ar',
+        ),
+      );
       await exportAsPDF(html, `lesson-flow-${topic}`);
     } catch {
       showToast(t('generationFailed'));
@@ -395,18 +440,28 @@ export default function LessonFlowScreen() {
                 </Pressable>
               ))}
             </ScrollView>
+            <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t('scopeNoCurriculumHint')} isRTL={isRTL} colors={colors} />
 
             {/* Subject */}
             <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', marginTop: 16, textAlign: isRTL ? 'right' : 'left' }]}>
               {lang === 'ar' ? 'المادة' : 'Subject'}
             </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', gap: 8 }}>
-              {subjectNames.map((s, i) => (
-                <Pressable key={i} onPress={() => setSubjectIdx(i)}
-                  style={[styles.chip, { flexShrink: 0, backgroundColor: subjectIdx === i ? colors.primary : colors.muted, borderColor: subjectIdx === i ? colors.primary : colors.border }]}>
-                  <Text style={[styles.chipText, { color: subjectIdx === i ? colors.primaryForeground : colors.foreground, fontFamily: 'Cairo_500Medium' }]}>{s}</Text>
-                </Pressable>
-              ))}
+              {/* `i` survives the filter on purpose — it is the index stored as
+                  subjectIdx, not the chip's position in the visible row. */}
+              {subjectNames
+                .map((s, i) => ({ s, i }))
+                .filter(({ i }) => !subjectHidden[i])
+                .map(({ s, i }) => {
+                  const active = subjectIdx === i;
+                  return (
+                    <Pressable key={i} accessibilityState={{ selected: active }}
+                      onPress={() => setSubjectIdx(i)}
+                      style={[styles.chip, { flexShrink: 0, backgroundColor: active ? colors.primary : colors.muted, borderColor: active ? colors.primary : colors.border }]}>
+                      <Text style={[styles.chipText, { color: active ? colors.primaryForeground : colors.foreground, fontFamily: 'Cairo_500Medium' }]}>{s}</Text>
+                    </Pressable>
+                  );
+                })}
             </ScrollView>
 
             {/* Duration */}
@@ -433,6 +488,15 @@ export default function LessonFlowScreen() {
                 disabled={!topic.trim()}
                 style={{ backgroundColor: NAVY }}
               />
+              {/*
+                A greyed-out primary button with nothing next to it reads as a
+                broken product rather than an unmet precondition. It says which.
+              */}
+              {!topic.trim() ? (
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, marginTop: 6, textAlign: isRTL ? 'right' : 'left' }}>
+                  {t('needTopicHint')}
+                </Text>
+              ) : null}
             </View>
           </View>
         )}
@@ -533,6 +597,13 @@ export default function LessonFlowScreen() {
                 color={ACCENT}
               />
             </Pressable>
+          </View>
+        )}
+
+        {/* Which class this flow is for — nothing until it is saved. */}
+        {isDone && (
+          <View style={{ marginHorizontal: 20, marginTop: 12 }}>
+            <MaterialClassField materialId={savedId ?? null} onToast={showToast} />
           </View>
         )}
 
@@ -652,7 +723,7 @@ function StepContent({ stepKey, objectives, warmup, activity, guidedPractice, wo
           {(objectives ?? []).map((obj, i) => (
             <View key={i} style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-start' }]}>
               <View style={[styles.bullet, { backgroundColor: NAVY }]} />
-              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' }}>{obj}</Text>
+              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(obj)}</Text>
             </View>
           ))}
         </View>
@@ -664,15 +735,15 @@ function StepContent({ stepKey, objectives, warmup, activity, guidedPractice, wo
       if (!act) return null;
       return (
         <View style={{ paddingHorizontal: 14, paddingBottom: 8 }}>
-          <Text style={[{ color: colors.primary, fontFamily: 'Cairo_600SemiBold', fontSize: 13, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{act.title}</Text>
+          <Text style={[{ color: colors.primary, fontFamily: 'Cairo_600SemiBold', fontSize: 13, marginBottom: 8, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>{isolateForeignRuns(act.title)}</Text>
           {act.steps.map((step, i) => (
             <View key={i} style={[styles.activityStep, { backgroundColor: colors.muted }]}>
               <View style={[styles.stepNum, { backgroundColor: stepKey === 'warmup' ? '#E67E22' : '#4F46E5' }]}>
                 <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 10 }}>{i + 1}</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 12.5, textAlign: isRTL ? 'right' : 'left' }}>{step.title}</Text>
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, marginTop: 2, lineHeight: 17, textAlign: isRTL ? 'right' : 'left' }}>{step.description}</Text>
+                <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 12.5, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(step.title)}</Text>
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, marginTop: 2, lineHeight: 17, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(step.description)}</Text>
               </View>
             </View>
           ))}
@@ -701,7 +772,7 @@ function StepContent({ stepKey, objectives, warmup, activity, guidedPractice, wo
               <View style={[styles.qNum, { backgroundColor: '#8B5CF6' }]}>
                 <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 10 }}>{i + 1}</Text>
               </View>
-              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12.5, lineHeight: 18, textAlign: isRTL ? 'right' : 'left' }}>{q.text}</Text>
+              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12.5, lineHeight: 18, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(q.text)}</Text>
               <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11 }}>{q.points}pt</Text>
             </View>
           ))}
@@ -719,7 +790,7 @@ function StepContent({ stepKey, objectives, warmup, activity, guidedPractice, wo
               <View style={[styles.qNum, { backgroundColor: '#F59E0B' }]}>
                 <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 10 }}>{i + 1}</Text>
               </View>
-              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12.5, lineHeight: 18, textAlign: isRTL ? 'right' : 'left' }}>{q.text}</Text>
+              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12.5, lineHeight: 18, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }}>{isolateForeignRuns(q.text)}</Text>
               <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11 }}>{q.points}pt</Text>
             </View>
           ))}

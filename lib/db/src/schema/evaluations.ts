@@ -21,6 +21,7 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { users } from "./users";
+import { classGroups } from "./students";
 import { levelScales, type CompetencyKey } from "./assessmentConfig";
 
 export type EvaluationStatus = "draft" | "published" | "closed";
@@ -57,6 +58,31 @@ export const evaluations = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     title: text("title").notNull().default(""),
     titleAr: text("title_ar").notNull().default(""),
+
+    /**
+     * Short code a student types, or the tail of the link they open. Issued at
+     * publish time and unique across every teacher, so a code identifies one
+     * exam without a login. Null until published: an unpublished exam has no
+     * link, because there is nothing to sit yet.
+     *
+     * The roster the link offers comes from `classGroupId` below — which is
+     * why an exam must be attached to a class before it can be handed out.
+     */
+    shareCode: text("share_code").unique(),
+
+    /**
+     * The class this exam belongs to, chosen by the teacher after the fact —
+     * never at authoring time. Same shape and same reasoning as
+     * `saved_materials.class_group_id`: `SET NULL` because archiving a class
+     * must not take the exam record with it, and one class per exam because a
+     * paper used with two sections gets duplicated, which is the trade already
+     * accepted for materials. Promote to `evaluation_assignments` (which has
+     * carried this shape since Phase 4 and still has no writer) only if
+     * teachers actually ask to share one paper across sections.
+     */
+    classGroupId: uuid("class_group_id").references(() => classGroups.id, {
+      onDelete: "set null",
+    }),
 
     // Curriculum scope — ids from @workspace/curriculum, resolved server-side.
     gradeId: text("grade_id").notNull(),

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "784063967007",
+    "project_id": "iqraa-95dd1",
+    "storage_bucket": "iqraa-95dd1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:784063967007:android:9fb4266691822617950a2a",
+        "android_client_info": {
+          "package_name": "com.iqra.teachingassistant"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD27GwkJth7BZg6-ctM3Rc7Q_qsOufFm6s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

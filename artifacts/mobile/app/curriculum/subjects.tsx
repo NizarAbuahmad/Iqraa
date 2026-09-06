@@ -1,5 +1,5 @@
 import React from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,6 +14,29 @@ import {
   getSemesterLabel,
   getUnitsForBook,
 } from '@/services/curriculumData';
+
+function DownloadChip({ label, url, icon, color }: {
+  label: string; url: string; icon: 'download-outline' | 'school-outline' | 'clipboard-outline'; color: string;
+}) {
+  const colors = useColors();
+  return (
+    <Pressable
+      onPress={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        Linking.openURL(url);
+      }}
+      style={({ pressed }) => [
+        styles.downloadChip,
+        { borderColor: colors.border, backgroundColor: colors.card, opacity: pressed ? 0.7 : 1 },
+      ]}
+    >
+      <Ionicons name={icon} size={15} color={color} />
+      <Text style={[styles.downloadChipText, { color: colors.foreground, fontFamily: 'Almarai_400Regular' }]} numberOfLines={1}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
 
 export default function SubjectsScreen() {
   const colors = useColors();
@@ -30,6 +53,19 @@ export default function SubjectsScreen() {
     gradeId ?? '',
     user?.role,
   ).slice().sort((a, b) => (a.semester ?? 99) - (b.semester ?? 99));
+
+  // Math/Chem/Finlit have one book per semester, so "Semester 1" alone tells
+  // them apart. English has several different books (different school
+  // tracks — Commerce, Agriculture, Hospitality, Industrial — the way
+  // different Jordanian private schools use different English series) that
+  // all happen to be Semester 1. Showing "Semester 1" on every card there
+  // would make four cards read identically. Fall back to the book's own
+  // title whenever more than one book on this screen shares a semester.
+  const semesterCounts = new Map<number, number>();
+  for (const b of books) {
+    const s = b.semester ?? -1;
+    semesterCounts.set(s, (semesterCounts.get(s) ?? 0) + 1);
+  }
 
   const color = subjectColor ?? colors.primary;
 
@@ -69,12 +105,22 @@ export default function SubjectsScreen() {
           </View>
         }
         renderItem={({ item: book }) => {
+          // Every mobile role is teacher-or-admin (UserRole has no 'student'),
+          // so the teacher-guide chip renders unconditionally here.
+          const guideUrl = book.guidePdfUrl;
           const units = getUnitsForBook(book.id);
           const lessonCount = units.reduce((n, u) => n + getLessonsForUnit(u.id).length, 0);
           const semesterLabel = getSemesterLabel(book, lang);
           const semesterNum = book.semester;
+          const hasSameSemesterSiblings = (semesterCounts.get(book.semester ?? -1) ?? 0) > 1;
+          const bookName = lang === 'ar' ? (book.titleAr || book.title) : book.title;
+          const cardTitle = hasSameSemesterSiblings ? bookName : semesterLabel;
+          const cardMeta = hasSameSemesterSiblings
+            ? `${semesterLabel} · ${t('unitsAndLessons', units.length, lessonCount)}`
+            : t('unitsAndLessons', units.length, lessonCount);
 
           return (
+            <View style={{ gap: 8 }}>
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -85,7 +131,7 @@ export default function SubjectsScreen() {
                     bookTitle: book.title,
                     bookTitleAr: book.titleAr,
                     subjectColor: color,
-                    semesterLabel,
+                    semesterLabel: cardTitle,
                   },
                 });
               }}
@@ -107,14 +153,39 @@ export default function SubjectsScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.semesterTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
-                  {semesterLabel}
+                  {cardTitle}
                 </Text>
                 <Text style={[styles.semesterMeta, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
-                  {t('unitsAndLessons', units.length, lessonCount)}
+                  {cardMeta}
                 </Text>
               </View>
               <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
             </Pressable>
+
+            {/* The printed book teachers actually hold — NCCD PDFs, or the
+                book's own hosted copy when NCCD doesn't publish it (then
+                downloadNote replaces the NCCD source line). */}
+            {(book.pdfUrl || guideUrl || book.activityPdfUrl) && (
+              <View style={{ gap: 4, alignItems: isRTL ? 'flex-end' : 'flex-start' }}>
+                <View style={[styles.downloadRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                  {book.pdfUrl && (
+                    <DownloadChip label={t('downloadBook')} url={book.pdfUrl} icon="download-outline" color={color} />
+                  )}
+                  {guideUrl && (
+                    <DownloadChip label={t('downloadTeacherGuide')} url={guideUrl} icon="school-outline" color={color} />
+                  )}
+                  {book.activityPdfUrl && (
+                    <DownloadChip label={t('downloadActivityBook')} url={book.activityPdfUrl} icon="clipboard-outline" color={color} />
+                  )}
+                </View>
+                <Text style={[styles.downloadNote, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+                  {(lang === 'ar' ? book.downloadNoteAr : book.downloadNote)
+                    ?? book.downloadNote
+                    ?? t('downloadSourceNccd', book.academicYear)}
+                </Text>
+              </View>
+            )}
+            </View>
           );
         }}
       />
@@ -141,6 +212,14 @@ const styles = StyleSheet.create({
   semesterBadgeText: { fontSize: 20, color: '#fff' },
   semesterTitle: { fontSize: 17, marginBottom: 4 },
   semesterMeta: { fontSize: 13 },
+  downloadRow: { gap: 8, flexWrap: 'wrap' },
+  downloadChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 12, paddingVertical: 7,
+    borderWidth: 1, borderRadius: 20,
+  },
+  downloadChipText: { fontSize: 12 },
+  downloadNote: { fontSize: 11, paddingHorizontal: 2 },
   empty: { alignItems: 'center', paddingTop: 60, gap: 10 },
   emptyTitle: { fontSize: 18 },
   emptyText: { fontSize: 14 },

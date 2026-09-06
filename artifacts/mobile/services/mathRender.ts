@@ -203,6 +203,58 @@ export function hasRenderableMath(line: string): boolean {
 }
 
 /**
+ * Wrap runs of Latin letters, digits and math symbols in Unicode
+ * directional isolates (LRI `⁦` ... PDI `⁩`) so the platform's own
+ * bidi algorithm keeps each run in place instead of reordering it against
+ * the surrounding Arabic — "f(x) = 2x + 3" embedded in «إذا كان f(x) = 2x +
+ * 3 و g(x) = x²، فإن...» rendered with the equation and the Arabic clauses
+ * scrambled relative to each other until this ran, on any plain RN `<Text>`
+ * with `writingDirection: 'rtl'`.
+ *
+ * Deliberately broader than `hasRenderableMath` above: plain function
+ * notation like "f(x) = 2x + 3" has no `^`, `/` or `√` for that parser to
+ * catch, so a line built entirely from prose plus notation like that never
+ * routes to MathText and fell straight through to a bare `<Text>` with no
+ * bidi protection at all. This runs on that fallback text instead.
+ *
+ * A run may contain single interior spaces ("2x + 3") so "2x", "+" and "3"
+ * isolate together rather than each getting its own isolate; a run never
+ * starts or ends on a space, so it never eats into the Arabic word-spacing
+ * around it.
+ */
+// Subscripts and comparison operators belong to the run for the same reason
+// the superscripts do: «قيمة x₁ ≤ 5» split into three isolates renders its
+// pieces in three different places. Deliberately excluded: `,` (Arabic prose
+// uses the latin comma), and `*` / `_` (markdown emphasis, which would change
+// already-shipped chat rendering to no benefit here).
+const FOREIGN_CHAR = "A-Za-z0-9()=+\\-./^√×÷∘′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉<>≤≥≠≈±∞";
+const FOREIGN_RUN_RE = new RegExp(`[${FOREIGN_CHAR}](?:[${FOREIGN_CHAR} ]*[${FOREIGN_CHAR}])?`, 'g');
+
+/**
+ * A run only earns an isolate if it could actually be reordered against the
+ * Arabic around it: it holds a Latin letter, or a number *and* an operator.
+ *
+ * Without this test the pass wraps a lone `.` or a bare «ص 45» page number,
+ * because `.` and the digits are in the class above. That is not merely
+ * useless — it broke the abjad option marker «أ.» into «أ⁦.⁩» and split the
+ * page citation, which is how it was caught. A standalone number or a
+ * standalone punctuation mark is laid out correctly by the bidi algorithm on
+ * its own; only a mixed run of them needs help.
+ */
+const HAS_LATIN = /[A-Za-z]/;
+const HAS_DIGIT = /[0-9₀-₉¹²³⁰⁴-⁹]/;
+const HAS_OPERATOR = /[=+\-/^√×÷∘<>≤≥≠≈±∞]/;
+
+function worthIsolating(run: string): boolean {
+  if (HAS_LATIN.test(run)) return true;
+  return HAS_DIGIT.test(run) && HAS_OPERATOR.test(run);
+}
+
+export function isolateForeignRuns(line: string): string {
+  return (line ?? '').replace(FOREIGN_RUN_RE, m => (worthIsolating(m) ? `⁦${m}⁩` : m));
+}
+
+/**
  * SymPy prints `3*x**2`; a projector should show `3x²`-style math. Turn the
  * verifier's raw syntax into the notation the parser above renders: `**`
  * becomes `^`, and the explicit `*` between a coefficient and a variable (or

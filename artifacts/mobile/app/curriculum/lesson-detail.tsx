@@ -11,6 +11,7 @@ import {
   isBrowserLessonTitleOnly,
 } from '@/services/curriculumData';
 import { LessonPrepPanel } from '@/components/ui/LessonPrepPanel';
+import { LessonShelfPanel } from '@/components/ui/LessonShelfPanel';
 
 const BLOOMS_COLORS: Record<string, string> = {
   Remember: '#6366F1',
@@ -118,7 +119,7 @@ export default function LessonDetailScreen() {
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               const msgText = lang === 'ar'
-                ? `ما الذي يجب أن أعرفه قبل تدريس: ${lessonTitle}؟`
+                ? `ما الذي يجب أن أعرفه قبل تدريس «${lessonTitle}»؟`
                 : `What should I know before teaching: ${lessonTitle}?`;
               router.push({
                 pathname: '/(tabs)/iqra',
@@ -137,6 +138,11 @@ export default function LessonDetailScreen() {
         {/* Preparation — in place, on the lesson it belongs to */}
         {prepOpen ? <LessonPrepPanel lessonId={lesson.id} accent={color} /> : null}
 
+        {/* What the library actually holds for this lesson. Above the
+            curriculum sections because a teacher preparing tomorrow wants the
+            worksheets before they want the Bloom's levels. */}
+        <LessonShelfPanel lessonId={lesson.id} accent={color} />
+
         {/* Objectives */}
         <Section title={t('learningObjectives')} icon="checkmark-circle-outline" color={color} isRTL={isRTL}>
           {objectivesArr.map((obj, i) => (
@@ -149,7 +155,10 @@ export default function LessonDetailScreen() {
           ))}
         </Section>
 
-        {/* Keywords */}
+        {/* Keywords — the NCCD books don't all print a per-lesson term list
+            (Arabic prints none at all), and an empty card under a heading
+            reads as a loading failure rather than "the book says nothing". */}
+        {keywordsArr.length > 0 && (
         <Section title={t('keyTerms')} icon="pricetag-outline" color={color} isRTL={isRTL}>
           <View style={[styles.keywords, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             {keywordsArr.map(k => (
@@ -159,13 +168,16 @@ export default function LessonDetailScreen() {
             ))}
           </View>
         </Section>
+        )}
 
         {/* Teacher Notes */}
+        {!!noteText && (
         <Section title={t('teacherNotes')} icon="clipboard-outline" color={color} isRTL={isRTL}>
           <Text style={[styles.noteText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
             {noteText}
           </Text>
         </Section>
+        )}
 
         {/* Learning Outcomes */}
         <Section title={t('learningOutcomes')} icon="trophy-outline" color={color} isRTL={isRTL}>

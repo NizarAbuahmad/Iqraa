@@ -38,7 +38,7 @@ import {
   searchKBRanked,
   searchKBSemantic,
 } from '@/services/knowledgeBase';
-import { getPickerSubjects } from '@/services/curriculumData';
+import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { loadLessonPick, saveLessonPick } from '@/services/lessonContext';
 import {
   buildResponse,
@@ -68,12 +68,12 @@ import {
   type SessionArtifact,
   type TeachingAction,
 } from '@/services/ai/teachingAssistant';
-import { classifyChatIntent } from '@/services/ai/intentRouter';
+import { classifyChatIntent, leavesClarificationStanding } from '@/services/ai/intentRouter';
 import { IqraaMark } from '@/components/ui/IqraaMark';
 import { CHAT_MAX_WIDTH } from '@/constants/layout';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
 import { MathParagraph } from '@/components/ui/MathParagraph';
-import { hasRenderableMath } from '@/services/mathRender';
+import { hasRenderableMath, isolateForeignRuns } from '@/services/mathRender';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { CurrentLessonCard } from '@/components/ui/CurrentLessonCard';
 import { DocumentAttachmentBar } from '@/components/ui/DocumentAttachmentBar';
@@ -99,12 +99,14 @@ import {
   subscribeSessionDocuments,
   type SessionDocument,
 } from '@/services/documents';
+import { lessonPickerParams } from '@/services/lessonPrep';
 import {
   buildCurrentLessonView,
   buildLessonSuggestions,
   isBareArtifactShortcut,
   isConfidentKbHit,
   pinLesson,
+  resolvePickedLesson,
   resourceRoute,
   seedDefaultLessonMemory,
   shouldReuseActiveLesson,
@@ -121,7 +123,19 @@ import {
   shareAsText,
 } from '@/services/share';
 import { buildClassDeck } from '@/services/startClass';
+import { bookFigureUri } from '@/services/bookFigureUri';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
+import { ClassPickerSheet, type ClassPick } from '@/components/ui/ClassPickerSheet';
+import { describeAttachResult } from '@/services/classAttach';
+import type { Lang } from '@/services/i18n';
+import { attachToClasses, getItem, saveItem, updateItem } from '@/services/workspace';
+import {
+  canPresentArtifact,
+  deckForArtifact,
+  materialContentFor,
+  materialFormStateFor,
+  materialTypeFor,
+} from '@/services/chatMaterialActions';
 
 function promptForTeachingAction(
   type: TeachingAction['type'],
@@ -197,6 +211,13 @@ interface Message {
   artifactProse?: string;
   /** Heading + context, so an edited document exports as edited. */
   artifactMeta?: { title: string; subject: string; grade: string; duration?: number };
+  /**
+   * Workspace id, once this material has been saved from chat. Held on the
+   * message so a second tap updates the same material instead of filing a
+   * duplicate, and so "add to class" knows there is already something to
+   * attach.
+   */
+  savedMaterialId?: string;
   sources?: KBLesson[];
   /** Topic used for generator navigation — not rendered as chips in the timeline. */
   lessonTopic?: string;
@@ -232,16 +253,22 @@ type EphemeralSuggestion = {
   toolType?: 'worksheet' | 'quiz' | 'lesson-plan' | 'activity' | 'homework';
 };
 
-// ─── Teaching-context subject options (investor MVP: Grade 10 Math only) ─────
+// ─── Teaching-context subject options ────────────────────────────────────────
 // All MVP subjects with KB content — kept in lockstep with the home picker
 // (was hardcoded to mathematics only, which is why the chat's change-lesson
-// sheet showed a single subject while home showed three).
+// sheet showed a single subject while home showed three). Grade is a
+// separate, independent pick (below) — it used to be baked in here as
+// 'grade-10', which is why Grade 9 was unreachable from this sheet even
+// after the picker itself learned about it.
 const CONTEXT_SUBJECTS = getPickerSubjects().map(s => ({
   subjectId: s.id,
-  gradeId: 'grade-10',
   labelAr: s.nameAr,
   labelEn: s.name,
 }));
+
+// All MVP grades with KB content — same picker `home.tsx`'s change-lesson
+// sheet uses, so this sheet offers the same choice.
+const CONTEXT_GRADES = getPickerGrades();
 
 // ─── Suggested questions per mode/language ───────────────────────────────────
 interface Suggestion {
@@ -272,26 +299,38 @@ const SUGGESTIONS: Record<Mode, Record<'ar' | 'en', Suggestion[]>> = {
 };
 
 // ─── Context Banner ───────────────────────────────────────────────────────────
+/**
+ * What the change-lesson sheet knows about the lesson the teacher tapped.
+ * `lessonId` is null for entire-unit / entire-book picks and for free text.
+ */
+type ChatLessonPick = { topic: string; subjectId: string; gradeId: string; lessonId: string | null };
+
 function ContextBanner({
   colors, isRTL, lang, t, onContextChange, onAsk, hidePill, externalOpen, onExternalOpenChange, onGlobalPick,
 }: {
   colors: any; isRTL: boolean; lang: 'ar' | 'en';
   t: (k: any) => string;
-  onContextChange: (ctx: string) => void;
-  onAsk: (topic: string) => void;
+  onContextChange: (ctx: string, pick?: ChatLessonPick) => void;
+  onAsk: (topic: string, pick?: ChatLessonPick) => void;
   /** When true, only the change-lesson modal is rendered (card owns the chrome). */
   hidePill?: boolean;
   externalOpen?: boolean;
   onExternalOpenChange?: (open: boolean) => void;
   /** Confirmed picks propagate to the app-wide current-lesson context. */
-  onGlobalPick?: (pick: { topic: string; subjectId: string }) => void;
+  onGlobalPick?: (pick: ChatLessonPick) => void;
 }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [subjIdx, setSubjIdx] = useState(0);
+  const [gradeId, setGradeId] = useState('grade-10');
   const [topic, setTopicInternal] = useState('');
   // Draft topic while modal is open; only committed on confirm
   const [draftTopic, setDraftTopic] = useState('');
   const [draftSubjIdx, setDraftSubjIdx] = useState(0);
+  const [draftGradeId, setDraftGradeId] = useState(gradeId);
+  // The KB id of the lesson the teacher tapped, straight from the picker.
+  // Kept because the title alone does not identify it again — see
+  // `TopicSelectionDetail.lessonId`.
+  const [draftLessonId, setDraftLessonId] = useState<string | null>(null);
 
   const subj = CONTEXT_SUBJECTS[draftSubjIdx];
   const isOpen = externalOpen ?? modalOpen;
@@ -303,6 +342,8 @@ function ContextBanner({
   const openModal = () => {
     setDraftTopic(topic);
     setDraftSubjIdx(subjIdx);
+    setDraftGradeId(gradeId);
+    setDraftLessonId(null);
     setOpen(true);
   };
 
@@ -310,17 +351,26 @@ function ContextBanner({
     if (externalOpen) {
       setDraftTopic(topic);
       setDraftSubjIdx(subjIdx);
+      setDraftGradeId(gradeId);
+      setDraftLessonId(null);
     }
   }, [externalOpen]);
 
   const handleConfirm = () => {
     setSubjIdx(draftSubjIdx);
+    setGradeId(draftGradeId);
     setTopicInternal(draftTopic);
-    onContextChange(draftTopic);
+    const pick: ChatLessonPick = {
+      topic: draftTopic.trim(),
+      subjectId: subj.subjectId,
+      gradeId: draftGradeId,
+      lessonId: draftLessonId,
+    };
+    onContextChange(draftTopic, pick);
     setOpen(false);
-    if (draftTopic.trim()) {
-      onGlobalPick?.({ topic: draftTopic.trim(), subjectId: subj.subjectId });
-      onAsk(draftTopic.trim());
+    if (pick.topic) {
+      onGlobalPick?.(pick);
+      onAsk(pick.topic, pick);
     }
   };
 
@@ -331,6 +381,8 @@ function ContextBanner({
   const handleClear = () => {
     setTopicInternal('');
     setSubjIdx(0);
+    setGradeId('grade-10');
+    setDraftLessonId(null);
     onContextChange('');
   };
 
@@ -400,15 +452,51 @@ function ContextBanner({
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
+            {/* Grade pills — only worth showing once there is a real choice. */}
+            {CONTEXT_GRADES.length > 1 ? (
+              <>
+                <Text style={[ctxStyles.modalSectionLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+                  {lang === 'ar' ? 'الصف' : 'Grade'}
+                </Text>
+                <View style={[ctxStyles.subjRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                  {CONTEXT_GRADES.map(g => (
+                    <Pressable
+                      key={g.id}
+                      onPress={() => {
+                        // Changing grade invalidates the unit/lesson draft,
+                        // same as changing subject does below.
+                        setDraftGradeId(g.id);
+                        setDraftTopic('');
+                        setDraftLessonId(null);
+                      }}
+                      style={[ctxStyles.subjPill, {
+                        backgroundColor: draftGradeId === g.id ? colors.primary : colors.muted,
+                        borderRadius: 16,
+                        borderWidth: 1.5,
+                        borderColor: draftGradeId === g.id ? colors.primary : colors.border,
+                      }]}
+                    >
+                      <Text style={[ctxStyles.subjText, {
+                        color: draftGradeId === g.id ? colors.primaryForeground : colors.mutedForeground,
+                        fontFamily: draftGradeId === g.id ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
+                      }]}>
+                        {lang === 'ar' ? g.nameAr : g.name}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </>
+            ) : null}
+
             {/* Subject pills */}
-            <Text style={[ctxStyles.modalSectionLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+            <Text style={[ctxStyles.modalSectionLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left', marginTop: CONTEXT_GRADES.length > 1 ? 18 : 0 }]}>
               {lang === 'ar' ? 'المادة' : 'Subject'}
             </Text>
             <View style={[ctxStyles.subjRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               {CONTEXT_SUBJECTS.map((s, i) => (
                 <Pressable
                   key={s.subjectId}
-                  onPress={() => { setDraftSubjIdx(i); setDraftTopic(''); }}
+                  onPress={() => { setDraftSubjIdx(i); setDraftTopic(''); setDraftLessonId(null); }}
                   style={[ctxStyles.subjPill, {
                     backgroundColor: draftSubjIdx === i ? colors.primary : colors.muted,
                     borderRadius: 16,
@@ -432,9 +520,10 @@ function ContextBanner({
             </Text>
             <TopicSelector
               subjectId={subj.subjectId}
-              gradeId={subj.gradeId}
+              gradeId={draftGradeId}
               value={draftTopic}
               onChange={setDraftTopic}
+              onSelectionDetail={d => setDraftLessonId(d.lessonId)}
               lang={lang}
               isRTL={isRTL}
               colors={colors}
@@ -561,7 +650,7 @@ function LessonPrepProgressCard({
               },
             ]}
           >
-            {isRTL ? 'ما تبقّى للحصة:' : 'Still needed for the lesson:'}
+            {isRTL ? 'ما تبقّى للدرس:' : 'Still needed for the lesson:'}
           </Text>
           {progress.remaining.map(item => (
             <Text
@@ -626,6 +715,7 @@ const prepStyles = StyleSheet.create({
 function MessageBubble({
   message, colors, isRTL, onLongPress, onClarifySubject, onClarifyLesson, onPedagogicalClarify, prepProgress,
   introName, introPitch, introActions, onEditArtifact, onCopy, onExport,
+  onSaveMaterial, onAddToClass, onPresentMaterial, busyMaterial,
   copyLabel, exportLabel, t,
 }: {
   message: Message; colors: any; isRTL: boolean;
@@ -645,6 +735,16 @@ function MessageBubble({
   /** Both take the whole message: what is copied is not always what is shown. */
   onCopy?: (message: Message) => void;
   onExport?: (message: Message) => void;
+  /**
+   * The three things the tool screens offer once a material exists. Passed
+   * only for messages that carry one — a plain answer has nothing to save,
+   * file or project.
+   */
+  onSaveMaterial?: (message: Message) => void;
+  onAddToClass?: (message: Message) => void;
+  onPresentMaterial?: (message: Message) => void;
+  /** Save / present in flight for this message — both are round trips. */
+  busyMaterial?: boolean;
   copyLabel?: string;
   exportLabel?: string;
   t: (k: any, ...a: any[]) => string;
@@ -738,6 +838,76 @@ function MessageBubble({
   // wall of separators the exporter produces.
   const lines = (planData ? (message.artifactProse ?? '') : message.text).split('\n');
 
+  /**
+   * The row under the bubble.
+   *
+   * Copy and export are for any answer long enough to be worth keeping. The
+   * other three exist only when the turn produced an actual material, and they
+   * are the same three the tool screens end with — save it, file it under a
+   * class, put it on the screen. They lead the row and carry the accent colour
+   * because they are the next step; copy and export stay muted behind them.
+   */
+  const artifact = message.artifactData;
+  const canAct = Boolean(artifact && message.artifactMeta);
+  const messageActions: {
+    key: string;
+    icon: keyof typeof Ionicons.glyphMap;
+    label: string;
+    color: string;
+    disabled?: boolean;
+    onPress: () => void;
+  }[] = [];
+
+  if (canAct && onSaveMaterial) {
+    const saved = Boolean(message.savedMaterialId);
+    messageActions.push({
+      key: 'save',
+      icon: saved ? 'checkmark-circle' : 'bookmark-outline',
+      label: saved ? t('iqraSavedMaterial') : t('iqraSaveMaterial'),
+      color: colors.primary,
+      disabled: busyMaterial,
+      onPress: () => onSaveMaterial(message),
+    });
+  }
+  if (canAct && onAddToClass) {
+    messageActions.push({
+      key: 'class',
+      icon: 'people-outline',
+      label: t('iqraAddToClass'),
+      color: colors.primary,
+      disabled: busyMaterial,
+      onPress: () => onAddToClass(message),
+    });
+  }
+  if (canAct && onPresentMaterial && artifact && canPresentArtifact(artifact)) {
+    messageActions.push({
+      key: 'present',
+      icon: 'tv-outline',
+      label: t('iqraPresentMaterial'),
+      color: '#0EA5E9',
+      disabled: busyMaterial,
+      onPress: () => onPresentMaterial(message),
+    });
+  }
+  if (onCopy && onExport && (canAct || message.text.trim().length > 60)) {
+    messageActions.push(
+      {
+        key: 'copy',
+        icon: 'copy-outline',
+        label: copyLabel ?? '',
+        color: colors.mutedForeground,
+        onPress: () => onCopy(message),
+      },
+      {
+        key: 'export',
+        icon: 'share-outline',
+        label: exportLabel ?? '',
+        color: colors.mutedForeground,
+        onPress: () => onExport(message),
+      },
+    );
+  }
+
   return (
     <View style={[styles.rowAssistant, isRTL && styles.rowAssistantRTL]}>
       <IqraaMark size={34} tone="soft" style={styles.avatar} />
@@ -774,7 +944,7 @@ function MessageBubble({
               const clean = line.replace(/\*\*/g, '');
               return (
                 <Text key={i} style={[styles.bubbleBold, { color: colors.foreground, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>
-                  {clean}
+                  {isolateForeignRuns(clean)}
                 </Text>
               );
             }
@@ -806,8 +976,8 @@ function MessageBubble({
                   <Text style={[styles.bubbleText, { color: colors.foreground, flex: 1, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>
                     {parts.map((p, pi) =>
                       pi % 2 === 1
-                        ? <Text key={pi} style={{ fontFamily: 'Cairo_600SemiBold' }}>{p}</Text>
-                        : p
+                        ? <Text key={pi} style={{ fontFamily: 'Cairo_600SemiBold' }}>{isolateForeignRuns(p)}</Text>
+                        : isolateForeignRuns(p)
                     )}
                   </Text>
                 </View>
@@ -816,7 +986,7 @@ function MessageBubble({
             if (line.startsWith('📚') || line.startsWith('📖')) {
               return (
                 <Text key={i} style={[styles.sourceText, { color: colors.mutedForeground, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>
-                  {line}
+                  {isolateForeignRuns(line)}
                 </Text>
               );
             }
@@ -834,34 +1004,28 @@ function MessageBubble({
           </Text>
         </Pressable>
 
-        {onCopy && onExport && message.text.trim().length > 60 ? (
+        {messageActions.length > 0 ? (
           <View style={[styles.msgActions, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <Pressable
-              onPress={() => onCopy(message)}
-              hitSlop={6}
-              style={({ pressed }) => [
-                styles.msgActionBtn,
-                { flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.6 : 1 },
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel={copyLabel}
-            >
-              <Ionicons name="copy-outline" size={13} color={colors.mutedForeground} />
-              <Text style={[styles.msgActionText, { color: colors.mutedForeground }]}>{copyLabel}</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => onExport(message)}
-              hitSlop={6}
-              style={({ pressed }) => [
-                styles.msgActionBtn,
-                { flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.6 : 1 },
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel={exportLabel}
-            >
-              <Ionicons name="share-outline" size={13} color={colors.mutedForeground} />
-              <Text style={[styles.msgActionText, { color: colors.mutedForeground }]}>{exportLabel}</Text>
-            </Pressable>
+            {messageActions.map(action => (
+              <Pressable
+                key={action.key}
+                onPress={action.onPress}
+                disabled={action.disabled}
+                hitSlop={6}
+                style={({ pressed }) => [
+                  styles.msgActionBtn,
+                  {
+                    flexDirection: isRTL ? 'row-reverse' : 'row',
+                    opacity: action.disabled ? 0.45 : pressed ? 0.6 : 1,
+                  },
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={action.label}
+              >
+                <Ionicons name={action.icon} size={13} color={action.color} />
+                <Text style={[styles.msgActionText, { color: action.color }]}>{action.label}</Text>
+              </Pressable>
+            ))}
           </View>
         ) : null}
 
@@ -971,6 +1135,12 @@ export default function IqraScreen() {
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
   const [teachingCtx, setTeachingCtx] = useState('');
+  // The lesson id that came with `teachingCtx`, when the sheet supplied one.
+  // Without it the retrieval below re-derived the lesson from the topic
+  // string and could seat a neighbouring lesson at the top of the results.
+  const [teachingCtxLessonId, setTeachingCtxLessonId] = useState<string | null>(null);
+  /** Latest `teachingCtx`, readable from async callbacks without a re-render. */
+  const teachingCtxRef = useRef(teachingCtx);
   /** Session memory for collaborative Demo Mode chat (active lesson + prior asks). */
   const [sessionMemory, setSessionMemory] = useState<ChatSessionMemory>(() =>
     seedDefaultLessonMemory(emptyChatSessionMemory()),
@@ -988,10 +1158,25 @@ export default function IqraScreen() {
    */
   const [lessonCardCollapsed, setLessonCardCollapsed] = useState(true);
   const [startingClass, setStartingClass] = useState(false);
+  const [startClassError, setStartClassError] = useState('');
   const [changeLessonOpen, setChangeLessonOpen] = useState(false);
   const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
   const [exportText, setExportText] = useState('');
   const [exportVisible, setExportVisible] = useState(false);
+  /**
+   * Workspace id waiting for a class, or null. Set right after a material's
+   * first save — the same "which class is this for?" moment the tool screens
+   * have, and the reason the sheet is opened on an id rather than on a message.
+   */
+  const [classPromptFor, setClassPromptFor] = useState<string | null>(null);
+  /**
+   * The class that material is already in, so the sheet opens on its current
+   * answer rather than asking from scratch. Null means unfiled — which is also
+   * what a class deleted since is resolved to, rather than a stale name.
+   */
+  const [classPromptCurrent, setClassPromptCurrent] = useState<string | null>(null);
+  /** Message whose save is in flight — its action row is disabled meanwhile. */
+  const [materialBusyId, setMaterialBusyId] = useState<string | null>(null);
   const [loadingPDF, setLoadingPDF] = useState(false);
   const [loadingWord, setLoadingWord] = useState(false);
   // Deep-link state: curriculum lesson to surface as "Open lesson" chip
@@ -1071,6 +1256,159 @@ export default function IqraScreen() {
     );
   }, []);
 
+  /**
+   * File a chat-generated material in the workspace, or update the one this
+   * message already owns.
+   *
+   * Saves the structured object, not the chat text: the workspace viewer parses
+   * `content` back into a lesson plan or a worksheet, and re-generating it from
+   * prose would land there as an unreadable blob. It also saves whatever the
+   * teacher has edited in the bubble, because `artifactData` is the edited copy.
+   *
+   * Returns the workspace id so callers that need one — filing it under a class
+   * — can chain, and null when nothing was written. Saying "saved" on a failed
+   * write is the one outcome worse than the failure.
+   */
+  const saveMessageMaterial = useCallback(async (message: Message): Promise<string | null> => {
+    const data = message.artifactData;
+    const meta = message.artifactMeta;
+    if (!data || !meta) return null;
+    const topic = message.lessonTopic?.trim() || meta.title;
+    const payload = {
+      type: materialTypeFor(data.kind),
+      title: meta.title,
+      subject: meta.subject,
+      grade: meta.grade,
+      topic,
+      language: lang as 'ar' | 'en',
+      content: JSON.stringify(materialContentFor(data)),
+      formState: materialFormStateFor(topic),
+    };
+    try {
+      if (message.savedMaterialId) {
+        const ok = await updateItem(message.savedMaterialId, payload);
+        if (!ok) {
+          showToast(t('iqraSaveFailed'));
+          return null;
+        }
+        showToast(t('updatedSuccess'));
+        return message.savedMaterialId;
+      }
+      const saved = await saveItem(payload);
+      setMessages(prev =>
+        prev.map(m => (m.id === message.id ? { ...m, savedMaterialId: saved.id } : m)),
+      );
+      showToast(t('savedSuccess'));
+      return saved.id;
+    } catch {
+      showToast(t('iqraSaveFailed'));
+      return null;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang, t]);
+
+  const handleSaveMaterial = useCallback(async (message: Message) => {
+    if (materialBusyId) return;
+    setMaterialBusyId(message.id);
+    try {
+      const firstSave = !message.savedMaterialId;
+      const id = await saveMessageMaterial(message);
+      if (!id) return;
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      // Only on a first save, exactly as the generator screens do: re-saving an
+      // edit must not re-ask a question the teacher already answered.
+      if (firstSave) setClassPromptFor(id);
+    } finally {
+      setMaterialBusyId(null);
+    }
+  }, [materialBusyId, saveMessageMaterial]);
+
+  /**
+   * A class link is a field on a saved material, so an unsaved one is saved
+   * first — otherwise this button would have nothing to attach and the teacher
+   * would have to know to press Save before it.
+   */
+  const handleAddToClass = useCallback(async (message: Message) => {
+    if (materialBusyId) return;
+    setMaterialBusyId(message.id);
+    try {
+      const id = message.savedMaterialId ?? await saveMessageMaterial(message);
+      if (!id) return;
+      // Read the class it is in before asking, so a second tap offers to move
+      // or remove it instead of re-asking a question already answered.
+      let current: string | null = null;
+      try {
+        current = (await getItem(id))?.classGroupId ?? null;
+      } catch {
+        // Offline: the sheet opens with nothing ticked, which is honest — it
+        // could not confirm a class, so it claims none.
+      }
+      setClassPromptCurrent(current);
+      setClassPromptFor(id);
+    } finally {
+      setMaterialBusyId(null);
+    }
+  }, [materialBusyId, saveMessageMaterial]);
+
+  const closeClassPrompt = useCallback(() => {
+    setClassPromptFor(null);
+    setClassPromptCurrent(null);
+  }, []);
+
+  const attachMaterialToClass = useCallback(async (picks: ClassPick[]) => {
+    const materialId = classPromptFor;
+    closeClassPrompt();
+    if (!materialId || picks.length === 0) return;
+    // One column, many classes: the first keeps it, the rest get copies.
+    const outcome = await attachToClasses(materialId, picks.map(p => p.id));
+    showToast(describeAttachResult(outcome, picks, t, lang as Lang));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [classPromptFor, closeClassPrompt, t, lang]);
+
+  const detachMaterialFromClass = useCallback(async () => {
+    const materialId = classPromptFor;
+    closeClassPrompt();
+    if (!materialId) return;
+    const ok = await updateItem(materialId, { classGroupId: null });
+    showToast(ok ? t('removedFromClass') : t('saveToClassFailed'));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [classPromptFor, closeClassPrompt, t]);
+
+  /**
+   * Project the material this turn produced.
+   *
+   * Deck building is synchronous and local — the plan, worksheet or quiz is
+   * already in hand, so unlike «ابدأ الحصة» this needs no round trip and
+   * projects exactly what is on screen rather than generating something new.
+   */
+  const handlePresentMaterial = useCallback((message: Message) => {
+    const data = message.artifactData;
+    const meta = message.artifactMeta;
+    if (!data || !meta) return;
+    const topic = message.lessonTopic?.trim() || meta.title;
+    try {
+      const deck = deckForArtifact(data, {
+        topic,
+        isAr: lang === 'ar',
+        lesson: message.curriculumLessonId
+          ? getLessonById(message.curriculumLessonId) ?? null
+          : null,
+        subject: meta.subject,
+        grade: meta.grade,
+        figureUri: bookFigureUri,
+      });
+      if (!deck) return;
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setPendingClassroomActivity(deck);
+      trackEvent('class_started', { source: 'chat_material', material: data.kind });
+      router.push('/ai-tools/classroom/presentation' as any);
+    } catch {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      showToast(t('iqraPresentFailed'));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang, t]);
+
   // Welcome message on mount / language change — reset session, keep one default active lesson
   useEffect(() => {
     setSessionMemory(seedDefaultLessonMemory(emptyChatSessionMemory()));
@@ -1094,14 +1432,27 @@ export default function IqraScreen() {
   useEffect(() => {
     void loadLessonPick().then(pick => {
       if (!pick?.topic) return;
-      setTeachingCtx(prev => (prev.trim() ? prev : pick.topic));
-      const hits = searchKBSemantic(pick.topic, lang as 'ar' | 'en');
-      if (hits[0]) {
-        setSessionMemory(prev => pinLesson(prev, hits[0]!, 'soft'));
+      // A pick made in the sheet while this read was in flight wins — but the
+      // topic and its lesson id must move together, so both are guarded by
+      // the same condition rather than by two independent updaters.
+      if (!teachingCtxRef.current.trim()) {
+        setTeachingCtx(pick.topic);
+        setTeachingCtxLessonId(pick.lessonId ?? null);
+      }
+      // Restore the exact lesson that was picked. Re-deriving it from the
+      // saved title put the teacher on a neighbouring lesson often enough
+      // that «ابدأ الحصة» could open on something they never chose.
+      const restored = resolvePickedLesson(pick.topic, pick, lang as 'ar' | 'en');
+      if (restored) {
+        setSessionMemory(prev => pinLesson(prev, restored, 'soft'));
       }
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang]);
+
+  useEffect(() => {
+    teachingCtxRef.current = teachingCtx;
+  }, [teachingCtx]);
 
   useEffect(() => {
     setSessionDocs(getSessionDocuments());
@@ -1245,11 +1596,18 @@ export default function IqraScreen() {
         : searchKBRanked(q, lang as 'ar' | 'en');
       const confidentHit = isConfidentKbHit(ranked);
 
+      // The lesson this send was explicitly pinned to, when there is one. It
+      // is also the honest teaching context: `teachingCtx` and
+      // `sessionMemory` in this closure still describe the previous lesson
+      // when the send comes from the change-lesson sheet, which is how a
+      // reply about the newly picked lesson could still announce «تركيزك
+      // الحالي» as the one the teacher had just left.
+      const pinnedLesson = pinnedLessonId ? getLessonById(pinnedLessonId) : null;
+
       let results: KBLesson[];
       if (pinnedLessonId) {
-        const pinned = getLessonById(pinnedLessonId);
-        results = pinned
-          ? [pinned]
+        results = pinnedLesson
+          ? [pinnedLesson]
           : deduplicateByUnit(searchKBSemantic(q, lang as 'ar' | 'en'), 3);
       } else {
         results = deduplicateByUnit(
@@ -1260,9 +1618,13 @@ export default function IqraScreen() {
 
       // Prefer explicit teaching-context lesson when available
       if (!pinnedLessonId && teachingCtx.trim()) {
-        const ctxHits = searchKBSemantic(teachingCtx.trim(), lang as 'ar' | 'en');
-        if (ctxHits[0]) {
-          results = [ctxHits[0], ...results.filter(r => r.id !== ctxHits[0]!.id)].slice(0, 3);
+        const ctxLesson = resolvePickedLesson(
+          teachingCtx.trim(),
+          { lessonId: teachingCtxLessonId },
+          lang as 'ar' | 'en',
+        );
+        if (ctxLesson) {
+          results = [ctxLesson, ...results.filter(r => r.id !== ctxLesson.id)].slice(0, 3);
         }
       }
 
@@ -1321,6 +1683,7 @@ export default function IqraScreen() {
             : 'Happy to refine — which lesson or material should I adjust?',
           timestamp: new Date(),
         };
+        awaitingClarifyRef.current = true;
         setMessages(prev => [...prev, clarifyMsg]);
         return;
       }
@@ -1348,6 +1711,7 @@ export default function IqraScreen() {
             clarificationQuery: q,
             timestamp: new Date(),
           };
+          awaitingClarifyRef.current = true;
           setMessages(prev => [...prev, clarifyMsg]);
           return;
         }
@@ -1395,7 +1759,9 @@ export default function IqraScreen() {
           lessons: results,
           lang: lang as 'ar' | 'en',
           mode,
-          teachingContext: teachingCtx || sessionMemory.activeTopicAr || sessionMemory.activeTopicEn,
+          teachingContext: pinnedLesson
+            ? (lang === 'ar' ? pinnedLesson.titleAr : pinnedLesson.titleEn)
+            : (teachingCtx || sessionMemory.activeTopicAr || sessionMemory.activeTopicEn),
           memory: sessionMemory,
           documentContext: hasDocs ? docBundle.promptBlock : null,
           documentNames: docNames,
@@ -1450,6 +1816,7 @@ export default function IqraScreen() {
         };
         // The `finally` on the enclosing try clears the thinking state, the
         // same way the subject-clarification branch above relies on it.
+        awaitingClarifyRef.current = true;
         setMessages(prev => [...prev, clarifyMsg]);
         return;
       }
@@ -1661,6 +2028,15 @@ export default function IqraScreen() {
         && (quickTopic || (teachingActions && teachingActions.length > 0)),
       );
 
+      // Why this is not just `Boolean(pedagogicalClarification)`, and why the
+      // rule lives next to the classifier that consumes it: see
+      // `leavesClarificationStanding`.
+      awaitingClarifyRef.current = leavesClarificationStanding({
+        responseText,
+        hasStructuredClarification: Boolean(pedagogicalClarification),
+        producedArtifact: Boolean(artifactData),
+      });
+
       const assistantMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
@@ -1726,7 +2102,7 @@ export default function IqraScreen() {
         setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
       }
     },
-    [deepLinkColor, deepLinkLessonId, lang, messages, mode, sessionMemory, t, teachingCtx],
+    [deepLinkColor, deepLinkLessonId, lang, messages, mode, sessionMemory, t, teachingCtx, teachingCtxLessonId],
   );
 
   // Auto-send deep-link message once welcome message is in place
@@ -1822,7 +2198,14 @@ export default function IqraScreen() {
       const hw = type === 'homework' ? { isHomework: '1' } : {};
       router.push({
         pathname: resourceRoute(type) as any,
-        params: { topic, ...hw },
+        // Without the lesson's own picker indices the tool opens on
+        // Mathematics whatever the teacher is teaching — see
+        // `lessonPickerParams`.
+        params: {
+          topic,
+          ...(lessonPickerParams(sessionMemory.activeLessonId, lang as 'ar' | 'en') ?? {}),
+          ...hw,
+        },
       });
       return;
     }
@@ -1921,7 +2304,13 @@ export default function IqraScreen() {
     if (tool.route) {
       router.push({
         pathname: tool.route as any,
-        params: { ...(topic ? { topic } : {}), ...(tool.routeParams ?? {}) },
+        params: {
+          ...(topic ? { topic } : {}),
+          // The lesson's grade and subject travel with the topic. A tool's own
+          // `routeParams` still win — they are the explicit choice.
+          ...(lessonPickerParams(sessionMemory.activeLessonId, lang as 'ar' | 'en') ?? {}),
+          ...(tool.routeParams ?? {}),
+        },
       });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1943,21 +2332,47 @@ export default function IqraScreen() {
     const topic = currentLessonView?.topic?.trim();
     if (!topic) return;
     setStartingClass(true);
+    setStartClassError('');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
-      const activity = await buildClassDeck({ topic, lang: lang as 'ar' | 'en' });
+      // The lesson's OWN subject, not the deck builder's maths default. That
+      // default was silent and wrong: `isMathContext` reads the subject name,
+      // so a chemistry lesson announced as "Mathematics" came back as a deck
+      // of algebra questions under the chemistry title — the teacher changed
+      // the lesson and «ابدأ الحصة» still projected the previous subject.
+      const activity = await buildClassDeck({
+        topic,
+        lang: lang as 'ar' | 'en',
+        subjectId: currentLessonView?.subjectId,
+        subjectName: currentLessonView?.subjectName,
+        // Only when a lesson is genuinely pinned: with a free-typed topic the
+        // card falls back to the demo lesson for its labels, and grounding the
+        // deck on that fallback would be the very swap this fixes.
+        lessonId: sessionMemory.activeLessonId,
+      });
       setPendingClassroomActivity(activity);
       trackEvent('class_started', { source: 'chat' });
       router.push('/ai-tools/classroom/presentation' as any);
     } catch {
-      // Surfacing this as a chat message would be wrong — the teacher pressed a
-      // button on a card, not asked a question. Leave the card as it was so the
-      // press reads as "did not take" and can simply be repeated.
+      // Surfacing this as a chat message would still be wrong — the teacher
+      // pressed a button on a card, they did not ask a question. But saying
+      // nothing at all was worse: `Haptics` is a no-op on web, so the whole
+      // failure signal was a buzz that platform never plays, and the press
+      // vanished. The card says what happened instead, and stays the retry.
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setStartClassError(t('startClassFailed'));
     } finally {
       setStartingClass(false);
     }
-  }, [startingClass, currentLessonView?.topic, lang]);
+  }, [
+    startingClass,
+    currentLessonView?.topic,
+    currentLessonView?.subjectId,
+    currentLessonView?.subjectName,
+    sessionMemory.activeLessonId,
+    lang,
+    t,
+  ]);
   const lessonSuggestions = buildLessonSuggestions(
       sessionMemory,
       lang as 'ar' | 'en',
@@ -2081,6 +2496,7 @@ export default function IqraScreen() {
           colors={colors}
           startClassLabel={t('startClass')}
           startClassBusy={startingClass}
+          startClassError={startClassError}
           onStartClass={handleStartClass}
           changeLabel={t('changeLesson')}
           uploadedLabel={(n) => t('lessonUploadedFiles', n)}
@@ -2101,24 +2517,40 @@ export default function IqraScreen() {
           onGlobalPick={(pick) => {
             // Changing the lesson in chat updates the app-wide context too —
             // home and the tools hub follow (one source of truth).
-            void saveLessonPick({ topic: pick.topic, unitOrder: null, subjectId: pick.subjectId });
+            void saveLessonPick({
+              topic: pick.topic,
+              unitOrder: null,
+              subjectId: pick.subjectId,
+              gradeId: pick.gradeId,
+              lessonId: pick.lessonId,
+            });
           }}
-          onContextChange={(ctx) => {
+          onContextChange={(ctx, pick) => {
             setTeachingCtx(ctx);
+            setTeachingCtxLessonId(pick?.lessonId ?? null);
             if (!ctx.trim()) return;
-            const hits = searchKBSemantic(ctx.trim(), lang as 'ar' | 'en');
-            if (hits[0]) {
-              setSessionMemory(prev => pinLesson(prev, hits[0]!, 'hard'));
+            const picked = resolvePickedLesson(ctx, pick, lang as 'ar' | 'en');
+            if (picked) {
+              setSessionMemory(prev => pinLesson(prev, picked, 'hard'));
             } else {
+              // No curriculum lesson behind this topic. Drop the previous
+              // lesson id as well as its title: keeping it left every
+              // generator — and «ابدأ الحصة» — grounded on the lesson the
+              // teacher just navigated away from, while the card showed the
+              // new topic. Both language fields move together for the same
+              // reason; a half-updated pair reads as the old lesson in the
+              // other language.
+              const topic = ctx.trim();
               setSessionMemory(prev => ({
                 ...prev,
-                activeTopicAr: lang === 'ar' ? ctx.trim() : prev.activeTopicAr,
-                activeTopicEn: lang === 'en' ? ctx.trim() : prev.activeTopicEn,
+                activeLessonId: null,
+                activeTopicAr: topic,
+                activeTopicEn: topic,
                 lessonPin: 'hard',
               }));
             }
           }}
-          onAsk={(topic) => {
+          onAsk={(topic, pick) => {
             // `onContextChange` just fired and queued the pin update for this
             // same topic, but React hasn't applied it yet — `sessionMemory`
             // in this closure is still the *previous* lesson. Passing that
@@ -2126,12 +2558,16 @@ export default function IqraScreen() {
             // to keep answering about the lesson the teacher just left.
             // Resolve fresh, the same way onContextChange does, so both agree
             // on the lesson that was actually just picked.
-            const hits = searchKBSemantic(topic, lang as 'ar' | 'en');
+            const picked = resolvePickedLesson(topic, pick, lang as 'ar' | 'en');
+            // Same trap the subject line used to have: this used to say
+            // "Grade 10" unconditionally, which misdescribed the lesson to
+            // the model for every Grade 9 pick.
+            const grade = CONTEXT_GRADES.find(g => g.id === pick?.gradeId) ?? CONTEXT_GRADES[0];
             sendMessage(
               lang === 'ar'
-                ? `أدرّس "${topic}" للصف العاشر. أعطني نظرة شاملة عن الموضوع مع أهم مفاهيمه.`
-                : `I'm teaching "${topic}" to Grade 10 students. Give me a comprehensive overview of this topic with key concepts.`,
-              hits[0]?.id ?? undefined,
+                ? `أدرّس "${topic}" ${grade ? `لطلاب ${grade.nameAr}` : 'للصف العاشر'}. أعطني نظرة شاملة عن الموضوع مع أهم مفاهيمه.`
+                : `I'm teaching "${topic}" to ${grade?.name ?? 'Grade 10'} students. Give me a comprehensive overview of this topic with key concepts.`,
+              picked?.id ?? undefined,
             );
           }}
         />
@@ -2159,6 +2595,10 @@ export default function IqraScreen() {
             onLongPress={item.role === 'assistant' ? () => handleExportMessage(item) : undefined}
             onCopy={item.role === 'assistant' ? handleCopyMessage : undefined}
             onExport={item.role === 'assistant' ? handleExportMessage : undefined}
+            onSaveMaterial={item.role === 'assistant' ? handleSaveMaterial : undefined}
+            onAddToClass={item.role === 'assistant' ? handleAddToClass : undefined}
+            onPresentMaterial={item.role === 'assistant' ? handlePresentMaterial : undefined}
+            busyMaterial={materialBusyId === item.id}
             copyLabel={t('iqraCopyMessage')}
             exportLabel={t('iqraExportMessage')}
             onClarifySubject={handleClarifySubject}
@@ -2302,6 +2742,12 @@ export default function IqraScreen() {
             ]}
             placeholder={t(DOCUMENT_UPLOAD_ENABLED ? 'iqraPlaceholderDocs' : 'iqraPlaceholder')}
             placeholderTextColor={colors.mutedForeground}
+            // A placeholder is not a label: it is the first thing a screen
+            // reader skips and the first thing sighted users lose, the moment
+            // they start typing. The name and the instructions have to outlive
+            // the empty field.
+            accessibilityLabel={t('iqraInputLabel')}
+            accessibilityHint={t('iqraInputHint')}
             value={input}
             onChangeText={setInput}
             multiline
@@ -2392,6 +2838,14 @@ export default function IqraScreen() {
           cancel: t('cancel'),
         }}
       />
+      <ClassPickerSheet
+        visible={classPromptFor !== null}
+        selectedClassId={classPromptCurrent}
+        onClose={closeClassPrompt}
+        multiple
+        onPick={picks => { void attachMaterialToClass(picks); }}
+        onClear={() => { void detachMaterialFromClass(); }}
+      />
       <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
     </View>
   );
@@ -2447,7 +2901,7 @@ const styles = StyleSheet.create({
   sourceText: { fontSize: 11, marginTop: 6, fontFamily: 'Almarai_400Regular', fontStyle: 'italic' },
   timestamp: { fontSize: 10, marginTop: 6, fontFamily: 'Almarai_400Regular' },
 
-  msgActions: { alignItems: 'center', gap: 14, marginTop: 6, paddingHorizontal: 4 },
+  msgActions: { alignItems: 'center', flexWrap: 'wrap', columnGap: 14, rowGap: 8, marginTop: 6, paddingHorizontal: 4 },
   msgActionBtn: { alignItems: 'center', gap: 4 },
   msgActionText: { fontSize: 11, fontFamily: 'Cairo_500Medium' },
   suggestionChipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },

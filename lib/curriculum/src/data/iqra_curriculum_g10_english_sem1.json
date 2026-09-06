@@ -1,0 +1,251 @@
+{
+  "meta": {
+    "grade": "الصف العاشر",
+    "grade_en": "Grade 10",
+    "subject": "اللغة الإنجليزية",
+    "subject_en": "English",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 1,
+    "provenance_note": "Every English field is copied from the two-page 'Contents' scope-and-sequence spread printed on pages 4-5 of the student book — the columns are UNIT, GRAMMAR, VOCABULARY, READING, LISTENING, SPEAKING, WRITING, and each entry keeps the book's own page references. Arabic titles and topic labels are OUR OWN TRANSLATIONS: this book is English-only and prints no Arabic beyond its cover, exactly as the four vocational English catalogs record for the same reason. Each unit is represented as ONE lesson at scope-and-sequence depth, matching those catalogs. That is deliberate and not a shortcut — the book prints seven lesson slots per unit (LESSON 1A..7A) but names them only by skill banner, and two of them share a page in unit 5, so a seven-lesson breakdown could not be derived without guessing which slot a page belongs to. See known_gaps.",
+    "source_books": {
+      "student_book_s1": "كتاب الطالب لمادة اللغة الإنجليزية الصف العاشر الفصل الأول.pdf — 78 pages, sourceId eng-s1-student-book. Contents spread: pages 4-5."
+    },
+    "schema_version": "1.0",
+    "known_gaps": [
+      "One lesson per unit, at scope-and-sequence depth. The book prints seven lesson slots per unit (LESSON 1A..7A at 18pt in the page header) but gives them no titles — only a skill banner (VOCABULARY, GRAMMAR, READING AND VOCABULARY, ...) whose order varies between units. In unit 5 two slots share page 52 with competing banners, so slot-to-page assignment cannot be derived from the PDF without judgement. A seven-lesson breakdown needs the teacher's guide, which is not in the repo.",
+      "No learning outcomes (نتاجات التعلم). This book prints none — unlike the science student books, whose lesson openers state them explicitly. objectives[] is therefore empty rather than invented, and this subject will report as having no official outcomes in `verify --gaps`.",
+      "No period counts. The teacher's guide, which is where the science books' periods come from, is not in the repo for English.",
+      "The LIFE SKILLS spreads (after units 2 and 4) and the end matter — Culture Spot pp58-59, Literature Spot pp60-61, Word List pp62-66, Grammar Reference pp67-71, Irregular Verbs p72, Communication pp73-75 — are recorded on the units they follow but are not modelled as lessons of their own."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_en": "Looking good",
+      "title_ar": "المظهر الحسن",
+      "data_tier": "textbook-scope-sequence",
+      "total_periods": null,
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_en": "Looking good",
+          "title_ar": "المظهر الحسن",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [],
+          "grammar_topic": {
+            "en": "pp4-5 Present Simple and Continuous, state and action verbs; p10 Articles; Pronunciation: /ðə/ and /ðiː/",
+            "ar": "المضارع البسيط والمضارع المستمر، أفعال الحالة وأفعال الحدث؛ أدوات التعريف والتنكير؛ اللفظ"
+          },
+          "vocabulary_topic": {
+            "en": "pp4-5 Verb phrases with dress; p6 Appearance, clothes, footwear and accessories; p7 Facial features; pp8-9 Phrasal verbs",
+            "ar": "تعبيرات فعلية مع dress؛ المظهر والملابس والأحذية والإكسسوارات؛ ملامح الوجه؛ الأفعال المركبة"
+          },
+          "reading_topic": {
+            "en": "pp8-9 The power of appearance",
+            "ar": "قوة المظهر"
+          },
+          "listening_topic": {
+            "en": "p7 A podcast about jobs in the entertainment industry; Active Listening: Listening effectively",
+            "ar": "بودكاست عن وظائف في صناعة الترفيه؛ الاستماع النشط: الاستماع الفعّال"
+          },
+          "speaking_topic": {
+            "en": "p11 Participating in conversations",
+            "ar": "المشاركة في المحادثات"
+          },
+          "writing_task": {
+            "en": "pp12-13 An informal email",
+            "ar": "رسالة إلكترونية غير رسمية"
+          }
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_en": "The digital mind",
+      "title_ar": "العقل الرقمي",
+      "data_tier": "textbook-scope-sequence",
+      "total_periods": null,
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_en": "The digital mind",
+          "title_ar": "العقل الرقمي",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [],
+          "grammar_topic": {
+            "en": "pp14-15 Present Perfect Simple and Continuous; p19 Verb patterns",
+            "ar": "المضارع التام البسيط والمضارع التام المستمر؛ أنماط الأفعال"
+          },
+          "vocabulary_topic": {
+            "en": "pp14-15 Scientific research; p18 Science, phrases with think and mind; p20 Uses of drones; pp22-23 Health and computers",
+            "ar": "البحث العلمي؛ العلوم، تعبيرات مع think وmind؛ استخدامات الطائرات المسيّرة؛ الصحة والحواسيب"
+          },
+          "reading_topic": {
+            "en": "pp16-17 Science fiction or science fact?; Active Reading: Skimming and scanning",
+            "ar": "خيال علمي أم حقيقة علمية؟؛ القراءة النشطة: القراءة السريعة والمسح"
+          },
+          "listening_topic": {
+            "en": "p20 An interview about drones",
+            "ar": "مقابلة عن الطائرات المسيّرة"
+          },
+          "speaking_topic": {
+            "en": "p21 Making choices",
+            "ar": "اتخاذ الخيارات"
+          },
+          "writing_task": {
+            "en": "pp22-23 A blog post",
+            "ar": "تدوينة"
+          },
+          "life_skill": {
+            "en": "pp24-25 How to give a presentation",
+            "ar": "كيف تقدّم عرضًا تقديميًا"
+          }
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_en": "Active and healthy",
+      "title_ar": "نشيط وصحّي",
+      "data_tier": "textbook-scope-sequence",
+      "total_periods": null,
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_en": "Active and healthy",
+          "title_ar": "نشيط وصحّي",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [],
+          "grammar_topic": {
+            "en": "pp26-27 Past Simple, Past Continuous and Past Perfect; p30 Used to and would",
+            "ar": "الماضي البسيط والماضي المستمر والماضي التام؛ used to وwould"
+          },
+          "vocabulary_topic": {
+            "en": "pp26-27 Sports collocations; p28 Sports, activities, fitness and exercise; p29 Injuries, accidents and emergencies; pp32-33 Diet and nutrition",
+            "ar": "متلازمات لفظية رياضية؛ الرياضات والأنشطة واللياقة والتمارين؛ الإصابات والحوادث والطوارئ؛ الحمية والتغذية"
+          },
+          "reading_topic": {
+            "en": "pp32-33 Say 'yum' to healthy eating!",
+            "ar": "قل «لذيذ» للأكل الصحي!"
+          },
+          "listening_topic": {
+            "en": "p29 Conversations about accidents; Active Listening: Identifying the speaker's purpose",
+            "ar": "محادثات عن الحوادث؛ الاستماع النشط: تحديد غرض المتحدث"
+          },
+          "speaking_topic": {
+            "en": "p31 Being polite; Pronunciation: Linking",
+            "ar": "التأدّب في الحديث؛ اللفظ: الوصل"
+          },
+          "writing_task": {
+            "en": "pp34-35 A short story",
+            "ar": "قصة قصيرة"
+          }
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "number": 4,
+      "title_en": "Time to move",
+      "title_ar": "حان وقت التنقّل",
+      "data_tier": "textbook-scope-sequence",
+      "total_periods": null,
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_en": "Time to move",
+          "title_ar": "حان وقت التنقّل",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [],
+          "grammar_topic": {
+            "en": "pp36-37 Modal and related verbs; p41 Relative clauses",
+            "ar": "الأفعال الناقصة وما يتصل بها؛ الجمل الوصفية"
+          },
+          "vocabulary_topic": {
+            "en": "pp36-37 Air travel; pp38-39 Holiday phrases; p40 Travel essentials, travel phrases; p42 City environments",
+            "ar": "السفر الجوي؛ تعبيرات العطلات؛ مستلزمات السفر وتعبيراته؛ بيئات المدن"
+          },
+          "reading_topic": {
+            "en": "pp38-39 How to have the perfect family holiday; Active Reading: Identifying author's attitudes",
+            "ar": "كيف تقضي عطلة عائلية مثالية؛ القراءة النشطة: تحديد مواقف الكاتب"
+          },
+          "listening_topic": {
+            "en": "p42 A radio programme about urban transport and pollution",
+            "ar": "برنامج إذاعي عن النقل في المدن والتلوث"
+          },
+          "speaking_topic": {
+            "en": "p43 Agreeing and disagreeing",
+            "ar": "الموافقة والاعتراض"
+          },
+          "writing_task": {
+            "en": "pp44-45 A formal email of enquiry",
+            "ar": "رسالة إلكترونية رسمية للاستفسار"
+          },
+          "life_skill": {
+            "en": "pp46-47 How to take part in a debate",
+            "ar": "كيف تشارك في مناظرة"
+          }
+        }
+      ]
+    },
+    {
+      "id": "u5",
+      "number": 5,
+      "title_en": "The next step",
+      "title_ar": "الخطوة التالية",
+      "data_tier": "textbook-scope-sequence",
+      "total_periods": null,
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_en": "The next step",
+          "title_ar": "الخطوة التالية",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [],
+          "grammar_topic": {
+            "en": "pp48-49 Talking about the future; pp50-51 Future Continuous and Future Perfect",
+            "ar": "الحديث عن المستقبل؛ المستقبل المستمر والمستقبل التام"
+          },
+          "vocabulary_topic": {
+            "en": "pp48-49 Personality adjectives; p50 Phrasal verbs related to studying; p53 Work and jobs; pp54-55 Future jobs",
+            "ar": "صفات الشخصية؛ أفعال مركبة تتعلق بالدراسة؛ العمل والوظائف؛ وظائف المستقبل"
+          },
+          "reading_topic": {
+            "en": "pp54-55 The future of work",
+            "ar": "مستقبل العمل"
+          },
+          "listening_topic": {
+            "en": "p53 A radio programme about the gig economy; Active Listening: Taking notes",
+            "ar": "برنامج إذاعي عن اقتصاد العمل الحر؛ الاستماع النشط: تدوين الملاحظات"
+          },
+          "speaking_topic": {
+            "en": "p52 Describing strengths and weaknesses; Pronunciation: /s/ and /ʃ/",
+            "ar": "وصف نقاط القوة والضعف؛ اللفظ"
+          },
+          "writing_task": {
+            "en": "pp56-57 Personal statement as part of a university application",
+            "ar": "بيان شخصي ضمن طلب التحاق جامعي"
+          }
+        }
+      ]
+    }
+  ]
+}

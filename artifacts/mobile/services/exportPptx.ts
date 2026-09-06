@@ -20,6 +20,7 @@ import * as Sharing from 'expo-sharing';
 import { File, Paths } from 'expo-file-system';
 
 import { visualForSlide } from './deckVisuals.ts';
+import { isBulletLine, looksLikeEquation, stripBullet } from './deckText.ts';
 import type { ActivitySlide, ClassroomActivity } from '@/services/ai/AIService';
 import { mathLineToUnicode, prettifySymPy } from '@/services/mathRender';
 import { trackEvent } from '@/services/analytics';
@@ -28,19 +29,20 @@ import { trackEvent } from '@/services/analytics';
 const HEAD_FONT = 'Cairo';
 const BODY_FONT = 'Almarai';
 
-const DECK_BG = '0D0D14';
-const DECK_TEXT = 'F2F2F6';
-const DECK_MUTED = '8B8CA4';
-const DECK_ACCENT = '4F46E5';
+import * as theme from './deckTheme.ts';
 
-function deckSlideAccent(type: ActivitySlide['type']): string {
-  if (type === 'challenge') return 'E67E22';
-  if (type === 'summary') return DECK_ACCENT;
-  if (type === 'graph') return '0EA5E9';
-  if (type === 'divider') return DECK_ACCENT;
-  if (type === 'question') return '3B82F6';
-  return DECK_MUTED;
-}
+// pptxgenjs takes hex without the leading '#'; deckTheme stores it with one.
+const DECK_BG = theme.pptxHex(theme.DECK_BG);
+const DECK_CARD = theme.pptxHex(theme.DECK_CARD_BG);
+const DECK_BORDER = theme.pptxHex(theme.DECK_BORDER);
+const DECK_TEXT = theme.pptxHex(theme.DECK_TEXT);
+const DECK_MUTED = theme.pptxHex(theme.DECK_MUTED);
+const DECK_ACCENT = theme.pptxHex(theme.DECK_ACCENT);
+const DECK_PINK = theme.pptxHex(theme.DECK_PINK);
+const DECK_BLOB = theme.pptxHex(theme.DECK_BLOB);
+
+const deckSlideAccent = (type: ActivitySlide['type']): string =>
+  theme.pptxHex(theme.slideTypeAccent(type));
 
 /**
  * Fetches an image URL ourselves and hands pptxgenjs the raw bytes (`data:`)
@@ -51,6 +53,35 @@ function deckSlideAccent(type: ActivitySlide['type']): string {
  * up front means a failed photo degrades to "no photo on this slide",
  * matching the unconfigured-key fallback, rather than losing the export.
  */
+/**
+ * The slide's own figure, in the column the caller reserved for it.
+ *
+ * Degrades to nothing when the fetch fails, for the reason `fetchAsDataUrl`
+ * documents: a rejected image would otherwise reject the whole `pptx.write()`
+ * and cost the teacher the entire export rather than one picture. The text
+ * column is already laid out narrow by then, which leaves whitespace — the
+ * honest outcome, and the same one the on-screen and HTML renderers reach
+ * when a figure was never bundled.
+ */
+async function addSideImage(
+  s: PptxSlide,
+  slide: ActivitySlide,
+  x: number,
+  w: number,
+): Promise<void> {
+  const dataUrl = await fetchAsDataUrl(slide.sideImageUrl!);
+  if (!dataUrl) return;
+  const h = 2.9;
+  const y = 1.35;
+  s.addImage({ data: dataUrl, x, y, w, h, sizing: { type: 'contain', w, h } });
+  if (slide.sideImageCaption) {
+    s.addText(slide.sideImageCaption, {
+      x, y: y + h + 0.1, w, h: 0.35,
+      align: 'center', fontSize: 10, color: DECK_MUTED,
+    });
+  }
+}
+
 async function fetchAsDataUrl(url: string): Promise<string | null> {
   try {
     const res = await fetch(url);
@@ -75,6 +106,51 @@ async function fetchAsDataUrl(url: string): Promise<string | null> {
  * to a flat accent panel when the fetch above came back empty.
  */
 type PptxSlide = ReturnType<InstanceType<typeof import('pptxgenjs').default>['addSlide']>;
+
+/**
+ * The two soft circles the projected slide sits on. Drawn first so every
+ * later shape and text box stacks above them — pptxgenjs has no z-index, add
+ * order is the whole story.
+ */
+function addBlobs(s: PptxSlide): void {
+  const blob = { color: DECK_BLOB };
+  s.addShape('ellipse', { x: -1.0, y: -1.1, w: 3.2, h: 3.2, fill: blob, line: blob });
+  s.addShape('ellipse', { x: 7.9, y: 3.7, w: 3.4, h: 3.4, fill: blob, line: blob });
+}
+
+/**
+ * The plotted curves as a NATIVE PowerPoint line chart, not a picture of one.
+ * The teacher can restyle it and it stays sharp at any projector resolution.
+ *
+ * One definition for all three slide kinds that draw a curve — the graph
+ * slide, and a check that carries the figure its stem refers to. Only the box
+ * differs, so only the box is a parameter; the styling drifting between them
+ * is how one export ends up looking like a different product from the other.
+ */
+function addPlotChart(
+  s: PptxSlide,
+  plot: { series: { label: string; points: { x: number; y: number }[] }[] },
+  box: { x: number; y: number; w: number; h: number },
+): void {
+  s.addChart(
+    'line',
+    plot.series.map(series => ({
+      name: series.label,
+      labels: series.points.map(pt => pt.x.toFixed(2)),
+      values: series.points.map(pt => pt.y),
+    })),
+    {
+      ...box,
+      showLegend: plot.series.length > 1,
+      legendPos: 'b',
+      lineSmooth: true,
+      lineDataSymbol: 'none',
+      // Sampled at 80 points — every category label would be an unreadable
+      // smear along the axis.
+      catAxisHidden: true,
+    },
+  );
+}
 
 async function addHeroBackground(s: PptxSlide, url: string): Promise<boolean> {
   const dataUrl = await fetchAsDataUrl(url);
@@ -125,26 +201,30 @@ export async function exportDeckAsPptx(
 
     if (i === 0) {
       // Title slide.
-      if (slide.mediaUrl) await addHeroBackground(s, slide.mediaUrl);
+      const onPhoto = slide.mediaUrl ? await addHeroBackground(s, slide.mediaUrl) : false;
+      if (!onPhoto) addBlobs(s);
       const [meta, ...rest] = slide.content.split('\n\n');
       s.addText('IQRA', {
         x: 0, y: 0.5, w: '100%', h: 0.4, align: 'center',
-        fontSize: 12, color: 'A5B4FC', bold: true, charSpacing: 4,
+        fontSize: 12, color: onPhoto ? 'FFFFFF' : DECK_ACCENT, bold: true, charSpacing: 4,
       });
       s.addText(slide.title, {
         x: 0.6, y: 1.6, w: 8.8, h: 1.4, align: 'center',
-        fontSize: 32, color: 'FFFFFF', bold: true, fontFace: HEAD_FONT, valign: 'middle',
+        fontSize: 32, color: onPhoto ? 'FFFFFF' : DECK_TEXT, bold: true, fontFace: HEAD_FONT, valign: 'middle',
       });
+      // The pink rule under the title — the projector's one flash of the
+      // second accent, and the quickest tell that this is the same deck.
+      s.addShape('rect', { x: 4.4, y: 3.0, w: 1.2, h: 0.06, fill: { color: DECK_PINK } });
       if (meta) {
         s.addText(meta, {
-          x: 0.6, y: 3.0, w: 8.8, h: 0.5, align: 'center',
-          fontSize: 14, color: DECK_MUTED,
+          x: 0.6, y: 3.2, w: 8.8, h: 0.5, align: 'center',
+          fontSize: 14, color: onPhoto ? 'FFFFFF' : DECK_MUTED,
         });
       }
       if (rest.length) {
         s.addText(rest.join(' '), {
-          x: 1.2, y: 3.6, w: 7.6, h: 1.2, align: 'center',
-          fontSize: 11, color: DECK_MUTED,
+          x: 1.2, y: 3.8, w: 7.6, h: 1.2, align: 'center',
+          fontSize: 11, color: onPhoto ? 'FFFFFF' : DECK_MUTED,
         });
       }
       continue;
@@ -169,45 +249,32 @@ export async function exportDeckAsPptx(
     }
 
     const accent = deckSlideAccent(slide.type);
+    addBlobs(s);
 
-    // Header bar: accent-coloured left rule + title.
-    s.addShape('rect', { x: 0, y: 0, w: 0.06, h: 0.75, fill: { color: accent } });
+    // Header: title on the reading edge with a short accent rule under it —
+    // the same shape SlideView draws on screen. It used to be a sliver of
+    // accent in the top-left corner, which in an Arabic deck sat on the wrong
+    // edge entirely and read as a rendering artefact.
     s.addText(slide.title, {
-      x: 0.35, y: 0.12, w: 9.3, h: 0.55, align: rtlAlign, valign: 'middle',
-      fontSize: 18, color: accent, bold: true, fontFace: HEAD_FONT,
+      x: 0.55, y: 0.22, w: 8.9, h: 0.5, align: rtlAlign, valign: 'middle',
+      fontSize: 20, color: accent, bold: true, fontFace: HEAD_FONT,
+    });
+    s.addShape('rect', {
+      x: isAr ? 8.55 : 0.55, y: 0.78, w: 0.9, h: 0.05, fill: { color: accent },
     });
 
     if (slide.type === 'graph') {
       const [context] = slide.content.split('\n\n');
       const commands = slide.graphCommands ?? [];
-      // A NATIVE PowerPoint chart, not a picture of one. The teacher can
-      // restyle it, and it stays sharp at any projector resolution. Until this
-      // existed the slide printed the equation as text beside a note saying
-      // the graph was interactive inside the app — an apology where the
-      // mathematics should have been.
+      // Until `addPlotChart` existed the slide printed the equation as text
+      // beside a note saying the graph was interactive inside the app — an
+      // apology where the mathematics should have been.
       const visual = visualForSlide(slide);
       if (visual?.kind === 'plot' && visual.series.length) {
         if (context) {
           s.addText(context, { x: 0.8, y: 1.25, w: 8.4, h: 0.5, align: 'center', fontSize: 13, color: DECK_TEXT });
         }
-        s.addChart(
-          'line',
-          visual.series.map(series => ({
-            name: series.label,
-            labels: series.points.map(p => p.x.toFixed(2)),
-            values: series.points.map(p => p.y),
-          })),
-          {
-            x: 1.0, y: 1.85, w: 8.0, h: 3.2,
-            showLegend: visual.series.length > 1,
-            legendPos: 'b',
-            lineSmooth: true,
-            lineDataSymbol: 'none',
-            // Sampled at 80 points — every category label would be an
-            // unreadable smear along the axis.
-            catAxisHidden: true,
-          },
-        );
+        addPlotChart(s, visual, { x: 1.0, y: 1.85, w: 8.0, h: 3.2 });
         continue;
       }
       let y = 1.3;
@@ -235,6 +302,13 @@ export async function exportDeckAsPptx(
     // a content slide reached neither export until this existed — the drawing
     // was only ever wired into the graph branch above.
     const slideVisual = visualForSlide(slide);
+    // A plotted curve on a question or challenge slide: a check whose stem
+    // says «في الرسم البياني الظاهر…» carries the commands for that figure
+    // (see lessonSlides.ts), and those branches lay themselves out around it
+    // below rather than falling through to the chart block here.
+    const slidePlot = slideVisual?.kind === 'plot' && slideVisual.series.length
+      ? slideVisual
+      : null;
     if (slideVisual?.kind === 'chart' && slideVisual.categories.length) {
       const [context] = slide.content.split('\n\n');
       if (context) {
@@ -299,21 +373,77 @@ export async function exportDeckAsPptx(
       continue;
     }
 
-    if (slide.type === 'challenge') {
-      s.addText(pptxLine(slide.content, true), {
-        x: 0.6, y: 1.2, w: 8.8, h: 1.0, align: 'center', valign: 'middle',
-        fontSize: 22, color: 'FFFFFF', bold: true,
+    if (slide.type === 'media' && slide.mediaKind === 'audio' && slide.mediaUrl) {
+      // Same reasoning as the video branch: no reliable embedded player, so a
+      // real hyperlink that always works beats an inert placeholder.
+      if (slide.mediaCaption) {
+        s.addText(slide.mediaCaption, {
+          x: 0.8, y: 1.5, w: 8.4, h: 1.2, align: 'center', valign: 'middle',
+          fontSize: 15, color: DECK_TEXT,
+        });
+      }
+      s.addText(`▶ ${L('استمع للتسجيل', 'Listen to the recording')}`, {
+        x: 3.0, y: 2.9, w: 4.0, h: 0.5, align: 'center', valign: 'middle',
+        fontSize: 16, color: 'B45309', bold: true,
+        hyperlink: { url: slide.mediaUrl },
       });
+      s.addText(slide.mediaUrl, {
+        x: 1.2, y: 3.6, w: 7.6, h: 0.4, align: 'center', fontSize: 9, color: DECK_MUTED,
+      });
+      if (slide.content) {
+        s.addText(slide.content, {
+          x: 1.2, y: 4.05, w: 7.6, h: 0.4, align: 'center', fontSize: 10, color: DECK_MUTED,
+        });
+      }
+      continue;
+    }
+
+    if (slide.type === 'media' && slide.mediaKind === 'document' && slide.mediaUrl) {
+      // Same reasoning as video/audio: no reliable in-slide viewer for a PDF,
+      // so a real hyperlink beats an inert placeholder.
+      if (slide.mediaCaption) {
+        s.addText(slide.mediaCaption, {
+          x: 0.8, y: 1.5, w: 8.4, h: 1.2, align: 'center', valign: 'middle',
+          fontSize: 15, color: DECK_TEXT,
+        });
+      }
+      s.addText(`📄 ${L('افتح المستند', 'Open the document')}`, {
+        x: 3.0, y: 2.9, w: 4.0, h: 0.5, align: 'center', valign: 'middle',
+        fontSize: 16, color: 'B45309', bold: true,
+        hyperlink: { url: slide.mediaUrl },
+      });
+      s.addText(slide.mediaUrl, {
+        x: 1.2, y: 3.6, w: 7.6, h: 0.4, align: 'center', fontSize: 9, color: DECK_MUTED,
+      });
+      if (slide.content) {
+        s.addText(slide.content, {
+          x: 1.2, y: 4.05, w: 7.6, h: 0.4, align: 'center', fontSize: 10, color: DECK_MUTED,
+        });
+      }
+      continue;
+    }
+
+    if (slide.type === 'challenge') {
+      // The stem gives up height to the curve when there is one — the figure
+      // is part of the question, so a layout that pushed the answer card off
+      // the bottom edge would be no better than not drawing it at all.
+      s.addText(pptxLine(slide.content, true), {
+        x: 0.6, y: slidePlot ? 1.05 : 1.2, w: 8.8, h: slidePlot ? 0.75 : 1.0,
+        align: 'center', valign: 'middle',
+        fontSize: slidePlot ? 18 : 22, color: DECK_TEXT, bold: true,
+      });
+      if (slidePlot) addPlotChart(s, slidePlot, { x: 2.4, y: 1.85, w: 5.2, h: 1.7 });
+      const answerTop = slidePlot ? 3.65 : 2.4;
       if (slide.answer) {
         s.addShape('roundRect', {
-          x: 2.0, y: 2.4, w: 6.0, h: slide.verified ? 1.6 : 1.1,
-          fill: { color: '1A1B26' }, line: { color: accent, width: 1.5 }, rectRadius: 0.08,
+          x: 2.0, y: answerTop, w: 6.0, h: slide.verified ? 1.6 : 1.1,
+          fill: { color: DECK_CARD }, line: { color: accent, width: 1.5 }, rectRadius: 0.08,
         });
         s.addText(L('الإجابة', 'Answer'), {
-          x: 2.0, y: 2.5, w: 6.0, h: 0.3, align: 'center', fontSize: 9, color: accent, bold: true,
+          x: 2.0, y: answerTop + 0.1, w: 6.0, h: 0.3, align: 'center', fontSize: 9, color: accent, bold: true,
         });
         s.addText(pptxLine(slide.answer, true), {
-          x: 2.0, y: 2.8, w: 6.0, h: 0.5, align: 'center', fontSize: 16, color: 'FFFFFF', bold: true,
+          x: 2.0, y: answerTop + 0.4, w: 6.0, h: 0.5, align: 'center', fontSize: 16, color: DECK_TEXT, bold: true,
         });
         if (slide.verified) {
           const verifiedColor = slide.verifiedBy === 'symbolic' ? '22C55E' : DECK_MUTED;
@@ -321,12 +451,12 @@ export async function exportDeckAsPptx(
             ? L('تم التحقق من الإجابة رياضيًا (SymPy)', 'Answer symbolically verified (SymPy)')
             : L('من بنك الأسئلة المُراجَع', 'From the reviewed question bank');
           s.addText(label, {
-            x: 2.0, y: 3.35, w: 6.0, h: 0.3, align: 'center', fontSize: 9, color: verifiedColor, bold: true,
+            x: 2.0, y: answerTop + 0.95, w: 6.0, h: 0.3, align: 'center', fontSize: 9, color: verifiedColor, bold: true,
           });
           if (slide.verifiedBy === 'symbolic' && slide.computedAnswer) {
             s.addText(
               `${L('حسبها المُحقِّق مستقلًّا', 'Verifier computed independently')}: ${mathLineToUnicode(prettifySymPy(slide.computedAnswer))}`,
-              { x: 2.0, y: 3.62, w: 6.0, h: 0.3, align: 'center', fontSize: 8, color: DECK_MUTED },
+              { x: 2.0, y: answerTop + 1.22, w: 6.0, h: 0.3, align: 'center', fontSize: 8, color: DECK_MUTED },
             );
           }
         }
@@ -347,18 +477,23 @@ export async function exportDeckAsPptx(
       const options = slide.options ?? [];
       const letters = isAr ? ['أ', 'ب', 'ج', 'د', 'هـ'] : ['A', 'B', 'C', 'D', 'E'];
       s.addText(pptxLine(slide.content, true), {
-        x: 0.6, y: 1.1, w: 8.8, h: 0.9, align: 'center', valign: 'middle',
-        fontSize: 20, color: 'FFFFFF', bold: true,
+        x: 0.6, y: slidePlot ? 1.0 : 1.1, w: 8.8, h: slidePlot ? 0.7 : 0.9,
+        align: 'center', valign: 'middle',
+        fontSize: slidePlot ? 17 : 20, color: DECK_TEXT, bold: true,
       });
-      const rowH = 0.62;
-      const top = 2.15;
+      if (slidePlot) addPlotChart(s, slidePlot, { x: 2.6, y: 1.65, w: 4.8, h: 1.5 });
+      // Option rows shrink to make room for the curve. Five short rows still
+      // clear the bottom edge; four is the usual case.
+      const rowH = slidePlot ? (options.length > 4 ? 0.36 : 0.44) : 0.62;
+      const rowGap = slidePlot ? 0.07 : 0.12;
+      const top = slidePlot ? 3.3 : 2.15;
       options.forEach((opt, i) => {
         const correct = i === slide.correctIndex;
-        const y = top + i * (rowH + 0.12);
+        const y = top + i * (rowH + rowGap);
         s.addShape('roundRect', {
           x: 2.0, y, w: 6.0, h: rowH,
-          fill: { color: correct ? '132A4A' : '1A1B26' },
-          line: { color: correct ? accent : '2A2B3A', width: correct ? 1.5 : 1 },
+          fill: { color: correct ? `${DECK_ACCENT}` : DECK_CARD },
+          line: { color: correct ? accent : DECK_BORDER, width: correct ? 1.5 : 1 },
           rectRadius: 0.08,
         });
         s.addText(`${letters[i] ?? String(i + 1)}`, {
@@ -377,7 +512,7 @@ export async function exportDeckAsPptx(
             ? L('تم التحقق من الإجابة رياضيًا (SymPy)', 'Answer symbolically verified (SymPy)')
             : L('من بنك الأسئلة المُراجَع', 'From the reviewed question bank'),
           {
-            x: 2.0, y: top + options.length * (rowH + 0.12) + 0.08, w: 6.0, h: 0.3,
+            x: 2.0, y: top + options.length * (rowH + rowGap) + 0.08, w: 6.0, h: 0.3,
             align: 'center', fontSize: 9, color: verifiedColor, bold: true,
           },
         );
@@ -385,16 +520,106 @@ export async function exportDeckAsPptx(
       continue;
     }
 
-    // Generic content slide: one text block per line, matching how the
-    // projector reads them — a short list, not a paragraph.
-    const lines = slide.content.split('\n').filter(Boolean);
-    s.addText(
-      lines.map(l => ({
-        text: pptxLine(l, false),
-        options: { fontSize: 14, color: DECK_TEXT, breakLine: true, paraSpaceAfter: 10 },
-      })),
-      { x: 0.8, y: 1.15, w: 8.4, h: 4.0, align: rtlAlign, valign: 'top' },
-    );
+    /**
+     * Generic content slide. On screen (presentation.tsx `SlideView`) a bullet
+     * is a bordered card with an accent bar and an equation sits in its own
+     * box; this printed every line as one identical 14pt paragraph pinned to
+     * the top of the slide, which is the bulk of "the exported deck doesn't
+     * look like the projected one".
+     *
+     * Falls back to that plain block when the copy is too long to lay out as
+     * cards — better a dense slide than one that runs off the bottom edge.
+     */
+    const lines = slide.content.split('\n').map(l => l.trim()).filter(Boolean);
+    const BODY_TOP = 1.05;
+    const BODY_BOTTOM = 5.2;
+    /**
+     * A figure the slide carries sits beside the text instead of under it.
+     *
+     * The whole block below positions with hard-coded inches against a 10in
+     * canvas, so a second column is a matter of narrowing every x/w — hence
+     * one factor rather than a rewrite. 0.56 leaves the text a little over
+     * half and the picture a little under, which is the split the on-screen
+     * and HTML renderers use too.
+     *
+     * `rowsFor`'s 64-character constant is calibrated to the FULL width, so
+     * it has to narrow with the column or the overflow guard stops guarding —
+     * it would under-count rows, under-estimate the stack, and lay out a
+     * column that runs off the bottom edge. This file has no test (it imports
+     * react-native at module scope, so `node --test` cannot load it), which
+     * is exactly why the arithmetic is written down rather than inlined.
+     */
+    const hasSide = typeof slide.sideImageUrl === 'string' && slide.sideImageUrl.length > 0;
+    const COL = hasSide ? 0.56 : 1;
+    const CHARS_PER_ROW = Math.round(64 * COL);
+    // The figure takes the far edge: the reading edge keeps the text, so a
+    // right-to-left deck reads text-then-picture exactly as a left-to-right
+    // one does.
+    const sideX = isAr ? 0.8 : 0.8 + 8.4 * COL + 0.3;
+    const sideW = 8.4 * (1 - COL) - 0.3;
+    const textX0 = hasSide && isAr ? 0.8 + sideW + 0.3 : 0.8;
+    // ponytail: character count, not text metrics — pptxgenjs exposes no way to
+    // measure a run, and ~64 characters is what one 15pt line fits across a
+    // card this wide. The overflow fallback below is what makes it safe.
+    const rowsFor = (l: string) => Math.max(1, Math.ceil(l.length / CHARS_PER_ROW));
+    const heightFor = (l: string) =>
+      looksLikeEquation(l) ? 0.95 : isBulletLine(l) ? 0.3 + rowsFor(l) * 0.32 : rowsFor(l) * 0.34;
+    const GAP = 0.14;
+    const stackH = lines.reduce((sum, l) => sum + heightFor(l), 0)
+      + GAP * Math.max(0, lines.length - 1);
+
+    if (!lines.length || stackH > BODY_BOTTOM - BODY_TOP) {
+      s.addText(
+        lines.map(l => ({
+          text: pptxLine(l, false),
+          options: { fontSize: 14, color: DECK_TEXT, breakLine: true, paraSpaceAfter: 10 },
+        })),
+        { x: textX0, y: 1.15, w: 8.4 * COL, h: 4.0, align: rtlAlign, valign: 'top' },
+      );
+      if (hasSide) await addSideImage(s, slide, sideX, sideW);
+      continue;
+    }
+
+    // Centred in the body area, like the on-screen slide, rather than hugging
+    // the header with four inches of empty deck underneath.
+    let y = BODY_TOP + (BODY_BOTTOM - BODY_TOP - stackH) / 2;
+    for (const line of lines) {
+      const h = heightFor(line);
+      if (looksLikeEquation(line)) {
+        const eqX = textX0 + 0.6 * COL;
+        const eqW = 8.4 * COL - 1.2 * COL;
+        s.addShape('roundRect', {
+          x: eqX, y, w: eqW, h,
+          fill: { color: DECK_CARD }, line: { color: DECK_BORDER, width: 1 }, rectRadius: 0.1,
+        });
+        s.addText(pptxLine(line, true), {
+          x: eqX, y, w: eqW, h, align: 'center', valign: 'middle',
+          fontSize: hasSide ? 16 : 20, color: DECK_TEXT, bold: true, fontFace: HEAD_FONT,
+        });
+      } else if (isBulletLine(line)) {
+        const cardW = 8.4 * COL;
+        s.addShape('roundRect', {
+          x: textX0, y, w: cardW, h,
+          fill: { color: DECK_CARD }, line: { color: DECK_BORDER, width: 1 }, rectRadius: 0.08,
+        });
+        // Accent bar on the reading edge: right in Arabic, left in English.
+        s.addShape('rect', {
+          x: isAr ? textX0 + cardW - 0.13 : textX0 + 0.06,
+          y: y + 0.07, w: 0.07, h: h - 0.14, fill: { color: accent },
+        });
+        s.addText(stripBullet(line), {
+          x: textX0 + 0.25, y, w: cardW - 0.5, h, align: rtlAlign, valign: 'middle',
+          fontSize: hasSide ? 13 : 15, color: DECK_TEXT,
+        });
+      } else {
+        s.addText(pptxLine(line, false), {
+          x: textX0 + 0.1, y, w: 8.4 * COL - 0.2, h, align: rtlAlign, valign: 'middle',
+          fontSize: hasSide ? 13 : 15, color: DECK_TEXT,
+        });
+      }
+      y += h + GAP;
+    }
+    if (hasSide) await addSideImage(s, slide, sideX, sideW);
   }
 
   const outFilename = `${filename}.pptx`;

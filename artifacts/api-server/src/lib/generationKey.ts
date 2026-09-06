@@ -1,0 +1,182 @@
+/**
+ * Turns a generation request into its cache keys.
+ *
+ * `strictKey` is what `artifactCache.ts` actually looks artifacts up by;
+ * `coarseKey` is still recorded rather than served on, because the parameters
+ * it drops are the ones phase 2 proposes to serve by slicing a superset, and
+ * the gap between the two repeat rates is what says whether that phase earns
+ * its complexity — see `docs/ai-cost-savings-plan.md`.
+ * Getting the normalisation right matters more than the hashing: an
+ * un-normalised key space is what makes a cache miss most of the time, and
+ * you cannot tell that from a hit-rate number taken after the fact.
+ *
+ * Deliberately free of any import that touches the database or the OpenAI
+ * client — both throw at module scope without their env vars, which would
+ * make this untestable under `node --test` (see CLAUDE.md).
+ */
+import { createHash } from "node:crypto";
+
+/**
+ * Bump when a prompt changes in a way that makes previously generated
+ * artifacts wrong or stale. It is part of both keys, so a bump partitions new
+ * traffic from old rather than silently mixing them.
+ */
+export const PROMPT_VERSION = "2026-09-04.1";
+
+/** Parameters the plan proposes to serve by slicing one superset artifact,
+ *  rather than by generating a separate artifact per combination. They are in
+ *  the strict key and out of the coarse key; the gap between the two repeat
+ *  rates is the measurement. */
+const SLICED_FIELDS = [
+  "duration",
+  "difficulty",
+  "numQuestions",
+  "totalMarks",
+] as const;
+
+const STRICT_ONLY_FIELDS = [
+  ...SLICED_FIELDS,
+  "teachingStyle",
+  "activityType",
+  "groupType",
+  "teachingGoal",
+  "objectives",
+  "questionTypes",
+  "includePriorReview",
+  "priorKnowledge",
+  "priorTopicsNotes",
+  "homework",
+] as const;
+
+const ARABIC_DIACRITICS = /[ً-ْٰـ]/g;
+
+/**
+ * Who wrote the `additionalContext` riding on a request.
+ *
+ * This distinction is the difference between a cache that works and one that
+ * never hits. Every generator screen sends `additionalContext`, but almost all
+ * of it is `buildGeneratorContext()` output — curriculum text the app derives
+ * from the lesson, byte-identical for any teacher who asks the same question,
+ * and perfectly safe to share. Only the chat/document path puts material the
+ * *teacher* supplied in that field. Reading "context present" as "private"
+ * would have excluded essentially every request from the shared pool.
+ *
+ * Absent is read as `teacher`. Fail closed: a caller that forgets to say gets
+ * a cache miss, never someone else's pasted material.
+ */
+export type ContextSource = "curriculum" | "teacher";
+
+export function contextSourceOf(body: Record<string, unknown>): ContextSource {
+  return body.contextSource === "curriculum" ? "curriculum" : "teacher";
+}
+
+/**
+ * Normalise a free-text field so two spellings of one lesson are one key.
+ *
+ * Arabic makes this load-bearing rather than cosmetic: the same lesson title
+ * turns up with and without diacritics, with tatweel padding, and with any of
+ * أ إ آ for the same alef. Left alone, each variant is its own cache entry.
+ */
+export function normalizeText(value: string): string {
+  return value
+    .normalize("NFKC")
+    .replace(ARABIC_DIACRITICS, "")
+    .replace(/[أإآٱ]/g, "ا")
+    .replace(/ى/g, "ي")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function normalizeValue(value: unknown): unknown {
+  if (typeof value === "string") {
+    const text = normalizeText(value);
+    return text === "" ? undefined : text;
+  }
+  if (Array.isArray(value)) {
+    const items = value.map(normalizeValue).filter((v) => v !== undefined);
+    if (items.length === 0) return undefined;
+    // Sorted: ['mcq','short'] and ['short','mcq'] are the same request, and an
+    // unsorted key would make them two.
+    return items.map((v) => JSON.stringify(v)).sort();
+  }
+  if (value === null || value === "" || value === undefined) return undefined;
+  return value;
+}
+
+function hash(parts: Record<string, unknown>): string {
+  // Sorted entries so key order in the request body cannot change the hash.
+  const canonical = JSON.stringify(
+    Object.entries(parts)
+      .filter(([, v]) => v !== undefined)
+      .sort(([a], [b]) => a.localeCompare(b)),
+  );
+  return createHash("sha256").update(canonical).digest("hex").slice(0, 16);
+}
+
+export type GenerationKeys = {
+  coarseKey: string;
+  strictKey: string;
+  /** The request carries context the teacher supplied. Such a request is
+   *  never read from or written to the shared pool. */
+  hasContext: boolean;
+  /** The request may be served from, and stored in, the globally shared pool.
+   *  The inverse of `hasContext`, named for what the caller decides with it. */
+  shareable: boolean;
+};
+
+/**
+ * `kind` and `model` are part of both keys: a worksheet and a quiz for one
+ * lesson are different artifacts, and an artifact generated by a different
+ * model is not interchangeable with one that was not.
+ *
+ * `additionalContext` is never hashed into the coarse key — the coarse key is
+ * the lesson, not the prose about it. It *is* hashed into the strict key
+ * whatever its provenance: curriculum context is derived from the KB, so a KB
+ * edit should partition new traffic from old exactly as a prompt edit does.
+ *
+ * Whether the context makes the request private is a separate question, and
+ * `contextSource` is what answers it — see `ContextSource` above.
+ */
+export function generationKeys(
+  kind: string,
+  model: string,
+  body: Record<string, unknown>,
+  /** Overridable so a test can prove the version really is part of the hash.
+   *  Callers pass nothing; a prompt edit bumps the constant instead. */
+  promptVersion: string = PROMPT_VERSION,
+): GenerationKeys {
+  const context = typeof body.additionalContext === "string" ? body.additionalContext.trim() : "";
+  const hasContext = context.length > 0 && contextSourceOf(body) === "teacher";
+
+  const shared: Record<string, unknown> = {
+    kind,
+    model,
+    promptVersion,
+    // lessonId when the client sent one — a stable id beats a typed string.
+    lesson: normalizeValue(body.lessonId ?? body.topic),
+    subject: normalizeValue(body.subject),
+    grade: normalizeValue(body.grade),
+    language: normalizeValue(body.language) ?? "arabic",
+    // In BOTH keys, unlike `activityType`. A warm-up is not a slice of the
+    // main activity that a superset artifact could be cut from — it is a
+    // different artifact, and sharing a coarse key with the lesson activity
+    // is how the two came to be identical in the first place.
+    activityVariant: normalizeValue(body.activityVariant),
+  };
+
+  const strict: Record<string, unknown> = { ...shared };
+  for (const field of STRICT_ONLY_FIELDS) {
+    strict[field] = normalizeValue(body[field]);
+  }
+  if (context.length > 0) {
+    strict.contextHash = createHash("sha256").update(context).digest("hex").slice(0, 16);
+  }
+
+  return {
+    coarseKey: hash(shared),
+    strictKey: hash(strict),
+    hasContext,
+    shareable: !hasContext,
+  };
+}

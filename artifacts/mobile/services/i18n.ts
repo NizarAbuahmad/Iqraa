@@ -4,6 +4,8 @@
  * Usage: const { t } = useLanguage(); then t('key')
  */
 
+import { arCountPhrase } from './arCount.ts';
+
 export type Lang = 'ar' | 'en';
 
 /**
@@ -34,6 +36,61 @@ export function countStudents(n: number, lang: Lang): string {
   return lang === 'ar' ? arCountStudents(n) : enCountStudents(n);
 }
 
+/** Same four-case rule as arCountStudents, for a count of classes. */
+export function arCountClasses(n: number): string {
+  if (n === 0) return 'لا صفوف';
+  if (n === 1) return 'صف واحد';
+  if (n === 2) return 'صفّان';
+  if (n >= 3 && n <= 10) return `${n} صفوف`;
+  return `${n} صفًّا`;
+}
+
+/** English side of the same count. */
+export function enCountClasses(n: number): string {
+  if (n === 0) return 'No classes';
+  return `${n} ${n === 1 ? 'class' : 'classes'}`;
+}
+
+/** Count classes in the active language. */
+export function countClasses(n: number, lang: Lang): string {
+  return lang === 'ar' ? arCountClasses(n) : enCountClasses(n);
+}
+
+/** Same four-case rule as arCountStudents, for materials attached to a class. */
+export function arCountMaterials(n: number): string {
+  if (n === 0) return 'لا موارد';
+  if (n === 1) return 'مورد واحد';
+  if (n === 2) return 'موردان';
+  if (n >= 3 && n <= 10) return `${n} موارد`;
+  return `${n} موردًا`;
+}
+
+/** Count materials in the active language. */
+export function countMaterials(n: number, lang: Lang): string {
+  if (lang === 'ar') return arCountMaterials(n);
+  if (n === 0) return 'No materials';
+  return `${n} ${n === 1 ? 'material' : 'materials'}`;
+}
+
+/**
+ * Same four-case rule again, for the elapsed-seconds counter on a generation
+ * that is still running. "1 ثانية" and "3 ثانية" are both wrong Arabic, and a
+ * counter ticking once a second is the most-read string on the screen while a
+ * teacher waits.
+ */
+export function arCountSeconds(n: number): string {
+  if (n === 1) return 'ثانية واحدة';
+  if (n === 2) return 'ثانيتان';
+  if (n >= 3 && n <= 10) return `${n} ثوانٍ`;
+  return `${n} ثانية`;
+}
+
+/** Count seconds in the active language. */
+export function countSeconds(n: number, lang: Lang): string {
+  if (lang === 'ar') return arCountSeconds(n);
+  return `${n}s`;
+}
+
 const translations = {
   ar: {
     // App
@@ -42,10 +99,10 @@ const translations = {
 
     // Tabs
     tabHome: 'الرئيسية',
-    tabCurriculum: 'المنهج',
+    tabCurriculum: 'المنهاج',
     tabIqra: 'اقرأ',
     tabTools: 'الأدوات',
-    tabAlerts: 'التنبيهات',
+    tabAlerts: 'الرسائل',
     tabProfile: 'حسابي',
 
     // Auth
@@ -59,6 +116,7 @@ const translations = {
     passwordPlaceholder: 'كلمة مرورك',
     forgotPassword: 'نسيت كلمة المرور؟',
     signIn: 'تسجيل الدخول',
+    orDivider: 'أو',
     newToIqra: 'جديد على اقرأ؟',
     createAccount: 'إنشاء حساب',
 
@@ -106,7 +164,7 @@ const translations = {
     goodEvening: 'مساء النور',
     teacher: 'معلم',
     welcomeBackNamed: (name: string) => `مرحبًا بعودتك، ${name}`,
-    currentCurriculum: 'المنهج الحالي',
+    currentCurriculum: 'المنهاج الحالي',
     curriculumFocusG10Math: 'الرياضيات — الصف العاشر',
     todaysFocus: 'تركيز اليوم',
     todaysFocusDefault: 'رياضيات الصف العاشر · الفصل الأول',
@@ -114,8 +172,8 @@ const translations = {
     createWorksheet: 'ورقة عمل',
     createQuiz: 'اختبار قصير',
     createHomework: 'واجب منزلي',
-    openCurriculum: 'عرض المنهج',
-    curriculumShortcutTitle: 'اختصار المنهج',
+    openCurriculum: 'عرض المنهاج',
+    curriculumShortcutTitle: 'اختصار المنهاج',
     curriculumShortcutSub: 'الصف العاشر · الرياضيات · الفصلان ١ و ٢',
     semester1Short: 'الفصل الأول',
     semester2Short: 'الفصل الثاني',
@@ -150,7 +208,7 @@ const translations = {
     lessonPlan: 'خطة درس',
     worksheet: 'ورقة عمل',
     quiz: 'اختبار قصير',
-    curriculum: 'المنهج',
+    curriculum: 'المنهاج',
     // Homepage AI-first (Phase 4)
     homeHeroTitle: 'ماذا سنحضّر لحصة اليوم؟',
     homeHeroSubtitle: 'اكتب ما تحتاجه، وسيتولى اقرأ إعداد المواد التعليمية خلال دقائق.',
@@ -164,11 +222,11 @@ const translations = {
     relatedCreateAll: '✨ أنشئ الكل',
 
     // Curriculum — top level
-    curriculumTitle: 'المنهج',
+    curriculumTitle: 'المنهاج',
     jordanCurriculum: 'المنهاج الأردني',
     searchSubjects: 'ابحث في المواد...',
     grade: 'الصف',
-    subjects_count: (n: number) => `${n} مادة`,
+    subjects_count: (n: number) => arCountPhrase(n, 'مادة', 'مادتان', 'مواد'),
     noSubjectsFound: 'لا توجد مواد مطابقة',
     books: 'الكتب',
     units: 'الوحدات',
@@ -184,23 +242,41 @@ const translations = {
     prepInlineOpenFullTool: 'افتح أداة خطة الدرس لموضوع آخر',
 
     // Curriculum — subjects / semester screen
-    booksAvailable: (n: number) => `${n} كتاب`,
+    booksAvailable: (n: number) => arCountPhrase(n, 'كتاب', 'كتابان', 'كتب'),
     noBooks: 'لا كتب بعد',
     noBooksDesc: (sub: string, grade: string) => `ستظهر هنا كتب ${sub} في ${grade}`,
     selectSemester: 'اختر الفصل',
     noSemesters: 'لا فصول دراسية بعد',
     unitsAndLessons: (units: number, lessons: number) => `${units} وحدات · ${lessons} دروس`,
+    downloadBook: 'تحميل الكتاب',
+    downloadTeacherGuide: 'دليل المعلم',
+    downloadActivityBook: 'كتاب الأنشطة',
+    // Books are republished yearly by NCCD — the year is what tells a teacher
+    // whether the linked edition still matches what's printed this year.
+    downloadSourceNccd: (year: string) => `من موقع المركز الوطني لتطوير المناهج · طبعة ${year}`,
 
     // Curriculum — lessons screen
     unitLabel: 'الوحدة',
-    unitsAvailable: (n: number) => `${n} وحدة`,
-    lessonsCount: (n: number) => `${n} درس`,
+    unitsAvailable: (n: number) => arCountPhrase(n, 'وحدة', 'وحدتان', 'وحدات'),
+    lessonsCount: (n: number) => arCountPhrase(n, 'درس', 'درسان', 'دروس'),
     noUnitsOrLessons: 'لا وحدات أو دروس بعد',
-    objectivesCount: (n: number) => `${n} هدف`,
+    objectivesCount: (n: number) => arCountPhrase(n, 'هدف', 'هدفان', 'أهداف'),
 
     // Curriculum — lesson detail
     lessonNotFound: 'لم نجد هذا الدرس',
     learningObjectives: 'الأهداف التعليمية',
+    // Lesson library — the knowledge bank, scoped to one lesson.
+    shelfTitle: 'مكتبة الدرس',
+    shelfCount: (n: number) => (n === 1 ? 'ملف واحد' : n === 2 ? 'ملفان' : n <= 10 ? `${n} ملفات` : `${n} ملفًا`),
+    shelfUnitScoped: (n: number) => `خاص بهذه الوحدة (${n})`,
+    shelfSemesterScoped: 'مواد الفصل كاملة',
+    shelfEmpty: 'لا توجد مواد في المكتبة لهذا الدرس بعد.',
+    shelfReferenceOnly: (n: number) =>
+      `${arCountPhrase(n, 'ملف', 'ملفان', 'ملفات')} من إعداد معلمين — للاستئناس في التحضير، لا لإعادة نشرها.`,
+    shelfNotInApp: 'الملفات نفسها ليست داخل التطبيق. اسأل اقرأ ليحضّر لك اعتمادًا عليها.',
+    shelfAsk: 'اسأل عنه',
+    shelfShowSemester: (n: number) => `إظهار مواد الفصل (${n})`,
+    shelfHideSemester: (n: number) => `إخفاء مواد الفصل (${n})`,
     keyTerms: 'المصطلحات الأساسية',
     learningOutcomes: 'النتاجات التعليمية',
 
@@ -226,7 +302,7 @@ const translations = {
     toolSlidesTitle: 'شرائح الدرس',
     toolSlidesDesc: 'حوّل الدرس إلى عرض للشاشة: نتاجات، مفردات، شرح، وأمثلة محلولة.',
     toolGameTitle: 'تحدي الصف',
-    toolGameDesc: 'لعبة أسئلة بين فرق الصف — بلا هواتف وبلا تحضير: الطلاب يرفعون أصابعهم وأنت تسجّل النقاط.',
+    toolGameDesc: 'لعبة أسئلة بين فرق الصف — بلا هواتف وبلا تحضير: الطلاب يرفعون أيديهم للإجابة وأنت تسجّل النقاط.',
     toolLessonMediaTitle: 'وسائط الدرس والقوالب',
     toolLessonMediaDesc: 'أرفق صورة أو فيديو للدرس الحالي ليظهر ضمن شرائح الحصة، واستخدم القوالب السريعة.',
     parentMsgTitle: 'رسالة لولي الأمر',
@@ -280,11 +356,18 @@ const translations = {
     topicPlaceholder: 'مثال: المعادلات التربيعية، التمثيل الضوئي...',
     durationLabel: 'المدة (بالدقائق)',
     topicRequired: 'أدخل موضوع الدرس أولاً.',
+    subjectTopicMismatch: (subject: string) =>
+      `هذا الموضوع درسٌ من مادة «${subject}». غيّر المادة إلى «${subject}»، أو اختر موضوعًا من المادة المحددة.`,
+    scopeNoCurriculum: (grade: string, subject: string) =>
+      `لا يوجد منهاج لمادة «${subject}» في «${grade}». اختر صفًا أو مادة أخرى.`,
+    scopeNoCurriculumHint:
+      'لا يتوفر منهاج لهذه المادة في الصف المحدد، لذلك لا تظهر ضمن قائمة المواد. غيّر الصف أو اختر مادة أخرى.',
     generationFailed: 'تعذر إتمام العملية. حاول مرة أخرى.',
-    curriculumUngroundedNotice: 'هذا الموضوع غير موجود في المنهج المتاح حالياً. الخطة عامة وليست مبنية على نتاجات درس محدد من الكتاب.',
-    curriculumUngroundedNoticeWorksheet: 'هذا الموضوع غير موجود في المنهج المتاح حالياً. ورقة العمل عامة وليست مبنية على نتاجات درس محدد من الكتاب.',
+    curriculumUngroundedNotice: 'هذا الموضوع غير موجود في المنهاج المتاح حالياً. الخطة عامة وليست مبنية على نتاجات درس محدد من الكتاب.',
+    curriculumUngroundedNoticeWorksheet: 'هذا الموضوع غير موجود في المنهاج المتاح حالياً. ورقة العمل عامة وليست مبنية على نتاجات درس محدد من الكتاب.',
     includePriorReviewLabel: 'تضمين أسئلة مراجعة سابقة',
-    priorReviewUnavailableNote: 'غير متوفر لهذه الوحدة حاليًا',
+    priorReviewUnavailableNote: 'لا توجد معارف سابقة مرتبطة بهذه الوحدة في المنهاج — ستُبنى الورقة من الدرس نفسه.',
+    needTopicHint: 'اكتب عنوان الدرس أعلاه ليصبح الزر جاهزاً.',
     typeWordProblem: 'مسألة حياتية',
     generateLessonPlanBtn: 'حضّر خطة الدرس',
     generatingLessonPlan: 'يعمل اقرأ على التجهيز...',
@@ -292,6 +375,7 @@ const translations = {
     lessonPlanReady: 'خطة الدرس جاهزة',
     sectionObjectives: 'الأهداف',
     sectionMaterials: 'المواد اللازمة',
+    sectionPriorReview: 'مراجعة سابقة',
     sectionIntroduction: 'التمهيد',
     sectionMainActivity: 'النشاط الرئيسي',
     sectionClosure: 'الختام',
@@ -304,15 +388,18 @@ const translations = {
     worksheetSubtitle: 'وثيقة تدريب للطالب داخل الصف — ليست نشاطاً جماعياً',
     homeworkSubtitle: 'تمرين منزلي مستقل مع تعليمات واضحة وسؤال تحدٍّ اختياري',
     simplifyExplanationTitle: 'تبسيط الشرح',
-    simplifyExplanationSubtitle: 'ساعد نفسك على الشرح: لغة أبسط، أمثلة، وأخطاء شائعة — بلا ورقة عمل',
+    simplifyExplanationSubtitle: 'خطة الدرس نفسها بلغة أبسط وخطوات أقصر — للطلاب الذين يحتاجون شرحًا مباشرًا',
     topicPlaceholderWorksheet: 'مثال: حالات المادة...',
     createWorksheetBtn: 'جهّز ورقة العمل',
+    worksheetThreeLevelsBtn: 'ثلاثة مستويات دفعة واحدة',
     buildingWorksheet: 'يعمل اقرأ على تجهيز ورقة العمل...',
     worksheetReady: 'ورقة العمل جاهزة',
 
     // Quiz generator
     createQuizTitle: 'اختبار قصير',
-    quizSubtitle: 'أسئلة جاهزة للتقويم السريع',
+    // «للمراجعة السريعة»، لا «للتقويم»: هذه الأداة تجهّز مادة تُطبع أو تُعرض،
+    // ولا ترصد درجات — الرصد والتصحيح شأن «التقييمات».
+    quizSubtitle: 'أسئلة جاهزة للمراجعة السريعة — للطباعة أو العرض',
     topicPlaceholderQuiz: 'مثال: الصيغة التربيعية، الكسور...',
     generateQuizBtn: 'جهّز الاختبار',
     generatingQuiz: 'يعمل اقرأ على إعداد الأسئلة...',
@@ -329,16 +416,25 @@ const translations = {
     // Deliberately not 'المساعد الذكي'. Prose generation is still mocked, and
     // the product is careful elsewhere to separate what is verified from what
     // is judged; the front door should not oversell what the rest labels.
-    iqraAgentName: 'مساعد إقرأ',
+    iqraAgentName: 'مساعد اقرأ',
     iqraAgentPitch: 'أساعدك في التخطيط، واقتراح الأفكار، وإعداد الاختبارات. كيف أدعمك اليوم؟',
     // Grounding: whether generated material is anchored to a curriculum lesson.
     groundedInCurriculum: (lesson: string) => `مرتبط بالمنهاج الأردني — ${lesson}`,
     notGroundedTitle: 'محتوى عام، غير مرتبط بدرس من المنهاج',
-    notGroundedHint: 'لم نجد درسًا مطابقًا في المنهاج لهذا الموضوع، فوُلِّد المحتوى بصورة عامة. اختر الدرس من «المنهج» لربطه بنتاجات الدرس ومصطلحاته.',
+    notGroundedHint: 'لم نجد درسًا مطابقًا في المنهاج لهذا الموضوع، فوُلِّد المحتوى بصورة عامة. اختر الدرس من «المنهاج» لربطه بنتاجات الدرس ومصطلحاته.',
+    bookFiguresTitle: 'من الكتاب المدرسي',
+    bookFiguresNote: 'أشكالٌ من الكتاب المدرسي لهذا الدرس، ليطابقها المعلّم بعينه مع أيّ سؤال يشير إلى شكل.',
+    bookFiguresStudentNote: 'أشكالٌ من كتابك المدرسي للدروس التي يغطّيها هذا الاختبار. انظر إليها عند أيّ سؤال يشير إلى شكل.',
     iqraWelcome: 'مرحبًا — أنا اقرأ، رفيقك في تحضير الحصص.',
     iqraWelcomeDocs: 'أنا اقرأ، رفيقك في تحضير الحصص.\n\nارفع خطة درس أو عرضاً أو ورقة عمل أو صورة من الكتاب — ونحضّر معاً التلخيص والشرح وخطط الدرس وأوراق العمل والواجبات والاختبارات من موادك.',
     iqraPlaceholder: 'اكتب ما تحتاجه...',
     iqraPlaceholderDocs: 'اسأل عن ملفاتك… أو اكتب: لخّص الدرس',
+    iqraInputLabel: 'رسالتك إلى اقرأ',
+    iqraInputHint: 'اكتب ما تحتاجه بلغتك — مثل: حضّر خطة درس عن تركيب الاقترانات.',
+    notFoundTitle: 'لم نجد هذه الصفحة',
+    notFoundBody: 'قد يكون الرابط قديمًا أو مكتوبًا بشكل غير صحيح. تابع من إحدى هذه الوجهات:',
+    notFoundHome: 'العودة إلى الرئيسية',
+    notFoundCurriculum: 'تصفّح المنهاج',
     docUpload: 'ارفع ملفاً',
     docUploadImage: 'ارفع صورة',
     docRemove: 'أزل الملف',
@@ -354,8 +450,8 @@ const translations = {
 
     iqraSend: 'أرسل',
     iqraSuggested: 'اقتراحات سريعة',
-    iqraNoResults: 'لم أجد هذا في الكتب المتوفرة حالياً. جرّب صياغة أخرى أو موضوعاً من المنهج.',
-    iqraOutOfScope: 'لم أجد هذا الموضوع في المنهج المتاح.\n\nيمكنني المساعدة في هذه المواضيع — اختر ما يناسبك:',
+    iqraNoResults: 'لم أجد هذا في الكتب المتوفرة حالياً. جرّب صياغة أخرى أو موضوعاً من المنهاج.',
+    iqraOutOfScope: 'لم أجد هذا الموضوع في المنهاج المتاح.\n\nيمكنني المساعدة في هذه المواضيع — اختر ما يناسبك:',
     iqraClarifySubject: 'سؤالك قد يخص أكثر من مادة. أيّ مادة تقصد؟',
     iqraDidYouMean: 'تقصد هذا الدرس؟',
     iqraWhichLesson: 'لم أتأكد من الدرس المقصود — أيّ واحد تعني؟',
@@ -385,8 +481,8 @@ const translations = {
     changeLesson: 'تغيير الدرس',
     lessonUploadedFiles: (n: number) => `الملفات المرفوعة: ${n}`,
     lessonGeneratedLabel: 'جاهز:',
-    teacherMode: 'معلم',
-    studentMode: 'طالب',
+    teacherMode: 'وضع المعلم',
+    studentMode: 'وضع الطالب',
 
     // Profile
     profileTitle: 'حسابي',
@@ -416,10 +512,10 @@ const translations = {
     confirm: 'تأكيد',
 
     // Notifications
-    notificationsTitle: 'التنبيهات',
+    notificationsTitle: 'الرسائل',
     markAllRead: 'علّم الكل مقروءاً',
-    noNotifications: 'لا توجد تنبيهات',
-    unread: (n: number) => `${n} غير مقروء`,
+    noNotifications: 'لا توجد محادثات بعد',
+    unread: (n: number) => `${arCountPhrase(n, 'إشعار غير مقروء', 'إشعاران غير مقروءين', 'إشعارات غير مقروءة')}`,
 
     // Settings screen sections
     languageSection: 'اللغة',
@@ -432,6 +528,30 @@ const translations = {
     privacyPolicy: 'سياسة الخصوصية',
     termsOfService: 'شروط الخدمة',
 
+    // Account deletion — Apple 5.1.1(v) and Google Play both require this
+    // path to exist inside the app.
+    // Shown where a student link code would be, while STUDENT_ACCOUNTS is off
+    // server-side. Says "not yet", not "failed" — nothing went wrong.
+    messagingClaimCodeUnavailable:
+      'روابط حسابات الطلبة وأولياء الأمور غير مفعّلة في هذا الإصدار، فالتطبيق حاليًّا للمعلّمين وحدهم.',
+    accountSection: 'الحساب',
+    deleteAccount: 'حذف الحساب',
+    deleteAccountTitle: 'حذف الحساب',
+    deleteAccountLead: 'حذف الحساب نهائيّ ولا يمكن التراجع عنه. سيجري فورًا، لا بعد مهلة.',
+    deleteAccountWhatGoesTeacher: 'سيُحذف معه: شُعَبك وسجلّات طلبتك وملاحظاتك عنهم، والاختبارات وأوراق العمل ونتائجها، والمواد المحفوظة، والملفات التي رفعتها، والرسائل التي أرسلتها.',
+    deleteAccountWhatGoesOther: 'سيُحذف معه: رسائلك وصورك المرفقة، وارتباطك بصفّك. يبقى سجلّ الطالب عند المعلّم لأنّه من بيانات المعلّم.',
+    deleteAccountPasswordLabel: 'أدخل كلمة المرور للتأكيد',
+    deleteAccountEmailLabel: 'أدخل بريدك الإلكتروني للتأكيد',
+    deleteAccountEmailHint: 'حسابك يدخل عبر Google ولا كلمة مرور له، لذا نطلب بريدك بدلًا منها.',
+    deleteAccountConfirmTitle: 'حذف حسابك؟',
+    deleteAccountConfirmBody: 'لا يمكن التراجع عن هذا.',
+    deleteAccountConfirmCta: 'احذف نهائيًّا',
+    deleteAccountCancel: 'إلغاء',
+    deleteAccountSubmit: 'حذف حسابي',
+    deleteAccountWorking: 'جارٍ الحذف…',
+    deleteAccountNeedProof: 'أدخل التأكيد المطلوب أولًا.',
+    deleteAccountFailed: 'تعذّر حذف الحساب. تحقّق ممّا أدخلته وحاول مرّة أخرى.',
+
     // Generator — new form fields
     teachingStyleLabel: 'أسلوب التدريس',
     teachingStyleDirect: 'التعليم المباشر',
@@ -441,9 +561,20 @@ const translations = {
     objectivesPlaceholder: 'اكتب أهدافك أو اترك الحقل فارغاً لاقتراحها',
     adaptationsLabel: 'تكييفات وتعليمات إضافية (اختياري)',
     adaptationsPlaceholder: 'مثال: كيّف الخطة لطالب لديه فرط حركة وتشتت انتباه',
+    priorTopicsLabel: 'موضوعات سابقة لإعادة شرحها (اختياري)',
+    priorTopicsPlaceholder: 'مثال: بعض الطلاب لم يستوعبوا حل المعادلات من الصف التاسع — راجعها قبل الدرس الجديد',
+    includePriorReviewPlanLabel: 'تضمين مراجعة للمعارف السابقة من المنهاج',
+    priorReviewPlanUnavailableNote: 'لا توجد معارف سابقة مرتبطة بهذه الوحدة في المنهاج — استخدم حقل الملاحظات أعلاه للإشارة إلى موضوعات محددة.',
     sectionGuidedPractice: 'التدريب الموجّه',
     sectionIndependentPractice: 'التدريب المستقل',
     regenerateBtn: 'أعد التجهيز',
+    reportArtifactBtn: 'بلّغ عن مشكلة في هذه النسخة',
+    reportArtifactTitle: 'سحب هذه النسخة؟',
+    reportArtifactMsg: 'هذه النسخة مُشتركة: تُقدَّم لكل معلّم يطلب هذا الدرس. سحبها يمنع تقديمها لأي معلّم بعد الآن، وسيُنشأ لك بديل جديد الآن.',
+    reportArtifactConfirm: 'اسحبها وأنشئ بديلًا',
+    reportArtifactDone: 'سُحبت النسخة، ويجري إنشاء بديل',
+    reportArtifactGone: 'هذه النسخة لم تعد في المشترك، ويجري إنشاء بديل',
+    reportArtifactFailed: 'تعذّر سحب النسخة — لم يتغيّر شيء',
     difficultyLabel: 'مستوى الصعوبة',
     difficultyEasy: 'سهل',
     difficultyMedium: 'متوسط',
@@ -495,6 +626,9 @@ const translations = {
     lessonType: 'خطة درس',
     worksheetType: 'ورقة عمل',
     quizType: 'اختبار قصير',
+    flowType: 'مسار الدرس',
+    activityType: 'نشاط صفي',
+    slidesType: 'شرائح',
     viewSavedContent: 'عرض المادة',
     noContentAvailable: 'المحتوى غير متاح',
 
@@ -511,6 +645,12 @@ const translations = {
     copiedToClipboard: 'نُسخ ✓',
     iqraCopyMessage: 'نسخ',
     iqraExportMessage: 'تصدير',
+    iqraSaveMaterial: 'حفظ',
+    iqraSavedMaterial: 'محفوظ ✓',
+    iqraAddToClass: 'أضف لصف',
+    iqraPresentMaterial: 'اعرض',
+    iqraSaveFailed: 'تعذّر الحفظ. حاول مرة أخرى.',
+    iqraPresentFailed: 'تعذّر تجهيز العرض. حاول مرة أخرى.',
     exportBtn: 'تصدير',
     longPressHint: 'اضغط مطوّلاً للنسخ',
 
@@ -556,10 +696,11 @@ const translations = {
 
     // Activity generator
     toolActivityTitle: 'نشاط صفي',
-    toolActivityDesc: 'تجربة تفاعلية في الصف: عمل جماعي، نقاش، أو لعبة — وليست ورقة للطباعة.',
+    toolActivityDesc: 'خطة نشاط جماعي بالخطوات والأدوار والزمن — للطباعة أو للرجوع إليها أثناء الحصة.',
     activityBadge: 'نشاط صفي',
     createActivityTitle: 'نشاط صفي',
     activityTypeLabel: 'نوع النشاط',
+    activityTypeWarmup: 'تهيئة واسترجاع',
     activityTypeIndividual: 'فردي',
     activityTypeGroup: 'جماعي',
     activityTypeDiscussion: 'نقاش',
@@ -579,7 +720,12 @@ const translations = {
 
     // Slides export
     exportSlides: 'تصدير شرائح',
-    exportSlidesSub: 'ملف PDF كشرائح عرض',
+    exportSlidesSub: 'ملف PDF بشرائح جاهزة للعرض — وليس ملف PowerPoint',
+    // The NotebookLM hand-off row in ExportMenu. Added here because the feature
+    // shipped calling t() for keys that were never defined, which broke
+    // `pnpm run typecheck` on main.
+    exportNotebook: 'افتح NotebookLM',
+    exportNotebookSub: 'ارفع ملف PDF لتحصل على ملخّص صوتي',
 
     // Lesson Flow Engine
     toolLessonFlowTitle: 'مسار الدرس الكامل',
@@ -608,6 +754,13 @@ const translations = {
     classroomHubDesc: 'شغّل تجارب تفاعلية مباشرة في الفصل',
     activityComingSoon: 'قريبًا',
     startClass: 'ابدأ الحصة',
+    startClassFailed: 'تعذّر تجهيز العرض. اضغط «ابدأ الحصة» للمحاولة مرة أخرى.',
+    genElapsed: (secs: string) => `مضى ${secs}`,
+    genSlowHint: 'يستغرق هذا وقتاً أطول من المعتاد. يمكنك الانتظار أو الإيقاف.',
+    genCancel: 'إيقاف',
+    genCancelled: 'أوقفتَ التحضير — لم يُنشأ أي محتوى. بياناتك كما هي.',
+    genRetry: 'أعد المحاولة',
+    genFailedTitle: 'تعذّر التحضير',
     presentOnScreen: 'اعرض على الشاشة',
     nextSlide: 'التالي',
     prevSlide: 'السابق',
@@ -642,6 +795,8 @@ const translations = {
     mediaAttachedCount: (n: number) => `${n} وسائط للحصة`,
     openGraph: 'افتح الرسم البياني',
     openMedia: 'افتح الوسائط',
+    enlargeImage: 'تكبير الصورة',
+    closeImage: 'إغلاق',
     addMediaTitle: 'أضف صورة أو فيديو للحصة',
     addMediaOptional: 'اختياري',
     editPlaceholder: 'اضغط للتعديل…',
@@ -653,8 +808,15 @@ const translations = {
     addMediaInvalid: 'الرابط غير مدعوم. استخدم رابط صورة أو فيديو يوتيوب.',
     addMediaAdd: 'أضف',
     addMediaRemove: 'إزالة',
+    lessonAttachmentsTitle: 'مرفقات الدرس',
+    lessonAttachmentsHint: 'صور، ملاحظات صوتية، أو مستندات — تُحفظ مع هذا الدرس وتظهر في كل مرة تعود إليه.',
+    lessonAttachmentsAddPhoto: 'إضافة صور',
+    lessonAttachmentsAddFile: 'إضافة ملفات',
+    lessonAttachmentsUploading: 'جارٍ الرفع…',
+    lessonAttachmentsUploadFailed: 'تعذّر رفع الملف. حاول مرة أخرى.',
+    lessonAttachmentsEmpty: 'لا مرفقات بعد.',
     activityQuickCheckTitle: 'تحقق سريع',
-    activityQuickCheckDesc: 'أسئلة على الشاشة يجيب عنها كل الطلاب معًا ببطاقات أ ب ج د — والإجابة الصحيحة مُتحقق منها',
+    activityQuickCheckDesc: 'أسئلة على الشاشة يجيب عنها كل الطلاب معًا برفع الأيدي — بلا تحضير مسبق',
     verifiedAnswerBadge: 'تم التحقق من الإجابة رياضيًا',
     verifiedBySymbolic: 'تم التحقق من الإجابة رياضيًا (SymPy)',
     verifiedByBank: 'إجابة من بنك الأسئلة المُراجَع',
@@ -662,7 +824,7 @@ const translations = {
     quizVerifiedCount: (n: number, total: number) =>
       `تحقّق المُحقِّق الرمزي من ${n} من أصل ${total} إجابة`,
     quizVerifiedNone: 'لم يتحقّق المُحقِّق الرمزي من أي إجابة — الإجابات من بنك الأسئلة المُراجَع',
-    allStudentsAnswer: 'الكل يجيب: ارفعوا أصابعكم معًا!',
+    allStudentsAnswer: 'ارفع يدك للإجابة!',
     activityEscapeTitle: 'تحدي الهروب',
     activityEscapeDesc: 'مجموعات تحل تحديات رياضية للهروب من المختبر بأكواد سرية',
     activityBingoTitle: 'بنغو الرياضيات',
@@ -691,6 +853,10 @@ const translations = {
     noFavoritesDesc: 'اضغط النجمة على أي مادة لإضافتها',
     addedToFavorites: 'أضفتها إلى المفضلة ⭐',
     removedFromFavorites: 'أزلتها من المفضلة',
+    addToFavorites: 'أضف إلى المفضلة',
+    inFavorites: 'في المفضلة',
+    favoriteShort: 'مفضلة',
+    favoriteFailed: 'تعذّر حفظ المفضلة، حاول مرة أخرى',
     loadDemoData: 'حمّل محتوى تجريبياً',
     demoDataLoaded: 'المحتوى التجريبي جاهز',
     // Presentation celebration
@@ -711,8 +877,8 @@ const translations = {
     generatingClassroom: 'يعمل اقرأ على بناء النشاط...',
     classroomReady: 'النشاط جاهز للعرض',
     startPresentation: 'ابدأ العرض',
-    slideCount: (n: number) => `${n} شريحة`,
-    challengeCount: (n: number) => `${n} تحدٍّ`,
+    slideCount: (n: number) => arCountPhrase(n, 'شريحة', 'شريحتان', 'شرائح'),
+    challengeCount: (n: number) => arCountPhrase(n, 'تحدٍّ', 'تحدّيان', 'تحديات'),
     // Slides Maker
     slidesTitle: 'شرائح الدرس',
     slidesSubtitle: 'حوّل الدرس إلى عرض جاهز للشاشة — نتاجات ومفردات وشرح وأمثلة.',
@@ -720,27 +886,29 @@ const translations = {
     slidesBuilding: 'يعمل اقرأ على بناء الشرائح...',
     slidesIncludeExamples: 'أضف أمثلة محلولة (مع وقت للتفكير)',
     slidesIncludePractice: 'أضف تدريبًا وواجبًا',
+    slidesIncludeAttachments: 'أضف مرفقاتي لهذا الدرس (صور وتسجيلات) إلى الشرائح',
     slidesSaved: 'حُفظت الشرائح في مساحتك',
+    slidesUnsaved: 'أزلت الشرائح من مساحتك',
     // Class Challenge (phone-free team game)
     gameTitle: 'تحدي الصف',
     gameSubtitle: 'لعبة أسئلة بين فرق الصف — بدون هواتف للطلاب. الشاشة هي لوحة اللعب.',
     gameHowTitle: 'كيف تعمل؟',
     gameHow1: 'قسّم الصف إلى فرق — لا تحتاج أي أدوات.',
     gameHow2: 'يظهر السؤال على الشاشة ويبدأ المؤقت — الجميع يفكر بصمت.',
-    gameHow3: 'عند انتهاء الوقت يرفع كل فريق أصابعه معًا (إصبع = أ، إصبعان = ب، ...)، ثم تكشف الإجابة.',
+    gameHow3: 'عند انتهاء الوقت يرفع كل فريق يده للإجابة، ثم تكشف الإجابة.',
     gameHow4: 'اضغط على الفرق التي أصابت — النقاط تُحتسب على الشاشة مباشرة.',
     gameTeamCount: 'عدد الفرق',
     gameQuestionCount: 'عدد الأسئلة',
     gameBuild: 'جهّز التحدي',
     gameBuilding: 'يعمل اقرأ على بناء التحدي...',
     gameStart: 'ابدأ التحدي',
-    gameQuestionsReady: (n: number) => `${n} سؤالًا`,
+    gameQuestionsReady: (n: number) => arCountPhrase(n, 'سؤال', 'سؤالان', 'أسئلة'),
     gameTeamsReady: (n: number) => `${n} فرق`,
     gameNoQuestions: 'تعذّر بناء أسئلة اختيار من متعدد لهذا الموضوع — جرّب موضوعًا آخر.',
     gameWhoScored: 'من أجاب إجابة صحيحة؟',
     gameAwardAll: 'الجميع أصابوا',
     gamePoints: 'نقطة',
-    gameStreak: (n: number) => `${n} متتالية 🔥`,
+    gameStreak: (n: number) => `${arCountPhrase(n, 'إجابة متتالية', 'إجابتان متتاليتان', 'إجابات متتالية')} 🔥`,
     gameNoScores: 'لم تُسجَّل أي نقاط في هذه الجولة.',
     gamePlayAgain: 'أعِد الجولة بالفرق نفسها',
     // Presentation mode
@@ -780,6 +948,7 @@ const translations = {
     studentNames: 'أسماء الطلاب',
     studentNamesPlaceholder: 'اسم في كل سطر، أو افصل بينها بفاصلة',
     studentNamesHint: 'الصق قائمة أسماء — سطر لكل طالب',
+    addStudentsCodeHint: 'بعد الإضافة، اضغط على أيقونة المفتاح بجانب اسم الطالب لإنشاء رمز الربط ومشاركته مع وليّ الأمر أو الطالب.',
     // Arabic counts its nouns by number class, so a single template with a
     // substituted digit reads wrong for most values. arCountStudents applies
     // the real rule (1 / 2 / 3–10 / 11+).
@@ -796,10 +965,62 @@ const translations = {
     rosterLoadFailed: 'تعذّر تحميل الصفوف.',
     remove: 'إزالة',
 
+    // Class ↔ materials
+    classTabStudents: 'الطلاب',
+    classTabMaterials: 'الموارد',
+    classTabExams: 'الامتحانات',
+    countExams: (n: number) => (n === 0 ? 'لا امتحانات' : n === 1 ? 'امتحان واحد' : `${n} امتحانات`),
+    noExamsYet: 'لا امتحانات لهذا الصف',
+    noExamsDesc: 'أرفق امتحانًا أنشأته ليظهر هنا، وابدأ إدخال العلامات',
+    attachExam: 'أرفق امتحانًا',
+    attachExamHint: 'اختر من امتحاناتك غير المرتبطة بصف',
+    noExamsToAttach: 'كل امتحاناتك مرتبطة بصفوف أخرى',
+    noExamsAtAll: 'لا امتحانات بعد — أنشئ امتحانًا أولاً',
+    createNewExam: 'أنشئ امتحانًا',
+    detachExam: 'أزل من الصف',
+    examMarkedCount: (marked: string, total: string) => `صُحّح ${marked} من ${total}`,
+    examNotPublished: 'مسودّة — انشره قبل إدخال العلامات',
+    noMaterialsYet: 'لا موارد لهذا الصف',
+    noMaterialsDesc: 'أرفق درسًا أو ورقة عمل من مساحتك ليظهرا هنا',
+    attachMaterial: 'أرفق مورداً',
+    attachMaterialHint: 'اختر من موادك المحفوظة غير المرتبطة بصف',
+    noMaterialsToAttach: 'كل موادك المحفوظة مرتبطة بصفوف أخرى',
+    noSavedMaterials: 'لا مواد محفوظة بعد — أنشئ درسًا أو ورقة عمل أولاً',
+    createNewMaterial: 'أنشئ مادة جديدة',
+    detachMaterial: 'أزل من الصف',
+    detachMaterialConfirm: (title: string) =>
+      `إزالة «${title}» من هذا الصف؟ سيبقى محفوظًا في مساحتك.`,
+
+    // Student notes
+    studentNoteHint: 'ملاحظتك عن هذا الطالب — تبقى معه عبر الفصل',
+    studentNotePlaceholder: 'مثال: يتحسّن في المسائل اللفظية، لكنه يستعجل',
+    saveNote: 'احفظ الملاحظة',
+
+    // Save a material into a class
+    pickFromMyClasses: 'اختر من صفوفي',
+    saveToClassTitle: 'لأي صف هذه المادة؟',
+    changeClassTitle: 'انقل المادة إلى صف آخر',
+    saveToClassHint: 'ستجدها في تبويب «الموارد» داخل الصف',
+    materialInClass: (name: string) => `الصف: ${name}`,
+    materialNoClass: 'غير مرتبطة بصف',
+    changeClass: 'تغيير',
+    choose: 'اختر',
+    removeFromClass: 'بلا صف',
+    removedFromClass: 'أُزيلت من الصف',
+    notNow: 'ليس الآن',
+    savedToClass: (name: string) => `حُفظت في ${name}`,
+    savedToClasses: (classes: string) => `حُفظت في ${classes} — نسخة مستقلة لكل صف`,
+    savedToClassesPartial: (ok: string, total: string) => `حُفظت في ${ok} من ${total} — أعد المحاولة للبقية`,
+    saveToClassesConfirm: 'احفظ في الصفوف المحددة',
+    currentClassTag: 'الصف الحالي',
+    saveToClassFailed: 'تعذّر ربطها بالصف — المادة محفوظة، حاول الإرفاق من داخل الصف',
+
     // Evaluations — authoring
     evaluations: 'التقييمات',
     myEvaluations: 'تقييماتي',
-    evaluationsSubtitle: 'أنشئ تقييمًا وولّد أسئلته من المنهاج',
+    // يقول صراحةً ما يميّز هذه الأداة عن «اختبار قصير»: هنا رصد وتصحيح وسجلّ
+    // لكل طالب، لا مادة للطباعة فحسب.
+    evaluationsSubtitle: 'امتحان يُرصَد ويُصحَّح: ولّد أسئلته من المنهاج وشاركه برابط وصحّح إجابات طلابك',
     newEvaluation: 'تقييم جديد',
     noEvaluationsYet: 'لا تقييمات بعد',
     noEvaluationsDesc: 'أنشئ تقييمك الأول لتوليد أسئلة من المنهاج المعتمد',
@@ -825,6 +1046,7 @@ const translations = {
     generateAndCreateBtn: 'أنشئ وولّد الأسئلة',
     creatingEvaluation: 'جارٍ الإنشاء…',
     evaluationCreateFailed: 'تعذّر إنشاء التقييم. حاول مرة أخرى.',
+    evaluationSetupNotReady: 'التقييمات غير مُفعَّلة على هذا الخادم بعد. تواصل مع الدعم الفني.',
     evaluationGenerateFailed: 'تعذّر توليد الأسئلة.',
     evaluationLoadFailed: 'تعذّر تحميل التقييم.',
     evaluationPublishFailed: 'تعذّر نشر التقييم.',
@@ -838,6 +1060,21 @@ const translations = {
     typeProblemSolving: 'حل مسألة',
     typePracticalTask: 'مهمة عملية',
     marksAbbrev: (n: string) => `${n} ع`,
+    // «تم التحقق» يوصف المفتاح لا السؤال: البرنامج يتحقق من صحة الإجابة
+    // رياضيًا، ولا يحكم على جودة السؤال نفسه.
+    keyVerifiedBadge: 'مفتاح مُتحقَّق منه',
+    keysVerifiedSummary: (n: string, m: string) =>
+      `تم التحقق رياضيًا من ${n} من أصل ${m} مفتاح إجابة`,
+    // مهم أن تُقرأ البقية «غير قابلة للفحص» لا «خاطئة»: أي مفتاح ناقضه
+    // المدقّق حُذف سؤاله عند التوليد ولم يصل إلى هنا أصلًا.
+    keysVerifiedNote: 'بقية الأسئلة ليس لها إجابة رمزية يفحصها البرنامج — وهذا لا يعني أنها خاطئة.',
+    // حالة عطل مؤقتة وقابلة للإعادة: المهم أن يعرف المعلّم أن لا شيء حُذف.
+    keysVerifierDownTitle: 'تعذّر الوصول إلى مدقّق الرياضيات',
+    keysVerifierDownNote: 'لم يُفحص أي مفتاح إجابة، ولم يُحذف أي سؤال. أعد المحاولة بعد قليل.',
+    // «غير قابلة للفحص» لا «خاطئة»: أي مفتاح ناقضه المدقّق يُحذف سؤاله عند
+    // التوليد ولا يصل إلى هذه الشاشة أصلًا.
+    keysNoneCheckableTitle: 'لا توجد مفاتيح يمكن فحصها آليًا',
+    keysNoneCheckableNote: 'أسئلة هذا الاختبار ليس لها إجابات رمزية يفحصها البرنامج (مثل الاشتقاق أو المعادلات) — وهذا لا يعني أنها خاطئة.',
 
     // Evaluations — attempts & answer entry
     enterAnswersBtn: 'أدخل إجابات الطلاب',
@@ -869,8 +1106,82 @@ const translations = {
     competencyApplication: 'التطبيق',
     competencyCriticalThinking: 'التفكير الناقد',
     insufficientEvidence: 'بيانات غير كافية',
-    provisionalResultNote: 'نتيجة أولية — بعض الأسئلة من النوع المفتوح تحتاج تصحيحًا يدويًا لم يُبنَ بعد.',
-    noGradedQuestionsYet: 'لا توجد علامة بعد — كل أسئلة هذا التقييم من نوع يحتاج تصحيحًا يدويًا.',
+    provisionalResultNote: 'نتيجة أولية — بقيت أسئلة بلا علامة. أدخل علاماتها لتصبح النتيجة نهائية.',
+    noGradedQuestionsYet: 'لا توجد علامة بعد — أدخل علامة كل سؤال لتظهر النتيجة.',
+    shareExamTitle: 'رابط الطلاب',
+    shareExamHint: 'اكتب الرمز على اللوح، أو أرسل الرابط. يفتحه الطالب ويختار اسمه.',
+    shareExamNeedsClass: 'أرفق هذا الامتحان بصف أولًا — الطالب يختار اسمه من قائمة الصف.',
+    shareExamCopyLink: 'انسخ الرابط',
+    shareExamAttachNow: 'أرفقه بصف الآن',
+    takeLinkFailed: 'هذا الرابط غير متاح.',
+    takeAskTeacher: 'اسأل معلّمك عن الرابط الصحيح.',
+    takeStartFailed: 'تعذّر بدء الامتحان.',
+    takeSubmitFailed: 'تعذّر تسليم الامتحان. حاول مرة أخرى.',
+    takePickYourName: 'اختر اسمك',
+    takeNameTaken: 'بدأ أحدهم بهذا الاسم',
+    takeConfirmName: 'هل هذا اسمك؟ لن تتمكّن من تغييره بعد البدء.',
+    takeYesStart: 'نعم، ابدأ',
+    takeNotMe: 'ليس أنا — أعد الاختيار',
+    takeQuestionsAndMarks: (n: string, marks: string) => `${n} أسئلة — ${marks} علامة`,
+    takeProgress: (i: string, n: string) => `السؤال ${i} من ${n}`,
+    takeWriteHere: 'اكتب إجابتك هنا…',
+    takePrevious: 'السابق',
+    takeNext: 'التالي',
+    takeReview: 'مراجعة',
+    takeReviewTitle: 'راجع إجاباتك قبل التسليم',
+    takeUnansweredWarning: (n: string) => `لم تُجب عن ${n} من الأسئلة.`,
+    takeAllAnswered: 'أجبت عن كل الأسئلة.',
+    takeBackToQuestions: 'العودة للأسئلة',
+    takeHandIn: 'سلّم الامتحان',
+    takeHandedIn: 'تم التسليم',
+    takeTeacherWillReview: 'سيراجع معلّمك إجاباتك.',
+    takeSaveFailed: 'لم تُحفظ — تحقّق من اتصالك',
+    classGapsTitle: 'ما الذي فات الصف',
+    classGapsHint: (n: string) => `مجموع العلامات عبر ${n} طالبًا صُحّحت أوراقهم — لا متوسّط النسب.`,
+    classBelowLine: (below: string, total: string) => `${below} من ${total} طلاب تحت الحد`,
+    classGapWorksheet: 'جهّز ورقة عمل للصف',
+    classGapWarmup: 'ابدأ الحصة القادمة بتهيئة على الفجوة',
+    nextStepsTitle: 'ما التالي',
+    nextStepsSubtitle: 'مبنيّ على العلامات التي أدخلتها، مرتّبًا حسب ما خسره الطالب فعليًا.',
+    recKindReview: 'أعد تدريسه',
+    recKindPractice: 'تدريب إضافي',
+    recKindActivity: 'توسّع',
+    recKindReassess: 'أعد التقييم بعد التدريس',
+    recEvidence: (pct: string, lost: string) => `${pct}٪ — خسر ${lost} علامة`,
+    recBuildWorksheet: 'جهّز ورقة عمل',
+    evalModeGenerate: 'ولّد الأسئلة',
+    evalModePaper: 'امتحان ورقي',
+    evalModeGenerateHint: 'يبني اقرأ الأسئلة من نتاجات المنهاج.',
+    evalModePaperHint: 'امتحان أعددته بنفسك على الورق. لا يحتاج اقرأ نص الأسئلة — فقط علامة كل سؤال وما يقيسه، لتُدخل العلامات وتظهر النتيجة.',
+    paperGridLabel: 'أسئلة الورقة',
+    paperGridHint: 'حدّد لكل سؤال علامته والمهارة التي يقيسها. المهارة تُحدّد توزيع النتيجة، فغيّرها إن لم تكن دقيقة.',
+    paperMarksLabel: 'العلامة',
+    paperObjectiveLabel: 'النتاج',
+    paperMarksInvalid: (n: string) => `علامة السؤال ${n} يجب أن تكون أكبر من صفر.`,
+    createPaperExamBtn: 'أنشئ الامتحان',
+    paperQuestionOnSheet: 'سؤال من الورقة — أدخل علامته فقط.',
+    scanMarksBtn: 'امسح العلامات من الورقة',
+    scanMarksHint: 'صوّر الورقة بعد تصحيحها — تُملأ الخانات ولا يُحفظ شيء حتى تراجعها.',
+    scanReading: 'يقرأ الورقة…',
+    scanFailed: 'تعذّرت قراءة الصورة. أدخل العلامات يدويًا.',
+    scanTooLarge: 'الصورة كبيرة جدًا. صوّرها من جديد بجودة أقل.',
+    scanUnavailable: 'قراءة الصور غير مفعّلة حاليًا. أدخل العلامات يدويًا.',
+    scanBudgetSpent: 'انتهت حصة الذكاء الاصطناعي لهذا الشهر. أدخل العلامات يدويًا.',
+    scanFoundNothing: 'لم يُقرأ أي علامة من الصورة.',
+    scanFilledAll: (n: string) => `مُلئت ${n} علامة — راجعها ثم احفظ.`,
+    scanFilledSome: (n: string, left: string) => `مُلئت ${n} علامة، وبقيت ${left} بحاجة إليك.`,
+    attemptGradedToast: 'تم التصحيح — النتيجة في الأعلى',
+    markLabel: 'العلامة',
+    markOutOf: (max: string) => `من ${max}`,
+    markOutOfRange: (max: string) => `أدخل علامة بين 0 و ${max}`,
+    markSaveFailed: 'تعذّر حفظ العلامة.',
+    markedByTeacher: 'تصحيح المعلّم',
+    markedAutomatically: 'تصحيح تلقائي',
+    answerCommentPlaceholder: 'ملاحظة على هذه الإجابة (اختياري)',
+    performanceCommentLabel: 'ملاحظة على أداء الطالب',
+    performanceCommentPlaceholder: 'ما الذي أتقنه، وما الذي يحتاج متابعة؟',
+    commentSaveFailed: 'تعذّر حفظ الملاحظة.',
+    savedLabel: 'حُفِظ',
     resultPercentLabel: (p: string) => `${p}٪`,
     resultsDashboardBtn: 'لوحة النتائج',
     resultsDashboardTitle: 'لوحة النتائج',
@@ -901,6 +1212,67 @@ const translations = {
     onboardingSlide3Desc: 'إجابات الرياضيات يتحقق منها محرك رمزي بدلاً من الاكتفاء بثقة النموذج، وتظهر شارة توضح ما تم إثباته فعليًا.',
     onboardingSlide4Title: 'أدوات لكل لحظة في الحصة',
     onboardingSlide4Desc: 'شرائح للعرض، تحدٍّ جماعي بلا هواتف، اختبارات وأوراق عمل — جاهزة قبل الحصة وأثناءها وبعدها.',
+
+    // Sign-up role step + class code claim, and person-to-person messaging
+    iAmA: 'أنا',
+    roleParent: 'ولي أمر',
+    roleStudent: 'طالب/ة',
+    classCode: 'رمز الصف',
+    classCodePlaceholder: 'مثال: YHFM8Y',
+    classCodeHint: 'اطلب هذا الرمز من معلم ابنك أو ابنتك',
+    messagingEmptyDesc: 'ابدأ محادثة مع معلم أو ولي أمر مرتبط بحسابك',
+    messagingLoadError: 'تعذّر تحميل المحادثات',
+    messagingSendError: 'تعذّر إرسال الرسالة',
+    messagingEmptyThread: 'لا توجد رسائل بعد. ابدأ المحادثة!',
+    messagingPlaceholder: 'اكتب رسالة…',
+    messagingStartConversation: 'راسل',
+    messagingMessageAction: 'مراسلة',
+    messagingNoContacts: 'لا يوجد أحد يمكن مراسلته بعد',
+    messagingClaimCodeTitle: 'رمز الربط',
+    messagingClaimCodeDesc: 'شارك هذا الرمز مع ولي الأمر أو الطالب لربط حسابه بهذا الطالب في التطبيق',
+    messagingGenerateCode: 'إنشاء رمز جديد',
+    messagingCodeExpires: 'ينتهي في',
+    messagingCopyCode: 'نسخ الرمز',
+    messagingCodeCopied: 'تم نسخ الرمز',
+    messagingGuardiansTitle: 'الحسابات المرتبطة',
+    messagingNoGuardiansYet: 'لا يوجد حساب مرتبط بعد',
+    messagingNoContactsTitle: 'لا يوجد حساب مرتبط بعد',
+    messagingNoContactsDesc:
+      'لا يملك الطلاب في قائمتك حسابات بعد. افتح صفّك واضغط «رمز الانضمام»، ثم شارك الرمز مع أولياء الأمور والطلاب لينشئوا حساباتهم.',
+    messagingClassChat: 'محادثة الصف',
+    joinCodeTitle: 'رمز الانضمام',
+    joinCodeDesc: 'رمز واحد للصف كله. شاركه مع أولياء الأمور والطلاب، ويختار كل واحد اسمه من قائمة الصف عند إنشاء حسابه.',
+    joinCodeGenerate: 'إنشاء رمز الانضمام',
+    joinCodeRegenerate: 'إنشاء رمز جديد',
+    joinCodeRegenerateConfirm: 'سيتوقف الرمز الحالي عن العمل فورًا، ولن يتمكن من لم ينضم بعد من استخدامه. هل تريد المتابعة؟',
+    joinCodeShare: 'مشاركة الرمز',
+    joinCodeNone: 'لم يُنشأ رمز لهذا الصف بعد',
+    joinPickYourName: 'اختر اسمك من قائمة الصف',
+    joinNameTaken: 'مرتبط بحساب',
+    rosterLinked: 'انضم',
+    rosterNotLinked: 'لم ينضم بعد',
+    unlinkAccount: 'إلغاء الربط',
+    unlinkAccountConfirm: 'سيتم فصل هذا الحساب عن الطالب، وسيخرج من محادثات الصف. هل تريد المتابعة؟',
+    messagingBlock: 'حظر',
+    messagingUnblock: 'إلغاء الحظر',
+    messagingReportTitle: 'الإبلاغ عن رسالة',
+    reportReasonInappropriate: 'محتوى غير لائق',
+    reportReasonBullying: 'تنمّر أو إساءة',
+    reportReasonSpam: 'إزعاج أو رسائل متكررة',
+    reportReasonOther: 'سبب آخر',
+    messagingNewGroup: 'مجموعة جديدة',
+    messagingGroupNamePlaceholder: 'اسم المجموعة',
+    messagingMembers: 'الأعضاء',
+    messagingPickMembers: 'اختيار الأعضاء',
+    messagingAddSelected: 'إضافة',
+    messagingSearchContacts: 'ابحث بالاسم…',
+    messagingNoSearchMatch: 'لا نتائج مطابقة لبحثك',
+    messagingCreateGroup: 'إنشاء المجموعة',
+    messagingManageMembers: 'إدارة الأعضاء',
+    messagingStudentCodes: 'رموز ربط الطلاب',
+    messagingLeaveGroup: 'مغادرة المجموعة',
+    messagingAllowStudentPosting: 'السماح للطلبة بالكتابة',
+    messagingReadOnlyGroup: 'المعلّم وحده يمكنه الكتابة في هذه المجموعة',
   },
 
   en: {
@@ -911,7 +1283,7 @@ const translations = {
     tabCurriculum: 'Curriculum',
     tabIqra: 'IQRA',
     tabTools: 'Tools',
-    tabAlerts: 'Alerts',
+    tabAlerts: 'Messages',
     tabProfile: 'Profile',
 
     welcomeBack: 'Welcome back',
@@ -924,6 +1296,7 @@ const translations = {
     passwordPlaceholder: 'Your password',
     forgotPassword: 'Forgot password?',
     signIn: 'Sign In',
+    orDivider: 'OR',
     newToIqra: 'New to IQRA?',
     createAccount: 'Create account',
 
@@ -1051,6 +1424,10 @@ const translations = {
     noSemesters: 'No semesters yet',
     unitsAndLessons: (units: number, lessons: number) =>
       `${units} unit${units !== 1 ? 's' : ''} · ${lessons} lesson${lessons !== 1 ? 's' : ''}`,
+    downloadBook: 'Download book',
+    downloadTeacherGuide: 'Teacher guide',
+    downloadActivityBook: 'Activity book',
+    downloadSourceNccd: (year: string) => `From the National Center for Curriculum Development · ${year} edition`,
 
     unitLabel: 'Unit',
     unitsAvailable: (n: number) => `${n} unit${n !== 1 ? 's' : ''}`,
@@ -1060,6 +1437,17 @@ const translations = {
 
     lessonNotFound: 'Lesson not found',
     learningObjectives: 'Learning Objectives',
+    shelfTitle: 'Lesson library',
+    shelfCount: (n: number) => `${n} file${n === 1 ? '' : 's'}`,
+    shelfUnitScoped: (n: number) => `For this unit (${n})`,
+    shelfSemesterScoped: 'Whole-semester material',
+    shelfEmpty: 'Nothing in the library for this lesson yet.',
+    shelfReferenceOnly: (n: number) =>
+      `${n} written by teachers — to inform your preparation, not to be reprinted.`,
+    shelfNotInApp: 'The PDFs themselves are not in the app. Ask IQRA to prepare from them.',
+    shelfAsk: 'Ask about it',
+    shelfShowSemester: (n: number) => `Show semester material (${n})`,
+    shelfHideSemester: (n: number) => `Hide semester material (${n})`,
     keyTerms: 'Key Terms',
     learningOutcomes: 'Learning Outcomes',
 
@@ -1083,7 +1471,7 @@ const translations = {
     toolSlidesTitle: 'Lesson slides',
     toolSlidesDesc: 'Turn the lesson into a deck for the screen: outcomes, vocabulary, explanation, worked examples.',
     toolGameTitle: 'Class challenge',
-    toolGameDesc: 'A team quiz game with no phones and no prep — students hold up fingers and you score it on screen.',
+    toolGameDesc: 'A team quiz game with no phones and no prep — students raise their hands to answer and you score it on screen.',
     toolLessonMediaTitle: 'Lesson media & templates',
     toolLessonMediaDesc: 'Attach an image or video to the current lesson so it appears in the class deck, and use quick templates.',
     parentMsgTitle: 'Message to parent',
@@ -1135,11 +1523,18 @@ const translations = {
     topicPlaceholder: 'e.g. Quadratic Equations, Photosynthesis...',
     durationLabel: 'Duration (minutes)',
     topicRequired: 'Please enter a topic.',
+    subjectTopicMismatch: (subject: string) =>
+      `This topic is a ${subject} lesson. Switch the subject to ${subject}, or pick a topic from the selected subject.`,
+    scopeNoCurriculum: (grade: string, subject: string) =>
+      `No curriculum for ${subject} in ${grade}. Pick another grade or subject.`,
+    scopeNoCurriculumHint:
+      'There is no curriculum for this subject in the selected grade, so it is not in the subject list. Change the grade, or pick another subject.',
     generationFailed: 'Generation failed. Please try again.',
     curriculumUngroundedNotice: 'This topic is not in the currently available curriculum. The plan is generic and not grounded in a specific textbook lesson.',
     curriculumUngroundedNoticeWorksheet: 'This topic is not in the currently available curriculum. The worksheet is generic and not grounded in a specific textbook lesson.',
     includePriorReviewLabel: 'Include prior-knowledge review questions',
-    priorReviewUnavailableNote: 'Not available for this unit yet',
+    priorReviewUnavailableNote: 'The curriculum records no prior knowledge for this unit — the worksheet will be built from the lesson itself.',
+    needTopicHint: 'Enter the lesson title above to enable this.',
     typeWordProblem: 'Real-life word problem',
     generateLessonPlanBtn: 'Generate Lesson Plan',
     generatingLessonPlan: 'Generating...',
@@ -1147,6 +1542,7 @@ const translations = {
     lessonPlanReady: 'Lesson plan generated successfully',
     sectionObjectives: 'Objectives',
     sectionMaterials: 'Materials Needed',
+    sectionPriorReview: 'Prior Knowledge Review',
     sectionIntroduction: 'Introduction',
     sectionMainActivity: 'Main Activity',
     sectionClosure: 'Closure',
@@ -1158,14 +1554,17 @@ const translations = {
     worksheetSubtitle: 'A printable practice sheet for students in class — not a group activity',
     homeworkSubtitle: 'Independent home practice with clear instructions and an optional challenge',
     simplifyExplanationTitle: 'Simplify explanation',
-    simplifyExplanationSubtitle: 'Help yourself explain: simpler language, examples, misconceptions — no worksheet',
+    simplifyExplanationSubtitle: 'The same lesson plan in simpler language and shorter steps — for students who need a direct explanation',
     topicPlaceholderWorksheet: 'e.g. States of Matter…',
     createWorksheetBtn: 'Create Worksheet',
+    worksheetThreeLevelsBtn: 'Three levels in one go',
     buildingWorksheet: 'Building your worksheet…',
     worksheetReady: 'Worksheet ready',
 
     createQuizTitle: 'Create Quiz',
-    quizSubtitle: 'Auto-graded questions',
+    // Not "auto-graded": this tool produces printable/projectable material and
+    // records nothing — grading and records live in Evaluations.
+    quizSubtitle: 'Ready-made questions for a quick review — print or project',
     topicPlaceholderQuiz: 'e.g. Quadratic Formula, Fractions…',
     generateQuizBtn: 'Generate Quiz',
     generatingQuiz: 'Generating quiz questions…',
@@ -1184,9 +1583,18 @@ const translations = {
     groundedInCurriculum: (lesson: string) => `Anchored to the Jordanian curriculum — ${lesson}`,
     notGroundedTitle: 'General content, not tied to a curriculum lesson',
     notGroundedHint: 'No matching curriculum lesson was found for this topic, so the content was generated generically. Pick the lesson from Curriculum to anchor it to real outcomes and vocabulary.',
+    bookFiguresTitle: 'From the Student Book',
+    bookFiguresNote: "Figures from this lesson's student book, for the teacher to match by eye against any question that refers to one.",
+    bookFiguresStudentNote: "Figures from your student book for the lessons this exam covers. Look here for any question that refers to one.",
     iqraWelcomeDocs: 'I’m IQRA’s AI Teaching Assistant.\n\nUpload a lesson plan, PowerPoint, worksheet, or a photo of a textbook page — and I’ll help you summarize, explain, build lesson plans, worksheets, homework, and quizzes from your own materials.',
     iqraPlaceholder: 'Ask IQRA anything...',
     iqraPlaceholderDocs: 'Ask about your files… or type: Summarize this lesson',
+    iqraInputLabel: 'Your message to IQRA',
+    iqraInputHint: 'Type what you need in your own words — for example: prepare a lesson plan on composing functions.',
+    notFoundTitle: 'We could not find that page',
+    notFoundBody: 'The link may be out of date or mistyped. Carry on from one of these:',
+    notFoundHome: 'Back to home',
+    notFoundCurriculum: 'Browse the curriculum',
     docUpload: 'Upload file',
     docUploadImage: 'Upload image',
     docRemove: 'Remove file',
@@ -1262,9 +1670,9 @@ const translations = {
     cancel: 'Cancel',
     confirm: 'Confirm',
 
-    notificationsTitle: 'Notifications',
+    notificationsTitle: 'Messages',
     markAllRead: 'Mark all as read',
-    noNotifications: 'No notifications yet',
+    noNotifications: 'No conversations yet',
     unread: (n: number) => `${n} unread`,
 
     languageSection: 'LANGUAGE',
@@ -1277,6 +1685,30 @@ const translations = {
     privacyPolicy: 'Privacy Policy',
     termsOfService: 'Terms of Service',
 
+    // Account deletion — Apple 5.1.1(v) and Google Play both require this
+    // path to exist inside the app.
+    // Shown where a student link code would be, while STUDENT_ACCOUNTS is off
+    // server-side. Says "not yet", not "failed" — nothing went wrong.
+    messagingClaimCodeUnavailable:
+      'Student and parent account links are not enabled in this release — the app is teacher-only for now.',
+    accountSection: 'ACCOUNT',
+    deleteAccount: 'Delete account',
+    deleteAccountTitle: 'Delete account',
+    deleteAccountLead: 'Deleting your account is permanent and cannot be undone. It happens immediately, not after a waiting period.',
+    deleteAccountWhatGoesTeacher: 'This also deletes: your classes, your student records and the notes you wrote about them, your tests and worksheets and their results, saved materials, files you uploaded, and messages you sent.',
+    deleteAccountWhatGoesOther: 'This also deletes: your messages and any images you attached, and your link to your class. The student record itself stays with the teacher, because it is the teacher\'s data.',
+    deleteAccountPasswordLabel: 'Enter your password to confirm',
+    deleteAccountEmailLabel: 'Enter your email address to confirm',
+    deleteAccountEmailHint: 'Your account signs in with Google and has no password, so we ask for your email instead.',
+    deleteAccountConfirmTitle: 'Delete your account?',
+    deleteAccountConfirmBody: 'This cannot be undone.',
+    deleteAccountConfirmCta: 'Delete permanently',
+    deleteAccountCancel: 'Cancel',
+    deleteAccountSubmit: 'Delete my account',
+    deleteAccountWorking: 'Deleting…',
+    deleteAccountNeedProof: 'Enter the confirmation above first.',
+    deleteAccountFailed: 'Could not delete the account. Check what you entered and try again.',
+
     // Generator — new form fields
     teachingStyleLabel: 'Teaching style',
     teachingStyleDirect: 'Direct Instruction',
@@ -1286,9 +1718,20 @@ const translations = {
     objectivesPlaceholder: 'Type your objectives or leave blank to auto-suggest',
     adaptationsLabel: 'Adaptations & extra instructions (optional)',
     adaptationsPlaceholder: 'e.g. adapt this plan for a student with ADHD',
+    priorTopicsLabel: 'Prior topics to re-explain (optional)',
+    priorTopicsPlaceholder: 'e.g. some students never grasped solving equations from grade 9 — review it before the new lesson',
+    includePriorReviewPlanLabel: 'Include a review of prior curriculum knowledge',
+    priorReviewPlanUnavailableNote: 'The curriculum records no prior knowledge for this unit — use the notes field above to point to specific topics instead.',
     sectionGuidedPractice: 'Guided Practice',
     sectionIndependentPractice: 'Independent Practice',
     regenerateBtn: 'Regenerate',
+    reportArtifactBtn: 'Report a problem with this version',
+    reportArtifactTitle: 'Withdraw this version?',
+    reportArtifactMsg: 'This version is shared — it is served to every teacher who asks for this lesson. Withdrawing it stops it reaching anyone else, and a replacement is generated for you now.',
+    reportArtifactConfirm: 'Withdraw and replace',
+    reportArtifactDone: 'Version withdrawn — generating a replacement',
+    reportArtifactGone: 'That version was already out of the shared pool — generating a replacement',
+    reportArtifactFailed: 'Could not withdraw the version — nothing changed',
     difficultyLabel: 'Difficulty level',
     difficultyEasy: 'Easy',
     difficultyMedium: 'Medium',
@@ -1340,6 +1783,9 @@ const translations = {
     lessonType: 'Lesson Plan',
     worksheetType: 'Worksheet',
     quizType: 'Quiz',
+    flowType: 'Lesson Flow',
+    activityType: 'Class activity',
+    slidesType: 'Slides',
     viewSavedContent: 'View Material',
     noContentAvailable: 'Content not available',
 
@@ -1356,6 +1802,12 @@ const translations = {
     copiedToClipboard: 'Copied ✓',
     iqraCopyMessage: 'Copy',
     iqraExportMessage: 'Export',
+    iqraSaveMaterial: 'Save',
+    iqraSavedMaterial: 'Saved ✓',
+    iqraAddToClass: 'Add to class',
+    iqraPresentMaterial: 'Present',
+    iqraSaveFailed: 'Could not save. Try again.',
+    iqraPresentFailed: 'Could not prepare the deck. Try again.',
     exportBtn: 'Export',
     longPressHint: 'Long-press to copy message',
 
@@ -1398,10 +1850,11 @@ const translations = {
 
     // Activity generator
     toolActivityTitle: 'Class activity',
-    toolActivityDesc: 'An in-class experience: group work, discussion, or a game — not a printable worksheet.',
+    toolActivityDesc: 'A step-by-step plan for a group activity — roles, timings and materials, to print or follow in class.',
     activityBadge: 'AI Activity',
     createActivityTitle: 'Generate Activity',
     activityTypeLabel: 'Activity type',
+    activityTypeWarmup: 'Warm-up & retrieval',
     activityTypeIndividual: 'Individual',
     activityTypeGroup: 'Group work',
     activityTypeDiscussion: 'Discussion',
@@ -1422,6 +1875,8 @@ const translations = {
     // Slides export
     exportSlides: 'Export Slides',
     exportSlidesSub: 'PDF slide deck (not PowerPoint)',
+    exportNotebook: 'Open NotebookLM',
+    exportNotebookSub: 'Upload the PDF there for an audio overview',
 
     // Lesson Flow Engine
     toolLessonFlowTitle: 'Full lesson path',
@@ -1450,6 +1905,13 @@ const translations = {
     classroomHubDesc: 'Run interactive experiences live in class',
     activityComingSoon: 'Coming soon',
     startClass: 'Start class',
+    startClassFailed: 'Could not build the deck. Tap "Start class" to try again.',
+    genElapsed: (secs: string) => `${secs} elapsed`,
+    genSlowHint: 'This is taking longer than usual. You can keep waiting or stop it.',
+    genCancel: 'Stop',
+    genCancelled: 'You stopped it — nothing was generated. Your inputs are unchanged.',
+    genRetry: 'Try again',
+    genFailedTitle: 'Could not generate',
     presentOnScreen: 'Present on screen',
     nextSlide: 'Next',
     prevSlide: 'Back',
@@ -1484,6 +1946,8 @@ const translations = {
     mediaAttachedCount: (n: number) => `${n} media for class`,
     openGraph: 'Open the graph',
     openMedia: 'Open media',
+    enlargeImage: 'Enlarge image',
+    closeImage: 'Close',
     addMediaTitle: 'Add an image or video to the class',
     addMediaOptional: 'Optional',
     editPlaceholder: 'Tap to edit…',
@@ -1495,8 +1959,15 @@ const translations = {
     addMediaInvalid: 'Unsupported link. Use an image URL or a YouTube video.',
     addMediaAdd: 'Add',
     addMediaRemove: 'Remove',
+    lessonAttachmentsTitle: 'Lesson attachments',
+    lessonAttachmentsHint: 'Photos, voice notes, or documents — saved with this lesson and available every time you come back to it.',
+    lessonAttachmentsAddPhoto: 'Add photos',
+    lessonAttachmentsAddFile: 'Add files',
+    lessonAttachmentsUploading: 'Uploading…',
+    lessonAttachmentsUploadFailed: "Couldn't upload the file. Try again.",
+    lessonAttachmentsEmpty: 'No attachments yet.',
     activityQuickCheckTitle: 'Quick Check',
-    activityQuickCheckDesc: 'On-screen questions the whole class answers with A B C D cards — with a verified answer key',
+    activityQuickCheckDesc: 'On-screen questions the whole class answers together by raised hands — zero prep',
     verifiedAnswerBadge: 'Answer key mathematically verified',
     verifiedBySymbolic: 'Answer symbolically verified (SymPy)',
     verifiedByBank: 'Answer from the reviewed question bank',
@@ -1504,7 +1975,7 @@ const translations = {
     quizVerifiedCount: (n: number, total: number) =>
       `${n} of ${total} answers symbolically verified`,
     quizVerifiedNone: 'No answer was symbolically verified — keys come from the reviewed bank',
-    allStudentsAnswer: 'Everyone answers: fingers up together!',
+    allStudentsAnswer: 'Raise your hand to answer!',
     activityEscapeTitle: 'Escape Challenge',
     activityEscapeDesc: 'Groups solve math challenges to escape the lab using secret codes',
     activityBingoTitle: 'Math Bingo',
@@ -1533,6 +2004,10 @@ const translations = {
     noFavoritesDesc: 'Tap the star on any material to add it',
     addedToFavorites: 'Added to Favourites ⭐',
     removedFromFavorites: 'Removed from Favourites',
+    addToFavorites: 'Add to Favourites',
+    inFavorites: 'Favourited',
+    favoriteShort: 'Favourite',
+    favoriteFailed: 'Could not save the favourite — try again',
     loadDemoData: 'Load sample content',
     demoDataLoaded: 'Sample content loaded!',
     // Presentation celebration
@@ -1562,14 +2037,16 @@ const translations = {
     slidesBuilding: 'Building your slides…',
     slidesIncludeExamples: 'Include worked examples (with think time)',
     slidesIncludePractice: 'Include practice and homework',
+    slidesIncludeAttachments: 'Include my attachments for this lesson (photos and recordings)',
     slidesSaved: 'Slides saved to your workspace',
+    slidesUnsaved: 'Slides removed from your workspace',
     // Class Challenge (phone-free team game)
     gameTitle: 'Class Challenge',
     gameSubtitle: 'A team quiz game with no student phones — the screen is the game board.',
     gameHowTitle: 'How it works',
     gameHow1: 'Split the class into teams — no materials needed.',
     gameHow2: 'The question appears on screen and the timer starts — everyone thinks silently.',
-    gameHow3: 'When time ends each team holds up fingers together (1 = A, 2 = B, …), then you reveal the answer.',
+    gameHow3: 'When time ends each team raises a hand to answer, then you reveal the answer.',
     gameHow4: 'Tap the teams that were right — scores update on screen instantly.',
     gameTeamCount: 'Number of teams',
     gameQuestionCount: 'Number of questions',
@@ -1622,6 +2099,7 @@ const translations = {
     studentNames: 'Student names',
     studentNamesPlaceholder: 'One name per line, or separated by commas',
     studentNamesHint: 'Paste a list — one student per line',
+    addStudentsCodeHint: "After adding, tap the key beside a student's name to create their link code and share it with a parent or the student.",
     willAddCount: (n: number) => `Will add ${n} ${n === 1 ? 'student' : 'students'}`,
     addToClass: 'Add to class',
     removeStudent: 'Remove from class',
@@ -1635,10 +2113,62 @@ const translations = {
     rosterLoadFailed: 'Could not load your classes.',
     remove: 'Remove',
 
+    // Class ↔ materials
+    classTabStudents: 'Students',
+    classTabMaterials: 'Materials',
+    classTabExams: 'Exams',
+    countExams: (n: number) => (n === 1 ? '1 exam' : `${n} exams`),
+    noExamsYet: 'No exams for this class',
+    noExamsDesc: 'Attach an exam you created and start entering marks',
+    attachExam: 'Attach an exam',
+    attachExamHint: 'Pick from your exams that are not in a class yet',
+    noExamsToAttach: 'All your exams are already in other classes',
+    noExamsAtAll: 'No exams yet — create one first',
+    createNewExam: 'Create an exam',
+    detachExam: 'Remove from class',
+    examMarkedCount: (marked: string, total: string) => `${marked} of ${total} marked`,
+    examNotPublished: 'Draft — publish it before entering marks',
+    noMaterialsYet: 'No materials for this class',
+    noMaterialsDesc: 'Attach a lesson or worksheet from your workspace and it will show up here',
+    attachMaterial: 'Attach material',
+    attachMaterialHint: 'Pick from your saved materials that are not in a class yet',
+    noMaterialsToAttach: 'All your saved materials are already in other classes',
+    noSavedMaterials: 'Nothing saved yet — create a lesson or worksheet first',
+    createNewMaterial: 'Create a new material',
+    detachMaterial: 'Remove from class',
+    detachMaterialConfirm: (title: string) =>
+      `Remove "${title}" from this class? It stays saved in your workspace.`,
+
+    // Student notes
+    studentNoteHint: 'Your note on this student — it stays with them all term',
+    studentNotePlaceholder: 'e.g. improving on word problems, but rushes',
+    saveNote: 'Save note',
+
+    // Save a material into a class
+    pickFromMyClasses: 'Pick from my classes',
+    saveToClassTitle: 'Which class is this for?',
+    changeClassTitle: 'Move this material to another class',
+    saveToClassHint: "You'll find it in the class's Materials tab",
+    materialInClass: (name: string) => `Class: ${name}`,
+    materialNoClass: 'Not in a class',
+    changeClass: 'Change',
+    choose: 'Choose',
+    removeFromClass: 'No class',
+    removedFromClass: 'Removed from class',
+    notNow: 'Not now',
+    savedToClass: (name: string) => `Saved to ${name}`,
+    savedToClasses: (classes: string) => `Saved to ${classes} — a separate copy for each`,
+    savedToClassesPartial: (ok: string, total: string) => `Saved to ${ok} of ${total} — try the rest again`,
+    saveToClassesConfirm: 'Save to selected classes',
+    currentClassTag: 'Current class',
+    saveToClassFailed: "Couldn't add it to the class — the material is saved, try attaching from the class",
+
     // Evaluations — authoring
     evaluations: 'Evaluations',
     myEvaluations: 'My evaluations',
-    evaluationsSubtitle: 'Create an evaluation and generate its questions from the curriculum',
+    // Says what separates this from the Short quiz tool: marks, grading and a
+    // per-student record, not just printable material.
+    evaluationsSubtitle: 'A marked exam with student records: generate it from the curriculum, share a link, grade the answers',
     newEvaluation: 'New evaluation',
     noEvaluationsYet: 'No evaluations yet',
     noEvaluationsDesc: 'Create your first evaluation to generate questions from the approved curriculum',
@@ -1664,6 +2194,7 @@ const translations = {
     generateAndCreateBtn: 'Create and generate questions',
     creatingEvaluation: 'Creating…',
     evaluationCreateFailed: 'Could not create the evaluation. Please try again.',
+    evaluationSetupNotReady: 'Evaluations are not set up on this server yet. Contact support.',
     evaluationGenerateFailed: 'Could not generate questions.',
     evaluationLoadFailed: 'Could not load the evaluation.',
     evaluationPublishFailed: 'Could not publish the evaluation.',
@@ -1677,6 +2208,16 @@ const translations = {
     typeProblemSolving: 'Problem Solving',
     typePracticalTask: 'Practical Task',
     marksAbbrev: (n: string) => `${n} pts`,
+    keyVerifiedBadge: 'Key verified',
+    keysVerifiedSummary: (n: string, m: string) =>
+      `${n} of ${m} answer keys verified by the maths verifier`,
+    // "Not checkable", never "wrong": a key the verifier contradicted was
+    // dropped at generation and never reached this screen.
+    keysVerifiedNote: 'The rest have no symbolic answer to check — that does not mean they are wrong.',
+    keysVerifierDownTitle: 'The maths verifier could not be reached',
+    keysVerifierDownNote: 'No answer key was checked, and no question was removed. Try again shortly.',
+    keysNoneCheckableTitle: 'No keys here could be checked automatically',
+    keysNoneCheckableNote: 'These questions have no symbolic answer the program can check (like derivatives or equations) — that does not mean they are wrong.',
 
     // Evaluations — attempts & answer entry
     enterAnswersBtn: 'Enter student answers',
@@ -1708,8 +2249,82 @@ const translations = {
     competencyApplication: 'Application',
     competencyCriticalThinking: 'Critical Thinking',
     insufficientEvidence: 'Not enough evidence',
-    provisionalResultNote: "Provisional result — some open-ended questions still need manual grading, which isn't built yet.",
-    noGradedQuestionsYet: 'No score yet — every question in this evaluation needs manual grading.',
+    provisionalResultNote: 'Provisional result — some questions are still unmarked. Enter their marks to finalise it.',
+    noGradedQuestionsYet: 'No score yet — enter a mark for each question to see the result.',
+    shareExamTitle: 'Student link',
+    shareExamHint: 'Write the code on the board, or send the link. Students open it and pick their name.',
+    shareExamNeedsClass: 'Attach this exam to a class first — students pick their name from the class list.',
+    shareExamCopyLink: 'Copy the link',
+    shareExamAttachNow: 'Attach it to a class now',
+    takeLinkFailed: 'This link is not available.',
+    takeAskTeacher: 'Ask your teacher for the right link.',
+    takeStartFailed: 'Could not start the exam.',
+    takeSubmitFailed: 'Could not hand in the exam. Try again.',
+    takePickYourName: 'Choose your name',
+    takeNameTaken: 'Someone started with this name',
+    takeConfirmName: 'Is this your name? You cannot change it after you start.',
+    takeYesStart: 'Yes, start',
+    takeNotMe: "That's not me — choose again",
+    takeQuestionsAndMarks: (n: string, marks: string) => `${n} questions — ${marks} marks`,
+    takeProgress: (i: string, n: string) => `Question ${i} of ${n}`,
+    takeWriteHere: 'Write your answer here…',
+    takePrevious: 'Previous',
+    takeNext: 'Next',
+    takeReview: 'Review',
+    takeReviewTitle: 'Check your answers before handing in',
+    takeUnansweredWarning: (n: string) => `You have not answered ${n} question(s).`,
+    takeAllAnswered: 'You have answered every question.',
+    takeBackToQuestions: 'Back to the questions',
+    takeHandIn: 'Hand in',
+    takeHandedIn: 'Handed in',
+    takeTeacherWillReview: 'Your teacher will review your answers.',
+    takeSaveFailed: 'Not saved — check your connection',
+    classGapsTitle: 'What the class missed',
+    classGapsHint: (n: string) => `Marks summed across ${n} marked students — not an average of percentages.`,
+    classBelowLine: (below: string, total: string) => `${below} of ${total} students below the line`,
+    classGapWorksheet: 'Build a worksheet for the class',
+    classGapWarmup: 'Open next class with a warm-up on the gap',
+    nextStepsTitle: 'What next',
+    nextStepsSubtitle: 'From the marks you entered, ordered by what the student actually lost.',
+    recKindReview: 'Reteach this',
+    recKindPractice: 'More practice',
+    recKindActivity: 'Extend',
+    recKindReassess: 'Reassess after teaching',
+    recEvidence: (pct: string, lost: string) => `${pct}% — ${lost} marks lost`,
+    recBuildWorksheet: 'Build a worksheet',
+    evalModeGenerate: 'Generate questions',
+    evalModePaper: 'Paper exam',
+    evalModeGenerateHint: 'Iqraa writes the questions from the curriculum objectives.',
+    evalModePaperHint: "An exam you set yourself on paper. Iqraa doesn't need the question text — only what each question is worth and what it measures, so you can enter marks and get a result.",
+    paperGridLabel: 'Questions on the paper',
+    paperGridHint: "Set each question's marks and the skill it measures. The skill decides how the result breaks down, so change it where it isn't right.",
+    paperMarksLabel: 'Marks',
+    paperObjectiveLabel: 'Objective',
+    paperMarksInvalid: (n: string) => `Question ${n} needs marks greater than zero.`,
+    createPaperExamBtn: 'Create the exam',
+    paperQuestionOnSheet: 'A question on the paper — just enter its mark.',
+    scanMarksBtn: 'Scan the marks from the paper',
+    scanMarksHint: 'Photograph the paper after marking it — the boxes fill in, and nothing saves until you check them.',
+    scanReading: 'Reading the paper…',
+    scanFailed: 'Could not read that photo. Enter the marks by hand.',
+    scanTooLarge: 'That photo is too large. Take it again at a lower quality.',
+    scanUnavailable: 'Photo reading is switched off right now. Enter the marks by hand.',
+    scanBudgetSpent: "This month's AI allowance is used up. Enter the marks by hand.",
+    scanFoundNothing: 'No marks could be read from that photo.',
+    scanFilledAll: (n: string) => `Filled ${n} mark(s) — check them, then save.`,
+    scanFilledSome: (n: string, left: string) => `Filled ${n}, and ${left} still need you.`,
+    attemptGradedToast: 'Marked — the result is at the top',
+    markLabel: 'Mark',
+    markOutOf: (max: string) => `of ${max}`,
+    markOutOfRange: (max: string) => `Enter a mark between 0 and ${max}`,
+    markSaveFailed: 'Could not save the mark.',
+    markedByTeacher: 'Marked by you',
+    markedAutomatically: 'Marked automatically',
+    answerCommentPlaceholder: 'Comment on this answer (optional)',
+    performanceCommentLabel: "Comment on the student's performance",
+    performanceCommentPlaceholder: 'What did they master, and what needs following up?',
+    commentSaveFailed: 'Could not save the comment.',
+    savedLabel: 'Saved',
     resultPercentLabel: (p: string) => `${p}%`,
     resultsDashboardBtn: 'Results dashboard',
     resultsDashboardTitle: 'Results dashboard',
@@ -1740,6 +2355,67 @@ const translations = {
     onboardingSlide3Desc: "Math answer keys are checked by a symbolic engine instead of just trusting the model, and a badge shows what was actually proven.",
     onboardingSlide4Title: 'Tools for every moment in class',
     onboardingSlide4Desc: 'Projectable slides, a phone-free team challenge, quizzes and worksheets — ready before, during, and after class.',
+
+    // Sign-up role step + class code claim, and person-to-person messaging
+    iAmA: 'I am a',
+    roleParent: 'Parent',
+    roleStudent: 'Student',
+    classCode: 'Class code',
+    classCodePlaceholder: 'e.g. YHFM8Y',
+    classCodeHint: "Ask your child's teacher for this code",
+    messagingEmptyDesc: 'Start a conversation with a teacher or a linked parent',
+    messagingLoadError: 'Could not load conversations',
+    messagingSendError: 'Could not send message',
+    messagingEmptyThread: 'No messages yet. Say hello!',
+    messagingPlaceholder: 'Type a message…',
+    messagingStartConversation: 'Message',
+    messagingMessageAction: 'Message',
+    messagingNoContacts: 'No one to message yet',
+    messagingClaimCodeTitle: 'Class code',
+    messagingClaimCodeDesc: "Share this code with a parent or the student to link their account to this student in the app",
+    messagingGenerateCode: 'Generate new code',
+    messagingCodeExpires: 'Expires',
+    messagingCopyCode: 'Copy code',
+    messagingCodeCopied: 'Code copied',
+    messagingGuardiansTitle: 'Linked accounts',
+    messagingNoGuardiansYet: 'No linked account yet',
+    messagingNoContactsTitle: 'No linked accounts yet',
+    messagingNoContactsDesc:
+      'The students on your roster do not have accounts yet. Open your class, tap "Join code", and share the code with parents and students so they can sign up.',
+    messagingClassChat: 'Class chat',
+    joinCodeTitle: 'Join code',
+    joinCodeDesc: 'One code for the whole class. Share it with parents and students — each person picks their own name from the class list when they sign up.',
+    joinCodeGenerate: 'Create join code',
+    joinCodeRegenerate: 'Generate new code',
+    joinCodeRegenerateConfirm: 'The current code stops working immediately, and anyone who has not joined yet will not be able to use it. Continue?',
+    joinCodeShare: 'Share code',
+    joinCodeNone: 'No code for this class yet',
+    joinPickYourName: 'Pick your name from the class list',
+    joinNameTaken: 'Already linked',
+    rosterLinked: 'Joined',
+    rosterNotLinked: 'Not joined yet',
+    unlinkAccount: 'Unlink',
+    unlinkAccountConfirm: 'This account will be disconnected from the student and removed from class chats. Continue?',
+    messagingBlock: 'Block',
+    messagingUnblock: 'Unblock',
+    messagingReportTitle: 'Report message',
+    reportReasonInappropriate: 'Inappropriate content',
+    reportReasonBullying: 'Bullying or harassment',
+    reportReasonSpam: 'Spam or repeated messages',
+    reportReasonOther: 'Other reason',
+    messagingNewGroup: 'New group',
+    messagingGroupNamePlaceholder: 'Group name',
+    messagingMembers: 'Members',
+    messagingPickMembers: 'Pick members',
+    messagingAddSelected: 'Add',
+    messagingSearchContacts: 'Search by name…',
+    messagingNoSearchMatch: 'No one matches your search',
+    messagingCreateGroup: 'Create group',
+    messagingManageMembers: 'Manage members',
+    messagingStudentCodes: 'Student link codes',
+    messagingLeaveGroup: 'Leave group',
+    messagingAllowStudentPosting: 'Allow students to post',
+    messagingReadOnlyGroup: 'Only the teacher can post in this group',
   },
 } as const;
 

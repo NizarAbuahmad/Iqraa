@@ -1,0 +1,1056 @@
+{
+  "note": "Book lesson -> curriculum lesson. Proposed by title overlap, then hand-checked. A null kbLessonId means no lesson corresponds; those figures stay unused. Do not auto-fill from `candidates`: the book and the curriculum disagree about lesson boundaries — the book splits composition/inverse/radical into separate lessons where the curriculum merges them, so high word overlap is not proof.",
+  "generatedFrom": "lessonTitleEn vs KB_LESSONS titleEn, constrained to the unit number the book prints",
+  "entries": [
+    {
+      "sourceId": "chem-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "نظريةُ بور لذرَّةِ الهيدروجين",
+      "kbLessonId": "kbl-chem-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "arabic-title"
+    },
+    {
+      "sourceId": "chem-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "النموذج الميكانيكي الموجي للذرة",
+      "kbLessonId": "kbl-chem-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "arabic-title",
+      "why": "Chemistry is joined on the Arabic title, which matches the curriculum's word for word — the book states no English lesson title the opener band can reach, and what sits there is its first SECTION heading. The unit and lesson numbers agree independently: the book prints 3 units of 2 lessons and the curriculum carries exactly u1_l1..u3_l2."
+    },
+    {
+      "sourceId": "chem-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "التوزيعُ اإللكترونيُّ للذرّات",
+      "kbLessonId": "kbl-chem-s1-nccd-u2_l1",
+      "score": 1,
+      "why": "The book title carries the decomposed lam-alef the PDF text layer produces; «اإللكتروني» is «الإلكتروني».",
+      "matchedBy": "arabic-title"
+    },
+    {
+      "sourceId": "chem-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "الخصائص الدورية للعناصر",
+      "kbLessonId": "kbl-chem-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "arabic-title",
+      "why": "Chemistry is joined on the Arabic title, which matches the curriculum's word for word — the book states no English lesson title the opener band can reach, and what sits there is its first SECTION heading. The unit and lesson numbers agree independently: the book prints 3 units of 2 lessons and the curriculum carries exactly u1_l1..u3_l2."
+    },
+    {
+      "sourceId": "chem-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "الروابطُ الكيميائيةُ وأنواعُها",
+      "kbLessonId": "kbl-chem-s1-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "arabic-title"
+    },
+    {
+      "sourceId": "chem-s1-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "الصيغ الكيميائية وخصائص المركبات",
+      "kbLessonId": "kbl-chem-s1-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "arabic-title",
+      "why": "Chemistry is joined on the Arabic title, which matches the curriculum's word for word — the book states no English lesson title the opener band can reach, and what sits there is its first SECTION heading. The unit and lesson numbers agree independently: the book prints 3 units of 2 lessons and the curriculum carries exactly u1_l1..u3_l2."
+    },
+    {
+      "sourceId": "math-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleEn": "Solving Special Equations",
+      "kbLessonId": null,
+      "score": 0.5,
+      "candidates": [
+        {
+          "id": "kbl-math-s1-nccd-u1_l1",
+          "titleEn": "Solving a System: Linear and Quadratic Equations",
+          "score": 0.5
+        },
+        {
+          "id": "kbl-math-s1-nccd-u1_l2",
+          "titleEn": "Solving a System of Two Quadratic Equations",
+          "score": 0.5
+        }
+      ],
+      "matchedBy": null,
+      "why": "The book opens unit 1 with a lesson the curriculum does not carry, which is why every later unit-1 lesson sits one place lower in the curriculum than the number the book prints. Left unmatched rather than forced onto a neighbour."
+    },
+    {
+      "sourceId": "math-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleEn": "Solving a System of Linear and Quadratic Equations",
+      "kbLessonId": "kbl-math-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "math-s1-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleEn": "Solving a System of Two Quadratic Equations",
+      "kbLessonId": "kbl-math-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "math-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleEn": "Chords, Diameters and Tangents of a Circle",
+      "kbLessonId": "kbl-math-s1-nccd-u2_l1",
+      "score": 1,
+      "why": "أوتار الدائرة وأقطارها ومماساتها — chords/diameters/tangents, in that order.",
+      "matchedBy": "hand-checked: book English title against the curriculum Arabic title"
+    },
+    {
+      "sourceId": "math-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleEn": "Arcs and Sectors",
+      "kbLessonId": "kbl-math-s1-nccd-u2_l2",
+      "score": 1,
+      "why": "الأقواس والقطاعات الدائرية.",
+      "matchedBy": "hand-checked: book English title against the curriculum Arabic title"
+    },
+    {
+      "sourceId": "math-s1-student-book",
+      "unit": 2,
+      "lesson": 3,
+      "bookTitleEn": "Angles in a Circle",
+      "kbLessonId": "kbl-math-s1-nccd-u2_l3",
+      "score": 1,
+      "why": "الزوايا في الدائرة.",
+      "matchedBy": "hand-checked: book English title against the curriculum Arabic title"
+    },
+    {
+      "sourceId": "math-s1-student-book",
+      "unit": 2,
+      "lesson": 4,
+      "bookTitleEn": "Equation of a Circle",
+      "kbLessonId": "kbl-math-s1-nccd-u2_l4",
+      "score": 1,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "math-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleEn": "Trigonometric Ratios",
+      "kbLessonId": "kbl-math-s1-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "math-s1-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleEn": "Trigonometric Ratios for Angles between 0º and 360º",
+      "kbLessonId": "kbl-math-s1-nccd-u3_l2",
+      "score": 0.55,
+      "why": "النسب المثلثية للزوايا ضمن الدورة الواحدة — a full rotation is 0º–360º",
+      "matchedBy": "hand-checked against the curriculum Arabic title"
+    },
+    {
+      "sourceId": "math-s1-student-book",
+      "unit": 3,
+      "lesson": 3,
+      "bookTitleEn": "Graphing Trigonometric Functions",
+      "kbLessonId": "kbl-math-s1-nccd-u3_l3",
+      "score": 1,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "math-s1-student-book",
+      "unit": 3,
+      "lesson": 4,
+      "bookTitleEn": "Solving Trigonometric Equations",
+      "kbLessonId": "kbl-math-s1-nccd-u3_l4",
+      "score": 1,
+      "why": "حل المعادلات المثلثية.",
+      "matchedBy": "hand-checked: book English title against the curriculum Arabic title"
+    },
+    {
+      "sourceId": "math-s1-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleEn": "Bearing",
+      "kbLessonId": "kbl-math-s1-nccd-u4_l1",
+      "score": 0.5,
+      "why": "الاتجاه من الشمال (Bearing) — same lesson, the curriculum keeps the English word",
+      "matchedBy": "hand-checked against the curriculum Arabic title"
+    },
+    {
+      "sourceId": "math-s1-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleEn": "Law of Sines",
+      "kbLessonId": "kbl-math-s1-nccd-u4_l2",
+      "score": 1,
+      "why": "قانون الجيوب.",
+      "matchedBy": "hand-checked: book English title against the curriculum Arabic title"
+    },
+    {
+      "sourceId": "math-s1-student-book",
+      "unit": 4,
+      "lesson": 3,
+      "bookTitleEn": "Law of Cosines",
+      "kbLessonId": "kbl-math-s1-nccd-u4_l3",
+      "score": 1,
+      "why": "قانون جيب التمام. Note these two are the pair `searchKBSemantic` confuses — the id is carried, not the title.",
+      "matchedBy": "hand-checked: book English title against the curriculum Arabic title"
+    },
+    {
+      "sourceId": "math-s1-student-book",
+      "unit": 4,
+      "lesson": 4,
+      "bookTitleEn": "Using Sine to Find the Area of a Triangle",
+      "kbLessonId": "kbl-math-s1-nccd-u4_l4",
+      "score": 1,
+      "why": "استعمال جيب الزاوية لإيجاد مساحة المثلث.",
+      "matchedBy": "hand-checked: book English title against the curriculum Arabic title"
+    },
+    {
+      "sourceId": "math-s1-student-book",
+      "unit": 4,
+      "lesson": 5,
+      "bookTitleEn": "Solving Problems in Three Dimensions",
+      "kbLessonId": "kbl-math-s1-nccd-u4_l5",
+      "score": 1,
+      "why": "حل مسائل ثلاثية الأبعاد.",
+      "matchedBy": "hand-checked: book English title against the curriculum Arabic title"
+    },
+    {
+      "sourceId": "math-s2-student-book",
+      "unit": 5,
+      "lesson": 1,
+      "bookTitleEn": "Polynomial Functions",
+      "kbLessonId": "kbl-math-s2-nccd-u5_l1",
+      "score": 0.33,
+      "why": "اقترانات كثيرات الحدود = polynomial functions",
+      "matchedBy": "hand-checked against the curriculum Arabic title"
+    },
+    {
+      "sourceId": "math-s2-student-book",
+      "unit": 5,
+      "lesson": 2,
+      "bookTitleEn": "Rational Functions",
+      "kbLessonId": "kbl-math-s2-nccd-u5_l2",
+      "score": 0.33,
+      "why": "قسمة كثيرات الحدود والاقترانات النسبية = dividing polynomials and rational functions",
+      "matchedBy": "hand-checked against the curriculum Arabic title"
+    },
+    {
+      "sourceId": "math-s2-student-book",
+      "unit": 5,
+      "lesson": 3,
+      "bookTitleEn": "Composition of Functions",
+      "kbLessonId": "kbl-math-s2-nccd-u5_l3",
+      "score": 1,
+      "why": "تركيب الاقترانات.",
+      "matchedBy": "hand-checked: book English title against the curriculum Arabic title"
+    },
+    {
+      "sourceId": "math-s2-student-book",
+      "unit": 5,
+      "lesson": 4,
+      "bookTitleEn": "Inverse Function",
+      "kbLessonId": "kbl-math-s2-nccd-u5_l4",
+      "score": 0.67,
+      "why": "الاقتران العكسي = the inverse function. NOT u5_l3, which the English matcher preferred at 0.67 — that lesson merges composition, inverse and radical",
+      "matchedBy": "hand-checked against the curriculum Arabic title"
+    },
+    {
+      "sourceId": "math-s2-student-book",
+      "unit": 5,
+      "lesson": 5,
+      "bookTitleEn": "Sequences",
+      "kbLessonId": "kbl-math-s2-nccd-u5_l5",
+      "score": 1,
+      "why": "المتتاليات.",
+      "matchedBy": "hand-checked: book English title against the curriculum Arabic title"
+    },
+    {
+      "sourceId": "math-s2-student-book",
+      "unit": 6,
+      "lesson": 1,
+      "bookTitleEn": "Estimating Slope",
+      "kbLessonId": "kbl-math-s2-nccd-u6_l1",
+      "score": 0.8,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "math-s2-student-book",
+      "unit": 6,
+      "lesson": 2,
+      "bookTitleEn": "Differentiation",
+      "kbLessonId": "kbl-math-s2-nccd-u6_l2",
+      "score": 1,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "math-s2-student-book",
+      "unit": 6,
+      "lesson": 3,
+      "bookTitleEn": "Maximum and Minimum Values",
+      "kbLessonId": "kbl-math-s2-nccd-u6_l3",
+      "score": 1,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "math-s2-student-book",
+      "unit": 7,
+      "lesson": 1,
+      "bookTitleEn": "Vectors in the Coordinate Plane",
+      "kbLessonId": "kbl-math-s2-nccd-u7_l1",
+      "score": 1,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "math-s2-student-book",
+      "unit": 7,
+      "lesson": 2,
+      "bookTitleEn": "Adding and Subtracting Vectors",
+      "kbLessonId": "kbl-math-s2-nccd-u7_l2",
+      "score": 0.33,
+      "why": "جمع المتجهات وطرحها = vector addition and subtraction",
+      "matchedBy": "hand-checked against the curriculum Arabic title"
+    },
+    {
+      "sourceId": "math-s2-student-book",
+      "unit": 7,
+      "lesson": 3,
+      "bookTitleEn": "Scalar Product",
+      "kbLessonId": "kbl-math-s2-nccd-u7_l3",
+      "score": 1,
+      "why": "الضرب القياسي.",
+      "matchedBy": "hand-checked: book English title against the curriculum Arabic title"
+    },
+    {
+      "sourceId": "math-s2-student-book",
+      "unit": 8,
+      "lesson": 1,
+      "bookTitleEn": "Scatter Graphs",
+      "kbLessonId": "kbl-math-s2-nccd-u8_l1",
+      "score": 1,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "math-s2-student-book",
+      "unit": 8,
+      "lesson": 2,
+      "bookTitleEn": "Cumulative Frequency Graph",
+      "kbLessonId": "kbl-math-s2-nccd-u8_l2",
+      "score": 1,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "math-s2-student-book",
+      "unit": 8,
+      "lesson": 3,
+      "bookTitleEn": "Measures of Variation for Frequency Tables with Class Intervals",
+      "kbLessonId": "kbl-math-s2-nccd-u8_l3",
+      "score": 1,
+      "why": "مقاييس التشتت للجداول التكرارية ذات الفئات.",
+      "matchedBy": "hand-checked: book English title against the curriculum Arabic title"
+    },
+    {
+      "sourceId": "math-s2-student-book",
+      "unit": 8,
+      "lesson": 4,
+      "bookTitleEn": "Probability of Mutually Exclusive Events",
+      "kbLessonId": "kbl-math-s2-nccd-u8_l4",
+      "score": 1,
+      "why": "احتمالات الحوادث المتنافية.",
+      "matchedBy": "hand-checked: book English title against the curriculum Arabic title"
+    },
+    {
+      "sourceId": "math-s2-student-book",
+      "unit": 8,
+      "lesson": 5,
+      "bookTitleEn": "Probability of Independent and Dependent Events",
+      "kbLessonId": "kbl-math-s2-nccd-u8_l5",
+      "score": 0,
+      "why": "احتمالات الحوادث المستقلة والحوادث غير المستقلة = independent and dependent events",
+      "matchedBy": "hand-checked against the curriculum Arabic title"
+    },
+    {
+      "sourceId": "chem-s2-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "التفاعلاتُ الكيميائية",
+      "kbLessonId": "kbl-chem-s2-nccd-u4_l1",
+      "score": 1,
+      "matchedBy": "arabic-title"
+    },
+    {
+      "sourceId": "chem-s2-student-book",
+      "unit": 4,
+      "lesson": 3,
+      "bookTitleAr": "الحساباتُ الكيميائية",
+      "kbLessonId": "kbl-chem-s2-nccd-u4_l3",
+      "score": 1,
+      "matchedBy": "arabic-title"
+    },
+    {
+      "sourceId": "chem-s2-student-book",
+      "unit": 5,
+      "lesson": 1,
+      "bookTitleAr": "تغيراتُ الطاقةِ في التفاعلاتِ الكيميائية",
+      "kbLessonId": "kbl-chem-s2-nccd-u5_l1",
+      "score": 1,
+      "matchedBy": "arabic-title"
+    },
+    {
+      "sourceId": "chem-s2-student-book",
+      "unit": 5,
+      "lesson": 3,
+      "bookTitleAr": "حساباتُ الطاقةِ في التفاعلاتِ الكيميائية",
+      "kbLessonId": "kbl-chem-s2-nccd-u5_l3",
+      "score": 1,
+      "matchedBy": "arabic-title",
+      "why": "Units 4-5 are chemistry's own S2 numbering, distinct from maths's 5-8 (see EXPECTED_UNITS in extract_book_figures.py). Titles match the curriculum word for word; lessons 4/2 and 5/2 print in the book but yielded no figures that survived review (their only crops were a section-heading callout and a lesson-review page, not diagrams)."
+    },
+    {
+      "sourceId": "finlit-s1-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "مراحلُ إدارةِ المشروعِ وفريقُ العملِ",
+      "kbLessonId": "kbl-finlit-s1-nccd-u1_l3",
+      "score": 1,
+      "matchedBy": "arabic-title"
+    },
+    {
+      "sourceId": "finlit-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "دراسةُ الجدوى: المفهومُ والأهميةُ",
+      "kbLessonId": "kbl-finlit-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "arabic-title"
+    },
+    {
+      "sourceId": "finlit-s1-student-book",
+      "unit": 2,
+      "lesson": 3,
+      "bookTitleAr": "الدراسةُ الفنيةُ",
+      "kbLessonId": "kbl-finlit-s1-nccd-u2_l3",
+      "score": 1,
+      "matchedBy": "arabic-title"
+    },
+    {
+      "sourceId": "finlit-s1-student-book",
+      "unit": 2,
+      "lesson": 4,
+      "bookTitleAr": "الدراسةُ الماليةُ",
+      "kbLessonId": "kbl-finlit-s1-nccd-u2_l4",
+      "score": 1,
+      "matchedBy": "arabic-title",
+      "why": "This book prints no `الوحدة` running header or top-band opener — extract_book_figures.py's outline() only found the unit boundary via its lesson-number-restart fallback (added alongside this book), so unit here is inferred from where the book's own `الدرسُ` count drops back to 1, not read directly off the page. Lessons 1/1, 1/2, 1/4, 1/5, 2/2, 2/5 print in the book but yielded no figures that survived review — every crop under them was a decorative divider, callout, or exercise-text fragment, not a diagram."
+    },
+    {
+      "sourceId": "g9-math-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleEn": "Sets and Intervals",
+      "kbLessonId": "kbl-g9-math-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "title-overlap",
+      "why": "Both G9 books number units 1-8 across the year the same way G10 maths does (S1=1-4, S2=5-8), and every one of the 28 lesson titles the book states matches the curriculum's own title exactly, unlike G10 maths's unit-1 offset (see EXPECTED_UNITS['grade-9-math'] in extract_book_figures.py). Titles the extractor could not read (u7_l3, u8_l1, u8_l3) are still placed by position: each sits between two lessons whose titles DID match, with no unaccounted-for lesson number in between."
+    },
+    {
+      "sourceId": "g9-math-s1-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleEn": "Graphing Linear Inequalities in Two Variables",
+      "kbLessonId": "kbl-g9-math-s1-nccd-u1_l3",
+      "score": 1,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "g9-math-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleEn": "Functions",
+      "kbLessonId": "kbl-g9-math-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "g9-math-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleEn": "Interpreting Graphs",
+      "kbLessonId": "kbl-g9-math-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "g9-math-s1-student-book",
+      "unit": 2,
+      "lesson": 3,
+      "bookTitleEn": "Quadratic Function",
+      "kbLessonId": "kbl-g9-math-s1-nccd-u2_l3",
+      "score": 1,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "g9-math-s1-student-book",
+      "unit": 2,
+      "lesson": 4,
+      "bookTitleEn": "Transformations of Quadratic Function",
+      "kbLessonId": "kbl-g9-math-s1-nccd-u2_l4",
+      "score": 1,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "g9-math-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleEn": "Solving Quadratic Equations by Graphing",
+      "kbLessonId": "kbl-g9-math-s1-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "g9-math-s1-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleEn": "Solving Quadratic Equations by Factoring",
+      "kbLessonId": "kbl-g9-math-s1-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "g9-math-s1-student-book",
+      "unit": 3,
+      "lesson": 3,
+      "bookTitleEn": "Solving Quadratic Equations by Completing the Square",
+      "kbLessonId": "kbl-g9-math-s1-nccd-u3_l3",
+      "score": 1,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "g9-math-s1-student-book",
+      "unit": 3,
+      "lesson": 4,
+      "bookTitleEn": "Solving Quadratic Equations Using the Quadratic Formula",
+      "kbLessonId": "kbl-g9-math-s1-nccd-u3_l4",
+      "score": 1,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "g9-math-s1-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleEn": "Distance in the Coordinate Plane",
+      "kbLessonId": "kbl-g9-math-s1-nccd-u4_l1",
+      "score": 1,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "g9-math-s1-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleEn": "Distance between a Point and a Line",
+      "kbLessonId": "kbl-g9-math-s1-nccd-u4_l2",
+      "score": 1,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "g9-math-s2-student-book",
+      "unit": 5,
+      "lesson": 1,
+      "bookTitleEn": "Proportional Parts in Triangles",
+      "kbLessonId": "kbl-g9-math-s2-nccd-u5_l1",
+      "score": 1,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "g9-math-s2-student-book",
+      "unit": 5,
+      "lesson": 2,
+      "bookTitleEn": "Bisectors in Triangle",
+      "kbLessonId": "kbl-g9-math-s2-nccd-u5_l2",
+      "score": 1,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "g9-math-s2-student-book",
+      "unit": 5,
+      "lesson": 3,
+      "bookTitleEn": "Medians and Altitudes in Triangle",
+      "kbLessonId": "kbl-g9-math-s2-nccd-u5_l3",
+      "score": 1,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "g9-math-s2-student-book",
+      "unit": 5,
+      "lesson": 4,
+      "bookTitleEn": "Trigonometric Ratios",
+      "kbLessonId": "kbl-g9-math-s2-nccd-u5_l4",
+      "score": 1,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "g9-math-s2-student-book",
+      "unit": 5,
+      "lesson": 5,
+      "bookTitleEn": "Applications of Trigonometric Ratios",
+      "kbLessonId": "kbl-g9-math-s2-nccd-u5_l5",
+      "score": 1,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "g9-math-s2-student-book",
+      "unit": 6,
+      "lesson": 1,
+      "bookTitleEn": "Simplifying Exponential Expressions",
+      "kbLessonId": "kbl-g9-math-s2-nccd-u6_l1",
+      "score": 1,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "g9-math-s2-student-book",
+      "unit": 6,
+      "lesson": 2,
+      "bookTitleEn": "Operations with Radical Expressions",
+      "kbLessonId": "kbl-g9-math-s2-nccd-u6_l2",
+      "score": 1,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "g9-math-s2-student-book",
+      "unit": 6,
+      "lesson": 3,
+      "bookTitleEn": "Solving Radical Equations",
+      "kbLessonId": "kbl-g9-math-s2-nccd-u6_l3",
+      "score": 1,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "g9-math-s2-student-book",
+      "unit": 7,
+      "lesson": 1,
+      "bookTitleEn": "Multiplying and Dividing Rational Algebraic Expressions",
+      "kbLessonId": "kbl-g9-math-s2-nccd-u7_l1",
+      "score": 1,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "g9-math-s2-student-book",
+      "unit": 7,
+      "lesson": 2,
+      "bookTitleEn": "Adding and Subtracting Rational Algebraic Expressions",
+      "kbLessonId": "kbl-g9-math-s2-nccd-u7_l2",
+      "score": 1,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "g9-math-s2-student-book",
+      "unit": 7,
+      "lesson": 3,
+      "bookTitleEn": "Solving Rational Equations",
+      "kbLessonId": "kbl-g9-math-s2-nccd-u7_l3",
+      "score": 1,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "g9-math-s2-student-book",
+      "unit": 8,
+      "lesson": 1,
+      "bookTitleEn": "Measures of Dispersion",
+      "kbLessonId": "kbl-g9-math-s2-nccd-u8_l1",
+      "score": 1,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "g9-math-s2-student-book",
+      "unit": 8,
+      "lesson": 2,
+      "bookTitleEn": "Frequency Tables with Class Intervals",
+      "kbLessonId": "kbl-g9-math-s2-nccd-u8_l2",
+      "score": 1,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "g9-math-s2-student-book",
+      "unit": 8,
+      "lesson": 3,
+      "bookTitleEn": "Histograms",
+      "kbLessonId": "kbl-g9-math-s2-nccd-u8_l3",
+      "score": 1,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "g9-math-s2-student-book",
+      "unit": 8,
+      "lesson": 4,
+      "bookTitleEn": "Probabilities and Venn Diagrams",
+      "kbLessonId": "kbl-g9-math-s2-nccd-u8_l4",
+      "score": 1,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "g9-math-s2-student-book",
+      "unit": 8,
+      "lesson": 5,
+      "bookTitleEn": "Geometric Probability",
+      "kbLessonId": "kbl-g9-math-s2-nccd-u8_l5",
+      "score": 1,
+      "matchedBy": "title-overlap"
+    },
+    {
+      "sourceId": "phys-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "kbLessonId": "kbl-phys-s1-nccd-u1_l1",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "phys-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "kbLessonId": "kbl-phys-s1-nccd-u1_l2",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "phys-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "kbLessonId": "kbl-phys-s1-nccd-u2_l1",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "phys-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "kbLessonId": "kbl-phys-s1-nccd-u2_l2",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "phys-s1-student-book",
+      "unit": 2,
+      "lesson": 3,
+      "kbLessonId": "kbl-phys-s1-nccd-u2_l3",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "phys-s2-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "kbLessonId": "kbl-phys-s2-nccd-u4_l1",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "phys-s2-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "kbLessonId": "kbl-phys-s2-nccd-u4_l2",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "phys-s2-student-book",
+      "unit": 4,
+      "lesson": 3,
+      "kbLessonId": "kbl-phys-s2-nccd-u4_l3",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "phys-s2-student-book",
+      "unit": 5,
+      "lesson": 1,
+      "kbLessonId": "kbl-phys-s2-nccd-u5_l1",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "phys-s2-student-book",
+      "unit": 5,
+      "lesson": 2,
+      "kbLessonId": "kbl-phys-s2-nccd-u5_l2",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "phys-s2-student-book",
+      "unit": 6,
+      "lesson": 1,
+      "kbLessonId": "kbl-phys-s2-nccd-u6_l1",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "phys-s2-student-book",
+      "unit": 6,
+      "lesson": 2,
+      "kbLessonId": "kbl-phys-s2-nccd-u6_l2",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "bio-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "kbLessonId": "kbl-biology-s1-nccd-u2_l1",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "bio-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "kbLessonId": "kbl-biology-s1-nccd-u3_l1",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "bio-s1-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "kbLessonId": "kbl-biology-s1-nccd-u3_l2",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "bio-s1-student-book",
+      "unit": 3,
+      "lesson": 3,
+      "kbLessonId": "kbl-biology-s1-nccd-u3_l3",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "bio-s1-student-book",
+      "unit": 3,
+      "lesson": 4,
+      "kbLessonId": "kbl-biology-s1-nccd-u3_l4",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "bio-s2-student-book",
+      "unit": 3,
+      "lesson": 5,
+      "kbLessonId": "kbl-biology-s2-nccd-u3_l5",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "bio-s2-student-book",
+      "unit": 3,
+      "lesson": 6,
+      "kbLessonId": "kbl-biology-s2-nccd-u3_l6",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "bio-s2-student-book",
+      "unit": 3,
+      "lesson": 7,
+      "kbLessonId": "kbl-biology-s2-nccd-u3_l7",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "bio-s2-student-book",
+      "unit": 3,
+      "lesson": 8,
+      "kbLessonId": "kbl-biology-s2-nccd-u3_l8",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "bio-s2-student-book",
+      "unit": 3,
+      "lesson": 9,
+      "kbLessonId": "kbl-biology-s2-nccd-u3_l9",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "bio-s2-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "kbLessonId": "kbl-biology-s2-nccd-u4_l1",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "bio-s2-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "kbLessonId": "kbl-biology-s2-nccd-u4_l2",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "bio-s2-student-book",
+      "unit": 4,
+      "lesson": 3,
+      "kbLessonId": "kbl-biology-s2-nccd-u4_l3",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "earth-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "kbLessonId": "kbl-earth-science-s1-nccd-u1_l1",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "earth-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "kbLessonId": "kbl-earth-science-s1-nccd-u1_l2",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "earth-s1-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "kbLessonId": "kbl-earth-science-s1-nccd-u1_l3",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "earth-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "kbLessonId": "kbl-earth-science-s1-nccd-u2_l1",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "earth-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "kbLessonId": "kbl-earth-science-s1-nccd-u2_l2",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "earth-s1-student-book",
+      "unit": 2,
+      "lesson": 3,
+      "kbLessonId": "kbl-earth-science-s1-nccd-u2_l3",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "earth-s2-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "kbLessonId": "kbl-earth-science-s2-nccd-u3_l1",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "earth-s2-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "kbLessonId": "kbl-earth-science-s2-nccd-u3_l2",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "earth-s2-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "kbLessonId": "kbl-earth-science-s2-nccd-u4_l1",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "earth-s2-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "kbLessonId": "kbl-earth-science-s2-nccd-u4_l2",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "earth-s2-student-book",
+      "unit": 4,
+      "lesson": 3,
+      "kbLessonId": "kbl-earth-science-s2-nccd-u4_l3",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "earth-s2-student-book",
+      "unit": 5,
+      "lesson": 1,
+      "kbLessonId": "kbl-earth-science-s2-nccd-u5_l1",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "earth-s2-student-book",
+      "unit": 5,
+      "lesson": 2,
+      "kbLessonId": "kbl-earth-science-s2-nccd-u5_l2",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "earth-s2-student-book",
+      "unit": 5,
+      "lesson": 3,
+      "kbLessonId": "kbl-earth-science-s2-nccd-u5_l3",
+      "matchedBy": "hand-checked: printed numbering, confirmed by figure content"
+    },
+    {
+      "sourceId": "eng-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "kbLessonId": "kbl-eng-s1-nccd-u1_l1",
+      "matchedBy": "hand-checked: one lesson per unit; s2 book units 1-5 are curriculum units 6-10"
+    },
+    {
+      "sourceId": "eng-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "kbLessonId": "kbl-eng-s1-nccd-u2_l1",
+      "matchedBy": "hand-checked: one lesson per unit; s2 book units 1-5 are curriculum units 6-10"
+    },
+    {
+      "sourceId": "eng-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "kbLessonId": "kbl-eng-s1-nccd-u3_l1",
+      "matchedBy": "hand-checked: one lesson per unit; s2 book units 1-5 are curriculum units 6-10"
+    },
+    {
+      "sourceId": "eng-s1-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "kbLessonId": "kbl-eng-s1-nccd-u4_l1",
+      "matchedBy": "hand-checked: one lesson per unit; s2 book units 1-5 are curriculum units 6-10"
+    },
+    {
+      "sourceId": "eng-s1-student-book",
+      "unit": 5,
+      "lesson": 1,
+      "kbLessonId": "kbl-eng-s1-nccd-u5_l1",
+      "matchedBy": "hand-checked: one lesson per unit; s2 book units 1-5 are curriculum units 6-10"
+    },
+    {
+      "sourceId": "eng-s2-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "kbLessonId": "kbl-eng-s2-nccd-u6_l1",
+      "matchedBy": "hand-checked: one lesson per unit; s2 book units 1-5 are curriculum units 6-10"
+    },
+    {
+      "sourceId": "eng-s2-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "kbLessonId": "kbl-eng-s2-nccd-u7_l1",
+      "matchedBy": "hand-checked: one lesson per unit; s2 book units 1-5 are curriculum units 6-10"
+    },
+    {
+      "sourceId": "eng-s2-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "kbLessonId": "kbl-eng-s2-nccd-u8_l1",
+      "matchedBy": "hand-checked: one lesson per unit; s2 book units 1-5 are curriculum units 6-10"
+    },
+    {
+      "sourceId": "eng-s2-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "kbLessonId": "kbl-eng-s2-nccd-u9_l1",
+      "matchedBy": "hand-checked: one lesson per unit; s2 book units 1-5 are curriculum units 6-10"
+    },
+    {
+      "sourceId": "eng-s2-student-book",
+      "unit": 5,
+      "lesson": 1,
+      "kbLessonId": "kbl-eng-s2-nccd-u10_l1",
+      "matchedBy": "hand-checked: one lesson per unit; s2 book units 1-5 are curriculum units 6-10"
+    }
+  ],
+  "unitNumbering": "The curriculum's `u{n}_l{m}` matches the number the book PRINTS in every unit except unit 1, where the book has an extra opening lesson («حل معادلات خاصة») and the rest shift by one. Units 1-4 are semester 1 and units 5-8 are semester 2, so the printed unit number also identifies which student book a figure came from — `check_semester` in scripts/extract_book_figures.py enforces that. Note the maths PDFs in attached_assets are named backwards: the file called `1st_semester` is the second-semester book. Source ids follow the books' contents, not their filenames."
+}

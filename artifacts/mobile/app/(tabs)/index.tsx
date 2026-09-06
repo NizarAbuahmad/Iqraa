@@ -12,12 +12,19 @@
  * and anything already pointing at it — deep links, `router.replace('/')` after
  * login — must keep working.
  *
+ * A parent or student lands on Messages instead. The chat is a teacher's
+ * material-generation tool and its routes reject those roles outright, so
+ * opening the app onto it would greet them with a screen that cannot work —
+ * and it is not even in their tab bar (see _layout.tsx).
+ *
  * The former home screen still exists at `/home` for the two things it holds
  * that have no other entry point yet: attaching media to a lesson, and Smart
  * Templates. Reachable from Profile. See STATUS.md.
  */
 import { Redirect } from 'expo-router';
+import { isTeacherRole, useAuth } from '@/context/AuthContext';
 
 export default function Index() {
-  return <Redirect href="/iqra" />;
+  const { user } = useAuth();
+  return <Redirect href={isTeacherRole(user?.role) ? '/iqra' : '/notifications'} />;
 }

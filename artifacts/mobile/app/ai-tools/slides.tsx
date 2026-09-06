@@ -8,7 +8,7 @@
  * fetched only to fill what the book does not hold (hook, practice, closure),
  * and the screen says which of the two the deck came from.
  */
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,32 +17,45 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { TopicSelector } from '@/components/ui/TopicSelector';
+import { PillSelector } from '@/components/ui/PillSelector';
+import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
+import { GenerationStatus } from '@/components/ui/GenerationStatus';
+import { isAbortError } from '@/services/ai/aiProvenance';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { Button } from '@/components/ui/Button';
 import { Toast } from '@/components/ui/Toast';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
+import { isolateForeignRuns } from '@/services/mathRender';
 import type { ActivitySlide, ClassroomActivity, LessonPlanOutput } from '@/services/ai/AIService';
-import { buildGeneratorContext, resolveGeneratorGrounding } from '@/services/kbContext';
+import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
 import {
-  buildLessonDeck, EXIT_TICKET_MAX, MID_LESSON_CHECK_MAX, rebuildAnswerKey,
+  buildLessonDeck, EXIT_TICKET_MAX, MID_LESSON_CHECK_MAX, rebuildAnswerKey, withoutSlide,
 } from '@/services/lessonSlides';
+import { bookFigureUri } from '@/services/bookFigureUri';
 import {
   applyMediaEdit, extractGraphCommands, insertLessonResources, nextVideoSuggestion,
   shouldSearchForVideo, videoCaption,
 } from '@/services/classMedia';
+import type { AttachedResource } from '@/services/classMedia';
 import { LessonResources } from '@/components/ui/LessonResources';
+import { LessonAttachments } from '@/components/ui/LessonAttachments';
 import type { LessonMediaItem } from '@/services/lessonMedia';
+import type { LessonMediaItem as UploadedAttachment } from '@/services/lessonMediaApi';
 import type { DeckVideo } from '@/services/youtubeVideo';
 import { summarizeVerification } from '@/services/quizVerification';
 import { confirm } from '@/services/confirm';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
-import { saveItem } from '@/services/workspace';
+import { timerSecondsForSlide } from '@/services/presentationUtils';
+import { deleteItem, getAllItems, saveItem, updateItem } from '@/services/workspace';
+import { findMatchingItem } from '@/services/savedMaterialMatch';
+import { MaterialClassField } from '@/components/ui/MaterialClassField';
 import { buildDeckSlidesHTML, exportAsPDF } from '@/services/share';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
 } from '@/services/curriculumData';
+import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, topicPickerParams } from '@/services/lessonPrep';
 
 const ACCENT = '#0EA5E9';
 
@@ -63,13 +76,68 @@ export default function SlidesScreen() {
   const params = useLocalSearchParams<{
     gradeIdx?: string; subjectIdx?: string; topic?: string;
   }>();
-  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(params.gradeIdx, grades.length));
-  const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx, subjects.length));
+  // A bare `topic` param (old bookmarks, callers without picker params) says
+  // which grade and subject it belongs to better than picker index 0 does —
+  // ground it instead of opening a math lesson under whatever subject sits
+  // first in the list.
+  const [inferredScope] = useState(() =>
+    params.gradeIdx == null && params.subjectIdx == null
+      ? topicPickerParams(params.topic, lang as 'ar' | 'en')
+      : null,
+  );
+  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(params.gradeIdx ?? inferredScope?.gradeIdx, grades.length));
+  // Index-aligned flags rather than a pre-filtered `subjects`: these positions
+  // are persisted as subjectIdx, so entries are dropped at render time only.
+  const subjectHidden = subjectsWithoutCurriculum(grades[gradeIdx].id);
+  const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx ?? inferredScope?.subjectIdx, subjects.length));
   const [topic, setTopic] = useState(params.topic ?? '');
+  // Live as the teacher types, not gated behind pressing Generate — same
+  // timing as `LessonResources`' own `topic` prop just below it.
+  const groundedLessonId = useMemo(
+    () => resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en').lesson?.id ?? '',
+    [topic, lang],
+  );
   const [includeExamples, setIncludeExamples] = useState(true);
   const [includePractice, setIncludePractice] = useState(true);
+  /**
+   * Off by default, and deliberately: a teacher's attachments are their own
+   * files pinned to the lesson, not deck content. Merging them in
+   * unconditionally meant every regeneration of the same lesson came back
+   * with the same photos and voice notes re-inserted as slides, which reads
+   * as the generator inventing media it did not make. They go in when asked.
+   */
+  const [includeAttachments, setIncludeAttachments] = useState(false);
   const [loading, setLoading] = useState(false);
+  /**
+   * Held across renders so Cancel can reach the in-flight requests — plural
+   * here: this screen asks for the formative checks and the lesson plan at
+   * once, and one controller ends both.
+   */
+  const abortRef = useRef<AbortController | null>(null);
+  const [cancelled, setCancelled] = useState(false);
   const [deck, setDeck] = useState<ClassroomActivity | null>(null);
+  /**
+   * The workspace item this deck is stored as, or null when it is not stored.
+   * The save button is a toggle over exactly this: pressing it once saves and
+   * lights the button up, pressing it again deletes that item and puts the
+   * button back. Holding the id (rather than a boolean) is what makes the
+   * second press able to remove the right material instead of leaving a copy
+   * behind.
+   */
+  const [savedId, setSavedId] = useState<string | null>(null);
+  const [savingBusy, setSavingBusy] = useState(false);
+  /**
+   * What the workspace copy currently holds, so an edit made after saving is
+   * pushed to that item. Without it the button would keep claiming "saved"
+   * over a stored deck that no longer matches what is on screen.
+   */
+  const savedContentRef = useRef('');
+  /**
+   * The deck identity this screen has already looked up in the workspace.
+   * The lookup runs once per identity so that an un-save is not undone by the
+   * next render re-adopting an older duplicate of the same deck.
+   */
+  const lookedUpKeyRef = useRef<string | null>(null);
   const [plan, setPlan] = useState<LessonPlanOutput | null>(null);
   const [grounded, setGrounded] = useState(false);
   const [groundedLesson, setGroundedLesson] = useState('');
@@ -98,6 +166,24 @@ export default function SlidesScreen() {
   const [loadingSuggestion, setLoadingSuggestion] = useState(false);
   /** What the teacher has pinned to this lesson, kept in sync by the picker. */
   const [attached, setAttached] = useState<LessonMediaItem[]>([]);
+  /** The teacher's own uploaded photos/files for this lesson (server-side, R2-backed). */
+  const [uploadedAttachments, setUploadedAttachments] = useState<UploadedAttachment[]>([]);
+  /**
+   * Every uploaded kind — image, audio, document — now has a slide renderer.
+   * Merged with the pinned-URL resources so both sources land in the deck
+   * the same way, in one call. This merge is purely client-side and runs
+   * after the lesson-plan fetch has already returned — the teacher's own
+   * files never appear in a request body, so they never enter the shared
+   * generation cache another teacher's request could be served from.
+   */
+  const attachedResources = useMemo<AttachedResource[]>(() => (includeAttachments ? [
+    ...attached,
+    ...uploadedAttachments
+      .filter((m): m is UploadedAttachment & { url: string } => !!m.url)
+      .map(m => ({ kind: m.kind, url: m.url, caption: m.caption })),
+  ] : []), [attached, uploadedAttachments, includeAttachments]);
+  /** Whether there is anything to offer — no attachments, no switch. */
+  const hasAttachments = attached.length + uploadedAttachments.length > 0;
   /** True once the example-verification pass has resolved — the summary row
       stays silent while a check is still in flight. */
   const [verifyDone, setVerifyDone] = useState(false);
@@ -134,8 +220,8 @@ export default function SlidesScreen() {
       try {
         const { searchDeckVideos } = await import('@/services/youtubeVideo');
         const query = isAr
-          ? `شرح ${deck.lesson} ${subjects[subjectIdx].nameAr} للصف العاشر`
-          : `${deck.lesson} ${subjects[subjectIdx].name} grade 10 explained`;
+          ? `شرح ${deck.lesson} ${subjects[subjectIdx].nameAr} لطلاب ${grades[gradeIdx].nameAr}`
+          : `${deck.lesson} ${subjects[subjectIdx].name} ${grades[gradeIdx].name} explained`;
         options = await searchDeckVideos(query, isAr ? 'ar' : 'en');
         setVideoOptions(options);
       } finally {
@@ -163,8 +249,7 @@ export default function SlidesScreen() {
       swapped = result.slide;
     }
 
-    const slides = deck.slides.map((s, i) => {
-      if (i !== editIdx) return s;
+    const applyToSlide = (s: ActivitySlide): ActivitySlide => {
       if (swapped) {
         return { ...swapped, title: editTitle.trim() || s.title, content: editContent };
       }
@@ -183,26 +268,37 @@ export default function SlidesScreen() {
         delete next.computedAnswer;
       }
       return next;
+    };
+    // By identity, not index — see removeSlide.
+    setDeck(cur => {
+      if (!cur) return cur;
+      const slides = cur.slides.map(s => (s === editing ? applyToSlide(s) : s));
+      return { ...cur, slides, answerKey: rebuildAnswerKey(slides, isAr) };
     });
-    setDeck({ ...deck, slides, answerKey: rebuildAnswerKey(slides, isAr) });
     setEditIdx(null);
     showToast(t('slideUpdated'));
   };
 
   const removeSlide = async (i: number) => {
     if (!deck) return;
+    // Hold the slide itself across the dialog. The media, video and verifier
+    // passes keep landing while the teacher reads it, and they replace the
+    // deck object — so `deck` here is stale by the time the answer comes back
+    // and `i` may no longer point at the slide the teacher chose.
+    const target = deck.slides[i];
     const ok = await confirm({
       title: t('deleteSlideTitle'),
-      message: deck.slides[i].title,
+      message: target.title,
       confirmLabel: t('deleteLabel'),
       cancelLabel: t('cancel'),
       destructive: true,
     });
     if (!ok) return;
-    const slides = deck.slides
-      .filter((_, idx) => idx !== i)
-      .map((s, idx) => ({ ...s, slideNumber: idx + 1 }));
-    setDeck({ ...deck, slides, answerKey: rebuildAnswerKey(slides, isAr) });
+    setDeck(cur => {
+      if (!cur) return cur;
+      const slides = withoutSlide(cur.slides, target);
+      return { ...cur, slides, answerKey: rebuildAnswerKey(slides, isAr) };
+    });
   };
 
   const prevGradeRef = useRef(gradeIdx);
@@ -211,6 +307,7 @@ export default function SlidesScreen() {
     if (prevGradeRef.current !== gradeIdx || prevSubjectRef.current !== subjectIdx) {
       setTopic('');
       setDeck(null);
+      forgetSaved();
       prevGradeRef.current = gradeIdx;
       prevSubjectRef.current = subjectIdx;
     }
@@ -219,7 +316,19 @@ export default function SlidesScreen() {
   const generate = async () => {
     const trimmed = topic.trim();
     if (!trimmed) { setError(t('topicRequired')); return; }
-    setError(''); setLoading(true); setDeck(null);
+    // A topic that grounds to another subject's lesson cannot make an honest
+    // deck — the book serves that lesson's own content while the header claims
+    // the picked subject. Refuse and name the real subject instead.
+    const scope = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, lang as 'ar' | 'en');
+    if (scope) { setError(t('scopeNoCurriculum', scope.grade, scope.subject)); return; }
+    const conflict = groundedSubjectConflict(trimmed, lang as 'ar' | 'en', subjects[subjectIdx].id);
+    if (conflict) { setError(t('subjectTopicMismatch', isAr ? conflict.nameAr : conflict.name)); return; }
+    setError(''); setCancelled(false);
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setLoading(true); setDeck(null);
+    // A new deck is a different material: it is not the one that was saved.
+    forgetSaved();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     const grounding = resolveGeneratorGrounding(trimmed, lang as 'ar' | 'en');
@@ -250,7 +359,7 @@ export default function SlidesScreen() {
           // for exactly what the deck places means no question is generated
           // and then thrown away.
           numQuestions: MID_LESSON_CHECK_MAX + EXIT_TICKET_MAX,
-        })
+        }, { signal: controller.signal })
         .then(a => a.slides)
         .catch((): ActivitySlide[] => []);
 
@@ -266,9 +375,18 @@ export default function SlidesScreen() {
           subject: subjects[subjectIdx].name,
           topic: trimmed,
           language: isAr ? 'arabic' : 'english',
-          additionalContext: buildGeneratorContext(trimmed, lang as 'ar' | 'en') || undefined,
-        });
-      } catch {
+          additionalContext: buildGeneratorContext(trimmed, lang as 'ar' | 'en'),
+          unitId: generatorUnitId(trimmed, lang as 'ar' | 'en'),
+          lessonId: generatorLessonId(trimmed, lang as 'ar' | 'en'),
+          bookFigureCount: generatorFigureCount(trimmed, lang as 'ar' | 'en'),
+          contextSource: 'curriculum',
+        }, { signal: controller.signal });
+      } catch (e) {
+        // This screen deliberately survives a failed plan — the curriculum book
+        // alone still makes a projectable deck. A cancel is the one rejection
+        // that must not be absorbed here: continuing would answer "stop" with
+        // a finished deck the teacher asked not to have.
+        if (isAbortError(e)) throw e;
         lessonPlan = null;
       }
 
@@ -278,19 +396,36 @@ export default function SlidesScreen() {
       }
 
       setPlan(lessonPlan);
+      const checks = await checksPromise;
       // A live graph slide when the lesson's own text carries plottable
       // functions — same conservative extractor Start Class already uses.
-      const graphCommands = subjects[subjectIdx].id === 'mathematics'
-        ? extractGraphCommands([
-            trimmed,
-            ...(grounding.lesson?.examplesAr ?? []),
-            ...(grounding.lesson?.examplesEn ?? []),
-            ...(grounding.lesson?.rulesAr ?? []),
-            ...(grounding.lesson?.rulesEn ?? []),
-            lessonPlan?.mainActivity ?? '',
-          ].join(' \n '))
-        : [];
-      const checks = await checksPromise;
+      //
+      // Keyed off what the lesson CONTAINS, not off its subject id. This read
+      // `subjects[subjectIdx].id === 'mathematics'` until now, which is the
+      // exact branch `startClass.ts` documents having removed for the same
+      // reason: chemistry and financial-literacy decks got no functional
+      // visual at all, silently, because nothing fails when a branch simply
+      // never runs. `extractGraphCommands` is already conservative enough to
+      // be the only filter — it returns nothing for text with no plottable
+      // function, whatever subject that text belongs to, and every subject
+      // added later inherits that instead of needing another branch here.
+      //
+      // The generated checks are scanned too. They are where a maths deck's
+      // equations actually live — the lesson's own prose states rules far more
+      // often than it states a function — and `lessonSlides.ts` already
+      // expects a check that claims a visual to carry the commands for it
+      // (`referencesShownVisual`), so leaving them out of the extraction is
+      // what made those checks droppable.
+      const graphCommands = extractGraphCommands([
+        trimmed,
+        ...(grounding.lesson?.examplesAr ?? []),
+        ...(grounding.lesson?.examplesEn ?? []),
+        ...(grounding.lesson?.rulesAr ?? []),
+        ...(grounding.lesson?.rulesEn ?? []),
+        lessonPlan?.mainActivity ?? '',
+        lessonPlan?.guidedPractice ?? '',
+        ...checks.map(c => c.content ?? ''),
+      ].join(' \n '));
       const builtBase = buildLessonDeck(trimmed, isAr, {
         lesson: grounding.lesson,
         plan: lessonPlan,
@@ -300,13 +435,14 @@ export default function SlidesScreen() {
         includePractice,
         graphCommands,
         checks,
+        figureUri: bookFigureUri,
       });
       // The teacher's own resources go in before anything is shown, unlike
       // the searched media which arrives later — they are local, so there is
       // nothing to wait for and no reason to make the deck flicker.
       const built = {
         ...builtBase,
-        slides: insertLessonResources(builtBase.slides, attached, isAr),
+        slides: insertLessonResources(builtBase.slides, attachedResources, isAr),
       };
       setDeck(built);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -366,13 +502,13 @@ export default function SlidesScreen() {
           // "mathematics" video is no use mid-lesson, where the point is to
           // explain THIS concept.
           const videoQuery = isAr
-            ? `شرح ${trimmed} ${subjects[subjectIdx].nameAr} للصف العاشر`
-            : `${trimmed} ${subjects[subjectIdx].name} grade 10 explained`;
+            ? `شرح ${trimmed} ${subjects[subjectIdx].nameAr} لطلاب ${grades[gradeIdx].nameAr}`
+            : `${trimmed} ${subjects[subjectIdx].name} ${grades[gradeIdx].name} explained`;
 
           // The search fills a gap, it does not compete with the teacher. A
           // pinned video means no call at all — one fewer thing on the
           // projector, and 100 units of a 10,000/day quota unspent.
-          const wantVideo = shouldSearchForVideo(attached);
+          const wantVideo = shouldSearchForVideo(attachedResources);
           const [titlePhoto, dividerPhoto, videos] = await Promise.all([
             searchDeckPhoto(titleQuery),
             searchDeckPhoto(dividerQuery),
@@ -421,9 +557,20 @@ export default function SlidesScreen() {
           // Missing media is a normal outcome, never a failure state for the deck.
         }
       })();
+    } catch (e) {
+      // Reached only by a cancel today: every other failure inside is handled
+      // where it happens, because a partial deck still has value.
+      if (isAbortError(e)) setCancelled(true);
+      else setError(t('generationFailed'));
     } finally {
+      abortRef.current = null;
       setLoading(false);
     }
+  };
+
+  /** Stop both in-flight requests and hand the teacher their form back. */
+  const cancelGenerate = () => {
+    abortRef.current?.abort();
   };
 
   const present = () => {
@@ -433,20 +580,112 @@ export default function SlidesScreen() {
     router.push('/ai-tools/classroom/presentation' as any);
   };
 
-  const save = async () => {
-    if (!deck) return;
-    await saveItem({
-      type: 'slides',
-      title: deck.activityName,
-      subject: isAr ? subjects[subjectIdx].nameAr : subjects[subjectIdx].name,
-      grade: isAr ? grades[gradeIdx].nameAr : grades[gradeIdx].name,
-      topic: topic.trim(),
-      language: isAr ? 'ar' : 'en',
-      content: JSON.stringify(deck),
-      formState: { gradeIdx, subjectIdx, topic: topic.trim(), includeExamples, includePractice },
-    });
-    showToast(t('slidesSaved'));
+  /**
+   * Drop the link to a workspace item without touching the item itself. The
+   * class prompt goes with it: it names a material this screen is no longer
+   * tracking, and on an un-save that material no longer exists.
+   */
+  const forgetSaved = () => {
+    setSavedId(null);
+    savedContentRef.current = '';
   };
+
+
+  /**
+   * Save, or un-save. The button reads as a bookmark, so it behaves like one:
+   * the second press removes the material it created rather than storing the
+   * same deck twice.
+   */
+  /**
+   * What this deck is, in the terms the workspace stores. One definition, used
+   * both to save and to recognise a deck that is already saved — if the two
+   * ever drift the button starts lying again.
+   */
+  const deckIdentity = (built: ClassroomActivity) => ({
+    type: 'slides' as const,
+    title: built.activityName,
+    subject: isAr ? subjects[subjectIdx].nameAr : subjects[subjectIdx].name,
+    grade: isAr ? grades[gradeIdx].nameAr : grades[gradeIdx].name,
+    topic: topic.trim(),
+    language: (isAr ? 'ar' : 'en') as 'ar' | 'en',
+  });
+
+  const toggleSave = async () => {
+    if (!deck || savingBusy) return;
+    setSavingBusy(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      if (savedId) {
+        await deleteItem(savedId);
+        forgetSaved();
+        showToast(t('slidesUnsaved'));
+        return;
+      }
+      const content = JSON.stringify(deck);
+      const item = await saveItem({
+        ...deckIdentity(deck),
+        content,
+        formState: { gradeIdx, subjectIdx, topic: topic.trim(), includeExamples, includePractice, includeAttachments },
+      });
+      savedContentRef.current = content;
+      setSavedId(item.id);
+      showToast(t('slidesSaved'));
+      // Every save creates a new workspace item — including a re-save after an
+      // un-save — so every save asks which class that item belongs to.
+    } finally {
+      setSavingBusy(false);
+    }
+  };
+
+  /**
+   * Pick the button's state back up from the workspace.
+   *
+   * `savedId` is screen state, so it died with the screen: a teacher who saved
+   * a deck, went to look at موادي and came back found the button offering to
+   * save again, and pressing it made a second copy instead of removing the
+   * first. The workspace is what actually remembers, so ask it.
+   *
+   * Once per identity, not once per render: `deck` is replaced by every edit
+   * and by the media passes, and re-running after an un-save could re-adopt an
+   * older duplicate of the same deck and light the button straight back up.
+   */
+  useEffect(() => {
+    if (!deck || savedId) return;
+    const identity = deckIdentity(deck);
+    const key = JSON.stringify(identity);
+    if (lookedUpKeyRef.current === key) return;
+    lookedUpKeyRef.current = key;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const existing = findMatchingItem(await getAllItems(), identity);
+        if (cancelled || !existing) return;
+        // Seed the sync ref from the STORED copy, so the sync effect pushes
+        // the on-screen deck only where the two genuinely differ.
+        savedContentRef.current = existing.content;
+        setSavedId(existing.id);
+      } catch {
+        // Offline, or the workspace is unreachable. The button stays on
+        // "احفظ" — the honest state for a screen that cannot tell.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [deck, savedId]);
+
+  // Slide edits, and the media/video passes that land after generation, both
+  // replace the deck. While it is saved, the stored copy follows.
+  useEffect(() => {
+    if (!savedId || !deck) return;
+    const content = JSON.stringify(deck);
+    if (content === savedContentRef.current) return;
+    savedContentRef.current = content;
+    void updateItem(savedId, { title: deck.activityName, content }).catch(() => {
+      // The deck on screen is the source of truth; a failed sync is not worth
+      // interrupting the teacher over.
+    });
+  }, [deck, savedId]);
 
   // Exports the DECK — same slides, same accents, same verification badges
   // the teacher just saw and edited on screen. This used to re-derive a
@@ -526,21 +765,24 @@ export default function SlidesScreen() {
         </View>
 
         <View style={styles.form}>
-          <PickerRow
+          <PillSelector
             label={t('grade')}
-            items={grades.map(g => (isAr ? g.nameAr : g.name))}
-            index={gradeIdx}
+            options={grades.map((g, i) => ({ value: i, label: isAr ? g.nameAr : g.name }))}
+            value={gradeIdx}
             onChange={setGradeIdx}
             colors={colors}
             isRTL={isRTL}
+            accent={ACCENT}
           />
-          <PickerRow
+          <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t('scopeNoCurriculumHint')} isRTL={isRTL} colors={colors} />
+          <PillSelector
             label={t('subjects')}
-            items={subjects.map(s => (isAr ? s.nameAr : s.name))}
-            index={subjectIdx}
+            options={subjects.map((s, i) => ({ value: i, label: isAr ? s.nameAr : s.name })).filter(o => !subjectHidden[o.value])}
+            value={subjectIdx}
             onChange={setSubjectIdx}
             colors={colors}
             isRTL={isRTL}
+            accent={ACCENT}
           />
 
           <TopicSelector
@@ -561,13 +803,22 @@ export default function SlidesScreen() {
               for that lesson carries it — and so does Class Mode, which has
               read this store all along. */}
           <LessonResources topic={topic.trim()} onChange={setAttached} />
+          <LessonAttachments lessonId={groundedLessonId} onChange={setUploadedAttachments} />
 
           <View style={{ gap: 10, marginBottom: 18 }}>
             <Toggle label={t('slidesIncludeExamples')} value={includeExamples} onChange={setIncludeExamples} />
             <Toggle label={t('slidesIncludePractice')} value={includePractice} onChange={setIncludePractice} />
+            {hasAttachments ? (
+              <Toggle label={t('slidesIncludeAttachments')} value={includeAttachments} onChange={setIncludeAttachments} />
+            ) : null}
           </View>
 
-          {error ? (
+          {/*
+            The validation error (an empty topic) stays here, next to the field
+            it is about. Generation failures moved down to GenerationStatus,
+            beside the spinner they replace.
+          */}
+          {error && !topic.trim() ? (
             <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }}>
               {error}
             </Text>
@@ -581,14 +832,18 @@ export default function SlidesScreen() {
           />
         </View>
 
-        {loading && (
-          <View style={[styles.loadingBox, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <ActivityIndicator color={ACCENT} />
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 14 }}>
-              {t('slidesBuilding')}
-            </Text>
-          </View>
-        )}
+        <GenerationStatus
+          phase={loading ? 'loading' : cancelled ? 'cancelled' : (error && topic.trim()) ? 'error' : 'idle'}
+          loadingLabel={t('slidesBuilding')}
+          errorDetail={error}
+          onCancel={cancelGenerate}
+          onRetry={generate}
+          colors={colors}
+          isRTL={isRTL}
+          lang={lang as 'ar' | 'en'}
+          accent={ACCENT}
+          t={t}
+        />
 
         {deck && !loading && (
           <View style={{ marginHorizontal: 20 }}>
@@ -650,30 +905,43 @@ export default function SlidesScreen() {
                   row opens the editor — the deck is theirs to adjust. */}
               <View style={{ marginTop: 12, gap: 6 }}>
                 {deck.slides.map((s, i) => (
-                  <Pressable
+                  <View
                     key={i}
-                    onPress={() => { Haptics.selectionAsync(); openEdit(i); }}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${t('editSlide')}: ${s.title}`}
-                    style={({ pressed }) => [
-                      { flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 10, opacity: pressed ? 0.7 : 1 },
-                    ]}
+                    style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 10 }}
                   >
-                    <View style={[styles.slideNum, { backgroundColor: ACCENT + '18' }]}>
-                      <Text style={{ color: ACCENT, fontFamily: 'Cairo_700Bold', fontSize: 11 }}>{i + 1}</Text>
-                    </View>
-                    <Text
-                      style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }}
-                      numberOfLines={1}
+                    <Pressable
+                      onPress={() => { Haptics.selectionAsync(); openEdit(i); }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${t('editSlide')}: ${s.title}`}
+                      style={({ pressed }) => [
+                        { flex: 1, flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 10, opacity: pressed ? 0.7 : 1 },
+                      ]}
                     >
-                      {s.title}
-                    </Text>
-                    {s.durationSeconds > 0 && (
-                      <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 11 }}>
-                        {s.durationSeconds}s
+                      <View style={[styles.slideNum, { backgroundColor: ACCENT + '18' }]}>
+                        <Text style={{ color: ACCENT, fontFamily: 'Cairo_700Bold', fontSize: 11 }}>{i + 1}</Text>
+                      </View>
+                      <Text
+                        style={{
+                          flex: 1,
+                          color: colors.foreground,
+                          fontFamily: 'Almarai_400Regular',
+                          fontSize: 13,
+                          textAlign: isRTL ? 'right' : 'left',
+                          writingDirection: isRTL ? 'rtl' : 'ltr',
+                        }}
+                        numberOfLines={1}
+                      >
+                        {isolateForeignRuns(s.title)}
                       </Text>
-                    )}
-                    <Ionicons name="create-outline" size={16} color={colors.mutedForeground} />
+                      {/* The projector's own rule, so the editor cannot advertise a
+                          timer the presentation screen then refuses to run. */}
+                      {timerSecondsForSlide(s) > 0 && (
+                        <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 11 }}>
+                          {timerSecondsForSlide(s)}s
+                        </Text>
+                      )}
+                      <Ionicons name="create-outline" size={16} color={colors.mutedForeground} />
+                    </Pressable>
                     <Pressable
                       onPress={() => { Haptics.selectionAsync(); void removeSlide(i); }}
                       hitSlop={8}
@@ -682,7 +950,7 @@ export default function SlidesScreen() {
                     >
                       <Ionicons name="trash-outline" size={16} color={colors.mutedForeground} />
                     </Pressable>
-                  </Pressable>
+                  </View>
                 ))}
               </View>
             </View>
@@ -695,13 +963,31 @@ export default function SlidesScreen() {
               <Text style={{ color: '#fff', fontFamily: 'Cairo_700Bold', fontSize: 15 }}>{t('presentOnScreen')}</Text>
             </Pressable>
 
+            {/* Which class this deck is for — nothing until it is saved. */}
+            <MaterialClassField materialId={savedId} onToast={showToast} />
+
             <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 10 }}>
               <Pressable
-                onPress={save}
-                style={[styles.secondaryBtn, { borderColor: ACCENT, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+                onPress={toggleSave}
+                disabled={savingBusy}
+                accessibilityRole="button"
+                accessibilityState={{ selected: !!savedId, disabled: savingBusy }}
+                accessibilityLabel={savedId ? t('savedLabel') : t('save')}
+                style={({ pressed }) => [
+                  styles.secondaryBtn,
+                  {
+                    backgroundColor: savedId ? ACCENT : 'transparent',
+                    borderColor: ACCENT,
+                    borderRadius: colors.radius,
+                    flexDirection: isRTL ? 'row-reverse' : 'row',
+                    opacity: pressed || savingBusy ? 0.75 : 1,
+                  },
+                ]}
               >
-                <Ionicons name="bookmark-outline" size={16} color={ACCENT} />
-                <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>{t('save')}</Text>
+                <Ionicons name={savedId ? 'bookmark' : 'bookmark-outline'} size={16} color={savedId ? '#fff' : ACCENT} />
+                <Text style={{ color: savedId ? '#fff' : ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+                  {savedId ? t('savedLabel') : t('save')}
+                </Text>
               </Pressable>
               <Pressable
                 onPress={exportPdf}
@@ -871,59 +1157,12 @@ export default function SlidesScreen() {
   );
 }
 
-function PickerRow({
-  label, items, index, onChange, colors, isRTL,
-}: {
-  label: string;
-  items: string[];
-  index: number;
-  onChange: (i: number) => void;
-  colors: any;
-  isRTL: boolean;
-}) {
-  return (
-    <View style={{ marginBottom: 18 }}>
-      <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
-        {label}
-      </Text>
-      <View style={[styles.pillRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        {items.map((item, i) => {
-          const active = i === index;
-          return (
-            <Pressable
-              key={item + i}
-              onPress={() => onChange(i)}
-              style={[styles.pill, {
-                backgroundColor: active ? ACCENT : colors.card,
-                borderColor: active ? ACCENT : colors.border,
-                borderRadius: colors.radius,
-              }]}
-            >
-              <Text style={[styles.pillText, {
-                color: active ? '#fff' : colors.mutedForeground,
-                fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
-              }]}>
-                {item}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 24 },
   backBtn: { width: 40, height: 40, justifyContent: 'center', marginBottom: 8 },
   form: { padding: 20 },
-  fieldLabel: { fontSize: 13, marginBottom: 8 },
-  pillRow: { flexWrap: 'wrap', gap: 8 },
-  pill: { paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1.5 },
-  pillText: { fontSize: 13 },
   toggle: { alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1.5 },
   toggleText: { fontSize: 13 },
-  loadingBox: { alignItems: 'center', gap: 12, padding: 20, borderWidth: 1, marginHorizontal: 20, marginBottom: 16 },
   previewCard: { borderWidth: 1, padding: 16, marginBottom: 12 },
   previewTitle: { fontSize: 17, marginBottom: 4 },
   previewMeta: { fontSize: 12 },

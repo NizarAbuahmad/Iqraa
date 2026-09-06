@@ -1,8 +1,10 @@
 import { Router, type Response } from "express";
+import type { AuthenticatedRequest } from "../middlewares/auth.ts";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { logger } from "../lib/logger";
 import {
   SYSTEM_AR,
+  systemPrompt,
   SYSTEM_EN,
   activityPromptAr,
   activityPromptEn,
@@ -13,6 +15,12 @@ import {
   worksheetPromptAr,
   worksheetPromptEn,
 } from "../lib/prompts.ts";
+import {
+  classroomPromptAr,
+  classroomPromptEn,
+  classroomSetupClause,
+  stripUnearnedVerification,
+} from "../lib/classroomPrompts.ts";
 
 import {
   AiBudgetExceededError,
@@ -20,10 +28,33 @@ import {
   assertBudgetAvailable,
   assertLiveModeEnabled,
   getGenerationModel,
+  recordCacheHit,
   recordUsage,
+  type GenerationDetail,
 } from "../lib/aiBudget.ts";
+import { normalizeEscapeCodes } from "../lib/escapeCodes.ts";
+import { withGrounding, type Grounding } from "../lib/grounding.ts";
+import { PROMPT_VERSION, generationKeys, normalizeText } from "../lib/generationKey.ts";
+import {
+  noteServed,
+  readPool,
+  readSeenArtifactIds,
+  retireVariant,
+  storeVariant,
+} from "../lib/artifactCache.ts";
+import { decideServe } from "../lib/variantPolicy.ts";
+import { SingleFlight } from "../lib/singleFlight.ts";
+import {
+  OVERLAP_REJECT_ABOVE,
+  normalizeAvoidInput,
+  overlapRatio,
+  signatureLines,
+  variationBlock,
+} from "../lib/variation.ts";
+import { VARIANT_POOL_MAX } from "@workspace/db/schema";
 import {
   assertUsableGeneration,
+  extractJSON,
   UnusableGenerationError,
   type GenerationKind,
 } from "../lib/generationShape.ts";
@@ -41,8 +72,99 @@ const generateRouter = Router();
 const GENERATION_TOKENS = 8000;
 
 /**
- * Shared by every route below: gate on AI_LIVE_MODE + budget, call the model,
- * parse JSON out.
+ * Collapses concurrent identical misses into one model call.
+ *
+ * Keyed on `${strictKey}:${variantIndex}` — the artifact being asked for, not
+ * the request asking for it. Thirty teachers in one training session hitting
+ * the same lesson used to be thirty completions; they are now one, and the
+ * other twenty-nine await it. See `singleFlight.ts` for why the unique index
+ * on `ai_artifacts` is still needed on top of this.
+ */
+const inFlight = new SingleFlight<GenerateResult>();
+
+type GenerateArgs = {
+  kind: GenerationKind;
+  systemPrompt: string;
+  userPrompt: string;
+  maxCompletionTokens: number;
+  /** Post-grounding request body — what the prompt was built from. */
+  body: Record<string, unknown>;
+  /** Which language the variation directives should be written in. */
+  isAr: boolean;
+  userId?: string | null;
+};
+
+type GenerateResult = {
+  content: unknown;
+  /**
+   * The `ai_artifacts` row this response came from, when there is one.
+   *
+   * Handed back to the client so a later "regenerate" can say which variant it
+   * is replacing without the server having to infer it. That echo is what makes
+   * regeneration work when the pool cannot be read at all, and on the very
+   * first regeneration of a key — the paths where a server-side serve log has
+   * nothing to say yet.
+   */
+  variantId?: string;
+};
+
+type Completion = {
+  parsed: unknown;
+  usage: { prompt_tokens?: number; completion_tokens?: number } | undefined | null;
+};
+
+/**
+ * One completion, parsed and shape-checked.
+ *
+ * Spend is recorded by the caller, not here, because only the caller knows
+ * which `ai_artifacts` row a completion ended up as — and that id is what makes
+ * the row a serve log rather than just a cost line. The one thing recorded here
+ * is a completion that failed the shape check: those tokens are spent too, and
+ * a budget guard that forgets the calls that failed is one that can be walked
+ * past by failing.
+ */
+async function completeOnce(args: {
+  kind: GenerationKind;
+  model: string;
+  systemPrompt: string;
+  userPrompt: string;
+  maxCompletionTokens: number;
+  detail: Omit<GenerationDetail, "artifactId">;
+}): Promise<Completion> {
+  const completion = await openai.chat.completions.create({
+    model: args.model,
+    max_completion_tokens: args.maxCompletionTokens,
+    messages: [
+      { role: "system", content: args.systemPrompt },
+      { role: "user", content: args.userPrompt },
+    ],
+  });
+  try {
+    const raw = completion.choices[0]?.message?.content ?? "{}";
+    const parsed = extractJSON(raw);
+    // Valid JSON is not the same as a usable artifact. Without this the route
+    // answered 200 with `{}` and the screen rendered a blank lesson plan. It
+    // also guards the pool: an unusable artifact stored here would be served
+    // to every teacher who asks for that lesson.
+    assertUsableGeneration(args.kind, parsed);
+    return { parsed, usage: completion.usage };
+  } catch (err) {
+    recordUsage(completion.usage, args.model, { ...args.detail, artifactId: null });
+    throw err;
+  }
+}
+
+/**
+ * Shared by every route below: gate on AI_LIVE_MODE, try the shared variant
+ * pool, and only then gate on budget and call the model.
+ *
+ * The order matters. `assertBudgetAvailable()` used to run first; it now runs
+ * after the cache lookup, so a spent budget still serves artifacts that cost
+ * nothing to serve. `assertLiveModeEnabled()` stays first, deliberately: with
+ * live mode off this API is meant to make no claim about AI content at all,
+ * and quietly answering from a pool filled on some earlier day would undo the
+ * one switch that says whether generation is real (see CLAUDE.md on the
+ * provenance badge).
  *
  * On the ceiling: these were 1500–2000, which is tight for a full Arabic
  * lesson plan and outright breaks a reasoning model — reasoning tokens are
@@ -50,31 +172,198 @@ const GENERATION_TOKENS = 8000;
  * the whole budget thinking and return a truncated object. The failure is
  * silent: `extractJSON` on a truncated response yields a partial object or
  * `{}`, the route answers 200, and the client renders an empty lesson plan.
- * The ceiling is now set per task below with room for that.
+ * Every caller passes `GENERATION_TOKENS`; the parameter is here so a task
+ * that genuinely needs a different ceiling can have one.
  */
-async function generateContent(
-  kind: GenerationKind,
-  systemPrompt: string,
-  userPrompt: string,
-  maxCompletionTokens: number,
-): Promise<unknown> {
+async function generateContent(args: GenerateArgs): Promise<GenerateResult> {
   assertLiveModeEnabled();
-  assertBudgetAvailable();
-  const completion = await openai.chat.completions.create({
-    model: getGenerationModel(),
-    max_completion_tokens: maxCompletionTokens,
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt },
-    ],
+  const { kind, body, userId } = args;
+  const model = getGenerationModel();
+  const keys = generationKeys(kind, model, body);
+  const regenerate = body.regenerate === true;
+  const detail = { kind, promptVersion: PROMPT_VERSION, userId, ...keys };
+
+  // Only a shareable request touches the pool at all. A request carrying the
+  // teacher's own pasted material is neither read from nor written to it —
+  // serving teacher A's document-derived worksheet to teacher B is a content
+  // leak, not a cache hit.
+  const [pool, seenIds] = keys.shareable
+    ? await Promise.all([
+        readPool(keys.strictKey),
+        readSeenArtifactIds({ strictKey: keys.strictKey, userId }),
+      ])
+    : [{ variants: [], nextVariantIndex: 0, readable: false }, new Set<string>()];
+  // The client tells us which variant it is holding. Unioned with the serve
+  // log rather than replacing it: the log covers a teacher who saw this on
+  // another device, the echo covers the case the log cannot know about yet.
+  for (const id of clientHeldVariantIds(body)) seenIds.add(id);
+
+  const decision = decideServe({
+    variants: pool.variants,
+    nextVariantIndex: pool.nextVariantIndex,
+    readable: pool.readable,
+    seenIds,
+    regenerate,
+    shareable: keys.shareable,
+    poolMax: VARIANT_POOL_MAX,
   });
-  recordUsage(completion.usage, getGenerationModel());
-  const raw = completion.choices[0]?.message?.content ?? "{}";
-  const parsed = extractJSON(raw);
-  // Valid JSON is not the same as a usable artifact. Without this the route
-  // answered 200 with `{}` and the screen rendered a blank lesson plan.
-  assertUsableGeneration(kind, parsed);
-  return parsed;
+
+  if (decision.action === "serve") {
+    noteServed(decision.artifact.id);
+    // A row per hit, at zero cost. Without it the hit rate is invisible, and
+    // so is the fact that this teacher has now seen this variant — which is
+    // what stops their next regenerate handing the same paper back.
+    recordCacheHit(model, { ...detail, artifactId: decision.artifact.id });
+    logger.info(
+      { kind, strictKey: keys.strictKey, variantIndex: decision.artifact.variantIndex },
+      "generation served from the shared pool",
+    );
+    return { content: decision.artifact.content, variantId: decision.artifact.id };
+  }
+
+  assertBudgetAvailable();
+
+  // What this teacher has already been shown for this key: the pooled variants
+  // they were served, plus whatever the screen says it is holding. Only the
+  // stems are sent — a whole prior worksheet in the prompt would cost more
+  // input than the generation it is varying.
+  const avoid = regenerate
+    ? dedupe([
+        ...pool.variants.filter((v) => seenIds.has(v.id)).flatMap((v) => signatureLines(v.content)),
+        ...normalizeAvoidInput(body.avoid),
+      ])
+    : [];
+
+  const run = async (): Promise<GenerateResult> => {
+    const completionArgs = {
+      kind,
+      model,
+      systemPrompt: args.systemPrompt,
+      maxCompletionTokens: args.maxCompletionTokens,
+      detail,
+    };
+
+    let chosen = await completeOnce({
+      ...completionArgs,
+      userPrompt:
+        args.userPrompt
+        + variationBlock({ variantIndex: decision.variantIndex, isArabic: args.isAr, avoid }),
+    });
+
+    const repeated = overlapRatio(signatureLines(chosen.parsed), avoid);
+    if (repeated > OVERLAP_REJECT_ABOVE) {
+      // The directive was read as a suggestion. Nothing further down would
+      // know: the model returned a well-formed artifact and the route would
+      // have answered 200 with the paper the teacher had just rejected.
+      // Measuring it is the only thing that makes "regenerated" mean anything
+      // — see CLAUDE.md on flags that describe an intention, not a result.
+      logger.warn(
+        { kind, strictKey: keys.strictKey, repeated: Number(repeated.toFixed(2)) },
+        "regeneration repeated most of what the teacher had already seen — retrying once",
+      );
+      // The rejected attempt was still billed, and it is not the artifact that
+      // gets stored, so it is recorded here with no artifact to its name.
+      recordUsage(chosen.usage, model, { ...detail, artifactId: null });
+      // One retry, not a loop: a second failure means the model has nothing
+      // else to say about this lesson, and a third call would spend the
+      // teacher's time to prove it. Whatever comes back is what is served.
+      chosen = await completeOnce({
+        ...completionArgs,
+        userPrompt:
+          args.userPrompt
+          + variationBlock({
+            variantIndex: decision.variantIndex,
+            isArabic: args.isAr,
+            avoid,
+            insistent: true,
+          }),
+      });
+    }
+
+    // Stored only once, and only the artifact actually being served. Storing
+    // inside the completion helper meant a retry wrote the *rejected* attempt
+    // into the pool first and then lost the slot to its own unique index — so
+    // every teacher after inherited the repetitive paper and the teacher who
+    // paid for the good one got it unstored.
+    const artifactId = decision.store ? await storeVariant({
+      strictKey: keys.strictKey,
+      coarseKey: keys.coarseKey,
+      kind,
+      model,
+      promptVersion: PROMPT_VERSION,
+      language: typeof body.language === "string" ? body.language : "arabic",
+      lessonRef: lessonRefOf(body),
+      variantIndex: decision.variantIndex,
+      content: chosen.parsed,
+    }) : null;
+
+    recordUsage(chosen.usage, model, { ...detail, artifactId });
+    return { content: chosen.parsed, variantId: artifactId ?? undefined };
+  };
+
+  return inFlight.run(`${keys.strictKey}:${decision.variantIndex}`, run);
+}
+
+/** Variant ids the client says it already holds. Sanitised: this is
+ *  request-controlled, and it is only ever compared against ids read out of
+ *  the pool, never queried with. */
+function clientHeldVariantIds(body: Record<string, unknown>): string[] {
+  const raw = body.excludeVariantIds ?? body.variantId;
+  const list = Array.isArray(raw) ? raw : [raw];
+  return list.filter((v): v is string => typeof v === "string" && v.length > 0 && v.length <= 64);
+}
+
+function dedupe(lines: string[]): string[] {
+  return [...new Set(lines)];
+}
+
+/**
+ * Whether this lesson has student-book figures that will actually be printed.
+ *
+ * The client knows; the server cannot. The crops live in
+ * `knowledge-base/<grade>-<subject>/figures/` and are joined to a lesson by
+ * `figure-lesson-map.json`, both of which are bundled into the app — the API
+ * has no copy of either and no way to resolve one. So the generator screens
+ * send the count they already compute for the export appendix, and this reads
+ * it.
+ *
+ * Fail closed on anything unexpected. Missing, zero or non-numeric means "no
+ * figures", which selects the stricter prompt — the one that forbids referring
+ * to a figure at all. Wrong in the permissive direction would print «انظر
+ * الشكل المجاور» on a paper with no figure anywhere on it, which is the exact
+ * bug the graph rule was written to stop.
+ */
+function hasBookFigures(body: Record<string, unknown>): boolean {
+  const n = body.bookFigureCount;
+  return typeof n === "number" && Number.isFinite(n) && n > 0;
+}
+
+/** How the pool is browsed by a human — the lesson this artifact belongs to.
+ *  Not part of the key, so an imperfect value costs nothing but readability. */
+function lessonRefOf(body: Record<string, unknown>): string {
+  const id = typeof body.lessonId === "string" ? body.lessonId.trim() : "";
+  if (id) return id;
+  return typeof body.topic === "string" ? normalizeText(body.topic).slice(0, 200) : "";
+}
+
+/**
+ * Hand the citations, and the variant's id, back with the artifact.
+ *
+ * The page numbers exist so a teacher can hold the generated worksheet against
+ * the printed book; stopping them at the prompt would waste the only part of
+ * retrieval a human can check. `variantId` is the handle the screen sends back
+ * when the teacher presses regenerate, so the server knows which of the pool's
+ * variants not to hand them again. Additive — every existing field is
+ * untouched, and an ungrounded generation is returned exactly as it was.
+ */
+function withMeta(parsed: unknown, grounding: Grounding | null, variantId?: string): unknown {
+  if (typeof parsed !== "object" || parsed === null) return parsed;
+  if (!grounding && !variantId) return parsed;
+  return {
+    ...parsed,
+    ...(grounding ? { sources: grounding.sources } : {}),
+    ...(variantId ? { variantId } : {}),
+  };
 }
 
 /** AI live-mode-off and budget-exceeded are expected, user-facing states — not server errors. */
@@ -100,65 +389,84 @@ function respondAiError(err: unknown, res: Response, label: string): void {
 }
 
 // ─── Lesson Plan ─────────────────────────────────────────────────────────────
-generateRouter.post("/generate/lesson-plan", async (req, res) => {
+generateRouter.post("/generate/lesson-plan", async (req: AuthenticatedRequest, res) => {
   try {
-    const body = req.body;
-    const isAr = body.language !== "english";
+    const isAr = req.body.language !== "english";
+    const { body, grounding } = withGrounding(req.body, isAr);
     const prompt = isAr ? lessonPlanPromptAr(body) : lessonPlanPromptEn(body);
-    const parsed = await generateContent("lesson-plan", isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS);
-    res.json(parsed);
+    const { content, variantId } = await generateContent({
+      kind: "lesson-plan", systemPrompt: systemPrompt(isAr, { hasBookFigures: hasBookFigures(body) }), userPrompt: prompt,
+      maxCompletionTokens: GENERATION_TOKENS, body, isAr, userId: req.user?.id,
+    });
+    res.json(withMeta(content, grounding, variantId));
   } catch (err) {
     respondAiError(err, res, "generate lesson-plan");
   }
 });
 
 // ─── Worksheet ────────────────────────────────────────────────────────────────
-generateRouter.post("/generate/worksheet", async (req, res) => {
+generateRouter.post("/generate/worksheet", async (req: AuthenticatedRequest, res) => {
   try {
-    const body = req.body;
-    const isAr = body.language !== "english";
+    const isAr = req.body.language !== "english";
+    const { body, grounding } = withGrounding(req.body, isAr);
     const prompt = isAr ? worksheetPromptAr(body) : worksheetPromptEn(body);
-    const parsed = await generateContent("worksheet", isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS);
-    res.json(parsed);
+    const { content, variantId } = await generateContent({
+      kind: "worksheet", systemPrompt: systemPrompt(isAr, { hasBookFigures: hasBookFigures(body) }), userPrompt: prompt,
+      maxCompletionTokens: GENERATION_TOKENS, body, isAr, userId: req.user?.id,
+    });
+    res.json(withMeta(content, grounding, variantId));
   } catch (err) {
     respondAiError(err, res, "generate worksheet");
   }
 });
 
 // ─── Quiz ─────────────────────────────────────────────────────────────────────
-generateRouter.post("/generate/quiz", async (req, res) => {
+generateRouter.post("/generate/quiz", async (req: AuthenticatedRequest, res) => {
   try {
-    const body = req.body;
-    const isAr = body.language !== "english";
+    const isAr = req.body.language !== "english";
+    const { body, grounding } = withGrounding(req.body, isAr);
     const prompt = isAr ? quizPromptAr(body) : quizPromptEn(body);
-    const parsed = await generateContent("quiz", isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS);
-    res.json(parsed);
+    const { content, variantId } = await generateContent({
+      kind: "quiz", systemPrompt: systemPrompt(isAr, { hasBookFigures: hasBookFigures(body) }), userPrompt: prompt,
+      maxCompletionTokens: GENERATION_TOKENS, body, isAr, userId: req.user?.id,
+    });
+    res.json(withMeta(content, grounding, variantId));
   } catch (err) {
     respondAiError(err, res, "generate quiz");
   }
 });
 
 // ─── Homework ─────────────────────────────────────────────────────────────────
-generateRouter.post("/generate/homework", async (req, res) => {
+generateRouter.post("/generate/homework", async (req: AuthenticatedRequest, res) => {
   try {
-    const body = req.body;
-    const isAr = body.language !== "english";
+    const isAr = req.body.language !== "english";
+    const { body, grounding } = withGrounding(req.body, isAr);
     const prompt = isAr ? worksheetPromptAr({ ...body, homework: true }) : worksheetPromptEn({ ...body, homework: true });
-    const parsed = await generateContent("homework", isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS);
-    res.json(parsed);
+    // `homework: true` rides on the key body as well as the prompt — a homework
+    // and a worksheet for one lesson are different artifacts, and the pool must
+    // not hand one out for the other.
+    const { content, variantId } = await generateContent({
+      kind: "homework", systemPrompt: systemPrompt(isAr, { hasBookFigures: hasBookFigures(body) }), userPrompt: prompt,
+      maxCompletionTokens: GENERATION_TOKENS, body: { ...body, homework: true }, isAr,
+      userId: req.user?.id,
+    });
+    res.json(withMeta(content, grounding, variantId));
   } catch (err) {
     respondAiError(err, res, "generate homework");
   }
 });
 
 // ─── Activity ─────────────────────────────────────────────────────────────────
-generateRouter.post("/generate/activity", async (req, res) => {
+generateRouter.post("/generate/activity", async (req: AuthenticatedRequest, res) => {
   try {
-    const body = req.body;
-    const isAr = body.language !== "english";
+    const isAr = req.body.language !== "english";
+    const { body, grounding } = withGrounding(req.body, isAr);
     const prompt = isAr ? activityPromptAr(body) : activityPromptEn(body);
-    const parsed = await generateContent("activity", isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS);
-    res.json(parsed);
+    const { content, variantId } = await generateContent({
+      kind: "activity", systemPrompt: systemPrompt(isAr, { hasBookFigures: hasBookFigures(body) }), userPrompt: prompt,
+      maxCompletionTokens: GENERATION_TOKENS, body, isAr, userId: req.user?.id,
+    });
+    res.json(withMeta(content, grounding, variantId));
   } catch (err) {
     respondAiError(err, res, "generate activity");
   }
@@ -171,432 +479,70 @@ generateRouter.post("/generate/activity", async (req, res) => {
 // bare, at /classroom-activity, so it never went through the guard — an
 // unauthenticated, unlimited proxy onto the OpenAI account. Same failure
 // shape as the roster/evaluations mount-order incident; see routes/index.ts.
-generateRouter.post('/generate/classroom-activity', async (req, res) => {
-  const body = req.body as Record<string, unknown>;
-  const isAr = body.language === 'arabic';
+generateRouter.post('/generate/classroom-activity', async (req: AuthenticatedRequest, res) => {
+  const isAr = (req.body as Record<string, unknown>).language === 'arabic';
+  const { body, grounding } = withGrounding(req.body as Record<string, unknown>, isAr);
   try {
-    const prompt = isAr ? classroomPromptAr(body) : classroomPromptEn(body);
-    const data = await generateContent("classroom-activity", isAr ? SYSTEM_AR : SYSTEM_EN, prompt, GENERATION_TOKENS);
-    res.json(data);
+    const prompt = (isAr ? classroomPromptAr(body) : classroomPromptEn(body))
+      + classroomSetupClause(body, isAr);
+    const { content, variantId } = await generateContent({
+      kind: "classroom-activity", systemPrompt: systemPrompt(isAr, { hasBookFigures: hasBookFigures(body) }), userPrompt: prompt,
+      maxCompletionTokens: GENERATION_TOKENS, body, isAr, userId: req.user?.id,
+    });
+    // Applied on the way out, to pooled and freshly generated decks alike —
+    // what is stored is the model's own output, so a deck served from the pool
+    // has to pass the same two filters the day it is served, not the day it
+    // was made.
+    //
+    // The escape deck's unlock codes are the activity's only mechanic and the
+    // app never validates them, so an unreadable or repeated digit ships as-is.
+    // A no-op for every other activity type. See lib/escapeCodes.ts.
+    const withCodes = normalizeEscapeCodes(content, isAr);
+    // No live call runs a verifier over its own output, so any "verified"
+    // fields a model invented are unearned. See stripUnearnedVerification.
+    res.json(withMeta(stripUnearnedVerification(withCodes), grounding, variantId));
   } catch (err) {
     respondAiError(err, res, "generate classroom-activity");
   }
 });
 
-function classroomPromptAr(b: any): string {
-  const goals: Record<string, string> = {
-    'warm-up': 'تمهيد', practice: 'تدريب', revision: 'مراجعة',
-    assessment: 'تقييم', 'critical-thinking': 'تفكير ناقد',
-  };
-  const groups: Record<string, string> = {
-    individual: 'فردي', pairs: 'ثنائي', groups: 'مجموعات', 'whole-class': 'الصف بأكمله',
-  };
-  const diffs: Record<string, string> = { easy: 'سهل', standard: 'متوسط', advanced: 'متقدم' };
 
-  const actType = b.activityType ?? 'escape-challenge';
-
-  if (actType === 'bingo') {
-    return `أنت مصمم أنشطة صفية تفاعلية. أنشئ نشاط "بينجو المصطلحات" لمادة ${b.subject}، الصف ${b.grade}، موضوع "${b.topic}".
-المدة: ${b.duration} دقيقة | الصعوبة: ${diffs[b.difficulty] ?? b.difficulty} | التجميع: ${groups[b.groupType] ?? b.groupType} | الهدف: ${goals[b.teachingGoal] ?? b.teachingGoal}
-${b.additionalContext ? `\nمحتوى الكتاب المدرسي:\n${b.additionalContext}` : ''}
-
-أعد JSON بالشكل الآتي (بالعربية الكاملة):
-{
-  "activityName": "بينجو – ${b.topic}",
-  "activityType": "bingo",
-  "grade": "${b.grade}",
-  "subject": "${b.subject}",
-  "lesson": "${b.topic}",
-  "duration": ${b.duration},
-  "difficulty": "${b.difficulty}",
-  "groupType": "${b.groupType}",
-  "learningObjective": "الهدف التعليمي بجملة واحدة",
-  "materials": ["بطاقات بينجو مطبوعة","قصاصات ورقية للتغطية","مؤقت"],
-  "teacherPreparation": "خطوات إعداد المعلم",
-  "slides": [
-    { "slideNumber": 1, "type": "intro", "title": "🎱 بينجو المصطلحات", "content": "شرح آلية اللعبة", "durationSeconds": 0 },
-    {
-      "slideNumber": 2,
-      "type": "bingo-call",
-      "title": "الاستدعاء 1",
-      "content": "تلميح أو تعريف المصطلح الأول",
-      "answer": "المصطلح الصحيح",
-      "durationSeconds": 30,
-      "teacher": {
-        "expectedAnswer": "المصطلح المستدعى",
-        "teachingTips": "نصيحة للمعلم"
-      }
-    }
-  ],
-  "teacherNotes": ["ملاحظة 1"],
-  "answerKey": ["المصطلح 1: تعريفه"],
-  "printables": ["بطاقات بينجو 5×5 (نسخة مختلفة لكل طالب)","قائمة الاستدعاء للمعلم"],
-  "assessment": "كيف تقيّم النشاط",
-  "extensionChallenge": "تحدٍّ إضافي للمتقدمين"
-}
-أنشئ قائمة استدعاء من ${Math.floor(b.duration / 2)} مصطلحًا على الأقل (شريحة bingo-call لكل مصطلح).`;
+/**
+ * Take a pooled artifact out of circulation.
+ *
+ * This is the safety valve for sharing. One bad worksheet used to cost one
+ * teacher a regeneration; pooled, it reaches every teacher who asks for that
+ * lesson until somebody notices. A retired row is never served again and its
+ * slot is never reused, so the next request for that key generates into a
+ * fresh one.
+ *
+ * Open to any authenticated teacher, not to admins only. The person holding
+ * the bad paper is the person who knows it is bad, and routing that through an
+ * operator means it stays in the pool for as long as the round trip takes. The
+ * downside is bounded in a way the alternative is not: the worst a wrong call
+ * does is spend one generation regenerating something that was fine.
+ *
+ * Under /generate/* so it inherits the auth guard the classroom-activity route
+ * once escaped by being mounted bare — see the note above that route.
+ */
+generateRouter.post("/generate/variants/:id/retire", async (req: AuthenticatedRequest, res) => {
+  // Express types this as `string | string[]`; a repeated :id would otherwise
+  // reach a uuid comparison as an array.
+  const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  if (typeof id !== "string" || !id) {
+    res.status(404).json({ error: "No pooled variant to retire." });
+    return;
   }
-
-  if (actType === 'relay') {
-    return `أنت مصمم أنشطة صفية تفاعلية. أنشئ نشاط "سباق التتابع" لمادة ${b.subject}، الصف ${b.grade}، موضوع "${b.topic}".
-المدة: ${b.duration} دقيقة | الصعوبة: ${diffs[b.difficulty] ?? b.difficulty} | التجميع: ${groups[b.groupType] ?? b.groupType} | الهدف: ${goals[b.teachingGoal] ?? b.teachingGoal}
-${b.additionalContext ? `\nمحتوى الكتاب المدرسي:\n${b.additionalContext}` : ''}
-
-أعد JSON بالشكل الآتي (بالعربية الكاملة):
-{
-  "activityName": "سباق التتابع – ${b.topic}",
-  "activityType": "relay",
-  "grade": "${b.grade}",
-  "subject": "${b.subject}",
-  "lesson": "${b.topic}",
-  "duration": ${b.duration},
-  "difficulty": "${b.difficulty}",
-  "groupType": "${b.groupType}",
-  "learningObjective": "الهدف التعليمي بجملة واحدة",
-  "materials": ["أوراق التتابع المطبوعة","مؤقت","أقلام ملونة"],
-  "teacherPreparation": "خطوات إعداد المعلم وتقسيم الفرق",
-  "slides": [
-    { "slideNumber": 1, "type": "intro", "title": "🏃 سباق التتابع", "content": "شرح آلية السباق", "durationSeconds": 0 },
-    {
-      "slideNumber": 2,
-      "type": "relay-problem",
-      "title": "المسألة 1 من 4",
-      "content": "نص المسألة الأولى مع المعطيات",
-      "hint": "تلميح مساعد",
-      "answer": "الإجابة الأولى (تُمرَّر للمسألة التالية)",
-      "durationSeconds": ${Math.round((b.duration * 60) / 5)},
-      "teacher": {
-        "expectedAnswer": "الإجابة التفصيلية",
-        "commonMisconceptions": "أخطاء شائعة",
-        "teachingTips": "نصيحة للمعلم",
-        "suggestedQuestions": ["سؤال متابعة"]
-      }
-    }
-  ],
-  "teacherNotes": ["ملاحظة 1"],
-  "answerKey": ["المسألة 1: الإجابة الأولى","المسألة 2: …"],
-  "printables": ["أوراق التتابع (نسخة لكل فريق)","لوحة النتائج"],
-  "assessment": "كيف تقيّم النشاط",
-  "extensionChallenge": "تحدٍّ إضافي للمتقدمين"
-}
-أنشئ سلسلة من 4-6 مسائل متصلة (إجابة كل مسألة تُمرَّر للتالية). أضف شريحة ملخص في النهاية.`;
+  const retired = await retireVariant(id);
+  if (!retired) {
+    // 404 for "no such variant" and for "already retired" alike: both mean
+    // there is nothing in the pool under that id any more, which is what the
+    // caller wanted, and telling the two apart says which ids exist.
+    res.status(404).json({ error: "No pooled variant to retire." });
+    return;
   }
-
-  return `أنت مصمم أنشطة صفية تفاعلية. أنشئ نشاط "تحدي الهروب" لمادة ${b.subject}، الصف ${b.grade}، موضوع "${b.topic}".
-المدة: ${b.duration} دقيقة | الصعوبة: ${diffs[b.difficulty] ?? b.difficulty} | التجميع: ${groups[b.groupType] ?? b.groupType} | الهدف: ${goals[b.teachingGoal] ?? b.teachingGoal}
-${b.additionalContext ? `\nمحتوى الكتاب المدرسي:\n${b.additionalContext}` : ''}
-
-أعد JSON بالشكل الآتي (بالعربية الكاملة، لا تستخدم أي حروف إنجليزية في النصوص):
-{
-  "activityName": "اسم النشاط",
-  "activityType": "escape-challenge",
-  "grade": "${b.grade}",
-  "subject": "${b.subject}",
-  "lesson": "${b.topic}",
-  "duration": ${b.duration},
-  "difficulty": "${b.difficulty}",
-  "groupType": "${b.groupType}",
-  "learningObjective": "الهدف التعليمي بجملة واحدة",
-  "materials": ["مادة 1","مادة 2"],
-  "teacherPreparation": "خطوات إعداد المعلم",
-  "slides": [
-    {
-      "slideNumber": 1,
-      "type": "intro",
-      "title": "مهمتكم",
-      "content": "وصف المهمة",
-      "durationSeconds": 0
-    },
-    {
-      "slideNumber": 2,
-      "type": "challenge",
-      "title": "التحدي 1",
-      "content": "نص التحدي",
-      "hint": "تلميح مساعد",
-      "answer": "الإجابة الصحيحة",
-      "unlockCode": "5",
-      "durationSeconds": 180,
-      "teacher": {
-        "expectedAnswer": "الإجابة المفصّلة",
-        "commonMisconceptions": "أخطاء شائعة",
-        "teachingTips": "نصائح للمعلم",
-        "suggestedQuestions": ["سؤال 1"],
-        "differentiationTips": "كيف تتعامل مع مستويات مختلفة"
-      }
-    },
-    {
-      "slideNumber": 3,
-      "type": "reveal",
-      "title": "تم فتح الكود!",
-      "content": "وصف الكود المفتوح",
-      "unlockCode": "5",
-      "durationSeconds": 0
-    }
-  ],
-  "teacherNotes": ["ملاحظة 1"],
-  "answerKey": ["إجابة التحدي 1"],
-  "printables": ["بطاقات التحديات","مفتاح الإجابات"],
-  "assessment": "كيف تقيّم النشاط",
-  "extensionChallenge": "تحدٍّ إضافي للمتقدمين"
-}
-أنشئ ${Math.floor(b.duration / 4)} تحديًا على الأقل. كل تحدٍّ يتبعه شريحة كشف.`;
-}
-
-function classroomPromptEn(b: any): string {
-  const actType = b.activityType ?? 'escape-challenge';
-
-  if (actType === 'bingo') {
-    return `You are an interactive classroom activity designer. Create a "Vocabulary Bingo" activity for ${b.subject}, Grade ${b.grade}, topic "${b.topic}".
-Duration: ${b.duration} min | Difficulty: ${b.difficulty} | Groups: ${b.groupType} | Goal: ${b.teachingGoal}
-${b.additionalContext ? `\nTextbook context:\n${b.additionalContext}` : ''}
-
-Return JSON in this exact shape (all text in English):
-{
-  "activityName": "Math Bingo – ${b.topic}",
-  "activityType": "bingo",
-  "grade": "${b.grade}",
-  "subject": "${b.subject}",
-  "lesson": "${b.topic}",
-  "duration": ${b.duration},
-  "difficulty": "${b.difficulty}",
-  "groupType": "${b.groupType}",
-  "learningObjective": "One-sentence learning objective",
-  "materials": ["Printed bingo cards","Chips or paper scraps","Timer"],
-  "teacherPreparation": "Teacher setup steps",
-  "slides": [
-    { "slideNumber": 1, "type": "intro", "title": "🎱 Vocabulary Bingo", "content": "How to play explanation", "durationSeconds": 0 },
-    {
-      "slideNumber": 2,
-      "type": "bingo-call",
-      "title": "Call 1",
-      "content": "Clue or definition for the first term",
-      "answer": "The correct term",
-      "durationSeconds": 30,
-      "teacher": {
-        "expectedAnswer": "The called term",
-        "teachingTips": "Teaching advice"
-      }
-    }
-  ],
-  "teacherNotes": ["note 1"],
-  "answerKey": ["Term 1: its definition"],
-  "printables": ["5×5 Bingo cards (unique per student)","Teacher caller list"],
-  "assessment": "How to assess the activity",
-  "extensionChallenge": "Extension challenge for advanced students"
-}
-Generate a caller list of at least ${Math.floor(b.duration / 2)} terms (one bingo-call slide per term). End with a summary slide.`;
-  }
-
-  if (actType === 'relay') {
-    return `You are an interactive classroom activity designer. Create a "Relay Race" activity for ${b.subject}, Grade ${b.grade}, topic "${b.topic}".
-Duration: ${b.duration} min | Difficulty: ${b.difficulty} | Groups: ${b.groupType} | Goal: ${b.teachingGoal}
-${b.additionalContext ? `\nTextbook context:\n${b.additionalContext}` : ''}
-
-Return JSON in this exact shape (all text in English):
-{
-  "activityName": "Relay Race – ${b.topic}",
-  "activityType": "relay",
-  "grade": "${b.grade}",
-  "subject": "${b.subject}",
-  "lesson": "${b.topic}",
-  "duration": ${b.duration},
-  "difficulty": "${b.difficulty}",
-  "groupType": "${b.groupType}",
-  "learningObjective": "One-sentence learning objective",
-  "materials": ["Printed relay sheets","Timer","Coloured markers"],
-  "teacherPreparation": "Teacher setup steps and team arrangement",
-  "slides": [
-    { "slideNumber": 1, "type": "intro", "title": "🏃 Relay Race", "content": "How the relay works", "durationSeconds": 0 },
-    {
-      "slideNumber": 2,
-      "type": "relay-problem",
-      "title": "Problem 1 of 4",
-      "content": "Problem text with given data",
-      "hint": "A helpful hint",
-      "answer": "First answer (passed to the next problem)",
-      "durationSeconds": ${Math.round((b.duration * 60) / 5)},
-      "teacher": {
-        "expectedAnswer": "Detailed expected answer",
-        "commonMisconceptions": "Common student errors",
-        "teachingTips": "Teaching advice",
-        "suggestedQuestions": ["Follow-up question"]
-      }
-    }
-  ],
-  "teacherNotes": ["note 1"],
-  "answerKey": ["Problem 1: first answer","Problem 2: …"],
-  "printables": ["Relay worksheets (one per team)","Scoreboard"],
-  "assessment": "How to assess the activity",
-  "extensionChallenge": "Extension challenge for advanced students"
-}
-Generate a chain of 4–6 linked problems (each answer feeds the next). Add a summary slide at the end.`;
-  }
-
-  if (b.activityType === 'error-detective') {
-    return `You are an interactive classroom activity designer. Create an "Error Detective" activity for ${b.subject}, Grade ${b.grade}, topic "${b.topic}".
-Duration: ${b.duration} min | Difficulty: ${b.difficulty} | Groups: ${b.groupType} | Goal: ${b.teachingGoal}
-${b.additionalContext ? `\nTextbook context:\n${b.additionalContext}` : ''}
-
-Return JSON in this exact shape (all text in English):
-{
-  "activityName": "Error Detective – ${b.topic}",
-  "activityType": "error-detective",
-  "grade": "${b.grade}", "subject": "${b.subject}", "lesson": "${b.topic}",
-  "duration": ${b.duration}, "difficulty": "${b.difficulty}", "groupType": "${b.groupType}",
-  "learningObjective": "One-sentence objective about identifying and correcting errors",
-  "materials": ["Printed error cards","Red correction pens"],
-  "teacherPreparation": "Setup instructions",
-  "slides": [
-    { "slideNumber": 1, "type": "intro", "title": "🔍 Error Detective", "content": "How the activity works", "durationSeconds": 0 },
-    {
-      "slideNumber": 2, "type": "challenge", "title": "🕵️ Case 1 – Find the Error",
-      "content": "Show a worked solution with ONE deliberate error for students to find",
-      "hint": "A hint pointing toward the error type",
-      "answer": "The error identified and the correct solution",
-      "durationSeconds": ${Math.round((b.duration * 60) / 4)},
-      "teacher": { "expectedAnswer": "Full correct solution", "commonMisconceptions": "Why students make this error", "teachingTips": "How to discuss the error constructively" }
-    },
-    { "slideNumber": 3, "type": "reveal", "title": "✅ Correct Solution", "content": "The full correct solution with explanation", "durationSeconds": 0 }
-  ],
-  "teacherNotes": ["note 1"],
-  "answerKey": ["Error 1 description", "Error 2 description"],
-  "printables": ["Error cards","Investigation report template"],
-  "assessment": "How to assess understanding",
-  "extensionChallenge": "Extension for advanced students"
-}
-Generate 3 error cases, each with a challenge slide followed by a reveal slide. End with a summary slide listing all errors found.`;
-  }
-
-  if (b.activityType === 'gallery-walk') {
-    return `You are an interactive classroom activity designer. Create a "Gallery Walk" activity for ${b.subject}, Grade ${b.grade}, topic "${b.topic}".
-Duration: ${b.duration} min | Difficulty: ${b.difficulty} | Groups: ${b.groupType} | Goal: ${b.teachingGoal}
-${b.additionalContext ? `\nTextbook context:\n${b.additionalContext}` : ''}
-
-Return JSON in this exact shape (all text in English):
-{
-  "activityName": "Gallery Walk – ${b.topic}",
-  "activityType": "gallery-walk",
-  "grade": "${b.grade}", "subject": "${b.subject}", "lesson": "${b.topic}",
-  "duration": ${b.duration}, "difficulty": "${b.difficulty}", "groupType": "${b.groupType}",
-  "learningObjective": "One-sentence objective about collaborative station-based exploration",
-  "materials": ["5 large paper sheets posted on walls","Coloured markers","Sticky notes"],
-  "teacherPreparation": "How to set up the 5 stations and manage group rotation",
-  "slides": [
-    { "slideNumber": 1, "type": "intro", "title": "🖼️ Gallery Walk", "content": "Explain the rotation rules and time per station", "durationSeconds": 0 },
-    {
-      "slideNumber": 2, "type": "challenge", "title": "📌 Station 1 – Foundations",
-      "content": "A foundational problem for students to solve and write on the poster",
-      "hint": "A guiding hint",
-      "answer": "See the poster at this station",
-      "durationSeconds": ${Math.round((b.duration * 60) / 6)},
-      "teacher": { "expectedAnswer": "Expected answer for this station", "teachingTips": "What to look for when reviewing this station's poster" }
-    }
-  ],
-  "teacherNotes": ["Circulate to guide discussion"],
-  "answerKey": ["Station 1 answer", "Station 2 answer"],
-  "printables": ["Station cards (A3)","Group tracking sheet"],
-  "assessment": "How to review and debrief",
-  "extensionChallenge": "Extension challenge"
-}
-Generate 5 station slides (foundations, application, analysis, evaluation, creative) plus a summary. Each station has a unique problem type.`;
-  }
-
-  if (b.activityType === 'exit-ticket') {
-    return `You are an interactive classroom activity designer. Create an "Exit Ticket" activity for ${b.subject}, Grade ${b.grade}, topic "${b.topic}".
-Duration: ${b.duration} min | Difficulty: ${b.difficulty} | Groups: ${b.groupType} | Goal: ${b.teachingGoal}
-${b.additionalContext ? `\nTextbook context:\n${b.additionalContext}` : ''}
-
-Return JSON in this exact shape (all text in English):
-{
-  "activityName": "Exit Ticket – ${b.topic}",
-  "activityType": "exit-ticket",
-  "grade": "${b.grade}", "subject": "${b.subject}", "lesson": "${b.topic}",
-  "duration": ${b.duration}, "difficulty": "${b.difficulty}", "groupType": "${b.groupType}",
-  "learningObjective": "Check understanding of ${b.topic} at the end of the lesson",
-  "materials": ["Printed exit ticket (1 per student)","Pen"],
-  "teacherPreparation": "Print tickets; reserve last ${b.duration} minutes of the lesson",
-  "slides": [
-    { "slideNumber": 1, "type": "intro", "title": "🎫 Exit Ticket", "content": "Instructions: individual work, hand in at the door", "durationSeconds": 0 },
-    {
-      "slideNumber": 2, "type": "challenge", "title": "❓ Question 1 – Recall",
-      "content": "Define the main concept of ${b.topic} in your own words",
-      "hint": "Think about what we covered at the start of today's lesson",
-      "answer": "Flexible — assess understanding not memorisation",
-      "durationSeconds": ${Math.round((b.duration * 60) / 4)},
-      "teacher": { "expectedAnswer": "Student-worded definition", "teachingTips": "Look for conceptual understanding" }
-    }
-  ],
-  "teacherNotes": ["Collect at door","Sort into: full / partial / needs support"],
-  "answerKey": ["Q1: definition","Q2: application","Q3: critical thinking"],
-  "printables": ["Exit ticket (one per student)"],
-  "assessment": "Sort tickets into three piles by level of understanding",
-  "extensionChallenge": "Use results to design a targeted warm-up next lesson"
-}
-Generate 3 questions: recall, application, critical thinking. Each is a challenge slide. End with a 'pens down' summary slide.`;
-  }
-
-  return `You are an interactive classroom activity designer. Create a Math Escape Challenge for ${b.subject}, Grade ${b.grade}, topic "${b.topic}".
-Duration: ${b.duration} min | Difficulty: ${b.difficulty} | Groups: ${b.groupType} | Goal: ${b.teachingGoal}
-${b.additionalContext ? `\nTextbook context:\n${b.additionalContext}` : ''}
-
-Return JSON in this exact shape (all text in English):
-{
-  "activityName": "Activity name",
-  "activityType": "escape-challenge",
-  "grade": "${b.grade}",
-  "subject": "${b.subject}",
-  "lesson": "${b.topic}",
-  "duration": ${b.duration},
-  "difficulty": "${b.difficulty}",
-  "groupType": "${b.groupType}",
-  "learningObjective": "One-sentence learning objective",
-  "materials": ["item 1","item 2"],
-  "teacherPreparation": "Teacher setup steps",
-  "slides": [
-    { "slideNumber": 1, "type": "intro", "title": "Your Mission", "content": "Mission description", "durationSeconds": 0 },
-    {
-      "slideNumber": 2,
-      "type": "challenge",
-      "title": "Challenge 1",
-      "content": "Challenge question text",
-      "hint": "A helpful hint",
-      "answer": "The correct answer",
-      "unlockCode": "5",
-      "durationSeconds": 180,
-      "teacher": {
-        "expectedAnswer": "Detailed expected answer",
-        "commonMisconceptions": "Common student errors",
-        "teachingTips": "Teaching advice",
-        "suggestedQuestions": ["Follow-up question"],
-        "differentiationTips": "How to support different levels"
-      }
-    },
-    { "slideNumber": 3, "type": "reveal", "title": "Code Unlocked!", "content": "Code reveal message", "unlockCode": "5", "durationSeconds": 0 }
-  ],
-  "teacherNotes": ["note 1"],
-  "answerKey": ["Challenge 1 answer"],
-  "printables": ["Challenge cards","Answer key"],
-  "assessment": "How to assess the activity",
-  "extensionChallenge": "Extension challenge for advanced students"
-}
-Generate at least ${Math.floor(b.duration / 4)} challenges. Each challenge slide is followed by a reveal slide.`;
-}
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-function extractJSON(raw: string): unknown {
-  // Strip markdown code fences if present
-  const cleaned = raw
-    .replace(/^```(?:json)?\s*/i, "")
-    .replace(/\s*```$/i, "")
-    .trim();
-  try {
-    return JSON.parse(cleaned);
-  } catch {
-    // Try to find the first { ... } block
-    const match = cleaned.match(/\{[\s\S]*\}/);
-    if (match) return JSON.parse(match[0]);
-    throw new Error("Could not parse JSON from AI response");
-  }
-}
+  logger.warn({ artifactId: id, userId: req.user?.id }, "pooled artifact retired by a teacher");
+  res.json({ retired: true });
+});
 
 export default generateRouter;

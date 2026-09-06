@@ -6,6 +6,7 @@
  * overwhelming majority of what science teachers actually project.
  */
 import type { VisualBlock } from './deckVisuals.ts';
+import { curveFromCommand } from './deckVisuals.ts';
 import type { ActivitySlide } from './ai/AIService.ts';
 
 /** Blank GeoGebra Graphing app — used when there is nothing to plot. */
@@ -194,13 +195,21 @@ export function buildChartSlide(
   };
 }
 
+const MEDIA_SLIDE_TITLE: Record<'image' | 'video' | 'audio' | 'document', [ar: string, en: string]> = {
+  video: ['فيديو', 'Video'],
+  audio: ['تسجيل صوتي', 'Audio'],
+  image: ['صورة', 'Image'],
+  document: ['مستند', 'Document'],
+};
+
 export function buildMediaSlide(
-  kind: 'image' | 'video',
+  kind: 'image' | 'video' | 'audio' | 'document',
   url: string,
   caption: string,
   isAr: boolean,
   slideNumber: number,
 ): ActivitySlide {
+  const [titleAr, titleEn] = MEDIA_SLIDE_TITLE[kind];
   return {
     slideNumber,
     type: 'media',
@@ -208,9 +217,7 @@ export function buildMediaSlide(
     // (presentation.tsx's badge, deckSlidesHtml's header, the PPTX header
     // bar) prepends its own type emoji, so carrying one here printed it
     // twice — "🎬  🎬 فيديو".
-    title: kind === 'video'
-      ? (isAr ? 'فيديو' : 'Video')
-      : (isAr ? 'صورة' : 'Image'),
+    title: isAr ? titleAr : titleEn,
     content: caption,
     mediaKind: kind,
     mediaUrl: url,
@@ -276,7 +283,7 @@ export function insertVideoSlide(
 }
 
 /** What a teacher pinned to a lesson — the shape `lessonMedia` stores. */
-export type AttachedResource = { kind: 'image' | 'video'; url: string; caption: string };
+export type AttachedResource = { kind: 'image' | 'video' | 'audio' | 'document'; url: string; caption: string };
 
 /**
  * Put the teacher's own resources into a generated deck.
@@ -320,7 +327,24 @@ export function shouldSearchForVideo(items: readonly AttachedResource[]): boolea
  * prose that would render an error in front of a class.
  */
 export function extractGraphCommands(text: string, max = 3): string[] {
-  if (!text) return [];
+  return scanGraphCommands(text, max).commands;
+}
+
+/**
+ * The same scan, keeping what it had to REFUSE.
+ *
+ * A stem that names «x² + y² = 5 و x − y = 1» yields one drawable curve and
+ * one this build cannot plot. Attaching just the line would put half a picture
+ * under a sentence about both — the confident-wrong-picture failure the whole
+ * check guard exists to prevent — so callers that are deciding whether a slide
+ * can honestly claim a figure need to know something was left out, not just
+ * what came back.
+ */
+export function scanGraphCommands(
+  text: string,
+  max = 3,
+): { commands: string[]; unplottable: string[] } {
+  if (!text) return { commands: [], unplottable: [] };
   // Generated math uses typographic characters GeoGebra won't parse:
   // superscripts and the true minus sign. Normalise before matching.
   text = text
@@ -328,6 +352,7 @@ export function extractGraphCommands(text: string, max = 3): string[] {
     .replace(/³/g, '^3')
     .replace(/[−–—]/g, '-');
   const out: string[] = [];
+  const unplottable: string[] = [];
   // The body is matched as a real expression — a term, then any number of
   // (operator, term) pairs — rather than a flat run of math-safe characters.
   //
@@ -339,8 +364,12 @@ export function extractGraphCommands(text: string, max = 3): string[] {
   // formula — but requiring an operator between terms stops naturally at
   // `1 and then…` while keeping `x^3 - 4x` whole.
   const term = '[0-9a-z^().√π]+';
+  // A leading unary minus is part of the first term, not an operator between
+  // two of them. Without this `y = -x + 3` matched nothing at all — an
+  // ordinary line with a negative slope, so a two-line system was projected
+  // with one line missing and no error anywhere.
   const re = new RegExp(
-    `([fghy])\\s*(\\([a-z]\\))?\\s*=\\s*(${term}(?:\\s*[+\\-*/]\\s*${term})*)`,
+    `([fghy])\\s*(\\([a-z]\\))?\\s*=\\s*(-?\\s*${term}(?:\\s*[+\\-*/]\\s*${term})*)`,
     'gi',
   );
   let m: RegExpExecArray | null;
@@ -348,11 +377,105 @@ export function extractGraphCommands(text: string, max = 3): string[] {
     const name = m[1]!;
     const arg = m[2] ?? (name.toLowerCase() === 'y' ? '' : '(x)');
     // A trailing full stop is sentence punctuation, never part of the maths.
-    const body = m[3]!.trim().replace(/[.\s]+$/, '');
+    const body = m[3]!.trim().replace(/[.\s]+$/, '').replace(/^-\s*/, '-');
     // A constant is not a curve worth projecting — require a variable.
     if (!/[a-z]/i.test(body)) continue;
     const cmd = `${name}${arg}=${body}`;
-    if (!out.includes(cmd)) out.push(cmd);
+    if (out.includes(cmd)) continue;
+    if (!curveFromCommand(cmd)) { unplottable.push(cmd); continue; }
+    out.push(cmd);
   }
-  return out;
+
+  // ── Second pass: the general form the textbook actually uses ──────────────
+  // «x − y = 1», «4y − 8x = −21», «y − x² = 7 − 5x». The pattern above needs
+  // the equation to open with a name — `y =`, `f(x) =` — so every system
+  // written the way the book writes it extracted nothing at all, and a
+  // question could carry a complete set of equations and still project a
+  // blank slide.
+  //
+  // Loose to match, strict to keep: anything found here is emitted only if
+  // `curveFromCommand` can actually turn it into a curve. That is what keeps
+  // «x² + y² = 5» out — GeoGebra would plot the circle, but this build's
+  // static renderers cannot, and a command nothing can draw would make a
+  // slide claim a visual it does not have.
+  // A leading sign on either side, for the same reason the pattern above needs
+  // one: `4y - 8x = -21` is an ordinary book equation, and without this the
+  // right-hand side simply failed to match.
+  const side = `-?\\s*${term}(?:\\s*[+\\-*/]\\s*${term})*`;
+  const general = new RegExp(`${side}\\s*=\\s*${side}`, 'gi');
+  const canonical = (c: string) => c.replace(/\s+/g, '');
+  const seen = new Set(out.map(canonical));
+  let g: RegExpExecArray | null;
+  while ((g = general.exec(text)) && out.length < max) {
+    const cmd = g[0]!.trim().replace(/[.\s]+$/, '');
+    if (seen.has(canonical(cmd))) continue;
+    seen.add(canonical(cmd));
+    if (!curveFromCommand(cmd)) { unplottable.push(cmd); continue; }
+    out.push(cmd);
+  }
+  return { commands: out, unplottable };
+}
+
+/**
+ * The two ways a stem can claim a picture is already on the slide.
+ *
+ * What both have in common is an assertion that can be *false*. «ارسم الرسم
+ * البياني للاقتران» is an instruction to draw one, and cannot be wrong;
+ * «في الرسم البياني الظاهر» and «يمثل الرسم البياني خطين» both assert one is
+ * on screen, and are wrong the moment it isn't. Matching the noun alone would
+ * flag every graphing exercise in the corpus, so the noun is never enough.
+ */
+const VISUAL_NOUN_AR = '(?:الرسم\\s*البياني|التمثيل\\s*البياني|المنحنى|الرسمة|الشكل|المخطط|الرسم)';
+
+/** Pointing at it: «الشكل الظاهر», «الرسم البياني أعلاه». */
+const SHOWN_VISUAL_AR = new RegExp(
+  `${VISUAL_NOUN_AR}`
+  + '\\s*(?:ال(?:ظاهر|مجاور|موضّح|موضح|مرفق|معروض|آتي|تالي|سابق)[\\u0600-\\u06FF]*'
+  + '|أعلاه|أدناه|أمامكم|أمامك)',
+  'u',
+);
+
+/**
+ * Saying what it shows: «يمثل الرسم البياني خطين…», «يوضح الشكل…».
+ *
+ * Arabic is verb-first, so this assertion carries no demonstrative at all —
+ * which is exactly how two live check slides slipped past the pointing-word
+ * test above and projected a question about a graph that was not drawn. The
+ * verb is doing the same work «الظاهر» does: it states, as fact, that the
+ * class is looking at a figure.
+ */
+const DEPICTS_VISUAL_AR = new RegExp(
+  '(?:يمثّل|يمثل|تمثّل|تمثل|يوضّح|يوضح|توضّح|توضح|يبيّن|يبين|تبيّن|تبين'
+  + '|يُظهر|يظهر|تُظهر|تظهر|يعرض|تعرض|يصف|تصف)'
+  + `\\s+(?:لنا\\s+)?${VISUAL_NOUN_AR}`,
+  'u',
+);
+
+const VISUAL_NOUN_EN = '(?:graph|figure|diagram|chart|plot|curve|sketch|image|picture)';
+const SHOWN_VISUAL_EN = new RegExp(
+  `\\b${VISUAL_NOUN_EN}\\s+(?:shown|above|below|opposite|attached|displayed|here`
+  + `|on\\s+(?:the\\s+)?(?:screen|slide|board))\\b`
+  + `|\\b(?:above|below|shown|attached|adjacent|following)\\s+${VISUAL_NOUN_EN}\\b`
+  // The English half of the same verb-led claim: "the graph shows two lines".
+  // `the` is required, and is what separates the claim from a definition:
+  // «A scatter plot shows ordered pairs» explains what a scatter plot IS —
+  // the one sentence in the whole curriculum corpus this would misread.
+  // Arabic needs no such guard; «الرسم البياني» is definite by construction.
+  + `|\\bthe\\s+${VISUAL_NOUN_EN}\\s+(?:shows|represents|depicts|illustrates|displays)\\b`,
+  'i',
+);
+
+/**
+ * Whether a slide's text asserts that a picture is already on screen.
+ *
+ * A question that opens «في الرسم البياني الظاهر…» is unanswerable when the
+ * slide shows no graph — the class is told to read coordinates off something
+ * that is not there. Generated checks make that claim on their own, so the
+ * deck has to notice it: either the picture gets drawn (the question's own
+ * equations are plottable) or the question does not project at all.
+ */
+export function referencesShownVisual(text: string): boolean {
+  const s = (text ?? '').trim();
+  if (!s) return false;
+  return SHOWN_VISUAL_AR.test(s) || DEPICTS_VISUAL_AR.test(s) || SHOWN_VISUAL_EN.test(s);
 }

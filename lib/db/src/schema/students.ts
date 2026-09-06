@@ -1,12 +1,18 @@
 /**
  * Roster — classes and students.
  *
- * Students deliberately have **no account**: no email, no password hash, no row
- * in `users`. A student is a name a teacher wrote down. Authenticating minors
- * would buy consent handling, password recovery for fifteen-year-olds and a
- * parent-facing support surface, none of which helps anyone learn anything.
- * When evaluations are delivered by link (a later phase), the link itself is
- * the identity — see `attempts.accessTokenHash`.
+ * A student row is still, first, **a name a teacher wrote down**: it needs no
+ * account to exist and most never have one. That was once the whole story —
+ * authenticating minors buys consent handling, password recovery for
+ * fifteen-year-olds and a parent-facing support surface, none of which helps
+ * anyone learn anything — and it is why an evaluation is delivered by link,
+ * with the link itself as the identity (see `attempts.accessTokenHash`).
+ *
+ * Since 2026-09-04 a student or parent *may additionally* claim a row and get
+ * a real `users` account: `claimCode` below is minted by the teacher, and
+ * `rosterLinks` (schema/messaging.ts) records who claimed what. That exists so
+ * in-app messaging has someone to address, and nothing else here depends on
+ * it — a roster whose rows are all unclaimed behaves exactly as it did before.
  *
  * Everything here is owned by a teacher. There is no school or tenant layer
  * yet; add one below `users` when a school actually asks for it.
@@ -30,11 +36,39 @@ export const classGroups = pgTable(
     subjectId: text("subject_id").notNull().default(""),
     academicYear: text("academic_year").notNull().default(""),
     /**
-     * Short human-typeable code for a future "one shared link, type your name"
-     * mode. Unused today — per-student links are the shipping path, because a
-     * level attached to the wrong name is worse than no level.
+     * One shared code for the whole class: the joiner types it and picks their
+     * own name off this class's roster. Reverses the deferral in
+     * docs/student-evaluation-module-plan.md — minting one code per student was
+     * six taps each, thirty times, and it was the reason nobody had contacts to
+     * put in a group.
+     *
+     * The objection that deferred it (a code attached to the wrong name) is
+     * paid for, not wished away: a name already held by a student account
+     * cannot be claimed again — see lib/claimDecision.ts in the api-server.
+     *
+     * COMPLETE IN CODE, STILL SWITCHED OFF as of 2026-09-06. Minting
+     * (POST /classes/:id/join-code), the public lookup (GET /auth/join/:code)
+     * and the undo for a wrong claim (DELETE /students/:id/links/:userId) all
+     * exist, and both columns are present in production and locally — verified
+     * by an information_schema query, not by `verify-schema`, which checks
+     * table names only and would report `ok` with a column missing.
+     *
+     * What still gates it is `STUDENT_ACCOUNTS`: false, so every one of those
+     * routes answers 403. Turning it on is not a config change — legal.ts
+     * states in print that no minor holds an account.
+     *
+     * Expiry is not optional here the way it might look. This code is the key
+     * to an *unauthenticated* endpoint that lists children's names, so
+     * regenerating is revocation on purpose and expiry is revocation by default
+     * when a teacher never comes back. Longer-lived than `students.claimCode`'s
+     * 30 days: a class code goes on the whiteboard in week 1 and gets redeemed
+     * by stragglers in week 6.
+     *
+     * ponytail: fixed 180-day TTL. Make it per-class if a school's term dates
+     * ever need to drive it.
      */
     joinCode: text("join_code").unique(),
+    joinCodeExpiresAt: timestamp("join_code_expires_at", { withTimezone: true }),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
@@ -53,6 +87,29 @@ export const students = pgTable(
     /** School register number or similar. Optional, teacher's own reference. */
     externalRef: text("external_ref"),
     gradeId: text("grade_id").notNull().default(""),
+    /**
+     * The teacher's running note on this child — one field, overwritten, not a
+     * history. What a teacher wants at a parent evening is the current picture
+     * ("improving on word problems, still rushes"), and a timeline of every
+     * edit is a bigger thing to build, read, and delete from.
+     *
+     * Distinct from `attempts.teacherComment`, which is about one sitting.
+     * This one outlives any single test.
+     *
+     * ponytail: no history. Add a notes table if a teacher asks to see how a
+     * child changed across the term.
+     */
+    teacherNote: text("teacher_note").notNull().default(""),
+    /**
+     * A short code the teacher hands to a parent or the student themself, so
+     * their self-serve signup can link to this exact roster row instead of
+     * creating a dangling account. Mirrors `classGroups.joinCode`. Plain text,
+     * not hashed like `attempts.accessTokenHash` — this grants a chat-linking
+     * claim, not exam-answering access, so it's shared the same low-stakes
+     * way a teacher already shares a join code.
+     */
+    claimCode: text("claim_code").unique(),
+    claimCodeExpiresAt: timestamp("claim_code_expires_at", { withTimezone: true }),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),

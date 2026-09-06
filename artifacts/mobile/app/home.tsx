@@ -23,12 +23,12 @@ import {
   extractLessonTopic,
   getVisibleHeroSuggestions,
   getVisibleHomeTools,
-  getVisibleSmartTemplates,
   inferToolFromPrompt,
   type HomeToolId,
 } from '@/services/homeAiTools';
 import { TopicSelector, type TopicSelectionDetail } from '@/components/ui/TopicSelector';
-import { getPickerSubjects } from '@/services/curriculumData';
+import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
+import { lessonPickerParams } from '@/services/lessonPrep';
 import {
   loadLessonPick,
   markOnboarded,
@@ -82,10 +82,12 @@ export default function DashboardScreen() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [draftTopic, setDraftTopic] = useState('');
   const [draftSubjectId, setDraftSubjectId] = useState('mathematics');
+  const [draftGradeId, setDraftGradeId] = useState('grade-10');
   const [draftDetail, setDraftDetail] = useState<TopicSelectionDetail>({
-    unitOrder: null, unitTitle: null, lessonTitle: null,
+    unitOrder: null, unitTitle: null, lessonTitle: null, lessonId: null,
   });
   const pickerSubjects = getPickerSubjects();
+  const pickerGrades = getPickerGrades();
   // Class Mode media attached to the CURRENT lesson (shown as deck slides).
   const [media, setMedia] = useState<LessonMediaItem[]>([]);
   const [mediaUrl, setMediaUrl] = useState('');
@@ -119,7 +121,7 @@ export default function DashboardScreen() {
     if (user && !pick && !(await wasOnboarded())) {
       await markOnboarded();
       setDraftTopic('');
-      setDraftDetail({ unitOrder: null, unitTitle: null, lessonTitle: null });
+      setDraftDetail({ unitOrder: null, unitTitle: null, lessonTitle: null, lessonId: null });
       setPickerOpen(true);
     }
     if (user) setCoachVisible(!(await wasCoachDismissed()));
@@ -161,7 +163,12 @@ export default function DashboardScreen() {
   const contextSubject = pickedSubject
     ? (lang === 'ar' ? pickedSubject.nameAr : pickedSubject.name)
     : (lang === 'ar' ? 'الرياضيات' : 'Mathematics');
-  const contextGrade = lang === 'ar' ? 'الصف العاشر' : 'Grade 10';
+  const pickedGrade = lessonPick?.gradeId
+    ? pickerGrades.find(g => g.id === lessonPick.gradeId)
+    : undefined;
+  const contextGrade = pickedGrade
+    ? (lang === 'ar' ? pickedGrade.nameAr : pickedGrade.name)
+    : (lang === 'ar' ? 'الصف العاشر' : 'Grade 10');
   const unitNumber = lessonPick
     ? lessonPick.unitOrder
     : (continueItem?.formState?.unitNumber as number | undefined)
@@ -172,13 +179,19 @@ export default function DashboardScreen() {
 
   const visibleTools = getVisibleHomeTools();
   const visibleSuggestions = getVisibleHeroSuggestions();
-  const visibleTemplates = getVisibleSmartTemplates();
 
   const openGenerator = (toolId: HomeToolId, topicOverride?: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const topic = (topicOverride ?? lessonTopic).trim();
     const nav = buildGeneratorNav(toolId, topic, lang);
-    router.push({ pathname: nav.pathname as any, params: nav.params });
+    // Carries the picked lesson's own grade/subject so the generator screen
+    // doesn't fall back to its index-0 default (Grade 10 Mathematics) — see
+    // lessonPickerParams's own docs for why that default isn't cosmetic.
+    const params = {
+      ...nav.params,
+      ...(lessonPickerParams(lessonPick?.lessonId, lang as 'ar' | 'en') ?? {}),
+    };
+    router.push({ pathname: nav.pathname as any, params });
   };
 
   const runPrompt = (raw?: string) => {
@@ -199,14 +212,21 @@ export default function DashboardScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setDraftTopic('');
     setDraftSubjectId(lessonPick?.subjectId ?? 'mathematics');
-    setDraftDetail({ unitOrder: null, unitTitle: null, lessonTitle: null });
+    setDraftGradeId(lessonPick?.gradeId ?? 'grade-10');
+    setDraftDetail({ unitOrder: null, unitTitle: null, lessonTitle: null, lessonId: null });
     setPickerOpen(true);
   };
 
   const confirmLessonPick = async () => {
     const topic = draftTopic.trim();
     if (!topic) return;
-    const pick: HomeLessonPick = { topic, unitOrder: draftDetail.unitOrder, subjectId: draftSubjectId };
+    const pick: HomeLessonPick = {
+      topic,
+      unitOrder: draftDetail.unitOrder,
+      subjectId: draftSubjectId,
+      gradeId: draftGradeId,
+      lessonId: draftDetail.lessonId,
+    };
     setLessonPick(pick);
     setPickerOpen(false);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -657,38 +677,6 @@ export default function DashboardScreen() {
         )}
       </View>
 
-      {/* 6 ── Smart Templates */}
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
-          {t('smartTemplatesTitle')}
-        </Text>
-        <View style={{ gap: 8 }}>
-          {visibleTemplates.map(tpl => (
-            <Pressable
-              key={tpl.id}
-              onPress={() => {
-                const hint = lang === 'ar' ? tpl.topicHintAr : tpl.topicHintEn;
-                openGenerator(tpl.toolId, `${hint}: ${lessonTopic}`);
-              }}
-              style={({ pressed }) => [
-                styles.templateRow,
-                {
-                  backgroundColor: colors.card,
-                  borderColor: colors.border,
-                  opacity: pressed ? 0.88 : 1,
-                  flexDirection: isRTL ? 'row-reverse' : 'row',
-                },
-              ]}
-            >
-              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Cairo_500Medium', fontSize: 14, textAlign: isRTL ? 'right' : 'left' }}>
-                • {lang === 'ar' ? tpl.labelAr : tpl.labelEn}
-              </Text>
-              <Ionicons name="sparkles-outline" size={16} color={TEAL} />
-            </Pressable>
-          ))}
-        </View>
-      </View>
-
       {/* 7 ── Recent Documents (lighter) */}
       <View style={styles.section}>
         <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
@@ -794,6 +782,58 @@ export default function DashboardScreen() {
                 : 'Pick the subject, unit, then lesson — Jordan curriculum, Grade 10.'}
             </Text>
 
+            {/* Grade pills — only worth showing once there is a real choice. */}
+            {pickerGrades.length > 1 ? (
+              <>
+                <Text
+                  style={{
+                    color: colors.foreground,
+                    fontFamily: 'Cairo_500Medium',
+                    fontSize: 14,
+                    marginBottom: 8,
+                    textAlign: isRTL ? 'right' : 'left',
+                  }}
+                >
+                  {lang === 'ar' ? 'الصف' : 'Grade'}
+                </Text>
+                <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+                  {pickerGrades.map(g => {
+                    const active = draftGradeId === g.id;
+                    return (
+                      <Pressable
+                        key={g.id}
+                        onPress={() => {
+                          // Changing grade invalidates the unit/lesson draft,
+                          // same as changing subject does below.
+                          setDraftGradeId(g.id);
+                          setDraftTopic('');
+                          setDraftDetail({ unitOrder: null, unitTitle: null, lessonTitle: null, lessonId: null });
+                        }}
+                        style={{
+                          paddingHorizontal: 16,
+                          paddingVertical: 9,
+                          borderRadius: 20,
+                          borderWidth: 1.5,
+                          borderColor: active ? TEAL : colors.border,
+                          backgroundColor: active ? TEAL + '16' : colors.card,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            color: active ? TEAL : colors.mutedForeground,
+                            fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
+                            fontSize: 13.5,
+                          }}
+                        >
+                          {lang === 'ar' ? g.nameAr : g.name}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </>
+            ) : null}
+
             {/* Subject pills */}
             <Text
               style={{
@@ -816,7 +856,7 @@ export default function DashboardScreen() {
                       // Changing subject invalidates the unit/lesson draft.
                       setDraftSubjectId(s.id);
                       setDraftTopic('');
-                      setDraftDetail({ unitOrder: null, unitTitle: null, lessonTitle: null });
+                      setDraftDetail({ unitOrder: null, unitTitle: null, lessonTitle: null, lessonId: null });
                     }}
                     style={{
                       paddingHorizontal: 16,
@@ -843,7 +883,7 @@ export default function DashboardScreen() {
 
             <TopicSelector
               subjectId={draftSubjectId}
-              gradeId="grade-10"
+              gradeId={draftGradeId}
               value={draftTopic}
               onChange={setDraftTopic}
               onSelectionDetail={setDraftDetail}
@@ -1275,15 +1315,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     gap: 4,
-  },
-
-  templateRow: {
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    alignItems: 'center',
-    gap: 10,
   },
 
   recentRow: {

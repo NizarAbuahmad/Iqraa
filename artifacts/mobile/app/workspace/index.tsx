@@ -1,37 +1,27 @@
 import React, { useCallback, useState } from 'react';
 import {
-  Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View,
+  FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View,
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { confirm } from '@/services/confirm';
+import { listClasses, type ClassGroup } from '@/services/roster';
+import { classNameFor } from '@/services/materialClass';
+import { arCountPhrase } from '@/services/arCount';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import {
   MaterialType, SavedMaterial,
   deleteItem, duplicateItem, getItems, toggleFavorite,
 } from '@/services/workspace';
-
-const TYPE_COLOR: Record<MaterialType, string> = {
-  lesson: '#1B6B62',
-  worksheet: '#8B5CF6',
-  quiz: '#F59E0B',
-  flow: '#00A99D',
-  activity: '#EC4899',
-  // Matches the Slides Maker screen's accent, so a saved deck is the same
-  // colour in the workspace as the tool that produced it.
-  slides: '#0EA5E9',
-};
-const TYPE_ICON: Record<MaterialType, keyof typeof Ionicons.glyphMap> = {
-  lesson: 'document-text-outline',
-  worksheet: 'list-outline',
-  quiz: 'help-circle-outline',
-  flow: 'git-branch-outline',
-  activity: 'game-controller-outline',
-  slides: 'tv-outline',
-};
+import {
+  MATERIAL_COLOR,
+  MATERIAL_EDIT_ROUTE,
+  MATERIAL_ICON,
+  MATERIAL_LABEL_KEY,
+} from '@/constants/materialKind';
 
 const TABS: Array<{ key: MaterialType | 'all'; labelKey: string }> = [
   { key: 'all', labelKey: 'allFilter' },
@@ -50,6 +40,14 @@ export default function WorkspaceScreen() {
   const [activeTab, setActiveTab] = useState<MaterialType | 'all'>('all');
   const [query, setQuery] = useState('');
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [menuItem, setMenuItem] = useState<SavedMaterial | null>(null);
+  /**
+   * The roster, only so a card can name the class it belongs to. Loaded once
+   * per focus rather than per card: `classGroupId` is stored on the material,
+   * but a teacher reads class names, not ids — and a class deleted since
+   * resolves to no class rather than a name that is gone.
+   */
+  const [classes, setClasses] = useState<ClassGroup[]>([]);
 
   const reload = useCallback(async () => {
     const type = activeTab === 'all' ? undefined : activeTab;
@@ -64,11 +62,21 @@ export default function WorkspaceScreen() {
   useFocusEffect(
     useCallback(() => {
       reload();
+      // Server-only, so offline this stays empty and the cards simply show no
+      // class — never a wrong one.
+      // `?? []` because listClasses returns `data.classes` unchecked: a
+      // malformed body lands here as undefined and the cards read it directly.
+      void listClasses().then(cs => setClasses(cs ?? [])).catch(() => setClasses([]));
     }, [reload]),
   );
 
-  const handleToggleFavorite = async (id: string) => {
-    await toggleFavorite(id);
+  // The list re-reads the store afterwards, so the star here always shows what
+  // persisted rather than what was intended. Passing `next` explicitly is what
+  // keeps a fast double-tap from racing itself: the read-then-flip form asked
+  // the server for the current value, and two taps could both read "off".
+  const handleToggleFavorite = async (item: SavedMaterial) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await toggleFavorite(item.id, !item.isFavorite);
     reload();
   };
 
@@ -92,41 +100,53 @@ export default function WorkspaceScreen() {
     reload();
   };
 
-  const handleMenu = (item: SavedMaterial) => {
-    const editRoute =
-      item.type === 'lesson' ? '/ai-tools/lesson-plan'
-        : item.type === 'worksheet' ? '/ai-tools/worksheet'
-          : item.type === 'flow' ? '/ai-tools/lesson-flow'
-            : '/ai-tools/quiz';
-
-    Alert.alert(
-      item.title,
-      undefined,
-      [
-        {
-          text: t('openItem'),
-          onPress: () => router.push({ pathname: '/workspace/view', params: { id: item.id } }),
-        },
-        {
-          text: t('editItem'),
-          onPress: () =>
+  /**
+   * The row menu's actions.
+   *
+   * This used to be an `Alert.alert` with five buttons, which meant the "..."
+   * button did nothing at all in the browser — `Alert.alert`'s handlers never
+   * fire on react-native web, the same defect `services/confirm.ts` was written
+   * for. Teachers are demoed on the web build, so Open, Edit, Duplicate and
+   * Delete were all dead there while looking fine on a phone.
+   */
+  const menuActions = (item: SavedMaterial) => {
+    // A chain of ternaries ending in `: '/ai-tools/quiz'` sent activities and
+    // decks to the quiz builder, which cannot rebuild either. Kinds with no
+    // form-driven editor simply do not offer Edit.
+    const editRoute = MATERIAL_EDIT_ROUTE[item.type];
+    return [
+      {
+        key: 'open',
+        icon: 'open-outline' as const,
+        label: t('openItem'),
+        run: () => router.push({ pathname: '/workspace/view', params: { id: item.id } }),
+      },
+      ...(editRoute
+        ? [{
+          key: 'edit',
+          icon: 'create-outline' as const,
+          label: t('editItem'),
+          run: () =>
             router.push({
               pathname: editRoute as any,
               params: { savedId: item.id, ...item.formState },
             }),
-        },
-        {
-          text: t('duplicateItem'),
-          onPress: () => handleDuplicate(item.id),
-        },
-        {
-          text: t('deleteItem'),
-          style: 'destructive',
-          onPress: () => { void handleDelete(item); },
-        },
-        { text: t('cancel'), style: 'cancel' },
-      ],
-    );
+        }]
+        : []),
+      {
+        key: 'duplicate',
+        icon: 'copy-outline' as const,
+        label: t('duplicateItem'),
+        run: () => { void handleDuplicate(item.id); },
+      },
+      {
+        key: 'delete',
+        icon: 'trash-outline' as const,
+        label: t('deleteItem'),
+        destructive: true,
+        run: () => { void handleDelete(item); },
+      },
+    ];
   };
 
   const formatDate = (iso: string) => {
@@ -141,16 +161,12 @@ export default function WorkspaceScreen() {
     }
   };
 
-  const typeLabel = (type: MaterialType) => {
-    if (type === 'lesson') return t('lessonType');
-    if (type === 'worksheet') return t('worksheetType');
-    if (type === 'flow') return lang === 'ar' ? 'مسار الدرس' : 'Lesson Flow';
-    return t('quizType');
-  };
+  const typeLabel = (type: MaterialType) => t(MATERIAL_LABEL_KEY[type]);
 
   const renderItem = ({ item }: { item: SavedMaterial }) => {
-    const color = TYPE_COLOR[item.type];
-    const icon = TYPE_ICON[item.type];
+    const color = MATERIAL_COLOR[item.type];
+    const icon = MATERIAL_ICON[item.type];
+    const classLabel = classNameFor(classes, item.classGroupId, lang as 'ar' | 'en');
     return (
       <Pressable
         onPress={() => router.push({ pathname: '/workspace/view', params: { id: item.id } })}
@@ -187,6 +203,20 @@ export default function WorkspaceScreen() {
             <Text style={[styles.metaText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
               {item.grade}
             </Text>
+            {/* Which class it is filed under. Absent rather than "no class":
+                an unfiled material is the normal case and does not need a
+                label saying so on every card. */}
+            {classLabel ? (
+              <View style={[styles.classPill, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                <Ionicons name="people-outline" size={11} color={colors.mutedForeground} />
+                <Text
+                  style={[styles.metaText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}
+                  numberOfLines={1}
+                >
+                  {classLabel}
+                </Text>
+              </View>
+            ) : null}
           </View>
           <Text style={[styles.metaText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left', marginTop: 2 }]}>
             {t('savedAt')} {formatDate(item.savedAt)}
@@ -196,7 +226,7 @@ export default function WorkspaceScreen() {
         {/* Actions */}
         <View style={[styles.cardActions, { alignItems: isRTL ? 'flex-start' : 'flex-end' }]}>
           <Pressable
-            onPress={() => handleToggleFavorite(item.id)}
+            onPress={() => handleToggleFavorite(item)}
             hitSlop={8}
             style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
           >
@@ -207,7 +237,7 @@ export default function WorkspaceScreen() {
             />
           </Pressable>
           <Pressable
-            onPress={() => handleMenu(item)}
+            onPress={() => setMenuItem(item)}
             hitSlop={8}
             style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, marginTop: 12 })}
           >
@@ -304,7 +334,7 @@ export default function WorkspaceScreen() {
           </Text>
         </Pressable>
         <Text style={[styles.countText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
-          {filtered.length} {lang === 'ar' ? 'مادة' : filtered.length === 1 ? 'item' : 'items'}
+          {lang === 'ar' ? arCountPhrase(filtered.length, 'مادة', 'مادتان', 'مواد') : `${filtered.length} ${filtered.length === 1 ? 'item' : 'items'}`}
         </Text>
       </View>
 
@@ -337,11 +367,93 @@ export default function WorkspaceScreen() {
           </View>
         }
       />
+
+      <Modal
+        visible={menuItem !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMenuItem(null)}
+      >
+        <Pressable style={styles.menuBackdrop} onPress={() => setMenuItem(null)}>
+          <Pressable
+            style={[styles.menuCard, { backgroundColor: colors.card }]}
+            onPress={e => e.stopPropagation()}
+          >
+            <Text
+              style={[
+                styles.menuTitle,
+                {
+                  color: colors.foreground,
+                  fontFamily: 'Cairo_600SemiBold',
+                  textAlign: isRTL ? 'right' : 'left',
+                },
+              ]}
+              numberOfLines={2}
+            >
+              {menuItem?.title}
+            </Text>
+            {(menuItem ? menuActions(menuItem) : []).map(action => (
+              <Pressable
+                key={action.key}
+                onPress={() => {
+                  // Close first: Edit and Open navigate away, and a modal still
+                  // mounted over the new screen is how a dialog gets stuck.
+                  setMenuItem(null);
+                  action.run();
+                }}
+                style={[
+                  styles.menuRow,
+                  { borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' },
+                ]}
+              >
+                <Ionicons
+                  name={action.icon}
+                  size={18}
+                  color={action.destructive ? colors.destructive : colors.primary}
+                />
+                <Text
+                  style={{
+                    color: action.destructive ? colors.destructive : colors.foreground,
+                    fontFamily: 'Cairo_500Medium',
+                    flex: 1,
+                    textAlign: isRTL ? 'right' : 'left',
+                  }}
+                >
+                  {action.label}
+                </Text>
+              </Pressable>
+            ))}
+            <Pressable onPress={() => setMenuItem(null)} style={styles.menuCancel}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }}>
+                {t('cancel')}
+              </Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  menuBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  menuCard: { width: '100%', maxWidth: 400, borderRadius: 16, padding: 20, gap: 8 },
+  menuTitle: { fontSize: 16, marginBottom: 4 },
+  menuRow: {
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 13,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  menuCancel: { alignSelf: 'flex-end', paddingHorizontal: 14, paddingVertical: 10, marginTop: 4 },
   header: { paddingHorizontal: 20, paddingBottom: 0, borderBottomWidth: 1 },
   backBtn: { width: 40, height: 40, justifyContent: 'center', marginBottom: 4 },
   headerTitle: { fontSize: 26, marginBottom: 2 },
@@ -359,6 +471,7 @@ const styles = StyleSheet.create({
   cardIcon: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   cardTitle: { fontSize: 14, marginBottom: 6, lineHeight: 20 },
   cardMeta: { alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  classPill: { alignItems: 'center', gap: 3 },
   typePill: { paddingHorizontal: 8, paddingVertical: 2 },
   typeText: { fontSize: 11 },
   metaText: { fontSize: 11 },

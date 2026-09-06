@@ -1,44 +1,19 @@
 /**
- * Arabic-aware normalisation, applied to both sides before any string compare.
+ * Grading-time comparison helpers.
  *
- * A student who writes the right answer a different way must not lose marks —
- * that is the rule the whole grading tier stands on. In Arabic, "different way"
- * is mostly orthographic: hamza carriers, taa marbuta, final yaa, harakat a
- * teacher typed and a student did not, and Arabic-Indic digits. Comparing raw
- * strings marks those wrong, and a wrong mark on a correct answer is the one
- * failure that destroys a teacher's trust in the whole level.
+ * `normalizeArabic` itself now lives in `@workspace/curriculum` — passage
+ * retrieval needs the identical folding, and that package is a dependency of
+ * this one, so the function moved down rather than being copied up. It is
+ * re-exported here so every existing import keeps working and there is still
+ * exactly one implementation.
  *
- * Deliberately NOT normalised: standalone hamza `ء`. It is a letter, not a
- * diacritic — folding it changes words (جزء → جز).
+ * What stays here is about marking rather than about Arabic: parsing a number
+ * out of a normalised string, and deciding whether a student's answer matches
+ * an accepted one.
  */
+import { normalizeArabic } from "@workspace/curriculum";
 
-/** Harakat and other combining marks a teacher may or may not have typed. */
-const HARAKAT = /[ً-ْٰـ]/g;
-
-const AR_DIGITS: Record<string, string> = {
-  "٠": "0", "١": "1", "٢": "2", "٣": "3", "٤": "4",
-  "٥": "5", "٦": "6", "٧": "7", "٨": "8", "٩": "9",
-  // Extended (Persian/Urdu) forms turn up when a keyboard is set that way.
-  "۰": "0", "۱": "1", "۲": "2", "۳": "3", "۴": "4",
-  "۵": "5", "۶": "6", "۷": "7", "۸": "8", "۹": "9",
-};
-
-export function normalizeArabic(input: unknown): string {
-  if (typeof input !== "string") return "";
-  let s = input.normalize("NFKC");
-
-  s = s.replace(HARAKAT, "");
-  s = s.replace(/[أإآٱ]/g, "ا");
-  s = s.replace(/ة/g, "ه");
-  s = s.replace(/ى/g, "ي");
-  s = s.replace(/[٠-٩۰-۹]/g, d => AR_DIGITS[d] ?? d);
-  // Arabic decimal separator and thousands mark.
-  s = s.replace(/٫/g, ".").replace(/٬/g, "");
-  s = s.toLowerCase();
-  s = s.replace(/\s+/g, " ").trim();
-
-  return s;
-}
+export { normalizeArabic };
 
 /** Parses a number from an already-normalised string, or null if it isn't one. */
 export function numericValue(normalized: string): number | null {

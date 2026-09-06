@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface ExportOption {
   id: string;
@@ -17,6 +18,10 @@ interface ExportOption {
   sublabel: string;
   color: string;
   loading?: boolean;
+  /** Carried on the option itself. This used to be a separate `handlers`
+   *  record keyed by `id`, so adding a row without adding its entry crashed
+   *  on tap — invisible until someone pressed the new one. */
+  onPress: () => void;
 }
 
 interface ExportMenuProps {
@@ -63,6 +68,7 @@ export function ExportMenu({
   labels,
 }: ExportMenuProps) {
   const colors = useColors();
+  const { t } = useLanguage();
 
   const options: ExportOption[] = [
     {
@@ -71,6 +77,7 @@ export function ExportMenu({
       label: labels.shareLabel,
       sublabel: labels.shareSub,
       color: '#3B82F6',
+      onPress: onShare,
     },
     {
       id: 'copy',
@@ -78,6 +85,7 @@ export function ExportMenu({
       label: labels.copyLabel,
       sublabel: labels.copySub,
       color: '#6366F1',
+      onPress: onCopy,
     },
     {
       id: 'pdf',
@@ -86,6 +94,7 @@ export function ExportMenu({
       sublabel: labels.pdfSub,
       color: '#EF4444',
       loading: loadingPDF,
+      onPress: onPDF,
     },
     {
       id: 'word',
@@ -94,6 +103,7 @@ export function ExportMenu({
       sublabel: labels.wordSub,
       color: '#2563EB',
       loading: loadingWord,
+      onPress: onWord,
     },
     ...(onSlides && labels.slidesLabel ? [{
       id: 'slides',
@@ -102,16 +112,9 @@ export function ExportMenu({
       sublabel: labels.slidesSub ?? '',
       color: '#7C3AED',
       loading: loadingSlides,
+      onPress: onSlides,
     }] : []),
   ];
-
-  const handlers: Record<string, () => void> = {
-    share: onShare,
-    copy: onCopy,
-    pdf: onPDF,
-    word: onWord,
-    ...(onSlides ? { slides: onSlides } : {}),
-  };
 
   return (
     <Modal
@@ -134,7 +137,7 @@ export function ExportMenu({
           {options.map(opt => (
             <Pressable
               key={opt.id}
-              onPress={() => { if (!opt.loading) { onClose(); handlers[opt.id](); } }}
+              onPress={() => { if (!opt.loading) { onClose(); opt.onPress(); } }}
               style={({ pressed }) => [
                 styles.row,
                 { flexDirection: isRTL ? 'row-reverse' : 'row', borderColor: colors.border, opacity: pressed ? 0.7 : 1 },

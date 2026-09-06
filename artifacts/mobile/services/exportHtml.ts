@@ -22,6 +22,8 @@
  * `row-reverse` is correct because RN has no document direction to inherit.
  */
 import { labelAnswer, labelOption, labelOptionLine } from './optionLabels.ts';
+import { arCountPhrase } from './arCount.ts';
+import { isolateForeignRuns } from './mathRender.ts';
 import type {
   ActivityOutput,
   LessonFlowOutput,
@@ -39,68 +41,283 @@ import type {
  * date, in every Arabic PDF. Rows are plain `row` now and let `direction` do
  * the work — never re-reverse a row inside an already-RTL document.
  */
-function htmlBase(content: string, isRTL: boolean, title: string): string {
+/**
+ * The accent a printed document is built around.
+ *
+ * The same four colours the projector already uses per artifact type
+ * (`buildWorksheetSlidesHTML` et al, and `deckTheme.ts`'s `slideTypeAccent`),
+ * so a teacher who prints a worksheet and then projects it sees one product.
+ * They were previously teal for everything except the activity, which had its
+ * own orange and its own hand-built document to put it in.
+ */
+export const DOC_ACCENT = {
+  lesson: '#1B6B62',
+  worksheet: '#8B5CF6',
+  quiz: '#F59E0B',
+  activity: '#E67E22',
+} as const;
+
+/** Where the name-and-date block gets its rule, and every section its tint. */
+type DocKind = keyof typeof DOC_ACCENT;
+
+/**
+ * A tinted section band with an icon — the one shape this stylesheet is
+ * built around.
+ *
+ * Lifted from `buildLessonFlowHTML`'s `secHeader`, which was the only builder
+ * in this file that looked designed: an 8%-alpha tint of the accent
+ * (`${color}15` is 8-digit hex, not a typo) behind an emoji and a bold label,
+ * with a 4px bar on the inline-start edge. Everything else here printed a
+ * grey hairline and 13px uppercase letter-spaced caps.
+ *
+ * The bar is branched rather than written with `border-inline-start` because
+ * this document's other physical properties already are, and expo-print's
+ * WebKit is the older of the two engines it has to satisfy. Note it must not
+ * become a flex row with `row-reverse` — see this file's header.
+ */
+function sectionBand(label: string, icon: string, color: string, isRTL: boolean): string {
+  const bar = isRTL
+    ? `border-right:4px solid ${color}`
+    : `border-left:4px solid ${color}`;
+  return `<div class="sec-band" style="background:${color}15;${bar}">
+      <span class="sec-icon">${icon}</span>
+      <span class="sec-label" style="color:${color}">${esc(label)}</span>
+    </div>`;
+}
+
+function htmlBase(
+  content: string,
+  isRTL: boolean,
+  title: string,
+  kind: DocKind = 'lesson',
+): string {
   const dir = isRTL ? 'rtl' : 'ltr';
   const align = isRTL ? 'right' : 'left';
+  const accent = DOC_ACCENT[kind];
+  // The app's own typefaces. The stack here has always NAMED Amiri and never
+  // loaded it, and Amiri ships on no phone or desktop we target — so every
+  // worksheet a teacher has ever printed fell through to system Arial while
+  // the projector deck rendered in Cairo/Almarai. Same product, two
+  // typographies. Linked rather than embedded for the reason
+  // `deckSlidesHtml.ts` documents at length: ~440KB of faces would sit in
+  // every bundle including those that never export, this path already assumes
+  // network for images, and with none the stack falls back to Arial — exactly
+  // what it printed before, so offline is no worse than today. `share.ts`'s
+  // `waitForFonts` (2.5s ceiling) exists for precisely this.
   return `<!DOCTYPE html>
 <html lang="${isRTL ? 'ar' : 'en'}" dir="${dir}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${esc(title)}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700&family=Cairo:wght@500;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
+    @page { size: A4 portrait; margin: 14mm 12mm; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: ${isRTL ? "'Amiri', 'Noto Naskh Arabic', 'Arabic UI Text', Arial" : "'Inter', 'Helvetica Neue', Arial"}, sans-serif;
-      font-size: 14px; line-height: 1.7; color: #1a1a1a;
-      padding: 40px; direction: ${dir}; text-align: ${align};
+      font-family: ${isRTL ? "'Almarai', 'Noto Naskh Arabic', Arial" : "'Inter', 'Helvetica Neue', Arial"}, sans-serif;
+      font-size: 13px; line-height: 1.7; color: #1f2937;
+      padding: 0; direction: ${dir}; text-align: ${align};
       background: #fff;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
     }
+    /* A4 portrait minus the 12mm side margins above is ~186mm ≈ 703px at
+       96dpi. 800px (what the lesson-flow document uses, which declares no
+       @page and so inherits the engine's own wider default) would clip on
+       the inline-end edge once a page size is declared. */
+    .page { max-width: 700px; margin: 0 auto; padding: 8px 4px 0; }
+    h1, h2, h3, .doc-title, .sec-label, .school-placeholder {
+      font-family: ${isRTL ? "'Cairo', 'Almarai', Arial" : "'Inter', 'Helvetica Neue', Arial"}, sans-serif;
+    }
+    /* Masthead — an accent band, not a hairline. */
     .school-header {
-      border-bottom: 2px solid #1B6B62; padding-bottom: 16px; margin-bottom: 24px;
-      display: flex; justify-content: space-between; align-items: flex-start;
-      flex-direction: row;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-direction: row; gap: 12px;
+      background: ${accent}0F; border-radius: 10px;
+      padding: 12px 16px; margin-bottom: 18px;
     }
-    .school-name { font-size: 13px; color: #666; }
-    .school-placeholder { font-weight: bold; color: #1B6B62; font-size: 15px; }
-    .doc-title { font-size: 22px; font-weight: 700; color: #111; margin-bottom: 6px; }
-    .doc-meta { font-size: 12px; color: #666; margin-bottom: 24px; }
-    .section { margin-bottom: 20px; }
+    .school-name { font-size: 12px; color: #6b7280; }
+    .school-placeholder { font-weight: 700; color: ${accent}; font-size: 14px; }
+    .doc-title { font-size: 23px; font-weight: 700; color: #111827; margin-bottom: 6px; line-height: 1.35; }
+    .doc-meta { font-size: 12px; color: #6b7280; margin-bottom: 20px; }
+    /* Sections */
+    .section { margin-bottom: 18px; break-inside: avoid; }
+    .sec-band {
+      display: flex; align-items: center; gap: 8px; flex-direction: row;
+      padding: 7px 12px; border-radius: 6px; margin-bottom: 10px;
+    }
+    .sec-icon { font-size: 15px; }
+    .sec-label { font-size: 13.5px; font-weight: 700; }
     .section-title {
-      font-size: 13px; font-weight: 700; color: #1B6B62;
-      text-transform: uppercase; letter-spacing: 0.5px;
-      border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; margin-bottom: 8px;
+      font-size: 13px; font-weight: 700; color: ${accent};
+      padding-bottom: 4px; margin-bottom: 8px;
+      border-bottom: 1px solid ${accent}33;
     }
-    .body-text { font-size: 13px; line-height: 1.8; color: #333; }
-    ul { padding-${isRTL ? 'right' : 'left'}: 20px; }
-    li { margin-bottom: 4px; font-size: 13px; color: #333; }
-    .answer-key { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 14px; margin-top: 24px; }
+    .body-text { font-size: 12.5px; line-height: 1.8; color: #374151; }
+    ul { padding-${isRTL ? 'right' : 'left'}: 18px; }
+    li { margin-bottom: 5px; font-size: 12.5px; color: #374151; line-height: 1.6; }
+    /* Question cards — a numbered badge instead of a bold full stop. */
+    .q-card {
+      background: #f9fafb; border: 1px solid #eef0f3; border-radius: 8px;
+      padding: 11px 13px; margin-bottom: 8px; break-inside: avoid;
+    }
+    .q-head { display: flex; align-items: center; gap: 8px; flex-direction: row; margin-bottom: 5px; }
+    .q-num {
+      background: ${accent}; color: #fff;
+      min-width: 22px; height: 22px; border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; flex-shrink: 0;
+    }
+    .q-text { font-size: 12.5px; color: #111827; line-height: 1.6; flex: 1; }
+    .q-option {
+      display: flex; flex-direction: row; gap: 8px; align-items: flex-start;
+      margin-top: 5px; font-size: 12px; color: #4b5563;
+      padding-${isRTL ? 'right' : 'left'}: 12px;
+    }
+    .q-pts { font-size: 10.5px; color: #9ca3af; margin-top: 5px; }
+    .q-type {
+      font-size: 10px; background: #fef3c7; color: #92400e;
+      padding: 2px 8px; border-radius: 9px; white-space: nowrap; flex-shrink: 0;
+      align-self: flex-start;
+    }
+    /* Writing room: a worksheet a student answers ON needs ruled space. */
+    .q-lines { margin-top: 8px; }
+    .q-rule { border-bottom: 1px solid #d1d5db; height: 20px; }
+    /* Answer key stays green — it is the one block that is not about the
+       document's own accent but about being obviously the teacher's half. */
+    .answer-key {
+      background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;
+      padding: 14px; margin-top: 22px; break-inside: avoid;
+    }
     .answer-key .section-title { color: #15803d; border-color: #bbf7d0; }
-    .answer-row { display: flex; flex-direction: row; gap: 8px; margin-bottom: 4px; font-size: 12px; }
-    .answer-num { font-weight: 600; color: #15803d; min-width: 24px; }
-    .q-card { border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; margin-bottom: 8px; }
-    .q-num { font-weight: 700; color: #1B6B62; }
-    .q-option { display: flex; flex-direction: row; gap: 8px; align-items: flex-start; margin-top: 4px; font-size: 12px; color: #555; }
-    .q-pts { font-size: 11px; color: #999; margin-top: 4px; }
-    .footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #e5e7eb; font-size: 11px; color: #aaa; text-align: center; }
+    .answer-row { display: flex; flex-direction: row; gap: 8px; margin-bottom: 5px; font-size: 12px; }
+    .answer-num { font-weight: 700; color: #15803d; min-width: 24px; }
+    /* Step cards, for the activity's numbered run-sheet. */
+    .step-card {
+      display: flex; flex-direction: row; gap: 10px; align-items: flex-start;
+      background: #f9fafb; border-radius: 8px; padding: 10px 12px;
+      margin-bottom: 8px; break-inside: avoid;
+    }
+    .step-num {
+      min-width: 24px; height: 24px; border-radius: 50%;
+      background: ${accent}; color: #fff; font-size: 11px; font-weight: 700;
+      display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .step-body { flex: 1; }
+    .step-title { font-size: 12.5px; font-weight: 700; color: #111827; margin-bottom: 3px; }
+    .step-desc { font-size: 11.5px; color: #6b7280; line-height: 1.55; }
+    /* A tinted callout for the one line that matters most on the page. */
+    .callout {
+      background: ${accent}0F; border-radius: 8px; padding: 12px 14px;
+      margin-bottom: 16px; font-size: 12.5px; color: #374151; line-height: 1.7;
+      ${isRTL ? `border-right:4px solid ${accent}` : `border-left:4px solid ${accent}`};
+    }
+    .footer {
+      margin-top: 28px; padding-top: 12px; border-top: 1px solid #e5e7eb;
+      font-size: 10.5px; color: #9ca3af; text-align: center;
+    }
   </style>
 </head>
 <body>
+  <div class="page">
   <div class="school-header">
     <div>
-      <div class="school-placeholder">${isRTL ? 'إقرأ — مساعد التدريس الذكي' : 'Iqra — AI Teaching Assistant'}</div>
+      <div class="school-placeholder">${isRTL ? 'اقرأ — مساعد التدريس الذكي' : 'Iqra — AI Teaching Assistant'}</div>
       <div class="school-name">${isRTL ? 'اسم المدرسة' : 'School Name'}</div>
     </div>
     <div class="school-name">${new Date().toLocaleDateString(isRTL ? 'ar-JO' : 'en-GB')}</div>
   </div>
   ${content}
-  <div class="footer">${isRTL ? 'أُنشئ بواسطة إقرأ — مساعد التدريس الذكي' : 'Generated by Iqra — AI Teaching Assistant'}</div>
+  <div class="footer">${isRTL ? 'أُنشئ بواسطة اقرأ — مساعد التدريس الذكي' : 'Generated by Iqra — AI Teaching Assistant'}</div>
+  </div>
 </body>
 </html>`;
 }
 
-function esc(s: string): string {
+/** Escape only. For attribute values — above all URLs, which must not carry
+ *  the directional isolates `esc` adds. */
+function escAttr(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+/**
+ * Escape *and* bidi-isolate. Every text node in this file is model-written
+ * Arabic that can carry an equation, and a printed worksheet reordering
+ * «f(x) = 2x⁴ - x² + 3» is the same bug the screens had — a teacher hands it
+ * to a class on paper, where nobody can reload to check. Isolation belongs
+ * here rather than at the 57 call sites so a new builder cannot forget it;
+ * `escAttr` is the deliberate opt-out for the one URL attribute.
+ */
+function esc(s: string): string {
+  // Null-safe via isolateForeignRuns, which two builders here relied on when
+  // they each carried their own `s ?? ''` copy of this function.
+  return escAttr(isolateForeignRuns(s));
+}
+
+/**
+ * A book figure ready to print — already resolved to a loadable URI and
+ * already captioned. Kept separate from `BookFigure` in `bookFigures.ts`:
+ * this file is pure and pulled into `node --test` (see the header note), and
+ * resolving a figure to a URI needs `bookFigureUri.ts`, which imports
+ * react-native to do it. The caller resolves both and hands over a plain
+ * object — the same dependency-injection shape `lessonSlides.ts` already uses
+ * for `opts.figureUri`, so this file still never touches react-native.
+ */
+export interface BookFigureRef {
+  uri: string;
+  /** 1-based page in the source PDF — the citation a teacher can check. */
+  page: number;
+  caption: string;
+}
+
+/**
+ * Cap on how many of a lesson's figures print in a document's appendix.
+ *
+ * Unlike a slide deck (`BOOK_FIGURE_MAX = 2`, one per beat), this is one
+ * static page: the circle-geometry lesson alone has 25 figures, and printing
+ * all of them before the answer key would bury it. Six is generous for "the
+ * diagrams this lesson's exercises reference" while keeping the appendix a
+ * page, not a photocopy of the chapter.
+ */
+export const EXPORT_FIGURE_MAX = 6;
+
+/**
+ * The "from the textbook" appendix a worksheet, quiz, lesson plan or activity
+ * can carry — lesson-level, never per-question.
+ *
+ * A generated question can say «انظر الشكل المجاور» because that is how the
+ * book itself writes such a question, and a teacher reading it expects a
+ * picture. But the model that wrote the question never saw the book's
+ * figures, so it cannot know which one goes with which item — letting it
+ * choose would be the same fabrication `demoExtractFromName`'s fence exists
+ * to stop, in a new place. What is safe without a vision model is showing
+ * every diagram the book prints for this lesson, cited by page, and trusting
+ * the teacher to match it to a question by eye, exactly as a student does
+ * from the printed book itself.
+ *
+ * Self-contained inline styles rather than the `.section`/`.section-title`
+ * classes `htmlBase` defines: `buildActivityHTML` builds its own document
+ * with no such classes, and this function is called from both.
+ */
+function figuresSectionHTML(figures: readonly BookFigureRef[], isAr: boolean): string {
+  if (!figures.length) return '';
+  const shown = figures.slice(0, EXPORT_FIGURE_MAX);
+  const cards = shown.map(f => `
+      <div style="break-inside:avoid;page-break-inside:avoid;border:1px solid #e5e7eb;border-radius:6px;padding:10px;text-align:center;background:#fafafa">
+        <img src="${escAttr(f.uri)}" alt="${esc(f.caption)}" style="max-width:100%;max-height:260px;object-fit:contain" />
+        <div style="font-size:11px;color:#666;margin-top:6px">${esc(f.caption)}</div>
+      </div>`).join('');
+  const note = isAr
+    ? 'أشكالٌ من الكتاب المدرسي لهذا الدرس، ليطابقها المعلّم بعينه مع أيّ سؤال يشير إلى شكل.'
+    : "Figures from this lesson's student book, for the teacher to match by eye against any question that refers to one.";
+  return `
+    <div style="margin-top:24px;break-inside:avoid">
+      <div style="font-size:13px;font-weight:700;color:#1B6B62;text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid #e5e7eb;padding-bottom:4px;margin-bottom:6px">${isAr ? 'من الكتاب المدرسي' : 'From the Student Book'}</div>
+      <div style="font-size:11px;color:#888;margin-bottom:10px;font-style:italic">${esc(note)}</div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">${cards}</div>
+    </div>`;
 }
 
 /**
@@ -108,6 +325,81 @@ function esc(s: string): string {
  * byte-identical copies of this line — the kind of duplication that lets one
  * export get fixed and the other keep printing A/B/C/D.
  */
+/**
+ * The «من الكتاب المدرسي» appendix as a *projector* slide, for the four
+ * `*SlidesHTML` builders.
+ *
+ * `figuresSectionHTML` above is the A4-portrait version those same four
+ * documents print. This is the landscape one, because the slide builders lay
+ * out 297×210mm pages with their own `.slide` / `.slide-header` /
+ * `.slide-body` chrome, and a figure grid sized for a printed page overflows
+ * a projected one.
+ *
+ * Why this exists at all: the print and project paths of the same worksheet
+ * disagreed. `buildWorksheetHTML` ended with the figure appendix while
+ * `buildWorksheetSlidesHTML` was marked "Text only in this builder" and took
+ * no figures argument — so a teacher who printed the paper got the book's
+ * diagrams and the same teacher projecting the same worksheet got none, with
+ * nothing to say why. The two call sites sit two lines apart in
+ * `useGeneratorExport.ts`.
+ *
+ * Returns '' for no figures, so a builder can interpolate it unconditionally
+ * and a lesson without figures renders exactly as it did before.
+ */
+function figureGridHTML(figures: readonly BookFigureRef[]): string {
+  const shown = figures.slice(0, EXPORT_FIGURE_MAX);
+  // Three across at most: beyond that each crop is too small to read from the
+  // back row, which is the only reason to put one on a projector at all. Four
+  // is the exception — three across leaves one figure alone on a second row,
+  // so it goes 2×2. (The portrait appendix always uses two columns; it can
+  // spend as many rows as it likes on a page that scrolls.)
+  const cols = shown.length === 4 ? 2 : Math.min(shown.length, 3);
+  const cards = shown.map(f => `
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;min-width:0">
+          <img src="${escAttr(f.uri)}" alt="${esc(f.caption)}" style="max-width:100%;max-height:110mm;object-fit:contain" />
+          <div style="font-size:10px;color:#6b7280;text-align:center">${esc(f.caption)}</div>
+        </div>`).join('');
+  return `<div class="slide-body">
+      <div style="height:100%;display:grid;grid-template-columns:repeat(${cols},1fr);gap:14px;align-items:end">${cards}</div>
+    </div>`;
+}
+
+/**
+ * The whole slide, for the three builders that emit `<div class="slide">`
+ * blocks themselves and number their own footers. `buildLessonPlanSlidesHTML`
+ * assembles an array and numbers it afterwards, so that one takes
+ * `figureGridHTML` directly and lets the loop supply the footer.
+ */
+function figuresSlideHTML(
+  figures: readonly BookFigureRef[],
+  isAr: boolean,
+  header: (sub: string) => string,
+  footerHTML: string,
+): string {
+  if (!figures.length) return '';
+  return `<div class="slide">
+    ${header(isAr ? 'من الكتاب المدرسي' : 'From the Student Book')}
+    ${figureGridHTML(figures)}
+    ${footerHTML}</div>`;
+}
+
+/**
+ * Ruled lines under a question with no options, for the student to write on.
+ *
+ * Three: enough for a worked short answer, few enough that four questions
+ * still fit a page. An array rather than a count so the caller reads as
+ * markup rather than arithmetic.
+ */
+const ANSWER_RULES = [0, 1, 2];
+
+/**
+ * Section glyphs, cycled. A worksheet's sections are generated and named by
+ * difficulty ("القسم الأول"), so there is nothing to map an icon to
+ * semantically the way the lesson plan's fixed phases allow — cycling keeps
+ * consecutive bands visually distinct without claiming meaning they lack.
+ */
+const SECTION_GLYPHS = ['📝', '🧩', '📐', '🔎', '🧠'];
+
 function optionRowHTML(text: string, index: number, isAr: boolean): string {
   const { letter, text: body } = labelOption(text, index, isAr);
   return `<div class="q-option"><span>${esc(letter)}</span> <span>${esc(body)}</span></div>`;
@@ -118,29 +410,37 @@ export function buildLessonPlanHTML(
   title: string,
   meta: { subject: string; grade: string; duration?: number },
   isAr: boolean,
+  figures: readonly BookFigureRef[] = [],
 ): string {
   const L = (ar: string, en: string) => isAr ? ar : en;
-  const section = (label: string, body: string) =>
-    `<div class="section"><div class="section-title">${esc(label)}</div><div class="body-text">${esc(body)}</div></div>`;
+  const A = DOC_ACCENT.lesson;
+  // One icon per phase of the lesson, in the order a teacher walks it. The
+  // colours are not decorative: they are the same per-phase palette
+  // `buildLessonFlowHTML` prints, so the plan and the all-in-one flow read as
+  // the same document family rather than two unrelated PDFs of one lesson.
+  const section = (label: string, icon: string, color: string, body: string) =>
+    `<div class="section">${sectionBand(label, icon, color, isAr)}<div class="body-text">${esc(body)}</div></div>`;
 
-  const bullets = (label: string, items: string[]) =>
-    `<div class="section"><div class="section-title">${esc(label)}</div><ul>${items.map(i => `<li>${esc(i)}</li>`).join('')}</ul></div>`;
+  const bullets = (label: string, icon: string, color: string, items: string[]) =>
+    `<div class="section">${sectionBand(label, icon, color, isAr)}<ul>${items.map(i => `<li>${esc(i)}</li>`).join('')}</ul></div>`;
 
   const content = `
     <div class="doc-title">${esc(title)}</div>
-    <div class="doc-meta">${esc(meta.subject)} • ${esc(meta.grade)}${meta.duration ? ` • ${meta.duration} ${L('دقيقة', 'min')}` : ''}</div>
-    ${bullets(L('الأهداف', 'Objectives'), plan.objectives)}
-    ${bullets(L('المواد اللازمة', 'Materials Needed'), plan.materials)}
-    ${section(L('التمهيد', 'Introduction'), plan.introduction)}
-    ${section(L('النشاط الرئيسي', 'Main Activity'), plan.mainActivity)}
-    ${section(L('التدريب الموجّه', 'Guided Practice'), plan.guidedPractice)}
-    ${section(L('التدريب المستقل', 'Independent Practice'), plan.independentPractice)}
-    ${section(L('الختام', 'Closure'), plan.closure)}
-    ${section(L('التقييم', 'Assessment'), plan.assessment)}
-    ${section(L('التمايز', 'Differentiation'), plan.differentiation)}
-    ${section(L('الواجب المنزلي', 'Homework'), plan.homework)}
+    <div class="doc-meta">${esc(meta.subject)} • ${esc(meta.grade)}${meta.duration ? ` • ${L(arCountPhrase(meta.duration, 'دقيقة', 'دقيقتان', 'دقائق'), `${meta.duration} min`)}` : ''}</div>
+    ${bullets(L('الأهداف', 'Objectives'), '🎯', '#081B3A', plan.objectives)}
+    ${bullets(L('المواد اللازمة', 'Materials Needed'), '🧰', '#6B7280', plan.materials)}
+    ${plan.priorReview?.trim() ? section(L('مراجعة سابقة', 'Prior Knowledge Review'), '🔁', '#0EA5E9', plan.priorReview) : ''}
+    ${section(L('التمهيد', 'Introduction'), '🔥', '#E67E22', plan.introduction)}
+    ${section(L('النشاط الرئيسي', 'Main Activity'), '⚡', '#4F46E5', plan.mainActivity)}
+    ${section(L('التدريب الموجّه', 'Guided Practice'), '✏️', A, plan.guidedPractice)}
+    ${section(L('التدريب المستقل', 'Independent Practice'), '🧑', A, plan.independentPractice)}
+    ${section(L('الختام', 'Closure'), '⏹', '#8B5CF6', plan.closure)}
+    ${section(L('التقييم', 'Assessment'), '✅', '#16A34A', plan.assessment)}
+    ${section(L('التمايز', 'Differentiation'), '🔀', '#0891B2', plan.differentiation)}
+    ${section(L('الواجب المنزلي', 'Homework'), '🏠', '#F59E0B', plan.homework)}
+    ${figuresSectionHTML(figures, isAr)}
   `;
-  return htmlBase(content, isAr, title);
+  return htmlBase(content, isAr, title, 'lesson');
 }
 
 export function buildWorksheetHTML(
@@ -148,19 +448,31 @@ export function buildWorksheetHTML(
   title: string,
   meta: { subject: string; grade: string },
   isAr: boolean,
+  figures: readonly BookFigureRef[] = [],
 ): string {
   const L = (ar: string, en: string) => isAr ? ar : en;
   let qNum = 1;
-  const sections = ws.sections.map(sec => {
+  const sections = ws.sections.map((sec, si) => {
     const questions = sec.questions.map(q => {
       const options = q.options
         ? q.options.map((o, oi) => optionRowHTML(o, oi, isAr)).join('')
         : '';
-      const html = `<div class="q-card"><span class="q-num">${qNum}.</span> ${esc(q.text)}${options}<div class="q-pts">${q.points} ${L('نقطة', 'pts')}</div></div>`;
+      // Somewhere to write. A worksheet is the one document a student fills
+      // in, and this printed multiple-choice options or nothing at all — so
+      // every short-answer question arrived as a sentence floating above the
+      // next sentence, and the teacher's copier did the ruling by hand.
+      // Options mean the answer goes in the margin, so the rules are only for
+      // questions that have none.
+      const room = q.options ? '' : `<div class="q-lines">${ANSWER_RULES.map(() => '<div class="q-rule"></div>').join('')}</div>`;
+      const html = `<div class="q-card">`
+        + `<div class="q-head"><span class="q-num">${qNum}</span><span class="q-text">${esc(q.text)}</span></div>`
+        + `${options}${room}`
+        + `<div class="q-pts">${L(arCountPhrase(q.points, 'نقطة', 'نقطتان', 'نقاط'), `${q.points} pts`)}</div>`
+        + `</div>`;
       qNum++;
       return html;
     }).join('');
-    return `<div class="section"><div class="section-title">${esc(sec.title)}</div>${questions}</div>`;
+    return `<div class="section">${sectionBand(sec.title, SECTION_GLYPHS[si % SECTION_GLYPHS.length]!, DOC_ACCENT.worksheet, isAr)}${questions}</div>`;
   }).join('');
 
   const akRows = ws.answerKey?.map(item =>
@@ -174,11 +486,12 @@ export function buildWorksheetHTML(
   const content = `
     <div class="doc-title">${esc(title)}</div>
     <div class="doc-meta">${esc(meta.subject)} • ${esc(meta.grade)}</div>
-    ${ws.instructions ? `<div class="body-text" style="margin-bottom:16px;color:#555;font-style:italic">${esc(ws.instructions)}</div>` : ''}
+    ${ws.instructions ? `<div class="callout">${esc(ws.instructions)}</div>` : ''}
     ${sections}
     ${answerKey}
+    ${figuresSectionHTML(figures, isAr)}
   `;
-  return htmlBase(content, isAr, title);
+  return htmlBase(content, isAr, title, 'worksheet');
 }
 
 export function buildQuizHTML(
@@ -186,6 +499,7 @@ export function buildQuizHTML(
   title: string,
   meta: { subject: string; grade: string },
   isAr: boolean,
+  figures: readonly BookFigureRef[] = [],
 ): string {
   const L = (ar: string, en: string) => isAr ? ar : en;
   const typeLabel = (t: string) =>
@@ -197,12 +511,17 @@ export function buildQuizHTML(
     const options = q.options
       ? q.options.map((o, oi) => optionRowHTML(o, oi, isAr)).join('')
       : '';
+    // A short-answer question on a quiz needs writing room for the same
+    // reason it does on a worksheet — this is the paper a student sits.
+    const room = q.options ? '' : `<div class="q-lines">${ANSWER_RULES.map(() => '<div class="q-rule"></div>').join('')}</div>`;
     return `<div class="q-card">
-      <span class="q-num">${i + 1}.</span>
-      <span style="font-size:11px;background:#fef3c7;color:#92400e;padding:2px 7px;border-radius:9px;margin-${isAr ? 'right' : 'left'}:6px">${typeLabel(q.type)}</span>
-      ${esc(q.text)}
-      ${options}
-      <div class="q-pts">${q.points} ${L('نقطة', 'pts')}</div>
+      <div class="q-head">
+        <span class="q-num">${i + 1}</span>
+        <span class="q-text">${esc(q.text)}</span>
+        <span class="q-type">${typeLabel(q.type)}</span>
+      </div>
+      ${options}${room}
+      <div class="q-pts">${L(arCountPhrase(q.points, 'نقطة', 'نقطتان', 'نقاط'), `${q.points} pts`)}</div>
     </div>`;
   }).join('');
 
@@ -212,76 +531,58 @@ export function buildQuizHTML(
 
   const content = `
     <div class="doc-title">${esc(title)}</div>
-    <div class="doc-meta">${esc(meta.subject)} • ${esc(meta.grade)} • ${quiz.duration} ${L('دقيقة', 'min')} • ${quiz.totalPoints} ${L('نقطة', 'pts')}</div>
+    <div class="doc-meta">${esc(meta.subject)} • ${esc(meta.grade)} • ${L(arCountPhrase(quiz.duration, 'دقيقة', 'دقيقتان', 'دقائق'), `${quiz.duration} min`)} • ${L(arCountPhrase(quiz.totalPoints, 'نقطة', 'نقطتان', 'نقاط'), `${quiz.totalPoints} pts`)}</div>
+    ${sectionBand(L('الأسئلة', 'Questions'), '📋', DOC_ACCENT.quiz, isAr)}
     ${questions}
     <div class="answer-key"><div class="section-title">${L('مفتاح الإجابات', 'Answer Key')}</div>${akRows}</div>
+    ${figuresSectionHTML(figures, isAr)}
   `;
-  return htmlBase(content, isAr, title);
+  return htmlBase(content, isAr, title, 'quiz');
 }
 export function buildActivityHTML(
   activity: ActivityOutput,
   title: string,
   meta: { subject: string; grade: string },
   isAr: boolean,
+  figures: readonly BookFigureRef[] = [],
 ): string {
-  const dir = isAr ? 'rtl' : 'ltr';
-  const align = isAr ? 'right' : 'left';
-  const ACCENT = '#E67E22';
   const L = (ar: string, en: string) => isAr ? ar : en;
-  const e = (s: string) => (s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const A = DOC_ACCENT.activity;
 
+  // This builder used to write its own `<!DOCTYPE html>` with a five-rule
+  // stylesheet and inline styles on every element — which is why
+  // `figuresSectionHTML` is inline-styled too (it is shared with the three
+  // builders that DO have classes, and a class-based version rendered
+  // unstyled here). Moving it onto `htmlBase` closes that: the activity now
+  // gets the same fonts, the same section bands and the same question
+  // vocabulary as the other three, and the appendix's inline styles are no
+  // longer load-bearing — left alone here only because nothing forces the
+  // change and a shared function is the wrong place to take a risk.
   const stepsHtml = activity.steps.map(s => `
-    <div style="border:1px solid #e5e7eb;border-radius:8px;padding:14px;margin-bottom:10px;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-direction:row">
-        <span style="background:${ACCENT};color:#fff;width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">${s.stepNumber}</span>
-        <span style="font-weight:600;font-size:13px;flex:1;text-align:${align}">${e(s.title)}</span>
-        <span style="font-size:11px;color:#9ca3af">${s.durationMin} ${L('د', 'min')}</span>
+    <div class="step-card">
+      <span class="step-num">${s.stepNumber}</span>
+      <div class="step-body">
+        <div class="step-title">${esc(s.title)}<span class="q-pts" style="margin-${isAr ? 'right' : 'left'}:8px;display:inline">${s.durationMin} ${L('د', 'min')}</span></div>
+        <div class="step-desc">${esc(s.description)}</div>
       </div>
-      <p style="font-size:12px;color:#374151;line-height:1.6;margin:0;text-align:${align}">${e(s.description)}</p>
     </div>`).join('');
 
-  const section = (label: string, body: string) => `
-    <div style="margin-bottom:20px">
-      <div style="font-size:13px;font-weight:700;color:${ACCENT};text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid #e5e7eb;padding-bottom:4px;margin-bottom:8px;text-align:${align}">${label}</div>
-      ${body}
-    </div>`;
+  const section = (label: string, icon: string, color: string, body: string) =>
+    `<div class="section">${sectionBand(label, icon, color, isAr)}${body}</div>`;
 
-  return `<!DOCTYPE html>
-<html lang="${isAr ? 'ar' : 'en'}" dir="${dir}">
-<head>
-  <meta charset="UTF-8">
-  <title>${e(title)}</title>
-  <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:${isAr ? "'Amiri','Arial'" : "'Inter','Helvetica Neue',Arial"},sans-serif;font-size:14px;line-height:1.7;color:#1a1a1a;padding:40px;direction:${dir};text-align:${align};background:#fff}
-    ul{padding-${isAr ? 'right' : 'left'}:20px}li{margin-bottom:4px;font-size:13px;color:#333}
-    .footer{margin-top:32px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:11px;color:#aaa;text-align:center}
-  </style>
-</head>
-<body>
-  <div style="border-bottom:2px solid ${ACCENT};padding-bottom:16px;margin-bottom:24px;display:flex;justify-content:space-between;flex-direction:row">
-    <div>
-      <div style="font-weight:bold;color:${ACCENT};font-size:15px">${L('إقرأ — مساعد التدريس الذكي', 'Iqra — AI Teaching Assistant')}</div>
-      <div style="font-size:13px;color:#666">${L('اسم المدرسة', 'School Name')}</div>
-    </div>
-    <div style="font-size:13px;color:#666">${new Date().toLocaleDateString(isAr ? 'ar-JO' : 'en-GB')}</div>
-  </div>
-  <div style="font-size:22px;font-weight:700;color:#111;margin-bottom:6px">${e(title)}</div>
-  <div style="font-size:12px;color:#666;margin-bottom:16px">${e(meta.subject)} • ${e(meta.grade)} • ${activity.totalDuration} ${L('دقيقة', 'min')}</div>
-  <div style="background:#FFF7ED;border-${isAr ? 'right' : 'left'}:4px solid ${ACCENT};padding:12px 16px;margin:0 0 18px;border-radius:6px;font-size:13px">
-    <strong>${L('الهدف:', 'Objective:')}</strong> ${e(activity.objective)}
-  </div>
-  <div style="font-size:12px;color:#6b7280;margin-bottom:18px">
-    <strong>${L('حجم المجموعة:', 'Group size:')}</strong> ${e(activity.groupSize)}
-  </div>
-  ${section(L('المواد اللازمة', 'Materials Needed'), `<ul>${activity.materials.map(m => `<li>${e(m)}</li>`).join('')}</ul>`)}
-  ${section(L('خطوات النشاط', 'Activity Steps'), stepsHtml)}
-  ${section(L('نصائح للمعلم', 'Teacher Tips'), `<ul>${activity.teacherTips.map(t => `<li>${e(t)}</li>`).join('')}</ul>`)}
-  ${section(L('التمايز', 'Differentiation'), `<p style="font-size:13px;color:#374151;line-height:1.8">${e(activity.differentiation)}</p>`)}
-  ${section(L('التقييم', 'Assessment'), `<p style="font-size:13px;color:#374151;line-height:1.8">${e(activity.assessment)}</p>`)}
-  <div class="footer">${L('أُنشئ بواسطة إقرأ — مساعد التدريس الذكي', 'Generated by Iqra — AI Teaching Assistant')}</div>
-</body>
-</html>`;
+  const content = `
+    <div class="doc-title">${esc(title)}</div>
+    <div class="doc-meta">${esc(meta.subject)} • ${esc(meta.grade)} • ${L(arCountPhrase(activity.totalDuration, 'دقيقة', 'دقيقتان', 'دقائق'), `${activity.totalDuration} min`)}</div>
+    <div class="callout"><strong>${L('الهدف:', 'Objective:')}</strong> ${esc(activity.objective)}</div>
+    <div class="doc-meta"><strong>${L('حجم المجموعة:', 'Group size:')}</strong> ${esc(activity.groupSize)}</div>
+    ${section(L('المواد اللازمة', 'Materials Needed'), '🧰', '#6B7280', `<ul>${activity.materials.map(m => `<li>${esc(m)}</li>`).join('')}</ul>`)}
+    ${section(L('خطوات النشاط', 'Activity Steps'), '⚡', A, stepsHtml)}
+    ${section(L('نصائح للمعلم', 'Teacher Tips'), '💡', '#F59E0B', `<ul>${activity.teacherTips.map(t => `<li>${esc(t)}</li>`).join('')}</ul>`)}
+    ${section(L('التمايز', 'Differentiation'), '🔀', '#0891B2', `<div class="body-text">${esc(activity.differentiation)}</div>`)}
+    ${section(L('التقييم', 'Assessment'), '✅', '#16A34A', `<div class="body-text">${esc(activity.assessment)}</div>`)}
+    ${figuresSectionHTML(figures, isAr)}
+  `;
+  return htmlBase(content, isAr, title, 'activity');
 }
 
 // ─── Slides HTML (lesson plan) ────────────────────────────────────────────────
@@ -291,16 +592,21 @@ export function buildLessonPlanSlidesHTML(
   title: string,
   meta: { subject: string; grade: string; duration?: number },
   isAr: boolean,
+  /**
+   * The lesson's book figures, appended as a final slide. Optional so
+   * existing four-argument callers keep working; passing none renders
+   * exactly what this builder rendered before.
+   */
+  figures: readonly BookFigureRef[] = [],
 ): string {
   const dir = isAr ? 'rtl' : 'ltr';
   const ACCENT = '#1B6B62';
-  const esc = (s: string) => (s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const bullets = (items: string[]) => items.map(i => `<li>${esc(i)}</li>`).join('');
   const L = (ar: string, en: string) => isAr ? ar : en;
 
   const footer = (num: number, total: number) => `
     <div class="slide-footer">
-      <span>${L('أُنشئ بواسطة إقرأ', 'Generated by Iqra')}</span>
+      <span>${L('أُنشئ بواسطة اقرأ', 'Generated by Iqra')}</span>
       <span>${num} / ${total}</span>
     </div>`;
 
@@ -319,56 +625,72 @@ export function buildLessonPlanSlidesHTML(
       <div class="section-body">${content}</div>
     </div>`;
 
-  const TOTAL = 6;
-
   const slide1 = `${slideOpen('title-slide')}
     <div class="title-content">
       <div class="title-badge">${L('خطة درس', 'Lesson Plan')}</div>
       <h1 class="title-main">${esc(title)}</h1>
-      <div class="title-meta">${esc(meta.subject)} &nbsp;•&nbsp; ${esc(meta.grade)}${meta.duration ? ` &nbsp;•&nbsp; ${meta.duration} ${L('دقيقة', 'min')}` : ''}</div>
-      <div class="title-brand">Iqra — ${L('مساعد التدريس الذكي', 'AI Teaching Assistant')}</div>
-    </div>
-    ${footer(1, TOTAL)}</div>`;
+      <div class="title-meta">${esc(meta.subject)} &nbsp;•&nbsp; ${esc(meta.grade)}${meta.duration ? ` &nbsp;•&nbsp; ${L(arCountPhrase(meta.duration, 'دقيقة', 'دقيقتان', 'دقائق'), `${meta.duration} min`)}` : ''}</div>
+      <div class="title-brand">${L('اقرأ — مساعد التدريس الذكي', 'Iqra — AI Teaching Assistant')}</div>
+    </div>`;
+
+  // Optional: present only when the teacher asked for a warm-up review of
+  // prior material. One block, not two-col — there is nothing to pair it with.
+  const priorReviewSlide = plan.priorReview?.trim() ? `${slideOpen()}
+    ${header(L('مراجعة سابقة', 'Prior Knowledge Review'))}
+    <div class="slide-body">
+      ${sectionBlock('🔄', L('مراجعة المعارف السابقة', 'Prior Knowledge Review'), `<p>${esc(plan.priorReview)}</p>`)}
+    </div>` : null;
 
   const slide2 = `${slideOpen()}
     ${header(L('الأهداف والمواد', 'Objectives & Materials'))}
     <div class="slide-body two-col">
       ${sectionBlock('🎯', L('الأهداف التعليمية', 'Learning Objectives'), `<ul>${bullets(plan.objectives)}</ul>`)}
       ${sectionBlock('🎒', L('المواد اللازمة', 'Materials'), `<ul>${bullets(plan.materials)}</ul>`)}
-    </div>
-    ${footer(2, TOTAL)}</div>`;
+    </div>`;
 
   const slide3 = `${slideOpen()}
     ${header(L('التمهيد والنشاط الرئيسي', 'Introduction & Main Activity'))}
     <div class="slide-body two-col">
       ${sectionBlock('▶', L('التمهيد', 'Introduction'), `<p>${esc(plan.introduction)}</p>`)}
       ${sectionBlock('👥', L('النشاط الرئيسي', 'Main Activity'), `<p>${esc(plan.mainActivity)}</p>`)}
-    </div>
-    ${footer(3, TOTAL)}</div>`;
+    </div>`;
 
   const slide4 = `${slideOpen()}
     ${header(L('التدريب الموجّه والمستقل', 'Guided & Independent Practice'))}
     <div class="slide-body two-col">
       ${sectionBlock('✋', L('التدريب الموجّه', 'Guided Practice'), `<p>${esc(plan.guidedPractice)}</p>`)}
       ${sectionBlock('🧑', L('التدريب المستقل', 'Independent Practice'), `<p>${esc(plan.independentPractice)}</p>`)}
-    </div>
-    ${footer(4, TOTAL)}</div>`;
+    </div>`;
 
   const slide5 = `${slideOpen()}
     ${header(L('الختام والتقييم', 'Closure & Assessment'))}
     <div class="slide-body two-col">
       ${sectionBlock('⏹', L('الختام', 'Closure'), `<p>${esc(plan.closure)}</p>`)}
       ${sectionBlock('✅', L('التقييم', 'Assessment'), `<p>${esc(plan.assessment)}</p>`)}
-    </div>
-    ${footer(5, TOTAL)}</div>`;
+    </div>`;
 
   const slide6 = `${slideOpen()}
     ${header(L('التمايز والواجب المنزلي', 'Differentiation & Homework'))}
     <div class="slide-body two-col">
       ${sectionBlock('📚', L('التمايز', 'Differentiation'), `<p>${esc(plan.differentiation)}</p>`)}
       ${sectionBlock('🏠', L('الواجب المنزلي', 'Homework'), `<p>${esc(plan.homework)}</p>`)}
-    </div>
-    ${footer(6, TOTAL)}</div>`;
+    </div>`;
+
+  // Numbered after assembly so an optional slide never desyncs the footer
+  // count from how many slides actually render.
+  const figuresSlide = figures.length
+    ? `${slideOpen()}
+    ${header(L('من الكتاب المدرسي', 'From the Student Book'))}
+    ${figureGridHTML(figures)}`
+    : null;
+
+  // Numbered after assembly so an optional slide never desyncs the footer
+  // count from how many slides actually render.
+  const slides = [
+    slide1, priorReviewSlide, slide2, slide3, slide4, slide5, slide6, figuresSlide,
+  ].filter((s): s is string => s !== null);
+  const total = slides.length;
+  const body = slides.map((s, i) => `${s}\n    ${footer(i + 1, total)}</div>`).join('\n');
 
   return `<!DOCTYPE html>
 <html dir="${dir}" lang="${isAr ? 'ar' : 'en'}">
@@ -377,7 +699,7 @@ export function buildLessonPlanSlidesHTML(
 <style>
 @page { size: A4 landscape; margin: 0; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','Arial',sans-serif"}; background:#f0f0f0; }
+body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','Arial',sans-serif"}; background:#f0f0f0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .slide {
   width: 297mm; height: 210mm; background: #fff; position: relative;
   overflow: hidden; page-break-after: always; display: flex; flex-direction: column;
@@ -411,12 +733,7 @@ body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','
 </style>
 </head>
 <body>
-${slide1}
-${slide2}
-${slide3}
-${slide4}
-${slide5}
-${slide6}
+${body}
 </body>
 </html>`;
 }
@@ -428,17 +745,22 @@ export function buildActivitySlidesHTML(
   title: string,
   meta: { subject: string; grade: string },
   isAr: boolean,
+  /**
+   * The lesson's book figures, appended as a final slide. Optional so
+   * existing four-argument callers keep working; passing none renders
+   * exactly what this builder rendered before.
+   */
+  figures: readonly BookFigureRef[] = [],
 ): string {
   const dir = isAr ? 'rtl' : 'ltr';
   const ACCENT = '#E67E22';
-  const esc = (s: string) => (s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const L = (ar: string, en: string) => isAr ? ar : en;
 
-  const TOTAL = 3 + Math.ceil(activity.steps.length / 2);
+  const TOTAL = 3 + Math.ceil(activity.steps.length / 2) + (figures.length ? 1 : 0);
 
   const footer = (num: number) => `
     <div class="slide-footer">
-      <span>${L('أُنشئ بواسطة إقرأ', 'Generated by Iqra')}</span>
+      <span>${L('أُنشئ بواسطة اقرأ', 'Generated by Iqra')}</span>
       <span>${num} / ${TOTAL}</span>
     </div>`;
 
@@ -458,7 +780,7 @@ export function buildActivitySlidesHTML(
     <div class="title-content">
       <div class="title-badge">${L('نشاط تعليمي', 'Classroom Activity')}</div>
       <h1 class="title-main">${esc(title)}</h1>
-      <div class="title-meta">${esc(meta.subject)} &nbsp;•&nbsp; ${esc(meta.grade)} &nbsp;•&nbsp; ${activity.totalDuration} ${L('دقيقة', 'min')}</div>
+      <div class="title-meta">${esc(meta.subject)} &nbsp;•&nbsp; ${esc(meta.grade)} &nbsp;•&nbsp; ${L(arCountPhrase(activity.totalDuration, 'دقيقة', 'دقيقتان', 'دقائق'), `${activity.totalDuration} min`)}</div>
       <div class="title-obj">${esc(activity.objective)}</div>
     </div>
     ${footer(1)}</div>`;
@@ -512,7 +834,7 @@ export function buildActivitySlidesHTML(
 <style>
 @page { size: A4 landscape; margin: 0; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','Arial',sans-serif"}; background:#f0f0f0; }
+body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','Arial',sans-serif"}; background:#f0f0f0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .slide { width:297mm; height:210mm; background:#fff; position:relative; overflow:hidden; page-break-after:always; display:flex; flex-direction:column; }
 .title-slide { background:linear-gradient(135deg,${ACCENT} 0%,#b55a0f 100%); }
 .title-content { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px; text-align:center; }
@@ -549,6 +871,7 @@ ${slide1}
 ${slide2}
 ${stepSlides.join('\n')}
 ${lastSlide}
+${figuresSlideHTML(figures, isAr, header, footer(TOTAL))}
 </body>
 </html>`;
 }
@@ -560,19 +883,28 @@ export function buildWorksheetSlidesHTML(
   title: string,
   meta: { subject: string; grade: string },
   isAr: boolean,
+  /**
+   * The lesson's book figures, appended as a final slide. Optional so
+   * existing four-argument callers keep working; passing none renders
+   * exactly what this builder rendered before.
+   */
+  figures: readonly BookFigureRef[] = [],
 ): string {
   const dir = isAr ? 'rtl' : 'ltr';
   const ACCENT = '#8B5CF6';
-  const e = (s: string) => (s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  // Text only in this builder — no attribute or URL goes through `e`, so it
+  // is the isolating `esc` under a shorter name.
+  const e = esc;
   const L = (ar: string, en: string) => isAr ? ar : en;
 
   // Total: title + (instructions if present: 1) + sections + answer key
   const hasInstructions = !!ws.instructions;
-  const TOTAL = 1 + (hasInstructions ? 1 : 0) + ws.sections.length + (ws.answerKey && ws.answerKey.length > 0 ? 1 : 0);
+  const TOTAL = 1 + (hasInstructions ? 1 : 0) + ws.sections.length
+    + (ws.answerKey && ws.answerKey.length > 0 ? 1 : 0) + (figures.length ? 1 : 0);
 
   const footer = (num: number) => `
     <div class="slide-footer">
-      <span>${L('أُنشئ بواسطة إقرأ', 'Generated by Iqra')}</span>
+      <span>${L('أُنشئ بواسطة اقرأ', 'Generated by Iqra')}</span>
       <span>${num} / ${TOTAL}</span>
     </div>`;
 
@@ -596,7 +928,7 @@ export function buildWorksheetSlidesHTML(
       <div class="title-badge">${L('ورقة عمل', 'Worksheet')}</div>
       <h1 class="title-main">${e(title)}</h1>
       <div class="title-meta">${e(meta.subject)} &nbsp;•&nbsp; ${e(meta.grade)}</div>
-      <div class="title-brand">Iqra — ${L('مساعد التدريس الذكي', 'AI Teaching Assistant')}</div>
+      <div class="title-brand">${L('اقرأ — مساعد التدريس الذكي', 'Iqra — AI Teaching Assistant')}</div>
     </div>
     ${footer(slideNum++)}</div>`;
 
@@ -615,7 +947,7 @@ export function buildWorksheetSlidesHTML(
       const opts = q.options
         ? `<div class="q-opts">${q.options.map((o, oi) => `<div class="q-opt">${e(labelOptionLine(o, oi, isAr))}</div>`).join('')}</div>`
         : '';
-      const html = `<div class="q-card"><span class="q-num">${qCounter}.</span> <span class="q-text">${e(q.text)}</span>${opts}<span class="q-pts">${q.points} ${L('نقطة', 'pts')}</span></div>`;
+      const html = `<div class="q-card"><span class="q-num">${qCounter}.</span> <span class="q-text">${e(q.text)}</span>${opts}<span class="q-pts">${L(arCountPhrase(q.points, 'نقطة', 'نقطتان', 'نقاط'), `${q.points} pts`)}</span></div>`;
       qCounter++;
       return html;
     }).join('');
@@ -646,7 +978,7 @@ export function buildWorksheetSlidesHTML(
 <style>
 @page { size: A4 landscape; margin: 0; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','Arial',sans-serif"}; background:#f0f0f0; }
+body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','Arial',sans-serif"}; background:#f0f0f0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .slide { width:297mm; height:210mm; background:#fff; position:relative; overflow:hidden; page-break-after:always; display:flex; flex-direction:column; }
 .title-slide { background:linear-gradient(135deg,${ACCENT} 0%,#5b21b6 100%); }
 .title-content { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px; text-align:center; }
@@ -683,6 +1015,7 @@ ${slide1}
 ${instrSlide}
 ${sectionSlides.join('\n')}
 ${akSlide}
+${figuresSlideHTML(figures, isAr, header, footer(TOTAL))}
 </body>
 </html>`;
 }
@@ -694,10 +1027,18 @@ export function buildQuizSlidesHTML(
   title: string,
   meta: { subject: string; grade: string },
   isAr: boolean,
+  /**
+   * The lesson's book figures, appended as a final slide. Optional so
+   * existing four-argument callers keep working; passing none renders
+   * exactly what this builder rendered before.
+   */
+  figures: readonly BookFigureRef[] = [],
 ): string {
   const dir = isAr ? 'rtl' : 'ltr';
   const ACCENT = '#F59E0B';
-  const e = (s: string) => (s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  // Text only in this builder — no attribute or URL goes through `e`, so it
+  // is the isolating `esc` under a shorter name.
+  const e = esc;
   const L = (ar: string, en: string) => isAr ? ar : en;
   const typeLabel = (t: string) =>
     t === 'multiple_choice' ? L('اختيار متعدد', 'MCQ')
@@ -710,12 +1051,13 @@ export function buildQuizSlidesHTML(
     questionGroups.push(quiz.questions.slice(i, i + GROUP_SIZE));
   }
 
-  const TOTAL = 1 + questionGroups.length + 1; // title + groups + answer key
+  // title + groups + answer key + the optional book-figures slide
+  const TOTAL = 1 + questionGroups.length + 1 + (figures.length ? 1 : 0);
   let slideNum = 1;
 
   const footer = (num: number) => `
     <div class="slide-footer">
-      <span>${L('أُنشئ بواسطة إقرأ', 'Generated by Iqra')}</span>
+      <span>${L('أُنشئ بواسطة اقرأ', 'Generated by Iqra')}</span>
       <span>${num} / ${TOTAL}</span>
     </div>`;
 
@@ -731,8 +1073,8 @@ export function buildQuizSlidesHTML(
       <div class="title-badge">${L('اختبار', 'Quiz')}</div>
       <h1 class="title-main">${e(title)}</h1>
       <div class="title-meta">${e(meta.subject)} &nbsp;•&nbsp; ${e(meta.grade)}</div>
-      <div class="title-meta">${quiz.duration} ${L('دقيقة', 'min')} &nbsp;•&nbsp; ${quiz.totalPoints} ${L('نقطة', 'pts')}</div>
-      <div class="title-brand">Iqra — ${L('مساعد التدريس الذكي', 'AI Teaching Assistant')}</div>
+      <div class="title-meta">${L(arCountPhrase(quiz.duration, 'دقيقة', 'دقيقتان', 'دقائق'), `${quiz.duration} min`)} &nbsp;•&nbsp; ${L(arCountPhrase(quiz.totalPoints, 'نقطة', 'نقطتان', 'نقاط'), `${quiz.totalPoints} pts`)}</div>
+      <div class="title-brand">${L('اقرأ — مساعد التدريس الذكي', 'Iqra — AI Teaching Assistant')}</div>
     </div>
     ${footer(slideNum++)}</div>`;
 
@@ -748,7 +1090,7 @@ export function buildQuizSlidesHTML(
         <div class="q-top">
           <span class="q-num">${idx}</span>
           <span class="type-badge">${typeLabel(q.type)}</span>
-          <span class="q-pts">${q.points} ${L('نقطة', 'pts')}</span>
+          <span class="q-pts">${L(arCountPhrase(q.points, 'نقطة', 'نقطتان', 'نقاط'), `${q.points} pts`)}</span>
         </div>
         <div class="q-text">${e(q.text)}</div>
         ${opts}
@@ -778,7 +1120,7 @@ export function buildQuizSlidesHTML(
 <style>
 @page { size: A4 landscape; margin: 0; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','Arial',sans-serif"}; background:#f0f0f0; }
+body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','Arial',sans-serif"}; background:#f0f0f0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .slide { width:297mm; height:210mm; background:#fff; position:relative; overflow:hidden; page-break-after:always; display:flex; flex-direction:column; }
 .title-slide { background:linear-gradient(135deg,${ACCENT} 0%,#b45309 100%); }
 .title-content { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px; text-align:center; }
@@ -812,19 +1154,33 @@ body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','
 ${slide1}
 ${qSlides.join('\n')}
 ${akSlide}
+${figuresSlideHTML(figures, isAr, header, footer(TOTAL))}
 </body>
 </html>`;
 }
 
 // ─── Lesson Flow HTML (all-in-one PDF) ───────────────────────────────────────
 
-export function buildLessonFlowHTML(flow: LessonFlowOutput, isAr: boolean): string {
+export function buildLessonFlowHTML(
+  flow: LessonFlowOutput,
+  isAr: boolean,
+  /**
+   * The lesson's book figures. Optional so the existing two-argument callers
+   * keep working; passing none prints no appendix, exactly as before.
+   *
+   * The flow PDF is the one document that bundles a worksheet and an exit
+   * ticket into a single hand-out, so it was the odd one out among the five:
+   * printing the same worksheet on its own carried «من الكتاب المدرسي» and
+   * printing it inside the flow did not.
+   */
+  figures: readonly BookFigureRef[] = [],
+): string {
   const dir = isAr ? 'rtl' : 'ltr';
   const font = isAr ? `'Amiri', 'Noto Naskh Arabic', serif` : `'Inter', 'Helvetica Neue', sans-serif`;
   const TEAL = '#00A99D';
   const NAVY = '#081B3A';
 
-  const meta = `${flow.grade} · ${flow.subject} · ${flow.duration} ${isAr ? 'دقيقة' : 'min'}`;
+  const meta = `${flow.grade} · ${flow.subject} · ${isAr ? arCountPhrase(flow.duration, 'دقيقة', 'دقيقتان', 'دقائق') : `${flow.duration} min`}`;
 
   /* ── Helpers ── */
   const secHeader = (label: string, icon: string, color: string) =>
@@ -847,7 +1203,7 @@ export function buildLessonFlowHTML(flow: LessonFlowOutput, isAr: boolean): stri
 
   const questionBlock = (q: { text: string; options?: string[]; correctAnswer?: string; points: number }, idx: number) =>
     `<div class="q-block">
-       <div class="q-top"><span class="q-num">${idx + 1}</span><span class="q-pts">${q.points} ${isAr ? 'نقطة' : 'pts'}</span></div>
+       <div class="q-top"><span class="q-num">${idx + 1}</span><span class="q-pts">${isAr ? arCountPhrase(q.points, 'نقطة', 'نقطتان', 'نقاط') : `${q.points} pts`}</span></div>
        <div class="q-text">${esc(q.text)}</div>
        ${q.options ? `<div class="q-opts">${q.options.map(o => `<span class="q-opt">○ ${esc(o)}</span>`).join('')}</div>` : ''}
      </div>`;
@@ -872,7 +1228,7 @@ export function buildLessonFlowHTML(flow: LessonFlowOutput, isAr: boolean): stri
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Amiri:wght@400;700&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: ${font}; font-size: 13px; color: #1f2937; background: #fff; direction: ${dir}; }
+  body { font-family: ${font}; font-size: 13px; color: #1f2937; background: #fff; direction: ${dir}; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .page { padding: 28px 32px; max-width: 800px; margin: 0 auto; }
   /* Cover */
   .cover { text-align: center; padding: 40px 0 32px; border-bottom: 2px solid ${NAVY}; margin-bottom: 28px; }
@@ -950,7 +1306,9 @@ export function buildLessonFlowHTML(flow: LessonFlowOutput, isAr: boolean): stri
   ${secHeader(isAr ? 'بطاقة الخروج' : 'Exit Ticket', '🎫', '#F59E0B')}
   ${etBody}
 
-  <div class="footer">IQRA Teaching Assistant · ${esc(flow.topic)} · ${new Date().toLocaleDateString()}</div>
+  ${figuresSectionHTML(figures, isAr)}
+
+  <div class="footer">${isAr ? 'اقرأ — مساعد التدريس الذكي' : 'IQRA Teaching Assistant'} · ${esc(flow.topic)} · ${new Date().toLocaleDateString(isAr ? 'ar-JO' : 'en-GB')}</div>
 </div>
 </body>
 </html>`;

@@ -1,65 +1,96 @@
 /**
- * Grade 10 support packs (Math + Chemistry) — worksheets, quizzes, summaries,
- * remedial / official books. Catalog only; binaries under knowledge-base/.
+ * Grade 10 support packs — the teacher-facing view of the knowledge bank.
+ *
+ * This used to own two JSON catalogs of its own (`data/g10_math_support_
+ * resources.json` and its chemistry twin). It no longer owns any data: the
+ * bank lives in `@workspace/curriculum` and this is a search over it. The two
+ * catalogs described the same 66 PDFs as `lib/curriculum`'s source manifest,
+ * under a second id space and a second type vocabulary, and had drifted —
+ * every past exam paper was typed `quiz`, five of them tagged `remedial`, and
+ * three entries pointed at copies the manifest marks `duplicate`.
+ *
+ * That last one is worth remembering when touching the de-duplication below:
+ * it keys on title, and the two copies of each chemistry student book carried
+ * *different* titles (one Arabic, one English), so this function could never
+ * have caught them. Identity belongs in the manifest, which knows byte counts
+ * and page counts; a title comparison here is only a cheap second guard.
  */
 
-import mathCatalog from '../data/g10_math_support_resources.json' with { type: 'json' };
-import chemCatalog from '../data/g10_chem_support_resources.json' with { type: 'json' };
+import {
+  type CurriculumSource,
+  type SourceKind,
+  type BankUsePolicy,
+  appSubjectId,
+  bankItems,
+  bankTagsForUnit,
+  isUnitScopedTag,
+  kindLabel,
+  usePolicy,
+} from '@workspace/curriculum';
 import type { KBLesson } from './knowledgeBase.ts';
 import { getBookForLesson, getUnitForLesson } from './knowledgeBase.ts';
 
-export type SupportResourceType =
-  | 'worksheet'
-  | 'quiz'
-  | 'answer_key'
-  | 'summary'
-  | 'remedial'
-  | 'official_book'
-  | 'support';
+/**
+ * Subjects whose bank material may be offered to a teacher.
+ *
+ * Financial literacy is held back deliberately, not for want of files: the
+ * manifest records an unresolved edition conflict between its S1 and S2 books
+ * (`finlit-s2-student-book`, status `conflict`), and STATUS.md's standing
+ * instruction is that nothing be generated across the two until one edition is
+ * chosen. Its S1 book is otherwise perfectly usable, so this is a decision to
+ * revisit — see STATUS.md — and not a permanent property of the subject.
+ */
+const APP_SUBJECTS: ReadonlySet<string> = new Set(['mathematics', 'chemistry']);
 
-export type SupportResource = {
-  id: string;
+/**
+ * A bank document as the app reads it: the manifest entry, plus the two names
+ * the UI already speaks (`titleAr`, `subjectId`) and the use policy resolved
+ * once so no caller has to re-derive it from `authority`.
+ */
+export type SupportResource = CurriculumSource & {
   titleAr: string;
-  filename: string;
-  type: SupportResourceType | string;
-  unitTags: string[];
-  authorAr?: string | null;
-  sizeBytes?: number;
-  keywords?: string[];
-  subjectId?: string;
+  subjectId: string;
+  usePolicy: BankUsePolicy;
 };
 
-const MATH_RESOURCES = (mathCatalog as { resources: SupportResource[] }).resources.map(r => ({
-  ...r,
-  subjectId: r.subjectId ?? 'mathematics',
-}));
+function toResource(s: CurriculumSource): SupportResource {
+  return { ...s, titleAr: s.title, subjectId: appSubjectId(s.subject), usePolicy: usePolicy(s) };
+}
 
-const CHEM_RESOURCES = (chemCatalog as { resources: SupportResource[] }).resources.map(r => ({
-  ...r,
-  subjectId: r.subjectId ?? 'chemistry',
-}));
+const RESOURCES: SupportResource[] = bankItems()
+  .filter(s => APP_SUBJECTS.has(appSubjectId(s.subject)))
+  .map(toResource);
 
-const RESOURCES: SupportResource[] = [...MATH_RESOURCES, ...CHEM_RESOURCES];
+export { kindLabel };
 
-const TYPE_LABEL_AR: Record<string, string> = {
-  worksheet: 'ورقة عمل',
-  quiz: 'اختبار / أسئلة',
-  answer_key: 'إجابات',
-  summary: 'ملخص',
-  remedial: 'مادة علاجية / تأسيس',
-  official_book: 'كتاب رسمي',
-  support: 'مادة مساندة',
-};
+/**
+ * The title as a teacher should read it, rather than as Drive stores it.
+ *
+ * `titleAr` is the filename, verbatim and deliberately so — the manifest keeps
+ * it that way precisely so a file can be found by searching for its name. That
+ * makes it wrong for a list: it ends in `.pdf`, and most of these filenames
+ * already carry the author, so a row that also shows `authorAr` prints
+ * «... أ. عبد الحميد الهندي.pdf» above «أ. عبد الحميد الهندي».
+ *
+ * Only ever trims the end, and only a credit that matches the author already
+ * recorded for that file — a title with a name embedded mid-sentence, or a
+ * different name at the end, is left exactly as it is.
+ */
+export function displayTitle(r: Pick<SupportResource, 'titleAr' | 'authorAr'>): string {
+  let out = r.titleAr.replace(/\.pdf$/i, '').trim();
+  out = out.replace(/\s*\(\d+\)$/, '').trim();
+  if (r.authorAr) {
+    const name = r.authorAr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    out = out.replace(
+      new RegExp(`\\s*(?:إعداد\\s*)?(?:المعلمة|المعلم|أ|م)\\s*\\.?\\s*${name}\\s*$`),
+      '',
+    ).trim();
+  }
+  // Never trim a title away to nothing: a row with no words is worse than a
+  // row that repeats the author.
+  return out.length >= 8 ? out : r.titleAr.replace(/\.pdf$/i, '').trim();
+}
 
-const TYPE_LABEL_EN: Record<string, string> = {
-  worksheet: 'Worksheet',
-  quiz: 'Quiz / items',
-  answer_key: 'Answer key',
-  summary: 'Summary',
-  remedial: 'Remedial / foundations',
-  official_book: 'Official book',
-  support: 'Support material',
-};
 
 function detectSubjectFromQuery(query: string): 'mathematics' | 'chemistry' | null {
   const q = query.trim();
@@ -68,51 +99,73 @@ function detectSubjectFromQuery(query: string): 'mathematics' | 'chemistry' | nu
   return null;
 }
 
-/** Map a KB unit id → catalog unitTags. */
+/**
+ * Map a KB lesson onto the bank's unit tags.
+ *
+ * The structural mapping lives in `@workspace/curriculum` so the API server
+ * derives the same tags from a `CurriculumObjective` — the unit ids are one
+ * namespace and there is no reason for two implementations of this.
+ */
 export function unitTagsForLesson(lesson: KBLesson | null | undefined): string[] {
   if (!lesson) return [];
   const unit = getUnitForLesson(lesson);
   const book = getBookForLesson(lesson);
-  const tags: string[] = [];
-  if (!unit) return tags;
+  if (!unit) return [];
 
-  // `s1-u1` / `s2-u3` are MATHEMATICS catalog tags — the maths packs are the
-  // only ones that use the bare form. Every NCCD unit id matches
-  // /nccd-u\d+/ though, so a financial-literacy unit 1 emitted `s1-u1` and
-  // scored +8 against every maths unit-1 resource. Chemistry escaped this only
-  // because it carries explicit `chem-*` tags below. Emit the bare form only
-  // for the subject it actually belongs to; a subject with no packs in the
-  // catalog should match nothing, which is the honest answer.
-  const m = unit.id.match(/nccd-(u\d+)/i);
-  if (m?.[1] && book?.subjectId === 'mathematics') {
-    const u = m[1].toLowerCase();
-    if (book?.semester === 2 || /s2/i.test(unit.id)) tags.push(`s2-${u}`);
-    else tags.push(`s1-${u}`);
+  // Primary: derived from the unit id.
+  //
+  // This replaced a hand-written mapping that tested `unit.id === 'kbu-chem-1'`
+  // and four siblings — ids from a scheme the catalog no longer uses. Every one
+  // of those branches was dead, which left chemistry unit tags to the title
+  // keywords below, and ten of the seventeen chemistry lessons — all of units
+  // 2, 4 and 5 — resolved to no unit tag at all.
+  const tags: string[] = [...bankTagsForUnit(unit.id)];
+
+  // Fallback for a unit the mapping does not recognise (a non-NCCD book).
+  // Better a semester tag than nothing; previously this was the only source of
+  // the semester tag and it is kept for the ids `bankTagsForUnit` returns [] for.
+  if (!tags.length && book?.semester) {
+    if (book.subjectId === 'chemistry') tags.push(`chem-s${book.semester}`);
+    else if (book.subjectId === 'financial-literacy') tags.push(`finlit-s${book.semester}`);
+    else if (book.subjectId === 'mathematics') tags.push(`s${book.semester}`);
   }
 
-  // Chemistry KB units
-  if (unit.id === 'kbu-chem-1') tags.push('chem-s1-u1');
-  if (unit.id === 'kbu-chem-2') tags.push('chem-s1-u2');
-  if (unit.id === 'kbu-chem-3') tags.push('chem-s1-u3');
-  if (unit.id === 'kbu-chem-s2-4') tags.push('chem-s2-u4');
-  if (unit.id === 'kbu-chem-s2-5') tags.push('chem-s2-u5');
-
+  // Secondary: title keywords, each gated to its own subject.
+  //
+  // These are no longer load-bearing for the unit a lesson sits in — they now
+  // only add a *neighbouring* unit's material, where the topic genuinely spans
+  // two (a trigonometry lesson that also wants the functions summary).
+  //
+  // Gating matters: ungated, «تجربة استهلالية: المعادلة الكيميائية» matched
+  // /معادل/ and picked up the MATHEMATICS tag `s1-u1`, putting six algebra
+  // worksheets on a chemistry lab. Chat survived it only because
+  // `scoreResource` rejects a subject mismatch afterwards.
+  //
+  // The tags below (`s1-u1`, `s2-u5`, …) are the bare, ungraded namespace
+  // `bankTagsForParsedUnit` reserves for Grade 10 specifically (every other
+  // grade gets an explicit `g{n}-` prefix) — so this whole block is Grade-10
+  // material only. Ungated, a Grade 9 lesson titled «الاقترانات» matched
+  // /اقتران/ and picked up `s2-u5`, pulling Grade 10 Math Semester 2 unit-5
+  // worksheets onto a Grade 9 lesson the moment Grade 9 Math had lessons at
+  // all to match against.
   const title = `${unit.titleAr} ${lesson.titleAr}`;
-  if (/مصفوف/.test(title)) tags.push('s1-matrices');
-  if (/دائر/.test(title)) tags.push('s1-u2');
-  if (/اشتقاق|مشتق/.test(title)) tags.push('s2-u6');
-  if (/اقتران/.test(title)) tags.push('s2-u5');
-  if (/أسس|معادل/.test(title)) tags.push('s1-u1');
-  if (/بنية الذرة|بور|بلانك/.test(title)) tags.push('chem-s1-u1');
-  if (/جدول دوري/.test(title)) tags.push('chem-s1-u2');
-  if (/روابط|تساهمية|أيونية|فلزية/.test(title)) tags.push('chem-s1-u3');
-  if (/تفاعلات كيمي/.test(title)) tags.push('chem-s2-u5');
-
+  if (book?.subjectId === 'mathematics' && book?.gradeId === 'grade-10') {
+    if (/مصفوف/.test(title)) tags.push('s1-matrices');
+    if (/دائر/.test(title)) tags.push('s1-u2');
+    if (/اشتقاق|مشتق/.test(title)) tags.push('s2-u6');
+    // Known imprecision, left alone: «الاقترانات المثلثية» is a Semester 1
+    // trigonometry lesson and this also tags it with the Semester 2 functions
+    // unit. Both are genuinely about اقترانات, so the extra material is
+    // related rather than wrong — unlike the cross-subject case above.
+    if (/اقتران/.test(title)) tags.push('s2-u5');
+    if (/أسس|معادل/.test(title)) tags.push('s1-u1');
+  }
   if (book?.subjectId === 'chemistry') {
-    tags.push(book.semester === 2 ? 'chem-s2' : 'chem-s1');
-  } else {
-    if (book?.semester === 1) tags.push('s1');
-    if (book?.semester === 2) tags.push('s2');
+    if (/بنية الذرة|بور|بلانك/.test(title)) tags.push('chem-s1-u1');
+    if (/جدول دوري|دوري/.test(title)) tags.push('chem-s1-u2');
+    if (/روابط|تساهمية|أيونية|فلزية/.test(title)) tags.push('chem-s1-u3');
+    if (/تفاعل/.test(title)) tags.push('chem-s2-u4');
+    if (/طاقة/.test(title)) tags.push('chem-s2-u5');
   }
 
   return [...new Set(tags)];
@@ -136,10 +189,10 @@ function scoreResource(
   // Worse, the unit-tag bonus below is +8, so a single colliding tag beat the
   // penalty outright — «المشروع وإدارته» (financial literacy) came back with
   // three mathematics files, and since 2026-08-20 those go into a live prompt.
-  if (subjectHint && r.subjectId && r.subjectId !== subjectHint) return 0;
+  if (subjectHint && r.subjectId !== subjectHint) return 0;
 
   for (const tag of lessonTags) {
-    if (r.unitTags.includes(tag)) score += tag.includes('-u') ? 8 : 3;
+    if (r.unitTags.includes(tag)) score += isUnitScopedTag(tag) ? 8 : 3;
   }
 
   if (!q) return score;
@@ -151,17 +204,22 @@ function scoreResource(
 
   for (const t of tokens) {
     if (title.includes(t)) score += 4;
-    if (r.keywords?.some(k => k.toLowerCase().includes(t))) score += 2;
+    if (r.keywords.some(k => k.toLowerCase().includes(t))) score += 2;
   }
 
-  if (/ورقة|worksheet/i.test(q) && r.type === 'worksheet') score += 5;
-  if (/اختبار|quiz|أسئلة|بنك/i.test(q) && r.type === 'quiz') score += 5;
-  if (/ملخص|summary|ملزمة/i.test(q) && r.type === 'summary') score += 5;
-  if (/إجابات|answer/i.test(q) && r.type === 'answer_key') score += 5;
-  if (/علاجي|تأسيس|فاقد|دوسية|remedial/i.test(q) && r.type === 'remedial') score += 5;
-  if (/كتاب الطالب|دليل المعلم|official|كتاب الأنشطة/i.test(q) && r.type === 'official_book') {
-    score += 6;
-  }
+  // Kind bonuses. `exam` and `question-bank` are separate lines because they
+  // are separate things: the ten entries under `exam` are real Jordanian test
+  // papers, and the old vocabulary called both of them `quiz`.
+  if (/ورقة عمل|worksheet/i.test(q) && r.kind === 'worksheet') score += 5;
+  if (/اختبار|امتحان|exam|past paper/i.test(q) && r.kind === 'exam') score += 5;
+  if (/أسئلة|بنك|quiz|questions/i.test(q) && r.kind === 'question-bank') score += 5;
+  if (/ملخص|summary/i.test(q) && r.kind === 'summary') score += 5;
+  if (/دوسية|ملزمة|study pack/i.test(q) && r.kind === 'study-pack') score += 5;
+  if (/إجابات|حلول|answer/i.test(q) && r.kind === 'answer-key') score += 5;
+  if (/علاجي|تأسيس|فاقد|داعمة|remedial/i.test(q) && r.kind === 'ministry-support') score += 5;
+  if (/كتاب الطالب|student book/i.test(q) && r.kind === 'student-book') score += 6;
+  if (/دليل المعلم|teacher guide/i.test(q) && r.kind === 'teacher-guide') score += 6;
+  if (/كتاب الأنشطة|الأنشطة|activity/i.test(q) && r.kind === 'activity-book') score += 6;
 
   return score;
 }
@@ -171,20 +229,46 @@ export function searchSupportResources(opts: {
   query?: string;
   lesson?: KBLesson | null;
   limit?: number;
-  types?: string[];
+  kinds?: readonly SourceKind[];
   subjectId?: string | null;
+  /** Pass explicitly when the caller drops `lesson` but still knows the grade — see buildSupportResourcesContext's widened retry. */
+  gradeId?: string | null;
 }): SupportResource[] {
   const query = opts.query ?? '';
-  const lessonTags = unitTagsForLesson(opts.lesson);
   const limit = opts.limit ?? 5;
-  const typeFilter = opts.types;
-  const subjectHint =
-    opts.subjectId
-    ?? (opts.lesson ? getBookForLesson(opts.lesson)?.subjectId : null)
-    ?? detectSubjectFromQuery(query);
+  const kindFilter = opts.kinds;
+  const lessonBook = opts.lesson ? getBookForLesson(opts.lesson) : undefined;
+
+  // A lesson was named but resolves to no book at all — true for any subject
+  // (English vocational tracks, currently) that's wired into the curriculum
+  // picker but not into KB_BOOKS here. Both hints below are `??`-chained
+  // through `getBookForLesson(...)?.subjectId`, which is `undefined` in this
+  // exact case — not null-from-a-known-mismatch — so the subject and grade
+  // gates that follow would silently no-op instead of rejecting, and an
+  // English lesson whose query happened to contain a word like "worksheet"
+  // or "exam" could match Math/Chemistry PDFs by keyword alone. Fail closed
+  // before either hint is even computed, the same call made for
+  // financial-literacy below (empty and honest beats wrongly scoped) — but
+  // only when a lesson was actually passed and came up empty; the widened
+  // retry below deliberately drops `lesson` and passes subjectId/gradeId
+  // explicitly, so it never hits this branch.
+  if (opts.lesson && !lessonBook) return [];
+
+  const lessonTags = unitTagsForLesson(opts.lesson);
+  const subjectHint = opts.subjectId ?? lessonBook?.subjectId ?? detectSubjectFromQuery(query);
+  const gradeHint = opts.gradeId ?? lessonBook?.gradeId;
+
+  // The whole bank is Grade 10 material — no PDF here has ever been scoped
+  // to any other grade. Title/keyword matching below has no grade awareness
+  // (it scores query tokens against resource titles directly), so without
+  // this a Grade 9 lesson sharing ordinary math vocabulary — «حل المعادلات»،
+  // «المعادلات» — pulled in Grade 10 worksheets and answer keys the moment
+  // Grade 9 Math had lessons in the KB to search from at all. Same shape as
+  // the financial-literacy case below: honestly empty beats wrongly scoped.
+  if (gradeHint && gradeHint !== 'grade-10') return [];
 
   const ranked = RESOURCES
-    .filter(r => !typeFilter?.length || typeFilter.includes(r.type))
+    .filter(r => !kindFilter?.length || kindFilter.includes(r.kind))
     .map(r => ({ r, score: scoreResource(r, query, lessonTags, subjectHint) }))
     .filter(x => x.score > 0)
     .sort((a, b) => b.score - a.score || a.r.titleAr.localeCompare(b.r.titleAr, 'ar'));
@@ -211,13 +295,11 @@ export function formatSupportResourcesBlock(
     ? '📎 مواد مساندة متوفرة في مكتبة اقرأ (للمعلم):'
     : '📎 Support materials in the Iqra library:';
   const lines = resources.map(r => {
-    const type = isAr
-      ? (TYPE_LABEL_AR[r.type] ?? r.type)
-      : (TYPE_LABEL_EN[r.type] ?? r.type);
+    const kind = kindLabel(r.kind, isAr ? 'ar' : 'en');
     const author = r.authorAr
       ? (isAr ? ` — أ. ${r.authorAr}` : ` — ${r.authorAr}`)
       : '';
-    return `• [${type}] ${r.titleAr}${author}`;
+    return `• [${kind}] ${displayTitle(r)}${author}`;
   });
   const tip = isAr
     ? 'يمكنك رفع أحد هذه الملفات في المحادثة لخطة درس / ورقة عمل أدق.'
@@ -235,14 +317,17 @@ export function buildSupportResourcesContext(
   const lesson = lessons[0] ?? null;
   const hits = searchSupportResources({ query, lesson, limit });
   // The widened retry drops the lesson to match on the query alone — but
-  // dropping the lesson also dropped the subject it implied, and
+  // dropping the lesson also dropped the subject and grade it implied, and
   // `detectSubjectFromQuery` only knows maths and chemistry. A
   // financial-literacy lesson therefore came back through this path with
-  // chemistry activity books attached. Widen the match, not the subject.
+  // chemistry activity books attached, and (before the grade gate above) a
+  // Grade 9 lesson came back with Grade 10 worksheets. Widen the match, not
+  // the subject or grade.
   const subjectId = lesson ? getBookForLesson(lesson)?.subjectId ?? null : null;
+  const gradeId = lesson ? getBookForLesson(lesson)?.gradeId ?? null : null;
   const resources = hits.length
     ? hits
-    : searchSupportResources({ query, limit, subjectId });
+    : searchSupportResources({ query, limit, subjectId, gradeId });
   return formatSupportResourcesBlock(resources, lang);
 }
 
@@ -252,15 +337,14 @@ export function listAllSupportResources(): SupportResource[] {
 
 export function supportResourcesStats(): {
   total: number;
-  byType: Record<string, number>;
+  byKind: Record<string, number>;
   bySubject: Record<string, number>;
 } {
-  const byType: Record<string, number> = {};
+  const byKind: Record<string, number> = {};
   const bySubject: Record<string, number> = {};
   for (const r of RESOURCES) {
-    byType[r.type] = (byType[r.type] ?? 0) + 1;
-    const s = r.subjectId ?? 'unknown';
-    bySubject[s] = (bySubject[s] ?? 0) + 1;
+    byKind[r.kind] = (byKind[r.kind] ?? 0) + 1;
+    bySubject[r.subjectId] = (bySubject[r.subjectId] ?? 0) + 1;
   }
-  return { total: RESOURCES.length, byType, bySubject };
+  return { total: RESOURCES.length, byKind, bySubject };
 }

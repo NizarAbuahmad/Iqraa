@@ -17,7 +17,7 @@
 import { after, before, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { spawn, type ChildProcess } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
@@ -81,6 +81,82 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(res.status, 200);
   });
 
+  it("keeps the bank catalog public, and free of what it cannot serve", async () => {
+    // Same reasoning as curriculum: titles and provenance, not documents.
+    const res = await fetch(`${base}/bank/items?kind=exam`);
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as {
+      items: Array<{ kind: string; usePolicy: string; driveId?: string; status: string }>;
+      total: number;
+    };
+    assert.ok(body.total >= 10, `only ${body.total} exam papers`);
+    for (const item of body.items) {
+      assert.equal(item.kind, "exam");
+      // The policy travels with the item: a caller assembling something a
+      // teacher exports must not have to go and look it up.
+      assert.ok(["quotable", "reference-only"].includes(item.usePolicy));
+      // No handle to a file this API does not serve.
+      assert.equal(item.driveId, undefined);
+    }
+    assert.ok(body.items.some(i => i.usePolicy === "reference-only"));
+  });
+
+  it("refuses a kind from the retired vocabulary rather than ignoring it", async () => {
+    // `quiz` was the old catalog's word for both exams and question banks.
+    // Answering 200 with the whole bank would look like a working query.
+    const res = await fetch(`${base}/bank/items?kind=quiz`);
+    assert.equal(res.status, 400);
+    const body = (await res.json()) as { error: string };
+    assert.equal(body.error, "unknown_kind");
+  });
+
+  it("scopes bank items to a unit, and says which tags it used", async () => {
+    const res = await fetch(`${base}/bank/items?unitId=kbu-math-s1-nccd-u2`);
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as { total: number; unitTags: string[] };
+    assert.deepEqual(body.unitTags, ["s1-u2", "s1"]);
+    assert.ok(body.total > 0);
+  });
+
+  it("distinguishes an unscoped unit from a unit with no material", async () => {
+    // An unrecognised unit id resolves to no tags at all. Returning an empty
+    // list for both cases would conflate "nothing on file" with "bad id".
+    const res = await fetch(`${base}/bank/items?unitId=not-a-unit`);
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as { total: number; unitTags: string[] };
+    assert.deepEqual(body.unitTags, []);
+    assert.equal(body.total, 0);
+  });
+
+  it("answers what the bank holds for a set of objectives", async () => {
+    const objectives = await (await fetch(
+      `${base}/curriculum/objectives?unitId=kbu-math-s1-nccd-u2`,
+    )).json() as { objectives: Array<{ id: string }> };
+    assert.ok(objectives.objectives.length > 0);
+    const ids = objectives.objectives.slice(0, 2).map(o => o.id).join(",");
+
+    const res = await fetch(`${base}/bank/for-objectives?objectiveIds=${encodeURIComponent(ids)},nope`);
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as {
+      total: number; unitIds: string[]; unknownObjectiveIds: string[];
+    };
+    assert.ok(body.total > 0);
+    assert.deepEqual(body.unitIds, ["kbu-math-s1-nccd-u2"]);
+    // An id that resolves to nothing is named, not silently dropped.
+    assert.deepEqual(body.unknownObjectiveIds, ["nope"]);
+  });
+
+  it("reports how much of the bank has actually been read", async () => {
+    const res = await fetch(`${base}/bank/stats`);
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as { usable: number; ingested: number; pending: number };
+    assert.equal(body.usable, body.ingested + body.pending);
+    // Flipped 2026-08-26 alongside lib/curriculum's bank.test.ts: 51 documents
+    // were ingested that day, taking ingested past pending for the first time.
+    assert.ok(body.pending > 0, "the bank should still have unread documents to say so about");
+    assert.ok(body.ingested > body.pending, "most of the bank has been read — say so");
+  });
+
   it("keeps the verifier probe public", async () => {
     // Whether the verifier is deployed must be answerable without logging in.
     // 503 here means reachable-and-down, which is a valid answer, not a refusal.
@@ -117,11 +193,144 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     }
   });
 
-  it("guards roster, evaluation and attempt routes", async () => {
-    for (const route of ["/students", "/classes", "/evaluations", "/attempts"]) {
+  it("mounts account deletion, and refuses it without a token", async () => {
+    // Apple 5.1.1(v) and Play both require this route to exist, so the thing
+    // worth pinning is that it is *mounted* — a 404 here is a submission
+    // blocker, and would look identical to a typo in the path. 401 says the
+    // route resolved and the guard ran; anything past that needs a database,
+    // which this suite deliberately does not have.
+    const res = await fetch(`${base}/auth/users/me`, { method: "DELETE" });
+    assert.equal(res.status, 401, "account deletion must exist and require a token");
+  });
+
+  it("reports that student accounts are off, and refuses one", async () => {
+    // v1 is teacher-only, and the app reads this endpoint rather than a
+    // build-time copy so the two cannot disagree about which doors to show.
+    const features = await fetch(`${base}/healthz/features`);
+    assert.equal(features.status, 200);
+    const body = (await features.json()) as { studentAccounts: boolean };
+    assert.equal(body.studentAccounts, false, "the suite must run with the shipping default");
+
+    // The refusal is the enforcement; hiding the option in the app is not.
+    // 403 before any database work, which is why this passes with no DB.
+    const res = await fetch(`${base}/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        firstName: "A",
+        lastName: "B",
+        email: "child@example.com",
+        password: "Sufficiently1Strong!",
+        role: "student",
+        claimCode: "ABC123",
+      }),
+    });
+    assert.equal(res.status, 403, "a student registration must be refused");
+    const refusal = (await res.json()) as { code?: string };
+    assert.equal(refusal.code, "student_accounts_disabled");
+  });
+
+  it("publishes the roster consent statement without a token", async () => {
+    // The app renders a translation of this; serving it keeps the wording a
+    // teacher agrees to and the wording the version stamp identifies as one
+    // thing rather than two.
+    const res = await fetch(`${base}/auth/roster-consent`);
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as { version: string; statement: string };
+    assert.ok(body.version, "the statement must carry a version");
+    assert.ok(body.statement.length > 40, "the statement must actually be the statement");
+  });
+
+  it("mounts the moderation queue, and refuses it without a token", async () => {
+    // The report button has always worked; until 2026-09-05 nothing read the
+    // rows. These are the routes that make a report actionable, so a 404
+    // here is the same submission blocker as a missing delete route.
+    const res = await fetch(`${base}/moderation/reports`);
+    assert.equal(res.status, 401, "the moderation queue must exist and require a token");
+
+    for (const route of [
+      "/moderation/reports/00000000-0000-0000-0000-000000000000/resolve",
+      "/moderation/users/00000000-0000-0000-0000-000000000000/unsuspend",
+    ]) {
+      const post = await fetch(`${base}${route}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      });
+      assert.equal(post.status, 401, `${route} must require a token`);
+    }
+  });
+
+  it("guards roster, evaluation, attempt and workspace routes", async () => {
+    for (const route of ["/students", "/classes", "/evaluations", "/attempts", "/workspace/items"]) {
       const res = await fetch(`${base}${route}`);
       assert.equal(res.status, 401, `${route} must require a token`);
     }
+  });
+
+  it("guards messaging routes — signed-in only, not teacher-only", async () => {
+    for (const route of ["/messaging/threads", "/messaging/contacts"]) {
+      const res = await fetch(`${base}${route}`);
+      assert.equal(res.status, 401, `${route} must require a token`);
+    }
+  });
+
+  it("keeps the student exam link public, and only the link", async () => {
+    // The one unauthenticated write surface. What is asserted is the absence of
+    // a 401: that status would mean an earlier guard swallowed the request and
+    // the public router never saw it, which is the failure this whole file
+    // exists for.
+    //
+    // 500 is the *expected* answer here, not a flaw — this suite boots with a
+    // deliberately unreachable DATABASE_URL, and reaching a database error is
+    // itself proof the request got through to the handler. The other public
+    // routes return 200 only because they never touch the database.
+    const res = await fetch(`${base}/take/ZZZZZZ`);
+    assert.notEqual(res.status, 401, "the student link must not require a token");
+    assert.ok(
+      res.status === 404 || res.status === 500,
+      `expected 404 (no such code) or 500 (no database in this suite), got ${res.status}`,
+    );
+  });
+
+  it("keeps the class join-code lookup public, and closed while student accounts are off", async () => {
+    // The trap this guards: roster.ts mounts
+    // `router.use(["/classes","/students"], authMiddleware, …)`, and Express
+    // prefix-matches, so naming this route /classes/join/:code would answer 401
+    // to the parents it exists for — silently, since nothing else would change.
+    // Under /auth there is no such guard. A 401 here means somebody moved it.
+    const res = await fetch(`${base}/auth/join/AAAAAA`);
+    assert.notEqual(res.status, 401, "the join-code lookup must not require a token");
+
+    // 403 with no database touched: the feature flag is checked before any
+    // query, so this is deterministic in a suite that has no reachable DB.
+    // It is also the assertion that the one unauthenticated endpoint returning
+    // children's names stays shut in a teacher-only deployment.
+    assert.equal(res.status, 403, "student accounts are off, so the lookup must refuse");
+    const body = (await res.json()) as { code?: string };
+    assert.equal(body.code, "student_accounts_disabled");
+  });
+
+  it("guards minting a class join code, and unlinking an account", async () => {
+    const mint = await fetch(`${base}/classes/00000000-0000-4000-8000-000000000000/join-code`, {
+      method: "POST",
+    });
+    assert.equal(mint.status, 401, "minting a join code must require a token");
+
+    const unlink = await fetch(
+      `${base}/students/00000000-0000-4000-8000-000000000000/links/00000000-0000-4000-8000-000000000001`,
+      { method: "DELETE" },
+    );
+    assert.equal(unlink.status, 401, "unlinking an account must require a token");
+  });
+
+  it("still refuses a student token where a teacher token is required", async () => {
+    // A student's bearer token is scoped to one attempt. Presenting anything at
+    // all to a teacher route must not be mistaken for a session.
+    const res = await fetch(`${base}/evaluations`, {
+      headers: { authorization: "Bearer not-a-teacher-token" },
+    });
+    assert.equal(res.status, 401);
   });
 
   it("guards the Unsplash lookup route", async () => {
@@ -169,5 +378,29 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
       body: "{}",
     });
     assert.equal(res.status, 404);
+  });
+});
+
+describe("the built bundle ships its data, not just its code", { skip: built ? false : "run `pnpm build` first" }, () => {
+  it("puts the extracted knowledge-bank text where the bundle actually looks for it", () => {
+    // `@workspace/curriculum/passages.ts` resolves `data/extracted` relative
+    // to its OWN module's `import.meta.url` — correct in source and under
+    // `node --test`, where that file really does sit next to a `data/`
+    // sibling. Bundling collapses every module into this one dist/index.mjs,
+    // so at runtime `import.meta.url` points at the bundle, not at
+    // passages.ts's original location: the same expression now resolves to
+    // dist/data/extracted. Nothing copied the files there, `existsSync`
+    // failed, and `passagesForUnit` took the documented-honest "no text
+    // extracted for this source" path — indistinguishable from a source that
+    // genuinely has none. Grounding found zero passages for every production
+    // request since it shipped; the UI showed a "grounded" lesson match with
+    // no page citation, which is exactly what a client-side topic match with
+    // an empty server-side `sources` array looks like. `build.mjs` now copies
+    // the files to this exact path — assert the copy landed, not just that
+    // the script contains a copy step.
+    const extractedDir = path.join(path.dirname(entry), "data", "extracted");
+    assert.ok(existsSync(extractedDir), "dist/data/extracted does not exist — grounding will find nothing");
+    const files = readdirSync(extractedDir).filter(f => f.endsWith(".json"));
+    assert.ok(files.length >= 6, `only ${files.length} extraction files shipped next to the built bundle`);
   });
 });

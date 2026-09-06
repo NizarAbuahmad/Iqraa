@@ -11,10 +11,13 @@
     "test": "node --experimental-strip-types --test \"src/**/__tests__/**/*.test.ts\""
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.699.0",
+    "@aws-sdk/s3-request-presigner": "^3.699.0",
     "@types/bcryptjs": "^3.0.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@workspace/api-zod": "workspace:*",
     "@workspace/curriculum": "workspace:*",
+    "@workspace/math-verify": "workspace:*",
     "@workspace/db": "workspace:*",
     "@workspace/integrations-openai-ai-server": "workspace:*",
     "bcryptjs": "^3.0.3",
@@ -22,6 +25,7 @@
     "cors": "^2.8.6",
     "drizzle-orm": "catalog:",
     "express": "^5.2.1",
+    "google-auth-library": "^9.15.0",
     "jsonwebtoken": "^9.0.3",
     "pino": "^9.14.0",
     "pino-http": "^10.5.0"

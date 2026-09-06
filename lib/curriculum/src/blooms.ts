@@ -32,19 +32,21 @@ export type BloomsLevel =
 
 /**
  * Fold Arabic orthographic variation so matching does not miss on a hamza.
- * Deliberately conservative: it normalizes letter forms and strips diacritics,
- * and does nothing that could merge two genuinely different roots.
+ *
+ * This file used to carry its own copy of this. There were three: one here,
+ * one in the api-server grading path, and — briefly — a third written for
+ * passage retrieval. They agreed on Arabic and disagreed on Latin case and
+ * Arabic-Indic digits, which is the shape of divergence nobody notices until
+ * two features give different answers about the same string.
+ *
+ * Checked before merging them: over all 196 marker terms and catalog
+ * objectives, the two implementations differ on 7 strings, every one of them
+ * an English objective being lowercased. The markers below are Arabic verbs,
+ * so nothing here changes.
  */
-export function normalizeArabic(text: string): string {
-  return text
-    .replace(/[ً-ْٰ]/g, "") // harakat + dagger alef
-    .replace(/ـ/g, "") // tatweel
-    .replace(/[آأإٱ]/g, "ا") // آ أ إ ٱ → ا
-    .replace(/ة/g, "ه") // ة → ه
-    .replace(/ى/g, "ي") // ى → ي
-    .replace(/\s+/g, " ")
-    .trim();
-}
+import { normalizeArabic } from './arabic.ts';
+
+export { normalizeArabic };
 
 /**
  * Action words by level, most specific first. Each entry is already normalized

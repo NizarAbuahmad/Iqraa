@@ -3,12 +3,17 @@
  *  • Chemistry Grade 10, Semester 1 (الكيمياء - الصف العاشر - الفصل الأول)
  *  • Mathematics Grade 10, Semester 1 (الرياضيات - الصف العاشر - الفصل الأول)
  *  • Mathematics Grade 10, Semester 2 (الرياضيات - الصف العاشر - الفصل الثاني)
+ *  • Mathematics Grade 9, Semester 1 (الرياضيات - الصف التاسع - الفصل الأول)
+ *  • Mathematics Grade 9, Semester 2 (الرياضيات - الصف التاسع - الفصل الثاني)
  *
- * Grade 10 Math Semester 1/2 units/lessons are seeded from
- * data/iqra_curriculum_g10_math_sem{1,2}.json (NCCD). Legacy hardcoded Math
- * S1/S2 rows remain below but are excluded from the exported catalog.
+ * Grade 10 Math Semester 1/2 and Grade 9 Math Semester 1/2 units/lessons are
+ * seeded from data/iqra_curriculum_{g10,g9}_math_sem{1,2}.json (NCCD). Legacy
+ * hardcoded Math S1/S2 rows remain below but are excluded from the exported
+ * catalog.
  *
- * Investor MVP: helper lookups hide Chemistry and non-Math books from UI surfaces.
+ * MVP grade/subject visibility (which books actually reach the UI) is
+ * `isKbBookVisible`, driven by `MVP_GRADE_IDS`/`MVP_SUBJECT_IDS` in
+ * `@workspace/curriculum` — check those, not this comment, for current state.
  */
 // Value import, not just the re-export below: `export ... from` creates no local
 // binding, and resolveGroundedKbLesson calls this directly.
@@ -26,13 +31,68 @@ import {
   buildNccdSem2Catalog,
 } from './curriculumG10MathSem2.ts';
 import {
+  G9_MATH_S1_KB_BOOK_ID,
+  buildG9MathSem1Catalog,
+} from './curriculumG9MathSem1.ts';
+import {
+  G9_MATH_S2_KB_BOOK_ID,
+  buildG9MathSem2Catalog,
+} from './curriculumG9MathSem2.ts';
+import {
   CHEM_S1_BOOK_ID,
   buildChemSem1Catalog,
 } from './curriculumG10ChemSem1.ts';
 import {
+  PHYS_S1_BOOK_ID,
+  buildPhysSem1Catalog,
+} from './curriculumG10PhysSem1.ts';
+import { buildEngSem1Catalog } from './curriculumG10EnglishSem1.ts';
+import { buildEngSem2Catalog } from './curriculumG10EnglishSem2.ts';
+import {
+  buildPhysSem2Catalog,
+} from './curriculumG10PhysSem2.ts';
+import {
+  buildEarthSem1Catalog,
+} from './curriculumG10EarthSem1.ts';
+import {
+  buildEarthSem2Catalog,
+} from './curriculumG10EarthSem2.ts';
+import { buildBioSem1Catalog } from './curriculumG10BioSem1.ts';
+import { buildBioSem2Catalog } from './curriculumG10BioSem2.ts';
+import {
+  CHEM_S2_BOOK_ID,
+  buildChemSem2Catalog,
+} from './curriculumG10ChemSem2.ts';
+import {
   FINLIT_S1_BOOK_ID,
   buildFinlitSem1Catalog,
 } from './curriculumG10FinlitSem1.ts';
+import {
+  ARABIC_S1_BOOK_ID,
+  buildArabicSem1Catalog,
+} from './curriculumG10ArabicSem1.ts';
+import {
+  ARABIC_S2_BOOK_ID,
+  buildArabicSem2Catalog,
+} from './curriculumG10ArabicSem2.ts';
+import {
+  ISLAMIC_S1_BOOK_ID,
+  buildIslamicSem1Catalog,
+} from './curriculumG10IslamicSem1.ts';
+import {
+  ISLAMIC_S2_BOOK_ID,
+  buildIslamicSem2Catalog,
+} from './curriculumG10IslamicSem2.ts';
+import {
+  ENGLISH_COMMERCE_S1_KB_BOOK_ID,
+  ENGLISH_AGRICULTURE_S1_KB_BOOK_ID,
+  ENGLISH_HOSPITALITY_S1_KB_BOOK_ID,
+  ENGLISH_INDUSTRY_S1_KB_BOOK_ID,
+  buildEnglishCommerceKbCatalog,
+  buildEnglishAgricultureKbCatalog,
+  buildEnglishHospitalityKbCatalog,
+  buildEnglishIndustryKbCatalog,
+} from './curriculumG10EnglishVocational.ts';
 
 export interface KBBook {
   id: string;
@@ -84,6 +144,78 @@ type HardcodedKBLesson = Omit<KBLesson, 'objectives' | 'periods'> & {
 // ─────────────────────────────────────────────────────
 export const KB_BOOKS: KBBook[] = [
   {
+    id: 'kb-eng-10-s1',
+    gradeId: 'grade-10',
+    subjectId: 'english',
+    titleAr: 'اللغة الإنجليزية – الصف العاشر – الفصل الأول',
+    titleEn: 'English – Grade 10 – Semester 1',
+    semester: 1,
+    source: 'كتاب الطالب لمادة اللغة الإنجليزية الصف العاشر الفصل الأول.pdf',
+  },
+  {
+    id: 'kb-eng-10-s2',
+    gradeId: 'grade-10',
+    subjectId: 'english',
+    titleAr: 'اللغة الإنجليزية – الصف العاشر – الفصل الثاني',
+    titleEn: 'English – Grade 10 – Semester 2',
+    semester: 2,
+    source: 'كتاب الطالب لمادة اللغة الإنجليزية الصف العاشر الفصل الثاني.pdf (نسخة قيد الإعداد والتجهيز)',
+  },
+  {
+    id: 'kb-phys-10-s1',
+    gradeId: 'grade-10',
+    subjectId: 'physics',
+    titleAr: 'الفيزياء – الصف العاشر – الفصل الأول',
+    titleEn: 'Physics – Grade 10 – Semester 1',
+    semester: 1,
+    source: 'كتاب الطالب لمادة الفيزياء للصف العاشر الفصل الأول.pdf',
+  },
+  {
+    id: 'kb-phys-10-s2',
+    gradeId: 'grade-10',
+    subjectId: 'physics',
+    titleAr: 'الفيزياء – الصف العاشر – الفصل الثاني',
+    titleEn: 'Physics – Grade 10 – Semester 2',
+    semester: 2,
+    source: 'كتاب الطالب لمادة الفيزياء للصف العاشر الفصل الثاني.pdf',
+  },
+  {
+    id: 'kb-earth-10-s1',
+    gradeId: 'grade-10',
+    subjectId: 'earth-science',
+    titleAr: 'علوم الأرض والبيئة – الصف العاشر – الفصل الأول',
+    titleEn: 'Earth and Environmental Science – Grade 10 – Semester 1',
+    semester: 1,
+    source: 'كتاب الطالب لمادة علوم الأرض والبيئة الصف العاشر الفصل الأول.pdf',
+  },
+  {
+    id: 'kb-earth-10-s2',
+    gradeId: 'grade-10',
+    subjectId: 'earth-science',
+    titleAr: 'علوم الأرض والبيئة – الصف العاشر – الفصل الثاني',
+    titleEn: 'Earth and Environmental Science – Grade 10 – Semester 2',
+    semester: 2,
+    source: 'كتاب الطالب لمادة علوم الأرض والبيئة الصف العاشر الفصل الثاني.pdf',
+  },
+  {
+    id: 'kb-bio-10-s1',
+    gradeId: 'grade-10',
+    subjectId: 'biology',
+    titleAr: 'العلوم الحياتية – الصف العاشر – الفصل الأول',
+    titleEn: 'Biology – Grade 10 – Semester 1',
+    semester: 1,
+    source: 'كتاب الطالب لمادة العلوم الحياتية للصف العاشر الفصل الأول.pdf',
+  },
+  {
+    id: 'kb-bio-10-s2',
+    gradeId: 'grade-10',
+    subjectId: 'biology',
+    titleAr: 'العلوم الحياتية – الصف العاشر – الفصل الثاني',
+    titleEn: 'Biology – Grade 10 – Semester 2',
+    semester: 2,
+    source: 'كتاب الطالب لمادة العلوم الحياتية للصف العاشر الفصل الثاني.pdf',
+  },
+  {
     id: 'kb-chem-10-s1',
     gradeId: 'grade-10',
     subjectId: 'chemistry',
@@ -108,7 +240,79 @@ export const KB_BOOKS: KBBook[] = [
     titleAr: 'الثقافة المالية – الصف العاشر – الفصل الأول',
     titleEn: 'Financial Literacy – Grade 10 – Semester 1',
     semester: 1,
-    source: 'knowledge-base/grade-10-financial-literacy/الثقافة المالية 10 ف1.pdf',
+    source: 'knowledge-base/grade-10-finlit/الثقافة المالية 10 ف1.pdf',
+  },
+  {
+    id: ARABIC_S1_BOOK_ID,
+    gradeId: 'grade-10',
+    subjectId: 'arabic',
+    titleAr: 'اللغة العربية (العربية لغتي) – الصف العاشر – الفصل الأول',
+    titleEn: 'Arabic – Grade 10 – Semester 1',
+    semester: 1,
+    source: 'knowledge-base/grade-10-arabic/support-pdfs/كتاب الطالب لمادة العربية لغتي للصف العاشر الفصل الأول.pdf',
+  },
+  {
+    id: ARABIC_S2_BOOK_ID,
+    gradeId: 'grade-10',
+    subjectId: 'arabic',
+    titleAr: 'اللغة العربية (العربية لغتي) – الصف العاشر – الفصل الثاني',
+    titleEn: 'Arabic – Grade 10 – Semester 2',
+    semester: 2,
+    source: 'knowledge-base/grade-10-arabic/support-pdfs/كتاب الطالب لمادة اللغة العربية للصف العاشر الفصل الثاني.pdf',
+  },
+  {
+    id: ISLAMIC_S1_BOOK_ID,
+    gradeId: 'grade-10',
+    subjectId: 'islamic',
+    titleAr: 'التربية الإسلامية – الصف العاشر – الفصل الأول',
+    titleEn: 'Islamic Education – Grade 10 – Semester 1',
+    semester: 1,
+    source: 'دليل المعلم لمادة التربية الإسلامية الصف العاشر الفصل الأول.pdf',
+  },
+  {
+    id: ISLAMIC_S2_BOOK_ID,
+    gradeId: 'grade-10',
+    subjectId: 'islamic',
+    titleAr: 'التربية الإسلامية – الصف العاشر – الفصل الثاني',
+    titleEn: 'Islamic Education – Grade 10 – Semester 2',
+    semester: 2,
+    source: 'دليل المعلم لمادة التربية الإسلامية الصف العاشر الفصل الثاني.pdf',
+  },
+  {
+    id: ENGLISH_COMMERCE_S1_KB_BOOK_ID,
+    gradeId: 'grade-10',
+    subjectId: 'english',
+    titleAr: 'اللغة الإنجليزية – القطاع التجاري – الصف العاشر – الفصل الأول',
+    titleEn: 'English – Commerce Track – Grade 10 – Semester 1',
+    semester: 1,
+    source: "Techer's book commerce english 2.pdf (Vocational English, Level 2)",
+  },
+  {
+    id: ENGLISH_AGRICULTURE_S1_KB_BOOK_ID,
+    gradeId: 'grade-10',
+    subjectId: 'english',
+    titleAr: 'اللغة الإنجليزية – القطاع الزراعي – الصف العاشر – الفصل الأول',
+    titleEn: 'English – Agriculture Track – Grade 10 – Semester 1',
+    semester: 1,
+    source: "Techer's book agriculture english 2.pdf (Vocational English, Level 2)",
+  },
+  {
+    id: ENGLISH_HOSPITALITY_S1_KB_BOOK_ID,
+    gradeId: 'grade-10',
+    subjectId: 'english',
+    titleAr: 'اللغة الإنجليزية – قطاع الضيافة والسياحة – الصف العاشر – الفصل الأول',
+    titleEn: 'English – Hospitality and Tourism Track – Grade 10 – Semester 1',
+    semester: 1,
+    source: "Techer's book hospitality english 2.pdf (Vocational English, Level 2)",
+  },
+  {
+    id: ENGLISH_INDUSTRY_S1_KB_BOOK_ID,
+    gradeId: 'grade-10',
+    subjectId: 'english',
+    titleAr: 'اللغة الإنجليزية – القطاع الصناعي والتقني – الصف العاشر – الفصل الأول',
+    titleEn: 'English – Industrial/Technical Track – Grade 10 – Semester 1',
+    semester: 1,
+    source: "Techer's book technical english.pdf (Technical English, Level 1)",
   },
   {
     id: 'kb-math-10-s1',
@@ -127,6 +331,24 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Mathematics – Grade 10 – Semester 2',
     semester: 2,
     source: '10th_grade,_math,_2nd_semester_1785147978008.pdf',
+  },
+  {
+    id: G9_MATH_S1_KB_BOOK_ID,
+    gradeId: 'grade-9',
+    subjectId: 'mathematics',
+    titleAr: 'الرياضيات – الصف التاسع – الفصل الأول',
+    titleEn: 'Mathematics – Grade 9 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g9_math_sem1.json (NCCD)',
+  },
+  {
+    id: G9_MATH_S2_KB_BOOK_ID,
+    gradeId: 'grade-9',
+    subjectId: 'mathematics',
+    titleAr: 'الرياضيات – الصف التاسع – الفصل الثاني',
+    titleEn: 'Mathematics – Grade 9 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g9_math_sem2.json (NCCD)',
   },
 ];
 
@@ -665,7 +887,7 @@ const HARDCODED_KB_LESSONS: HardcodedKBLesson[] = [
       { ar: 'المدى', en: 'Range', definitionAr: 'الفرق بين أكبر قيمة وأصغر قيمة في مجموعة البيانات', definitionEn: 'The difference between the maximum and minimum values in a dataset' },
       { ar: 'الانحراف المعياري', en: 'Standard Deviation', definitionAr: 'مقياس لمتوسط انحراف القيم عن الوسط الحسابي', definitionEn: 'A measure of the average deviation of values from the mean' },
     ],
-    rulesAr: ['المدى = أكبر قيمة − أصغر قيمة', 'الوسط الحسابي للمبوبة = Σ(fₓ · xᵢ) / Σfₓ حيث xᵢ منتصف الفئة'],
+    rulesAr: ['المدى = أكبر قيمة − أصغر قيمة', 'الوسط الحسابي للمبوبة = Σ(fᵢ · xᵢ) / Σfᵢ حيث xᵢ منتصف الفئة'],
     rulesEn: ['Range = max value − min value', 'Mean for grouped data = Σ(fᵢ · xᵢ) / Σfᵢ where xᵢ is the class midpoint'],
   },
   {
@@ -847,7 +1069,7 @@ const HARDCODED_KB_LESSONS: HardcodedKBLesson[] = [
       'الزاوية المركزية رأسها مركز الدائرة وتساوي القوس الذي تحصره. الزاوية المحيطية رأسها على الدائرة وتساوي نصف الزاوية المركزية المقابلة لنفس القوس. الزاوية في نصف دائرة = 90°. الزوايا المحيطية المبنية على نفس القوس متساوية.',
     summaryEn:
       'A central angle has its vertex at the center and equals the intercepted arc. An inscribed angle has its vertex on the circle and equals half the central angle subtending the same arc. Angle in a semicircle = 90°. Inscribed angles subtending the same arc are equal.',
-    keyConceptsAr: ['الزاوية المركزية = القوس الذي تحصره', 'الزاوية المحيطية = نصف الزاوية المركزية', 'الزاوية في نصف دائرة = 90°', 'زوايا محيطية على نفس القوس متساوية', 'الزوايا المقابلة في رباعي منتظم على الدائرة تكملان 180°'],
+    keyConceptsAr: ['الزاوية المركزية = القوس الذي تحصره', 'الزاوية المحيطية = نصف الزاوية المركزية', 'الزاوية في نصف دائرة = 90°', 'زوايا محيطية على نفس القوس متساوية', 'مجموع الزوايا المتقابلة في الرباعي الدائري = 180°'],
     keyConceptsEn: ['Central angle = intercepted arc', 'Inscribed angle = half the central angle', 'Angle in semicircle = 90°', 'Inscribed angles on same arc are equal', 'Opposite angles in cyclic quadrilateral sum to 180°'],
     keyTerms: [
       { ar: 'الزاوية المركزية', en: 'Central Angle', definitionAr: 'زاوية رأسها مركز الدائرة وضلعاها نصفا قطر', definitionEn: 'An angle with its vertex at the center of the circle and sides as radii' },
@@ -1000,8 +1222,8 @@ const HARDCODED_KB_LESSONS: HardcodedKBLesson[] = [
     ],
     rulesAr: ['a/sin A = b/sin B = c/sin C', 'يُستخدم عند توفر (زاوية + ضلعها المقابل + زاوية أو ضلع آخر)'],
     rulesEn: ['a/sin A = b/sin B = c/sin C', 'Use when you know one angle-side pair and one other element'],
-    examplesAr: ['مثلث: A=40°، B=75°، a=8.3 → C=65°، b=8.3×sin75°/sin40°≈12.2'],
-    examplesEn: ['Triangle: A=40°, B=75°, a=8.3 → C=65°, b=8.3×sin75°/sin40°≈12.2'],
+    examplesAr: ['مثلث: A=40°، B=75°، a=8.3 → C=65°، b=8.3×sin75°/sin40°≈12.5'],
+    examplesEn: ['Triangle: A=40°, B=75°, a=8.3 → C=65°, b=8.3×sin75°/sin40°≈12.5'],
   },
   {
     id: 'kbl-math-s2-4-3',
@@ -1071,7 +1293,29 @@ const HARDCODED_KB_LESSONS: HardcodedKBLesson[] = [
 const _nccdSem1 = buildNccdSem1Catalog();
 const _nccdSem2 = buildNccdSem2Catalog();
 const _chemSem1 = buildChemSem1Catalog();
+const _physSem1 = buildPhysSem1Catalog();
+const _physSem2 = buildPhysSem2Catalog();
+const _earthSem1 = buildEarthSem1Catalog();
+const _earthSem2 = buildEarthSem2Catalog();
+const _bioSem1 = buildBioSem1Catalog();
+const _bioSem2 = buildBioSem2Catalog();
+const _chemSem2 = buildChemSem2Catalog();
 const _finlitSem1 = buildFinlitSem1Catalog();
+const _arabicSem1 = buildArabicSem1Catalog();
+const _arabicSem2 = buildArabicSem2Catalog();
+const _islamicSem1 = buildIslamicSem1Catalog();
+const _islamicSem2 = buildIslamicSem2Catalog();
+const _g9MathSem1 = buildG9MathSem1Catalog();
+const _g9MathSem2 = buildG9MathSem2Catalog();
+// General English — the two books that had a catalog row and no lessons
+// under it until 2026-09-05. Distinct from the four vocational ESP tracks
+// below, which are separate books with their own subject slugs.
+const _engSem1 = buildEngSem1Catalog();
+const _engSem2 = buildEngSem2Catalog();
+const _engCommerce = buildEnglishCommerceKbCatalog();
+const _engAgriculture = buildEnglishAgricultureKbCatalog();
+const _engHospitality = buildEnglishHospitalityKbCatalog();
+const _engIndustry = buildEnglishIndustryKbCatalog();
 const _legacyS1UnitIds = new Set(
   HARDCODED_KB_UNITS.filter(u => u.bookId === NCCD_S1_BOOK_ID).map(u => u.id),
 );
@@ -1084,10 +1328,18 @@ const _legacyS2UnitIds = new Set(
 const _legacyChemS1UnitIds = new Set(
   HARDCODED_KB_UNITS.filter(u => u.bookId === CHEM_S1_BOOK_ID).map(u => u.id),
 );
+// Chemistry S2 hardcoded rows are superseded by the student-book JSON — unit 4
+// had no real title («الوحدة الرابعة»; the book says «التفاعلات والحسابات
+// الكيميائية») and unit 5 was labelled «التفاعلات الكيميائية», which is unit
+// 4's subject — the book's unit 5 is «الطاقة الكيميائية».
+const _legacyChemS2UnitIds = new Set(
+  HARDCODED_KB_UNITS.filter(u => u.bookId === CHEM_S2_BOOK_ID).map(u => u.id),
+);
 const _supersededUnitIds = new Set([
   ..._legacyS1UnitIds,
   ..._legacyS2UnitIds,
   ..._legacyChemS1UnitIds,
+  ..._legacyChemS2UnitIds,
 ]);
 
 function normalizeHardcodedLesson(lesson: HardcodedKBLesson): KBLesson {
@@ -1173,28 +1425,73 @@ function enrichLesson(lesson: KBLesson): KBLesson {
   };
 }
 
-/** Active units: NCCD Chem S1 + Chem S2 (hardcoded) + NCCD Math S1/S2. */
+/** Active units: NCCD Chem S1/S2 + NCCD Math S1/S2 + NCCD FinLit S1 + English vocational tracks. */
 export const KB_UNITS: KBUnit[] = [
   ...HARDCODED_KB_UNITS.filter(
     u => u.bookId !== NCCD_S1_BOOK_ID
       && u.bookId !== NCCD_S2_BOOK_ID
-      && u.bookId !== CHEM_S1_BOOK_ID,
+      && u.bookId !== CHEM_S1_BOOK_ID
+      && u.bookId !== CHEM_S2_BOOK_ID,
   ),
   ..._chemSem1.units,
+  ..._engSem1.units,
+  ..._engSem2.units,
+  ..._physSem1.units,
+  ..._physSem2.units,
+  ..._earthSem1.units,
+  ..._earthSem2.units,
+  ..._bioSem1.units,
+  ..._bioSem2.units,
+  ..._chemSem2.units,
   ..._finlitSem1.units,
+  ..._arabicSem1.units,
+  ..._arabicSem2.units,
+  ..._islamicSem1.units,
+  ..._islamicSem2.units,
   ..._nccdSem1.units,
   ..._nccdSem2.units,
+  ..._g9MathSem1.units,
+  ..._g9MathSem2.units,
+  ..._engCommerce.units,
+  ..._engAgriculture.units,
+  ..._engHospitality.units,
+  ..._engIndustry.units,
 ];
 
-/** Active lessons: NCCD Chem S1 + Chem S2 (hardcoded) + NCCD Math S1/S2. */
+/** Active lessons: NCCD Chem S1/S2 + NCCD Math S1/S2 (G10 + G9) + NCCD FinLit S1 + English vocational tracks. */
 export const KB_LESSONS: KBLesson[] = [
   ...HARDCODED_KB_LESSONS
     .filter(l => !_supersededUnitIds.has(l.unitId))
     .map(normalizeHardcodedLesson),
   ..._chemSem1.lessons.map(enrichLesson),
+  ..._chemSem2.lessons.map(enrichLesson),
   ..._finlitSem1.lessons.map(enrichLesson),
+  ..._arabicSem1.lessons.map(enrichLesson),
+  ..._arabicSem2.lessons.map(enrichLesson),
+  ..._islamicSem1.lessons.map(enrichLesson),
+  ..._islamicSem2.lessons.map(enrichLesson),
   ..._nccdSem1.lessons.map(enrichLesson),
   ..._nccdSem2.lessons.map(enrichLesson),
+  // No hand-authored G9 rows exist to enrich from — these carry only what
+  // the NCCD JSON has (title-only lessons keep an empty summary/objectives).
+  // Physics has no hand-authored rows to enrich from either — it arrived
+  // with the 2026-09-03 intake and never had a hardcoded predecessor.
+  ..._engSem1.lessons,
+  ..._engSem2.lessons,
+  ..._physSem1.lessons,
+  ..._physSem2.lessons,
+  ..._earthSem1.lessons,
+  ..._earthSem2.lessons,
+  ..._bioSem1.lessons,
+  ..._bioSem2.lessons,
+  ..._g9MathSem1.lessons,
+  ..._g9MathSem2.lessons,
+  // No hand-authored rows exist for English either — these carry only what
+  // g10EnglishVocational.ts's browser catalog already assembled.
+  ..._engCommerce.lessons,
+  ..._engAgriculture.lessons,
+  ..._engHospitality.lessons,
+  ..._engIndustry.lessons,
 ];
 
 // ─────────────────────────────────────────────────────

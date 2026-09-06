@@ -28,13 +28,15 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import type { LessonPlanOutput } from '@/services/ai/AIService';
+import { getUnitPriorKnowledge, resolveGeneratorGrounding } from '@/services/kbContext';
 import {
   buildLessonPrepRequest,
   lessonPrepPickerIndices,
   resolveLessonPrepContext,
   type TeachingStyle,
 } from '@/services/lessonPrep';
-import { saveItem, toggleFavorite, updateItem } from '@/services/workspace';
+import { attachToClasses, saveItem, updateItem } from '@/services/workspace';
+import { useFavorite } from '@/hooks/useFavorite';
 import {
   buildLessonPlanHTML,
   buildLessonPlanSlidesHTML,
@@ -46,6 +48,9 @@ import {
 } from '@/services/share';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { Button } from '@/components/ui/Button';
+import { ClassPickerSheet, type ClassPick } from '@/components/ui/ClassPickerSheet';
+import { describeAttachResult } from '@/services/classAttach';
+import type { Lang } from '@/services/i18n';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
@@ -85,6 +90,8 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
   const [duration, setDuration] = useState<number>(context?.duration ?? 45);
   const [styleIdx, setStyleIdx] = useState(0);
   const [adaptations, setAdaptations] = useState('');
+  const [priorTopicsNotes, setPriorTopicsNotes] = useState('');
+  const [includePriorReview, setIncludePriorReview] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
 
   const [loading, setLoading] = useState(false);
@@ -97,7 +104,6 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
 
   const [savedId, setSavedId] = useState<string | undefined>();
   const [saveLabel, setSaveLabel] = useState<'save' | 'saved' | 'updated'>('save');
-  const [favorited, setFavorited] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [loadingPDF, setLoadingPDF] = useState(false);
   const [loadingWord, setLoadingWord] = useState(false);
@@ -106,6 +112,11 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
   const [toastVisible, setToastVisible] = useState(false);
 
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
+  const { favorited, toggle: handleToggleFavorite } =
+    useFavorite(savedId, key => showToast(t(key)), Haptics.ImpactFeedbackStyle.Light);
+  // Holds the new material's id after a first save — that is what opens the
+  // "which class?" sheet. Re-saving an edit does not re-ask.
+  const [classPromptFor, setClassPromptFor] = useState<string | null>(null);
 
   const generate = async () => {
     const built = buildLessonPrepRequest({
@@ -114,6 +125,8 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
       duration,
       teachingStyle: STYLE_IDS[styleIdx],
       adaptations,
+      priorTopicsNotes,
+      includePriorReview,
     });
     if (!built) { setError(t('generationFailed')); return; }
 
@@ -149,6 +162,13 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
 
   if (!context) return null;
 
+  // Prior-knowledge availability for this lesson (no fabrication)
+  const priorKnowledge = (() => {
+    const g = resolveGeneratorGrounding(context.topic, lang as 'ar' | 'en');
+    return g.lesson ? getUnitPriorKnowledge(g.lesson.id) : [];
+  })();
+  const priorReviewAvailable = priorKnowledge.length > 0;
+
   const applyEdit = <K extends keyof LessonPlanOutput>(field: K, value: LessonPlanOutput[K]) => {
     setResult(prev => (prev ? { ...prev, [field]: value } : prev));
     setEditedFields(prev => new Set(prev).add(field as string));
@@ -168,6 +188,7 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
       styleIdx,
       objectives: context.objectives,
       adaptations,
+      priorTopicsNotes,
       lessonId,
     };
     const payload = {
@@ -186,23 +207,9 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
       const saved = await saveItem({ type: 'lesson', ...payload });
       setSavedId(saved.id);
       setSaveLabel('saved');
+      setClassPromptFor(saved.id);
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-  };
-
-  const handleToggleFavorite = async () => {
-    if (!savedId) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const next = !favorited;
-    setFavorited(next);
-    try {
-      await toggleFavorite(savedId);
-    } catch {
-      setFavorited(!next); // revert on failure
-    }
-    showToast(next
-      ? (lang === 'ar' ? 'أضفتها إلى المفضلة ⭐' : 'Added to Favourites ⭐')
-      : (lang === 'ar' ? 'أزلتها من المفضلة' : 'Removed from Favourites'));
   };
 
   const handleShareText = async () => {
@@ -278,6 +285,7 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
         styleIdx: String(styleIdx),
         objectives: context.objectives,
         adaptations,
+        priorTopicsNotes,
       },
     });
   };
@@ -374,6 +382,43 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
               multiline
             />
           </View>
+
+          <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align }]}>
+            {t('priorTopicsLabel')}
+          </Text>
+          <View style={[styles.inputBox, { backgroundColor: colors.background, borderColor: colors.border, borderRadius: colors.radius }]}>
+            <TextInput
+              style={[styles.textInput, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: align }]}
+              placeholder={t('priorTopicsPlaceholder')}
+              placeholderTextColor={colors.mutedForeground}
+              value={priorTopicsNotes}
+              onChangeText={setPriorTopicsNotes}
+              multiline
+            />
+          </View>
+
+          <View style={[styles.checkboxGroup, { backgroundColor: colors.background, borderColor: colors.border, borderRadius: colors.radius, opacity: priorReviewAvailable ? 1 : 0.55 }]}>
+            <CheckboxRow
+              label={t('includePriorReviewPlanLabel')}
+              checked={includePriorReview && priorReviewAvailable}
+              onToggle={() => { if (priorReviewAvailable) setIncludePriorReview(v => !v); }}
+              accent={accent}
+              colors={colors}
+              isRTL={isRTL}
+              disabled={!priorReviewAvailable}
+            />
+            {!priorReviewAvailable ? (
+              <Text style={{
+                color: colors.mutedForeground,
+                fontFamily: 'Almarai_400Regular',
+                fontSize: 12,
+                marginTop: 2,
+                textAlign: align,
+              }}>
+                {t('priorReviewPlanUnavailableNote')}
+              </Text>
+            ) : null}
+          </View>
         </View>
       )}
 
@@ -455,9 +500,7 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
             {!!savedId && (
               <ActionButton
                 icon={favorited ? 'star' : 'star-outline'}
-                label={favorited
-                  ? (lang === 'ar' ? 'في المفضلة' : 'Favourited')
-                  : (lang === 'ar' ? 'أضف إلى المفضلة' : 'Add to Favourites')}
+                label={favorited ? t('inFavorites') : t('addToFavorites')}
                 onPress={handleToggleFavorite}
                 accent={favorited ? '#F59E0B' : colors.mutedForeground}
                 colors={colors}
@@ -514,6 +557,19 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
           cancel: t('cancel'),
         }}
       />
+      <ClassPickerSheet
+        visible={classPromptFor !== null}
+        multiple
+        onClose={() => setClassPromptFor(null)}
+        onPick={picks => {
+          const materialId = classPromptFor;
+          setClassPromptFor(null);
+          if (!materialId || picks.length === 0) return;
+          // One column, many classes: the extras become copies.
+          void attachToClasses(materialId, picks.map(p => p.id))
+            .then(outcome => showToast(describeAttachResult(outcome, picks, t, lang as Lang)));
+        }}
+      />
       <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
     </View>
   );
@@ -540,6 +596,25 @@ function Chip({ label, selected, accent, colors, onPress }: {
       }]}>
         {label}
       </Text>
+    </Pressable>
+  );
+}
+
+function CheckboxRow({ label, checked, onToggle, accent, colors, isRTL, disabled }: {
+  label: string; checked: boolean; onToggle: () => void;
+  accent: string; colors: ReturnType<typeof useColors>; isRTL: boolean;
+  disabled?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={disabled ? undefined : onToggle}
+      disabled={disabled}
+      style={[styles.checkRow, { flexDirection: isRTL ? 'row-reverse' : 'row', opacity: disabled ? 0.6 : 1 }]}
+    >
+      <View style={[styles.checkbox, { borderColor: checked ? accent : colors.border, backgroundColor: checked ? accent : 'transparent' }]}>
+        {checked && <Ionicons name="checkmark" size={13} color="#fff" />}
+      </View>
+      <Text style={[{ color: disabled ? colors.mutedForeground : colors.foreground, fontFamily: checked ? 'Cairo_500Medium' : 'Almarai_400Regular', fontSize: 13, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -585,6 +660,9 @@ const styles = StyleSheet.create({
   chipText: { fontSize: 12 },
   inputBox: { borderWidth: 1.5, padding: 12, marginTop: 2 },
   textInput: { fontSize: 14, padding: 0, minHeight: 48 },
+  checkboxGroup: { borderWidth: 1.5, padding: 12, marginTop: 10, gap: 4 },
+  checkRow: { alignItems: 'center', gap: 10, paddingVertical: 4 },
+  checkbox: { width: 18, height: 18, borderRadius: 4, borderWidth: 2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   loadingBox: { alignItems: 'center', gap: 12, padding: 16, marginTop: 12 },
   loadingText: { fontSize: 13 },
   error: { fontSize: 13, marginTop: 10 },

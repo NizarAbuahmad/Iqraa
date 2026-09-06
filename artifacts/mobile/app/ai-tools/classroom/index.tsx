@@ -9,81 +9,12 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
-import { buildBuilderRoute } from '@/services/classroomRouting';
+import { ACTIVITY_CARDS, ActivityCard, buildBuilderRoute } from '@/services/classroomRouting';
+import { arCountPhrase } from '@/services/arCount';
 
 const ACCENT = '#4F46E5';
 
 type FilterKey = 'all' | 'quick' | 'team' | 'solo';
-
-interface ActivityCard {
-  id: string;
-  emoji: string;
-  titleKey: string;
-  descKey: string;
-  difficulty: string;
-  groupType: string;
-  duration: string;
-  durationMin: number; // for Quick filter
-  isTeam: boolean;
-  isSolo: boolean;
-  isNew: boolean;
-  isFeatured: boolean;
-  accentColor: string;
-}
-
-const ACTIVITY_CARDS: ActivityCard[] = [
-  {
-    id: 'escape-challenge', emoji: '🔐',
-    titleKey: 'activityEscapeTitle', descKey: 'activityEscapeDesc',
-    difficulty: 'Easy–Advanced', groupType: 'Groups', duration: '10–30 min',
-    durationMin: 30, isTeam: true, isSolo: false, isNew: false, isFeatured: true,
-    accentColor: ACCENT,
-  },
-  {
-    id: 'quick-check', emoji: '🙋',
-    titleKey: 'activityQuickCheckTitle', descKey: 'activityQuickCheckDesc',
-    difficulty: 'Easy–Advanced', groupType: 'Whole Class', duration: '5–15 min',
-    // isFeatured must stay false: the hub renders ONE hero card
-    // (find(isFeatured)) and drops every other featured card from the list.
-    durationMin: 15, isTeam: false, isSolo: false, isNew: true, isFeatured: false,
-    accentColor: '#3B82F6',
-  },
-  {
-    id: 'error-detective', emoji: '🔍',
-    titleKey: 'activityErrorTitle', descKey: 'activityErrorDesc',
-    difficulty: 'Medium', groupType: 'Pairs', duration: '15–25 min',
-    durationMin: 25, isTeam: true, isSolo: false, isNew: true, isFeatured: false,
-    accentColor: '#E67E22',
-  },
-  {
-    id: 'exit-ticket', emoji: '🎫',
-    titleKey: 'activityExitTitle', descKey: 'activityExitDesc',
-    difficulty: 'Easy', groupType: 'Individual', duration: '5–10 min',
-    durationMin: 10, isTeam: false, isSolo: true, isNew: true, isFeatured: false,
-    accentColor: '#10B981',
-  },
-  {
-    id: 'bingo', emoji: '🎱',
-    titleKey: 'activityBingoTitle', descKey: 'activityBingoDesc',
-    difficulty: 'Easy–Medium', groupType: 'Whole Class', duration: '15–25 min',
-    durationMin: 25, isTeam: true, isSolo: false, isNew: false, isFeatured: false,
-    accentColor: '#A855F7',
-  },
-  {
-    id: 'relay', emoji: '🏃',
-    titleKey: 'activityRelayTitle', descKey: 'activityRelayDesc',
-    difficulty: 'Medium–Advanced', groupType: 'Teams', duration: '20–35 min',
-    durationMin: 35, isTeam: true, isSolo: false, isNew: false, isFeatured: false,
-    accentColor: '#F43F5E',
-  },
-  {
-    id: 'gallery-walk', emoji: '🖼️',
-    titleKey: 'activityGalleryTitle', descKey: 'activityGalleryDesc',
-    difficulty: 'Medium', groupType: 'Groups', duration: '20–30 min',
-    durationMin: 30, isTeam: true, isSolo: false, isNew: true, isFeatured: false,
-    accentColor: '#0EA5E9',
-  },
-];
 
 const FILTERS: Array<{ key: FilterKey; labelKey: string }> = [
   { key: 'all',   labelKey: 'marketplaceAll' },
@@ -150,7 +81,9 @@ export default function ClassroomHubScreen() {
             {lang === 'ar' ? 'أنشطة الحصة' : 'Activity Marketplace'}
           </Text>
           <Text style={[styles.headerSub, { fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
-            {lang === 'ar' ? '6 أنشطة تفاعلية جاهزة — اختر نشاطاً وابدأ الحصة' : '6 interactive activities — pick one and launch in seconds'}
+            {lang === 'ar'
+              ? `${arCountPhrase(ACTIVITY_CARDS.length, 'نشاط تفاعلي جاهز', 'نشاطان تفاعليان جاهزان', 'أنشطة تفاعلية جاهزة')} — اختر نشاطاً وابدأ الحصة`
+              : `${ACTIVITY_CARDS.length} interactive activities — pick one and launch in seconds`}
           </Text>
 
           {/* Search */}
@@ -233,7 +166,7 @@ export default function ClassroomHubScreen() {
           <Text style={[styles.sectionLabel, { color: colors.foreground, fontFamily: 'Cairo_700Bold', marginBottom: 12 }]}>
             {filter === 'all' && !query.trim()
               ? t('marketplaceActivities' as any)
-              : `${filtered.length} ${lang === 'ar' ? 'نشاط' : filtered.length === 1 ? 'activity' : 'activities'}`}
+              : lang === 'ar' ? arCountPhrase(filtered.length, 'نشاط', 'نشاطان', 'أنشطة') : `${filtered.length} ${filtered.length === 1 ? 'activity' : 'activities'}`}
           </Text>
 
           {filtered.length === 0 ? (

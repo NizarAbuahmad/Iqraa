@@ -1,0 +1,3619 @@
+{
+  "note": "Every Grade 10 source document on file, and what has been done with each one. This is the single registry: `bank.ts` reads it, and the app's support-resource search is a derived view of it. It absorbed artifacts/mobile/data/g10_{math,chem}_support_resources.json on 2026-08-25 — those held the same 66 PDFs under a second id space and a second type vocabulary, and had already drifted (every exam paper was typed `quiz`, and three entries pointed at copies this file marks `duplicate`). Titles are copied verbatim from Drive so a file can be found by searching for its name.",
+  "capturedAt": "2026-08-24",
+  "localRoot": "C:/Users/Lenovo/Downloads/Raya studio/Iqraa/Calude app/Knowledge Base/10th grade",
+  "localRootNote": "The Drive tree is mirrored on disk under this path (chemistry in ./alchamy, math in ./Math), file names matching the Drive titles. Extraction reads from there; Drive is the shareable copy, not the working one. The mirror is close but not exact — it holds at least one file Drive does not (a compressed math teacher guide).",
+  "folders": {
+    "1464Qn9YYU2rg00SkFUAdghOXCCRGRmm4": "Math G10",
+    "1PdxrODmAgA5S4IzSr-bHOUqGnCoaPYCO": "Math G10 / Other resources",
+    "1FBNflzb0VWF2TGFD3SWjvKcJ4-L0O_l6": "Chemistry G10",
+    "1B6WYpFVl8Zik7_JlMFWEH4KP4MS2-Pph": "Financial literacy G10"
+  },
+  "sources": [
+    {
+      "id": "math-s1-student-book",
+      "driveId": "1RPHOG_hScVh3uO8q-L8fXtDIZI1-UApE",
+      "title": "كتاب الطالب لمادة الرياضيات الصف العاشر الفصل الأول.pdf",
+      "bytes": 18630721,
+      "subject": "math",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-25",
+        "pages": 132,
+        "chars": 184065,
+        "localPath": "attached_assets/10th_grade,_math,_2nd_semester_1785147978008.pdf",
+        "sha256": "31fb912092398e107f62505a4abbada0a571343cbcca69032cb541e1a5182668",
+        "bytesDifferFromManifest": {
+          "manifest": 18630721,
+          "local": 33429449
+        }
+      },
+      "filename": "كتاب الطالب لمادة الرياضيات الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ]
+    },
+    {
+      "id": "math-s2-student-book",
+      "driveId": "1Dh6qWpdFDFOgkbP6MoTBsIf5LREwK-f4",
+      "title": "10th grade, math, 2nd semester.pdf",
+      "bytes": 33429449,
+      "subject": "math",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-25",
+        "pages": 150,
+        "chars": 220128,
+        "localPath": "attached_assets/10th_grade,_math,_1st_semester_1785071530816.pdf",
+        "sha256": "284b59d944a0cc3be7232aa89f35ba2750e82da496917d53781fea4a26d4c14f",
+        "bytesDifferFromManifest": {
+          "manifest": 33429449,
+          "local": 12150839
+        }
+      },
+      "filename": "10th grade, math, 2nd semester.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ]
+    },
+    {
+      "id": "math-s1-teacher-guide",
+      "driveId": "1fiJ-CRa0-5rqjYtAOHo8Z34w5j4-Uzgn",
+      "title": "teacher guiede, 10th grade, semster one.pdf",
+      "bytes": 58371821,
+      "subject": "math",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-02",
+        "pages": 212,
+        "chars": 513732,
+        "localPath": "attached_assets/TE010_Book-teacher_guiede,_10th_grade,_semster_one_1785147998881.pdf",
+        "sha256": "56fac019e4302ac92920f2d1bc7a2c9e760c806ee43d10353fd769b4b9753aab"
+      },
+      "filename": "teacher guiede, 10th grade, semster one.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر",
+        "دليل المعلم",
+        "الفصل الأول"
+      ],
+      "notes": "Source of the math S1 per-lesson objectives (مخطَّط الوحدة tables, book pages 36B/76B/110B). `status: \"ingested\"` was set before this file was ever actually extracted — it sat as an unpulled 58MB Git-LFS pointer the whole time, so the claim was untrue until 2026-08-30. Extracted from a 33MB compressed copy fetched via R2 (bytes differ from the 58371821 above; see `extraction` block and the extracted JSON's own `bytesDifferFromManifest`) — same pattern as `chem-s1-student-book-compressed`, a re-compression, not a different edition."
+    },
+    {
+      "id": "math-s2-teacher-guide",
+      "driveId": "11OhKr6LEESClLPN1vBQsIyELUVw9RotX",
+      "title": "teacher guiede, 10th grade, semster two.pdf",
+      "bytes": 16165934,
+      "subject": "math",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-25",
+        "pages": 218,
+        "chars": 558414,
+        "localPath": "attached_assets/Book10_2_Proof3_WEB-teacher_guiede,_10th_grade,_semster_two_1785147998881.pdf",
+        "sha256": "f3c362a34c1b8862485b95a2944719eeea820dbaa4ca134cd90119507f318810"
+      },
+      "filename": "teacher guiede, 10th grade, semster two.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر",
+        "دليل المعلم",
+        "الفصل الثاني"
+      ],
+      "notes": "Not yet mined for misconceptions or worked examples."
+    },
+    {
+      "id": "math-s1-exercise-book",
+      "driveId": "16z2PS7s-7L094u7cNkLN5YcdqbpB1fT8",
+      "title": "10th grade, math excersice book, semster one.pdf",
+      "bytes": 6600081,
+      "subject": "math",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-25",
+        "pages": 50,
+        "chars": 47275,
+        "localPath": "attached_assets/2026_MT10_WB1__10th_grade,_math_excersice_book,_semster_one_1785147998882.pdf",
+        "sha256": "3fdcdea589cd02957375a0ef352a24ed5f905b9832b754dee58795a5d70ffb07"
+      },
+      "filename": "10th grade, math excersice book, semster one.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر",
+        "كتاب التمارين",
+        "الفصل الأول"
+      ]
+    },
+    {
+      "id": "math-s2-exercise-book",
+      "driveId": "17u7aF4kRD70F_UKyjc72JksdZ3U_RbF_",
+      "title": "mather exccersie book, semster 2.pdf",
+      "bytes": 4408290,
+      "subject": "math",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-25",
+        "pages": 56,
+        "chars": 57003,
+        "localPath": "attached_assets/MA_10_WB2_6_11_2025-mather_exccersie_book,_semster_2_1785147998882.pdf",
+        "sha256": "302c2a3c58f34a9d4be13a89c7aebfa7f05f8d4a2ec96c07e8ea1aeaab64f5fb"
+      },
+      "filename": "mather exccersie book, semster 2.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر",
+        "كتاب التمارين",
+        "الفصل الثاني"
+      ]
+    },
+    {
+      "id": "math-remedial-plan",
+      "driveId": "1G2Uby_TmT4X0zvRqgXEUx7iQ-cjJn2Wo",
+      "title": "خطة البرنامج العلاجي لمادة الرياضيات للصف العاشر الفصل الأول.pdf",
+      "bytes": 317129,
+      "subject": "math",
+      "semester": 1,
+      "kind": "ministry-support",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "خطة البرنامج العلاجي لمادة الرياضيات للصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 1,
+        "chars": 1683,
+        "localPath": "attached_assets/knowledge-base-pending/math-remedial-plan.pdf",
+        "sha256": "5a757a291a93032d6c402c0c103b20a7ca618f08abc9e26380009d8e9f96305c"
+      }
+    },
+    {
+      "id": "math-remedial-part1",
+      "driveId": "1iASlbgyWVMTTcMT80tYZcBR0GZTxslCQ",
+      "title": "مادة التدخلات العلاجية لمادة الرياضيات للصف العاشر الجزء الأول.pdf",
+      "bytes": 3496220,
+      "subject": "math",
+      "semester": null,
+      "kind": "ministry-support",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "مادة التدخلات العلاجية لمادة الرياضيات للصف العاشر الجزء الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 33,
+        "chars": 35103,
+        "localPath": "attached_assets/knowledge-base-pending/math-remedial-part1.pdf",
+        "sha256": "0b2dd1d69907975179d0de269be9143c99032a01c13a9c7d1916ed6ca89ae558"
+      }
+    },
+    {
+      "id": "math-remedial-part2",
+      "driveId": "1J0Oj7i3ILaxM7_Bu6XGA6z4RDmSJJmOg",
+      "title": "مادة التدخلات العلاجية لمادة الرياضيات للصف العاشر الجزء الثاني.pdf",
+      "bytes": 2099135,
+      "subject": "math",
+      "semester": null,
+      "kind": "ministry-support",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "مادة التدخلات العلاجية لمادة الرياضيات للصف العاشر الجزء الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-loss-recovery",
+      "driveId": "1DYE6BKUCRl_B65JPgohCyLqr5WRjkZYT",
+      "title": "المادة المقررة لتعويض الفاقد التعليمي لمادة الرياضيات الصف العاشر.pdf",
+      "bytes": 6543330,
+      "subject": "math",
+      "semester": null,
+      "kind": "ministry-support",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "المادة المقررة لتعويض الفاقد التعليمي لمادة الرياضيات الصف العاشر.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-s1-support-material",
+      "driveId": "1NN1R71SVypOasqZrELBIIbMLKW0ezMyS",
+      "title": "المادة المساندة لمادة الرياضيات الصف العاشر الفصل الأول.pdf",
+      "bytes": 17737588,
+      "subject": "math",
+      "semester": 1,
+      "kind": "ministry-support",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "المادة المساندة لمادة الرياضيات الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-02",
+        "pages": 80,
+        "chars": 101175,
+        "localPath": "knowledge-base/grade-10-math/support-pdfs/المادة المساندة لمادة الرياضيات الصف العاشر الفصل الأول.pdf",
+        "sha256": "51dfb4306d812f4aa1eb2ebdec9048c01a4fdc3ec526a3a3549bb0ee4dd79692"
+      }
+    },
+    {
+      "id": "math-s2-support-worksheets",
+      "driveId": "1q5GLby9MlDDOSfFntrZxkuoZlrX2sRJC",
+      "title": "أوراق عمل داعمة لمادة الرياضيات الصف العاشر الفصل الثاني.pdf",
+      "bytes": 621952,
+      "subject": "math",
+      "semester": 2,
+      "kind": "ministry-support",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "أوراق عمل داعمة لمادة الرياضيات الصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 20,
+        "chars": 17041,
+        "localPath": "attached_assets/knowledge-base-pending/math-s2-support-worksheets.pdf",
+        "sha256": "e6ddb27e2e77e57495097d815d62c19ea3d2393c0c2ab84fea0651ef9ebe17c4"
+      }
+    },
+    {
+      "id": "math-diagnostic-test",
+      "driveId": "1gYj7P7cTT3o_gN5aGrcB_0Vg_jkA46kg",
+      "title": "اختبار تشخيصي لمادة الرياضيات للصف العاشر.pdf",
+      "bytes": 251933,
+      "subject": "math",
+      "semester": null,
+      "kind": "exam",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "اختبار تشخيصي لمادة الرياضيات للصف العاشر.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 12,
+        "chars": 4762,
+        "localPath": "attached_assets/knowledge-base-pending/math-diagnostic-test.pdf",
+        "sha256": "31ad1895582864acecaeb3b04b81a15cab5f06efe0b0abf0955d7f68bbf26cf6"
+      }
+    },
+    {
+      "id": "math-u1-answers-almasri",
+      "driveId": "1C0bH5OSIrxS85pv49hplop1YU2Q8skiE",
+      "title": "إجابات أول درسين من الوحدة الأولى الرياضيات الصف العاشر أ. أحمد المصري.pdf",
+      "bytes": 16123407,
+      "subject": "math",
+      "semester": 1,
+      "kind": "answer-key",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "إجابات أول درسين من الوحدة الأولى الرياضيات الصف العاشر أ. أحمد المصري.pdf",
+      "authorAr": "أحمد المصري",
+      "unitTags": [
+        "g10-math-general",
+        "s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-u1-answers-alkhatib",
+      "driveId": "17PlUHeCwplpScsdJoL-gnjfDTMKfm9fB",
+      "title": "إجابات الوحدة الأولى (الأسس والمعادلات) رياضيات الصف العاشر أ. سلسبيل الخطيب.pdf",
+      "bytes": 19311464,
+      "subject": "math",
+      "semester": 1,
+      "kind": "answer-key",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "إجابات الوحدة الأولى (الأسس والمعادلات) رياضيات الصف العاشر أ. سلسبيل الخطيب.pdf",
+      "authorAr": "سلسبيل الخطيب",
+      "unitTags": [
+        "s1",
+        "s1-u1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-u2-answers-alkhatib",
+      "driveId": "1UgBo0BaiEkbUUN-bTjV24k5AFZ3nlQ1W",
+      "title": "إجابات الوحدة الثانية (الدائرة) رياضيات الصف العاشر أ. سلسبيل الخطيب.pdf",
+      "bytes": 16939957,
+      "subject": "math",
+      "semester": 1,
+      "kind": "answer-key",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "إجابات الوحدة الثانية (الدائرة) رياضيات الصف العاشر أ. سلسبيل الخطيب.pdf",
+      "authorAr": "سلسبيل الخطيب",
+      "unitTags": [
+        "s1",
+        "s1-u2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-u1-summary-alkhamayseh",
+      "driveId": "1deeLT37j689TyDhk6ZmknfCLsyws18T6",
+      "title": "ملخص الوحدة الأولى الاقترانات الرياضيات الصف العاشر أ. رعد الخمايسة.pdf",
+      "bytes": 7654977,
+      "subject": "math",
+      "semester": null,
+      "kind": "summary",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "ملخص الوحدة الأولى الاقترانات الرياضيات الصف العاشر أ. رعد الخمايسة.pdf",
+      "authorAr": "رعد الخمايسة",
+      "unitTags": [
+        "s2-u5"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-u2-summary-alkhamayseh",
+      "driveId": "18FSdL2NK8bXdGQRzc0JHBHunc1-uGLhf",
+      "title": "ملخص الوحدة الثانية الاشتقاق الرياضيات الصف العاشر أ. رعد الخمايسة.pdf",
+      "bytes": 4186889,
+      "subject": "math",
+      "semester": null,
+      "kind": "summary",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "ملخص الوحدة الثانية الاشتقاق الرياضيات الصف العاشر أ. رعد الخمايسة.pdf",
+      "authorAr": "رعد الخمايسة",
+      "unitTags": [
+        "s2-u6"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-ws-systems-alhindi",
+      "driveId": "1skm0DvZhFf-5L9qEBkyRGDBfb4Mo526I",
+      "title": "ورقة عمل أنظمة المعادلات الرياضية الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
+      "bytes": 2396371,
+      "subject": "math",
+      "semester": 1,
+      "kind": "worksheet",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "ورقة عمل أنظمة المعادلات الرياضية الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
+      "authorAr": "عبد الحميد الهندي",
+      "unitTags": [
+        "s1",
+        "s1-u1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-ws-systems-alhindi-dup",
+      "driveId": "1HzyFwtsu_smJS3JEKGkw4RvtiZs8TXV1",
+      "title": "ورقة عمل أنظمة المعادلات الرياضية الرياضيات الصف العاشر أ. عبد الحميد الهندي (1).pdf",
+      "bytes": 2396371,
+      "subject": "math",
+      "semester": 1,
+      "kind": "worksheet",
+      "authority": "teacher",
+      "status": "duplicate",
+      "filename": "ورقة عمل أنظمة المعادلات الرياضية الرياضيات الصف العاشر أ. عبد الحميد الهندي (1).pdf",
+      "authorAr": "عبد الحميد الهندي",
+      "unitTags": [
+        "s1",
+        "s1-u1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ],
+      "duplicateOf": "math-ws-systems-alhindi"
+    },
+    {
+      "id": "math-ws-systems-solved-alkhatib",
+      "driveId": "1KjBbHc6fPQgXQWY3p4VFzJXem1zBf7VS",
+      "title": "ورقة عمل مع الحلول (حل نظام مكوّن من معادلة خطية ومعادلة تربيعية) أ. سلسبيل الخطيب.pdf",
+      "bytes": 905509,
+      "subject": "math",
+      "semester": 1,
+      "kind": "worksheet",
+      "authority": "teacher",
+      "status": "ingested",
+      "filename": "ورقة عمل مع الحلول (حل نظام مكوّن من معادلة خطية ومعادلة تربيعية) أ. سلسبيل الخطيب.pdf",
+      "authorAr": "سلسبيل الخطيب",
+      "unitTags": [
+        "s1",
+        "s1-u1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ],
+      "notes": "Worked solutions — the depth source for the linear+quadratic system lesson.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 6,
+        "chars": 6918,
+        "localPath": "attached_assets/knowledge-base-pending/math-ws-systems-solved-alkhatib.pdf",
+        "sha256": "3edfe97ec45974f3eaa493401572a7142592306a1b7153b85c96f99ec69c09b5"
+      }
+    },
+    {
+      "id": "math-systems-almasri",
+      "driveId": "12IeX2CXbHvSRB4NVoJF8E-SNjM82EaI-",
+      "title": "حل أنظمة المعادلات الرياضية الصف العاشر أ. أحمد المصري.pdf",
+      "bytes": 363537,
+      "subject": "math",
+      "semester": 1,
+      "kind": "worksheet",
+      "authority": "teacher",
+      "status": "ingested",
+      "filename": "حل أنظمة المعادلات الرياضية الصف العاشر أ. أحمد المصري.pdf",
+      "authorAr": "أحمد المصري",
+      "unitTags": [
+        "s1",
+        "s1-u1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 3,
+        "chars": 2165,
+        "localPath": "attached_assets/knowledge-base-pending/math-systems-almasri.pdf",
+        "sha256": "b6035becada95e1da32784f95f6fc6a949f3a671c9e80f400b69385262914c44"
+      }
+    },
+    {
+      "id": "math-ws-powers-almasri",
+      "driveId": "1UMa4Mz3l1UqEiBh6ZFlRoUhYbuM8oqgt",
+      "title": "ورقة عمل الأسس والمعادلات الرياضيات الصف العاشر أ. أحمد المصري.pdf",
+      "bytes": 526969,
+      "subject": "math",
+      "semester": 1,
+      "kind": "worksheet",
+      "authority": "teacher",
+      "status": "ingested",
+      "filename": "ورقة عمل الأسس والمعادلات الرياضيات الصف العاشر أ. أحمد المصري.pdf",
+      "authorAr": "أحمد المصري",
+      "unitTags": [
+        "s1",
+        "s1-u1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 6,
+        "chars": 3708,
+        "localPath": "attached_assets/knowledge-base-pending/math-ws-powers-almasri.pdf",
+        "sha256": "4a477a733f2fc96489909377140fbfbaf9abf55fe853f499ba8b4cde09741774"
+      }
+    },
+    {
+      "id": "math-ws-polynomials-almasri",
+      "driveId": "1lnKg8fE72OhQIKjj3i8MhLRjHsFeU4Vl",
+      "title": "ورقة عمل كثيرات الحدود الصف العاشر أ. أحمد المصري.pdf",
+      "bytes": 413745,
+      "subject": "math",
+      "semester": 1,
+      "kind": "worksheet",
+      "authority": "teacher",
+      "status": "ingested",
+      "filename": "ورقة عمل كثيرات الحدود الصف العاشر أ. أحمد المصري.pdf",
+      "authorAr": "أحمد المصري",
+      "unitTags": [
+        "s1",
+        "s1-u1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 3,
+        "chars": 3407,
+        "localPath": "attached_assets/knowledge-base-pending/math-ws-polynomials-almasri.pdf",
+        "sha256": "df3bad13d0ebae630fb2c374939f1b64d10341228ad22ff0863676bac240a64b"
+      }
+    },
+    {
+      "id": "math-ws-circle-full-alkhatib",
+      "driveId": "1XjQnnH21FqfscGq99LqPoifqSmpTFpQu",
+      "title": "ورقة عمل شاملة لوحدة الدائرة الرياضيات الصف العاشر أ. سلسبيل الخطيب.pdf",
+      "bytes": 931585,
+      "subject": "math",
+      "semester": 1,
+      "kind": "worksheet",
+      "authority": "teacher",
+      "status": "ingested",
+      "filename": "ورقة عمل شاملة لوحدة الدائرة الرياضيات الصف العاشر أ. سلسبيل الخطيب.pdf",
+      "authorAr": "سلسبيل الخطيب",
+      "unitTags": [
+        "s1",
+        "s1-u2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 3,
+        "chars": 1377,
+        "localPath": "attached_assets/knowledge-base-pending/math-ws-circle-full-alkhatib.pdf",
+        "sha256": "7a703b58b5ee0f68fc9d77349181325f54404e6766e8c8394e358c272b301670"
+      }
+    },
+    {
+      "id": "math-ws-tangents-alhindi",
+      "driveId": "1qYj01qxxDPUbZKiBTA_edR_ICvOa0Epn",
+      "title": "ورقة عمل مماسات الدائرة الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
+      "bytes": 355169,
+      "subject": "math",
+      "semester": 1,
+      "kind": "worksheet",
+      "authority": "teacher",
+      "status": "ingested",
+      "filename": "ورقة عمل مماسات الدائرة الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
+      "authorAr": "عبد الحميد الهندي",
+      "unitTags": [
+        "s1",
+        "s1-u2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 2,
+        "chars": 1334,
+        "localPath": "attached_assets/knowledge-base-pending/math-ws-tangents-alhindi.pdf",
+        "sha256": "def34e85674914a421f43b6704c9445ecca042f76f857044ba02f34b8dbdcb25"
+      }
+    },
+    {
+      "id": "math-ws-tangent-angle-alhindi",
+      "driveId": "1SUioQEhLgn3_Ph5zfKTcDIhb6V0Ls3c3",
+      "title": "ورقة عمل مماسات الدائرة والزاوية المماسية الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
+      "bytes": 462181,
+      "subject": "math",
+      "semester": 1,
+      "kind": "worksheet",
+      "authority": "teacher",
+      "status": "ingested",
+      "filename": "ورقة عمل مماسات الدائرة والزاوية المماسية الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
+      "authorAr": "عبد الحميد الهندي",
+      "unitTags": [
+        "s1",
+        "s1-u2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 2,
+        "chars": 1511,
+        "localPath": "attached_assets/knowledge-base-pending/math-ws-tangent-angle-alhindi.pdf",
+        "sha256": "e7e1b943120ed3a2322249b6f100d2b9982821cd1569ad0a6f40be6822439cde"
+      }
+    },
+    {
+      "id": "math-ws-cyclic-quad-1-alhindi",
+      "driveId": "1qAtlpUASe33M46XBcwqn4H1f-1_nCLg3",
+      "title": "ورقة عمل الشكل الرباعي الدائري (1) الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
+      "bytes": 355685,
+      "subject": "math",
+      "semester": 1,
+      "kind": "worksheet",
+      "authority": "teacher",
+      "status": "ingested",
+      "filename": "ورقة عمل الشكل الرباعي الدائري (1) الرياضيات الصف العاشر أ. عبد الحميد الهندي (1).pdf",
+      "authorAr": "عبد الحميد الهندي",
+      "unitTags": [
+        "s1",
+        "s1-u2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 2,
+        "chars": 1183,
+        "localPath": "attached_assets/knowledge-base-pending/math-ws-cyclic-quad-1-alhindi.pdf",
+        "sha256": "8901d580b84d93c734f049215983847d840cc94e673aaa50bd4c5373a19c6ea8"
+      }
+    },
+    {
+      "id": "math-ws-cyclic-quad-2-alhindi",
+      "driveId": "1qBd6GuHodQT3JkaozZHaX-GKWuSTbpf9",
+      "title": "ورقة عمل الشكل الرباعي الدائري (2) الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
+      "bytes": 335037,
+      "subject": "math",
+      "semester": 1,
+      "kind": "worksheet",
+      "authority": "teacher",
+      "status": "ingested",
+      "filename": "ورقة عمل الشكل الرباعي الدائري (2) الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
+      "authorAr": "عبد الحميد الهندي",
+      "unitTags": [
+        "s1",
+        "s1-u2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 3,
+        "chars": 1067,
+        "localPath": "attached_assets/knowledge-base-pending/math-ws-cyclic-quad-2-alhindi.pdf",
+        "sha256": "c18a92e7d69520f5196f526ad9bd278bb7e535952dab6d6d68c5bc76be99423b"
+      }
+    },
+    {
+      "id": "math-ws-angles-alhindi",
+      "driveId": "1SaxBiF4PiM9a6_ydv5FfvQs4QiZfXCJ5",
+      "title": "ورقة عمل الزاوية المركزية والزاوية المحيطية الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
+      "bytes": 353233,
+      "subject": "math",
+      "semester": 1,
+      "kind": "worksheet",
+      "authority": "teacher",
+      "status": "ingested",
+      "filename": "ورقة عمل الزاوية المركزية والزاوية المحيطية الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
+      "authorAr": "عبد الحميد الهندي",
+      "unitTags": [
+        "s1",
+        "s1-u2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 3,
+        "chars": 2272,
+        "localPath": "attached_assets/knowledge-base-pending/math-ws-angles-alhindi.pdf",
+        "sha256": "f27c08594e1c442228121ddd5e46c70ee53f05064e2196b3de1a3903592a8b99"
+      }
+    },
+    {
+      "id": "math-ws-chords-1-alhindi",
+      "driveId": "1g5sWd9E8_uvqEe98LqHnA7MJetgR-wBX",
+      "title": "ورقة عمل أوتار الدائرة (1) الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
+      "bytes": 292252,
+      "subject": "math",
+      "semester": 1,
+      "kind": "worksheet",
+      "authority": "teacher",
+      "status": "ingested",
+      "filename": "ورقة عمل أوتار الدائرة (1) الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
+      "authorAr": "عبد الحميد الهندي",
+      "unitTags": [
+        "s1",
+        "s1-u2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "ورقة عمل",
+        "أوتار",
+        "الدائرة",
+        "رياضيات",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 2,
+        "chars": 1517,
+        "localPath": "attached_assets/knowledge-base-pending/math-ws-chords-1-alhindi.pdf",
+        "sha256": "dea74b3f525c7a6fbab36ac7978329082899f2d8d76df0813dacce63a64f2507"
+      }
+    },
+    {
+      "id": "math-ws-chords-1-alhindi-dup",
+      "driveId": "1IagRFXKA7CwOBWF8gZ0oxIq3T4wd5pwf",
+      "title": "ورقة عمل أوتار الدائرة (1) الرياضيات الصف العاشر أ. عبد الحميد الهندي (1).pdf",
+      "bytes": 292252,
+      "subject": "math",
+      "semester": 1,
+      "kind": "worksheet",
+      "authority": "teacher",
+      "status": "duplicate",
+      "filename": "ورقة عمل أوتار الدائرة (1) الرياضيات الصف العاشر أ. عبد الحميد الهندي (1).pdf",
+      "authorAr": "عبد الحميد الهندي",
+      "unitTags": [
+        "s1",
+        "s1-u2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ],
+      "duplicateOf": "math-ws-chords-1-alhindi"
+    },
+    {
+      "id": "math-ws-chords-2-alhindi",
+      "driveId": "16PkrogdEwLNHBaEul7BLjFGKropZ4PPo",
+      "title": "ورقة عمل أوتار الدائرة (2) الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
+      "bytes": 550428,
+      "subject": "math",
+      "semester": 1,
+      "kind": "worksheet",
+      "authority": "teacher",
+      "status": "ingested",
+      "filename": "ورقة عمل أوتار الدائرة (2) الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
+      "authorAr": "عبد الحميد الهندي",
+      "unitTags": [
+        "s1",
+        "s1-u2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 2,
+        "chars": 1631,
+        "localPath": "attached_assets/knowledge-base-pending/math-ws-chords-2-alhindi.pdf",
+        "sha256": "b5458edacc81ed688d997fab3b52de332d8f7fa85460c5105f8e9fd6a3c7576b"
+      }
+    },
+    {
+      "id": "math-mcq-circle-alkhatib",
+      "driveId": "1FwdimuqUXfz3c0mWnby6MX7lxJ6FiICm",
+      "title": "أسئلة موضوعية ( ضع دائرة ) لوحدة الدائرة أ. سلسبيل الخطيب.pdf",
+      "bytes": 1377593,
+      "subject": "math",
+      "semester": 1,
+      "kind": "question-bank",
+      "authority": "teacher",
+      "status": "ingested",
+      "filename": "أسئلة موضوعية ( ضع دائرة ) لوحدة الدائرة أ. سلسبيل الخطيب.pdf",
+      "authorAr": "سلسبيل الخطيب",
+      "unitTags": [
+        "s1",
+        "s1-u2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 5,
+        "chars": 2659,
+        "localPath": "attached_assets/knowledge-base-pending/math-mcq-circle-alkhatib.pdf",
+        "sha256": "93142df2322dd22333bfc4926e0616ff61e1a8f49f3764dfed725c3e846ef882"
+      }
+    },
+    {
+      "id": "math-mcq-circle-suggested-alkhatib",
+      "driveId": "1yM1OzAver17-H5--1FCnBtzqR4hPyBsB",
+      "title": "أسئلة مقترحة ضع دائرة لوحدة الدائرة مادة الرياضيات الصف العاشر أ.سلسبيل الخطيب.pdf",
+      "bytes": 457033,
+      "subject": "math",
+      "semester": 1,
+      "kind": "question-bank",
+      "authority": "teacher",
+      "status": "ingested",
+      "filename": "أسئلة مقترحة ضع دائرة لوحدة الدائرة مادة الرياضيات الصف العاشر أ.سلسبيل الخطيب.pdf",
+      "authorAr": "سلسبيل الخطيب",
+      "unitTags": [
+        "s1",
+        "s1-u2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 2,
+        "chars": 1282,
+        "localPath": "attached_assets/knowledge-base-pending/math-mcq-circle-suggested-alkhatib.pdf",
+        "sha256": "9c0fdac920f198a53804d0d01b24b581215c05b4602288339da4d47115253ff7"
+      }
+    },
+    {
+      "id": "math-mcq-circle-suggested-alkhatib-dup",
+      "driveId": "1hZyP14qsBBrukk1ShpDXuUg_gnnUAT-W",
+      "title": "أسئلة مقترحة ضع دائرة لوحدة الدائرة مادة الرياضيات الصف العاشر أ.سلسبيل الخطيب (1).pdf",
+      "bytes": 457033,
+      "subject": "math",
+      "semester": 1,
+      "kind": "question-bank",
+      "authority": "teacher",
+      "status": "duplicate",
+      "filename": "أسئلة مقترحة ضع دائرة لوحدة الدائرة مادة الرياضيات الصف العاشر أ.سلسبيل الخطيب (1).pdf",
+      "authorAr": "سلسبيل الخطيب",
+      "unitTags": [
+        "s1",
+        "s1-u2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ],
+      "duplicateOf": "math-mcq-circle-suggested-alkhatib"
+    },
+    {
+      "id": "math-matrices-suggested-alkhatib",
+      "driveId": "1syBdo_bj1GjlC4TFfUjgDBEXk0n8OAxC",
+      "title": "أسئلة مقترحة لوحدة المصفوفات للاختبار النهائي الفصل الدراسي الأول أ. سلسبيل الخطيب.pdf",
+      "bytes": 777179,
+      "subject": "math",
+      "semester": 1,
+      "kind": "question-bank",
+      "authority": "teacher",
+      "status": "ingested",
+      "filename": "أسئلة مقترحة لوحدة المصفوفات للاختبار النهائي الفصل الدراسي الأول أ. سلسبيل الخطيب.pdf",
+      "authorAr": "سلسبيل الخطيب",
+      "unitTags": [
+        "s1",
+        "s1-matrices"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 3,
+        "chars": 2105,
+        "localPath": "attached_assets/knowledge-base-pending/math-matrices-suggested-alkhatib.pdf",
+        "sha256": "ea7619687c0a0df99aa064a7277ba4012e25c091e769e10c60792335b845ac8b"
+      }
+    },
+    {
+      "id": "math-final-alhindi",
+      "driveId": "1rmXnc-PCM_TeGtBQ475H5FJhiF0Vc3YD",
+      "title": "اختبار نهاية الفصل الأول الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
+      "bytes": 1369918,
+      "subject": "math",
+      "semester": 1,
+      "kind": "exam",
+      "authority": "teacher",
+      "status": "ingested",
+      "filename": "اختبار نهاية الفصل الأول الرياضيات الصف العاشر أ. عبد الحميد الهندي.pdf",
+      "authorAr": "عبد الحميد الهندي",
+      "unitTags": [
+        "s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 5,
+        "chars": 3261,
+        "localPath": "attached_assets/knowledge-base-pending/math-final-alhindi.pdf",
+        "sha256": "8b7f8dfcb86c2636f4e32ada5d6501c3dc93ecbc287570d8582da6256da83d22"
+      }
+    },
+    {
+      "id": "math-final-1-alkhatib",
+      "driveId": "1lBB51UBP6tCRmVwpOHB57cQesZkmYhHK",
+      "title": "اختبار نهائي نموذج1 في مادة الرياضيات الصف العاشر الفصل الأول أ. سلسبيل الخطيب.pdf",
+      "bytes": 1082968,
+      "subject": "math",
+      "semester": 1,
+      "kind": "exam",
+      "authority": "teacher",
+      "status": "ingested",
+      "filename": "اختبار نهائي نموذج1 في مادة الرياضيات الصف العاشر الفصل الأول أ. سلسبيل الخطيب.pdf",
+      "authorAr": "سلسبيل الخطيب",
+      "unitTags": [
+        "s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 7,
+        "chars": 6582,
+        "localPath": "attached_assets/knowledge-base-pending/math-final-1-alkhatib.pdf",
+        "sha256": "6cdacb808f27d308a19b2b8c5bf932c5730c8f4f2c593d745e824751a9b6efa6"
+      }
+    },
+    {
+      "id": "math-final-2-alkhatib",
+      "driveId": "1ieTdAjKnWKc5hUuTxE_HlA1l9bxyymEf",
+      "title": "اختبار نهائي نموذج2 في مادة الرياضيات الصف العاشر الفصل الأول أ. سلسبيل الخطيب.pdf",
+      "bytes": 458922,
+      "subject": "math",
+      "semester": 1,
+      "kind": "exam",
+      "authority": "teacher",
+      "status": "ingested",
+      "filename": "اختبار نهائي نموذج2 في مادة الرياضيات الصف العاشر الفصل الأول أ. سلسبيل الخطيب.pdf",
+      "authorAr": "سلسبيل الخطيب",
+      "unitTags": [
+        "s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 2,
+        "chars": 2291,
+        "localPath": "attached_assets/knowledge-base-pending/math-final-2-alkhatib.pdf",
+        "sha256": "20c17c27365119f24f5b4ef22c167827fd1fb433a354cb78fbb2f739ef0c62d7"
+      }
+    },
+    {
+      "id": "math-month1-alkhatib",
+      "driveId": "1KNv_2GRkJzOlcYuGOkHfQaa59n3m0n7D",
+      "title": "اختبار الشهر الأول في الرياضيات الصف العاشر الفصل الأول أ. سلسبيل الخطيب.pdf",
+      "bytes": 3436798,
+      "subject": "math",
+      "semester": 1,
+      "kind": "exam",
+      "authority": "teacher",
+      "status": "ingested",
+      "filename": "اختبار الشهر الأول في الرياضيات الصف العاشر الفصل الأول أ. سلسبيل الخطيب.pdf",
+      "authorAr": "سلسبيل الخطيب",
+      "unitTags": [
+        "s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 10,
+        "chars": 2650,
+        "localPath": "attached_assets/knowledge-base-pending/math-month1-alkhatib.pdf",
+        "sha256": "cfa250c898d9ed246eda373a3d2646053ab1c9523215750a46d8d374e0dbec3f"
+      }
+    },
+    {
+      "id": "math-month2-alfarakh",
+      "driveId": "12LBlTCvBe9LTfIrEHWk19b6zs8a5D-E0",
+      "title": "اختبار شهر ثاني رياضيات الصف العاشر الفصل الأول أ. أحمد الفرخ.pdf",
+      "bytes": 140834,
+      "subject": "math",
+      "semester": 1,
+      "kind": "exam",
+      "authority": "teacher",
+      "status": "ingested",
+      "filename": "اختبار شهر ثاني رياضيات الصف العاشر الفصل الأول أ. أحمد الفرخ.pdf",
+      "authorAr": "أحمد الفرخ",
+      "unitTags": [
+        "s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 2,
+        "chars": 736,
+        "localPath": "attached_assets/knowledge-base-pending/math-month2-alfarakh.pdf",
+        "sha256": "d9b2680840d8679441ff0e7dd27e8b98b4797c095f44e54220feca29cb691190"
+      }
+    },
+    {
+      "id": "math-u6-test-hussein",
+      "driveId": "1s0Uj03pwii4k6MyRvFw9tNlkm89ypcpO",
+      "title": "اختبار الوحدة السادسة رياضيات الصف العاشر أ. رضا حسين.pdf",
+      "bytes": 121726,
+      "subject": "math",
+      "semester": 2,
+      "kind": "exam",
+      "authority": "teacher",
+      "status": "ingested",
+      "filename": "اختبار الوحدة السادسة رياضيات الصف العاشر أ. رضا حسين.pdf",
+      "authorAr": "رضا حسين",
+      "unitTags": [
+        "s2",
+        "s2-u6"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 2,
+        "chars": 1138,
+        "localPath": "attached_assets/knowledge-base-pending/math-u6-test-hussein.pdf",
+        "sha256": "e852ba2e198cb3bce752a7e17c90332ab9ca6c54ff72414e3988bdbbef2ae491"
+      }
+    },
+    {
+      "id": "math-u7-test-hussein",
+      "driveId": "1oCyf452IbES_5RsknXIUD5JghwpJGmPZ",
+      "title": "اختبار الوحدة السابعة رياضيات الصف العاشر أ. رضا حسين.pdf",
+      "bytes": 190892,
+      "subject": "math",
+      "semester": 2,
+      "kind": "exam",
+      "authority": "teacher",
+      "status": "ingested",
+      "filename": "اختبار الوحدة السابعة رياضيات الصف العاشر أ. رضا حسين.pdf",
+      "authorAr": "رضا حسين",
+      "unitTags": [
+        "s2",
+        "s2-u7"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 2,
+        "chars": 1561,
+        "localPath": "attached_assets/knowledge-base-pending/math-u7-test-hussein.pdf",
+        "sha256": "d470c655defbc2bbb6206924e2b5feceb24418458c964705da8d43c629277e94"
+      }
+    },
+    {
+      "id": "math-foundation-lafi",
+      "driveId": "1LRX7ImclbvBDE7byCzqIyATPAxjC4_YG",
+      "title": "دوسية تأسيس رياضيات للصف العاشر إعداد أ. ابتهال لافي.pdf",
+      "bytes": 743049,
+      "subject": "math",
+      "semester": null,
+      "kind": "study-pack",
+      "authority": "teacher",
+      "status": "ingested",
+      "filename": "دوسية تأسيس رياضيات للصف العاشر إعداد أ. ابتهال لافي.pdf",
+      "authorAr": "ابتهال لافي",
+      "unitTags": [
+        "s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 25,
+        "chars": 14417,
+        "localPath": "attached_assets/knowledge-base-pending/math-foundation-lafi.pdf",
+        "sha256": "77bd743de09a2f27c673f1e247ccfb4aa0daeb6bdfbbe8b0c6d34d902ff41e8d"
+      }
+    },
+    {
+      "id": "math-foundations-melhem",
+      "driveId": "1GIyikORoCHaqGeWC4KBl_GJ8GZkFe1_4",
+      "title": "أسس الرياضيات إعداد أ. عبد الله ملحم.pdf",
+      "bytes": 1420909,
+      "subject": "math",
+      "semester": null,
+      "kind": "study-pack",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "أسس الرياضيات إعداد أ. عبد الله ملحم.pdf",
+      "authorAr": "عبد الله ملحم",
+      "unitTags": [
+        "s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "math-geometry-formulas-melhem",
+      "driveId": "129wB5hhcJhgOUqVtEtwHUxODamXpzqsP",
+      "title": "قوانين الأشكال الهندسية إعداد أ. عبد الله ملحم.pdf",
+      "bytes": 566514,
+      "subject": "math",
+      "semester": null,
+      "kind": "summary",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "قوانين الأشكال الهندسية إعداد أ. عبد الله ملحم.pdf",
+      "authorAr": "عبد الله ملحم",
+      "unitTags": [
+        "g10-math-general"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "math",
+        "رياضيات",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "chem-s1-student-book",
+      "driveId": "12a_AVMgB3a3nqfxXHzObtbOjKX7ZBD6l",
+      "title": "10th grade, alchamy1st semester.pdf",
+      "bytes": 29124500,
+      "subject": "chemistry",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-25",
+        "pages": 76,
+        "chars": 113815,
+        "localPath": "attached_assets/10th_grade,_alchamy1st_semester_1785071530814.pdf",
+        "sha256": "0df149c6402ff1163af158ad4a7f463d978b20897afba463f5150df0dea42456"
+      },
+      "filename": "10th grade, alchamy1st semester.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "chem-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ],
+      "notes": "Units 1-3: بنية الذرة وتركيبها / التوزيع الإلكتروني والدورية / المركبات والروابط الكيميائية — two lessons each, plus a تجربة استهلالية, an إثراء وتوسع and a مراجعة per unit. 76 pages, Adobe PDF Library original: prefer this one for page-image extraction. Its 12 objectives are what the lesson-opening pages actually print; the three lessons showing none are the labs, which the book gives no outcomes."
+    },
+    {
+      "id": "chem-s1-student-book-compressed",
+      "driveId": "1OcUbQExGz9Bd1UsuKBZqNLI539soCUZv",
+      "title": "كتاب الطالب لمادة الكيمياء الصف العاشر الفصل الأول.pdf",
+      "bytes": 24778814,
+      "subject": "chemistry",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "duplicate",
+      "filename": "كتاب الطالب لمادة الكيمياء الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "chem-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ],
+      "duplicateOf": "chem-s1-student-book",
+      "notes": "Resolved 2026-08-24: not a second edition. Identical 76-page count and identical PDF CreationDate as chem-s1-student-book; Producer is iLovePDF, i.e. a re-compression. Readable, but its images are downsampled, which matters because these NCCD PDFs are extracted from page renders."
+    },
+    {
+      "id": "chem-s2-student-book",
+      "driveId": "12bjxCFdCYN3brF73jY-LQLCaee_XGRZl",
+      "title": "10th grade, alchamy.2nd semester.pdf",
+      "bytes": 58646564,
+      "subject": "chemistry",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "10th grade, alchamy.2nd semester.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "chem-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ],
+      "notes": "Units 4-5: التفاعلات والحسابات الكيميائية / الطاقة الكيميائية — three lessons each, plus a تجربة استهلالية, an إثراء وتوسع and a مراجعة per unit. Unit numbering continues from S1, so the two semesters are one course, not two editions. 84 pages, Adobe original: prefer for extraction. Ingested 2026-08-24 into iqra_curriculum_g10_chem_sem2.json: main ideas, outcomes and bilingual vocabulary from the six lesson openers.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-02",
+        "pages": 84,
+        "chars": 131290,
+        "localPath": "knowledge-base/grade-10-chemistry/support-pdfs/10th grade, alchamy.2nd semester.pdf",
+        "sha256": "b3285eb5104b9e0249d5593569dd66497d50185420172baa9db1a69f05d899c8"
+      }
+    },
+    {
+      "id": "chem-s2-student-book-compressed",
+      "driveId": "1Kc6dWg4pAgRCdzIz04t-ZRt7KlYkCSju",
+      "title": "كتاب الطالب لمادة الكيمياء الصف العاشر الفصل الثاني.pdf",
+      "bytes": 27409185,
+      "subject": "chemistry",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "duplicate",
+      "filename": "كتاب الطالب لمادة الكيمياء الصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "chem-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ],
+      "duplicateOf": "chem-s2-student-book",
+      "notes": "Resolved 2026-08-24: same 84 pages and same PDF CreationDate as chem-s2-student-book, re-compressed through iLovePDF (less than half the bytes)."
+    },
+    {
+      "id": "chem-s1-teacher-guide",
+      "driveId": "1lSTUJOvLNSqaLvepUEQpk7jfHb2czApB",
+      "title": "دليل المعلم لمادة الكيمياء الصف العاشر الفصل الأول.pdf",
+      "bytes": 55193457,
+      "subject": "chemistry",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة الكيمياء الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "chem-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ],
+      "notes": "132 pages. مخطط الوحدة tables at guide pages 7A / 29A / 59A gave the catalog its period counts (3 per lesson), per-unit prior knowledge with the grade each outcome was taught in, the named activities, and unit 3's finer-grained outcomes (6 and 5, against the book's 1 and 2). Ingested 2026-08-24. Its per-lesson teaching notes, misconceptions and worksheet answer keys (appendix A1+) are NOT mined yet — that is the depth pass. استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "chem-s2-teacher-guide",
+      "driveId": "1CpsTQ7NfzT0spnFck6cyHQHXWFVj3qpU",
+      "title": "دليل المعلم لمادة الكيمياء الصف العاشر الفصل الثاني.pdf",
+      "bytes": 38253996,
+      "subject": "chemistry",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة الكيمياء الصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "chem-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ],
+      "notes": "مخطط الوحدة at guide pages 7A and 41A gave the period counts (2-4 per lesson, 9 per unit), the per-unit prior knowledge, and the named activities. Its per-lesson teaching notes and the answer appendix (M1+) are not mined yet. استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "chem-s1-activity-book",
+      "driveId": "1QlOHSJyP-Tyn7Q0C7xeQ7y_kfrh_aSH0",
+      "title": "كتاب الأنشطة والتجارب العملية كيمياء الصف العاشر الفصل الأول.pdf",
+      "bytes": 3141923,
+      "subject": "chemistry",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة والتجارب العملية كيمياء الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "chem-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 20,
+        "chars": 27630,
+        "localPath": "attached_assets/knowledge-base-pending/chem-s1-activity-book.pdf",
+        "sha256": "e5b6b3a8409b2e9ea6b3a71847dc37f33bd8c3b449760119e177ab6c5474ff4b"
+      }
+    },
+    {
+      "id": "chem-s2-activity-book",
+      "driveId": "1B5OMTT_i3gTqTT2YU9hMZDsqckGnabjX",
+      "title": "كتاب الأنشطة والتجارب العملية كيمياء الصف العاشر الفصل الثاني.pdf",
+      "bytes": 1758377,
+      "subject": "chemistry",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة والتجارب العملية كيمياء الصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "chem-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 26,
+        "chars": 34380,
+        "localPath": "attached_assets/knowledge-base-pending/chem-s2-activity-book.pdf",
+        "sha256": "e0940b450955483634b23055cc7ad04fe515a5ef1293be0168722d5f0770f243"
+      }
+    },
+    {
+      "id": "chem-loss-recovery",
+      "driveId": "1l16yf2EV9aju7UF8xcOXm0xMk-iXr19n",
+      "title": "المادة المقررة لتعويض الفاقد التعليمي لمادة الكيمياء الصف العاشر.pdf",
+      "bytes": 2612943,
+      "subject": "chemistry",
+      "semester": null,
+      "kind": "ministry-support",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "المادة المقررة لتعويض الفاقد التعليمي لمادة الكيمياء الصف العاشر.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "chem-g10-general"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 52,
+        "chars": 33715,
+        "localPath": "attached_assets/knowledge-base-pending/chem-loss-recovery.pdf",
+        "sha256": "2c58785d854dfd24ba3e1e37652a7f75d75b4663ab56b7cb0b678ddbf43ba454"
+      }
+    },
+    {
+      "id": "chem-s1-pack-sartawi",
+      "driveId": "1MfffMkderuPGUnOpmb0s_QU-xPp3ZOJI",
+      "title": "دوسية الكيمياء الصف العاشر الفصل الدراسي الأول 2021 م. مريم السرطاوي.pdf",
+      "bytes": 4983987,
+      "subject": "chemistry",
+      "semester": 1,
+      "kind": "study-pack",
+      "authority": "teacher",
+      "status": "ingested",
+      "filename": "دوسية الكيمياء الصف العاشر الفصل الدراسي الأول 2021 م. مريم السرطاوي.pdf",
+      "authorAr": "مريم السرطاوي",
+      "unitTags": [
+        "chem-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 149,
+        "chars": 174171,
+        "localPath": "attached_assets/knowledge-base-pending/chem-s1-pack-sartawi.pdf",
+        "sha256": "212d6c63d7f71475e7accad86801425a77cd3a5fbb3c935bd4cbbbf00bdd2848"
+      }
+    },
+    {
+      "id": "chem-s1-pack-sartawi-dup",
+      "driveId": "1N4eA0_5ZXs3oZtcr5FVnjW0ueFH1kDLg",
+      "title": "دوسية الكيمياء الصف العاشر الفصل الدراسي الأول 2021 م. مريم السرطاوي (1).pdf",
+      "bytes": 4983987,
+      "subject": "chemistry",
+      "semester": 1,
+      "kind": "study-pack",
+      "authority": "teacher",
+      "status": "duplicate",
+      "filename": "دوسية الكيمياء الصف العاشر الفصل الدراسي الأول 2021 م. مريم السرطاوي (1).pdf",
+      "authorAr": "مريم السرطاوي",
+      "unitTags": [
+        "chem-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ],
+      "duplicateOf": "chem-s1-pack-sartawi"
+    },
+    {
+      "id": "chem-s1-u1-pack-sartawi",
+      "driveId": "1jazGKe-8Dy8AvTIcN-mJpG0eL7DXzpXc",
+      "title": "دوسية الوحدة الأولى الكيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
+      "bytes": 1811036,
+      "subject": "chemistry",
+      "semester": 1,
+      "kind": "study-pack",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "دوسية الوحدة الأولى الكيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
+      "authorAr": "مريم السرطاوي",
+      "unitTags": [
+        "chem-s1",
+        "chem-s1-u1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "chem-s1-u2-pack-sartawi",
+      "driveId": "18vPPxm2UQosj2hbRoeNcdTyv_AvRT3Wi",
+      "title": "دوسية الوحدة الثانية الكيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
+      "bytes": 2282249,
+      "subject": "chemistry",
+      "semester": 1,
+      "kind": "study-pack",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "دوسية الوحدة الثانية الكيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
+      "authorAr": "مريم السرطاوي",
+      "unitTags": [
+        "chem-s1",
+        "chem-s1-u2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "chem-s1-u3-pack-sartawi",
+      "driveId": "1CB3f9zajyQhTABHDudxWR8zx_JmosZre",
+      "title": "دوسية الوحدة الثالثة الكيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
+      "bytes": 2412831,
+      "subject": "chemistry",
+      "semester": 1,
+      "kind": "study-pack",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "دوسية الوحدة الثالثة الكيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
+      "authorAr": "مريم السرطاوي",
+      "unitTags": [
+        "chem-s1",
+        "chem-s1-u3"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "chem-s1-pack-almasri",
+      "driveId": "1ynQtgLSldvWJL9s3cxpN4olEk1Do4NaW",
+      "title": "دوسية الفصل الأول كيمياء الصف العاشر أ. عبير المصري.pdf",
+      "bytes": 1615124,
+      "subject": "chemistry",
+      "semester": 1,
+      "kind": "study-pack",
+      "authority": "teacher",
+      "status": "ingested",
+      "filename": "دوسية الفصل الأول كيمياء الصف العاشر أ. عبير المصري.pdf",
+      "authorAr": "عبير المصري",
+      "unitTags": [
+        "chem-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 52,
+        "chars": 35434,
+        "localPath": "attached_assets/knowledge-base-pending/chem-s1-pack-almasri.pdf",
+        "sha256": "b713176b80d0dae787455e526053bdb43c79d6ff0ce54e3b9ca9c973af530782"
+      }
+    },
+    {
+      "id": "chem-s1-summary-shawata",
+      "driveId": "1G8eNXphlCsS2sH-h7A37F3lt9bIZxIT2",
+      "title": "ملخص الكيمياء الصف العاشر الفصل الدراسي الأول أ. ولاء شعواطة.pdf",
+      "bytes": 4736025,
+      "subject": "chemistry",
+      "semester": 1,
+      "kind": "summary",
+      "authority": "teacher",
+      "status": "ingested",
+      "filename": "ملخص الكيمياء الصف العاشر الفصل الدراسي الأول أ. ولاء شعواطة.pdf",
+      "authorAr": "ولاء شعواطة",
+      "unitTags": [
+        "chem-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 93,
+        "chars": 47748,
+        "localPath": "attached_assets/knowledge-base-pending/chem-s1-summary-shawata.pdf",
+        "sha256": "ec3ca27a2c474c36d8acc4871029e8c677f531362a788e6dceb3ad0fe3623f3a"
+      }
+    },
+    {
+      "id": "chem-s2-pack-sartawi",
+      "driveId": "1vum9l3MR_qi_X862yIzfgprokGgURhiE",
+      "title": "دوسية الكيمياء الصف العاشر الفصل الثاني إعداد م. مريم السرطاوي.pdf",
+      "bytes": 3749571,
+      "subject": "chemistry",
+      "semester": 2,
+      "kind": "study-pack",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "دوسية الكيمياء الصف العاشر الفصل الثاني إعداد م. مريم السرطاوي.pdf",
+      "authorAr": "مريم السرطاوي",
+      "unitTags": [
+        "chem-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "chem-s2-pack-shawata",
+      "driveId": "1y6TD0EFy627sWKg2oh_cOjM4EAuV6rZV",
+      "title": "دوسية الكيمياء الصف العاشر الفصل الثاني أ.ولاء شعواطة.pdf",
+      "bytes": 6106249,
+      "subject": "chemistry",
+      "semester": 2,
+      "kind": "study-pack",
+      "authority": "teacher",
+      "status": "ingested",
+      "filename": "دوسية الكيمياء الصف العاشر الفصل الثاني أ.ولاء شعواطة.pdf",
+      "authorAr": "ولاء شعواطة",
+      "unitTags": [
+        "chem-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 140,
+        "chars": 80233,
+        "localPath": "attached_assets/knowledge-base-pending/chem-s2-pack-shawata.pdf",
+        "sha256": "4d4249ce3e3efa693c23b5add1be17557b792cc6c7e0bec139ea463e01b186af"
+      }
+    },
+    {
+      "id": "chem-s2-pack-almasri",
+      "driveId": "1Jkb6g0UyuVWe7ejqIj_Z1cETPQq2P2bq",
+      "title": "ملزمة الكيمياء الصف العاشر الفصل الثاني أ. عبير المصري.pdf",
+      "bytes": 1652511,
+      "subject": "chemistry",
+      "semester": 2,
+      "kind": "study-pack",
+      "authority": "teacher",
+      "status": "ingested",
+      "filename": "ملزمة الكيمياء الصف العاشر الفصل الثاني أ. عبير المصري.pdf",
+      "authorAr": "عبير المصري",
+      "unitTags": [
+        "chem-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 49,
+        "chars": 20392,
+        "localPath": "attached_assets/knowledge-base-pending/chem-s2-pack-almasri.pdf",
+        "sha256": "41be69178baccb461fc7a815010d21eb03591df0a285a27b9a4f34bfa28fb49e"
+      }
+    },
+    {
+      "id": "chem-u4-summary-sartawi",
+      "driveId": "1LVsQWhgPTzd9HB0sGaeToBg9nkhPE48g",
+      "title": "ملخص الوحدة الرابعة الكيمياء الصف العاشر إعداد م. مريم السرطاوي.pdf",
+      "bytes": 2747824,
+      "subject": "chemistry",
+      "semester": 2,
+      "kind": "summary",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "ملخص الوحدة الرابعة الكيمياء الصف العاشر إعداد م. مريم السرطاوي.pdf",
+      "authorAr": "مريم السرطاوي",
+      "unitTags": [
+        "chem-s2",
+        "chem-s2-u4"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "chem-u5-summary-sartawi",
+      "driveId": "1QnVQPXNGXVh3uuBKkJc_ix6geOGXWHWx",
+      "title": "ملخص الوحدة الخامسة الكيمياء الصف العاشر إعداد م. مريم السرطاوي.pdf",
+      "bytes": 2258772,
+      "subject": "chemistry",
+      "semester": 2,
+      "kind": "summary",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "ملخص الوحدة الخامسة الكيمياء الصف العاشر إعداد م. مريم السرطاوي.pdf",
+      "authorAr": "مريم السرطاوي",
+      "unitTags": [
+        "chem-s2",
+        "chem-s2-u5"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "chem-s1-question-bank-sartawi",
+      "driveId": "1Ke91aNByOkqUCmGbLxA6wsV-xkROmnMs",
+      "title": "بنك أسئلة الكيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
+      "bytes": 707952,
+      "subject": "chemistry",
+      "semester": 1,
+      "kind": "question-bank",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "بنك أسئلة الكيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
+      "authorAr": "مريم السرطاوي",
+      "unitTags": [
+        "chem-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "chem-s1-mixed-questions-sartawi",
+      "driveId": "1sGUI-vUP6-GRFTkm9Vn6r--iPTNlm4XD",
+      "title": "أسئلة منوعة كيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
+      "bytes": 227212,
+      "subject": "chemistry",
+      "semester": 1,
+      "kind": "question-bank",
+      "authority": "teacher",
+      "status": "ingested",
+      "filename": "أسئلة منوعة كيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
+      "authorAr": "مريم السرطاوي",
+      "unitTags": [
+        "chem-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 14,
+        "chars": 6644,
+        "localPath": "attached_assets/knowledge-base-pending/chem-s1-mixed-questions-sartawi.pdf",
+        "sha256": "6b04303b25ac2c35b7daa18a30c753c6b8922c68f4c57f35c245af8396bd99fa"
+      }
+    },
+    {
+      "id": "chem-ws-bohr-manhaji",
+      "driveId": "1fw3FkExLqJFhCa4b5Vghvi-HtJBJqfi4",
+      "title": "ورقة عمل كيمياء الصف العاشر نظرية بور الذرية شبكة منهاجي التعليمية.pdf",
+      "bytes": 552090,
+      "subject": "chemistry",
+      "semester": 1,
+      "kind": "worksheet",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "ورقة عمل كيمياء الصف العاشر نظرية بور الذرية شبكة منهاجي التعليمية.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "chem-s1",
+        "chem-s1-u1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ],
+      "notes": "From منهاجي — a third-party network, not the ministry and not a named teacher.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 8,
+        "chars": 3373,
+        "localPath": "attached_assets/knowledge-base-pending/chem-ws-bohr-manhaji.pdf",
+        "sha256": "f0bc7ff58c8dca85b2f482a88fe1701d62e3f512f7c3536be1024d71410c24a5"
+      }
+    },
+    {
+      "id": "chem-ws-bohr-tareq",
+      "driveId": "1q3O9_JqWANmdSePhh3shRq5aVnfsgmX9",
+      "title": "ورقة عمل كيمياء الصف العاشر نظرية بور أ. محمد طارق.pdf",
+      "bytes": 219398,
+      "subject": "chemistry",
+      "semester": 1,
+      "kind": "worksheet",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "ورقة عمل كيمياء الصف العاشر نظرية بور أ. محمد طارق.pdf",
+      "authorAr": "محمد طارق",
+      "unitTags": [
+        "chem-s1",
+        "chem-s1-u1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "chem-ws-reactions-tareq",
+      "driveId": "1IpAKqJhcXukd0-h4QUylIFEMfcHyU3c7",
+      "title": "ورقة عمل التفاعلات الكيميائية كيمياء عاشر أ. محمد طارق.pdf",
+      "bytes": 403163,
+      "subject": "chemistry",
+      "semester": 2,
+      "kind": "worksheet",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "ورقة عمل التفاعلات الكيميائية كيمياء عاشر أ. محمد طارق.pdf",
+      "authorAr": "محمد طارق",
+      "unitTags": [
+        "chem-s2",
+        "chem-s2-u5"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "chem-ws-planck-almasri",
+      "driveId": "1zEse9-kuqh5wdLJ0Dwm87zfzL4Ow3qyc",
+      "title": "ورقة عمل قانون ماكس بلانك الكيمياء للصف العاشر أ. عبير المصري.pdf",
+      "bytes": 150140,
+      "subject": "chemistry",
+      "semester": 1,
+      "kind": "worksheet",
+      "authority": "teacher",
+      "status": "ingested",
+      "filename": "ورقة عمل قانون ماكس بلانك الكيمياء للصف العاشر أ. عبير المصري.pdf",
+      "authorAr": "عبير المصري",
+      "unitTags": [
+        "chem-s1",
+        "chem-s1-u1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 2,
+        "chars": 648,
+        "localPath": "attached_assets/knowledge-base-pending/chem-ws-planck-almasri.pdf",
+        "sha256": "34ce3f169a20a710a57507150c231ab12c45c82895b22561eff29d12a010ad74"
+      }
+    },
+    {
+      "id": "chem-u1-test-shawata",
+      "driveId": "19wlw2bjj-LMM-aATYeXv8_ODJesnjN5W",
+      "title": "اختبار الوحدة الأولى البنية الذرية إعداد المعلمة ولاء شعواطة.pdf",
+      "bytes": 357947,
+      "subject": "chemistry",
+      "semester": 1,
+      "kind": "exam",
+      "authority": "teacher",
+      "status": "ingested",
+      "filename": "اختبار الوحدة الأولى البنية الذرية إعداد المعلمة ولاء شعواطة.pdf",
+      "authorAr": "ولاء شعواطة",
+      "unitTags": [
+        "chem-s1",
+        "chem-s1-u1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-08-26",
+        "pages": 7,
+        "chars": 7072,
+        "localPath": "attached_assets/knowledge-base-pending/chem-u1-test-shawata.pdf",
+        "sha256": "9d4715e23635d1480947cc1a69d2a7aaeb8a41eff5d34b237e6771feaf655ab9"
+      }
+    },
+    {
+      "id": "chem-s2-month1-tareq",
+      "driveId": "15a-yOq9nucKEbsswUAhHEx0LnFCsEaHi",
+      "title": "اختبار الشهر الأول كيمياء الصف العاشر الفصل الثاني أ. محمد طارق عوض.pdf",
+      "bytes": 58224,
+      "subject": "chemistry",
+      "semester": 2,
+      "kind": "exam",
+      "authority": "teacher",
+      "status": "pending",
+      "filename": "اختبار الشهر الأول كيمياء الصف العاشر الفصل الثاني أ. محمد طارق عوض.pdf",
+      "authorAr": "محمد طارق عوض",
+      "unitTags": [
+        "chem-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "chemistry",
+        "كيمياء",
+        "عاشر"
+      ]
+    },
+    {
+      "id": "finlit-s1-student-book",
+      "driveId": "1eydBC98cOUFeGH-9XiR_6628PViUFgqu",
+      "title": "الثقافة المالية 10 ف1 small.pdf",
+      "bytes": 5521575,
+      "subject": "financial-literacy",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "الثقافة المالية 10 ف1 small.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "finlit-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "financial-literacy",
+        "ثقافة مالية",
+        "عاشر",
+        "كتاب الطالب"
+      ],
+      "notes": "استُخرج بالتعرّف الضوئي (tesseract ara، 300 نقطة/إنش) في 2026-09-06 بعد أن أخفق استخراج طبقة النص مرتين: كانت حروف الكلمة الواحدة تتناثر ويُعاد ترتيبها («ةالصحيح ع ة اإلجاب زرم ه رأختا» بدل «أختار رمز الإجابة الصحيحة»). النص المخزَّن الآن مقروء من صور الصفحات لا من طبقة النص المعطوبة، ومرّ على بوابات الجودة نفسها التي رفضت سابقه. نصّ التعرّف الضوئي درجةٌ أدنى من الاستخراج الرقمي النظيف — تحقّق من أي اقتباس يظهر للمعلم.",
+      "extraction": {
+        "tool": "tesseract-ocr (--ocr requested)",
+        "extractedAt": "2026-09-06",
+        "pages": 80,
+        "chars": 77833,
+        "localPath": "knowledge-base/grade-10-finlit/support-pdfs/الثقافة المالية 10 ف1 small.pdf",
+        "sha256": "fd3a9fd692a01ce77827816f50e5029f471d5e117924da8a1c1f417987ed27f2"
+      }
+    },
+    {
+      "id": "finlit-s2-student-book",
+      "driveId": "1qEaXy2Hz8uqNFLByg1GDEwCl4xsOJqMY",
+      "title": "كتاب الطالب لمادة الثقافة المالية للصف العاشر الفصل الثاني.pdf",
+      "bytes": 4871291,
+      "subject": "financial-literacy",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "conflict",
+      "filename": "كتاب الطالب لمادة الثقافة المالية للصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "finlit-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "financial-literacy",
+        "ثقافة مالية",
+        "عاشر",
+        "كتاب الطالب"
+      ],
+      "conflictWith": "finlit-s1-student-book",
+      "notes": "The known edition split: the S1 file in the catalog and this S2 book are not the same edition of the course, so their unit/lesson sequences do not line up. Nothing should be generated across both until one edition is chosen."
+    },
+    {
+      "id": "phys-s1-student-book",
+      "title": "كتاب الطالب لمادة الفيزياء للصف العاشر الفصل الأول.pdf",
+      "bytes": 20553673,
+      "subject": "physics",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة الفيزياء للصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "phys-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "physics",
+        "فيزياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 88,
+        "chars": 130931,
+        "localPath": "knowledge-base/grade-10-physics/support-pdfs/كتاب الطالب لمادة الفيزياء للصف العاشر الفصل الأول.pdf",
+        "sha256": "95fda6fdfdd99324fd5777d7e0563b05f346512d0f67ba41181203f5beb53b63"
+      }
+    },
+    {
+      "id": "phys-s2-student-book",
+      "title": "كتاب الطالب لمادة الفيزياء للصف العاشر الفصل الثاني.pdf",
+      "bytes": 52926341,
+      "subject": "physics",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة الفيزياء للصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "phys-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "physics",
+        "فيزياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 132,
+        "chars": 226951,
+        "localPath": "knowledge-base/grade-10-physics/support-pdfs/كتاب الطالب لمادة الفيزياء للصف العاشر الفصل الثاني.pdf",
+        "sha256": "6320adc51501e6b60f08b8200f1765247aff2664189de9081fe607d0e4eed88b"
+      }
+    },
+    {
+      "id": "phys-s1-teacher-guide",
+      "title": "دليل المعلم لمادة الفيزياء الصف العاشر الفصل الأول.pdf",
+      "bytes": 48454458,
+      "subject": "physics",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "دليل المعلم لمادة الفيزياء الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "phys-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "physics",
+        "فيزياء",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "phys-s2-teacher-guide",
+      "title": "دليل المعلم لمادة الفيزياء الصف العاشر الفصل الثاني.pdf",
+      "bytes": 75967769,
+      "subject": "physics",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "دليل المعلم لمادة الفيزياء الصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "phys-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "physics",
+        "فيزياء",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "phys-s1-activity-book",
+      "title": "كتاب الأنشطة لمادة الفيزياء للصف العاشر الفصل الأول.pdf",
+      "bytes": 3922425,
+      "subject": "physics",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة لمادة الفيزياء للصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "phys-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "physics",
+        "فيزياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 36,
+        "chars": 55773,
+        "localPath": "knowledge-base/grade-10-physics/support-pdfs/كتاب الأنشطة لمادة الفيزياء للصف العاشر الفصل الأول.pdf",
+        "sha256": "fd9a3bda70353cc81392114fe44f8a5ba4421c5ac6f4e5d5fcd026ec4ac710a0"
+      }
+    },
+    {
+      "id": "phys-s2-exercise-book",
+      "title": "كتاب التمارين لمادة الفيزياء للصف العاشر الفصل الثاني.pdf",
+      "bytes": 20062584,
+      "subject": "physics",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب التمارين لمادة الفيزياء للصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "phys-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "physics",
+        "فيزياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 52,
+        "chars": 91793,
+        "localPath": "knowledge-base/grade-10-physics/support-pdfs/كتاب التمارين لمادة الفيزياء للصف العاشر الفصل الثاني.pdf",
+        "sha256": "b815e584e4af0a4272557ae44dc23c79f2e13b7866a528c06aed96cce3ec6c99"
+      }
+    },
+    {
+      "id": "bio-s1-student-book",
+      "title": "كتاب الطالب لمادة العلوم الحياتية للصف العاشر الفصل الأول.pdf",
+      "bytes": 79946226,
+      "subject": "biology",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة العلوم الحياتية للصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "bio-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "biology",
+        "العلوم الحياتية",
+        "أحياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 84,
+        "chars": 100250,
+        "localPath": "knowledge-base/grade-10-biology/support-pdfs/كتاب الطالب لمادة العلوم الحياتية للصف العاشر الفصل الأول.pdf",
+        "sha256": "4e7a1e23d5b3012590624322b52fdd3e5d3e811301b2e68efe8d2214e0b905d4"
+      }
+    },
+    {
+      "id": "bio-s2-student-book",
+      "title": "كتاب الطالب لمادة العلوم الحياتية للصف العاشر الفصل الثاني.pdf",
+      "bytes": 74954829,
+      "subject": "biology",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة العلوم الحياتية للصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "bio-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "biology",
+        "العلوم الحياتية",
+        "أحياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 84,
+        "chars": 121357,
+        "localPath": "knowledge-base/grade-10-biology/support-pdfs/كتاب الطالب لمادة العلوم الحياتية للصف العاشر الفصل الثاني.pdf",
+        "sha256": "ba6402b35aa079cef91788ef56e390e5b2fcafced7656db86d2f42008b3421f9"
+      }
+    },
+    {
+      "id": "bio-s1-teacher-guide",
+      "title": "دليل المعلم العلوم الحياتية الصف العاشر الفصل الأول.pdf",
+      "bytes": 16013386,
+      "subject": "biology",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم العلوم الحياتية الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "bio-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "biology",
+        "العلوم الحياتية",
+        "أحياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: no text layer)",
+        "extractedAt": "2026-09-05",
+        "pages": 132,
+        "chars": 218551,
+        "localPath": "knowledge-base/grade-10-biology/support-pdfs/دليل المعلم العلوم الحياتية الصف العاشر الفصل الأول.pdf",
+        "sha256": "4e6d45eccee619e93cc6a79d5c99998b30d2d9f8294d478c237cf12c1e81107e"
+      }
+    },
+    {
+      "id": "bio-s2-teacher-guide",
+      "title": "دليل المعلم لمادة العلوم الحياتية الصف العاشر الفصل الثاني.pdf",
+      "bytes": 95166443,
+      "subject": "biology",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة العلوم الحياتية الصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "bio-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "biology",
+        "العلوم الحياتية",
+        "أحياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic with the definite article transposed (الحركة ← احلركة) in 89% of samples — readable by eye, not quotable)",
+        "extractedAt": "2026-09-05",
+        "pages": 100,
+        "chars": 207322,
+        "localPath": "knowledge-base/grade-10-biology/support-pdfs/دليل المعلم لمادة العلوم الحياتية الصف العاشر الفصل الثاني.pdf",
+        "sha256": "bb0b3a566b68f97aff10d3277a0e64b2cb686090db2e0693b9b1b104d9edfe21"
+      }
+    },
+    {
+      "id": "bio-s1-activity-book",
+      "title": "كتاب الأنشطة والتجارب العملية لمادة العلوم الحياتية للصف العاشر الفصل الأول.pdf",
+      "bytes": 3811065,
+      "subject": "biology",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة والتجارب العملية لمادة العلوم الحياتية للصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "bio-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "biology",
+        "العلوم الحياتية",
+        "أحياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 32,
+        "chars": 49506,
+        "localPath": "knowledge-base/grade-10-biology/support-pdfs/كتاب الأنشطة والتجارب العملية لمادة العلوم الحياتية للصف العاشر الفصل الأول.pdf",
+        "sha256": "40767a4855ad34c3a66ad8f95a9fe9cf3d757a02b9eff977be3f14d8cba7d45c"
+      }
+    },
+    {
+      "id": "bio-s2-activity-book",
+      "title": "كتاب الأنشطة والتجارب العملية لمادة العلوم الحياتية للصف العاشر الفصل الثاني.pdf",
+      "bytes": 3066786,
+      "subject": "biology",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة والتجارب العملية لمادة العلوم الحياتية للصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "bio-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "biology",
+        "العلوم الحياتية",
+        "أحياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 40,
+        "chars": 55367,
+        "localPath": "knowledge-base/grade-10-biology/support-pdfs/كتاب الأنشطة والتجارب العملية لمادة العلوم الحياتية للصف العاشر الفصل الثاني.pdf",
+        "sha256": "f15a3484a5fc1526b71e91678efd73bfda6f2c48df2d26e7137a0be0e8b947ef"
+      }
+    },
+    {
+      "id": "bio-worksheet-answers",
+      "title": "إجابات أسئلة أوراق العمل من دليل المعلم العلوم الحياتية الصف العاشر.pdf",
+      "bytes": 346627,
+      "subject": "biology",
+      "semester": null,
+      "kind": "answer-key",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "إجابات أسئلة أوراق العمل من دليل المعلم العلوم الحياتية الصف العاشر.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "bio-g10-general"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "biology",
+        "العلوم الحياتية",
+        "أحياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic with the definite article transposed (الحركة ← احلركة) in 91% of samples — readable by eye, not quotable)",
+        "extractedAt": "2026-09-05",
+        "pages": 10,
+        "chars": 11706,
+        "localPath": "knowledge-base/grade-10-biology/support-pdfs/إجابات أسئلة أوراق العمل من دليل المعلم العلوم الحياتية الصف العاشر.pdf",
+        "sha256": "34e123b5943a519182de262f712bb78f49b62a33e6b55cf9030cca975a3333e4"
+      }
+    },
+    {
+      "id": "earth-s2-student-book",
+      "title": "كتاب الطالب لمادة علوم الأرض والبيئة الصف العاشر الفصل الثاني.pdf",
+      "bytes": 87975922,
+      "subject": "earth-science",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة علوم الأرض والبيئة الصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "earth-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "earth-science",
+        "علوم الأرض",
+        "البيئة",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 92,
+        "chars": 155561,
+        "localPath": "knowledge-base/grade-10-earth-science/support-pdfs/كتاب الطالب لمادة علوم الأرض والبيئة الصف العاشر الفصل الثاني.pdf",
+        "sha256": "b5ac4142754f97756ffc1f7431eaa83b6caf5306fa6922ed40e1ebb1e7867280"
+      }
+    },
+    {
+      "id": "earth-s1-teacher-guide",
+      "title": "دليل المعلم لمادة علوم الأرض والبيئة الصف العاشر الفصل الأول.pdf",
+      "bytes": 48517066,
+      "subject": "earth-science",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "دليل المعلم لمادة علوم الأرض والبيئة الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "earth-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "earth-science",
+        "علوم الأرض",
+        "البيئة",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "earth-s2-teacher-guide",
+      "title": "دليل المعلم لمادة علوم الأرض والبيئة الصف العاشر الفصل الثاني.pdf",
+      "bytes": 81782623,
+      "subject": "earth-science",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "دليل المعلم لمادة علوم الأرض والبيئة الصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "earth-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "earth-science",
+        "علوم الأرض",
+        "البيئة",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "earth-s1-activity-book",
+      "title": "كتاب الأنشطة والتجارب العملية لمادة علوم الأرض الصف العاشر الفصل الأول.pdf",
+      "bytes": 3586042,
+      "subject": "earth-science",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة والتجارب العملية لمادة علوم الأرض الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "earth-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "earth-science",
+        "علوم الأرض",
+        "البيئة",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 30,
+        "chars": 48931,
+        "localPath": "knowledge-base/grade-10-earth-science/support-pdfs/كتاب الأنشطة والتجارب العملية لمادة علوم الأرض الصف العاشر الفصل الأول.pdf",
+        "sha256": "93b9e34c8256e7ee3001a7b767c2546155c574342e32c8e54e338412571ea2ae"
+      }
+    },
+    {
+      "id": "earth-s2-activity-book",
+      "title": "كتاب الأنشطة والتجارب العملية لمادة علوم الأرض الصف العاشر الفصل الثاني.pdf",
+      "bytes": 3330804,
+      "subject": "earth-science",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة والتجارب العملية لمادة علوم الأرض الصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "earth-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "earth-science",
+        "علوم الأرض",
+        "البيئة",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 40,
+        "chars": 72542,
+        "localPath": "knowledge-base/grade-10-earth-science/support-pdfs/كتاب الأنشطة والتجارب العملية لمادة علوم الأرض الصف العاشر الفصل الثاني.pdf",
+        "sha256": "f2243dba4e3ff2e3e0cba1489b705ec8fc0ed6b14fea1c137ab2baa17055b987"
+      }
+    },
+    {
+      "id": "arabic-s1-student-book",
+      "title": "كتاب الطالب لمادة العربية لغتي للصف العاشر الفصل الأول.pdf",
+      "bytes": 11501482,
+      "subject": "arabic",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة العربية لغتي للصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "arabic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "arabic",
+        "اللغة العربية",
+        "العربية لغتي",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 144,
+        "chars": 207585,
+        "localPath": "knowledge-base/grade-10-arabic/support-pdfs/كتاب الطالب لمادة العربية لغتي للصف العاشر الفصل الأول.pdf",
+        "sha256": "9caec4fbe79d9d63cf75c91792e4d93226183965f125ddd026f77116844cd5ee"
+      }
+    },
+    {
+      "id": "arabic-s2-student-book",
+      "title": "كتاب الطالب لمادة اللغة العربية للصف العاشر الفصل الثاني.pdf",
+      "bytes": 10742310,
+      "subject": "arabic",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة اللغة العربية للصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "arabic-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "arabic",
+        "اللغة العربية",
+        "العربية لغتي",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 140,
+        "chars": 223841,
+        "localPath": "knowledge-base/grade-10-arabic/support-pdfs/كتاب الطالب لمادة اللغة العربية للصف العاشر الفصل الثاني.pdf",
+        "sha256": "99f4cbd774161d075638b4db644229721a7cc9f670f0578e7784980485c7bd26"
+      }
+    },
+    {
+      "id": "arabic-s1-teacher-guide",
+      "title": "دليل المعلم لمادة العربية لغتي الصف العاشر الفصل الأول.pdf",
+      "bytes": 34986295,
+      "subject": "arabic",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة العربية لغتي الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "arabic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "arabic",
+        "اللغة العربية",
+        "العربية لغتي",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 255,
+        "chars": 674930,
+        "localPath": "knowledge-base/grade-10-arabic/support-pdfs/دليل المعلم لمادة العربية لغتي الصف العاشر الفصل الأول.pdf",
+        "sha256": "d0859534d64cd2a3edc3cc8cd1ef3b6a09c341910dd666e6e61d6e52db801add"
+      }
+    },
+    {
+      "id": "arabic-s1-exercise-book",
+      "title": "كتاب التمارين لمادة اللغة العربية (العربية لغتي) للصف العاشر الفصل الأول.pdf",
+      "bytes": 4074619,
+      "subject": "arabic",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب التمارين لمادة اللغة العربية (العربية لغتي) للصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "arabic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "arabic",
+        "اللغة العربية",
+        "العربية لغتي",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 51,
+        "chars": 72370,
+        "localPath": "knowledge-base/grade-10-arabic/support-pdfs/كتاب التمارين لمادة اللغة العربية (العربية لغتي) للصف العاشر الفصل الأول.pdf",
+        "sha256": "1e051f0f783f0bf6059f5705e7faf31f51d5272167d743754db73fdde07cab88"
+      }
+    },
+    {
+      "id": "arabic-s2-exercise-book",
+      "title": "كتاب التمارين لمادة اللغة العربية (العربية لغتي) للصف العاشر الفصل الثاني.pdf",
+      "bytes": 3003701,
+      "subject": "arabic",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب التمارين لمادة اللغة العربية (العربية لغتي) للصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "arabic-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "arabic",
+        "اللغة العربية",
+        "العربية لغتي",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 53,
+        "chars": 78355,
+        "localPath": "knowledge-base/grade-10-arabic/support-pdfs/كتاب التمارين لمادة اللغة العربية (العربية لغتي) للصف العاشر الفصل الثاني.pdf",
+        "sha256": "efbe54284fe8ddf8f54d51ea8934628532bf15d01de9261997e5d5ed2926f8d7"
+      }
+    },
+    {
+      "id": "earth-s1-student-book",
+      "title": "كتاب الطالب لمادة علوم الأرض والبيئة الصف العاشر الفصل الأول.pdf",
+      "bytes": 20302336,
+      "subject": "earth-science",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة علوم الأرض والبيئة الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "earth-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "earth-science",
+        "علوم الأرض",
+        "البيئة",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 64,
+        "chars": 104690,
+        "localPath": "knowledge-base/grade-10-earth-science/support-pdfs/كتاب الطالب لمادة علوم الأرض والبيئة الصف العاشر الفصل الأول.pdf",
+        "sha256": "471202b6960d63b877c9634cc10dfa4a36720e1a39fd0d7df6b732b3fdb98c4e"
+      }
+    },
+    {
+      "id": "islamic-s1-teacher-guide",
+      "title": "دليل المعلم لمادة التربية الإسلامية الصف العاشر الفصل الأول.pdf",
+      "bytes": 25763749,
+      "subject": "islamic",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة التربية الإسلامية الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "islamic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "islamic",
+        "التربية الإسلامية",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "tesseract-ocr (--ocr requested)",
+        "extractedAt": "2026-09-05",
+        "pages": 204,
+        "chars": 338208,
+        "localPath": "knowledge-base/grade-10-islamic/support-pdfs/دليل المعلم لمادة التربية الإسلامية الصف العاشر الفصل الأول.pdf",
+        "sha256": "d8aaf8e72b8c9fb972182ce1ddef3e704050618c12f38d693817e4fba762ec88"
+      },
+      "notes": "أُعيد استخراجه بـ OCR في 2026-09-05 بطلب صريح (‎--ocr‎)، لا لأن بوابة الجودة رفضته: كان يمرّ منها بنسبة قلبٍ ‎44.8%‎ (في/على/الله) وهي دون حدّ ‎WORD_TRANSPOSITION_LIMIT‎، لكنها أسوأ من كل ملفٍّ يعامله المشروع مقتبَسًا. نزلت النسبة بعد الاستخراج إلى ‎8.0%‎. ملحوظة مهمّة: الاستخراج الجديد أفضل في النثر وأسوأ في الرموز القصيرة — قرأ pdf-parse سطر «الزمن المقترح لتنفيذ الدرس» في ‎23‎ صفحة، وقرأه الـ OCR في ‎8‎ فقط (يُسقط «حص» من «حصتان»). وحيثما قرأهما الاثنان تطابقا تمامًا، فعددُ الحصص في ملف المنهاج مأخوذ من قراءة pdf-parse ومُصدَّق بالـ OCR حيث أمكن."
+    },
+    {
+      "id": "islamic-s2-teacher-guide",
+      "title": "دليل المعلم لمادة التربية الإسلامية الصف العاشر الفصل الثاني.pdf",
+      "bytes": 23136258,
+      "subject": "islamic",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة التربية الإسلامية الصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "islamic-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "islamic",
+        "التربية الإسلامية",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "tesseract-ocr (--ocr requested)",
+        "extractedAt": "2026-09-05",
+        "pages": 232,
+        "chars": 381381,
+        "localPath": "knowledge-base/grade-10-islamic/support-pdfs/دليل المعلم لمادة التربية الإسلامية الصف العاشر الفصل الثاني.pdf",
+        "sha256": "221c06d785afe02110788c1244f4ab6e2348a08de055846936e116cef681cf12"
+      },
+      "notes": "أُعيد استخراجه بـ OCR في 2026-09-05 بطلب صريح (‎--ocr‎)، لا لأن بوابة الجودة رفضته: كان يمرّ منها بنسبة قلبٍ ‎47.0%‎ (في/على/الله) وهي دون حدّ ‎WORD_TRANSPOSITION_LIMIT‎، لكنها أسوأ من كل ملفٍّ يعامله المشروع مقتبَسًا. نزلت النسبة بعد الاستخراج إلى ‎7.6%‎. ملحوظة مهمّة: الاستخراج الجديد أفضل في النثر وأسوأ في الرموز القصيرة — قرأ pdf-parse سطر «الزمن المقترح لتنفيذ الدرس» في ‎25‎ صفحة، وقرأه الـ OCR في ‎12‎ فقط (يُسقط «حص» من «حصتان»). وحيثما قرأهما الاثنان تطابقا تمامًا، فعددُ الحصص في ملف المنهاج مأخوذ من قراءة pdf-parse ومُصدَّق بالـ OCR حيث أمكن."
+    },
+    {
+      "id": "islamic-s1-student-book",
+      "title": "كتاب الطالب لمادة التربية الإسلامية الصف العاشر الفصل الأول.pdf",
+      "bytes": 15755756,
+      "subject": "islamic",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التربية الإسلامية الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "islamic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "islamic",
+        "التربية الإسلامية",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) بنسبة 96%؛ رفضه بوابة الجودة تلقائيًا في 2026-09-03 ولم يُستخرج. الملف نفسه سليم؛ يحتاج استخراجًا أفضل أو OCR.",
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic with the definite article transposed (الحركة ← احلركة) in 96% of samples — readable by eye, not quotable)",
+        "extractedAt": "2026-09-05",
+        "pages": 136,
+        "chars": 111680,
+        "localPath": "knowledge-base/grade-10-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف العاشر الفصل الأول.pdf",
+        "sha256": "519e9fe24edcb7b7a8bd77da694648318c1b680cdf9421d44617c37dbcf0b55a"
+      }
+    },
+    {
+      "id": "islamic-s2-student-book",
+      "title": "كتاب الطالب لمادة التربية الإسلامية الصف العاشر الفصل الثاني.pdf",
+      "bytes": 18639095,
+      "subject": "islamic",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التربية الإسلامية الصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "islamic-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "islamic",
+        "التربية الإسلامية",
+        "عاشر"
+      ],
+      "notes": "استخراج هذا الملف مقلوب الحروف على نحو منتظم: «عىل» بدل «على»، «اهلل» بدل «الله»، «يف» بدل «في»، «رشعي» بدل «شرعي»، «العارش» بدل «العاشر»، «إرساء» بدل «إسراء». مقروء بالعين وغير صالح للاقتباس. قيست النسبة على أشيع الكلمات (في/على/الله): 91.9% من 1387 ورودًا جاءت مقلوبة. حُذف الاستخراج في 2026-09-04 قبل أن يُبنى منه منهاج: لا توجد وحدات للتربية الإسلامية بعد، فلم يكن يُقدّم لأحد، ولو بُني لصار يُقدّم فورًا. ملحوظة: بوابة الجودة الحالية (lamTranspositionRate) أعطته 18% فقط دون حدّها 40%، لأنّ قائمتها تغطّي أربعة أنماط فقط وقلب هذا الملف في أزواج حروف أخرى. الملف في R2؛ يحتاج استخراجًا أفضل أو OCR. حُلَّ الحجب في 2026-09-05: أُعيد الاستخراج بـ OCR كما كانت الملحوظة تطلب، فنزلت نسبة القلب من 92.2% إلى 8.5% (في/على/الله)، وهي في مستوى الملفات النظيفة. وأُضيفت بوابة wordTranspositionRate في textQuality.ts لتلتقط هذا النمط، إذ كانت البوابة القديمة تعطيه 18% فقط.",
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic with letters transposed inside common words (في ← يف) in 99% of samples — readable by eye, not quotable)",
+        "extractedAt": "2026-09-05",
+        "pages": 182,
+        "chars": 143060,
+        "localPath": "knowledge-base/grade-10-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف العاشر الفصل الثاني.pdf",
+        "sha256": "1861736bed6e6fef034ed524e1efcd84d47b3b4f3eccc77d36862848087c0447"
+      }
+    },
+    {
+      "id": "history-s1-student-book",
+      "title": "كتاب الطالب لمادة التاريخ للصف العاشر الفصل الأول.pdf",
+      "bytes": 14308255,
+      "subject": "history",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "كتاب الطالب لمادة التاريخ للصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "history-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "history",
+        "التاريخ",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) بنسبة 42%؛ رفضه بوابة الجودة تلقائيًا في 2026-09-03 ولم يُستخرج. الملف نفسه سليم؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "history-s2-student-book",
+      "title": "كتاب الطالب لمادة التاريخ للصف العاشر الفصل الثاني.pdf",
+      "bytes": 30987187,
+      "subject": "history",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التاريخ للصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "history-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "history",
+        "التاريخ",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 94,
+        "chars": 108889,
+        "localPath": "knowledge-base/grade-10-history/support-pdfs/كتاب الطالب لمادة التاريخ للصف العاشر الفصل الثاني.pdf",
+        "sha256": "2ce354159d52e0c2addf793b99a18b16413f9a37498084d027177a0d454f034b"
+      }
+    },
+    {
+      "id": "eng-s1-student-book",
+      "title": "كتاب الطالب لمادة اللغة الإنجليزية الصف العاشر الفصل الأول.pdf",
+      "bytes": 12568357,
+      "subject": "english",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة اللغة الإنجليزية الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "eng-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "english",
+        "اللغة الإنجليزية",
+        "عاشر"
+      ],
+      "notes": "المصدر غير مؤكد: لم يُعثر على نسخة NCCD معتمدة لهذه الطبعة (انظر STATUS.md، 2026-08-30)؛ الكتالوج يصفها بأنها «نسخة على مساحة تخزين المشروع». لذلك authority = third-party وليس nccd — لا يُدّعى مصدر لم يُتحقق منه.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 78,
+        "chars": 183110,
+        "localPath": "knowledge-base/grade-10-english/support-pdfs/كتاب الطالب لمادة اللغة الإنجليزية الصف العاشر الفصل الأول.pdf",
+        "sha256": "4c4c8d69503ab16c4a7278c9748d6771b2157b6b695f5d01a18e0af5200f5b62"
+      }
+    },
+    {
+      "id": "eng-s1-activity-book",
+      "title": "كتاب الأنشطة لمادة اللغة الإنجليزية للصف العاشر الفصل الأول.pdf",
+      "bytes": 4085295,
+      "subject": "english",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة لمادة اللغة الإنجليزية للصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "eng-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "english",
+        "اللغة الإنجليزية",
+        "عاشر"
+      ],
+      "notes": "المصدر غير مؤكد: لم يُعثر على نسخة NCCD معتمدة لهذه الطبعة (انظر STATUS.md، 2026-08-30)؛ الكتالوج يصفها بأنها «نسخة على مساحة تخزين المشروع». لذلك authority = third-party وليس nccd — لا يُدّعى مصدر لم يُتحقق منه.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 52,
+        "chars": 110720,
+        "localPath": "knowledge-base/grade-10-english/support-pdfs/كتاب الأنشطة لمادة اللغة الإنجليزية للصف العاشر الفصل الأول.pdf",
+        "sha256": "850316cac0d8ef948d9bc9e00f17b7a2c0184a9a345235732522aef6a2728345"
+      }
+    },
+    {
+      "id": "eng-s2-student-book",
+      "title": "كتاب الطالب لمادة اللغة الإنجليزية الصف العاشر الفصل الثاني.pdf",
+      "bytes": 9319268,
+      "subject": "english",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة اللغة الإنجليزية الصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "eng-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "english",
+        "اللغة الإنجليزية",
+        "عاشر"
+      ],
+      "notes": "المصدر غير مؤكد: لم يُعثر على نسخة NCCD معتمدة لهذه الطبعة (انظر STATUS.md، 2026-08-30)، ولذلك authority = third-party ولا يُقتبس حرفيًا. استُخرج بالتعرّف الضوئي (tesseract eng، 300 نقطة/إنش) في 2026-09-06 بعد أن أعاد استخراج طبقة النص العربيةَ بأشكال العرض المتصلة معكوسةَ الحروف ورفضته بوابة الجودة في 2026-09-03. النموذج العربي مستبعَد عمدًا: الكتاب إنجليزيٌّ بالكامل (0 حرف عربي في المخرجات)، وتشغيل ara معه أنتج 627 حرفًا عربيًا كلُّها ضوضاء وأضاع 766 حرفًا لاتينيًا. نصّ التعرّف الضوئي درجةٌ أدنى من الاستخراج الرقمي النظيف.",
+      "extraction": {
+        "tool": "tesseract-ocr (--ocr requested)",
+        "extractedAt": "2026-09-06",
+        "pages": 80,
+        "chars": 198311,
+        "localPath": "knowledge-base/grade-10-english/support-pdfs/كتاب الطالب لمادة اللغة الإنجليزية الصف العاشر الفصل الثاني.pdf",
+        "sha256": "c7372286302b90ac97ae7d835d20f272c9ae7c370ce85437fcb880e1b9fd4714"
+      }
+    },
+    {
+      "id": "eng-s2-activity-book",
+      "title": "كتاب الأنشطة لمادة اللغة الإنجليزية للصف العاشر الفصل الثاني.pdf",
+      "bytes": 3854743,
+      "subject": "english",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة لمادة اللغة الإنجليزية للصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "eng-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "english",
+        "اللغة الإنجليزية",
+        "عاشر"
+      ],
+      "notes": "المصدر غير مؤكد كما في كتاب الطالب للفصل نفسه، وauthority = third-party. استُخرج بالتعرّف الضوئي (tesseract eng، 300 نقطة/إنش) في 2026-09-06؛ كتاب أنشطة الفصل الأول استُخرج رقميًا وهذا لم يكن ممكنًا هنا. النموذج العربي مستبعَد كما في كتاب الطالب. نصّ التعرّف الضوئي درجةٌ أدنى من الاستخراج الرقمي النظيف.",
+      "extraction": {
+        "tool": "tesseract-ocr (--ocr requested)",
+        "extractedAt": "2026-09-06",
+        "pages": 56,
+        "chars": 116394,
+        "localPath": "knowledge-base/grade-10-english/support-pdfs/كتاب الأنشطة لمادة اللغة الإنجليزية للصف العاشر الفصل الثاني.pdf",
+        "sha256": "5860952191a9523046759b2170651209307f4b13c6ca5abb1831ad6e0a7e0da6"
+      }
+    },
+    {
+      "id": "geo-s1-student-book",
+      "title": "كتاب الطالب لمادة الجغرافيا للصف العاشر الفصل الأول.pdf",
+      "bytes": 74034315,
+      "subject": "geography",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "كتاب الطالب لمادة الجغرافيا للصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "geo-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "geography",
+        "الجغرافيا",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة)؛ رفضته بوابة الجودة تلقائيًا في 2026-09-03 ولم يُستخرج. الملف نفسه سليم؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "geo-s2-student-book",
+      "title": "كتاب الطالب لمادة الجغرافيا للصف العاشر الفصل الثاني.pdf",
+      "bytes": 75200687,
+      "subject": "geography",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "كتاب الطالب لمادة الجغرافيا للصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "geo-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "geography",
+        "الجغرافيا",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة)؛ رفضته بوابة الجودة تلقائيًا في 2026-09-03 ولم يُستخرج. الملف نفسه سليم؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "digital-s1-student-book",
+      "title": "كتاب الطالب لمادة المهارات الرقمية الصف العاشر الفصل الأول.pdf",
+      "bytes": 6674271,
+      "subject": "digital-literacy",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة المهارات الرقمية الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "digital-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "digital-literacy",
+        "المهارات الرقمية",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 208,
+        "chars": 327833,
+        "localPath": "knowledge-base/grade-10-digital-literacy/support-pdfs/كتاب الطالب لمادة المهارات الرقمية الصف العاشر الفصل الأول.pdf",
+        "sha256": "3a76f254361b50b30df39e01e0f10aeb252b4d7d5c594730182d9242078a61b4"
+      }
+    },
+    {
+      "id": "digital-s2-student-book",
+      "title": "كتاب الطالب لمادة المهارات الرقمية الصف العاشر الفصل الثاني.pdf",
+      "bytes": 5960705,
+      "subject": "digital-literacy",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة المهارات الرقمية الصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "digital-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "digital-literacy",
+        "المهارات الرقمية",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 149,
+        "chars": 277553,
+        "localPath": "knowledge-base/grade-10-digital-literacy/support-pdfs/كتاب الطالب لمادة المهارات الرقمية الصف العاشر الفصل الثاني.pdf",
+        "sha256": "f9d37c035a0576db2b49fe2fb2699616dffac2877ca62dcfd1efe1f60e2bdd00"
+      }
+    },
+    {
+      "id": "civic-s1-student-book",
+      "title": "كتاب الطالب لمادة التربية الوطنية والمدنية للصف العاشر الفصل الأول.pdf",
+      "bytes": 18700226,
+      "subject": "civic",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "كتاب الطالب لمادة التربية الوطنية والمدنية للصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "civic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "civic",
+        "التربية الوطنية والمدنية",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة)؛ رفضته بوابة الجودة تلقائيًا في 2026-09-03 ولم يُستخرج. الملف نفسه سليم؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "civic-s2-student-book",
+      "title": "كتاب الطالب لمادة التربية الوطنية والمدنية للصف العاشر الفصل الثاني.pdf",
+      "bytes": 7184270,
+      "subject": "civic",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "كتاب الطالب لمادة التربية الوطنية والمدنية للصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "civic-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "civic",
+        "التربية الوطنية والمدنية",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة)؛ رفضته بوابة الجودة تلقائيًا في 2026-09-03 ولم يُستخرج. الملف نفسه سليم؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "art-teacher-guide",
+      "title": "دليل المعلم التربية الفنية الصف العاشر.pdf",
+      "bytes": 9321957,
+      "subject": "art",
+      "semester": null,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "دليل المعلم التربية الفنية الصف العاشر.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "art-g10-general"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "art",
+        "التربية الفنية",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة)؛ رفضته بوابة الجودة تلقائيًا في 2026-09-03 ولم يُستخرج. الملف نفسه سليم؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "art-student-book",
+      "title": "كتاب الطالب لمادة التربية الفنية للصف العاشر.pdf",
+      "bytes": 9288059,
+      "subject": "art",
+      "semester": null,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "كتاب الطالب لمادة التربية الفنية للصف العاشر.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "art-g10-general"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "art",
+        "التربية الفنية",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة)؛ رفضته بوابة الجودة تلقائيًا في 2026-09-03 ولم يُستخرج. الملف نفسه سليم؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "vocational-p1-student-book",
+      "title": "كتاب الطالب لمادة التربية المهنية الصف العاشر الجزء الأول.pdf",
+      "bytes": 3731369,
+      "subject": "vocational",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التربية المهنية الصف العاشر الجزء الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "vocational-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "vocational",
+        "التربية المهنية",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 131,
+        "chars": 124463,
+        "localPath": "knowledge-base/grade-10-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية الصف العاشر الجزء الأول.pdf",
+        "sha256": "7862ab652cceebea3e72dc63814639d24d894a4c1f8a0d9108152954d8478ab0"
+      }
+    },
+    {
+      "id": "vocational-p2-student-book",
+      "title": "كتاب الطالب لمادة التربية المهنية الصف العاشر الجزء الثاني.pdf",
+      "bytes": 5681052,
+      "subject": "vocational",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التربية المهنية الصف العاشر الجزء الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "vocational-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "vocational",
+        "التربية المهنية",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 101,
+        "chars": 103861,
+        "localPath": "knowledge-base/grade-10-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية الصف العاشر الجزء الثاني.pdf",
+        "sha256": "ecc9eeb9d18a35ef53056181e4d1a49523c2b3f0dea5c86aae2c68b767b70560"
+      }
+    },
+    {
+      "id": "g9-math-s1-student-book",
+      "title": "كتاب الطالب لمادة الرياضيات الصف التاسع الفصل الأول.pdf",
+      "bytes": 8883077,
+      "subject": "math",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة الرياضيات الصف التاسع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g9-math-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-9",
+        "math",
+        "رياضيات",
+        "تاسع",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "ISBN 978-9923-41-408-8, 151ص. يطابق الطبعة المذكورة في source_books.student_book بملف iqra_curriculum_g9_math_sem1.json (نفس ISBN). محتوى الوحدة 2 (العلاقات والاقترانات) يطابق ترتيب الدروس الموجود فعلاً في المنهاج: الاقترانات، تفسير التمثيلات البيانية، الاقتران التربيعي، معمل جيوجبرا، التحويلات الهندسية للاقترانات التربيعية — الوحيدة التي لم يُعثر لها على جدول مخطط وحدة في أي مصدر متاح سابقًا.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-05",
+        "pages": 151,
+        "chars": 206330,
+        "localPath": "knowledge-base/grade-9-math/support-pdfs/كتاب الطالب لمادة الرياضيات الصف التاسع الفصل الأول.pdf",
+        "sha256": "87d9fdf3de414e3282407e9df1bc3a4c89b18c6344412edfcafe21e6d80f488b"
+      }
+    },
+    {
+      "id": "g9-math-s2-student-book",
+      "title": "كتاب الطالب لمادة الرياضيات الصف التاسع الفصل الثاني.pdf",
+      "bytes": 27091457,
+      "subject": "math",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة الرياضيات الصف التاسع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g9-math-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-9",
+        "math",
+        "رياضيات",
+        "تاسع",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "ISBN 978-9923-41-407-1, 174ص. الوحدات 5-8 تطابق ترتيب المنهاج الموجود فعلاً في iqra_curriculum_g9_math_sem2.json.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-05",
+        "pages": 174,
+        "chars": 222781,
+        "localPath": "knowledge-base/grade-9-math/support-pdfs/كتاب الطالب لمادة الرياضيات الصف التاسع الفصل الثاني.pdf",
+        "sha256": "c6c31ebc326dadb947d22233c71ef2c41477699743fc501f49d47153e9bb5a65"
+      }
+    }
+  ],
+  "mergedAt": "2026-08-25"
+}

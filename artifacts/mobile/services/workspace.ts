@@ -9,6 +9,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiFetch, getAccessToken } from './apiClient';
 import { trackEvent } from './analytics';
+import { attachAcrossClasses } from './classAttach';
 
 // 'activity' is a first-class kind: it is stage 3 of the lesson flow, a CQV
 // artifact type ('classroom-activity'), and already has a `materialActivity`
@@ -31,6 +32,11 @@ export interface SavedMaterial {
   content: string;
   /** Form state so Edit can pre-fill the generator */
   formState: Record<string, any>;
+  /**
+   * The class this material is attached to, or null/undefined for none.
+   * Set from the class screen, not at save time — see `app/classes/[id].tsx`.
+   */
+  classGroupId?: string | null;
 }
 
 const LOCAL_KEY = '@iqra_workspace_v1';
@@ -76,12 +82,14 @@ type ApiItem = {
   content: string;
   formState: Record<string, any>;
   isFavorite: boolean;
+  classGroupId?: string | null;
   savedAt: string;
 };
 
 function apiToLocal(item: ApiItem): SavedMaterial {
   return {
     id: item.id,
+    classGroupId: item.classGroupId ?? null,
     type: item.type as MaterialType,
     title: item.title,
     subject: item.subject,
@@ -128,6 +136,7 @@ export async function saveItem(
           language: payload.language,
           content: payload.content,
           formState: payload.formState,
+          classGroupId: payload.classGroupId ?? null,
         }),
       });
       if (res.ok) {
@@ -152,11 +161,20 @@ export async function saveItem(
   return item;
 }
 
-/** Update an existing item. */
+/**
+ * Update an existing item. **Returns whether the change actually persisted.**
+ *
+ * It used to return `void` and swallow every failure, which was fine while the
+ * only callers were favourite toggles that re-read the list afterwards. Then
+ * "attach this material to a class" started reporting «حُفظت في العاشر أ» from
+ * a toast that fired no matter what — so an offline teacher, or one on a server
+ * that has not had the schema push, was told the material was filed when it was
+ * not. Callers that tell the teacher something worked have to be able to ask.
+ */
 export async function updateItem(
   id: string,
   updates: Partial<Omit<SavedMaterial, 'id'>>,
-): Promise<void> {
+): Promise<boolean> {
   if (await isAuthenticated()) {
     try {
       const res = await apiFetch(`/workspace/items/${id}`, {
@@ -170,15 +188,19 @@ export async function updateItem(
           content: updates.content,
           formState: updates.formState,
           isFavorite: updates.isFavorite,
+          classGroupId: updates.classGroupId,
         }),
       });
-      if (res.ok) return;
+      if (res.ok) return true;
     } catch {
       // fall through to local
     }
   }
 
-  // Local fallback
+  // Local fallback. For a signed-out teacher this *is* the store, so landing
+  // here is a real save. For a signed-in one whose request just failed, the
+  // item usually is not in local storage at all — and that is the case worth
+  // reporting, because nothing was written anywhere.
   const items = await readLocal();
   const idx = items.findIndex((i) => i.id === id);
   if (idx !== -1) {
@@ -186,7 +208,9 @@ export async function updateItem(
     const [updated] = items.splice(idx, 1);
     items.unshift(updated);
     await writeLocal(items);
+    return true;
   }
+  return false;
 }
 
 /** Delete an item by id. */
@@ -231,31 +255,58 @@ export async function duplicateItem(id: string): Promise<SavedMaterial | null> {
   return copy;
 }
 
-/** Toggle the isFavorite flag. */
-export async function toggleFavorite(id: string): Promise<void> {
+/**
+ * Set — or flip — the isFavorite flag. **Returns the state that actually
+ * persisted, and whether anything persisted at all.**
+ *
+ * It used to return `void`, and every one of its callers flipped a star
+ * optimistically and then told the teacher «أضفتها إلى المفضلة» no matter what
+ * came back. Nothing ever came back: the signed-in path fell through to the
+ * local store on any non-OK response, the item is normally not in the local
+ * store for a signed-in teacher, and the `if (item)` guard then swallowed the
+ * whole toggle. The star stayed lit until the next reload put it out. Same
+ * honesty rule as `updateItem` above — a caller that tells the teacher
+ * something worked has to be able to ask whether it did.
+ *
+ * Pass `next` when the caller already knows which way the star should go. An
+ * optimistic UI always does, and it saves the read-then-write round trip that
+ * let a second tap race the first.
+ */
+export async function toggleFavorite(
+  id: string,
+  next?: boolean,
+): Promise<{ ok: boolean; isFavorite: boolean }> {
   if (await isAuthenticated()) {
     try {
-      // First fetch current state
-      const res = await apiFetch(`/workspace/items/${id}`);
-      if (res.ok) {
-        const item = await res.json() as ApiItem;
+      let target = next;
+      if (target === undefined) {
+        const res = await apiFetch(`/workspace/items/${id}`);
+        if (res.ok) {
+          const item = await res.json() as ApiItem;
+          target = !item.isFavorite;
+        }
+      }
+      if (target !== undefined) {
         const patchRes = await apiFetch(`/workspace/items/${id}`, {
           method: 'PATCH',
-          body: JSON.stringify({ isFavorite: !item.isFavorite }),
+          body: JSON.stringify({ isFavorite: target }),
         });
-        if (patchRes.ok) return;
+        if (patchRes.ok) return { ok: true, isFavorite: target };
       }
     } catch {
       // fall through to local
     }
   }
 
+  // Local fallback. For a signed-out teacher this *is* the store. For a
+  // signed-in one whose request failed the item is usually not here at all,
+  // and that is the case worth reporting: nothing was written anywhere.
   const items = await readLocal();
   const item = items.find((i) => i.id === id);
-  if (item) {
-    item.isFavorite = !item.isFavorite;
-    await writeLocal(items);
-  }
+  if (!item) return { ok: false, isFavorite: false };
+  item.isFavorite = next ?? !item.isFavorite;
+  await writeLocal(items);
+  return { ok: true, isFavorite: item.isFavorite };
 }
 
 /** Return all items, newest first. */
@@ -275,12 +326,15 @@ export async function getItems(opts: {
   type?: MaterialType;
   query?: string;
   favoritesFirst?: boolean;
+  /** Only materials attached to this class. */
+  classId?: string;
 }): Promise<SavedMaterial[]> {
   if (await isAuthenticated()) {
     const params = new URLSearchParams();
     if (opts.type) params.set('type', opts.type);
     if (opts.query?.trim()) params.set('query', opts.query.trim());
     if (opts.favoritesFirst) params.set('favoritesFirst', 'true');
+    if (opts.classId) params.set('classId', opts.classId);
 
     const data = await apiGet<ApiItem[]>(`/workspace/items?${params.toString()}`);
     if (data !== null) {
@@ -291,6 +345,7 @@ export async function getItems(opts: {
 
   let items = await readLocal();
   if (opts.type) items = items.filter((i) => i.type === opts.type);
+  if (opts.classId) items = items.filter((i) => i.classGroupId === opts.classId);
   if (opts.query?.trim()) {
     const q = opts.query.trim().toLowerCase();
     items = items.filter(
@@ -420,4 +475,25 @@ export async function getItem(id: string): Promise<SavedMaterial | null> {
 
   const items = await readLocal();
   return items.find((i) => i.id === id) ?? null;
+}
+
+/**
+ * Attach one saved material to several classes at once.
+ *
+ * Wiring only — the ordering and counting live in `attachAcrossClasses`, which
+ * is testable because it does not reach AsyncStorage. See that function for
+ * why the first class keeps the original and the rest get copies.
+ */
+export async function attachToClasses(
+  materialId: string,
+  classIds: string[],
+): Promise<{ attached: number; requested: number }> {
+  return attachAcrossClasses(
+    {
+      update: (id, classGroupId) => updateItem(id, { classGroupId }),
+      duplicate: (id) => duplicateItem(id),
+    },
+    materialId,
+    classIds,
+  );
 }

@@ -7,15 +7,19 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { TopicSelector } from '@/components/ui/TopicSelector';
+import { PillSelector } from '@/components/ui/PillSelector';
+import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
 import { Button } from '@/components/ui/Button';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
 } from '@/services/curriculumData';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { ClassroomActivity } from '@/services/ai/AIService';
-import { buildGeneratorContext } from '@/services/kbContext';
+import { isolateForeignRuns } from '@/services/mathRender';
+import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generatorUnitId } from '@/services/kbContext';
+import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum } from '@/services/lessonPrep';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
-import { ACTIVITY_CARDS, resolveActivityType } from '@/services/classroomRouting';
+import { ACTIVITY_CARDS, ClassroomSetup, resolveActivityType } from '@/services/classroomRouting';
 
 const ACCENT = '#4F46E5';
 
@@ -39,12 +43,18 @@ export default function ClassroomBuilderScreen() {
   const subjects = getPickerSubjects();
 
   const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(undefined, grades.length));
+  // Index-aligned flags rather than a pre-filtered `subjects`: these positions
+  // are persisted as subjectIdx, so entries are dropped at render time only.
+  const subjectHidden = subjectsWithoutCurriculum(grades[gradeIdx].id);
   const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(undefined, subjects.length));
   const [topic, setTopic] = useState('');
   const [durationIdx, setDurationIdx] = useState(1); // 20 min default
   const [difficulty, setDifficulty] = useState<Difficulty>('standard');
   const [groupType, setGroupType] = useState<GroupType>('groups');
   const [teachingGoal, setTeachingGoal] = useState<TeachingGoal>('practice');
+  // Defaults to the projector because that is what the app's own deck assumes;
+  // a board-only room is the choice that changes what gets printed.
+  const [classroomSetup, setClassroomSetup] = useState<ClassroomSetup>('screen');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ClassroomActivity | null>(null);
   const [error, setError] = useState('');
@@ -61,10 +71,17 @@ export default function ClassroomBuilderScreen() {
 
   const generate = async () => {
     if (!topic.trim()) { setError(t('topicRequired')); return; }
+    // A topic that grounds to another subject's lesson cannot make an honest
+    // activity — the KB serves that lesson's own content while the header
+    // claims the picked subject. Refuse and name the real subject instead.
+    const scope = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, lang as 'ar' | 'en');
+    if (scope) { setError(t('scopeNoCurriculum', scope.grade, scope.subject)); return; }
+    const conflict = groundedSubjectConflict(topic.trim(), lang as 'ar' | 'en', subjects[subjectIdx].id);
+    if (conflict) { setError(t('subjectTopicMismatch', lang === 'ar' ? conflict.nameAr : conflict.name)); return; }
     setError(''); setLoading(true); setResult(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
-      const additionalContext = buildGeneratorContext(topic.trim(), lang as 'ar' | 'en') || undefined;
+      const additionalContext = buildGeneratorContext(topic.trim(), lang as 'ar' | 'en');
       const out = await aiService.generateClassroomActivity({
         grade: grades[gradeIdx].name,
         subject: subjects[subjectIdx].name,
@@ -74,8 +91,13 @@ export default function ClassroomBuilderScreen() {
         difficulty,
         groupType,
         teachingGoal,
+        classroomSetup,
         language: lang === 'ar' ? 'arabic' : 'english',
         additionalContext,
+        unitId: generatorUnitId(topic.trim(), lang as 'ar' | 'en'),
+        lessonId: generatorLessonId(topic.trim(), lang as 'ar' | 'en'),
+        bookFigureCount: generatorFigureCount(topic.trim(), lang as 'ar' | 'en'),
+        contextSource: 'curriculum',
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setResult(out);
@@ -93,34 +115,6 @@ export default function ClassroomBuilderScreen() {
     router.push('/ai-tools/classroom/presentation' as any);
   };
 
-  const PillGroup = <T extends string>({
-    label, options, value, onChange,
-  }: { label: string; options: { value: T; label: string }[]; value: T; onChange: (v: T) => void }) => (
-    <View style={{ marginBottom: 18 }}>
-      <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
-      <View style={[styles.pillRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        {options.map(o => {
-          const active = o.value === value;
-          return (
-            <Pressable
-              key={o.value}
-              onPress={() => onChange(o.value)}
-              style={[styles.pill, {
-                backgroundColor: active ? ACCENT : colors.card,
-                borderColor: active ? ACCENT : colors.border,
-                borderRadius: colors.radius,
-              }]}
-            >
-              <Text style={[styles.pillText, { color: active ? '#fff' : colors.mutedForeground, fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular' }]}>
-                {o.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-    </View>
-  );
-
   const difficultyOpts: { value: Difficulty; label: string }[] = [
     { value: 'easy', label: t('difficultyEasy') },
     { value: 'standard', label: lang === 'ar' ? 'متوسط' : 'Standard' },
@@ -132,6 +126,20 @@ export default function ClassroomBuilderScreen() {
     { value: 'groups', label: lang === 'ar' ? 'مجموعات' : 'Groups' },
     { value: 'whole-class', label: lang === 'ar' ? 'الصف' : 'Whole Class' },
   ];
+  const setupOpts: { value: ClassroomSetup; label: string }[] = [
+    { value: 'screen', label: lang === 'ar' ? 'شاشة عرض' : 'Projector' },
+    { value: 'board', label: lang === 'ar' ? 'سبورة فقط' : 'Board only' },
+  ];
+  // Says what the choice changes, because it does not change the questions.
+  // Without this the row looked decorative: both options produce the same
+  // slides, and the difference lands in «المواد اللازمة» and «تحضير المعلّم».
+  const setupHint = classroomSetup === 'screen'
+    ? (lang === 'ar'
+      ? 'الأسئلة تُعرض من الشرائح، فلا يُطلب منك طباعة ما تعرضه الشاشة. تتغيّر المواد اللازمة وتحضير المعلّم — لا الأسئلة نفسها.'
+      : 'Questions come off the slides, so you are not asked to print what the screen shows. Changes the materials and teacher prep — not the questions themselves.')
+    : (lang === 'ar'
+      ? 'يُبنى النشاط للسبورة والأوراق المطبوعة، ولا يُذكر جهاز العرض ضمن المواد. تتغيّر المواد اللازمة وتحضير المعلّم — لا الأسئلة نفسها.'
+      : 'The activity is built for the board and printed handouts, and no projector is listed. Changes the materials and teacher prep — not the questions themselves.');
   const goalOpts: { value: TeachingGoal; label: string }[] = [
     { value: 'warm-up', label: t('teachingGoalWarmup') },
     { value: 'practice', label: t('teachingGoalPractice') },
@@ -167,39 +175,27 @@ export default function ClassroomBuilderScreen() {
       {/* Form */}
       <View style={styles.form}>
         {/* Grade */}
-        <View style={{ marginBottom: 18 }}>
-          <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('grade')}</Text>
-          <View style={[styles.pillRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            {grades.map((g, idx) => {
-              const active = gradeIdx === idx;
-              const label = lang === 'ar' ? g.nameAr : g.name;
-              return (
-                <Pressable key={g.id} onPress={() => setGradeIdx(idx)} style={[styles.pill, { backgroundColor: active ? ACCENT : colors.card, borderColor: active ? ACCENT : colors.border, borderRadius: colors.radius }]}>
-                  <Text style={[styles.pillText, { color: active ? '#fff' : colors.mutedForeground, fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular' }]}>
-                    {label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
+        <PillSelector
+          label={t('grade')}
+          options={grades.map((g, idx) => ({ value: idx, label: lang === 'ar' ? g.nameAr : g.name }))}
+          value={gradeIdx}
+          onChange={setGradeIdx}
+          colors={colors}
+          isRTL={isRTL}
+          accent={ACCENT}
+        />
+        <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t('scopeNoCurriculumHint')} isRTL={isRTL} colors={colors} />
 
         {/* Subject */}
-        <View style={{ marginBottom: 18 }}>
-          <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('subjects')}</Text>
-          <View style={[styles.pillRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            {subjects.map((s, i) => {
-              const active = subjectIdx === i;
-              return (
-                <Pressable key={s.id} onPress={() => setSubjectIdx(i)} style={[styles.pill, { backgroundColor: active ? ACCENT : colors.card, borderColor: active ? ACCENT : colors.border, borderRadius: colors.radius }]}>
-                  <Text style={[styles.pillText, { color: active ? '#fff' : colors.mutedForeground, fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular' }]}>
-                    {lang === 'ar' ? s.nameAr : s.name}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
+        <PillSelector
+          label={t('subjects')}
+          options={subjects.map((s, i) => ({ value: i, label: lang === 'ar' ? s.nameAr : s.name })).filter(o => !subjectHidden[o.value])}
+          value={subjectIdx}
+          onChange={setSubjectIdx}
+          colors={colors}
+          isRTL={isRTL}
+          accent={ACCENT}
+        />
 
         {/* Topic */}
         <TopicSelector
@@ -216,25 +212,29 @@ export default function ClassroomBuilderScreen() {
         />
 
         {/* Duration */}
-        <View style={{ marginBottom: 18 }}>
-          <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{t('durationLabel')}</Text>
-          <View style={[styles.pillRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            {DURATIONS.map((d, i) => {
-              const active = durationIdx === i;
-              return (
-                <Pressable key={d} onPress={() => setDurationIdx(i)} style={[styles.pill, { backgroundColor: active ? ACCENT : colors.card, borderColor: active ? ACCENT : colors.border, borderRadius: colors.radius }]}>
-                  <Text style={[styles.pillText, { color: active ? '#fff' : colors.mutedForeground, fontFamily: active ? 'Cairo_600SemiBold' : 'Almarai_400Regular' }]}>
-                    {d} {t('min')}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
+        <PillSelector
+          label={t('durationLabel')}
+          options={DURATIONS.map((d, i) => ({ value: i, label: `${d} ${t('min')}` }))}
+          value={durationIdx}
+          onChange={setDurationIdx}
+          colors={colors}
+          isRTL={isRTL}
+          accent={ACCENT}
+        />
 
-        <PillGroup label={t('difficultyLabel')} options={difficultyOpts} value={difficulty} onChange={setDifficulty} />
-        <PillGroup label={lang === 'ar' ? 'نوع المجموعة' : 'Class type'} options={groupOpts} value={groupType} onChange={setGroupType} />
-        <PillGroup label={t('teachingGoalLabel')} options={goalOpts} value={teachingGoal} onChange={setTeachingGoal} />
+        <PillSelector label={t('difficultyLabel')} options={difficultyOpts} value={difficulty} onChange={setDifficulty} colors={colors} isRTL={isRTL} accent={ACCENT} />
+        <PillSelector label={lang === 'ar' ? 'نوع المجموعة' : 'Class type'} options={groupOpts} value={groupType} onChange={setGroupType} colors={colors} isRTL={isRTL} accent={ACCENT} />
+        <PillSelector label={t('teachingGoalLabel')} options={goalOpts} value={teachingGoal} onChange={setTeachingGoal} colors={colors} isRTL={isRTL} accent={ACCENT} />
+        <PillSelector
+          label={lang === 'ar' ? 'تجهيزات الصف' : 'Classroom setup'}
+          options={setupOpts}
+          value={classroomSetup}
+          onChange={setClassroomSetup}
+          hint={setupHint}
+          colors={colors}
+          isRTL={isRTL}
+          accent={ACCENT}
+        />
 
         {error ? <Text style={[{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
 
@@ -267,11 +267,31 @@ export default function ClassroomBuilderScreen() {
 
           {/* Activity overview */}
           <View style={[styles.previewCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-            <Text style={[styles.previewTitle, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
-              {result.activityName}
+            <Text
+              style={[
+                styles.previewTitle,
+                {
+                  color: colors.foreground,
+                  fontFamily: 'Cairo_700Bold',
+                  textAlign: isRTL ? 'right' : 'left',
+                  writingDirection: isRTL ? 'rtl' : 'ltr',
+                },
+              ]}
+            >
+              {isolateForeignRuns(result.activityName)}
             </Text>
-            <Text style={[styles.previewObj, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
-              {result.learningObjective}
+            <Text
+              style={[
+                styles.previewObj,
+                {
+                  color: colors.mutedForeground,
+                  fontFamily: 'Almarai_400Regular',
+                  textAlign: isRTL ? 'right' : 'left',
+                  writingDirection: isRTL ? 'rtl' : 'ltr',
+                },
+              ]}
+            >
+              {isolateForeignRuns(result.learningObjective)}
             </Text>
 
             {/* Stats row */}
@@ -294,6 +314,21 @@ export default function ClassroomBuilderScreen() {
               </View>
             ))}
           </View>
+
+          {/* Teacher prep — the other half of what «تجهيزات الصف» rewrites.
+              Generated all along and rendered nowhere, so a teacher who
+              switched between projector and board saw one bullet move and
+              concluded the setting did nothing. */}
+          {result.teacherPreparation ? (
+            <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
+              <Text style={[styles.sectionLabel, { color: ACCENT, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+                {lang === 'ar' ? 'تحضير المعلّم' : 'Teacher prep'}
+              </Text>
+              <Text style={[styles.prepText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+                {result.teacherPreparation}
+              </Text>
+            </View>
+          ) : null}
 
           {/* CTA */}
           <Pressable
@@ -331,10 +366,6 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 24 },
   backBtn: { width: 40, height: 40, justifyContent: 'center', marginBottom: 8 },
   form: { padding: 20 },
-  fieldLabel: { fontSize: 13, marginBottom: 8 },
-  pillRow: { flexWrap: 'wrap', gap: 8 },
-  pill: { paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1.5 },
-  pillText: { fontSize: 13 },
   loadingBox: { alignItems: 'center', gap: 12, padding: 20, borderWidth: 1, marginBottom: 16 },
   loadingText: { fontSize: 14 },
   readyBanner: { alignItems: 'center', gap: 8, padding: 14, borderWidth: 1, marginBottom: 14 },
@@ -348,6 +379,9 @@ const styles = StyleSheet.create({
   bullet: { gap: 8, marginBottom: 5, alignItems: 'flex-start' },
   dot: { width: 5, height: 5, borderRadius: 3, marginTop: 8, flexShrink: 0 },
   bulletText: { flex: 1, fontSize: 13, lineHeight: 20 },
+  // No `flex: 1`: this one is a paragraph in a column, not a bullet's second
+  // child in a row, and flexing it there collapses its height.
+  prepText: { fontSize: 13, lineHeight: 20 },
   ctaBtn: { alignItems: 'center', justifyContent: 'center', gap: 10, padding: 16, marginBottom: 10 },
   ctaText: { color: '#fff', fontSize: 16 },
   regenBtn: { alignItems: 'center', gap: 8, padding: 14, borderWidth: 1.5 },

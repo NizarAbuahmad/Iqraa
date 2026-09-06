@@ -13,11 +13,6 @@ import { trackEvent } from '@/services/analytics';
 import { getPickerSubjects } from '@/services/curriculumData';
 import { loadLessonPick } from '@/services/lessonContext';
 import {
-  buildGeneratorNav,
-  getVisibleSmartTemplates,
-  type SmartTemplate,
-} from '@/services/homeAiTools';
-import {
   AFTER_CLASS,
   BEFORE_CLASS,
   DURING_CLASS,
@@ -49,26 +44,6 @@ async function runToolAction(tool: ToolDef) {
     }
     router.push({ pathname: tool.route as any, params: { ...prefill, ...tool.routeParams } });
   }
-}
-
-/**
- * Open a generator with the template's phrasing folded into the topic.
- *
- * A template is a tool plus a pre-shaped topic: the worksheet tool opened from
- * the grid gets «الاقترانات», opened from a template it gets «ورقة عمل صفية:
- * الاقترانات». `buildGeneratorNav` already owns the routing, the params and the
- * coming-soon guard, so this only decides the string.
- */
-async function runTemplate(tpl: SmartTemplate, lang: 'ar' | 'en') {
-  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  trackEvent('tool_opened', { toolId: tpl.toolId, source: 'template' });
-  const hint = lang === 'ar' ? tpl.topicHintAr : tpl.topicHintEn;
-  const pick = await loadLessonPick();
-  const topic = (pick?.topic ?? '').trim();
-  // No lesson picked yet: the hint alone is a real topic ("45-minute lesson
-  // plan"), where "45-minute lesson plan: " with nothing after it is not.
-  const nav = buildGeneratorNav(tpl.toolId, topic ? `${hint}: ${topic}` : hint, lang);
-  router.push({ pathname: nav.pathname as any, params: nav.params });
 }
 
 function ToolCard({
@@ -180,46 +155,6 @@ export default function AIToolsScreen() {
         </View>
       ))}
 
-      {/* Smart Templates — the same generators, with the phrasing already
-          chosen. Kept below the grid: the grid is "which tool", this is
-          "start one now". */}
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
-          {t('smartTemplatesTitle')}
-        </Text>
-        <View style={styles.list}>
-          {getVisibleSmartTemplates().map(tpl => (
-            <Pressable
-              key={tpl.id}
-              onPress={() => { void runTemplate(tpl, lang as 'ar' | 'en'); }}
-              style={({ pressed }) => [
-                styles.templateRow,
-                {
-                  backgroundColor: colors.card,
-                  borderColor: colors.border,
-                  borderRadius: colors.radius,
-                  opacity: pressed ? 0.88 : 1,
-                  flexDirection: isRTL ? 'row-reverse' : 'row',
-                },
-              ]}
-            >
-              <Text
-                style={{
-                  flex: 1,
-                  color: colors.foreground,
-                  fontFamily: 'Cairo_500Medium',
-                  fontSize: 14,
-                  textAlign: isRTL ? 'right' : 'left',
-                }}
-              >
-                {lang === 'ar' ? tpl.labelAr : tpl.labelEn}
-              </Text>
-              <Ionicons name="sparkles-outline" size={16} color={colors.mutedForeground} />
-            </Pressable>
-          ))}
-        </View>
-      </View>
-
       <Pressable
         onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/workspace'); }}
         style={({ pressed }) => [
@@ -276,7 +211,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   list: { paddingHorizontal: 20, gap: 10, paddingBottom: 8 },
-  templateRow: { alignItems: 'center', gap: 12, paddingVertical: 14, paddingHorizontal: 16, borderWidth: 1 },
   card: { alignItems: 'center', padding: 16, borderWidth: 1, gap: 14 },
   cardCompact: { padding: 14 },
   iconWrap: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },

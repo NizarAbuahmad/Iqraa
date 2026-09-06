@@ -12,16 +12,19 @@
  * builders stamp every derived outcome `'Understand'` with no skills, because
  * the source JSON has objective *text* but no cognitive classification.
  *
- * That covers Math S1, Math S2 and Financial Literacy — i.e. most of what the
- * product actually ships. Treating those as genuine 'Understand' would collapse
- * the whole competency breakdown into a single bar, so this module reports where
- * the value came from instead of hiding the difference.
+ * That covers every subject built from NCCD JSON — 502 of the 507 objectives
+ * in the catalog, i.e. essentially everything the product ships. Only five are
+ * hand-classified (`o-chem-1`, `o-chem-2`, `o-chem-s2-5`, `o-sci-1`). Treating
+ * the rest as genuine 'Understand' would collapse the whole competency
+ * breakdown into a single bar, so this module reports where the value came from
+ * instead of hiding the difference.
  *
  * Classifying the derived objectives properly (Arabic action verb → Bloom's
  * level) belongs with the generator that needs it. Until then, consumers must
  * branch on `bloomsSource` rather than assume.
  */
 import { classifyBlooms, type BloomsLevel } from './blooms.ts';
+import { isDerivedObjectiveId } from './curriculumIds.ts';
 import {
   BOOKS,
   LESSONS,
@@ -65,18 +68,19 @@ export interface CurriculumObjective extends LearningOutcome {
 }
 
 /**
- * Outcome-id prefixes emitted by the NCCD browser-catalog builders, which
- * hardcode `bloomsLevel: 'Understand'`. Kept in sync with:
- *   catalogs/g10MathSem1.ts   → `o-nccd-s1-…`
- *   catalogs/g10MathSem2.ts   → `o-nccd-…`
- *   catalogs/g10FinlitSem1.ts → `o-finlit-s1-…`
+ * All 14 NCCD catalog builders mint their outcome ids through `objectiveId`
+ * and hardcode `bloomsLevel: 'Understand'`, so asking that function what it
+ * emits is the whole test — see `isDerivedObjectiveId`.
+ *
+ * This was a literal list of prefixes maintained here by hand, and a builder
+ * whose prefix was missing silently claimed `authored` for a level no human
+ * ever chose. It went wrong twice. Note the shape it has to get right:
+ * chemistry S2 first shipped as `o-chem-s2-…`, which collided with the
+ * hand-authored `o-chem-s2-5-1`; hence the `o-nccd-` prefix on generated ids
+ * and hence a prefix check rather than a subject check.
  */
-const DERIVED_OUTCOME_PREFIXES = ['o-nccd-', 'o-finlit-'] as const;
-
 function bloomsSourceOf(outcomeId: string): BloomsSource {
-  return DERIVED_OUTCOME_PREFIXES.some(p => outcomeId.startsWith(p))
-    ? 'defaulted'
-    : 'authored';
+  return isDerivedObjectiveId(outcomeId) ? 'defaulted' : 'authored';
 }
 
 function expand(lesson: Lesson): CurriculumObjective[] {
@@ -143,6 +147,43 @@ export function resolveObjectiveIds(ids: readonly string[]): {
 export function getObjectivesForLesson(lessonId: string): CurriculumObjective[] {
   const lesson = getLessonById(lessonId);
   return lesson ? expand(lesson) : [];
+}
+
+/**
+ * The lessons a set of objectives covers, in the order they name them.
+ *
+ * The derivation an evaluation needs. An exam is scoped by **objectives**, not
+ * by a lesson: `evaluations.lessonId` is a real column and is always null,
+ * because no client has ever sent it. Anything that wants an evaluation's
+ * lesson — the book-figure panel on the student's paper and on the teacher's
+ * review screen — has to come through here.
+ *
+ * Deriving it rather than reading that column is deliberate. `objectiveIds` is
+ * validated at create time (`objectivesAreWithinBook`) and generation refuses
+ * to run unscoped, whereas `lessonId` is free text nothing checks. Filing the
+ * wrong book's diagram onto an exam paper is the failure this avoids.
+ *
+ * Lives here rather than beside either caller because both the API and the app
+ * need it and they cannot import each other — the duplication this replaces
+ * was six identical lines in `routes/studentAttempt.ts` and
+ * `artifacts/mobile/services/bookFigures.ts`.
+ *
+ * Unknown ids are skipped, not thrown on: an objective can be retired from the
+ * curriculum while an old evaluation still names it, and an exam that renders
+ * without a picture beats one that will not open.
+ */
+export function lessonIdsForObjectiveIds(
+  objectiveIds: readonly string[] | null | undefined,
+): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const id of objectiveIds ?? []) {
+    const lessonId = OBJECTIVE_INDEX.get(id)?.lessonId;
+    if (!lessonId || seen.has(lessonId)) continue;
+    seen.add(lessonId);
+    out.push(lessonId);
+  }
+  return out;
 }
 
 /** Objectives across every lesson in a unit. */

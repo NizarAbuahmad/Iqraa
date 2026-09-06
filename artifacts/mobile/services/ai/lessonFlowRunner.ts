@@ -107,19 +107,27 @@ export async function runLessonFlowFrom(
           break;
         }
         case 'warmup': {
+          // A warm-up is prior-knowledge retrieval, not a compressed lesson
+          // activity. This used to ask for a 10-minute `hands-on` activity,
+          // which returned the main activity's own four steps and the same
+          // three problems the activity step then posed again.
           const warmup = await aiService.generateActivity({
             ...req,
-            duration: 10,
-            activityType: 'hands-on',
+            duration: 8,
+            activityVariant: 'warmup',
           });
           acc.warmup = warmup;
           callbacks.onStepDone(key, { warmup });
           break;
         }
         case 'activity': {
+          // `continueMathPractice` keeps this off the items the warm-up just
+          // used, so the two steps pose different problems.
           const activity = await aiService.generateActivity({
             ...req,
-            activityType: 'game',
+            activityType: 'group',
+            activityVariant: 'main',
+            continueMathPractice: true,
           });
           acc.activity = activity;
           callbacks.onStepDone(key, { activity });

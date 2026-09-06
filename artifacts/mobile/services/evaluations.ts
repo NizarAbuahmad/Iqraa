@@ -23,6 +23,12 @@ export type EvaluationStatus = 'draft' | 'published' | 'closed';
 
 export interface Evaluation {
   id: string;
+  /** The class the teacher attached this exam to, or null. */
+  classGroupId?: string | null;
+  /** Papers with marks on them. Only meaningful for a class-scoped list. */
+  markedCount?: number;
+  /** The student link's code. Issued at publish; null before that. */
+  shareCode?: string | null;
   title: string;
   titleAr: string;
   gradeId: string;
@@ -49,7 +55,29 @@ export interface EvaluationQuestion {
   marks: string;
   gradingMode: 'deterministic' | 'math_equivalence' | 'ai_rubric' | 'manual';
   source: 'ai' | 'teacher' | 'ai_edited';
+  /**
+   * SymPy's verdict on this question's answer key, when there was one to
+   * check. Absent on every question written before key checking existed, and
+   * on every question whose answer is not symbolic — which is most of them.
+   * `verified: false` therefore means "not checked", never "wrong": a key the
+   * verifier contradicts is dropped at generation and never reaches here.
+   */
+  verification?: {
+    verified: boolean;
+    source: 'sympy' | 'unchecked';
+    /**
+     * Why, as a value rather than prose. Absent on every question written
+     * before key checking existed — treat that as "say nothing", never as a
+     * verdict.
+     */
+    code?: 'verified' | 'no_key' | 'verifier_unreachable' | 'undecided';
+    computedAnswer?: string | null;
+    reason?: string;
+    checkedAt?: string;
+  } | null;
 }
+
+export { countBlanks, showBlanks } from './evaluationBlanks.ts';
 
 export interface EvaluableBook {
   bookId: string;
@@ -71,12 +99,15 @@ export interface GenerateResult {
 export class EvaluationError extends Error {
   readonly status: number;
   readonly code: string;
+  /** Per-question reasons on a 400 "not ready to publish" — e.g. `/publish`'s blockers array. */
+  readonly details: string[];
 
-  constructor(message: string, status: number, code: string) {
+  constructor(message: string, status: number, code: string, details: string[] = []) {
     super(message);
     this.name = 'EvaluationError';
     this.status = status;
     this.code = code;
+    this.details = details;
   }
 }
 
@@ -84,14 +115,16 @@ async function readJson<T>(res: Response, action: string): Promise<T> {
   if (!res.ok) {
     let detail = '';
     let code = '';
+    let blockers: string[] = [];
     try {
-      const body = (await res.json()) as { error?: string; code?: string };
+      const body = (await res.json()) as { error?: string; code?: string; blockers?: string[] };
       detail = body.error ?? '';
       code = body.code ?? '';
+      blockers = Array.isArray(body.blockers) ? body.blockers : [];
     } catch {
       /* body wasn't JSON — the status is all we have */
     }
-    throw new EvaluationError(detail || `${action} failed (${res.status})`, res.status, code);
+    throw new EvaluationError(detail || `${action} failed (${res.status})`, res.status, code, blockers);
   }
   return (await res.json()) as T;
 }
@@ -105,10 +138,30 @@ export async function listEvaluableBooks(): Promise<{
   return readJson(res, 'Loading evaluable books');
 }
 
-export async function listEvaluations(): Promise<Evaluation[]> {
-  const res = await apiFetch('/evaluations');
+/**
+ * `classId` scopes the list to one class. Pass `'none'` for the exams that
+ * belong to no class yet — what the attach sheet needs, and asking the server
+ * rather than filtering client-side is what keeps an exam already attached
+ * elsewhere from looking attachable here.
+ */
+export async function listEvaluations(opts: { classId?: string } = {}): Promise<Evaluation[]> {
+  const query = opts.classId ? `?classId=${encodeURIComponent(opts.classId)}` : '';
+  const res = await apiFetch(`/evaluations${query}`);
   const data = await readJson<{ evaluations: Evaluation[] }>(res, 'Loading evaluations');
   return data.evaluations;
+}
+
+/** Attach an exam to a class, or pass null to detach it. */
+export async function setEvaluationClass(
+  evaluationId: string,
+  classGroupId: string | null,
+): Promise<Evaluation> {
+  const res = await apiFetch(`/evaluations/${evaluationId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ classGroupId }),
+  });
+  const data = await readJson<{ evaluation: Evaluation }>(res, 'Attaching the exam');
+  return data.evaluation;
 }
 
 export async function createEvaluation(input: {
@@ -136,6 +189,31 @@ export async function generateEvaluation(id: string): Promise<GenerateResult> {
   return readJson(res, 'Generating questions');
 }
 
+/** One row of a paper exam: what the question is worth and what it measures. */
+export interface PaperQuestionInput {
+  marks: number | string;
+  objectiveId: string;
+  competencyKey: CompetencyKey;
+  difficulty?: Difficulty;
+}
+
+/**
+ * Replace a draft's questions with a paper-exam grid — an exam the teacher set
+ * themselves, so the app holds no question text, only what each one is worth
+ * and what it measures. Replaces rather than appends, so sending it twice does
+ * not double the paper.
+ */
+export async function setPaperQuestions(
+  evaluationId: string,
+  questions: PaperQuestionInput[],
+): Promise<{ questions: EvaluationQuestion[]; totalMarks: number }> {
+  const res = await apiFetch(`/evaluations/${evaluationId}/questions/paper`, {
+    method: 'PUT',
+    body: JSON.stringify({ questions }),
+  });
+  return readJson(res, 'Saving the paper');
+}
+
 export async function publishEvaluation(id: string): Promise<Evaluation> {
   const res = await apiFetch(`/evaluations/${id}/publish`, { method: 'POST' });
   const data = await readJson<{ evaluation: Evaluation }>(res, 'Publishing evaluation');
@@ -157,11 +235,15 @@ export type Verdict = 'correct' | 'partial' | 'incorrect' | 'unanswered';
 export type LevelKey = 'beginner' | 'developing' | 'proficient' | 'advanced';
 export type CompetencyKey = 'knowledge' | 'understanding' | 'application' | 'critical_thinking';
 
+export type Grader = 'deterministic' | 'math_verifier' | 'ai' | 'teacher';
+
 export interface Attempt {
   id: string;
   evaluationId: string;
   studentId: string;
   status: AttemptStatus;
+  /** The teacher's note on the sitting as a whole. */
+  teacherComment: string;
   questionSnapshot: EvaluationQuestion[];
   startedAt: string | null;
   submittedAt: string | null;
@@ -191,6 +273,9 @@ export interface AttemptQuestionGrade {
   awardedMarks: string | number;
   maxMarks: string | number;
   verdict: Verdict;
+  /** Who produced this mark — drives the badge next to it. Never inferred. */
+  grader: Grader;
+  /** The teacher's comment on this answer, or the grader's rationale. */
   rationaleAr?: string;
 }
 
@@ -212,6 +297,73 @@ export interface AttemptResult {
   isProvisional: boolean;
 }
 
+export type RecommendationKind = 'review' | 'practice' | 'activity' | 'reassess';
+
+/**
+ * What to do next about one objective, derived from the marks. `generatedBy`
+ * says whether a rule or a model produced it — the same reason a mark carries
+ * `grader`, and the reason the two must never be rendered identically.
+ */
+export interface Recommendation {
+  id: string;
+  kind: RecommendationKind;
+  objectiveId: string | null;
+  generatedBy: 'rule' | 'ai';
+  payload: {
+    objectiveTitle: string;
+    objectiveTitleAr: string;
+    percent: number;
+    marksLost: number;
+    questionCount: number;
+  };
+}
+
+/** The exam's curriculum scope, so a generator can open already pointed at it. */
+export interface AttemptEvaluationSummary {
+  id: string;
+  title: string;
+  titleAr: string;
+  gradeId: string;
+  subjectId: string;
+  bookId: string;
+}
+
+/** One objective, summed across every student who has been marked. */
+export interface ClassObjectiveScore {
+  objectiveId: string;
+  title: string;
+  titleAr: string;
+  earned: number;
+  total: number;
+  percent: number;
+  marksLost: number;
+  /** How many marked students fell below the gap line on this objective. */
+  studentsBelowGap: number;
+  studentCount: number;
+}
+
+export interface ClassInsights {
+  studentCount: number;
+  earnedMarks: number;
+  totalMarks: number;
+  percent: number;
+  objectiveScores: ClassObjectiveScore[];
+}
+
+/**
+ * What the class as a whole missed. Only marked attempts are counted — an
+ * unmarked one would drag the class percentage down and read as a bad cohort
+ * rather than as unfinished marking.
+ */
+export async function getClassInsights(evaluationId: string): Promise<{
+  insights: ClassInsights;
+  recommendations: Recommendation[];
+  scope: { gradeId: string; subjectId: string; bookId: string };
+}> {
+  const res = await apiFetch(`/evaluations/${evaluationId}/insights`);
+  return readJson(res, 'Loading class insights');
+}
+
 export async function listAttempts(evaluationId: string): Promise<AttemptListRow[]> {
   const res = await apiFetch(`/evaluations/${evaluationId}/attempts`);
   const data = await readJson<{ attempts: AttemptListRow[] }>(res, 'Loading attempts');
@@ -230,12 +382,13 @@ export async function startAttempt(evaluationId: string, studentId: string): Pro
 
 export async function getAttempt(attemptId: string): Promise<{
   attempt: Attempt;
-  evaluation: { id: string; title: string; titleAr: string };
+  evaluation: AttemptEvaluationSummary;
   student: { id: string; displayName: string };
   questions: EvaluationQuestion[];
   answers: AttemptAnswer[];
   grades: AttemptQuestionGrade[];
   result: AttemptResult | null;
+  recommendations: Recommendation[];
 }> {
   const res = await apiFetch(`/attempts/${attemptId}`);
   return readJson(res, 'Loading attempt');
@@ -254,11 +407,75 @@ export async function saveAnswer(
   return data.answer;
 }
 
+/**
+ * Mark one question by hand. `note` is the teacher's comment on that answer;
+ * the verdict is derived from the mark unless one is passed.
+ */
+export async function setQuestionGrade(
+  attemptId: string,
+  questionId: string,
+  input: { awardedMarks: number | string; note?: string; verdict?: Verdict },
+): Promise<{
+  grade: AttemptQuestionGrade;
+  attempt: Attempt;
+  result: AttemptResult;
+  recommendations: Recommendation[];
+}> {
+  const res = await apiFetch(`/attempts/${attemptId}/grades/${questionId}`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  });
+  return readJson(res, 'Saving the mark');
+}
+
+/** One mark the scan believes it read, for the teacher to confirm. */
+export interface MarkProposal {
+  questionId: string;
+  number: number;
+  awardedMarks: number;
+  /** The characters the model reported seeing, so the teacher checks a
+   *  reading rather than trusting a total. */
+  readAs: string;
+}
+
+/**
+ * Read the marks off a photo of the paper.
+ *
+ * Saves nothing — `saved: false` comes back in the response to say so. The
+ * proposals go into the boxes and the teacher confirms them through the
+ * ordinary marking call.
+ */
+export async function scanMarks(
+  attemptId: string,
+  image: string,
+): Promise<{
+  proposals: MarkProposal[];
+  skipped: { number: number; reason: string }[];
+  model: string;
+  saved: boolean;
+}> {
+  const res = await apiFetch(`/attempts/${attemptId}/scan-marks`, {
+    method: 'POST',
+    body: JSON.stringify({ image }),
+  });
+  return readJson(res, 'Reading the marks');
+}
+
+export async function setTeacherComment(attemptId: string, teacherComment: string): Promise<Attempt> {
+  const res = await apiFetch(`/attempts/${attemptId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ teacherComment }),
+  });
+  const data = await readJson<{ attempt: Attempt }>(res, 'Saving the comment');
+  return data.attempt;
+}
+
 export async function submitAttempt(attemptId: string): Promise<{
   attempt: Attempt;
   grades: AttemptQuestionGrade[];
   ungradedQuestionIds: string[];
   result: AttemptResult;
+  recommendations: Recommendation[];
 }> {
   const res = await apiFetch(`/attempts/${attemptId}/submit`, { method: 'POST' });
   return readJson(res, 'Submitting attempt');

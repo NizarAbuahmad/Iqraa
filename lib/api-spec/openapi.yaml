@@ -367,6 +367,24 @@ components:
           enum: [direct, inquiry, collaborative]
         objectives:
           type: string
+        priorTopicsNotes:
+          type: string
+          description: >-
+            Free-text notes on prior topics (from earlier lessons or earlier
+            grades) the teacher wants re-explained in class. Lesson-plan only.
+        unitId:
+          type: string
+          description: Catalog unit id the server uses to pull the unit's own textbook pages.
+        includePriorReview:
+          type: boolean
+          description: >-
+            When true and priorKnowledge is non-empty, prepend a "مراجعة سابقة"
+            warm-up review. Shared by worksheet and lesson-plan generation.
+        priorKnowledge:
+          type: array
+          items:
+            type: string
+          description: Grounded unit prior-knowledge concepts (never invented when empty).
         difficulty:
           type: string
           enum: [easy, medium, hard, mixed]
@@ -401,6 +419,12 @@ components:
           type: array
           items:
             type: string
+        priorReview:
+          type: string
+          description: >-
+            Plan for a short warm-up reviewing prior material — present only
+            when the teacher asked for it via priorTopicsNotes or
+            includePriorReview.
         introduction:
           type: string
         mainActivity:

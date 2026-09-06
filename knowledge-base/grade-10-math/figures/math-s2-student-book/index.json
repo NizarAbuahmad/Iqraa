@@ -1,0 +1,1685 @@
+{
+ "sourceId": "math-s2-student-book",
+ "figures": [
+  {
+   "file": "p001.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 1,
+   "rect": [
+    71.5,
+    471.7,
+    248.9,
+    603.6
+   ],
+   "unit": null,
+   "lesson": null,
+   "lessonTitleEn": null,
+   "lessonTitleAr": null,
+   "lessonStartPage": null
+  },
+  {
+   "file": "p001b.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 1,
+   "rect": [
+    346.5,
+    471.7,
+    523.8,
+    603.6
+   ],
+   "unit": null,
+   "lesson": null,
+   "lessonTitleEn": null,
+   "lessonTitleAr": null,
+   "lessonStartPage": null
+  },
+  {
+   "file": "p010.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 10,
+   "rect": [
+    46.7,
+    421.1,
+    162.9,
+    547.3
+   ],
+   "unit": 5,
+   "lesson": 1,
+   "lessonTitleEn": "Polynomial Functions",
+   "lessonTitleAr": null,
+   "lessonStartPage": 8
+  },
+  {
+   "file": "p011.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 11,
+   "rect": [
+    50.5,
+    267.5,
+    138.6,
+    353.1
+   ],
+   "unit": 5,
+   "lesson": 1,
+   "lessonTitleEn": "Polynomial Functions",
+   "lessonTitleAr": null,
+   "lessonStartPage": 8
+  },
+  {
+   "file": "p011b.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 11,
+   "rect": [
+    420.9,
+    291.4,
+    542.9,
+    415.2
+   ],
+   "unit": 5,
+   "lesson": 1,
+   "lessonTitleEn": "Polynomial Functions",
+   "lessonTitleAr": null,
+   "lessonStartPage": 8
+  },
+  {
+   "file": "p014.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 14,
+   "rect": [
+    184.0,
+    177.6,
+    276.1,
+    259.7
+   ],
+   "unit": 5,
+   "lesson": 1,
+   "lessonTitleEn": "Polynomial Functions",
+   "lessonTitleAr": null,
+   "lessonStartPage": 8
+  },
+  {
+   "file": "p017.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 17,
+   "rect": [
+    35.9,
+    69.2,
+    178.0,
+    189.6
+   ],
+   "unit": 5,
+   "lesson": 1,
+   "lessonTitleEn": "Polynomial Functions",
+   "lessonTitleAr": null,
+   "lessonStartPage": 8
+  },
+  {
+   "file": "p017b.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 17,
+   "rect": [
+    45.6,
+    271.3,
+    154.1,
+    407.0
+   ],
+   "unit": 5,
+   "lesson": 1,
+   "lessonTitleEn": "Polynomial Functions",
+   "lessonTitleAr": null,
+   "lessonStartPage": 8
+  },
+  {
+   "file": "p020.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 20,
+   "rect": [
+    49.6,
+    573.6,
+    193.9,
+    720.5
+   ],
+   "unit": 5,
+   "lesson": 2,
+   "lessonTitleEn": "Rational Functions",
+   "lessonTitleAr": null,
+   "lessonStartPage": 18
+  },
+  {
+   "file": "p021.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 21,
+   "rect": [
+    34.8,
+    59.1,
+    206.8,
+    220.0
+   ],
+   "unit": 5,
+   "lesson": 2,
+   "lessonTitleEn": "Rational Functions",
+   "lessonTitleAr": null,
+   "lessonStartPage": 18
+  },
+  {
+   "file": "p022.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 22,
+   "rect": [
+    46.7,
+    425.2,
+    188.8,
+    624.3
+   ],
+   "unit": 5,
+   "lesson": 2,
+   "lessonTitleEn": "Rational Functions",
+   "lessonTitleAr": null,
+   "lessonStartPage": 18
+  },
+  {
+   "file": "p024.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 24,
+   "rect": [
+    77.4,
+    357.8,
+    201.1,
+    469.0
+   ],
+   "unit": 5,
+   "lesson": 2,
+   "lessonTitleEn": "Rational Functions",
+   "lessonTitleAr": null,
+   "lessonStartPage": 18
+  },
+  {
+   "file": "p024b.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 24,
+   "rect": [
+    230.2,
+    357.8,
+    337.0,
+    466.2
+   ],
+   "unit": 5,
+   "lesson": 2,
+   "lessonTitleEn": "Rational Functions",
+   "lessonTitleAr": null,
+   "lessonStartPage": 18
+  },
+  {
+   "file": "p024c.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 24,
+   "rect": [
+    390.3,
+    357.8,
+    497.0,
+    466.1
+   ],
+   "unit": 5,
+   "lesson": 2,
+   "lessonTitleEn": "Rational Functions",
+   "lessonTitleAr": null,
+   "lessonStartPage": 18
+  },
+  {
+   "file": "p025.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 25,
+   "rect": [
+    442.5,
+    0.0,
+    565.2,
+    154.1
+   ],
+   "unit": 5,
+   "lesson": 3,
+   "lessonTitleEn": "Composition of Functions",
+   "lessonTitleAr": null,
+   "lessonStartPage": 25
+  },
+  {
+   "file": "p025b.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 25,
+   "rect": [
+    46.3,
+    633.8,
+    222.1,
+    734.3
+   ],
+   "unit": 5,
+   "lesson": 3,
+   "lessonTitleEn": "Composition of Functions",
+   "lessonTitleAr": null,
+   "lessonStartPage": 25
+  },
+  {
+   "file": "p027.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 27,
+   "rect": [
+    96.9,
+    472.9,
+    352.7,
+    621.8
+   ],
+   "unit": 5,
+   "lesson": 3,
+   "lessonTitleEn": "Composition of Functions",
+   "lessonTitleAr": null,
+   "lessonStartPage": 25
+  },
+  {
+   "file": "p031.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 31,
+   "rect": [
+    33.2,
+    459.0,
+    282.4,
+    592.8
+   ],
+   "unit": 5,
+   "lesson": 3,
+   "lessonTitleEn": "Composition of Functions",
+   "lessonTitleAr": null,
+   "lessonStartPage": 25
+  },
+  {
+   "file": "p031b.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 31,
+   "rect": [
+    274.2,
+    461.0,
+    513.0,
+    583.3
+   ],
+   "unit": 5,
+   "lesson": 3,
+   "lessonTitleEn": "Composition of Functions",
+   "lessonTitleAr": null,
+   "lessonStartPage": 25
+  },
+  {
+   "file": "p032.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 32,
+   "rect": [
+    442.5,
+    0.0,
+    565.2,
+    164.8
+   ],
+   "unit": 5,
+   "lesson": 4,
+   "lessonTitleEn": "Inverse Function",
+   "lessonTitleAr": null,
+   "lessonStartPage": 32
+  },
+  {
+   "file": "p032b.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 32,
+   "rect": [
+    430.0,
+    557.3,
+    568.6,
+    688.1
+   ],
+   "unit": 5,
+   "lesson": 4,
+   "lessonTitleEn": "Inverse Function",
+   "lessonTitleAr": null,
+   "lessonStartPage": 32
+  },
+  {
+   "file": "p033.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 33,
+   "rect": [
+    52.0,
+    375.9,
+    183.2,
+    490.9
+   ],
+   "unit": 5,
+   "lesson": 4,
+   "lessonTitleEn": "Inverse Function",
+   "lessonTitleAr": null,
+   "lessonStartPage": 32
+  },
+  {
+   "file": "p033b.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 33,
+   "rect": [
+    285.4,
+    375.9,
+    410.9,
+    491.1
+   ],
+   "unit": 5,
+   "lesson": 4,
+   "lessonTitleEn": "Inverse Function",
+   "lessonTitleAr": null,
+   "lessonStartPage": 32
+  },
+  {
+   "file": "p033c.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 33,
+   "rect": [
+    265.7,
+    611.9,
+    395.1,
+    687.1
+   ],
+   "unit": 5,
+   "lesson": 4,
+   "lessonTitleEn": "Inverse Function",
+   "lessonTitleAr": null,
+   "lessonStartPage": 32
+  },
+  {
+   "file": "p034.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 34,
+   "rect": [
+    124.6,
+    184.3,
+    363.6,
+    303.6
+   ],
+   "unit": 5,
+   "lesson": 4,
+   "lessonTitleEn": "Inverse Function",
+   "lessonTitleAr": null,
+   "lessonStartPage": 32
+  },
+  {
+   "file": "p035.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 35,
+   "rect": [
+    39.6,
+    597.5,
+    209.4,
+    727.5
+   ],
+   "unit": 5,
+   "lesson": 4,
+   "lessonTitleEn": "Inverse Function",
+   "lessonTitleAr": null,
+   "lessonStartPage": 32
+  },
+  {
+   "file": "p037.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 37,
+   "rect": [
+    208.3,
+    614.6,
+    294.2,
+    685.4
+   ],
+   "unit": 5,
+   "lesson": 4,
+   "lessonTitleEn": "Inverse Function",
+   "lessonTitleAr": null,
+   "lessonStartPage": 32
+  },
+  {
+   "file": "p040.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 40,
+   "rect": [
+    298.7,
+    157.5,
+    373.0,
+    262.4
+   ],
+   "unit": 5,
+   "lesson": 4,
+   "lessonTitleEn": "Inverse Function",
+   "lessonTitleAr": null,
+   "lessonStartPage": 32
+  },
+  {
+   "file": "p040b.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 40,
+   "rect": [
+    60.9,
+    159.0,
+    135.2,
+    263.9
+   ],
+   "unit": 5,
+   "lesson": 4,
+   "lessonTitleEn": "Inverse Function",
+   "lessonTitleAr": null,
+   "lessonStartPage": 32
+  },
+  {
+   "file": "p041.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 41,
+   "rect": [
+    53.6,
+    63.5,
+    147.1,
+    190.3
+   ],
+   "unit": 5,
+   "lesson": 4,
+   "lessonTitleEn": "Inverse Function",
+   "lessonTitleAr": null,
+   "lessonStartPage": 32
+  },
+  {
+   "file": "p042.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 42,
+   "rect": [
+    442.5,
+    0.0,
+    565.2,
+    165.5
+   ],
+   "unit": 5,
+   "lesson": 5,
+   "lessonTitleEn": "Sequences",
+   "lessonTitleAr": null,
+   "lessonStartPage": 42
+  },
+  {
+   "file": "p043.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 43,
+   "rect": [
+    420.9,
+    289.8,
+    542.9,
+    538.2
+   ],
+   "unit": 5,
+   "lesson": 5,
+   "lessonTitleEn": "Sequences",
+   "lessonTitleAr": null,
+   "lessonStartPage": 42
+  },
+  {
+   "file": "p048.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 48,
+   "rect": [
+    352.6,
+    559.2,
+    482.5,
+    685.3
+   ],
+   "unit": 5,
+   "lesson": 5,
+   "lessonTitleEn": "Sequences",
+   "lessonTitleAr": null,
+   "lessonStartPage": 42
+  },
+  {
+   "file": "p048b.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 48,
+   "rect": [
+    247.4,
+    568.9,
+    352.8,
+    667.5
+   ],
+   "unit": 5,
+   "lesson": 5,
+   "lessonTitleEn": "Sequences",
+   "lessonTitleAr": null,
+   "lessonStartPage": 42
+  },
+  {
+   "file": "p056.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 56,
+   "rect": [
+    54.4,
+    204.9,
+    199.9,
+    309.8
+   ],
+   "unit": 6,
+   "lesson": 1,
+   "lessonTitleEn": "Estimating Slope",
+   "lessonTitleAr": null,
+   "lessonStartPage": 56
+  },
+  {
+   "file": "p056b.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 56,
+   "rect": [
+    85.5,
+    325.5,
+    175.6,
+    461.1
+   ],
+   "unit": 6,
+   "lesson": 1,
+   "lessonTitleEn": "Estimating Slope",
+   "lessonTitleAr": null,
+   "lessonStartPage": 56
+  },
+  {
+   "file": "p056c.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 56,
+   "rect": [
+    71.4,
+    597.0,
+    148.7,
+    705.8
+   ],
+   "unit": 6,
+   "lesson": 1,
+   "lessonTitleEn": "Estimating Slope",
+   "lessonTitleAr": null,
+   "lessonStartPage": 56
+  },
+  {
+   "file": "p057.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 57,
+   "rect": [
+    32.5,
+    62.4,
+    430.7,
+    342.4
+   ],
+   "unit": 6,
+   "lesson": 1,
+   "lessonTitleEn": "Estimating Slope",
+   "lessonTitleAr": null,
+   "lessonStartPage": 56
+  },
+  {
+   "file": "p057b.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 57,
+   "rect": [
+    82.9,
+    469.2,
+    169.4,
+    621.6
+   ],
+   "unit": 6,
+   "lesson": 1,
+   "lessonTitleEn": "Estimating Slope",
+   "lessonTitleAr": null,
+   "lessonStartPage": 56
+  },
+  {
+   "file": "p058.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 58,
+   "rect": [
+    46.7,
+    60.9,
+    444.9,
+    518.8
+   ],
+   "unit": 6,
+   "lesson": 1,
+   "lessonTitleEn": "Estimating Slope",
+   "lessonTitleAr": null,
+   "lessonStartPage": 56
+  },
+  {
+   "file": "p058b.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 58,
+   "rect": [
+    435.0,
+    217.5,
+    557.1,
+    310.8
+   ],
+   "unit": 6,
+   "lesson": 1,
+   "lessonTitleEn": "Estimating Slope",
+   "lessonTitleAr": null,
+   "lessonStartPage": 56
+  },
+  {
+   "file": "p058c.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 58,
+   "rect": [
+    54.7,
+    630.0,
+    194.5,
+    743.7
+   ],
+   "unit": 6,
+   "lesson": 1,
+   "lessonTitleEn": "Estimating Slope",
+   "lessonTitleAr": null,
+   "lessonStartPage": 56
+  },
+  {
+   "file": "p059.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 59,
+   "rect": [
+    157.6,
+    201.5,
+    333.0,
+    311.9
+   ],
+   "unit": 6,
+   "lesson": 1,
+   "lessonTitleEn": "Estimating Slope",
+   "lessonTitleAr": null,
+   "lessonStartPage": 56
+  },
+  {
+   "file": "p059b.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 59,
+   "rect": [
+    40.4,
+    535.5,
+    158.3,
+    709.4
+   ],
+   "unit": 6,
+   "lesson": 1,
+   "lessonTitleEn": "Estimating Slope",
+   "lessonTitleAr": null,
+   "lessonStartPage": 56
+  },
+  {
+   "file": "p060.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 60,
+   "rect": [
+    46.9,
+    484.5,
+    203.0,
+    592.5
+   ],
+   "unit": 6,
+   "lesson": 1,
+   "lessonTitleEn": "Estimating Slope",
+   "lessonTitleAr": null,
+   "lessonStartPage": 56
+  },
+  {
+   "file": "p060b.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 60,
+   "rect": [
+    51.0,
+    608.9,
+    180.9,
+    701.4
+   ],
+   "unit": 6,
+   "lesson": 1,
+   "lessonTitleEn": "Estimating Slope",
+   "lessonTitleAr": null,
+   "lessonStartPage": 56
+  },
+  {
+   "file": "p061.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 61,
+   "rect": [
+    33.0,
+    56.5,
+    212.9,
+    210.8
+   ],
+   "unit": 6,
+   "lesson": 1,
+   "lessonTitleEn": "Estimating Slope",
+   "lessonTitleAr": null,
+   "lessonStartPage": 56
+  },
+  {
+   "file": "p062.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 62,
+   "rect": [
+    65.5,
+    54.3,
+    230.8,
+    246.5
+   ],
+   "unit": 6,
+   "lesson": 1,
+   "lessonTitleEn": "Estimating Slope",
+   "lessonTitleAr": null,
+   "lessonStartPage": 56
+  },
+  {
+   "file": "p063.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 63,
+   "rect": [
+    442.5,
+    0.0,
+    565.2,
+    161.8
+   ],
+   "unit": 6,
+   "lesson": 2,
+   "lessonTitleEn": "Differentiation",
+   "lessonTitleAr": null,
+   "lessonStartPage": 63
+  },
+  {
+   "file": "p064.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 64,
+   "rect": [
+    49.1,
+    343.8,
+    177.4,
+    556.6
+   ],
+   "unit": 6,
+   "lesson": 2,
+   "lessonTitleEn": "Differentiation",
+   "lessonTitleAr": null,
+   "lessonStartPage": 63
+  },
+  {
+   "file": "p065.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 65,
+   "rect": [
+    420.9,
+    359.6,
+    542.9,
+    461.1
+   ],
+   "unit": 6,
+   "lesson": 2,
+   "lessonTitleEn": "Differentiation",
+   "lessonTitleAr": null,
+   "lessonStartPage": 63
+  },
+  {
+   "file": "p069.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 69,
+   "rect": [
+    36.4,
+    59.6,
+    174.1,
+    230.9
+   ],
+   "unit": 6,
+   "lesson": 2,
+   "lessonTitleEn": "Differentiation",
+   "lessonTitleAr": null,
+   "lessonStartPage": 63
+  },
+  {
+   "file": "p069b.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 69,
+   "rect": [
+    30.2,
+    453.8,
+    194.5,
+    620.3
+   ],
+   "unit": 6,
+   "lesson": 2,
+   "lessonTitleEn": "Differentiation",
+   "lessonTitleAr": null,
+   "lessonStartPage": 63
+  },
+  {
+   "file": "p070.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 70,
+   "rect": [
+    48.5,
+    273.5,
+    227.0,
+    365.8
+   ],
+   "unit": 6,
+   "lesson": 3,
+   "lessonTitleEn": "Maximum and Minimum Values",
+   "lessonTitleAr": null,
+   "lessonStartPage": 70
+  },
+  {
+   "file": "p071.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 71,
+   "rect": [
+    35.7,
+    306.1,
+    182.5,
+    428.6
+   ],
+   "unit": 6,
+   "lesson": 3,
+   "lessonTitleEn": "Maximum and Minimum Values",
+   "lessonTitleAr": null,
+   "lessonStartPage": 70
+  },
+  {
+   "file": "p071b.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 71,
+   "rect": [
+    54.5,
+    572.8,
+    219.4,
+    698.0
+   ],
+   "unit": 6,
+   "lesson": 3,
+   "lessonTitleEn": "Maximum and Minimum Values",
+   "lessonTitleAr": null,
+   "lessonStartPage": 70
+  },
+  {
+   "file": "p075.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 75,
+   "rect": [
+    30.1,
+    636.8,
+    107.6,
+    726.5
+   ],
+   "unit": 6,
+   "lesson": 3,
+   "lessonTitleEn": "Maximum and Minimum Values",
+   "lessonTitleAr": null,
+   "lessonStartPage": 70
+  },
+  {
+   "file": "p076.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 76,
+   "rect": [
+    47.2,
+    476.7,
+    189.7,
+    612.8
+   ],
+   "unit": 6,
+   "lesson": 3,
+   "lessonTitleEn": "Maximum and Minimum Values",
+   "lessonTitleAr": null,
+   "lessonStartPage": 70
+  },
+  {
+   "file": "p077.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 77,
+   "rect": [
+    339.1,
+    454.5,
+    499.7,
+    594.8
+   ],
+   "unit": 6,
+   "lesson": 3,
+   "lessonTitleEn": "Maximum and Minimum Values",
+   "lessonTitleAr": null,
+   "lessonStartPage": 70
+  },
+  {
+   "file": "p077b.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 77,
+   "rect": [
+    83.1,
+    536.9,
+    212.7,
+    623.2
+   ],
+   "unit": 6,
+   "lesson": 3,
+   "lessonTitleEn": "Maximum and Minimum Values",
+   "lessonTitleAr": null,
+   "lessonStartPage": 70
+  },
+  {
+   "file": "p081.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 81,
+   "rect": [
+    436.4,
+    303.4,
+    521.4,
+    395.1
+   ],
+   "unit": 7,
+   "lesson": 1,
+   "lessonTitleEn": "Vectors in the Coordinate Plane",
+   "lessonTitleAr": null,
+   "lessonStartPage": 80
+  },
+  {
+   "file": "p082.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 82,
+   "rect": [
+    46.2,
+    64.4,
+    444.4,
+    280.9
+   ],
+   "unit": 7,
+   "lesson": 1,
+   "lessonTitleEn": "Vectors in the Coordinate Plane",
+   "lessonTitleAr": null,
+   "lessonStartPage": 80
+  },
+  {
+   "file": "p082b.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 82,
+   "rect": [
+    435.0,
+    363.5,
+    557.1,
+    470.2
+   ],
+   "unit": 7,
+   "lesson": 1,
+   "lessonTitleEn": "Vectors in the Coordinate Plane",
+   "lessonTitleAr": null,
+   "lessonStartPage": 80
+  },
+  {
+   "file": "p084.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 84,
+   "rect": [
+    46.6,
+    59.0,
+    444.4,
+    497.7
+   ],
+   "unit": 7,
+   "lesson": 1,
+   "lessonTitleEn": "Vectors in the Coordinate Plane",
+   "lessonTitleAr": null,
+   "lessonStartPage": 80
+  },
+  {
+   "file": "p084b.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 84,
+   "rect": [
+    433.8,
+    112.0,
+    555.9,
+    268.4
+   ],
+   "unit": 7,
+   "lesson": 1,
+   "lessonTitleEn": "Vectors in the Coordinate Plane",
+   "lessonTitleAr": null,
+   "lessonStartPage": 80
+  },
+  {
+   "file": "p084c.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 84,
+   "rect": [
+    433.8,
+    267.1,
+    555.9,
+    494.3
+   ],
+   "unit": 7,
+   "lesson": 1,
+   "lessonTitleEn": "Vectors in the Coordinate Plane",
+   "lessonTitleAr": null,
+   "lessonStartPage": 80
+  },
+  {
+   "file": "p086.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 86,
+   "rect": [
+    82.7,
+    224.9,
+    163.9,
+    319.0
+   ],
+   "unit": 7,
+   "lesson": 1,
+   "lessonTitleEn": "Vectors in the Coordinate Plane",
+   "lessonTitleAr": null,
+   "lessonStartPage": 80
+  },
+  {
+   "file": "p087.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 87,
+   "rect": [
+    81.2,
+    71.5,
+    175.5,
+    156.2
+   ],
+   "unit": 7,
+   "lesson": 1,
+   "lessonTitleEn": "Vectors in the Coordinate Plane",
+   "lessonTitleAr": null,
+   "lessonStartPage": 80
+  },
+  {
+   "file": "p087b.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 87,
+   "rect": [
+    36.5,
+    237.6,
+    166.2,
+    368.9
+   ],
+   "unit": 7,
+   "lesson": 1,
+   "lessonTitleEn": "Vectors in the Coordinate Plane",
+   "lessonTitleAr": null,
+   "lessonStartPage": 80
+  },
+  {
+   "file": "p087c.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 87,
+   "rect": [
+    127.0,
+    549.9,
+    258.9,
+    634.1
+   ],
+   "unit": 7,
+   "lesson": 1,
+   "lessonTitleEn": "Vectors in the Coordinate Plane",
+   "lessonTitleAr": null,
+   "lessonStartPage": 80
+  },
+  {
+   "file": "p087d.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 87,
+   "rect": [
+    286.4,
+    549.9,
+    418.4,
+    634.1
+   ],
+   "unit": 7,
+   "lesson": 1,
+   "lessonTitleEn": "Vectors in the Coordinate Plane",
+   "lessonTitleAr": null,
+   "lessonStartPage": 80
+  },
+  {
+   "file": "p088.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 88,
+   "rect": [
+    442.5,
+    0.0,
+    565.2,
+    145.8
+   ],
+   "unit": 7,
+   "lesson": 2,
+   "lessonTitleEn": "Adding and Subtracting Vectors",
+   "lessonTitleAr": null,
+   "lessonStartPage": 88
+  },
+  {
+   "file": "p090.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 90,
+   "rect": [
+    57.4,
+    488.0,
+    161.5,
+    577.7
+   ],
+   "unit": 7,
+   "lesson": 2,
+   "lessonTitleEn": "Adding and Subtracting Vectors",
+   "lessonTitleAr": null,
+   "lessonStartPage": 88
+  },
+  {
+   "file": "p091.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 91,
+   "rect": [
+    32.5,
+    56.7,
+    430.4,
+    514.5
+   ],
+   "unit": 7,
+   "lesson": 2,
+   "lessonTitleEn": "Adding and Subtracting Vectors",
+   "lessonTitleAr": null,
+   "lessonStartPage": 88
+  },
+  {
+   "file": "p093.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 93,
+   "rect": [
+    420.5,
+    180.6,
+    542.6,
+    282.0
+   ],
+   "unit": 7,
+   "lesson": 2,
+   "lessonTitleEn": "Adding and Subtracting Vectors",
+   "lessonTitleAr": null,
+   "lessonStartPage": 88
+  },
+  {
+   "file": "p096.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 96,
+   "rect": [
+    442.5,
+    0.0,
+    565.2,
+    161.8
+   ],
+   "unit": 7,
+   "lesson": 3,
+   "lessonTitleEn": "Scalar Product",
+   "lessonTitleAr": null,
+   "lessonStartPage": 96
+  },
+  {
+   "file": "p096b.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 96,
+   "rect": [
+    435.0,
+    623.7,
+    557.1,
+    731.8
+   ],
+   "unit": 7,
+   "lesson": 3,
+   "lessonTitleEn": "Scalar Product",
+   "lessonTitleAr": null,
+   "lessonStartPage": 96
+  },
+  {
+   "file": "p099.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 99,
+   "rect": [
+    35.4,
+    478.4,
+    212.7,
+    584.4
+   ],
+   "unit": 7,
+   "lesson": 3,
+   "lessonTitleEn": "Scalar Product",
+   "lessonTitleAr": null,
+   "lessonStartPage": 96
+  },
+  {
+   "file": "p108.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 108,
+   "rect": [
+    46.2,
+    570.7,
+    186.3,
+    715.5
+   ],
+   "unit": 8,
+   "lesson": 1,
+   "lessonTitleEn": "Scatter Graphs",
+   "lessonTitleAr": null,
+   "lessonStartPage": 106
+  },
+  {
+   "file": "p109.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 109,
+   "rect": [
+    51.5,
+    375.6,
+    223.6,
+    523.8
+   ],
+   "unit": 8,
+   "lesson": 1,
+   "lessonTitleEn": "Scatter Graphs",
+   "lessonTitleAr": null,
+   "lessonStartPage": 106
+  },
+  {
+   "file": "p110.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 110,
+   "rect": [
+    66.6,
+    125.9,
+    210.6,
+    269.0
+   ],
+   "unit": 8,
+   "lesson": 1,
+   "lessonTitleEn": "Scatter Graphs",
+   "lessonTitleAr": null,
+   "lessonStartPage": 106
+  },
+  {
+   "file": "p111.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 111,
+   "rect": [
+    49.9,
+    541.6,
+    187.4,
+    711.1
+   ],
+   "unit": 8,
+   "lesson": 1,
+   "lessonTitleEn": "Scatter Graphs",
+   "lessonTitleAr": null,
+   "lessonStartPage": 106
+  },
+  {
+   "file": "p116.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 116,
+   "rect": [
+    85.1,
+    544.2,
+    177.2,
+    719.2
+   ],
+   "unit": 8,
+   "lesson": 1,
+   "lessonTitleEn": "Scatter Graphs",
+   "lessonTitleAr": null,
+   "lessonStartPage": 106
+  },
+  {
+   "file": "p117.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 117,
+   "rect": [
+    442.5,
+    0.0,
+    565.2,
+    145.8
+   ],
+   "unit": 8,
+   "lesson": 2,
+   "lessonTitleEn": "Cumulative Frequency Graph",
+   "lessonTitleAr": null,
+   "lessonStartPage": 117
+  },
+  {
+   "file": "p118.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 118,
+   "rect": [
+    72.4,
+    232.0,
+    197.3,
+    360.2
+   ],
+   "unit": 8,
+   "lesson": 2,
+   "lessonTitleEn": "Cumulative Frequency Graph",
+   "lessonTitleAr": null,
+   "lessonStartPage": 117
+  },
+  {
+   "file": "p119.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 119,
+   "rect": [
+    134.7,
+    395.9,
+    377.7,
+    517.6
+   ],
+   "unit": 8,
+   "lesson": 2,
+   "lessonTitleEn": "Cumulative Frequency Graph",
+   "lessonTitleAr": null,
+   "lessonStartPage": 117
+  },
+  {
+   "file": "p120.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 120,
+   "rect": [
+    148.9,
+    74.0,
+    391.6,
+    195.7
+   ],
+   "unit": 8,
+   "lesson": 2,
+   "lessonTitleEn": "Cumulative Frequency Graph",
+   "lessonTitleAr": null,
+   "lessonStartPage": 117
+  },
+  {
+   "file": "p120b.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 120,
+   "rect": [
+    134.4,
+    404.3,
+    388.7,
+    528.2
+   ],
+   "unit": 8,
+   "lesson": 2,
+   "lessonTitleEn": "Cumulative Frequency Graph",
+   "lessonTitleAr": null,
+   "lessonStartPage": 117
+  },
+  {
+   "file": "p121.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 121,
+   "rect": [
+    56.4,
+    236.3,
+    190.0,
+    356.3
+   ],
+   "unit": 8,
+   "lesson": 2,
+   "lessonTitleEn": "Cumulative Frequency Graph",
+   "lessonTitleAr": null,
+   "lessonStartPage": 117
+  },
+  {
+   "file": "p121b.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 121,
+   "rect": [
+    64.6,
+    602.5,
+    153.6,
+    727.0
+   ],
+   "unit": 8,
+   "lesson": 2,
+   "lessonTitleEn": "Cumulative Frequency Graph",
+   "lessonTitleAr": null,
+   "lessonStartPage": 117
+  },
+  {
+   "file": "p123.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 123,
+   "rect": [
+    49.3,
+    325.6,
+    197.8,
+    483.5
+   ],
+   "unit": 8,
+   "lesson": 2,
+   "lessonTitleEn": "Cumulative Frequency Graph",
+   "lessonTitleAr": null,
+   "lessonStartPage": 117
+  },
+  {
+   "file": "p123b.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 123,
+   "rect": [
+    53.6,
+    512.9,
+    270.4,
+    682.2
+   ],
+   "unit": 8,
+   "lesson": 2,
+   "lessonTitleEn": "Cumulative Frequency Graph",
+   "lessonTitleAr": null,
+   "lessonStartPage": 117
+  },
+  {
+   "file": "p124.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 124,
+   "rect": [
+    442.5,
+    0.0,
+    565.2,
+    161.8
+   ],
+   "unit": 8,
+   "lesson": 3,
+   "lessonTitleEn": "Measures of Variation for Frequency Tables with Class Intervals",
+   "lessonTitleAr": null,
+   "lessonStartPage": 124
+  },
+  {
+   "file": "p130.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 130,
+   "rect": [
+    77.7,
+    589.2,
+    259.0,
+    697.4
+   ],
+   "unit": 8,
+   "lesson": 3,
+   "lessonTitleEn": "Measures of Variation for Frequency Tables with Class Intervals",
+   "lessonTitleAr": null,
+   "lessonStartPage": 124
+  },
+  {
+   "file": "p131.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 131,
+   "rect": [
+    442.5,
+    0.0,
+    565.2,
+    163.4
+   ],
+   "unit": 8,
+   "lesson": 4,
+   "lessonTitleEn": "Probability of Mutually Exclusive Events",
+   "lessonTitleAr": null,
+   "lessonStartPage": 131
+  },
+  {
+   "file": "p133.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 133,
+   "rect": [
+    39.1,
+    87.2,
+    157.9,
+    159.7
+   ],
+   "unit": 8,
+   "lesson": 4,
+   "lessonTitleEn": "Probability of Mutually Exclusive Events",
+   "lessonTitleAr": null,
+   "lessonStartPage": 131
+  },
+  {
+   "file": "p134.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 134,
+   "rect": [
+    173.5,
+    389.5,
+    306.2,
+    488.5
+   ],
+   "unit": 8,
+   "lesson": 4,
+   "lessonTitleEn": "Probability of Mutually Exclusive Events",
+   "lessonTitleAr": null,
+   "lessonStartPage": 131
+  },
+  {
+   "file": "p136.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 136,
+   "rect": [
+    435.3,
+    528.5,
+    541.3,
+    601.0
+   ],
+   "unit": 8,
+   "lesson": 4,
+   "lessonTitleEn": "Probability of Mutually Exclusive Events",
+   "lessonTitleAr": null,
+   "lessonStartPage": 131
+  },
+  {
+   "file": "p137.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 137,
+   "rect": [
+    419.7,
+    82.3,
+    525.7,
+    154.9
+   ],
+   "unit": 8,
+   "lesson": 4,
+   "lessonTitleEn": "Probability of Mutually Exclusive Events",
+   "lessonTitleAr": null,
+   "lessonStartPage": 131
+  },
+  {
+   "file": "p139.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 139,
+   "rect": [
+    442.5,
+    0.0,
+    565.2,
+    145.8
+   ],
+   "unit": 8,
+   "lesson": 5,
+   "lessonTitleEn": "Probability of Independent and Dependent Events",
+   "lessonTitleAr": null,
+   "lessonStartPage": 139
+  },
+  {
+   "file": "p146.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 146,
+   "rect": [
+    64.5,
+    70.3,
+    230.7,
+    188.6
+   ],
+   "unit": 8,
+   "lesson": 5,
+   "lessonTitleEn": "Probability of Independent and Dependent Events",
+   "lessonTitleAr": null,
+   "lessonStartPage": 139
+  },
+  {
+   "file": "p148.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 148,
+   "rect": [
+    326.8,
+    135.7,
+    428.0,
+    252.2
+   ],
+   "unit": 8,
+   "lesson": 5,
+   "lessonTitleEn": "Probability of Independent and Dependent Events",
+   "lessonTitleAr": null,
+   "lessonStartPage": 139
+  },
+  {
+   "file": "p149.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 149,
+   "rect": [
+    78.6,
+    438.0,
+    250.7,
+    537.5
+   ],
+   "unit": 8,
+   "lesson": 5,
+   "lessonTitleEn": "Probability of Independent and Dependent Events",
+   "lessonTitleAr": null,
+   "lessonStartPage": 139
+  },
+  {
+   "file": "p149b.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 149,
+   "rect": [
+    334.1,
+    449.0,
+    518.5,
+    617.7
+   ],
+   "unit": 8,
+   "lesson": 5,
+   "lessonTitleEn": "Probability of Independent and Dependent Events",
+   "lessonTitleAr": null,
+   "lessonStartPage": 139
+  },
+  {
+   "file": "p150.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 150,
+   "rect": [
+    373.6,
+    406.9,
+    496.6,
+    518.9
+   ],
+   "unit": 8,
+   "lesson": 5,
+   "lessonTitleEn": "Probability of Independent and Dependent Events",
+   "lessonTitleAr": null,
+   "lessonStartPage": 139
+  }
+ ]
+}

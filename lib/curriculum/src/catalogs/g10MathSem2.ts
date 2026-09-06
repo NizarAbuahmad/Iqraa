@@ -7,6 +7,14 @@
  */
 
 import raw from '../data/iqra_curriculum_g10_math_sem2.json' with { type: 'json' };
+import {
+  lessonKbId,
+  lessonKbPrefix,
+  objectiveId,
+  unitKbId,
+  unitKbPrefix,
+  type CurriculumIdScope,
+} from '../curriculumIds.ts';
 
 /** Book id in KB_BOOKS that this JSON supersedes. */
 export const NCCD_S2_BOOK_ID = 'kb-math-10-s2';
@@ -43,7 +51,8 @@ export type NccdCurriculumMeta = {
   curriculum_authority: string;
   semester_covered: number;
   semester_note: string;
-  source_books: string[];
+  /** Free-form source-book citations, keyed by whatever the data calls each one — see the other g10 catalogs' JSON for the varying key names. */
+  source_books: Record<string, string>;
   provenance: string;
   schema_version: string;
   known_gaps: string[];
@@ -80,14 +89,24 @@ export type NccdCurriculumFile = {
 
 export const nccdG10MathSem2 = raw as NccdCurriculumFile;
 
+/**
+ * What this catalog's ids are scoped to.
+ *
+ * The prefix used to be interpolated inline here and repeated as a string
+ * literal wherever an id had to be parsed back apart. It now comes from
+ * `curriculumIds.ts`, which is the only thing that knows a Grade 10 id has no
+ * grade segment and a Grade 9 one does.
+ */
+const SCOPE: CurriculumIdScope = { gradeId: 'grade-10', subject: 'math', semester: 2 };
+
 /** Stable KB unit id derived from JSON unit id (e.g. u5 → kbu-math-s2-nccd-u5). */
 export function nccdUnitKbId(jsonUnitId: string): string {
-  return `kbu-math-s2-nccd-${jsonUnitId}`;
+  return unitKbId(SCOPE, jsonUnitId);
 }
 
 /** Stable KB lesson id derived from JSON lesson id (e.g. u5_l3 → kbl-math-s2-nccd-u5_l3). */
 export function nccdLessonKbId(jsonLessonId: string): string {
-  return `kbl-math-s2-nccd-${jsonLessonId}`;
+  return lessonKbId(SCOPE, jsonLessonId);
 }
 
 /** Default demo lesson: تركيب الاقترانات (unit 5, lesson 3). */
@@ -144,7 +163,7 @@ export function buildNccdSem2Catalog(): { units: NccdKbUnit[]; lessons: NccdKbLe
 
 /** Look up a JSON lesson by mapped KB lesson id. */
 export function findNccdLessonByKbId(kbLessonId: string): NccdLesson | null {
-  const prefix = 'kbl-math-s2-nccd-';
+  const prefix = lessonKbPrefix(SCOPE);
   if (!kbLessonId.startsWith(prefix)) return null;
   const jsonId = kbLessonId.slice(prefix.length);
   for (const u of nccdG10MathSem2.units) {
@@ -156,7 +175,7 @@ export function findNccdLessonByKbId(kbLessonId: string): NccdLesson | null {
 
 /** Look up JSON unit that owns a mapped KB lesson id. */
 export function findNccdUnitByLessonKbId(lessonKbId: string): NccdUnit | null {
-  const prefix = 'kbl-math-s2-nccd-';
+  const prefix = lessonKbPrefix(SCOPE);
   if (!lessonKbId.startsWith(prefix)) return null;
   const jsonId = lessonKbId.slice(prefix.length);
   for (const u of nccdG10MathSem2.units) {
@@ -244,7 +263,7 @@ export function buildNccdSem2BrowserCatalog(): {
         teacherNotes: '',
         teacherNotesAr: '',
         outcomes: objectives.map((o, i) => ({
-          id: `o-nccd-${lesson.id}-${i}`,
+          id: objectiveId(SCOPE, lesson.id, i),
           lessonId: lessonKbId,
           description: o,
           descriptionAr: o,

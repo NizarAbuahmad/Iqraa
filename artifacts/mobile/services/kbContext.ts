@@ -22,7 +22,9 @@ import {
   findNccdLessonByKbId,
   findNccdUnitByLessonKbId,
 } from './curriculumG10MathSem2.ts';
+import { figuresForLesson } from './bookFigures.ts';
 import { buildSupportResourcesContext } from './mathSupportResources.ts';
+import { isNccdUnitId } from '@workspace/curriculum';
 
 // ─── Generator KB context ────────────────────────────────────────────────────
 
@@ -100,7 +102,7 @@ function serializeLessonContext(
   }
   if (curriculumObjectives.length > 0) {
     lines.push('');
-    lines.push(isAr ? 'النتاجات (من المنهج الرسمي):' : 'Official curriculum outcomes:');
+    lines.push(isAr ? 'النتاجات (من المنهاج الرسمي):' : 'Official curriculum outcomes:');
     curriculumObjectives.forEach(o => lines.push(`• ${o}`));
   } else if (titleOnlyUnit && unitObjectives.length > 0) {
     // Sem1 units 2–4: real lesson title, but outcomes are unit-level only
@@ -172,6 +174,28 @@ export function buildAdaptationsDirective(text: string, lang: 'ar' | 'en'): stri
 }
 
 /**
+ * One display line for the textbook pages a generation actually cites.
+ *
+ * `GroundedSource[]` (see `ai/AIService.ts`) is a level more specific than
+ * `resolveGeneratorGrounding`'s `grounded` flag: the lesson can resolve while
+ * the server still finds no extracted book passages for it — most lessons
+ * today, since only six books are ingested. When sources *are* present, this
+ * is the page a teacher can hold the printed book open to and check.
+ *
+ * Returns '' for an empty list so callers can render conditionally on truthiness.
+ */
+export function sourceCitationLine(
+  sources: readonly { titleAr: string; page: number }[],
+  isAr: boolean,
+): string {
+  if (!sources.length) return '';
+  const arabicDigits = (n: number) => String(n).replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[Number(d)]!);
+  return sources
+    .map(s => (isAr ? `${s.titleAr} · صفحة ${arabicDigits(s.page)}` : `${s.titleAr} · page ${s.page}`))
+    .join(isAr ? '، ' : ', ');
+}
+
+/**
  * Resolve whether a topic is curriculum-grounded for generation.
  * Weak fuzzy hits are rejected — never silently substitute an unrelated lesson.
  */
@@ -189,7 +213,7 @@ export function resolveGeneratorGrounding(
       score: 0,
       context: '',
       ungroundedNote: isAr
-        ? 'تنبيه: الموضوع غير موجود في المنهج المتاح حالياً. أنشئ خطة عامة دون الادعاء أنها مبنية على نتاجات درس محدد من الكتاب.'
+        ? 'تنبيه: الموضوع غير موجود في المنهاج المتاح حالياً. أنشئ خطة عامة دون الادعاء أنها مبنية على نتاجات درس محدد من الكتاب.'
         : 'NOTE: topic not found in the available curriculum KB. Generate a generic plan; do not claim textbook grounding.',
     };
   }
@@ -206,18 +230,97 @@ export function resolveGeneratorGrounding(
 }
 
 /**
- * Build a compact textbook context string for the AI generator prompts
- * (lesson-plan, worksheet, quiz). Requires an exact / high-confidence KB match.
+ * The curriculum context to send with a generation request.
  *
- * Returns an empty string when ungrounded so callers can fall back to generic
- * generation without presenting unrelated curriculum content as grounded.
+ * Returns the lesson's textbook context when the topic is grounded, and the
+ * *ungrounded note* when it is not — never an empty string.
+ *
+ * It used to return `''` when ungrounded, "so callers can fall back to generic
+ * generation". Every one of the seven callers then wrote
+ * `buildGeneratorContext(...) || undefined`, so the note — the sentence that
+ * tells the model not to claim textbook grounding it does not have — reached a
+ * prompt from exactly none of them. `lesson-plan.tsx` and `worksheet.tsx` were
+ * unaffected only because they bypass this function and read
+ * `resolveGeneratorGrounding` themselves.
+ *
+ * Returning the note is what makes the fallback safe by default rather than by
+ * remembering. A caller that genuinely wants nothing can read `.context` off
+ * `resolveGeneratorGrounding`, which is explicit about what it is skipping.
  */
 export function buildGeneratorContext(
   topic: string,
   lang: 'ar' | 'en',
   options?: BuildGeneratorContextOptions,
 ): string {
-  return resolveGeneratorGrounding(topic, lang, options).context;
+  const grounding = resolveGeneratorGrounding(topic, lang, options);
+  return grounding.grounded ? grounding.context : grounding.ungroundedNote;
+}
+
+/**
+ * The catalog unit a topic belongs to, for the server to fetch book pages with.
+ *
+ * The API resolves a unit from the free-text topic when this is absent, but a
+ * title match can be ambiguous where the app's own lookup is not: the screen
+ * knows which lesson the teacher picked. `null` when ungrounded, or when the
+ * lesson is one of the legacy hardcoded rows whose unit ids (`kbu-chem-1`) are
+ * not in the NCCD namespace the bank indexes by.
+ */
+export function generatorUnitId(topic: string, lang: 'ar' | 'en'): string | undefined {
+  return nccdUnitId(resolveGeneratorGrounding(topic, lang).lesson?.unitId);
+}
+
+/**
+ * The curriculum lesson id a topic grounds to, for the server to key the
+ * shared artifact pool on.
+ *
+ * The id, not the title, because the pool is shared between teachers and a
+ * title does not identify a lesson: CLAUDE.md records `searchKBSemantic(title)`
+ * returning a *different* lesson for 16 of the picker's 63 («قانون الجيوب» →
+ * «قانون جيب التمام»). Keying on a normalised title meant two lessons could
+ * collide onto one key; before there was a pool that was a bad log line, and
+ * with one it is teacher A being served teacher B's lesson.
+ *
+ * `undefined` when the topic is free-typed and grounds to nothing — the server
+ * falls back to the normalised topic, which is a correct key for a lesson that
+ * exists nowhere in the curriculum.
+ */
+export function generatorLessonId(topic: string, lang: 'ar' | 'en'): string | undefined {
+  return resolveGeneratorGrounding(topic, lang).lesson?.id;
+}
+
+/**
+ * How many student-book figures this topic's lesson has — the `AIRequest`
+ * field of the same name.
+ *
+ * Sits beside `generatorLessonId` because it answers the same question from
+ * the same grounding, and every screen that sends one should send the other:
+ * the server uses it to decide whether the model may write «في الشكل
+ * المجاور», and that is only true when the paper's appendix will carry a
+ * figure to look at.
+ *
+ * Counts the index, not the bundle. `figuresForLesson` is the same lookup
+ * `bookFigureRefsForLesson` starts from, minus the `react-native` asset
+ * resolution — which this module must stay clear of, and which can only ever
+ * *reduce* the count (an unbundled crop is dropped at render). Over-counting
+ * by an unbundled figure would at worst permit a reference the appendix does
+ * not honour, so the drift test on `bookFigureAssets.ts` is what keeps the two
+ * in step; there is no cheap way to ask the bundler from here.
+ */
+export function generatorFigureCount(topic: string, lang: 'ar' | 'en'): number {
+  return figuresForLesson(generatorLessonId(topic, lang)).length;
+}
+
+/**
+ * A unit id the knowledge bank can index by, or `undefined`.
+ *
+ * The KB carries two unit-id namespaces: NCCD-derived lessons use
+ * `kbu-math-s1-nccd-u2`, and the legacy hardcoded rows use `kbu-chem-1`. Only
+ * the first is what `bankTagsForUnit()` maps onto bank tags, so sending the
+ * second would just be a string the server cannot resolve. Filtering here
+ * keeps that judgement in one place rather than in each screen.
+ */
+export function nccdUnitId(unitId: string | null | undefined): string | undefined {
+  return isNccdUnitId(unitId) ? unitId ?? undefined : undefined;
 }
 
 /**

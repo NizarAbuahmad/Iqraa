@@ -37,6 +37,16 @@ export type HomeLessonPick = {
   topic: string;
   unitOrder: number | null;
   subjectId?: string;
+  /** Absent on picks saved before Grade 9 existed — readers fall back to grade-10. */
+  gradeId?: string;
+  /**
+   * KB id of the lesson that was picked. Optional because picks saved before
+   * this field existed have none, and because entire-unit / entire-book picks
+   * are not a single lesson — both fall back to searching for `topic`, which
+   * is what every reader used to do and is why a restored pick could come
+   * back as a neighbouring lesson.
+   */
+  lessonId?: string | null;
 };
 
 export async function loadLessonPick(): Promise<HomeLessonPick | null> {
