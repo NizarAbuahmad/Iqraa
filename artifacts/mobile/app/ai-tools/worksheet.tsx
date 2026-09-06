@@ -20,6 +20,7 @@ import {
 import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, topicPickerParams } from '@/services/lessonPrep';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { PickerField as SharedPickerField } from '@/components/ui/PickerField';
+import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
 import { Button } from '@/components/ui/Button';
 import { getItem, saveItem, updateItem } from '@/services/workspace';
 import { useFavorite } from '@/hooks/useFavorite';
@@ -441,6 +442,7 @@ export default function WorksheetScreen() {
       {/* Form */}
       <View style={{ padding: 20 }}>
         <PickerField label={t('grade')} value={gradeNames[gradeIdx]} options={gradeNames} onChange={setGradeIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
+        <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t('scopeNoCurriculumHint')} isRTL={isRTL} colors={colors} />
         <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} hidden={subjectHidden} />
 
         <TopicSelector
@@ -794,12 +796,12 @@ function CheckboxRow({ label, checked, onToggle, accent, colors, isRTL, disabled
  * how the 45-line copy this replaces drifted away from
  * components/ui/PickerField in the first place.
  *
- * The trigger tints its border violet while open. quiz's copy did this and
- * this screen's did not, which was drift; the de-duplication preserved the
- * asymmetry rather than decide it, and Nizar has since asked for the tint.
+ * The open trigger's border tint was bound here for one commit, after this
+ * screen turned out to be the only generator without it. It now lives in the
+ * component, because the answer was that every screen wanted it.
  */
 function PickerField(props: React.ComponentProps<typeof SharedPickerField>) {
-  return <SharedPickerField maxHeight={180} selectedTint={ACCENT + '15'} highlightBorderWhenOpen {...props} />;
+  return <SharedPickerField maxHeight={180} selectedTint={ACCENT + '15'} {...props} />;
 }
 
 const styles = StyleSheet.create({

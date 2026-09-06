@@ -52,8 +52,12 @@ Thumbs.db
 # Math verifier local artifacts
 artifacts/math-verifier/.venv/
 artifacts/math-verifier/prove_slice_report.json
-artifacts/math-verifier/__pycache__/
-artifacts/math-verifier/**/__pycache__/
+# Python bytecode, anywhere. Scoping this to math-verifier was fine while that
+# was the only place python ran; `scripts/` now has importers too, and a rule
+# has to be as wide as the places python actually runs.
+__pycache__/
+**/__pycache__/
+*.py[cod]
 
 # Large teacher PDF support packs (catalog JSON is committed; binaries stay local)
 knowledge-base/**/support-pdfs/
@@ -67,11 +71,20 @@ knowledge-base/**/*.pdf
 # Provider-evaluation output (generated content + raw model responses)
 eval-out/
 
-# Claude Code local state
-.claude/
-
-# Byte-compiled helpers for scripts/ — regenerated on every run.
-scripts/__pycache__/
+# Claude Code — local state is ignored, checked-in shared config is not.
+# `.claude/skills/` holds the vendored Superpowers skills and
+# `.claude/hooks/` + `.claude/settings.json` wire them up; see
+# `.claude/SUPERPOWERS.md`. Everything else under `.claude/` is per-machine —
+# `worktrees/` and `plugins/` included, which is why this is `.claude/*` plus
+# negations rather than an un-ignore of the whole directory.
+.claude/*
+!.claude/settings.json
+!.claude/skills/
+!.claude/hooks/
+!.claude/scripts/
+!.claude/SUPERPOWERS.md
+!.claude/LICENSE-superpowers
+.claude/settings.local.json
 
 # Firebase service-account private keys. The FCM V1 key is uploaded to EAS and
 # lives nowhere in this repo — it can send push as us and read Firebase

@@ -188,6 +188,13 @@ export interface CurriculumSource {
    * source; that hook belongs with the OCR fallback being built in it, and OCR
    * is precisely the remedy both of these need, so whoever lands it should
    * clear the field rather than work around it.
+   *
+   * **No source carries this field as of 2026-09-06.** That is the sentence
+   * above being honoured, not the mechanism lapsing: OCR replaced the scrambled
+   * financial-literacy text layer with text read off the page images, so the
+   * judgement it recorded no longer applies and the field was cleared. Set it
+   * again on the next file whose text layer is bad in a way the quality gate
+   * passes — that is still the only way to make the ban stick.
    */
   extractionBlocked?: string;
 }

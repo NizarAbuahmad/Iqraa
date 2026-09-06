@@ -19,8 +19,20 @@ import { groundingFor, groundingForObjectives, withGrounding } from "../groundin
 /** الدائرة — extracted, and the unit with the most material on file. */
 const CIRCLE = "kbu-math-s1-nccd-u2";
 const CIRCLE_LESSON = "أوتار الدائرة وأقطارها ومماساتها";
-/** Financial literacy is in the catalog and nothing has been read for it. */
+/**
+ * Financial literacy — extracted by OCR on 2026-09-06, where every other
+ * grounded book has a clean digital text layer. Kept as its own constant
+ * because it is the one unit whose pages come off page images.
+ */
 const FINLIT = "kbu-finlit-s1-nccd-u1";
+/**
+ * Well-formed for `isNccdUnitId` and not a unit anybody has: this is now the
+ * only way to exercise "the catalog can't ground this". It used to be FINLIT,
+ * which had a catalog entry and no book text until its book was OCR'd — and
+ * with that done, **every** NCCD unit in the catalog has extracted text, so
+ * there is no real example left to point at.
+ */
+const NO_SUCH_UNIT = "kbu-finlit-s1-nccd-u9";
 
 describe("groundingFor", () => {
   it("finds the book for a lesson that has one", () => {
@@ -83,8 +95,23 @@ describe("groundingFor", () => {
     assert.deepEqual(a?.sources, b?.sources);
   });
 
+  it("grounds financial literacy, whose pages were read by OCR", () => {
+    // The one book in the corpus extracted from page images rather than from a
+    // text layer. Worth its own assertion: OCR text is noisier, and if a future
+    // quality gate ever rejects it this should fail loudly rather than quietly
+    // dropping financial literacy back to ungrounded generation.
+    const g = groundingFor({ unitId: FINLIT }, true);
+    assert.ok(g, "finlit has had extracted text since 2026-09-06");
+    assert.equal(g.unitId, FINLIT);
+    assert.ok(g.sources.length > 0);
+    assert.ok(
+      g.sources.every(s => s.sourceId === "finlit-s1-student-book"),
+      `grounded on ${g.sources.map(s => s.sourceId).join(", ")}`,
+    );
+  });
+
   it("returns nothing rather than something adjacent", () => {
-    assert.equal(groundingFor({ unitId: FINLIT }, true), null, "finlit has no extracted text");
+    assert.equal(groundingFor({ unitId: NO_SUCH_UNIT }, true), null, "no such unit");
     assert.equal(groundingFor({ topic: "شيء غير موجود في المنهاج" }, true), null);
     assert.equal(groundingFor({ topic: "" }, true), null);
     assert.equal(groundingFor({}, true), null);
@@ -187,8 +214,15 @@ describe("groundingForObjectives", () => {
   });
 
   it("is null for objectives with nothing on file", () => {
-    assert.equal(groundingForObjectives(getObjectivesForUnit(FINLIT), true), null);
+    // FINLIT stood here until its book was OCR'd — see NO_SUCH_UNIT above.
+    assert.equal(groundingForObjectives([{ unitId: NO_SUCH_UNIT }], true), null);
     assert.equal(groundingForObjectives([], true), null);
     assert.equal(groundingForObjectives([{ unitId: "kbu-chem-1" }], true), null);
+  });
+
+  it("pools financial literacy's objectives onto its own book", () => {
+    const g = groundingForObjectives(getObjectivesForUnit(FINLIT), true);
+    assert.ok(g, "finlit objectives ground since 2026-09-06");
+    assert.ok(g.sources.every(s => s.sourceId === "finlit-s1-student-book"));
   });
 });
