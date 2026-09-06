@@ -595,17 +595,11 @@ export class MockAIService extends AIService {
     const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
     const docs = docsFromReq(req);
     const rawTopic = req.topic;
-    const isSimplify =
-      /تبسيط|بسّط|بسط|simplify/i.test(rawTopic)
-      || /تبسيط|simplify/i.test(req.objectives ?? '')
-      || (/simplify/i.test(req.additionalContext ?? '') && !docs.present);
-    const topic = (
-      docs.present && docs.title
-        ? docs.title
-        : rawTopic
-            .replace(/^(تبسيط\s*الشرح|بسّط\s*الشرح|بسط\s*الشرح|simplify(\s+explanation)?)\s*[:：\-]?\s*/i, '')
-            .trim()
-    ) || rawTopic;
+    // No prefix stripping: «تبسيط الشرح» has its own screen, its own output
+    // type and its own generator now (see generateSimplifiedExplanation). The
+    // regex that used to live here would also have eaten the leading word of
+    // any English lesson whose title began "Simplify…".
+    const topic = (docs.present && docs.title ? docs.title : rawTopic).trim() || rawTopic;
     const kb = docs.present ? null : groundedKb(topic, lang);
     const dur = req.duration ?? 45;
     const style = req.teachingStyle ?? 'direct';
@@ -615,57 +609,6 @@ export class MockAIService extends AIService {
     const conceptLine = docs.concepts.slice(0, 3).join(lang === 'ar' ? ' · ' : ' · ');
     const exampleLine = docs.examples[0] || docs.plainSnippets[0] || '';
     const docObjectives = lpObjectivesFromDocs(topic, docs, lang);
-
-    if (isSimplify) {
-      if (lang === 'ar') {
-        return {
-          title: `تبسيط الشرح – ${topic}`,
-          grade: req.grade, subject: req.subject, duration: Math.min(dur, 20),
-          objectives: [
-            `يفهم الطالب فكرة «${topic}» بلغة بسيطة`,
-            'يربط المفهوم بمثال من الحياة اليومية',
-            'يعيد شرح الفكرة بجملة أو جملتين',
-          ],
-          materials: ['سبورة', 'مثال بصري بسيط', 'بطاقة جملة مفتاحية'],
-          introduction: `اليوم سنبسّط «${topic}» دون مصطلحات معقّدة. ابدأ بسؤال: ماذا تعرف أصلاً عن هذا الموضوع؟`,
-          mainActivity:
-            `الشرح المبسط لـ«${topic}»:\n`
-            + `1) الفكرة بجملة واحدة: ${kb?.summaryAr ?? docs.summary ?? `«${topic}» تعني فهم العلاقة الأساسية خطوة بخطوة.`}\n`
-            + '2) مثال من الحياة: اختر موقفاً مألوفاً للطلاب واربطه بالفكرة.\n'
-            + '3) قاعدة ذهبية قصيرة يحفظها الطالب.\n'
-            + '4) خطأ شائع واحد وكيف نتجنّبه.',
-          guidedPractice: `معاً: حلّ مثالاً واحداً سهِّلاً على «${topic}» مع تفكير بصوت عالٍ وبكلمات بسيطة فقط.`,
-          independentPractice: 'اطلب من كل طالب إعادة الشرح لزميله بجملتين فقط، ثم صحّح أي تعقيد لغوي.',
-          closure: `اطلب جملة ختامية: «${topic} يعني …» واكتب أفضل صياغة مبسطة على السبورة.`,
-          assessment: 'تحقق سريع شفهي: اسأل 3 طلاب أن يشرحوا الفكرة دون النظر للدفتر.',
-          differentiation: 'للمتعثرين: مثال واحد إضافي بصري. للمتقدمين: اطلب مثالاً حياتياً جديداً من عندهم.',
-          homework: 'اكتب في المنزل شرحاً مبسطاً لـ«' + topic + '» في 4–5 أسطر لمبتدئ.',
-        };
-      }
-      return {
-        title: `Simplified Explanation – ${topic}`,
-        grade: req.grade, subject: req.subject, duration: Math.min(dur, 20),
-        objectives: [
-          `Students understand “${topic}” in plain language`,
-          'Students connect the idea to a real-life example',
-          'Students restate the idea in one or two sentences',
-        ],
-        materials: ['Board', 'Simple visual example', 'Key-sentence card'],
-        introduction: `Today we simplify “${topic}” without heavy jargon. Start with: What do you already know?`,
-        mainActivity:
-          `Plain-language breakdown of “${topic}”:\n`
-          + `1) One-sentence idea: ${kb?.summaryEn ?? docs.summary ?? `“${topic}” means understanding the core relationship step by step.`}\n`
-          + '2) Real-life example students already know.\n'
-          + '3) One golden rule to remember.\n'
-          + '4) One common mistake and how to avoid it.',
-        guidedPractice: `Together: solve one easy example on “${topic}” while thinking aloud in simple words only.`,
-        independentPractice: 'Pair share: each student explains the idea in two sentences; coach away jargon.',
-        closure: `Exit line: “${topic} means …” — capture the clearest student wording on the board.`,
-        assessment: 'Quick oral check: three students explain the idea without notes.',
-        differentiation: 'Support: one extra visual. Stretch: invent a new real-life example.',
-        homework: `At home, write a 4–5 sentence plain explanation of “${topic}” for a beginner.`,
-      };
-    }
 
     const priorConcepts = req.includePriorReview && req.priorKnowledge?.length ? req.priorKnowledge : [];
     const priorReview = lpPriorReview(priorConcepts, req.priorTopicsNotes ?? '', lang);

@@ -7,9 +7,11 @@
  * reachable only by typing the URL — which meant, in practice, not reachable.
  * `game` and `activity` returned with it rather than leaving one door of the
  * three open. `simplify` and `parent-msg` came back on 2026-09-03: the parent
- * message is an offline composer with no audit objection, and `simplify` ships
- * with a subtitle that describes what it actually produces (a simpler lesson
- * plan). Everything else stays parked.
+ * message is an offline composer with no audit objection, and `simplify` came
+ * back with an honest subtitle over an output that was still a lesson plan.
+ * That last part is now fixed — `simplify` has its own screen, its own output
+ * type and its own endpoint (2026-09-06), which closes the audit's «simplify is
+ * not a tool» finding. Everything else stays parked.
  *
  * Parked tools stay in the catalog (their routes still resolve for saved
  * materials and deep links) but must not reappear on a menu — which is easy to
@@ -35,6 +37,31 @@ const PARKED_TOOLS = [
 describe('toolCatalog — the offered surface', () => {
   it('offers exactly the agreed tools, in workflow order', () => {
     assert.deepEqual(ALL_TOOLS.map(t => t.id), OFFERED_TOOLS);
+  });
+
+  it('never offers a tool that is another tool wearing a flag', () => {
+    // What `simplify` was until 2026-09-06: `route: '/ai-tools/lesson-plan'`
+    // plus `routeParams: { simplify: '1' }`, so it produced the identical
+    // LessonPlanOutput through the identical endpoint while its subtitle
+    // promised students a direct explanation. The audit called it "not a tool"
+    // and nothing in the suite could see it — a mode flag on someone else's
+    // screen looks exactly like a route.
+    const routes = ALL_TOOLS.filter(t => t.route).map(t => t.route);
+    for (const tool of ALL_TOOLS) {
+      if (!tool.routeParams) continue;
+      assert.equal(
+        routes.filter(r => r === tool.route).length,
+        1,
+        `«${tool.id}» shares ${tool.route} with another offered tool and distinguishes `
+        + 'itself only by routeParams — give it its own screen and output type.',
+      );
+    }
+  });
+
+  it('gives simplify its own screen', () => {
+    const simplify = ALL_TOOLS.find(t => t.id === 'simplify')!;
+    assert.equal(simplify.route, '/ai-tools/simplify');
+    assert.equal(simplify.routeParams, undefined);
   });
 
   it('keeps the pilot tools ahead of the ones that came back', () => {

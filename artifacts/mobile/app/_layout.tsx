@@ -131,6 +131,7 @@ function RootLayoutNav() {
       <Stack.Screen name="ai-tools/worksheet" options={{ headerShown: false }} />
       <Stack.Screen name="ai-tools/quiz" options={{ headerShown: false }} />
       <Stack.Screen name="ai-tools/activity" options={{ headerShown: false }} />
+      <Stack.Screen name="ai-tools/simplify" options={{ headerShown: false }} />
       <Stack.Screen name="ai-tools/lesson-flow" options={{ headerShown: false }} />
       <Stack.Screen name="admin/dashboard" options={{ headerShown: false }} />
       <Stack.Screen name="classes/index" options={{ headerShown: false }} />

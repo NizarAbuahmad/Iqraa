@@ -410,6 +410,90 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## تبسيط الشرح is a student's handout now, and the server implements it, 2026-09-06
+
+Started as "what is the difference between تبسيط الشرح and ورقة عمل, and do we
+need them both?" They do not overlap and both stay: the worksheet is practice
+with no exposition (`sections[]` + `answerKey[]`, no prose), and the explainer
+was exposition with no practice. They shared no output field except `title`,
+`sources` and `variantId`.
+
+The comparison turned up the real problem, which was not the worksheet.
+
+**«تبسيط الشرح» was not a tool.** `route: '/ai-tools/lesson-plan'` plus
+`routeParams: { simplify: '1' }`, producing the identical `LessonPlanOutput`
+through the identical endpoint and PDF builder. The 2026-08-18 audit said
+exactly this and parked it; 2026-09-03 un-parked it with a corrected subtitle
+and nothing else. That subtitle («خطة الدرس نفسها بلغة أبسط») was honest and
+was the problem: it promised a student «شرحًا مباشرًا» over an artifact
+carrying the teacher's objectives, assessment and homework.
+
+**The live path did not exist.** `grep -rn "simplify\|تبسيط"
+artifacts/api-server/src/` returned **0 matches**. The three signals the screen
+sent — a `تبسيط الشرح: ` topic prefix, an `objectives` default, and a literal
+`mode:simplify` line in `additionalContext` — were read by no prompt clause, so
+with `AI_LIVE_MODE=true` the tool returned an ordinary lesson plan. `DEMO_MODE`
+ships `true`, so a hardcoded offline branch in `generators.ts` was all anyone
+ever saw. Nothing failed; it just quietly stopped simplifying the moment live
+generation was turned on.
+
+**What it is now.** `SimplifiedExplanationOutput` — `bigIdea`, `explanation`
+steps, optional `keyWords`, one `workedExample`, one `misconception`, and
+self-checks. `app/ai-tools/simplify.tsx` (form deliberately shorter than the
+lesson plan's: no duration, teaching style, objectives or prior review, none of
+which a handout has), `services/ai/explainerBlueprint.ts` offline, and
+`POST /generate/simplified-explanation` live. `schema-push: none` —
+`ai_artifacts.kind` and `saved_materials.type` are plain `text`.
+
+Four things worth keeping:
+
+- **The type has no `verified` field, on purpose.** Nothing in this path runs
+  the verifier. `answerSource: 'bank' | 'curriculum' | 'generated'` says how an
+  answer was established instead, absent read as `'generated'`. Only the
+  offline generator can honestly claim the first two; a live model asked for
+  the field writes `"bank"` because the shape invites it, so
+  `stampGeneratedAnswerSource` overwrites it **on the way out, on pooled and
+  fresh artifacts alike** — same discipline and placement as
+  `stripUnearnedVerification`. A check with no answer gets no label and prints
+  no key: a guess under a heading reading «الإجابات» is worse than a blank.
+- **`missingFields` now walks dotted paths.** It returned `false` for any
+  object, so a truncated `"workedExample": {}` cleared
+  `assertUsableGeneration`, reached the shared pool, and would have rendered an
+  empty card for every teacher on that lesson — a well-formed artifact that is
+  wrong, which nothing downstream can catch.
+- **The prefix had to go, carefully.** `buildTopicForTool` glued «تبسيط الشرح: »
+  onto the lesson title for the related-tools panel, and a prefixed title
+  grounds to nothing — so the path most teachers arrive by produced an
+  ungrounded generic handout while `GroundingNotice` correctly said so and
+  nobody read it. `stripExplainerPrefix` is anchored to the tool's full name
+  plus a separator, because «تبسيط المقادير الأسية» is a real Grade 10 lesson
+  and a bare «تبسيط» strip would have grounded the student to a different one.
+  Both halves were needed: the hint is gone from `homeAiTools.ts` as well.
+- **The two paths pin each other.** `EXPLAINER_SHAPE` is declared in
+  `explainerBlueprint.ts` and again in `prompts.ts`, and asserted from both
+  sides — they cannot import each other. The live prompt bans the lesson-plan
+  sections by name, because a model asked for "a simple lesson" reliably
+  returns a lesson plan with shorter sentences.
+
+`toolCatalog.test.ts` gained the guard that would have caught the original
+shape: **no offered tool may share another offered tool's screen and
+distinguish itself only by `routeParams`.** Nothing could see it before — a
+mode flag on someone else's route looks exactly like a route.
+
+Left alone deliberately: the result is **read-only** (the nested
+`workedExample`/`misconception` need an editor that does not exist; regenerate
+instead), there is **no slides deck** (`buildSlidesHTML` is now optional on
+`useGeneratorExport`, and reusing `buildLessonPlanSlidesHTML` would print a
+«خطة درس» badge on a student's handout — the exact mislabelling this removes),
+the chat "+" menu **routes to the screen** rather than generating inline
+(chat-native means widening `TeachingActionType` → `SessionArtifact` and five
+exhaustive maps), and old `?simplify=1` links now yield an ordinary lesson
+plan, which is what that screen is.
+
+Verified: `pnpm run typecheck` clean; mobile 1278 tests, 0 failures;
+api-server 528 tests, 0 failures. Note the endpoint is not live until the API
+is deployed by hand — a merge only auto-deploys the web app.
+
 ## Financial literacy and English S2 have readable text at last, 2026-09-06
 
 Three books whose PDFs were on file and whose text nobody could read are now
@@ -2032,6 +2116,9 @@ objection to `simplify` was its subtitle promising examples and
 misconceptions the output lacks; the subtitle now describes the output
 (a simpler lesson plan). The parent message is a pure offline composer and
 had no finding against it.
+**Superseded 2026-09-06:** the honest subtitle described a lesson plan
+because the output still was one. `simplify` now has its own screen, output
+type and endpoint — see «تبسيط الشرح is a student's handout now» above.
 
 ## A lesson plan follows the style the teacher picked, 2026-08-31
 
@@ -7087,12 +7174,16 @@ mislabelled tool, or a second-order convenience.
 
 **The audit findings behind the parking**, worth keeping because they
 are still true and will need deciding eventually:
-- `simplify` is not a tool. It routes to `lesson-plan` with a flag,
+- ~~`simplify` is not a tool. It routes to `lesson-plan` with a flag,
   produces the identical `LessonPlanOutput`, and its description promises
-  "examples and misconceptions" that do not exist in that type.
-  **Unparked 2026-09-03 with an honest subtitle** («خطة الدرس نفسها بلغة
-  أبسط وخطوات أقصر…»); still not a distinct output type. `parent-msg` came
-  back the same day — an offline composer with no audit finding against it.
+  "examples and misconceptions" that do not exist in that type.~~
+  Unparked 2026-09-03 with an honest subtitle («خطة الدرس نفسها بلغة أبسط
+  وخطوات أقصر…») but still not a distinct output type. **Closed 2026-09-06:**
+  it has `SimplifiedExplanationOutput`, `/ai-tools/simplify` and
+  `POST /generate/simplified-explanation`, and the examples and
+  misconceptions the description promised are fields of the type. The
+  finding was open for 19 days. `parent-msg` came back on 2026-09-03 too —
+  an offline composer with no audit finding against it.
 - `activity`'s description is **backwards**. It says "an in-class
   experience… not a printable worksheet"; the code generates a printable
   PDF/Word document with no live-presentation capability at all.
@@ -7464,9 +7555,9 @@ endpoint that doesn't otherwise need to exist) or losing the comment
 entirely. Tapping a thumb only selects it; one explicit Submit sends
 rating and comment together in a single row. Wired into the six
 generator screens that produce a result a teacher would judge —
-`lesson-plan.tsx` (covers `simplify` too, same screen), `worksheet.tsx`
-(covers `homework`), `quiz.tsx`, `activity.tsx`, `slides.tsx`,
-`lesson-flow.tsx`. There's no shared result-action component across
+`lesson-plan.tsx`, `worksheet.tsx` (covers `homework`), `quiz.tsx`,
+`activity.tsx`, `slides.tsx`, `lesson-flow.tsx` — and `simplify.tsx`, which
+shared `lesson-plan.tsx` until 2026-09-06 and now has its own screen. There's no shared result-action component across
 these screens (confirmed by reading all six — each builds its own
 Save/Export row independently), so each got the widget added at its own
 existing `result && !loading` guard, next to `RelatedResourcesPanel`

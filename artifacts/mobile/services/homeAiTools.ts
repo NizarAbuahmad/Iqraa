@@ -9,6 +9,7 @@ export type GeneratorRoute =
   | '/ai-tools/quiz'
   | '/ai-tools/activity'
   | '/ai-tools/lesson-flow'
+  | '/ai-tools/simplify'
   | '/ai-tools/classroom';
 
 export type HomeToolId =
@@ -46,7 +47,6 @@ export type HomeToolDef = {
   topicHintAr?: string;
   topicHintEn?: string;
   homework?: boolean;
-  simplify?: boolean;
 };
 
 /** Primary tools in teaching-workflow order (before → during → after). */
@@ -66,11 +66,11 @@ export const HOME_AI_TOOLS: HomeToolDef[] = [
     route: '/ai-tools/lesson-plan', status: 'enabled', enabled: true,
   },
   {
+    // No `topicHint`: the hint was prefixed onto the lesson title, and a
+    // prefixed title grounds to nothing — the related-tools panel handed this
+    // screen «تبسيط الشرح: الاقترانات» and got a generic handout back.
     id: 'simplify', emoji: '💡', labelAr: 'تبسيط الشرح', labelEn: 'Simplify explanation',
-    route: '/ai-tools/lesson-plan', status: 'enabled', enabled: true,
-    simplify: true,
-    topicHintAr: 'تبسيط الشرح',
-    topicHintEn: 'Simplify explanation',
+    route: '/ai-tools/simplify', status: 'enabled', enabled: true,
   },
   // ── During class ────────────────────────────────────────────────────────
   {
@@ -265,13 +265,6 @@ export function buildTopicForTool(
   if (!hint) return base;
   if (!base) return hint;
   if (base.includes(hint)) return base;
-  // Avoid nesting "تبسيط الشرح: تبسيط الشرح: …"
-  if (tool.simplify) {
-    const stripped = base
-      .replace(/^(تبسيط\s*الشرح|بسّط\s*الشرح|بسط\s*الشرح|simplify(\s+explanation)?)\s*[:：\-]?\s*/i, '')
-      .trim();
-    return lang === 'ar' ? `تبسيط الشرح: ${stripped || base}` : `Simplify explanation: ${stripped || base}`;
-  }
   return `${hint}: ${base}`;
 }
 
@@ -317,6 +310,5 @@ export function buildGeneratorNav(
   const params: Record<string, string> = {};
   if (topic) params.topic = topic;
   if (resolved.homework) params.isHomework = '1';
-  if (resolved.simplify) params.simplify = '1';
   return { pathname: resolved.route, params };
 }

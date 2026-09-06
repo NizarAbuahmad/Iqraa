@@ -151,6 +151,29 @@ export function scopePickerParams(
 }
 
 /**
+ * Strip a «تبسيط الشرح: » prefix off a topic before grounding it.
+ *
+ * «تبسيط الشرح» used to be the lesson-plan screen behind a flag, and it told
+ * the two catalogs apart by gluing its own name onto the front of the lesson
+ * title — `buildTopicForTool` still produced «تبسيط الشرح: الاقترانات» for the
+ * related-tools panel. A prefixed title grounds to nothing, so the screen
+ * would take picker index 0 and generate a generic handout while
+ * `GroundingNotice` quietly said so.
+ *
+ * Deliberately anchored and narrow. «تبسيط المقادير الأسية» is a real Grade 10
+ * lesson: stripping a bare «تبسيط» would turn it into «المقادير الأسية» and
+ * ground the student to a different lesson than the teacher picked — the
+ * failure CLAUDE.md records under "a lesson title does not identify a lesson".
+ * Only the tool's full name followed by a separator is removed.
+ */
+export function stripExplainerPrefix(topic: string | undefined): string {
+  if (!topic) return '';
+  return topic
+    .replace(/^\s*(?:تبسيط\s+الشرح|بسّط\s+الشرح|بسط\s+الشرح|simplify(?:\s+explanation)?)\s*[:：\-]\s*/i, '')
+    .trim() || topic.trim();
+}
+
+/**
  * Picker params inferred from a bare `topic` route param — the last line of
  * defence for navigations that carry a lesson title but no `gradeIdx` /
  * `subjectIdx` (old bookmarked URLs, callers that predate `lessonPickerParams`).

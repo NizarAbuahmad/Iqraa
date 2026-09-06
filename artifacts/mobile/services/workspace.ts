@@ -16,7 +16,7 @@ import { attachAcrossClasses } from './classAttach';
 // label and a ContinueMaterialKind member. It was missing here, which made the
 // `item.type === 'activity'` branch in continueTeaching.ts provably dead — so a
 // saved activity arriving without formState was silently labelled a lesson.
-export type MaterialType = 'lesson' | 'worksheet' | 'quiz' | 'flow' | 'activity' | 'slides';
+export type MaterialType = 'lesson' | 'worksheet' | 'quiz' | 'flow' | 'activity' | 'slides' | 'explainer';
 
 export interface SavedMaterial {
   id: string;

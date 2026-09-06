@@ -28,6 +28,7 @@ import {
   lessonPrepPickerIndices,
   resolveLessonPrepContext,
   scopePickerParams,
+  stripExplainerPrefix,
   topicPickerParams,
 } from '../lessonPrep.ts';
 import { getObjectivesForLesson, getPickerGrades, getPickerSubjects, getLessonById } from '../curriculumData.ts';
@@ -341,5 +342,52 @@ describe('buildGapWarmupRequest', () => {
 
   it('returns null for an unknown objective, so the button stays hidden', () => {
     assert.equal(buildGapWarmupRequest('o-no-such-objective', 'ar'), null);
+  });
+});
+
+/**
+ * «تبسيط الشرح» used to glue its own name onto the lesson title so the two
+ * catalogs could tell it apart. A prefixed title grounds to nothing, so the
+ * screen fell back to picker index 0 and generated a handout for whatever
+ * subject sat first in the list.
+ */
+describe('stripExplainerPrefix', () => {
+  it('removes the tool name from a prefixed topic', () => {
+    for (const prefixed of [
+      'تبسيط الشرح: الاقترانات',
+      'تبسيط الشرح - الاقترانات',
+      'بسّط الشرح: الاقترانات',
+      'Simplify explanation: Functions',
+      'simplify: Functions',
+    ]) {
+      const out = stripExplainerPrefix(prefixed);
+      assert.ok(!out.includes('تبسيط الشرح'), `left the prefix on «${prefixed}»`);
+      assert.ok(!/^simplify/i.test(out), `left the prefix on “${prefixed}”`);
+      assert.ok(out.length > 0);
+    }
+  });
+
+  it('leaves «تبسيط المقادير الأسية» alone — it is a real lesson', () => {
+    // The whole reason the pattern is anchored to the tool's FULL name plus a
+    // separator. Stripping a bare «تبسيط» would ground the student to a
+    // different lesson than the teacher picked.
+    const lesson = 'تبسيط المقادير الأسية';
+    assert.equal(stripExplainerPrefix(lesson), lesson);
+  });
+
+  it('leaves an ordinary topic untouched', () => {
+    assert.equal(stripExplainerPrefix('قانون الجيوب'), 'قانون الجيوب');
+    assert.equal(stripExplainerPrefix('  الاقترانات  '), 'الاقترانات');
+  });
+
+  it('answers with an empty string for nothing', () => {
+    assert.equal(stripExplainerPrefix(undefined), '');
+    assert.equal(stripExplainerPrefix(''), '');
+  });
+
+  it('never empties a topic that was only the prefix', () => {
+    // «تبسيط الشرح:» with nothing after it is a caller bug, but returning ''
+    // would silently clear the teacher's topic field. Keep what was sent.
+    assert.equal(stripExplainerPrefix('تبسيط الشرح:'), 'تبسيط الشرح:');
   });
 });
