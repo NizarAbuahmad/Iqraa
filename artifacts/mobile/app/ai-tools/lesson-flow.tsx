@@ -42,6 +42,7 @@ import {
 } from '@/services/curriculumData';
 import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, topicPickerParams } from '@/services/lessonPrep';
 import { TopicSelector } from '@/components/ui/TopicSelector';
+import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
 import { Button } from '@/components/ui/Button';
 import { saveItem, updateItem } from '@/services/workspace';
 import { MaterialClassField } from '@/components/ui/MaterialClassField';
@@ -461,6 +462,7 @@ export default function LessonFlowScreen() {
                   );
                 })}
             </ScrollView>
+            <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t('scopeNoCurriculumHint')} isRTL={isRTL} colors={colors} />
 
             {/* Duration */}
             <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', marginTop: 16, textAlign: isRTL ? 'right' : 'left' }]}>

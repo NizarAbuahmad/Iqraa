@@ -360,6 +360,8 @@ const translations = {
       `هذا الموضوع درسٌ من مادة «${subject}». غيّر المادة إلى «${subject}»، أو اختر موضوعًا من المادة المحددة.`,
     scopeNoCurriculum: (grade: string, subject: string) =>
       `لا يوجد منهاج لمادة «${subject}» في «${grade}». اختر صفًا أو مادة أخرى.`,
+    scopeNoCurriculumHint:
+      'لا يتوفر منهاج لهذه المادة في الصف المحدد، لذلك لم تعد ضمن الخيارات. اختر مادة أخرى أو غيّر الصف.',
     generationFailed: 'تعذر إتمام العملية. حاول مرة أخرى.',
     curriculumUngroundedNotice: 'هذا الموضوع غير موجود في المنهاج المتاح حالياً. الخطة عامة وليست مبنية على نتاجات درس محدد من الكتاب.',
     curriculumUngroundedNoticeWorksheet: 'هذا الموضوع غير موجود في المنهاج المتاح حالياً. ورقة العمل عامة وليست مبنية على نتاجات درس محدد من الكتاب.',
@@ -1525,6 +1527,8 @@ const translations = {
       `This topic is a ${subject} lesson. Switch the subject to ${subject}, or pick a topic from the selected subject.`,
     scopeNoCurriculum: (grade: string, subject: string) =>
       `No curriculum for ${subject} in ${grade}. Pick another grade or subject.`,
+    scopeNoCurriculumHint:
+      'No curriculum for this subject in the selected grade, so it is no longer listed. Pick another subject, or change the grade.',
     generationFailed: 'Generation failed. Please try again.',
     curriculumUngroundedNotice: 'This topic is not in the currently available curriculum. The plan is generic and not grounded in a specific textbook lesson.',
     curriculumUngroundedNoticeWorksheet: 'This topic is not in the currently available curriculum. The worksheet is generic and not grounded in a specific textbook lesson.',

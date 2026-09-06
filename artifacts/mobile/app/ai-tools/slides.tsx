@@ -18,6 +18,7 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { PillSelector } from '@/components/ui/PillSelector';
+import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
 import { isAbortError } from '@/services/ai/aiProvenance';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
@@ -782,6 +783,7 @@ export default function SlidesScreen() {
             isRTL={isRTL}
             accent={ACCENT}
           />
+          <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t('scopeNoCurriculumHint')} isRTL={isRTL} colors={colors} />
 
           <TopicSelector
             subjectId={subjects[subjectIdx].id}

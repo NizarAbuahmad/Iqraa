@@ -20,6 +20,7 @@ import {
 import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, topicPickerParams } from '@/services/lessonPrep';
 import { TopicSelector } from '@/components/ui/TopicSelector';
 import { PickerField as SharedPickerField } from '@/components/ui/PickerField';
+import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
 import { Button } from '@/components/ui/Button';
 import { getItem, saveItem, updateItem } from '@/services/workspace';
 import { useFavorite } from '@/hooks/useFavorite';
@@ -442,6 +443,7 @@ export default function WorksheetScreen() {
       <View style={{ padding: 20 }}>
         <PickerField label={t('grade')} value={gradeNames[gradeIdx]} options={gradeNames} onChange={setGradeIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
         <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} hidden={subjectHidden} />
+        <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t('scopeNoCurriculumHint')} isRTL={isRTL} colors={colors} />
 
         <TopicSelector
           subjectId={subjects[subjectIdx].id}
