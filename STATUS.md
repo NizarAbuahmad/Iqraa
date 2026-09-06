@@ -453,10 +453,15 @@ from inside the app — check that a token row reaches `device_push_tokens`,
 then send one.
 
 One rough edge shipped by PR #281, which made a student's claim code findable
-from class chat: minting a code calls `POST /students/:id/claim-code`, which
-`studentAccountsEnabled()` refuses in v1 with `student_accounts_disabled`, and
-nothing in the app special-cases that error. A teacher tapping it gets a raw
-failure rather than "not available yet."
+from the class roster: minting a code calls `POST /students/:id/claim-code`,
+which `studentAccountsEnabled()` refuses in v1 with
+`student_accounts_disabled`. Nothing special-cased the refusal, so the screen
+rendered the server's raw English error into an Arabic-first UI, styled as a
+failure — when nothing had failed. **Fixed the same day:** `classes/[id].tsx`
+hides the key icon and `messaging/claim/[studentId].tsx` replaces the generate
+button with a sentence saying the capability is not in this release, both off
+`useStudentAccountsEnabled()`. A disabled control was rejected deliberately —
+it invites "when?", which neither screen can answer.
 
 ## The app has been built for a real device, 2026-09-05
 
