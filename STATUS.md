@@ -472,6 +472,63 @@ curl -s -o /dev/null -w "%{http_code}\n" -X POST \
 # 401 = columns exist   500 = they do not
 ```
 
+## A matching question was unanswerable, and fill-blank was worse, 2026-09-05
+
+Closes the «found in passing» note below («`matching` questions render as a
+bare prompt with no pairs»). Three defects, one root cause: **a screen saving a
+shape `questionTypes.ts` does not read.** All merged (#260) and live on Cloud
+Run revision `iqraa-api-00008-9kz`.
+
+- **`matching` had no render branch** in `take/[code].tsx`. The student got the
+  card and nothing else — no lists, no way to pair them, nothing for
+  `saveStudentAnswer` to send. The teacher's transcription screen already had a
+  working picker, so it moved to `components/QuestionInputs.tsx` and both
+  screens use it; a second picker is a second chance to disagree about the
+  response shape.
+- **`fill_blank` was quietly worse, and had not been noticed at all.** It sat in
+  the student screen's shared text-area list saving `{text}`, while
+  `fillBlank.grade` reads `{blanks}` positionally — so **every fill-in-the-blank
+  answer marked as unanswered**, however well the student filled it in. Worse
+  than the matching bug, because a blank card is visibly broken and this looked
+  answered. Both shapes are now built by pure functions in `studentAnswers.ts`
+  and pinned from both sides: the mobile test fixes the shape, the api-server
+  grading test proves that exact shape marks.
+- **The shuffle the code claimed existed did not.**
+  `matching.sanitizeForStudent` said "right-hand items are shuffled for
+  delivery" and nothing shuffled them. Stored order comes from a generator asked
+  for `pairs` in order, so the i-th right item was usually the answer to the
+  i-th left one — **the question was answerable straight down the list without
+  reading it.** Now shuffled in `sanitizeQuestionForStudent`, seeded on the
+  attempt *and* the question: the attempt so two students get different columns,
+  the question so one paper is not a single permutation you can work out once.
+  Derived, not stored, because claim and resume sanitise through separate routes
+  and a column that reorders mid-exam is its own unfairness.
+
+**Verified against the running routes, not just unit tests.** A throwaway local
+database, a hand-written matching question (the type is `mockable: false`, so
+generating a fixture means paying a model to maybe return one), and the built
+API bundle driven over HTTP:
+
+| | served on claim | on resume | again |
+| --- | --- | --- | --- |
+| student A | `r4,r3,r2,r5,r1` | same | same |
+| student B | `r5,r2,r1,r3,r4` | same | same |
+
+Stored order is `r1..r5`. Neither student got it, the two differ, each is stable
+across `claim` → `state` → `state` (two routes sanitising independently, which
+is what proves the seed is derived rather than random), the left column is
+untouched, the payload carries only `left,right`, and the saved answer reads
+back as `{pairs:[{left:"l1",right:"r4"}…]}` — ids off the shuffled column, which
+is exactly what `matching.grade` reads. **No test data was left anywhere:** the
+throwaway database was dropped, nothing was written to production, and no roster
+name was burned on a real class.
+
+Also in the same pass: the evaluation list printed «—» for a matching question,
+because its body carries none of the four prompt fields `questionText` tried.
+
+**Known ceiling, deliberate:** a matching question still cannot be *authored* by
+the mock generator, so papers only contain one when live generation returns one.
+
 ## Android push has the credentials it needs, 2026-09-06
 
 `expo-notifications` has always been able to *ask* for a token and never able
@@ -1325,7 +1382,10 @@ against fixtures, which would only agree with themselves.
 
 **Found in passing, not fixed here:** `matching` questions render as a bare
 prompt with no pairs in `take/[code].tsx` — a student gets a question they
-cannot answer. And `lesson-sci-1` (grade-8 science, `catalog.ts` «Other books»)
+cannot answer. _(Fixed and deployed 2026-09-05, along with two more of the same
+kind found while fixing it — see «A matching question was unanswerable, and
+fill-blank was worse» at the top.)_ And `lesson-sci-1` (grade-8 science,
+`catalog.ts` «Other books»)
 is the one lesson id in the catalog not minted through `lessonKbId()`; it is
 outside `MVP_SUBJECT_IDS` and carries no figures, so nothing reads it, but a
 blanket `/^kbl-/` assertion fails on it — `objectives.test.ts` asserts per-MVP-
