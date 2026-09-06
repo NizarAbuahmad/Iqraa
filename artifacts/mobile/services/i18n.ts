@@ -922,6 +922,7 @@ const translations = {
     studentNames: 'أسماء الطلاب',
     studentNamesPlaceholder: 'اسم في كل سطر، أو افصل بينها بفاصلة',
     studentNamesHint: 'الصق قائمة أسماء — سطر لكل طالب',
+    addStudentsCodeHint: 'بعد الإضافة، اضغط على أيقونة المفتاح بجانب اسم الطالب لإنشاء رمز الربط ومشاركته مع وليّ الأمر أو الطالب.',
     // Arabic counts its nouns by number class, so a single template with a
     // substituted digit reads wrong for most values. arCountStudents applies
     // the real rule (1 / 2 / 3–10 / 11+).
@@ -1229,6 +1230,7 @@ const translations = {
     messagingNoSearchMatch: 'لا نتائج مطابقة لبحثك',
     messagingCreateGroup: 'إنشاء المجموعة',
     messagingManageMembers: 'إدارة الأعضاء',
+    messagingStudentCodes: 'رموز ربط الطلاب',
     messagingLeaveGroup: 'مغادرة المجموعة',
     messagingAllowStudentPosting: 'السماح للطلبة بالكتابة',
     messagingReadOnlyGroup: 'المعلّم وحده يمكنه الكتابة في هذه المجموعة',
@@ -2032,6 +2034,7 @@ const translations = {
     studentNames: 'Student names',
     studentNamesPlaceholder: 'One name per line, or separated by commas',
     studentNamesHint: 'Paste a list — one student per line',
+    addStudentsCodeHint: "After adding, tap the key beside a student's name to create their link code and share it with a parent or the student.",
     willAddCount: (n: number) => `Will add ${n} ${n === 1 ? 'student' : 'students'}`,
     addToClass: 'Add to class',
     removeStudent: 'Remove from class',
@@ -2331,6 +2334,7 @@ const translations = {
     messagingNoSearchMatch: 'No one matches your search',
     messagingCreateGroup: 'Create group',
     messagingManageMembers: 'Manage members',
+    messagingStudentCodes: 'Student link codes',
     messagingLeaveGroup: 'Leave group',
     messagingAllowStudentPosting: 'Allow students to post',
     messagingReadOnlyGroup: 'Only the teacher can post in this group',
