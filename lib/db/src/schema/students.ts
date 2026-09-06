@@ -36,11 +36,37 @@ export const classGroups = pgTable(
     subjectId: text("subject_id").notNull().default(""),
     academicYear: text("academic_year").notNull().default(""),
     /**
-     * Short human-typeable code for a future "one shared link, type your name"
-     * mode. Unused today — per-student links are the shipping path, because a
-     * level attached to the wrong name is worse than no level.
+     * One shared code for the whole class: the joiner types it and picks their
+     * own name off this class's roster. Reverses the deferral in
+     * docs/student-evaluation-module-plan.md — minting one code per student was
+     * six taps each, thirty times, and it was the reason nobody had contacts to
+     * put in a group.
+     *
+     * The objection that deferred it (a code attached to the wrong name) is
+     * paid for, not wished away: a name already held by a student account
+     * cannot be claimed again — see lib/claimDecision.ts in the api-server.
+     *
+     * COMPLETE IN CODE, UNREACHABLE IN PRODUCTION as of 2026-09-06. Minting
+     * (POST /classes/:id/join-code), the public lookup (GET /auth/join/:code)
+     * and the undo for a wrong claim (DELETE /students/:id/links/:userId) all
+     * exist. Two things still gate it: `STUDENT_ACCOUNTS` is false, so every
+     * one of those routes answers 403; and **this column has not been pushed
+     * to any database** — `verify-schema` checks table names only, so it will
+     * report `ok` while `join_code_expires_at` is missing, and a missing column
+     * makes every join code look permanently expired.
+     *
+     * Expiry is not optional here the way it might look. This code is the key
+     * to an *unauthenticated* endpoint that lists children's names, so
+     * regenerating is revocation on purpose and expiry is revocation by default
+     * when a teacher never comes back. Longer-lived than `students.claimCode`'s
+     * 30 days: a class code goes on the whiteboard in week 1 and gets redeemed
+     * by stragglers in week 6.
+     *
+     * ponytail: fixed 180-day TTL. Make it per-class if a school's term dates
+     * ever need to drive it.
      */
     joinCode: text("join_code").unique(),
+    joinCodeExpiresAt: timestamp("join_code_expires_at", { withTimezone: true }),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),

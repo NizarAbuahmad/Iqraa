@@ -55,6 +55,8 @@ export interface RegisterData {
   role?: 'teacher' | 'student' | 'parent';
   /** Required when role is 'student' or 'parent' — see services/messaging.ts. */
   claimCode?: string;
+  /** Which roster name was picked, when `claimCode` is a whole-class join code. A per-student code names its own student and ignores this. */
+  studentId?: string;
 }
 
 interface AuthContextType {
@@ -239,6 +241,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           confirmPassword: payload.confirmPassword,
           role: payload.role,
           claimCode: payload.claimCode?.trim(),
+          studentId: payload.studentId,
         }),
       },
     );

@@ -293,6 +293,37 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     );
   });
 
+  it("keeps the class join-code lookup public, and closed while student accounts are off", async () => {
+    // The trap this guards: roster.ts mounts
+    // `router.use(["/classes","/students"], authMiddleware, …)`, and Express
+    // prefix-matches, so naming this route /classes/join/:code would answer 401
+    // to the parents it exists for — silently, since nothing else would change.
+    // Under /auth there is no such guard. A 401 here means somebody moved it.
+    const res = await fetch(`${base}/auth/join/AAAAAA`);
+    assert.notEqual(res.status, 401, "the join-code lookup must not require a token");
+
+    // 403 with no database touched: the feature flag is checked before any
+    // query, so this is deterministic in a suite that has no reachable DB.
+    // It is also the assertion that the one unauthenticated endpoint returning
+    // children's names stays shut in a teacher-only deployment.
+    assert.equal(res.status, 403, "student accounts are off, so the lookup must refuse");
+    const body = (await res.json()) as { code?: string };
+    assert.equal(body.code, "student_accounts_disabled");
+  });
+
+  it("guards minting a class join code, and unlinking an account", async () => {
+    const mint = await fetch(`${base}/classes/00000000-0000-4000-8000-000000000000/join-code`, {
+      method: "POST",
+    });
+    assert.equal(mint.status, 401, "minting a join code must require a token");
+
+    const unlink = await fetch(
+      `${base}/students/00000000-0000-4000-8000-000000000000/links/00000000-0000-4000-8000-000000000001`,
+      { method: "DELETE" },
+    );
+    assert.equal(unlink.status, 401, "unlinking an account must require a token");
+  });
+
   it("still refuses a student token where a teacher token is required", async () => {
     // A student's bearer token is scoped to one attempt. Presenting anything at
     // all to a teacher route must not be mistaken for a session.
