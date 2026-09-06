@@ -17,6 +17,7 @@ import lessonMediaRouter from "./lessonMedia";
 import feedbackRouter from "./feedback";
 import adminRouter from "./admin";
 import messagingRouter from "./messaging";
+import moderationRouter from "./moderation";
 
 const router: IRouter = Router();
 
@@ -73,5 +74,8 @@ router.use(adminRouter);
 // messaging.ts self-guards too (see its own note) — deliberately signed-in-only,
 // not teacher-only, since parents and students must reach it.
 router.use(messagingRouter);
+// moderation.ts is the read side of messaging's reports. Same self-guarding
+// arrangement, admin-only on every route.
+router.use(moderationRouter);
 
 export default router;

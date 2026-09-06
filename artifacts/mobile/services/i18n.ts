@@ -526,6 +526,30 @@ const translations = {
     privacyPolicy: 'سياسة الخصوصية',
     termsOfService: 'شروط الخدمة',
 
+    // Account deletion — Apple 5.1.1(v) and Google Play both require this
+    // path to exist inside the app.
+    // Shown where a student link code would be, while STUDENT_ACCOUNTS is off
+    // server-side. Says "not yet", not "failed" — nothing went wrong.
+    messagingClaimCodeUnavailable:
+      'روابط حسابات الطلبة وأولياء الأمور غير مفعّلة في هذا الإصدار، فالتطبيق حاليًّا للمعلّمين وحدهم.',
+    accountSection: 'الحساب',
+    deleteAccount: 'حذف الحساب',
+    deleteAccountTitle: 'حذف الحساب',
+    deleteAccountLead: 'حذف الحساب نهائيّ ولا يمكن التراجع عنه. سيجري فورًا، لا بعد مهلة.',
+    deleteAccountWhatGoesTeacher: 'سيُحذف معه: شُعَبك وسجلّات طلبتك وملاحظاتك عنهم، والاختبارات وأوراق العمل ونتائجها، والمواد المحفوظة، والملفات التي رفعتها، والرسائل التي أرسلتها.',
+    deleteAccountWhatGoesOther: 'سيُحذف معه: رسائلك وصورك المرفقة، وارتباطك بصفّك. يبقى سجلّ الطالب عند المعلّم لأنّه من بيانات المعلّم.',
+    deleteAccountPasswordLabel: 'أدخل كلمة المرور للتأكيد',
+    deleteAccountEmailLabel: 'أدخل بريدك الإلكتروني للتأكيد',
+    deleteAccountEmailHint: 'حسابك يدخل عبر Google ولا كلمة مرور له، لذا نطلب بريدك بدلًا منها.',
+    deleteAccountConfirmTitle: 'حذف حسابك؟',
+    deleteAccountConfirmBody: 'لا يمكن التراجع عن هذا.',
+    deleteAccountConfirmCta: 'احذف نهائيًّا',
+    deleteAccountCancel: 'إلغاء',
+    deleteAccountSubmit: 'حذف حسابي',
+    deleteAccountWorking: 'جارٍ الحذف…',
+    deleteAccountNeedProof: 'أدخل التأكيد المطلوب أولًا.',
+    deleteAccountFailed: 'تعذّر حذف الحساب. تحقّق ممّا أدخلته وحاول مرّة أخرى.',
+
     // Generator — new form fields
     teachingStyleLabel: 'أسلوب التدريس',
     teachingStyleDirect: 'التعليم المباشر',
@@ -1212,8 +1236,21 @@ const translations = {
     messagingNoGuardiansYet: 'لا يوجد حساب مرتبط بعد',
     messagingNoContactsTitle: 'لا يوجد حساب مرتبط بعد',
     messagingNoContactsDesc:
-      'لا يملك الطلاب في قائمتك حسابات بعد. افتح صفّك واضغط أيقونة المحادثة بجانب اسم الطالب لإنشاء رمز ربط، ثم شاركه مع وليّ الأمر أو الطالب ليُنشئ حسابه.',
+      'لا يملك الطلاب في قائمتك حسابات بعد. افتح صفّك واضغط «رمز الانضمام»، ثم شارك الرمز مع أولياء الأمور والطلاب لينشئوا حساباتهم.',
     messagingClassChat: 'محادثة الصف',
+    joinCodeTitle: 'رمز الانضمام',
+    joinCodeDesc: 'رمز واحد للصف كله. شاركه مع أولياء الأمور والطلاب، ويختار كل واحد اسمه من قائمة الصف عند إنشاء حسابه.',
+    joinCodeGenerate: 'إنشاء رمز الانضمام',
+    joinCodeRegenerate: 'إنشاء رمز جديد',
+    joinCodeRegenerateConfirm: 'سيتوقف الرمز الحالي عن العمل فورًا، ولن يتمكن من لم ينضم بعد من استخدامه. هل تريد المتابعة؟',
+    joinCodeShare: 'مشاركة الرمز',
+    joinCodeNone: 'لم يُنشأ رمز لهذا الصف بعد',
+    joinPickYourName: 'اختر اسمك من قائمة الصف',
+    joinNameTaken: 'مرتبط بحساب',
+    rosterLinked: 'انضم',
+    rosterNotLinked: 'لم ينضم بعد',
+    unlinkAccount: 'إلغاء الربط',
+    unlinkAccountConfirm: 'سيتم فصل هذا الحساب عن الطالب، وسيخرج من محادثات الصف. هل تريد المتابعة؟',
     messagingBlock: 'حظر',
     messagingUnblock: 'إلغاء الحظر',
     messagingReportTitle: 'الإبلاغ عن رسالة',
@@ -1643,6 +1680,30 @@ const translations = {
     version: 'Version',
     privacyPolicy: 'Privacy Policy',
     termsOfService: 'Terms of Service',
+
+    // Account deletion — Apple 5.1.1(v) and Google Play both require this
+    // path to exist inside the app.
+    // Shown where a student link code would be, while STUDENT_ACCOUNTS is off
+    // server-side. Says "not yet", not "failed" — nothing went wrong.
+    messagingClaimCodeUnavailable:
+      'Student and parent account links are not enabled in this release — the app is teacher-only for now.',
+    accountSection: 'ACCOUNT',
+    deleteAccount: 'Delete account',
+    deleteAccountTitle: 'Delete account',
+    deleteAccountLead: 'Deleting your account is permanent and cannot be undone. It happens immediately, not after a waiting period.',
+    deleteAccountWhatGoesTeacher: 'This also deletes: your classes, your student records and the notes you wrote about them, your tests and worksheets and their results, saved materials, files you uploaded, and messages you sent.',
+    deleteAccountWhatGoesOther: 'This also deletes: your messages and any images you attached, and your link to your class. The student record itself stays with the teacher, because it is the teacher\'s data.',
+    deleteAccountPasswordLabel: 'Enter your password to confirm',
+    deleteAccountEmailLabel: 'Enter your email address to confirm',
+    deleteAccountEmailHint: 'Your account signs in with Google and has no password, so we ask for your email instead.',
+    deleteAccountConfirmTitle: 'Delete your account?',
+    deleteAccountConfirmBody: 'This cannot be undone.',
+    deleteAccountConfirmCta: 'Delete permanently',
+    deleteAccountCancel: 'Cancel',
+    deleteAccountSubmit: 'Delete my account',
+    deleteAccountWorking: 'Deleting…',
+    deleteAccountNeedProof: 'Enter the confirmation above first.',
+    deleteAccountFailed: 'Could not delete the account. Check what you entered and try again.',
 
     // Generator — new form fields
     teachingStyleLabel: 'Teaching style',
@@ -2316,8 +2377,21 @@ const translations = {
     messagingNoGuardiansYet: 'No linked account yet',
     messagingNoContactsTitle: 'No linked accounts yet',
     messagingNoContactsDesc:
-      'The students on your roster do not have accounts yet. Open your class, tap the chat icon next to a student to create a class code, and share it with their parent or the student so they can sign up.',
+      'The students on your roster do not have accounts yet. Open your class, tap "Join code", and share the code with parents and students so they can sign up.',
     messagingClassChat: 'Class chat',
+    joinCodeTitle: 'Join code',
+    joinCodeDesc: 'One code for the whole class. Share it with parents and students — each person picks their own name from the class list when they sign up.',
+    joinCodeGenerate: 'Create join code',
+    joinCodeRegenerate: 'Generate new code',
+    joinCodeRegenerateConfirm: 'The current code stops working immediately, and anyone who has not joined yet will not be able to use it. Continue?',
+    joinCodeShare: 'Share code',
+    joinCodeNone: 'No code for this class yet',
+    joinPickYourName: 'Pick your name from the class list',
+    joinNameTaken: 'Already linked',
+    rosterLinked: 'Joined',
+    rosterNotLinked: 'Not joined yet',
+    unlinkAccount: 'Unlink',
+    unlinkAccountConfirm: 'This account will be disconnected from the student and removed from class chats. Continue?',
     messagingBlock: 'Block',
     messagingUnblock: 'Unblock',
     messagingReportTitle: 'Report message',

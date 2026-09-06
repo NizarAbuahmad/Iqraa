@@ -49,7 +49,7 @@ import {
   devicePushTokens,
   type DevicePushPlatform,
 } from "@workspace/db";
-import { and, asc, desc, eq, inArray, isNull, lt, ne, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, isNull, lt, ne, or } from "drizzle-orm";
 import {
   authMiddleware,
   TEACHER_ROLES,
@@ -59,6 +59,7 @@ import { logger } from "../lib/logger.js";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
 import { sendExpoPush } from "../lib/pushNotifications.js";
 import { isR2Configured, newChatMediaKey, presignedGetUrl, putObject } from "../lib/r2.js";
+import { syncClassGroupThread } from "../lib/classThread.js";
 import { EXTENSION_BY_MIME, MAX_DATA_URL_LENGTH, kindForMime, parseDataUrl } from "../lib/lessonMediaUpload.js";
 
 const router = Router();
@@ -209,73 +210,6 @@ async function notifyThreadParticipants(threadId: string, senderId: string, body
   await sendExpoPush(
     tokenRows.map(t => ({ to: t.expoPushToken, title: senderName, body: preview, data: { threadId } })),
   );
-}
-
-/**
- * Get-or-create the one thread for a class, then reconcile membership to
- * exactly the teacher plus every student self-linked to a current member of
- * the class. Never removes the teacher, even if some future bug left them
- * out of `desired` — that guarantee is the whole point of this function, so
- * it is asserted here directly rather than trusted to always fall out of the
- * query above it.
- */
-async function syncClassGroupThread(
-  classGroupId: string,
-  teacherId: string,
-  name: string,
-  nameAr: string,
-) {
-  let [thread] = await db.select().from(chatThreads).where(eq(chatThreads.classGroupId, classGroupId)).limit(1);
-  if (!thread) {
-    const inserted = await db
-      .insert(chatThreads)
-      .values({ type: "class_group", classGroupId, title: name, titleAr: nameAr })
-      .onConflictDoNothing()
-      .returning();
-    thread = inserted[0];
-    if (!thread) {
-      // Lost a create race to a concurrent request — the row exists now.
-      [thread] = await db.select().from(chatThreads).where(eq(chatThreads.classGroupId, classGroupId)).limit(1);
-    }
-  } else if (thread.title !== name || thread.titleAr !== nameAr) {
-    // Keep the thread's display name in sync with the class's — a rename
-    // shouldn't leave the thread showing the class's old name forever.
-    [thread] = await db
-      .update(chatThreads)
-      .set({ title: name, titleAr: nameAr, updatedAt: new Date() })
-      .where(eq(chatThreads.id, thread.id))
-      .returning();
-  }
-  if (!thread) throw new Error("Failed to create class thread");
-
-  const studentUserRows = await db
-    .select({ userId: rosterLinks.userId })
-    .from(classMemberships)
-    .innerJoin(students, eq(students.id, classMemberships.studentId))
-    .innerJoin(
-      rosterLinks,
-      and(eq(rosterLinks.studentId, classMemberships.studentId), eq(rosterLinks.relation, "self")),
-    )
-    .where(and(eq(classMemberships.classGroupId, classGroupId), isNull(students.archivedAt)));
-
-  const desired = new Set<string>([teacherId, ...studentUserRows.map(r => r.userId)]);
-
-  await db
-    .insert(chatParticipants)
-    .values([...desired].map(userId => ({ threadId: thread.id, userId })))
-    .onConflictDoNothing();
-
-  const current = await db.select().from(chatParticipants).where(eq(chatParticipants.threadId, thread.id));
-  const toRemove = current
-    .map(p => p.userId)
-    .filter(userId => userId !== teacherId && !desired.has(userId));
-  if (toRemove.length > 0) {
-    await db
-      .delete(chatParticipants)
-      .where(and(eq(chatParticipants.threadId, thread.id), inArray(chatParticipants.userId, toRemove)));
-  }
-
-  return thread;
 }
 
 // ─── Contacts ────────────────────────────────────────────────────────────────
@@ -655,6 +589,22 @@ router.post("/messaging/threads/:id/participants", async (req: AuthenticatedRequ
       .filter((id): id is string => typeof id === "string" && id !== req.user!.id);
     if (memberIds.length === 0) {
       res.status(400).json({ error: "At least one member id is required" });
+      return;
+    }
+
+    // The cap belongs on the total, not the batch: it was only ever checked on
+    // create, so a group could be grown past MAX_CUSTOM_GROUP_MEMBERS by
+    // repeated adds — and each id in an unbounded array costs its own
+    // isConnected round trip below. Counted before that loop for exactly that
+    // reason. Already-present ids are conflict-ignored on insert rather than
+    // subtracted here, so re-adding an existing member can refuse near the
+    // ceiling; that is the safe direction to be wrong in.
+    const [{ count: currentMembers }] = await db
+      .select({ count: count() })
+      .from(chatParticipants)
+      .where(eq(chatParticipants.threadId, threadId));
+    if (currentMembers + memberIds.length > MAX_CUSTOM_GROUP_MEMBERS) {
+      res.status(400).json({ error: `A group can hold at most ${MAX_CUSTOM_GROUP_MEMBERS} members` });
       return;
     }
 

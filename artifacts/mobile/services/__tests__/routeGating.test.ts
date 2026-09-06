@@ -57,6 +57,15 @@ describe('isPublicRoute', () => {
     }
   });
 
+  it('lets a store reviewer open the policy documents cold', () => {
+    // Both listings require a privacy-policy URL that resolves without a
+    // session. Bouncing to login there is a submission blocker, and it would
+    // look exactly like a working app to anyone already signed in.
+    for (const p of ['/legal', '/legal/privacy', '/legal/terms']) {
+      assert.equal(isPublicRoute(p), true, p);
+    }
+  });
+
   it('keeps every teacher route private', () => {
     for (const p of ['/', '/home', '/classes', '/evaluations', '/admin/dashboard', '/workspace']) {
       assert.equal(isPublicRoute(p), false, p);

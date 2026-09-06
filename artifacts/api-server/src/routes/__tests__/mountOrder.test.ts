@@ -193,6 +193,74 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     }
   });
 
+  it("mounts account deletion, and refuses it without a token", async () => {
+    // Apple 5.1.1(v) and Play both require this route to exist, so the thing
+    // worth pinning is that it is *mounted* — a 404 here is a submission
+    // blocker, and would look identical to a typo in the path. 401 says the
+    // route resolved and the guard ran; anything past that needs a database,
+    // which this suite deliberately does not have.
+    const res = await fetch(`${base}/auth/users/me`, { method: "DELETE" });
+    assert.equal(res.status, 401, "account deletion must exist and require a token");
+  });
+
+  it("reports that student accounts are off, and refuses one", async () => {
+    // v1 is teacher-only, and the app reads this endpoint rather than a
+    // build-time copy so the two cannot disagree about which doors to show.
+    const features = await fetch(`${base}/healthz/features`);
+    assert.equal(features.status, 200);
+    const body = (await features.json()) as { studentAccounts: boolean };
+    assert.equal(body.studentAccounts, false, "the suite must run with the shipping default");
+
+    // The refusal is the enforcement; hiding the option in the app is not.
+    // 403 before any database work, which is why this passes with no DB.
+    const res = await fetch(`${base}/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        firstName: "A",
+        lastName: "B",
+        email: "child@example.com",
+        password: "Sufficiently1Strong!",
+        role: "student",
+        claimCode: "ABC123",
+      }),
+    });
+    assert.equal(res.status, 403, "a student registration must be refused");
+    const refusal = (await res.json()) as { code?: string };
+    assert.equal(refusal.code, "student_accounts_disabled");
+  });
+
+  it("publishes the roster consent statement without a token", async () => {
+    // The app renders a translation of this; serving it keeps the wording a
+    // teacher agrees to and the wording the version stamp identifies as one
+    // thing rather than two.
+    const res = await fetch(`${base}/auth/roster-consent`);
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as { version: string; statement: string };
+    assert.ok(body.version, "the statement must carry a version");
+    assert.ok(body.statement.length > 40, "the statement must actually be the statement");
+  });
+
+  it("mounts the moderation queue, and refuses it without a token", async () => {
+    // The report button has always worked; until 2026-09-05 nothing read the
+    // rows. These are the routes that make a report actionable, so a 404
+    // here is the same submission blocker as a missing delete route.
+    const res = await fetch(`${base}/moderation/reports`);
+    assert.equal(res.status, 401, "the moderation queue must exist and require a token");
+
+    for (const route of [
+      "/moderation/reports/00000000-0000-0000-0000-000000000000/resolve",
+      "/moderation/users/00000000-0000-0000-0000-000000000000/unsuspend",
+    ]) {
+      const post = await fetch(`${base}${route}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      });
+      assert.equal(post.status, 401, `${route} must require a token`);
+    }
+  });
+
   it("guards roster, evaluation, attempt and workspace routes", async () => {
     for (const route of ["/students", "/classes", "/evaluations", "/attempts", "/workspace/items"]) {
       const res = await fetch(`${base}${route}`);
@@ -223,6 +291,37 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
       res.status === 404 || res.status === 500,
       `expected 404 (no such code) or 500 (no database in this suite), got ${res.status}`,
     );
+  });
+
+  it("keeps the class join-code lookup public, and closed while student accounts are off", async () => {
+    // The trap this guards: roster.ts mounts
+    // `router.use(["/classes","/students"], authMiddleware, …)`, and Express
+    // prefix-matches, so naming this route /classes/join/:code would answer 401
+    // to the parents it exists for — silently, since nothing else would change.
+    // Under /auth there is no such guard. A 401 here means somebody moved it.
+    const res = await fetch(`${base}/auth/join/AAAAAA`);
+    assert.notEqual(res.status, 401, "the join-code lookup must not require a token");
+
+    // 403 with no database touched: the feature flag is checked before any
+    // query, so this is deterministic in a suite that has no reachable DB.
+    // It is also the assertion that the one unauthenticated endpoint returning
+    // children's names stays shut in a teacher-only deployment.
+    assert.equal(res.status, 403, "student accounts are off, so the lookup must refuse");
+    const body = (await res.json()) as { code?: string };
+    assert.equal(body.code, "student_accounts_disabled");
+  });
+
+  it("guards minting a class join code, and unlinking an account", async () => {
+    const mint = await fetch(`${base}/classes/00000000-0000-4000-8000-000000000000/join-code`, {
+      method: "POST",
+    });
+    assert.equal(mint.status, 401, "minting a join code must require a token");
+
+    const unlink = await fetch(
+      `${base}/students/00000000-0000-4000-8000-000000000000/links/00000000-0000-4000-8000-000000000001`,
+      { method: "DELETE" },
+    );
+    assert.equal(unlink.status, 401, "unlinking an account must require a token");
   });
 
   it("still refuses a student token where a teacher token is required", async () => {

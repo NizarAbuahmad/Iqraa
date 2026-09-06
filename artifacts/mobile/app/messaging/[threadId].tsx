@@ -299,6 +299,22 @@ export default function ThreadScreen() {
         ) : (
           <View style={{ flex: 1 }} />
         )}
+        {/*
+          Adding someone used to be five taps in — ⋮ → إدارة الأعضاء → the
+          dashed row → tick → إضافة — which is why nobody found it. The picker
+          is already mounted independently of the manage sheet, so opening it
+          straight from the header costs nothing. ⋮ keeps إدارة الأعضاء: it is
+          still the only route to *remove* someone.
+
+          Gated on isOwnerOfGroup, not thread.isOwner, so it stays off a class
+          group — that membership is derived from the roster and must never be
+          hand-edited (see routes/messaging.ts's syncClassGroupThread).
+        */}
+        {isOwnerOfGroup ? (
+          <Pressable onPress={() => setAddMembersOpen(true)} hitSlop={10}>
+            <Ionicons name="person-add-outline" size={20} color={colors.foreground} />
+          </Pressable>
+        ) : null}
         {(!isGroup && thread?.otherParticipant) || thread?.type === 'custom_group' || (isGroup && thread?.isOwner) ? (
           <Pressable onPress={() => setMenuOpen(true)} hitSlop={10}>
             <Ionicons name="ellipsis-vertical" size={20} color={colors.foreground} />

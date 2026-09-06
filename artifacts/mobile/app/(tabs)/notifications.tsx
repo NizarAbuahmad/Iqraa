@@ -58,9 +58,21 @@ export default function NotificationsScreen() {
       const [list, myContacts] = await Promise.all([
         listThreads(),
         isTeacherRole(user?.role)
-          ? getTeacherContacts().then(byStudent =>
-              byStudent.flatMap(s => s.contacts.map(c => ({ ...c, studentName: s.studentName }))),
-            )
+          ? // Deduped by userId, the same way ParticipantPickerSheet does it:
+            // contacts arrive grouped by student, so one parent with two
+            // children on this teacher's roster appeared twice — and this list
+            // keys on userId, so React saw duplicate keys. The two lists used
+            // to disagree about the same data; the picker was the one that was
+            // right. First student wins, so the subtitle stays stable.
+            getTeacherContacts().then(byStudent => {
+              const seen = new Map<string, Contact>();
+              for (const s of byStudent) {
+                for (const c of s.contacts) {
+                  if (!seen.has(c.userId)) seen.set(c.userId, { ...c, studentName: s.studentName });
+                }
+              }
+              return [...seen.values()];
+            })
           : getMyContacts().then(rows =>
               rows.map(r => ({ userId: r.userId, firstName: r.firstName, lastName: r.lastName, studentName: r.studentName })),
             ),

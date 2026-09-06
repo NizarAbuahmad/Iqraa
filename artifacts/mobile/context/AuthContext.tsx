@@ -55,6 +55,8 @@ export interface RegisterData {
   role?: 'teacher' | 'student' | 'parent';
   /** Required when role is 'student' or 'parent' — see services/messaging.ts. */
   claimCode?: string;
+  /** Which roster name was picked, when `claimCode` is a whole-class join code. A per-student code names its own student and ignores this. */
+  studentId?: string;
 }
 
 interface AuthContextType {
@@ -67,6 +69,12 @@ interface AuthContextType {
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (token: string, password: string, confirmPassword: string) => Promise<void>;
   updateProfile: (data: { preferredLanguage?: string; firstName?: string; lastName?: string }) => Promise<void>;
+  /**
+   * Irreversible. Pass `password` for an ordinary account, or `confirmEmail`
+   * for a Google-only one — the server picks which it will accept based on
+   * whether the account has a password hash at all, and refuses 401 otherwise.
+   */
+  deleteAccount: (proof: { password?: string; confirmEmail?: string }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -233,6 +241,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           confirmPassword: payload.confirmPassword,
           role: payload.role,
           claimCode: payload.claimCode?.trim(),
+          studentId: payload.studentId,
         }),
       },
     );
@@ -287,6 +296,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(toUser(updated));
   }, []);
 
+  const deleteAccount = useCallback(
+    async (proof: { password?: string; confirmEmail?: string }) => {
+      // Push token first, for the same reason logout does it first: after the
+      // account is gone the server would refuse the unregister call, and the
+      // device would keep a token pointed at a user that no longer exists.
+      await unregisterPushToken();
+      // No try/catch — unlike logout, a failure here must reach the caller.
+      // Clearing local state on a server error would show a signed-out app
+      // whose account still exists, which is the one outcome worse than an
+      // error message.
+      await apiJson('/auth/users/me', {
+        method: 'DELETE',
+        body: JSON.stringify(proof),
+      });
+      await clearTokens();
+      setUser(null);
+    },
+    [],
+  );
+
   return (
     <AuthContext.Provider
       value={{
@@ -299,6 +328,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         forgotPassword,
         resetPassword,
         updateProfile,
+        deleteAccount,
       }}
     >
       {children}
