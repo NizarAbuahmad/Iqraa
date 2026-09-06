@@ -68,7 +68,7 @@ import {
   type SessionArtifact,
   type TeachingAction,
 } from '@/services/ai/teachingAssistant';
-import { classifyChatIntent } from '@/services/ai/intentRouter';
+import { classifyChatIntent, leavesClarificationStanding } from '@/services/ai/intentRouter';
 import { IqraaMark } from '@/components/ui/IqraaMark';
 import { CHAT_MAX_WIDTH } from '@/constants/layout';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
@@ -2028,16 +2028,14 @@ export default function IqraScreen() {
         && (quickTopic || (teachingActions && teachingActions.length > 0)),
       );
 
-      // Structured clarifications (pedagogicalClarification) are the obvious case, but
-      // the live AI path (remoteAIService.chat) also asks free-text clarifying questions
-      // — "which concept do you want explained?" — with no structural flag at all. Without
-      // this, a one-word answer to that question ("الافتراضات") lands back in
-      // classifyChatIntent's short-token fallback, which re-asks its own generic
-      // "concept or material?" question instead of forwarding the answer. Treat any short
-      // reply ending in a question mark, with no artifact produced, as a standing ask.
-      awaitingClarifyRef.current =
-        Boolean(pedagogicalClarification)
-        || (!artifactData && /[؟?]\s*$/.test(responseText.trim()) && responseText.trim().length < 400);
+      // Why this is not just `Boolean(pedagogicalClarification)`, and why the
+      // rule lives next to the classifier that consumes it: see
+      // `leavesClarificationStanding`.
+      awaitingClarifyRef.current = leavesClarificationStanding({
+        responseText,
+        hasStructuredClarification: Boolean(pedagogicalClarification),
+        producedArtifact: Boolean(artifactData),
+      });
 
       const assistantMsg: Message = {
         id: (Date.now() + 1).toString(),

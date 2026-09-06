@@ -334,3 +334,43 @@ export function classifyChatIntent(
 
   return clarify();
 }
+
+/**
+ * The longest a reply can be and still be read as "this was a question".
+ *
+ * A clarifying question is a sentence; an explanation that happens to end on
+ * one ("…هل تريد المزيد؟") is a paragraph. The cut is a heuristic and cannot be
+ * anything else — the live AI path returns prose with no structural flag — so
+ * it is set well above a question and well below an answer.
+ */
+const CLARIFYING_QUESTION_MAX_CHARS = 400;
+
+/**
+ * Did this assistant turn leave a question standing?
+ *
+ * `classifyChatIntent`'s `afterClarify` exists so a teacher who answers a
+ * clarifying question is not asked it again — but it only ever saw the *local*
+ * classifier's own clarifications. The other two askers are invisible to it: a
+ * structured `pedagogicalClarification`, and the live AI path, which asks
+ * free-text questions ("which concept do you want explained?") carrying no flag
+ * at all. Without this, a one-word answer to one of those ("الافتراضات") is
+ * short enough to hit the short-token fallback above and be met with the
+ * generic "concept or material?" — the dead end `afterClarify` was written to
+ * prevent.
+ *
+ * Structured clarifications are exact. The free-text case is inferred, and the
+ * inference is deliberately loose in the safe direction: a false positive
+ * forwards the teacher's next message instead of re-asking, which is the better
+ * failure. Producing an artifact is treated as proof the turn answered
+ * something rather than asked.
+ */
+export function leavesClarificationStanding(input: {
+  responseText: string;
+  hasStructuredClarification?: boolean;
+  producedArtifact?: boolean;
+}): boolean {
+  if (input.hasStructuredClarification) return true;
+  if (input.producedArtifact) return false;
+  const text = input.responseText.trim();
+  return /[؟?]$/.test(text) && text.length < CLARIFYING_QUESTION_MAX_CHARS;
+}
