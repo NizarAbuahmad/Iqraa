@@ -12,7 +12,7 @@ import { SavedMaterial, getItem } from '@/services/workspace';
 import { useFavorite } from '@/hooks/useFavorite';
 import {
   ActivityOutput, ActivityStep, ClassroomActivity, LessonFlowOutput, LessonPlanOutput,
-  QuizOutput, WorksheetOutput,
+  QuizOutput, SimplifiedExplanationOutput, WorksheetOutput,
 } from '@/services/ai/AIService';
 import { looksLikeActivityContent } from '@/services/materialShape';
 import { arCountPhrase } from '@/services/arCount';
@@ -30,11 +30,14 @@ import { resolveGeneratorGrounding } from '@/services/kbContext';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import {
-  buildActivityHTML, buildLessonFlowHTML, buildLessonPlanHTML, buildQuizHTML, buildWorksheetHTML,
+  buildActivityHTML, buildLessonFlowHTML, buildLessonPlanHTML, buildQuizHTML,
+  buildSimplifiedExplanationHTML, buildWorksheetHTML,
   copyToClipboard, exportAsPDF, exportAsWord,
-  formatActivityText, formatLessonPlanText, formatQuizText, formatWorksheetText,
+  formatActivityText, formatLessonPlanText, formatQuizText,
+  formatSimplifiedExplanationText, formatWorksheetText,
   shareAsText,
 } from '@/services/share';
+import { SimplifiedExplanationView } from '@/components/ui/SimplifiedExplanationView';
 
 export default function WorkspaceViewScreen() {
   const colors = useColors();
@@ -111,7 +114,8 @@ export default function WorkspaceViewScreen() {
         : kind === 'worksheet' ? '/ai-tools/worksheet'
           : kind === 'flow' ? '/ai-tools/lesson-flow'
             : kind === 'slides' ? '/ai-tools/slides'
-              : '/ai-tools/quiz';
+              : kind === 'explainer' ? '/ai-tools/simplify'
+                : '/ai-tools/quiz';
 
   const isAr = lang === 'ar';
   const getPlainText = () => {
@@ -122,6 +126,7 @@ export default function WorkspaceViewScreen() {
     if (kind === 'worksheet') return formatWorksheetText(content as WorksheetOutput, item.title, meta, isAr);
     if (kind === 'flow') return item.title; // flow exports as PDF only
     if (kind === 'slides') return formatDeckOutline(content as ClassroomActivity, isAr);
+    if (kind === 'explainer') return formatSimplifiedExplanationText(content as unknown as SimplifiedExplanationOutput, item.title, meta, isAr);
     return formatQuizText(content as QuizOutput, item.title, meta, isAr);
   };
   /**
@@ -148,6 +153,7 @@ export default function WorkspaceViewScreen() {
     if (kind === 'worksheet') return buildWorksheetHTML(content as WorksheetOutput, item.title, meta, isAr, figures);
     if (kind === 'flow') return buildLessonFlowHTML(content as unknown as LessonFlowOutput, isAr, figures);
     if (kind === 'slides') return buildDeckHTML(content as ClassroomActivity, isAr);
+    if (kind === 'explainer') return buildSimplifiedExplanationHTML(content as unknown as SimplifiedExplanationOutput, item.title, meta, isAr, figures);
     return buildQuizHTML(content as QuizOutput, item.title, meta, isAr, figures);
   };
 
@@ -289,6 +295,8 @@ export default function WorkspaceViewScreen() {
           <FlowView flow={content as unknown as LessonFlowOutput} colors={colors} isRTL={isRTL} lang={lang} accent={accent} />
         ) : kind === 'slides' ? (
           <SlidesDeckView deck={content as ClassroomActivity} colors={colors} isRTL={isRTL} isAr={isAr} accent={accent} />
+        ) : kind === 'explainer' ? (
+          <SimplifiedExplanationView explainer={content as unknown as SimplifiedExplanationOutput} colors={colors} isRTL={isRTL} t={t} accent={accent} />
         ) : (
           <QuizView quiz={content as QuizOutput} colors={colors} isRTL={isRTL} t={t} accent={accent} lang={lang} />
         )}
@@ -304,7 +312,7 @@ export default function WorkspaceViewScreen() {
             deck already has the figures as its own slides, and
             so claiming them here would promise what the export does not
             deliver. */}
-        {content && ['lesson', 'activity', 'worksheet', 'quiz', 'flow'].includes(kind) && (
+        {content && ['lesson', 'activity', 'worksheet', 'quiz', 'flow', 'explainer'].includes(kind) && (
           <BookFiguresPanel
             figures={getExportFigures()}
             isRTL={isRTL}

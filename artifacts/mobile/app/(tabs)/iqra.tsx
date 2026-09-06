@@ -2291,16 +2291,6 @@ export default function IqraScreen() {
       return;
     }
 
-    if (tool.id === 'simplify' && topic) {
-      sendMessage(
-        lang === 'ar'
-          ? `بسّط شرح هذا الدرس بلغة يفهمها الطلاب: ${topic}`
-          : `Explain this lesson in simple language students understand: ${topic}`,
-        sessionMemory.activeLessonId ?? undefined,
-      );
-      return;
-    }
-
     if (tool.route) {
       router.push({
         pathname: tool.route as any,

@@ -33,7 +33,8 @@ export type GenerationKind =
   | "homework"
   | "quiz"
   | "activity"
-  | "classroom-activity";
+  | "classroom-activity"
+  | "simplified-explanation";
 
 /**
  * Fields whose absence leaves the screen with nothing to draw.
@@ -55,23 +56,47 @@ export const REQUIRED_FIELDS: Record<GenerationKind, readonly string[]> = {
   quiz: ["title", "questions"],
   activity: ["title", "objective", "materials", "steps"],
   "classroom-activity": ["activityName", "slides"],
+  // Dotted names because two of this artifact's load-bearing pieces are
+  // objects, and a bare key check cannot tell `{}` from a filled one — see
+  // `missingFields`. A student handout whose worked example has no answer is
+  // worse than no handout.
+  "simplified-explanation": [
+    "title", "bigIdea", "explanation",
+    "workedExample.text", "workedExample.answer",
+    "misconception.claim", "misconception.correction",
+    "checks",
+  ],
 };
 
-/** Which required fields are missing or empty — [] means usable. */
+/**
+ * Which required fields are missing or empty — [] means usable.
+ *
+ * A name containing a dot walks into a nested object: `"workedExample.answer"`
+ * asks that `workedExample` exist AND carry a non-empty `answer`. Without that,
+ * the check could only ask whether the key was present, so a truncated
+ * `"workedExample": {}` cleared the gate, got written to the shared artifact
+ * pool, and rendered an empty card for every teacher who asked for that lesson
+ * — a well-formed artifact that is wrong, which nothing downstream can catch.
+ */
 export function missingFields(kind: GenerationKind, parsed: unknown): string[] {
   const required = REQUIRED_FIELDS[kind] ?? [];
   if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
     return [...required];
   }
-  const obj = parsed as Record<string, unknown>;
-  return required.filter((f) => {
-    const v = obj[f];
-    if (v === undefined || v === null) return true;
-    // A whitespace-only string is the truncation signature, not a value.
-    if (typeof v === "string") return v.trim() === "";
-    if (Array.isArray(v)) return v.length === 0;
-    return false;
-  });
+  return required.filter((f) => isEmptyAt(parsed, f.split(".")));
+}
+
+/** Walk `path` from `node`: true when it dead-ends or lands on an empty value. */
+function isEmptyAt(node: unknown, path: readonly string[]): boolean {
+  if (node === null || typeof node !== "object" || Array.isArray(node)) return true;
+  const [head, ...rest] = path;
+  const v = (node as Record<string, unknown>)[head!];
+  if (v === undefined || v === null) return true;
+  if (rest.length > 0) return isEmptyAt(v, rest);
+  // A whitespace-only string is the truncation signature, not a value.
+  if (typeof v === "string") return v.trim() === "";
+  if (Array.isArray(v)) return v.length === 0;
+  return false;
 }
 
 /**

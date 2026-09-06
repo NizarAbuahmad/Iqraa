@@ -624,3 +624,109 @@ Return JSON in this exact shape:
   "assessment": "How to assess activity success"
 }`;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// «تبسيط الشرح» — the student's own explainer
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * The shape both paths promise.
+ *
+ * Hand-kept in step with `EXPLAINER_SHAPE` in
+ * `artifacts/mobile/services/ai/explainerBlueprint.ts`, the offline twin —
+ * `simplifiedExplanationPrompts.test.ts` pins these literals from this side and
+ * `simplifiedExplanation.test.ts` pins them from the other. Change one, change
+ * both, or a teacher gets a different handout depending on whether live
+ * generation happened to be on.
+ */
+export const EXPLAINER_SHAPE = { minSteps: 3, maxSteps: 5, checks: 3 } as const;
+
+/**
+ * What separates this artifact from a lesson plan.
+ *
+ * This tool had no server implementation at all: it posted to
+ * `/generate/lesson-plan` with «تبسيط الشرح» glued onto the topic, and the
+ * model returned an ordinary teacher's plan. The rules below are the whole
+ * difference, so they are stated as bans rather than suggestions — a model
+ * asked for "a simple lesson" reliably produces a lesson plan with shorter
+ * sentences.
+ */
+const EXPLAINER_RULES_AR = `- اكتب للطالب مباشرة بضمير المخاطب: «تبدأ»، «انتبه»، «جرّب». هذه ورقة تُسلَّم للطالب، لا خطة يقرأها معلّم.
+- ممنوع تمامًا: لا تكتب أهدافًا ولا مواد ولا تمهيدًا ولا تقييمًا ولا واجبًا منزليًا ولا تمايزًا ولا مدة حصة. هذه عناصر خطة درس، ووجودها هنا يعني أنك كتبت الشيء الخطأ.
+- ممنوع مخاطبة المعلّم: لا «اطلب من الطلاب»، ولا «وزّع البطاقات»، ولا «قيّم الفهم».
+- استخدم أبسط لغة ممكنة: جملة قصيرة واحدة لكل فكرة، وتجنّب المصطلح إلا إذا شرحته في «كلمات مفتاحية».
+- "explanation" من ${EXPLAINER_SHAPE.minSteps} إلى ${EXPLAINER_SHAPE.maxSteps} خطوات، كل خطوة سطر واحد.
+- "workedExample" مثال واحد محلول بخطواته، ويجب أن ينتهي بالإجابة النهائية صراحةً في حقل "answer".
+- "misconception" خطأ شائع واحد مكتوب كما يقوله الطالب فعلاً في "claim"، ثم التصحيح في "correction". لا تكتب نصيحة عامة.
+- "checks" ${EXPLAINER_SHAPE.checks} أسئلة بالضبط يحلّها الطالب وحده، ولكل سؤال إجابته في "answer".
+- اكتب المعادلات والرموز بالحروف اللاتينية (x، y) وليس بالحروف العربية.`;
+
+const EXPLAINER_RULES_EN = `- Write to the student in the second person: "you start", "watch out", "try". This sheet is handed to the student; it is not a plan a teacher reads.
+- Forbidden: do not write objectives, materials, an introduction, assessment, homework, differentiation, or a lesson duration. Those are lesson-plan sections, and any of them appearing here means you wrote the wrong artifact.
+- Forbidden: never address the teacher — no "ask students to", no "hand out cards", no "assess understanding".
+- Use the plainest language available: one short sentence per idea, and no term you have not explained under "keyWords".
+- "explanation" is ${EXPLAINER_SHAPE.minSteps} to ${EXPLAINER_SHAPE.maxSteps} steps, one line each.
+- "workedExample" is a single solved example with its steps, and it must end with the final answer stated explicitly in "answer".
+- "misconception" is one common mistake written the way a student actually says it in "claim", then the fix in "correction". Not general advice.
+- "checks" is exactly ${EXPLAINER_SHAPE.checks} questions the student answers alone, each with its answer in "answer".
+- Write equations and symbols in latin letters (x, y), never in Arabic letters.`;
+
+export function simplifiedExplanationPromptAr(b: any): string {
+  return `اكتب ورقة «تبسيط الشرح» لطالب في الصف ${b.grade} لم يفهم درس "${b.topic}" في مادة ${b.subject}.
+الورقة تُطبع وتُسلَّم للطالب ليقرأها وحده في البيت.
+${b.additionalContext ? `\nسياق الكتاب المدرسي (اعتمد عليه ولا تخترع خارجه):\n${b.additionalContext}` : ""}
+
+قواعد إلزامية:
+${EXPLAINER_RULES_AR}
+
+أعد JSON بالشكل الآتي (بالعربية):
+{
+  "title": "عنوان الورقة",
+  "bigIdea": "الفكرة كلها في جملة واحدة يستطيع الطالب حفظها",
+  "explanation": ["خطوة 1", "خطوة 2", "خطوة 3"],
+  "keyWords": [{ "term": "المصطلح", "meaning": "معناه بجملة بسيطة" }],
+  "workedExample": {
+    "text": "نص المثال",
+    "steps": ["الخطوة الأولى", "الخطوة الثانية"],
+    "answer": "الإجابة النهائية"
+  },
+  "misconception": {
+    "claim": "الخطأ الشائع بصيغة الطالب",
+    "correction": "لماذا هو خطأ، وما الصواب"
+  },
+  "checks": [
+    { "text": "سؤال تحقّق", "answer": "الإجابة" }
+  ]
+}
+إن لم يكن في الدرس مصطلحات تستحق التعريف، احذف "keyWords" بالكامل ولا تخترع تعريفات.`;
+}
+
+export function simplifiedExplanationPromptEn(b: any): string {
+  return `Write a "simplified explanation" sheet for a ${b.grade} student who did not understand the ${b.subject} lesson on "${b.topic}".
+The sheet is printed and handed to the student to read on their own at home.
+${b.additionalContext ? `\nTextbook context (rely on it; invent nothing beyond it):\n${b.additionalContext}` : ""}
+
+Mandatory rules:
+${EXPLAINER_RULES_EN}
+
+Return JSON in this exact shape:
+{
+  "title": "Sheet title",
+  "bigIdea": "The whole idea in one sentence the student can memorise",
+  "explanation": ["step 1", "step 2", "step 3"],
+  "keyWords": [{ "term": "the term", "meaning": "what it means, in one plain sentence" }],
+  "workedExample": {
+    "text": "The example problem",
+    "steps": ["first step", "second step"],
+    "answer": "The final answer"
+  },
+  "misconception": {
+    "claim": "The common mistake in the student's own words",
+    "correction": "Why it is wrong, and what is right"
+  },
+  "checks": [
+    { "text": "A check question", "answer": "The answer" }
+  ]
+}
+If the lesson has no terms worth defining, omit "keyWords" entirely rather than inventing definitions.`;
+}

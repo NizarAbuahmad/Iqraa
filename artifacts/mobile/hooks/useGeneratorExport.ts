@@ -30,7 +30,12 @@ export function useGeneratorExport<TResult, TMeta extends GeneratorExportMeta>(c
   getMeta: () => TMeta;
   formatText: (result: TResult, title: string, meta: TMeta, isAr: boolean) => string;
   buildHTML: (result: TResult, title: string, meta: TMeta, isAr: boolean, figures: readonly BookFigureRef[]) => string;
-  buildSlidesHTML: (result: TResult, title: string, meta: TMeta, isAr: boolean, figures: readonly BookFigureRef[]) => string;
+  /**
+   * Omit for an artifact with no deck. «تبسيط الشرح» is a printed handout and
+   * has none; `ExportMenu` already hides the row when `onSlides` is undefined,
+   * so the alternative was a fifth slide builder existing only to be offered.
+   */
+  buildSlidesHTML?: (result: TResult, title: string, meta: TMeta, isAr: boolean, figures: readonly BookFigureRef[]) => string;
   onError: (key: TranslationKey) => void;
   onCopied: (key: TranslationKey) => void;
 }) {
@@ -87,8 +92,8 @@ export function useGeneratorExport<TResult, TMeta extends GeneratorExportMeta>(c
     }
   }, [result, getTitle, getMeta, formatText, isAr, onError]);
 
-  const handleSlides = useCallback(async () => {
-    if (!result) return;
+  const handleSlidesImpl = useCallback(async () => {
+    if (!result || !buildSlidesHTML) return;
     setLoadingSlides(true);
     try {
       const title = getTitle();
@@ -107,7 +112,8 @@ export function useGeneratorExport<TResult, TMeta extends GeneratorExportMeta>(c
     handleCopy,
     handlePDF,
     handleWord,
-    handleSlides,
+    // undefined, not a no-op: ExportMenu keys the row's existence off this.
+    handleSlides: buildSlidesHTML ? handleSlidesImpl : undefined,
     loadingPDF,
     loadingWord,
     loadingSlides,

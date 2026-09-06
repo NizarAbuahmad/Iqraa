@@ -15,7 +15,7 @@ import {
   ActivityOutput, AIRequest, AIService,
   ClassroomActivity, ClassroomActivityRequest,
   GenerateOptions,
-  LessonPlanOutput, QuizOutput, WorksheetOutput,
+  LessonPlanOutput, QuizOutput, SimplifiedExplanationOutput, WorksheetOutput,
 } from './AIService';
 import { DEMO_MODE } from './demoMode';
 import { MockAIService } from './generators';
@@ -106,6 +106,17 @@ export class RemoteAIService extends AIService {
       'worksheet',
       () => postJSON<WorksheetOutput>('/generate/worksheet', req, opts),
       () => this.fallback.generateWorksheet(req),
+    );
+  }
+
+  async generateSimplifiedExplanation(
+    req: AIRequest,
+    opts?: GenerateOptions,
+  ): Promise<SimplifiedExplanationOutput> {
+    return generateWithProvenance(
+      'simplified-explanation',
+      () => postJSON<SimplifiedExplanationOutput>('/generate/simplified-explanation', req, opts),
+      () => this.fallback.generateSimplifiedExplanation(req),
     );
   }
 

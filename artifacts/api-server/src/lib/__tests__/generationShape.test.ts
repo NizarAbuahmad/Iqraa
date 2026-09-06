@@ -31,6 +31,15 @@ const lessonPlan = () => ({
   homework: "واجب",
 });
 
+const explainer = () => ({
+  title: "تبسيط الشرح",
+  bigIdea: "الفكرة في جملة",
+  explanation: ["خطوة", "خطوة أخرى", "خطوة ثالثة"],
+  workedExample: { text: "مسألة", steps: ["خطوة"], answer: "٣" },
+  misconception: { claim: "الخطأ الشائع", correction: "التصحيح" },
+  checks: [{ text: "سؤال" }],
+});
+
 describe("missingFields", () => {
   it("passes a complete artifact", () => {
     assert.deepEqual(missingFields("lesson-plan", lessonPlan()), []);
@@ -83,6 +92,61 @@ describe("missingFields", () => {
 
   it("holds homework to the worksheet contract it is rendered by", () => {
     assert.deepEqual(REQUIRED_FIELDS.homework, REQUIRED_FIELDS.worksheet);
+  });
+
+  it("passes a complete simplified explanation", () => {
+    assert.deepEqual(missingFields("simplified-explanation", explainer()), []);
+  });
+
+  it("looks INSIDE workedExample and misconception", () => {
+    // The whole reason the dotted paths exist. A model that gets cut off after
+    // opening the object leaves `{}` behind, which a bare key check reads as
+    // present — and this artifact is pooled, so one empty worked example is
+    // served to every teacher who asks for that lesson, not just the one who
+    // triggered it.
+    assert.deepEqual(
+      missingFields("simplified-explanation", { ...explainer(), workedExample: {} }),
+      ["workedExample.text", "workedExample.answer"],
+    );
+    assert.deepEqual(
+      missingFields("simplified-explanation", {
+        ...explainer(),
+        workedExample: { text: "مسألة", steps: [], answer: "  " },
+      }),
+      ["workedExample.answer"],
+    );
+    assert.deepEqual(
+      missingFields("simplified-explanation", {
+        ...explainer(),
+        misconception: { claim: "الخطأ" },
+      }),
+      ["misconception.correction"],
+    );
+  });
+
+  it("reports a dotted path as missing when its parent is not an object", () => {
+    for (const bad of [null, "نص", 42, ["a"]]) {
+      assert.deepEqual(
+        missingFields("simplified-explanation", { ...explainer(), workedExample: bad }),
+        ["workedExample.text", "workedExample.answer"],
+        `workedExample: ${JSON.stringify(bad)} should report both leaves`,
+      );
+    }
+  });
+
+  it("does not require keyWords — several lessons print no terms box", () => {
+    // An invented definition is worse than none, so the generator omits the
+    // field rather than sending []. Requiring it would 502 those lessons.
+    assert.ok(!REQUIRED_FIELDS["simplified-explanation"].includes("keyWords"));
+    assert.deepEqual(missingFields("simplified-explanation", explainer()), []);
+  });
+
+  it("never requires a `verified` field on a self-check", () => {
+    // Nothing in this path runs the verifier. Requiring the flag would invite
+    // the model to supply one, which is how an unearned claim gets stored.
+    assert.ok(
+      !REQUIRED_FIELDS["simplified-explanation"].some((f) => f.includes("verified")),
+    );
   });
 });
 

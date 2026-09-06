@@ -8,6 +8,13 @@
  * (`includePriorReview` + `priorKnowledge`) or via free-text notes on prior
  * topics to re-explain (`priorTopicsNotes`) — and never otherwise.
  *
+ * A case here used to assert that the `isSimplify` branch never fabricated a
+ * `priorReview`. That branch is gone — «تبسيط الشرح» has its own generator now
+ * — and the same input legitimately DOES produce a review, because the notes
+ * were passed and are honoured. The equivalent guard lives in
+ * `simplifiedExplanation.test.ts`, which asserts the handout carries no
+ * lesson-plan field at all.
+ *
  * Runs with Node's built-in test runner:
  *   node --experimental-strip-types --test \
  *     artifacts/mobile/services/__tests__/mockLessonPlanPriorReview.test.ts
@@ -75,15 +82,6 @@ describe('MockAIService.generateLessonPlan — priorReview', () => {
     });
     assert.match(plan.priorReview!, /حل معادلات تربيعية باستعمال التحليل/);
     assert.match(plan.priorReview!, /ركّز على المتعثرين في الصف التاسع/);
-  });
-
-  it('does not fabricate a priorReview during the simplify-explanation branch', async () => {
-    const plan = await service.generateLessonPlan({
-      ...BASE_REQ,
-      topic: 'تبسيط الشرح: المعادلات التربيعية',
-      priorTopicsNotes: 'ملاحظات لن تُستخدم في وضع التبسيط',
-    });
-    assert.equal(plan.priorReview, undefined);
   });
 
   it('works in English too', async () => {

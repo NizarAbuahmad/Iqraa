@@ -33,6 +33,7 @@ export {
   formatAttemptResultText,
   formatLessonPlanText,
   formatQuizText,
+  formatSimplifiedExplanationText,
   formatWorksheetText,
 } from './exportText.ts';
 
@@ -44,6 +45,7 @@ export {
   buildLessonPlanSlidesHTML,
   buildQuizHTML,
   buildQuizSlidesHTML,
+  buildSimplifiedExplanationHTML,
   buildWorksheetHTML,
   buildWorksheetSlidesHTML,
   type BookFigureRef,

@@ -36,7 +36,7 @@ export type AiSourceReason = 'demo-mode' | 'live' | 'fallback' | 'failed' | 'can
 /** Which generator ran — matches the API path segment, e.g. 'lesson-plan'. */
 export type AiGenerationKind =
   | 'lesson-plan' | 'worksheet' | 'quiz' | 'activity' | 'homework'
-  | 'classroom-activity' | 'chat';
+  | 'classroom-activity' | 'simplified-explanation' | 'chat';
 
 export interface AiGenerationRecord {
   kind: AiGenerationKind;

@@ -216,6 +216,104 @@ export interface QuizQuestion {
   explanation: string;
 }
 
+/**
+ * A plain-language explainer written FOR the student, not for the teacher.
+ *
+ * The one output type in this file whose reader is a fifteen-year-old who did
+ * not follow the lesson. That is why it carries none of `LessonPlanOutput`'s
+ * fields: objectives, materials, assessment and homework are things a teacher
+ * does, and a student handed them reads instructions addressed to someone else.
+ * «تبسيط الشرح» used to BE a `LessonPlanOutput` with a shorter duration, which
+ * is how its subtitle came to promise examples and misconceptions the type had
+ * nowhere to put.
+ *
+ * Not a `WorksheetOutput` either: a worksheet is questions and an answer key
+ * with no prose, and a student who cannot do the questions is exactly the
+ * student this is for. The self-check items at the end are a check ON the
+ * explanation, not the artifact.
+ */
+export interface SimplifiedExplanationOutput {
+  title: string;
+  grade: string;
+  subject: string;
+  /** The whole lesson in one sentence the student could repeat from memory. */
+  bigIdea: string;
+  /**
+   * The explanation itself, as 3-5 short steps.
+   *
+   * An array, not a paragraph: the wall of prose is the thing this tool exists
+   * to replace, and `missingFields` can see an empty array where it cannot see
+   * an empty sentence inside one.
+   */
+  explanation: string[];
+  /**
+   * Words the lesson cannot be read without, each in one plain sentence.
+   *
+   * Optional and often absent: the definitions come from the lesson's own
+   * `keyTerms`, and several NCCD lessons print no terms box at all. An invented
+   * definition is worse than none, so an empty list is omitted rather than sent.
+   */
+  keyWords?: SimplifiedKeyWord[];
+  workedExample: WorkedExample;
+  misconception: Misconception;
+  /** Questions the student answers alone to check the explanation landed. */
+  checks: SelfCheckItem[];
+  sources?: GroundedSource[];
+  variantId?: string;
+}
+
+export interface SimplifiedKeyWord {
+  term: string;
+  meaning: string;
+}
+
+export interface WorkedExample {
+  /**
+   * The problem, stated as the student would meet it.
+   *
+   * Named `text` deliberately, like `WorksheetQuestion.text`: `variation.ts`
+   * and `regeneration.ts` both key their signature extraction on that name, so
+   * a regeneration is steered away from re-posing this same problem. Calling it
+   * `problem` would silently get none of that.
+   */
+  text: string;
+  /** One step per line, in the order a student writes them. */
+  steps: string[];
+  /**
+   * The final answer, stated plainly. Computed in latin `x` and converted to
+   * `س` / Arabic digits at display time only.
+   */
+  answer: string;
+}
+
+export interface Misconception {
+  /** The wrong idea, written the way a student would say it. */
+  claim: string;
+  /** Why it is wrong, and what to do instead. */
+  correction: string;
+}
+
+export interface SelfCheckItem {
+  text: string;
+  /**
+   * Absent when nothing established it. An omitted answer prints no key; a
+   * guessed one prints a wrong key under a heading that looks official.
+   */
+  answer?: string;
+  /**
+   * How that answer was established — never whether it is "verified".
+   *
+   *  'bank'       hand-authored item from the reviewed concrete bank.
+   *  'curriculum' the lesson's own `keyTerms` definition, quoted.
+   *  'generated'  a model wrote it and nothing checked it.
+   *
+   * Absent is read as `'generated'`. This type deliberately has NO `verified`
+   * field: nothing in this path runs the verifier, and a code-computed
+   * `verified` has shipped once already — see CLAUDE.md.
+   */
+  answerSource?: 'bank' | 'curriculum' | 'generated';
+}
+
 export interface ActivityStep {
   stepNumber: number;
   title: string;
@@ -457,5 +555,6 @@ export abstract class AIService {
   abstract generateQuiz(req: AIRequest, opts?: GenerateOptions): Promise<QuizOutput>;
   abstract generateHomework(req: AIRequest, opts?: GenerateOptions): Promise<WorksheetOutput>;
   abstract generateActivity(req: AIRequest, opts?: GenerateOptions): Promise<ActivityOutput>;
+  abstract generateSimplifiedExplanation(req: AIRequest, opts?: GenerateOptions): Promise<SimplifiedExplanationOutput>;
   abstract generateClassroomActivity(req: ClassroomActivityRequest, opts?: GenerateOptions): Promise<ClassroomActivity>;
 }

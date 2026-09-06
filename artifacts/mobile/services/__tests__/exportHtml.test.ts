@@ -20,6 +20,7 @@ import {
   buildLessonPlanSlidesHTML,
   buildQuizHTML,
   buildQuizSlidesHTML,
+  buildSimplifiedExplanationHTML,
   buildWorksheetHTML,
   buildWorksheetSlidesHTML,
   DOC_ACCENT,
@@ -31,6 +32,7 @@ import type {
   LessonFlowOutput,
   LessonPlanOutput,
   QuizOutput,
+  SimplifiedExplanationOutput,
   WorksheetOutput,
 } from '../ai/AIService.ts';
 
@@ -103,6 +105,22 @@ const flow = (): LessonFlowOutput => ({
 }) as unknown as LessonFlowOutput;
 
 /** Every builder, rendered in Arabic — the RTL surface as a whole. */
+const explainer = (): SimplifiedExplanationOutput => ({
+  title: 'تبسيط الشرح – الاقترانات',
+  grade: 'الصف العاشر',
+  subject: 'Mathematics',
+  bigIdea: 'الاقتران علاقة تعطي لكل مدخل مخرجًا واحدًا.',
+  explanation: ['افهم أولاً: المدخل والمخرج', 'القاعدة التي تستخدمها: f(x) = 2x + 1', 'جرّب بنفسك'],
+  keyWords: [{ term: 'المجال', meaning: 'كل القيم المسموح بها للمدخل' }],
+  workedExample: { text: 'أوجد f(3) حيث f(x) = 2x + 1', steps: ['عوّض x = 3'], answer: '7' },
+  misconception: { claim: 'كثيرون يجيبون «5»', correction: 'الإجابة الصحيحة «7».' },
+  // One answered, one open — the open item must print no answer line.
+  checks: [
+    { text: 'أوجد f(5)', answer: '11', answerSource: 'bank' },
+    { text: 'اشرح الفكرة بجملتين' },
+  ],
+});
+
 const arabicDocuments = (): [string, string][] => [
   ['quiz', buildQuizHTML(quiz(), 'اختبار', meta, true)],
   ['worksheet', buildWorksheetHTML(worksheet(), 'ورقة عمل', meta, true)],
@@ -113,6 +131,7 @@ const arabicDocuments = (): [string, string][] => [
   ['lessonPlanSlides', buildLessonPlanSlidesHTML(plan(), 'خطة', meta, true)],
   ['activitySlides', buildActivitySlidesHTML(activity(), 'نشاط', meta, true)],
   ['lessonFlow', buildLessonFlowHTML(flow(), true)],
+  ['explainer', buildSimplifiedExplanationHTML(explainer(), 'تبسيط الشرح', meta, true)],
 ];
 
 describe('RTL layout', () => {
@@ -277,13 +296,14 @@ describe('book figure appendix', () => {
     }
   });
 
-  it('prints the appendix for all four document builders, cited by page', () => {
+  it('prints the appendix for every document builder, cited by page', () => {
     const figs = someFigures(2);
     const builders: [string, (f: BookFigureRef[]) => string][] = [
       ['worksheet', f => buildWorksheetHTML(worksheet(), 'ورقة عمل', meta, true, f)],
       ['quiz', f => buildQuizHTML(quiz(), 'اختبار', meta, true, f)],
       ['lessonPlan', f => buildLessonPlanHTML(plan(), 'خطة', meta, true, f)],
       ['activity', f => buildActivityHTML(activity(), 'نشاط', meta, true, f)],
+      ['explainer', f => buildSimplifiedExplanationHTML(explainer(), 'تبسيط', meta, true, f)],
     ];
     for (const [name, build] of builders) {
       const html = build(figs);
@@ -492,5 +512,54 @@ describe('printed document design', () => {
     for (const [name, html] of printDocuments()) {
       assert.match(html, /print-color-adjust:\s*exact/, `${name} will print colourless`);
     }
+  });
+});
+
+/**
+ * The student's handout must not look like the teacher's plan.
+ *
+ * «تبسيط الشرح» was `buildLessonPlanHTML` behind a route flag, so a teacher
+ * who exported it handed a student a document headed «خطة درس» with the
+ * teacher's objectives and assessment on it.
+ */
+describe('the simplified explanation is a student handout', () => {
+  it('never carries another artifact type\'s badge', () => {
+    const html = buildSimplifiedExplanationHTML(explainer(), 'تبسيط الشرح', meta, true);
+    assert.ok(!html.includes('خطة درس'), 'printed the lesson-plan badge');
+    assert.ok(!html.includes('ورقة عمل'), 'printed the worksheet badge');
+  });
+
+  it('prints no lesson-plan section headings', () => {
+    const html = buildSimplifiedExplanationHTML(explainer(), 'تبسيط الشرح', meta, true);
+    for (const heading of ['الأهداف', 'المواد اللازمة', 'التمهيد', 'الواجب المنزلي', 'التمايز']) {
+      assert.ok(!html.includes(heading), `printed «${heading}», which belongs to a lesson plan`);
+    }
+  });
+
+  it('prints an answer only for a check that has one', () => {
+    // The open second check has no `answer`. Printing «undefined» under a
+    // heading that reads «الإجابات» is worse than printing nothing.
+    const html = buildSimplifiedExplanationHTML(explainer(), 'تبسيط الشرح', meta, true);
+    assert.ok(html.includes('الإجابات'), 'the answers block should appear');
+    assert.ok(html.includes('11'), "the answered check's answer is missing");
+    assert.ok(!html.includes('undefined'), 'printed undefined for the open check');
+  });
+
+  it('omits the answers block entirely when nothing established an answer', () => {
+    const open = { ...explainer(), checks: [{ text: 'اشرح بكلماتك' }] };
+    const html = buildSimplifiedExplanationHTML(open, 'تبسيط الشرح', meta, true);
+    assert.ok(!html.includes('الإجابات'), 'printed an empty answers heading');
+  });
+
+  it('skips the key-words block when the lesson prints no terms', () => {
+    const noTerms = { ...explainer(), keyWords: undefined };
+    const html = buildSimplifiedExplanationHTML(noTerms, 'تبسيط الشرح', meta, true);
+    assert.ok(!html.includes('كلمات مفتاحية'), 'printed an empty key-words heading');
+  });
+
+  it('uses its own accent, not another document type\'s', () => {
+    assert.equal(DOC_ACCENT.explainer, '#00A99D');
+    const html = buildSimplifiedExplanationHTML(explainer(), 'تبسيط الشرح', meta, true);
+    assert.ok(html.includes(DOC_ACCENT.explainer));
   });
 });
