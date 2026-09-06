@@ -85,3 +85,41 @@ describe("quiz difficulty reaches the prompt at all", () => {
     });
   }
 });
+
+/**
+ * The same failure this file documents for `difficulty`, found in production
+ * on 2026-09-06 for `duration`: a teacher picked a 20-minute quiz and got a
+ * paper headed «45 دقيقة». Both quiz prompts carried a literal
+ * `"duration": 45` in their JSON template while every neighbouring field
+ * interpolated the request — so the picker worked, the value reached the
+ * server, and the prompt threw it away. The lesson-plan prompts in the same
+ * file had it right, which is what makes this look like a copy that lost its
+ * `${...}`.
+ *
+ * Per-language because the two templates are separate strings, and a fix that
+ * touched only the Arabic one would otherwise pass.
+ */
+describe("quiz duration reaches the prompt", () => {
+  for (const [name, build] of [["ar", quizPromptAr], ["en", quizPromptEn]] as const) {
+    it(`${name}: the teacher's duration is what the prompt asks for`, () => {
+      assert.match(build({ ...base, duration: 20 }), /"duration": 20/, `${name}: quiz prompt ignores duration`);
+      assert.match(build({ ...base, duration: 30 }), /"duration": 30/);
+    });
+
+    it(`${name}: two durations are two different prompts`, () => {
+      // The assertion above would still pass if 20 and 30 appeared somewhere
+      // unrelated in the template. This one cannot.
+      assert.notEqual(
+        build({ ...base, duration: 20 }),
+        build({ ...base, duration: 45 }),
+        `${name}: duration does not change the quiz prompt`,
+      );
+    });
+
+    it(`${name}: falls back to 45 when the caller sends none`, () => {
+      // Matches the lesson-plan prompts' `?? 45`. A quiz built by a path that
+      // never asks for a duration should still name one.
+      assert.match(build({ ...base }), /"duration": 45/);
+    });
+  }
+});

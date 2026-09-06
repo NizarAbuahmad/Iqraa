@@ -389,7 +389,7 @@ ${b.additionalContext ? `\nسياق الكتاب المدرسي (استخدمه 
 أعد JSON بالشكل الآتي (بالعربية):
 {
   "title": "عنوان الاختبار",
-  "duration": 45,
+  "duration": ${b.duration ?? 45},
   "totalPoints": ${marks},
   "questions": [
     {
@@ -416,7 +416,7 @@ ${b.additionalContext ? `\nTextbook context (use this to craft accurate, curricu
 Return JSON in this exact shape:
 {
   "title": "Quiz title",
-  "duration": 45,
+  "duration": ${b.duration ?? 45},
   "totalPoints": ${marks},
   "questions": [
     {
