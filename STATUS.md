@@ -406,6 +406,63 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Android push has the credentials it needs, 2026-09-06
+
+`expo-notifications` has always been able to *ask* for a token and never able
+to get a usable one: there was no Firebase project, no `google-services.json`,
+and no FCM V1 key on EAS. Both halves now exist, and they are different kinds
+of thing:
+
+- **`google-services.json`** — client config, committed (`d462aa3`). Not
+  secret: it ships inside the APK and only identifies the Firebase project.
+  `app.json` points at it via `android.googleServicesFile`.
+- **The FCM V1 service account key** — a private key, uploaded to EAS and
+  stored nowhere in this repo. `iqraa-95dd1`, client
+  `firebase-adminsdk-fbsvc@iqraa-95dd1.iam.gserviceaccount.com`, uploaded
+  2026-09-06 10:13. `*firebase-adminsdk*.json` and `*-service-account*.json`
+  are gitignored so it cannot arrive here by accident.
+
+Firebase project `iqraa-95dd1`, Android app `com.iqra.teachingassistant` —
+both files verified to name the same project before either was wired in.
+
+**The upload had to go through the Expo web dashboard, not `eas credentials`.**
+Worth recording because it cost an hour: that command is a TUI with no
+non-interactive flag (`--non-interactive` is not a flag; piping gives
+`Input is required, but stdin is not readable`), and the desktop app's terminal
+panel does not forward keystrokes into its raw-mode prompt — every attempt
+delivered a single control byte and the prompt looped on "File does not exist."
+No path fixes that. The dashboard route is
+`…/credentials/android/<package>` → *FCM V1 service account key* → *Add a
+service account key*, which is an ordinary file input.
+
+Rebuilt on `main` (`d5e1bf2`), build `68522384-7bff-45ec-bb18-830456db0e47`,
+finished in 22 minutes. New APK:
+https://expo.dev/artifacts/eas/NjlAR0VFVTImx9eIiVbxAgtq403T_NZ55LsVwg5Ljfo.apk
+
+**The rebuild was not optional and the old APK is not fixable.** FCM config is
+compiled into the binary, so the 2026-09-05 build stays push-dead no matter
+what sits on Expo's servers. Evidence the native config really changed: the
+EAS fingerprint moved from `aee3bf20…` to `92f803e2…`. The archive also fell
+from 424 MB to 311 MB, which is `.easignore` from the previous entry working.
+
+Still not verified, and only a device can: **that a notification actually
+arrives.** A key on the server and a config in the binary are necessary, not
+sufficient. `registerPushToken` swallows every failure by design
+(`services/pushTokens.ts`), so a broken setup looks exactly like a working one
+from inside the app — check that a token row reaches `device_push_tokens`,
+then send one.
+
+One rough edge shipped by PR #281, which made a student's claim code findable
+from the class roster: minting a code calls `POST /students/:id/claim-code`,
+which `studentAccountsEnabled()` refuses in v1 with
+`student_accounts_disabled`. Nothing special-cased the refusal, so the screen
+rendered the server's raw English error into an Arabic-first UI, styled as a
+failure — when nothing had failed. **Fixed the same day:** `classes/[id].tsx`
+hides the key icon and `messaging/claim/[studentId].tsx` replaces the generate
+button with a sentence saying the capability is not in this release, both off
+`useStudentAccountsEnabled()`. A disabled control was rejected deliberately —
+it invites "when?", which neither screen can answer.
+
 ## The app has been built for a real device, 2026-09-05
 
 The first EAS build in the project's life. `artifacts/mobile` has always been
@@ -456,6 +513,11 @@ a build existing is not a build running. `newArchEnabled` and `reactCompiler`
 are both experimental and this is the first time either has been compiled.
 
 iOS is untouched and is blocked on a person: it needs an Apple Developer
+<<<<<<< HEAD
+Program membership and an Apple ID sign-in. ~~Android push also still needs an
+FCM service account key uploaded to EAS~~ — **done 2026-09-06, see «Android
+push has the credentials it needs» below.**
+=======
 Program membership and an Apple ID sign-in. Android push also still needs an
 FCM service account key uploaded to EAS — not a build blocker, but until it is
 there `expo-notifications` will register tokens that nothing can deliver to.
@@ -569,6 +631,7 @@ rebuilds, but custom-group membership and any existing direct thread do not.
 Those were a teacher's explicit choice rather than a derivation, and dropping a
 parent out of «أولياء أمور ١٠-أ» over a roster correction is a product
 decision, not a cleanup.
+>>>>>>> origin
 
 ## v1 is teacher-only, and a roster now needs a consent to exist, 2026-09-05
 
@@ -874,7 +937,8 @@ See «v1 is teacher-only, and a roster now needs a consent to exist».** **No EA
 build has ever been made**, so push delivery, image picking and the app icon
 remain unverified on a device, and `newArchEnabled` + `reactCompiler` are both
 experimental — Expo Go over LAN is not evidence that a release build runs.
-There are no store assets and no `google-services.json` for Android FCM.
+There are no store assets. ~~and no `google-services.json` for Android FCM~~
+— the Firebase side landed 2026-09-06, see below.
 
 ## Arabic and Islamic Studies do not carry extractable figures, 2026-09-05
 

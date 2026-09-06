@@ -37,6 +37,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { useStudentAccountsEnabled } from '@/services/features';
 import {
   RosterError,
   addStudents,
@@ -68,6 +69,11 @@ export default function ClassDetailScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
+  // v1 is teacher-only: minting a link code answers 403
+  // `student_accounts_disabled` server-side, so the key icon below would be
+  // a door onto an error. Asked of the server, not a build-time constant —
+  // see services/features.ts.
+  const studentAccounts = useStudentAccountsEnabled();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const [tab, setTab] = useState<Tab>('students');
@@ -452,16 +458,22 @@ export default function ClassDetailScreen() {
               {t('messagingClassChat')}
             </Text>
           </Pressable>
-          <Pressable
-            onPress={() => setShowJoinCode(true)}
-            hitSlop={8}
-            style={[styles.classChatPill, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-          >
-            <Ionicons name="key-outline" size={15} color="#fff" />
-            <Text style={[styles.classChatPillText, { fontFamily: 'Cairo_500Medium' }]}>
-              {t('joinCodeTitle')}
-            </Text>
-          </Pressable>
+          {/* Minting a class join code answers 403 `student_accounts_disabled`
+              while v1 is teacher-only, and the modal behind this pill has no
+              other purpose — so the pill goes rather than opening onto an
+              error. Comes back on its own when STUDENT_ACCOUNTS is enabled. */}
+          {studentAccounts ? (
+            <Pressable
+              onPress={() => setShowJoinCode(true)}
+              hitSlop={8}
+              style={[styles.classChatPill, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+            >
+              <Ionicons name="key-outline" size={15} color="#fff" />
+              <Text style={[styles.classChatPillText, { fontFamily: 'Cairo_500Medium' }]}>
+                {t('joinCodeTitle')}
+              </Text>
+            </Pressable>
+          ) : null}
         </View>
         <View style={[styles.tabs, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           {renderTab('students', t('classTabStudents'), countStudents(students.length, lang))}
@@ -545,7 +557,9 @@ export default function ClassDetailScreen() {
               {/* Who has actually signed up — the question a shared join code
                   immediately creates, and the one nothing on this screen used
                   to answer. Only shown once somebody has joined: thirty grey
-                  "not joined yet" pills on day one is noise, not information. */}
+                  "not joined yet" pills on day one is noise, not information.
+                  Needs no flag guard of its own — nobody can be linked while
+                  student accounts are off, so it never renders in v1. */}
               {item.linked ? (
                 <View style={[styles.linkedPill, { backgroundColor: ACCENT + '18' }]}>
                   <Text style={[styles.linkedPillText, { color: ACCENT, fontFamily: 'Cairo_500Medium' }]}>
@@ -553,15 +567,17 @@ export default function ClassDetailScreen() {
                   </Text>
                 </View>
               ) : null}
-              <Pressable
-                onPress={() => router.push(`/messaging/claim/${item.id}?studentName=${encodeURIComponent(item.displayName)}`)}
-                hitSlop={10}
-              >
-                {/* A key, not a speech bubble: this opens the student's link
-                    code. The bubble read as "chat with them" and hid the one
-                    thing teachers were hunting for. */}
-                <Ionicons name="key-outline" size={18} color={colors.mutedForeground} />
-              </Pressable>
+              {studentAccounts ? (
+                <Pressable
+                  onPress={() => router.push(`/messaging/claim/${item.id}?studentName=${encodeURIComponent(item.displayName)}`)}
+                  hitSlop={10}
+                >
+                  {/* A key, not a speech bubble: this opens the student's link
+                      code. The bubble read as "chat with them" and hid the one
+                      thing teachers were hunting for. */}
+                  <Ionicons name="key-outline" size={18} color={colors.mutedForeground} />
+                </Pressable>
+              ) : null}
               <Pressable onPress={() => { void onRemove(item); }} hitSlop={10}>
                 <Ionicons name="close" size={20} color={colors.mutedForeground} />
               </Pressable>

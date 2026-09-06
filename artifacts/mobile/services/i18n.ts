@@ -528,6 +528,10 @@ const translations = {
 
     // Account deletion — Apple 5.1.1(v) and Google Play both require this
     // path to exist inside the app.
+    // Shown where a student link code would be, while STUDENT_ACCOUNTS is off
+    // server-side. Says "not yet", not "failed" — nothing went wrong.
+    messagingClaimCodeUnavailable:
+      'روابط حسابات الطلبة وأولياء الأمور غير مفعّلة في هذا الإصدار، فالتطبيق حاليًّا للمعلّمين وحدهم.',
     accountSection: 'الحساب',
     deleteAccount: 'حذف الحساب',
     deleteAccountTitle: 'حذف الحساب',
@@ -1679,6 +1683,10 @@ const translations = {
 
     // Account deletion — Apple 5.1.1(v) and Google Play both require this
     // path to exist inside the app.
+    // Shown where a student link code would be, while STUDENT_ACCOUNTS is off
+    // server-side. Says "not yet", not "failed" — nothing went wrong.
+    messagingClaimCodeUnavailable:
+      'Student and parent account links are not enabled in this release — the app is teacher-only for now.',
     accountSection: 'ACCOUNT',
     deleteAccount: 'Delete account',
     deleteAccountTitle: 'Delete account',
