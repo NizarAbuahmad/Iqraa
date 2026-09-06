@@ -18,7 +18,8 @@
       },
       "env": {
         "EXPO_PUBLIC_API_BASE_URL": "https://iqraa-api-613126375862.europe-west1.run.app/api",
-        "EXPO_PUBLIC_DEMO_MODE": "false"
+        "EXPO_PUBLIC_DEMO_MODE": "false",
+        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "784063967007-86omgnji0cg28iaav1o1celb8cm9je26.apps.googleusercontent.com"
       }
     },
     "production": {
@@ -28,7 +29,8 @@
       },
       "env": {
         "EXPO_PUBLIC_API_BASE_URL": "https://iqraa-api-613126375862.europe-west1.run.app/api",
-        "EXPO_PUBLIC_DEMO_MODE": "false"
+        "EXPO_PUBLIC_DEMO_MODE": "false",
+        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "784063967007-86omgnji0cg28iaav1o1celb8cm9je26.apps.googleusercontent.com"
       }
     }
   },

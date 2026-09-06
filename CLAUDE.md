@@ -41,7 +41,7 @@ pnpm run typecheck                     # whole monorepo
 pnpm run dev:api                       # Express on :8080
 pnpm run dev:mobile:web                # Expo web on :8081 (MOBILE_PORT overrides)
 
-cd artifacts/mobile     && pnpm test   # 1244 passing (2026-09-06)
+cd artifacts/mobile     && pnpm test
 cd artifacts/api-server && pnpm build && pnpm test   # build first — see below
 ```
 
