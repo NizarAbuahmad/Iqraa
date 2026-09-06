@@ -45,23 +45,22 @@ interface Props {
   maxHeight?: number;
   /**
    * Background of the selected row. Defaults to `colors.secondary`, a fixed
-   * teal. quiz and worksheet pass `accent + '15'` instead, because their
-   * accents are amber and violet and a teal row on those screens looks like
-   * a bug — the tint is keyed to the screen, not to the theme.
+   * teal. quiz, worksheet and the evaluations paper builder pass
+   * `accent + '15'` instead, because their accents are amber, violet and teal
+   * and a fixed teal row on the first two looks like a bug — that tint is
+   * keyed to the screen, not to the theme.
    */
   selectedTint?: string;
-  /** Tint the closed trigger's border with `accent` while open. quiz only. */
-  highlightBorderWhenOpen?: boolean;
 }
 
-export function PickerField({ label, value, options, onChange, colors, isRTL, accent, hidden, maxHeight = 200, selectedTint, highlightBorderWhenOpen }: Props) {
+export function PickerField({ label, value, options, onChange, colors, isRTL, accent, hidden, maxHeight = 200, selectedTint }: Props) {
   const [open, setOpen] = useState(false);
   return (
     <View style={{ marginBottom: 16 }}>
       <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
       <Pressable
         onPress={() => setOpen(o => !o)}
-        style={[styles.pickerBtn, { backgroundColor: colors.card, borderColor: highlightBorderWhenOpen && open ? accent : colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+        style={[styles.pickerBtn, { backgroundColor: colors.card, borderColor: open ? accent : colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
       >
         <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{value}</Text>
         <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />

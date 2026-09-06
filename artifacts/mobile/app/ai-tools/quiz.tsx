@@ -823,14 +823,15 @@ function CheckboxRow({ label, checked, onToggle, accent, colors, isRTL }: {
 }
 
 /**
- * The shared dropdown wearing this screen's skin: a shorter list, an
- * amber-tinted selected row, and a trigger that tints its border while open.
+ * The shared dropdown wearing this screen's skin: a shorter list and an
+ * amber-tinted selected row. (The open trigger's border tint used to be bound
+ * here too, until every screen wanted it and it moved into the component.)
  * Binding them here rather than at each of the five call sites means a sixth
  * picker cannot be added half-styled — which is how the 45-line copy this
  * replaces drifted away from components/ui/PickerField in the first place.
  */
 function PickerField(props: React.ComponentProps<typeof SharedPickerField>) {
-  return <SharedPickerField maxHeight={180} selectedTint={ACCENT + '15'} highlightBorderWhenOpen {...props} />;
+  return <SharedPickerField maxHeight={180} selectedTint={ACCENT + '15'} {...props} />;
 }
 
 const styles = StyleSheet.create({
