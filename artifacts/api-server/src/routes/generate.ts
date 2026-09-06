@@ -12,9 +12,12 @@ import {
   lessonPlanPromptEn,
   quizPromptAr,
   quizPromptEn,
+  simplifiedExplanationPromptAr,
+  simplifiedExplanationPromptEn,
   worksheetPromptAr,
   worksheetPromptEn,
 } from "../lib/prompts.ts";
+import { stampGeneratedAnswerSource } from "../lib/explainerAnswers.ts";
 import {
   classroomPromptAr,
   classroomPromptEn,
@@ -401,6 +404,29 @@ generateRouter.post("/generate/lesson-plan", async (req: AuthenticatedRequest, r
     res.json(withMeta(content, grounding, variantId));
   } catch (err) {
     respondAiError(err, res, "generate lesson-plan");
+  }
+});
+
+// ─── Simplified explanation («تبسيط الشرح») ──────────────────────────────────
+// A handout for the student, not a plan for the teacher. This tool had no
+// server implementation at all until now: the screen posted to
+// /generate/lesson-plan with «تبسيط الشرح» prefixed onto the topic and a
+// `mode:simplify` line in additionalContext that no prompt clause ever read,
+// so with live generation on it returned an ordinary lesson plan.
+generateRouter.post("/generate/simplified-explanation", async (req: AuthenticatedRequest, res) => {
+  try {
+    const isAr = req.body.language !== "english";
+    const { body, grounding } = withGrounding(req.body, isAr);
+    const prompt = isAr ? simplifiedExplanationPromptAr(body) : simplifiedExplanationPromptEn(body);
+    const { content, variantId } = await generateContent({
+      kind: "simplified-explanation", systemPrompt: systemPrompt(isAr, { hasBookFigures: hasBookFigures(body) }), userPrompt: prompt,
+      maxCompletionTokens: GENERATION_TOKENS, body, isAr, userId: req.user?.id,
+    });
+    // On the way out, so a pooled artifact stored before this ran cannot keep
+    // claiming its answers came from the reviewed bank.
+    res.json(withMeta(stampGeneratedAnswerSource(content), grounding, variantId));
+  } catch (err) {
+    respondAiError(err, res, "generate simplified-explanation");
   }
 });
 

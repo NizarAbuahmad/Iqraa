@@ -3,7 +3,7 @@ import type {
   ActivityOutput, ActivityStep, AIRequest,
   ClassroomActivity, ClassroomActivityRequest,
   LessonPlanOutput,
-  QuizOutput, QuizQuestion, WorksheetAnswerKeyItem,
+  QuizOutput, QuizQuestion, SimplifiedExplanationOutput, WorksheetAnswerKeyItem,
   WorksheetOutput, WorksheetSection,
 } from './AIService.ts';
 import type { KBLesson } from '../knowledgeBase.ts';
@@ -21,6 +21,7 @@ import {
   type DiffTier,
 } from './mathPractice.ts';
 import { buildActivityBlueprint } from './activityBlueprints.ts';
+import { buildExplainer, EXPLAINER_SHAPE } from './explainerBlueprint.ts';
 import { buildLessonStyleBlueprint, type LessonDocContext } from './lessonPlanBlueprints.ts';
 import { classifyVerifiableTopic } from './verifyMathGuards.ts';
 
@@ -1072,6 +1073,43 @@ export class MockAIService extends AIService {
       teacherTips: blueprint.teacherTips,
       differentiation: blueprint.differentiation,
       assessment: blueprint.assessment,
+    };
+  }
+
+  /**
+   * «تبسيط الشرح» — a handout for the student, not a plan for the teacher.
+   *
+   * This used to be `generateLessonPlan` behind an `isSimplify` flag, which is
+   * why the tool's subtitle once promised examples and misconceptions that a
+   * `LessonPlanOutput` had nowhere to put. The format now lives in
+   * `explainerBlueprint.ts`, with its twin clause on the server.
+   */
+  async generateSimplifiedExplanation(req: AIRequest): Promise<SimplifiedExplanationOutput> {
+    await this.delay();
+    if (!req.continueMathPractice) beginMathPracticeSession();
+
+    const lang: Lang = req.language === 'arabic' ? 'ar' : 'en';
+    const docs = docsFromReq(req);
+    const topic = (docs.present && docs.title ? docs.title : req.topic).trim() || req.topic;
+    const kb = docs.present ? null : groundedKb(topic, lang);
+    const math = isMathContext(topic, kb, req.subject);
+
+    // Drawn separately so each has the tier its job needs: the worked example
+    // opens easy, the misconception needs a multiple-choice item because its
+    // distractors are the hand-authored wrong answers, and the checks are the
+    // student's own practice.
+    const workedItem = math ? takeConcreteMath('short_answer', topic, kb, 'easy', lang, 4) : null;
+    const misconceptionItem = math
+      ? takeConcreteMath('multiple_choice', topic, kb, 'medium', lang, 4)
+      : null;
+    const practice = math
+      ? takeConcreteMathBatch(EXPLAINER_SHAPE.checks, topic, kb, lang, 'easy')
+      : [];
+
+    return {
+      ...buildExplainer({ topic, lang, math, workedItem, misconceptionItem, practice, kb, docs }),
+      grade: req.grade,
+      subject: req.subject,
     };
   }
 

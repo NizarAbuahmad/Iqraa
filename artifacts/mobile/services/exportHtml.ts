@@ -29,6 +29,7 @@ import type {
   LessonFlowOutput,
   LessonPlanOutput,
   QuizOutput,
+  SimplifiedExplanationOutput,
   WorksheetOutput,
 } from './ai/AIService.ts';
 
@@ -55,6 +56,7 @@ export const DOC_ACCENT = {
   worksheet: '#8B5CF6',
   quiz: '#F59E0B',
   activity: '#E67E22',
+  explainer: '#00A99D',
 } as const;
 
 /** Where the name-and-date block gets its rule, and every section its tint. */
@@ -1312,4 +1314,77 @@ export function buildLessonFlowHTML(
 </div>
 </body>
 </html>`;
+}
+
+/**
+ * «تبسيط الشرح» as a printable handout.
+ *
+ * Deliberately NOT routed through `buildLessonPlanSlidesHTML` or given a
+ * «خطة درس» badge: this used to be a lesson plan behind a flag, and a student
+ * handout carrying the lesson-plan label is the exact mislabelling the tool
+ * was rebuilt to remove.
+ */
+export function buildSimplifiedExplanationHTML(
+  out: SimplifiedExplanationOutput,
+  title: string,
+  meta: { subject: string; grade: string },
+  isAr: boolean,
+  figures: readonly BookFigureRef[] = [],
+): string {
+  const L = (ar: string, en: string) => isAr ? ar : en;
+  const accent = DOC_ACCENT.explainer;
+  const band = (label: string, glyph: string) => sectionBand(label, glyph, accent, isAr);
+  const numbered = (items: readonly string[]) =>
+    items.map((s, i) =>
+      `<div class="q-card"><div class="q-head"><span class="q-num">${i + 1}</span>`
+      + `<span class="q-text">${esc(s)}</span></div></div>`,
+    ).join('');
+
+  const keyWords = out.keyWords?.length
+    ? `<div class="section">${band(L('كلمات مفتاحية', 'Key Words'), '📖')}`
+      + out.keyWords.map(w =>
+          `<div class="q-card"><div class="q-text"><strong>${esc(w.term)}</strong> — ${esc(w.meaning)}</div></div>`,
+        ).join('')
+      + `</div>`
+    : '';
+
+  const answered = out.checks
+    .map((c, i) => ({ n: i + 1, answer: (c.answer ?? '').trim() }))
+    .filter(a => a.answer.length > 0);
+  // An omitted answer prints nothing here. A guess under a heading that looks
+  // official is worse than a blank the student has to think about.
+  const answers = answered.length
+    ? `<div class="answer-key"><div class="section-title">${L('الإجابات', 'Answers')}</div>`
+      + answered.map(a =>
+          `<div class="answer-row"><span class="answer-num">${a.n}.</span><span>${esc(a.answer)}</span></div>`,
+        ).join('')
+      + `</div>`
+    : '';
+
+  const content = `
+    <div class="doc-title">${esc(title)}</div>
+    <div class="doc-meta">${esc(meta.subject)} • ${esc(meta.grade)}</div>
+    <div class="callout">${esc(out.bigIdea)}</div>
+    <div class="section">${band(L('الشرح خطوة بخطوة', 'Step by Step'), '🪜')}${numbered(out.explanation)}</div>
+    ${keyWords}
+    <div class="section">${band(L('مثال محلول', 'Worked Example'), '✏️')}
+      <div class="q-card"><div class="q-text">${esc(out.workedExample.text)}</div></div>
+      ${numbered(out.workedExample.steps)}
+      <div class="q-card"><div class="q-text"><strong>${L('الإجابة:', 'Answer:')}</strong> ${esc(out.workedExample.answer)}</div></div>
+    </div>
+    <div class="section">${band(L('خطأ شائع', 'A Common Mistake'), '⚠️')}
+      <div class="q-card"><div class="q-text">${esc(out.misconception.claim)}</div></div>
+      <div class="q-card"><div class="q-text">${esc(out.misconception.correction)}</div></div>
+    </div>
+    <div class="section">${band(L('تحقّق من فهمك', 'Check Your Understanding'), '🧠')}
+      ${out.checks.map((c, i) =>
+        `<div class="q-card"><div class="q-head"><span class="q-num">${i + 1}</span>`
+        + `<span class="q-text">${esc(c.text)}</span></div>`
+        + `<div class="q-lines">${ANSWER_RULES.map(() => '<div class="q-rule"></div>').join('')}</div></div>`,
+      ).join('')}
+    </div>
+    ${answers}
+    ${figuresSectionHTML(figures, isAr)}
+  `;
+  return htmlBase(content, isAr, title, 'explainer');
 }
