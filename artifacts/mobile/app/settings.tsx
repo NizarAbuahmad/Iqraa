@@ -102,9 +102,36 @@ export default function SettingsScreen() {
             right={<Text style={[{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13 }]}>1.0.0</Text>}
           />
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <SettingRow icon="shield-checkmark-outline" label={t('privacyPolicy')} isRTL={isRTL} colors={colors} onPress={() => {}} />
+          <SettingRow
+            icon="shield-checkmark-outline"
+            label={t('privacyPolicy')}
+            isRTL={isRTL}
+            colors={colors}
+            onPress={() => router.push('/legal/privacy' as any)}
+          />
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <SettingRow icon="document-text-outline" label={t('termsOfService')} isRTL={isRTL} colors={colors} onPress={() => {}} />
+          <SettingRow
+            icon="document-text-outline"
+            label={t('termsOfService')}
+            isRTL={isRTL}
+            colors={colors}
+            onPress={() => router.push('/legal/terms' as any)}
+          />
+        </View>
+
+        {/* Account. Deleting is the only row here, and it is deliberately last
+            and on its own card — both stores require the path to exist, and
+            nothing else in Settings is irreversible. */}
+        <SectionLabel label={t('accountSection')} isRTL={isRTL} colors={colors} top />
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
+          <SettingRow
+            icon="trash-outline"
+            label={t('deleteAccount')}
+            isRTL={isRTL}
+            colors={colors}
+            destructive
+            onPress={() => router.push('/delete-account' as any)}
+          />
         </View>
       </ScrollView>
     </View>
@@ -119,15 +146,18 @@ function SectionLabel({ label, isRTL, colors, top }: { label: string; isRTL: boo
   );
 }
 
-function SettingRow({ icon, label, colors, isRTL, right, onPress }: {
+function SettingRow({ icon, label, colors, isRTL, right, onPress, destructive }: {
   icon: keyof typeof Ionicons.glyphMap; label: string;
   colors: ReturnType<typeof useColors>; isRTL: boolean;
   right?: React.ReactNode; onPress?: () => void;
+  /** Tints the row red. Only the irreversible one should set it. */
+  destructive?: boolean;
 }) {
+  const tint = destructive ? colors.destructive : colors.primary;
   const inner = (
     <View style={[styles.settingRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-      <Ionicons name={icon} size={20} color={colors.primary} />
-      <Text style={[styles.settingLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>
+      <Ionicons name={icon} size={20} color={tint} />
+      <Text style={[styles.settingLabel, { color: destructive ? colors.destructive : colors.foreground, fontFamily: 'Cairo_500Medium', flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>
         {label}
       </Text>
       <View style={{ marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }}>

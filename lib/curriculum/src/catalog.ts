@@ -235,14 +235,16 @@ export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9'];
 // in MVP_BOOK_IDS while its lessons resolved to nothing.
 // 'arabic', 'islamic' and 'computer' were appended on 2026-09-05 as tiles with
 // no book behind any of them; the "no books" empty state they fell through to
-// reads as a broken subject, not an honest one. All three came back off, and
-// each returns only once it has something to open: 'arabic' the same day (both
-// semesters of the student book), 'islamic' likewise (both semesters, from the
-// teacher guides — the student books are still unextracted). 'computer' stays
-// out: no computer-science PDF has been sourced at all. Note this is an APPEND
-// — 'islamic' is back at the tail, where it was, so no existing index moves.
-// `finlitCurriculum.test.ts` fails the moment a subject is offered here with
-// nothing to open, and now also the reverse.
+// reads as a broken subject, not an honest one — and App Review reads a
+// placeholder section the same way, as an incomplete app, guideline 2.1. All
+// three came back off, and each returns only once it has something to open:
+// 'arabic' the same day (both semesters of the student book), 'islamic'
+// likewise (both semesters, from the teacher guides — the student books are
+// still unextracted). 'computer' stays out: no computer-science PDF has been
+// sourced at all. Note this is an APPEND — 'islamic' is back at the tail,
+// where it was, so no existing index moves. `finlitCurriculum.test.ts` fails
+// the moment a subject is offered here with nothing to open, and now also the
+// reverse.
 export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy', 'english', 'physics', 'earth-science', 'biology', 'arabic', 'islamic'];
 /** Main semester books only (guides/exercises stay in data, hidden from UI). */
 export const MVP_BOOK_IDS: readonly string[] = [

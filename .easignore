@@ -1,3 +1,25 @@
+# What EAS Build uploads. NOT an addition to .gitignore — a REPLACEMENT.
+#
+# When this file exists, EAS CLI ignores .gitignore entirely and uses only
+# what is here. That is the footgun: drop a line and node_modules goes up with
+# the archive. Everything below the marker is a verbatim copy of .gitignore
+# for exactly that reason — edit .gitignore and copy the change down here.
+#
+# Why it exists: the first build (2026-09-05, commit 71f484b) uploaded 424 MB,
+# of which 231 MB was attached_assets — the source curriculum PDFs, referenced
+# only by lib/curriculum/scripts/localSources.ts, an extraction script that
+# never runs on a build machine. knowledge-base is NOT excluded and must not
+# be: services/bookFigureAssets.ts static-requires those PNGs, so Metro bundles
+# them and a build without them fails to resolve.
+
+# ── Build-irrelevant, excluded on top of .gitignore ──────────────────────────
+attached_assets/
+cqv-reports/
+docs/
+artifacts/mockup-sandbox/
+.github/
+
+# ── Verbatim copy of .gitignore below this line ──────────────────────────────
 # See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
 
 # compiled output

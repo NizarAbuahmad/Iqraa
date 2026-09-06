@@ -9,11 +9,19 @@ import {
   refreshTokens,
   passwordResetTokens,
   rosterLinks,
+  lessonMedia,
+  chatMessages,
 } from "@workspace/db";
-import { eq, and, gt } from "drizzle-orm";
+import { eq, and, gt, isNotNull } from "drizzle-orm";
 import { authMiddleware, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { logger } from "../lib/logger.js";
 import { createRateLimiter } from "../lib/rateLimit.js";
+import { deleteObject } from "../lib/r2.js";
+import { studentAccountsEnabled } from "../lib/features.js";
+import {
+  ROSTER_CONSENT_STATEMENT_EN,
+  ROSTER_CONSENT_VERSION,
+} from "../lib/rosterConsent.js";
 import { isStrongPassword, PASSWORD_POLICY_MESSAGE } from "../lib/passwordPolicy.js";
 import { resolveClaimCode, type ClaimRole } from "../lib/rosterClaim.js";
 
@@ -106,6 +114,17 @@ router.post("/register", registerLimiter, async (req, res) => {
     // created dangling off an invalid code.
     let claim: { studentId: string; relation: "self" | "guardian" } | null = null;
     if (role !== "teacher") {
+      // v1 is teacher-only. A student account is an account for a minor, and
+      // the consent posture around one needs a lawyer and a matching store
+      // declaration — see lib/features.ts. Refused here rather than hidden in
+      // the app, because the app is not the security boundary.
+      if (!studentAccountsEnabled()) {
+        res.status(403).json({
+          code: "student_accounts_disabled",
+          error: "Parent and student accounts are not available yet.",
+        });
+        return;
+      }
       const code = claimCode?.trim();
       if (!code) {
         res.status(400).json({ error: "A class code is required to sign up as a parent or student" });
@@ -187,6 +206,18 @@ router.post("/register", registerLimiter, async (req, res) => {
  */
 router.post("/claim", authMiddleware, async (req: AuthenticatedRequest, res) => {
   try {
+    // Closed for the same reason /register is. No such account can exist
+    // while the flag is off, so this is unreachable in v1 — but leaving it
+    // open would mean turning the flag off later did not actually close the
+    // door for accounts created while it was on.
+    if (!studentAccountsEnabled()) {
+      res.status(403).json({
+        code: "student_accounts_disabled",
+        error: "Parent and student accounts are not available yet.",
+      });
+      return;
+    }
+
     const role = req.user!.role;
     if (role !== "student" && role !== "parent") {
       res.status(400).json({ error: "Only a student or parent account can claim a roster code" });
@@ -244,6 +275,21 @@ router.post("/login", loginLimiter, async (req, res) => {
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
       res.status(401).json({ error: "Invalid email or password" });
+      return;
+    }
+
+    // Checked after the password, not before: answering differently to a
+    // suspended account before proving who is asking would turn this into an
+    // oracle for which addresses are suspended. Past the password there is no
+    // one left to leak it to.
+    //
+    // `authMiddleware` would refuse every subsequent call anyway; saying so
+    // here is what turns "the app is broken" into a reason they can appeal.
+    if (user.suspendedAt) {
+      res.status(403).json({
+        error: user.suspendedReason || "This account has been suspended.",
+        code: "account_suspended",
+      });
       return;
     }
 
@@ -334,6 +380,17 @@ router.post("/google", googleLimiter, async (req, res) => {
     }
 
     if (!user) throw new Error("Failed to resolve Google user");
+
+    // Same check as the password path, for the same reason — and here it is
+    // after Google has already proved who is asking. Without it, a suspended
+    // teacher with a Google account keeps a working sign-in button.
+    if (user.suspendedAt) {
+      res.status(403).json({
+        error: user.suspendedReason || "This account has been suspended.",
+        code: "account_suspended",
+      });
+      return;
+    }
 
     await db.update(users).set({ lastLogin: new Date() }).where(eq(users.id, user.id));
 
@@ -458,6 +515,19 @@ router.get("/me", authMiddleware, async (req: AuthenticatedRequest, res) => {
       role: user.role,
       preferredLanguage: user.preferredLanguage,
       emailVerified: user.emailVerified,
+      // Which proof `DELETE /auth/users/me` will accept from this account: a
+      // password, or — for a Google-only account, which has no hash to check
+      // — its own email address retyped. Deliberately only here and not on the
+      // six other places this object is serialised: the delete screen fetches
+      // /me itself, so one site cannot drift out of step with the others.
+      hasPassword: user.passwordHash !== null,
+      // Whether this teacher has attested to their school's parental consent,
+      // and which wording they saw. Null means the roster is read-only for
+      // them until they do — the app reads this to show the statement rather
+      // than waiting for a write to come back 403. Absent here would be read
+      // as "not consented", which is the safe direction.
+      rosterConsentAt: user.rosterConsentAt,
+      rosterConsentVersion: user.rosterConsentVersion,
       createdAt: user.createdAt,
       lastLogin: user.lastLogin,
     });
@@ -627,6 +697,167 @@ router.patch("/users/profile", authMiddleware, async (req: AuthenticatedRequest,
     logger.error({ err }, "update profile failed");
     res.status(500).json({ error: "Failed to update profile" });
   }
+});
+
+// DELETE /auth/users/me
+//
+// Apple 5.1.1(v) and Google Play both require an in-app route that actually
+// deletes the account. A support address does not satisfy either.
+//
+// The schema does almost all of the work: every table referencing `users.id`
+// declares `onDelete: "cascade"`, so removing one row takes the roster,
+// classes, evaluations, saved materials, chat participation, blocks, reports
+// and push tokens with it. Two things a cascade cannot reach:
+//
+//   - R2 objects, which are not rows. Their keys are read *before* the delete,
+//     because a key read afterwards is a key that no longer exists.
+//   - `aiGenerations.userId`, which is `set null` by design rather than
+//     cascade. It is cost accounting; what survives is a spend row with no
+//     person attached to it.
+//
+// Re-authentication is required. For a teacher the cascade reaches the whole
+// roster — other people's children — and a stolen access token must not be
+// enough to erase it.
+const deleteAccountLimiter = createRateLimiter({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  name: "delete-account",
+});
+
+router.delete(
+  "/users/me",
+  authMiddleware,
+  deleteAccountLimiter,
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = req.user!.id;
+      const [account] = await db.select().from(users).where(eq(users.id, userId));
+      if (!account) {
+        res.status(404).json({ error: "Account not found" });
+        return;
+      }
+
+      // A password account proves itself with its password. A Google-only
+      // account has no hash to check, so it retypes its own email address:
+      // weaker, but it is the strongest thing that account actually holds,
+      // and it still stops deletion by token alone.
+      const { password, confirmEmail } = req.body as {
+        password?: string;
+        confirmEmail?: string;
+      };
+      if (account.passwordHash) {
+        const ok = password
+          ? await bcrypt.compare(password, account.passwordHash)
+          : false;
+        if (!ok) {
+          res.status(401).json({ error: "Password is incorrect" });
+          return;
+        }
+      } else if (
+        confirmEmail?.trim().toLowerCase() !== account.email.toLowerCase()
+      ) {
+        res.status(401).json({ error: "Email confirmation does not match" });
+        return;
+      }
+
+      const media = await db
+        .select({ key: lessonMedia.r2Key })
+        .from(lessonMedia)
+        .where(eq(lessonMedia.userId, userId));
+      const attachments = await db
+        .select({ key: chatMessages.attachmentKey })
+        .from(chatMessages)
+        .where(
+          and(
+            eq(chatMessages.senderId, userId),
+            isNotNull(chatMessages.attachmentKey),
+          ),
+        );
+
+      await db.delete(users).where(eq(users.id, userId));
+
+      // Deliberately after the row is gone: the deletion the user asked for is
+      // the database one, and it must not fail because object storage is
+      // unreachable. A failure here leaves an unreferenced blob behind —
+      // logged at error level because nothing else will ever notice it.
+      // ponytail: no retry queue. Add one if these lines actually appear.
+      const keys = [
+        ...media.map(m => m.key),
+        ...attachments.map(a => a.key as string),
+      ];
+      let orphaned = 0;
+      for (const key of keys) {
+        try {
+          await deleteObject(key);
+        } catch (err) {
+          orphaned += 1;
+          logger.error({ err, key, userId }, "account deleted but R2 object remains");
+        }
+      }
+
+      logger.info({ userId, r2Objects: keys.length, orphaned }, "account deleted");
+      res.json({ ok: true });
+    } catch (err) {
+      logger.error({ err }, "account deletion failed");
+      res.status(500).json({ error: "Failed to delete account" });
+    }
+  },
+);
+
+/**
+ * POST /auth/roster-consent
+ *
+ * Records the teacher's attestation that their school holds the parental
+ * consent that lets them enter student information — see
+ * `lib/rosterConsent.ts` for why this sits on the teacher rather than on each
+ * student row, and why it gates writes only.
+ *
+ * Idempotent by re-stamping: pressing it twice moves the timestamp, which is
+ * the honest record of the most recent time they agreed, and re-agreeing
+ * after the wording changes is exactly the case that has to work.
+ */
+router.post("/roster-consent", authMiddleware, async (req: AuthenticatedRequest, res) => {
+  try {
+    // The client sends back the version it displayed. A mismatch means the
+    // app is showing wording this server no longer considers current, and
+    // recording agreement to text nobody can now identify is worse than
+    // refusing — that is the failure the version column exists to prevent.
+    const { version } = req.body as { version?: string };
+    if (version && version !== ROSTER_CONSENT_VERSION) {
+      res.status(409).json({
+        code: "roster_consent_version_mismatch",
+        error: "This consent statement is out of date. Reload the app and try again.",
+        consentVersion: ROSTER_CONSENT_VERSION,
+      });
+      return;
+    }
+
+    const [updated] = await db
+      .update(users)
+      .set({ rosterConsentAt: new Date(), rosterConsentVersion: ROSTER_CONSENT_VERSION })
+      .where(eq(users.id, req.user!.id))
+      .returning({ at: users.rosterConsentAt, version: users.rosterConsentVersion });
+
+    logger.info(
+      { userId: req.user!.id, version: ROSTER_CONSENT_VERSION },
+      "roster consent recorded",
+    );
+    res.json({ rosterConsentAt: updated.at, rosterConsentVersion: updated.version });
+  } catch (err) {
+    logger.error({ err }, "record roster consent failed");
+    res.status(500).json({ error: "Failed to record consent" });
+  }
+});
+
+/**
+ * GET /auth/roster-consent — the current wording and version, unauthenticated.
+ *
+ * Served rather than duplicated in the app so the statement a teacher agrees
+ * to and the statement this server records agreement *to* cannot drift apart.
+ * The app holds translations of it; this is the text they translate.
+ */
+router.get("/roster-consent", (_req, res) => {
+  res.json({ version: ROSTER_CONSENT_VERSION, statement: ROSTER_CONSENT_STATEMENT_EN });
 });
 
 export default router;

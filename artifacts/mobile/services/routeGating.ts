@@ -23,7 +23,13 @@
  * Kept as a prefix list rather than a regex so adding one is unmistakable, and
  * so a route can never become public by accident of pattern.
  */
-const PUBLIC_ROUTES = ['/take'];
+/**
+ * `/legal` is here for a different reason than `/take`: not because its
+ * visitor has no account, but because a store reviewer opens the privacy
+ * policy URL cold, in a browser with no session, and both listings require
+ * that to work. Bouncing them to a login screen fails the review.
+ */
+const PUBLIC_ROUTES = ['/take', '/legal'];
 
 export function isPublicRoute(pathname: string | null | undefined): boolean {
   if (!pathname) return false;

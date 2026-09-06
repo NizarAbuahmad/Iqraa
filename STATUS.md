@@ -462,6 +462,366 @@ unit-opener illustration card (scales, the Kaaba, a gavel on a Quran, a
 microscope; a caravan, Jerusalem, manuscript pages). Ten of those, one per
 unit, is a smaller and much better-defined target than "the figures in this
 book".
+## The app has been built for a real device, 2026-09-05
+
+The first EAS build in the project's life. `artifacts/mobile` has always been
+an Expo app that nothing had ever compiled — every earlier note that something
+was "unverified on device" traced back to that. Android `preview`, build
+`5c38a5fb-3eb3-459b-9b5a-7452f8e6cf99`, commit 71f484b, **finished** in 22
+minutes. Installable APK:
+https://expo.dev/artifacts/eas/3rXtdVfq1c1aV--xlpAx0rGAanGywjGy4ZuwAgKHSRo.apk
+
+Most of the setup turned out to be already done — `eas-cli` is authenticated
+as `nizar.62` and the project has always been linked as `@nizar.62/mobile`
+(id `83fc6522…`, matching `app.json`). What was missing was anyone running it.
+
+Two things the run confirmed that could not be confirmed any other way:
+
+- **The `eas.json` env fix works.** The build log says
+  `Environment variables loaded from the "preview" build profile "env"
+  configuration: EXPO_PUBLIC_API_BASE_URL, EXPO_PUBLIC_DEMO_MODE`. Before that
+  block existed a release build inlined nothing and resolved its API base to
+  the relative string `/api` — see «A release build would have shipped broken».
+- **An Android keystore now exists**, generated on Expo's servers during this
+  build. It is a durable credential on the account, not a local file, and it
+  is what every future Android build and Play upload is signed with.
+
+`versionCode` initialised to 1 under `appVersionSource: "remote"`, so EAS owns
+the number from here and `autoIncrement` on the production profile will move
+it.
+
+**Build from the branch, not from whatever is checked out.** This was built in
+a scratch worktree at `origin/claude/store-readiness-release-config` on
+purpose: the shared checkout was on `main`, PR #269 is unmerged, and a build
+from there would have used the old `eas.json` — the exact broken configuration
+the branch exists to fix, silently.
+
+`.easignore` added after the build, and **not yet exercised by one**. That
+first archive was 424 MB, 231 MB of it `attached_assets` — source curriculum
+PDFs referenced only by `lib/curriculum/scripts/localSources.ts`, an
+extraction script that never runs on a build machine. Note the footgun the
+file's own header records: `.easignore` **replaces** `.gitignore` for the
+archive rather than adding to it, so it carries a verbatim copy of
+`.gitignore` beneath its own excludes. `knowledge-base` is deliberately NOT
+excluded — `services/bookFigureAssets.ts` static-requires those PNGs and Metro
+bundles them.
+
+What this does NOT establish. **Nobody has installed the APK.** Push delivery,
+image picking and the app icon are still exactly as unverified as before —
+a build existing is not a build running. `newArchEnabled` and `reactCompiler`
+are both experimental and this is the first time either has been compiled.
+
+iOS is untouched and is blocked on a person: it needs an Apple Developer
+Program membership and an Apple ID sign-in. Android push also still needs an
+FCM service account key uploaded to EAS — not a build blocker, but until it is
+there `expo-notifications` will register tokens that nothing can deliver to.
+
+## v1 is teacher-only, and a roster now needs a consent to exist, 2026-09-05
+
+The last of the four compliance blockers, and the only one that was a
+decision rather than a gap. Two answers shaped it: **student and parent
+accounts are off in v1**, and consent for student data is **teacher
+attestation of school-held parental consent** — not an in-app age gate.
+
+**No minor holds an account.** `STUDENT_ACCOUNTS` (default false, and the
+default *is* the decision) makes `/auth/register` and `/auth/claim` refuse a
+student or parent outright, and `/students/:id/claim-code` refuse to mint a
+code nobody could redeem. Refused server-side, not merely hidden: the app is
+not the security boundary. Note what else this switches off — no chat thread
+can be created at all, because `createDirectThread` needs a teacher on one
+side and a parent or student on the other, and a class group needs members.
+Messaging is *inert* in v1, not hidden, which is the honest answer when App
+Review asks whether the app carries user-generated content. Turning it back
+on is one environment variable; the code is written and tested, including the
+moderation queue built for exactly the content this currently prevents.
+
+**But the roster still holds children's data, and that is the surface that
+stays live.** A teacher types names, register numbers and a written note
+about a child before any account for that child exists — the earliest consent
+surface in the product, and the one a "no student accounts" answer does not
+touch. So `users.rosterConsentAt` / `rosterConsentVersion`, and
+`lib/rosterConsent.ts` refuses roster **writes** without it. Reads pass:
+the exposure is entering child data, not looking at data already entered, and
+blocking reads would show every existing teacher what looks like an outage.
+The gate attaches at the roster router's single existing mount, so a roster
+route added later is gated without anyone remembering.
+
+Three deliberate shapes, each with a cheaper alternative that is worse:
+
+- **On the teacher, not on each student row.** A teacher enters thirty names
+  in one sitting and a per-name checkbox is a checkbox nobody reads. Schools
+  obtain consent in a blanket form, so one attestation at the point of first
+  entry is both the honest shape and the one a teacher takes seriously.
+  ponytail: move it to `classGroups` if a school ever needs to say yes for one
+  class and no for another.
+- **No birthdate, anywhere.** Not an oversight — collecting a child's date of
+  birth the product has no use for is *more* data held about them, not less,
+  and a self-entered birthdate is unverifiable anyway. The privacy policy now
+  says this in as many words.
+- **The wording is versioned and served.** `GET /auth/roster-consent` returns
+  the statement and `ROSTER_CONSENT_VERSION`; the app posts the version back
+  and a mismatch is refused. A consent record that cannot say *what* was
+  agreed to is close to worthless, and recording agreement to text nobody can
+  later identify is worse than refusing.
+
+**The legal documents were rewritten to match.** They now state that no minor
+holds an account, that messaging is inactive, that a teacher attests before
+entering any name, and that no birthdate is collected. `constants/legal.ts`
+carries a header saying it plainly: **flipping `STUDENT_ACCOUNTS` makes two
+published statements false**, so it is not a config change — it is a change to
+a legal document, and that file moves with it.
+
+`schema-push: done.` `users` gained `roster_consent_at` and
+`roster_consent_version` — verified absent beforehand, present after, same
+transaction-wrapped `add column if not exists` as the suspension pair (33
+users, 0 consented). Unlike that one this degrades safely without the push:
+`requireRosterConsent` catches and answers 503 rather than crashing, so a
+missed push costs the roster, not the whole API. **All 33 existing teachers
+will meet the gate on their next roster visit** — intended, and worth knowing
+before someone reports it as a bug.
+
+The client reads the flag from `GET /healthz/features` rather than an
+`EXPO_PUBLIC_*` constant. A build-time copy is the drift this repo has been
+bitten by before and worse here: it is inlined at build time while the
+server's own value changes with a restart, a missing key is a silent no-op,
+and the register screen needs the answer before anyone has signed in. Fails
+closed — offering a signup door that answers 403 beats hiding one that works.
+
+Verified in a real browser: the register screen renders with no role selector
+and no class-code field, straight to the teacher form. The API suite asserts
+`/healthz/features` reports it off and that a student registration comes back
+403 `student_accounts_disabled`, against the built bundle over HTTP. Not
+verified: a teacher accepting the gate end to end — that needs a signed-in
+teacher against a throwaway database.
+
+Still needing a person, not a commit: `LEGAL_CONTACT_EMAIL`
+(`privacy@iqraa.app`) is still not a real mailbox, and it is now the appeal
+address a suspended user is shown. And no lawyer has read either document —
+the governing-law clause most needs one.
+
+Green: typecheck clean, mobile 1172/1172 (10 skipped), API 466/466.
+
+## The report button now reaches someone, 2026-09-05
+
+The third of the four compliance blockers. `POST /messaging/reports` has
+existed since messaging shipped and **nothing ever read the rows**: no route
+listed them, nothing moved `status` off `open`, and nothing had ever written
+`chatMessages.archivedAt` — even though every thread read already filters on
+it. So the button worked, the table filled up, and no report could be acted
+on. Apple's guideline 1.2 asks four things of an app carrying user content:
+filtering, reporting, blocking, and the developer removing content and
+ejecting the offender within 24 hours. Only the middle two existed.
+
+`routes/moderation.ts`, admin-only throughout. Deliberately not a per-teacher
+queue: the teacher who owns a thread already sees every message in it, so that
+would add no visibility — what was missing is the operator-level power 1.2
+asks of the developer.
+
+- `GET /moderation/reports` — newest first, filterable by status, carrying the
+  reported message's own body and attachment kind so a moderator can read what
+  they are judging without opening the thread as somebody they are not. Two
+  aliased joins onto `users`, because one join would silently read the same
+  person's row for both sides of the report. `openCount` comes back whatever
+  the filter is: that number is what says whether the 24-hour obligation is
+  being met.
+- `POST /moderation/reports/:id/resolve` — the whole decision in one call
+  (hide the message, suspend the author, both, or neither), because a
+  moderator opens a report and decides once, and two calls can leave a hidden
+  message beside an open report. `dismissed` with actions attached is refused
+  rather than quietly honoured — a queue that accepts "nothing was wrong here"
+  alongside "I suspended them" has stopped being an audit trail. Hiding sets
+  `archivedAt`; it never deletes, so evidence survives an appeal.
+- `POST /moderation/users/:id/unsuspend`, separate, because by the time
+  someone appeals the report that caused it is closed. An admin cannot be
+  suspended from here — that would lock every moderator out of the tool that
+  reverses it.
+
+**Suspension enforces in `authMiddleware`, and that is the load-bearing
+detail.** It already re-read the user row on every request, so a suspension
+takes effect on the next call rather than whenever the access token expires,
+and putting the check there means a route added tomorrow is closed to a
+suspended account by default. The opposite arrangement fails open, and the one
+route someone forgets is the one an ejected user still has. Login refuses too
+— after the password check, never before, or the response becomes an oracle
+for which addresses are suspended.
+
+Two things a suspended account may still reach, in `lib/suspension.ts` with
+its own tests: `GET /auth/me`, so the app can say *why* everything stopped
+(an ejected user who only sees failures has nothing to appeal against), and
+`DELETE /auth/users/me`, because the right to erasure does not pause during a
+suspension and the privacy policy shipped this morning promises deletion
+without conditions. That predicate is split out and tested rather than
+eyeballed because both directions fail silently: too wide and an ejected user
+keeps a route, too narrow and a published promise becomes false.
+
+**The schema change was applied to production, by hand, before this merged.**
+`users` gained `suspended_at` and `suspended_reason`; verified absent
+beforehand and present after (32 users, 0 suspended). Two
+`add column if not exists` statements inside a transaction rather than
+`pnpm --filter @workspace/db run push` — additive only, idempotent, and
+incapable of the column drops render.yaml warns that drizzle-kit push resolves
+drift with. **Note the ordering is not optional here and the usual "endpoints
+answer 503" description understates it:** `authMiddleware` selects both
+columns on every request, so this code deployed against a database without
+them would fail *every authenticated call in the app*, not one endpoint. Also
+note `verify-schema` cannot catch that — it asks whether a table *name*
+exists, so a table with a stale column set still reports `ok`.
+
+Not verified: the queue driven end to end as a signed-in admin. That needs
+either a throwaway database or test reports in production, and manufacturing
+abuse reports in a live database to look at a screen is not a test. What is
+pinned is that all three routes are mounted and refuse an anonymous caller
+(`mountOrder.test.ts`) and that the suspension allowlist matches the exact
+paths it should (`lib/__tests__/suspension.test.ts`).
+
+Still open from the original four: no age or guardian-consent handling
+anywhere in the schema. And the moderator's suspension notice is one fixed
+sentence pointing at `LEGAL_CONTACT_EMAIL` — a mailbox that still does not
+exist.
+
+Green: typecheck clean, mobile 1172/1172 (10 skipped), API 460/460.
+
+## An account can be deleted, and the policy links go somewhere, 2026-09-05
+
+Two of the four compliance blockers named in the entry below. Both are
+store-mandated and neither existed: `grep` for account deletion returned
+nothing across the whole repo, and the privacy-policy and terms rows in
+`app/settings.tsx` were `onPress={() => {}}` — against copy at registration
+that already told every new user they were agreeing to both documents.
+
+**`DELETE /auth/users/me`.** Almost all of the work was already done by the
+schema and nobody had noticed: every table referencing `users.id` declares
+`onDelete: "cascade"`, so one row delete takes the roster, classes,
+evaluations, saved materials, chat participation, blocks, reports and push
+tokens with it. What a cascade cannot reach is the two things that are not
+rows —
+
+- R2 objects. `lessonMedia.r2Key` and `chatMessages.attachmentKey` are read
+  **before** the delete, because a key read afterwards is a key that no longer
+  exists, and the blobs are removed after. Deliberately after: the deletion
+  the user asked for is the database one and must not fail because object
+  storage is unreachable. A failure there logs at error level and leaves an
+  unreferenced blob — no retry queue, which is a stated ceiling, not an
+  oversight.
+- `aiGenerations.userId`, which is `set null` by design. It is cost
+  accounting; what survives is a spend row with nobody attached.
+
+Re-authentication is required, because for a teacher the cascade reaches the
+whole roster — other people's children — and a stolen access token must not be
+enough to erase it. A password account types its password; a Google-only
+account has no hash to check, so it retypes its own email. Which one gets
+asked for comes from `hasPassword` on `GET /auth/me`, added there **and
+nowhere else**: that object is serialised at seven sites in `routes/auth.ts`
+and the delete screen fetches `/me` itself, so one field cannot drift out of
+step with six copies.
+
+**The documents exist.** `constants/legal.ts` holds a privacy policy and terms
+of service in both languages, and `app/legal/[doc].tsx` renders either —
+one dynamic route, not two near-identical screens. Every factual claim in the
+policy was written from the code rather than from a template: the
+subprocessor list is `lib/r2.ts`, `lib/db`, `services/analytics.ts`,
+`services/pushTokens.ts`, `routes/auth.ts` and the OpenAI client, and the data
+inventory is `lib/db/src/schema`. **That makes it part of the blast radius of
+those files** — a policy describing a system that no longer exists is worse
+than a missing one, because it is a published false statement.
+
+`/legal` joins `/take` in `PUBLIC_ROUTES`, for a different reason than
+`/take` has: not that its visitor has no account, but that a store reviewer
+opens the policy URL cold, in a browser with no session. Verified in a real
+browser on the web build — `/legal/privacy` and `/legal/terms` both render
+signed out with no console errors, and `/delete-account` correctly bounces a
+signed-out visitor to onboarding.
+
+Not verified: the deletion itself end to end. The only database this checkout
+can reach is production, and a test that deletes a real account against it is
+not a test. The route is pinned as *mounted and guarded* in
+`mountOrder.test.ts` — a 404 there would be a submission blocker and would
+look identical to a typo in the path — and the rest needs a throwaway
+database.
+
+Two things still need a person, not a commit: `LEGAL_CONTACT_EMAIL` in
+`constants/legal.ts` is `privacy@iqraa.app` and **no such mailbox is known to
+exist** — a reviewer may write to it and a data-subject request has a
+statutory clock. And no lawyer has read either document; the children's-data
+section and the governing-law clause are the two that most need one, given
+students reach this app through a teacher with no age recorded anywhere in the
+schema.
+
+Green: typecheck clean, mobile 1172/1172 (10 skipped), API 453/453.
+
+## A release build would have shipped broken, 2026-09-05
+
+A store-readiness review of the mobile app. The app itself is native-safe —
+every `document`/`localStorage`/`window` use is behind a `Platform.OS === 'web'`
+guard and the native branches (share sheet, cache writes, print) are written —
+but the *release configuration* was not, in four ways that a checked-in test or
+a resolved-config dump could each have caught. `expo-doctor` now reports 18/18.
+
+- **`eas.json` declared no `env`, so a production build inlined nothing.**
+  `EXPO_PUBLIC_*` values are baked in at build time; with none set,
+  `getApiBaseUrl()` falls through to the relative string `/api`
+  (`services/apiClient.ts`), which is not a resolvable URL on native. Every
+  request would have failed on first launch, and the same gap left
+  `DEMO_MODE` at its `true` default — the whole app mocked, and mock content
+  is indistinguishable from real. Both `preview` and `production` now set
+  `EXPO_PUBLIC_API_BASE_URL` (Cloud Run) and `EXPO_PUBLIC_DEMO_MODE=false`.
+  `artifacts/mobile/.env` is gitignored, so EAS never uploaded it and the
+  profile `env` is the only source — do not assume the local `.env` reaches a
+  build.
+- **The build asked for permissions the app does not use.** `expo-location`
+  was a dependency with no callers anywhere in app code, and autolinking is
+  enough: it put `NSLocationWhenInUseUsageDescription` plus
+  `ACCESS_FINE_LOCATION`/`ACCESS_COARSE_LOCATION` into the manifest, which
+  Play gates behind a Location Permission Declaration and rejects when it is
+  not core functionality. Removed. Separately, every `expo-image-picker` call
+  is `launchImageLibraryAsync` with `mediaTypes: ['images']` — there is no
+  camera or recording path — so the plugin now sets `cameraPermission: false`
+  and `microphonePermission: false`, dropping `NSCameraUsageDescription`,
+  `NSMicrophoneUsageDescription` and `RECORD_AUDIO`, and gives the photos
+  prompt a purpose string that names the actual use. Read the resolved
+  manifest with `npx expo config --type introspect`, not `app.json` — none of
+  these appeared in `app.json`.
+- **ATS allowed cleartext to anywhere.** Expo's default
+  `NSAllowsArbitraryLoads: true` was reaching the build; App Review asks about
+  it. Now `false`, with `NSAllowsLocalNetworking: true` so a dev client can
+  still reach a LAN API over http, plus the localhost exception.
+- **Three subject tiles dead-ended.** `arabic`, `islamic` and `computer` were
+  appended to `MVP_SUBJECT_IDS` earlier the same day; no book or catalog
+  exists for any of them, so each bottomed out in the "no books" empty state.
+  Honest in a demo, but App Review reads placeholder sections as an incomplete
+  app (guideline 2.1) — and `finlitCurriculum.test.ts` already asserted "every
+  MVP subject resolves to at least one visible book", so `main` would have
+  gone red. Removed from the tail, which is what keeps the change reversible:
+  the seven remaining positions never move, and the three can be appended back
+  the day a book lands. They stay in `SUBJECTS`.
+
+Also: three Expo packages were a patch behind, and bumping them split
+`expo-constants` into two installed copies (`expo-asset` pins `~18.0.13`) —
+a duplicate native module is a build error, not a warning. `pnpm dedupe`
+collapsed it; no override was needed.
+
+Green after all of it: typecheck clean, mobile 1165/1165 (10 skipped), API
+452/452.
+
+**None of this makes the app publishable.** The blockers that remain are
+compliance and process, not configuration: ~~there is no account deletion
+anywhere in the app or API (Apple 5.1.1(v) and Play both require it), the
+privacy-policy and terms rows in `app/settings.tsx` are `onPress={() => {}}`
+against copy at registration that already claims both documents exist,~~
+**both closed the same day — see the entry above,**
+~~messaging carries image attachments with block and report endpoints but
+nothing that can act on a report or eject a user (`routes/admin.ts` has one
+route, `usage-summary`),~~ **also closed the same day — see «The report button
+now reaches someone»** — and ~~students get accounts by claim code with no
+birthdate, age or guardian-consent field anywhere in the schema~~ **the last
+one closed the same day too: v1 has no student accounts at all, and a teacher
+now attests to school-held parental consent before entering any child's name.
+See «v1 is teacher-only, and a roster now needs a consent to exist».** ~~No EAS
+build has ever been made~~ **— closed the same day too, see «The app has been
+built for a real device»; push delivery, image picking and the app icon are
+still unverified on a device because that build has not been installed and
+driven, and** `newArchEnabled` + `reactCompiler` are both experimental.
+There are no store assets and no `google-services.json` for Android FCM.
 
 ## English teaches something at last, and its book photographs reach it, 2026-09-05
 

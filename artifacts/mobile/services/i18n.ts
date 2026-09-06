@@ -526,6 +526,26 @@ const translations = {
     privacyPolicy: 'سياسة الخصوصية',
     termsOfService: 'شروط الخدمة',
 
+    // Account deletion — Apple 5.1.1(v) and Google Play both require this
+    // path to exist inside the app.
+    accountSection: 'الحساب',
+    deleteAccount: 'حذف الحساب',
+    deleteAccountTitle: 'حذف الحساب',
+    deleteAccountLead: 'حذف الحساب نهائيّ ولا يمكن التراجع عنه. سيجري فورًا، لا بعد مهلة.',
+    deleteAccountWhatGoesTeacher: 'سيُحذف معه: شُعَبك وسجلّات طلبتك وملاحظاتك عنهم، والاختبارات وأوراق العمل ونتائجها، والمواد المحفوظة، والملفات التي رفعتها، والرسائل التي أرسلتها.',
+    deleteAccountWhatGoesOther: 'سيُحذف معه: رسائلك وصورك المرفقة، وارتباطك بصفّك. يبقى سجلّ الطالب عند المعلّم لأنّه من بيانات المعلّم.',
+    deleteAccountPasswordLabel: 'أدخل كلمة المرور للتأكيد',
+    deleteAccountEmailLabel: 'أدخل بريدك الإلكتروني للتأكيد',
+    deleteAccountEmailHint: 'حسابك يدخل عبر Google ولا كلمة مرور له، لذا نطلب بريدك بدلًا منها.',
+    deleteAccountConfirmTitle: 'حذف حسابك؟',
+    deleteAccountConfirmBody: 'لا يمكن التراجع عن هذا.',
+    deleteAccountConfirmCta: 'احذف نهائيًّا',
+    deleteAccountCancel: 'إلغاء',
+    deleteAccountSubmit: 'حذف حسابي',
+    deleteAccountWorking: 'جارٍ الحذف…',
+    deleteAccountNeedProof: 'أدخل التأكيد المطلوب أولًا.',
+    deleteAccountFailed: 'تعذّر حذف الحساب. تحقّق ممّا أدخلته وحاول مرّة أخرى.',
+
     // Generator — new form fields
     teachingStyleLabel: 'أسلوب التدريس',
     teachingStyleDirect: 'التعليم المباشر',
@@ -1643,6 +1663,26 @@ const translations = {
     version: 'Version',
     privacyPolicy: 'Privacy Policy',
     termsOfService: 'Terms of Service',
+
+    // Account deletion — Apple 5.1.1(v) and Google Play both require this
+    // path to exist inside the app.
+    accountSection: 'ACCOUNT',
+    deleteAccount: 'Delete account',
+    deleteAccountTitle: 'Delete account',
+    deleteAccountLead: 'Deleting your account is permanent and cannot be undone. It happens immediately, not after a waiting period.',
+    deleteAccountWhatGoesTeacher: 'This also deletes: your classes, your student records and the notes you wrote about them, your tests and worksheets and their results, saved materials, files you uploaded, and messages you sent.',
+    deleteAccountWhatGoesOther: 'This also deletes: your messages and any images you attached, and your link to your class. The student record itself stays with the teacher, because it is the teacher\'s data.',
+    deleteAccountPasswordLabel: 'Enter your password to confirm',
+    deleteAccountEmailLabel: 'Enter your email address to confirm',
+    deleteAccountEmailHint: 'Your account signs in with Google and has no password, so we ask for your email instead.',
+    deleteAccountConfirmTitle: 'Delete your account?',
+    deleteAccountConfirmBody: 'This cannot be undone.',
+    deleteAccountConfirmCta: 'Delete permanently',
+    deleteAccountCancel: 'Cancel',
+    deleteAccountSubmit: 'Delete my account',
+    deleteAccountWorking: 'Deleting…',
+    deleteAccountNeedProof: 'Enter the confirmation above first.',
+    deleteAccountFailed: 'Could not delete the account. Check what you entered and try again.',
 
     // Generator — new form fields
     teachingStyleLabel: 'Teaching style',

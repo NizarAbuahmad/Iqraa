@@ -23,6 +23,8 @@ import {
 import { logger } from "../lib/logger";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
 import { generateShareCode } from "../modules/assessment/studentView.ts";
+import { requireRosterConsent } from "../lib/rosterConsent.js";
+import { studentAccountsEnabled } from "../lib/features.js";
 
 const router = Router();
 
@@ -33,6 +35,11 @@ const router = Router();
 // requireRole closes the gap where any authenticated user, not just a
 // teacher, could read or edit a roster.
 router.use(["/classes", "/students"], authMiddleware, requireRole(...TEACHER_ROLES));
+// Entering a child's name is the earliest consent surface in the product and
+// the only one live in a teacher-only v1. Scoped to the same two paths, so a
+// roster route added later is gated without anyone remembering to gate it;
+// reads pass through untouched (see lib/rosterConsent.ts for why).
+router.use(["/classes", "/students"], requireRosterConsent);
 
 const MAX_BULK_STUDENTS = 200;
 
@@ -485,6 +492,17 @@ router.patch("/students/:id", async (req: AuthenticatedRequest, res) => {
  */
 router.post("/students/:id/claim-code", async (req: AuthenticatedRequest, res) => {
   try {
+    // A code nobody can redeem is a dead end that looks like a feature. When
+    // parent and student accounts are off, minting one would have the teacher
+    // hand a child a code that answers 403 at signup.
+    if (!studentAccountsEnabled()) {
+      res.status(403).json({
+        code: "student_accounts_disabled",
+        error: "Parent and student accounts are not enabled on this deployment.",
+      });
+      return;
+    }
+
     const studentId = req.params["id"] as string;
     const claimCode = generateShareCode();
     const claimCodeExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
