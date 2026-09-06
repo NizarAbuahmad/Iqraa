@@ -150,6 +150,26 @@ describe('picker scope — the generate-time backstop', () => {
     assert.equal(scopeWithoutCurriculum('grade-9', 'mathematics', 'ar'), null);
   });
 
+  // `StrandedSelectionNote` renders off `subjectsWithoutCurriculum`, generation
+  // refuses off `scopeWithoutCurriculum`. They have to answer identically for
+  // every pair the pickers can express: a note with no refusal cries wolf, and
+  // a refusal with no note is exactly the silent dead end that dropping the
+  // entries reintroduced and the note exists to close.
+  it('notes on screen exactly the selections generation refuses', () => {
+    for (const gradeId of MVP_GRADE_IDS) {
+      const flags = subjectsWithoutCurriculum(gradeId);
+      getPickerSubjects().forEach((s, subjectIdx) => {
+        const noted = flags[subjectIdx] === true;
+        const refused = scopeWithoutCurriculum(gradeId, s.id, 'ar') !== null;
+        assert.equal(
+          noted,
+          refused,
+          `${s.id} + ${gradeId}: note shown=${noted} but generation refuses=${refused}`,
+        );
+      });
+    }
+  });
+
   // Never block on something the pickers cannot even express — an unknown id
   // is a routing bug, and refusing it here would only mask it.
   it('stays out of the way for ids the pickers do not carry', () => {

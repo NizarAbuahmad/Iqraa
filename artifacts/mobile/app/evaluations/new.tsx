@@ -553,8 +553,9 @@ function CheckboxRow({
 
 /**
  * The shared dropdown wearing this screen's skin, replacing a 43-line copy of
- * it: a teal-tinted selected row and a trigger that tints its border while
- * open, both of which the copy had.
+ * it: a teal-tinted selected row, and a radius this screen sets by hand. The
+ * copy also tinted the open trigger's border, which every screen now does, so
+ * the component handles that and it is not bound here.
  *
  * `radius` is overridden rather than left to the theme because this screen
  * rounds everything to 10 by hand — the text input, book rows, mode chips,
@@ -570,7 +571,6 @@ function PickerField(props: React.ComponentProps<typeof SharedPickerField>) {
       {...props}
       colors={{ ...props.colors, radius: 10 }}
       selectedTint={ACCENT + '15'}
-      highlightBorderWhenOpen
     />
   );
 }

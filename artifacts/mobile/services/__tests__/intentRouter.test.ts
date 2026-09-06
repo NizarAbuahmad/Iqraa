@@ -12,7 +12,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { classifyChatIntent } from '../ai/intentRouter.ts';
+import { classifyChatIntent, leavesClarificationStanding } from '../ai/intentRouter.ts';
 
 describe('the clarify question is answerable', () => {
   const offered: Array<[string, string]> = [
@@ -125,4 +125,73 @@ describe('teaching work that merely mentions the outside world still routes to t
       assert.equal(route.useTeachingPipeline, true);
     });
   }
+});
+
+/**
+ * The same dead end, reached from the other direction.
+ *
+ * `afterClarify` only ever knew about the local classifier's own clarify reply.
+ * Two other things ask questions — a structured `pedagogicalClarification`, and
+ * the live AI path's free-text "which concept?" — and neither set the flag, so
+ * an answer to one of those was met with the generic clarify question again.
+ * The last test here is the one that matters: it walks the whole round trip.
+ */
+describe('leavesClarificationStanding', () => {
+  it('is exact for a structured clarification', () => {
+    assert.equal(
+      leavesClarificationStanding({ responseText: 'اختر:', hasStructuredClarification: true }),
+      true,
+    );
+  });
+
+  it('reads a short free-text question as a standing ask, in either script', () => {
+    assert.equal(leavesClarificationStanding({ responseText: 'أي مفهوم تريد شرحه؟' }), true);
+    assert.equal(leavesClarificationStanding({ responseText: 'Which concept shall I explain?' }), true);
+    assert.equal(leavesClarificationStanding({ responseText: '  أي درس؟  ' }), true);
+  });
+
+  it('does not treat an answer as a question', () => {
+    assert.equal(leavesClarificationStanding({ responseText: 'الافتراضات هي كذا وكذا.' }), false);
+    assert.equal(leavesClarificationStanding({ responseText: '' }), false);
+  });
+
+  it('does not mistake a long explanation that happens to end on a question', () => {
+    // The reason the cap exists: prose closing with «هل تريد المزيد؟» answered
+    // something, it did not ask.
+    const prose = 'شرح مطول '.repeat(60) + 'هل تريد المزيد؟';
+    assert.ok(prose.length > 400, 'fixture must exceed the cap to be meaningful');
+    assert.equal(leavesClarificationStanding({ responseText: prose }), false);
+  });
+
+  it('treats a produced artifact as proof the turn answered something', () => {
+    // A worksheet came back; whatever the prose ends with, nothing is pending.
+    assert.equal(
+      leavesClarificationStanding({ responseText: 'جاهزة. أريد تعديلها؟', producedArtifact: true }),
+      false,
+    );
+    // ...but a structured clarification still wins: it is a fact, not a guess.
+    assert.equal(
+      leavesClarificationStanding({
+        responseText: 'اختر:',
+        hasStructuredClarification: true,
+        producedArtifact: true,
+      }),
+      true,
+    );
+  });
+
+  it('forwards a one-word answer instead of re-asking — the whole point', () => {
+    const asked = leavesClarificationStanding({ responseText: 'أي مفهوم تريد شرحه؟' });
+    assert.equal(asked, true);
+
+    // "الافتراضات" is short enough to hit the short-token fallback. With the
+    // flag it reaches the teaching pipeline; without it the teacher is asked
+    // the same generic question they just answered.
+    const answered = classifyChatIntent('الافتراضات', 'ar', asked);
+    assert.equal(answered.useTeachingPipeline, true);
+    assert.notEqual(answered.intent, 'ambiguous');
+
+    const withoutFlag = classifyChatIntent('الافتراضات', 'ar', false);
+    assert.equal(withoutFlag.intent, 'ambiguous');
+  });
 });

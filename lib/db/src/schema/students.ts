@@ -46,14 +46,16 @@ export const classGroups = pgTable(
      * paid for, not wished away: a name already held by a student account
      * cannot be claimed again — see lib/claimDecision.ts in the api-server.
      *
-     * COMPLETE IN CODE, UNREACHABLE IN PRODUCTION as of 2026-09-06. Minting
+     * COMPLETE IN CODE, STILL SWITCHED OFF as of 2026-09-06. Minting
      * (POST /classes/:id/join-code), the public lookup (GET /auth/join/:code)
      * and the undo for a wrong claim (DELETE /students/:id/links/:userId) all
-     * exist. Two things still gate it: `STUDENT_ACCOUNTS` is false, so every
-     * one of those routes answers 403; and **this column has not been pushed
-     * to any database** — `verify-schema` checks table names only, so it will
-     * report `ok` while `join_code_expires_at` is missing, and a missing column
-     * makes every join code look permanently expired.
+     * exist, and both columns are present in production and locally — verified
+     * by an information_schema query, not by `verify-schema`, which checks
+     * table names only and would report `ok` with a column missing.
+     *
+     * What still gates it is `STUDENT_ACCOUNTS`: false, so every one of those
+     * routes answers 403. Turning it on is not a config change — legal.ts
+     * states in print that no minor holds an account.
      *
      * Expiry is not optional here the way it might look. This code is the key
      * to an *unauthenticated* endpoint that lists children's names, so

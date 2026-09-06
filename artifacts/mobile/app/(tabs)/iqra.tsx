@@ -68,7 +68,7 @@ import {
   type SessionArtifact,
   type TeachingAction,
 } from '@/services/ai/teachingAssistant';
-import { classifyChatIntent } from '@/services/ai/intentRouter';
+import { classifyChatIntent, leavesClarificationStanding } from '@/services/ai/intentRouter';
 import { IqraaMark } from '@/components/ui/IqraaMark';
 import { CHAT_MAX_WIDTH } from '@/constants/layout';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
@@ -1683,6 +1683,7 @@ export default function IqraScreen() {
             : 'Happy to refine — which lesson or material should I adjust?',
           timestamp: new Date(),
         };
+        awaitingClarifyRef.current = true;
         setMessages(prev => [...prev, clarifyMsg]);
         return;
       }
@@ -1710,6 +1711,7 @@ export default function IqraScreen() {
             clarificationQuery: q,
             timestamp: new Date(),
           };
+          awaitingClarifyRef.current = true;
           setMessages(prev => [...prev, clarifyMsg]);
           return;
         }
@@ -1814,6 +1816,7 @@ export default function IqraScreen() {
         };
         // The `finally` on the enclosing try clears the thinking state, the
         // same way the subject-clarification branch above relies on it.
+        awaitingClarifyRef.current = true;
         setMessages(prev => [...prev, clarifyMsg]);
         return;
       }
@@ -2024,6 +2027,15 @@ export default function IqraScreen() {
         && !pedagogicalClarification
         && (quickTopic || (teachingActions && teachingActions.length > 0)),
       );
+
+      // Why this is not just `Boolean(pedagogicalClarification)`, and why the
+      // rule lives next to the classifier that consumes it: see
+      // `leavesClarificationStanding`.
+      awaitingClarifyRef.current = leavesClarificationStanding({
+        responseText,
+        hasStructuredClarification: Boolean(pedagogicalClarification),
+        producedArtifact: Boolean(artifactData),
+      });
 
       const assistantMsg: Message = {
         id: (Date.now() + 1).toString(),
