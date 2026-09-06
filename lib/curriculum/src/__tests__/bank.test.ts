@@ -73,6 +73,7 @@ describe('manifest shape', () => {
       civic: /^civic-s[12]$/,
       art: /^art-g10-general$/,
       vocational: /^vocational-s[12]$/,
+      'physical-education': /^pe-s[12]$/,
     };
     for (const s of G10_SOURCES) {
       for (const t of s.unitTags) {

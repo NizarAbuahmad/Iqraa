@@ -3404,7 +3404,7 @@
       "semester": 2,
       "kind": "student-book",
       "authority": "nccd",
-      "status": "pending",
+      "status": "ingested",
       "filename": "كتاب الطالب لمادة التربية الوطنية والمدنية للصف العاشر الفصل الثاني.pdf",
       "authorAr": null,
       "unitTags": [
@@ -3417,7 +3417,15 @@
         "التربية الوطنية والمدنية",
         "عاشر"
       ],
-      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة)؛ رفضته بوابة الجودة تلقائيًا في 2026-09-03 ولم يُستخرج. الملف نفسه سليم؛ يحتاج استخراجًا أفضل أو OCR."
+      "notes": "استُخرج بالتعرف الضوئي (tesseract) بعد رفض pdf-parse لقلبه أداة التعريف بنسبة 55%. القلب زال تمامًا (0.00%)، لكن التعرف الضوئي يخطئ في كلمات مفردة — رُصد «العيش الكريه» بدل «العيش الكريم» في ص 11. صالح للاستناد والاسترجاع؛ يحتاج مراجعة بالعين قبل الاقتباس الحرفي أمام معلم أو طالب.",
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic with the definite article transposed (الحركة ← احلركة) in 55% of samples — readable by eye, not quotable)",
+        "extractedAt": "2026-09-06",
+        "pages": 100,
+        "chars": 79385,
+        "localPath": "knowledge-base/grade-10-civic/support-pdfs/كتاب الطالب لمادة التربية الوطنية والمدنية للصف العاشر الفصل الثاني.pdf",
+        "sha256": "c0abcd3d48657316a483551d1fdc19d0bcc8f65c76e467695f7546255905e22f"
+      }
     },
     {
       "id": "art-teacher-guide",
@@ -3590,6 +3598,77 @@
         "localPath": "knowledge-base/grade-9-math/support-pdfs/كتاب الطالب لمادة الرياضيات الصف التاسع الفصل الثاني.pdf",
         "sha256": "c6c31ebc326dadb947d22233c71ef2c41477699743fc501f49d47153e9bb5a65"
       }
+    },
+    {
+      "id": "pe-s1-student-book",
+      "title": "كتاب الطالب لمادة التربية الرياضية للصف العاشر الفصل الأول.pdf",
+      "bytes": 36394455,
+      "subject": "physical-education",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "كتاب الطالب لمادة التربية الرياضية للصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "pe-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "physical-education",
+        "التربية الرياضية",
+        "عاشر"
+      ],
+      "notes": "نُزّل من nccd.gov.jo مباشرة في 2026-09-06 — أول مادة تُسجَّل لهذا الصف بلا أي أثر سابق في المستودع. الطبعة الأولى (التجريبية) 1447هـ/2025م، أُعيدت طباعتها 2026م. 56 صفحة، وفيها طبقة نصية."
+    },
+    {
+      "id": "eng-s1-teacher-guide",
+      "title": "دليل المعلم لمادة اللغة الإنجليزية للصف العاشر الفصل الأول.pdf",
+      "bytes": 12566679,
+      "subject": "english",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "دليل المعلم لمادة اللغة الإنجليزية للصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "eng-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "english",
+        "اللغة الإنجليزية",
+        "دليل المعلم",
+        "عاشر"
+      ],
+      "notes": "نُزّل من nccd.gov.jo في 2026-09-06، ولذلك authority = nccd هنا خلافًا لصفوف eng-* الأخرى المسجّلة third-party لتعذّر إيجاد نسخة NCCD وقتها (انظر 2026-08-30). NCCD ينشر نسختين للفصل الأول؛ هذه نسخة «Print Updated» (170 ص). النسخة الأخرى (18.2MB) تحمل علامة «نسخة قيد الإعداد والتجهيز» فحُذفت."
+    },
+    {
+      "id": "eng-s2-teacher-guide",
+      "title": "دليل المعلم لمادة اللغة الإنجليزية للصف العاشر الفصل الثاني.pdf",
+      "bytes": 18132282,
+      "subject": "english",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "دليل المعلم لمادة اللغة الإنجليزية للصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "eng-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "english",
+        "اللغة الإنجليزية",
+        "دليل المعلم",
+        "عاشر"
+      ],
+      "notes": "نُزّل من nccd.gov.jo في 2026-09-06. 192 صفحة. يحمل علامة «نسخة قيد الإعداد والتجهيز» — وهو الدليل الوحيد للفصل الثاني الذي ينشره NCCD، فسُجّل كما هو مع تسجيل أنه مسوّدة."
     }
   ],
   "mergedAt": "2026-08-25"

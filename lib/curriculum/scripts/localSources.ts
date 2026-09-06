@@ -163,6 +163,11 @@ export const LOCAL_FILES: Record<string, string> = {
   'eng-s1-activity-book': 'knowledge-base/grade-10-english/support-pdfs/كتاب الأنشطة لمادة اللغة الإنجليزية للصف العاشر الفصل الأول.pdf',
   'eng-s2-student-book': 'knowledge-base/grade-10-english/support-pdfs/كتاب الطالب لمادة اللغة الإنجليزية الصف العاشر الفصل الثاني.pdf',
   'eng-s2-activity-book': 'knowledge-base/grade-10-english/support-pdfs/كتاب الأنشطة لمادة اللغة الإنجليزية للصف العاشر الفصل الثاني.pdf',
+  // The two teacher's books came off nccd.gov.jo on 2026-09-06, unlike the
+  // four student/activity books above, which is why their manifest rows carry
+  // authority 'nccd' where those carry 'third-party'.
+  'eng-s1-teacher-guide': 'knowledge-base/grade-10-english/support-pdfs/دليل المعلم لمادة اللغة الإنجليزية للصف العاشر الفصل الأول.pdf',
+  'eng-s2-teacher-guide': 'knowledge-base/grade-10-english/support-pdfs/دليل المعلم لمادة اللغة الإنجليزية للصف العاشر الفصل الثاني.pdf',
   'geo-s1-student-book': 'knowledge-base/grade-10-geography/support-pdfs/كتاب الطالب لمادة الجغرافيا للصف العاشر الفصل الأول.pdf',
   'geo-s2-student-book': 'knowledge-base/grade-10-geography/support-pdfs/كتاب الطالب لمادة الجغرافيا للصف العاشر الفصل الثاني.pdf',
   'digital-s1-student-book': 'knowledge-base/grade-10-digital-literacy/support-pdfs/كتاب الطالب لمادة المهارات الرقمية الصف العاشر الفصل الأول.pdf',
@@ -173,6 +178,7 @@ export const LOCAL_FILES: Record<string, string> = {
   'art-student-book': 'knowledge-base/grade-10-art/support-pdfs/كتاب الطالب لمادة التربية الفنية للصف العاشر.pdf',
   'vocational-p1-student-book': 'knowledge-base/grade-10-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية الصف العاشر الجزء الأول.pdf',
   'vocational-p2-student-book': 'knowledge-base/grade-10-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية الصف العاشر الجزء الثاني.pdf',
+  'pe-s1-student-book': 'knowledge-base/grade-10-pe/support-pdfs/كتاب الطالب لمادة التربية الرياضية للصف العاشر الفصل الأول.pdf',
   // Added 2026-09-05, closing the gap flagged in objectives.test.ts and
   // curriculumIds.test.ts: the Grade 9 maths catalog shipped with 0 sources
   // behind it. Filenames verified against content, not trusted blind — see
