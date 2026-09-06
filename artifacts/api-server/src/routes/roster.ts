@@ -23,6 +23,7 @@ import {
 import { logger } from "../lib/logger";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
 import { generateShareCode } from "../modules/assessment/studentView.ts";
+import { claimCodeIsLive } from "../lib/claimCode.ts";
 import { requireRosterConsent } from "../lib/rosterConsent.js";
 import { studentAccountsEnabled } from "../lib/features.js";
 
@@ -484,11 +485,70 @@ router.patch("/students/:id", async (req: AuthenticatedRequest, res) => {
 });
 
 /**
+ * Returns the student's current claim code, so the teacher can re-open the
+ * screen and share the code they already handed out.
+ *
+ * Without this the only affordance was minting, which overwrites — a teacher
+ * who generated a code, gave it to a parent, and came back saw an empty card
+ * and one button that silently invalidated the parent's code.
+ *
+ * An expired code is reported as no code at all. Collapsing it here rather
+ * than in the client leaves the screen two states instead of three, and means
+ * anything it displays is something `resolveClaimCode` will accept — the two
+ * share `claimCodeIsLive` so they cannot drift apart.
+ *
+ * Readable at all only because `students.claimCode` is stored in plain text,
+ * which that schema argues for deliberately (it grants a chat link, not
+ * exam-answering access). If it ever becomes a hash, this endpoint goes with it.
+ */
+router.get("/students/:id/claim-code", async (req: AuthenticatedRequest, res) => {
+  try {
+    // Same refusal as the mint below: handing back a code minted before the
+    // flag flipped is still handing out something nothing can redeem.
+    if (!studentAccountsEnabled()) {
+      res.status(403).json({
+        code: "student_accounts_disabled",
+        error: "Parent and student accounts are not enabled on this deployment.",
+      });
+      return;
+    }
+
+    const studentId = req.params["id"] as string;
+    const [row] = await db
+      .select({
+        claimCode: students.claimCode,
+        claimCodeExpiresAt: students.claimCodeExpiresAt,
+      })
+      .from(students)
+      // Ownership in the WHERE, not a separate check: another teacher's
+      // student is a 404 here, the same as everywhere else in this router.
+      .where(and(eq(students.id, studentId), eq(students.teacherId, req.user!.id)))
+      .limit(1);
+
+    if (!row) {
+      res.status(404).json({ error: "Student not found" });
+      return;
+    }
+
+    if (!claimCodeIsLive(row.claimCodeExpiresAt)) {
+      res.json({ claimCode: null, claimCodeExpiresAt: null });
+      return;
+    }
+    res.json({ claimCode: row.claimCode, claimCodeExpiresAt: row.claimCodeExpiresAt });
+  } catch (err) {
+    failRoster(res, err, "read claim code", "Failed to load the link code");
+  }
+});
+
+/**
  * Mints a fresh claim code so the teacher can hand it to a parent or the
  * student themself for self-serve signup — see /auth/register and
  * /auth/claim. Regenerating overwrites the previous code rather than
  * allowing several live at once: a code the teacher no longer trusts just
  * stops working the moment they ask for a new one.
+ *
+ * This is now the deliberate branch, not the default one — the client asks
+ * before calling it when a live code already exists (see the GET above).
  */
 router.post("/students/:id/claim-code", async (req: AuthenticatedRequest, res) => {
   try {

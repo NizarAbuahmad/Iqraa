@@ -167,9 +167,23 @@ export async function archiveClass(classId: string): Promise<void> {
 }
 
 /**
+ * The code this student currently has, or `null` when there is none.
+ *
+ * The server reports an expired code as no code, so a caller never has to ask
+ * whether what it is about to display would actually still work.
+ */
+export async function getClaimCode(
+  studentId: string,
+): Promise<{ claimCode: string | null; claimCodeExpiresAt: string | null }> {
+  const res = await apiFetch(`/students/${studentId}/claim-code`);
+  return readJson(res, 'Loading link code');
+}
+
+/**
  * Mints a fresh code so a parent or the student can link to this exact
  * roster row when they sign up — see services/messaging.ts. Regenerating
- * invalidates any code shared before.
+ * invalidates any code shared before, which is why the screen confirms first
+ * when `getClaimCode` says one is already live.
  */
 export async function generateClaimCode(
   studentId: string,

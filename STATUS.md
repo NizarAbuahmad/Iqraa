@@ -406,6 +406,74 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The link code a teacher shares, 2026-09-06
+
+Asked "where does a teacher find the code to share?", the answer was: حسابي →
+الإعدادات → صفوفي → a class → an unlabelled grey speech-bubble icon on a
+student row, between a pencil and an ×. Classes are not on the tab bar at all.
+
+Chasing that found something worse than a hidden button.
+
+**The only action on that screen destroyed the code you had already shared.**
+Nothing returned an existing code — `claimCode` appeared in `routes/roster.ts`
+only inside the mint handler, never in a projection — so re-opening the screen
+showed an empty card whose one button minted a *new* code, overwriting the old
+one in place. A teacher who generated a code, gave it to a parent, and came
+back silently broke it. No warning existed because nothing knew.
+
+`GET /students/:id/claim-code` now returns the live code, and an expired one as
+`null` so the screen has two states rather than three. Sharing became the
+primary action; replacing is a demoted text button whose label states the
+consequence («إنشاء رمز جديد بدل الحالي») behind a confirm that spells it out.
+The confirm goes through `services/confirm.ts` and not `Alert.alert`, which
+does nothing on react-native web — the build teachers are demoed on.
+
+**The code also left the app as six bare characters.** It now leaves as a
+message: greeting, the child's name, the code alone on its own line so a
+long-press selects it, the expiry, and a link to the web app with what to tap.
+`services/claimCodeMessage.ts` composes it — pure, so `node --test` can load
+it, and deliberately *not* `parentMessage.ts`, which requires a
+`studentGender` the roster does not record.
+
+Three smaller things the same trail turned up:
+
+- **The teacher and the parent called it different names.** The screen said
+  «رمز الربط»; the sign-up field said «رمز الصف». A teacher relaying the first
+  sent a parent hunting for a label that did not exist. Both are «رمز الربط»
+  now, and the composer is *passed* the register screen's own label so a rename
+  cannot silently re-open the gap — `claimCodeMessage.test.ts` asserts it.
+- **A pasted code was rejected for being pasted.** `normalizeShareCode` was
+  applied to exam codes and never to claim codes; both call sites only
+  `.trim()`. «abc-234 » answered "invalid or has expired", which was neither.
+  Normalising now happens once in the shared resolver, so the third caller
+  cannot forget. Verified live: a parent redeemed `sp7-p2c` for `SP7P2C`.
+- **`POST /auth/claim` had no rate limiter** while register, login and
+  forgot-password all did — an authenticated 6-character guessing surface. 10/hr.
+
+**Reconciled with a teacher-only v1 rather than shipped against it.** Two
+unmerged branches pulled opposite ways: one made the code findable (key icon,
+class-chat menu entry), the other turned parent and student accounts off by
+default. Landed as written, a teacher would have got a clearly-labelled key
+leading to a button that 403s. So when `STUDENT_ACCOUNTS` is off the entry
+points are **hidden** — an affordance whose only purpose is handing out a
+redeemable code is meaningless when nothing can redeem it — and the screen
+itself **explains**, because the route stays reachable by URL. Hiding is not
+the enforcement: the server refuses both routes regardless, and that was
+verified separately with a real teacher token.
+
+Also corrected: the findability branch renamed the icon and left the sentence
+naming it, so `messagingNoContactsDesc` still told teachers to press «أيقونة
+المحادثة». That string is rendered in two places and was false the moment that
+branch landed.
+
+**Verified against a running stack, both ways.** Flag off: both routes 403
+`student_accounts_disabled` with a teacher token; the key icon absent from the
+roster; the screen explaining. Flag on: read-before-mint returns null; mint;
+**re-read returns the same code** — the bug, gone; another teacher gets 404;
+the confirm fires and cancelling leaves the code untouched; the old code is
+rejected after a replace. The share message was captured from the page.
+`schema-push:` **none** — both columns already exist.
+
 ## Arabic and Islamic Studies do not carry extractable figures, 2026-09-05
 
 Measured, then abandoned. Recording it so the next person does not spend the

@@ -27,6 +27,7 @@ import {
 } from '@/services/messaging';
 import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import { usePollingRefresh } from '@/hooks/usePollingRefresh';
+import { useStudentAccountsEnabled } from '@/services/features';
 import { Avatar } from '@/components/ui/Avatar';
 
 interface Contact {
@@ -40,6 +41,7 @@ export default function NotificationsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
+  const studentAccounts = useStudentAccountsEnabled();
   const { user } = useAuth();
 
   const [threads, setThreads] = useState<ChatThreadSummary[]>([]);
@@ -107,7 +109,7 @@ export default function NotificationsScreen() {
             {t('messagingNoContactsTitle')}
           </Text>
           <Text style={[styles.threadPreview, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center', lineHeight: 20 }]}>
-            {t('messagingNoContactsDesc')}
+            {studentAccounts ? t('messagingNoContactsDesc') : t('messagingDisabledDesc')}
           </Text>
         </View>
       }

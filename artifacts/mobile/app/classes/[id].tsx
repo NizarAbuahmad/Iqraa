@@ -56,6 +56,7 @@ import {
 } from '@/constants/materialKind';
 import { countMaterials, countStudents } from '@/services/i18n';
 import { confirm } from '@/services/confirm';
+import { useStudentAccountsEnabled } from '@/services/features';
 
 const ACCENT = '#1B6B62';
 
@@ -65,6 +66,7 @@ export default function ClassDetailScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
+  const studentAccounts = useStudentAccountsEnabled();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const [tab, setTab] = useState<Tab>('students');
@@ -483,15 +485,22 @@ export default function ClassDetailScreen() {
                 size={18}
                 color={item.teacherNote ? ACCENT : colors.mutedForeground}
               />
-              <Pressable
-                onPress={() => router.push(`/messaging/claim/${item.id}?studentName=${encodeURIComponent(item.displayName)}`)}
-                hitSlop={10}
-              >
-                {/* A key, not a speech bubble: this opens the student's link
-                    code. The bubble read as "chat with them" and hid the one
-                    thing teachers were hunting for. */}
-                <Ionicons name="key-outline" size={18} color={colors.mutedForeground} />
-              </Pressable>
+              {/* Hidden, not disabled, when nothing can redeem a code: a greyed
+                  key on every one of thirty rows is more confusion, not less.
+                  The server refuses regardless — see routes/roster.ts. */}
+              {studentAccounts ? (
+                <Pressable
+                  onPress={() => router.push(`/messaging/claim/${item.id}?studentName=${encodeURIComponent(item.displayName)}`)}
+                  hitSlop={10}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('messagingStudentCodes')}
+                >
+                  {/* A key, not a speech bubble: this opens the student's link
+                      code. The bubble read as "chat with them" and hid the one
+                      thing teachers were hunting for. */}
+                  <Ionicons name="key-outline" size={18} color={colors.mutedForeground} />
+                </Pressable>
+              ) : null}
               <Pressable onPress={() => { void onRemove(item); }} hitSlop={10}>
                 <Ionicons name="close" size={20} color={colors.mutedForeground} />
               </Pressable>
@@ -652,15 +661,18 @@ export default function ClassDetailScreen() {
             ) : null}
             {/* The code is minted per student and only after the name exists,
                 so this dialog cannot show one — it can say where to find it,
-                which is the whole complaint. */}
-            <Text
-              style={[
-                styles.modalHint,
-                { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align, marginTop: 10 },
-              ]}
-            >
-              {t('addStudentsCodeHint')}
-            </Text>
+                which is the whole complaint. Suppressed with the icon it names:
+                pointing at a key that is not rendered is worse than silence. */}
+            {studentAccounts ? (
+              <Text
+                style={[
+                  styles.modalHint,
+                  { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align, marginTop: 10 },
+                ]}
+              >
+                {t('addStudentsCodeHint')}
+              </Text>
+            ) : null}
             <View style={styles.modalActions}>
               <Pressable onPress={() => setShowAdd(false)} style={styles.modalBtn}>
                 <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }}>

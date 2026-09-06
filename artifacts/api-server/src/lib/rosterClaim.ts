@@ -15,6 +15,7 @@
 import { db } from "@workspace/db";
 import { students, rosterLinks, type RosterLinkRelation } from "@workspace/db";
 import { and, eq } from "drizzle-orm";
+import { claimCodeIsLive, claimCodeLookupKey } from "./claimCode.ts";
 
 export type ClaimRole = "student" | "parent";
 
@@ -23,13 +24,25 @@ export type ClaimResolution =
   | { ok: false; status: number; error: string };
 
 export async function resolveClaimCode(code: string, role: ClaimRole): Promise<ClaimResolution> {
+  // Normalised here rather than at the call sites. Both of them used to only
+  // `.trim()`, so a parent pasting «abc-234 » — lower case, a dash because it
+  // looks like a code, a trailing space from the copy — was told the code was
+  // invalid or expired, which was neither true nor actionable. The exam flow
+  // has always normalised (`routes/studentAttempt.ts`); claim codes never did.
+  // Fixing it in the shared resolver rather than in the two callers means the
+  // third caller cannot forget.
+  const normalized = claimCodeLookupKey(code);
+  if (!normalized) {
+    return { ok: false, status: 400, error: "That code is invalid or has expired" };
+  }
+
   const [student] = await db
     .select({ id: students.id, claimCodeExpiresAt: students.claimCodeExpiresAt })
     .from(students)
-    .where(eq(students.claimCode, code))
+    .where(eq(students.claimCode, normalized))
     .limit(1);
 
-  if (!student || !student.claimCodeExpiresAt || student.claimCodeExpiresAt < new Date()) {
+  if (!student || !claimCodeIsLive(student.claimCodeExpiresAt)) {
     return { ok: false, status: 400, error: "That code is invalid or has expired" };
   }
 

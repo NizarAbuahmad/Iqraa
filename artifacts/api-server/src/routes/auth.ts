@@ -37,6 +37,12 @@ const forgotPasswordLimiter = createRateLimiter({
   name: "forgot-password",
 });
 const googleLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, name: "google-auth" });
+// /claim was the only code-redeeming route without one, which made it an
+// authenticated guessing surface against a 6-character alphabet. More headroom
+// than register because a parent with three children legitimately claims three
+// times in a sitting. Dormant while STUDENT_ACCOUNTS is off — the route 403s
+// before reaching the handler — so this is insurance for the day it flips.
+const claimLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 10, name: "claim" });
 
 // Unset means the endpoint answers 503 and the client-side button never
 // renders (see GoogleSignInButton) — never a failure, just no button, same
@@ -204,7 +210,7 @@ router.post("/register", registerLimiter, async (req, res) => {
  * second teacher's roster for the same student. Same resolver as /register,
  * just without creating a user row first.
  */
-router.post("/claim", authMiddleware, async (req: AuthenticatedRequest, res) => {
+router.post("/claim", claimLimiter, authMiddleware, async (req: AuthenticatedRequest, res) => {
   try {
     // Closed for the same reason /register is. No such account can exist
     // while the flag is off, so this is unreachable in v1 — but leaving it

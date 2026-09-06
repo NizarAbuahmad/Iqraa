@@ -48,6 +48,7 @@ import { MessageBubble } from '@/components/ui/MessageBubble';
 import { Avatar } from '@/components/ui/Avatar';
 import { ParticipantPickerSheet } from '@/components/ui/ParticipantPickerSheet';
 import { mergeNewMessages } from '@/services/messageMerge';
+import { useStudentAccountsEnabled } from '@/services/features';
 import { usePollingRefresh } from '@/hooks/usePollingRefresh';
 
 const REPORT_REASON_KEYS = ['reportReasonInappropriate', 'reportReasonBullying', 'reportReasonSpam', 'reportReasonOther'] as const;
@@ -57,6 +58,7 @@ export default function ThreadScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, lang, isRTL } = useLanguage();
+  const studentAccounts = useStudentAccountsEnabled();
   const { user } = useAuth();
 
   const [thread, setThread] = useState<ThreadDetail | null>(null);
@@ -437,7 +439,7 @@ export default function ThreadScreen() {
                   to invite someone. Not a code of its own: a class-wide join
                   code is a separate, deliberately-parked decision.
                 */}
-                {thread?.type === 'class_group' && thread.isOwner && thread.classGroupId ? (
+                {thread?.type === 'class_group' && thread.isOwner && thread.classGroupId && studentAccounts ? (
                   <Pressable
                     onPress={() => { setMenuOpen(false); router.push(`/classes/${thread.classGroupId}`); }}
                     style={styles.menuRow}
