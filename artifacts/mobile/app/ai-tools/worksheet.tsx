@@ -794,12 +794,12 @@ function CheckboxRow({ label, checked, onToggle, accent, colors, isRTL, disabled
  * how the 45-line copy this replaces drifted away from
  * components/ui/PickerField in the first place.
  *
- * quiz's copy also tinted the trigger border while open and this one did not,
- * which is drift rather than intent; left as-is here so this commit changes
- * nothing visually.
+ * The trigger tints its border violet while open. quiz's copy did this and
+ * this screen's did not, which was drift; the de-duplication preserved the
+ * asymmetry rather than decide it, and Nizar has since asked for the tint.
  */
 function PickerField(props: React.ComponentProps<typeof SharedPickerField>) {
-  return <SharedPickerField maxHeight={180} selectedTint={ACCENT + '15'} {...props} />;
+  return <SharedPickerField maxHeight={180} selectedTint={ACCENT + '15'} highlightBorderWhenOpen {...props} />;
 }
 
 const styles = StyleSheet.create({

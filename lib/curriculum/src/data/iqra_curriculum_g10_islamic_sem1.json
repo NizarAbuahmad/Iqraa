@@ -6,15 +6,17 @@
     "subject_en": "Islamic Education",
     "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
     "semester_covered": 1,
-    "provenance_note": "المصدر هنا دليل المعلم، لا كتاب الطالب: كتاب الطالب مسجَّل في المستودع ولم يُستخرَج نصُّه بعد. أسماء الدروس منسوخة من صفحة «دروس الوحدة» في مفتتح كل وحدة ومن «مخطط الوحدة»، ونتاجات التعلم من كتلة «نتاجات التعلم: يُتوقَّع أن يحقق الطلبة النتاجات الآتية» في صفحة كل درس — لا من عمود «النتاجات» في مخطط الوحدة، لأن ذلك العمود يختصر: درس «الحديث الشريف: حفظ اللسان» يعرض فيه ثلاثة نتاجات بينما صفحة الدرس نفسها تطبع ستة. عدد الحصص منسوخ من سطر «الزمن المقترح لتنفيذ الدرس» في صفحة كل درس، وهو مطابق لعمود «عدد الحصص» في مخطط الوحدة. لا اجتهاد ولا توليد.",
+    "provenance_note": "نتاجات التعلم وعدد الحصص من دليل المعلم: من كتلة «نتاجات التعلم» ومن سطر «الزمن المقترح لتنفيذ الدرس» في صفحة كل درس — لا من عمود النتاجات في «مخطط الوحدة»، لأن ذلك العمود يختصر (يعرض ثلاثة نتاجات لدرس «الحديث الشريف: حفظ اللسان» بينما صفحة الدرس تطبع ستة). أمّا أسماء الدروس فمن كتاب الطالب نفسه، بعد أن استُخرج نصُّه في 2026-09-05: قوبلت الأربعة والعشرون كلُّها بالدليل، فاختلف خمسة، وقُدِّم كتاب الطالب لأنه الكتاب الذي بيد المعلّم والطالب. وكلُّ عنوان مصحَّح مثبَتٌ في موضعين مستقلَّين من كتاب الطالب: الفهرس (ص4) وصفحة «دروس الوحدة» في مفتتح وحدته. لا اجتهاد ولا توليد. وفي 2026-09-05 أُعيد استخراج الدليل بـ OCR فنزلت نسبة قلب الحروف فيه من ~45% إلى ~8%، وأُعيدت قراءة النتاجات كلِّها عليه فلم يتغيّر منها شيء. أمّا عدد الحصص فمصدرُه قراءةُ pdf-parse الأولى، لأن الـ OCR يُسقط «حص» من «حصتان» في كثير من الصفحات؛ وحيثما قرأ الاثنان السطرَ نفسه تطابقا في العشرين موضعًا كلِّها.",
     "source_books": {
-      "units_1_4": "دليل المعلم - التربية الإسلامية - الصف العاشر - الفصل الدراسي الأول - sourceId: islamic-s1-teacher-guide (204 صفحة)"
+      "units_1_4_outcomes_and_periods": "دليل المعلم - التربية الإسلامية - الصف العاشر - الفصل الدراسي الأول - sourceId: islamic-s1-teacher-guide (204 صفحة)",
+      "units_1_4_lesson_titles": "كتاب الطالب - التربية الإسلامية - الصف العاشر - الفصل الدراسي الأول - sourceId: islamic-s1-student-book (136 صفحة، استُخرج بـ OCR في 2026-09-05)"
     },
     "schema_version": "1.0",
     "known_gaps": [
       "الوحدات في هذا الكتاب لا تحمل عنوانًا موضوعيًّا؛ يعنونها الدليل بالترتيب وحده («الوحدة الأولى» … «الوحدة الرابعة») ويضع فوق كل وحدة آيةً كريمة (المائدة: 42، الأنعام: 161، البقرة: 229، البقرة: 282). فالعناوين هنا هي ترتيبها كما يطبعه الكتاب، لا عنوان مخترَع.",
+      "اختلف كتاب الطالب عن دليل المعلم في خمسة عناوين، واعتُمد كتاب الطالب: «البيع في الفقه الإسلاميّ» (الدليل: «البيع: مشروعيته وأحكامه») — «من مقاصد الشريعة الإسلاميّة (حفظ الدين)» (الدليل: بلا «الإسلاميّة») — «موقف الشريعة الإسلاميّة من الرِّبا» (الدليل: «الرِّبا وأحكامه في الفقه الإسلامي») — «القدس والمسجد الأقصى المبارك» (الدليل: «المسجد الأقصى المبارك») — «موقف الشريعة الإسلاميّة من القمار» (الدليل: «القمار وأحكامه في الفقه الإسلامي»). قد يكون الاختلاف بين طبعتين؛ لم يُحسَم، ولذلك سُجِّلت صيغة الدليل هنا بدل أن تُمحى.",
+      "استخراج كتاب الطالب تمّ بـ OCR لأن طبقة النصّ فيه مقلوبة الحروف حول أداة التعريف بنسبة 96%. ونصُّ الـ OCR أدنى درجةً من استخراج رقميّ نظيف (انظر ترويسة scripts/ocr.ts)، لكنه هنا شاهدٌ على العناوين لا مصدرُ اقتباس: كلُّ عنوان مصحَّح قُرئ في موضعين منه.",
       "لم تُدرَج قوائم المفاهيم (vocabulary) رغم أن مخطط الوحدة يطبع عمود «المفاهيم» لكل درس: العمود المجاور له في الجدول نفسه ثبت أنه يختصر، فلا سبيل إلى التحقق من اكتمال قوائم المفاهيم من مصدر آخر — وقائمة مصطلحات ناقصة أسوأ من غيابها.",
-      "كتاب الطالب (islamic-s1-student-book) مسجَّل في g10_sources.json بحالة pending — لم يُستخرَج نصُّه. حين يُستخرَج ينبغي التحقق من أسماء الدروس وعناوين الوحدات في مقابل ما هنا.",
       "لا توجد عناوين إنجليزية مطبوعة في الكتاب — العناوين الإنجليزية هنا ترجمة أمينة للعناوين العربية.",
       "prior_knowledge غير مذكورة في الدليل بصيغة قابلة للنسخ، فتُركت فارغة."
     ]
@@ -27,7 +29,7 @@
       "title_en": "Unit One",
       "general_idea_ar": "",
       "total_periods": 10,
-      "data_tier": "lesson-level (teacher guide: outcomes and periods printed per lesson)",
+      "data_tier": "lesson-level (teacher guide: outcomes + periods; student book: lesson titles)",
       "prior_knowledge": [],
       "lessons": [
         {
@@ -46,8 +48,8 @@
         {
           "id": "u1_l2",
           "order": 2,
-          "title_ar": "البيع: مشروعيته وأحكامه",
-          "title_en": "Sale: Its Legitimacy and Rulings",
+          "title_ar": "البيعُ في الفقهِ الإسلاميِّ",
+          "title_en": "Sale in Islamic Jurisprudence",
           "main_idea_ar": "",
           "periods": 2,
           "objectives": [
@@ -133,7 +135,7 @@
       "title_en": "Unit Two",
       "general_idea_ar": "",
       "total_periods": 12,
-      "data_tier": "lesson-level (teacher guide: outcomes and periods printed per lesson)",
+      "data_tier": "lesson-level (teacher guide: outcomes + periods; student book: lesson titles)",
       "prior_knowledge": [],
       "lessons": [
         {
@@ -199,8 +201,8 @@
         {
           "id": "u2_l5",
           "order": 5,
-          "title_ar": "من مقاصد الشريعة (حفظ الدين)",
-          "title_en": "Among the Aims of Shari'ah: Preservation of Religion",
+          "title_ar": "مِنْ مقاصدِ الشريعةِ الإسلاميّةِ (حفظُ الدّين)",
+          "title_en": "Among the Aims of Islamic Law: Preservation of Religion",
           "main_idea_ar": "",
           "periods": 2,
           "objectives": [
@@ -237,7 +239,7 @@
       "title_en": "Unit Three",
       "general_idea_ar": "",
       "total_periods": 10,
-      "data_tier": "lesson-level (teacher guide: outcomes and periods printed per lesson)",
+      "data_tier": "lesson-level (teacher guide: outcomes + periods; student book: lesson titles)",
       "prior_knowledge": [],
       "lessons": [
         {
@@ -259,8 +261,8 @@
         {
           "id": "u3_l2",
           "order": 2,
-          "title_ar": "الرِّبا وأحكامه في الفقه الإسلامي",
-          "title_en": "Usury and Its Rulings in Islamic Jurisprudence",
+          "title_ar": "موقفُ الشريعةِ الإسلاميّةِ مِنَ الرِّبا",
+          "title_en": "The Position of Islamic Law on Usury",
           "main_idea_ar": "",
           "periods": 2,
           "objectives": [
@@ -274,8 +276,8 @@
         {
           "id": "u3_l3",
           "order": 3,
-          "title_ar": "المسجد الأقصى المبارك",
-          "title_en": "The Blessed Al-Aqsa Mosque",
+          "title_ar": "القدسُ والمسجدُ الأقصى المبارك",
+          "title_en": "Jerusalem and the Blessed Al-Aqsa Mosque",
           "main_idea_ar": "",
           "periods": 2,
           "objectives": [
@@ -340,7 +342,7 @@
       "title_en": "Unit Four",
       "general_idea_ar": "",
       "total_periods": 10,
-      "data_tier": "lesson-level (teacher guide: outcomes and periods printed per lesson)",
+      "data_tier": "lesson-level (teacher guide: outcomes + periods; student book: lesson titles)",
       "prior_knowledge": [],
       "lessons": [
         {
@@ -377,8 +379,8 @@
         {
           "id": "u4_l3",
           "order": 3,
-          "title_ar": "القمار وأحكامه في الفقه الإسلامي",
-          "title_en": "Gambling and Its Rulings in Islamic Jurisprudence",
+          "title_ar": "موقفُ الشريعةِ الإسلاميّةِ مِنَ القمار",
+          "title_en": "The Position of Islamic Law on Gambling",
           "main_idea_ar": "",
           "periods": 2,
           "objectives": [

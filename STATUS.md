@@ -268,16 +268,54 @@ an announcement by default» below.
   do; the `s1`/`s2` id segment is the only thing separating `u1_l1` from
   `u1_l1`, and `islamicCurriculum.test.ts` pins that an S1 lookup handed an S2
   id answers null.
-  - **The only catalog built from a teacher guide rather than a student book.**
-    Both student books (`islamic-s1-student-book`, `islamic-s2-student-book`)
-    are registered `pending` in `g10_sources.json` and have never been
-    extracted; the two guides were, on 2026-09-03. That turned out to be an
-    upgrade: the guides print «الزمن المقترح لتنفيذ الدرس» on every lesson
-    page, so **this is the first Arabic-side book with real `periods`** (1-3
-    حصص) instead of the one-45-minute-period floor every other one falls back
-    to. A test asserts the durations stay whole multiples of 45 and that most
-    exceed one period, because a regression that dropped them would look
-    exactly like the rest of the catalog.
+  - **Outcomes and periods come from the teacher guides; lesson titles from
+    the student books.** The guides print «الزمن المقترح لتنفيذ الدرس» on
+    every lesson page, so **this is the first Arabic-side book with real
+    `periods`** (1-3 حصص) instead of the one-45-minute-period floor. A test
+    asserts the durations stay whole multiples of 45 and that most exceed one
+    period, because a regression that dropped them would look exactly like the
+    rest of the catalog.
+  - The student books were extracted on 2026-09-05, having sat `pending` since
+    2026-09-03, and cross-checking all 50 titles against them **moved five**.
+    All five are S1, and each is printed in two independent places in the book
+    (the فهرس and its unit's «دروس الوحدة» page):
+    «البيع في الفقه الإسلاميّ» (guide: «البيع: مشروعيته وأحكامه»),
+    «من مقاصد الشريعة الإسلاميّة (حفظ الدين)» (guide: without «الإسلاميّة»),
+    «موقف الشريعة الإسلاميّة من الرِّبا» (guide: «الرِّبا وأحكامه في الفقه
+    الإسلامي»), «القدس والمسجد الأقصى المبارك» (guide: «المسجد الأقصى
+    المبارك»), «موقف الشريعة الإسلاميّة من القمار» (guide: «القمار وأحكامه في
+    الفقه الإسلامي»). The book wins — it is what a teacher and student hold —
+    and the guide's wording is kept in `known_gaps` rather than erased, since
+    the two may be different editions. All 26 S2 titles matched.
+  - Both student books needed **OCR**, and the second one exposed a hole in
+    the extraction quality gate. `islamic-s2-student-book` is 98.8%
+    letter-transposed (في→يف, على→عىل, الله→اهلل) yet scored 18% on
+    `lamTranspositionRate`, whose four probes only look at definite-article
+    prefixes — so it passed as a clean `pdf-parse@2` extraction. A whole-word
+    probe (`wordTranspositionRate`) now sits beside it, and re-extracting
+    through OCR took that file from **92.2% → 8.5%** transposed. Its
+    `extractionBlocked` flag — set 2026-09-04, saying "needs OCR" — is cleared,
+    which is what `extraction.test.ts` demands and what caught the first
+    attempt that skipped the step.
+    - The new limit is **0.5, deliberately not 0.4**: measured across all 80
+      extractions, everything trusted sits at or below 12.3%, then history-s2
+      at 18.0%, the Arabic exercise books at ~29%, and **the two Islamic
+      teacher guides at ~42%**. Those are genuinely a grade below clean, but a
+      threshold is for unambiguous cases — so rather than move it until it
+      caught them, `extract-text.ts` gained an explicit `--ocr` flag for
+      "I have read this and judged it too poor to quote". It refuses to run
+      corpus-wide and its output is held to the same gates.
+  - **Both guides were then re-read that way** (2026-09-05), taking them from
+    44.8% → 8.0% and 47.0% → 7.6%. All four Islamic sources now sit at 7.6-8.5%.
+    Every one of the 221 catalogued outcomes was re-checked against the new
+    text: **nothing changed**.
+    - The OCR pass is **not uniformly better**, which is worth knowing before
+      reaching for it again. It is far better on prose and *worse* on short
+      tokens: pdf-parse read the «الزمن المقترح لتنفيذ الدرس» line on 23 and 25
+      pages, OCR on only 8 and 12, because it drops the «حص» from «حصتان». The
+      catalogue's `periods` therefore come from the pdf-parse reading —
+      corroborated by OCR on all 20 pages both could read, with no
+      disagreement.
   - Outcomes come from each lesson's own «نتاجات التعلم» block, **not** from
     the «مخطط الوحدة» summary table — that table abbreviates: it prints 3 of
     «الحديث الشريف: حفظ اللسان»'s 6 outcomes. Its «المفاهيم» column is
@@ -727,6 +765,63 @@ build has ever been made**, so push delivery, image picking and the app icon
 remain unverified on a device, and `newArchEnabled` + `reactCompiler` are both
 experimental — Expo Go over LAN is not evidence that a release build runs.
 There are no store assets and no `google-services.json` for Android FCM.
+
+## Arabic and Islamic Studies do not carry extractable figures, 2026-09-05
+
+Measured, then abandoned. Recording it so the next person does not spend the
+same afternoon rediscovering it — everything below is a count, not an
+impression.
+
+**These are text-and-ornament books, not diagram-bearing ones.** Both
+extractors misfire on them in the same way: the vector tool captures whole
+pages of Quranic text, ruled exercise boxes and «الدَّرْسُ الأوَّل» banners; the
+raster tool finds page-background washes. What each actually yielded:
+
+| | vector crops | usable | raster candidates | usable | lesson outline |
+| --- | --- | --- | --- | --- | --- |
+| Arabic s1+s2 | 173 | ~20 of the 105 reviewed | 56 | ~8 of the 26 reviewed | **none** |
+| Islamic s1+s2 | 106 | ~10 of the 36 reviewed | 14 | ~6 of the 8 reviewed | readable, wrong shape |
+
+For scale, physics semester 2 alone yields **84** usable crops across 7
+lessons. Islamic would yield roughly 12 across 50.
+
+**Arabic cannot be placed at lesson level at all.** Its lesson headers are
+*rendered as images*, not text — which is why the opener detector returns
+nothing and why those banners turn up as crops in the contact sheet. No font
+threshold reaches them. Its UNIT openers are text and detectable
+(«الوحدة الأولى» at 18-20pt, 5 per book, matching the catalog's units 1-5 and
+6-10 exactly), so unit-level placement is possible — but
+`figure-lesson-map.json` keys on `(sourceId, unit, lesson)` and a unit here
+spans five lessons, so that needs a model change, not a map entry.
+
+**Islamic prints a third opener layout the detector does not know.** It is the
+better of the two — 24 opener pages against the catalog's 24 lessons in
+semester 1, and 26 against 26 in semester 2, an exact join with no offset —
+but every threshold in `lesson_start` is tuned for the maths and science
+layouts. Measured on its own pages, what it would need:
+
+| | maths / science | Islamic |
+| --- | --- | --- |
+| «الدرس» size | ≥20pt | **15.9pt**, y=48-57 |
+| lesson number | ≥40pt, bare digits, y<65 | **15.9pt, parenthesised `(1)`**, y=75 |
+| lesson title | ≥24pt, y<60 | **21.9pt**, y=62 |
+
+Raising only the first (tried, as a per-subject override) still placed zero,
+because `lesson_start` returns `None` when it cannot read a number. Supporting
+Islamic means a per-subject opener *profile* — three geometry facts, not one
+threshold — and the payoff is ~12 photographs.
+
+**Nothing was kept.** The `BOOKS` entries, the per-subject opener size and 279
+crops were all reverted; only this note survives. That is the point: the
+figures pipeline was built for books that draw their content, and this is the
+edge of where it pays.
+
+**If it is ever revisited**, start from the table above rather than from the
+extractors — and note the one thing both books genuinely do have is a good
+unit-opener illustration card (scales, the Kaaba, a gavel on a Quran, a
+microscope; a caravan, Jerusalem, manuscript pages). Ten of those, one per
+unit, is a smaller and much better-defined target than "the figures in this
+book".
 
 ## English teaches something at last, and its book photographs reach it, 2026-09-05
 

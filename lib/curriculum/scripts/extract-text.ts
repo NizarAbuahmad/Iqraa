@@ -28,10 +28,19 @@
  * exact failure the two source catalogs were merged to end. Callers normalize
  * on load.
  *
- * Run: pnpm --filter @workspace/curriculum run extract-text [--force] [<sourceId> ...]
+ * Run: pnpm --filter @workspace/curriculum run extract-text [--force] [--ocr] [<sourceId> ...]
  * Positional sourceIds restrict the run to just those — useful when only a
  * handful of the many pending sources need a (slow) OCR pass and the rest
  * should wait.
+ *
+ * `--ocr` skips the pdf-parse attempt and rasterizes straight away. The gates
+ * decide *automatic* rejection, and their thresholds are set where the
+ * evidence is unambiguous; a file can still be poor without tripping one. The
+ * two Islamic teacher guides sit at ~42% word transposition — under
+ * `WORD_TRANSPOSITION_LIMIT`, readable, and genuinely worse than every file
+ * this project treats as quotable. That is a judgement call, so it is made
+ * explicitly on the command line and recorded on the manifest entry, rather
+ * than by moving a threshold until it catches what someone wanted caught.
  */
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
@@ -142,13 +151,30 @@ async function tryOcr(abs: string): Promise<{ pages: ExtractedPage[]; reason: st
   return { pages, reason: rejectReason(pages.map(p => p.text).join('')) };
 }
 
-async function extractOne(sourceId: string, rel: string): Promise<ExtractedDocument | string> {
+async function extractOne(
+  sourceId: string,
+  rel: string,
+  forceOcr = false,
+): Promise<ExtractedDocument | string> {
   const abs = path.join(repoRoot, rel);
   const fetchError = await ensureLocal(sourceId, abs);
   if (fetchError) return fetchError;
 
   const buf = readFileSync(abs);
   if (isLfsPointer(buf)) return `Git-LFS pointer, run \`git lfs pull\`: ${rel}`;
+
+  if (forceOcr) {
+    const ocrResult = await tryOcr(abs);
+    if (!ocrResult) {
+      return `--ocr requested but OCR is unavailable — see lib/curriculum/scripts/ocr.ts. ${rel}`;
+    }
+    if (ocrResult.reason) {
+      // Held to the same gates as any other text: a forced OCR pass that comes
+      // back garbage is still garbage, and must not overwrite what is on disk.
+      return `--ocr requested, and the OCR output was rejected: ${ocrResult.reason}. ${rel}`;
+    }
+    return buildDoc(sourceId, rel, buf, ocrResult.pages, 'tesseract-ocr (--ocr requested)');
+  }
 
   let { pages, reason } = await parseWithPdfParse(buf);
   let tool = 'pdf-parse@2';
@@ -167,6 +193,16 @@ async function extractOne(sourceId: string, rel: string): Promise<ExtractedDocum
     }
   }
 
+  return buildDoc(sourceId, rel, buf, pages, tool);
+}
+
+function buildDoc(
+  sourceId: string,
+  rel: string,
+  buf: Buffer,
+  pages: ExtractedPage[],
+  tool: string,
+): ExtractedDocument {
   const manifest = G10_SOURCES.find(s => s.id === sourceId);
   const doc: ExtractedDocument = {
     sourceId,
@@ -186,9 +222,18 @@ async function extractOne(sourceId: string, rel: string): Promise<ExtractedDocum
 }
 
 async function main(): Promise<void> {
-  const args = process.argv.slice(2).filter(a => a !== '--force');
+  const args = process.argv.slice(2).filter(a => a !== '--force' && a !== '--ocr');
   const force = process.argv.includes('--force');
+  // Rasterizing is slow and overwrites a clean extraction with a lesser one if
+  // pointed at the wrong file, so it only ever applies to sources named
+  // explicitly — never to a whole-corpus run.
+  const forceOcr = process.argv.includes('--ocr');
   const only = args.length ? new Set(args) : null;
+  if (forceOcr && !only) {
+    console.error('--ocr requires explicit sourceIds; refusing to OCR the whole corpus.');
+    process.exitCode = 1;
+    return;
+  }
   mkdirSync(outDir, { recursive: true });
 
   const done: ExtractedDocument[] = [];
@@ -201,7 +246,7 @@ async function main(): Promise<void> {
       console.log(`· ${sourceId} — already extracted (use --force to redo)`);
       continue;
     }
-    const result = await extractOne(sourceId, rel);
+    const result = await extractOne(sourceId, rel, forceOcr);
     if (typeof result === 'string') {
       skipped.push({ id: sourceId, why: result });
       console.log(`✗ ${sourceId} — ${result}`);

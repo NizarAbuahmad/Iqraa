@@ -11,10 +11,12 @@ import assert from 'node:assert/strict';
 import {
   BOOKS,
   MVP_BOOK_IDS,
+  MVP_GRADE_IDS,
   MVP_SUBJECT_IDS,
   getBooksForSubjectGrade,
   getLessonsForUnit,
   getPickerSubjects,
+  getSubjectsForGrade,
   getUnitsForBook,
   isCurriculumBookVisible,
 } from '../curriculumData.ts';
@@ -46,6 +48,35 @@ describe('Financial Literacy G10 S1 — curriculum browser', () => {
       assert.ok(
         MVP_SUBJECT_IDS.includes(book.subjectId),
         `book "${bookId}" is in MVP_BOOK_IDS but its subject "${book.subjectId}" is not in MVP_SUBJECT_IDS — the book is unreachable`,
+      );
+    }
+  });
+
+  // Both assertions above are per subject alone; this one is per subject/grade
+  // PAIR. English earns its MVP place on Grade 10 books while SUBJECTS also
+  // claims grade-9, where no book was ever ingested — so الصف التاسع listed an
+  // اللغة الإنجليزية tile that opened on an empty book list. Ask
+  // getSubjectsForGrade, since that is what the browser screen and
+  // GET /curriculum/grades/:id/subjects actually list.
+  it('every subject offered for a grade resolves to a book, in every MVP grade', () => {
+    for (const gradeId of MVP_GRADE_IDS) {
+      for (const subject of getSubjectsForGrade(gradeId)) {
+        const books = getBooksForSubjectGrade(subject.id, gradeId, 'teacher');
+        assert.ok(
+          books.length > 0,
+          `subject "${subject.id}" is offered for ${gradeId} but has no book — dead end`,
+        );
+      }
+    }
+  });
+
+  // Filtering subjects by book availability moves the dead end up a level: a
+  // grade whose every subject is filtered out would render an empty grade.
+  it('offers no grade that has been left with nothing to show', () => {
+    for (const gradeId of MVP_GRADE_IDS) {
+      assert.ok(
+        getSubjectsForGrade(gradeId).length > 0,
+        `grade "${gradeId}" is offered in pickers but has no subject — dead end`,
       );
     }
   });
