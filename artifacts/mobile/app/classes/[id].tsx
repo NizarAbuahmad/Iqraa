@@ -41,6 +41,7 @@ import { useStudentAccountsEnabled } from '@/services/features';
 import {
   RosterError,
   addStudents,
+  generateJoinCode,
   getClass,
   parseStudentNames,
   removeStudentFromClass,
@@ -48,6 +49,8 @@ import {
   type ClassGroup,
   type RosterStudent,
 } from '@/services/roster';
+import { copyToClipboard, shareAsText } from '@/services/share';
+import { Toast } from '@/components/ui/Toast';
 import { getItems, updateItem, type SavedMaterial } from '@/services/workspace';
 import { listEvaluations, setEvaluationClass, type Evaluation } from '@/services/evaluations';
 import {
@@ -94,6 +97,9 @@ export default function ClassDetailScreen() {
   const [noteStudent, setNoteStudent] = useState<RosterStudent | null>(null);
   const [noteText, setNoteText] = useState('');
   const [savingNote, setSavingNote] = useState(false);
+  const [showJoinCode, setShowJoinCode] = useState(false);
+  const [mintingCode, setMintingCode] = useState(false);
+  const [toast, setToast] = useState('');
 
   /** Server errors arrive in English; this screen is Arabic-first. */
   const describe = useCallback(
@@ -161,6 +167,39 @@ export default function ClassDetailScreen() {
       setError(describe(err));
     } finally {
       setSaving(false);
+    }
+  };
+
+  /**
+   * Minting overwrites any live code, so a teacher who already handed one out
+   * is asked first — the people still holding the old one are exactly the ones
+   * who have not joined yet, which is the group this code exists for.
+   */
+  const onMintJoinCode = async () => {
+    if (!id || mintingCode) return;
+    if (group?.joinCode) {
+      const ok = await confirm({
+        title: t('joinCodeRegenerate'),
+        message: t('joinCodeRegenerateConfirm'),
+        confirmLabel: t('joinCodeRegenerate'),
+        cancelLabel: t('cancel'),
+        destructive: true,
+      });
+      if (!ok) return;
+    }
+    setMintingCode(true);
+    setError('');
+    try {
+      const minted = await generateJoinCode(id);
+      setGroup(prev =>
+        prev ? { ...prev, joinCode: minted.joinCode, joinCodeExpiresAt: minted.joinCodeExpiresAt } : prev,
+      );
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (err) {
+      setError(describe(err));
+      setShowJoinCode(false);
+    } finally {
+      setMintingCode(false);
     }
   };
 
@@ -395,10 +434,20 @@ export default function ClassDetailScreen() {
           Deliberately not a fourth tab: the three tabs swap what this screen
           shows, this leaves the screen.
         */}
-        <View style={[styles.heroTitleRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <Text style={[styles.heroTitle, { fontFamily: 'Cairo_700Bold', textAlign: align, flexShrink: 1 }]} numberOfLines={1}>
-            {title}
-          </Text>
+        <Text style={[styles.heroTitle, { fontFamily: 'Cairo_700Bold', textAlign: align }]} numberOfLines={1}>
+          {title}
+        </Text>
+        {/*
+          Two pills on their own row rather than trailing the class name. The
+          chat pill used to sit beside the title; a second one next to it
+          overflows a 375pt phone, and the pair reads better as a row of
+          actions than as a title that happens to have buttons stuck to it.
+
+          The join code is here, labelled, because it was the thing nobody
+          could find: it lived behind an unlabelled icon on a single student's
+          row, four navigations deep, and had to be repeated per child.
+        */}
+        <View style={[styles.heroActions, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <Pressable
             onPress={() => router.push(`/messaging/class/${id}`)}
             hitSlop={8}
@@ -409,6 +458,22 @@ export default function ClassDetailScreen() {
               {t('messagingClassChat')}
             </Text>
           </Pressable>
+          {/* Minting a class join code answers 403 `student_accounts_disabled`
+              while v1 is teacher-only, and the modal behind this pill has no
+              other purpose — so the pill goes rather than opening onto an
+              error. Comes back on its own when STUDENT_ACCOUNTS is enabled. */}
+          {studentAccounts ? (
+            <Pressable
+              onPress={() => setShowJoinCode(true)}
+              hitSlop={8}
+              style={[styles.classChatPill, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+            >
+              <Ionicons name="key-outline" size={15} color="#fff" />
+              <Text style={[styles.classChatPillText, { fontFamily: 'Cairo_500Medium' }]}>
+                {t('joinCodeTitle')}
+              </Text>
+            </Pressable>
+          ) : null}
         </View>
         <View style={[styles.tabs, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           {renderTab('students', t('classTabStudents'), countStudents(students.length, lang))}
@@ -489,6 +554,19 @@ export default function ClassDetailScreen() {
                 size={18}
                 color={item.teacherNote ? ACCENT : colors.mutedForeground}
               />
+              {/* Who has actually signed up — the question a shared join code
+                  immediately creates, and the one nothing on this screen used
+                  to answer. Only shown once somebody has joined: thirty grey
+                  "not joined yet" pills on day one is noise, not information.
+                  Needs no flag guard of its own — nobody can be linked while
+                  student accounts are off, so it never renders in v1. */}
+              {item.linked ? (
+                <View style={[styles.linkedPill, { backgroundColor: ACCENT + '18' }]}>
+                  <Text style={[styles.linkedPillText, { color: ACCENT, fontFamily: 'Cairo_500Medium' }]}>
+                    {t('rosterLinked')}
+                  </Text>
+                </View>
+              ) : null}
               {studentAccounts ? (
                 <Pressable
                   onPress={() => router.push(`/messaging/claim/${item.id}?studentName=${encodeURIComponent(item.displayName)}`)}
@@ -609,6 +687,89 @@ export default function ClassDetailScreen() {
       >
         <Ionicons name={tab === 'students' ? 'person-add' : 'add'} size={22} color="#fff" />
       </Pressable>
+
+      <Modal
+        visible={showJoinCode}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowJoinCode(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
+            <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}>
+              {t('joinCodeTitle')}
+            </Text>
+            <Text style={[styles.modalHint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+              {t('joinCodeDesc')}
+            </Text>
+
+            {group?.joinCode ? (
+              <>
+                <Text style={[styles.codeText, { color: ACCENT, fontFamily: 'Cairo_700Bold' }]} selectable>
+                  {group.joinCode}
+                </Text>
+                {group.joinCodeExpiresAt ? (
+                  <Text style={[styles.modalHint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center' }]}>
+                    {t('messagingCodeExpires')}: {new Date(group.joinCodeExpiresAt).toLocaleDateString()}
+                  </Text>
+                ) : null}
+                <View style={[styles.codeActions, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                  <Pressable
+                    onPress={async () => {
+                      await copyToClipboard(group.joinCode!);
+                      setToast(t('messagingCodeCopied'));
+                    }}
+                    style={[styles.pickRow, { borderColor: colors.border, flex: 1, justifyContent: 'center', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+                  >
+                    <Ionicons name="copy-outline" size={18} color={colors.mutedForeground} />
+                    <Text style={{ color: colors.foreground, fontFamily: 'Cairo_500Medium' }}>{t('messagingCopyCode')}</Text>
+                  </Pressable>
+                  <Pressable
+                    // shareAsText falls back to the clipboard where the OS share
+                    // sheet does not exist (react-native-web), so this is never
+                    // a dead button — it just tells the truth about what it did.
+                    onPress={async () => {
+                      const how = await shareAsText(`${t('joinCodeTitle')}: ${group.joinCode}`, title);
+                      if (how === 'copied') setToast(t('messagingCodeCopied'));
+                    }}
+                    style={[styles.pickRow, { borderColor: colors.border, flex: 1, justifyContent: 'center', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+                  >
+                    <Ionicons name="share-outline" size={18} color={colors.mutedForeground} />
+                    <Text style={{ color: colors.foreground, fontFamily: 'Cairo_500Medium' }}>{t('joinCodeShare')}</Text>
+                  </Pressable>
+                </View>
+              </>
+            ) : (
+              <Text style={[styles.modalHint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: 'center', paddingVertical: 12 }]}>
+                {t('joinCodeNone')}
+              </Text>
+            )}
+
+            <Pressable
+              onPress={() => { void onMintJoinCode(); }}
+              disabled={mintingCode}
+              style={[styles.createRow, { borderColor: ACCENT, justifyContent: 'center', opacity: mintingCode ? 0.5 : 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+            >
+              {mintingCode ? (
+                <ActivityIndicator size="small" color={ACCENT} />
+              ) : (
+                <>
+                  <Ionicons name="refresh-outline" size={18} color={ACCENT} />
+                  <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold' }}>
+                    {group?.joinCode ? t('joinCodeRegenerate') : t('joinCodeGenerate')}
+                  </Text>
+                </>
+              )}
+            </Pressable>
+
+            <Pressable onPress={() => setShowJoinCode(false)} style={{ paddingVertical: 12 }}>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: 'center' }}>
+                {t('cancel')}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
 
       <Modal visible={showAdd} transparent animationType="fade" onRequestClose={() => setShowAdd(false)}>
         <View style={styles.modalBackdrop}>
@@ -995,6 +1156,8 @@ export default function ClassDetailScreen() {
           </View>
         </View>
       </Modal>
+
+      <Toast visible={!!toast} message={toast} onHide={() => setToast('')} />
     </View>
   );
 }
@@ -1002,7 +1165,7 @@ export default function ClassDetailScreen() {
 const styles = StyleSheet.create({
   hero: { paddingHorizontal: 20, paddingBottom: 0, gap: 8 },
   heroTitle: { fontSize: 24, color: '#fff' },
-  heroTitleRow: { alignItems: 'center', gap: 10, marginTop: 2 },
+  heroActions: { alignItems: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap' },
   // Translucent white rather than a solid fill: it has to read as a control on
   // the teal hero without competing with the class name beside it.
   classChatPill: {
@@ -1088,6 +1251,10 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   count: { fontSize: 13 },
+  codeText: { fontSize: 28, letterSpacing: 4, textAlign: 'center', marginTop: 4 },
+  codeActions: { gap: 8 },
+  linkedPill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
+  linkedPillText: { fontSize: 11 },
   modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10 },
   modalBtn: { paddingHorizontal: 18, paddingVertical: 11, borderRadius: 10 },
   modalPrimary: { minWidth: 120, alignItems: 'center' },

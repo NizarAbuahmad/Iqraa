@@ -11,8 +11,11 @@ import {
   rosterLinks,
   lessonMedia,
   chatMessages,
+  classGroups,
+  classMemberships,
+  students,
 } from "@workspace/db";
-import { eq, and, gt, isNotNull } from "drizzle-orm";
+import { eq, and, asc, gt, inArray, isNotNull, isNull } from "drizzle-orm";
 import { authMiddleware, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { logger } from "../lib/logger.js";
 import { createRateLimiter } from "../lib/rateLimit.js";
@@ -24,6 +27,7 @@ import {
 } from "../lib/rosterConsent.js";
 import { isStrongPassword, PASSWORD_POLICY_MESSAGE } from "../lib/passwordPolicy.js";
 import { resolveClaimCode, type ClaimRole } from "../lib/rosterClaim.js";
+import { normalizeShareCode } from "../modules/assessment/studentView.ts";
 
 const router = Router();
 
@@ -70,10 +74,16 @@ async function storeRefreshToken(userId: string, tokenValue: string): Promise<vo
   await db.insert(refreshTokens).values({ userId, tokenHash, expiresAt });
 }
 
+/** An empty or whitespace-only picked name is "none given", not a name that fails to match. */
+function trimmedOrUndefined(value: unknown): string | undefined {
+  const trimmed = typeof value === "string" ? value.trim() : "";
+  return trimmed === "" ? undefined : trimmed;
+}
+
 // POST /auth/register
 router.post("/register", registerLimiter, async (req, res) => {
   try {
-    const { firstName, lastName, email, password, confirmPassword, role: rawRole, claimCode } =
+    const { firstName, lastName, email, password, confirmPassword, role: rawRole, claimCode, studentId } =
       req.body as {
         firstName?: string;
         lastName?: string;
@@ -84,6 +94,14 @@ router.post("/register", registerLimiter, async (req, res) => {
         role?: string;
         /** Required for role 'student'/'parent' — see /students/:id/claim-code in roster.ts. */
         claimCode?: string;
+        /**
+         * Which roster row this person says they are. Required only when
+         * `claimCode` is a whole-class join code, which names no student of its
+         * own; a per-student claim code ignores it. Never trusted as identity —
+         * it is checked for membership of that code's class, and a name already
+         * held by a student account is refused (lib/claimDecision.ts).
+         */
+        studentId?: string;
       };
 
     if (!firstName?.trim()) {
@@ -130,7 +148,9 @@ router.post("/register", registerLimiter, async (req, res) => {
         res.status(400).json({ error: "A class code is required to sign up as a parent or student" });
         return;
       }
-      const resolved = await resolveClaimCode(code, role);
+      // studentId is the name picked off a class roster (see GET /auth/join/:code).
+      // A per-student claim code names its own student and ignores this.
+      const resolved = await resolveClaimCode(code, role, trimmedOrUndefined(studentId));
       if (!resolved.ok) {
         res.status(resolved.status).json({ error: resolved.error });
         return;
@@ -224,13 +244,14 @@ router.post("/claim", authMiddleware, async (req: AuthenticatedRequest, res) => 
       return;
     }
 
-    const code = (req.body as { claimCode?: string })?.claimCode?.trim();
+    const { claimCode, studentId } = (req.body ?? {}) as { claimCode?: string; studentId?: string };
+    const code = claimCode?.trim();
     if (!code) {
       res.status(400).json({ error: "A class code is required" });
       return;
     }
 
-    const resolved = await resolveClaimCode(code, role);
+    const resolved = await resolveClaimCode(code, role, trimmedOrUndefined(studentId));
     if (!resolved.ok) {
       res.status(resolved.status).json({ error: resolved.error });
       return;
@@ -245,6 +266,96 @@ router.post("/claim", authMiddleware, async (req: AuthenticatedRequest, res) => 
   } catch (err) {
     logger.error({ err }, "claim failed");
     res.status(500).json({ error: "Failed to link account" });
+  }
+});
+
+/**
+ * Turns a class join code into the list of names it can be claimed against, so
+ * a joiner can pick their own before they have an account. Modelled on
+ * GET /take/:code in studentAttempt.ts, the existing public "code → roster of
+ * names" surface.
+ *
+ * Deliberately under /auth and not /classes: roster.ts mounts
+ * `router.use(["/classes","/students"], authMiddleware, …)`, which prefix-matches,
+ * so a route named /classes/join/:code would silently answer 401 to the very
+ * people it exists for. mountOrder.test.ts pins this.
+ *
+ * This is the only unauthenticated endpoint in the product that returns
+ * children's names, and it is not something to make quietly broader later.
+ * Four things hold it in: the feature flag below, the rate limit, the 180-day
+ * expiry on the code itself, and the teacher's ability to regenerate. The
+ * payload carries names and nothing else — no externalRef (a school register
+ * number identifies far harder than a first name), no grade, no teacher.
+ *
+ * ponytail: one shared limiter, not per-code lockout. Revisit if anyone
+ * actually grinds it — 60/min against 31^6 is slow, but it is slow for every
+ * live code at once, not per code.
+ */
+const joinLookupLimiter = createRateLimiter({ windowMs: 60 * 1000, max: 60, name: "join-lookup" });
+
+router.get("/join/:code", joinLookupLimiter, async (req, res) => {
+  try {
+    if (!studentAccountsEnabled()) {
+      res.status(403).json({
+        code: "student_accounts_disabled",
+        error: "Parent and student accounts are not available yet.",
+      });
+      return;
+    }
+
+    const code = normalizeShareCode(req.params["code"]);
+    const [group] = code
+      ? await db
+          .select({ id: classGroups.id, name: classGroups.name, nameAr: classGroups.nameAr })
+          .from(classGroups)
+          .where(
+            and(
+              eq(classGroups.joinCode, code),
+              isNull(classGroups.archivedAt),
+              gt(classGroups.joinCodeExpiresAt, new Date()),
+            ),
+          )
+          .limit(1)
+      : [];
+
+    // Unknown, expired and archived all answer alike: a public endpoint must
+    // not confirm which codes exist. Same reasoning as evaluationByCode.
+    if (!group) {
+      res.status(404).json({ error: "This class code is not available", code: "code_not_found" });
+      return;
+    }
+
+    const roster = await db
+      .select({ id: students.id, displayName: students.displayName })
+      .from(classMemberships)
+      .innerJoin(students, eq(students.id, classMemberships.studentId))
+      .where(and(eq(classMemberships.classGroupId, group.id), isNull(students.archivedAt)))
+      .orderBy(asc(students.displayName));
+
+    // Every name is returned, with `taken` marking the ones a student account
+    // already holds — not filtered out. Only the one self-link is exclusive;
+    // guardians are deliberately unlimited, so hiding claimed names would mean
+    // the second parent could not find their own child and the class code
+    // would appear broken to them. The names are visible either way, so
+    // filtering would buy no privacy and cost a real case.
+    const selfLinked = await db
+      .select({ studentId: rosterLinks.studentId })
+      .from(rosterLinks)
+      .where(
+        and(
+          eq(rosterLinks.relation, "self"),
+          inArray(rosterLinks.studentId, roster.length > 0 ? roster.map(s => s.id) : [""]),
+        ),
+      );
+    const taken = new Set(selfLinked.map(r => r.studentId));
+
+    res.json({
+      class: { name: group.name, nameAr: group.nameAr },
+      students: roster.map(s => ({ ...s, taken: taken.has(s.id) })),
+    });
+  } catch (err) {
+    logger.error({ err }, "join code lookup failed");
+    res.status(500).json({ error: "Failed to open this class code" });
   }
 });
 
