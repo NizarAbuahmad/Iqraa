@@ -10,6 +10,7 @@ import {
   untransposeText,
   untransposeDocument,
   reattachMarks,
+  repairLigatureWord,
   repairExtraction,
   countRepairs,
 } from '../../scripts/untranspose.ts';
@@ -205,10 +206,66 @@ describe('reattachMarks', () => {
   });
 });
 
+describe('repairLigatureWord', () => {
+  it('repairs a لا the wordlist attests', () => {
+    assert.equal(repairLigatureWord('العالقة'), 'العلاقة');
+    assert.equal(repairLigatureWord('الخاليا'), 'الخلايا');
+    assert.equal(repairLigatureWord('هؤالء'), 'هؤلاء');
+    assert.equal(repairLigatureWord('إال'), 'إلا');
+    assert.equal(repairLigatureWord('والصالة'), 'والصلاة');
+  });
+
+  it('leaves a word the OCR books also spell that way', () => {
+    // The block half of the rule. Every one of these is a word the books
+    // meant; without it «مثال» alone is corrupted 651 times.
+    assert.equal(repairLigatureWord('مثال'), 'مثال');
+    assert.equal(repairLigatureWord('الثالث'), 'الثالث');
+    assert.equal(repairLigatureWord('ثالثة'), 'ثالثة');
+    assert.equal(repairLigatureWord('قال'), 'قال');
+    assert.equal(repairLigatureWord('حال'), 'حال');
+  });
+
+  it('leaves a legitimate internal ال alone', () => {
+    for (const w of ['العالم', 'العالمية', 'الحالة', 'الرسالة', 'الآلة', 'الطالب', 'معالم']) {
+      assert.equal(repairLigatureWord(w), w, w);
+    }
+  });
+
+  it('finds a form the list only knows without its proclitic', () => {
+    // The list has «السلامة» (38 sightings) but never «والسلامة», so the
+    // whole-word lookup misses and the و has to come off first.
+    assert.equal(repairLigatureWord('والسالمة'), 'والسلامة');
+    assert.equal(repairLigatureWord('بداللة'), 'بدلالة');
+    assert.equal(repairLigatureWord('بالعالقة'), 'بالعلاقة');
+  });
+
+  it('still blocks when the stripped body is itself a real word', () => {
+    // «مثال» is attested, so «ومثال» must not be repaired either.
+    assert.equal(repairLigatureWord('ومثال'), 'ومثال');
+    assert.equal(repairLigatureWord('والثالث'), 'والثالث');
+  });
+
+  it('leaves a word neither list has seen', () => {
+    // Coverage is bounded by the OCR books' vocabulary, and an unknown word
+    // is left alone rather than guessed at.
+    assert.equal(repairLigatureWord('زقالمثيل'), 'زقالمثيل');
+  });
+
+  it('does not touch the word-initial article, which is not its job', () => {
+    assert.equal(repairLigatureWord('الكتاب'), 'الكتاب');
+  });
+});
+
 describe('repairExtraction', () => {
   it('reattaches marks before repairing the article, so words are whole', () => {
     const [out] = repairExtraction(['اإلنسان ُ واألرض']);
     assert.equal(out, 'الإنسانُ والأرض');
+  });
+
+  it('repairs the article before the ligature, so a word carrying both is finished', () => {
+    // «اإلسالم» needs the article put back to become «الإسالم» before the
+    // ligature rule can recognise it. Either step alone leaves it broken.
+    assert.deepEqual(repairExtraction(['اإلسالم']), ['الإسلام']);
   });
 });
 

@@ -868,7 +868,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-06",
         "pages": 3,
         "chars": 1067,
         "localPath": "attached_assets/knowledge-base-pending/math-ws-cyclic-quad-2-alhindi.pdf",
@@ -1266,7 +1266,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-06",
         "pages": 2,
         "chars": 736,
         "localPath": "attached_assets/knowledge-base-pending/math-month2-alfarakh.pdf",
@@ -3191,7 +3191,7 @@
       "notes": "المصدر غير مؤكد: لم يُعثر على نسخة NCCD معتمدة لهذه الطبعة (انظر STATUS.md، 2026-08-30)؛ الكتالوج يصفها بأنها «نسخة على مساحة تخزين المشروع». لذلك authority = third-party وليس nccd — لا يُدّعى مصدر لم يُتحقق منه.",
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-03",
+        "extractedAt": "2026-09-06",
         "pages": 78,
         "chars": 183110,
         "localPath": "knowledge-base/grade-10-english/support-pdfs/كتاب الطالب لمادة اللغة الإنجليزية الصف العاشر الفصل الأول.pdf",
@@ -3222,7 +3222,7 @@
       "notes": "المصدر غير مؤكد: لم يُعثر على نسخة NCCD معتمدة لهذه الطبعة (انظر STATUS.md، 2026-08-30)؛ الكتالوج يصفها بأنها «نسخة على مساحة تخزين المشروع». لذلك authority = third-party وليس nccd — لا يُدّعى مصدر لم يُتحقق منه.",
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-03",
+        "extractedAt": "2026-09-06",
         "pages": 52,
         "chars": 110720,
         "localPath": "knowledge-base/grade-10-english/support-pdfs/كتاب الأنشطة لمادة اللغة الإنجليزية للصف العاشر الفصل الأول.pdf",

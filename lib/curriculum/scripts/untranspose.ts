@@ -40,6 +40,8 @@
  * it.
  */
 
+import wordlist from '../src/data/ligature-wordlist.json' with { type: 'json' };
+
 /** Alef-with-hamza forms. A bare alef is never legitimately followed by one. */
 const HAMZA_CARRIERS = new Set(['أ', 'إ', 'آ']);
 const ALEF = 'ا';
@@ -47,7 +49,18 @@ const LAM = 'ل';
 
 /** Tashkeel, superscript alef and tatweel — marks that hang off a letter. */
 const MARK = /[ً-ْٰـ]/;
-const ARABIC_RUN = /[؀-ۿ]+/g;
+
+/**
+ * A run of Arabic letters and the marks that sit on them — and nothing else.
+ *
+ * The obvious class, `[؀-ۿ]`, is the whole Arabic block, which also
+ * holds the comma (U+060C), the semicolon, the question mark and the
+ * Arabic-Indic digits. Tokenising with it glues punctuation onto the word:
+ * 52,135 tokens, 7.1% of the corpus, arrive as «املناهج،» rather than
+ * «املناهج». Nothing matches a wordlist entry after that, so every repair
+ * that needs a lookup silently skipped one token in fourteen.
+ */
+const ARABIC_RUN = /[\u0621-\u065F\u0670-\u06D3\u06FA-\u06FF]+/gu;
 
 /**
  * One base letter plus whatever marks trail it, so a swap carries a letter's
@@ -262,9 +275,110 @@ export function reattachMarks(text: string): string {
   return text.replace(ORPHAN_MARK, '$1$2');
 }
 
-/** Both pdf-parse ordering artifacts, in the order they must be undone. */
+/**
+ * The same displacement again, at the لا ligature inside a word.
+ *
+ * «السلام» is stored «السالم», «الصلاة» is stored «الصالة». Identical
+ * mechanism to the article — a lam one place to the right — but it happens
+ * mid-word, where `untransposeWord` does not look.
+ *
+ * This one cannot be decided from the shape of the word, and that is the whole
+ * difficulty. «العالم» (the world, 120 occurrences) carries an internal «ال»
+ * honestly; «الصالة» (the hall) and «صالة» are real words that a book might
+ * mean. Nor can the corpus supply its own evidence the way it did for the
+ * article's ambiguous class: pdf-parse never emits a correct لا anywhere —
+ * «السلام», «الصلاة» and «الإسلام» occur zero times in 735,365 words of it.
+ *
+ * So the evidence comes from the OCR extractions, which read a rendered page
+ * and carry the correct spellings, via a generated wordlist. Two conditions,
+ * and the repair needs both:
+ *
+ *   - the swapped form is in `correct` — the لا spelling is a real word here;
+ *   - the original is NOT in `attested` — the ال spelling is not, so it is
+ *     the broken form rather than a word the book meant.
+ *
+ * The second condition blocks 42 forms that the first alone would rewrite,
+ * including «الثالث» → «الثلاث» and «مثال» → «مثلا». Dropping it would corrupt
+ * 651 occurrences of «مثال» on its own.
+ *
+ * Coverage is bounded by what the OCR books happen to say: 257 forms and 3,741
+ * occurrences at the time of writing. A word neither list has seen is left
+ * alone, which is the right way for this to fail.
+ */
+const LIGATURE_CORRECT: ReadonlySet<string> = new Set(wordlist.correct);
+const LIGATURE_ATTESTED: ReadonlySet<string> = new Set(wordlist.attested);
+
+/** Indexes of an internal «ال». Index 0 is the article, repaired elsewhere. */
+function internalArticlePositions(word: string): number[] {
+  const out: number[] = [];
+  for (let i = 1; i < word.length - 1; i++) {
+    if (word[i] === ALEF && word[i + 1] === LAM) out.push(i);
+  }
+  return out;
+}
+
+/**
+ * Proclitics to try removing before consulting the list.
+ *
+ * The wordlist holds whole forms, so «والسلامة» is only found if the OCR books
+ * happened to use that exact prefixed form twice — «السلامة» appears 38 times
+ * and «والسلامة» not at all, leaving «والسالمة» unrepaired for want of a و.
+ * Retrying without one or two leading proclitics recovers 106 forms and 453
+ * occurrences.
+ *
+ * ل is included here, unlike in the article repair: nothing assimilates in a
+ * plain lookup, and «لل» is a real two-letter prefix.
+ */
+const LIGATURE_PROCLITICS = new Set(['و', 'ف', 'ب', 'ك', 'ل']);
+
+/** The lookup keys to try: the whole word, then it minus 1-2 proclitics. */
+function lookupForms(bases: string): string[] {
+  const forms = [bases];
+  for (let k = 1; k <= 2 && k < bases.length; k++) {
+    if (!LIGATURE_PROCLITICS.has(bases[k - 1])) break;
+    forms.push(bases.slice(k));
+  }
+  return forms;
+}
+
+export function repairLigatureWord(word: string): string {
+  const { lead, units } = toUnits(word);
+  const bases = units.map(u => u.base).join('');
+
+  for (const form of lookupForms(bases)) {
+    // The block condition is checked per form: a prefix-stripped body the OCR
+    // books attest is just as much a real word as the whole one.
+    if (LIGATURE_ATTESTED.has(form)) return word;
+    const offset = bases.length - form.length;
+    for (const i of internalArticlePositions(form)) {
+      const swapped = form.slice(0, i) + LAM + ALEF + form.slice(i + 2);
+      if (LIGATURE_CORRECT.has(swapped)) {
+        const at = i + offset;
+        const out = units.slice();
+        const alef = out[at];
+        out[at] = out[at + 1];
+        out[at + 1] = alef;
+        return render(lead, out);
+      }
+    }
+  }
+  return word;
+}
+
+export function repairLigatures(pages: readonly string[]): string[] {
+  return pages.map(page => page.replace(ARABIC_RUN, w => repairLigatureWord(w)));
+}
+
+/**
+ * Every pdf-parse ordering artifact, in the order they must be undone.
+ *
+ * Marks first, so the later rules see whole words rather than fragments. The
+ * article before the ligature, because a word can carry both — «اإلسالم» needs
+ * the article put back to become «الإسالم» before the ligature rule can
+ * recognise it and finish the job as «الإسلام».
+ */
 export function repairExtraction(pages: readonly string[]): string[] {
-  return untransposeDocument(pages.map(reattachMarks));
+  return repairLigatures(untransposeDocument(pages.map(reattachMarks)));
 }
 
 /**
@@ -296,14 +410,24 @@ export function countDetachedMarks(pages: readonly string[]): number {
   return n;
 }
 
-/** Both repairs with their own counts, since they are separately reversible. */
+/** Each repair with its own count, since they are separately reversible. */
 export function repairWithCounts(pages: readonly string[]): {
   pages: string[];
   marks: number;
   articles: number;
+  ligatures: number;
 } {
   const marks = countDetachedMarks(pages);
   const attached = pages.map(reattachMarks);
-  const repaired = untransposeDocument(attached);
-  return { pages: repaired, marks, articles: countRepairs(attached, repaired) };
+  const articled = untransposeDocument(attached);
+  const ligatured = repairLigatures(articled);
+  return {
+    pages: ligatured,
+    marks,
+    // Both counted against text that tokenises identically to their input:
+    // neither the article swap nor the ligature swap changes word boundaries,
+    // unlike reattaching marks. See the note on `countRepairs`.
+    articles: countRepairs(attached, articled),
+    ligatures: countRepairs(articled, ligatured),
+  };
 }
