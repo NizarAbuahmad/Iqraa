@@ -37,6 +37,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { useStudentAccountsEnabled } from '@/services/features';
 import {
   RosterError,
   addStudents,
@@ -65,6 +66,11 @@ export default function ClassDetailScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
+  // v1 is teacher-only: minting a link code answers 403
+  // `student_accounts_disabled` server-side, so the key icon below would be
+  // a door onto an error. Asked of the server, not a build-time constant —
+  // see services/features.ts.
+  const studentAccounts = useStudentAccountsEnabled();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const [tab, setTab] = useState<Tab>('students');
@@ -483,15 +489,17 @@ export default function ClassDetailScreen() {
                 size={18}
                 color={item.teacherNote ? ACCENT : colors.mutedForeground}
               />
-              <Pressable
-                onPress={() => router.push(`/messaging/claim/${item.id}?studentName=${encodeURIComponent(item.displayName)}`)}
-                hitSlop={10}
-              >
-                {/* A key, not a speech bubble: this opens the student's link
-                    code. The bubble read as "chat with them" and hid the one
-                    thing teachers were hunting for. */}
-                <Ionicons name="key-outline" size={18} color={colors.mutedForeground} />
-              </Pressable>
+              {studentAccounts ? (
+                <Pressable
+                  onPress={() => router.push(`/messaging/claim/${item.id}?studentName=${encodeURIComponent(item.displayName)}`)}
+                  hitSlop={10}
+                >
+                  {/* A key, not a speech bubble: this opens the student's link
+                      code. The bubble read as "chat with them" and hid the one
+                      thing teachers were hunting for. */}
+                  <Ionicons name="key-outline" size={18} color={colors.mutedForeground} />
+                </Pressable>
+              ) : null}
               <Pressable onPress={() => { void onRemove(item); }} hitSlop={10}>
                 <Ionicons name="close" size={20} color={colors.mutedForeground} />
               </Pressable>

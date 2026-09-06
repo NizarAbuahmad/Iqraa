@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { useStudentAccountsEnabled } from '@/services/features';
 import { generateClaimCode, RosterError } from '@/services/roster';
 import { MessagingError, getTeacherContacts, startThread, type ChatRole } from '@/services/messaging';
 import { copyToClipboard } from '@/services/share.ts';
@@ -32,6 +33,9 @@ export default function ClaimCodeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL } = useLanguage();
+  // The entry point in classes/[id].tsx is hidden while this is false, but a
+  // deep link, a back gesture or a stale history entry can still land here.
+  const studentAccounts = useStudentAccountsEnabled();
 
   const [guardians, setGuardians] = useState<Guardian[]>([]);
   const [loading, setLoading] = useState(true);
@@ -127,19 +131,33 @@ export default function ClaimCodeScreen() {
             </Text>
           ) : null}
 
-          <Pressable
-            onPress={handleGenerate}
-            disabled={generating}
-            style={[styles.generateBtn, { backgroundColor: colors.primary, borderRadius: colors.radius }]}
-          >
-            {generating ? (
-              <ActivityIndicator color={colors.primaryForeground} />
-            ) : (
-              <Text style={{ color: colors.primaryForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>
-                {t('messagingGenerateCode')}
-              </Text>
-            )}
-          </Pressable>
+          {studentAccounts ? (
+            <Pressable
+              onPress={handleGenerate}
+              disabled={generating}
+              style={[styles.generateBtn, { backgroundColor: colors.primary, borderRadius: colors.radius }]}
+            >
+              {generating ? (
+                <ActivityIndicator color={colors.primaryForeground} />
+              ) : (
+                <Text style={{ color: colors.primaryForeground, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>
+                  {t('messagingGenerateCode')}
+                </Text>
+              )}
+            </Pressable>
+          ) : (
+            // Deliberately not a disabled button and not an error: nothing has
+            // failed, the capability is not in this release. A disabled control
+            // invites "when?", which this screen cannot answer.
+            <Text
+              style={[
+                styles.cardDesc,
+                { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align },
+              ]}
+            >
+              {t('messagingClaimCodeUnavailable')}
+            </Text>
+          )}
         </View>
 
         <View>
