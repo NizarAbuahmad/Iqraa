@@ -672,13 +672,20 @@ repeated adds.
 
 **Not done, and needed before this is switched on:**
 
-1. **The schema is not pushed.** `join_code_expires_at` is in
-   `lib/db/src/schema/students.ts` and nowhere else. Note `verify-schema`
-   checks table *names* only — it will report `ok` with the column missing, and
-   a missing column makes every join code look permanently expired. Confirm
-   with an `information_schema.columns` query, and check `join_code` itself is
-   there too: it has been in the schema file for weeks but only table names
-   have ever been verified.
+1. ~~The schema is not pushed.~~ **Done 2026-09-06.**
+   `join_code_expires_at` was applied to production (Neon project
+   `jolly-night-35480890`, branch `production`, database `neondb`) and to the
+   local `iqraa` database, and confirmed in both by an
+   `information_schema.columns` query returning `join_code` *and*
+   `join_code_expires_at`. Applied as a targeted
+   `ALTER TABLE class_groups ADD COLUMN IF NOT EXISTS …` in the Neon console
+   rather than `drizzle-kit push`: push syncs everything, prompts
+   interactively, and would offer to drop any production column the schema does
+   not declare. Note the repo-root `.env` points at **localhost**, so
+   `pnpm --filter @workspace/db run push` migrates the dev database and reports
+   success while production is untouched — check the host before trusting it.
+   `verify-schema` would not have caught the gap either: it checks table
+   *names* only, so it reports `ok` with a column missing.
 2. **`STUDENT_ACCOUNTS` is still false**, so none of this is reachable — by
    design, and it is also the reason nobody has contacts today. Worth checking
    that first if "my groups are empty" comes up again.
