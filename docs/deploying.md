@@ -75,6 +75,47 @@ A health check proves the container booted and can reach the database. It does
 **not** prove the OpenAI or R2 credentials are right — nothing calls those on a
 health path. Generating a worksheet is the cheapest thing that does.
 
+## Is a given change live? Probe the route, not the git log
+
+`git log` cannot answer this, and neither can `/api/healthz`. Several sessions
+work in this repo at once and any of them may deploy, so the last deploy *you*
+know about is not the running one — the API went through eleven revisions in
+roughly an hour on 2026-09-06. Reasoning from "the deployed revision was built
+from commit X" is reasoning from a fact with a very short shelf life.
+
+Two things do answer it.
+
+**What is running:**
+
+```bash
+gcloud run revisions list --service iqraa-api --region europe-west1 --project iqraa-auth-507315 --limit 5
+```
+
+**What is in it** — call a route the change added, and **read the body**. The
+status code alone is not enough: a missing route and a missing record both come
+back `404`, and telling them apart is the whole point.
+
+```bash
+API=https://iqraa-api-613126375862.europe-west1.run.app/api
+curl -s "$API/auth/join/ABC234"          # a route only newer code has
+curl -s "$API/definitely/not/a/route"    # what a MISSING route looks like
+```
+
+| Response body | Means |
+| --- | --- |
+| `{"error":"...","code":"code_not_found"}` | **The route is deployed.** It ran, looked, and found nothing — that is the handler answering. |
+| `<!DOCTYPE html>… Cannot GET /api/…` | **The route is not deployed.** Express's own fallback; no handler exists. |
+
+The JSON-versus-HTML distinction is the signal. Any route that answers a
+"not found" case with a `code` field works as a probe; pick one the change
+introduced, not one that already existed.
+
+Both directions of this have been got wrong here in one day: a deploy reported
+as done that never ran (every command had failed on `PATH`, while `/api/healthz`
+answered `ok` from the *old* revision), and changes assumed undeployed that had
+shipped hours earlier from another session. In both cases a green health check
+looked identical to the truth and to its opposite.
+
 ## Schema
 
 **Nothing deploys the database schema.** Not the build, not the deploy:
