@@ -51,7 +51,7 @@ import { G10_SOURCES } from '../src/sources.ts';
 import { downloadFromR2, isLfsPointer, isR2Configured } from './r2.ts';
 import { LOCAL_FILES } from './localSources.ts';
 import { rejectReason } from './textQuality.ts';
-import { untransposeDocument, countRepairs } from './untranspose.ts';
+import { repairWithCounts } from './untranspose.ts';
 import { ocrPdf } from './ocr.ts';
 import { loadEnvFile } from '../../../scripts/load-env.mjs';
 
@@ -116,27 +116,31 @@ async function ensureLocal(sourceId: string, abs: string): Promise<string | null
 }
 
 /**
- * Repair the displaced definite article before anything judges the text.
+ * Undo pdf-parse's ordering artifacts before anything judges the text.
  *
  * Order matters both ways. Ahead of `rejectReason`, because a book that only
- * failed on transposition should now pass rather than fall through to a slow
- * OCR pass that would read it less accurately. And ahead of the extracted
- * JSON being written, because that file is what every generator and the
- * passage index read — repairing later would leave the defect in the one
- * artefact that matters.
+ * failed on these should now pass rather than fall through to a slow OCR pass
+ * that would read it less accurately. And ahead of the extracted JSON being
+ * written, because that file is what every generator and the passage index
+ * read — repairing later would leave the defect in the one artefact that
+ * matters.
  *
  * Applied to pdf-parse output only. OCR misreads a letter rather than
  * misplacing one, so it produces no article to put back; running the repair
  * over OCR text changes 17 words across the eight OCR extractions, all of
  * them genuine instances of the same pattern, which is not worth coupling the
  * two paths for.
+ *
+ * Neither repair rescues a book whose *runs* are reversed rather than its
+ * letters — `history-s1-student-book` reads «سأتعلم؟ ماذا» for «ماذا
+ * سأتعلم؟» — and that failure is not measured by any gate here. Such a book
+ * now passes where it used to be rejected for transposition, so it needs
+ * `--ocr` and an eye, not this.
  */
-function repairArticle(sourceId: string, pages: ExtractedPage[]): ExtractedPage[] {
-  const texts = pages.map(p => p.text);
-  const fixed = untransposeDocument(texts);
-  const repairs = countRepairs(texts, fixed);
-  if (repairs > 0) {
-    console.log(`  ⤷ ${sourceId} — put back ${repairs} displaced definite article${repairs === 1 ? '' : 's'}`);
+function repairArtifacts(sourceId: string, pages: ExtractedPage[]): ExtractedPage[] {
+  const { pages: fixed, marks, articles } = repairWithCounts(pages.map(p => p.text));
+  if (marks || articles) {
+    console.log(`  ⤷ ${sourceId} — reattached ${marks} mark(s), put back ${articles} article(s)`);
   }
   return pages.map((p, i) => ({ ...p, text: fixed[i] }));
 }
@@ -157,7 +161,7 @@ async function parseWithPdfParse(sourceId: string, buf: Buffer): Promise<{ pages
     if (!pages.length && result.text) {
       pages.push({ page: 1, text: result.text.trim() });
     }
-    const repaired = repairArticle(sourceId, pages);
+    const repaired = repairArtifacts(sourceId, pages);
     return { pages: repaired, reason: rejectReason(repaired.map(p => p.text).join('')) };
   } finally {
     await parser.destroy();

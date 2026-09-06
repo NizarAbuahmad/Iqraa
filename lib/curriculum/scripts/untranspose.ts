@@ -241,15 +241,69 @@ export function untransposeText(text: string): string {
 }
 
 /**
- * How many words the repair changed. Reported at extraction time so a run
- * says what it did rather than silently rewriting a book.
+ * A combining mark separated from its letter by whitespace, put back.
+ *
+ * The same extractor that displaces the article also emits case endings as
+ * free-standing tokens: «فرضياتُ نظريةِ بور» arrives as «فرضيات ُ نظرية ِ
+ * بور». It is the larger of the two defects by volume — 7,044 of 22,494
+ * tokens in the chemistry student book alone, 31% — and it is why a page of
+ * this text looks shattered even where every letter is right.
+ *
+ * Unlike the article, this needs no evidence and no guard. A combining mark
+ * has no meaning without a base, and whitespace cannot be one, so a mark
+ * preceded by a space is always an artifact and there is exactly one letter
+ * it can belong to: the one before the space. The `\S` is what keeps it
+ * honest — a mark with nothing before it at all is left where it is rather
+ * than pulled onto the end of the previous page.
+ */
+const ORPHAN_MARK = /(\S)\s+([ً-ْٰ]+)/gu;
+
+export function reattachMarks(text: string): string {
+  return text.replace(ORPHAN_MARK, '$1$2');
+}
+
+/** Both pdf-parse ordering artifacts, in the order they must be undone. */
+export function repairExtraction(pages: readonly string[]): string[] {
+  return untransposeDocument(pages.map(reattachMarks));
+}
+
+/**
+ * How many words the article repair changed.
+ *
+ * Compares word by word at the same index, which is only meaningful when both
+ * sides tokenise the same way — so pass it text that has already had its
+ * marks reattached, never raw against fully-repaired. Reattaching merges an
+ * orphan mark into the word before it, and every index past the first merge
+ * then shifts by one: comparing across that boundary reported 882,943
+ * "repairs" over a corpus of 734,990 words, which is how the mistake announces
+ * itself if it is ever made again.
  */
 export function countRepairs(before: readonly string[], after: readonly string[]): number {
   let n = 0;
   for (let i = 0; i < before.length; i++) {
     const a = before[i].match(ARABIC_RUN) ?? [];
     const b = after[i].match(ARABIC_RUN) ?? [];
+    if (a.length !== b.length) continue; // tokenisation moved; not comparable
     for (let j = 0; j < a.length; j++) if (a[j] !== b[j]) n++;
   }
   return n;
+}
+
+/** How many case endings are sitting apart from their letter. */
+export function countDetachedMarks(pages: readonly string[]): number {
+  let n = 0;
+  for (const page of pages) n += (page.match(ORPHAN_MARK) ?? []).length;
+  return n;
+}
+
+/** Both repairs with their own counts, since they are separately reversible. */
+export function repairWithCounts(pages: readonly string[]): {
+  pages: string[];
+  marks: number;
+  articles: number;
+} {
+  const marks = countDetachedMarks(pages);
+  const attached = pages.map(reattachMarks);
+  const repaired = untransposeDocument(attached);
+  return { pages: repaired, marks, articles: countRepairs(attached, repaired) };
 }

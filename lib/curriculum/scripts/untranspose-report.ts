@@ -13,7 +13,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { untransposeDocument, countRepairs } from './untranspose.ts';
+import { repairWithCounts } from './untranspose.ts';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const dir = path.join(here, '..', 'src', 'data', 'extracted');
@@ -28,6 +28,7 @@ interface Row {
   words: number;
   before: number;
   after: number;
+  orphans: number;
   repairs: number;
 }
 
@@ -38,7 +39,7 @@ for (const file of readdirSync(dir).filter(f => f.endsWith('.json'))) {
   if (!Array.isArray(doc.text)) continue;
 
   const pages: string[] = doc.text.map((p: { text?: string }) => p.text ?? '');
-  const fixed = untransposeDocument(pages);
+  const { pages: fixed, marks, articles } = repairWithCounts(pages);
   const joinBefore = pages.join(' ');
   const joinAfter = fixed.join(' ');
 
@@ -48,7 +49,8 @@ for (const file of readdirSync(dir).filter(f => f.endsWith('.json'))) {
     words: (joinBefore.match(ARABIC) ?? []).length,
     before: (joinBefore.match(MARKER) ?? []).length,
     after: (joinAfter.match(MARKER) ?? []).length,
-    repairs: countRepairs(pages, fixed),
+    orphans: marks,
+    repairs: articles,
   });
 }
 
@@ -58,18 +60,19 @@ const pdf = rows.filter(r => r.tool === 'pdf-parse');
 const ocr = rows.filter(r => r.tool === 'ocr');
 const sum = (xs: Row[], k: keyof Row): number => xs.reduce((n, r) => n + (r[k] as number), 0);
 
-console.log('worst 15 by remaining marker:\n');
-console.log('  before   after  repaired  source');
+console.log('worst 15 by article marker:\n');
+console.log('  article  after  detached-marks  words repaired  source');
 for (const r of rows.slice(0, 15)) {
   console.log(
-    `  ${String(r.before).padStart(6)}  ${String(r.after).padStart(6)}  ${String(r.repairs).padStart(8)}  ${r.id}`,
+    `  ${String(r.before).padStart(7)}  ${String(r.after).padStart(5)}  ${String(r.orphans).padStart(14)}  ${String(r.repairs).padStart(14)}  ${r.id}`,
   );
 }
 
 console.log('\n--- totals ---');
 for (const [label, set] of [['pdf-parse', pdf], ['ocr', ocr]] as const) {
   console.log(
-    `${label.padEnd(10)} ${String(set.length).padStart(3)} docs | marker ${sum(set, 'before')} -> ${sum(set, 'after')} | words repaired ${sum(set, 'repairs')}`,
+    `${label.padEnd(10)} ${String(set.length).padStart(3)} docs | article ${sum(set, 'before')} -> ${sum(set, 'after')}` +
+      ` | detached marks ${sum(set, 'orphans')} | words repaired ${sum(set, 'repairs')}`,
   );
 }
 

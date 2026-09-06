@@ -3435,7 +3435,7 @@
       "semester": null,
       "kind": "teacher-guide",
       "authority": "nccd",
-      "status": "pending",
+      "status": "ingested",
       "filename": "دليل المعلم التربية الفنية الصف العاشر.pdf",
       "authorAr": null,
       "unitTags": [
@@ -3448,7 +3448,15 @@
         "التربية الفنية",
         "عاشر"
       ],
-      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة)؛ رفضته بوابة الجودة تلقائيًا في 2026-09-03 ولم يُستخرج. الملف نفسه سليم؛ يحتاج استخراجًا أفضل أو OCR."
+      "notes": "رُفض في 2026-09-03 لقلبه أداة التعريف. أُعيد الاستخراج في 2026-09-06 بعد إضافة مُصحِّح أداة التعريف؛ لم يكفِ التصحيح وحده (بقيت النسبة 56% في كتاب الطالب)، فانتقل إلى التعرف الضوئي (tesseract). النص الناتج سليم القراءة بالمعاينة، ونسبة الحركات المنفصلة 0.10% — أقل بكثير من استخراج pdf-parse. يبقى التعرف الضوئي درجة أدنى من الاستخراج الرقمي النظيف: يُراجَع بالعين قبل الاقتباس الحرفي.",
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic with the definite article transposed (الحركة ← احلركة) in 54% of samples — readable by eye, not quotable)",
+        "extractedAt": "2026-09-06",
+        "pages": 131,
+        "chars": 95815,
+        "localPath": "knowledge-base/grade-10-art/support-pdfs/دليل المعلم التربية الفنية الصف العاشر.pdf",
+        "sha256": "687c318b547a17205ebb930d975d5765d3196cb194b0ce5262264c0f70f0ce35"
+      }
     },
     {
       "id": "art-student-book",
@@ -3458,7 +3466,7 @@
       "semester": null,
       "kind": "student-book",
       "authority": "nccd",
-      "status": "pending",
+      "status": "ingested",
       "filename": "كتاب الطالب لمادة التربية الفنية للصف العاشر.pdf",
       "authorAr": null,
       "unitTags": [
@@ -3471,7 +3479,15 @@
         "التربية الفنية",
         "عاشر"
       ],
-      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة)؛ رفضته بوابة الجودة تلقائيًا في 2026-09-03 ولم يُستخرج. الملف نفسه سليم؛ يحتاج استخراجًا أفضل أو OCR."
+      "notes": "رُفض في 2026-09-03 لقلبه أداة التعريف. أُعيد الاستخراج في 2026-09-06 بعد إضافة مُصحِّح أداة التعريف؛ لم يكفِ التصحيح وحده (بقيت النسبة 56% في كتاب الطالب)، فانتقل إلى التعرف الضوئي (tesseract). النص الناتج سليم القراءة بالمعاينة، ونسبة الحركات المنفصلة 1.20% — أقل بكثير من استخراج pdf-parse. يبقى التعرف الضوئي درجة أدنى من الاستخراج الرقمي النظيف: يُراجَع بالعين قبل الاقتباس الحرفي.",
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic with the definite article transposed (الحركة ← احلركة) in 56% of samples — readable by eye, not quotable)",
+        "extractedAt": "2026-09-06",
+        "pages": 125,
+        "chars": 67676,
+        "localPath": "knowledge-base/grade-10-art/support-pdfs/كتاب الطالب لمادة التربية الفنية للصف العاشر.pdf",
+        "sha256": "94fcd1825011d1afda8b9211c59ce82f2a26a490c0d6354eaec2b4dbe1ee00a6"
+      }
     },
     {
       "id": "vocational-p1-student-book",

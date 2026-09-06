@@ -9,6 +9,8 @@ import {
   untransposeWord,
   untransposeText,
   untransposeDocument,
+  reattachMarks,
+  repairExtraction,
   countRepairs,
 } from '../../scripts/untranspose.ts';
 
@@ -170,6 +172,43 @@ describe('untransposeDocument', () => {
   it('is a no-op on text that has no defect', () => {
     const clean = 'الحركة الميكانيكية في المستوى المائل.';
     assert.equal(untransposeText(clean), clean);
+  });
+});
+
+describe('reattachMarks', () => {
+  it('puts a detached case ending back on its letter', () => {
+    // Verbatim from chem-s1-student-book page 16.
+    assert.equal(
+      reattachMarks('فرضيات ُ نظرية ِ بور'),
+      'فرضياتُ نظريةِ بور',
+    );
+    assert.equal(
+      reattachMarks('أسهمَت ِ القوانين ُ والنظريات ُ الفيزيائية ُ'),
+      'أسهمَتِ القوانينُ والنظرياتُ الفيزيائيةُ',
+    );
+  });
+
+  it('leaves a mark with nothing before it alone', () => {
+    // Pulling this onto the previous page's last word would be worse than
+    // leaving it where the extractor put it.
+    assert.equal(reattachMarks(' ُ نظرية'), ' ُ نظرية');
+  });
+
+  it('does not touch marks that are already attached', () => {
+    const ok = 'فرضياتُ نظريةِ بور';
+    assert.equal(reattachMarks(ok), ok);
+  });
+
+  it('does not join across a line break into a different word', () => {
+    // The mark still belongs to the word it follows, newline or not.
+    assert.equal(reattachMarks('نظرية\n ِ بور'), 'نظريةِ بور');
+  });
+});
+
+describe('repairExtraction', () => {
+  it('reattaches marks before repairing the article, so words are whole', () => {
+    const [out] = repairExtraction(['اإلنسان ُ واألرض']);
+    assert.equal(out, 'الإنسانُ والأرض');
   });
 });
 
