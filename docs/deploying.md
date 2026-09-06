@@ -106,9 +106,27 @@ curl -s "$API/definitely/not/a/route"    # what a MISSING route looks like
 | `{"error":"...","code":"code_not_found"}` | **The route is deployed.** It ran, looked, and found nothing — that is the handler answering. |
 | `<!DOCTYPE html>… Cannot GET /api/…` | **The route is not deployed.** Express's own fallback; no handler exists. |
 
-The JSON-versus-HTML distinction is the signal. Any route that answers a
-"not found" case with a `code` field works as a probe; pick one the change
-introduced, not one that already existed.
+The JSON-versus-HTML distinction is the signal.
+
+**The probe must be an UNAUTHENTICATED route.** This is not a detail — get it
+wrong and the probe reports "deployed" for a route that does not exist. Auth
+middleware runs *before* routing, so every path under a guarded prefix answers
+`{"error":"No token provided"}` whether or not the route is there:
+
+```bash
+curl -s -X DELETE "$API/students/000/links/000"                    # real route
+curl -s -X DELETE "$API/students/000/links/000/definitely-not-real" # not a route
+# both: {"error":"No token provided"}  — proves nothing either way
+```
+
+So pick a public route the change introduced — `/auth/join/:code`, `/take/:code`
+and the other `/take/*` endpoints are the unauthenticated surface. If the change
+only touched guarded routes, this technique cannot see it; check the revision
+timestamp against when the change merged instead.
+
+**POST probes need a body.** `curl -X POST` with none gets Google Front End's
+`411 Length Required` before the container is reached, which looks like a
+failure and is not. Use `-d '{}'`.
 
 Both directions of this have been got wrong here in one day: a deploy reported
 as done that never ran (every command had failed on `PATH`, while `/api/healthz`
