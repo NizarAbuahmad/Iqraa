@@ -32,6 +32,25 @@ describe('repairExtractionArtifacts', () => {
     assert.equal(repairExtractionArtifacts('االسس'), 'الاسس');
   });
 
+  it('rejoins it in its hamza-carrying forms too', () => {
+    // لأ, لإ and لآ reverse exactly as لا does, and used to be missed: 26,626
+    // words of the corpus, every document. «الإنسان» went from matching 31 pages
+    // to 314 once this was added — retrieval had been missing ~90% of them.
+    assert.equal(repairExtractionArtifacts('األلوان'), 'الألوان');
+    assert.equal(repairExtractionArtifacts('اإلنسان'), 'الإنسان');
+    assert.equal(repairExtractionArtifacts('اآللة'), 'الآلة');
+  });
+
+  it('needs no dictionary, because the sequence it keys on is not Arabic', () => {
+    // An alef immediately followed by a hamza-carrying alef is not something
+    // Arabic orthography produces, so this rule cannot misfire on a real word
+    // the way a bare ال rule would — «ألوان» and «ألف» are ordinary words
+    // that begin with the very pair being swapped, and must survive untouched.
+    for (const ok of ['ألوان', 'ألف', 'إلى', 'ألم', 'للأطفال']) {
+      assert.equal(repairExtractionArtifacts(ok), ok);
+    }
+  });
+
   it('leaves text that never had the defect alone', () => {
     for (const ok of ['الدائرة', 'المشتقات', 'بنية الذرة', 'Bohr model']) {
       assert.equal(repairExtractionArtifacts(ok), ok);
@@ -50,7 +69,12 @@ describe('passagesForUnit', () => {
   it('returns the circle unit\'s own pages', () => {
     const ps = passagesForUnit({ unitId: CIRCLE, limit: 5 });
     assert.ok(ps.length > 0, 'no passages for الدائرة');
-    assert.ok(ps.every(p => p.sourceId === 'math-s1-student-book' || p.sourceId === 'math-s1-exercise-book'),
+    // math-s1-teacher-guide joined 2026-08-30 once it was actually extracted
+    // (it had sat as an unpulled Git-LFS pointer before) — its مخطَّط الوحدة
+    // tables and per-lesson outcome pages are genuinely about this unit, not
+    // noise from its book-wide `unitTags: ['s1']` tag.
+    const allowed = new Set(['math-s1-student-book', 'math-s1-exercise-book', 'math-s1-teacher-guide']);
+    assert.ok(ps.every(p => allowed.has(p.sourceId)),
       `unexpected sources: ${[...new Set(ps.map(p => p.sourceId))].join(', ')}`);
     // The vocabulary of this unit, not of a neighbouring one.
     assert.ok(mentions(ps, 'الوتر') || mentions(ps, 'المماس') || mentions(ps, 'الدائرة'));
@@ -109,18 +133,34 @@ describe('passagesForUnit', () => {
   });
 
   it('is empty rather than approximate when nothing is extracted', () => {
-    // Financial literacy has no extracted text. Returning something loosely
-    // related from another book would be worse than returning nothing.
-    assert.deepEqual(passagesForUnit({ unitId: 'kbu-finlit-s1-nccd-u1' }), []);
+    // A unit with no text behind it must return nothing rather than something
+    // loosely related from another book. This has gone stale picking "a
+    // subject nothing has ingested yet" twice: first a financial-literacy
+    // unit (finlit-s1 got extracted 2026-09-03), then a Grade 9 unit reasoned
+    // to be durable because the manifest was Grade 10 only — ingesting the
+    // Grade 9 maths books on 2026-09-05 broke that reasoning the same way.
+    // Both were the shallow branch anyway: `bankTagsForUnit` returning [] and
+    // `passagesForUnit` returning before it ever looks for a source.
+    //
+    // English vocational is the deeper branch and the more durable pick:
+    // `kbu-eng-agri-s1-nccd-u1` is a real catalog unit whose tags resolve to
+    // `['eng-agri-s1']` — a non-empty tag, so this exercises "found no source
+    // carrying the tag", not "found no tag" — and it stays true by design
+    // rather than by omission: `curriculumIds.ts` documents these four
+    // tracks as having "no bank material at all yet", so nothing is expected
+    // to ever tag a document this way.
+    assert.deepEqual(passagesForUnit({ unitId: 'kbu-eng-agri-s1-nccd-u1' }), []);
     assert.deepEqual(passagesForUnit({ unitId: 'not-a-unit' }), []);
   });
 
   it('knows which sources have text', () => {
     assert.ok(hasExtractedText('math-s1-student-book'));
-    // Still pending as of 2026-08-26: the file is 17 MB, over the 10 MB
-    // single-call ceiling of the tool used to fetch the support pack — see
-    // STATUS.md. Pick a fresh still-pending id here if this one gets fetched.
-    assert.ok(!hasExtractedText('math-s1-support-material'));
+    // math-s1-support-material used to stand here as the un-fetched case; it
+    // was extracted on 2026-09-02, so this needs an id that stays without text.
+    // This one is a deliberate skip rather than a backlog item: the PDF has no
+    // text layer at all and OCR is not something this project has, so it will
+    // not go stale the way a pending fetch does.
+    assert.ok(!hasExtractedText('math-u1-answers-alkhatib'));
   });
 });
 

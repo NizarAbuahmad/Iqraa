@@ -23,7 +23,6 @@ import {
   extractLessonTopic,
   getVisibleHeroSuggestions,
   getVisibleHomeTools,
-  getVisibleSmartTemplates,
   inferToolFromPrompt,
   type HomeToolId,
 } from '@/services/homeAiTools';
@@ -180,7 +179,6 @@ export default function DashboardScreen() {
 
   const visibleTools = getVisibleHomeTools();
   const visibleSuggestions = getVisibleHeroSuggestions();
-  const visibleTemplates = getVisibleSmartTemplates();
 
   const openGenerator = (toolId: HomeToolId, topicOverride?: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -677,38 +675,6 @@ export default function DashboardScreen() {
             </Text>
           </Pressable>
         )}
-      </View>
-
-      {/* 6 ── Smart Templates */}
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
-          {t('smartTemplatesTitle')}
-        </Text>
-        <View style={{ gap: 8 }}>
-          {visibleTemplates.map(tpl => (
-            <Pressable
-              key={tpl.id}
-              onPress={() => {
-                const hint = lang === 'ar' ? tpl.topicHintAr : tpl.topicHintEn;
-                openGenerator(tpl.toolId, `${hint}: ${lessonTopic}`);
-              }}
-              style={({ pressed }) => [
-                styles.templateRow,
-                {
-                  backgroundColor: colors.card,
-                  borderColor: colors.border,
-                  opacity: pressed ? 0.88 : 1,
-                  flexDirection: isRTL ? 'row-reverse' : 'row',
-                },
-              ]}
-            >
-              <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Cairo_500Medium', fontSize: 14, textAlign: isRTL ? 'right' : 'left' }}>
-                • {lang === 'ar' ? tpl.labelAr : tpl.labelEn}
-              </Text>
-              <Ionicons name="sparkles-outline" size={16} color={TEAL} />
-            </Pressable>
-          ))}
-        </View>
       </View>
 
       {/* 7 ── Recent Documents (lighter) */}
@@ -1349,15 +1315,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     gap: 4,
-  },
-
-  templateRow: {
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    alignItems: 'center',
-    gap: 10,
   },
 
   recentRow: {

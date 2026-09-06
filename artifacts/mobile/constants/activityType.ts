@@ -22,6 +22,20 @@ export const ACTIVITY_TYPE_LABEL_KEY: Record<ActivityTypeId, TranslationKey> = {
 };
 
 /**
+ * Types the generator can produce that the picker deliberately does not offer.
+ *
+ * `warmup` is the lesson flow's opening retrieval step — a real activity type
+ * with its own blueprint, but not something a teacher picks on the Activity
+ * screen. Kept out of `ACTIVITY_TYPE_IDS` (which drives the picker, and whose
+ * positions are persisted in formState and route URLs) and labelled here, so a
+ * saved warm-up viewed in the workspace does not show the latin word "warmup"
+ * in an otherwise Arabic meta row.
+ */
+const EXTRA_TYPE_LABEL_KEY: Record<string, TranslationKey> = {
+  warmup: 'activityTypeWarmup',
+};
+
+/**
  * The label for a stored activity type.
  *
  * Falls back to the raw value rather than to a placeholder: with live AI the
@@ -35,6 +49,6 @@ export function activityTypeLabel(
 ): string {
   const raw = (activityType ?? '').trim();
   if (!raw) return '';
-  const key = ACTIVITY_TYPE_LABEL_KEY[raw as ActivityTypeId];
+  const key = ACTIVITY_TYPE_LABEL_KEY[raw as ActivityTypeId] ?? EXTRA_TYPE_LABEL_KEY[raw];
   return key ? t(key) : raw;
 }

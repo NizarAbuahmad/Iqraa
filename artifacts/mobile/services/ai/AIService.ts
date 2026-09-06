@@ -22,14 +22,78 @@ export interface AIRequest {
    * a title match — see `generatorUnitId` in `services/kbContext.ts`.
    */
   unitId?: string;
+  /**
+   * Curriculum lesson id (`resolveGeneratorGrounding(...).lesson.id`), when the
+   * screen knows it.
+   *
+   * The server keys the shared artifact pool on this in preference to `topic`.
+   * A lesson title does not identify a lesson — CLAUDE.md records
+   * `searchKBSemantic(title)` returning a different lesson for 16 of the
+   * picker's 63 — and once artifacts are shared between teachers, two lessons
+   * whose titles normalise alike would be served each other's worksheets.
+   */
+  lessonId?: string;
+  /**
+   * How many student-book figures this lesson has (`figuresForLesson().length`).
+   *
+   * The server cannot work this out: the crops and `figure-lesson-map.json`
+   * are bundled into the app, not shipped to the API. It uses the count to
+   * decide one thing — whether the model is allowed to write «في الشكل
+   * المجاور». With figures, that sentence lands on a paper whose appendix
+   * prints them; without, it points at nothing.
+   *
+   * Only four subjects have any figures at all (both maths, both chemistry,
+   * financial literacy), so this is `0` or absent for most lessons and the
+   * server falls back to the stricter prompt. Omitted is read as none.
+   */
+  bookFigureCount?: number;
+  /**
+   * Who wrote `additionalContext`.
+   *
+   * `'curriculum'` — the app derived it from the KB for this lesson. It is the
+   * same text for every teacher who asks the same question, so the artifact can
+   * be shared with them. `'teacher'` — it contains material the teacher
+   * supplied (a pasted note, an attached document); the artifact is generated
+   * fresh and never pooled.
+   *
+   * Omitted is read by the server as `'teacher'`. Fail closed: a screen that
+   * forgets to say gets a cache miss, never someone else's material.
+   */
+  contextSource?: 'curriculum' | 'teacher';
+  /**
+   * The teacher asked for a replacement for what is on screen, not another
+   * copy of it.
+   *
+   * The server answers this from the variant pool when it can — free, and
+   * guaranteed different — and otherwise steers a fresh generation away from
+   * `avoid`. Without it a "regenerate" is a byte-identical request and comes
+   * back as the same paper reworded, which is the one thing the button is for.
+   */
+  regenerate?: boolean;
+  /** Question stems and headings already on screen, so a regeneration does not
+   *  repeat them. Sent by the screen because it is the only party that knows
+   *  what the teacher is actually looking at. */
+  avoid?: string[];
+  /** `variantId`s from the pool this teacher already holds, echoed back so the
+   *  server does not serve them again. */
+  excludeVariantIds?: string[];
   // Lesson plan extras
   teachingStyle?: 'direct' | 'inquiry' | 'collaborative';
   objectives?: string;
+  /**
+   * Free-text notes on prior topics the teacher wants re-explained in class —
+   * from earlier lessons or earlier grades — because some students haven't
+   * fully grasped them. Lesson-plan only; distinct from `objectives` (this
+   * lesson's own learning outcomes) and from `additionalContext` (delivery
+   * instructions).
+   */
+  priorTopicsNotes?: string;
   // Worksheet extras
   difficulty?: 'easy' | 'medium' | 'hard' | 'mixed';
   numQuestions?: number;
   questionTypes?: Array<'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false' | 'word_problem'>;
-  /** When true and priorKnowledge is non-empty, prepend a "مراجعة سابقة" warm-up. */
+  /** When true and priorKnowledge is non-empty, prepend a "مراجعة سابقة" warm-up.
+   *  Shared by worksheet and lesson-plan generation. */
   includePriorReview?: boolean;
   /** Grounded unit prior-knowledge concepts (never invent when empty). */
   priorKnowledge?: string[];
@@ -37,6 +101,22 @@ export interface AIRequest {
   totalMarks?: number;
   // Activity extras
   activityType?: 'individual' | 'group' | 'discussion' | 'hands-on' | 'game';
+  /**
+   * Which slot in the lesson this activity fills.
+   *
+   * A warm-up is short prior-knowledge retrieval, not a shortened version of
+   * the main activity. The lesson flow used to generate both from the same
+   * call with only the duration changed, so a teacher got the same four steps
+   * and the same three problems twice in one lesson.
+   */
+  activityVariant?: 'main' | 'warmup';
+  /**
+   * Continue the concrete-item selection from the previous generation instead
+   * of restarting it, so two activities in the same lesson do not pose the
+   * same problems. Set by `lessonFlowRunner` on the calls that follow the
+   * warm-up; only the deterministic bank honours it.
+   */
+  continueMathPractice?: boolean;
 }
 
 /**
@@ -60,6 +140,9 @@ export interface LessonPlanOutput {
   duration: number;
   objectives: string[];
   materials: string[];
+  /** Plan for a short warm-up reviewing prior material — present only when
+   *  the teacher asked for it via `priorTopicsNotes` or `includePriorReview`. */
+  priorReview?: string;
   introduction: string;
   mainActivity: string;
   guidedPractice: string;
@@ -69,6 +152,7 @@ export interface LessonPlanOutput {
   differentiation: string;
   homework: string;
   sources?: GroundedSource[];
+  variantId?: string;
 }
 
 export interface WorksheetOutput {
@@ -77,10 +161,26 @@ export interface WorksheetOutput {
   sections: WorksheetSection[];
   answerKey: WorksheetAnswerKeyItem[];
   sources?: GroundedSource[];
+  variantId?: string;
 }
 
 export interface WorksheetSection {
-  type: 'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false' | 'word_problem';
+  /**
+   * The question type this section contains, or `'mixed'` when it holds more
+   * than one.
+   *
+   * Sections are grouped by DIFFICULTY, not by type, so a section genuinely
+   * can be mixed — the generator rotates through the teacher's selected types
+   * within each difficulty bucket. This field used to be set to whichever type
+   * happened to come last in the bucket, so a section of 2 MCQs and 2 short
+   * answers reported `short_answer`.
+   *
+   * Server-generated worksheets are shaped by the model against the prompt in
+   * `artifacts/api-server/src/lib/prompts.ts`, which does not yet offer
+   * `'mixed'` — so a live-generated mixed section can still carry a single
+   * type. Fix that there if this field ever gains a consumer.
+   */
+  type: 'multiple_choice' | 'short_answer' | 'fill_blank' | 'true_false' | 'word_problem' | 'mixed';
   title: string;
   questions: WorksheetQuestion[];
 }
@@ -103,6 +203,7 @@ export interface QuizOutput {
   totalPoints: number;
   questions: QuizQuestion[];
   sources?: GroundedSource[];
+  variantId?: string;
 }
 
 export interface QuizQuestion {
@@ -134,6 +235,7 @@ export interface ActivityOutput {
   differentiation: string;
   assessment: string;
   sources?: GroundedSource[];
+  variantId?: string;
 }
 
 // ─── Interactive Classroom Engine ────────────────────────────────────────────
@@ -194,8 +296,30 @@ export interface ActivitySlide {
    * the picture too.
    */
   visual?: import('../deckVisuals.ts').VisualBlock;
-  /** Media payload for type 'media' — projected image or video. */
-  mediaKind?: 'image' | 'video';
+  /** Media payload for type 'media' — projected image, video, audio, or a linked document. */
+  /**
+   * A picture that sits BESIDE this slide's text rather than replacing it.
+   *
+   * Distinct from `mediaUrl` on purpose. That field is already overloaded —
+   * on a `media` slide it is the subject of the slide, and on slide 1 or a
+   * `divider` it is a full-bleed background (see `attachBackgroundImage`) —
+   * so a third meaning on the same key would be unreadable at the call site
+   * and impossible to render unambiguously.
+   *
+   * Set only when there is a real figure to show. Every content slide in the
+   * deck was a single vertical column, so the book's diagram of a rule became
+   * its own slide *after* the rule, and a class saw the statement and the
+   * picture of it a click apart. With this the two share a slide.
+   *
+   * The renderers must treat it as optional and fall back to the single
+   * column when it is absent — most lessons have no figure at all (four of
+   * sixteen subjects have any), and a two-column layout with an empty column
+   * is worse than the one column it replaced.
+   */
+  sideImageUrl?: string;
+  /** Book and page for `sideImageUrl`, same provenance rule as `mediaCaption`. */
+  sideImageCaption?: string;
+  mediaKind?: 'image' | 'video' | 'audio' | 'document';
   /**
    * Image URL / data URI, or a YouTube watch/share link.
    * Also doubles as a full-bleed background photo on the title slide
@@ -234,6 +358,8 @@ export interface ClassroomActivity {
   printables: string[];
   assessment: string;
   extensionChallenge: string;
+  /** The pool variant this deck came from — see `AIRequest.regenerate`. */
+  variantId?: string;
   /**
    * Present only on Class Challenge decks. Its presence is what switches the
    * presentation screen into game mode (scoreboard strip, award row on reveal,
@@ -267,6 +393,15 @@ export interface ClassroomActivityRequest {
   additionalContext?: string;
   /** Catalog unit id, so the server can ground the prompt — see `AIRequest.unitId`. */
   unitId?: string;
+  /** See the identically named fields on `AIRequest` — same meaning, same
+   *  reasons; this request type predates the shared one and has never been
+   *  merged with it. */
+  lessonId?: string;
+  bookFigureCount?: number;
+  contextSource?: 'curriculum' | 'teacher';
+  regenerate?: boolean;
+  avoid?: string[];
+  excludeVariantIds?: string[];
   /**
    * How many questions to generate. Honoured by 'quick-check', which defaults
    * to 4 — the size of a standalone whole-class check. Slides Maker asks for

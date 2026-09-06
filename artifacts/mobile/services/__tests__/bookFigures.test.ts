@@ -47,11 +47,11 @@ describe('figuresForLesson', () => {
   });
 
   it('is empty for a lesson with nothing mapped, and for nothing at all', () => {
-    // Financial literacy, whose book is not in the repo at all — so this stays
-    // empty for a structural reason rather than an incidental one. It used to
-    // be a chemistry lesson, picked when that book yielded five figures; it now
-    // yields 68 and that lesson has eleven, which made the example wrong
-    // without making the behaviour wrong.
+    // Financial literacy's book IS in the repo now, but this particular
+    // lesson («المشروع وإدارته», u1_l1) has no crop that survived review —
+    // every figure the extractor found on its pages was a decorative divider
+    // or a lesson-review text block, not a diagram. Empty for the same
+    // structural reason as before, just a different one.
     assert.deepEqual(figuresForLesson('kbl-finlit-s1-nccd-u1_l1'), []);
     assert.deepEqual(figuresForLesson('no-such-lesson'), []);
     assert.deepEqual(figuresForLesson(null), []);
@@ -67,10 +67,34 @@ describe('figuresForLesson', () => {
     // filenames that are backwards. Nothing failed — the figures were on the
     // right lessons and only the book label was wrong, which is why it
     // shipped. Hence a test rather than a comment.
+    //
+    // A lesson id's subject slug is NOT always the source id's prefix. Both
+    // are deliberate and neither is free to change: the lesson slug comes from
+    // `SubjectSlug` in curriculumIds.ts, the source id from the row in
+    // `g10_sources.json`, and `docs/adding-a-book.md` makes that row the
+    // contract. They happen to agree for maths, chemistry and finlit, and
+    // disagree for the two sciences added in 2026-09 — so the join is written
+    // down rather than derived by string surgery, which is what this test used
+    // to do and what quietly excluded every new subject from the check.
+    const SOURCE_PREFIX: Record<string, string> = {
+      math: 'math',
+      chem: 'chem',
+      finlit: 'finlit',
+      'g9-math': 'g9-math',
+      phys: 'phys',
+      // General English, added 2026-09-05. Its books are `eng-s1-student-book`
+      // / `-s2`, matching the manifest, so slug and prefix agree here.
+      eng: 'eng',
+      biology: 'bio',
+      'earth-science': 'earth',
+    };
+
     for (const id of lessonsWithFigures()) {
-      const m = /^kbl-(math|chem)-(s[12])-/.exec(id);
+      const m = /^kbl-(.+)-(s[12])-nccd-/.exec(id);
       assert.ok(m, `${id} has a subject and semester`);
-      const expected = `${m![1]}-${m![2]}-student-book`;
+      const prefix = SOURCE_PREFIX[m![1]!];
+      assert.ok(prefix, `${id}: no source-id prefix known for subject "${m![1]}"`);
+      const expected = `${prefix}-${m![2]}-student-book`;
       for (const f of figuresForLesson(id)) {
         assert.equal(f.sourceId, expected, `${id} is illustrated from ${f.sourceId}`);
       }
@@ -131,5 +155,96 @@ describe('figurePath', () => {
       figurePath(figure!),
       `knowledge-base/grade-10-math/figures/math-s1-student-book/${figure!.file}`,
     );
+  });
+});
+
+describe('the three sciences carry figures', () => {
+  // Added 2026-09-05. Before this, physics, biology and earth science had
+  // curriculum lessons and zero figures between them — 41 lessons that could
+  // never show a diagram on a slide, a worksheet or an exam paper.
+  //
+  // Pinned as a floor rather than an exact count: the review pass is a human
+  // one, so a later reviewer deleting a bad crop must not turn this red. What
+  // it catches is the join breaking — a renamed source id, a dropped
+  // figure-lesson-map entry, an index.json that stopped being imported.
+  const FLOOR: Record<string, number> = {
+    'kbl-phys-s1-nccd-u1_l1': 5,
+    'kbl-phys-s2-nccd-u5_l2': 15,
+    'kbl-biology-s1-nccd-u3_l3': 3,
+    'kbl-biology-s2-nccd-u3_l6': 12,
+    'kbl-earth-science-s1-nccd-u1_l1': 4,
+    'kbl-earth-science-s2-nccd-u3_l2': 8,
+  };
+
+  for (const [lessonId, floor] of Object.entries(FLOOR)) {
+    it(`${lessonId} has at least ${floor}`, () => {
+      const n = figuresForLesson(lessonId).length;
+      assert.ok(n >= floor, `${lessonId} has ${n}, expected >= ${floor}`);
+    });
+  }
+
+  it('every science figure comes from a student book, not a guide', () => {
+    // The manifest carries teacher guides and activity books for all three
+    // subjects under the same `phys-`/`bio-`/`earth-` prefix. Only the student
+    // book is extracted, because that is the copy on the student's desk — a
+    // caption citing a page of the teacher's guide is uncheckable.
+    for (const id of lessonsWithFigures()) {
+      if (!/^kbl-(phys|biology|earth-science)-/.test(id)) continue;
+      for (const f of figuresForLesson(id)) {
+        assert.match(f.sourceId, /-student-book$/, `${id} cites ${f.sourceId}`);
+      }
+    }
+  });
+});
+
+describe('general English carries its book photographs', () => {
+  // English was the last subject with no figures, and the reason was not
+  // extraction: `book-english-10-s1` and `-s2` were catalog rows with ZERO
+  // lessons under them, so there was nothing for a figure to attach to. Both
+  // halves landed 2026-09-05 — the curriculum from the book's contents spread,
+  // the photos from a raster extractor (`scripts/extract_book_photos.py`),
+  // since this book draws almost nothing and photographs almost everything.
+  const LESSONS = [
+    'kbl-eng-s1-nccd-u1_l1',
+    'kbl-eng-s1-nccd-u5_l1',
+    'kbl-eng-s2-nccd-u6_l1',
+    'kbl-eng-s2-nccd-u10_l1',
+  ];
+
+  for (const id of LESSONS) {
+    it(`${id} resolves to photographs from its own semester's book`, () => {
+      const figs = figuresForLesson(id);
+      assert.ok(figs.length > 0, `${id} has no figures`);
+      const semester = id.includes('-s1-') ? 's1' : 's2';
+      for (const f of figs) {
+        assert.equal(f.sourceId, `eng-${semester}-student-book`, `${id} cites ${f.sourceId}`);
+      }
+    });
+  }
+
+  it('maps semester-2 book units 1-5 onto curriculum units 6-10', () => {
+    // The offset worth a test of its own. `extract_book_photos.py` numbers
+    // units by counting LESSON-header resets inside one PDF, so the s2 book's
+    // units come out 1..5; the curriculum keeps the numbers the book PRINTS on
+    // its contents page, 06..10. Reversing this would file every semester-2
+    // photo under a real lesson about something else, and nothing would fail.
+    const u6 = figuresForLesson('kbl-eng-s2-nccd-u6_l1');
+    assert.ok(u6.length > 0);
+    assert.ok(u6.every(f => f.unit === 1), 'curriculum u6 is the book\'s unit 1');
+
+    const u10 = figuresForLesson('kbl-eng-s2-nccd-u10_l1');
+    assert.ok(u10.length > 0);
+    assert.ok(u10.every(f => f.unit === 5), 'curriculum u10 is the book\'s unit 5');
+  });
+
+  it('files every English photo on lesson 1, because a unit IS one lesson', () => {
+    // The catalog models one lesson per unit — the book prints seven lesson
+    // slots and titles none of them. Any other lesson number here would mean
+    // the extractor and the catalog had drifted apart about that.
+    for (const id of LESSONS) {
+      for (const f of figuresForLesson(id)) {
+        assert.equal(f.lesson, 1, `${f.file} is on lesson ${f.lesson}`);
+      }
+    }
   });
 });

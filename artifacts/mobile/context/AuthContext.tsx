@@ -11,8 +11,21 @@ import {
 import { setActiveLessonContextUser } from '@/services/lessonContext';
 import { setActiveMediaUser } from '@/services/lessonMedia';
 import { warmUpVerifier } from '@/services/ai/verifyMath';
+import { registerPushToken, unregisterPushToken } from '@/services/pushTokens';
 
-export type UserRole = 'teacher' | 'school_admin' | 'system_admin';
+export type UserRole = 'teacher' | 'school_admin' | 'system_admin' | 'student' | 'parent';
+
+/**
+ * The roles the teacher-facing product is for. Mirrors TEACHER_ROLES in the
+ * server's middlewares/auth.ts — the server is what actually enforces this
+ * (every generation and roster route rejects the others); the client uses it
+ * to avoid offering a door that only leads to a 403.
+ */
+export const TEACHER_ROLES: UserRole[] = ['teacher', 'school_admin', 'system_admin'];
+
+export function isTeacherRole(role: UserRole | null | undefined): boolean {
+  return !!role && TEACHER_ROLES.includes(role);
+}
 
 export interface User {
   id: string;
@@ -38,17 +51,30 @@ export interface RegisterData {
   email: string;
   password: string;
   confirmPassword?: string;
+  /** Defaults to 'teacher' server-side when omitted. */
+  role?: 'teacher' | 'student' | 'parent';
+  /** Required when role is 'student' or 'parent' — see services/messaging.ts. */
+  claimCode?: string;
+  /** Which roster name was picked, when `claimCode` is a whole-class join code. A per-student code names its own student and ignores this. */
+  studentId?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: (credential: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (token: string, password: string, confirmPassword: string) => Promise<void>;
   updateProfile: (data: { preferredLanguage?: string; firstName?: string; lastName?: string }) => Promise<void>;
+  /**
+   * Irreversible. Pass `password` for an ordinary account, or `confirmEmail`
+   * for a Google-only one — the server picks which it will accept based on
+   * whether the account has a password hash at all, and refuses 401 otherwise.
+   */
+  deleteAccount: (proof: { password?: string; confirmEmail?: string }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -96,7 +122,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // the sleeping verifier now so the symbolic badge is available when they
     // do, instead of silently degrading to the bank label. The route needs a
     // token, so this cannot run any earlier than here.
-    if (user?.id) warmUpVerifier();
+    if (user?.id) {
+      warmUpVerifier();
+      void registerPushToken();
+    }
   }, [user?.id]);
 
   // Register redirect callback so token-refresh failures can navigate to login
@@ -176,6 +205,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(toUser(data.user));
   }, []);
 
+  const loginWithGoogle = useCallback(async (credential: string) => {
+    const data = await apiJson<{ accessToken: string; refreshToken: string; user: ApiUser }>(
+      '/auth/google',
+      {
+        method: 'POST',
+        body: JSON.stringify({ credential }),
+      },
+    );
+
+    await storeTokens(data.accessToken, data.refreshToken);
+    setUser(toUser(data.user));
+  }, []);
+
   const register = useCallback(async (payload: RegisterData) => {
     if (!payload.firstName?.trim()) throw new Error('First name is required');
     if (!payload.lastName?.trim()) throw new Error('Last name is required');
@@ -184,6 +226,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error('Password must be at least 8 characters');
     if (payload.confirmPassword && payload.confirmPassword !== payload.password)
       throw new Error('Passwords do not match');
+    if (payload.role && payload.role !== 'teacher' && !payload.claimCode?.trim())
+      throw new Error('A class code is required');
 
     const data = await apiJson<{ accessToken: string; refreshToken: string; user: ApiUser }>(
       '/auth/register',
@@ -195,6 +239,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           email: payload.email.trim(),
           password: payload.password,
           confirmPassword: payload.confirmPassword,
+          role: payload.role,
+          claimCode: payload.claimCode?.trim(),
+          studentId: payload.studentId,
         }),
       },
     );
@@ -204,6 +251,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
+    await unregisterPushToken();
     try {
       const refreshToken = await getRefreshToken();
       await apiJson('/auth/logout', {
@@ -248,17 +296,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(toUser(updated));
   }, []);
 
+  const deleteAccount = useCallback(
+    async (proof: { password?: string; confirmEmail?: string }) => {
+      // Push token first, for the same reason logout does it first: after the
+      // account is gone the server would refuse the unregister call, and the
+      // device would keep a token pointed at a user that no longer exists.
+      await unregisterPushToken();
+      // No try/catch — unlike logout, a failure here must reach the caller.
+      // Clearing local state on a server error would show a signed-out app
+      // whose account still exists, which is the one outcome worse than an
+      // error message.
+      await apiJson('/auth/users/me', {
+        method: 'DELETE',
+        body: JSON.stringify(proof),
+      });
+      await clearTokens();
+      setUser(null);
+    },
+    [],
+  );
+
   return (
     <AuthContext.Provider
       value={{
         user,
         isLoading,
         login,
+        loginWithGoogle,
         register,
         logout,
         forgotPassword,
         resetPassword,
         updateProfile,
+        deleteAccount,
       }}
     >
       {children}

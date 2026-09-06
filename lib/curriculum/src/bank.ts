@@ -60,6 +60,18 @@ export const BANK_SUBJECT_IDS: Record<CurriculumSource['subject'], string> = {
   math: 'mathematics',
   chemistry: 'chemistry',
   'financial-literacy': 'financial-literacy',
+  physics: 'physics',
+  biology: 'biology',
+  'earth-science': 'earth-science',
+  arabic: 'arabic',
+  islamic: 'islamic',
+  history: 'history',
+  english: 'english',
+  geography: 'geography',
+  'digital-literacy': 'digital-literacy',
+  civic: 'civic',
+  art: 'art',
+  vocational: 'vocational',
 };
 
 export function appSubjectId(subject: CurriculumSource['subject']): string {
@@ -310,12 +322,36 @@ const SUBJECT_LABEL_AR: Record<CurriculumSource['subject'], string> = {
   math: 'الرياضيات',
   chemistry: 'الكيمياء',
   'financial-literacy': 'الثقافة المالية',
+  physics: 'الفيزياء',
+  biology: 'العلوم الحياتية',
+  'earth-science': 'علوم الأرض والبيئة',
+  arabic: 'اللغة العربية',
+  islamic: 'التربية الإسلامية',
+  history: 'التاريخ',
+  english: 'اللغة الإنجليزية',
+  geography: 'الجغرافيا',
+  'digital-literacy': 'المهارات الرقمية',
+  civic: 'التربية الوطنية والمدنية',
+  art: 'التربية الفنية',
+  vocational: 'التربية المهنية',
 };
 
 const SUBJECT_LABEL_EN: Record<CurriculumSource['subject'], string> = {
   math: 'Mathematics',
   chemistry: 'Chemistry',
   'financial-literacy': 'Financial literacy',
+  physics: 'Physics',
+  biology: 'Biology',
+  'earth-science': 'Earth and environmental science',
+  arabic: 'Arabic',
+  islamic: 'Islamic Studies',
+  history: 'History',
+  english: 'English',
+  geography: 'Geography',
+  'digital-literacy': 'Digital Literacy',
+  civic: 'National and Civic Education',
+  art: 'Art Education',
+  vocational: 'Vocational Education',
 };
 
 /**

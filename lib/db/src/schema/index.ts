@@ -28,3 +28,12 @@ export * from "./feedback";
 
 // AI spend + cache-hit measurement — see docs/ai-cost-savings-plan.md
 export * from "./aiGenerations";
+// The shared variant pool those keys are looked up in (plan phase 1)
+export * from "./aiArtifacts";
+
+// Teacher-uploaded lesson attachments (R2-backed) — see routes/lessonMedia.ts
+export * from "./lessonMedia";
+
+// Person-to-person chat — teacher/parent/student threads and groups. Not the
+// AI chatbot (that's ./conversations + ./messages) — see routes/messaging.ts
+export * from "./messaging";

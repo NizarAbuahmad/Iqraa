@@ -1,0 +1,101 @@
+{
+ "sourceId": "finlit-s1-student-book",
+ "figures": [
+  {
+   "file": "p017.png",
+   "sourceId": "finlit-s1-student-book",
+   "pdfPage": 17,
+   "rect": [
+    0.0,
+    444.9,
+    552.8,
+    791.9
+   ],
+   "unit": 1,
+   "lesson": 3,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "مراحُلُ إدارِةِ المشروِعِ وفريُقُ العمِل",
+   "lessonStartPage": 16
+  },
+  {
+   "file": "p041.png",
+   "sourceId": "finlit-s1-student-book",
+   "pdfPage": 41,
+   "rect": [
+    60.2,
+    361.7,
+    291.5,
+    620.7
+   ],
+   "unit": 2,
+   "lesson": 1,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "واألهميُة دراسُةُ الجدوى: المفهوُمُ ،",
+   "lessonStartPage": 40
+  },
+  {
+   "file": "p041b.png",
+   "sourceId": "finlit-s1-student-book",
+   "pdfPage": 41,
+   "rect": [
+    316.1,
+    375.8,
+    527.7,
+    652.5
+   ],
+   "unit": 2,
+   "lesson": 1,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "واألهميُة دراسُةُ الجدوى: المفهوُمُ ،",
+   "lessonStartPage": 40
+  },
+  {
+   "file": "p053.png",
+   "sourceId": "finlit-s1-student-book",
+   "pdfPage": 53,
+   "rect": [
+    0.0,
+    435.5,
+    595.3,
+    793.7
+   ],
+   "unit": 2,
+   "lesson": 3,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "ُالدراسُةُ الفنيُة",
+   "lessonStartPage": 52
+  },
+  {
+   "file": "p059.png",
+   "sourceId": "finlit-s1-student-book",
+   "pdfPage": 59,
+   "rect": [
+    136.7,
+    518.0,
+    462.0,
+    631.5
+   ],
+   "unit": 2,
+   "lesson": 4,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "ُالدراسُةُ الماليُة",
+   "lessonStartPage": 57
+  },
+  {
+   "file": "p059b.png",
+   "sourceId": "finlit-s1-student-book",
+   "pdfPage": 59,
+   "rect": [
+    89.3,
+    623.6,
+    319.7,
+    725.4
+   ],
+   "unit": 2,
+   "lesson": 4,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "ُالدراسُةُ الماليُة",
+   "lessonStartPage": 57
+  }
+ ]
+}

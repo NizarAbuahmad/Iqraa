@@ -13,18 +13,36 @@
     "./passages": "./src/passages.ts",
     "./catalogs/g10MathSem1": "./src/catalogs/g10MathSem1.ts",
     "./catalogs/g10MathSem2": "./src/catalogs/g10MathSem2.ts",
+    "./catalogs/g9MathSem1": "./src/catalogs/g9MathSem1.ts",
+    "./catalogs/g9MathSem2": "./src/catalogs/g9MathSem2.ts",
     "./catalogs/g10ChemSem1": "./src/catalogs/g10ChemSem1.ts",
+    "./catalogs/g10PhysSem1": "./src/catalogs/g10PhysSem1.ts",
+    "./catalogs/g10PhysSem2": "./src/catalogs/g10PhysSem2.ts",
+    "./catalogs/g10EarthSem1": "./src/catalogs/g10EarthSem1.ts",
+    "./catalogs/g10EarthSem2": "./src/catalogs/g10EarthSem2.ts",
+    "./catalogs/g10BioSem1": "./src/catalogs/g10BioSem1.ts",
+    "./catalogs/g10BioSem2": "./src/catalogs/g10BioSem2.ts",
     "./catalogs/g10ChemSem2": "./src/catalogs/g10ChemSem2.ts",
     "./catalogs/g10FinlitSem1": "./src/catalogs/g10FinlitSem1.ts",
+    "./catalogs/g10ArabicSem1": "./src/catalogs/g10ArabicSem1.ts",
+    "./catalogs/g10ArabicSem2": "./src/catalogs/g10ArabicSem2.ts",
+    "./catalogs/g10IslamicSem1": "./src/catalogs/g10IslamicSem1.ts",
+    "./catalogs/g10IslamicSem2": "./src/catalogs/g10IslamicSem2.ts",
+    "./catalogs/g10EnglishVocational": "./src/catalogs/g10EnglishVocational.ts",
+    "./catalogs/g10EnglishSem1": "./src/catalogs/g10EnglishSem1.ts",
+    "./catalogs/g10EnglishSem2": "./src/catalogs/g10EnglishSem2.ts",
     "./validateCurriculum": "./src/validateCurriculum.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "verify": "node --experimental-strip-types scripts/verify-curriculum.ts",
     "test": "node --experimental-strip-types --test \"src/**/__tests__/**/*.test.ts\"",
-    "extract-text": "node --experimental-strip-types scripts/extract-text.ts"
+    "extract-text": "node --experimental-strip-types scripts/extract-text.ts",
+    "upload-r2": "node --experimental-strip-types scripts/upload-to-r2.ts",
+    "audit-r2": "node --experimental-strip-types scripts/audit-r2.ts"
   },
   "devDependencies": {
+    "@aws-sdk/client-s3": "^3.699.0",
     "@types/node": "catalog:",
     "pdf-parse": "^2.4.5"
   }

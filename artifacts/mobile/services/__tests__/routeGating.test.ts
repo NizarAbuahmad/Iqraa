@@ -6,7 +6,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { isEntryRoute, isPublicRoute } from '../routeGating.ts';
+import { isEntryRoute, isNonTeacherRoute, isPublicRoute } from '../routeGating.ts';
 
 describe('isEntryRoute', () => {
   it('treats the auth and onboarding routes as entries', () => {
@@ -57,6 +57,15 @@ describe('isPublicRoute', () => {
     }
   });
 
+  it('lets a store reviewer open the policy documents cold', () => {
+    // Both listings require a privacy-policy URL that resolves without a
+    // session. Bouncing to login there is a submission blocker, and it would
+    // look exactly like a working app to anyone already signed in.
+    for (const p of ['/legal', '/legal/privacy', '/legal/terms']) {
+      assert.equal(isPublicRoute(p), true, p);
+    }
+  });
+
   it('keeps every teacher route private', () => {
     for (const p of ['/', '/home', '/classes', '/evaluations', '/admin/dashboard', '/workspace']) {
       assert.equal(isPublicRoute(p), false, p);
@@ -76,5 +85,61 @@ describe('isPublicRoute', () => {
     assert.equal(isPublicRoute(null), false);
     assert.equal(isPublicRoute(undefined), false);
     assert.equal(isPublicRoute(''), false);
+  });
+});
+
+describe('isNonTeacherRoute', () => {
+  it('lets a parent or student reach the screens built for them', () => {
+    for (const p of [
+      '/notifications',
+      '/messaging',
+      '/messaging/abc-123',
+      '/curriculum',
+      '/curriculum/lesson-detail',
+      '/profile',
+    ]) {
+      assert.equal(isNonTeacherRoute(p), true, p);
+    }
+  });
+
+  it('keeps every teacher screen out — this is the deep-link hole it closes', () => {
+    // Each of these rendered for a parent who typed the URL, then answered 403
+    // on every call it made.
+    for (const p of [
+      '/iqra',
+      '/ai-tools',
+      '/ai-tools/worksheet',
+      '/ai-tools/classroom/presentation',
+      '/classes',
+      '/classes/abc-123',
+      '/evaluations',
+      '/workspace',
+      '/admin/dashboard',
+      '/home',
+    ]) {
+      assert.equal(isNonTeacherRoute(p), false, p);
+    }
+  });
+
+  it('excludes the claim screen even though it sits under /messaging', () => {
+    // It mints a student's claim code and reads the roster — teacher-only,
+    // despite the prefix that would otherwise let it through.
+    assert.equal(isNonTeacherRoute('/messaging/claim'), false);
+    assert.equal(isNonTeacherRoute('/messaging/claim/abc-123'), false);
+  });
+
+  it('does not match a route that merely starts with the same letters', () => {
+    // '/profiles' is not '/profile', and '/curriculum-admin' is not
+    // '/curriculum'. Without the boundary check either would open up.
+    assert.equal(isNonTeacherRoute('/profiles'), false);
+    assert.equal(isNonTeacherRoute('/curriculum-admin'), false);
+    assert.equal(isNonTeacherRoute('/notificationsettings'), false);
+  });
+
+  it('fails closed on no path', () => {
+    // Unknown is not somewhere a parent may be — same rule as isPublicRoute.
+    assert.equal(isNonTeacherRoute(null), false);
+    assert.equal(isNonTeacherRoute(undefined), false);
+    assert.equal(isNonTeacherRoute(''), false);
   });
 });

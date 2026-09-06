@@ -15,6 +15,7 @@ import {
   QuizOutput, WorksheetOutput,
 } from '@/services/ai/AIService';
 import { looksLikeActivityContent } from '@/services/materialShape';
+import { arCountPhrase } from '@/services/arCount';
 // One map, not two. This screen kept its own copy of the same five colours;
 // adding a sixth to a private copy is exactly the drift `materialKind.ts` was
 // extracted to stop — a card in موادي and the material it opens must not
@@ -23,6 +24,9 @@ import { MATERIAL_COLOR } from '@/constants/materialKind';
 import { activityTypeLabel } from '@/constants/activityType';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { normalizeQuestionOptions, optionLetter } from '@/services/optionLabels';
+import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
+import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
+import { resolveGeneratorGrounding } from '@/services/kbContext';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import {
@@ -120,15 +124,31 @@ export default function WorkspaceViewScreen() {
     if (kind === 'slides') return formatDeckOutline(content as ClassroomActivity, isAr);
     return formatQuizText(content as QuizOutput, item.title, meta, isAr);
   };
+  /**
+   * The book figures for this material's lesson, re-resolved from the saved
+   * `topic` — the same grounding `useGeneratorExport` does on the generator
+   * screens, so a paper printed from موادي carries the same «من الكتاب
+   * المدرسي» appendix as the one printed the moment it was generated.
+   *
+   * It did not, before: these four builders were called without the argument,
+   * so the figures were a property of *when* you exported rather than of the
+   * material — and a quiz saved for next week's exam printed without the
+   * diagrams its own questions refer to. Re-resolved rather than stored,
+   * because a saved material predates the field and would have none.
+   */
+  const getExportFigures = () =>
+    bookFigureRefsForLesson(resolveGeneratorGrounding(item.topic ?? '', lang).lesson?.id, isAr);
+
   const getHTML = () => {
     if (!content) return '<p></p>';
     const meta = { subject: item.subject, grade: item.grade };
-    if (kind === 'lesson') return buildLessonPlanHTML(content as LessonPlanOutput, item.title, meta, isAr);
-    if (kind === 'activity') return buildActivityHTML(content as ActivityOutput, item.title, meta, isAr);
-    if (kind === 'worksheet') return buildWorksheetHTML(content as WorksheetOutput, item.title, meta, isAr);
-    if (kind === 'flow') return buildLessonFlowHTML(content as unknown as LessonFlowOutput, isAr);
+    const figures = getExportFigures();
+    if (kind === 'lesson') return buildLessonPlanHTML(content as LessonPlanOutput, item.title, meta, isAr, figures);
+    if (kind === 'activity') return buildActivityHTML(content as ActivityOutput, item.title, meta, isAr, figures);
+    if (kind === 'worksheet') return buildWorksheetHTML(content as WorksheetOutput, item.title, meta, isAr, figures);
+    if (kind === 'flow') return buildLessonFlowHTML(content as unknown as LessonFlowOutput, isAr, figures);
     if (kind === 'slides') return buildDeckHTML(content as ClassroomActivity, isAr);
-    return buildQuizHTML(content as QuizOutput, item.title, meta, isAr);
+    return buildQuizHTML(content as QuizOutput, item.title, meta, isAr, figures);
   };
 
   const handleShareText = async () => { await shareAsText(getPlainText(), item.title); };
@@ -271,6 +291,26 @@ export default function WorkspaceViewScreen() {
           <SlidesDeckView deck={content as ClassroomActivity} colors={colors} isRTL={isRTL} isAr={isAr} accent={accent} />
         ) : (
           <QuizView quiz={content as QuizOutput} colors={colors} isRTL={isRTL} t={t} accent={accent} lang={lang} />
+        )}
+
+        {/* The same «من الكتاب المدرسي» figures the export appendix prints,
+            shown before you export rather than only after. `getExportFigures`
+            already resolved them above for the PDF; this screen was the one
+            place that computed them and then showed the teacher nothing, so
+            a saved worksheet looked like it had lost its diagrams until you
+            exported it to find out otherwise.
+
+            Only the four kinds whose exports carry the appendix. A `slides`
+            deck already has the figures as its own slides, and
+            so claiming them here would promise what the export does not
+            deliver. */}
+        {content && ['lesson', 'activity', 'worksheet', 'quiz', 'flow'].includes(kind) && (
+          <BookFiguresPanel
+            figures={getExportFigures()}
+            isRTL={isRTL}
+            colors={colors}
+            labels={{ title: t('bookFiguresTitle'), note: t('bookFiguresNote') }}
+          />
         )}
       </View>
     </ScrollView>
@@ -601,7 +641,7 @@ function SlidesDeckView({ deck, colors, isRTL, isAr, accent }: {
   return (
     <View style={{ gap: 10 }}>
       <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 12, textAlign: isRTL ? 'right' : 'left' }}>
-        {isAr ? `${deck.slides.length} شريحة` : `${deck.slides.length} slides`}
+        {isAr ? arCountPhrase(deck.slides.length, 'شريحة', 'شريحتان', 'شرائح') : `${deck.slides.length} slides`}
       </Text>
       {deck.slides.map(s => (
         <View
@@ -736,7 +776,7 @@ function FlowView({ flow, colors, isRTL, lang, accent }: {
     <>
       {/* Meta badge */}
       <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, marginBottom: 16, flexWrap: 'wrap' }]}>
-        {[flow.grade, flow.subject, `${flow.duration} ${lang === 'ar' ? 'دقيقة' : 'min'}`].map(tag => (
+        {[flow.grade, flow.subject, lang === 'ar' ? arCountPhrase(flow.duration, 'دقيقة', 'دقيقتان', 'دقائق') : `${flow.duration} min`].map(tag => (
           <View key={tag} style={{ backgroundColor: FLOW_TEAL + '15', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 }}>
             <Text style={{ color: FLOW_TEAL, fontFamily: 'Cairo_500Medium', fontSize: 12 }}>{tag}</Text>
           </View>

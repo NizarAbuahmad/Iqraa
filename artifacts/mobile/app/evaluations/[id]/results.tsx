@@ -31,7 +31,14 @@ import {
   type LevelKey,
   type Recommendation,
 } from '@/services/evaluations';
-import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
+import {
+  buildGapWarmupRequest,
+  lessonPickerParams,
+  lessonPrepPickerIndices,
+  scopePickerParams,
+} from '@/services/lessonPrep';
+import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
+import { saveItem } from '@/services/workspace';
 import type { TranslationKey } from '@/services/i18n';
 
 const ACCENT = '#1B6B62';
@@ -282,13 +289,49 @@ function ClassGaps({
   lang: string;
   t: (key: TranslationKey, ...args: any[]) => string;
 }) {
-  const gradeIdx = scope ? getPickerGrades().findIndex(g => g.id === scope.gradeId) : -1;
-  const subjectIdx = scope
-    ? getPickerSubjects(scope.gradeId).findIndex(x => x.id === scope.subjectId)
-    : -1;
-  const canGenerate = gradeIdx >= 0 && subjectIdx >= 0;
+  // Indices against the same bare picker lists the worksheet screen rebuilds —
+  // see scopePickerParams: a grade-filtered list here would drift from the
+  // receiver the day INVESTOR_MVP_CURRICULUM stops flattening the argument.
+  const pickerParams = scope ? scopePickerParams(scope.gradeId, scope.subjectId) : null;
+  const canGenerate = pickerParams !== null;
 
   const worst = insights.objectiveScores.slice(0, MAX_CLASS_GAPS);
+  // One tap from "the class missed X" to a warm-up on X, saved and opened on
+  // the activity screen. Built on the worst objective's own lesson so the
+  // offline generator (which picks by topic) actually changes what it serves.
+  const gap = worst[0] ? buildGapWarmupRequest(worst[0].objectiveId, lang as 'ar' | 'en') : null;
+  const [warming, setWarming] = useState(false);
+  const [warmError, setWarmError] = useState('');
+  const startWarmup = async () => {
+    if (!gap) return;
+    setWarming(true); setWarmError('');
+    try {
+      const out = await aiService.generateActivity(gap.request);
+      const { gradeIdx, subjectIdx } = lessonPrepPickerIndices(gap.context);
+      const topic = gap.context.topic;
+      const saved = await saveItem({
+        type: 'activity',
+        title: lang === 'ar' ? `تهيئة: ${topic}` : `Warm-up: ${topic}`,
+        subject: gap.context.subjectName,
+        grade: gap.context.gradeName,
+        topic,
+        language: lang as 'ar' | 'en',
+        content: JSON.stringify(out),
+        formState: { gradeIdx, subjectIdx, topic, activityTypeIdx: 0, durationIdx: 0, objective: '' },
+      });
+      // ponytail: Regenerate on the activity screen rebuilds this as a plain
+      // group activity — its form has no warm-up slot. Add a `variant=warmup`
+      // route param there if teachers turn out to regenerate warm-ups.
+      router.push({
+        pathname: '/ai-tools/activity',
+        params: { savedId: saved.id, topic, ...lessonPickerParams(gap.context.lessonId, lang as 'ar' | 'en') },
+      });
+    } catch {
+      setWarmError(t('generationFailed'));
+    } finally {
+      setWarming(false);
+    }
+  };
   const top = recommendations.find(r => r.kind !== 'reassess');
   const topTitle = top
     ? (lang === 'ar' ? top.payload.objectiveTitleAr : top.payload.objectiveTitle) ||
@@ -329,7 +372,7 @@ function ClassGaps({
           onPress={() =>
             router.push({
               pathname: '/ai-tools/worksheet',
-              params: { topic: topTitle, gradeIdx: String(gradeIdx), subjectIdx: String(subjectIdx) },
+              params: { topic: topTitle, ...pickerParams },
             })
           }
           style={[styles.classGapBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
@@ -339,6 +382,27 @@ function ClassGaps({
             {t('classGapWorksheet')}
           </Text>
         </Pressable>
+      ) : null}
+
+      {gap ? (
+        <Pressable
+          onPress={() => { void startWarmup(); }}
+          disabled={warming}
+          accessibilityRole="button"
+          style={[styles.classGapBtn, { borderColor: ACCENT, flexDirection: isRTL ? 'row-reverse' : 'row', opacity: warming ? 0.7 : 1 }]}
+        >
+          {warming
+            ? <ActivityIndicator size="small" color={ACCENT} />
+            : <Ionicons name="flash-outline" size={14} color={ACCENT} />}
+          <Text style={{ color: ACCENT, fontFamily: 'Cairo_500Medium', fontSize: 12 }}>
+            {t('classGapWarmup')}
+          </Text>
+        </Pressable>
+      ) : null}
+      {warmError ? (
+        <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 11, textAlign: align }}>
+          {warmError}
+        </Text>
       ) : null}
     </View>
   );

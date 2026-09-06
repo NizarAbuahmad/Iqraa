@@ -151,6 +151,35 @@ export class RemoteAIService extends AIService {
   }
 
   /**
+   * Take a pooled artifact out of circulation.
+   *
+   * The safety valve for sharing. Before the shared pool a wrong answer key
+   * cost one teacher one regeneration — private, self-correcting. Pooled, the
+   * same artifact is handed to every teacher who asks for that lesson, so the
+   * damage scales exactly as the saving does. Only a person can tell a
+   * well-formed worksheet from a correct one, which is why this is a button
+   * and not a check.
+   *
+   * `false` means there was nothing in the pool under that id — no such
+   * variant, or somebody retired it already. Not an error: both leave the
+   * caller where it wanted to be, and the screen goes on to regenerate either
+   * way. A network or auth failure throws, because that one did *not* leave
+   * the artifact withdrawn and saying otherwise would be a lie the teacher
+   * acts on.
+   */
+  async retireVariant(variantId: string): Promise<boolean> {
+    const res = await apiFetch(`/generate/variants/${encodeURIComponent(variantId)}/retire`, {
+      method: 'POST',
+    });
+    if (res.status === 404) return false;
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+      throw new Error((err as { error?: string }).error ?? `HTTP ${res.status}`);
+    }
+    return true;
+  }
+
+  /**
    * Chat with iQra. In Demo Mode this throws so callers use local KB text.
    *
    * No mock fallback here — the chat screen has its own local answer path and

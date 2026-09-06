@@ -21,12 +21,17 @@ import {
   getEvaluation,
   publishEvaluation,
   setEvaluationClass,
+  showBlanks,
   type Evaluation,
   type EvaluationQuestion,
   type QuestionType,
 } from '@/services/evaluations';
+import { summariseKeyChecks, type KeyCheckSummary } from '@/services/keyCheckSummary';
+import { isolateForeignRuns, prettifySymPy } from '@/services/mathRender';
 import { copyToClipboard } from '@/services/share';
 import { ClassPickerSheet } from '@/components/ui/ClassPickerSheet';
+import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
+import { bookFigureRefsForObjectives } from '@/services/bookFigureUri';
 import type { TranslationKey } from '@/services/i18n';
 
 const ACCENT = '#1B6B62';
@@ -52,16 +57,35 @@ const TYPE_LABEL_KEY: Record<QuestionType, TranslationKey> = {
   practical_task: 'typePracticalTask',
 };
 
-/** The one field worth showing per type, regardless of shape. */
+/**
+ * The one field worth showing per type, regardless of shape.
+ *
+ * Isolated here rather than at the render site because every branch below
+ * returns model-written Arabic that can carry an equation, and an unisolated
+ * «f(x) = 2x⁴ - x² + 3» comes out of the bidi algorithm reordered against the
+ * Arabic around it — a wrong question, not just an ugly one.
+ */
 function questionText(q: EvaluationQuestion): string {
   const body = q.body;
-  return (
+  const template = body['template'] as string | undefined;
+  return isolateForeignRuns(
     (body['stem'] as string | undefined)
     ?? (body['statement'] as string | undefined)
-    ?? (body['template'] as string | undefined)
+    ?? (template === undefined ? undefined : showBlanks(template))
     ?? (body['prompt'] as string | undefined)
-    ?? ''
+    // A matching body has none of the four above, so it used to fall through
+    // to '' and print as a dash — a teacher reviewing a paper could see that a
+    // matching question existed but not what it asked. The left column is what
+    // it asks about.
+    ?? matchingLeftText(body['left'])
+    ?? '',
   );
+}
+
+function matchingLeftText(left: unknown): string | undefined {
+  if (!Array.isArray(left)) return undefined;
+  const labels = left.map(l => (l as { text?: string })?.text).filter(Boolean);
+  return labels.length > 0 ? labels.join(' · ') : undefined;
 }
 
 export default function EvaluationDetailScreen() {
@@ -69,14 +93,39 @@ export default function EvaluationDetailScreen() {
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
   const align = isRTL ? 'right' : 'left';
-  const { id } = useLocalSearchParams<{ id: string }>();
+  // `warnings` rides in from new.tsx, which generates and then replaces the
+  // route — the only way the create-time notes survive the redirect.
+  const { id, warnings: warningsParam } = useLocalSearchParams<{ id: string; warnings?: string }>();
 
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
   const [pickingClass, setPickingClass] = useState(false);
   const [questions, setQuestions] = useState<EvaluationQuestion[]>([]);
+  // Silence used to be the answer for three different situations — keys
+  // verified, verifier unreachable, nothing checkable — and a teacher cannot
+  // act on silence. Derived from the questions so it survives a reload.
+  const keyChecks = summariseKeyChecks(questions, evaluation?.subjectId);
+  // Prefer the objectives the *questions* actually target over the
+  // evaluation's own scope: a generated paper can come back covering fewer
+  // objectives than were requested (a type the generator could not produce for
+  // one of them, an item the verifier contradicted and dropped), and showing a
+  // diagram for a lesson no question asks about invites a teacher to look for
+  // a question that is not there. Falls back to the evaluation's scope for a
+  // paper exam, whose questions carry objectives but no generated body.
+  const examFigures = bookFigureRefsForObjectives(
+    questions.length > 0
+      ? questions.map(q => q.objectiveId)
+      : (evaluation?.objectiveIds ?? []),
+    lang === 'ar',
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState<'generate' | 'publish' | null>(null);
+  // What the generator said while producing this paper ("2 questions removed:
+  // the verifier contradicted their key"). The questions cannot show a
+  // question that was dropped, so this is the only place the teacher hears it.
+  const [genWarnings, setGenWarnings] = useState<string[]>(
+    () => (warningsParam ?? '').split('\n').filter(Boolean),
+  );
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -103,7 +152,9 @@ export default function EvaluationDetailScreen() {
     setBusy('generate');
     setError('');
     try {
-      await generateEvaluation(id);
+      setGenWarnings([]);
+      const gen = await generateEvaluation(id);
+      setGenWarnings(gen.warnings ?? []);
       await load();
     } catch (err) {
       setError(err instanceof EvaluationError ? err.message : t('evaluationGenerateFailed'));
@@ -240,6 +291,27 @@ export default function EvaluationDetailScreen() {
         </View>
       )}
 
+      {keyChecks.kind !== 'silent' && (
+        <View style={{ paddingHorizontal: 20, paddingTop: 4 }}>
+          <KeyCheckNotice summary={keyChecks} colors={colors} isRTL={isRTL} align={align} t={t} />
+        </View>
+      )}
+
+      {genWarnings.length > 0 && (
+        <View style={{ paddingHorizontal: 20, paddingTop: 8 }}>
+          <View style={[styles.verifySummary, { backgroundColor: colors.card, borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'flex-start', gap: 8 }]}>
+            <Ionicons name="information-circle-outline" size={16} color={colors.mutedForeground} />
+            <View style={{ flex: 1, gap: 4 }}>
+              {genWarnings.map((w, i) => (
+                <Text key={i} style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: align }}>
+                  {`• ${w}`}
+                </Text>
+              ))}
+            </View>
+          </View>
+        </View>
+      )}
+
       <View style={{ padding: 20, gap: 10 }}>
         {questions.map((q, i) => (
           <View key={q.id} style={[styles.qCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -256,12 +328,62 @@ export default function EvaluationDetailScreen() {
                 {t('marksAbbrev', q.marks)}
               </Text>
             </View>
-            <Text style={[styles.qText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+            {/* Only a confirmed key is marked. Nothing is shown for the rest,
+                because a "not verified" chip on most of the paper would read as
+                doubt about questions the verifier never had an opinion on. */}
+            {q.verification?.verified ? (
+              <View style={[styles.verifiedRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                <Ionicons name="shield-checkmark" size={13} color="#059669" />
+                <Text style={{ color: '#059669', fontFamily: 'Cairo_500Medium', fontSize: 11 }}>
+                  {t('keyVerifiedBadge')}
+                </Text>
+              </View>
+            ) : null}
+            {/* The strongest evidence there is: the verifier's own answer,
+                derived independently of the key it agreed with. */}
+            {q.verification?.verified && q.verification.computedAnswer ? (
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, marginBottom: 6, textAlign: align }}>
+                {isolateForeignRuns(t('verifiedComputed', prettifySymPy(q.verification.computedAnswer)))}
+              </Text>
+            ) : null}
+            <Text
+              style={[
+                styles.qText,
+                {
+                  color: colors.foreground,
+                  fontFamily: 'Almarai_400Regular',
+                  textAlign: align,
+                  writingDirection: isRTL ? 'rtl' : 'ltr',
+                },
+              ]}
+            >
               {questionText(q) || '—'}
             </Text>
           </View>
         ))}
       </View>
+
+      {/* The book's own diagrams for the lessons this exam covers.
+
+          Lesson-level, never bound to a question, for the reason
+          `exportHtml.ts`'s `figuresSectionHTML` documents: the model that
+          wrote these questions never saw the figures, so it cannot know which
+          one belongs to which item, and letting it choose would be a citation
+          it invented. A teacher reviewing the paper matches them by eye.
+
+          The lesson comes from `objectiveIds`, not from `evaluation.lessonId`
+          — that column exists and is always null, because no client has ever
+          sent it. */}
+      {questions.length > 0 && (
+        <View style={{ paddingHorizontal: 20 }}>
+          <BookFiguresPanel
+            figures={examFigures}
+            isRTL={isRTL}
+            colors={colors}
+            labels={{ title: t('bookFiguresTitle'), note: t('bookFiguresNote') }}
+          />
+        </View>
+      )}
 
       {evaluation?.status === 'draft' && (
         <View style={{ paddingHorizontal: 20, gap: 10 }}>
@@ -311,6 +433,58 @@ export default function EvaluationDetailScreen() {
  * student picks their name from *is* the class. Rather than hide the card or
  * show a link that 404s, it says which step is missing.
  */
+/**
+ * One notice, three states, deliberately three different tones.
+ *
+ * Green is a claim: SymPy confirmed these keys. Amber is an outage the teacher
+ * can retry, and its most important word is that nothing was removed. Grey is
+ * not a complaint about the paper at all — most questions have no symbolic
+ * answer, and a paper of them is perfectly good. None of the three may read as
+ * "these answers are wrong": a key the verifier contradicts is dropped during
+ * generation and never reaches this screen.
+ */
+function KeyCheckNotice({
+  summary, colors, isRTL, align, t,
+}: {
+  summary: KeyCheckSummary;
+  colors: ReturnType<typeof useColors>;
+  isRTL: boolean;
+  align: 'left' | 'right';
+  t: (key: TranslationKey, ...args: any[]) => string;
+}) {
+  const tone = summary.kind === 'verified'
+    ? { fg: '#059669', bg: '#05966912', border: '#05966933', icon: 'shield-checkmark' as const }
+    : summary.kind === 'verifier-down'
+      ? { fg: '#B45309', bg: '#F59E0B14', border: '#F59E0B38', icon: 'cloud-offline-outline' as const }
+      : { fg: colors.mutedForeground, bg: colors.card, border: colors.border, icon: 'information-circle-outline' as const };
+
+  const title = summary.kind === 'verified'
+    ? t('keysVerifiedSummary', String(summary.verified), String(summary.total))
+    : summary.kind === 'verifier-down'
+      ? t('keysVerifierDownTitle')
+      : t('keysNoneCheckableTitle');
+
+  const note = summary.kind === 'verified'
+    ? t('keysVerifiedNote')
+    : summary.kind === 'verifier-down'
+      ? t('keysVerifierDownNote')
+      : t('keysNoneCheckableNote');
+
+  return (
+    <View style={[styles.verifySummary, { backgroundColor: tone.bg, borderColor: tone.border }]}>
+      <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }}>
+        <Ionicons name={tone.icon} size={15} color={tone.fg} />
+        <Text style={{ flex: 1, color: tone.fg, fontFamily: 'Cairo_600SemiBold', fontSize: 12.5, textAlign: align }}>
+          {title}
+        </Text>
+      </View>
+      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11.5, marginTop: 4, textAlign: align, lineHeight: 18 }}>
+        {note}
+      </Text>
+    </View>
+  );
+}
+
 function ShareLinkCard({
   shareCode, attachedToClass, onAttach, colors, isRTL, align, t,
 }: {
@@ -403,6 +577,8 @@ const styles = StyleSheet.create({
   qNum: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   typeBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   qText: { fontSize: 14, lineHeight: 20 },
+  verifiedRow: { alignItems: 'center', gap: 5, marginBottom: 6 },
+  verifySummary: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
   actionBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: 15, borderRadius: 10 },
   actionBtnOutline: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 13, borderRadius: 10, borderWidth: 1.5, marginBottom: 10 },
   shareCard: { borderWidth: 1, borderRadius: 12, padding: 16 },

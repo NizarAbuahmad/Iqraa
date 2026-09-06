@@ -17,6 +17,8 @@ import type {
   WorksheetOutput,
 } from './ai/AIService.ts';
 import type { KBLesson } from './knowledgeBase.ts';
+import type { BookFigure } from './bookFigures.ts';
+import { bookFigureSlides } from './lessonSlides.ts';
 
 const THINK_SECONDS = 45;
 
@@ -53,14 +55,27 @@ function indexOfAnswer(options: string[], answer: string): number {
   return Math.max(0, options.findIndex(o => norm(o) === norm(answer)));
 }
 
+/**
+ * The two rules every projected class-mode format shares: the question
+ * appears and the timer starts, then everyone thinks silently before
+ * answering. `introSlide` and `buildGameDeckFromQuiz`'s intro each add their
+ * own answering mechanic on top of these (raise a hand vs. a team card), so
+ * these two lines are the only ones that were ever duplicated between them.
+ */
+function sharedThinkingRules(isAr: boolean): string {
+  return isAr
+    ? '• يظهر السؤال ويبدأ المؤقت\n• الجميع يفكر بصمت'
+    : '• The question appears and the timer starts\n• Everyone thinks silently';
+}
+
 function introSlide(titleAr: string, lessonTitle: string, isAr: boolean): ActivitySlide {
   return {
     slideNumber: 1,
     type: 'intro',
     title: isAr ? `📚 ${titleAr}` : `📚 ${titleAr}`,
     content: isAr
-      ? `${lessonTitle}\n\nالقواعد:\n• يظهر السؤال ويبدأ المؤقت\n• الجميع يفكر بصمت\n• عند انتهاء الوقت: ارفع يدك للإجابة\n• ثم نكشف الإجابة ونناقش`
-      : `${lessonTitle}\n\nRules:\n• The question appears and the timer starts\n• Everyone thinks silently\n• When time ends: raise your hand to answer\n• Then we reveal and discuss`,
+      ? `${lessonTitle}\n\nالقواعد:\n${sharedThinkingRules(true)}\n• عند انتهاء الوقت: ارفع يدك للإجابة\n• ثم نكشف الإجابة ونناقش`
+      : `${lessonTitle}\n\nRules:\n${sharedThinkingRules(false)}\n• When time ends: raise your hand to answer\n• Then we reveal and discuss`,
     durationSeconds: 0,
   };
 }
@@ -96,6 +111,26 @@ export function objectivesSlide(
 }
 
 /**
+ * Append the lesson's book figures, numbered to follow what is already there.
+ *
+ * Placed right after the objectives slide, which is where `buildLessonDeck`
+ * and `assembleDeckSlides` both put them — "here is the lesson, here is how
+ * your book draws it, now answer". Keeping the position identical across the
+ * three deck builders is the point: a teacher who projects a worksheet and
+ * then a quiz should not find the diagrams in a different place each time.
+ */
+function pushFigures(
+  slides: ActivitySlide[],
+  kbLessonId: string | null | undefined,
+  isAr: boolean,
+  figureUri?: (figure: BookFigure) => string | null,
+): void {
+  for (const slide of bookFigureSlides(kbLessonId, isAr, figureUri)) {
+    slides.push({ ...slide, slideNumber: slides.length + 1 } as ActivitySlide);
+  }
+}
+
+/**
  * Quiz → projectable deck. Multiple-choice questions become whole-class
  * response slides; open-ended ones become think-and-write prompts.
  */
@@ -117,11 +152,18 @@ export function buildDeckFromQuiz(
       | { verifiedBy: 'symbolic' | 'bank'; computedAnswer?: string }
       | undefined
     )[];
+    /**
+     * Resolves a book figure to a loadable URI. Injected rather than imported
+     * for the reason `bookFigureSlides` documents; omitting it yields no
+     * figure slides, exactly as before.
+     */
+    figureUri?: (figure: BookFigure) => string | null;
   },
 ): ClassroomActivity {
   const slides: ActivitySlide[] = [introSlide(quiz.title, lessonTitle, isAr)];
   const objSlide = objectivesSlide(opts?.lesson ?? null, lessonTitle, isAr, slides.length + 1);
   if (objSlide) slides.push(objSlide);
+  pushFigures(slides, opts?.lesson?.id, isAr, opts?.figureUri);
 
   quiz.questions.forEach((q, i) => {
     const hasOptions = Array.isArray(q.options) && q.options.length >= 2;
@@ -208,11 +250,14 @@ export function buildDeckFromWorksheet(
       | { verifiedBy: 'symbolic' | 'bank'; computedAnswer?: string }
       | undefined
     )[];
+    /** See `buildDeckFromQuiz`. */
+    figureUri?: (figure: BookFigure) => string | null;
   },
 ): ClassroomActivity {
   const slides: ActivitySlide[] = [introSlide(ws.title, lessonTitle, isAr)];
   const objSlide = objectivesSlide(opts?.lesson ?? null, lessonTitle, isAr, slides.length + 1);
   if (objSlide) slides.push(objSlide);
+  pushFigures(slides, opts?.lesson?.id, isAr, opts?.figureUri);
 
   // A worksheet question carries no answer of its own — the generator only
   // ever fills in the top-level answerKey, keyed by 1-based position across
@@ -292,17 +337,24 @@ export function buildDeckFromWorksheet(
 }
 
 /**
- * Deck order for Start Class: intro → objectives → [graph] → questions →
- * [teacher's media] → summary.
+ * Deck order for Start Class: intro → objectives → [book figures] → [graph] →
+ * questions → [teacher's media] → summary.
  *
  * Every part except the intro is optional, and the order is the point: the
  * class sees what it is meant to learn before it sees a question about it.
  * This lived inline in the home screen, where it could not be tested and did
  * not survive that screen being retired.
+ *
+ * Book figures sit where `buildLessonDeck` puts them — after the lesson's own
+ * statement of itself and before the interactive graph, so the sequence reads
+ * "here is the lesson, here is how your book draws it, now watch it move".
+ * They are a separate slot from `media` because that one is the teacher's own
+ * pinned links, which belong after the questions, not before them.
  */
 export function assembleDeckSlides(parts: {
   activitySlides: ActivitySlide[];
   objectives?: ActivitySlide | null;
+  figures?: ActivitySlide[];
   graph?: ActivitySlide | null;
   chart?: ActivitySlide | null;
   media?: ActivitySlide[];
@@ -320,6 +372,7 @@ export function assembleDeckSlides(parts: {
   return [
     intro,
     ...(parts.objectives ? [parts.objectives] : []),
+    ...(parts.figures ?? []),
     ...(parts.graph ? [parts.graph] : []),
     ...(parts.chart ? [parts.chart] : []),
     ...tail,
@@ -347,7 +400,13 @@ export function buildGameDeckFromQuiz(
   quiz: QuizOutput,
   lessonTitle: string,
   isAr: boolean,
-  opts: { teamCount: number; lesson?: KBLesson | null; verified?: boolean },
+  opts: {
+    teamCount: number;
+    lesson?: KBLesson | null;
+    verified?: boolean;
+    /** See `buildDeckFromQuiz`. */
+    figureUri?: (figure: BookFigure) => string | null;
+  },
 ): ClassroomActivity {
   const teamCount = Math.max(2, Math.min(6, Math.floor(opts.teamCount) || 2));
   const scoreable = quiz.questions.filter(q => Array.isArray(q.options) && q.options.length >= 2);
@@ -357,13 +416,14 @@ export function buildGameDeckFromQuiz(
     type: 'intro',
     title: isAr ? `🏆 تحدي الصف — ${quiz.title}` : `🏆 Class Challenge — ${quiz.title}`,
     content: isAr
-      ? `${lessonTitle}\n\nالقواعد:\n• الصف مقسوم إلى ${teamCount} فرق\n• يظهر السؤال ويبدأ المؤقت\n• الجميع يفكر بصمت\n• عند انتهاء الوقت: كل فريق يرفع يده للإجابة\n• الفريق المصيب يأخذ ١٠٠ نقطة — والإجابات المتتالية تعطي نقاطًا إضافية`
-      : `${lessonTitle}\n\nRules:\n• The class is split into ${teamCount} teams\n• The question appears and the timer starts\n• Everyone thinks silently\n• When time ends: each team raises a hand to answer\n• A correct team scores 100 points — consecutive answers earn a bonus`,
+      ? `${lessonTitle}\n\nالقواعد:\n• الصف مقسوم إلى ${teamCount} فرق\n${sharedThinkingRules(true)}\n• عند انتهاء الوقت: كل فريق يرفع يده للإجابة\n• الفريق المصيب يأخذ ١٠٠ نقطة — والإجابات المتتالية تعطي نقاطًا إضافية`
+      : `${lessonTitle}\n\nRules:\n• The class is split into ${teamCount} teams\n${sharedThinkingRules(false)}\n• When time ends: each team raises a hand to answer\n• A correct team scores 100 points — consecutive answers earn a bonus`,
     durationSeconds: 0,
   }];
 
   const objSlide = objectivesSlide(opts.lesson ?? null, lessonTitle, isAr, slides.length + 1);
   if (objSlide) slides.push(objSlide);
+  pushFigures(slides, opts.lesson?.id, isAr, opts.figureUri);
 
   scoreable.forEach((q, i) => {
     slides.push({

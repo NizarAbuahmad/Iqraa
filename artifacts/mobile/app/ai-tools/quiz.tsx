@@ -7,20 +7,26 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
-import { buildGeneratorContext, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
-import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
+import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
+import { pooledVariantId, regenerationFields } from '@/services/ai/regeneration';
 import { QuizOutput, QuizQuestion } from '@/services/ai/AIService';
 import { buildDeckFromQuiz } from '@/services/classDeck';
+import { bookFigureUri } from '@/services/bookFigureUri';
 import { summarizeVerification, type VerifyOutcome } from '@/services/quizVerification';
 import { normalizeQuestionOptions, optionLetter } from '@/services/optionLabels';
+import { isolateForeignRuns, prettifySymPy } from '@/services/mathRender';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
 } from '@/services/curriculumData';
+import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, topicPickerParams } from '@/services/lessonPrep';
 import { TopicSelector } from '@/components/ui/TopicSelector';
+import { PickerField as SharedPickerField } from '@/components/ui/PickerField';
+import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
 import { isAbortError } from '@/services/ai/aiProvenance';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
+import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { EditableText } from '@/components/ui/Editable';
 import { confirm } from '@/services/confirm';
 import {
@@ -33,14 +39,12 @@ import {
 import { Button } from '@/components/ui/Button';
 import { getItem, saveItem, updateItem } from '@/services/workspace';
 import { useFavorite } from '@/hooks/useFavorite';
+import { useGeneratorExport } from '@/hooks/useGeneratorExport';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
-import {
-  buildQuizHTML, buildQuizSlidesHTML, copyToClipboard, exportAsPDF, exportAsWord,
-  formatQuizText, shareAsText,
-} from '@/services/share';
+import { buildQuizHTML, buildQuizSlidesHTML, formatQuizText } from '@/services/share';
 
 const ACCENT = '#F59E0B';
 
@@ -81,8 +85,20 @@ export default function QuizScreen() {
     try { return new Set(JSON.parse(raw) as QType[]); } catch { return new Set(['multiple_choice', 'true_false', 'short_answer']); }
   };
 
-  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(params.gradeIdx, grades.length));
-  const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx, subjects.length));
+  // A bare `topic` param (old bookmarks, callers without picker params) says
+  // which grade and subject it belongs to better than picker index 0 does —
+  // ground it instead of opening a math lesson under whatever subject sits
+  // first in the list.
+  const [inferredScope] = useState(() =>
+    params.gradeIdx == null && params.subjectIdx == null
+      ? topicPickerParams(params.topic, lang as 'ar' | 'en')
+      : null,
+  );
+  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(params.gradeIdx ?? inferredScope?.gradeIdx, grades.length));
+  // Index-aligned flags rather than a pre-filtered `subjects`: these positions
+  // are persisted as subjectIdx, so entries are dropped at render time only.
+  const subjectHidden = subjectsWithoutCurriculum(grades[gradeIdx].id);
+  const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx ?? inferredScope?.subjectIdx, subjects.length));
   const [topic, setTopic] = useState(params.topic ?? '');
   const [diffIdx, setDiffIdx] = useState(0);
 
@@ -124,9 +140,6 @@ export default function QuizScreen() {
   const [showExport, setShowExport] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
-  const [loadingPDF, setLoadingPDF] = useState(false);
-  const [loadingWord, setLoadingWord] = useState(false);
-  const [loadingSlides, setLoadingSlides] = useState(false);
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
   const { favorited, setFavorited, toggle: handleToggleFavorite } =
     useFavorite(savedId, key => showToast(t(key)));
@@ -227,8 +240,27 @@ export default function QuizScreen() {
     setSaveLabel(savedId ? 'updated' : 'save');
   };
 
-  const generate = async () => {
+  /**
+   * `regenerate` is the teacher asking for a replacement, not another copy.
+   *
+   * It used to be the same call: the button re-ran this function with an
+   * identical body, and the same prompt came back as the same content
+   * reworded. The flag lets the server answer from a variant it has already
+   * paid for — free, and certain to be different — and steer a fresh
+   * generation away from what is on screen when it cannot.
+   */
+  const generate = async (opts?: { regenerate?: boolean }) => {
+    // Read before any setState clears it — this is what the teacher is
+    // looking at, and what a regeneration must not hand back.
+    const previous = result;
     if (!topic.trim()) { setError(t('topicRequired')); return; }
+    // A topic that grounds to another subject's lesson cannot make an honest
+    // paper — the KB serves that lesson's own content while the header claims
+    // the picked subject. Refuse and name the real subject instead.
+    const scope = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, lang as 'ar' | 'en');
+    if (scope) { setError(t('scopeNoCurriculum', scope.grade, scope.subject)); return; }
+    const conflict = groundedSubjectConflict(topic.trim(), lang as 'ar' | 'en', subjects[subjectIdx].id);
+    if (conflict) { setError(t('subjectTopicMismatch', lang === 'ar' ? conflict.nameAr : conflict.name)); return; }
     setError(''); setCancelled(false);
     const controller = new AbortController();
     abortRef.current = controller;
@@ -255,9 +287,19 @@ export default function QuizScreen() {
         duration: DURATION_OPTIONS[durationIdx],
         totalMarks: MARKS_OPTIONS[marksIdx],
         questionTypes: Array.from(selectedTypes),
+        // Two questions per selected type — the same rule MockAIService uses,
+        // so live and mock papers agree on size. Without this the server
+        // prompt fell back to a flat 10, whatever was picked here.
+        numQuestions: selectedTypes.size * 2,
         difficulty: DIFFICULTY_MAP[DIFFICULTY_IDS[diffIdx]],
         additionalContext,
         unitId,
+        lessonId: generatorLessonId(topic.trim(), lang as 'ar' | 'en'),
+        bookFigureCount: generatorFigureCount(topic.trim(), lang as 'ar' | 'en'),
+        // Curriculum-derived, so the artifact may be shared with any teacher
+        // who asks the same question — see AIRequest.contextSource.
+        contextSource: 'curriculum',
+        ...regenerationFields(opts?.regenerate === true, previous),
       }, { signal: controller.signal });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       // Options are lettered by the renderer, once, in the display language.
@@ -339,46 +381,28 @@ export default function QuizScreen() {
   // material — the screen showed الرياضيات and the exported file disagreed.
   const getExportMeta = () => ({ subject: subjectNames[subjectIdx]!, grade: gradeNames[gradeIdx]! });
 
-  const handleShareText = async () => {
-    if (!result) return;
-    await shareAsText(formatQuizText(result, getExportTitle(), getExportMeta(), lang === 'ar'), getExportTitle());
-  };
-  const handleCopy = async () => {
-    if (!result) return;
-    await copyToClipboard(formatQuizText(result, getExportTitle(), getExportMeta(), lang === 'ar'));
-    showToast(t('copiedToClipboard'));
-  };
-  // Lesson-level, resolved fresh at export time — same re-resolve pattern this
-  // file already uses elsewhere. Empty for an ungrounded topic.
-  const getExportFigures = () =>
-    bookFigureRefsForLesson(
-      resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en').lesson?.id,
-      lang === 'ar',
-    );
-
-  const handlePDF = async () => {
-    if (!result) return;
-    setLoadingPDF(true);
-    try {
-      await exportAsPDF(buildQuizHTML(result, getExportTitle(), getExportMeta(), lang === 'ar', getExportFigures()), getExportTitle().replace(/[^\w\s]/g, '').trim());
-    } catch { showToast(t('generationFailed')); } finally { setLoadingPDF(false); }
-  };
-  const handleWord = async () => {
-    if (!result) return;
-    setLoadingWord(true);
-    try {
-      await exportAsWord(formatQuizText(result, getExportTitle(), getExportMeta(), lang === 'ar'), getExportTitle().replace(/[^\w\s]/g, '').trim(), lang === 'ar');
-    } catch { showToast(t('generationFailed')); } finally { setLoadingWord(false); }
-  };
-
-  const handleSlides = async () => {
-    if (!result) return;
-    setLoadingSlides(true);
-    try {
-      const html = buildQuizSlidesHTML(result, getExportTitle(), getExportMeta(), lang === 'ar');
-      await exportAsPDF(html, (getExportTitle() + '-slides').replace(/[^\w\s-]/g, '').trim());
-    } catch { showToast(t('generationFailed')); } finally { setLoadingSlides(false); }
-  };
+  const {
+    getExportFigures,
+    handleShareText,
+    handleCopy,
+    handlePDF,
+    handleWord,
+    handleSlides,
+    loadingPDF,
+    loadingWord,
+    loadingSlides,
+  } = useGeneratorExport({
+    result,
+    topic,
+    lang,
+    getTitle: getExportTitle,
+    getMeta: getExportMeta,
+    formatText: formatQuizText,
+    buildHTML: buildQuizHTML,
+    buildSlidesHTML: buildQuizSlidesHTML,
+    onError: key => showToast(t(key)),
+    onCopied: key => showToast(t(key)),
+  });
 
   const exportLabels = {
     title: t('exportTitle'),
@@ -416,7 +440,8 @@ export default function QuizScreen() {
       {/* Form */}
       <View style={{ padding: 20 }}>
         <PickerField label={t('grade')} value={gradeNames[gradeIdx]} options={gradeNames} onChange={setGradeIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
-        <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
+        <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} hidden={subjectHidden} />
+        <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t('scopeNoCurriculumHint')} isRTL={isRTL} colors={colors} />
 
         <TopicSelector
           subjectId={subjects[subjectIdx].id}
@@ -449,7 +474,7 @@ export default function QuizScreen() {
           out of sight of the button that had just been pressed.
         */}
         {error && !topic.trim() ? <Text style={[{ color: colors.destructive, fontSize: 13, fontFamily: 'Almarai_400Regular', marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
-        <Button label={loading ? t('generatingQuiz') : t('generateQuizBtn')} onPress={generate} loading={loading} disabled={!topic.trim()} fullWidth style={{ backgroundColor: ACCENT }} />
+        <Button label={loading ? t('generatingQuiz') : t('generateQuizBtn')} onPress={() => generate()} loading={loading} disabled={!topic.trim()} fullWidth style={{ backgroundColor: ACCENT }} />
         {/*
           A greyed-out primary button with nothing next to it reads as a broken
           product rather than an unmet precondition. It says which one.
@@ -492,6 +517,14 @@ export default function QuizScreen() {
               genericHint: t('notGroundedHint'),
             }}
           />
+          {curriculumGrounded && (
+            <BookFiguresPanel
+              figures={getExportFigures()}
+              isRTL={isRTL}
+              colors={colors}
+              labels={{ title: t('bookFiguresTitle'), note: t('bookFiguresNote') }}
+            />
+          )}
           {/* Whether anything actually checked the answer keys. Silent until
               the check resolves: saying nothing is honest, saying "not
               verified" while a request is still in flight is not. */}
@@ -547,6 +580,7 @@ export default function QuizScreen() {
                   // verifier had actually proved. Per question now, so the
                   // projector badges exactly what was checked.
                   outcomes: effectiveOutcomes,
+                  figureUri: bookFigureUri,
                 }),
               );
               router.push('/ai-tools/classroom/presentation' as any);
@@ -580,6 +614,7 @@ export default function QuizScreen() {
 
           {result.questions.map((q, i) => {
             const tc = TYPE_COLOR[q.type as QType] ?? ACCENT;
+            const o = effectiveOutcomes[i];
             return (
               <View key={q.id} style={[styles.qCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
                 <View style={[styles.qTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -615,6 +650,22 @@ export default function QuizScreen() {
                     </Pressable>
                   </View>
                 </View>
+                {/* Symbolic only, per question: `bank` is also the verifier-down
+                    fallback, so naming it per item would vouch for a key nothing
+                    checked. The aggregate row above still covers the rest. */}
+                {o?.verifiedBy === 'symbolic' ? (
+                  <View style={[styles.verifyRow, { marginTop: 0, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                    <Ionicons name="shield-checkmark" size={13} color="#10B981" />
+                    <Text style={[styles.verifyText, { color: '#10B981', textAlign: isRTL ? 'right' : 'left' }]}>
+                      {t('verifiedBySymbolic')}
+                    </Text>
+                  </View>
+                ) : null}
+                {showAnswers && o?.verifiedBy === 'symbolic' && o.computedAnswer ? (
+                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, textAlign: isRTL ? 'right' : 'left' }}>
+                    {isolateForeignRuns(t('verifiedComputed', prettifySymPy(o.computedAnswer)))}
+                  </Text>
+                ) : null}
                 <View style={styles.qText}>
                   <EditableText
                     value={q.text}
@@ -722,7 +773,8 @@ export default function QuizScreen() {
           onSave={handleSave}
           favorite={{ favorited, onToggle: handleToggleFavorite }}
           onExport={() => setShowExport(true)}
-          onRegenerate={generate}
+          onRegenerate={() => generate({ regenerate: true })}
+          variantId={pooledVariantId(result)}
           materialType="quiz"
           toolId="quiz"
           topic={topic.trim()}
@@ -772,39 +824,16 @@ function CheckboxRow({ label, checked, onToggle, accent, colors, isRTL }: {
   );
 }
 
-function PickerField({ label, value, options, onChange, colors, isRTL, accent }: {
-  label: string; value: string; options: string[]; onChange: (i: number) => void;
-  colors: ReturnType<typeof useColors>; isRTL: boolean; accent: string;
-}) {
-  const [open, setOpen] = useState(false);
-  return (
-    <View style={{ marginBottom: 16 }}>
-      <Text style={[styles.label, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
-      <Pressable
-        onPress={() => setOpen(o => !o)}
-        style={[styles.input, { backgroundColor: colors.card, borderColor: open ? accent : colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center' }]}
-      >
-        <Text style={[{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, textAlign: isRTL ? 'right' : 'left' }]}>{value}</Text>
-        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
-      </Pressable>
-      {open && (
-        <View style={[{ borderWidth: 1, borderColor: colors.border, borderRadius: colors.radius, backgroundColor: colors.card, marginTop: -8, marginBottom: 8, maxHeight: 180, overflow: 'hidden' }]}>
-          <ScrollView nestedScrollEnabled>
-            {options.map((o, i) => (
-              <Pressable
-                key={i}
-                onPress={() => { onChange(i); setOpen(false); }}
-                style={[{ paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: o === value ? accent + '15' : 'transparent', flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between' }]}
-              >
-                <Text style={[{ color: o === value ? accent : colors.foreground, fontFamily: o === value ? 'Cairo_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{o}</Text>
-                {o === value && <Ionicons name="checkmark" size={16} color={accent} />}
-              </Pressable>
-            ))}
-          </ScrollView>
-        </View>
-      )}
-    </View>
-  );
+/**
+ * The shared dropdown wearing this screen's skin: a shorter list and an
+ * amber-tinted selected row. (The open trigger's border tint used to be bound
+ * here too, until every screen wanted it and it moved into the component.)
+ * Binding them here rather than at each of the five call sites means a sixth
+ * picker cannot be added half-styled — which is how the 45-line copy this
+ * replaces drifted away from components/ui/PickerField in the first place.
+ */
+function PickerField(props: React.ComponentProps<typeof SharedPickerField>) {
+  return <SharedPickerField maxHeight={180} selectedTint={ACCENT + '15'} {...props} />;
 }
 
 const styles = StyleSheet.create({
@@ -815,7 +844,6 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 26 },
   headerSub: { fontSize: 13, marginTop: 4 },
   label: { fontSize: 13, marginBottom: 6 },
-  input: { borderWidth: 1.5, padding: 14, marginBottom: 16 },
   checkboxGroup: { borderWidth: 1, padding: 14, marginBottom: 16, gap: 4 },
   checkRow: { alignItems: 'center', gap: 10, paddingVertical: 6 },
   checkbox: { width: 20, height: 20, borderRadius: 4, borderWidth: 2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },

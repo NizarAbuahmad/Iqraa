@@ -1,0 +1,341 @@
+{
+  "sourceId": "earth-s1-student-book",
+  "figures": [
+    {
+      "file": "p010.png",
+      "sourceId": "earth-s1-student-book",
+      "pdfPage": 10,
+      "rect": [
+        45.3,
+        422.6,
+        353.5,
+        716.9
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p013.png",
+      "sourceId": "earth-s1-student-book",
+      "pdfPage": 13,
+      "rect": [
+        76.3,
+        440.5,
+        563.6,
+        597.0
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p013b.png",
+      "sourceId": "earth-s1-student-book",
+      "pdfPage": 13,
+      "rect": [
+        109.2,
+        591.6,
+        563.8,
+        702.4
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p017.png",
+      "sourceId": "earth-s1-student-book",
+      "pdfPage": 17,
+      "rect": [
+        60.1,
+        38.4,
+        465.6,
+        195.9
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p018.png",
+      "sourceId": "earth-s1-student-book",
+      "pdfPage": 18,
+      "rect": [
+        288.7,
+        506.3,
+        401.9,
+        665.8
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p018b.png",
+      "sourceId": "earth-s1-student-book",
+      "pdfPage": 18,
+      "rect": [
+        216.0,
+        617.3,
+        292.7,
+        690.4
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p019b.png",
+      "sourceId": "earth-s1-student-book",
+      "pdfPage": 19,
+      "rect": [
+        24.8,
+        539.1,
+        342.0,
+        683.1
+      ],
+      "unit": 1,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 19
+    },
+    {
+      "file": "p020.png",
+      "sourceId": "earth-s1-student-book",
+      "pdfPage": 20,
+      "rect": [
+        49.9,
+        580.5,
+        386.6,
+        768.7
+      ],
+      "unit": 1,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 19
+    },
+    {
+      "file": "p021.png",
+      "sourceId": "earth-s1-student-book",
+      "pdfPage": 21,
+      "rect": [
+        221.3,
+        402.2,
+        336.1,
+        629.2
+      ],
+      "unit": 1,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 19
+    },
+    {
+      "file": "p030.png",
+      "sourceId": "earth-s1-student-book",
+      "pdfPage": 30,
+      "rect": [
+        265.3,
+        538.5,
+        362.1,
+        715.3
+      ],
+      "unit": 1,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 28
+    },
+    {
+      "file": "p039b.png",
+      "sourceId": "earth-s1-student-book",
+      "pdfPage": 39,
+      "rect": [
+        33.7,
+        189.1,
+        335.5,
+        406.2
+      ],
+      "unit": 1,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 28
+    },
+    {
+      "file": "p040.png",
+      "sourceId": "earth-s1-student-book",
+      "pdfPage": 40,
+      "rect": [
+        47.1,
+        515.1,
+        366.7,
+        756.5
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 40
+    },
+    {
+      "file": "p043.png",
+      "sourceId": "earth-s1-student-book",
+      "pdfPage": 43,
+      "rect": [
+        150.6,
+        301.5,
+        458.9,
+        510.0
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 40
+    },
+    {
+      "file": "p045b.png",
+      "sourceId": "earth-s1-student-book",
+      "pdfPage": 45,
+      "rect": [
+        49.7,
+        388.8,
+        362.7,
+        734.2
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 45
+    },
+    {
+      "file": "p047.png",
+      "sourceId": "earth-s1-student-book",
+      "pdfPage": 47,
+      "rect": [
+        0.0,
+        32.8,
+        208.3,
+        159.4
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 45
+    },
+    {
+      "file": "p050.png",
+      "sourceId": "earth-s1-student-book",
+      "pdfPage": 50,
+      "rect": [
+        20.1,
+        532.8,
+        366.8,
+        747.5
+      ],
+      "unit": 2,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 50
+    },
+    {
+      "file": "p053.png",
+      "sourceId": "earth-s1-student-book",
+      "pdfPage": 53,
+      "rect": [
+        20.7,
+        229.1,
+        207.9,
+        630.5
+      ],
+      "unit": 2,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 50
+    },
+    {
+      "file": "p055.png",
+      "sourceId": "earth-s1-student-book",
+      "pdfPage": 55,
+      "rect": [
+        57.9,
+        495.4,
+        256.1,
+        720.5
+      ],
+      "unit": 2,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 50
+    },
+    {
+      "file": "p058.png",
+      "sourceId": "earth-s1-student-book",
+      "pdfPage": 58,
+      "rect": [
+        47.9,
+        193.0,
+        299.5,
+        301.1
+      ],
+      "unit": 2,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 50
+    },
+    {
+      "file": "p058b.png",
+      "sourceId": "earth-s1-student-book",
+      "pdfPage": 58,
+      "rect": [
+        47.2,
+        374.9,
+        290.9,
+        553.6
+      ],
+      "unit": 2,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 50
+    },
+    {
+      "file": "p058c.png",
+      "sourceId": "earth-s1-student-book",
+      "pdfPage": 58,
+      "rect": [
+        471.4,
+        438.0,
+        595.3,
+        580.1
+      ],
+      "unit": 2,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 50
+    }
+  ]
+}

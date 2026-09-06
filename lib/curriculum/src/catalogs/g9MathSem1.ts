@@ -28,6 +28,9 @@ import {
 /** Curriculum-browser book id for Math G9 Semester 1. */
 export const G9_MATH_S1_CURRICULUM_BOOK_ID = 'book-math-9-s1';
 
+/** Knowledge-base book id for Math G9 Semester 1 — KB_BOOKS entry in knowledgeBase.ts. */
+export const G9_MATH_S1_KB_BOOK_ID = 'kb-math-9-s1';
+
 export type G9MathSem1DataTier =
   | 'lesson-level (teacher guide + student book)'
   | 'unit-level only (student book)';
@@ -122,6 +125,88 @@ export function findG9MathSem1LessonByKbId(kbLessonId: string): G9MathSem1Lesson
     if (hit) return hit;
   }
   return null;
+}
+
+/** Shape compatible with KBUnit / KBLesson in knowledgeBase.ts */
+export type G9MathSem1KbUnit = {
+  id: string;
+  bookId: string;
+  order: number;
+  titleAr: string;
+  titleEn: string;
+};
+
+export type G9MathSem1KbLesson = {
+  id: string;
+  unitId: string;
+  order: number;
+  titleAr: string;
+  titleEn: string;
+  summaryAr: string;
+  summaryEn: string;
+  keyConceptsAr: string[];
+  keyConceptsEn: string[];
+  keyTerms: Array<{ ar: string; en: string; definitionAr: string; definitionEn: string }>;
+  objectives: string[];
+  periods: number | null;
+};
+
+/**
+ * Map the NCCD JSON into KB units + lessons for book kb-math-9-s1.
+ * Mirrors buildNccdSem1Catalog in g10MathSem1.ts exactly — same shape, same
+ * title-only summary/enrichment convention, so knowledgeBase.ts's merge logic
+ * needs nothing Grade-9-specific to consume this.
+ */
+export function buildG9MathSem1Catalog(): {
+  units: G9MathSem1KbUnit[];
+  lessons: G9MathSem1KbLesson[];
+} {
+  const units: G9MathSem1KbUnit[] = nccdG9MathSem1.units.map(u => ({
+    id: g9MathSem1UnitKbId(u.id),
+    bookId: G9_MATH_S1_KB_BOOK_ID,
+    order: u.number,
+    titleAr: u.title_ar,
+    titleEn: u.title_en,
+  }));
+
+  const lessons: G9MathSem1KbLesson[] = [];
+  for (const u of nccdG9MathSem1.units) {
+    const unitKbId = g9MathSem1UnitKbId(u.id);
+    const titleOnly = isG9MathSem1TitleOnlyTier(u.data_tier);
+    for (const lesson of u.lessons) {
+      const vocab = lesson.vocabulary ?? [];
+      const objectives = lesson.objectives ?? [];
+      lessons.push({
+        id: g9MathSem1LessonKbId(lesson.id),
+        unitId: unitKbId,
+        order: lesson.order,
+        titleAr: lesson.title_ar,
+        titleEn: lesson.title_ar,
+        summaryAr: objectives.length
+          ? objectives.join('؛ ')
+          : titleOnly
+            ? `درس «${lesson.title_ar}» من وحدة «${u.title_ar}» (عنوان مؤكَّد — النتاجات على مستوى الوحدة).`
+            : `درس «${lesson.title_ar}» من وحدة «${u.title_ar}».`,
+        summaryEn: objectives.length
+          ? objectives.join('; ')
+          : titleOnly
+            ? `Lesson "${lesson.title_ar}" from unit "${u.title_en}" (title confirmed — outcomes are unit-level).`
+            : `Lesson "${lesson.title_ar}" from unit "${u.title_en}".`,
+        keyConceptsAr: [...vocab],
+        keyConceptsEn: [...vocab],
+        keyTerms: vocab.map(term => ({
+          ar: term,
+          en: term,
+          definitionAr: '',
+          definitionEn: '',
+        })),
+        objectives: [...objectives],
+        periods: lesson.periods ?? null,
+      });
+    }
+  }
+
+  return { units, lessons };
 }
 
 /** Shape compatible with Unit / Lesson in catalog.ts */

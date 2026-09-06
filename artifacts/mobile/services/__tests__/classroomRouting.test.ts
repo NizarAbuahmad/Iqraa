@@ -17,6 +17,7 @@ import {
   buildBuilderRoute,
   resolveActivityType,
 } from '../classroomRouting.ts';
+import translations, { getT } from '../i18n.ts';
 
 // ─── 1. ACTIVITY_CARDS data integrity ────────────────────────────────────────
 
@@ -39,6 +40,41 @@ describe('ACTIVITY_CARDS — data integrity', () => {
     const first = ACTIVITY_CARDS[0];
     assert.equal(first.id, 'escape-challenge');
     assert.equal(first.available, true);
+  });
+
+  it('exactly one card is featured (the hub renders find(isFeatured) as its single hero card)', () => {
+    const featured = ACTIVITY_CARDS.filter(c => c.isFeatured);
+    assert.equal(featured.length, 1, `expected exactly one featured card, got ${featured.map(c => c.id)}`);
+  });
+
+  it('every card resolves to a non-empty title and description in both languages', () => {
+    for (const lang of ['ar', 'en'] as const) {
+      const t = getT(lang);
+      for (const card of ACTIVITY_CARDS) {
+        assert.ok(t(card.titleKey as any).trim().length > 0, `${lang}.${card.id}.titleKey rendered empty`);
+        assert.ok(t(card.descKey as any).trim().length > 0, `${lang}.${card.id}.descKey rendered empty`);
+      }
+    }
+  });
+
+  it('every titleKey/descKey is a real translation key in both languages', () => {
+    for (const card of ACTIVITY_CARDS) {
+      assert.ok(card.titleKey in translations.en, `${card.titleKey} is not an English translation key`);
+      assert.ok(card.titleKey in translations.ar, `${card.titleKey} is missing from Arabic`);
+      assert.ok(card.descKey in translations.en, `${card.descKey} is not an English translation key`);
+      assert.ok(card.descKey in translations.ar, `${card.descKey} is missing from Arabic`);
+    }
+  });
+
+  // Cross-referenced against src/lib/__tests__/classroomPrompts.test.ts on the
+  // api-server side — both lists must carry the same 7 ids so a new format
+  // can't be added to one side without the other going stale again.
+  it('pins the exact set of card ids (keep in sync with the server prompt builder)', () => {
+    const ids = ACTIVITY_CARDS.map(c => c.id).sort();
+    assert.deepEqual(ids, [
+      'bingo', 'error-detective', 'escape-challenge', 'exit-ticket',
+      'gallery-walk', 'quick-check', 'relay',
+    ]);
   });
 });
 
@@ -156,10 +192,73 @@ describe('applyClassroomSetup', () => {
     assert.ok(out.materials.length > 0, 'the projector line is still added');
   });
 
-  it('leaves a board-only room exactly as the generator wrote it', () => {
+  it('leaves a board-only room the materials the generator wrote it', () => {
     // Board is what these activities were authored for, so "no screen" must
-    // never quietly drop something the teacher is about to need.
+    // never quietly drop something the teacher is about to need. Nothing in
+    // this list is about a projector, so nothing moves.
     assert.deepEqual(applyClassroomSetup(boardActivity, 'board', true), boardActivity);
+  });
+
+  it('does not hand a board-only room a projector', () => {
+    // quick-check's own materials name «شاشة عرض» because the activity was
+    // written screen-first. A teacher who just answered «سبورة فقط» and is
+    // then told to bring a projector has been shown a setting that did
+    // nothing — which is what board mode did before this.
+    const quick = {
+      activityType: 'quick-check',
+      materials: ['شاشة عرض', 'ألواح صغيرة (اختياري)'],
+      teacherPreparation: 'اعرض السؤال، شغّل المؤقت.',
+    };
+    const out = applyClassroomSetup(quick, 'board', true);
+    assert.ok(!out.materials.some(m => m.includes('شاشة')), 'the projector line goes');
+    assert.ok(out.materials.some(m => m.includes('السبورة')), 'the board takes its place');
+    // The student mini-whiteboards are not a projector and must survive.
+    assert.ok(out.materials.some(m => m.includes('ألواح صغيرة')));
+  });
+
+  it('keeps a mini-whiteboard line that happens to name a screen', () => {
+    const withMini = {
+      activityType: 'quick-check',
+      materials: ['Projector', 'Mini whiteboards (screen optional)'],
+      teacherPreparation: '',
+    };
+    const out = applyClassroomSetup(withMini, 'board', false);
+    assert.ok(out.materials.some(m => m.startsWith('Mini whiteboards')));
+    assert.ok(!out.materials.includes('Projector'));
+    // Mini whiteboards are what students hold up, not the class board, so the
+    // class board still has to be named.
+    assert.ok(out.materials.some(m => m === 'Whiteboard'));
+  });
+
+  it('stops telling a board-only class to watch the screen', () => {
+    const deck = {
+      activityType: 'escape-challenge',
+      materials: ['السبورة'],
+      teacherPreparation: '',
+      slides: [
+        { type: 'intro', content: 'لكل تحدٍّ وقت محدّد يظهر على الشاشة.' },
+        { type: 'challenge', content: 'حلّ المعادلة على الشاشة' },
+      ],
+    };
+    const out = applyClassroomSetup(deck, 'board', true);
+    assert.ok(!out.slides[0].content.includes('الشاشة'));
+    assert.ok(out.slides[0].content.includes('يعلنه معلّمك'));
+    // Only intro slides are restaged. A challenge slide carries the maths,
+    // and rewriting that would be editing content, not staging.
+    assert.equal(out.slides[1].content, deck.slides[1].content);
+  });
+
+  it('leaves a projector deck\'s slides alone', () => {
+    const deck = {
+      activityType: 'escape-challenge',
+      materials: [],
+      teacherPreparation: '',
+      slides: [{ type: 'intro', content: 'وقت محدّد يظهر على الشاشة.' }],
+    };
+    assert.equal(
+      applyClassroomSetup(deck, 'screen', true).slides[0].content,
+      deck.slides[0].content,
+    );
   });
 
   it('stops asking a projector room to print what the slides already show', () => {
@@ -170,16 +269,60 @@ describe('applyClassroomSetup', () => {
   });
 
   it('adds the projector to an activity it has no override for', () => {
-    const bingo = {
-      activityType: 'bingo',
-      materials: ['بطاقات بينجو مطبوعة (بطاقة لكل طالب)', 'مؤقت'],
-      teacherPreparation: 'اطبع بطاقات بينجو مختلفة لكل طالب.',
+    // gallery-walk is the deliberate case: five sheets taped to the walls are
+    // the activity, and a projector replaces none of them.
+    const gallery = {
+      activityType: 'gallery-walk',
+      materials: ['5 أوراق كبيرة مثبّتة على الجدران', 'أقلام ملونة'],
+      teacherPreparation: 'اكتب مسألة مختلفة على كل ورقة كبيرة.',
     };
-    const out = applyClassroomSetup(bingo, 'screen', true);
-    // The per-student card is not something a screen replaces — it stays.
-    assert.ok(out.materials.some(m => m.includes('بينجو')));
+    const out = applyClassroomSetup(gallery, 'screen', true);
+    assert.ok(out.materials.some(m => m.includes('أوراق كبيرة')));
     assert.equal(out.materials.length, 3);
-    assert.equal(out.teacherPreparation, bingo.teacherPreparation);
+    assert.equal(out.teacherPreparation, gallery.teacherPreparation);
+  });
+
+  it('keeps the artifact each student writes on, and drops the rest', () => {
+    // The trap this table exists to avoid: "strip anything printed" would
+    // take the bingo card each student marks and the slip each student hands
+    // in at the door, neither of which a projector replaces.
+    const bingo = applyClassroomSetup(
+      { activityType: 'bingo', materials: ['x'], teacherPreparation: 'اطبع' },
+      'screen', true,
+    );
+    assert.ok(bingo.materials.some(m => m.includes('بينجو')), 'the card stays');
+    assert.ok(!bingo.materials.some(m => m.includes('مؤقت')), 'the deck runs the timer');
+
+    const exit = applyClassroomSetup(
+      { activityType: 'exit-ticket', materials: ['x'], teacherPreparation: 'اطبع' },
+      'screen', true,
+    );
+    assert.ok(exit.materials.some(m => m.includes('ورقة صغيرة')), 'the slip stays');
+    assert.ok(!exit.materials.some(m => m.includes('مطبوعة')), 'nothing to print');
+
+    const relay = applyClassroomSetup(
+      { activityType: 'relay', materials: ['x'], teacherPreparation: 'اطبع' },
+      'screen', true,
+    );
+    assert.ok(relay.materials.some(m => m.includes('ورقة تتابع')), 'the relay sheet stays');
+    assert.ok(!relay.materials.some(m => m.includes('السبورة')));
+  });
+
+  it('gives every screen override a projector line and both languages', () => {
+    for (const type of ['escape-challenge', 'error-detective', 'bingo', 'relay', 'exit-ticket']) {
+      for (const isAr of [true, false]) {
+        const out = applyClassroomSetup(
+          { activityType: type, materials: [], teacherPreparation: '' },
+          'screen', isAr,
+        );
+        assert.ok(out.materials.length > 0, `${type} ${isAr} has materials`);
+        assert.ok(
+          out.materials.some(m => /بروجكتر|Projector/.test(m)),
+          `${type} ${isAr} names the projector`,
+        );
+        assert.ok(out.teacherPreparation.length > 0, `${type} ${isAr} has prep`);
+      }
+    }
   });
 
   it('does not add a second projector line to a list that names one', () => {

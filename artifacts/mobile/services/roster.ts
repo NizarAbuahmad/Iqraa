@@ -18,6 +18,9 @@ export interface ClassGroup {
   academicYear: string;
   createdAt: string;
   studentCount: number;
+  /** The class's shared join code, null until a teacher mints one. Both fields come free on GET /classes/:id, which selects the whole row. */
+  joinCode?: string | null;
+  joinCodeExpiresAt?: string | null;
 }
 
 export interface RosterStudent {
@@ -28,6 +31,8 @@ export interface RosterStudent {
   /** The teacher's running note on this child. Empty string, never null. */
   teacherNote: string;
   createdAt: string;
+  /** Somebody has signed up against this name. Absent from the class list endpoint, which does not compute it. */
+  linked?: boolean;
 }
 
 export interface NewStudent {
@@ -164,6 +169,61 @@ export async function updateStudent(
 export async function archiveClass(classId: string): Promise<void> {
   const res = await apiFetch(`/classes/${classId}`, { method: 'DELETE' });
   await readJson(res, 'Archiving class');
+}
+
+/**
+ * Mints a fresh code so a parent or the student can link to this exact
+ * roster row when they sign up — see services/messaging.ts. Regenerating
+ * invalidates any code shared before.
+ */
+export async function generateClaimCode(
+  studentId: string,
+): Promise<{ claimCode: string; claimCodeExpiresAt: string }> {
+  const res = await apiFetch(`/students/${studentId}/claim-code`, { method: 'POST' });
+  return readJson(res, 'Generating class code');
+}
+
+/**
+ * Mints one code for the whole class instead of one per child. Same
+ * overwrite-on-regenerate rule as the per-student code above, but longer-lived
+ * — it goes on a whiteboard, not into a single message.
+ */
+export async function generateJoinCode(
+  classId: string,
+): Promise<{ joinCode: string; joinCodeExpiresAt: string }> {
+  const res = await apiFetch(`/classes/${classId}/join-code`, { method: 'POST' });
+  return readJson(res, 'Generating join code');
+}
+
+/**
+ * The undo for a wrong claim. Drops the account's link to this roster row and
+ * rebuilds the class threads it derived — it does not remove them from any
+ * custom group a teacher put them in by hand (see the route's comment).
+ */
+export async function unlinkAccount(studentId: string, userId: string): Promise<void> {
+  const res = await apiFetch(`/students/${studentId}/links/${userId}`, { method: 'DELETE' });
+  await readJson(res, 'Unlinking account');
+}
+
+export interface JoinRosterEntry {
+  id: string;
+  displayName: string;
+  /** A student account already holds this name. Parents may still claim it; a second student may not. */
+  taken: boolean;
+}
+
+/**
+ * Reads the class behind a join code so the joiner can pick their own name.
+ * Public — called from the signup screen before any account exists. A 404 here
+ * is the normal answer for a per-student claim code, which names its own
+ * student and needs no picker; callers should treat it as "not a class code"
+ * rather than an error.
+ */
+export async function lookupJoinCode(
+  code: string,
+): Promise<{ class: { name: string; nameAr: string }; students: JoinRosterEntry[] }> {
+  const res = await apiFetch(`/auth/join/${encodeURIComponent(code)}`);
+  return readJson(res, 'Opening class code');
 }
 
 /** Re-exported so screens have one roster import. Lives apart to stay testable. */

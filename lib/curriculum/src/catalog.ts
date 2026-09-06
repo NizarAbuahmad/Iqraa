@@ -19,6 +19,30 @@ import {
   buildChemSem1BrowserCatalog,
 } from './catalogs/g10ChemSem1.ts';
 import {
+  buildPhysSem1BrowserCatalog,
+  PHYS_S1_CURRICULUM_BOOK_ID,
+} from './catalogs/g10PhysSem1.ts';
+import {
+  buildPhysSem2BrowserCatalog,
+  PHYS_S2_CURRICULUM_BOOK_ID,
+} from './catalogs/g10PhysSem2.ts';
+import {
+  buildEarthSem1BrowserCatalog,
+  EARTH_S1_CURRICULUM_BOOK_ID,
+} from './catalogs/g10EarthSem1.ts';
+import {
+  buildEarthSem2BrowserCatalog,
+  EARTH_S2_CURRICULUM_BOOK_ID,
+} from './catalogs/g10EarthSem2.ts';
+import {
+  buildBioSem1BrowserCatalog,
+  BIO_S1_CURRICULUM_BOOK_ID,
+} from './catalogs/g10BioSem1.ts';
+import {
+  buildBioSem2BrowserCatalog,
+  BIO_S2_CURRICULUM_BOOK_ID,
+} from './catalogs/g10BioSem2.ts';
+import {
   CHEM_S2_CURRICULUM_BOOK_ID,
   buildChemSem2BrowserCatalog,
 } from './catalogs/g10ChemSem2.ts';
@@ -27,6 +51,22 @@ import {
   FINLIT_S1_CURRICULUM_BOOK_ID,
   buildFinlitSem1BrowserCatalog,
 } from './catalogs/g10FinlitSem1.ts';
+import {
+  ARABIC_S1_CURRICULUM_BOOK_ID,
+  buildArabicSem1BrowserCatalog,
+} from './catalogs/g10ArabicSem1.ts';
+import {
+  ARABIC_S2_CURRICULUM_BOOK_ID,
+  buildArabicSem2BrowserCatalog,
+} from './catalogs/g10ArabicSem2.ts';
+import {
+  ISLAMIC_S1_CURRICULUM_BOOK_ID,
+  buildIslamicSem1BrowserCatalog,
+} from './catalogs/g10IslamicSem1.ts';
+import {
+  ISLAMIC_S2_CURRICULUM_BOOK_ID,
+  buildIslamicSem2BrowserCatalog,
+} from './catalogs/g10IslamicSem2.ts';
 import {
   G9_MATH_S1_CURRICULUM_BOOK_ID,
   buildG9MathSem1BrowserCatalog,
@@ -39,6 +79,24 @@ import {
   isG9MathSem2TitleOnlyUnit,
   isG9MathSem2TitleOnlyLesson,
 } from './catalogs/g9MathSem2.ts';
+import {
+  ENGLISH_COMMERCE_S1_CURRICULUM_BOOK_ID,
+  ENGLISH_AGRICULTURE_S1_CURRICULUM_BOOK_ID,
+  ENGLISH_HOSPITALITY_S1_CURRICULUM_BOOK_ID,
+  ENGLISH_INDUSTRY_S1_CURRICULUM_BOOK_ID,
+  buildEnglishCommerceBrowserCatalog,
+  buildEnglishAgricultureBrowserCatalog,
+  buildEnglishHospitalityBrowserCatalog,
+  buildEnglishIndustryBrowserCatalog,
+} from './catalogs/g10EnglishVocational.ts';
+import {
+  ENG_S1_CURRICULUM_BOOK_ID,
+  buildEngSem1BrowserCatalog,
+} from './catalogs/g10EnglishSem1.ts';
+import {
+  ENG_S2_CURRICULUM_BOOK_ID,
+  buildEngSem2BrowserCatalog,
+} from './catalogs/g10EnglishSem2.ts';
 
 export interface Grade {
   id: string;
@@ -72,8 +130,21 @@ export interface Book {
   semester?: 1 | 2;
   /** Official NCCD student-book PDF. Links verified 2026-08-23. */
   pdfUrl?: string;
-  /** Official NCCD teacher-guide PDF. Hidden from students. */
+  /** Teacher-guide / teacher's-book PDF. Hidden from students. NCCD-hosted
+   *  unless `downloadNote` says otherwise. */
   guidePdfUrl?: string;
+  /** Companion activity/workbook PDF, shown as its own chip (distinct from
+   *  the teacher guide — this one is visible to everyone). */
+  activityPdfUrl?: string;
+  /**
+   * Source note shown under the download chips instead of the default
+   * "من موقع المركز الوطني لتطوير المناهج" line. Set it whenever the linked
+   * PDFs are NOT hosted on nccd.gov.jo, so the UI never claims NCCD
+   * provenance for a file that isn't theirs (the English vocational books
+   * are York Press titles NCCD doesn't publish).
+   */
+  downloadNote?: string;
+  downloadNoteAr?: string;
 }
 
 export interface Unit {
@@ -135,6 +206,7 @@ export const SUBJECTS: Subject[] = [
   { id: 'social',      name: 'Social Studies',   nameAr: 'الدراسات الاجتماعية', icon: 'globe',        color: '#EC4899', grades: GRADES.slice(0, 9).map(g => g.id) },
   { id: 'computer',    name: 'Computer',         nameAr: 'الحاسوب',          icon: 'laptop-outline',  color: '#06B6D4', grades: GRADES.map(g => g.id) },
   { id: 'financial-literacy', name: 'Financial Literacy', nameAr: 'الثقافة المالية', icon: 'wallet-outline', color: '#B45309', grades: GRADES.slice(9).map(g => g.id) },
+  { id: 'earth-science', name: 'Earth and Environmental Science', nameAr: 'علوم الأرض والبيئة', icon: 'earth', color: '#65A30D', grades: GRADES.slice(9).map(g => g.id) },
 ];
 
 /**
@@ -155,7 +227,25 @@ export const INVESTOR_MVP_CURRICULUM = true;
  * iqra_curriculum_g9_math_sem2.json.
  */
 export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9'];
-export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy'];
+// Appended, never inserted: these positions are persisted as bare indices in
+// formState and route URLs, so inserting shifts what a saved URL resolves to.
+// 'physics' joined on 2026-09-03 with the Grade 10 S1 curriculum. Without it,
+// isPickerCurriculumVisible gates every physics lesson invisible and
+// getLessonById returns undefined for all of them — the book would be listed
+// in MVP_BOOK_IDS while its lessons resolved to nothing.
+// 'arabic', 'islamic' and 'computer' were appended on 2026-09-05 as tiles with
+// no book behind any of them; the "no books" empty state they fell through to
+// reads as a broken subject, not an honest one — and App Review reads a
+// placeholder section the same way, as an incomplete app, guideline 2.1. All
+// three came back off, and each returns only once it has something to open:
+// 'arabic' the same day (both semesters of the student book), 'islamic'
+// likewise (both semesters, from the teacher guides — the student books are
+// still unextracted). 'computer' stays out: no computer-science PDF has been
+// sourced at all. Note this is an APPEND — 'islamic' is back at the tail,
+// where it was, so no existing index moves. `finlitCurriculum.test.ts` fails
+// the moment a subject is offered here with nothing to open, and now also the
+// reverse.
+export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy', 'english', 'physics', 'earth-science', 'biology', 'arabic', 'islamic'];
 /** Main semester books only (guides/exercises stay in data, hidden from UI). */
 export const MVP_BOOK_IDS: readonly string[] = [
   'book-math-10',
@@ -166,18 +256,87 @@ export const MVP_BOOK_IDS: readonly string[] = [
   FINLIT_S1_CURRICULUM_BOOK_ID,
   'book-math-9-s1',
   'book-math-9-s2',
+  // English vocational tracks (Commerce/Agriculture/Hospitality/Industrial) —
+  // Semester 1 only, no Semester 2 source on file yet.
+  ENGLISH_COMMERCE_S1_CURRICULUM_BOOK_ID,
+  ENGLISH_AGRICULTURE_S1_CURRICULUM_BOOK_ID,
+  ENGLISH_HOSPITALITY_S1_CURRICULUM_BOOK_ID,
+  ENGLISH_INDUSTRY_S1_CURRICULUM_BOOK_ID,
+  // General (non-vocational) Grade 10 English — Student + Activity Book
+  // download links only; unit/lesson content is still a placeholder (one
+  // stub unit on S1, none on S2), shown anyway per the same
+  // honestly-thin-rather-than-hidden precedent as Grade 9 Math S2 above.
+  'book-english-10-s1',
+  'book-english-10-s2',
+  // Physics S1 — the first subject from the 2026-09-03 intake to have a
+  // curriculum behind it. Appended, never inserted: these positions are
+  // persisted in formState and route URLs (see CLAUDE.md on picker order).
+  PHYS_S1_CURRICULUM_BOOK_ID,
+  PHYS_S2_CURRICULUM_BOOK_ID,
+  // Earth and Environmental Science — built 2026-09-03, same treatment as
+  // physics: appended, never inserted.
+  EARTH_S1_CURRICULUM_BOOK_ID,
+  EARTH_S2_CURRICULUM_BOOK_ID,
+  BIO_S1_CURRICULUM_BOOK_ID,
+  BIO_S2_CURRICULUM_BOOK_ID,
+  // Arabic — both semesters. S2 carries units 6-10, continuing S1's numbering.
+  ARABIC_S1_CURRICULUM_BOOK_ID,
+  ARABIC_S2_CURRICULUM_BOOK_ID,
+  // Islamic Education — both semesters, sourced from the teacher guides
+  // (the student books are registered but unextracted). Units restart at 1
+  // each semester here, because these books do.
+  ISLAMIC_S1_CURRICULUM_BOOK_ID,
+  ISLAMIC_S2_CURRICULUM_BOOK_ID,
 ];
+
+/**
+ * MVP pickers follow the MVP arrays' order, not declaration order in
+ * GRADES/SUBJECTS. Picker positions are persisted — every generator screen's
+ * saved formState and route URLs carry `gradeIdx`/`subjectIdx` as bare
+ * indices, and a screen opened without them falls back to index 0. Filtering
+ * by declaration order meant enabling Grade 9 / English *inserted* entries at
+ * the front: index 0 silently became grade-9/English, and every stored index
+ * pointed one entry off (a bare-topic math URL opened as «اختبار في اللغة
+ * الإنجليزية» over math questions). New grades/subjects must be APPENDED to
+ * MVP_GRADE_IDS / MVP_SUBJECT_IDS so existing indices keep their meaning.
+ */
+function inMvpOrder<T extends { id: string }>(all: T[], mvpIds: readonly string[]): T[] {
+  return mvpIds
+    .map(id => all.find(item => item.id === id))
+    .filter((item): item is T => item !== undefined);
+}
 
 export function getVisibleGrades(): Grade[] {
   if (!INVESTOR_MVP_CURRICULUM) return GRADES;
-  return GRADES.filter(g => MVP_GRADE_IDS.includes(g.id));
+  return inMvpOrder(GRADES, MVP_GRADE_IDS);
 }
 
+/**
+ * Subjects the curriculum browser offers for a grade.
+ *
+ * A subject is listed in SUBJECTS for every grade it exists in nationally,
+ * which is not the same as "we have its book for that grade". English is in
+ * the MVP subject list for its Grade 10 books, and `SUBJECTS` says english
+ * spans grade-9 too, but no Grade 9 English book was ever ingested — so
+ * الصف التاسع showed an اللغة الإنجليزية tile that opened on an empty book
+ * list. The subject/grade pair is what has to resolve, not either alone.
+ *
+ * The book check goes here rather than in the two callers (the browser screen
+ * and `GET /curriculum/grades/:id/subjects`) so a third surface cannot miss
+ * it, and it asks `hasCurriculumForSubjectGrade` — the same predicate the
+ * AI-tools pickers grey their entries with — so the two surfaces cannot drift
+ * into disagreeing about which pairs exist.
+ *
+ * Deliberately NOT applied to `getPickerSubjects()` — that list's positions
+ * are persisted as bare `subjectIdx` values, so it stays an explicit array,
+ * and MVP_SUBJECT_IDS stays the place a subject is switched on.
+ */
 export function getSubjectsForGrade(gradeId: string): Subject[] {
   const subjects = SUBJECTS.filter(s => s.grades.includes(gradeId));
   if (!INVESTOR_MVP_CURRICULUM) return subjects;
   if (!MVP_GRADE_IDS.includes(gradeId)) return [];
-  return subjects.filter(s => (MVP_SUBJECT_IDS as readonly string[]).includes(s.id));
+  return inMvpOrder(subjects, MVP_SUBJECT_IDS)
+    .filter(s => hasCurriculumForSubjectGrade(s.id, gradeId));
 }
 
 /** Grades shown in AI tools, chat, and other curriculum pickers. */
@@ -190,7 +349,7 @@ export function getPickerSubjects(gradeId?: string): Subject[] {
   if (!INVESTOR_MVP_CURRICULUM) {
     return gradeId ? getSubjectsForGrade(gradeId) : [...SUBJECTS];
   }
-  return SUBJECTS.filter(s => (MVP_SUBJECT_IDS as readonly string[]).includes(s.id));
+  return inMvpOrder(SUBJECTS, MVP_SUBJECT_IDS);
 }
 
 /** Clamp a saved/route picker index into the current picker list. */
@@ -325,6 +484,111 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'student',
   },
+  // ── Physics Grade 10 – Semester 1 ──────────────────────────────────────────
+  // First subject added from the 2026-09-03 local intake, when NCCD published
+  // no direct PDF link for this edition. It does now — verified 2026-09-05 by
+  // downloading all six science links below and reading each title page
+  // (rendered with pdftoppm for the two over the fetch tool's 100MB cap),
+  // confirming subject, grade and semester all match. Every URL returned 200
+  // application/pdf at that check.
+  {
+    id: PHYS_S1_CURRICULUM_BOOK_ID,
+    title: 'Physics – Grade 10, Semester 1',
+    titleAr: 'الفيزياء – الصف العاشر – الفصل الأول',
+    subjectId: 'physics',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+    pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/sciences/G10/1/%D9%81%D9%8A%D8%B2%D9%8A%D8%A7%D8%A1%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D9%81%D8%B5%D9%84%20%D8%A3%D9%88%D9%84.pdf',
+    guidePdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/Science%20date%2010.9.2023/%D8%A7%D9%84%D8%B9%D8%A7%D8%B4%D8%B1/%D9%81%D9%8A%D8%B2%D9%8A%D8%A7%D8%A1/%D8%AF%D9%84%D9%8A%D9%84%20%D8%A7%D9%84%D9%85%D8%B9%D9%84%D9%85%20%D9%81%D9%8A%D8%B2%D9%8A%D8%A7%D8%A1%20%D8%B9%D8%A7%D8%B4%D8%B1%20%20%D9%811%20.pdf',
+    activityPdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/sciences/G10/1/%D9%81%D9%8A%D8%B2%D9%8A%D8%A7%D8%A1%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D9%86%D8%B4%D8%A7%D8%B7%20%D9%811.pdf',
+  },
+  {
+    id: PHYS_S2_CURRICULUM_BOOK_ID,
+    title: 'Physics – Grade 10, Semester 2',
+    titleAr: 'الفيزياء – الصف العاشر – الفصل الثاني',
+    subjectId: 'physics',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+    pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/New%20folder/%D8%B9%D9%84%D9%88%D9%85%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D9%812%20Pdf/%D9%81%D9%8A%D8%B2%D9%8A%D8%A7%D8%A1%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D9%812%20Pdf/%D9%81%D9%8A%D8%B2%D9%8A%D8%A7%D8%A1%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D8%A7%D9%84%D8%AC%D8%B2%D8%A1%20%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A.pdf',
+    guidePdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/%D8%A7%D8%AF%D9%84%D8%A9%20%D8%A7%D9%84%D8%B9%D9%84%D9%88%D9%85%20%D9%85%D9%86%201-10/%D8%A7%D8%AF%D9%84%D8%A9%20%D8%A7%D9%84%D9%85%D8%B9%D9%84%D9%85%20%D8%B9%D9%84%D9%88%D9%85%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D8%AC%D8%B2%D8%A1%20%D8%AB%D8%A7%D9%86%D9%8A/(2025)%20%D8%AF%D9%84%D9%8A%D9%84%20%D9%81%D9%8A%D8%B2%D9%8A%D8%A7%D8%A1%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D8%AC%D9%802.pdf',
+    activityPdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/New%20folder/%D8%B9%D9%84%D9%88%D9%85%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D9%812%20Pdf/%D9%81%D9%8A%D8%B2%D9%8A%D8%A7%D8%A1%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D9%812%20Pdf/%D9%81%D9%8A%D8%B2%D9%8A%D8%A7%D8%A1%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D8%A7%D9%84%D8%AC%D8%B2%D8%A1%20%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A%20%D9%86%D8%B4%D8%A7%D8%B7.pdf',
+  },
+  // ── Earth and Environmental Science Grade 10 ───────────────────────────────
+  {
+    id: EARTH_S1_CURRICULUM_BOOK_ID,
+    title: 'Earth and Environmental Science – Grade 10, Semester 1',
+    titleAr: 'علوم الأرض والبيئة – الصف العاشر – الفصل الأول',
+    subjectId: 'earth-science',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+    pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/sciences/G10/1/%D8%B9%D9%84%D9%88%D9%85%20%D8%A3%D8%B1%D8%B6%2010%20%D8%AC1%20%D8%B7%D8%A7%D9%84%D8%A8.pdf',
+    guidePdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/Science%20date%2010.9.2023/%D8%A7%D9%84%D8%B9%D8%A7%D8%B4%D8%B1/%D8%B9%D9%84%D9%88%D9%85%20%D8%A7%D9%84%D8%A3%D8%B1%D8%B6/%D8%AF%D9%84%D9%8A%D9%84%20%D8%B9%D9%84%D9%88%D9%85%20%D8%A7%D9%84%D8%A7%D8%B1%D8%B6%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D8%AC%D8%B2%D8%A1%20%D8%A3%D9%88%D9%84.pdf',
+    activityPdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/sciences/G10/1/%D8%B9%D9%84%D9%88%D9%85%20%D8%A3%D8%B1%D8%B6%2010%20%D9%86%D8%B4%D8%A7%D8%B7%20%D9%811%20.pdf',
+  },
+  {
+    id: EARTH_S2_CURRICULUM_BOOK_ID,
+    title: 'Earth and Environmental Science – Grade 10, Semester 2',
+    titleAr: 'علوم الأرض والبيئة – الصف العاشر – الفصل الثاني',
+    subjectId: 'earth-science',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+    pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/New%20folder/%D8%B9%D9%84%D9%88%D9%85%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%A3%D8%B1%D8%B6%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%A7%D8%B1%D8%B6%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D8%A7%D9%84%D8%AC%D8%B2%D8%A1%20%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A%20.pdf',
+    guidePdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/%D8%A7%D8%AF%D9%84%D8%A9%20%D8%A7%D9%84%D8%B9%D9%84%D9%88%D9%85%20%D9%85%D9%86%201-10/%D8%A7%D8%AF%D9%84%D8%A9%20%D8%A7%D9%84%D9%85%D8%B9%D9%84%D9%85%20%D8%B9%D9%84%D9%88%D9%85%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D8%AC%D8%B2%D8%A1%20%D8%AB%D8%A7%D9%86%D9%8A/(2025)%20%D8%AF%D9%84%D9%8A%D9%84%20%D8%B9%D9%84%D9%88%D9%85%20%D8%A7%D9%84%D8%A7%D8%B1%D8%B6%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D8%AC%D9%802%20.pdf',
+    activityPdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/New%20folder/%D8%B9%D9%84%D9%88%D9%85%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%A3%D8%B1%D8%B6%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%A7%D8%B1%D8%B6%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D9%86%D8%B4%D8%A7%D8%B7%20%D8%AC%D9%A2%20.pdf',
+  },
+  // ── Biology Grade 10 ───────────────────────────────────────────────────────
+  {
+    id: BIO_S1_CURRICULUM_BOOK_ID,
+    title: 'Biology – Grade 10, Semester 1',
+    titleAr: 'العلوم الحياتية – الصف العاشر – الفصل الأول',
+    subjectId: 'biology',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+    pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/sciences/G10/1/%D8%B9%D9%84%D9%88%D9%85%20%D8%AD%D9%8A%D8%A7%D8%AA%D9%8A%D8%A9%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D9%811.pdf',
+    guidePdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/Science%20date%2010.9.2023/%D8%A7%D9%84%D8%B9%D8%A7%D8%B4%D8%B1/%D8%B9%D9%84%D9%88%D9%85%20%D8%AD%D9%8A%D8%A7%D8%AA%D9%8A%D8%A9/%D8%AF%D9%84%D9%8A%D9%84%20%D8%A7%D9%84%D9%85%D8%B9%D9%84%D9%85%20%D8%A7%D8%AD%D9%8A%D8%A7%D8%A1%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D9%811.pdf',
+    activityPdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/sciences/G10/1/%D9%86%D8%B4%D8%A7%D8%B7%20%D8%B9%D9%84%D9%88%D9%85%20%D8%AD%D9%8A%D8%A7%D8%AA%D9%8A%D8%A9%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D9%811.pdf',
+  },
+  {
+    id: BIO_S2_CURRICULUM_BOOK_ID,
+    title: 'Biology – Grade 10, Semester 2',
+    titleAr: 'العلوم الحياتية – الصف العاشر – الفصل الثاني',
+    subjectId: 'biology',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+    pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/New%20folder/%D8%B9%D9%84%D9%88%D9%85%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%AD%D9%8A%D8%A7%D8%AA%D9%8A%D8%A9%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%AD%D9%8A%D8%A7%D8%AA%D9%8A%D8%A9%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D8%A7%D9%84%D8%AC%D8%B2%D8%A1%20%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A.pdf',
+    guidePdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/%D8%A7%D8%AF%D9%84%D8%A9%20%D8%A7%D9%84%D8%B9%D9%84%D9%88%D9%85%20%D9%85%D9%86%201-10/%D8%A7%D8%AF%D9%84%D8%A9%20%D8%A7%D9%84%D9%85%D8%B9%D9%84%D9%85%20%D8%B9%D9%84%D9%88%D9%85%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D8%AC%D8%B2%D8%A1%20%D8%AB%D8%A7%D9%86%D9%8A/(2025)%20%D8%AF%D9%84%D9%8A%D9%84%20%D8%A3%D8%AD%D9%8A%D8%A7%D8%A1%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D8%AC%D9%802%20.pdf',
+    activityPdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/New%20folder/%D8%B9%D9%84%D9%88%D9%85%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%AD%D9%8A%D8%A7%D8%AA%D9%8A%D8%A9%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%AD%D9%8A%D8%A7%D8%AA%D9%8A%D8%A9%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D8%A7%D9%84%D8%AC%D8%B2%D8%A1%20%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A%20%20%D9%86%D8%B4%D8%A7%D8%B7.pdf',
+  },
   // ── Financial Literacy Grade 10 – Semester 1 ───────────────────────────────
   {
     id: FINLIT_S1_CURRICULUM_BOOK_ID,
@@ -339,6 +603,71 @@ export const BOOKS: Book[] = [
     audience: 'all',
     semester: 1,
     pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Financial%20culture/G10/1/%D8%A7%D9%84%D8%AB%D9%82%D8%A7%D9%81%D8%A9%20%D8%A7%D9%84%D9%85%D8%A7%D9%84%D9%8A%D8%A9%2010%20%D9%811%20small%20.pdf',
+  },
+  // ── Arabic Grade 10 – Semester 1 ───────────────────────────────────────────
+  // No pdfUrl/guidePdfUrl: the three S1 PDFs (student book, teacher guide,
+  // exercise book) are on file locally and registered in g10_sources.json, but
+  // no NCCD hosted URL for them has been verified. A download chip is left off
+  // rather than pointed at a guessed link.
+  {
+    id: ARABIC_S1_CURRICULUM_BOOK_ID,
+    title: 'Arabic – Grade 10, Semester 1',
+    titleAr: 'اللغة العربية (العربية لغتي) – الصف العاشر – الفصل الأول',
+    subjectId: 'arabic',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  // ── Arabic Grade 10 – Semester 2 ───────────────────────────────────────────
+  // Units 6-10, continuing S1's numbering. Same missing download link as S1.
+  {
+    id: ARABIC_S2_CURRICULUM_BOOK_ID,
+    title: 'Arabic – Grade 10, Semester 2',
+    titleAr: 'اللغة العربية (العربية لغتي) – الصف العاشر – الفصل الثاني',
+    subjectId: 'arabic',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── Islamic Education Grade 10 – Semesters 1 & 2 ───────────────────────────
+  // hasKnowledgeBase is true and honest, but note what it is built from: the
+  // teacher guides. The student books are registered in g10_sources.json with
+  // status `pending` and have never been extracted, so there is no student-book
+  // text behind these two rows — and no verified NCCD URL either, hence no
+  // download chip.
+  {
+    id: ISLAMIC_S1_CURRICULUM_BOOK_ID,
+    title: 'Islamic Education – Grade 10, Semester 1',
+    titleAr: 'التربية الإسلامية – الصف العاشر – الفصل الأول',
+    subjectId: 'islamic',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: ISLAMIC_S2_CURRICULUM_BOOK_ID,
+    title: 'Islamic Education – Grade 10, Semester 2',
+    titleAr: 'التربية الإسلامية – الصف العاشر – الفصل الثاني',
+    subjectId: 'islamic',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
   },
   // ── Math Grade 9 – Semester 1 ───────────────────────────────────────────────
   // Distinct id from the pre-existing inert `book-math-9` stub below (no real
@@ -356,6 +685,14 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    // Was the "PublicationDetails" flipbook link (no raw .pdf existed as of
+    // 2026-08-28); NCCD has since published one at the raw path other Grade
+    // 10 subjects use. Verified 2026-09-05: downloaded the full PDF (19.3MB)
+    // and read page 1 — "الرياضيات – الصف التاسع – كتاب الطالب – الفصل
+    // الدراسي الأول", ISBN 978-9923-41-408-8, matching the locally-ingested
+    // copy this book's units/lessons were built from.
+    pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Math/G9/1/ST/2026_MT09_SE1.pdf',
+    guidePdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Math/2025/MT_TE09_Book_2_3_2025.pdf',
   },
   // ── Math Grade 9 – Semester 2 ───────────────────────────────────────────────
   {
@@ -370,10 +707,23 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    // Unpublished on NCCD as of 2026-08-28 (see S1 above); published since.
+    // Verified 2026-09-05: downloaded the full PDF (38.1MB) and read page 1 —
+    // "الرياضيات – الصف التاسع – كتاب الطالب – الفصل الدراسي الثاني", ISBN
+    // 978-9923-41-407-1, matching this book's 174-page local source exactly
+    // (see iqra_curriculum_g9_math_sem2.json's source_books note).
+    pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Math/2025/G09/2/MT09/SE/MT09_SE2_WEB.pdf',
+    guidePdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Math/2025/MT09_TE2_PRINT.pdf',
   },
   // ── Other grades ───────────────────────────────────────────────────────────
+  // General (non-vocational) Grade 10 English track — Student Book + Activity
+  // Book, both semesters. Split into one book per semester (matching every
+  // other subject's convention) rather than one book carrying four links.
+  // Provenance of the source PDFs is not confirmed NCCD — hosted on the
+  // project's own storage, hence downloadNote overriding the NCCD line.
   {
-    id: 'book-english-10',
+    id: 'book-english-10-s1',
+    hasKnowledgeBase: true,
     title: 'English for Jordan 10',
     titleAr: 'اللغة الإنجليزية للصف العاشر',
     subjectId: 'english',
@@ -381,6 +731,110 @@ export const BOOKS: Book[] = [
     academicYear: '2024-2025',
     language: 'English',
     edition: '2nd',
+    audience: 'all',
+    semester: 1,
+    pdfUrl: 'https://pub-d9ddd8f74e734a21824518b812652124.r2.dev/%D9%83%D8%AA%D8%A7%D8%A8%20%D8%A7%D9%84%D8%B7%D8%A7%D9%84%D8%A8%20%D9%84%D9%85%D8%A7%D8%AF%D8%A9%20%D8%A7%D9%84%D9%84%D8%BA%D8%A9%20%D8%A7%D9%84%D8%A5%D9%86%D8%AC%D9%84%D9%8A%D8%B2%D9%8A%D8%A9%20%D8%A7%D9%84%D8%B5%D9%81%20%D8%A7%D9%84%D8%B9%D8%A7%D8%B4%D8%B1%20%D8%A7%D9%84%D9%81%D8%B5%D9%84%20%D8%A7%D9%84%D8%A3%D9%88%D9%84.pdf',
+    activityPdfUrl: 'https://pub-d9ddd8f74e734a21824518b812652124.r2.dev/%D9%83%D8%AA%D8%A7%D8%A8%20%D8%A7%D9%84%D8%A3%D9%86%D8%B4%D8%B7%D8%A9%20%D9%84%D9%85%D8%A7%D8%AF%D8%A9%20%D8%A7%D9%84%D9%84%D8%BA%D8%A9%20%D8%A7%D9%84%D8%A5%D9%86%D8%AC%D9%84%D9%8A%D8%B2%D9%8A%D8%A9%20%D9%84%D9%84%D8%B5%D9%81%20%D8%A7%D9%84%D8%B9%D8%A7%D8%B4%D8%B1%20%D8%A7%D9%84%D9%81%D8%B5%D9%84%20%D8%A7%D9%84%D8%A3%D9%88%D9%84.pdf',
+    downloadNote: 'Student Book & Activity Book · project storage copy',
+    downloadNoteAr: 'كتاب الطالب وكتاب الأنشطة · نسخة على مساحة تخزين المشروع',
+  },
+  {
+    id: 'book-english-10-s2',
+    hasKnowledgeBase: true,
+    title: 'English for Jordan 10 (Semester 2)',
+    titleAr: 'اللغة الإنجليزية للصف العاشر – الفصل الثاني',
+    subjectId: 'english',
+    gradeId: 'grade-10',
+    academicYear: '2024-2025',
+    language: 'English',
+    edition: '2nd',
+    audience: 'all',
+    semester: 2,
+    pdfUrl: 'https://pub-d9ddd8f74e734a21824518b812652124.r2.dev/%D9%83%D8%AA%D8%A7%D8%A8%20%D8%A7%D9%84%D8%B7%D8%A7%D9%84%D8%A8%20%D9%84%D9%85%D8%A7%D8%AF%D8%A9%20%D8%A7%D9%84%D9%84%D8%BA%D8%A9%20%D8%A7%D9%84%D8%A5%D9%86%D8%AC%D9%84%D9%8A%D8%B2%D9%8A%D8%A9%20%D8%A7%D9%84%D8%B5%D9%81%20%D8%A7%D9%84%D8%B9%D8%A7%D8%B4%D8%B1%20%D8%A7%D9%84%D9%81%D8%B5%D9%84%20%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A.pdf',
+    activityPdfUrl: 'https://pub-d9ddd8f74e734a21824518b812652124.r2.dev/%D9%83%D8%AA%D8%A7%D8%A8%20%D8%A7%D9%84%D8%A3%D9%86%D8%B4%D8%B7%D8%A9%20%D9%84%D9%85%D8%A7%D8%AF%D8%A9%20%D8%A7%D9%84%D9%84%D8%BA%D8%A9%20%D8%A7%D9%84%D8%A5%D9%86%D8%AC%D9%84%D9%8A%D8%B2%D9%8A%D8%A9%20%D9%84%D9%84%D8%B5%D9%81%20%D8%A7%D9%84%D8%B9%D8%A7%D8%B4%D8%B1%20%D8%A7%D9%84%D9%81%D8%B5%D9%84%20%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A.pdf',
+    downloadNote: 'Student Book & Activity Book · project storage copy',
+    downloadNoteAr: 'كتاب الطالب وكتاب الأنشطة · نسخة على مساحة تخزين المشروع',
+  },
+  // ── English Grade 10 — vocational tracks (Semester 1) ──────────────────────
+  // Source: Vocational English Level 2 Volume 1 (York Press/ERC, 2023),
+  // one Teacher's Book per track. See g10EnglishVocational.ts and each data
+  // file's meta for provenance and known gaps.
+  //
+  // These are York Press titles NCCD does not publish, so there is no
+  // nccd.gov.jo pdfUrl to link. The guidePdfUrl links below are the team's
+  // own Drive copies of each track's Teacher's Book (the exact files this
+  // catalog was mined from — same driveIds as each data file's meta;
+  // already shared "anyone with link" before they were linked here), and
+  // downloadNote replaces the NCCD source line so the UI doesn't claim
+  // NCCD provenance for them.
+  {
+    id: ENGLISH_COMMERCE_S1_CURRICULUM_BOOK_ID,
+    title: 'English – Commerce Track, Grade 10 (Semester 1)',
+    titleAr: 'اللغة الإنجليزية – القطاع التجاري – الصف العاشر – الفصل الأول',
+    subjectId: 'english',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'English',
+    edition: '2023',
+    hasKnowledgeBase: false,
+    audience: 'all',
+    semester: 1,
+    guidePdfUrl: 'https://drive.google.com/file/d/1IRHz4F1T5V8lsD6hrZSg5RqW_OJx9TUX/view',
+    downloadNote: "Teacher's Book — Vocational English series (York Press, 2023) · copy on Google Drive",
+    downloadNoteAr: 'كتاب المعلم — سلسلة Vocational English (York Press، طبعة 2023) · نسخة على Google Drive',
+  },
+  {
+    id: ENGLISH_AGRICULTURE_S1_CURRICULUM_BOOK_ID,
+    title: 'English – Agriculture Track, Grade 10 (Semester 1)',
+    titleAr: 'اللغة الإنجليزية – القطاع الزراعي – الصف العاشر – الفصل الأول',
+    subjectId: 'english',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'English',
+    edition: '2023',
+    hasKnowledgeBase: false,
+    audience: 'all',
+    semester: 1,
+    guidePdfUrl: 'https://drive.google.com/file/d/1EJyghKdN7oi_xYyeHJWXZz1lQreAdXuc/view',
+    downloadNote: "Teacher's Book — Vocational English series (York Press, 2023) · copy on Google Drive",
+    downloadNoteAr: 'كتاب المعلم — سلسلة Vocational English (York Press، طبعة 2023) · نسخة على Google Drive',
+  },
+  {
+    id: ENGLISH_HOSPITALITY_S1_CURRICULUM_BOOK_ID,
+    title: 'English – Hospitality and Tourism Track, Grade 10 (Semester 1)',
+    titleAr: 'اللغة الإنجليزية – قطاع الضيافة والسياحة – الصف العاشر – الفصل الأول',
+    subjectId: 'english',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'English',
+    edition: '2023',
+    hasKnowledgeBase: false,
+    audience: 'all',
+    semester: 1,
+    guidePdfUrl: 'https://drive.google.com/file/d/1pZbTwHj2y_lyv9MBbBTiFk7PF4mHVSbn/view',
+    downloadNote: "Teacher's Book — Vocational English series (York Press, 2023) · copy on Google Drive",
+    downloadNoteAr: 'كتاب المعلم — سلسلة Vocational English (York Press، طبعة 2023) · نسخة على Google Drive',
+  },
+  {
+    id: ENGLISH_INDUSTRY_S1_CURRICULUM_BOOK_ID,
+    title: 'English – Industrial/Technical Track, Grade 10 (Semester 1)',
+    titleAr: 'اللغة الإنجليزية – القطاع الصناعي والتقني – الصف العاشر – الفصل الأول',
+    subjectId: 'english',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'English',
+    edition: '2nd',
+    hasKnowledgeBase: false,
+    audience: 'all',
+    semester: 1,
+    // The track's own Level-2 Teacher's Book ("industry english 2.pdf").
+    // The lesson content above was mined from Technical English Level 1
+    // instead (this file's text wouldn't extract — see the industry data
+    // file's meta), so the linked book and the catalog rows differ; the
+    // link is still the printed book this track's teachers hold.
+    guidePdfUrl: 'https://drive.google.com/file/d/1a6j5izZzLqmHdNFNMj7Je93Uk5Fkt9ml/view',
+    downloadNote: "Teacher's Book — Vocational English series (York Press, 2023) · copy on Google Drive",
+    downloadNoteAr: 'كتاب المعلم — سلسلة Vocational English (York Press، طبعة 2023) · نسخة على Google Drive',
   },
   {
     id: 'book-science-8',
@@ -551,15 +1005,11 @@ const _HARDCODED_UNITS: Unit[] = [
   },
 
   // Other books
-  {
-    id: 'unit-eng-10-1',
-    bookId: 'book-english-10',
-    name: 'Communication Skills',
-    nameAr: 'مهارات التواصل',
-    description: 'Reading, writing, and speaking skills',
-    descriptionAr: 'مهارات القراءة والكتابة والتحدث',
-    order: 1,
-  },
+  // `unit-eng-10-1` ('Communication Skills') used to sit here: a hand-written
+  // placeholder with no lessons under it, which is why English was a
+  // lesson-level dead end for as long as the catalog has existed. Replaced
+  // 2026-09-05 by the five real units the student book prints, built from
+  // data/iqra_curriculum_g10_english_sem1.json. Nothing referenced its id.
   {
     id: 'unit-sci-8-1',
     bookId: 'book-science-8',
@@ -1207,10 +1657,30 @@ const _MATH_G10_S2_BOOK_ID = 'book-math-10-s2';
 const _nccdSem1Browser = buildNccdSem1BrowserCatalog();
 const _nccdSem2Browser = buildNccdSem2BrowserCatalog();
 const _finlitSem1Browser = buildFinlitSem1BrowserCatalog();
+const _arabicSem1Browser = buildArabicSem1BrowserCatalog();
+const _arabicSem2Browser = buildArabicSem2BrowserCatalog();
+const _islamicSem1Browser = buildIslamicSem1BrowserCatalog();
+const _islamicSem2Browser = buildIslamicSem2BrowserCatalog();
 const _chemSem1Browser = buildChemSem1BrowserCatalog();
+const _physSem1Browser = buildPhysSem1BrowserCatalog();
+const _physSem2Browser = buildPhysSem2BrowserCatalog();
+const _earthSem1Browser = buildEarthSem1BrowserCatalog();
+const _earthSem2Browser = buildEarthSem2BrowserCatalog();
+const _bioSem1Browser = buildBioSem1BrowserCatalog();
+const _bioSem2Browser = buildBioSem2BrowserCatalog();
 const _chemSem2Browser = buildChemSem2BrowserCatalog();
 const _g9MathSem1Browser = buildG9MathSem1BrowserCatalog();
 const _g9MathSem2Browser = buildG9MathSem2BrowserCatalog();
+const _engCommerceBrowser = buildEnglishCommerceBrowserCatalog();
+const _engAgricultureBrowser = buildEnglishAgricultureBrowserCatalog();
+const _engHospitalityBrowser = buildEnglishHospitalityBrowserCatalog();
+const _engIndustryBrowser = buildEnglishIndustryBrowserCatalog();
+// General English. `book-english-10-s1` and `-s2` are the two rows that
+// have existed since this file was written and carried ZERO lessons until
+// 2026-09-05 — a teacher who picked English and opened either saw an empty
+// book, one level below the dead end the MVP-subject test catches.
+const _engSem1Browser = buildEngSem1BrowserCatalog();
+const _engSem2Browser = buildEngSem2BrowserCatalog();
 
 // ─── Authored-Bloom's enrichment for NCCD browser rows ───────────────────────
 //
@@ -1320,24 +1790,56 @@ export const UNMATCHED_AUTHORED_LESSON_TITLES: readonly string[] = [
 export const UNITS: Unit[] = [
   ..._HARDCODED_UNITS.filter(u => !_legacyBookIds.has(u.bookId)),
   ..._chemSem1Browser.units,
+  ..._physSem1Browser.units,
+  ..._physSem2Browser.units,
+  ..._earthSem1Browser.units,
+  ..._earthSem2Browser.units,
+  ..._bioSem1Browser.units,
+  ..._bioSem2Browser.units,
   ..._chemSem2Browser.units,
   ..._nccdSem1Browser.units,
   ..._nccdSem2Browser.units,
   ..._finlitSem1Browser.units,
+  ..._arabicSem1Browser.units,
+  ..._arabicSem2Browser.units,
+  ..._islamicSem1Browser.units,
+  ..._islamicSem2Browser.units,
   ..._g9MathSem1Browser.units,
   ..._g9MathSem2Browser.units,
+  ..._engCommerceBrowser.units,
+  ..._engAgricultureBrowser.units,
+  ..._engHospitalityBrowser.units,
+  ..._engIndustryBrowser.units,
+  ..._engSem1Browser.units,
+  ..._engSem2Browser.units,
 ];
 
 /** Active lessons — legacy Math/Chem G10 rows replaced by NCCD-sourced browser rows. */
 export const LESSONS: Lesson[] = [
   ..._HARDCODED_LESSONS.filter(l => !_legacyUnitIds.has(l.unitId)),
   ..._chemSem1Merged.lessons,
+  ..._physSem1Browser.lessons,
+  ..._physSem2Browser.lessons,
+  ..._earthSem1Browser.lessons,
+  ..._earthSem2Browser.lessons,
+  ..._bioSem1Browser.lessons,
+  ..._bioSem2Browser.lessons,
   ..._chemSem2Merged.lessons,
   ..._nccdSem1Browser.lessons,
   ..._nccdSem2Browser.lessons,
   ..._finlitSem1Browser.lessons,
+  ..._arabicSem1Browser.lessons,
+  ..._arabicSem2Browser.lessons,
+  ..._islamicSem1Browser.lessons,
+  ..._islamicSem2Browser.lessons,
   ..._g9MathSem1Browser.lessons,
   ..._g9MathSem2Browser.lessons,
+  ..._engCommerceBrowser.lessons,
+  ..._engAgricultureBrowser.lessons,
+  ..._engHospitalityBrowser.lessons,
+  ..._engIndustryBrowser.lessons,
+  ..._engSem1Browser.lessons,
+  ..._engSem2Browser.lessons,
 ];
 
 /** Math Grade 10 Semester 1 book id (NCCD-backed). */
@@ -1396,17 +1898,33 @@ export function getSemesterLabel(book: Book, lang: 'ar' | 'en'): string {
 export function getBooksForSubjectGrade(
   subjectId: string,
   gradeId: string,
-  role?: 'teacher' | 'student' | 'school_admin' | 'system_admin',
+  role?: 'teacher' | 'student' | 'parent' | 'school_admin' | 'system_admin',
 ): Book[] {
   return BOOKS.filter(b => {
     if (b.subjectId !== subjectId || b.gradeId !== gradeId) return false;
     if (INVESTOR_MVP_CURRICULUM && !MVP_BOOK_IDS.includes(b.id)) return false;
     const aud = b.audience ?? 'all';
     if (aud === 'all') return true;
-    // teachers and admins see everything; students only see 'student' + 'all'
+    // teachers and admins see everything; students and parents only see 'student' + 'all'
     if (!role || role === 'teacher' || role === 'school_admin' || role === 'system_admin') return true;
     return aud === 'student';
   });
+}
+
+/**
+ * True when a subject/grade pair has a visible book behind it.
+ *
+ * The pair is the unit that matters, and neither half answers alone: SUBJECTS
+ * lists english for grade-9 because the subject exists there nationally, while
+ * MVP_BOOK_IDS holds no Grade 9 English book. The AI-tools pickers offer grades
+ * and subjects as two independent lists — `getPickerSubjects()` deliberately
+ * ignores its gradeId so every screen rebuilds the identical list (see
+ * `scopePickerParams` in the app's lessonPrep) — so a teacher can land on a
+ * combination that no book covers. This is what the pickers ask before letting
+ * one be chosen, and what generation re-checks for URLs saved before it did.
+ */
+export function hasCurriculumForSubjectGrade(subjectId: string, gradeId: string): boolean {
+  return getBooksForSubjectGrade(subjectId, gradeId).length > 0;
 }
 
 /** True when a book id is allowed in the current curriculum UI surface. */

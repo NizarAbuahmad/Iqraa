@@ -37,6 +37,7 @@ import {
 } from "@workspace/db";
 import type { EvaluationQuestion } from "@workspace/db";
 import { and, asc, eq, isNull } from "drizzle-orm";
+import { lessonIdsForObjectiveIds } from "@workspace/curriculum";
 import { logger } from "../lib/logger";
 import { createRateLimiter } from "../lib/rateLimit";
 import {
@@ -78,6 +79,24 @@ async function evaluationByCode(rawCode: unknown) {
   // exist.
   if (!row || row.status !== "published") return undefined;
   return row;
+}
+
+/**
+ * The curriculum lessons a paper covers, for the student's figure panel.
+ *
+ * Sends lesson **ids**, not figures and not URIs. The figures are bundled into
+ * the app by Metro at build time (`bookFigureAssets.ts`), so the client
+ * resolves them locally and needs no bytes from here; and the URIs are
+ * build-time bundle paths that differ between web and native, which this
+ * server has no way to know. A short string is the whole contract.
+ *
+ * Objective ids themselves stay server-side: `sanitizeQuestionForStudent`
+ * projects only `{id, orderIndex, type, marks, body}`, and widening that
+ * allowlist to ship curriculum internals to an unauthenticated share-code
+ * holder would be a bigger change than this feature earns.
+ */
+function lessonIdsForPaper(questions: readonly { objectiveId: string }[]): string[] {
+  return lessonIdsForObjectiveIds(questions.map(q => q.objectiveId));
 }
 
 async function liveQuestions(evaluationId: string) {
@@ -213,8 +232,12 @@ router.post("/take/:code/claim", async (req, res) => {
     }
 
     const { token, hash } = issueAccessToken();
+    let attemptId: string;
     try {
-      await db.insert(attempts).values({
+      // The id is wanted, not incidental: it seeds the per-student ordering of
+      // matching questions below, and the resume route reads the same id off
+      // the token — which is what keeps the two orderings identical.
+      const [created] = await db.insert(attempts).values({
         evaluationId: evaluation.id,
         studentId,
         source: "student_link",
@@ -224,7 +247,9 @@ router.post("/take/:code/claim", async (req, res) => {
         tokenExpiresAt: new Date(Date.now() + TOKEN_TTL_MS),
         questionSnapshot: questions,
         levelScaleSnapshot: { scaleId: evaluation.levelScaleId, bands },
-      });
+      }).returning({ id: attempts.id });
+      if (!created) throw new Error("attempt insert returned no row");
+      attemptId = created.id;
     } catch (err) {
       // The check above is the fast path; this is the one that is actually
       // true. Thirty students press start at once, so two claiming the same
@@ -243,7 +268,8 @@ router.post("/take/:code/claim", async (req, res) => {
     res.status(201).json({
       token,
       student: { id: member.id, displayName: member.displayName },
-      questions: questions.map(sanitizeQuestionForStudent),
+      questions: questions.map(q => sanitizeQuestionForStudent(q, attemptId)),
+      lessonIds: lessonIdsForPaper(questions),
     });
   } catch (err) {
     logger.error({ err }, "claim student attempt failed");
@@ -282,8 +308,12 @@ router.get("/take/attempt/state", async (req, res) => {
     res.json({
       status: attempt.status,
       submittedAt: attempt.submittedAt,
-      questions: snapshot.map(sanitizeQuestionForStudent),
+      questions: snapshot.map(q => sanitizeQuestionForStudent(q, attempt.id)),
       answers: saved,
+      // Also here, not just on claim: a student who reloads mid-exam resumes
+      // through this route, and a figure panel that vanished on refresh would
+      // read as the diagrams having been withdrawn.
+      lessonIds: lessonIdsForPaper(snapshot),
     });
   } catch (err) {
     logger.error({ err }, "student attempt state failed");

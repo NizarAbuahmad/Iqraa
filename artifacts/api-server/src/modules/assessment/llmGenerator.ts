@@ -27,11 +27,16 @@
 import type { CurriculumObjective } from "@workspace/curriculum";
 import type { Difficulty, QuestionType } from "@workspace/db";
 import { QUESTION_TYPES } from "./questionTypes.ts";
+import {
+  VERIFIABLE_TOPICS,
+  isMathematicsSubject,
+  parseAnswerKeyCheck,
+} from "@workspace/math-verify";
 import { competencyForBlooms, type CompetencyKey } from "./competency.ts";
 import type { GeneratedQuestion } from "./mockGenerator.ts";
 
 /** Bumped when the prompt changes shape, so usage rows stay comparable. */
-export const GENERATION_PROMPT_VERSION = "exam-gen-2";
+export const GENERATION_PROMPT_VERSION = "exam-gen-4";
 
 export interface LlmGenerationRequest {
   objectives: CurriculumObjective[];
@@ -59,7 +64,7 @@ export interface LlmGenerationRequest {
  * options with unique text and a correct id that exists — and a question that
  * fails them is thrown away after we have already paid for it.
  */
-const TYPE_CONTRACTS: Partial<Record<QuestionType, string>> = {
+export const TYPE_CONTRACTS: Partial<Record<QuestionType, string>> = {
   multiple_choice:
     '{"type":"multiple_choice","body":{"stem":"…","multiSelect":false,' +
     '"options":[{"id":"a","text":"…"},{"id":"b","text":"…"},{"id":"c","text":"…"},{"id":"d","text":"…"}]},' +
@@ -75,17 +80,37 @@ const TYPE_CONTRACTS: Partial<Record<QuestionType, string>> = {
     '{"type":"fill_blank","body":{"template":"… {{1}} … {{2}} …"},' +
     '"expectedAnswer":{"blanks":[{"accept":["…","…"]},{"accept":["…"]}]}}' +
     "  — one entry in blanks per {{n}}, and accept must list every spelling a correct student might write",
+  // These four are graded by a human (practical_task) or, once Tier 3 exists,
+  // an AI rubric grader (the other three) — never by `questionTypes.ts`'s own
+  // `grade()`, which none of them define. All three ai_rubric types need
+  // `modelAnswer` and `keyConcepts` in `expectedAnswer`: the same fields the
+  // mock generator always fills in, and — unlike the four contracts above —
+  // not optional. `validateGenerated` calls each type's own `validate()`
+  // before anything is persisted, and `questionTypes.ts`'s shared open-response
+  // validator rejects any question missing either field, model-written or
+  // not. A contract that omits them (as this one used to for all three) is
+  // not a smaller ask — it is asking the model to write a question that
+  // cannot pass the gate that already exists for it.
   short_answer:
-    '{"type":"short_answer","body":{"prompt":"…"},"expectedAnswer":{"accept":["…"]}}',
+    '{"type":"short_answer","body":{"prompt":"…"},' +
+    '"expectedAnswer":{"modelAnswer":"…","keyConcepts":["…","…"]},' +
+    '"rubric":{"criteria":[{"label":"…","marks":2}]}}',
   open_ended:
-    '{"type":"open_ended","body":{"prompt":"…"},"expectedAnswer":{},' +
+    '{"type":"open_ended","body":{"prompt":"…"},' +
+    '"expectedAnswer":{"modelAnswer":"…","keyConcepts":["…","…"]},' +
     '"rubric":{"criteria":[{"label":"…","marks":2}]}}',
   problem_solving:
-    '{"type":"problem_solving","body":{"prompt":"…"},"expectedAnswer":{},' +
+    '{"type":"problem_solving","body":{"prompt":"…","scenario":"…"},' +
+    '"expectedAnswer":{"modelAnswer":"…","keyConcepts":["…","…"]},' +
     '"rubric":{"criteria":[{"label":"…","marks":2}]}}',
+  // Graded manually against successCriteria, never by an AI rubric — a
+  // rubric example here would be as misleading as omitting successCriteria
+  // is disqualifying, since `practicalTask.validate()` requires the latter
+  // and never looks for the former.
   practical_task:
-    '{"type":"practical_task","body":{"prompt":"…"},"expectedAnswer":{},' +
-    '"rubric":{"criteria":[{"label":"…","marks":2}]}}',
+    '{"type":"practical_task","body":{"prompt":"…"},' +
+    '"expectedAnswer":{"successCriteria":["…","…"]}}' +
+    "  — no rubric; a teacher marks this by hand against the success criteria",
 };
 
 const DIFFICULTY_NOTE: Record<Difficulty, string> = {
@@ -93,6 +118,23 @@ const DIFFICULTY_NOTE: Record<Difficulty, string> = {
   standard: "A balanced paper: some recall, most application, a little analysis.",
   advanced: "Weight towards application and analysis. Recall alone should not pass it.",
 };
+
+/**
+ * Is this a mathematics paper?
+ *
+ * Matched on `subjectId`, never on the subject's display name. CLAUDE.md
+ * records the name-matching version of this question as a repeat offender —
+ * `isMathContext` tests a string, so a mislabelled subject serves maths
+ * questions under a chemistry title. An id is not a display string, does not
+ * localise, and cannot drift.
+ *
+ * Used to decide whether the prompt insists on a machine-checkable key: the
+ * verifier only proves derivatives, circles and equations, so asking a
+ * chemistry paper for one would produce keys it must then refuse.
+ */
+export function paperIsMathematics(objectives: readonly CurriculumObjective[]): boolean {
+  return objectives.some(o => isMathematicsSubject(o.subjectId));
+}
 
 export function buildGenerationPrompt(req: LlmGenerationRequest): {
   system: string;
@@ -105,11 +147,17 @@ export function buildGenerationPrompt(req: LlmGenerationRequest): {
   const objectives = req.objectives
     .map(o => `- id "${o.id}": ${o.descriptionAr || o.description}`)
     .join("\n");
+  // Only a maths paper gets pushed on the check block: those are the topics the
+  // verifier can actually prove.
+  const isMaths = paperIsMathematics(req.objectives);
 
   const system = [
     "You write exam questions for the Jordanian national curriculum, Grade 10.",
     arabic
-      ? "Every question you write is in Modern Standard Arabic, as a Jordanian teacher would phrase it for their own class. Use Arabic mathematical notation and Arabic-Indic digits where a teacher would."
+      ? "Every question you write is in Modern Standard Arabic, as a Jordanian teacher would phrase it "
+        + "for their own class. Use Arabic mathematical notation and Arabic-Indic digits where a teacher "
+        + "would — in the text a student reads. The \"check\" field described below is never shown to a "
+        + "student: it is read by a computer algebra system, and it is always Latin."
       : "Write in clear English.",
     "",
     "Rules you do not break:",
@@ -118,6 +166,34 @@ export function buildGenerationPrompt(req: LlmGenerationRequest): {
     "3. Distractors are plausible wrong answers a real student would pick — never filler, never obviously absurd, never 'none of the above'.",
     "4. Never write a question whose answer is a matter of opinion unless the type is open_ended.",
     "5. Do not repeat yourself. Two questions that test the same fact in the same way are one question.",
+    "6. Whenever a question's answer is symbolic — an expression, a value, a solution set, a point — you "
+      + "include \"check\", in Latin notation. It is verified by a computer algebra system before any "
+      + "teacher sees the question, so a key you are not sure of is worth more to us checked than omitted. "
+      + "Written in Arabic it cannot be checked at all, and the question goes out unverified.",
+    // The figure rule the deck generator has had since decks shipped checks
+    // reading «يمثل الرسم البياني…» beside an empty slide (`FIGURE_RULE_AR` in
+    // `lib/prompts.ts`). The exam generator never had one, so nothing stopped
+    // a stem pointing at a picture that was not on the paper.
+    //
+    // Deliberately NOT the same rule. The deck's is a flat ban, because that
+    // path can only draw a curve it can derive from equations in the text.
+    // The exam paper now carries the lesson's own book figures in a panel, so
+    // a general reference is honest here — what is not honest is a *specific*
+    // one. The panel shows every figure the lesson has, in book order, chosen
+    // by nothing; a stem saying «الشكل ٣» or "the figure below" names one the
+    // model never saw and cannot have picked.
+    "7. The paper shows the lesson's own textbook diagrams together, in one panel, in book order. "
+      + "You may write a question that refers to them in general (\"استعن بأشكال الدرس\"). "
+      + "Never name or number a specific one — not \"الشكل ٣\", not \"the figure below\", not \"الشكل المجاور\" — "
+      + "and never describe what one contains. You have not seen these images. "
+      + "A question that depends on identifying one of them cannot be answered from this paper.",
+    ...(isMaths
+      ? [
+        "8. This is a mathematics paper. Every question here whose answer is an expression, a value, a "
+          + "solution set or a point has a \"check\" — that is most of them. A maths question without one "
+          + "is a question nobody can verify.",
+      ]
+      : []),
     "",
     "Return JSON only: {\"questions\": [ … ]}. No prose, no markdown fence.",
   ].join("\n");
@@ -152,6 +228,40 @@ export function buildGenerationPrompt(req: LlmGenerationRequest): {
     "    A recall question about an application objective is knowledge.",
     '  "marks": a positive number, larger for questions that demand more work',
     '  "skill": a two-to-four word label for what it actually tests, or null',
+    "",
+    // The stem stays Arabic for the class; this is the same maths in the only
+    // notation SymPy reads. Optional on purpose — a question with no symbolic
+    // answer must not be forced to invent one, and an absent check costs the
+    // question nothing beyond going out unverified.
+    'When the answer is something a computer algebra system can check, include:',
+    '  "check": {"topic": …, "question": …, "answer": …} — all in LATIN notation (x, 0-9), never Arabic.',
+    `    topic is one of: ${VERIFIABLE_TOPICS.join(" | ")}`,
+    '    question is the payload the topic needs: the expression for a derivative ("x^3 - 4x"),',
+    '      the expression and point separated by @ for derivative_at_point ("x^4@2"),',
+    '      the equation for an equation topic ("2x + 5 = 13") or a circle ("(x-4)^2 + (y+1)^2 = 9").',
+    '    answer is your key in latin form ("3x^2 - 4", "x = 4", "(4, -1)").',
+    // The permission to omit stays, and is deliberately narrow. A model
+    // badgered into inventing a check for an essay question would produce a
+    // key the verifier then judges — which is a worse outcome than no key.
+    '    Omit "check" only when the answer is prose, a definition, or otherwise not symbolic.',
+    // One complete object beats three paragraphs describing one. It exists
+    // mainly to show the two notations sitting side by side in a single
+    // question — Arabic in the stem a student reads, Latin in the field the
+    // machine reads — which is the exact distinction the rules above are
+    // asking the model to hold.
+    ...(isMaths
+      ? [
+        "",
+        "A complete example of a maths question, showing the Arabic a student reads and the Latin the",
+        "verifier reads in the same object:",
+        '{"type":"short_answer","objectiveId":"<one of the ids above>","competencyKey":"application",'
+          + '"marks":3,"skill":"اشتقاق كثيرة حدود",'
+          + '"body":{"prompt":"أوجد مشتقة الاقتران ق(س) = س³ − ٤س"},'
+          + '"expectedAnswer":{"modelAnswer":"المشتقة هي ٣س² − ٤","keyConcepts":["المشتقة","كثيرة الحدود"]},'
+          + '"rubric":{"criteria":[{"label":"صحة الاشتقاق","marks":3}]},'
+          + '"check":{"topic":"derivative_polynomial","question":"x^3 - 4x","answer":"3x^2 - 4"}}',
+      ]
+      : []),
   ].join("\n");
 
   return { system, user };
@@ -236,6 +346,11 @@ export function parseGeneratedQuestions(
 
     const skill = typeof q["skill"] === "string" && q["skill"].trim() ? q["skill"].trim() : null;
 
+    // Absent or malformed both give null, and neither is an error: a question
+    // with no symbolic answer is the normal case, and a broken check costs the
+    // question only its chance at being verified, never its place in the paper.
+    const check = parseAnswerKeyCheck(q["check"]);
+
     questions.push({
       type: type as QuestionType,
       body,
@@ -247,6 +362,7 @@ export function parseGeneratedQuestions(
       marks: Math.round(marks * 100) / 100,
       skill,
       gradingMode: typeModule.defaultGradingMode,
+      check,
       // Provenance, so a question can always answer "where did you come from".
       // `evaluations.generator` records the same at the evaluation level.
       aiMetadata: {

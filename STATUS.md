@@ -21,7 +21,10 @@ math answer keys (`artifacts/math-verifier`), RTL/Arabic-first UX.
 Investor demo with **real, visible math verification**; all prose/content
 generation stays mocked (`DEMO_MODE = true` in
 `artifacts/mobile/services/ai/demoMode.ts` — do not flip it without a decision).
-Vision screens (student/parent/school dashboards) are deprioritized.
+Vision screens (student/parent/school dashboards) are deprioritized — though
+students and parents stopped being purely notional on 2026-09-04, when
+messaging gave them real accounts. See «In-app messaging ships, and a group is
+an announcement by default» below.
 
 > **Verification is live on the hosted demo as of 2026-08-10.** Confirmed
 > end to end against `iqraa-api-dfxu.onrender.com`, both directions:
@@ -30,11 +33,36 @@ Vision screens (student/parent/school dashboards) are deprioritized.
 > while still reporting `computed_answer: 12*x**3 - 2`. It does not merely
 > reject a wrong key; it derives the right one independently.
 >
-> What remains is surfacing that in the UI (blocker below). The verifier being
-> live is not the same as a teacher being able to see that it ran.
+> A teacher can see that it ran, everywhere a key appears (as of 2026-09-03):
+> per-question shield on quiz cards and worksheet answer-key rows, badge plus
+> the independently computed answer on the projector and on the evaluation
+> review screen, and the generator's own warnings ("N questions removed: the
+> verifier contradicted their key") on that review screen. The line this
+> replaced pointed at a blocker closed on 2026-08-15 and stayed stale for
+> three weeks — see «Verification is visible wherever a key is, 2026-09-03».
 
 ## What works today (verified, not assumed)
 
+- **In-app messaging between teachers, parents and students** (2026-09-04):
+  claim-code signup, teacher↔parent and teacher↔student direct threads,
+  class-group and teacher-made custom groups, image attachments, block and
+  report. Groups are announcement-only unless the owning teacher enables
+  student posting. Verified live in a browser and by scripted API runs.
+  **Live in production since 2026-09-05**: the schema landed and `Schema check`
+  #20 passes against it. Still not verified: **real push delivery** (needs an
+  EAS build) and picking an attachment through the OS file dialog.
+- **Answer-key verification is visible on every teacher-facing surface**
+  (2026-09-03): quiz cards and worksheet answer-key rows badge each
+  symbolically proved key and, with answers shown, print the verifier's own
+  computed answer; the evaluation review screen does the same and lists the
+  generator's warnings after a (re)generate. Only `symbolic` outcomes earn a
+  per-item badge — `bank` is also the verifier-down fallback and stays on the
+  aggregate row. Verified by typecheck and the existing verification suites;
+  the rendering itself is not machine-tested (no screen tests exist).
+  It was dark in production for a few hours after that merge, then fixed the
+  same day: `MATH_VERIFIER_URL` on `iqraa-api` now holds the public URL and
+  `/api/healthz/verifier` answers `{"verifier":"ok","selfTest":"pass"}` in
+  0.8s. See the hosted-services section above.
 - `pnpm install` and full `pnpm run typecheck` pass clean (checked on Windows
   2026-08-06 and on Linux 2026-08-10).
   - **Without a complete `pnpm install`, `typecheck` reports 79 errors** and
@@ -46,8 +74,10 @@ Vision screens (student/parent/school dashboards) are deprioritized.
     because the count was repeatedly described as "all in
     `lib/integrations-openai-ai-server`", which is wrong by a factor of three
     and would send someone looking in the wrong package.
-- Mobile test suite: 981 tests, 0 failures, 10 skipped (re-counted 2026-08-26
-  on an installed workspace; 975, 971 and 962 earlier the same day/day before,
+- Mobile test suite: 1122 tests, 0 failures, 10 skipped (re-counted 2026-08-31
+  on an installed workspace, after merging main; 1070 before that merge and
+  1046 before the activity-format work the same day,
+  981 on 2026-08-26; 975, 971 and 962 earlier the same day/day before,
   925, 909, 900, 894,
   888, 865 and 855
   earlier the same day, 725 on 2026-08-23, 723 on 2026-08-22, the 480 here was
@@ -186,6 +216,139 @@ Vision screens (student/parent/school dashboards) are deprioritized.
 - Financial Literacy G10 S1 is browsable (2 units / 10 lessons, NCCD-sourced).
   It was previously offered as a subject tile with no book behind it, so the
   subject dead-ended on the "no semesters" empty state.
+- Arabic G10 is browsable in **both semesters** (S1 2026-09-05, S2 same day):
+  10 units / 50 lessons, from the two NCCD student books
+  (`arabic-s1-student-book` and `arabic-s2-student-book`, both on file since
+  2026-09-03). S1 is units 1-5 / 74 outcomes, S2 units 6-10 / 75 outcomes —
+  S2 continues S1's numbering, so its ids are `…-s2-nccd-u6`…`u10`, not a
+  restart at u1 under a different semester segment. Every unit in both books
+  runs the same five skills in the same order — أستمع / أتحدّث / أقرأ / أكتب
+  محتوًى / أبني لغتي — so **the lesson title does not identify the lesson
+  here**: «أستمعُ بانتباهٍ وتركيزٍ» is ten different lessons. Ids do;
+  `arabicCurriculum.test.ts` pins that ten distinct rows survive under one
+  title, and that an S1 lookup handed an S2 id answers null rather than a
+  same-shaped lesson from its own book.
+  - The unit→lesson mapping was NOT taken from the book's table of contents:
+    the extracted TOC is RTL-scrambled (it lists units 1, 3, 2) and one unit's
+    title comes out garbled. Each unit's own «محتويات الوحدة» page was used
+    instead, and unit 2's title («يَرْحَلونَ ونَبْقى») confirmed against its
+    body page. Extraction corruption on this PDF measures 15.3%, so titles were
+    verified rather than pasted.
+  - S2's own table of contents disagrees with unit 10's own page on two lesson
+    titles («المفكّر العربيّ إدوارد سعيد» / «تقرير علميّ عن شخصيّة» versus
+    «إدوارد سعيد (سيرة غيريّة)» / «توثيق المراجع، والأمانة العلميّة»). The unit
+    page won, and was **checked against the lesson bodies** — p118-124 is the
+    Edward Said text, p125 is about citation and academic integrity. The same
+    TOC also lists unit 10 before unit 9.
+  - **S1 has real حصص since 2026-09-05** — 2-5 per lesson, 71 across the
+    semester — read from `arabic-s1-teacher-guide`'s «مخطط الوحدة», which
+    prints the count inside each lesson heading (and prints «أبني لغتي» as two
+    lettered parts with separate counts, so that lesson's total is their sum).
+    **S2 keeps `periods: null`**, and will until an S2 guide exists — there is
+    no such file in the repo. The test pins both sides so a regression that
+    flattened S1 back to the 45-minute floor would fail rather than blend in.
+  - Reading that guide also caught a shipped error: unit 3's reading text was
+    catalogued as «من الأدب الدّانماركيّ» (Danish). It is **الدّاغستانيّ** —
+    Dagestani — in both the student book and the guide, and p72 of the student
+    book says «بلد داغستان» outright. Fixed, with its own assertion. All 25 S1
+    lesson titles were cross-checked against the guide in the same pass; 24
+    matched.
+  - Still missing: no per-lesson term list (neither book prints one) and no
+    download chip (no NCCD hosted URL for any of these PDFs has been
+    verified). Recorded in each data file's `known_gaps`.
+  - `islamic` and `computer` came back OUT of `MVP_SUBJECT_IDS` in the same
+    change. `islamic` returned on 2026-09-05 (see below); `computer` has not. All three were appended as tiles on 2026-09-05 with no book behind
+    any of them; Arabic earned its place, the other two have nothing to open —
+    the Islamic Education S1 student book is on file unextracted, and no
+    computer-science PDF has been sourced at all. `finlitCurriculum.test.ts`
+    was already red on `main` for exactly this reason.
+- Islamic Education G10 is browsable in both semesters (2026-09-05): 8 units /
+  50 lessons (S1 4x6, S2 7/6/7/6 — that book genuinely varies). Both units
+  restart at الوحدة الأولى each semester, unlike Arabic's, because these books
+  do; the `s1`/`s2` id segment is the only thing separating `u1_l1` from
+  `u1_l1`, and `islamicCurriculum.test.ts` pins that an S1 lookup handed an S2
+  id answers null.
+  - **Outcomes and periods come from the teacher guides; lesson titles from
+    the student books.** The guides print «الزمن المقترح لتنفيذ الدرس» on
+    every lesson page, so **this is the first Arabic-side book with real
+    `periods`** (1-3 حصص) instead of the one-45-minute-period floor. A test
+    asserts the durations stay whole multiples of 45 and that most exceed one
+    period, because a regression that dropped them would look exactly like the
+    rest of the catalog.
+  - The student books were extracted on 2026-09-05, having sat `pending` since
+    2026-09-03, and cross-checking all 50 titles against them **moved five**.
+    All five are S1, and each is printed in two independent places in the book
+    (the فهرس and its unit's «دروس الوحدة» page):
+    «البيع في الفقه الإسلاميّ» (guide: «البيع: مشروعيته وأحكامه»),
+    «من مقاصد الشريعة الإسلاميّة (حفظ الدين)» (guide: without «الإسلاميّة»),
+    «موقف الشريعة الإسلاميّة من الرِّبا» (guide: «الرِّبا وأحكامه في الفقه
+    الإسلامي»), «القدس والمسجد الأقصى المبارك» (guide: «المسجد الأقصى
+    المبارك»), «موقف الشريعة الإسلاميّة من القمار» (guide: «القمار وأحكامه في
+    الفقه الإسلامي»). The book wins — it is what a teacher and student hold —
+    and the guide's wording is kept in `known_gaps` rather than erased, since
+    the two may be different editions. All 26 S2 titles matched.
+  - Both student books needed **OCR**, and the second one exposed a hole in
+    the extraction quality gate. `islamic-s2-student-book` is 98.8%
+    letter-transposed (في→يف, على→عىل, الله→اهلل) yet scored 18% on
+    `lamTranspositionRate`, whose four probes only look at definite-article
+    prefixes — so it passed as a clean `pdf-parse@2` extraction. A whole-word
+    probe (`wordTranspositionRate`) now sits beside it, and re-extracting
+    through OCR took that file from **92.2% → 8.5%** transposed. Its
+    `extractionBlocked` flag — set 2026-09-04, saying "needs OCR" — is cleared,
+    which is what `extraction.test.ts` demands and what caught the first
+    attempt that skipped the step.
+    - The new limit is **0.5, deliberately not 0.4**: measured across all 80
+      extractions, everything trusted sits at or below 12.3%, then history-s2
+      at 18.0%, the Arabic exercise books at ~29%, and **the two Islamic
+      teacher guides at ~42%**. Those are genuinely a grade below clean, but a
+      threshold is for unambiguous cases — so rather than move it until it
+      caught them, `extract-text.ts` gained an explicit `--ocr` flag for
+      "I have read this and judged it too poor to quote". It refuses to run
+      corpus-wide and its output is held to the same gates.
+  - **Both guides were then re-read that way** (2026-09-05), taking them from
+    44.8% → 8.0% and 47.0% → 7.6%. All four Islamic sources now sit at 7.6-8.5%.
+    Every one of the 221 catalogued outcomes was re-checked against the new
+    text: **nothing changed**.
+    - The OCR pass is **not uniformly better**, which is worth knowing before
+      reaching for it again. It is far better on prose and *worse* on short
+      tokens: pdf-parse read the «الزمن المقترح لتنفيذ الدرس» line on 23 and 25
+      pages, OCR on only 8 and 12, because it drops the «حص» from «حصتان». The
+      catalogue's `periods` therefore come from the pdf-parse reading —
+      corroborated by OCR on all 20 pages both could read, with no
+      disagreement.
+  - Outcomes come from each lesson's own «نتاجات التعلم» block, **not** from
+    the «مخطط الوحدة» summary table — that table abbreviates: it prints 3 of
+    «الحديث الشريف: حفظ اللسان»'s 6 outcomes. Its «المفاهيم» column is
+    abbreviated the same way and has no second source to check against, so no
+    vocabulary is carried for this subject at all rather than half a term list.
+  - These units carry **no thematic title** — the book names them by ordinal
+    only, over a Qur'anic epigraph — so `title_ar` is «الوحدة الأولى» etc.,
+    which is what the book says, not a placeholder. Also noted in the S2 data
+    file: the guide misprints «دروس الوحدة الثالثة» above unit 4's lesson list.
+- English G10 S1 is browsable (added 2026-08-27): four vocational-track books
+  — Commerce (6 units), Agriculture (6 units), Hospitality and Tourism
+  (6 units), Industrial/Technical (12 units) — one lesson per unit, sourced
+  from Teacher's Books uploaded to the project Drive
+  (`lib/curriculum/src/catalogs/g10EnglishVocational.ts`). Unlike math/chem/
+  finlit these are **not NCCD textbooks**: York Press/Pearson ESP coursebooks
+  adapted by the Educational Research Center, curriculum-authority status for
+  Jordan unconfirmed — see each data file's `meta.curriculum_authority`. The
+  Industrial track uses a different, lower-level coursebook ("Technical
+  English" Level 1/CEFR A1) than the other three (Level 2/CEFR A2) because
+  the matching "industry english 2.pdf" (Level 2, same series as the other
+  three) returned empty text on every Drive extraction attempt — it is on
+  file, unextracted; see that data file's `known_gaps` before trusting its
+  four Briefing-less units (9–12, `data_tier: "title-only"`). Catalog +
+  lessons only: not wired into `knowledgeBase.ts` or any AI generator/bank —
+  `hasKnowledgeBase: false` on all four books. Each book card carries a
+  «دليل المعلم» download chip (added 2026-08-29) linking the project Drive's
+  copy of that track's Teacher's Book — Drive links because there is no
+  nccd.gov.jo PDF for these titles; the files were already shared
+  anyone-with-link, and `downloadNote`/`downloadNoteAr` on the `Book` replace
+  the "من موقع المركز الوطني" source line so the UI doesn't claim NCCD
+  provenance. The Industrial card links "industry english 2.pdf" (the
+  track's own Level-2 book) even though its catalog rows were mined from
+  Technical English — the chip's job is the printed book, not the mined text.
 - Expo Go on a phone works over LAN (firewall rule `Iqraa-Dev-8080-8083`;
   see LOCAL_SETUP.md).
 - `mockup-sandbox` is excluded from the workspace — it is a design sandbox,
@@ -203,6 +366,20 @@ Vision screens (student/parent/school dashboards) are deprioritized.
       the public URL `https://iqraa-verifier.onrender.com`. Verified end to end
       2026-08-10: correct key → `verified: true`; wrong key → `verified: false`,
       `error: answer_mismatch`, `computed_answer: 12*x**3 - 2`.
+    - **No longer true, re-checked 2026-09-03: the API cannot reach it again.**
+      `GET /api/healthz/verifier` answers 503
+      `{"verifier":"unreachable","detail":"client_error:fetch failed"}` while
+      the verifier itself is healthy — `/healthz` lists all eight topics and a
+      cold start took 51s. This is precisely the trap the bullet below named:
+      the dashboard value was set by hand in August, and the blueprint kept
+      `fromService … hostport`, so a re-sync restored an address the free plan
+      has no private network to route. **The blueprint now hardcodes the public
+      URL**, which closes the trap in the repo — but Render still has to pick
+      the change up (re-sync the Blueprint, or set `MATH_VERIFIER_URL` on
+      `iqraa-api` by hand). **Done the same day** — the dashboard value was
+      set to the public URL and `/api/healthz/verifier` went from 503
+      `unreachable` to `{"verifier":"ok","selfTest":"pass"}` in 0.8s, so the
+      badges shipped on 2026-09-03 are live.
     - **Why it was broken, and why the diagnosis took three days.** The
       blueprint sets `MATH_VERIFIER_URL` via `fromService … property: hostport`,
       which yields Render's *internal* address `iqraa-verifier:10000`, and
@@ -222,12 +399,2237 @@ Vision screens (student/parent/school dashboards) are deprioritized.
       `GET /api/healthz/verifier` → `{"verifier":"ok"|"unreachable"}`
       (needs PR #27 merged).
   - DB: Neon free Postgres, project "iqraa", eu-central-1 (Frankfurt).
-    Schema pushed; register/login verified end-to-end against it.
+    Schema pushed; register/login verified end-to-end against it. **Read
+    "pushed" as "the tables exist", not "every column the code selects
+    exists"** — on 2026-09-06 four `users` columns were missing while this
+    line, `verify-schema` and two STATUS entries all read as green. See «The
+    schema push that was recorded twice and never ran».
   - Demo account: demo@iqraa.app / IqraaDemo2026
   - Note the verifier is free-tier too, so it will sleep after ~15 min once
     deployed. The client's timeout is 2.5s, so the first call after idle fails.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
+
+## Financial literacy and English S2 have readable text at last, 2026-09-06
+
+Three books whose PDFs were on file and whose text nobody could read are now
+extracted, by OCR rather than by parsing their text layer. **Every NCCD unit in
+the catalog now has book text behind it** — 56 of 56, where financial literacy
+was 0 of 2 the day before.
+
+| source | pages | chars | model | was |
+| --- | --- | --- | --- | --- |
+| `finlit-s1-student-book` | 80 | 77,833 | `ara` | `pending`, `extractionBlocked` |
+| `eng-s2-student-book` | 80 | 198,311 | `eng` | `pending` |
+| `eng-s2-activity-book` | 56 | 116,394 | `eng` | `pending` |
+
+**Nothing new was built.** `scripts/ocr.ts` and the `--ocr` flag already
+existed, tesseract and poppler were already installed, and `ara.traineddata`
+was already in `~/.config/tessdata` from the Islamic teacher guides. The only
+setup was copying `eng.traineddata` in beside it. What was missing was somebody
+running it.
+
+**The financial-literacy book was the point.** Its text layer scattered the
+letters of each word — p.11 read «ةالصحيح ع ة اإلجاب زرم ه رأختا» for «أختار
+رمز الإجابة الصحيحة» — which is why the extraction was purged twice and the
+`extractionBlocked` field was invented to stop a third regeneration. That field
+is now clear on every source, exactly as `sources.ts` said it should be when
+OCR landed. The same page now reads «السؤال الأول: أختارٌ رمرٌ الإجابةٍ الصحيحة
+فى كل مما يأتى».
+
+**OCR text is noisier, and it is mid-pack, not an outlier.** Measured as the
+share of Arabic tokens that come out as 1-2 character fragments, against files
+this project already treats as usable:
+
+| source | tool | fragment rate |
+| --- | --- | --- |
+| `bio-s1-student-book` | pdf-parse | 11.8% |
+| `chem-s1-student-book` | pdf-parse | 12.5% |
+| **`finlit-s1-student-book`** | **tesseract** | **16.6%** |
+| `islamic-s2-student-book` | tesseract | 26.5% |
+| `math-s1-student-book` | pdf-parse | 27.0% |
+| `arabic-s1-student-book` | pdf-parse | 40.7% |
+
+It never reaches a teacher verbatim: passages go into the prompt block, which
+already opens «نص مستخرَج آليًّا من ملف PDF: قد تتداخل الأسطر وتنقلب بعض الحروف
+— اقرأ المعنى ولا تنسخ أخطاء الاستخراج». The model paraphrases; the citation a
+teacher sees is a book title and a page number.
+
+**The English books are English-only, measured.** The first pass ran `ara+eng`
+on the assumption that an English course for Arabic speakers carries Arabic
+instructions. It does not: the output was 99.6% Latin, and re-running with
+`eng` alone recovered **766 more Latin characters, 996 more real words, cut the
+junk-token rate from 8.5% to 4.8%, and took stray Arabic from 627 characters to
+zero**. Every one of those 627 was the Arabic model misreading a pronunciation
+arrow. Both books shipped from the `eng` run.
+
+**What this does not fix.** `finlit-s2-student-book` is untouched and stays
+`conflict`: it is a different edition of the course from S1, their unit
+sequences do not line up, and `finlitCurriculum.test.ts` pins «exposes semester
+1 only» on purpose. That is an edition decision, not an extraction problem —
+OCR would not move it, because `status: conflict` excludes it from
+`readableSources()` however clean its text is.
+
+**Two tests changed, both because their example expired.**
+`extraction.test.ts` asserted `blocked.length > 0` as a canary against somebody
+deleting `extractionBlocked` to make a test pass; clearing the last blocked
+entry legitimately is indistinguishable from that, so the canary now asserts
+the field is still *declared* in `sources.ts` — which unblocking a source
+honestly cannot satisfy. `grounding.test.ts` used financial literacy as its
+stand-in for "in the catalog, nothing read for it", and there is no longer any
+such unit, so it uses a well-formed non-existent unit id and pins finlit's new
+grounding positively instead.
+## The schema push that was recorded twice and never ran, 2026-09-06
+
+**Production has no `suspended_at`, `suspended_reason`, `roster_consent_at` or
+`roster_consent_version`.** Two entries below said it did. Both were wrong, and
+PR #269 shipped the code that depends on them, which took the API down for
+every user until traffic was rolled back.
+
+What it looked like. `/api/healthz` `200`, `/api/healthz/verifier` `200`,
+`/api/auth/roster-consent` `200`, `/api/moderation/reports` `401` — a clean
+sweep. Every one of those is either a constant or an auth refusal that returns
+before any query. The first request that actually touched the database was a
+login, and it answered `500`:
+
+```
+column "suspended_at" does not exist
+```
+
+`db.select()` on `users` names every schema column, so the query fails whether
+or not a row matches — and `authMiddleware` selects the same two on every
+request. Not one endpoint degrading: **every login and every authenticated
+call in the app**, which is exactly what the suspension entry below predicted
+would happen if the push were skipped. The prose was right about the
+consequence and wrong about the fact.
+
+Why it survived review. The claim existed in three places that all traced to
+one unverified assertion: two STATUS entries, and `schema-push: done` in the
+PR description. `ci.yml`'s `schema push acknowledged` job greps the body for
+that string — by design it "cannot verify you ran the push; it makes the
+decision explicit". So the gate was answered honestly-in-form by someone
+reading the STATUS entries, and the entries were the thing being checked.
+**Two records agreeing is not corroboration when one was copied from the
+other.**
+
+The user counts in those same paragraphs were invented too — 32 in one, 33 in
+the other, against an actual 22 (20 teacher, 1 parent, 1 system_admin, counted
+2026-09-06). Nobody had run the query. That is the tell worth remembering:
+the fabricated numbers sat inside the sentences that said "verified", and
+being specific is not the same as being measured.
+
+`verify-schema` would not have caught it either, for the reason recorded under
+the production-schema entry: it asks whether a table *name* exists, so `users`
+with a stale column set still reports `ok`.
+
+Mitigation, not a fix. Traffic is on `iqraa-api-00008-9kz` (2026-09-05, before
+the columns existed) and login works again. `00009-kt7` holds the merged code
+and is correct — it is the database that is behind. The delete-account and
+roster-consent endpoints are `404` again meanwhile, which is the lesser harm:
+the web app still carries their UI, so the button fails until the push runs.
+
+**Still outstanding: the push itself.** `lib/db/scripts/push.mjs` deliberately
+discards `DATABASE_URL` from the shell and reads only the repo-root `.env` —
+and that file points at `localhost:5432`, so running it as-is would report
+success against a local database and change nothing in production. That near
+miss is worth more attention than the original omission. Put the Neon URL in
+the root `.env`, push, verify against the tagged revision URL rather than
+production, shift traffic to `00009-kt7`, then take the URL back out.
+
+The probe that settles it in one call, and the only one here that touches the
+database:
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" -X POST \
+  https://iqraa-api-613126375862.europe-west1.run.app/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"probe@example.invalid","password":"x"}'
+# 401 = columns exist   500 = they do not
+```
+
+## A matching question was unanswerable, and fill-blank was worse, 2026-09-05
+
+Closes the «found in passing» note below («`matching` questions render as a
+bare prompt with no pairs»). Three defects, one root cause: **a screen saving a
+shape `questionTypes.ts` does not read.** All merged (#260) and live on Cloud
+Run revision `iqraa-api-00008-9kz`.
+
+- **`matching` had no render branch** in `take/[code].tsx`. The student got the
+  card and nothing else — no lists, no way to pair them, nothing for
+  `saveStudentAnswer` to send. The teacher's transcription screen already had a
+  working picker, so it moved to `components/QuestionInputs.tsx` and both
+  screens use it; a second picker is a second chance to disagree about the
+  response shape.
+- **`fill_blank` was quietly worse, and had not been noticed at all.** It sat in
+  the student screen's shared text-area list saving `{text}`, while
+  `fillBlank.grade` reads `{blanks}` positionally — so **every fill-in-the-blank
+  answer marked as unanswered**, however well the student filled it in. Worse
+  than the matching bug, because a blank card is visibly broken and this looked
+  answered. Both shapes are now built by pure functions in `studentAnswers.ts`
+  and pinned from both sides: the mobile test fixes the shape, the api-server
+  grading test proves that exact shape marks.
+- **The shuffle the code claimed existed did not.**
+  `matching.sanitizeForStudent` said "right-hand items are shuffled for
+  delivery" and nothing shuffled them. Stored order comes from a generator asked
+  for `pairs` in order, so the i-th right item was usually the answer to the
+  i-th left one — **the question was answerable straight down the list without
+  reading it.** Now shuffled in `sanitizeQuestionForStudent`, seeded on the
+  attempt *and* the question: the attempt so two students get different columns,
+  the question so one paper is not a single permutation you can work out once.
+  Derived, not stored, because claim and resume sanitise through separate routes
+  and a column that reorders mid-exam is its own unfairness.
+
+**Verified against the running routes, not just unit tests.** A throwaway local
+database, a hand-written matching question (the type is `mockable: false`, so
+generating a fixture means paying a model to maybe return one), and the built
+API bundle driven over HTTP:
+
+| | served on claim | on resume | again |
+| --- | --- | --- | --- |
+| student A | `r4,r3,r2,r5,r1` | same | same |
+| student B | `r5,r2,r1,r3,r4` | same | same |
+
+Stored order is `r1..r5`. Neither student got it, the two differ, each is stable
+across `claim` → `state` → `state` (two routes sanitising independently, which
+is what proves the seed is derived rather than random), the left column is
+untouched, the payload carries only `left,right`, and the saved answer reads
+back as `{pairs:[{left:"l1",right:"r4"}…]}` — ids off the shuffled column, which
+is exactly what `matching.grade` reads. **No test data was left anywhere:** the
+throwaway database was dropped, nothing was written to production, and no roster
+name was burned on a real class.
+
+Also in the same pass: the evaluation list printed «—» for a matching question,
+because its body carries none of the four prompt fields `questionText` tried.
+
+**Known ceiling, deliberate:** a matching question still cannot be *authored* by
+the mock generator, so papers only contain one when live generation returns one.
+
+## Android push has the credentials it needs, 2026-09-06
+
+`expo-notifications` has always been able to *ask* for a token and never able
+to get a usable one: there was no Firebase project, no `google-services.json`,
+and no FCM V1 key on EAS. Both halves now exist, and they are different kinds
+of thing:
+
+- **`google-services.json`** — client config, committed (`d462aa3`). Not
+  secret: it ships inside the APK and only identifies the Firebase project.
+  `app.json` points at it via `android.googleServicesFile`.
+- **The FCM V1 service account key** — a private key, uploaded to EAS and
+  stored nowhere in this repo. `iqraa-95dd1`, client
+  `firebase-adminsdk-fbsvc@iqraa-95dd1.iam.gserviceaccount.com`, uploaded
+  2026-09-06 10:13. `*firebase-adminsdk*.json` and `*-service-account*.json`
+  are gitignored so it cannot arrive here by accident.
+
+Firebase project `iqraa-95dd1`, Android app `com.iqra.teachingassistant` —
+both files verified to name the same project before either was wired in.
+
+**The upload had to go through the Expo web dashboard, not `eas credentials`.**
+Worth recording because it cost an hour: that command is a TUI with no
+non-interactive flag (`--non-interactive` is not a flag; piping gives
+`Input is required, but stdin is not readable`), and the desktop app's terminal
+panel does not forward keystrokes into its raw-mode prompt — every attempt
+delivered a single control byte and the prompt looped on "File does not exist."
+No path fixes that. The dashboard route is
+`…/credentials/android/<package>` → *FCM V1 service account key* → *Add a
+service account key*, which is an ordinary file input.
+
+Rebuilt on `main` (`d5e1bf2`), build `68522384-7bff-45ec-bb18-830456db0e47`,
+finished in 22 minutes. New APK:
+https://expo.dev/artifacts/eas/NjlAR0VFVTImx9eIiVbxAgtq403T_NZ55LsVwg5Ljfo.apk
+
+**The rebuild was not optional and the old APK is not fixable.** FCM config is
+compiled into the binary, so the 2026-09-05 build stays push-dead no matter
+what sits on Expo's servers. Evidence the native config really changed: the
+EAS fingerprint moved from `aee3bf20…` to `92f803e2…`. The archive also fell
+from 424 MB to 311 MB, which is `.easignore` from the previous entry working.
+
+Still not verified, and only a device can: **that a notification actually
+arrives.** A key on the server and a config in the binary are necessary, not
+sufficient. `registerPushToken` swallows every failure by design
+(`services/pushTokens.ts`), so a broken setup looks exactly like a working one
+from inside the app — check that a token row reaches `device_push_tokens`,
+then send one.
+
+One rough edge shipped by PR #281, which made a student's claim code findable
+from the class roster: minting a code calls `POST /students/:id/claim-code`,
+which `studentAccountsEnabled()` refuses in v1 with
+`student_accounts_disabled`. Nothing special-cased the refusal, so the screen
+rendered the server's raw English error into an Arabic-first UI, styled as a
+failure — when nothing had failed. **Fixed the same day:** `classes/[id].tsx`
+hides the key icon and `messaging/claim/[studentId].tsx` replaces the generate
+button with a sentence saying the capability is not in this release, both off
+`useStudentAccountsEnabled()`. A disabled control was rejected deliberately —
+it invites "when?", which neither screen can answer.
+
+## The app has been built for a real device, 2026-09-05
+
+The first EAS build in the project's life. `artifacts/mobile` has always been
+an Expo app that nothing had ever compiled — every earlier note that something
+was "unverified on device" traced back to that. Android `preview`, build
+`5c38a5fb-3eb3-459b-9b5a-7452f8e6cf99`, commit 71f484b, **finished** in 22
+minutes. Installable APK:
+https://expo.dev/artifacts/eas/3rXtdVfq1c1aV--xlpAx0rGAanGywjGy4ZuwAgKHSRo.apk
+
+Most of the setup turned out to be already done — `eas-cli` is authenticated
+as `nizar.62` and the project has always been linked as `@nizar.62/mobile`
+(id `83fc6522…`, matching `app.json`). What was missing was anyone running it.
+
+Two things the run confirmed that could not be confirmed any other way:
+
+- **The `eas.json` env fix works.** The build log says
+  `Environment variables loaded from the "preview" build profile "env"
+  configuration: EXPO_PUBLIC_API_BASE_URL, EXPO_PUBLIC_DEMO_MODE`. Before that
+  block existed a release build inlined nothing and resolved its API base to
+  the relative string `/api` — see «A release build would have shipped broken».
+- **An Android keystore now exists**, generated on Expo's servers during this
+  build. It is a durable credential on the account, not a local file, and it
+  is what every future Android build and Play upload is signed with.
+
+`versionCode` initialised to 1 under `appVersionSource: "remote"`, so EAS owns
+the number from here and `autoIncrement` on the production profile will move
+it.
+
+**Build from the branch, not from whatever is checked out.** This was built in
+a scratch worktree at `origin/claude/store-readiness-release-config` on
+purpose: the shared checkout was on `main`, PR #269 is unmerged, and a build
+from there would have used the old `eas.json` — the exact broken configuration
+the branch exists to fix, silently.
+
+`.easignore` added after the build, and **not yet exercised by one**. That
+first archive was 424 MB, 231 MB of it `attached_assets` — source curriculum
+PDFs referenced only by `lib/curriculum/scripts/localSources.ts`, an
+extraction script that never runs on a build machine. Note the footgun the
+file's own header records: `.easignore` **replaces** `.gitignore` for the
+archive rather than adding to it, so it carries a verbatim copy of
+`.gitignore` beneath its own excludes. `knowledge-base` is deliberately NOT
+excluded — `services/bookFigureAssets.ts` static-requires those PNGs and Metro
+bundles them.
+
+What this does NOT establish. **Nobody has installed the APK.** Push delivery,
+image picking and the app icon are still exactly as unverified as before —
+a build existing is not a build running. `newArchEnabled` and `reactCompiler`
+are both experimental and this is the first time either has been compiled.
+
+iOS is untouched and is blocked on a person: it needs an Apple Developer
+Program membership and an Apple ID sign-in. ~~Android push also still needs an
+FCM service account key uploaded to EAS~~ — **done 2026-09-06, see «Android
+push has the credentials it needs» below.**
+
+## One join code per class, and the two buttons nobody could find, 2026-09-06
+
+**Built 2026-09-05, parked the same day, un-parked 2026-09-06 on Nizar's call.**
+It was parked because v1 ships teacher-only and `constants/legal.ts` states in
+print that no minor holds an account; that is still true, and every line here
+is still gated behind `STUDENT_ACCOUNTS=false`, so nothing below is reachable
+today. Turning that flag on remains a change to a published legal document, not
+a config change — see «v1 is teacher-only» below.
+
+One overlap to know about: the roster icon swap (`chatbubble-outline` →
+`key-outline`) described below **already shipped separately** in PR #281, which
+reached the same conclusion independently while this was parked. This branch
+keeps #281's version of that comment; the swap is not counted twice.
+
+Started as "adding users to a group isn't easy" and turned out to be one
+problem wearing two hats. A group can only contain people the teacher is
+already *connected* to — a `roster_links` row, which exists only once somebody
+redeems a code. So the member picker was thin because the **code flow** was the
+bottleneck, not because the picker was bad.
+
+Getting a code was حسابي → صفوفي → the class → scroll the roster → an unlabelled
+`chatbubble-outline` → إنشاء رمز. Six taps, per child, and the icon read as
+"message this student" — something you cannot even do to a roster row that
+holds no account.
+
+**One code for a whole class now exists.** `class_groups.join_code` had been in
+the schema since the roster shipped, deliberately unused:
+`docs/student-evaluation-module-plan.md:244` deferred it because "a level
+attached to the wrong name is worse than no level". **That deferral is
+reversed** — the six-tap-per-child hunt was costing more than the wrong-name
+risk, and the risk is now paid for rather than wished away.
+
+- `POST /classes/:id/join-code` mints it (180-day TTL, not the per-student
+  code's 30 — a class code goes on a whiteboard in week 1 and is redeemed by
+  stragglers in week 6). Regenerating overwrites, same as before.
+- `GET /auth/join/:code` turns it into the list of names to pick from.
+- The rules live in `api-server/src/lib/claimDecision.ts`, with **no database
+  import**, and `resolveClaimCode` is now only the queries. That split is the
+  point: `@workspace/db` throws at import without `DATABASE_URL`, so anything
+  colocated with the queries is untestable, and this repo has no DB-backed
+  tests at all. Expiry, class membership and one-account-per-student are three
+  trust-boundary rules that would otherwise have had no check, ever.
+  `claimDecision.test.ts` covers them (15 assertions, verified by mutation:
+  disabling the membership check fails two).
+- **The undo exists now.** `DELETE /students/:id/links/:userId`. Before this,
+  `roster_links` was insert-only and a wrong claim was permanent — the only way
+  out was deleting the child's roster row. It rebuilds class threads via
+  `syncClassGroupThread`, moved to `api-server/src/lib/classThread.ts` so the
+  derivation rule has one implementation and not two.
+
+**`GET /auth/join/:code` is the only unauthenticated endpoint in the product
+that returns children's names.** That is the real price of the class-code
+model and it should not be widened casually. Four things hold it in: the
+`STUDENT_ACCOUNTS` flag (checked before any query), a 60/min limiter (not
+`/take`'s 240 — this grinds against every live code at once), the 180-day
+expiry, and the teacher's regenerate. It returns names and nothing else — no
+`externalRef`, which identifies far harder than a first name. It deliberately
+lives under `/auth`, **not** `/classes`: roster.ts prefix-matches
+`router.use(["/classes","/students"], authMiddleware, …)`, so `/classes/join/:code`
+would have silently answered 401 to the parents it exists for.
+`mountOrder.test.ts` pins that.
+
+Claimed names are returned with a `taken` flag rather than filtered out.
+Filtering looked safer and is wrong: only the one `self` link is exclusive,
+guardians are unlimited by design, so hiding claimed names would stop the
+second parent finding their own child and make the code look broken to them.
+The names are exposed either way, so filtering buys no privacy.
+
+**The two findability fixes**, which were the original complaint:
+
+- The group thread header now has a `person-add-outline` beside the ⋮. Adding
+  someone was five taps buried in a menu (⋮ → إدارة الأعضاء → a dashed row →
+  tick → إضافة); the picker was already mounted independently, so this cost six
+  lines. Gated on `isOwnerOfGroup`, so it correctly never appears on a class
+  group, whose membership is derived.
+- The class screen has a labelled «رمز الانضمام» pill next to the chat pill,
+  and the roster row's icon is now `key-outline`. Roster rows show who has
+  actually joined — the question a shared code immediately creates.
+
+Two adjacent bugs fixed because this work made them likely rather than
+hypothetical: `notifications.tsx` flat-mapped contacts with no dedupe while
+keying on `userId` (duplicate React keys the moment one parent has two children
+with the same teacher — `ParticipantPickerSheet` already deduped, so the two
+lists disagreed), and `POST /messaging/threads/:id/participants` enforced no
+size cap while create enforced 100, so a group could be grown past it by
+repeated adds.
+
+**Not done, and needed before this is switched on:**
+
+1. ~~The schema is not pushed.~~ **Done 2026-09-06.**
+   `join_code_expires_at` was applied to production (Neon project
+   `jolly-night-35480890`, branch `production`, database `neondb`) and to the
+   local `iqraa` database, and confirmed in both by an
+   `information_schema.columns` query returning `join_code` *and*
+   `join_code_expires_at`. Applied as a targeted
+   `ALTER TABLE class_groups ADD COLUMN IF NOT EXISTS …` in the Neon console
+   rather than `drizzle-kit push`: push syncs everything, prompts
+   interactively, and would offer to drop any production column the schema does
+   not declare. Note the repo-root `.env` points at **localhost**, so
+   `pnpm --filter @workspace/db run push` migrates the dev database and reports
+   success while production is untouched — check the host before trusting it.
+   `verify-schema` would not have caught the gap either: it checks table
+   *names* only, so it reports `ok` with a column missing.
+2. **`STUDENT_ACCOUNTS` is still false**, so none of this is reachable — by
+   design, and it is also the reason nobody has contacts today. Worth checking
+   that first if "my groups are empty" comes up again.
+3. **Not exercised end to end.** Typecheck and the full suites pass (re-run on
+   the un-parked tree against current main), and the register screen was
+   confirmed to render unchanged with the flag off. The picker, the mint-and-share sheet and the
+   unlink were not driven against a real database — that needs
+   `STUDENT_ACCOUNTS=true` and a seeded class.
+
+**Known residue on unlink, deliberately not cascaded:** class-group membership
+rebuilds, but custom-group membership and any existing direct thread do not.
+Those were a teacher's explicit choice rather than a derivation, and dropping a
+parent out of «أولياء أمور ١٠-أ» over a roster correction is a product
+decision, not a cleanup.
+
+## v1 is teacher-only, and a roster now needs a consent to exist, 2026-09-05
+
+The last of the four compliance blockers, and the only one that was a
+decision rather than a gap. Two answers shaped it: **student and parent
+accounts are off in v1**, and consent for student data is **teacher
+attestation of school-held parental consent** — not an in-app age gate.
+
+**No minor holds an account.** `STUDENT_ACCOUNTS` (default false, and the
+default *is* the decision) makes `/auth/register` and `/auth/claim` refuse a
+student or parent outright, and `/students/:id/claim-code` refuse to mint a
+code nobody could redeem. Refused server-side, not merely hidden: the app is
+not the security boundary. Note what else this switches off — no chat thread
+can be created at all, because `createDirectThread` needs a teacher on one
+side and a parent or student on the other, and a class group needs members.
+Messaging is *inert* in v1, not hidden, which is the honest answer when App
+Review asks whether the app carries user-generated content. Turning it back
+on is one environment variable; the code is written and tested, including the
+moderation queue built for exactly the content this currently prevents.
+
+**But the roster still holds children's data, and that is the surface that
+stays live.** A teacher types names, register numbers and a written note
+about a child before any account for that child exists — the earliest consent
+surface in the product, and the one a "no student accounts" answer does not
+touch. So `users.rosterConsentAt` / `rosterConsentVersion`, and
+`lib/rosterConsent.ts` refuses roster **writes** without it. Reads pass:
+the exposure is entering child data, not looking at data already entered, and
+blocking reads would show every existing teacher what looks like an outage.
+The gate attaches at the roster router's single existing mount, so a roster
+route added later is gated without anyone remembering.
+
+Three deliberate shapes, each with a cheaper alternative that is worse:
+
+- **On the teacher, not on each student row.** A teacher enters thirty names
+  in one sitting and a per-name checkbox is a checkbox nobody reads. Schools
+  obtain consent in a blanket form, so one attestation at the point of first
+  entry is both the honest shape and the one a teacher takes seriously.
+  ponytail: move it to `classGroups` if a school ever needs to say yes for one
+  class and no for another.
+- **No birthdate, anywhere.** Not an oversight — collecting a child's date of
+  birth the product has no use for is *more* data held about them, not less,
+  and a self-entered birthdate is unverifiable anyway. The privacy policy now
+  says this in as many words.
+- **The wording is versioned and served.** `GET /auth/roster-consent` returns
+  the statement and `ROSTER_CONSENT_VERSION`; the app posts the version back
+  and a mismatch is refused. A consent record that cannot say *what* was
+  agreed to is close to worthless, and recording agreement to text nobody can
+  later identify is worse than refusing.
+
+**The legal documents were rewritten to match.** They now state that no minor
+holds an account, that messaging is inactive, that a teacher attests before
+entering any name, and that no birthdate is collected. `constants/legal.ts`
+carries a header saying it plainly: **flipping `STUDENT_ACCOUNTS` makes two
+published statements false**, so it is not a config change — it is a change to
+a legal document, and that file moves with it.
+
+~~`schema-push: done.`~~ **`schema-push: NOT done` — corrected 2026-09-06.**
+`users` was to gain `roster_consent_at` and `roster_consent_version` by the
+same transaction-wrapped `add column if not exists` as the suspension pair.
+Neither pair was ever applied; both entries claimed a verification that did
+not happen, and the two claims corroborating each other is what made them
+convincing. See «The schema push that was recorded twice and never ran».
+Unlike that one this degrades safely without the push:
+`requireRosterConsent` catches and answers 503 rather than crashing, so a
+missed push costs the roster, not the whole API. **All 20 existing teachers
+will meet the gate on their next roster visit** — intended, and worth knowing
+before someone reports it as a bug. Twenty, not the 33 this entry claimed and
+not the 32 the suspension entry claimed: **22 accounts total — 20 teacher, 1
+parent, 1 system_admin — counted against the production database on
+2026-09-06**, along with 0 suspended and 0 consented. Both earlier figures
+were part of the same unverified paragraph as the schema push itself.
+
+The client reads the flag from `GET /healthz/features` rather than an
+`EXPO_PUBLIC_*` constant. A build-time copy is the drift this repo has been
+bitten by before and worse here: it is inlined at build time while the
+server's own value changes with a restart, a missing key is a silent no-op,
+and the register screen needs the answer before anyone has signed in. Fails
+closed — offering a signup door that answers 403 beats hiding one that works.
+
+Verified in a real browser: the register screen renders with no role selector
+and no class-code field, straight to the teacher form. The API suite asserts
+`/healthz/features` reports it off and that a student registration comes back
+403 `student_accounts_disabled`, against the built bundle over HTTP. Not
+verified: a teacher accepting the gate end to end — that needs a signed-in
+teacher against a throwaway database.
+
+Still needing a person, not a commit: `LEGAL_CONTACT_EMAIL`
+(`privacy@iqraa.app`) is still not a real mailbox, and it is now the appeal
+address a suspended user is shown. And no lawyer has read either document —
+the governing-law clause most needs one.
+
+Green: typecheck clean, mobile 1172/1172 (10 skipped), API 466/466.
+
+## The report button now reaches someone, 2026-09-05
+
+The third of the four compliance blockers. `POST /messaging/reports` has
+existed since messaging shipped and **nothing ever read the rows**: no route
+listed them, nothing moved `status` off `open`, and nothing had ever written
+`chatMessages.archivedAt` — even though every thread read already filters on
+it. So the button worked, the table filled up, and no report could be acted
+on. Apple's guideline 1.2 asks four things of an app carrying user content:
+filtering, reporting, blocking, and the developer removing content and
+ejecting the offender within 24 hours. Only the middle two existed.
+
+`routes/moderation.ts`, admin-only throughout. Deliberately not a per-teacher
+queue: the teacher who owns a thread already sees every message in it, so that
+would add no visibility — what was missing is the operator-level power 1.2
+asks of the developer.
+
+- `GET /moderation/reports` — newest first, filterable by status, carrying the
+  reported message's own body and attachment kind so a moderator can read what
+  they are judging without opening the thread as somebody they are not. Two
+  aliased joins onto `users`, because one join would silently read the same
+  person's row for both sides of the report. `openCount` comes back whatever
+  the filter is: that number is what says whether the 24-hour obligation is
+  being met.
+- `POST /moderation/reports/:id/resolve` — the whole decision in one call
+  (hide the message, suspend the author, both, or neither), because a
+  moderator opens a report and decides once, and two calls can leave a hidden
+  message beside an open report. `dismissed` with actions attached is refused
+  rather than quietly honoured — a queue that accepts "nothing was wrong here"
+  alongside "I suspended them" has stopped being an audit trail. Hiding sets
+  `archivedAt`; it never deletes, so evidence survives an appeal.
+- `POST /moderation/users/:id/unsuspend`, separate, because by the time
+  someone appeals the report that caused it is closed. An admin cannot be
+  suspended from here — that would lock every moderator out of the tool that
+  reverses it.
+
+**Suspension enforces in `authMiddleware`, and that is the load-bearing
+detail.** It already re-read the user row on every request, so a suspension
+takes effect on the next call rather than whenever the access token expires,
+and putting the check there means a route added tomorrow is closed to a
+suspended account by default. The opposite arrangement fails open, and the one
+route someone forgets is the one an ejected user still has. Login refuses too
+— after the password check, never before, or the response becomes an oracle
+for which addresses are suspended.
+
+Two things a suspended account may still reach, in `lib/suspension.ts` with
+its own tests: `GET /auth/me`, so the app can say *why* everything stopped
+(an ejected user who only sees failures has nothing to appeal against), and
+`DELETE /auth/users/me`, because the right to erasure does not pause during a
+suspension and the privacy policy shipped this morning promises deletion
+without conditions. That predicate is split out and tested rather than
+eyeballed because both directions fail silently: too wide and an ejected user
+keeps a route, too narrow and a published promise becomes false.
+
+**~~The schema change was applied to production, by hand, before this
+merged.~~ THAT WAS NEVER TRUE, and it caused an outage on 2026-09-06 — see
+«The schema push that was recorded twice and never ran».** `users` was to gain
+`suspended_at` and `suspended_reason` via two `add column if not exists`
+statements inside a transaction rather than
+`pnpm --filter @workspace/db run push` — additive only, idempotent, and
+incapable of the column drops render.yaml warns that drizzle-kit push resolves
+drift with. That is still the right shape for the change. **It has not been
+run.** Production has neither column, proven by
+`column "suspended_at" does not exist` from the live API.
+
+The rest of this paragraph was right, and is the reason the omission cost what
+it did. **Note the ordering is not optional here and the usual "endpoints
+answer 503" description understates it:** `authMiddleware` selects both
+columns on every request, so this code deployed against a database without
+them would fail *every authenticated call in the app*, not one endpoint. Also
+note `verify-schema` cannot catch that — it asks whether a table *name*
+exists, so a table with a stale column set still reports `ok`.
+
+Not verified: the queue driven end to end as a signed-in admin. That needs
+either a throwaway database or test reports in production, and manufacturing
+abuse reports in a live database to look at a screen is not a test. What is
+pinned is that all three routes are mounted and refuse an anonymous caller
+(`mountOrder.test.ts`) and that the suspension allowlist matches the exact
+paths it should (`lib/__tests__/suspension.test.ts`).
+
+Still open from the original four: no age or guardian-consent handling
+anywhere in the schema. And the moderator's suspension notice is one fixed
+sentence pointing at `LEGAL_CONTACT_EMAIL` — a mailbox that still does not
+exist.
+
+Green: typecheck clean, mobile 1172/1172 (10 skipped), API 460/460.
+
+## An account can be deleted, and the policy links go somewhere, 2026-09-05
+
+Two of the four compliance blockers named in the entry below. Both are
+store-mandated and neither existed: `grep` for account deletion returned
+nothing across the whole repo, and the privacy-policy and terms rows in
+`app/settings.tsx` were `onPress={() => {}}` — against copy at registration
+that already told every new user they were agreeing to both documents.
+
+**`DELETE /auth/users/me`.** Almost all of the work was already done by the
+schema and nobody had noticed: every table referencing `users.id` declares
+`onDelete: "cascade"`, so one row delete takes the roster, classes,
+evaluations, saved materials, chat participation, blocks, reports and push
+tokens with it. What a cascade cannot reach is the two things that are not
+rows —
+
+- R2 objects. `lessonMedia.r2Key` and `chatMessages.attachmentKey` are read
+  **before** the delete, because a key read afterwards is a key that no longer
+  exists, and the blobs are removed after. Deliberately after: the deletion
+  the user asked for is the database one and must not fail because object
+  storage is unreachable. A failure there logs at error level and leaves an
+  unreferenced blob — no retry queue, which is a stated ceiling, not an
+  oversight.
+- `aiGenerations.userId`, which is `set null` by design. It is cost
+  accounting; what survives is a spend row with nobody attached.
+
+Re-authentication is required, because for a teacher the cascade reaches the
+whole roster — other people's children — and a stolen access token must not be
+enough to erase it. A password account types its password; a Google-only
+account has no hash to check, so it retypes its own email. Which one gets
+asked for comes from `hasPassword` on `GET /auth/me`, added there **and
+nowhere else**: that object is serialised at seven sites in `routes/auth.ts`
+and the delete screen fetches `/me` itself, so one field cannot drift out of
+step with six copies.
+
+**The documents exist.** `constants/legal.ts` holds a privacy policy and terms
+of service in both languages, and `app/legal/[doc].tsx` renders either —
+one dynamic route, not two near-identical screens. Every factual claim in the
+policy was written from the code rather than from a template: the
+subprocessor list is `lib/r2.ts`, `lib/db`, `services/analytics.ts`,
+`services/pushTokens.ts`, `routes/auth.ts` and the OpenAI client, and the data
+inventory is `lib/db/src/schema`. **That makes it part of the blast radius of
+those files** — a policy describing a system that no longer exists is worse
+than a missing one, because it is a published false statement.
+
+`/legal` joins `/take` in `PUBLIC_ROUTES`, for a different reason than
+`/take` has: not that its visitor has no account, but that a store reviewer
+opens the policy URL cold, in a browser with no session. Verified in a real
+browser on the web build — `/legal/privacy` and `/legal/terms` both render
+signed out with no console errors, and `/delete-account` correctly bounces a
+signed-out visitor to onboarding.
+
+Not verified: the deletion itself end to end. The only database this checkout
+can reach is production, and a test that deletes a real account against it is
+not a test. The route is pinned as *mounted and guarded* in
+`mountOrder.test.ts` — a 404 there would be a submission blocker and would
+look identical to a typo in the path — and the rest needs a throwaway
+database.
+
+Two things still need a person, not a commit: `LEGAL_CONTACT_EMAIL` in
+`constants/legal.ts` is `privacy@iqraa.app` and **no such mailbox is known to
+exist** — a reviewer may write to it and a data-subject request has a
+statutory clock. And no lawyer has read either document; the children's-data
+section and the governing-law clause are the two that most need one, given
+students reach this app through a teacher with no age recorded anywhere in the
+schema.
+
+Green: typecheck clean, mobile 1172/1172 (10 skipped), API 453/453.
+
+## A release build would have shipped broken, 2026-09-05
+
+A store-readiness review of the mobile app. The app itself is native-safe —
+every `document`/`localStorage`/`window` use is behind a `Platform.OS === 'web'`
+guard and the native branches (share sheet, cache writes, print) are written —
+but the *release configuration* was not, in four ways that a checked-in test or
+a resolved-config dump could each have caught. `expo-doctor` now reports 18/18.
+
+- **`eas.json` declared no `env`, so a production build inlined nothing.**
+  `EXPO_PUBLIC_*` values are baked in at build time; with none set,
+  `getApiBaseUrl()` falls through to the relative string `/api`
+  (`services/apiClient.ts`), which is not a resolvable URL on native. Every
+  request would have failed on first launch, and the same gap left
+  `DEMO_MODE` at its `true` default — the whole app mocked, and mock content
+  is indistinguishable from real. Both `preview` and `production` now set
+  `EXPO_PUBLIC_API_BASE_URL` (Cloud Run) and `EXPO_PUBLIC_DEMO_MODE=false`.
+  `artifacts/mobile/.env` is gitignored, so EAS never uploaded it and the
+  profile `env` is the only source — do not assume the local `.env` reaches a
+  build.
+- **The build asked for permissions the app does not use.** `expo-location`
+  was a dependency with no callers anywhere in app code, and autolinking is
+  enough: it put `NSLocationWhenInUseUsageDescription` plus
+  `ACCESS_FINE_LOCATION`/`ACCESS_COARSE_LOCATION` into the manifest, which
+  Play gates behind a Location Permission Declaration and rejects when it is
+  not core functionality. Removed. Separately, every `expo-image-picker` call
+  is `launchImageLibraryAsync` with `mediaTypes: ['images']` — there is no
+  camera or recording path — so the plugin now sets `cameraPermission: false`
+  and `microphonePermission: false`, dropping `NSCameraUsageDescription`,
+  `NSMicrophoneUsageDescription` and `RECORD_AUDIO`, and gives the photos
+  prompt a purpose string that names the actual use. Read the resolved
+  manifest with `npx expo config --type introspect`, not `app.json` — none of
+  these appeared in `app.json`.
+- **ATS allowed cleartext to anywhere.** Expo's default
+  `NSAllowsArbitraryLoads: true` was reaching the build; App Review asks about
+  it. Now `false`, with `NSAllowsLocalNetworking: true` so a dev client can
+  still reach a LAN API over http, plus the localhost exception.
+- **Three subject tiles dead-ended.** `arabic`, `islamic` and `computer` were
+  appended to `MVP_SUBJECT_IDS` earlier the same day; no book or catalog
+  exists for any of them, so each bottomed out in the "no books" empty state.
+  Honest in a demo, but App Review reads placeholder sections as an incomplete
+  app (guideline 2.1) — and `finlitCurriculum.test.ts` already asserted "every
+  MVP subject resolves to at least one visible book", so `main` would have
+  gone red. Removed from the tail, which is what keeps the change reversible:
+  the seven remaining positions never move, and the three can be appended back
+  the day a book lands. They stay in `SUBJECTS`.
+
+Also: three Expo packages were a patch behind, and bumping them split
+`expo-constants` into two installed copies (`expo-asset` pins `~18.0.13`) —
+a duplicate native module is a build error, not a warning. `pnpm dedupe`
+collapsed it; no override was needed.
+
+Green after all of it: typecheck clean, mobile 1165/1165 (10 skipped), API
+452/452.
+
+**None of this makes the app publishable.** The blockers that remain are
+compliance and process, not configuration: ~~there is no account deletion
+anywhere in the app or API (Apple 5.1.1(v) and Play both require it), the
+privacy-policy and terms rows in `app/settings.tsx` are `onPress={() => {}}`
+against copy at registration that already claims both documents exist,~~
+**both closed the same day — see the entry above,**
+~~messaging carries image attachments with block and report endpoints but
+nothing that can act on a report or eject a user (`routes/admin.ts` has one
+route, `usage-summary`),~~ **also closed the same day — see «The report button
+now reaches someone»** — and ~~students get accounts by claim code with no
+birthdate, age or guardian-consent field anywhere in the schema~~ **the last
+one closed the same day too: v1 has no student accounts at all, and a teacher
+now attests to school-held parental consent before entering any child's name.
+See «v1 is teacher-only, and a roster now needs a consent to exist».** **No EAS
+build has ever been made**, so push delivery, image picking and the app icon
+remain unverified on a device, and `newArchEnabled` + `reactCompiler` are both
+experimental — Expo Go over LAN is not evidence that a release build runs.
+There are no store assets. ~~and no `google-services.json` for Android FCM~~
+— the Firebase side landed 2026-09-06, see below.
+
+## Arabic and Islamic Studies do not carry extractable figures, 2026-09-05
+
+Measured, then abandoned. Recording it so the next person does not spend the
+same afternoon rediscovering it — everything below is a count, not an
+impression.
+
+**These are text-and-ornament books, not diagram-bearing ones.** Both
+extractors misfire on them in the same way: the vector tool captures whole
+pages of Quranic text, ruled exercise boxes and «الدَّرْسُ الأوَّل» banners; the
+raster tool finds page-background washes. What each actually yielded:
+
+| | vector crops | usable | raster candidates | usable | lesson outline |
+| --- | --- | --- | --- | --- | --- |
+| Arabic s1+s2 | 173 | ~20 of the 105 reviewed | 56 | ~8 of the 26 reviewed | **none** |
+| Islamic s1+s2 | 106 | ~10 of the 36 reviewed | 14 | ~6 of the 8 reviewed | readable, wrong shape |
+
+For scale, physics semester 2 alone yields **84** usable crops across 7
+lessons. Islamic would yield roughly 12 across 50.
+
+**Arabic cannot be placed at lesson level at all.** Its lesson headers are
+*rendered as images*, not text — which is why the opener detector returns
+nothing and why those banners turn up as crops in the contact sheet. No font
+threshold reaches them. Its UNIT openers are text and detectable
+(«الوحدة الأولى» at 18-20pt, 5 per book, matching the catalog's units 1-5 and
+6-10 exactly), so unit-level placement is possible — but
+`figure-lesson-map.json` keys on `(sourceId, unit, lesson)` and a unit here
+spans five lessons, so that needs a model change, not a map entry.
+
+**Islamic prints a third opener layout the detector does not know.** It is the
+better of the two — 24 opener pages against the catalog's 24 lessons in
+semester 1, and 26 against 26 in semester 2, an exact join with no offset —
+but every threshold in `lesson_start` is tuned for the maths and science
+layouts. Measured on its own pages, what it would need:
+
+| | maths / science | Islamic |
+| --- | --- | --- |
+| «الدرس» size | ≥20pt | **15.9pt**, y=48-57 |
+| lesson number | ≥40pt, bare digits, y<65 | **15.9pt, parenthesised `(1)`**, y=75 |
+| lesson title | ≥24pt, y<60 | **21.9pt**, y=62 |
+
+Raising only the first (tried, as a per-subject override) still placed zero,
+because `lesson_start` returns `None` when it cannot read a number. Supporting
+Islamic means a per-subject opener *profile* — three geometry facts, not one
+threshold — and the payoff is ~12 photographs.
+
+**Nothing was kept.** The `BOOKS` entries, the per-subject opener size and 279
+crops were all reverted; only this note survives. That is the point: the
+figures pipeline was built for books that draw their content, and this is the
+edge of where it pays.
+
+**If it is ever revisited**, start from the table above rather than from the
+extractors — and note the one thing both books genuinely do have is a good
+unit-opener illustration card (scales, the Kaaba, a gavel on a Quran, a
+microscope; a caravan, Jerusalem, manuscript pages). Ten of those, one per
+unit, is a smaller and much better-defined target than "the figures in this
+book".
+
+## English teaches something at last, and its book photographs reach it, 2026-09-05
+
+Asked for "the English figures", the honest answer turned out to be that
+extraction was never the blocker. `book-english-10-s1` and `-s2` have existed
+since this catalog was written and carried **zero lessons** between them: a
+teacher who picked English and opened either saw an empty book. One level below
+the MVP-subject dead end #267 fixed, which only asks whether a subject resolves
+to a *book*. The 30 English lessons that did exist belong to the four vocational
+ESP tracks, all `hasKnowledgeBase: false` with no PDFs in the repo.
+
+So figures first needed a curriculum. Extracting without one would have produced
+crops nothing could ever ask for — the "unmapped figures go unused" dead end
+`bookFigures.ts` documents.
+
+**The curriculum comes from the book's own contents spread.** Pages 4-5 of each
+student book print a scope-and-sequence table — UNIT, GRAMMAR, VOCABULARY,
+READING, LISTENING, SPEAKING, WRITING — with the book's own page references.
+Ten units across the year: 01 Looking good … 10 Food for thought. Semester 2
+keeps its printed numbering (06-10) rather than restarting, the convention
+physics and chemistry semester 2 already follow.
+
+**One lesson per unit, and that is forced by the book.** It prints seven lesson
+slots per unit (LESSON 1A..7A, 18pt, page header) and titles none of them —
+only a skill banner whose order changes between units, and in semester 1 two
+slots share page 52 with competing banners. A seven-lesson split would be a
+guess about which slot owns which page. The four vocational English catalogs
+already model a unit as one lesson for the same kind of reason.
+
+Two things are recorded rather than invented: **no learning outcomes** (this
+series prints none, unlike the science books' lesson openers, so `objectives`
+is empty and `verify --gaps` says so), and **Arabic titles are our own
+translations** — the book is English-only, exactly as the vocational catalogs
+declare.
+
+**The semester-2 book is a DRAFT.** 79 of its 80 pages carry «نسخة قيد الإعداد
+والتجهيز»; semester 1 carries it on none, and its manifest row is `pending`
+where s1's is `ingested`. Everything transcribed from it may change in the final
+edition. Worth knowing that the stamp is invisible to a plain text search: it
+extracts as Arabic presentation forms, so grepping «قيد الإعداد» returns nothing.
+
+**A second extractor, because this book photographs rather than draws.**
+Measured before writing it: across 60 pages the English student book carries
+~3.4k vector drawing operations against physics's ~509k. `extract_book_figures.py`
+seeds on vector geometry and would have found page furniture.
+`scripts/extract_book_photos.py` enumerates the embedded rasters instead and
+throws away chrome three ways — reuse across pages (a border is used dozens of
+times), size, and aspect ratio. Output format is deliberately identical, so
+`bookFigures.ts` reads these with no idea they came from a different pipeline.
+
+43 photos out; 3 deleted in the review pass (a Literature Spot extract, an
+earthquake map and a strip — all pages of prose rendered as images, unreadable
+at slide size). **40 kept, covering all 10 units.** `BOOK_FIGURE_COUNT` 841 →
+881.
+
+**The join has an offset worth its own test.** The extractor numbers units by
+counting LESSON-header resets inside one PDF, so the semester-2 book's units
+come out 1-5; the curriculum keeps the printed 6-10. Reversing that would file
+every semester-2 photo under a real lesson about something else and nothing
+would fail, so `bookFigures.test.ts` pins u6→book-unit-1 and u10→book-unit-5.
+
+Verified: typecheck clean; mobile 1198 / 0 fail / 10 known skips; api-server
+452 / 0 fail; curriculum 113 / 0 fail and `verify` 0 errors across 20 files;
+SymPy 72/72. Coverage is now 122 of 203 catalog lessons.
+
+**Two tests moved because they were relying on ordering.** `lessonSlides.test.ts`
+took `getUnitsForSubjectGrade('english','grade-10')[0]` and assumed a
+vocational lesson; general English now sorts in front of those, and that lesson
+has no `keyTerms` (the contents page gives vocabulary *topics*, not
+term/definition pairs), so the vocabulary slide it asserted on stopped
+existing. It names its lesson now. And `bookFigures.test.ts`'s source-id map
+needed an `eng` entry — that map exists precisely so a new subject fails loudly
+instead of being skipped, and it did.
+
+**Still nothing for the four vocational tracks.** They hold 30 of English's 40
+lessons and have no PDFs in the repo; the two `grade-10-vocational` files are
+التربية المهنية, a different subject.
+
+## Physics, biology and earth science get the book's figures, 2026-09-05
+
+41 lessons across three subjects had curriculum content and **zero** figures
+between them. Every visual feature built over the last week — the two-column
+slide, the printed appendix, the exam panel — could only ever fire on maths,
+chemistry and financial literacy. This is the supply side of that.
+
+**English was measured and rejected, not forgotten.** The extractor seeds on
+vector drawing operations; its docstring records that these books draw their
+diagrams rather than embed them. That is true of the sciences and false of
+English: across 60 pages the English student book carries ~3.4k vector ops
+against physics's ~509k, because its content is photographs and layout art.
+Running it would have produced crops of page furniture. Extracting English
+needs raster detection — a different tool, not another `BOOKS` entry.
+
+| book | crops | lessons | note |
+| --- | --- | --- | --- |
+| phys-s1 | 39 | 5 | vectors, kinematics graphs, projectiles |
+| phys-s2 | 84 | 7 | free-body diagrams, Archimedes, Bernoulli, waves |
+| bio-s1 | 30 | 5 | virus structure, bacterial cell, protists, fungi |
+| bio-s2 | 47 | 8 | plant anatomy, stem/root sections, populations |
+| earth-s1 | 21 | 6 | volcano sections, rock cycle, stellar evolution |
+| earth-s2 | 30 | 8 | pressure systems, isobars, ocean profiles |
+
+**Coverage: physics 0 → 12/12, earth science 0 → 14/14, biology 0 → 13/15.**
+Overall 73 → 112 lessons with figures. `BOOK_FIGURE_COUNT` 600 → 841.
+
+**A flat-panel filter, because the seed cannot tell a diagram from a header
+band.** These books' unit openers and section bands are large vector fills
+drawn with the same operations a diagram is, so no geometry tuning separates
+them — but a flat fill has almost no edges. On 57 hand-labelled phys-s1 crops
+the junk ran 4.8-34.7 edge density and the real figures 11.2-38.0;
+`MIN_EDGE_DENSITY = 11.0` sits just under the lowest real figure and removed
+14 of 23 junk crops with zero false positives. Set at that floor deliberately
+rather than between the medians: a lost figure is invisible, surviving junk is
+caught by the review that follows. It dropped 159 panels across the six books.
+
+It cannot catch everything and is not meant to — dense Arabic prose has a high
+edge count too. **The human pass still ran**: all six `_review.png` contact
+sheets were read and 122 further crops deleted (front matter, «مراجعة الدرس»
+banners, tip boxes, page-number badges, the closing calligraphy page). 373 →
+251, both PNG and index entry, as the docstring requires.
+
+**The join is 1:1 for all six, which maths and chemistry never were.** Those
+disagreed because the book opened a unit with a lesson the curriculum does not
+carry. Here the curriculum ids are minted `u{k}_l{m}` against the book's own
+printed numbering, so «الوحدة 3 / الدرس 2» is `…-u3_l2` by construction — and
+each was then confirmed against what the figures actually show, which is the
+part that would have caught a silent off-by-one: «الفيروسات» carries the virus
+structures, «الطلائعيات» the Euglena and Paramecium, «أنظمة الضغط الجوي» all
+twelve pressure diagrams. Physics is the near-miss: its curriculum adds a
+`_lab` lesson per unit for the تجربة استهلالية that the book does not number
+as «الدرس», so book lesson 1 is `_l1` and NOT the lab.
+
+**Two things the run exposed, both left alone on purpose.** Re-running the
+whole extractor rewrites the seven already-committed books, and their output
+moves — chem-s2 18 → 59 figures, finlit 6 → 18, g9-math-s1 115 → 136 — because
+those were extracted before later detector work. That is a real improvement and
+a separate change; `extract_book_figures.py` now takes optional source-id
+arguments so a subset can be run without sweeping it in. And
+`IQRAA_PDF_ROOT` exists because `support-pdfs/` is gitignored and therefore
+absent from every worktree, which is why four older `BOOKS` entries are
+absolute paths on one machine.
+
+**Cost: +28.4 MB of PNGs**, roughly doubling the repo's figure weight, and all
+of it is bundled by Metro into the app. Biology is two thirds of it — its
+pages are photographs, ~166 KB a crop against ~41 KB for maths line art. Not
+addressed here; if it matters, the lever is per-book DPI or palette
+quantisation, not fewer figures.
+
+Verified: typecheck clean; mobile 1176 / 0 fail / 10 known skips; api-server
+443 / 0 fail; curriculum 105 / 0 fail and `verify` 0 errors; SymPy 72/72.
+`bookFigures.test.ts` gained a per-subject floor and a "student book, never a
+teacher guide" assertion; its source-id check used to derive the book from the
+lesson-id prefix by string surgery, which silently excluded every new subject —
+the slugs differ (`biology` → `bio`, `earth-science` → `earth`) and are now a
+written-down map.
+
+## The Cloud Run cutover happened, and this file did not say so, 2026-09-05
+
+**Production topology, current:** the web app is served by `iqraa-web` on
+Render and calls the **Cloud Run** API. `render.yaml` now contains only
+`iqraa-web` — the Render API and verifier were removed from the blueprint by
+`a25469a`, after the web build was pointed at Cloud Run by `1e305f4`.
+
+Read the two sections below this one and you would conclude the opposite. Both
+still end with «**Nothing is switched over.** Render still serves the live app,
+untouched», which was true when written on 2026-09-03 and false two days later.
+Nothing superseded them, so the most recent word this file had on the subject
+was wrong — and it is the file `CLAUDE.md` sends people to. Confirmed the other
+way before writing this: the deployed bundle at `iqraa-web.onrender.com` has
+`iqraa-api-613126375862.europe-west1.run.app/api` compiled into it, so this is
+the running system's answer and not the blueprint's.
+
+The same section closes with «Dockerfiles live on `claude/cloud-run-test`
+(unmerged, deliberately)». They are on `main` — `00b3c9a` is an ancestor of it,
+and `Dockerfile` plus `artifacts/math-verifier/Dockerfile` are both there,
+each carrying its own `gcloud run deploy` line in the header.
+
+**What this cost, concretely.** Acting on those lines, an agent asked to ship a
+merged API change reported that the change was blocked on unmerged Dockerfiles
+and an undocumented deploy — when the Dockerfiles were merged and the commands
+were sitting in their headers. The stale entry did not merely go unread; it was
+read, believed, and acted on.
+
+**Two things that follow, and neither is about Cloud Run:**
+
+- **A merge no longer means a deploy, and this file never marked the change.**
+  When Render ran all three services, «merged» and «deployed» were close
+  enough to the same word. Now merging ships the web app only; the API and the
+  verifier are hand-deployed. Every «shipped» claim written since 2026-09-05
+  should be read with that split in mind.
+- **The deploy procedure now has a findable home:** [`docs/deploying.md`](./docs/deploying.md).
+  It existed before, spread across two Dockerfile headers and a `render.yaml`
+  comment — none of which is where anyone looks to answer "how do I deploy
+  this". The Dockerfiles stay the source of truth for the commands themselves.
+
+## A student sitting an exam can see the book's diagrams, 2026-09-05
+
+The last surface with no figures at all. A worksheet, quiz, lesson plan,
+activity, deck and workspace item all carried the lesson's textbook diagrams;
+the exam — the one paper a student is graded on — carried none, on either side.
+`app/take/[code].tsx` did not import `Image`.
+
+**The blocker was that an exam does not know its lesson.** `evaluations.lessonId`
+is a real column and is **always null**: the route reads it, `new.tsx` never
+sends it, and `services/evaluations.ts` does not mention it. Same for `unitId`.
+
+What an exam always has is `objectiveIds` — at least one, validated against the
+book at create time (`objectivesAreWithinBook`), and generation refuses to run
+unscoped. And every `CurriculumObjective` carries `lessonId`, in the same
+`kbl-…` namespace `figuresForLesson` keys on. So the lesson is *derived*, and
+deriving it is better than reading the column would have been: one path is
+checked, the other is free text nothing validates. Filing another book's
+diagram onto an exam paper is the failure that avoids.
+
+`lessonIdsForObjectiveIds()` lives in `lib/curriculum/src/objectives.ts` rather
+than beside either caller, because the API and the app both need it and cannot
+import each other. It was written twice before it was written once.
+
+**An exam spans several lessons — every other figure caller holds exactly one.**
+So the refs are round-robined across them, not concatenated: the circle-chords
+lesson alone has 25 figures, and concatenating would spend the whole cap of 6 on
+the first lesson and show nothing from the second, which reads as "the rest of
+this exam has no diagrams" rather than "the cap was reached". Verified on a real
+two-lesson chemistry exam: p009, p021, p010, p024, p011, p025 — alternating.
+
+**Ids on the wire, never URIs.** The server adds `lessonIds` to
+`POST /take/:code/claim` and to `/take/attempt/state` (the resume path — a panel
+that vanished on refresh would read as the diagrams being withdrawn). The
+figures are Metro-bundled, so the client resolves them locally with no network;
+and the URIs are build-time bundle paths that differ between web and native,
+which the server cannot know. Objective ids stay server-side:
+`sanitizeQuestionForStudent` projects only `{id, orderIndex, type, marks, body}`,
+and widening that allowlist to ship curriculum internals to an unauthenticated
+share-code holder is a bigger change than this earns.
+
+**The exam generator had no figure rule.** The deck generator has had
+`FIGURE_RULE_AR` since decks shipped checks reading «يمثل الرسم البياني…» beside
+an empty slide; `llmGenerator.ts` had nothing, so a stem could point at a
+picture that was not on the paper. It has one now, and deliberately not the same
+one: the deck's is a flat ban because that path can only draw what it derives
+from equations in the text, whereas the exam paper now really does carry the
+lesson's figures. A general reference is honest; naming or numbering a specific
+one is not, because the panel shows all of them in book order, chosen by
+nothing, and the model has never seen them.
+
+Verified: typecheck clean; mobile 1164 / 0 fail / 10 known skips; api-server
+443 / 0 fail; curriculum 105 / 0 fail. The derivation was exercised end to end
+against real data — objective ids → lessons → crops on disk — rather than
+against fixtures, which would only agree with themselves.
+
+**Found in passing, not fixed here:** `matching` questions render as a bare
+prompt with no pairs in `take/[code].tsx` — a student gets a question they
+cannot answer. _(Fixed and deployed 2026-09-05, along with two more of the same
+kind found while fixing it — see «A matching question was unanswerable, and
+fill-blank was worse» at the top.)_ And `lesson-sci-1` (grade-8 science,
+`catalog.ts` «Other books»)
+is the one lesson id in the catalog not minted through `lessonKbId()`; it is
+outside `MVP_SUBJECT_IDS` and carries no figures, so nothing reads it, but a
+blanket `/^kbl-/` assertion fails on it — `objectives.test.ts` asserts per-MVP-
+subject and says why, rather than loosening to hide it.
+
+## One email is one role: a teacher cannot also be a parent, 2026-09-05
+
+Found while inviting the first parent: the teacher's own email could not be
+reused to make a parent account. That is the design, and it is enforced twice
+— `users.email` is unique, and `POST /auth/claim` refuses any role that is not
+`student` or `parent`, so a teacher cannot claim a code even for their own
+child.
+
+**Deliberately not built:** multi-role accounts. A teacher who is also a parent
+at the same school — an ordinary situation, teachers have children — needs a
+second email today. The workaround for testing is a plus-alias
+(`name+parent@gmail.com`), which the signup form accepts.
+
+**What it would actually cost, when someone asks for it.** Less schema than
+expected: `rosterLinks` already links *any* `users` row to a student as
+`guardian`, and nothing structural stops a teacher's row being one. What blocks
+it is the safety rule — a direct thread requires **exactly one side to be a
+teacher-role** (see routes/messaging.ts), so a teacher-parent messaging their
+child's teacher is two teachers and is refused.
+
+Lifting it means restating that rule from role-based to relationship-based:
+*one side must be the teacher who owns the student that connects them*. That is
+arguably more correct — today's rule permits two unrelated teachers to DM,
+which the relationship form would not — but it is the single rule carrying the
+minor-safety design, and its current form is a sentence that fits in one's
+head. Worth trading only for a real user, not a hypothetical one.
+
+**The trigger to revisit:** the first teacher at a pilot school who says their
+own child is in one of these classes. At that point the change is contained —
+the direct-thread rule and `GET /messaging/contacts`, no migration — and there
+is someone real to test it against.
+
+## The messaging schema reached production — by SQL, not by push, 2026-09-05
+
+The entry below closed with the production push outstanding. It has landed:
+`Schema check` #20 passes, and `neondb` on the Neon **production** branch
+reports 7 of 7 new tables and both `students.claim_code` columns.
+
+**It took three attempts, and the first two failed silently.** The documented
+procedure — put the production URL in the repo-root `.env`, run
+`pnpm --filter @workspace/db run push`, put the URL back — was followed and
+production still had *nothing*: 0 tables, 0 columns, and no error anywhere to
+say so. That is the part worth writing down. `push.mjs` deliberately reads the
+`.env` of **whichever checkout you are standing in**, and since worktrees
+arrived there are four of those files. A push aimed at the wrong one connects,
+finds its target already matches, reports `Changes applied`, and changes
+nothing in production. Success and total no-op are the same output.
+
+**What worked instead was not running `push` against production at all.**
+`drizzle-kit generate` emitted the full schema as SQL; that was filtered to
+only the objects production lacked, wrapped in one transaction, and run in the
+Neon console — the same editor already demonstrably connected to the right
+database, which removes the entire question of which `.env` was in play. The
+SQL was tested first against a throwaway local database built to match
+production's state (everything except the seven tables, and `students` without
+its claim columns), and checked for idempotency by running it twice.
+
+**Two checks were needed, because one of them cannot see half the change.**
+`verify-schema` asks `to_regclass` for table *names*, so it reports
+`ok students.ts` whether or not the two `claim_code` columns exist. The
+columns had to be confirmed by a separate `information_schema` query. A green
+`Schema check` on its own would not have proved claim codes work.
+
+Still unproven at time of writing: **Render's** `DATABASE_URL` is a different
+value from the Actions secret, and only the secret's database has been
+verified. The app's own Messages tab is the check that covers the third one.
+
+For the next schema change, prefer generating the SQL and applying it where
+you can see the connection, over swapping a URL into a file that four
+directories share.
+
+## The book's figures reach the surfaces that were quietly skipping them, 2026-09-04
+
+Six hundred bundled crops, seventy-three joined lessons, and a renderer for
+every one of them — reaching four screens. The rest of the app resolved
+figures and then didn't show them, or never asked. **Every gap failed
+silently**: no error, no log, nothing missing from a build, just text.
+
+What was skipping them, and now doesn't:
+
+| Surface | Was | Now |
+| --- | --- | --- |
+| Worksheet/quiz/plan/activity **projected** (`*SlidesHTML`) | no `figures` param at all; `buildWorksheetSlidesHTML` was commented "Text only in this builder" | a captioned figures slide, counted in the footer total |
+| Class Mode decks from a **quiz or worksheet** (`buildDeckFromQuiz/Worksheet`) | no figure slot | figure slides after the objectives, same place `buildLessonDeck` puts them |
+| **Class Challenge** deck (`buildGameDeckFromQuiz`) | same | same |
+| Decks built from **chat** (`deckForArtifact`) | `buildLessonDeck` called without `figureUri` — the only caller that never passed one | passes it |
+| **موادي** viewer (`workspace/view.tsx`) | resolved figures for export, rendered none on screen | `BookFiguresPanel`, like the four generator screens |
+| **Lesson-flow PDF** (`buildLessonFlowHTML`) | no `figures` param | the «من الكتاب المدرسي» appendix |
+
+Print and project disagreed about the same worksheet, from the same screen,
+with the two call sites seven lines apart in `useGeneratorExport.ts`.
+
+**One helper, not four copies.** `bookFigureSlides()` (`lessonSlides.ts`) is
+the slide-side twin of `bookFigureRefsForLesson()`; `classDeck.ts` calls it
+through `pushFigures`. It keeps the injected-`figureUri` shape rather than
+importing the resolver, because that reaches into `react-native` and all three
+builders run under `node --test`. Omitting it still yields nothing, so a
+caller that forgets gets exactly the old behaviour.
+
+**The Slides Maker gated graphs on the subject name.** `slides.tsx` read
+`subjects[subjectIdx].id === 'mathematics'` — the identical branch
+`startClass.ts` documents having removed, for the identical reason. It now
+keys off what the lesson *contains*, and scans the generated checks too, which
+is where a maths deck's equations actually live. Measured over 20 mock decks:
+maths graph slides 1 → 3.
+
+**`buildLessonDeck` never asked for a chart.** `chartForLesson()` worked and
+had one caller (`startClass.ts`), so the same lesson charted from «ابدأ الحصة»
+and not from Slides. Now wired — but see the honest number below.
+
+### The prompt stopped forbidding figures and started asking for visuals
+
+`FIGURE_RULE_AR`/`EN` was the **only** mention of a picture anywhere in the
+prompt layer, and it was a prohibition. Grepping all four prompt files for
+`image|icon|figure|shape|graphic|visual|svg|diagram|صورة|شكل|رسم|أيقونة` returns
+that ban, its style-rule cross-reference, and nothing else.
+
+- `BOOK_FIGURE_RULE_AR`/`EN` lifts it — «في الشكل المجاور» is how the ministry's
+  books write every circle-geometry, apparatus and Venn question — **only when
+  the lesson has figures**. `systemPrompt(isAr, { hasBookFigures })`; the client
+  sends `bookFigureCount` (`generatorFigureCount` in `kbContext.ts`) because the
+  crops and the map are bundled and the API has no copy. Absent reads as none,
+  so a caller that forgets gets the stricter prompt. It still forbids numbering
+  or describing a figure the model cannot see.
+- `VISUAL_RULE_AR`/`EN` asks for what the miners actually consume: labelled
+  `label: number` data with **at least three items** (`extractChartData`'s real
+  threshold), equations in latin `x`/`y`, comparison tables, numbered steps. No
+  `visual` field — nothing reads one on these types.
+- `PROMPT_VERSION` → `2026-09-04.1`, so the shared pool partitions.
+
+### The honest number, and what it says
+
+Across 20 DEMO_MODE decks (231 → 316 slides): **maths graph 1 → 3, charts 0,
+book figures 21.** Charts stay at zero and that is not a bug to fix in code:
+
+- **0 of 167 KB lessons yield a chart** from their own text, and only 4 yield a
+  curve. `chartForLesson` refusing is correct — Grade-10 financial literacy
+  semester 1 is *project management* (roles, stages, stakeholders), with no
+  dataset in it. Wiring is necessary and not sufficient; the content has to
+  carry the data, which is what the new prompt rule asks the live model for.
+- So the mock generators were **not** given invented datasets. What they lost
+  is the promise: `lpIntroAr`/`En` said «اعرض صورة ذات صلة» / "Show a visual
+  related to X" unconditionally — go find a picture the app never supplied.
+  `bookFigureCue()` now names the deck's own figure slide for the 73 lessons
+  that have one and says nothing for the rest.
+
+### Still true, and out of scope here
+
+Per-question figure binding (needs a vision pass over the crops; the refusal is
+documented at `exportHtml.ts`'s `figuresSectionHTML`). Word export still
+carries no images — no `ImageRun` anywhere in the repo. Students sitting an
+exam still see none: `app/take/[code].tsx` reads only
+`body.stem/statement/prompt/template` out of a free-form jsonb. Every content
+slide is still a single column, so a picture cannot sit beside its text. And
+**12 of 16 subjects have no extracted figures at all** — physics, biology,
+Arabic, English and the rest — so no wiring puts a diagram on those lessons.
+
+**Not a lost-figures bug, checked:** `math-s2-student-book` has 144 PNGs and
+105 index entries. All 39 orphans were indexed *before* commit `29f2a8c`
+("Stop cropping figures through their own labels"), which dropped 45 entries
+and added 14 — they are the rejected old crops, kept on disk. Nothing
+references them; `gen_book_figure_assets.mjs` re-runs to a no-op at 600.
+Deleting the files is the documented cleanup and has not been done.
+
+Verified: typecheck clean; mobile 1156 tests / 0 fail / 10 known skips;
+api-server 442 / 0 fail. The projected worksheet was rendered with four real
+crops and read in a browser — 4 `<img>`, one extra slide, footer 5/5, no
+overflow, 2×2 grid.
+
+## In-app messaging ships, and a group is an announcement by default, 2026-09-04
+
+Teachers can message parents and students inside Iqraa (PR #245). Until now the
+closest thing was `ai-tools/parent-message`, a composer that hands off to
+WhatsApp — one-way, unpersisted, and outside the product. Students and parents
+now hold real `users` accounts, claimed against a roster row with a code the
+teacher mints (`students.claimCode` → `rosterLinks`).
+
+**The role gap had to close first, and did.** Before this, `requireRole` was
+used in exactly two files (`admin.ts`, `feedback.ts`); every other router —
+roster, evaluations, attempts, workspace, generate — trusted "authenticated ⇒
+teacher". That is harmless while every account is a teacher's and exploitable
+the moment one is not, so the guards landed in the same PR as the accounts
+rather than after them. `mountOrder.test.ts` pins them, 22/22.
+
+**Two rules carry the safety design, both server-side.** A direct thread must
+have exactly one teacher-role participant, so there is no code path that
+creates an unsupervised parent↔student or student↔student DM. A class group's
+membership is derived from the roster rather than edited, and the owning
+teacher is the one row the sync will never remove.
+
+**A group is announcement-only until its teacher opens it.**
+`chat_threads.student_posting_enabled` defaults to false: teachers post,
+everyone else reads, and a student who tries gets `403 group_read_only` — the
+composer is hidden too, but hiding a button is not the rule. So minor-to-minor
+messaging exists nowhere unless one named teacher deliberately enables it on
+one named group. That narrows the consent question to a per-group decision a
+teacher owns; **it does not answer it**, and whether enabling a group should
+itself require parental consent is still undecided.
+
+Block hides rather than removes, and never filters for the owning teacher —
+a block that could hide activity from the teacher's oversight would defeat the
+oversight. Report is an accountability log, not a moderation queue, since the
+teacher already sees the content as a permanent participant.
+
+Push notifications go through Expo as one HTTPS POST (no server dependency
+added), fire-and-forget after the response so a push failure cannot fail a
+message send. Attachments are images to R2 under `chat-media/`, reusing
+`lessonMedia`'s mime allowlist and size cap.
+
+**Verified against a running stack**, not just typecheck: scripted API runs per
+phase (17, 14, 21 and 22 assertions), plus live browser passes for claim-code
+signup, direct and group threads, block, report, group creation, member
+add/remove, self-leave, and the read-only notice against the teacher's toggle.
+Two paths this environment cannot exercise and which are therefore **unproven**:
+real push delivery to a device (needs an EAS build) and picking an image
+through the OS file dialog (browser automation cannot drive it) — the upload
+itself is exercised server-side.
+
+**The production schema push is still outstanding at time of writing.** Seven
+new tables (`roster_links`, `chat_threads`, `chat_participants`,
+`chat_messages`, `chat_blocks`, `chat_reports`, `device_push_tokens`) plus
+`students.claim_code`/`claim_code_expires_at` exist in the local dev database
+only. Until `pnpm --filter @workspace/db run push` runs against production,
+every messaging endpoint answers 503 there. Note `verify-schema` will report
+`ok students.ts` regardless of whether those two *columns* landed, because it
+checks table names — and that is precisely the half that needed a manual
+`ALTER TABLE` locally, drizzle-kit having prompted interactively for the unique
+constraint.
+
+## The extraction reversed a ligature and retrieval lost 90% of its pages, 2026-09-04
+
+Checking that the grounding the entry below switched on actually serves
+readable text. It does — physics, earth science and biology return four
+passages per unit of real Arabic. But every document carries a defect nothing
+was repairing.
+
+`repairExtractionArtifacts` undoes the reversed lam-alef ligature for the bare
+form («االقتران» → «الاقتران») and did nothing for the three hamza-carrying
+ones. «الألوان» is stored as «األلوان» — `U+0627 U+0623 U+0644` where the book
+prints `U+0627 U+0644 U+0623`. 26,626 occurrences across 1.4M words, all 69
+extracted documents, about one word in seventy.
+
+**Retrieval was losing most pages for ordinary words.** Pages matched, before →
+after: «الإنسان» 31 → 314, «الأرض» 37 → 297, «الآلة» 52 → 151, «الأعداد» 28 →
+118. A correctly-spelled Arabic query could not see roughly 90% of the corpus
+containing it, and this had been true of maths and chemistry since grounding
+first shipped.
+
+The rule needs no dictionary, which is what separates it from the
+transposition class that remains unfixable here: an alef followed by a
+hamza-carrying alef is not a sequence Arabic orthography produces, so it cannot
+misfire on a real word the way a bare «ال» rule would. «ألوان» and «ألف» begin
+with the exact pair being swapped and are pinned untouched. Mid-word reversals
+with no alef before them — «ملاءمة» stored as «مالءمة» — are still left alone,
+because telling that «ال» from a definite article does need a dictionary.
+
+`Passage.text` now carries the repair instead of raw text. Its one consumer is
+`grounding.ts`, whose prompt says «استند إلى النص أعلاه في الصياغة والأمثلة
+والمصطلحات» — so serving it raw was inviting the model to reproduce «األلوان»
+in front of a teacher. Not a fidelity loss: the PDF page the citation points at
+prints the word correctly, and the defect is in its text layer. The repair
+still has no business in the grading path and stays out of it.
+
+**Verified in the code points, not the rendering.** RTL text in a terminal
+reorders glyphs, so a visual check would have looked identical whether the
+bytes were right or wrong.
+
+`lib/curriculum` 98/98, mobile 1131/1131, `verify-curriculum` 0 errors.
+
+## Unifying a regex did not unify what was inside it, 2026-09-04
+
+The 2026-08 refactor below replaced three copies of the unit-id regex with one
+`isNccdUnitId`. That fixed the copies and left the *contents* hand-maintained:
+the subject alternation inside the surviving pattern, `DERIVED_OUTCOME_PREFIXES`
+in `objectives.ts`, and the tag vocabulary in `bankTagsForParsedUnit` still
+enumerated the subjects separately. One list became one list plus two others.
+
+Physics, earth science and biology were added on 2026-09-03 to none of them:
+
+- **Grounding was off for all three.** All 15 of their units failed
+  `isNccdUnitId`, so `grounding.ts` dropped them from its unit list and resolved
+  no book passages, and `bankTagsForUnit` returned `[]`. The subjects rendered
+  fine and simply had no textbook behind them.
+- **141 of their objectives reported `bloomsSource: 'authored'`** while carrying
+  the builder's blanket `'Understand'` — a human classification that never
+  happened, feeding the competency breakdown. `DERIVED_OUTCOME_PREFIXES` had
+  already missed the Grade 9 and English vocational shapes, so 311 of 507
+  objectives were misreporting when this was measured.
+
+Both are the same failure the two content bugs on 2026-09-02/03 were: output
+that passes every check and is worthless to a reader. Nothing errored either
+time.
+
+Now one `SUBJECTS` table in `curriculumIds.ts` — a row per subject with its
+bank-tag stem and whether the bank holds unit-level material. `SubjectSlug` is
+`keyof typeof` it, `UNIT_ID_RE` is built from its keys, and
+`isDerivedObjectiveId` asks `objectiveId` what it emits instead of restating it.
+Adding a subject is one row the compiler demands.
+
+No existing tag moved: maths bare (`s1-u2`), chemistry prefixed
+(`chem-s1-u2`), financial literacy and the English tracks semester-only. The
+three sciences emit their real manifest stems — `phys-s1`, `bio-s1`, `earth-s1`,
+abbreviations of the slug rather than the slug — and resolve 3 documents each.
+
+**Note what let it through.** Both guards started from the thing under test.
+`bankTagsForUnit`'s loop iterated `UNITS.filter(isNccdUnitId)`, so a subject the
+predicate did not know about was filtered out before the assertion could see it;
+`objectives.test.ts` listed scopes by hand. The new unit-id test matches on the
+id's *shape* independently and asserts the predicate agrees. A test that selects
+its cases with the code it is checking can only confirm what that code already
+believes.
+
+`lib/curriculum` 96/96, mobile 1131/1131, `verify-curriculum` 17 files / 155
+lessons / 0 errors.
+
+## A pasted key arrived as bullets, and three things hid it, 2026-09-04
+
+Cloud Run could not generate. Every health check was green — `/api/healthz`
+ok, the database readable, `/api/healthz/verifier` reporting
+`{"verifier":"ok","selfTest":"pass"}` — and `POST /generate/quiz` still
+returned 500 in 0.34s. Render, same request, same account, same database,
+worked.
+
+**The cause.** The Cloud Run deploy command was pasted from a chat message,
+and the two longest values lost their middles to `•` (U+2022) somewhere in
+transit: `OPENAI_API_KEY=sk-proj-••••••••` and `YOUTUBE_API_KEY=AIzaSyAx••••`.
+Nothing else was touched — the Neon URL, both R2 keys and the client ID all
+arrived intact, which is why everything except OpenAI worked. The console's
+own diff made it unarguable: the stored value was `sk-proj-` followed by five
+lines of bullets.
+
+The failure is loud once you see it and invisible until then:
+
+```
+TypeError: Cannot convert argument to a ByteString because the character
+at index 15 has a value of 8226 which is greater than 255
+  at OpenAI.bearerAuth (openai/src/client.ts:608)
+```
+
+The SDK throws while building the `Authorization` header, before any socket
+opens. Hence 0.34s, and hence no spend.
+
+**Three things hid it, and each is worth knowing on its own.**
+
+- **Health checks never touch OpenAI.** `/api/healthz/ai-budget` reports
+  `liveMode`, the model and the spend — all of which read correctly from
+  config and the database with a completely broken key. A deployment can be
+  green on every probe and unable to generate a single paper.
+- **The shared artifact pool masked the first test.** The first generation
+  "succeeded" and returned a quiz identical to Render's, carrying a
+  `variantId` — a pool hit, not a generation. Testing a topic another
+  deployment has already generated tests the database, not the model. Only a
+  topic that cannot be cached exercises the real path.
+- **`spentUsd` is the honest signal.** It sat at `0.2243` through every
+  green check. A generation that does not move it did not happen. Render's
+  moved to `0.2295` on the same request; Cloud Run's did not move at all.
+
+**How it was fixed.** Not through the terminal — a second paste corrupted it
+identically, and a third attempt failed differently when bracketed-paste
+markers (`^[[200~`) were injected into the command itself. The value went
+Render's copy button → the Cloud Run console's own env-var form → deploy.
+A browser form field survived what two terminal pastes did not.
+
+**Confirmed working 2026-09-04:** a quiz on an uncacheable topic returned
+correct Arabic mathematics, and spend moved `0.2336 → 0.2359`. That is the
+first real end-to-end proof that Cloud Run can serve a teacher, as opposed
+to answer a probe.
+
+**Still wrong there:** `YOUTUBE_API_KEY` carries the same bullet corruption
+and needs the same fix. It only affects lesson-video lookup, so nothing is
+blocked, but it will fail silently. `ADMIN_DEBUG_KEY` is unset on Cloud Run,
+so `/api/healthz/errors` — which would have shown that stack trace in one
+request instead of a log hunt — is unreachable there.
+
+**Nothing is switched over.** The cutover remains one line and a web rebuild.
+_(Superseded 2026-09-05: it happened. See «The Cloud Run cutover happened, and
+this file did not say so» at the top.)_
+
+## Cloud Run answers the cold-start question: ~1-3s, not 51s, 2026-09-03
+
+Both Render services sleep on the free plan. The verifier waking from sleep
+took **51 seconds** against a 2.5s client timeout (`VERIFY_TIMEOUT_MS`), which
+means the first generation after any idle period cannot verify a key — the
+badges shipped that morning would silently show nothing. Paying Render is
+$14/mo for the two services; the question was whether Cloud Run does better
+for less.
+
+**It does.** Both services now run on Cloud Run in `iqraa-auth-507315`,
+`europe-west1` (the nearest Google region to Neon in Frankfurt):
+
+| | Render free | Cloud Run |
+| --- | --- | --- |
+| Verifier cold start | 51s | 4.59s |
+| API cold start | not measured | 5.97s |
+| Verifier warm | 0.39s | 0.21-0.60s |
+| Cost at ~500 teachers | $14/mo (paid tier) | likely $0 (free tier: 2M req, 180k vCPU-s/mo) |
+
+Verified live: `GET /api/healthz` ok, `/api/healthz/ai-budget` reads the shared
+Neon database (same `spentUsd` as Render, so both point at one database),
+`/api/healthz/verifier` returns `{"verifier":"ok","selfTest":"pass"}`, and a
+real `POST /verify/derivative` returns `{"verified":true,"computed_answer":"2*x"}`.
+
+**Measured cleanly a few hours later, and the earlier caveat resolved against
+us.** The 1.1s first reported was not a cold start — a health check had
+already woken the container. Left genuinely idle ~45 minutes, the real
+figures are **4.59s for the verifier** (0.60s warm) and **5.97s for the API**
+(0.24s warm); the API is slower because it runs the assessment seed before it
+listens. So a cold verifier does exceed the old 2.5s timeout, every time —
+which means that timeout was aborting every first verification after an idle
+period, exactly as suspected. **Fixed:** 8s server-side, 15s client-side,
+the latter because that request is app to API to verifier and can be waiting
+on two cold starts (~10.5s worst case) — PR #235.
+
+**Nothing is switched over.** _(Superseded 2026-09-05: it was switched over —
+`EXPO_PUBLIC_API_BASE_URL` points at Cloud Run and the Render API and verifier
+have been retired from the blueprint. See the top of this file. The paragraph
+stands as written for its reasoning, not its status.)_ Render still serves the
+live app, untouched.
+`EXPO_PUBLIC_API_BASE_URL` in `render.yaml` still points `iqraa-web` at
+`iqraa-api-dfxu.onrender.com/api`; changing that line and rebuilding the web
+service is the entire cutover. Deliberately not done, because the health
+checks above never call OpenAI or R2 — those env values were transcribed from
+screenshots, and a single misread character would pass every check here and
+fail only when a teacher generates a worksheet or opens a lesson image.
+
+**Two things worth knowing before anyone touches this again:**
+- **`/healthz` does not work on Cloud Run.** Google Front End reserves that
+  path and answers it with its own generic 404 before the container sees the
+  request — the app's other routes are fine (`/` returns FastAPI's own JSON
+  404). Cloud Run needs no health path declared, so this is cosmetic, but it
+  will look like a broken deploy to anyone who tests with `/healthz` first.
+- **Production secrets now exist in two places.** The Cloud Run services hold
+  their own copies of `DATABASE_URL`, `OPENAI_API_KEY` and the R2 keys. Any
+  rotation has to happen in both, or delete the Cloud Run services to shrink
+  the surface. `SESSION_SECRET` there is freshly generated, not Render's.
+
+Dockerfiles live on `claude/cloud-run-test` (unmerged, deliberately). They
+mirror `render.yaml`'s own build and start commands rather than optimizing —
+same pnpm version, same `--filter`, same Python pin, same seed-then-start.
+_(Superseded 2026-09-05: they are on `main` — `00b3c9a`, both files, each with
+its `gcloud run deploy` line in the header. See [`docs/deploying.md`](./docs/deploying.md).)_
+
+## The verifier went unreachable again, and the blueprint was the trap, 2026-09-03
+
+Checked against the live API right after the quick-wins merge, because that
+PR ships verification UI and nothing had confirmed the verifier was reachable
+since 2026-08-10:
+
+| Probe | Answer |
+| --- | --- |
+| `GET /api/healthz/verifier` | 503 `{"verifier":"unreachable","detail":"client_error:fetch failed"}` |
+| `GET /healthz` on the verifier | `{"status":"ok","topics":[…8 topics]}` |
+| Verifier cold start | 51s |
+| `GET /api/healthz/ai-budget` | `liveMode: true`, `gpt-5.4-mini`, $0.22 of $5 |
+
+So the verifier is up and doing maths, and the API cannot talk to it — the
+same split state that took three days to diagnose in August, when this file
+asserted "NOT DEPLOYED" and was wrong.
+
+**The August entry predicted this in writing.** It said hardcoding the public
+URL in the dashboard worked, but that leaving `fromService … property:
+hostport` in the blueprint meant "a re-sync that restores `hostport` would
+silently break verification again". It did. `render.yaml` now sets the public
+URL literally, so the repo no longer carries the trap.
+
+**What this does not fix.** A blueprint is not a deploy. Render still holds
+whatever value it last synced, so `MATH_VERIFIER_URL` on `iqraa-api` has to be
+re-synced or set by hand before any of this reaches a teacher. Until then the
+badges merged earlier today render nothing — correctly, and silently, because
+an unreachable verifier degrades to the reviewed-bank label rather than
+claiming anything.
+
+**Fixed the same day, 2026-09-03.** `MATH_VERIFIER_URL` on `iqraa-api` was
+set by hand to `https://iqraa-verifier.onrender.com` in the Render dashboard,
+and the blueprint change landed on main in PR #225, so a future re-sync writes
+the same value rather than restoring the trap. Confirmed after the redeploy:
+`GET /api/healthz/verifier` → `{"verifier":"ok","selfTest":"pass"}` in 0.8s.
+`selfTest` is the part that matters — the API sent a real derivative and got
+the right answer back, so this is the whole chain, not just a socket opening.
+
+**Still unproven:** whether a real generated paper comes back with
+`keysChecked > 0`. Reachability is necessary, not sufficient; that number
+still needs one live generation on a funded key to settle, exactly as the
+2026-08-29 entry said.
+
+**Worth deciding separately: the cold start.** The verifier sleeps on the free
+plan and took 51 seconds to wake, against a 2.5s client timeout
+(`VERIFY_TIMEOUT_MS`). Even with the URL fixed, the first generation after an
+idle period cannot verify. `warmUpVerifier` exists in
+`services/ai/verifyMath.ts`; whether it fires early enough to cover a
+51-second wake has not been measured, and one teacher opening the app is not
+a long enough runway to assume it does.
+
+## Four teacher-facing quick wins, 2026-09-03
+
+Picked from a "what would make this interesting for teachers now" pass,
+filtered by learning value per unit of build. Mobile suite after: 1140 tests,
+0 failures, 10 skipped (the chemistry KB-search cases). Typecheck clean.
+
+**Verification is visible wherever a key is.** The top-of-file line saying
+"what remains is surfacing that in the UI" had been stale since 2026-08-15.
+What was actually missing, and is now in:
+- `app/ai-tools/quiz.tsx` and `worksheet.tsx` computed a per-question
+  outcome and showed only the aggregate count. Each quiz card and each
+  worksheet answer-key row now carries the shield when the verifier proved
+  that key, and (with answers shown) the verifier's independently computed
+  answer via the existing `verifiedComputed` string. **Symbolic only** — the
+  `bank` outcome doubles as the verifier-down fallback, so a per-item «من بنك
+  الأسئلة» would vouch for a key nothing checked. The worksheet badges the
+  answer-key rows, not the question cards: outcomes are flat and positional,
+  `answerKey[].num` is that same flat position, and the question cards use a
+  section-local index.
+- `app/evaluations/[id]/index.tsx` read only `verification.verified`; it now
+  prints `computedAnswer` under the badge, and shows the generator's
+  `warnings[]` (e.g. how many questions were dropped because the verifier
+  contradicted their key). `new.tsx` generates and then `router.replace`s, so
+  it forwards those warnings as a route param — the only way create-time
+  notes survive the redirect; the screen re-derives everything else from the
+  questions, which by construction cannot show a question that was dropped.
+- Not done: nothing tests the rendering (no screen tests exist), and the two
+  production facts from 2026-08-30 — `MATH_VERIFIER_URL` reachability and
+  `keysChecked > 0` after one funded generation — are still unverified.
+
+**«ابدأ الحصة القادمة بتهيئة على الفجوة» on the class results dashboard.**
+The dashboard already knew which objective the class missed most, and its
+only action pushed a *title string* to the worksheet screen — the objective
+id was discarded at the navigation boundary. `buildGapWarmupRequest` in
+`services/lessonPrep.ts` (tested) goes objective id → `getObjectiveById` →
+its lesson → `resolveLessonPrepContext`, and builds an 8-minute
+`activityVariant: 'warmup'` request with the objective text as the stated
+aim. The button generates in place (the `home.tsx` `startClass` pattern),
+saves it as an `activity` material and opens `/ai-tools/activity?savedId=`
+on the lesson's own picker indices. Two traps designed around: the request
+declares `contextSource: 'curriculum'` (the objective is catalog text, not a
+text box — `activity.tsx` would have flipped it to `'teacher'` and dropped
+the request out of the pool), and the topic is the *lesson title*, because
+the offline generator picks content by topic and would otherwise only
+relabel the same activity. `ponytail:` Regenerate on the activity screen
+rebuilds it as a plain group activity (its form has no warm-up slot).
+
+**«ثلاثة مستويات دفعة واحدة» on the worksheet screen.** Three
+`generateWorksheet` calls fanned out with `Promise.all` at easy/medium/hard
+(difficulty is in the server's strict key, so three independent, shareable
+pool slots; one abort signal covers all three). A tab row switches the paper
+on screen; `diffIdx` follows the tab, so save, export, present and the
+verify summary needed no changes — they already read `result` + `diffIdx`.
+Each level keeps its own `savedId` and outcomes; titles get the level label
+appended so three saves are three materials in موادي. Verification re-runs
+on first visit to a level, and a result arriving after the teacher switched
+tabs is dropped rather than badging the wrong paper. Cost: the first teacher
+on a lesson pays 3× once; everyone after is served from the pools.
+Regenerate inside this mode regenerates the active level and collapses back
+to a single paper. Screen-only, no test.
+
+**`simplify` and `parent-msg` unparked.** One `hidden` line each in
+`toolCatalog.ts`, `simplify` mirrored to `enabled: true` in `homeAiTools.ts`
+(which also lets its smart template and hero chip through), and the test's
+`OFFERED_TOOLS` / `PARKED_TOOLS` lists moved deliberately. The audit's
+objection to `simplify` was its subtitle promising examples and
+misconceptions the output lacks; the subtitle now describes the output
+(a simpler lesson plan). The parent message is a pure offline composer and
+had no finding against it.
+
+## A lesson plan follows the style the teacher picked, 2026-08-31
+
+The third instance of the same pattern as the two sections below — *a picker
+that changes a label but not the output*. Found by checking whether the defect
+sat in the remaining generators; it did.
+
+**`teachingStyle` reached exactly one of the plan's eleven fields.** Only
+`mainActivity` branched on it. `guidedPractice`, `independentPractice`,
+`assessment`, `differentiation` and `materials` were style-blind, and
+`objectives`, `title`, `introduction`, `closure` and `homework` never varied by
+style either.
+
+**Careful about what "varies" meant here.** `introduction`, `closure`,
+`assessment` and `homework` looked like they differed across styles (2 of 3
+distinct). They vary identically **within a single style** — six runs of
+`direct` gave 3 distinct introductions and 2 distinct closures. That is the
+`pick()` helper, not the style. Measuring "the three styles differ" on those
+fields would have passed with the style ignored entirely, which is how this hid.
+
+**The plan contradicted itself.** A `collaborative` plan opened with group task
+cards and presentations, then two sections later said
+«يُسمح بمراجعة الملاحظات؛ **المناقشة بين الطلاب مؤجّلة**» — "notes are
+permitted; peer discussion is not". The I-Do/We-Do/You-Do phases were hardcoded
+regardless of the style wrapped around them.
+
+**With an attached document the picker was inert altogether.** The
+document-grounded branch never read `style` and hardcoded
+«شرح مباشر من المواد المرفوعة» / "Direct teach from uploaded materials".
+Verified: with a real document block, `collaborative` and `direct` returned the
+**identical** `mainActivity`.
+
+**Now:** `artifacts/mobile/services/ai/lessonPlanBlueprints.ts` holds per-style
+phases, built on what each style is for:
+
+| Style | The shape it commits to |
+| --- | --- |
+| `direct` | I do → we do → you do; worked examples faded to solo practice |
+| `inquiry` | students meet the phenomenon and record a **conjecture** before the rule is named; the guided phase presses on the evidence instead of demonstrating; independent practice tests the conclusion on a new case |
+| `collaborative` | four different task cards per group, group-to-group critique, then **individual accountability** — which is how assessment stops contradicting the grouping |
+
+Re-measured: **1 of 11 fields → 6 of 11**, three distinct values out of three on
+every style-owned field, **on both the ordinary and the document paths**, and
+the self-contradiction is gone. Only `direct` still describes its independent
+stage as individual, where that is correct by the model's own design.
+
+Ten now-dead helpers (`lpMainActivityAr/En`, `lpGuidedAr/En`,
+`lpIndependentAr/En`, `lpAssessment`, `lpDifferentiation`, `lpMaterialsAr/En`)
+were deleted rather than left beside the blueprints for someone to edit by
+mistake.
+
+**The live path had the same hole.** `lessonPlanPromptAr` interpolated one word;
+`lessonPlanPromptEn` passed the raw enum token (`inquiry`) on a line of its own
+with nothing after it. Both now carry `LESSON_STYLE_RULES_AR`/`_EN`, which state
+what each style requires **across every field** and forbid the exact
+contradiction by name. `PROMPT_VERSION` → `2026-08-31.3`.
+
+**Pinned by** `services/__tests__/lessonPlanStyle.test.ts` and
+`artifacts/api-server/src/lib/__tests__/lessonStylePrompts.test.ts`. Verified
+against the reverted generator: **7 of the 11 mobile cases fail** without the
+fix. The document-path tests use the real block format from
+`buildDocumentPromptBlock` — a block that does not match the parser falls
+through to the ordinary path and proves nothing, which is a mistake made once
+while writing these.
+
+## Embedded maths stopped being scrambled by RTL, 2026-08-31
+
+A generated slide read «إيجاد مشتقة الاقترانات الآتية: f(x) = 2x⁴ - x² + 3»
+and **projected as `x⁴f(x) = 2 - x² + 3`**; on the next line the `t²` of
+`s(t) = 80t - 5t²` was carried off to a line of its own. A teacher was showing
+a class wrong maths.
+
+Bidi, not maths. Arabic prose sets a right-to-left run, and the digits,
+parentheses and operators inside an embedded equation are bidi-*neutral*, so
+the platform reorders them against the surrounding Arabic unless each
+Latin/maths run is explicitly isolated.
+
+**The fix already existed and had never been wired up.** `isolateForeignRuns()`
+landed in `services/mathRender.ts` on 2026-08-27 for exactly this failure, with
+tests — and was applied to the chat bubble and `MathParagraph` only. Eleven
+other screens rendering model-written prose never got it.
+
+Now wired everywhere it applies, following the chat pattern
+(`writingDirection` for the paragraph's base direction, `isolateForeignRuns`
+for the runs inside it):
+
+| Surface | Was |
+| --- | --- |
+| `presentation.tsx` | the reported bug — and it set `textAlign` but never `writingDirection`, in 1349 lines |
+| `evaluations/[id]/index.tsx`, `…/answers/[studentId].tsx`, `take/[code].tsx` | teacher review, grading, and the paper a student actually sits |
+| `lesson-flow`, `activity`, `classroom/builder`, `slides`, `game` | artifact previews |
+| `iqra.tsx:987` | the one chat branch the 2026-08-27 commit missed |
+| `exportHtml.ts`, `deckSlidesHtml.ts` | print/PDF — isolation moved into `esc` so a new builder cannot forget it, with `escAttr` as the explicit opt-out for URLs |
+
+**Two things the export suite caught, worth keeping in mind.** Isolating every
+run the character class matched wrapped a lone `.` and a bare «ص 45» page
+number — which split the abjad option marker «أ.» into «أ⁦.⁩» and cut the page
+out of a citation. A run now earns an isolate only if it holds a Latin letter,
+or a number *and* an operator; a standalone number or punctuation mark is laid
+out correctly on its own. Separately, a URL printed as visible text has to be
+isolated **whole** (`escUrlText`): general run detection cuts it at the `://`,
+because a colon is not a maths character, and the scheme can then swap sides
+with the host.
+
+`exportPptx.ts` and `exportText.ts` are deliberately untouched — invisible
+U+2066/U+2069 can read as corruption in apps that do not honour them.
+
+**Not machine-verified:** the rendering itself. Synthetic events still do not
+reach these React-Native-Web controls. The helper and the exported strings are
+tested (mobile 1091 pass / 0 fail); the screen call sites were read by eye.
+
+## Regeneration means something, and one artifact can serve many teachers, 2026-08-31
+
+Two teacher-facing complaints with one mechanism behind them: pressing
+«إعادة التوليد» returned the same paper reworded, and every teacher asking for
+the same lesson paid for their own model call.
+
+**They are the same feature.** A regeneration is what fills a shared pool, and
+the pool is what makes the next teacher's regeneration free. Phase 1 of
+`docs/ai-cost-savings-plan.md` — the shared cache and single-flight — is built;
+phases 2 (superset slicing) and 3 (precomputed catalog) are not.
+
+What is now true, checked against the code and the suites:
+
+- **Regenerate is a different request.** It was not: `onRegenerate={generate}`
+  re-ran the same function with a byte-identical body, and `generateContent`
+  set no seed, no temperature and no directive. The screens now send
+  `regenerate: true`, the stems on screen (`avoid`) and the pool variant they
+  hold (`excludeVariantIds`) — see `services/ai/regeneration.ts`.
+- **The server answers a regeneration from the pool when it can.** A variant
+  this teacher has not seen costs nothing and is certainly different. Only when
+  there is none does it generate, steered by a named variation profile keyed to
+  the pool slot and by an exclusion list of what the teacher already saw.
+- **And it checks.** `overlapRatio` measures how much of the "new" artifact the
+  teacher had already been shown; above half it retries once with a harder
+  directive. Nothing marks an artifact regenerated on the strength of having
+  asked for one — the repo has shipped a flag describing an intention rather
+  than a result before, and this is that shape of claim.
+- **`ai_artifacts` holds up to 5 variants per key**, served least-used-first.
+  Keyed on `strictKey`, not `coarseKey`: the coarse key drops difficulty,
+  question count and duration on the promise that phase 2 will slice a superset
+  down to them, and phase 2 does not exist — serving on it today would hand a
+  teacher who asked for 5 easy questions a 15-question hard paper.
+- **`ai_generations` rows now carry `artifactId`**, which makes them a
+  per-teacher serve log: "which variants has this teacher seen" is a query over
+  rows that were already being written. `cacheStatus` finally moves off `miss`.
+- **A cache hit is served even when the budget is spent.** `assertBudgetAvailable()`
+  now runs after the lookup — it costs nothing to hand over an artifact that
+  was paid for last week. `assertLiveModeEnabled()` still runs first, on
+  purpose: with live mode off this API is meant to make no AI claim at all.
+
+**The finding that decides whether any of this works.** The plan's scope rule
+was "global for requests with no `additionalContext`". Every generator screen
+sends `additionalContext` — it is `buildGeneratorContext()` output, curriculum
+text the app derives from the lesson — so that rule would have excluded
+essentially every request from the pool and the hit rate would have been zero
+for reasons no dashboard would have explained. Requests now declare
+`contextSource`; only `'teacher'` (a pasted note, an attached document, typed
+objectives or adaptations) stays private, and an absent value is read as
+`'teacher'` so a screen that forgets fails closed.
+
+**A teacher can pull a bad artifact out of the pool, 2026-09-02.** The four
+generator screens now show «بلّغ عن مشكلة في هذه النسخة» beneath Regenerate,
+and it withdraws the artifact for everybody and regenerates a replacement in
+one action. This was the gap the section below recorded: the endpoint existed
+and nothing called it, which in practice meant a bad worksheet stayed in
+circulation until an operator ran a curl nobody was going to run.
+
+Three decisions worth knowing:
+- **Any authenticated teacher can retire any variant.** The person holding the
+  bad paper is the one who knows it is bad, and routing it through an admin
+  leaves it being served meanwhile. The cost of a wrong call is one wasted
+  generation; the cost of the delay is every teacher who asks for that lesson
+  in between.
+- **The button only appears for a pooled artifact** (`pooledVariantId()` finds
+  a `variantId`). A mock-generator fallback or a request carrying the teacher's
+  own material was never shared, so withdrawing it would do nothing — and a
+  button that does nothing teaches teachers to distrust the ones that do.
+- **A failed withdrawal does not regenerate.** The teacher would get a fresh
+  artifact and reasonably conclude the bad one was dealt with, while it is
+  still in the pool.
+
+**Not built, and worth knowing:**
+- The hit rate has not been observed on real traffic. Everything above is what
+  the code does, verified by tests; the first number that means anything comes
+  from `select cache_status, count(*) from ai_generations` after a week.
+- Nothing precomputes the catalog, so a teacher is still the one paying for the
+  first request on any lesson. That is phase 3, ~$1 for all of math S1.
+
+**Needs the manual push** — `ai_artifacts` is a new table and `ai_generations`
+gains a column: `pnpm --filter @workspace/db run push`, then
+`pnpm --filter @workspace/db run verify-schema`. Without it the pool degrades
+to "generate every time", which is the old behaviour, and
+`/healthz/ai-budget` reports it under `cacheFailure` rather than failing
+silently.
+
+## The difficulty picker does something now, 2026-08-31
+
+Same shape as the activity-format defect below, found by checking whether that
+pattern — *a picker that changes a label but not the output* — sat in the
+sibling generators. It did.
+
+**`req.difficulty` was never read.** Not by `generateWorksheet`, not by
+`generateQuiz`; the only two matches in either function body were comments.
+Both screens show the picker and both send the value
+(`app/ai-tools/worksheet.tsx:214`, `quiz.tsx:285`).
+
+**The quiz factories hard-coded the tier** — the literal `'medium'` at six call
+sites. On the math path `tryMathPractice` forwards the tier to
+`takeConcreteMath`, which filters the bank by `item.diff`, so **an "easy" quiz
+and a "difficult" quiz drew from the identical medium slice.**
+
+**On the non-math path the tier reached only the points number.** `mcPts` /
+`saPts` / `fbPts` returned 2/4/6 and `tfPts` ignored it entirely — its
+parameter was `_diff`. The same 32 Arabic and 32 English templates served all
+three tiers, so a chemistry worksheet's «تمارين تمهيدية (سهل)» and «تحدٍّ سريع
+(أصعب)» came from one pool and differed by heading and points alone.
+
+**Measured before**, requesting easy/medium/hard for one lesson: the math
+worksheet produced **1 distinct question set out of 3**, quiz points were
+identical across all three tiers, and section titles never moved. Chemistry
+showed 3/3 distinct — but that was random template selection, not tiering, and
+is exactly why the new tests assert tier *membership* rather than difference.
+
+**Now:**
+
+- Every question template carries the tier it actually is
+  (`TieredTemplate`), and `pickTiered` selects from that slice with an
+  adjacent-tier fallback mirroring `takeConcreteMath`. The tier lives on each
+  template rather than in a parallel index list, which would silently
+  mismatch the first time someone reordered one.
+- The six quiz factories take the requested tier. `mixed` spreads tiers across
+  the paper instead of collapsing to medium.
+- **The worksheet SHIFTS its band rather than flattening it** — `easy` →
+  easy/easy/medium, `medium` → easy/medium/hard, `hard` → medium/hard/hard.
+  The easy→hard progression is deliberate scaffolding and honouring "hard" by
+  making all three sections hard would throw it away. Section titles now name
+  the tier they actually contain.
+- A worksheet section reports `'mixed'` when it holds more than one question
+  type. `sectionType` was assigned inside the per-question loop, so a section
+  was tagged by whichever question came last. Nothing reads
+  `WorksheetSection.type` today (grepped — no consumer in app or export code),
+  so this was wrong data rather than a visible break; it is stored in the
+  workspace and, since the shared pool landed, served to other teachers.
+
+**The live path had the same hole, twice over.** The worksheet prompt
+interpolated the level name and stopped; **the quiz prompt never mentioned
+`difficulty` at all.** Both now carry a clause saying what each tier means, and
+the worksheet's states the band explicitly so the live paper matches the
+offline one. `PROMPT_VERSION` → `2026-08-31.2`.
+
+**Checked, and deliberately not changed:**
+
+- `difficulty` stays in `SLICED_FIELDS` (strict key only, out of the coarse
+  key). `docs/ai-cost-savings-plan.md` says phase 1 serves on the **strict**
+  key precisely so the pool cannot answer "5 easy questions" with a
+  15-question hard paper. Correct as it stands.
+- `fill_blank` and `word_problem` fall into the quiz's short-answer branch.
+  The quiz picker offers only three types, so no teacher can reach it; the
+  question produced is an honest short answer, correctly labelled. Recorded in
+  a comment at the branch rather than fixed, to keep this change contained.
+- The math bank's `trig_apps` family holds exactly **one item per tier**, so a
+  six-question quiz on «قانون الجيوب» exhausts it and `takeConcreteMath` falls
+  back across tiers by design. That is a bank-content limit, not a tiering
+  bug — the tests use an `exp_eq` lesson (6 easy / 6 medium / 5 hard) where the
+  tier can actually be observed.
+
+**Pinned by** `services/__tests__/questionDifficulty.test.ts` and
+`artifacts/api-server/src/lib/__tests__/difficultyPrompts.test.ts`. Before this
+there were **no tests invoking `generateWorksheet` or `generateQuiz` at all** —
+the only references were stubs in `lessonFlowRunner.test.ts`. Verified the new
+suite fails on the pre-fix code: **6 of its 10 mobile cases fail** when the
+generator changes are reverted.
+
+## The five activity types stopped being one template, 2026-08-31
+
+**The Activity generator produced one activity with five names.** Measured
+before the fix, generating all five types for the same lesson and stripping
+the title and the group-size noun: **1 distinct body across 5 types.** Per
+field, out of five types, `objective` / `materials` / `steps` / `teacherTips` /
+`differentiation` / `assessment` each had **1 distinct value**; only
+`groupSize` had five, and `title` had three (individual, group and hands-on
+all read «تعلم تعاوني»). `activityType` controlled exactly one interpolated
+noun.
+
+The seams showed in the Arabic: step 2 was `قسّم الطلاب حسب ${groupLabel}`, so
+«individual» rendered as **«قسّم الطلاب حسب فردي. تحل كل مجموعة المسألتين»** and
+«discussion» as «قسّم الطلاب حسب الصف كامل». The teacher tips then told you to
+assign roles inside each group — on an individual worksheet. «لعبة تعليمية» had
+no rules, no scoring, no rounds and no win condition.
+
+**The lesson flow generated the warm-up from the same call.**
+`lessonFlowRunner` asked for a 10-minute `hands-on` activity and then a
+30-minute `game`, so a teacher running the journey got the same four steps,
+the same materials, tips and differentiation, and **the same three problems
+posed twice in one lesson**. The warm-up also claimed 10 minutes while its
+steps summed to 20 (`stepDur = max(5, (duration - 10) / 2)`, four steps).
+
+**Now:** each format has its own blueprint in
+`artifacts/mobile/services/ai/activityBlueprints.ts` — steps, materials, tips,
+differentiation and assessment built around what the format is for.
+Re-measured after: **5 distinct bodies out of 5, and 5 distinct values on
+every field including the title.**
+
+| Format | Structure it now produces |
+| --- | --- |
+| `individual` | silent retrieval → worked example → faded practice → self-explanation. No groups anywhere. |
+| `group` | jigsaw: four different tasks, expert groups, teach-back, random individual accountability |
+| `discussion` | a contestable claim, vote, silent think, pairs, talk moves, re-vote |
+| `hands-on` | build/measure a physical artefact, then reconcile measured against computed |
+| `game` | announced rules, teams, two rounds (the second a wager), live scoreboard, win condition, miss review |
+| `warmup` | three steps: prior-knowledge retrieval, one check, a bridge to today |
+
+`activityVariant: 'warmup'` is the lesson flow's opening step now, and
+`continueMathPractice: true` on the activity call keeps it off the items the
+warm-up just used — **verified: 0 shared problem values** between the two.
+Step durations are computed by `distributeMinutes` and `totalDuration` is the
+**sum of the steps**, so the two can no longer disagree.
+
+**The live-AI path had the same hole and is fixed too.**
+`activityPromptAr`/`activityPromptEn` injected the type name into one opening
+sentence and asked for the same fixed JSON shape for all five, so the model had
+nothing to differentiate on. They now carry a per-format structure clause
+(`ACTIVITY_FORMAT_RULES_AR` / `_EN` in `artifacts/api-server/src/lib/prompts.ts`),
+mirroring the blueprints — the same 7-branch treatment `classroomPrompts.ts`
+already had. **Keep the two in step:** a teacher must not get a different kind
+of activity depending on whether live generation was on. `PROMPT_VERSION` is
+bumped to `2026-08-31.1`, and `activityVariant` is in **both** generation keys
+(not strict-only like `activityType`) — a warm-up is not a slice of the main
+activity, and sharing a coarse key is how the two came to be identical.
+
+**Not touched:** `generateClassroomActivity` was already properly
+differentiated — bingo emits `bingo-call` slides with a caller list, relay
+emits `relay-problem` slides, quick-check emits MCQs whose distractors are
+misconceptions from the concrete bank. That capability existed; the
+lesson-activity generator just never got it.
+
+**Pinned by** `services/__tests__/activityBlueprints.test.ts` (every type
+differs from every other on every field, in Arabic and English, for a maths and
+a chemistry lesson; each format carries its defining structure; durations sum)
+and `artifacts/api-server/src/lib/__tests__/activityPrompts.test.ts` (all five
+prompts differ, each names its own structure, in both languages).
+
+**Load-bearing on the shared artifact pool** added the same day (the section
+above). The lesson flow sends `contextSource: 'curriculum'`, so its steps are
+pooled — and the warm-up and the main activity both POST to
+`/generate/activity` for the same lesson. `activityVariant` being in the coarse
+key is what keeps them two pool entries instead of one.
+
+## Exams & tests review: variation, book grounding, purpose separation, 2026-08-28
+
+A full pass over both exam systems — the `/ai-tools` generators and the
+evaluations subsystem — against a live local stack (Postgres 16 + API + the
+whole lifecycle: create → generate → publish → student link → claim → answer →
+submit → hand-mark → results). What already held, held: the share-link roster,
+`name_taken` on a double claim, no answer key anywhere in the student payload,
+edit-after-submit refused, a bad key in live mode answering `502
+generator_unavailable` with nothing written. Three teacher-visible problems
+were real and are fixed:
+
+- **Regenerating an exam returned the identical paper.** `generateMockEvaluation`
+  was deterministic by design — fixed stems, round-robin objectives — so the
+  regenerate button looked broken. It now varies (three Arabic phrasings per
+  competency, seeded shuffle of objective order) without inventing content, and
+  the seed is stored so a paper stays reproducible. Same on the client: the
+  concrete math bank drew `ranked[0]`, so every fresh session opened with the
+  identical quiz; the draw is now random within the difficulty-preferred pool,
+  with `usedIds` still preventing repeats within a pass.
+  `mockVariation.test.ts` holds both directions: two seeds differ, same seed
+  replays, and structure (count/types/marks/objective coverage) never moves.
+- **Chemistry S2 could never be examined.** `/evaluations/meta/evaluable`
+  hand-listed four book ids and dropped `book-chem-10-s2` (20 objectives). It
+  now serves `getEvaluableBookIds()` — which also surfaces G9 math, the English
+  tracks, and science-8 (1 objective), since the helper's contract is "has
+  objectives". Verified live: a chem-S2 evaluation generates.
+- **`generationParams` was documented as "the exact request handed to the
+  generator" and never written.** `POST /evaluations/:id/generate` now stores
+  it (objectives, types, count, difficulty, language, seed on the mock path,
+  prompt version + grounding sources on the model path). An ungrounded model
+  generation also says so out loud now — a warning names that no book passages
+  exist for those units, instead of a bookless paper reading exactly like a
+  grounded one.
+
+Smaller repairs on the way: the quiz screen never sent `numQuestions`, so every
+live quiz asked the model for exactly 10 — it now sends 2 × selected types, the
+same rule the mock uses; the evaluations→worksheet handoffs computed
+`subjectIdx` against a grade-filtered list while the receiving screens rebuild
+the bare list (identical only while `INVESTOR_MVP_CURRICULUM` flattens the
+argument) — both now go through `scopePickerParams` in `services/lessonPrep.ts`;
+`game.tsx` got the localised grade name and a cancel; the EN quiz-tool subtitle
+claimed "Auto-graded questions", which is the evaluations feature's job, and
+both tools' subtitles now state their actual, different purposes.
+
+**Still not true, on purpose left as findings:** generated answer keys never
+pass through the math verifier — `evaluationQuestions.verification`,
+`math_equivalence` and `math_verifier` are declared in the schema and written
+by nothing, and the verifier has no general-equivalence endpoint to call;
+`/generate/*` still validates no request body; the evaluations client has no
+offline fallback (server decides mock/live — by design, but stated nowhere).
+Local-boot note that cost an hour: the API refuses to start without *some*
+`OPENAI_API_KEY` even in demo mode — LOCAL_SETUP.md said "optional", now
+corrected.
+
+## A teacher can see why nothing was verified, 2026-08-30
+
+The first real production test generated a maths exam with live AI and showed
+**nothing at all** — no badges, no explanation. Two unrelated causes were
+invisible behind the same silence:
+
+- production's `MATH_VERIFIER_URL` is misconfigured, so the API cannot reach a
+  verifier that is itself healthy (`/api/healthz/verifier` → `unreachable`
+  while `iqraa-verifier.onrender.com/healthz` → `ok`);
+- the exam was on الاتجاه من الشمال and قانون الجيوب — topics the verifier
+  cannot prove, so zero was the *correct* answer.
+
+**A warning existed and no screen rendered it.** `POST /evaluations/:id/generate`
+returns `warnings[]`, the client type declares it, and nothing reads it. That
+was claimed as visible when it was not.
+
+**The state is now derived from the questions, not from the generate response.**
+`GET /evaluations/:id` already returns each question's `verification` and the
+evaluation's `subjectId`, so `summariseKeyChecks` (mobile,
+`services/keyCheckSummary.ts`, pure, 10 tests) decides what to say and it
+survives a reload — identical after a first generation and after a regenerate,
+with no transient state carried across `router.replace`.
+
+**`verification` gained a `code`** — `verified | no_key | verifier_unreachable |
+undecided` — because the four outcomes were previously distinguishable only by
+English prose written for logs. A screen string-matching those breaks the day
+anyone rewords a sentence, and the app must tell two of them apart: *nobody
+could check this* is a content problem, *the checker was down* is an outage.
+The helper resolves the outage first for that reason; collapsing them would send
+a teacher rewriting good questions.
+
+Three states, three tones, none of which may read as "these answers are wrong" —
+a key the verifier contradicts is dropped during generation and never reaches
+this screen: green «تم التحقق رياضيًا من N من أصل M», amber «تعذّر الوصول إلى
+مدقّق الرياضيات … ولم يُحذف أي سؤال», grey «لا توجد مفاتيح يمكن فحصها آليًا …
+وهذا لا يعني أنها خاطئة». Questions written before key checking exist carry no
+`verification`, and stay **silent**: claiming "nothing here was checkable" of
+them would report a finding from a check that never ran.
+
+`isMathematicsSubject` moved to `lib/math-verify` and `paperIsMathematics` now
+delegates to it, so the server and the app cannot drift on the one question they
+both ask.
+
+**Verified live** on Postgres + the real verifier + the API with a scripted
+model, reading the codes back out of Postgres:
+
+| Scenario | Codes written |
+| --- | --- |
+| checks supplied, verifier up | `verified`, `no_key` |
+| no checks supplied | `no_key` ×3 |
+| checks supplied, **verifier down** | `verifier_unreachable` ×2 — 3 of 3 produced, nothing dropped |
+
+api-server 346, mobile 1056 (1046 pass, 10 expected skips), typecheck clean.
+
+**Not machine-verified:** the rendering itself — synthetic events do not reach
+these React-Native-Web controls, as recorded elsewhere here. The helper is
+tested; the three branches that consume it were read by eye.
+
+**Worth knowing:** `npx tsc` inside `artifacts/mobile` reports phantom errors
+against `@workspace/curriculum` (e.g. `activityPdfUrl` "does not exist"). Those
+are stale declaration files, not real. `pnpm run typecheck` at the root runs
+`tsc --build` on the libs first and is the only reading that means anything.
+
+## The key check now insists on being usable, 2026-08-29
+
+Key verification shipped correct and unexercised: every test, mine and CI's,
+hands the model's latin `check` block over directly. **No real model has ever
+been asked for one**, and reading the prompt back gave two concrete reasons one
+might not supply it — which would leave the feature working perfectly and
+verifying nothing.
+
+- **The system prompt pulled both ways.** *"Use Arabic mathematical notation and
+  Arabic-Indic digits where a teacher would"* was unscoped, so it read as
+  covering everything the model writes; rule 6 then demanded the check be Latin.
+  The Arabic rule now says where it applies — the text a student reads — and
+  states that `check` is machine-only and always Latin.
+- **"Optionally" is an easy out.** Models under-comply with optional fields. It
+  is now an obligation conditional on the answer being symbolic, with the
+  narrow permission to omit kept for prose and definitions: a model badgered
+  into inventing a key for an essay question is worse than a missing one.
+- **A maths paper gets a hard rule and a worked example.** Detected by
+  `paperIsMathematics(objectives)`, which matches on `subjectId` and never on
+  the display name — the name-matching version of this question is already in
+  CLAUDE.md as a repeat offender. The example is one complete question object
+  carrying an Arabic stem *and* its latin check, because showing the two
+  notations coexisting is the thing the description alone was failing to convey.
+  Chemistry gets none of this: the verifier cannot prove its topics, so pressing
+  for a check would only produce keys it must refuse.
+
+`GENERATION_PROMPT_VERSION` → `exam-gen-4`, so before/after is readable from any
+paper's `generationParams`.
+
+**The silent-zero is no longer silent.** A maths paper that checked nothing was
+previously only discoverable by reading `generationParams` in the database. The
+generate response now says so in its warnings, and the app shows it.
+
+**Verified both directions** against Postgres + the real verifier + the API,
+with a scripted model driven through the real route:
+
+- model emitting **no** check blocks → 3 of 3 produced, nothing dropped,
+  `keysChecked: 0`, `promptVersion: exam-gen-4`, and the warning *"No answer key
+  on this maths paper could be checked…"*;
+- model emitting them → **no false alarm**, `keysChecked: 2, keysVerified: 1`,
+  and the deliberately wrong key still dropped naming the arithmetic.
+
+Suites: api-server 346, mobile 1041 (1031 pass, 10 expected skips), typecheck
+clean. The 17 existing `buildGenerationPrompt` tests pass **unchanged** — the
+shared fixture carries no `subjectId`, so it is treated as non-maths and none of
+the new text appears for it.
+
+**Still unproven, and only one thing proves it:** whether a real model actually
+emits `check`. This raises the odds; it cannot settle them. The number that
+settles it is `generationParams.keysChecked` after one live generation with a
+funded key — above zero and the feature is doing real work, zero and the prompt
+needs another pass.
+
+## Generated answer keys go through SymPy now, 2026-08-29
+
+`evaluationQuestions.verification` had described this since Phase 3 — *"SymPy's
+verdict on the ANSWER KEY at authoring time. A key the verifier contradicts is
+dropped before a teacher ever sees the question"* — and nothing wrote it. A
+model could key «أوجد مشتقة f(x) = x³ − 4x» as `3x² + 4` and the paper reached a
+teacher looking correct: the validator checks type, objective, marks and
+duplication, none of which is arithmetic.
+
+**Measured before building, because the obvious build would have verified
+nothing.** The classification chain requires latin maths, and the generation
+prompt said *"Use Arabic mathematical notation and Arabic-Indic digits where a
+teacher would."* Running real question shapes through `classifyVerifiableTopic`:
+**0 of 5 classifiable in Arabic notation, 5 of 5 in latin.** On top of that, no
+question type carries a symbolic key at all — multiple choice keys an option
+*id*, short answer keys prose. Wiring the verifier to the existing fields would
+have shipped a feature that proves nothing while looking delivered.
+
+So the model now states its key twice: the stem stays Arabic for the class, and
+an optional `check: {topic, question, answer}` carries the same maths in latin
+for the machine (`GENERATION_PROMPT_VERSION` → `exam-gen-3`). This is the repo's
+own standing rule — compute in latin `x`, convert to `س` only at display time —
+applied to answer keys.
+
+**The trap that made this dangerous, found by a test.** SymPy does not reject
+Arabic. With implicit multiplication on, «الإجابة سبعة» parses as a *product of
+eight letter-symbols*, compares unequal to the real answer, and is reported
+`answer_mismatch` — identical to a wrong key. On a check whose verdict deletes a
+teacher's question, in an Arabic-first product, that would have deleted correct
+questions for the offence of being written in Arabic. `relate_answer_key` now
+gates on Arabic script explicitly and answers `error`, never `distinct`;
+legitimate Arabic inside a solution set («أو», «فقط») still verifies, because
+the gate runs after those are normalised away.
+
+**Only a contradiction drops a question.** The new `POST /verify/answer-key`
+returns a three-way relation rather than a bool, because `verify_item`'s
+`expr_equiv` folds `.equals() → None` into `False` — an undecidable comparison
+would read as a wrong key. `indeterminate`, `error` and `unsupported_topic` all
+leave the question in the paper, unverified.
+
+**An unreachable verifier changes nothing.** It is a free-tier service that
+sleeps; losing questions because it was asleep is far worse than shipping an
+unverified key. The first unreachable answer stops the pass, everything
+survives, and a warning says the check did not run.
+
+`verifyMathGuards.ts` moved to a new `lib/math-verify` (`@workspace/math-verify`)
+because the generator runs server-side and a second copy of a correctness
+control is the `sanitizeQuestionForStudent` mistake again. Mobile keeps a
+re-export shim, and its 74 guard tests passing untouched is the proof the move
+was behaviour-free.
+
+**Verified end to end** against Postgres + the real Python verifier + the API,
+driving the real route with a scripted model server (`OPENAI_BASE_URL`):
+
+- a key of `x = 5` for `2x + 5 = 13` is **dropped**, reason: *"it derives \"4\"
+  where the key says \"x = 5\""*; 2 of 3 produced;
+- the correct derivative key stores
+  `{"source":"sympy","verified":true,"computedAnswer":"3*x**2 - 4"}` — read back
+  from the `verification` column;
+- `generationParams` records `keysChecked: 2, keysVerified: 1`;
+- **verifier stopped: 3 of 3 produced, nothing dropped**, warning says the check
+  did not run, and it returns in 0.03s (the pass stops after the first
+  unreachable answer rather than waiting 2.5s per question);
+- a chemistry evaluation on the mock generator: 4 of 4, `keysChecked: 0`,
+  untouched.
+
+Suites: Python 72/72, api-server 303, mobile 1013 (1003 pass, 10 expected
+skips), typecheck clean.
+
+**What this is not.** It checks keys at *authoring* time only. Student answers
+are graded exactly as before — `math_equivalence` and grader `math_verifier` are
+still declared and still unwritten. Coverage is also only as good as the model's
+willingness to emit a `check`: a question without one is never verified, which
+is the honest default and the common case.
+
+**Not machine-verified:** the review screen's «مفتاح مُتحقَّق منه» badge and
+"N of M" summary render from the same data proved above, but the screen itself
+was not driven end to end — synthetic events do not reach these
+React-Native-Web controls, as recorded elsewhere in this file.
 
 ## Production has all 25 tables, and something checks it now, 2026-08-25
 
@@ -383,7 +2785,11 @@ slides path, so an unreviewed bad crop ships.
 Lesson plans, worksheets and exams do not touch `figuresForLesson`, and the
 system prompt still tells the model never to reference a figure unless the
 question text states its equations — a rule written for graphs that silently
-puts every circle-geometry question out of scope. Per-question binding also
+puts every circle-geometry question out of scope.
+**Both closed since:** the appendix landed 2026-08-26 (next section), the
+remaining six surfaces and the prompt rule on 2026-09-04. Exams are the
+exception and are still untouched — a student sitting one sees no figure at
+all. Per-question binding also
 needs care: the model cannot see these images, so letting it choose which
 diagram belongs to which question is the fabrication failure the filename
 fence closed earlier today, in a new place.
@@ -431,12 +2837,15 @@ so four callers do not grow four copies.
 
 Scoped deliberately narrow. Per-question figure binding is still not done, and
 still needs either a vision model or per-exercise extraction metadata neither
-of which exists. The `FIGURE_RULE_AR`/`EN` system-prompt rule — never
+of which exists. ~~The `FIGURE_RULE_AR`/`EN` system-prompt rule — never
 reference a figure unless the question states its equations — is untouched;
 it was written for graphs and still silently excludes every circle-geometry
-question a live model would write. Word export carries no images at all: it
-goes through `docx` paragraphs with no image support, a pre-existing
-limitation this does not touch.
+question a live model would write.~~ **Fixed 2026-09-04** — see «The book's
+figures reach the surfaces that were quietly skipping them»: the ban now
+applies to plotted graphs only, and `BOOK_FIGURE_RULE_AR`/`EN` permits «في
+الشكل المجاور» for the lessons that actually have figures. Word export still
+carries no images: it goes through `docx` paragraphs with no image support, a
+pre-existing limitation neither pass touched.
 
 971 mobile tests pass; typecheck clean. New tests were checked against two
 regressions, not just written to pass: removing the cap turns "caps at
@@ -1459,12 +3868,10 @@ total outage is the worse failure.
 
 ### What is still not true
 
-**The maths verifier cannot check a generated answer key.** The plan said keys
-would go through SymPy; the service only exposes `/verify/derivative` and
-`/compute/derivative` — there is no general equivalence endpoint. So a
-generated key is *unverified* unless the question happens to be a derivative,
-and nothing claims otherwise. Wiring Tier 2 equivalence into grading needs a new
-endpoint on the Python service first.
+~~**The maths verifier cannot check a generated answer key.**~~ **Fixed
+2026-08-29** — see "Generated answer keys go through SymPy now" at the top of
+this file. Authoring-time key checking exists; Tier 2 *grading* (marking a
+student's typed answer by equivalence) still does not.
 
 **Nothing has generated a real question yet.** Every test above runs with live
 mode off or with a deliberately broken key. Turning it on is env-only —
@@ -3168,6 +5575,10 @@ worksheet is on screen (never blocks generation), the same badge component
 appears once it resolves, and Class Mode now passes per-question `outcomes`
 instead of the old blanket `verified: false`.
 
+> **Correction, 2026-09-03:** "the same badge component" was the aggregate
+> row only («تم التحقق من N من M»). Neither quiz nor worksheet badged a
+> single question on its own screen until 2026-09-03; only the projector did.
+
 **Found and fixed a real, dormant bug while wiring this up.** A worksheet
 question doesn't carry its own answer — the generator only ever fills in
 the top-level `answerKey`, keyed by 1-based position across the flattened
@@ -4648,6 +7059,9 @@ are still true and will need deciding eventually:
 - `simplify` is not a tool. It routes to `lesson-plan` with a flag,
   produces the identical `LessonPlanOutput`, and its description promises
   "examples and misconceptions" that do not exist in that type.
+  **Unparked 2026-09-03 with an honest subtitle** («خطة الدرس نفسها بلغة
+  أبسط وخطوات أقصر…»); still not a distinct output type. `parent-msg` came
+  back the same day — an offline composer with no audit finding against it.
 - `activity`'s description is **backwards**. It says "an in-class
   experience… not a printable worksheet"; the code generates a printable
   PDF/Word document with no live-presentation capability at all.
@@ -7208,3 +9622,1161 @@ typecheck` for the whole monorepo (clean). Grade 9 Math S1 Unit 2 and all of
 Semester 2 remain title-only — the unit-plan tables are the next thing worth
 chasing, and would need either a >10MB-capable download path or the guides
 re-uploaded directly the way the S1 units 3-4 material was.
+
+## Grade 9 was visible but unreachable — the real screen and the real KB never got the fix, 2026-08-27
+
+Ran the app for the first time this session — `pnpm install` and a local
+Postgres (started in-container: `service postgresql start`, schema pushed
+against `postgresql://postgres:postgres@localhost:5432/iqraa`) both worked,
+where earlier entries this week had no `node_modules` at all and could only
+syntax-check. That let the previous "Not run against the real app" caveat
+from the 2026-08-27 grade-pill entry actually get checked — and it failed.
+
+**`app/home.tsx`, the file the earlier PR fixed, is not the screen a teacher
+lands on.** The real "change lesson" flow is `ContextBanner` inside
+`app/(tabs)/iqra.tsx` — a 2885-line file, its own `CONTEXT_SUBJECTS` /
+`TopicSelector` wiring, nothing shared with `home.tsx` beyond the component
+name. Its grade was `gradeId: 'grade-10'` baked into every subject row, no
+picker, no way to reach Grade 9 from it at all. Fixed the same way as
+`home.tsx`: independent `gradeId`/`draftGradeId` state, a grade-pill row,
+`ChatLessonPick` carries `gradeId` through to `saveLessonPick`. Caught a
+second hardcoded-Grade-10 spot in the same file while there — the synthetic
+"I'm teaching X to Grade 10 students" chat prompt that opens a fresh topic,
+unconditionally, regardless of the grade actually picked.
+
+**Worse: even with the picker fixed, Grade 9 had zero content behind it.**
+`TopicSelector`'s unit → lesson cascade, chat retrieval, `resolveGroundedKbLesson`,
+lesson-prep grounding — all of it reads `services/knowledgeBase.ts`, and
+`KB_BOOKS` there is a hand-maintained list completely separate from
+`lib/curriculum/src/catalog.ts`'s `BOOKS`. It had five Grade 10 entries and
+nothing else; `grep -c grade-9` was 0. Turning `MVP_GRADE_IDS` on
+(2026-08-27, PR #169) made Grade 9 *listed* — grade/subject pickers, the
+curriculum browser — without making it *reachable*: `TopicSelector` falls
+back to a bare free-text box whenever `hasKBContent(subject, grade)` is
+false, silently dropping the one thing that keeps a picked lesson from
+drifting (`onSelectionDetail`'s `lessonId`) and forcing every Grade 9 pick
+through `searchKBSemantic` fallback matching instead.
+
+Fixed by giving Grade 9 Math the same KB-shaped builder Grade 10 Math has
+had all along: added `buildG9MathSem1Catalog()` / `buildG9MathSem2Catalog()`
+to `lib/curriculum/src/catalogs/g9MathSem{1,2}.ts` (mirrors
+`buildNccdSem1Catalog` in `g10MathSem1.ts` field-for-field — same shape,
+same title-only-lesson summary convention), added the two subpath exports to
+`lib/curriculum/package.json`, added `services/curriculumG9MathSem{1,2}.ts`
+re-export shims (same one-line pattern `curriculumG10MathSem1.ts` uses), and
+merged the results into `KB_BOOKS`/`KB_UNITS`/`KB_LESSONS`. Grade 9 Math now
+has a real unit → lesson cascade in the picker, confirmed live: picking
+الصف التاسع → حل المعادلات lists the actual 4 lessons
+(بيانيًا/بالتحليل/بإكمال المربع/بالقانون العام), and the KB id survives
+through to the lesson-grounded chat reply, which cites the real objectives
+from the JSON and correctly labels itself «الصف التاسع» — `resolveCurriculumContext`
+in `teachingAssistant.ts` had the exact same hardcoded-grade bug as the
+subject line its own comment already flagged as fixed; fixed grade the same
+way, from the lesson's own book.
+
+**Wiring Grade 9 into the KB surfaced a live content-isolation bug, not just
+a coverage gap.** `mathSupportResources.ts`'s title-keyword tagging
+(`unitTagsForLesson`'s "secondary" block — `/اقتران/` → `s2-u5`, etc.) is
+gated by subject only, and those bare tags (`s1-u1`, `s2-u5`, no grade
+prefix) are `bankTagsForParsedUnit`'s Grade-10-only namespace — every other
+grade gets an explicit `g{n}-` prefix precisely so this can't collide, a
+mechanism already built for this exact scenario and never wired to check it
+here. The moment Grade 9 Math had lessons to match against, a Grade 9 lesson
+titled «الاقترانات» picked up the Grade 10 functions-unit tag. Confirmed
+live and worse than the tag path alone: `searchSupportResources`'s
+title/keyword scoring has no grade awareness at all (only a subject gate),
+so a Grade 9 «حل المعادلات» lesson pulled three Grade 10 worksheets and an
+answer key straight into a live chat reply — the resource bank is entirely
+Grade 10 material with no `gradeId` field on any entry, so nothing in that
+path could have known better. Fixed at both layers: gated the keyword block
+to `book.gradeId === 'grade-10'`, and added a hard grade gate at the top of
+`searchSupportResources` (empty result for any non-Grade-10 lesson — same
+"honestly empty" precedent already used for financial-literacy) threaded
+through `buildSupportResourcesContext`'s widened retry too, which drops the
+lesson object but needs to keep the grade it implied. Two existing tests
+encoded the old single-grade assumption as their pass condition
+(`lessonShelf.test.ts`'s tag-namespace allowlist, `knowledgeBase.test.ts`'s
+"probability lesson" ranking, now genuinely ambiguous between grades) —
+updated both to state what they actually guarantee post-Grade-9 rather than
+loosening them.
+
+Verified against the real running app end-to-end (not just tests): registered
+a test account, opened the change-lesson sheet in `(tabs)/iqra.tsx`, picked
+الصف التاسع → الرياضيات → حل المعادلات → حل المعادلات التربيعية بالتحليل,
+confirmed the chat reply carries the correct grade label, the real JSON
+objectives, and — after the fix — no Grade 10 resource attachments.
+`pnpm --filter @workspace/curriculum run verify`/`test` unchanged (0 errors,
+28 gaps, 83/83); mobile `pnpm test` 982/982 (972 pass + 10 skipped) after the
+two test updates above; `pnpm run typecheck` clean across the monorepo.
+
+Net: the 2026-08-27 "Grade 9 is visible now" entry was true and also not
+enough — visible in the pickers is not the same as reachable in the one
+screen that matters, and reachable is not the same as grounded in real
+content. All three now hold for Grade 9 Math.
+
+## Grounding has been finding zero passages in production since it shipped, 2026-08-27
+
+Went to verify Phase 4 (live AI) end to end and found both switches already
+flipped — `AI_LIVE_MODE=true` and `EXPO_PUBLIC_DEMO_MODE=false` were on in
+Render already, with real spend recorded, so someone had turned this on
+before this session went looking. Generated a real lesson plan for «أوتار
+الدائرة وأقطارها ومماساتها» through the live app: the header badge correctly
+said **ذكاء اصطناعي مباشر**, the content was genuinely on-topic — and the
+grounding pill showed a matched lesson with no page citation under it. That
+combination is the tell: `resolveGeneratorGrounding` (client-side, matches a
+topic string against the bundled `knowledgeBase.ts` catalog) said grounded;
+`groundingFor` (server-side, the one that actually attaches book text) said
+nothing.
+
+**Root cause: the extracted knowledge-bank text never reaches the deployed
+server.** `lib/curriculum/src/passages.ts` locates `data/extracted/` relative
+to its own module's `import.meta.url` — correct in source and under `node
+--test`, where that file really does sit next to a `data/` sibling.
+`artifacts/api-server`'s build bundles the entire app into one file,
+`dist/index.mjs` (`build.mjs`, esbuild, `bundle: true`, single `outdir`).
+Bundling collapses every module's `import.meta.url` into the same value — the
+bundle's own path, not any individual source file's — so at runtime the exact
+same expression resolves to `dist/data/extracted`, and nothing ever put
+anything there. `passagesForUnit`'s `existsSync` check silently took the
+documented-honest path for a source with no extraction on file — the one
+`passages.test.ts` explicitly protects ("is empty rather than approximate
+when nothing is extracted") — because that check cannot tell "this source was
+never read" from "the deploy is broken." Both look identical from inside the
+function. Grounding has resolved zero book passages for every production
+request since it shipped in PR #140, on 2026-08-25 — two days before anyone
+looked at what a live generation actually contained, because the badge and
+the generic grounding pill both looked correct and the content itself read
+as good, topic-appropriate prose either way.
+
+**Fixed at the build, not the lookup.** `build.mjs` now copies
+`lib/curriculum/src/data/extracted/*.json` to `dist/data/extracted/` after
+the esbuild step — the one relative position that stays correct regardless of
+how deep in the bundle graph `passages.ts` sits, so no source changes were
+needed. Verified the fix is real, not coincidental: deleted `dist/data/extracted`
+and reran the new test — it failed; restored it — green again. New guard in
+`mountOrder.test.ts` (same "runs against the built bundle" pattern as the
+rest of that file) asserts the directory exists with real files after a
+build, so this can't silently regress a second time.
+
+**What this means for everything Phase 3/3.5 shipped:** the grounding *code*
+was correct the whole time — `grounding.test.ts`'s 20-odd assertions all run
+against source directly under `node --test`, which never hit this bug, so
+they kept passing while production quietly served zero citations. The gap was
+entirely in what a bundler does to `import.meta.url`, invisible to any test
+that doesn't boot the actual built artifact — which is exactly why
+`mountOrder.test.ts` exists and why this fix's guard lives there too, not in
+`lib/curriculum`.
+
+276 api-server / 83 curriculum / 982 mobile tests pass; typecheck clean. Not
+yet verified against a live redeploy — the next real generation on
+`iqraa-api` after this merges and redeploys should show a page number under
+the grounding pill for units with extracted text (circle unit first).
+
+**Verified against the live deploy, same day.** Re-tested the exact circle-
+unit lesson plan after the fix above went out: the grounding pill now shows
+real citations — «كتاب الطالب — الكيمياء — الفصل الأول، صفحة ١٠» and two more,
+for a chemistry atomic-spectrum lesson tried separately. Checked all three
+cited pages against the actual extracted book text before trusting them: page
+10 opens the Bohr-theory lesson, page 20 the wave-mechanical atomic model,
+page 30 electron configuration — all genuinely on-topic, not coincidental
+round numbers. The fix works.
+
+## Book figures now show on screen, not only in the export, 2026-08-27
+
+Answered a question the citation fix surfaced: a teacher pointed out the
+generated lesson plan named a diagram («انظر الشكل المجاور») with nothing to
+look at. The diagrams exist — 60 figures cut from the student books, already
+mapped lesson-by-lesson (`bookFigures.ts`) and already rendered into every
+PDF/Word export's appendix (`exportHtml.ts`'s `figuresSectionHTML`, captioned
+by book and page, capped at `EXPORT_FIGURE_MAX = 6`). None of that reached the
+in-app result screen a teacher sees immediately after generating — only the
+exported document.
+
+**Not a new feature, a new surface for an existing one.** `bookFigureUri.ts`'s
+`bookFigureRefsForLesson()` already resolves a lesson's figures to real,
+bundled image URIs with captions — built for the export path, already called
+by all four generator screens (`getExportFigures()`, lesson-plan/worksheet/
+quiz/activity) at export time. New `components/ui/BookFiguresPanel.tsx` is a
+thin render of that same, already-resolved data as a two-column image grid
+with captions, mirroring `figuresSectionHTML`'s wording and figure cap
+exactly, so the same reasoning it documents (a generated question can say
+"see the adjacent figure" because that's how the book itself writes such
+questions, but the model never saw the book's figures and cannot know which
+one goes with which item — showing every diagram the lesson prints, cited by
+page, and trusting the teacher to match it by eye, same as a student does
+from the printed book) now applies to what is on screen, not only to what
+gets exported. Wired into the same `GroundingNotice` block on all four
+generator screens, shown only when a lesson actually resolved.
+
+No new data, no new resolution logic — reused `getExportFigures()` verbatim.
+276 api-server / 983 mobile / 83 curriculum tests pass; typecheck clean. No
+component-render tests added — this codebase has none for any `components/ui/*`
+file (checked before assuming a gap), consistent with how `GroundingNotice.tsx`
+itself ships untested at the render level; the data it renders is tested
+thoroughly elsewhere (`bookFigures`, `bookFigureUri`/`exportHtml` figure
+tests). Not yet seen on a live device — confirm the grid renders sensibly on
+a phone-width screen, not just that it typechecks.
+
+## Teacher-perspective AI Tools review: five follow-up PRs, 2026-08-26/27
+
+A full teacher-perspective review of the AI Tools (Slides Maker, Lesson Plan,
+Worksheet, Quiz, Evaluations, Class Challenge, Classroom Hub, Parent Message)
+— live run plus source/STATUS.md audit — turned up several real issues.
+Fixed in five PRs, landed on the same branch in priority order (#160, #163,
+#165, #174, #176):
+
+**#160 — three cheapest, lowest-risk fixes.** Quiz's generated title leaked
+the raw English subject enum into an otherwise-Arabic string (`اختبار
+Mathematics – …`); every other generator's Arabic title omits the subject,
+Quiz now does too. Slides Maker nested a delete `Pressable` inside the row's
+own edit `Pressable` — an invalid button-in-a-button on web, confirmed via
+React hydration warnings during the live run — split into sibling
+Pressables inside a plain row `View`. Evaluations showed a raw English 409
+(`"No level scale is configured…"`) on an Arabic screen when the assessment
+config wasn't seeded; the response already carried `code: "no_level_scale"`,
+now mapped to a translated message, and the required `pnpm --filter
+@workspace/db run seed:assessment` step (missing from any doc, so any fresh
+environment hit this 409 on the very first evaluation) is now in
+`LOCAL_SETUP.md`.
+
+**#163 — Worksheet/Quiz drifting off-topic once a lesson's item bank ran
+out.** `detectMathFamily` buckets a lesson into one of ~13 concrete-item
+families, several with as few as 5 items. `takeConcreteMath` — the one choke
+point every worksheet/quiz/homework/activity question builder calls through
+— fell straight through to the generic `algebra` family the moment a
+family's unused items ran out, so a lesson on function composition (5
+items) could serve a quadratic-formula question with no connection to it
+once a worksheet asked for more than 5. Fixed by retrying the *same* family
+with repeats allowed before ever falling through to `algebra` — a repeat
+within the right topic costs a teacher far less than a wrong one.
+`mathPractice.ts`; regression test in `questionStems.test.ts` pins a
+function-composition lesson asked for more items than it has never drifting
+into algebra content. Also carried a one-line fix for a `main`-inherited
+typecheck break (`g10MathSem2.ts`'s `NccdCurriculumMeta.source_books` type
+hadn't followed the curriculum JSON's array→object reshape), confirmed
+pre-existing by typechecking a clean `origin/main` checkout in isolation
+first.
+
+**#165 — Evaluations publish blockers dropped, and a real UI-drift bug
+found while extracting a shared component.** Live-verified against a real
+Postgres+API instance that Publish itself works fine (200, `published`
+status, share code issued) — the review's "dead end" observation was almost
+certainly its test automation not handling the native `window.confirm()`
+dialog Publish opens first, not a product bug. But a real, separate gap
+turned up while verifying: the server's 400 when publish is genuinely
+blocked carries a `blockers` array naming the specific problem
+(`"Question 3: ..."`), and the mobile client's `readJson` silently dropped
+it — a teacher who hit a real precondition saw only a generic message with
+no way to tell which question was the issue. Fixed: `EvaluationError` now
+carries `details: string[]`, surfaced in the error banner.
+Separately, extracted `components/ui/GeneratorResultActions.tsx` — Lesson
+Plan, Worksheet, Quiz, and Activity had each hand-built the same
+Save/Favourite/Export/Regenerate row, and a 23 Aug fix that reordered the
+row before the feedback/related-resources panels had reached three of the
+four screens but silently missed `activity.tsx`, because there was no
+shared place for the fix to live. That's the standing risk this file had
+already named for the duplicated row; the fourth screen actually going stale
+is the proof it was real. Live-verified end to end (save a worksheet and an
+activity against a running Expo web instance) that the row now renders in
+the corrected order on all four screens.
+
+**#174 — Evaluations' live-mode generator would have rejected every
+question of 4 of its 8 types.** The review's "shallow template questions"
+finding turned out to be a demo-mode artifact, not a bug —
+`mockGenerator.ts` deliberately produces honest, labeled templates rather
+than fabricating content it can't guarantee correct, same principle as
+Worksheet's "not symbolically verified" badge, and a fully-built live
+generator (`llmGenerator.ts`) already exists behind `AI_LIVE_MODE`. But
+reading that live path found a real bug: `TYPE_CONTRACTS` (the JSON shape
+the prompt tells the model to write) never asked for `modelAnswer`/
+`keyConcepts` for `short_answer`/`open_ended`/`problem_solving`, even though
+`questionTypes.ts`'s validator requires both unconditionally; `practical_task`'s
+contract asked for a rubric it never uses while omitting `successCriteria`,
+the field its validator actually requires. A model following the prompt
+exactly, for any of those four types, would have every question rejected —
+turning `AI_LIVE_MODE` on today would not have produced usable evaluations
+for half the question types. Root cause of why this went unnoticed:
+`validator.ts` imported `./questionTypes` and `./mockGenerator` without the
+`.ts` extension node's native test runner needs (the same extensionless-
+import trap this file already documents elsewhere), so nothing could import
+`validateGenerated` directly and no test ever exercised it against real LLM
+output. Fixed the contracts, fixed the import, and added a test that parses
+each of the 8 `TYPE_CONTRACTS` entries' *literal* JSON — not hand-authored
+examples that could quietly drift from the real prompt text — through the
+same parse→validate pipeline the route uses. Verified the test actually
+catches the bug: reverted just the four contract strings, confirmed exactly
+those four subtests failed with the predicted reasons, restored and
+confirmed all 25 pass.
+
+**#176 — swept the rest of the monorepo for the same extensionless-import
+pattern.** `api-server` route files are clean by construction (only ever
+loaded through the built bundle in `mountOrder.test.ts`, never through the
+native test loader directly); `lib/curriculum` and `lib/db` are clean/not
+applicable. One real finding in `artifacts/mobile/services`:
+`cqv/progress.ts` — pure logic, zero existing test coverage, bare
+extensionless imports — fixed. **Caveat, confirmed by direct probe**: the
+fix alone doesn't make the file test-reachable. It transitively imports
+`cqv/catalog.ts`, which resolves curriculum data via the `@/` path alias —
+something Metro/tsconfig understand but node's native test loader does not
+(`ERR_MODULE_NOT_FOUND: Cannot find package '@/services'`). That's a
+separate, pre-existing, harness-wide gap shared by every `@/`-importing
+service file (9 total, none imported by any existing test) — worth fixing
+on its own, since it silently excludes real logic from ever being unit
+tested the same way the `validator.ts` bug did, but out of scope for this
+sweep.
+
+All five: `pnpm run typecheck` clean, full mobile (972) and api-server (284)
+suites passing at each step. Not independently re-verified as a batch after
+the fact — each PR's own verification stands as recorded above.
+
+## Auditing for more "visible but not grounded" bugs found a real one, not the one I went looking for, 2026-08-28
+
+After PR #180 (Grade 9's wrong-screen + unwired-KB bugs), asked an Explore
+agent to check whether the new Grade 10 English curriculum (four vocational
+tracks, merged by a parallel session) had the same shape of problem. It
+does — `lib/curriculum/src/catalogs/g10EnglishVocational.ts` builds only
+`Browser*` rows (for the curriculum-browser UI), never the KB-shaped ones
+`knowledgeBase.ts` needs, and its own file comment says so plainly: "nothing
+in the AI-generation/grounding pipeline consumes these tracks yet." **That's
+the difference from Grade 9's bug** — Grade 9 was shipped *claiming* to be
+reachable and wasn't; English says outright that it isn't wired yet. Not a
+false claim, just unfinished — leaving the KB wiring for whoever picks this
+back up (four tracks' worth of new KB-shaped builders, mirroring
+`buildG9MathSem1Catalog`, is its own real chunk of work, not something to
+fold into an unrelated audit).
+
+What *is* a bug, and now fixed: `mathSupportResources.ts`'s two safety gates
+from the Grade 9 fix — the subject check and the `gradeHint !== 'grade-10'`
+check — both read `getBookForLesson(lesson)?.subjectId` /`?.gradeId`, which
+is `undefined` (not a known mismatch) for any lesson with no resolvable
+book at all. `undefined` fails both `if (hint && ...)` checks open, not
+closed — so a lesson from any subject not yet wired into `KB_BOOKS` (English
+today, whatever's unwired next) skipped both gates entirely and fell through
+to ungated title/keyword matching against every Math/Chemistry PDF. Confirmed
+live with a synthetic English-shaped lesson and a query containing "ورقة عمل
+worksheet exam": three Math PDFs matched before the fix, none after.
+Fixed by resolving the lesson's book once, up front, and returning empty
+immediately when a lesson was named but resolved to no book — before either
+hint is computed, so there's no hint left to read as "no opinion" instead of
+"reject." The widened retry in `buildSupportResourcesContext` (which
+deliberately drops `lesson` and passes `subjectId`/`gradeId` explicitly) is
+unaffected — it never had a `lesson` to fail on.
+
+Verified directly: a fabricated lesson shaped like a Grade 10 English
+commerce lesson (id `kbl-g10-eng-commerce-nccd-u1_l1`, no matching
+`KB_BOOKS` entry) now returns zero resources for a query stuffed with
+matching keywords; a real Grade 10 Math lesson queried the same way still
+returns its normal three PDFs. `pnpm run typecheck` clean, mobile `pnpm
+test` 977/987 (10 skipped) — unchanged pass count, this fix has no test
+coverage of its own yet (worth adding alongside whoever does the English
+KB wiring, since that's what will first exercise this path for real).
+
+No other `BOOKS` entry has this gap — cross-checked every id in
+`catalog.ts`'s `BOOKS` against `MVP_BOOK_IDS` and `knowledgeBase.ts`'s
+`KB_BOOKS`; math-10, math-10-s2, chem-10, chem-10-s2, finlit-s1, math-9-s1,
+math-9-s2 all resolve, and the grade-8/9/11 books outside `MVP_GRADE_IDS`
+are intentionally not visible, not silently broken.
+
+## «اختبار في اللغة الإنجليزية» full of math: picker index 0 changed meaning, 2026-08-29
+
+Reported from the deployed site with screenshots: a quiz screen opened as
+`/ai-tools/quiz?topic=<معمل برمجية جيوجبرا: حل أنظمة المعادلات بيانياً>` showed
+**الصف التاسع + اللغة الإنجليزية** over that Grade 10 *math* lab lesson, and
+generating produced English-language math questions titled «اختبار في اللغة
+الإنجليزية للصف التاسع: GeoGebra Lab – Solving Systems of Equations
+Graphically».
+
+Three faults stacked:
+
+1. **Picker order is persisted state, and it silently changed.** The MVP
+   pickers filtered `SUBJECTS`/`GRADES` in *declaration* order, so enabling
+   English (2026-08-27) and Grade 9 *inserted* entries at the front: index 0
+   became English + الصف التاسع. Every screen falls back to index 0 when a
+   picker param is absent, and every saved `formState`/route URL stored bare
+   indices — all of them shifted one entry off. Fixed: `getPickerSubjects` /
+   `getVisibleGrades` / `getSubjectsForGrade` now follow `MVP_SUBJECT_IDS` /
+   `MVP_GRADE_IDS` order (mathematics and grade-10 first, exactly the
+   pre-English positions), and `lib/curriculum/src/__tests__/pickerOrder.test.ts`
+   pins it. **Append** new MVP entries, never insert.
+2. **A bare `topic` param defaulted the scope instead of asking the topic.**
+   All seven `/ai-tools/*` screens now ground a bare topic and take the
+   lesson's own grade/subject (`topicPickerParams` in `services/lessonPrep.ts`)
+   before falling back to index 0. Explicit `gradeIdx`/`subjectIdx` params
+   still win.
+3. **Nothing refused the mismatch.** Even with subject=English picked by hand
+   over a math lesson title, generation went ahead and the server prompt
+   («أنشئ اختبارًا لمادة اللغة الإنجليزية … حول "معمل برمجية جيوجبرا…"») made
+   the model do its best. Now every generator screen (quiz, worksheet,
+   lesson-plan, activity, slides, game, lesson-flow, classroom builder) calls
+   `groundedSubjectConflict` first and refuses with a message naming the
+   lesson's real subject (`subjectTopicMismatch` i18n key, ar+en). Ungrounded
+   free-text topics are untouched — nothing to contradict.
+
+Verified: new tests ground the exact reported topic onto Grade 10 Mathematics
+and flag it under English; mobile suite 1004 pass / 0 fail (10 skipped),
+lib/curriculum 87 pass, api-server 292 pass, `pnpm run typecheck` clean.
+
+## Class-time tools kept as three doors, consolidated underneath, 2026-08-29
+
+The three أثناء الحصة tools (الفصل التفاعلي, تحدي الصف, نشاط صفي) stay
+separate teacher-facing cards — the jobs are genuinely different (formative
+on-screen interaction / zero-prep team retrieval game / printable
+cooperative plan) — but a discussion of "why not one umbrella" surfaced two
+real bugs and some duplicated internals worth fixing regardless of that
+decision.
+
+**Two divergent `ACTIVITY_CARDS` lists, now one.** `services/classroomRouting.ts`
+carried its own 5-card list (`exit-ticket` marked `available:false` with
+empty copy) while `app/ai-tools/classroom/index.tsx` hardcoded a different
+7-card marketplace list. `builder.tsx`'s header looks up the *routing*
+list, so opening the builder from `error-detective` or `gallery-walk`
+silently fell back to generic header copy — those two ids didn't exist in
+the list it was searching. The hub's 7-card list, with its marketplace
+metadata (`durationMin`/`isTeam`/`isSolo`/`isNew`/`isFeatured`/`accentColor`),
+is now the one exported `ACTIVITY_CARDS`; the hub imports it instead of
+keeping its own copy, and its hardcoded "6 activities" header string now
+reads `ACTIVITY_CARDS.length`.
+
+**The live Arabic classroom prompt only covered 3 of 7 formats — English
+covered 6.** In `artifacts/api-server/src/routes/generate.ts`,
+`classroomPromptAr` branched on `bingo`/`relay` only and defaulted
+everything else — `error-detective`, `gallery-walk`, `exit-ticket`,
+`quick-check` — to the escape-challenge prompt. `classroomPromptEn` handled
+three of those four; neither language handled `quick-check` at all, which
+exists only in the offline `MockAIService`. So on the live server, an
+Arabic teacher picking المحقق الرياضي / جولة المعارض / بطاقة الخروج /
+تحقق سريع got an escape-challenge deck instead — and any caller sending
+`quick-check` in live mode (the classroom hub, `slides.tsx`'s mid-lesson
+checks, Start Class, `home.tsx`) hit the same silent substitution. Fixed by
+moving the prompt builders out of `routes/generate.ts` — which imports the
+OpenAI client at module scope and throws without a key, so nothing there
+was ever unit-testable — into `src/lib/classroomPrompts.ts`, adding the
+missing Arabic branches (mirroring the English ones' structure and slide
+counts), and adding `quick-check` in both languages with an explicit
+0-based `correctIndex` instruction and a clamped `numQuestions` (1–8,
+default 4, matching the mock). A new `classroomPrompts.test.ts` pins all 7
+activity ids × both languages to prevent this drifting silently again; a
+matching test on the mobile side pins the same 7-id set against
+`ACTIVITY_CARDS`.
+
+**A live classroom-activity deck could show a false "verified" badge.**
+Nothing stripped `verified`/`verifiedBy`/`computedAnswer` from live model
+output before the route responded, and `presentation.tsx` renders a green
+verified badge straight off `slide.verified`. Only `MockAIService`'s
+offline quick-check path actually runs a verifier (SymPy, via
+`verifyIfPossible`) — a live call never does — but a model asked for JSON
+shaped like `ActivitySlide` will sometimes write `"verified": true`
+unprompted, because the shape invites it. Fixed with a
+`stripUnearnedVerification` sanitizer (same immutable-copy shape as
+`normalizeEscapeCodes` in `lib/escapeCodes.ts`) run on every live
+classroom-activity response. The quick-check card's own description
+(`activityQuickCheckDesc`) claimed "a verified answer key" in both
+languages — no longer true once fabricated verification is actively
+stripped — softened to describe the zero-prep mechanic instead, without
+the verification claim.
+
+**Consolidated, no behavior change:** four screens (game.tsx, classroom
+builder.tsx, slides.tsx, activity.tsx) each hand-rolled their own pill-row
+or dropdown picker. Extracted `components/ui/PillSelector.tsx` (with a
+`pillStyle` override for game.tsx's wider pills) and
+`components/ui/PickerField.tsx` (the dropdown, moved from activity.tsx)
+and switched all four screens over — pixel-identical, and incidentally
+fixes `builder.tsx`'s `PillGroup` having been redefined on every render.
+Also deduped the two rule lines ("the question appears and the timer
+starts" / "everyone thinks silently") that `classDeck.ts`'s `introSlide`
+and `buildGameDeckFromQuiz`'s inline intro each wrote out separately, into
+one `sharedThinkingRules` helper — same final copy, one source.
+
+**Left alone on purpose:** `activity.tsx`'s document generator
+(`ActivityOutput`, no `slides` field, cannot reach the presentation
+player) was not merged with the classroom deck pipeline — different
+endpoint, different output type, and doing so would be exactly the
+"consolidation for its own sake" the discussion ruled out. The
+seven-doors-into-one-presentation-player question flagged back in the
+2026-08-15/18 entries is unaffected by this PR and stays open.
+
+Verified: `pnpm run typecheck` clean across the monorepo. Mobile `pnpm
+test`: 1001 pass / 10 skipped (0 failed), including new coverage in
+`classroomRouting.test.ts` and `classDeck.test.ts`. `api-server` `pnpm
+build && pnpm test`: 315 pass (0 failed), including the new
+`classroomPrompts.test.ts` and the existing mount-order suite. Server-side
+Arabic/quick-check behavior is verified by unit test against the prompt
+builders only — the sandbox proxy blocks live calls to the deployed API,
+same caveat as the 2026-08-25 schema-verification entry. Not yet manually
+walked through in the running app (`pnpm run dev:mobile:web`); do that
+before treating the header-copy and quick-check-format fixes as confirmed
+end-to-end.
+
+## Projected English content stopped reading backwards, 2026-08-30
+
+Reported with a screenshot: a Slides Maker exit-ticket check for an English
+lesson («Which action is the most logical if a website does not load?»)
+projected with أ/ب/ج/د option letters and right-aligned text, while the slide
+title read Arabic-only («تذكرة الخروج 3»).
+
+Cause: `SlideView` and `QuestionOptions` in
+`app/ai-tools/classroom/presentation.tsx` chose direction and option
+lettering from the app's UI language (`isRTL`), not from what the slide
+itself says. A deck's chrome is picked once at build time from that UI
+language, but a check's own question/options are AI-generated and come back
+in whichever language the lesson actually is — an English-subject exit
+ticket is English even when the surrounding Arabic UI built the deck.
+
+Fixed at the renderer, not the generator (same shape as `optionLabels.ts`
+normalizing on receipt): `services/deckText.ts` gained
+`isEnglishSlideContent(...parts)` — true when the joined payload has no
+Arabic-script character and does have Latin letters, so a stray Latin
+variable inside Arabic prose doesn't flip it. `SlideView` and
+`QuestionOptions` now compute their own `isRTL` from `slide.content` (+
+`slide.options` for the latter), falling back to the app's language only when
+the slide has no opinion. Deliberately excludes `slide.title` from the
+detection — see next paragraph.
+
+Also: `lessonSlides.ts`'s numbered check titles (Quick Check N, Exit Ticket
+N, and the Exit Ticket section divider) are now built bilingually
+(`✋ تحقّق سريع 1 · Quick Check 1`) instead of picking one language — a
+single-language title can no longer name the wrong language for what is
+actually projected under it. This is why the direction detector reads
+`slide.content`/`slide.options` and not `slide.title`: the title is now
+deliberately bilingual and would always contain Arabic.
+
+Verified: new `deckText.test.ts` cases cover the reported question+options
+pair (flips to LTR/A-D) and confirm Arabic prose with an embedded equation or
+Arabic options stays Arabic; `lessonSlides.test.ts`'s two `answerKey`
+assertions that matched on the old single-language title prefix were updated
+to match the Arabic half instead. Mobile suite 1031 pass / 0 fail (10
+skipped), typecheck clean.
+
+## Every slide heading is bilingual for the English subject, not just checks, 2026-08-30
+
+Follow-up to the same-day fix above: a screenshot showed a plain content
+slide («مفردات الدرس» — Key Vocabulary, for a Grade 10 English-Agriculture
+lesson) still Arabic-only. The earlier fix only made the *numbered check*
+titles (Quick Check N, Exit Ticket N) bilingual; every other slide heading
+`buildLessonDeck` builds (Learning Outcomes, Key Vocabulary, Warm-up, The
+Rule, worked examples, Guided/Independent Practice, Lesson Summary, Homework)
+still picked one language from the app's UI, same defect as before — a
+teacher or student who does not read Arabic has no idea what a slide is
+about when the lesson itself teaches English.
+
+`lessonSlides.ts` now detects `isEnglishSubject` once per deck — the
+lesson's own book (`getBookForLesson(lesson)?.subjectId === 'english'`) when
+a curriculum lesson is attached, falling back to matching `opts.subject`
+against both localised spellings ("English" / «اللغة الإنجليزية», since the
+caller passes whichever the app's own UI language produced) — and every
+chrome-title call site (11 of them) now goes through `T(ar, en)`, which
+composes bilingually only when that flag is set; a non-English deck is
+byte-identical to before. The numbered check titles keep their own always-on
+`BL` from the earlier fix — a check's content can be English even inside an
+Arabic-subject deck (a curriculum lesson with an English-language exercise
+embedded), so those stay unconditional.
+
+Verified: five new `lessonSlides.test.ts` cases — both subject spellings
+trigger it, the lesson's own book wins over a mismatched `subject` string,
+a non-English deck is untouched, and the check titles stay bilingual either
+way (using a real Grade 10 English-Agriculture KB lesson, not a fabricated
+id, since `getBookForLesson` resolves through the real `KB_UNITS`/`KB_BOOKS`
+tables). Mobile suite 1036 pass / 0 fail (10 skipped), typecheck clean.
+
+## Cloudflare R2 replaces Drive as the source-PDF fetch path, 2026-08-30
+
+Fetching source books through the Drive MCP tools had two hard failure
+modes on this project's real sources: a 10MB single-call ceiling on the
+small-file path, and two distinct corruption bugs on the large-file
+fallback (whole-line character reversal on some documents; blank,
+OCR-less pages on scanned ones). Neither is fixable by reorganizing Drive
+folders — they're limits of the fetch tool itself, and they are why
+`math-s1-teacher-guide` sat as an unpulled Git-LFS pointer and six of the
+60-item support pack were never fetched at all (see the "Correction" notes
+in the knowledge-bank plan).
+
+Set up a Cloudflare R2 bucket (`iqraa-media`, free tier: 10GB storage, zero
+egress) as the replacement. `lib/curriculum/scripts/r2.ts` is a thin
+S3-compatible client (`@aws-sdk/client-s3`, region `auto`), gated entirely
+by three env vars (`R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`
+— `R2_BUCKET` optional, defaults `iqraa-media`); unset means R2 is simply
+not used, verified by a test that every helper returns inert values
+(`null`/`false`) rather than throwing when unconfigured.
+
+`extract-text.ts`'s `LOCAL_FILES` map moved to its own module
+(`localSources.ts`) — it was inline before, which meant the new
+`upload-to-r2.ts` script would have had to import `extract-text.ts` itself
+to reach it, silently triggering that file's top-level `await main()` (a
+full extraction run) as a side effect of grabbing a constant. Caught before
+it shipped, not after.
+
+`extract-text.ts` now falls back to R2 for any `LOCAL_FILES` entry missing
+on disk, keyed as `<sourceId>.pdf` — chosen over the original filenames
+(several carry a machine-appended timestamp) so uploading a new source is
+one memorable rule: name the file after its `sourceId`. Verified the
+refactor changed nothing for the existing 60-entry manifest: re-ran
+`extract-text` with R2 unconfigured and got byte-identical skip reasons to
+before (LFS pointer, no text layer ×3, broken cmap ×2, reversed
+presentation-form glyphs ×3 — 9 skipped, 0 newly extracted, matching the
+pre-change run exactly).
+
+Not yet done: no source has actually been uploaded to the bucket yet (it's
+freshly created), and the six previously-unfetched support-pack PDFs and
+the `math-s1-teacher-guide` LFS pointer are the first candidates once they
+are. `pnpm run typecheck` clean across the whole monorepo; curriculum suite
+84/84 (was 83, +1 for the new R2 gating test).
+
+**Same bucket now also serves public downloads, 2026-08-30.** The general
+(non-vocational) Grade 10 English track — Student Book + Activity Book,
+both semesters — has no confirmed NCCD source and no Drive copy on hand, so
+its 4 PDFs were uploaded straight into `iqraa-media` via the Cloudflare
+dashboard and "Public Development URL" was enabled on the bucket to serve
+them (`https://pub-59ecbec8df5a4adc80bf8f7d1084fdd5.r2.dev/<filename>`).
+Wired as `book-english-10-s1` / `-s2` in `catalog.ts` (replacing the old
+placeholder `book-english-10` stub — one real unit, no other content — now
+added to `MVP_BOOK_IDS` so the card is visible), with a new
+`activityPdfUrl` field on `Book` and a third download chip
+(«كتاب الأنشطة» / Activity Book) in `subjects.tsx` for the workbook link,
+next to the existing student-book and teacher-guide chips.
+
+**This makes the whole bucket public, not just these 4 files** — Public
+Development URL is a bucket-level toggle, so any source PDF already
+uploaded (or uploaded later) under the `<sourceId>.pdf` convention above is
+now reachable by anyone who knows/guesses its filename, even though that
+flow was built assuming private, credentialed S3 access. Not fixed here —
+worth splitting into a separate public bucket before treating anything in
+`iqraa-media` as actually private.
+
+## The R2 fetch path proved out end to end, and found the same public-bucket risk from the other side, 2026-08-30
+
+Uploaded the real `math-s1-teacher-guide.pdf` (a 33MB re-compression, not
+the 58MB Drive original — same "readable, re-compressed, not a different
+edition" pattern as `chem-s1-student-book-compressed`) to `iqraa-media` and
+ran extraction against it for the first time. It worked: 212 pages /
+513,822 characters of genuine, on-topic Arabic teacher-guide prose —
+مُخطَّط الوحدة unit-plan tables, per-lesson outcomes, common-student-error
+notes, worked examples — verified by reading actual extracted pages, not
+just checking the page/char counts moved.
+
+**Caught a real bug the live test exposed that no unit test had:**
+`ensureLocal()`'s R2 fallback checked `existsSync()` alone, so the on-disk
+Git-LFS pointer (a ~130-byte stub) read as "already there" and the fallback
+never fired — the exact case it exists for. Fixed in the same PR (#201,
+merged) that shipped the original R2 work; `math-s1-teacher-guide` sitting
+unpulled the whole time is why this went uncaught until a real file was
+actually uploaded and tested against.
+
+**Also caught: `status: "ingested"` had been true for this source since
+before it ever had real extracted text** — the manifest entry claimed
+`"ingested"` while the file was still an unpulled LFS pointer, with no
+`extraction` block to back the claim. Same class of problem CLAUDE.md
+already names for `verified` — a status flag asserting something nobody
+had checked. Fixed by adding the real `extraction` block (pages, chars,
+sha256, `bytesDifferFromManifest` — required by
+`extraction.test.ts`'s "records the file it actually read" check, which
+correctly failed until this was added) now that the claim is actually
+true.
+
+**One test fixture needed updating, not the code**: `passages.test.ts`
+asserted the circle unit's passages could only come from the student book
+or exercise book — written before the teacher guide had any content to
+contribute. Verified by reading the actual returned passages (not just
+loosening the assertion): every one is genuinely about الدائرة (unit-plan
+table, tangent/chord/diameter outcomes, angles in a circle, circle
+equation), so widened the allowed sources rather than treating this as
+noise to filter.
+
+**The public-bucket risk flagged just above cuts both ways.** It was found
+from the download side (four English PDFs meant to be public); this upload
+proves the same bucket now also holds `math-s1-teacher-guide.pdf` — NCCD
+teacher material, not meant for public redistribution — reachable at the
+same `pub-*.r2.dev` toggle if it's still on. Not verified here: the
+sandbox's egress proxy blocks `*.r2.dev`, so whether that URL actually
+serves the file could not be checked directly from this session. Needs a
+human check of the bucket's Public Access setting before treating anything
+uploaded under the `<sourceId>.pdf` convention as actually private —
+carries real weight now that a real, presumably-restricted source is in the
+bucket, not just a hypothetical.
+
+Verified: `pnpm --filter @workspace/curriculum run verify` — 0 errors.
+`pnpm --filter @workspace/curriculum run test` — 88/88 (was 86/88
+immediately after the upload, both failures were the two findings above,
+both fixed and re-verified passing, not skipped). `pnpm run typecheck`
+clean across the monorepo. Mobile suite 1036/1046 pass (10 pre-existing
+skips), unaffected as expected. The local LFS-pointer file that
+`extract-text.ts` wrote real bytes into during this test was deliberately
+**not** committed — `git-lfs` is not installed in this container, so
+committing it would have bypassed LFS and put a 33MB binary straight into
+git history instead of a pointer; R2 is now the source of truth for this
+file going forward, not a second local copy.
+
+## Teacher-uploaded lesson attachments (R2-backed, first version), 2026-08-30
+
+Real feature request, not infrastructure: a teacher wanted to attach a
+photo, a voice note, or a document to a specific lesson and have it stay
+there — the existing `services/lessonMedia.ts` only pins an image/video
+*URL* per topic string, on one device, in AsyncStorage (a reinstall loses
+every pin, and it only ever knew URLs, never a file the teacher actually
+has). New, separate feature (kept `lessonMedia.ts`/`LessonResources.tsx`
+untouched — different capability, different consumer in `startClass.ts`'s
+Class Mode deck, not worth risking a working pipeline to merge):
+
+- `lib/db/src/schema/lessonMedia.ts` — new table, keyed by the lesson's own
+  KB id (`kbl-...`), not a free-text topic. Deliberate: CLAUDE.md already
+  records that a lesson title does not identify a lesson (16 of 63 titles
+  resolve to the wrong lesson under semantic search).
+- `artifacts/api-server/src/lib/r2.ts` — a *runtime* R2 client, separate
+  from `lib/curriculum/scripts/r2.ts` (a dev/CI tool using `node:fs`, wrong
+  lifetime for a live request). `routes/lessonMedia.ts` mounted under
+  `/media`, reusing the `authMiddleware` guard `routes/index.ts` already
+  declares at that mount site rather than adding a second one — same
+  convention `media.ts` (mounted right next to it) already relies on.
+- Files travel as `data:` URLs in the JSON body (`attempts.ts`'s
+  `scan-marks` shape, same 8MB cap) — there is no multipart upload path
+  anywhere in this server, and building one was a bigger change than this
+  feature needed.
+- **A design correction caught before it shipped, not after**: the first
+  version served files through an Express proxy endpoint
+  (`GET /media/lesson/:id/file`), auth-checked per row. That silently fails
+  on Expo web — a plain `<img src>` cannot attach an `Authorization`
+  header, only React Native's native `Image` component can. Replaced with
+  R2 presigned GET URLs (`presignedGetUrl`, 1-hour expiry): unguessable and
+  time-limited without needing a header at all, so the same `url` works on
+  both platforms. The proxy endpoint was deleted, not kept as a fallback.
+- Client: `services/lessonMediaApi.ts` (list/upload/delete),
+  `services/lessonMediaPick.ts` (photo via `expo-image-picker`, same
+  downscale `pickMarkSheetPhoto` already uses; audio/PDF via
+  `expo-document-picker` + a new cross-platform uri→base64 helper), and
+  `components/ui/LessonAttachments.tsx`, wired into `slides.tsx` right
+  under the existing `LessonResources` panel, gated on the topic actually
+  resolving to a real lesson id (`resolveGeneratorGrounding(...).lesson?.id`,
+  memoized live off the topic field, not gated behind pressing Generate).
+- Hit and fixed a real dependency-version bug on the way: `expo-file-system`
+  19.x dropped `readAsStringAsync`/`EncodingType` from its root export in
+  favor of a class-based File/Directory API; `expo-file-system/legacy` is
+  the still-typed, still-supported entry that keeps the old function —
+  `documents/extract.ts` already duck-types around this at runtime, this
+  is the typed equivalent for a new call site.
+
+**Deploy is not done by this PR — three steps this repo's own tooling
+requires, none of them mine to run:**
+1. `pnpm --filter @workspace/db run push` against production `DATABASE_URL`
+   — the new table does not exist until this runs (see this file's
+   2026-08-19/25 entries on why that push is manual and easy to forget).
+   Until it does, every route here answers a graceful 503
+   (`lesson_media_unavailable`), the same `isSchemaMissing` pattern
+   `workspace.ts` already uses — not a crash, but not usable either.
+2. The `R2_ACCESS_KEY_ID`/`R2_SECRET_ACCESS_KEY`/`R2_ENDPOINT`/`R2_BUCKET`
+   env vars already set on Render for the extraction pipeline (2026-08-30,
+   earlier this file) cover this feature too — same bucket, a
+   `lesson-media/` key prefix, nothing new to configure there.
+3. This PR's description cannot honestly say `schema-push: done` — no
+   `DATABASE_URL` is set in this sandbox, so the push has not run from
+   here. Whoever merges needs to run it and update the PR description
+   before CI's schema-push check will pass.
+
+**Verification gap, stated plainly rather than assumed away**: `pnpm run
+typecheck` clean across the whole monorepo, curriculum/api-server/mobile
+suites all pass with no regressions (api-server 350/350, mobile
+1036/1046 — 10 pre-existing skips, both unchanged from before this PR),
+and the Expo web dev server boots and renders (RTL Arabic, fonts, routing
+all fine, zero console errors beyond the expected "API unreachable" ones
+since no server was running). **What was not verified**: actually clicking
+through the new panel — attaching a photo, seeing it list, deleting it —
+because that needs a logged-in session, which needs a real Postgres this
+sandbox does not have (no `pg_ctl`/`postgres` binary, and the Docker
+daemon is unavailable here too). Treat the upload/list/delete flow as
+code-reviewed and unit-tested at the boundary (`lessonMediaUpload.test.ts`
+covers the parsing/validation logic that doesn't need a DB), not as
+confirmed working end to end.
+
+## Lesson attachments follow-up: schema push done, feature is live, 2026-08-31
+
+Closes the first of the three "Deploy is not done by this PR" steps above.
+`pnpm --filter @workspace/db run push` ran against production
+(`ep-bold-bar-asvxvxjr-pooler.c-4.eu-central-1.aws.neon.tech`), then
+`pnpm --filter @workspace/db run verify-schema` confirmed:
+
+```
+27 of 27 tables present
+ok  lessonMedia.ts   1/1
+Every declared table exists.
+```
+
+`lesson_media` exists in production. The 503 (`lesson_media_unavailable`)
+path is gone — upload/list/delete now hit a real table instead of the
+graceful-missing-schema fallback. Steps 2 (R2 env vars) and 3 (PR
+description) were already satisfied at merge time. The "verification gap"
+noted above still stands as written: the click-through (attach a photo, see
+it list, delete it) has still not been done against a real logged-in
+session — this entry closes the *schema* gap, not that one.
+
+## Lesson attachments: uploaded photos now reach the deck, multi-select added, 2026-08-31
+
+Real usage on the merged/live feature above surfaced two gaps immediately:
+
+- **Uploaded images never reached the generated deck.** `LessonAttachments`
+  (the new R2-backed panel) uploaded and listed files fine, but nothing fed
+  its items into `buildLessonDeck`/`insertLessonResources` — only
+  `LessonResources` (the older pinned-URL feature) was wired into the
+  `attached` state that `slides.tsx` actually builds the deck from. A teacher
+  who uploaded a photo saw it in the panel and never again. Fixed by lifting
+  `LessonAttachments`' list into `slides.tsx` via a new `onChange` prop (same
+  shape `LessonResources` already used) and merging its `kind: 'image'` items
+  with the pinned-URL ones into one `AttachedResource[]` before calling
+  `insertLessonResources`/`shouldSearchForVideo`. **`audio`/`document`
+  attachments still don't appear in a presented deck** —
+  `ActivitySlide.mediaKind` only renders `'image' | 'video'`, and there is no
+  slide type for a document or a voice note yet. That's a real gap, not
+  silently patched over; worth its own follow-up if teachers start attaching
+  those and expecting them on screen.
+- **Picking was one-at-a-time.** `pickLessonPhoto`/`pickLessonFile` in
+  `lessonMediaPick.ts` hardcoded `allowsMultipleSelection: false` /
+  `multiple: false`. Now `pickLessonPhotos`/`pickLessonFiles`, both
+  multi-select, uploaded one at a time in `LessonAttachments.attach()` — a
+  single failure doesn't stop the rest, and the list refreshes with whatever
+  made it up, with an error shown only if something actually failed.
+
+Verified: `pnpm run typecheck` clean, mobile suite 1084/1084 pass (10
+pre-existing skips, unchanged). **Not verified**: the actual upload → present
+flow end to end in a browser — this sandbox has no logged-in session to test
+against, same limitation as the original feature's entry above.
+
+## Lesson attachments: audio now reaches the deck too, 2026-09-01
+
+Reported after images started working: audio uploads still didn't show up
+when presenting. `ActivitySlide.mediaKind` was `'image' | 'video'` — audio
+was never a real slide kind, so it fell through every renderer silently.
+Widened to `'image' | 'video' | 'audio'` and threaded through all three
+places that branch on it:
+
+- `presentation.tsx`'s `MediaView` — a real HTML5 `<audio controls>` on web
+  (browsers already render a usable player for free, unlike video where
+  there's no in-app player and the YouTube iframe is the only embed that
+  exists); falls back to the same "open externally" button video uses on
+  native, since there's no native audio-player component here either.
+- `deckSlidesHtml.ts` (PDF export) and `exportPptx.ts` — audio can't play in
+  either format, same as video, so both got a sibling to the existing
+  video-link fallback (clickable link + bare URL text), not a new pattern.
+- `classMedia.ts` — `AttachedResource['kind']` and `buildMediaSlide()` widened
+  to accept `'audio'`; `slides.tsx`'s `attachedResources` merge now admits
+  `kind === 'audio'` uploads alongside images, not just images.
+
+`document` (PDF) attachments are still the one gap left — there is still no
+slide type for a document/handout, and building one (embed vs. link-out, and
+what a "document slide" even looks like on a projector) is its own decision,
+not a small addition like audio was. Flagging it rather than shipping a rushed
+version.
+
+Verified: `pnpm run typecheck` clean, mobile suite 1114/1114 pass (10
+pre-existing skips, unchanged) including new tests for the audio title
+(`classMedia.test.ts`) and the audio PDF-export link
+(`deckSlidesHtml.test.ts`). Not verified: a real audio file presented in a
+browser — same sandbox limitation as above.
+
+## Lesson attachments: document slides, and a privacy check, 2026-09-01
+
+Closes the last gap from the two entries above: `document` (PDF) attachments
+now get a slide, same `'image' | 'video' | 'audio' | 'document'` `mediaKind`
+pattern. No in-app or PDF/PPTX-native PDF viewer exists, so it follows the
+same link-out shape audio/video already use — a clickable link, the bare URL
+as text, and (in `presentation.tsx`) a document icon and label instead of the
+"▶ play" one, since a play glyph on a handout read as a broken player.
+
+**Before building it, checked something that mattered more: could a
+teacher's own uploaded file ever be shown to a DIFFERENT teacher** — via the
+shared `ai_artifacts` generation pool this repo already uses to serve one
+generated worksheet to every teacher who asks for the same lesson (see the
+"shared artifact pool" entries elsewhere in this file). Traced it end to end:
+`attachedResources` (built from `lesson_media` rows, each `userId`-scoped in
+Postgres and filtered by `req.user!.id` in every route) never appears in the
+`/generate/lesson-plan` request body, the pool's cache key
+(`generationKeys()` in `generationKey.ts`), or the stored pooled payload —
+`insertLessonResources` splices attachments into the deck client-side,
+*after* the network round trip for the lesson plan is already done. Checked
+the other places a deck could leak too: `workspace` saves are `userId`-scoped
+server-side (`routes/workspace.ts`), there's no shared/team workspace
+feature, and PDF/PPTX export is fully on-device with no upload step. No leak
+found — documented here rather than left as an unstated assumption, since
+the next person extending this path needs to know the property to preserve:
+never add a field to `AIRequest`/`ClassroomActivityRequest` that carries
+attachment content or URLs into the generation request body.
+
+Verified: `pnpm run typecheck` clean, mobile suite 1116/1116 pass (10
+pre-existing skips, unchanged), including new tests for the document slide
+title and the document PDF-export link. Not verified: a real PDF attached and
+opened from a presented deck in a browser — same sandbox limitation as the
+rest of this feature's entries.
+
+## «تجهيزات الصف» changed almost nothing, 2026-08-31
+
+Reported from the builder screen: a teacher toggled «شاشة عرض» / «سبورة فقط»,
+regenerated, and could not see a difference. They were mostly right, and the
+reasons were worth writing down.
+
+`classroomSetup` reached two places — `classroomSetupClause()` in the server
+prompt, and `applyClassroomSetup()` in `services/classroomRouting.ts` — and the
+second one, the only deterministic half, touched exactly two fields:
+`materials` and `teacherPreparation`. Running every activity type through the
+generator both ways showed what that came to:
+
+- **`slides` were byte-identical every time,** for all seven activity types.
+  The deck you present is what the toggle never reached.
+- **`teacherPreparation` is rendered nowhere.** Not in the builder, not in the
+  presentation screen, not in either exporter. So for `escape-challenge` and
+  `error-detective` — the two types with a real override — the larger half of
+  the change was invisible by construction.
+- **`quick-check` produced identical output in both modes.** Its own materials
+  already name «شاشة عرض», so the screen path's "already there" check skipped,
+  and the board path was a documented no-op. A teacher who answered «سبورة
+  فقط» was handed a projector as a required material.
+- What was left was one bullet appearing in «المواد اللازمة».
+
+Four changes, all in the mobile app:
+
+1. `teacherPreparation` now renders on the result card as «تحضير المعلّم». It
+   was generated all along.
+2. `PillSelector` takes a `hint`, and the setup row uses it to say what the
+   choice changes — and, as importantly, that it does **not** change the
+   questions.
+3. `SCREEN_SETUP` covers `bingo`, `relay` and `exit-ticket` as well. Each keeps
+   the artifact a student writes on and drops only what the slides take over —
+   the teacher's printouts, the board copy of a question, the physical timer
+   the deck already runs. `exit-ticket` on a screen now needs nothing printed
+   at all. `gallery-walk` is deliberately still on the default projector-line
+   path: five sheets taped to the walls are the activity and a screen replaces
+   none of them.
+4. Board mode is no longer a pure no-op. It strips materials lines that are
+   only about a projector (keeping mini-whiteboards, which name a screen but
+   are not one), names the class board if removing the projector left the
+   questions nowhere to appear, and rewrites intro-slide copy that tells
+   students to watch a screen — «وقت محدّد يظهر على الشاشة» becomes «وقت محدّد
+   يعلنه معلّمك». **Intro slides only**: challenge and question slides carry
+   the maths, and rewriting those would be editing content, not staging.
+
+Verified by running the mock generator for all seven types both ways again:
+every one now differs in materials, six of seven in teacher prep, and
+`escape-challenge` in its rules slide. `pnpm run typecheck` clean;
+1042 mobile tests pass.
+
+Still true, and deliberate: the toggle does not change the questions. That is
+the honest behaviour — the same activity in a different room — and the hint
+under the pills now says so rather than leaving a teacher to infer it from two
+generations that look alike.
+
+## Deleted 13 orphaned chemistry-S1 crop PNGs, 2026-09-01
+
+`knowledge-base/grade-10-chemistry/figures/chem-s1-student-book/` had 13 PNGs
+with no `index.json` entry: `p001b`, `p013c`, `p017b`, `p047`, `p047b`, `p048`,
+`p056`, `p056b`, `p058`, `p060`, `p060b`, `p063b`, `p072`. Harmless —
+`gen_book_figure_assets.mjs` and `figuresForLesson` only ever read
+`index.json`, never scan the directory — but dead weight, and the opposite
+mistake from the one `bookFigureAssets.test.ts` guards (index pointing at a
+missing file).
+
+Checked each was really dead, not a correct-but-unmapped crop: all 13 had a
+real `index.json` entry (unit/lesson/rect already assigned) as of commit
+`d086e77`, and all 13 were gone from `index.json` by the very next commit,
+`29f2a8c`, which re-ran extraction and reassigned several of those page
+regions to new filenames (e.g. page 47's crop is now `p049.png`). `git log
+--diff-filter=D` on the directory shows no PNG was ever `git rm`'d — the
+extractor's own documented review step
+(`scripts/extract_book_figures.py`: "Deleting a crop means deleting BOTH the
+PNG and its `index.json` entry") was only half-followed. Deleted the 13 files;
+nothing else in the repo referenced them (`bookFigureAssets.ts`'s generated
+`require()` map already only lists what's in `index.json`).
+
+## Review of content and media pools, 2026-09-02
+
+Full-project pass over what exists, how a book gets in, and what media each
+result type can carry. Procedure written up as `docs/adding-a-book.md` (there
+was none; the steps were reconstructed from source comments and this file).
+
+Fixed in the same pass:
+
+- `objectives.ts` matched derived objective ids against a literal list that
+  missed `o-g9-…` and `o-eng-…`, so 170 of 366 objectives (all Grade 9 maths,
+  all English vocational) reported `bloomsSource: 'authored'` while carrying
+  the builder's stamped `'Understand'`. Now matched by the shapes
+  `objectiveId()` emits; `__tests__/objectives.test.ts` pins every scope.
+- `knowledge-base/grade-10-financial-literacy/` never existed (the directory
+  is `grade-10-finlit`); corrected in `iqra_curriculum_g10_finlit_sem1.json`
+  and `services/knowledgeBase.ts`.
+- Both `knowledge-base/*/README.md` still told you to run the hard-disabled
+  `import_g10_*_support.py`; they now point at the guide.
+
+Found and not fixed (ranked):
+
+1. `lib/curriculum/src/data/extracted-g9/` is dead data: two files in reversed
+   presentation-form Arabic with a different schema, read by nothing. Grade 9
+   has no manifest rows and no passage grounding at all.
+2. `scripts/extract_book_figures.py` points 4 of 7 books at absolute paths on
+   one machine; chem-s2, finlit and both Grade 9 figure sets cannot be
+   regenerated elsewhere.
+3. `UNSPLASH_ACCESS_KEY`, `YOUTUBE_API_KEY` and `R2_*` are set nowhere in-repo
+   (not `.env`, not `render.yaml`). Missing keys are silent no-ops, so the
+   only media that appears in any result today is book figures.
+4. No audio at all (no TTS, STT or recorder), and no uploaded-video support;
+   `lesson_media.kind` is image / audio / document.
+5. Two incompatible teacher-media stores: topic-string AsyncStorage URLs
+   (`services/lessonMedia.ts`) and KB-id R2 files (`services/lessonMediaApi.ts`).
+6. Bank PDFs are listed by title but not openable in-app; `driveId` is used
+   only by a uniqueness test.
+7. Figures reach 6 of 10 generators; chat, lesson flow, game and parent
+   message get none.
+8. `iqra_curriculum_g10_english_industry.json` has 12 units and 0 lessons but
+   ships in `MVP_BOOK_IDS`. `validateCurriculum` also reports 18 false gaps
+   for the other English tracks because it looks for `lessons[].objectives`
+   and the vocational schema synthesises them.
+9. Stale prose: `bank.ts:188` ("63 pending", actual 13), `passages.ts:145`
+   ("six documents read", actual 57), `gen_book_figure_assets.mjs:11`
+   ("63 files", actual 600+), `.agents/memory/iqra-architecture.md` (pre-NCCD
+   id scheme). `attached_assets/g9/` holds 1.6 MB of PDFs referenced by nothing.
+10. The `iqraa-media` R2 bucket is still public (flagged 2026-08-30, twice).
+    **No longer true, verified 2026-09-03** — see the entry below.
+
+
+## `iqraa-media` is no longer publicly readable, verified 2026-09-03
+
+Probed `https://pub-59ecbec8df5a4adc80bf8f7d1084fdd5.r2.dev/<key>` from a
+machine that can reach `*.r2.dev` (the sandbox that first raised this could
+not, which is why it stayed "not verified" through three entries). Four keys —
+`math-s1-student-book.pdf`, `math-s1-teacher-guide.pdf`,
+`chem-s1-student-book.pdf` and a deliberately non-existent one — all answer
+**401**. A bucket with Public Development URL still on answers 404 for a key
+that isn't there and 200 for one that is, so a uniform 401 across both is the
+signature of the toggle being off, not of the objects having moved.
+
+The split done in `16b22e4` is therefore complete: `iqraa-public`
+(`pub-d9ddd8f7…`) serves the four public English download links and answers
+**206** on a ranged GET, while `iqraa-media` now refuses anonymous reads.
+`math-s1-teacher-guide.pdf`, the restricted NCCD material that made this
+urgent, is no longer reachable without credentials.
+
+Two things this does **not** settle: the objects were never re-keyed or
+rotated, so anyone who fetched one while the bucket was open still has it;
+and the check is an HTTP probe from outside, not a read of the bucket's
+settings — re-run it rather than trusting this line.
+
+## Four new subjects have sources and text; none of them has a curriculum yet, 2026-09-03
+
+Grade 10 physics, biology (العلوم الحياتية), earth science (علوم الأرض
+والبيئة) and Arabic arrived as a local folder — 23 PDFs, 790 MB — and are now
+manifest rows, extracted text and R2 objects. The manifest is 101 sources, up
+from 78. Physics was prioritised because it is the subject being built out
+next.
+
+All six physics sources extracted clean: 616 pages, 1,343,223 characters —
+both student books, both teacher guides at 154pp, both workbooks. That is a
+larger corpus than the chemistry set the app currently teaches from. Totals
+for the rest: biology 350pp / 602,443 chars (6 of 7), earth science 384pp /
+948,430, Arabic 643pp / 1,257,081.
+
+**Twenty-three of twenty-four extracted.** `bio-s1-teacher-guide` is scanned
+with no text layer and this project has no OCR, so it is `pending` with a note
+saying why rather than counted as ingested — the S2 guide extracted fine at
+100pp, so it is that file's export, not the series. It is in R2 regardless, so
+an OCR pass later needs no re-fetch.
+
+**`finlit-s1-student-book` was never Drive-only.** This file has claimed since
+August to be reachable only through Drive, and the forty catalog objectives
+mined from it rested on that. It was on disk the whole time, byte-exact
+(5,521,575), in `Knowledge Base/10th grade/` — a folder no audit had walked,
+because every audit walked `LOCAL_FILES` and that map had never heard of it.
+Now ingested: 80pp / 113,520 chars. The same folder also holds the
+18,630,721-byte math student book that was previously only in R2, so the
+three-way discrepancy between that export, the 33,429,449-byte local file
+mapped as `math-s1-student-book`, and the manifest's own byte counts is now
+resolvable by comparing files rather than guessing. Not resolved here.
+
+**`driveId` is optional now.** These came from a folder, not Drive. The
+manifest asserts Drive ids are unique, so the convenient move was to invent
+some; that would make `driveUrl` hand out links that 404. It returns `null`
+instead, uniqueness is asserted only across sources that have an id, and the
+backlog check accepts "reachable through `LOCAL_FILES`" as the alternative.
+
+**Widening the `subject` union found three incomplete maps** the compiler had
+been guarding: Arabic labels, English labels, and `BANK_SUBJECT_IDS`. The last
+had no earth-science target at all, and the tempting fix — mapping it onto the
+existing `science` id — would have been wrong, because that is the Grade 1-9
+course. `catalog.ts` gains a real `earth-science` subject, **appended** and
+kept out of `MVP_SUBJECT_IDS` per the picker-order trap in CLAUDE.md.
+
+Two fixtures went stale and were fixed at the root, not loosened.
+`bio-worksheet-answers` has `semester: null`, which generated a bare `biology`
+unit tag; `BANK_UNIT_TAGS` derives from unitTags, so that made the keyword
+`biology` structural and failed the keyword check. Tags now follow the
+subject-prefixed convention the test exists to enforce. And `passages.test.ts`
+used a financial-literacy unit as its "nothing extracted" case, which stopped
+being true the moment finlit-s1 extracted — moved to a Grade 9 unit, which
+this Grade 10 manifest cannot give text to.
+
+**What this does not do.** Ingesting a source is not teaching a subject. These
+four have text and nothing else: no catalog units, no lesson data, no
+objectives. The app can list their books and cannot generate from them. That
+is the next piece of work, and physics is where it starts — mining the S1
+teacher guide's مخطط الوحدة tables the way chemistry's were on 2026-08-24.
+
+Still missing after this: the earth-science S1 student book and the Arabic S2
+teacher guide (neither is in the folder), `finlit-s2` (now the only Drive-only
+source left), and OCR for the biology S1 guide.
+
+Verified: curriculum suite 90/90, `verify` 0 errors, monorepo typecheck clean.
+All 94 mapped sources confirmed in `iqraa-media` by listing the bucket rather
+than trusting the upload log — 106 objects, 1.32 GB, every source byte-equal
+to its file on disk, none missing.
+
+## OCR fallback added; the biology S1 guide and two other stuck sources are ingested, 2026-09-05
+
+Closes the gap the previous entry left open. `extract-text.ts` had four gates
+(no text layer, broken font cmap, unshaped presentation forms, transposed
+definite article) and no recovery from any of them — a source that failed one
+stayed `pending` forever. All four are failures of the PDF's own embedded
+text, none of which exist in a rendered page image, so
+`lib/curriculum/scripts/ocr.ts` rasterizes the page with `pdftoppm` and reads
+it with Tesseract, and `extract-text.ts` now tries that whenever pdf-parse
+rejects a source, checking the OCR output against the same four gates rather
+than assuming a clean pass.
+
+Tesseract + the Arabic language model are **not** committed or fetched
+automatically — a checkout without them behaves exactly as before, rejecting
+with the same message. Setup is in `LOCAL_SETUP.md` ("OCR fallback for
+scanned PDFs"): `winget install tesseract-ocr.tesseract`, then the Arabic
+model by hand into `~/.config/tessdata` (Program Files is usually not
+writable without elevation, so this project keeps its own copy rather than
+depending on the install's own `tessdata/`).
+
+Three biology sources that were stuck now have real text:
+
+| sourceId | why it was stuck | pages | chars |
+|---|---|---|---|
+| `bio-s1-teacher-guide` | scanned, no text layer at all | 132 | 218,551 |
+| `bio-s2-teacher-guide` | definite article transposed in 89% of samples | 100 | 207,322 |
+| `bio-worksheet-answers` | definite article transposed in 91% of samples | 10 | 11,706 |
+
+Verified end to end, not just "the script ran": `passagesForUnit` for
+`kbu-biology-s1-nccd-u1` now returns three passages, two of them from
+`bio-s1-teacher-guide` — the same lookup a live generation request makes.
+
+**Cost, and it is real:** roughly 15-20 seconds per page at the default
+300 DPI, so the 132-page guide alone took 41 minutes. `extract-text.ts` now
+accepts positional `sourceId`s to scope a run to just the sources that need
+it, rather than re-attempting OCR against everything `LOCAL_FILES` lists —
+the four science subjects' pending backlog alone is ~30 sources, hours of
+wall-clock at this rate.
+
+**Quality is not verified character-for-character.** Spot-checked the
+teacher guide's OCR output against a page render: coherent, on-topic Arabic
+(lab safety instructions, teaching notes), with occasional garbled words
+around small decorative page elements (unit-badge numerals, icons) —
+`tesseract-ocr` was chosen for both PNG page images. Treat it as one notch
+below a clean digital extraction; the `tool` field on each `extraction`
+block records `tesseract-ocr (pdf-parse rejected: <why>)` rather than a bare
+tool name, so which sources are OCR'd stays visible without opening each
+JSON.
+
+The four gates themselves moved into `textQuality.ts` (renamed the local
+function to the exported `rejectReason`) so they are shared verbatim between
+the pdf-parse attempt and the OCR attempt, and so they are testable at all —
+`extract-text.ts` ends in a top-level `await main()`, the same reason
+`localSources.ts` and `textQuality.ts` were split out before. New test file:
+`rejectReason.test.ts`, 6 cases, one per gate plus a "two gates fail at once"
+case.
+
+Verified: curriculum suite 105/105 (was 90), `verify` 0 errors, monorepo
+typecheck clean.

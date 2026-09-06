@@ -163,6 +163,12 @@ describe('bank tags', () => {
     assert.deepEqual(bankTagsForUnit('kbu-math-s1-nccd-u2'), ['s1-u2', 's1']);
     assert.deepEqual(bankTagsForUnit('kbu-chem-s2-nccd-u4'), ['chem-s2-u4', 'chem-s2']);
     assert.deepEqual(bankTagsForUnit('kbu-finlit-s1-nccd-u1'), ['finlit-s1']);
+    // The three sciences added 2026-09-03 carry semester-only tags under their
+    // own manifest stems, which are abbreviations of the slug, not the slug:
+    // `bio-s1`, not `biology-s1`. Nothing in the bank is unit-level for them.
+    assert.deepEqual(bankTagsForUnit('kbu-phys-s2-nccd-u4'), ['phys-s2']);
+    assert.deepEqual(bankTagsForUnit('kbu-biology-s1-nccd-u1'), ['bio-s1']);
+    assert.deepEqual(bankTagsForUnit('kbu-earth-science-s2-nccd-u3'), ['earth-s2']);
     // Every real unit still resolves to something, or to nothing on purpose.
     for (const u of UNITS.filter(x => isNccdUnitId(x.id))) {
       assert.ok(bankTagsForUnit(u.id).length > 0, `${u.id} lost its bank tags`);
@@ -198,5 +204,18 @@ describe('isNccdUnitId', () => {
     assert.ok(!isNccdUnitId(''));
     assert.ok(!isNccdUnitId(null));
     assert.ok(!isNccdUnitId(undefined));
+  });
+
+  it('accepts every NCCD-shaped unit id the catalog actually holds', () => {
+    // The check above and `bankTagsForUnit`'s loop both start from
+    // `isNccdUnitId`, so a subject the predicate does not know about is
+    // filtered out before either can notice it — which is how physics, earth
+    // science and biology shipped on 2026-09-03 with all 15 of their units
+    // rejected. Grounding resolved no book passages for any of them and
+    // nothing failed. So match on the id's *shape*, independently of the
+    // predicate under test, and assert the predicate agrees.
+    const shaped = UNITS.filter(u => /^kbu-(?:g\d+-)?[a-z-]+-s[12]-nccd-u\d+$/.test(u.id));
+    assert.ok(shaped.length >= 68, `only ${shaped.length} NCCD-shaped units found`);
+    assert.deepEqual(shaped.filter(u => !isNccdUnitId(u.id)).map(u => u.id), []);
   });
 });

@@ -38,7 +38,7 @@ import {
   searchKBRanked,
   searchKBSemantic,
 } from '@/services/knowledgeBase';
-import { getPickerSubjects } from '@/services/curriculumData';
+import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
 import { loadLessonPick, saveLessonPick } from '@/services/lessonContext';
 import {
   buildResponse,
@@ -73,7 +73,7 @@ import { IqraaMark } from '@/components/ui/IqraaMark';
 import { CHAT_MAX_WIDTH } from '@/constants/layout';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
 import { MathParagraph } from '@/components/ui/MathParagraph';
-import { hasRenderableMath } from '@/services/mathRender';
+import { hasRenderableMath, isolateForeignRuns } from '@/services/mathRender';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { CurrentLessonCard } from '@/components/ui/CurrentLessonCard';
 import { DocumentAttachmentBar } from '@/components/ui/DocumentAttachmentBar';
@@ -123,6 +123,7 @@ import {
   shareAsText,
 } from '@/services/share';
 import { buildClassDeck } from '@/services/startClass';
+import { bookFigureUri } from '@/services/bookFigureUri';
 import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { ClassPickerSheet, type ClassPick } from '@/components/ui/ClassPickerSheet';
 import { describeAttachResult } from '@/services/classAttach';
@@ -252,16 +253,22 @@ type EphemeralSuggestion = {
   toolType?: 'worksheet' | 'quiz' | 'lesson-plan' | 'activity' | 'homework';
 };
 
-// ─── Teaching-context subject options (investor MVP: Grade 10 Math only) ─────
+// ─── Teaching-context subject options ────────────────────────────────────────
 // All MVP subjects with KB content — kept in lockstep with the home picker
 // (was hardcoded to mathematics only, which is why the chat's change-lesson
-// sheet showed a single subject while home showed three).
+// sheet showed a single subject while home showed three). Grade is a
+// separate, independent pick (below) — it used to be baked in here as
+// 'grade-10', which is why Grade 9 was unreachable from this sheet even
+// after the picker itself learned about it.
 const CONTEXT_SUBJECTS = getPickerSubjects().map(s => ({
   subjectId: s.id,
-  gradeId: 'grade-10',
   labelAr: s.nameAr,
   labelEn: s.name,
 }));
+
+// All MVP grades with KB content — same picker `home.tsx`'s change-lesson
+// sheet uses, so this sheet offers the same choice.
+const CONTEXT_GRADES = getPickerGrades();
 
 // ─── Suggested questions per mode/language ───────────────────────────────────
 interface Suggestion {
@@ -296,7 +303,7 @@ const SUGGESTIONS: Record<Mode, Record<'ar' | 'en', Suggestion[]>> = {
  * What the change-lesson sheet knows about the lesson the teacher tapped.
  * `lessonId` is null for entire-unit / entire-book picks and for free text.
  */
-type ChatLessonPick = { topic: string; subjectId: string; lessonId: string | null };
+type ChatLessonPick = { topic: string; subjectId: string; gradeId: string; lessonId: string | null };
 
 function ContextBanner({
   colors, isRTL, lang, t, onContextChange, onAsk, hidePill, externalOpen, onExternalOpenChange, onGlobalPick,
@@ -314,10 +321,12 @@ function ContextBanner({
 }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [subjIdx, setSubjIdx] = useState(0);
+  const [gradeId, setGradeId] = useState('grade-10');
   const [topic, setTopicInternal] = useState('');
   // Draft topic while modal is open; only committed on confirm
   const [draftTopic, setDraftTopic] = useState('');
   const [draftSubjIdx, setDraftSubjIdx] = useState(0);
+  const [draftGradeId, setDraftGradeId] = useState(gradeId);
   // The KB id of the lesson the teacher tapped, straight from the picker.
   // Kept because the title alone does not identify it again — see
   // `TopicSelectionDetail.lessonId`.
@@ -333,6 +342,7 @@ function ContextBanner({
   const openModal = () => {
     setDraftTopic(topic);
     setDraftSubjIdx(subjIdx);
+    setDraftGradeId(gradeId);
     setDraftLessonId(null);
     setOpen(true);
   };
@@ -341,16 +351,19 @@ function ContextBanner({
     if (externalOpen) {
       setDraftTopic(topic);
       setDraftSubjIdx(subjIdx);
+      setDraftGradeId(gradeId);
       setDraftLessonId(null);
     }
   }, [externalOpen]);
 
   const handleConfirm = () => {
     setSubjIdx(draftSubjIdx);
+    setGradeId(draftGradeId);
     setTopicInternal(draftTopic);
     const pick: ChatLessonPick = {
       topic: draftTopic.trim(),
       subjectId: subj.subjectId,
+      gradeId: draftGradeId,
       lessonId: draftLessonId,
     };
     onContextChange(draftTopic, pick);
@@ -368,6 +381,7 @@ function ContextBanner({
   const handleClear = () => {
     setTopicInternal('');
     setSubjIdx(0);
+    setGradeId('grade-10');
     setDraftLessonId(null);
     onContextChange('');
   };
@@ -438,8 +452,44 @@ function ContextBanner({
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
+            {/* Grade pills — only worth showing once there is a real choice. */}
+            {CONTEXT_GRADES.length > 1 ? (
+              <>
+                <Text style={[ctxStyles.modalSectionLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+                  {lang === 'ar' ? 'الصف' : 'Grade'}
+                </Text>
+                <View style={[ctxStyles.subjRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                  {CONTEXT_GRADES.map(g => (
+                    <Pressable
+                      key={g.id}
+                      onPress={() => {
+                        // Changing grade invalidates the unit/lesson draft,
+                        // same as changing subject does below.
+                        setDraftGradeId(g.id);
+                        setDraftTopic('');
+                        setDraftLessonId(null);
+                      }}
+                      style={[ctxStyles.subjPill, {
+                        backgroundColor: draftGradeId === g.id ? colors.primary : colors.muted,
+                        borderRadius: 16,
+                        borderWidth: 1.5,
+                        borderColor: draftGradeId === g.id ? colors.primary : colors.border,
+                      }]}
+                    >
+                      <Text style={[ctxStyles.subjText, {
+                        color: draftGradeId === g.id ? colors.primaryForeground : colors.mutedForeground,
+                        fontFamily: draftGradeId === g.id ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
+                      }]}>
+                        {lang === 'ar' ? g.nameAr : g.name}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </>
+            ) : null}
+
             {/* Subject pills */}
-            <Text style={[ctxStyles.modalSectionLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+            <Text style={[ctxStyles.modalSectionLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left', marginTop: CONTEXT_GRADES.length > 1 ? 18 : 0 }]}>
               {lang === 'ar' ? 'المادة' : 'Subject'}
             </Text>
             <View style={[ctxStyles.subjRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -470,7 +520,7 @@ function ContextBanner({
             </Text>
             <TopicSelector
               subjectId={subj.subjectId}
-              gradeId={subj.gradeId}
+              gradeId={draftGradeId}
               value={draftTopic}
               onChange={setDraftTopic}
               onSelectionDetail={d => setDraftLessonId(d.lessonId)}
@@ -600,7 +650,7 @@ function LessonPrepProgressCard({
               },
             ]}
           >
-            {isRTL ? 'ما تبقّى للحصة:' : 'Still needed for the lesson:'}
+            {isRTL ? 'ما تبقّى للدرس:' : 'Still needed for the lesson:'}
           </Text>
           {progress.remaining.map(item => (
             <Text
@@ -894,7 +944,7 @@ function MessageBubble({
               const clean = line.replace(/\*\*/g, '');
               return (
                 <Text key={i} style={[styles.bubbleBold, { color: colors.foreground, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>
-                  {clean}
+                  {isolateForeignRuns(clean)}
                 </Text>
               );
             }
@@ -926,8 +976,8 @@ function MessageBubble({
                   <Text style={[styles.bubbleText, { color: colors.foreground, flex: 1, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>
                     {parts.map((p, pi) =>
                       pi % 2 === 1
-                        ? <Text key={pi} style={{ fontFamily: 'Cairo_600SemiBold' }}>{p}</Text>
-                        : p
+                        ? <Text key={pi} style={{ fontFamily: 'Cairo_600SemiBold' }}>{isolateForeignRuns(p)}</Text>
+                        : isolateForeignRuns(p)
                     )}
                   </Text>
                 </View>
@@ -936,7 +986,7 @@ function MessageBubble({
             if (line.startsWith('📚') || line.startsWith('📖')) {
               return (
                 <Text key={i} style={[styles.sourceText, { color: colors.mutedForeground, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>
-                  {line}
+                  {isolateForeignRuns(line)}
                 </Text>
               );
             }
@@ -1345,6 +1395,7 @@ export default function IqraScreen() {
           : null,
         subject: meta.subject,
         grade: meta.grade,
+        figureUri: bookFigureUri,
       });
       if (!deck) return;
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -2472,6 +2523,7 @@ export default function IqraScreen() {
               topic: pick.topic,
               unitOrder: null,
               subjectId: pick.subjectId,
+              gradeId: pick.gradeId,
               lessonId: pick.lessonId,
             });
           }}
@@ -2509,10 +2561,14 @@ export default function IqraScreen() {
             // Resolve fresh, the same way onContextChange does, so both agree
             // on the lesson that was actually just picked.
             const picked = resolvePickedLesson(topic, pick, lang as 'ar' | 'en');
+            // Same trap the subject line used to have: this used to say
+            // "Grade 10" unconditionally, which misdescribed the lesson to
+            // the model for every Grade 9 pick.
+            const grade = CONTEXT_GRADES.find(g => g.id === pick?.gradeId) ?? CONTEXT_GRADES[0];
             sendMessage(
               lang === 'ar'
-                ? `أدرّس "${topic}" للصف العاشر. أعطني نظرة شاملة عن الموضوع مع أهم مفاهيمه.`
-                : `I'm teaching "${topic}" to Grade 10 students. Give me a comprehensive overview of this topic with key concepts.`,
+                ? `أدرّس "${topic}" ${grade ? `لطلاب ${grade.nameAr}` : 'للصف العاشر'}. أعطني نظرة شاملة عن الموضوع مع أهم مفاهيمه.`
+                : `I'm teaching "${topic}" to ${grade?.name ?? 'Grade 10'} students. Give me a comprehensive overview of this topic with key concepts.`,
               picked?.id ?? undefined,
             );
           }}

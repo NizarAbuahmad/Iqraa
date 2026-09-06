@@ -22,6 +22,7 @@ import {
   buildQuizSlidesHTML,
   buildWorksheetHTML,
   buildWorksheetSlidesHTML,
+  DOC_ACCENT,
   EXPORT_FIGURE_MAX,
   type BookFigureRef,
 } from '../exportHtml.ts';
@@ -139,6 +140,31 @@ describe('RTL layout', () => {
     }
   });
 
+  it('isolates an embedded equation in every Arabic document', () => {
+    // Same failure the screens had, and worse on paper: an unisolated
+    // «f(x) = 2x⁴ - x² + 3» comes out of the bidi algorithm reordered, and a
+    // teacher hands that to a class with no way to reload and check. Every
+    // builder must route its text through the isolating `esc`, so a new
+    // builder that forgets it fails here rather than at a printer.
+    const mathQuiz = quiz();
+    mathQuiz.questions[0]!.text = 'اشتق الاقتران f(x) = 2x⁴ - x² + 3';
+    const mathWorksheet = worksheet();
+    mathWorksheet.sections[0]!.questions[0]!.text = 'اشتق الاقتران f(x) = 2x⁴ - x² + 3';
+
+    const docs: [string, string][] = [
+      ['quiz', buildQuizHTML(mathQuiz, 'اختبار', meta, true)],
+      ['quizSlides', buildQuizSlidesHTML(mathQuiz, 'اختبار', meta, true)],
+      ['worksheet', buildWorksheetHTML(mathWorksheet, 'ورقة عمل', meta, true)],
+      ['worksheetSlides', buildWorksheetSlidesHTML(mathWorksheet, 'ورقة عمل', meta, true)],
+    ];
+    for (const [name, html] of docs) {
+      assert.ok(
+        html.includes('\u2066f(x) = 2x⁴ - x² + 3\u2069'),
+        `${name} emitted the equation without directional isolates`,
+      );
+    }
+  });
+
   it('leaves the English documents left-to-right', () => {
     const html = buildQuizHTML(quiz(), 'Quiz', { subject: 'Math', grade: 'Grade 10' }, false);
     assert.match(html, /dir="ltr"/);
@@ -211,6 +237,25 @@ describe('document shape', () => {
 });
 
 
+describe('printing without background graphics', () => {
+  // Chrome's print dialog (and most browsers') defaults "Background graphics"
+  // OFF. The four slide decks put white/near-white title text directly on a
+  // colored gradient title-slide with no other fallback — without this
+  // property, the gradient vanishes on print and the title, subject/grade
+  // line and brand footer all disappear into an all-white page. `docx.docx`
+  // isn't affected (a different writer entirely), only the browser-print /
+  // "Save as PDF" path every one of these HTML builders feeds.
+  it('forces backgrounds to print regardless of the browser\'s default', () => {
+    for (const [name, html] of arabicDocuments()) {
+      assert.match(
+        html,
+        /print-color-adjust:\s*exact/,
+        `${name} has no print-color-adjust — a colored background can silently vanish on print`,
+      );
+    }
+  });
+});
+
 describe('book figure appendix', () => {
   // A model never chose these — the whole point (see `figuresSectionHTML`'s
   // header comment). These are fixture URIs, not resolved assets; the actual
@@ -281,5 +326,171 @@ describe('book figure appendix', () => {
     const en = buildQuizHTML(quiz(), 'Quiz', meta, false, someFigures(1));
     assert.ok(ar.includes('من الكتاب المدرسي'));
     assert.ok(en.includes('From the Student Book'));
+  });
+});
+
+/**
+ * The projected worksheet carries the same figures the printed one does.
+ *
+ * These four builders took no figures argument at all —
+ * `buildWorksheetSlidesHTML` was even commented "Text only in this builder" —
+ * while their print-path twins ended with the «من الكتاب المدرسي» appendix.
+ * So the same worksheet, from the same screen, showed the book's diagrams on
+ * paper and none on the projector, with nothing to say why. The two call
+ * sites sit seven lines apart in `useGeneratorExport.ts`.
+ */
+describe('book figures on the projector builders', () => {
+  const imgs = (h: string) => (h.match(/<img /g) ?? []).length;
+  // `class="slide title-slide"` is a slide too — matching only `slide"`
+  // undercounts by exactly the title slide, which reads as an off-by-one in
+  // the footer rather than as a miscount here.
+  const slideCount = (h: string) => (h.match(/class="slide[ "]/g) ?? []).length;
+  const figures = (n: number): BookFigureRef[] =>
+    Array.from({ length: n }, (_, i) => ({
+      uri: `file:///figs/p0${i}.png`,
+      page: 21 + i,
+      caption: `كتاب الطالب · صفحة ${21 + i}`,
+    }));
+
+  const builders: [string, (f?: BookFigureRef[]) => string][] = [
+    ['worksheet', f => buildWorksheetSlidesHTML(worksheet(), 'ورقة', meta, true, f)],
+    ['quiz', f => buildQuizSlidesHTML(quiz(), 'اختبار', meta, true, f)],
+    ['lesson plan', f => buildLessonPlanSlidesHTML(plan(), 'خطة', meta, true, f)],
+    ['activity', f => buildActivitySlidesHTML(activity(), 'نشاط', meta, true, f)],
+  ];
+
+  for (const [name, build] of builders) {
+    it(`${name}: renders them and adds exactly one slide, not one per figure`, () => {
+      const without = build();
+      const withFigs = build(figures(2));
+      assert.equal(imgs(without), 0, 'no figures passed, none rendered');
+      assert.equal(imgs(withFigs), 2);
+      assert.equal(slideCount(withFigs), slideCount(without) + 1);
+      assert.match(withFigs, /من الكتاب المدرسي/);
+      // The page citation has to survive into the markup, not only the alt.
+      assert.match(withFigs, /صفحة ٢١|صفحة 21/);
+    });
+
+    it(`${name}: counts the extra slide in the footer total`, () => {
+      // A footer reading "5 / 4" is how a teacher learns not to trust the deck.
+      const html = build(figures(2));
+      const totals = [...html.matchAll(/(\d+) \/ (\d+)</g)].map(m => Number(m[2]));
+      assert.ok(totals.length > 0, 'the deck numbers its slides');
+      assert.ok(
+        totals.every(t => t === slideCount(html)),
+        `footer total ${totals[0]} should equal ${slideCount(html)} rendered slides`,
+      );
+    });
+  }
+
+  it('caps at EXPORT_FIGURE_MAX, like the printed appendix', () => {
+    const html = buildWorksheetSlidesHTML(
+      worksheet(), 'ورقة', meta, true, figures(EXPORT_FIGURE_MAX + 4),
+    );
+    assert.equal(imgs(html), EXPORT_FIGURE_MAX);
+  });
+
+  it('gives the lesson-flow PDF the appendix too', () => {
+    // The one document that bundles a worksheet and an exit ticket together,
+    // and so the one where the missing appendix was least obvious.
+    const withFigs = buildLessonFlowHTML(flow(), true, figures(2));
+    assert.equal(imgs(withFigs), 2);
+    assert.equal(imgs(buildLessonFlowHTML(flow(), true)), 0);
+  });
+});
+
+/**
+ * The printed documents look like one designed product.
+ *
+ * They did not. The worksheet, quiz and lesson plan were a grey hairline and
+ * one teal accent; the activity built its own document with a five-rule
+ * stylesheet and inline styles on every element; and `buildLessonFlowHTML`
+ * — the only one anybody had designed — had coloured section bands, step
+ * cards and real webfonts that none of the others could reach.
+ */
+describe('printed document design', () => {
+  const printDocuments = (): [string, string][] => [
+    ['quiz', buildQuizHTML(quiz(), 'اختبار', meta, true)],
+    ['worksheet', buildWorksheetHTML(worksheet(), 'ورقة عمل', meta, true)],
+    ['lessonPlan', buildLessonPlanHTML(plan(), 'خطة', meta, true)],
+    ['activity', buildActivityHTML(activity(), 'نشاط', meta, true)],
+  ];
+
+  it('actually LOADS the Arabic typeface it names', () => {
+    // The bug this replaces: the stack named 'Amiri' and nothing ever fetched
+    // it. Amiri ships on none of the platforms we target, so every printed
+    // worksheet fell through to system Arial while the projector deck
+    // rendered in Cairo/Almarai — one product, two typographies. Naming a
+    // font is not loading it, which is exactly what made this invisible.
+    for (const [name, html] of printDocuments()) {
+      assert.match(html, /fonts\.googleapis\.com/, `${name} loads no webfont`);
+      assert.match(html, /family=Almarai/, `${name} does not request Almarai`);
+      assert.ok(
+        html.includes("'Almarai'") || html.includes('Almarai,'),
+        `${name} requests Almarai but does not use it`,
+      );
+      assert.ok(!html.includes('Amiri'), `${name} still names the font it never loads`);
+    }
+  });
+
+  it('gives each document its own accent, matching its projected twin', () => {
+    const docs = printDocuments();
+    assert.match(docs[0]![1], new RegExp(DOC_ACCENT.quiz));
+    assert.match(docs[1]![1], new RegExp(DOC_ACCENT.worksheet));
+    assert.match(docs[2]![1], new RegExp(DOC_ACCENT.lesson));
+    assert.match(docs[3]![1], new RegExp(DOC_ACCENT.activity));
+  });
+
+  it('builds the activity from the shared base, not its own document', () => {
+    // It had its own <!DOCTYPE>, its own five CSS rules and inline styles
+    // everywhere — which is the reason `figuresSectionHTML` is inline-styled
+    // for all five callers. One <!DOCTYPE> and the shared classes now.
+    const html = printDocuments()[3]![1];
+    assert.equal((html.match(/<!DOCTYPE html>/g) ?? []).length, 1);
+    assert.match(html, /class="step-card"/);
+    assert.match(html, /class="sec-band"/);
+    assert.match(html, /class="page"/);
+  });
+
+  it('bands every section with an icon rather than a grey hairline', () => {
+    for (const [name, html] of printDocuments()) {
+      assert.match(html, /class="sec-band"/, `${name} has no section bands`);
+      assert.match(html, /class="sec-icon"/, `${name} has no section icons`);
+    }
+  });
+
+  it('leaves room to write on a question with no options, and not on one with', () => {
+    // A worksheet is the one document a student fills in, and it printed the
+    // stem and then the next stem. The shared `worksheet()` fixture is
+    // all-MCQ, so this builds its own pair rather than widening a fixture
+    // eight other assertions depend on.
+    const withShortAnswer = {
+      ...worksheet(),
+      sections: [{
+        type: 'short_answer' as const,
+        title: 'القسم الأول',
+        questions: [
+          { text: 'اشرح بخطواتك.', points: 3 },
+          { text: 'أي مما يلي صحيح؟', options: ['أ', 'ب'], points: 1 },
+        ],
+      }],
+    } as unknown as WorksheetOutput;
+    const html = buildWorksheetHTML(withShortAnswer, 'ورقة', meta, true);
+    assert.equal(
+      (html.match(/class="q-rule"/g) ?? []).length, 3,
+      'three rules for the one option-less question, none for the MCQ',
+    );
+
+    // An all-MCQ paper gets none at all — the answer goes in the margin.
+    const mcqOnly = buildWorksheetHTML(worksheet(), 'ورقة', meta, true);
+    assert.equal((mcqOnly.match(/class="q-rule"/g) ?? []).length, 0);
+  });
+
+  it('keeps the print-colour rule every background depends on', () => {
+    // Chrome and WebKit drop every background when printing without it —
+    // the bands and cards would print as blank white space.
+    for (const [name, html] of printDocuments()) {
+      assert.match(html, /print-color-adjust:\s*exact/, `${name} will print colourless`);
+    }
   });
 });

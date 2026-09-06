@@ -22,6 +22,7 @@ import {
   findNccdLessonByKbId,
   findNccdUnitByLessonKbId,
 } from './curriculumG10MathSem2.ts';
+import { figuresForLesson } from './bookFigures.ts';
 import { buildSupportResourcesContext } from './mathSupportResources.ts';
 import { isNccdUnitId } from '@workspace/curriculum';
 
@@ -101,7 +102,7 @@ function serializeLessonContext(
   }
   if (curriculumObjectives.length > 0) {
     lines.push('');
-    lines.push(isAr ? 'النتاجات (من المنهج الرسمي):' : 'Official curriculum outcomes:');
+    lines.push(isAr ? 'النتاجات (من المنهاج الرسمي):' : 'Official curriculum outcomes:');
     curriculumObjectives.forEach(o => lines.push(`• ${o}`));
   } else if (titleOnlyUnit && unitObjectives.length > 0) {
     // Sem1 units 2–4: real lesson title, but outcomes are unit-level only
@@ -212,7 +213,7 @@ export function resolveGeneratorGrounding(
       score: 0,
       context: '',
       ungroundedNote: isAr
-        ? 'تنبيه: الموضوع غير موجود في المنهج المتاح حالياً. أنشئ خطة عامة دون الادعاء أنها مبنية على نتاجات درس محدد من الكتاب.'
+        ? 'تنبيه: الموضوع غير موجود في المنهاج المتاح حالياً. أنشئ خطة عامة دون الادعاء أنها مبنية على نتاجات درس محدد من الكتاب.'
         : 'NOTE: topic not found in the available curriculum KB. Generate a generic plan; do not claim textbook grounding.',
     };
   }
@@ -266,6 +267,47 @@ export function buildGeneratorContext(
  */
 export function generatorUnitId(topic: string, lang: 'ar' | 'en'): string | undefined {
   return nccdUnitId(resolveGeneratorGrounding(topic, lang).lesson?.unitId);
+}
+
+/**
+ * The curriculum lesson id a topic grounds to, for the server to key the
+ * shared artifact pool on.
+ *
+ * The id, not the title, because the pool is shared between teachers and a
+ * title does not identify a lesson: CLAUDE.md records `searchKBSemantic(title)`
+ * returning a *different* lesson for 16 of the picker's 63 («قانون الجيوب» →
+ * «قانون جيب التمام»). Keying on a normalised title meant two lessons could
+ * collide onto one key; before there was a pool that was a bad log line, and
+ * with one it is teacher A being served teacher B's lesson.
+ *
+ * `undefined` when the topic is free-typed and grounds to nothing — the server
+ * falls back to the normalised topic, which is a correct key for a lesson that
+ * exists nowhere in the curriculum.
+ */
+export function generatorLessonId(topic: string, lang: 'ar' | 'en'): string | undefined {
+  return resolveGeneratorGrounding(topic, lang).lesson?.id;
+}
+
+/**
+ * How many student-book figures this topic's lesson has — the `AIRequest`
+ * field of the same name.
+ *
+ * Sits beside `generatorLessonId` because it answers the same question from
+ * the same grounding, and every screen that sends one should send the other:
+ * the server uses it to decide whether the model may write «في الشكل
+ * المجاور», and that is only true when the paper's appendix will carry a
+ * figure to look at.
+ *
+ * Counts the index, not the bundle. `figuresForLesson` is the same lookup
+ * `bookFigureRefsForLesson` starts from, minus the `react-native` asset
+ * resolution — which this module must stay clear of, and which can only ever
+ * *reduce* the count (an unbundled crop is dropped at render). Over-counting
+ * by an unbundled figure would at worst permit a reference the appendix does
+ * not honour, so the drift test on `bookFigureAssets.ts` is what keeps the two
+ * in step; there is no cheap way to ask the bundler from here.
+ */
+export function generatorFigureCount(topic: string, lang: 'ar' | 'en'): number {
+  return figuresForLesson(generatorLessonId(topic, lang)).length;
 }
 
 /**

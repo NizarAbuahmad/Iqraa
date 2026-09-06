@@ -22,6 +22,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { G10_SOURCES } from '../sources.ts';
 import { searchForm } from '../passages.ts';
+import { isLfsPointer } from '../../scripts/r2.ts';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const srcDir = path.resolve(here, '..');
@@ -72,6 +73,33 @@ describe('extracted text', () => {
     }
   });
 
+  it('has not regenerated an extraction that was blocked on purpose', () => {
+    // The guard that was missing. `extract-text.ts` decided what to do by
+    // whether the output file existed, so purging a corrupt extraction made it
+    // look un-extracted and the next run wrote it straight back: the scrambled
+    // financial-literacy text removed on 2026-09-03 was on disk again on
+    // 2026-09-04, serving teachers, with nothing red. The quality gate cannot
+    // catch these — both blocked files passed it — so the judgement is recorded
+    // on the manifest and this asserts the record is honoured.
+    //
+    // This used to assert `blocked.length > 0` as a canary against someone
+    // deleting the field to make the test pass. That proxy expired on
+    // 2026-09-06: OCR cleared the last blocked entry (finlit-s1), which is the
+    // remedy `sources.ts` names for exactly this field, so an empty set is now
+    // the correct state and the count would fail on success. The canary moves
+    // to the declaration itself — that is the thing whose removal would be
+    // silent, and it cannot be satisfied by unblocking a source honestly.
+    const declaration = readFileSync(path.join(srcDir, 'sources.ts'), 'utf8');
+    assert.match(declaration, /extractionBlocked\?: string;/, 'the extractionBlocked field has been dropped');
+
+    const onDisk = new Set(files.map(f => load(f).sourceId));
+    const blocked = G10_SOURCES.filter(s => s.extractionBlocked);
+    for (const s of blocked) {
+      assert.ok(!onDisk.has(s.id), `${s.id} is blocked but has an extraction on disk: ${s.extractionBlocked}`);
+      assert.ok(!s.extraction, `${s.id} is blocked but the manifest claims an extraction`);
+    }
+  });
+
   it('is internally consistent', () => {
     for (const f of files) {
       const doc = load(f);
@@ -108,14 +136,29 @@ describe('extracted text', () => {
     // 0.32; the reversed-glyph and broken-cmap files this same run's quality
     // gate now rejects before they reach disk measured 0.00-0.12. 0.2 sits in
     // the gap with margin on both sides, not picked to just barely pass today.
+    // The English books added on 2026-09-03 broke the premise above: they are
+    // genuinely English, so an Arabic floor would fail them for being exactly
+    // what they are. Exempting them outright would leave their extractions
+    // unchecked, which loses the point of the test — so the same question is
+    // asked of the alphabet each source is actually written in. Measured
+    // across every extraction on disk: English sources are 74.0% and 74.3%
+    // Latin, while the highest Latin density among Arabic-language documents
+    // is 15.1% (`chem-ws-planck-almasri`, a worksheet dense with formula
+    // symbols). 0.4 sits in that gap the same way 0.2 sits in the Arabic one.
     const ARABIC = /[؀-ۿ]/g;
+    const LATIN = /[A-Za-z]/g;
+    const subjectOf = new Map(G10_SOURCES.map(s => [s.id, s.subject]));
     const failures: string[] = [];
     for (const f of files) {
       const doc = load(f);
-      const arabicChars = doc.text.reduce((n, p) => n + (p.text.match(ARABIC) ?? []).length, 0);
-      const ratio = doc.chars > 0 ? arabicChars / doc.chars : 0;
-      if (ratio <= 0.2) {
-        failures.push(`${doc.sourceId}: only ${(ratio * 100).toFixed(1)}% of extracted characters are Arabic`);
+      const isEnglish = subjectOf.get(doc.sourceId) === 'english';
+      const script = isEnglish ? LATIN : ARABIC;
+      const floor = isEnglish ? 0.4 : 0.2;
+      const label = isEnglish ? 'Latin' : 'Arabic';
+      const scriptChars = doc.text.reduce((n, p) => n + (p.text.match(script) ?? []).length, 0);
+      const ratio = doc.chars > 0 ? scriptChars / doc.chars : 0;
+      if (ratio <= floor) {
+        failures.push(`${doc.sourceId}: only ${(ratio * 100).toFixed(1)}% of extracted characters are ${label}`);
       }
     }
     // Every file is checked before asserting — a loop that throws on the
@@ -130,7 +173,10 @@ describe('extracted text', () => {
     for (const f of files) {
       const doc = load(f);
       const abs = path.join(repoRoot, doc.localPath);
-      if (!existsSync(abs)) continue; // an LFS-thin checkout is not a failure here
+      // An LFS-thin checkout is not a failure here — whether the file is
+      // fully absent, or present only as the ~130-byte pointer stub that
+      // `existsSync` alone can't tell apart from the real thing.
+      if (!existsSync(abs) || isLfsPointer(readFileSync(abs))) continue;
       assert.equal(statSync(abs).size, doc.bytes, `${doc.sourceId} bytes`);
       assert.equal(
         createHash('sha256').update(readFileSync(abs)).digest('hex'),

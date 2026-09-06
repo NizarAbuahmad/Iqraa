@@ -91,6 +91,13 @@ describe("generationKeys", () => {
     it("still separates genuinely different lessons in the coarse key", () => {
       assert.notEqual(keys(base).coarseKey, keys({ ...base, topic: "المتجهات" }).coarseKey);
     });
+
+    it("changes the strict key for priorTopicsNotes but not the coarse key", () => {
+      const plain = keys(base);
+      const withNotes = keys({ ...base, priorTopicsNotes: "راجع حل المعادلات من الصف التاسع" });
+      assert.equal(plain.coarseKey, withNotes.coarseKey);
+      assert.notEqual(plain.strictKey, withNotes.strictKey);
+    });
   });
 
   describe("teacher-pasted context", () => {
@@ -114,6 +121,64 @@ describe("generationKeys", () => {
 
     it("does not count whitespace-only context as context", () => {
       assert.equal(keys({ ...base, additionalContext: "   " }).hasContext, false);
+    });
+  });
+
+  describe("who wrote the context", () => {
+    const CONTEXT = "📚 الدرس: كثيرات الحدود\n\nالنتاجات...";
+
+    it("curriculum-derived context is shareable — the difference between a cache and no cache", () => {
+      // Every generator screen sends additionalContext, and almost all of it is
+      // buildGeneratorContext() output: text the app derives from the lesson,
+      // identical for any teacher who asks. Reading "context present" as
+      // "private" excluded essentially every request from the shared pool.
+      const derived = keys({ ...base, additionalContext: CONTEXT, contextSource: "curriculum" });
+      assert.equal(derived.hasContext, false);
+      assert.equal(derived.shareable, true);
+    });
+
+    it("teacher-supplied context is not", () => {
+      const pasted = keys({ ...base, additionalContext: CONTEXT, contextSource: "teacher" });
+      assert.equal(pasted.hasContext, true);
+      assert.equal(pasted.shareable, false);
+    });
+
+    it("an unstated source is treated as the teacher's — fail closed", () => {
+      // A screen that forgets to declare gets a cache miss, never someone
+      // else's pasted material.
+      assert.equal(keys({ ...base, additionalContext: CONTEXT }).shareable, false);
+    });
+
+    it("does not change the key, only who may be served from it", () => {
+      // Both requests want the same artifact. If provenance moved the key, two
+      // teachers asking the same question would never meet in the pool.
+      assert.equal(
+        keys({ ...base, additionalContext: CONTEXT, contextSource: "curriculum" }).strictKey,
+        keys({ ...base, additionalContext: CONTEXT, contextSource: "teacher" }).strictKey,
+      );
+    });
+
+    it("still partitions the strict key when the curriculum text itself changes", () => {
+      // A KB edit should reach teachers the same way a prompt edit does,
+      // rather than being masked by artifacts generated from the old text.
+      assert.notEqual(
+        keys({ ...base, additionalContext: "الدرس أ", contextSource: "curriculum" }).strictKey,
+        keys({ ...base, additionalContext: "الدرس ب", contextSource: "curriculum" }).strictKey,
+      );
+    });
+
+    it("regeneration fields never move the key", () => {
+      // A regenerate must land on the same key it is regenerating, or it looks
+      // up an empty pool and pays for a variant that already exists.
+      const plain = keys(base);
+      const again = keys({
+        ...base,
+        regenerate: true,
+        avoid: ["a stem the teacher already saw"],
+        excludeVariantIds: ["some-uuid"],
+      });
+      assert.equal(plain.strictKey, again.strictKey);
+      assert.equal(plain.coarseKey, again.coarseKey);
     });
   });
 

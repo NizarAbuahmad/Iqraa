@@ -87,8 +87,14 @@ export type SourceStatus =
 export interface CurriculumSource {
   /** Stable slug used to cite this document from curriculum data. */
   id: string;
-  /** Google Drive file id — the only durable handle; titles get renamed. */
-  driveId: string;
+  /**
+   * Google Drive file id — the durable handle for anything that came through
+   * Drive, since titles get renamed. Absent on sources handed over as local
+   * files instead (the 2026-09-03 physics / biology / earth-science / Arabic
+   * intake): they have no Drive handle, and inventing one would make
+   * `driveUrl` hand out a link that 404s.
+   */
+  driveId?: string;
   /** Filename exactly as it appears in Drive, so it can be found by search. */
   title: string;
   bytes: number;
@@ -151,7 +157,7 @@ export interface CurriculumSource {
     sha256: string;
     bytesDifferFromManifest?: { manifest: number; local: number };
   };
-  subject: 'math' | 'chemistry' | 'financial-literacy';
+  subject: 'math' | 'chemistry' | 'financial-literacy' | 'physics' | 'biology' | 'earth-science' | 'arabic' | 'islamic' | 'history' | 'english' | 'geography' | 'digital-literacy' | 'civic' | 'art' | 'vocational';
   /** null when the document spans both semesters or names none. */
   semester: 1 | 2 | null;
   kind: SourceKind;
@@ -162,6 +168,35 @@ export interface CurriculumSource {
   /** Set on a 'conflict': the entry it disagrees with. */
   conflictWith?: string;
   notes?: string;
+  /**
+   * Why this file's text layer must not be extracted, or absent if it may be.
+   *
+   * Deleting a bad extraction does not stick on its own: `extract-text.ts`
+   * decides what to do by whether the output file exists, so a purged one looks
+   * un-extracted and comes back on the next run. That happened — the scrambled
+   * financial-literacy text purged on 2026-09-03 was regenerated on 2026-09-04
+   * and was being served to teachers again, with nothing red.
+   *
+   * The quality gate cannot be the guard either: it rejects text by shape at
+   * extraction time, and both files carrying this field passed it. Some defects
+   * are only recognisable by reading the Arabic, so the judgement has to be
+   * recorded rather than recomputed. `notes` says the same to a human.
+   *
+   * Enforced today by `extraction.test.ts`, which fails if a blocked source has
+   * an extraction on disk or a manifest claim — so a regeneration cannot reach
+   * `main` whatever produced it. `extract-text.ts` does not yet skip these at
+   * source; that hook belongs with the OCR fallback being built in it, and OCR
+   * is precisely the remedy both of these need, so whoever lands it should
+   * clear the field rather than work around it.
+   *
+   * **No source carries this field as of 2026-09-06.** That is the sentence
+   * above being honoured, not the mechanism lapsing: OCR replaced the scrambled
+   * financial-literacy text layer with text read off the page images, so the
+   * judgement it recorded no longer applies and the field was cleared. Set it
+   * again on the next file whose text layer is bad in a way the quality gate
+   * passes — that is still the only way to make the ban stick.
+   */
+  extractionBlocked?: string;
 }
 
 /** Every Grade 10 source on file, in Drive order. */
@@ -173,8 +208,9 @@ export const FOLDERS: Record<string, string> = raw.folders;
 /** The date the Drive listing this was written from was taken. */
 export const CAPTURED_AT: string = raw.capturedAt;
 
-export function driveUrl(source: CurriculumSource): string {
-  return `https://drive.google.com/file/d/${source.driveId}/view`;
+/** Null for a source with no Drive id — see `driveId`. */
+export function driveUrl(source: CurriculumSource): string | null {
+  return source.driveId ? `https://drive.google.com/file/d/${source.driveId}/view` : null;
 }
 
 export function getSource(id: string): CurriculumSource | undefined {

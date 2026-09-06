@@ -168,7 +168,7 @@ describe('the subject a deck is generated under', () => {
     const svc = new MockAIService();
     const req = {
       grade: '10',
-      topic: 'موضوع حر غير موجود في المنهج',
+      topic: 'موضوع حر غير موجود في المنهاج',
       activityType: 'quick-check',
       duration: 15,
       difficulty: 'standard',

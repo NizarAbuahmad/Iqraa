@@ -104,7 +104,9 @@ function makeWorkingAI(): RunnerAIService {
 /**
  * Returns an AI mock that throws at the named step.
  * 'warmup' and 'activity' are both served by generateActivity; the mock
- * distinguishes them by activityType.
+ * distinguishes them by `activityVariant`. It used to key off activityType
+ * ('hands-on' vs 'game'), which quietly assumed the runner asked for the main
+ * activity in a format it no longer uses.
  */
 function makeFailingAI(failAt: StepKey): RunnerAIService {
   const ok = makeWorkingAI();
@@ -115,10 +117,10 @@ function makeFailingAI(failAt: StepKey): RunnerAIService {
         : ok.generateLessonPlan,
 
     generateActivity: async (req) => {
-      if (failAt === 'warmup' && req.activityType === 'hands-on') {
+      if (failAt === 'warmup' && req.activityVariant === 'warmup') {
         throw new Error('Network error');
       }
-      if (failAt === 'activity' && req.activityType === 'game') {
+      if (failAt === 'activity' && req.activityVariant === 'main') {
         throw new Error('Network error');
       }
       return { ...MOCK_ACTIVITY };

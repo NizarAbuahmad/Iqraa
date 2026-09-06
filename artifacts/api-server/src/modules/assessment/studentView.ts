@@ -88,13 +88,64 @@ function safeOption(option: unknown): unknown {
   return { id: o["id"], text: o["text"] };
 }
 
-export function sanitizeQuestionForStudent(question: {
-  id: string;
-  orderIndex: number;
-  type: string;
-  marks: unknown;
-  body: Record<string, unknown> | null | undefined;
-}): StudentQuestion {
+/**
+ * The right-hand column of a matching question, reordered for delivery.
+ *
+ * Stored order is written by a generator asked for `pairs` in order, so the
+ * i-th right item is usually the answer to the i-th left one. Handed over
+ * unchanged, the question is answerable straight down the list by a student who
+ * has not read it — which is the whole of what it was meant to measure.
+ *
+ * Keyed on the attempt and the question rather than drawn from `Math.random`,
+ * which settles two things at once:
+ *
+ * - **The attempt**, so the pupil at the next desk is answering a differently
+ *   ordered column. Copying a neighbour's third pick is then just a wrong
+ *   answer, which is the point of shuffling at all.
+ * - **The question**, so one paper is not a single permutation applied to every
+ *   matching question on it — spot the order once and you would have it for the
+ *   rest of the paper.
+ *
+ * Derived rather than stored, and derived from an id the student already holds
+ * an attempt on: the same list is served on claim and again on every resume,
+ * through two routes that sanitise separately, and a column that reorders under
+ * a student mid-exam is its own kind of unfair. That is also why this is a sort
+ * on a keyed hash rather than a Fisher–Yates on a seeded PRNG — same result, no
+ * generator state to carry and nothing to keep in step between the routes.
+ *
+ * Safe against grading by construction: `matching.grade` matches pairs by id,
+ * and ids travel with their items.
+ */
+function shuffleForDelivery(right: readonly unknown[], seed: string): unknown[] {
+  const keyed = right.map((item, i) => {
+    const id = (item as Record<string, unknown>)?.["id"] ?? item;
+    return {
+      item,
+      // The index is in the hash so that two right items sharing an id (or two
+      // identical strings) still get distinct keys rather than a tie broken by
+      // stored order — the order this exists to hide.
+      key: crypto.createHash("sha256").update(`${seed} ${i} ${String(id)}`).digest("hex"),
+    };
+  });
+  keyed.sort((a, b) => (a.key < b.key ? -1 : 1));
+  return keyed.map(k => k.item);
+}
+
+/**
+ * `attemptId` is required rather than optional so that a caller cannot get a
+ * class-wide ordering by forgetting it — and so that `.map(sanitize…)`, which
+ * would quietly hand the array index over as the seed, does not compile.
+ */
+export function sanitizeQuestionForStudent(
+  question: {
+    id: string;
+    orderIndex: number;
+    type: string;
+    marks: unknown;
+    body: Record<string, unknown> | null | undefined;
+  },
+  attemptId: string,
+): StudentQuestion {
   const source = question.body ?? {};
   const typeModule = QUESTION_TYPES[question.type as keyof typeof QUESTION_TYPES];
 
@@ -118,6 +169,16 @@ export function sanitizeQuestionForStudent(question: {
   // means a future projection that forgets cannot leak through here.
   for (const key of ["options", "left", "right"]) {
     if (Array.isArray(body[key])) body[key] = (body[key] as unknown[]).map(safeOption);
+  }
+
+  // After the allowlist, not before: reordering is about what the layout gives
+  // away, and there is no point hiding the order of fields that should not have
+  // been sent at all.
+  if (question.type === "matching" && Array.isArray(body["right"])) {
+    body["right"] = shuffleForDelivery(
+      body["right"] as unknown[],
+      `${attemptId} ${question.id}`,
+    );
   }
 
   return {

@@ -6,7 +6,10 @@
  * parking `classroom` left the escape / bingo / relay / gallery-walk formats
  * reachable only by typing the URL — which meant, in practice, not reachable.
  * `game` and `activity` returned with it rather than leaving one door of the
- * three open. Everything else stays parked.
+ * three open. `simplify` and `parent-msg` came back on 2026-09-03: the parent
+ * message is an offline composer with no audit objection, and `simplify` ships
+ * with a subtitle that describes what it actually produces (a simpler lesson
+ * plan). Everything else stays parked.
  *
  * Parked tools stay in the catalog (their routes still resolve for saved
  * materials and deep links) but must not reappear on a menu — which is easy to
@@ -19,14 +22,14 @@ import assert from 'node:assert/strict';
 import { AFTER_CLASS, ALL_TOOLS, BEFORE_CLASS, DURING_CLASS, WORKFLOW } from '../toolCatalog.ts';
 
 const OFFERED_TOOLS = [
-  'slides', 'lesson-plan',                        // before
+  'slides', 'lesson-plan', 'simplify',            // before
   'worksheet', 'classroom', 'game', 'activity',   // during
-  'quiz', 'evaluations',                          // after
+  'quiz', 'evaluations', 'parent-msg',            // after
 ];
 
 /** Parked on 2026-08-18 and still parked — none of these may reach a menu. */
 const PARKED_TOOLS = [
-  'simplify', 'lesson-flow', 'geogebra', 'lesson-media', 'homework', 'parent-msg',
+  'lesson-flow', 'geogebra', 'lesson-media', 'homework',
 ];
 
 describe('toolCatalog — the offered surface', () => {

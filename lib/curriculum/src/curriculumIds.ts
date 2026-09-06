@@ -33,8 +33,47 @@
  * assumption.
  */
 
+/**
+ * Every subject that can appear inside an id, and what its ids are made of.
+ *
+ * One row per subject, and `keyof typeof` makes the compiler demand it. This
+ * knowledge used to sit in three independent lists — `UNIT_ID_RE`'s
+ * alternation below, `DERIVED_OUTCOME_PREFIXES` in `objectives.ts`, and the tag
+ * vocabulary in `bankTagsForParsedUnit` — so adding a subject meant updating
+ * three things that nothing tied together. Physics, earth science and biology
+ * arrived on 2026-09-03 in none of them: their 15 units failed `isNccdUnitId`,
+ * so grounding resolved no book passages for any of them, and their 141
+ * objectives reported a human `authored` Bloom's level while carrying the
+ * builder's blanket 'Understand'. Both read as "the subject is just quiet".
+ *
+ * `tag` is the bank-tag stem. Grade 10 maths is empty because its tags are bare
+ * (`s1-u2`) — the vocabulary written into the manifest before there was a
+ * second subject to distinguish it from. `unitLevel: false` means the bank
+ * holds nothing narrower than a semester, so the tags stop at `bio-s1`;
+ * emitting `bio-s1-u3` would invent a tag no document carries.
+ */
+const SUBJECTS = {
+  'math': { tag: '', unitLevel: true },
+  'chem': { tag: 'chem-', unitLevel: true },
+  'phys': { tag: 'phys-', unitLevel: false },
+  'earth-science': { tag: 'earth-', unitLevel: false },
+  'biology': { tag: 'bio-', unitLevel: false },
+  'finlit': { tag: 'finlit-', unitLevel: false },
+  'arabic': { tag: 'arabic-', unitLevel: false },
+  'islamic': { tag: 'islamic-', unitLevel: false },
+  // General English, distinct from the four vocational ESP tracks below. The
+  // manifest already tags its books `eng-s1` / `eng-s2`, so the stem matches.
+  // `UNIT_ID_RE` sorts these keys longest-first precisely so this shorter slug
+  // never shadows `eng-commerce` and friends.
+  'eng': { tag: 'eng-', unitLevel: false },
+  'eng-commerce': { tag: 'eng-commerce-', unitLevel: false },
+  'eng-agri': { tag: 'eng-agri-', unitLevel: false },
+  'eng-hospitality': { tag: 'eng-hospitality-', unitLevel: false },
+  'eng-industry': { tag: 'eng-industry-', unitLevel: false },
+} as const;
+
 /** Subject slug as it appears inside an id. Not the app's `subjectId`. */
-export type SubjectSlug = 'math' | 'chem' | 'finlit';
+export type SubjectSlug = keyof typeof SUBJECTS;
 
 export interface CurriculumIdScope {
   /** Catalog grade id, e.g. `grade-10`. */
@@ -128,7 +167,12 @@ export function objectiveId(
  * `kbContext.ts`. Three copies of a shape that was about to gain a segment is
  * three chances to update two of them.
  */
-const UNIT_ID_RE = /^kbu-(?:g(\d+)-)?(math|chem|finlit)-s([12])-nccd-u(\d+)$/;
+const UNIT_ID_RE = new RegExp(
+  // Longest first, so `eng-commerce` is never shadowed by a shorter sibling.
+  '^kbu-(?:g(\\d+)-)?('
+    + Object.keys(SUBJECTS).sort((a, b) => b.length - a.length).join('|')
+    + ')-s([12])-nccd-u(\\d+)$',
+);
 
 export interface ParsedUnitId {
   gradeId: string;
@@ -169,7 +213,8 @@ export function isNccdUnitId(value: string | null | undefined): boolean {
  * maths is bare (`s1-u2`, `s1`), chemistry is prefixed (`chem-s1-u2`), and
  * financial literacy gets only a semester tag because the bank holds no
  * unit-level material for it — emitting `finlit-s1-u1` would invent a tag
- * nothing can carry.
+ * nothing can carry. The four English vocational tracks are new subjects with
+ * no bank material at all yet, so they get the same semester-only treatment.
  *
  * Other grades are explicit on both axes (`g9-math-s1-u2`, `g9-math-s1`). Maths
  * stops being the silent default the moment there is a second grade to be
@@ -177,14 +222,35 @@ export function isNccdUnitId(value: string | null | undefined): boolean {
  */
 export function bankTagsForParsedUnit(parsed: ParsedUnitId): string[] {
   const { gradeId, subject, semester, unit } = parsed;
+  const { tag, unitLevel } = SUBJECTS[subject];
 
   if (gradeId === IMPLICIT_GRADE_ID) {
-    if (subject === 'finlit') return [`finlit-s${semester}`];
-    const prefix = subject === 'chem' ? 'chem-s' : 's';
-    return [`${prefix}${semester}-u${unit}`, `${prefix}${semester}`];
+    const scope = `${tag}s${semester}`;
+    return unitLevel ? [`${scope}-u${unit}`, scope] : [scope];
   }
 
+  // Other grades name the subject in full rather than by its Grade 10 tag
+  // stem: `g9-math-s1`, never `g9-s1`. Maths stops being the silent default
+  // the moment there is a second grade to be silent about.
   const scope = `${gradeSlug(gradeId)}-${subject}-s${semester}`;
-  if (subject === 'finlit') return [scope];
-  return [`${scope}-u${unit}`, scope];
+  return unitLevel ? [`${scope}-u${unit}`, scope] : [scope];
 }
+
+/**
+ * Whether an objective id was minted by `objectiveId` — that is, stamped out by
+ * a catalog builder rather than classified by a human.
+ *
+ * Asks `objectiveId` itself rather than keeping a list beside it, because the
+ * list was wrong twice: it missed `o-g9-…` and `o-eng-…`, and then the three
+ * science subjects. Each miss made `objectives.ts` report `authored` for a
+ * Bloom's level nobody chose.
+ */
+export function isDerivedObjectiveId(id: string): boolean {
+  // Every grade but 10 carries an explicit `g{n}` segment, whatever the subject.
+  return /^o-g\d+-/.test(id) || DERIVED_GRADE_10_PREFIXES.some(p => id.startsWith(p));
+}
+
+/** `objectiveId` with an empty lesson id yields `{prefix}-0`; drop the `-0`. */
+const DERIVED_GRADE_10_PREFIXES: string[] = (Object.keys(SUBJECTS) as SubjectSlug[])
+  .flatMap(subject => ([1, 2] as const).map(semester =>
+    objectiveId({ gradeId: IMPLICIT_GRADE_ID, subject, semester }, '', 0).slice(0, -2)));

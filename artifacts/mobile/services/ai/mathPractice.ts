@@ -209,7 +209,7 @@ const BANK: ConcreteItem[] = [
   { id: 'lq-e1', family: 'linear_quad', diff: 'easy', eq: 'y = x', eq2: 'y = x²', answer: '(0 ، 0) و (1 ، 1)', wrongs: ['(2 ، 2)', 'لا حل', '(−1 ، −1)'], kind: 'system', promptAr: 'حل النظام:\ny = x\ny = x²', promptEn: 'Solve:\ny = x\ny = x²' },
   { id: 'lq-e2', family: 'linear_quad', diff: 'easy', eq: 'y = 2', eq2: 'y = x² − 2', answer: '(−2 ، 2) و (2 ، 2)', wrongs: ['(0 ، −2)', '(1 ، 2)', 'لا حل'], kind: 'system', promptAr: 'حل النظام:\ny = 2\ny = x² − 2', promptEn: 'Solve:\ny = 2\ny = x² − 2' },
   { id: 'lq-m1', family: 'linear_quad', diff: 'medium', eq: 'y = x + 1', eq2: 'y = x² − 3x + 4', answer: '(1 ، 2) و (3 ، 4)', wrongs: ['(0 ، 1)', '(2 ، 3)', 'لا حل'], kind: 'system', promptAr: 'حل النظام:\ny = x + 1\ny = x² − 3x + 4', promptEn: 'Solve:\ny = x + 1\ny = x² − 3x + 4' },
-  { id: 'lq-m2', family: 'linear_quad', diff: 'medium', eq: 'y = −x + 4', eq2: 'y = x² − 2x', answer: '(−2 ، 6) و (2 ، 2)', wrongs: ['(0 ، 4)', '(1 ، 3)', 'لا حل'], kind: 'system' },
+  { id: 'lq-m2', family: 'linear_quad', diff: 'medium', eq: 'y = −x + 4', eq2: 'y = x² − x', answer: '(−2 ، 6) و (2 ، 2)', wrongs: ['(0 ، 4)', '(1 ، 3)', 'لا حل'], kind: 'system' },
   { id: 'lq-h1', family: 'linear_quad', diff: 'hard', eq: 'y = 3x − 1', eq2: 'y = x² + x − 1', answer: '(0 ، −1) و (2 ، 5)', wrongs: ['(1 ، 2)', '(−1 ، −4)', 'لا حل'], kind: 'system' },
   { id: 'lq-h2', family: 'linear_quad', diff: 'hard', eq: 'x + y = 5', eq2: 'y = x² − 1', answer: '(2 ، 3) و (−3 ، 8)', wrongs: ['(1 ، 4)', '(0 ، 5)', 'لا حل'], kind: 'system', promptAr: 'حل النظام:\nx + y = 5\ny = x² − 1', promptEn: 'Solve:\nx + y = 5\ny = x² − 1' },
 
@@ -283,7 +283,7 @@ const BANK: ConcreteItem[] = [
   { id: 'a-e3', family: 'algebra', diff: 'easy', eq: 'x/2 = 9', answer: 'x = 18', wrongs: ['x = 4.5', 'x = 11', 'x = 9'] },
   { id: 'a-m1', family: 'algebra', diff: 'medium', eq: 'x² − 5x + 6 = 0', answer: 'x = 2 أو x = 3', wrongs: ['x = −2 أو −3', 'x = 1 أو 6', 'x = 0'] },
   { id: 'a-m2', family: 'algebra', diff: 'medium', eq: 'x² = 49', answer: 'x = ±7', wrongs: ['x = 7 فقط', 'x = 24.5', 'x = ±49'] },
-  { id: 'a-m3', family: 'algebra', diff: 'medium', eq: '2x + y = 7, y = 3', answer: 'x = 2 ، y = 3', wrongs: ['x = 3 ، y = 2', 'x = 7', 'x = 5'] },
+  { id: 'a-m3', family: 'algebra', diff: 'medium', eq: '2x + y = 7', eq2: 'y = 3', answer: 'x = 2 ، y = 3', wrongs: ['x = 3 ، y = 2', 'x = 7', 'x = 5'], kind: 'system' },
   { id: 'a-h1', family: 'algebra', diff: 'hard', eq: 'x² − 4x + 1 = 0', answer: 'x = 2 ± √3', wrongs: ['x = ±2', 'x = 4', 'x = 1'], promptAr: 'حل بالقانون العام: x² − 4x + 1 = 0', promptEn: 'Solve with the quadratic formula: x² − 4x + 1 = 0' },
   { id: 'a-h2', family: 'algebra', diff: 'hard', eq: 'x² − 9 = 0', answer: 'x = ±3', wrongs: ['x = 9', 'x = 3 فقط', 'x = 0'] },
   {
@@ -421,11 +421,13 @@ export function takeConcreteMath(
   const pickFrom = (fam: MathFamily): ConcreteItem | null => {
     const pool = BANK.filter(i => matches(i, fam));
     if (pool.length === 0) return null;
-    const ranked = [
-      ...pool.filter(i => i.diff === diff),
-      ...pool.filter(i => i.diff !== diff),
-    ];
-    return ranked[0] ?? null;
+    // Random within the difficulty-preferred slice, not `ranked[0]`: taking
+    // the first unused item in bank order meant every fresh session served
+    // the identical quiz for a topic — "regenerate" only looked alive until
+    // the page reloaded. `usedIds` still guarantees no repeats within a pass.
+    const sameDiff = pool.filter(i => i.diff === diff);
+    const candidates = sameDiff.length > 0 ? sameDiff : pool;
+    return candidates[Math.floor(Math.random() * candidates.length)] ?? null;
   };
 
   /**

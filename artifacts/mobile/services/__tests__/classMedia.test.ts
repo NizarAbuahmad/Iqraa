@@ -388,6 +388,8 @@ describe('insertLessonResources', () => {
   const items = [
     { kind: 'video' as const, url: 'https://youtu.be/dQw4w9WgXcQ', caption: 'فيديو المعلم' },
     { kind: 'image' as const, url: 'https://example.com/diagram.png', caption: 'مخطط' },
+    { kind: 'audio' as const, url: 'https://example.com/note.mp3', caption: 'ملاحظة صوتية' },
+    { kind: 'document' as const, url: 'https://example.com/handout.pdf', caption: 'ورقة عمل' },
   ];
 
   it('lands after the teaching and before the worked examples', () => {
@@ -403,7 +405,7 @@ describe('insertLessonResources', () => {
     // first `challenge` slide.
     const out = insertLessonResources(deck, items, true);
     const kinds = out.filter(s => s.type === 'media').map(s => s.mediaKind);
-    assert.deepEqual(kinds, ['video', 'image']);
+    assert.deepEqual(kinds, ['video', 'image', 'audio', 'document']);
   });
 
   it('renumbers so the deck stays consecutive', () => {
@@ -421,6 +423,19 @@ describe('insertLessonResources', () => {
 
   it('changes nothing when nothing is attached', () => {
     assert.deepEqual(insertLessonResources(deck, [], true), deck);
+  });
+});
+
+describe('buildMediaSlide', () => {
+  it('titles every kind distinctly from the others', () => {
+    const kinds = ['image', 'video', 'audio', 'document'] as const;
+    const titles = kinds.map(k => buildMediaSlide(k, 'https://x', 'caption', true, 1).title);
+    assert.equal(new Set(titles).size, kinds.length, 'every title is unique');
+  });
+
+  it('sets mediaKind to document for a document attachment', () => {
+    const doc = buildMediaSlide('document', 'https://example.com/handout.pdf', 'caption', true, 1);
+    assert.equal(doc.mediaKind, 'document');
   });
 });
 

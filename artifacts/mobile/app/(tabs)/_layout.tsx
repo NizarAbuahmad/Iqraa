@@ -7,6 +7,10 @@ import { BlurView } from 'expo-blur';
 import { Tabs } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { isTeacherRole, useAuth } from '@/context/AuthContext';
+
+/** Hides a tab without unregistering its route, so a deep link to it still resolves. */
+const HIDDEN = { tabBarButton: () => null, tabBarItemStyle: { display: 'none' as const } };
 
 function ClassicTabLayout() {
   const colors = useColors();
@@ -16,6 +20,17 @@ function ClassicTabLayout() {
   const isWeb = Platform.OS === 'web';
   const insets = useSafeAreaInsets();
   const { t } = useLanguage();
+  const { user } = useAuth();
+
+  /*
+   * A parent or student gets الرسائل, المنهج and حسابي — and not the two tabs
+   * that only a teacher can actually use. iQra and AI Tools call generation
+   * routes the server refuses for these roles (see middlewares/auth.ts), so
+   * showing them offers a door that only ever opens onto a 403. The curriculum
+   * tab stays: it reads bundled data, and getBooksForSubjectGrade already
+   * narrows a non-teacher to student-facing books.
+   */
+  const isTeacher = isTeacherRole(user?.role);
 
   return (
     <Tabs
@@ -56,18 +71,12 @@ function ClassicTabLayout() {
         silently fell back to generating a lesson plan for anything it did not
         recognise. Chat's box is the real one, so chat is the landing.
       */}
-      <Tabs.Screen
-        name="index"
-        options={{
-          tabBarButton: () => null,
-          tabBarItemStyle: { display: 'none' },
-        }}
-      />
+      <Tabs.Screen name="index" options={HIDDEN} />
 
       {/* ── iQra Chat (first tab) ─────────────────────────── */}
       <Tabs.Screen
         name="iqra"
-        options={{
+        options={isTeacher ? {
           title: t('tabIqra'),
           tabBarIcon: ({ color, focused }) =>
             isIOS ? (
@@ -80,7 +89,7 @@ function ClassicTabLayout() {
               <Ionicons name={focused ? 'chatbubble-ellipses' : 'chatbubble-ellipses-outline'} size={22} color={color} />
             ),
           tabBarBadge: undefined,
-        }}
+        } : HIDDEN}
       />
 
       {/* ── Curriculum ────────────────────────────────────── */}
@@ -100,7 +109,7 @@ function ClassicTabLayout() {
       {/* ── AI Tools ──────────────────────────────────────── */}
       <Tabs.Screen
         name="ai-tools"
-        options={{
+        options={isTeacher ? {
           title: t('tabTools'),
           tabBarIcon: ({ color, focused }) =>
             isIOS ? (
@@ -112,22 +121,25 @@ function ClassicTabLayout() {
             ) : (
               <Ionicons name={focused ? 'sparkles' : 'sparkles-outline'} size={22} color={color} />
             ),
-        }}
+        } : HIDDEN}
       />
 
-      {/*
-        ── Notifications (hidden from the tab bar) ──────────
-        The screen renders "no notifications" and nothing else — there is no
-        source feeding it. A tab that has never shown anything does not read as
-        "empty today", it teaches teachers there is nothing there, and it takes
-        a fifth of the bar from the four that work. The screen stays so the tab
-        is one line to restore the day notifications exist.
-      */}
+      {/* ── Messages (was "Notifications", hidden until there was a real
+        source — person-to-person chat is that source now) ────────── */}
       <Tabs.Screen
         name="notifications"
         options={{
-          tabBarButton: () => null,
-          tabBarItemStyle: { display: 'none' },
+          title: t('tabAlerts'),
+          tabBarIcon: ({ color, focused }) =>
+            isIOS ? (
+              <SymbolView
+                name={focused ? 'bubble.left.fill' : 'bubble.left'}
+                tintColor={color}
+                size={22}
+              />
+            ) : (
+              <Ionicons name={focused ? 'chatbubble' : 'chatbubble-outline'} size={22} color={color} />
+            ),
         }}
       />
 

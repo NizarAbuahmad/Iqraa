@@ -14,6 +14,15 @@ import assert from 'node:assert/strict';
 import { buildDeckSlidesHTML } from '../deckSlidesHtml.ts';
 import type { ActivitySlide, ClassroomActivity } from '../ai/AIService.ts';
 
+/**
+ * Drop the U+2066/U+2069 directional isolates the exporter adds around Latin
+ * and maths runs, so an assertion can talk about the text a reader sees
+ * rather than the invisible marks that hold it in order.
+ */
+function stripIsolates(html: string): string {
+  return html.replace(/[\u2066\u2069]/g, '');
+}
+
 function deck(slides: ActivitySlide[]): ClassroomActivity {
   return {
     activityName: 'الاشتقاق',
@@ -122,7 +131,10 @@ describe('buildDeckSlidesHTML — media slide', () => {
       },
     ]), true);
     assert.match(html, /src="https:\/\/images\.unsplash\.com\/photo-1\.jpg"/);
-    assert.match(html, /📷 A\. Photographer · Unsplash/);
+    // The caption's Latin runs carry directional isolates on an RTL page, so
+    // assert the credit's content survives rather than its exact byte form —
+    // the src above is the one that must stay isolate-free.
+    assert.match(stripIsolates(html), /📷 A\. Photographer · Unsplash/);
   });
 
   it('renders a video media slide as a real clickable link, not an image', () => {
@@ -145,7 +157,43 @@ describe('buildDeckSlidesHTML — media slide', () => {
     assert.match(html, /شرح الاشتقاق — قناة الرياضيات/);
     assert.match(html, /deck-video-note">فيديو خارجي — راجعه قبل العرض/);
     // The bare URL prints too, for the paper case where a link can't be clicked.
-    assert.match(html, /deck-video-url">https:\/\/youtu\.be\/dQw4w9WgXcQ/);
+    assert.match(stripIsolates(html), /deck-video-url">https:\/\/youtu\.be\/dQw4w9WgXcQ/);
+    // …and it prints as ONE isolated unit. Left to the general run detection
+    // it would be cut at the "://" and the scheme could swap sides with the
+    // host on an RTL page — a URL nobody can retype.
+    assert.match(html, /deck-video-url">\u2066https:\/\/youtu\.be\/dQw4w9WgXcQ\u2069</);
+  });
+
+  it('renders an audio media slide as a real clickable link, not an image', () => {
+    const html = buildDeckSlidesHTML(deck([
+      titleSlide,
+      {
+        slideNumber: 2, type: 'media', title: '\u062a\u0633\u062c\u064a\u0644 \u0635\u0648\u062a\u064a', content: '\u0645\u0644\u0627\u062d\u0638\u0629 \u0635\u0648\u062a\u064a\u0629',
+        mediaKind: 'audio', mediaUrl: 'https://example.com/note.mp3',
+        mediaCaption: '\u0634\u0631\u062d \u0627\u0644\u0645\u0639\u0644\u0645', durationSeconds: 0,
+      },
+    ]), true);
+    assert.doesNotMatch(html, /<img/);
+    assert.match(html, /<a class="deck-video-link"[^>]*href="https:\/\/example\.com\/note\.mp3"/);
+    assert.match(html, /\u0627\u0633\u062a\u0645\u0639 \u0644\u0644\u062a\u0633\u062c\u064a\u0644/);
+    assert.match(html, /\u0634\u0631\u062d \u0627\u0644\u0645\u0639\u0644\u0645/);
+    assert.match(stripIsolates(html), /deck-video-url">https:\/\/example\.com\/note\.mp3/);
+  });
+
+  it('renders a document media slide as a real clickable link, not an image', () => {
+    const html = buildDeckSlidesHTML(deck([
+      titleSlide,
+      {
+        slideNumber: 2, type: 'media', title: 'مستند', content: 'ورقة عمل',
+        mediaKind: 'document', mediaUrl: 'https://example.com/handout.pdf',
+        mediaCaption: 'ورقة عمل الوحدة الثانية', durationSeconds: 0,
+      },
+    ]), true);
+    assert.doesNotMatch(html, /<img/);
+    assert.match(html, /<a class="deck-video-link"[^>]*href="https:\/\/example\.com\/handout\.pdf"/);
+    assert.match(html, /افتح المستند/);
+    assert.match(html, /ورقة عمل الوحدة الثانية/);
+    assert.match(stripIsolates(html), /deck-video-url">https:\/\/example\.com\/handout\.pdf/);
   });
 });
 

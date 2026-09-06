@@ -62,6 +62,18 @@ describe("missingFields", () => {
     assert.ok(!missing.includes("title"));
   });
 
+  it("does not require priorReview — most plans never asked for one", () => {
+    // priorReview only appears when the teacher asked for a warm-up review of
+    // prior material (see prompts.ts). Requiring it here would 502 every
+    // ordinary plan the moment the model — correctly — leaves it out.
+    assert.ok(!REQUIRED_FIELDS["lesson-plan"].includes("priorReview"));
+    assert.deepEqual(missingFields("lesson-plan", lessonPlan()), []);
+    assert.deepEqual(
+      missingFields("lesson-plan", { ...lessonPlan(), priorReview: "مراجعة قصيرة" }),
+      [],
+    );
+  });
+
   it("does not require cosmetic echoes of the request", () => {
     // A quiz missing `duration` is still a quiz. Discarding it would turn a
     // usable artifact into mock content, which is the opposite of the point.

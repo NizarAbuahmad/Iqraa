@@ -13,7 +13,7 @@ This guide runs Iqraa **without Replit**. The product UI is the Expo app in `art
 | **Node.js 24+** | Matches the Replit Node 24 workspace (`node -v`) |
 | **pnpm 9+** | `npm install -g pnpm` or Corepack: `corepack enable` |
 | **PostgreSQL 16+** | Local install or Docker |
-| **OpenAI API key** (optional) | Needed for live chat/generate; mobile falls back to mocks if the API/AI call fails |
+| **OpenAI API key** | The API server refuses to boot without *some* value set (`lib/integrations-openai-ai-server` builds its client at module scope) — a placeholder like `sk-local-dummy` is fine when `AI_LIVE_MODE` is off. A real key is only needed for live chat/generate; mobile falls back to mocks if the API/AI call fails |
 | **Git** | Already required for the repo |
 
 Optional for native device testing: Expo Go on a phone, Android Studio / Xcode.
@@ -115,6 +115,7 @@ Without an OpenAI key, the API process will not start (AI client initializes at 
 | `ADMIN_DEBUG_KEY` | unset (endpoint 404s) | Set to see recent server errors at `GET /api/healthz/errors` (header `x-admin-key`) |
 | `UNSPLASH_ACCESS_KEY` | unset (Slides Maker skips the image slide) | Free Unsplash "Demo" key — Slides Maker fetches one topic photo per deck when set |
 | `YOUTUBE_API_KEY` | unset (Slides Maker skips the video slide) | Free YouTube Data API key — Slides Maker searches for one real explainer video per lesson when set |
+| `R2_ENDPOINT` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` / `R2_BUCKET` | unset (R2 simply not used) | Cloudflare R2 (S3-compatible), `R2_BUCKET` defaults to `iqraa-media`. See "Hosting source PDFs on R2" below |
 
 ### Testing against real AI (optional)
 
@@ -177,6 +178,105 @@ Set `MATH_VERIFIER_URL=http://127.0.0.1:8090` in the repo-root `.env`. API route
 - `POST /api/generate/verified-derivative/ai`
 - `POST /api/generate/verified-derivative/batch`
 - `POST /api/verify/derivative`
+
+---
+
+## Hosting source PDFs on R2
+
+`lib/curriculum/scripts/extract-text.ts` reads source books from
+`attached_assets/…` on disk. Getting a large or newly-found PDF onto that disk
+used to mean fetching it through Drive's MCP tools, which has two hard
+failure modes on this project's sources: a 10MB single-call ceiling, and two
+distinct corruption bugs on the large-file fallback (reversed lines on some
+documents; blank, OCR-less pages on scanned ones). Cloudflare R2 replaces
+that fetch path with a plain S3 GET/PUT — reachable even from sandboxes that
+block Drive and `nccd.gov.jo` — with zero egress cost, so repeated extraction
+runs are free beyond the flat storage price.
+
+**To add a new source:**
+
+1. Drag the PDF into the `iqraa-media` R2 bucket via the [Cloudflare
+   dashboard](https://dash.cloudflare.com) (Storage & databases → R2 Object
+   Storage → `iqraa-media` → Objects → drag and drop), or via any S3 client
+   for files over ~300MB.
+2. **Name it `<sourceId>.pdf`** — the same `sourceId` key used in
+   `lib/curriculum/scripts/localSources.ts`'s `LOCAL_FILES` map (e.g.
+   `math-s1-teacher-guide.pdf`). This is the only naming rule; it's what lets
+   extraction find it automatically.
+3. Set `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` in `.env`
+   (`R2_BUCKET` defaults to `iqraa-media`) — get these from the Cloudflare
+   dashboard: Storage & databases → R2 Object Storage, or a user-scoped
+   Account API Token with `Workers R2 Storage: Edit` (the Access Key ID is
+   that token's Token ID; the Secret Access Key is the SHA-256 hash of the
+   token value — `curl "https://api.cloudflare.com/client/v4/user/tokens/verify"
+   -H "Authorization: Bearer <token>"` returns the Token ID as `result.id`).
+4. Run `pnpm --filter @workspace/curriculum run extract-text` — any
+   `LOCAL_FILES` entry missing on disk is now fetched from R2 automatically
+   before extraction runs.
+
+**To back up a source already on disk** (so a future run, in this sandbox or
+anyone else's, no longer needs the original Drive link at all):
+
+```powershell
+pnpm --filter @workspace/curriculum run upload-r2 math-s1-teacher-guide
+# or upload everything LOCAL_FILES points at that exists locally:
+pnpm --filter @workspace/curriculum run upload-r2 -- --all
+```
+
+Both scripts no-op (not error) when R2 env vars are unset — a checkout
+without R2 configured behaves exactly as it did before this existed.
+
+---
+
+## OCR fallback for scanned PDFs
+
+`extract-text.ts` reads a source through `pdf-parse` first and checks the
+result against four gates (no text layer, broken font cmap, unshaped
+presentation forms, transposed definite article). A source that fails any of
+them falls back to `lib/curriculum/scripts/ocr.ts`, which rasterizes each
+page and reads it with Tesseract — all four gate failures are bugs in the
+PDF's own embedded text, and none of them exist in a rendered page image.
+
+This needs two tools this project didn't previously depend on. Both are
+optional at the project level: `extract-text.ts` runs exactly as it always
+did (rejects the source with the same message) when either is missing.
+
+1. **Poppler**, for `pdftoppm` — already needed for `pdftotext` (see the
+   poppler landmine in `CLAUDE.md`: install the winget build, not
+   `/mingw64/bin/pdftotext`, which returns almost no Arabic from these PDFs).
+   `ocr.ts` finds it on `PATH`, then globs the winget package directory, then
+   `POPPLER_BIN` if set (the `pdftoppm(.exe)` binary itself, not a directory).
+2. **Tesseract**, with the Arabic language model:
+   ```powershell
+   winget install --id tesseract-ocr.tesseract -e
+   ```
+   Windows' package ships English only. Fetch Arabic separately (Program
+   Files is usually not writable without elevation, so this project keeps its
+   own copy rather than the tesseract install's own `tessdata/`):
+   ```powershell
+   mkdir "$HOME\.config\tessdata" -Force
+   curl.exe -L -o "$HOME\.config\tessdata\ara.traineddata" `
+     https://github.com/tesseract-ocr/tessdata/raw/main/ara.traineddata
+   ```
+   `ocr.ts` finds `tesseract` on `PATH`, then the standard
+   `C:\Program Files\Tesseract-OCR\tesseract.exe`, then `TESSERACT_BIN` if
+   set. It reads the language model from `TESSDATA_DIR` (default
+   `~/.config/tessdata`) — override either env var for a different setup.
+
+**Cost, in wall-clock time, not money:** OCR is slow — roughly 15-20 seconds
+per page at the default 300 DPI (`OCR_DPI`), so a 130-page scanned book takes
+the better part of an hour. Run it scoped to just the sources that need it:
+
+```powershell
+pnpm --filter @workspace/curriculum run extract-text -- bio-s1-teacher-guide
+```
+
+**Quality is not verified character-for-character.** Spot-checked on a real
+scanned NCCD teacher guide: coherent, on-topic Arabic came back (lab safety
+instructions, teaching notes), with occasional garbled words around small
+decorative page elements (unit-badge numerals, icons). Treat OCR'd text as
+one notch below a clean digital extraction, and read anything a teacher will
+see quoted before trusting it.
 
 ---
 

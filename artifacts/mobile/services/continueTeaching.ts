@@ -19,7 +19,7 @@ export const DEMO_CONTINUE = {
   unitNumber: 5,
   lessonNumber: 3,
   lessonTitleAr: 'تركيب الاقترانات',
-  lessonTitleEn: 'تركيب الاقترانات',
+  lessonTitleEn: 'Composition of Functions',
   unitTopicAr: 'الاقترانات',
   unitTopicEn: 'Functions',
   materialKind: 'lesson' as ContinueMaterialKind,

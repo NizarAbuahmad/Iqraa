@@ -94,6 +94,14 @@
       "kind": "teacher-guide",
       "authority": "nccd",
       "status": "ingested",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-02",
+        "pages": 212,
+        "chars": 513732,
+        "localPath": "attached_assets/TE010_Book-teacher_guiede,_10th_grade,_semster_one_1785147998881.pdf",
+        "sha256": "56fac019e4302ac92920f2d1bc7a2c9e760c806ee43d10353fd769b4b9753aab"
+      },
       "filename": "teacher guiede, 10th grade, semster one.pdf",
       "authorAr": null,
       "unitTags": [
@@ -108,7 +116,7 @@
         "دليل المعلم",
         "الفصل الأول"
       ],
-      "notes": "Source of the math S1 per-lesson objectives (مخطَّط الوحدة tables, book pages 36B/76B/110B)."
+      "notes": "Source of the math S1 per-lesson objectives (مخطَّط الوحدة tables, book pages 36B/76B/110B). `status: \"ingested\"` was set before this file was ever actually extracted — it sat as an unpulled 58MB Git-LFS pointer the whole time, so the claim was untrue until 2026-08-30. Extracted from a 33MB compressed copy fetched via R2 (bytes differ from the 58371821 above; see `extraction` block and the extracted JSON's own `bytesDifferFromManifest`) — same pattern as `chem-s1-student-book-compressed`, a re-compression, not a different edition."
     },
     {
       "id": "math-s2-teacher-guide",
@@ -327,7 +335,7 @@
       "semester": 1,
       "kind": "ministry-support",
       "authority": "nccd",
-      "status": "pending",
+      "status": "ingested",
       "filename": "المادة المساندة لمادة الرياضيات الصف العاشر الفصل الأول.pdf",
       "authorAr": null,
       "unitTags": [
@@ -339,7 +347,15 @@
         "math",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-02",
+        "pages": 80,
+        "chars": 101175,
+        "localPath": "knowledge-base/grade-10-math/support-pdfs/المادة المساندة لمادة الرياضيات الصف العاشر الفصل الأول.pdf",
+        "sha256": "51dfb4306d812f4aa1eb2ebdec9048c01a4fdc3ec526a3a3549bb0ee4dd79692"
+      }
     },
     {
       "id": "math-s2-support-worksheets",
@@ -1477,7 +1493,15 @@
         "كيمياء",
         "عاشر"
       ],
-      "notes": "Units 4-5: التفاعلات والحسابات الكيميائية / الطاقة الكيميائية — three lessons each, plus a تجربة استهلالية, an إثراء وتوسع and a مراجعة per unit. Unit numbering continues from S1, so the two semesters are one course, not two editions. 84 pages, Adobe original: prefer for extraction. Ingested 2026-08-24 into iqra_curriculum_g10_chem_sem2.json: main ideas, outcomes and bilingual vocabulary from the six lesson openers."
+      "notes": "Units 4-5: التفاعلات والحسابات الكيميائية / الطاقة الكيميائية — three lessons each, plus a تجربة استهلالية, an إثراء وتوسع and a مراجعة per unit. Unit numbering continues from S1, so the two semesters are one course, not two editions. 84 pages, Adobe original: prefer for extraction. Ingested 2026-08-24 into iqra_curriculum_g10_chem_sem2.json: main ideas, outcomes and bilingual vocabulary from the six lesson openers.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-02",
+        "pages": 84,
+        "chars": 131290,
+        "localPath": "knowledge-base/grade-10-chemistry/support-pdfs/10th grade, alchamy.2nd semester.pdf",
+        "sha256": "b3285eb5104b9e0249d5593569dd66497d50185420172baa9db1a69f05d899c8"
+      }
     },
     {
       "id": "chem-s2-student-book-compressed",
@@ -1526,7 +1550,7 @@
         "كيمياء",
         "عاشر"
       ],
-      "notes": "132 pages. مخطط الوحدة tables at guide pages 7A / 29A / 59A gave the catalog its period counts (3 per lesson), per-unit prior knowledge with the grade each outcome was taught in, the named activities, and unit 3's finer-grained outcomes (6 and 5, against the book's 1 and 2). Ingested 2026-08-24. Its per-lesson teaching notes, misconceptions and worksheet answer keys (appendix A1+) are NOT mined yet — that is the depth pass."
+      "notes": "132 pages. مخطط الوحدة tables at guide pages 7A / 29A / 59A gave the catalog its period counts (3 per lesson), per-unit prior knowledge with the grade each outcome was taught in, the named activities, and unit 3's finer-grained outcomes (6 and 5, against the book's 1 and 2). Ingested 2026-08-24. Its per-lesson teaching notes, misconceptions and worksheet answer keys (appendix A1+) are NOT mined yet — that is the depth pass. استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
     },
     {
       "id": "chem-s2-teacher-guide",
@@ -1550,7 +1574,7 @@
         "كيمياء",
         "عاشر"
       ],
-      "notes": "مخطط الوحدة at guide pages 7A and 41A gave the period counts (2-4 per lesson, 9 per unit), the per-unit prior knowledge, and the named activities. Its per-lesson teaching notes and the answer appendix (M1+) are not mined yet."
+      "notes": "مخطط الوحدة at guide pages 7A and 41A gave the period counts (2-4 per lesson, 9 per unit), the per-unit prior knowledge, and the named activities. Its per-lesson teaching notes and the answer appendix (M1+) are not mined yet. استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
     },
     {
       "id": "chem-s1-activity-book",
@@ -1709,7 +1733,7 @@
       "semester": 1,
       "kind": "study-pack",
       "authority": "teacher",
-      "status": "ingested",
+      "status": "pending",
       "filename": "دوسية الوحدة الأولى الكيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
       "authorAr": "مريم السرطاوي",
       "unitTags": [
@@ -1723,14 +1747,7 @@
         "كيمياء",
         "عاشر"
       ],
-      "extraction": {
-        "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
-        "pages": 67,
-        "chars": 75516,
-        "localPath": "attached_assets/knowledge-base-pending/chem-s1-u1-pack-sartawi.pdf",
-        "sha256": "0a11b9bf7f59907cd58f875ff739e9dab1afe0009d7e71175c2f4f14cf5be1ad"
-      }
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
     },
     {
       "id": "chem-s1-u2-pack-sartawi",
@@ -1741,7 +1758,7 @@
       "semester": 1,
       "kind": "study-pack",
       "authority": "teacher",
-      "status": "ingested",
+      "status": "pending",
       "filename": "دوسية الوحدة الثانية الكيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
       "authorAr": "مريم السرطاوي",
       "unitTags": [
@@ -1755,14 +1772,7 @@
         "كيمياء",
         "عاشر"
       ],
-      "extraction": {
-        "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
-        "pages": 65,
-        "chars": 71809,
-        "localPath": "attached_assets/knowledge-base-pending/chem-s1-u2-pack-sartawi.pdf",
-        "sha256": "40420967f96cd9cb6789eb43985365e8b4c7619af5498670f4677f39f4ca67f2"
-      }
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
     },
     {
       "id": "chem-s1-u3-pack-sartawi",
@@ -1773,7 +1783,7 @@
       "semester": 1,
       "kind": "study-pack",
       "authority": "teacher",
-      "status": "ingested",
+      "status": "pending",
       "filename": "دوسية الوحدة الثالثة الكيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
       "authorAr": "مريم السرطاوي",
       "unitTags": [
@@ -1787,14 +1797,7 @@
         "كيمياء",
         "عاشر"
       ],
-      "extraction": {
-        "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
-        "pages": 68,
-        "chars": 66827,
-        "localPath": "attached_assets/knowledge-base-pending/chem-s1-u3-pack-sartawi.pdf",
-        "sha256": "206af4678164d726f5e9221e30f6a5a1fbf33f9947d77143a0c7d80aa19eb827"
-      }
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
     },
     {
       "id": "chem-s1-pack-almasri",
@@ -1867,7 +1870,7 @@
       "semester": 2,
       "kind": "study-pack",
       "authority": "teacher",
-      "status": "ingested",
+      "status": "pending",
       "filename": "دوسية الكيمياء الصف العاشر الفصل الثاني إعداد م. مريم السرطاوي.pdf",
       "authorAr": "مريم السرطاوي",
       "unitTags": [
@@ -1880,14 +1883,7 @@
         "كيمياء",
         "عاشر"
       ],
-      "extraction": {
-        "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
-        "pages": 141,
-        "chars": 159330,
-        "localPath": "attached_assets/knowledge-base-pending/chem-s2-pack-sartawi.pdf",
-        "sha256": "538ba9d599845a8c7fab8401b75a718524407cdb28ba53e82c7f7b60ca768199"
-      }
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
     },
     {
       "id": "chem-s2-pack-shawata",
@@ -1960,7 +1956,7 @@
       "semester": 2,
       "kind": "summary",
       "authority": "teacher",
-      "status": "ingested",
+      "status": "pending",
       "filename": "ملخص الوحدة الرابعة الكيمياء الصف العاشر إعداد م. مريم السرطاوي.pdf",
       "authorAr": "مريم السرطاوي",
       "unitTags": [
@@ -1974,14 +1970,7 @@
         "كيمياء",
         "عاشر"
       ],
-      "extraction": {
-        "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
-        "pages": 86,
-        "chars": 79483,
-        "localPath": "attached_assets/knowledge-base-pending/chem-u4-summary-sartawi.pdf",
-        "sha256": "08b5aea4cd80efad07d1a0f0b669ec27e2a69b835a40acd5d8c73e2a169fc094"
-      }
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
     },
     {
       "id": "chem-u5-summary-sartawi",
@@ -1992,7 +1981,7 @@
       "semester": 2,
       "kind": "summary",
       "authority": "teacher",
-      "status": "ingested",
+      "status": "pending",
       "filename": "ملخص الوحدة الخامسة الكيمياء الصف العاشر إعداد م. مريم السرطاوي.pdf",
       "authorAr": "مريم السرطاوي",
       "unitTags": [
@@ -2006,14 +1995,7 @@
         "كيمياء",
         "عاشر"
       ],
-      "extraction": {
-        "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
-        "pages": 71,
-        "chars": 78304,
-        "localPath": "attached_assets/knowledge-base-pending/chem-u5-summary-sartawi.pdf",
-        "sha256": "c6bc50b5381e51b2a1abdb12608f5e19812f345f31b25ffb45c3b91c1ceb2a66"
-      }
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
     },
     {
       "id": "chem-s1-question-bank-sartawi",
@@ -2024,7 +2006,7 @@
       "semester": 1,
       "kind": "question-bank",
       "authority": "teacher",
-      "status": "ingested",
+      "status": "pending",
       "filename": "بنك أسئلة الكيمياء الصف العاشر الفصل الأول م. مريم السرطاوي.pdf",
       "authorAr": "مريم السرطاوي",
       "unitTags": [
@@ -2037,14 +2019,7 @@
         "كيمياء",
         "عاشر"
       ],
-      "extraction": {
-        "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
-        "pages": 21,
-        "chars": 14413,
-        "localPath": "attached_assets/knowledge-base-pending/chem-s1-question-bank-sartawi.pdf",
-        "sha256": "6bfae1bf8c53dcc446c95f0a113891f7029e5026a2d22001b4c1ac0f366876bd"
-      }
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
     },
     {
       "id": "chem-s1-mixed-questions-sartawi",
@@ -2268,7 +2243,15 @@
         "عاشر",
         "كتاب الطالب"
       ],
-      "notes": "40 objectives in the catalog came from this file."
+      "notes": "استُخرج بالتعرّف الضوئي (tesseract ara، 300 نقطة/إنش) في 2026-09-06 بعد أن أخفق استخراج طبقة النص مرتين: كانت حروف الكلمة الواحدة تتناثر ويُعاد ترتيبها («ةالصحيح ع ة اإلجاب زرم ه رأختا» بدل «أختار رمز الإجابة الصحيحة»). النص المخزَّن الآن مقروء من صور الصفحات لا من طبقة النص المعطوبة، ومرّ على بوابات الجودة نفسها التي رفضت سابقه. نصّ التعرّف الضوئي درجةٌ أدنى من الاستخراج الرقمي النظيف — تحقّق من أي اقتباس يظهر للمعلم.",
+      "extraction": {
+        "tool": "tesseract-ocr (--ocr requested)",
+        "extractedAt": "2026-09-06",
+        "pages": 80,
+        "chars": 77833,
+        "localPath": "knowledge-base/grade-10-finlit/support-pdfs/الثقافة المالية 10 ف1 small.pdf",
+        "sha256": "fd3a9fd692a01ce77827816f50e5029f471d5e117924da8a1c1f417987ed27f2"
+      }
     },
     {
       "id": "finlit-s2-student-book",
@@ -2295,6 +2278,1341 @@
       ],
       "conflictWith": "finlit-s1-student-book",
       "notes": "The known edition split: the S1 file in the catalog and this S2 book are not the same edition of the course, so their unit/lesson sequences do not line up. Nothing should be generated across both until one edition is chosen."
+    },
+    {
+      "id": "phys-s1-student-book",
+      "title": "كتاب الطالب لمادة الفيزياء للصف العاشر الفصل الأول.pdf",
+      "bytes": 20553673,
+      "subject": "physics",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة الفيزياء للصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "phys-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "physics",
+        "فيزياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 88,
+        "chars": 130931,
+        "localPath": "knowledge-base/grade-10-physics/support-pdfs/كتاب الطالب لمادة الفيزياء للصف العاشر الفصل الأول.pdf",
+        "sha256": "95fda6fdfdd99324fd5777d7e0563b05f346512d0f67ba41181203f5beb53b63"
+      }
+    },
+    {
+      "id": "phys-s2-student-book",
+      "title": "كتاب الطالب لمادة الفيزياء للصف العاشر الفصل الثاني.pdf",
+      "bytes": 52926341,
+      "subject": "physics",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة الفيزياء للصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "phys-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "physics",
+        "فيزياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 132,
+        "chars": 226951,
+        "localPath": "knowledge-base/grade-10-physics/support-pdfs/كتاب الطالب لمادة الفيزياء للصف العاشر الفصل الثاني.pdf",
+        "sha256": "6320adc51501e6b60f08b8200f1765247aff2664189de9081fe607d0e4eed88b"
+      }
+    },
+    {
+      "id": "phys-s1-teacher-guide",
+      "title": "دليل المعلم لمادة الفيزياء الصف العاشر الفصل الأول.pdf",
+      "bytes": 48454458,
+      "subject": "physics",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "دليل المعلم لمادة الفيزياء الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "phys-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "physics",
+        "فيزياء",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "phys-s2-teacher-guide",
+      "title": "دليل المعلم لمادة الفيزياء الصف العاشر الفصل الثاني.pdf",
+      "bytes": 75967769,
+      "subject": "physics",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "دليل المعلم لمادة الفيزياء الصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "phys-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "physics",
+        "فيزياء",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "phys-s1-activity-book",
+      "title": "كتاب الأنشطة لمادة الفيزياء للصف العاشر الفصل الأول.pdf",
+      "bytes": 3922425,
+      "subject": "physics",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة لمادة الفيزياء للصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "phys-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "physics",
+        "فيزياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 36,
+        "chars": 55773,
+        "localPath": "knowledge-base/grade-10-physics/support-pdfs/كتاب الأنشطة لمادة الفيزياء للصف العاشر الفصل الأول.pdf",
+        "sha256": "fd9a3bda70353cc81392114fe44f8a5ba4421c5ac6f4e5d5fcd026ec4ac710a0"
+      }
+    },
+    {
+      "id": "phys-s2-exercise-book",
+      "title": "كتاب التمارين لمادة الفيزياء للصف العاشر الفصل الثاني.pdf",
+      "bytes": 20062584,
+      "subject": "physics",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب التمارين لمادة الفيزياء للصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "phys-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "physics",
+        "فيزياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 52,
+        "chars": 91793,
+        "localPath": "knowledge-base/grade-10-physics/support-pdfs/كتاب التمارين لمادة الفيزياء للصف العاشر الفصل الثاني.pdf",
+        "sha256": "b815e584e4af0a4272557ae44dc23c79f2e13b7866a528c06aed96cce3ec6c99"
+      }
+    },
+    {
+      "id": "bio-s1-student-book",
+      "title": "كتاب الطالب لمادة العلوم الحياتية للصف العاشر الفصل الأول.pdf",
+      "bytes": 79946226,
+      "subject": "biology",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة العلوم الحياتية للصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "bio-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "biology",
+        "العلوم الحياتية",
+        "أحياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 84,
+        "chars": 100250,
+        "localPath": "knowledge-base/grade-10-biology/support-pdfs/كتاب الطالب لمادة العلوم الحياتية للصف العاشر الفصل الأول.pdf",
+        "sha256": "4e7a1e23d5b3012590624322b52fdd3e5d3e811301b2e68efe8d2214e0b905d4"
+      }
+    },
+    {
+      "id": "bio-s2-student-book",
+      "title": "كتاب الطالب لمادة العلوم الحياتية للصف العاشر الفصل الثاني.pdf",
+      "bytes": 74954829,
+      "subject": "biology",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة العلوم الحياتية للصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "bio-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "biology",
+        "العلوم الحياتية",
+        "أحياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 84,
+        "chars": 121357,
+        "localPath": "knowledge-base/grade-10-biology/support-pdfs/كتاب الطالب لمادة العلوم الحياتية للصف العاشر الفصل الثاني.pdf",
+        "sha256": "ba6402b35aa079cef91788ef56e390e5b2fcafced7656db86d2f42008b3421f9"
+      }
+    },
+    {
+      "id": "bio-s1-teacher-guide",
+      "title": "دليل المعلم العلوم الحياتية الصف العاشر الفصل الأول.pdf",
+      "bytes": 16013386,
+      "subject": "biology",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم العلوم الحياتية الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "bio-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "biology",
+        "العلوم الحياتية",
+        "أحياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: no text layer)",
+        "extractedAt": "2026-09-05",
+        "pages": 132,
+        "chars": 218551,
+        "localPath": "knowledge-base/grade-10-biology/support-pdfs/دليل المعلم العلوم الحياتية الصف العاشر الفصل الأول.pdf",
+        "sha256": "4e6d45eccee619e93cc6a79d5c99998b30d2d9f8294d478c237cf12c1e81107e"
+      }
+    },
+    {
+      "id": "bio-s2-teacher-guide",
+      "title": "دليل المعلم لمادة العلوم الحياتية الصف العاشر الفصل الثاني.pdf",
+      "bytes": 95166443,
+      "subject": "biology",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة العلوم الحياتية الصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "bio-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "biology",
+        "العلوم الحياتية",
+        "أحياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic with the definite article transposed (الحركة ← احلركة) in 89% of samples — readable by eye, not quotable)",
+        "extractedAt": "2026-09-05",
+        "pages": 100,
+        "chars": 207322,
+        "localPath": "knowledge-base/grade-10-biology/support-pdfs/دليل المعلم لمادة العلوم الحياتية الصف العاشر الفصل الثاني.pdf",
+        "sha256": "bb0b3a566b68f97aff10d3277a0e64b2cb686090db2e0693b9b1b104d9edfe21"
+      }
+    },
+    {
+      "id": "bio-s1-activity-book",
+      "title": "كتاب الأنشطة والتجارب العملية لمادة العلوم الحياتية للصف العاشر الفصل الأول.pdf",
+      "bytes": 3811065,
+      "subject": "biology",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة والتجارب العملية لمادة العلوم الحياتية للصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "bio-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "biology",
+        "العلوم الحياتية",
+        "أحياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 32,
+        "chars": 49506,
+        "localPath": "knowledge-base/grade-10-biology/support-pdfs/كتاب الأنشطة والتجارب العملية لمادة العلوم الحياتية للصف العاشر الفصل الأول.pdf",
+        "sha256": "40767a4855ad34c3a66ad8f95a9fe9cf3d757a02b9eff977be3f14d8cba7d45c"
+      }
+    },
+    {
+      "id": "bio-s2-activity-book",
+      "title": "كتاب الأنشطة والتجارب العملية لمادة العلوم الحياتية للصف العاشر الفصل الثاني.pdf",
+      "bytes": 3066786,
+      "subject": "biology",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة والتجارب العملية لمادة العلوم الحياتية للصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "bio-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "biology",
+        "العلوم الحياتية",
+        "أحياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 40,
+        "chars": 55367,
+        "localPath": "knowledge-base/grade-10-biology/support-pdfs/كتاب الأنشطة والتجارب العملية لمادة العلوم الحياتية للصف العاشر الفصل الثاني.pdf",
+        "sha256": "f15a3484a5fc1526b71e91678efd73bfda6f2c48df2d26e7137a0be0e8b947ef"
+      }
+    },
+    {
+      "id": "bio-worksheet-answers",
+      "title": "إجابات أسئلة أوراق العمل من دليل المعلم العلوم الحياتية الصف العاشر.pdf",
+      "bytes": 346627,
+      "subject": "biology",
+      "semester": null,
+      "kind": "answer-key",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "إجابات أسئلة أوراق العمل من دليل المعلم العلوم الحياتية الصف العاشر.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "bio-g10-general"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "biology",
+        "العلوم الحياتية",
+        "أحياء",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic with the definite article transposed (الحركة ← احلركة) in 91% of samples — readable by eye, not quotable)",
+        "extractedAt": "2026-09-05",
+        "pages": 10,
+        "chars": 11706,
+        "localPath": "knowledge-base/grade-10-biology/support-pdfs/إجابات أسئلة أوراق العمل من دليل المعلم العلوم الحياتية الصف العاشر.pdf",
+        "sha256": "34e123b5943a519182de262f712bb78f49b62a33e6b55cf9030cca975a3333e4"
+      }
+    },
+    {
+      "id": "earth-s2-student-book",
+      "title": "كتاب الطالب لمادة علوم الأرض والبيئة الصف العاشر الفصل الثاني.pdf",
+      "bytes": 87975922,
+      "subject": "earth-science",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة علوم الأرض والبيئة الصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "earth-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "earth-science",
+        "علوم الأرض",
+        "البيئة",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 92,
+        "chars": 155561,
+        "localPath": "knowledge-base/grade-10-earth-science/support-pdfs/كتاب الطالب لمادة علوم الأرض والبيئة الصف العاشر الفصل الثاني.pdf",
+        "sha256": "b5ac4142754f97756ffc1f7431eaa83b6caf5306fa6922ed40e1ebb1e7867280"
+      }
+    },
+    {
+      "id": "earth-s1-teacher-guide",
+      "title": "دليل المعلم لمادة علوم الأرض والبيئة الصف العاشر الفصل الأول.pdf",
+      "bytes": 48517066,
+      "subject": "earth-science",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "دليل المعلم لمادة علوم الأرض والبيئة الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "earth-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "earth-science",
+        "علوم الأرض",
+        "البيئة",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "earth-s2-teacher-guide",
+      "title": "دليل المعلم لمادة علوم الأرض والبيئة الصف العاشر الفصل الثاني.pdf",
+      "bytes": 81782623,
+      "subject": "earth-science",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "دليل المعلم لمادة علوم الأرض والبيئة الصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "earth-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "earth-science",
+        "علوم الأرض",
+        "البيئة",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "earth-s1-activity-book",
+      "title": "كتاب الأنشطة والتجارب العملية لمادة علوم الأرض الصف العاشر الفصل الأول.pdf",
+      "bytes": 3586042,
+      "subject": "earth-science",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة والتجارب العملية لمادة علوم الأرض الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "earth-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "earth-science",
+        "علوم الأرض",
+        "البيئة",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 30,
+        "chars": 48931,
+        "localPath": "knowledge-base/grade-10-earth-science/support-pdfs/كتاب الأنشطة والتجارب العملية لمادة علوم الأرض الصف العاشر الفصل الأول.pdf",
+        "sha256": "93b9e34c8256e7ee3001a7b767c2546155c574342e32c8e54e338412571ea2ae"
+      }
+    },
+    {
+      "id": "earth-s2-activity-book",
+      "title": "كتاب الأنشطة والتجارب العملية لمادة علوم الأرض الصف العاشر الفصل الثاني.pdf",
+      "bytes": 3330804,
+      "subject": "earth-science",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة والتجارب العملية لمادة علوم الأرض الصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "earth-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "earth-science",
+        "علوم الأرض",
+        "البيئة",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 40,
+        "chars": 72542,
+        "localPath": "knowledge-base/grade-10-earth-science/support-pdfs/كتاب الأنشطة والتجارب العملية لمادة علوم الأرض الصف العاشر الفصل الثاني.pdf",
+        "sha256": "f2243dba4e3ff2e3e0cba1489b705ec8fc0ed6b14fea1c137ab2baa17055b987"
+      }
+    },
+    {
+      "id": "arabic-s1-student-book",
+      "title": "كتاب الطالب لمادة العربية لغتي للصف العاشر الفصل الأول.pdf",
+      "bytes": 11501482,
+      "subject": "arabic",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة العربية لغتي للصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "arabic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "arabic",
+        "اللغة العربية",
+        "العربية لغتي",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 144,
+        "chars": 207585,
+        "localPath": "knowledge-base/grade-10-arabic/support-pdfs/كتاب الطالب لمادة العربية لغتي للصف العاشر الفصل الأول.pdf",
+        "sha256": "9caec4fbe79d9d63cf75c91792e4d93226183965f125ddd026f77116844cd5ee"
+      }
+    },
+    {
+      "id": "arabic-s2-student-book",
+      "title": "كتاب الطالب لمادة اللغة العربية للصف العاشر الفصل الثاني.pdf",
+      "bytes": 10742310,
+      "subject": "arabic",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة اللغة العربية للصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "arabic-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "arabic",
+        "اللغة العربية",
+        "العربية لغتي",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 140,
+        "chars": 223841,
+        "localPath": "knowledge-base/grade-10-arabic/support-pdfs/كتاب الطالب لمادة اللغة العربية للصف العاشر الفصل الثاني.pdf",
+        "sha256": "99f4cbd774161d075638b4db644229721a7cc9f670f0578e7784980485c7bd26"
+      }
+    },
+    {
+      "id": "arabic-s1-teacher-guide",
+      "title": "دليل المعلم لمادة العربية لغتي الصف العاشر الفصل الأول.pdf",
+      "bytes": 34986295,
+      "subject": "arabic",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة العربية لغتي الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "arabic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "arabic",
+        "اللغة العربية",
+        "العربية لغتي",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 255,
+        "chars": 674930,
+        "localPath": "knowledge-base/grade-10-arabic/support-pdfs/دليل المعلم لمادة العربية لغتي الصف العاشر الفصل الأول.pdf",
+        "sha256": "d0859534d64cd2a3edc3cc8cd1ef3b6a09c341910dd666e6e61d6e52db801add"
+      }
+    },
+    {
+      "id": "arabic-s1-exercise-book",
+      "title": "كتاب التمارين لمادة اللغة العربية (العربية لغتي) للصف العاشر الفصل الأول.pdf",
+      "bytes": 4074619,
+      "subject": "arabic",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب التمارين لمادة اللغة العربية (العربية لغتي) للصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "arabic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "arabic",
+        "اللغة العربية",
+        "العربية لغتي",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 51,
+        "chars": 72370,
+        "localPath": "knowledge-base/grade-10-arabic/support-pdfs/كتاب التمارين لمادة اللغة العربية (العربية لغتي) للصف العاشر الفصل الأول.pdf",
+        "sha256": "1e051f0f783f0bf6059f5705e7faf31f51d5272167d743754db73fdde07cab88"
+      }
+    },
+    {
+      "id": "arabic-s2-exercise-book",
+      "title": "كتاب التمارين لمادة اللغة العربية (العربية لغتي) للصف العاشر الفصل الثاني.pdf",
+      "bytes": 3003701,
+      "subject": "arabic",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب التمارين لمادة اللغة العربية (العربية لغتي) للصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "arabic-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "arabic",
+        "اللغة العربية",
+        "العربية لغتي",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 53,
+        "chars": 78355,
+        "localPath": "knowledge-base/grade-10-arabic/support-pdfs/كتاب التمارين لمادة اللغة العربية (العربية لغتي) للصف العاشر الفصل الثاني.pdf",
+        "sha256": "efbe54284fe8ddf8f54d51ea8934628532bf15d01de9261997e5d5ed2926f8d7"
+      }
+    },
+    {
+      "id": "earth-s1-student-book",
+      "title": "كتاب الطالب لمادة علوم الأرض والبيئة الصف العاشر الفصل الأول.pdf",
+      "bytes": 20302336,
+      "subject": "earth-science",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة علوم الأرض والبيئة الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "earth-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "earth-science",
+        "علوم الأرض",
+        "البيئة",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 64,
+        "chars": 104690,
+        "localPath": "knowledge-base/grade-10-earth-science/support-pdfs/كتاب الطالب لمادة علوم الأرض والبيئة الصف العاشر الفصل الأول.pdf",
+        "sha256": "471202b6960d63b877c9634cc10dfa4a36720e1a39fd0d7df6b732b3fdb98c4e"
+      }
+    },
+    {
+      "id": "islamic-s1-teacher-guide",
+      "title": "دليل المعلم لمادة التربية الإسلامية الصف العاشر الفصل الأول.pdf",
+      "bytes": 25763749,
+      "subject": "islamic",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة التربية الإسلامية الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "islamic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "islamic",
+        "التربية الإسلامية",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "tesseract-ocr (--ocr requested)",
+        "extractedAt": "2026-09-05",
+        "pages": 204,
+        "chars": 338208,
+        "localPath": "knowledge-base/grade-10-islamic/support-pdfs/دليل المعلم لمادة التربية الإسلامية الصف العاشر الفصل الأول.pdf",
+        "sha256": "d8aaf8e72b8c9fb972182ce1ddef3e704050618c12f38d693817e4fba762ec88"
+      },
+      "notes": "أُعيد استخراجه بـ OCR في 2026-09-05 بطلب صريح (‎--ocr‎)، لا لأن بوابة الجودة رفضته: كان يمرّ منها بنسبة قلبٍ ‎44.8%‎ (في/على/الله) وهي دون حدّ ‎WORD_TRANSPOSITION_LIMIT‎، لكنها أسوأ من كل ملفٍّ يعامله المشروع مقتبَسًا. نزلت النسبة بعد الاستخراج إلى ‎8.0%‎. ملحوظة مهمّة: الاستخراج الجديد أفضل في النثر وأسوأ في الرموز القصيرة — قرأ pdf-parse سطر «الزمن المقترح لتنفيذ الدرس» في ‎23‎ صفحة، وقرأه الـ OCR في ‎8‎ فقط (يُسقط «حص» من «حصتان»). وحيثما قرأهما الاثنان تطابقا تمامًا، فعددُ الحصص في ملف المنهاج مأخوذ من قراءة pdf-parse ومُصدَّق بالـ OCR حيث أمكن."
+    },
+    {
+      "id": "islamic-s2-teacher-guide",
+      "title": "دليل المعلم لمادة التربية الإسلامية الصف العاشر الفصل الثاني.pdf",
+      "bytes": 23136258,
+      "subject": "islamic",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة التربية الإسلامية الصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "islamic-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "islamic",
+        "التربية الإسلامية",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "tesseract-ocr (--ocr requested)",
+        "extractedAt": "2026-09-05",
+        "pages": 232,
+        "chars": 381381,
+        "localPath": "knowledge-base/grade-10-islamic/support-pdfs/دليل المعلم لمادة التربية الإسلامية الصف العاشر الفصل الثاني.pdf",
+        "sha256": "221c06d785afe02110788c1244f4ab6e2348a08de055846936e116cef681cf12"
+      },
+      "notes": "أُعيد استخراجه بـ OCR في 2026-09-05 بطلب صريح (‎--ocr‎)، لا لأن بوابة الجودة رفضته: كان يمرّ منها بنسبة قلبٍ ‎47.0%‎ (في/على/الله) وهي دون حدّ ‎WORD_TRANSPOSITION_LIMIT‎، لكنها أسوأ من كل ملفٍّ يعامله المشروع مقتبَسًا. نزلت النسبة بعد الاستخراج إلى ‎7.6%‎. ملحوظة مهمّة: الاستخراج الجديد أفضل في النثر وأسوأ في الرموز القصيرة — قرأ pdf-parse سطر «الزمن المقترح لتنفيذ الدرس» في ‎25‎ صفحة، وقرأه الـ OCR في ‎12‎ فقط (يُسقط «حص» من «حصتان»). وحيثما قرأهما الاثنان تطابقا تمامًا، فعددُ الحصص في ملف المنهاج مأخوذ من قراءة pdf-parse ومُصدَّق بالـ OCR حيث أمكن."
+    },
+    {
+      "id": "islamic-s1-student-book",
+      "title": "كتاب الطالب لمادة التربية الإسلامية الصف العاشر الفصل الأول.pdf",
+      "bytes": 15755756,
+      "subject": "islamic",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التربية الإسلامية الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "islamic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "islamic",
+        "التربية الإسلامية",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) بنسبة 96%؛ رفضه بوابة الجودة تلقائيًا في 2026-09-03 ولم يُستخرج. الملف نفسه سليم؛ يحتاج استخراجًا أفضل أو OCR.",
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic with the definite article transposed (الحركة ← احلركة) in 96% of samples — readable by eye, not quotable)",
+        "extractedAt": "2026-09-05",
+        "pages": 136,
+        "chars": 111680,
+        "localPath": "knowledge-base/grade-10-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف العاشر الفصل الأول.pdf",
+        "sha256": "519e9fe24edcb7b7a8bd77da694648318c1b680cdf9421d44617c37dbcf0b55a"
+      }
+    },
+    {
+      "id": "islamic-s2-student-book",
+      "title": "كتاب الطالب لمادة التربية الإسلامية الصف العاشر الفصل الثاني.pdf",
+      "bytes": 18639095,
+      "subject": "islamic",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التربية الإسلامية الصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "islamic-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "islamic",
+        "التربية الإسلامية",
+        "عاشر"
+      ],
+      "notes": "استخراج هذا الملف مقلوب الحروف على نحو منتظم: «عىل» بدل «على»، «اهلل» بدل «الله»، «يف» بدل «في»، «رشعي» بدل «شرعي»، «العارش» بدل «العاشر»، «إرساء» بدل «إسراء». مقروء بالعين وغير صالح للاقتباس. قيست النسبة على أشيع الكلمات (في/على/الله): 91.9% من 1387 ورودًا جاءت مقلوبة. حُذف الاستخراج في 2026-09-04 قبل أن يُبنى منه منهاج: لا توجد وحدات للتربية الإسلامية بعد، فلم يكن يُقدّم لأحد، ولو بُني لصار يُقدّم فورًا. ملحوظة: بوابة الجودة الحالية (lamTranspositionRate) أعطته 18% فقط دون حدّها 40%، لأنّ قائمتها تغطّي أربعة أنماط فقط وقلب هذا الملف في أزواج حروف أخرى. الملف في R2؛ يحتاج استخراجًا أفضل أو OCR. حُلَّ الحجب في 2026-09-05: أُعيد الاستخراج بـ OCR كما كانت الملحوظة تطلب، فنزلت نسبة القلب من 92.2% إلى 8.5% (في/على/الله)، وهي في مستوى الملفات النظيفة. وأُضيفت بوابة wordTranspositionRate في textQuality.ts لتلتقط هذا النمط، إذ كانت البوابة القديمة تعطيه 18% فقط.",
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic with letters transposed inside common words (في ← يف) in 99% of samples — readable by eye, not quotable)",
+        "extractedAt": "2026-09-05",
+        "pages": 182,
+        "chars": 143060,
+        "localPath": "knowledge-base/grade-10-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف العاشر الفصل الثاني.pdf",
+        "sha256": "1861736bed6e6fef034ed524e1efcd84d47b3b4f3eccc77d36862848087c0447"
+      }
+    },
+    {
+      "id": "history-s1-student-book",
+      "title": "كتاب الطالب لمادة التاريخ للصف العاشر الفصل الأول.pdf",
+      "bytes": 14308255,
+      "subject": "history",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "كتاب الطالب لمادة التاريخ للصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "history-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "history",
+        "التاريخ",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) بنسبة 42%؛ رفضه بوابة الجودة تلقائيًا في 2026-09-03 ولم يُستخرج. الملف نفسه سليم؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "history-s2-student-book",
+      "title": "كتاب الطالب لمادة التاريخ للصف العاشر الفصل الثاني.pdf",
+      "bytes": 30987187,
+      "subject": "history",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التاريخ للصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "history-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "history",
+        "التاريخ",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 94,
+        "chars": 108889,
+        "localPath": "knowledge-base/grade-10-history/support-pdfs/كتاب الطالب لمادة التاريخ للصف العاشر الفصل الثاني.pdf",
+        "sha256": "2ce354159d52e0c2addf793b99a18b16413f9a37498084d027177a0d454f034b"
+      }
+    },
+    {
+      "id": "eng-s1-student-book",
+      "title": "كتاب الطالب لمادة اللغة الإنجليزية الصف العاشر الفصل الأول.pdf",
+      "bytes": 12568357,
+      "subject": "english",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة اللغة الإنجليزية الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "eng-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "english",
+        "اللغة الإنجليزية",
+        "عاشر"
+      ],
+      "notes": "المصدر غير مؤكد: لم يُعثر على نسخة NCCD معتمدة لهذه الطبعة (انظر STATUS.md، 2026-08-30)؛ الكتالوج يصفها بأنها «نسخة على مساحة تخزين المشروع». لذلك authority = third-party وليس nccd — لا يُدّعى مصدر لم يُتحقق منه.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 78,
+        "chars": 183110,
+        "localPath": "knowledge-base/grade-10-english/support-pdfs/كتاب الطالب لمادة اللغة الإنجليزية الصف العاشر الفصل الأول.pdf",
+        "sha256": "4c4c8d69503ab16c4a7278c9748d6771b2157b6b695f5d01a18e0af5200f5b62"
+      }
+    },
+    {
+      "id": "eng-s1-activity-book",
+      "title": "كتاب الأنشطة لمادة اللغة الإنجليزية للصف العاشر الفصل الأول.pdf",
+      "bytes": 4085295,
+      "subject": "english",
+      "semester": 1,
+      "kind": "activity-book",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة لمادة اللغة الإنجليزية للصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "eng-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "english",
+        "اللغة الإنجليزية",
+        "عاشر"
+      ],
+      "notes": "المصدر غير مؤكد: لم يُعثر على نسخة NCCD معتمدة لهذه الطبعة (انظر STATUS.md، 2026-08-30)؛ الكتالوج يصفها بأنها «نسخة على مساحة تخزين المشروع». لذلك authority = third-party وليس nccd — لا يُدّعى مصدر لم يُتحقق منه.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 52,
+        "chars": 110720,
+        "localPath": "knowledge-base/grade-10-english/support-pdfs/كتاب الأنشطة لمادة اللغة الإنجليزية للصف العاشر الفصل الأول.pdf",
+        "sha256": "850316cac0d8ef948d9bc9e00f17b7a2c0184a9a345235732522aef6a2728345"
+      }
+    },
+    {
+      "id": "eng-s2-student-book",
+      "title": "كتاب الطالب لمادة اللغة الإنجليزية الصف العاشر الفصل الثاني.pdf",
+      "bytes": 9319268,
+      "subject": "english",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة اللغة الإنجليزية الصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "eng-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "english",
+        "اللغة الإنجليزية",
+        "عاشر"
+      ],
+      "notes": "المصدر غير مؤكد: لم يُعثر على نسخة NCCD معتمدة لهذه الطبعة (انظر STATUS.md، 2026-08-30)، ولذلك authority = third-party ولا يُقتبس حرفيًا. استُخرج بالتعرّف الضوئي (tesseract eng، 300 نقطة/إنش) في 2026-09-06 بعد أن أعاد استخراج طبقة النص العربيةَ بأشكال العرض المتصلة معكوسةَ الحروف ورفضته بوابة الجودة في 2026-09-03. النموذج العربي مستبعَد عمدًا: الكتاب إنجليزيٌّ بالكامل (0 حرف عربي في المخرجات)، وتشغيل ara معه أنتج 627 حرفًا عربيًا كلُّها ضوضاء وأضاع 766 حرفًا لاتينيًا. نصّ التعرّف الضوئي درجةٌ أدنى من الاستخراج الرقمي النظيف.",
+      "extraction": {
+        "tool": "tesseract-ocr (--ocr requested)",
+        "extractedAt": "2026-09-06",
+        "pages": 80,
+        "chars": 198311,
+        "localPath": "knowledge-base/grade-10-english/support-pdfs/كتاب الطالب لمادة اللغة الإنجليزية الصف العاشر الفصل الثاني.pdf",
+        "sha256": "c7372286302b90ac97ae7d835d20f272c9ae7c370ce85437fcb880e1b9fd4714"
+      }
+    },
+    {
+      "id": "eng-s2-activity-book",
+      "title": "كتاب الأنشطة لمادة اللغة الإنجليزية للصف العاشر الفصل الثاني.pdf",
+      "bytes": 3854743,
+      "subject": "english",
+      "semester": 2,
+      "kind": "activity-book",
+      "authority": "third-party",
+      "status": "ingested",
+      "filename": "كتاب الأنشطة لمادة اللغة الإنجليزية للصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "eng-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "english",
+        "اللغة الإنجليزية",
+        "عاشر"
+      ],
+      "notes": "المصدر غير مؤكد كما في كتاب الطالب للفصل نفسه، وauthority = third-party. استُخرج بالتعرّف الضوئي (tesseract eng، 300 نقطة/إنش) في 2026-09-06؛ كتاب أنشطة الفصل الأول استُخرج رقميًا وهذا لم يكن ممكنًا هنا. النموذج العربي مستبعَد كما في كتاب الطالب. نصّ التعرّف الضوئي درجةٌ أدنى من الاستخراج الرقمي النظيف.",
+      "extraction": {
+        "tool": "tesseract-ocr (--ocr requested)",
+        "extractedAt": "2026-09-06",
+        "pages": 56,
+        "chars": 116394,
+        "localPath": "knowledge-base/grade-10-english/support-pdfs/كتاب الأنشطة لمادة اللغة الإنجليزية للصف العاشر الفصل الثاني.pdf",
+        "sha256": "5860952191a9523046759b2170651209307f4b13c6ca5abb1831ad6e0a7e0da6"
+      }
+    },
+    {
+      "id": "geo-s1-student-book",
+      "title": "كتاب الطالب لمادة الجغرافيا للصف العاشر الفصل الأول.pdf",
+      "bytes": 74034315,
+      "subject": "geography",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "كتاب الطالب لمادة الجغرافيا للصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "geo-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "geography",
+        "الجغرافيا",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة)؛ رفضته بوابة الجودة تلقائيًا في 2026-09-03 ولم يُستخرج. الملف نفسه سليم؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "geo-s2-student-book",
+      "title": "كتاب الطالب لمادة الجغرافيا للصف العاشر الفصل الثاني.pdf",
+      "bytes": 75200687,
+      "subject": "geography",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "كتاب الطالب لمادة الجغرافيا للصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "geo-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "geography",
+        "الجغرافيا",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة)؛ رفضته بوابة الجودة تلقائيًا في 2026-09-03 ولم يُستخرج. الملف نفسه سليم؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "digital-s1-student-book",
+      "title": "كتاب الطالب لمادة المهارات الرقمية الصف العاشر الفصل الأول.pdf",
+      "bytes": 6674271,
+      "subject": "digital-literacy",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة المهارات الرقمية الصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "digital-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "digital-literacy",
+        "المهارات الرقمية",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 208,
+        "chars": 327833,
+        "localPath": "knowledge-base/grade-10-digital-literacy/support-pdfs/كتاب الطالب لمادة المهارات الرقمية الصف العاشر الفصل الأول.pdf",
+        "sha256": "3a76f254361b50b30df39e01e0f10aeb252b4d7d5c594730182d9242078a61b4"
+      }
+    },
+    {
+      "id": "digital-s2-student-book",
+      "title": "كتاب الطالب لمادة المهارات الرقمية الصف العاشر الفصل الثاني.pdf",
+      "bytes": 5960705,
+      "subject": "digital-literacy",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة المهارات الرقمية الصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "digital-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "digital-literacy",
+        "المهارات الرقمية",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 149,
+        "chars": 277553,
+        "localPath": "knowledge-base/grade-10-digital-literacy/support-pdfs/كتاب الطالب لمادة المهارات الرقمية الصف العاشر الفصل الثاني.pdf",
+        "sha256": "f9d37c035a0576db2b49fe2fb2699616dffac2877ca62dcfd1efe1f60e2bdd00"
+      }
+    },
+    {
+      "id": "civic-s1-student-book",
+      "title": "كتاب الطالب لمادة التربية الوطنية والمدنية للصف العاشر الفصل الأول.pdf",
+      "bytes": 18700226,
+      "subject": "civic",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "كتاب الطالب لمادة التربية الوطنية والمدنية للصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "civic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "civic",
+        "التربية الوطنية والمدنية",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة)؛ رفضته بوابة الجودة تلقائيًا في 2026-09-03 ولم يُستخرج. الملف نفسه سليم؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "civic-s2-student-book",
+      "title": "كتاب الطالب لمادة التربية الوطنية والمدنية للصف العاشر الفصل الثاني.pdf",
+      "bytes": 7184270,
+      "subject": "civic",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "كتاب الطالب لمادة التربية الوطنية والمدنية للصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "civic-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "civic",
+        "التربية الوطنية والمدنية",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة)؛ رفضته بوابة الجودة تلقائيًا في 2026-09-03 ولم يُستخرج. الملف نفسه سليم؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "art-teacher-guide",
+      "title": "دليل المعلم التربية الفنية الصف العاشر.pdf",
+      "bytes": 9321957,
+      "subject": "art",
+      "semester": null,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "دليل المعلم التربية الفنية الصف العاشر.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "art-g10-general"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "art",
+        "التربية الفنية",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة)؛ رفضته بوابة الجودة تلقائيًا في 2026-09-03 ولم يُستخرج. الملف نفسه سليم؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "art-student-book",
+      "title": "كتاب الطالب لمادة التربية الفنية للصف العاشر.pdf",
+      "bytes": 9288059,
+      "subject": "art",
+      "semester": null,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "كتاب الطالب لمادة التربية الفنية للصف العاشر.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "art-g10-general"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "art",
+        "التربية الفنية",
+        "عاشر"
+      ],
+      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة)؛ رفضته بوابة الجودة تلقائيًا في 2026-09-03 ولم يُستخرج. الملف نفسه سليم؛ يحتاج استخراجًا أفضل أو OCR."
+    },
+    {
+      "id": "vocational-p1-student-book",
+      "title": "كتاب الطالب لمادة التربية المهنية الصف العاشر الجزء الأول.pdf",
+      "bytes": 3731369,
+      "subject": "vocational",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التربية المهنية الصف العاشر الجزء الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "vocational-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "vocational",
+        "التربية المهنية",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 131,
+        "chars": 124463,
+        "localPath": "knowledge-base/grade-10-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية الصف العاشر الجزء الأول.pdf",
+        "sha256": "7862ab652cceebea3e72dc63814639d24d894a4c1f8a0d9108152954d8478ab0"
+      }
+    },
+    {
+      "id": "vocational-p2-student-book",
+      "title": "كتاب الطالب لمادة التربية المهنية الصف العاشر الجزء الثاني.pdf",
+      "bytes": 5681052,
+      "subject": "vocational",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التربية المهنية الصف العاشر الجزء الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "vocational-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "vocational",
+        "التربية المهنية",
+        "عاشر"
+      ],
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-03",
+        "pages": 101,
+        "chars": 103861,
+        "localPath": "knowledge-base/grade-10-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية الصف العاشر الجزء الثاني.pdf",
+        "sha256": "ecc9eeb9d18a35ef53056181e4d1a49523c2b3f0dea5c86aae2c68b767b70560"
+      }
+    },
+    {
+      "id": "g9-math-s1-student-book",
+      "title": "كتاب الطالب لمادة الرياضيات الصف التاسع الفصل الأول.pdf",
+      "bytes": 8883077,
+      "subject": "math",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة الرياضيات الصف التاسع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g9-math-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-9",
+        "math",
+        "رياضيات",
+        "تاسع",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "ISBN 978-9923-41-408-8, 151ص. يطابق الطبعة المذكورة في source_books.student_book بملف iqra_curriculum_g9_math_sem1.json (نفس ISBN). محتوى الوحدة 2 (العلاقات والاقترانات) يطابق ترتيب الدروس الموجود فعلاً في المنهاج: الاقترانات، تفسير التمثيلات البيانية، الاقتران التربيعي، معمل جيوجبرا، التحويلات الهندسية للاقترانات التربيعية — الوحيدة التي لم يُعثر لها على جدول مخطط وحدة في أي مصدر متاح سابقًا.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-05",
+        "pages": 151,
+        "chars": 206330,
+        "localPath": "knowledge-base/grade-9-math/support-pdfs/كتاب الطالب لمادة الرياضيات الصف التاسع الفصل الأول.pdf",
+        "sha256": "87d9fdf3de414e3282407e9df1bc3a4c89b18c6344412edfcafe21e6d80f488b"
+      }
+    },
+    {
+      "id": "g9-math-s2-student-book",
+      "title": "كتاب الطالب لمادة الرياضيات الصف التاسع الفصل الثاني.pdf",
+      "bytes": 27091457,
+      "subject": "math",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة الرياضيات الصف التاسع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g9-math-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-9",
+        "math",
+        "رياضيات",
+        "تاسع",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "ISBN 978-9923-41-407-1, 174ص. الوحدات 5-8 تطابق ترتيب المنهاج الموجود فعلاً في iqra_curriculum_g9_math_sem2.json.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-05",
+        "pages": 174,
+        "chars": 222781,
+        "localPath": "knowledge-base/grade-9-math/support-pdfs/كتاب الطالب لمادة الرياضيات الصف التاسع الفصل الثاني.pdf",
+        "sha256": "c6c31ebc326dadb947d22233c71ef2c41477699743fc501f49d47153e9bb5a65"
+      }
     }
   ],
   "mergedAt": "2026-08-25"

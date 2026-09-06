@@ -7,14 +7,19 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
-import { buildGeneratorContext, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
-import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
+import { buildGeneratorContext, generatorFigureCount, generatorLessonId, generatorUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
+import { isolateForeignRuns } from '@/services/mathRender';
+import { pooledVariantId, regenerationFields } from '@/services/ai/regeneration';
 import { ActivityOutput, ActivityStep } from '@/services/ai/AIService';
 import {
   getPickerGrades, getPickerSubjects, resolvePickerIndex,
 } from '@/services/curriculumData';
+import { groundedSubjectConflict, scopeWithoutCurriculum, subjectsWithoutCurriculum, topicPickerParams } from '@/services/lessonPrep';
 import { TopicSelector } from '@/components/ui/TopicSelector';
+import { PickerField } from '@/components/ui/PickerField';
+import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
+import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { Button } from '@/components/ui/Button';
 import { getItem, saveItem, updateItem } from '@/services/workspace';
 import {
@@ -26,15 +31,8 @@ import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { GeneratorResultActions } from '@/components/ui/GeneratorResultActions';
-import {
-  buildActivityHTML,
-  buildActivitySlidesHTML,
-  copyToClipboard,
-  exportAsPDF,
-  exportAsWord,
-  formatActivityText,
-  shareAsText,
-} from '@/services/share';
+import { useGeneratorExport } from '@/hooks/useGeneratorExport';
+import { buildActivityHTML, buildActivitySlidesHTML, formatActivityText } from '@/services/share';
 
 const ACCENT = '#E67E22';
 const DURATION_VALUES = [20, 30, 45, 60];
@@ -57,8 +55,20 @@ export default function ActivityScreen() {
   const durationLabels = DURATION_VALUES.map(d => `${d} ${t('min')}`);
   const activityTypeLabels = ACTIVITY_TYPE_IDS.map(id => activityTypeLabel(id, t));
 
-  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(params.gradeIdx, grades.length));
-  const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx, subjects.length));
+  // A bare `topic` param (old bookmarks, callers without picker params) says
+  // which grade and subject it belongs to better than picker index 0 does —
+  // ground it instead of opening a math lesson under whatever subject sits
+  // first in the list.
+  const [inferredScope] = useState(() =>
+    params.gradeIdx == null && params.subjectIdx == null
+      ? topicPickerParams(params.topic, lang as 'ar' | 'en')
+      : null,
+  );
+  const [gradeIdx, setGradeIdx] = useState(() => resolvePickerIndex(params.gradeIdx ?? inferredScope?.gradeIdx, grades.length));
+  // Index-aligned flags rather than a pre-filtered `subjects`: these positions
+  // are persisted as subjectIdx, so entries are dropped at render time only.
+  const subjectHidden = subjectsWithoutCurriculum(grades[gradeIdx].id);
+  const [subjectIdx, setSubjectIdx] = useState(() => resolvePickerIndex(params.subjectIdx ?? inferredScope?.subjectIdx, subjects.length));
   const [topic, setTopic] = useState(params.topic ?? '');
   const [activityTypeIdx, setActivityTypeIdx] = useState(params.activityTypeIdx ? parseInt(params.activityTypeIdx, 10) : 1);
   const [durationIdx, setDurationIdx] = useState(params.durationIdx ? parseInt(params.durationIdx, 10) : 1);
@@ -74,9 +84,6 @@ export default function ActivityScreen() {
   const [showExport, setShowExport] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
-  const [loadingPDF, setLoadingPDF] = useState(false);
-  const [loadingWord, setLoadingWord] = useState(false);
-  const [loadingSlides, setLoadingSlides] = useState(false);
 
   const showToast = (msg: string) => { setToastMsg(msg); setToastVisible(true); };
 
@@ -105,8 +112,27 @@ export default function ActivityScreen() {
     if (result) setSaveLabel(savedId ? 'updated' : 'save');
   }, [result]);
 
-  const generate = async () => {
+  /**
+   * `regenerate` is the teacher asking for a replacement, not another copy.
+   *
+   * It used to be the same call: the button re-ran this function with an
+   * identical body, and the same prompt came back as the same content
+   * reworded. The flag lets the server answer from a variant it has already
+   * paid for — free, and certain to be different — and steer a fresh
+   * generation away from what is on screen when it cannot.
+   */
+  const generate = async (opts?: { regenerate?: boolean }) => {
+    // Read before any setState clears it — this is what the teacher is
+    // looking at, and what a regeneration must not hand back.
+    const previous = result;
     if (!topic.trim()) { setError(t('topicRequired')); return; }
+    // A topic that grounds to another subject's lesson cannot make an honest
+    // activity — the KB serves that lesson's own content while the header
+    // claims the picked subject. Refuse and name the real subject instead.
+    const scope = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, lang as 'ar' | 'en');
+    if (scope) { setError(t('scopeNoCurriculum', scope.grade, scope.subject)); return; }
+    const conflict = groundedSubjectConflict(topic.trim(), lang as 'ar' | 'en', subjects[subjectIdx].id);
+    if (conflict) { setError(t('subjectTopicMismatch', lang === 'ar' ? conflict.nameAr : conflict.name)); return; }
     setError(''); setLoading(true); setResult(null); setSaveLabel('save');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
@@ -127,6 +153,13 @@ export default function ActivityScreen() {
         objectives: objective.trim() || undefined,
         additionalContext,
         unitId,
+        lessonId: generatorLessonId(topic.trim(), lang as 'ar' | 'en'),
+        bookFigureCount: generatorFigureCount(topic.trim(), lang as 'ar' | 'en'),
+        // A typed objective is the teacher's own words, and they end up inside
+        // the generated activity — so that request is theirs alone and never
+        // enters the shared pool. Picking a lesson and generating does.
+        contextSource: objective.trim() ? 'teacher' : 'curriculum',
+        ...regenerationFields(opts?.regenerate === true, previous),
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setResult(out);
@@ -194,56 +227,28 @@ export default function ActivityScreen() {
   };
 
 
-  const handleShareText = async () => {
-    if (!result) return;
-    const text = formatActivityText(result, getExportTitle(), getExportMeta(), lang === 'ar');
-    await shareAsText(text, getExportTitle());
-  };
-
-  const handleCopy = async () => {
-    if (!result) return;
-    const text = formatActivityText(result, getExportTitle(), getExportMeta(), lang === 'ar');
-    await copyToClipboard(text);
-    showToast(t('copiedToClipboard'));
-  };
-
-  // Lesson-level, resolved fresh at export time — same re-resolve pattern this
-  // file already uses elsewhere. Empty for an ungrounded topic.
-  const getExportFigures = () =>
-    bookFigureRefsForLesson(
-      resolveGeneratorGrounding(topic.trim(), lang as 'ar' | 'en').lesson?.id,
-      lang === 'ar',
-    );
-
-  const handlePDF = async () => {
-    if (!result) return;
-    setLoadingPDF(true);
-    try {
-      const html = buildActivityHTML(result, getExportTitle(), getExportMeta(), lang === 'ar', getExportFigures());
-      await exportAsPDF(html, getExportTitle().replace(/[^\w\s]/g, '').trim());
-    } catch { showToast(t('generationFailed')); }
-    finally { setLoadingPDF(false); }
-  };
-
-  const handleWord = async () => {
-    if (!result) return;
-    setLoadingWord(true);
-    try {
-      const text = formatActivityText(result, getExportTitle(), getExportMeta(), lang === 'ar');
-      await exportAsWord(text, getExportTitle().replace(/[^\w\s]/g, '').trim(), lang === 'ar');
-    } catch { showToast(t('generationFailed')); }
-    finally { setLoadingWord(false); }
-  };
-
-  const handleSlides = async () => {
-    if (!result) return;
-    setLoadingSlides(true);
-    try {
-      const html = buildActivitySlidesHTML(result, getExportTitle(), getExportMeta(), lang === 'ar');
-      await exportAsPDF(html, (getExportTitle() + '-slides').replace(/[^\w\s-]/g, '').trim());
-    } catch { showToast(t('generationFailed')); }
-    finally { setLoadingSlides(false); }
-  };
+  const {
+    getExportFigures,
+    handleShareText,
+    handleCopy,
+    handlePDF,
+    handleWord,
+    handleSlides,
+    loadingPDF,
+    loadingWord,
+    loadingSlides,
+  } = useGeneratorExport({
+    result,
+    topic,
+    lang,
+    getTitle: getExportTitle,
+    getMeta: getExportMeta,
+    formatText: formatActivityText,
+    buildHTML: buildActivityHTML,
+    buildSlidesHTML: buildActivitySlidesHTML,
+    onError: key => showToast(t(key)),
+    onCopied: key => showToast(t(key)),
+  });
 
   const topPad = insets.top + (insets.top === 0 ? 67 : 0);
 
@@ -284,7 +289,8 @@ export default function ActivityScreen() {
       {/* Form */}
       <View style={styles.form}>
         <PickerField label={t('grade')} value={gradeNames[gradeIdx]} options={gradeNames} onChange={setGradeIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
-        <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} />
+        <PickerField label={t('subjects')} value={subjectNames[subjectIdx]} options={subjectNames} onChange={setSubjectIdx} colors={colors} isRTL={isRTL} accent={ACCENT} hidden={subjectHidden} />
+        <StrandedSelectionNote hidden={subjectHidden} index={subjectIdx} message={t('scopeNoCurriculumHint')} isRTL={isRTL} colors={colors} />
 
         <TopicSelector
           subjectId={subjects[subjectIdx].id}
@@ -319,7 +325,7 @@ export default function ActivityScreen() {
         {error ? <Text style={[{ color: colors.destructive, fontFamily: 'Almarai_400Regular', fontSize: 13, marginBottom: 8, textAlign: isRTL ? 'right' : 'left' }]}>{error}</Text> : null}
         <Button
           label={loading ? t('generatingActivity') : t('generateActivityBtn')}
-          onPress={generate}
+          onPress={() => generate()}
           loading={loading}
           disabled={!topic.trim()}
           fullWidth
@@ -362,6 +368,14 @@ export default function ActivityScreen() {
               genericHint: t('notGroundedHint'),
             }}
           />
+          {curriculumGrounded && (
+            <BookFiguresPanel
+              figures={getExportFigures()}
+              isRTL={isRTL}
+              colors={colors}
+              labels={{ title: t('bookFiguresTitle'), note: t('bookFiguresNote') }}
+            />
+          )}
         </View>
       )}
 
@@ -375,7 +389,8 @@ export default function ActivityScreen() {
           saveState={saveLabel}
           onSave={handleSave}
           onExport={() => setShowExport(true)}
-          onRegenerate={generate}
+          onRegenerate={() => generate({ regenerate: true })}
+          variantId={pooledVariantId(result)}
           materialType="activity"
           toolId="activity"
           topic={topic.trim()}
@@ -492,15 +507,36 @@ function StepCard({ step, colors, isRTL, t }: {
         <View style={[styles.stepNum, { backgroundColor: ACCENT_LOCAL }]}>
           <Text style={{ color: '#fff', fontSize: 12, fontFamily: 'Cairo_700Bold' }}>{step.stepNumber}</Text>
         </View>
-        <Text style={[styles.stepTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>
-          {step.title}
+        <Text
+          style={[
+            styles.stepTitle,
+            {
+              color: colors.foreground,
+              fontFamily: 'Cairo_600SemiBold',
+              flex: 1,
+              textAlign: isRTL ? 'right' : 'left',
+              writingDirection: isRTL ? 'rtl' : 'ltr',
+            },
+          ]}
+        >
+          {isolateForeignRuns(step.title)}
         </Text>
         <Text style={[styles.stepDur, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
           {step.durationMin} {t('activityMin')}
         </Text>
       </View>
-      <Text style={[styles.stepDesc, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
-        {step.description}
+      <Text
+        style={[
+          styles.stepDesc,
+          {
+            color: colors.foreground,
+            fontFamily: 'Almarai_400Regular',
+            textAlign: isRTL ? 'right' : 'left',
+            writingDirection: isRTL ? 'rtl' : 'ltr',
+          },
+        ]}
+      >
+        {isolateForeignRuns(step.description)}
       </Text>
     </View>
   );
@@ -528,48 +564,13 @@ function BulletItem({ text, colors, isRTL }: { text: string; colors: ReturnType<
   return (
     <View style={[styles.bulletRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
       <View style={[styles.bulletDot, { backgroundColor: ACCENT }]} />
-      <Text style={[styles.bulletText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{text}</Text>
+      <Text style={[styles.bulletText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>{isolateForeignRuns(text)}</Text>
     </View>
   );
 }
 
 function BodyText({ text, colors, isRTL }: { text: string; colors: ReturnType<typeof useColors>; isRTL: boolean }) {
-  return <Text style={[styles.bodyText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>{text}</Text>;
-}
-
-function PickerField({ label, value, options, onChange, colors, isRTL, accent }: {
-  label: string; value: string; options: string[]; onChange: (i: number) => void;
-  colors: ReturnType<typeof useColors>; isRTL: boolean; accent: string;
-}) {
-  const [open, setOpen] = useState(false);
-  return (
-    <View style={{ marginBottom: 16 }}>
-      <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
-      <Pressable
-        onPress={() => setOpen(o => !o)}
-        style={[styles.pickerBtn, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-      >
-        <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{value}</Text>
-        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
-      </Pressable>
-      {open && (
-        <View style={[styles.pickerDropdown, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-          <ScrollView nestedScrollEnabled style={{ maxHeight: 200 }}>
-            {options.map((o, i) => (
-              <Pressable
-                key={i}
-                onPress={() => { onChange(i); setOpen(false); }}
-                style={[styles.pickerOption, { borderBottomColor: colors.border, backgroundColor: o === value ? colors.secondary : 'transparent', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-              >
-                <Text style={[{ color: o === value ? accent : colors.foreground, fontFamily: o === value ? 'Cairo_500Medium' : 'Almarai_400Regular', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>{o}</Text>
-                {o === value && <Ionicons name="checkmark" size={16} color={accent} />}
-              </Pressable>
-            ))}
-          </ScrollView>
-        </View>
-      )}
-    </View>
-  );
+  return <Text style={[styles.bodyText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>{isolateForeignRuns(text)}</Text>;
 }
 
 const styles = StyleSheet.create({
@@ -582,9 +583,6 @@ const styles = StyleSheet.create({
   fieldLabel: { fontSize: 13, marginBottom: 6 },
   inputBox: { borderWidth: 1.5, padding: 14, marginBottom: 16 },
   textInput: { fontSize: 15, padding: 0, minHeight: 44 },
-  pickerBtn: { alignItems: 'center', borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 13 },
-  pickerDropdown: { borderWidth: 1, marginTop: -8, marginBottom: 8, overflow: 'hidden' },
-  pickerOption: { alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1 },
   loadingBox: { alignItems: 'center', gap: 12, padding: 20, borderWidth: 1, marginBottom: 16 },
   loadingText: { fontSize: 14 },
   resultHeader: { alignItems: 'center', gap: 8, padding: 14, borderWidth: 1, marginBottom: 16 },

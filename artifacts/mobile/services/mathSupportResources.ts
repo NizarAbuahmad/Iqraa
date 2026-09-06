@@ -140,8 +140,16 @@ export function unitTagsForLesson(lesson: KBLesson | null | undefined): string[]
   // /معادل/ and picked up the MATHEMATICS tag `s1-u1`, putting six algebra
   // worksheets on a chemistry lab. Chat survived it only because
   // `scoreResource` rejects a subject mismatch afterwards.
+  //
+  // The tags below (`s1-u1`, `s2-u5`, …) are the bare, ungraded namespace
+  // `bankTagsForParsedUnit` reserves for Grade 10 specifically (every other
+  // grade gets an explicit `g{n}-` prefix) — so this whole block is Grade-10
+  // material only. Ungated, a Grade 9 lesson titled «الاقترانات» matched
+  // /اقتران/ and picked up `s2-u5`, pulling Grade 10 Math Semester 2 unit-5
+  // worksheets onto a Grade 9 lesson the moment Grade 9 Math had lessons at
+  // all to match against.
   const title = `${unit.titleAr} ${lesson.titleAr}`;
-  if (book?.subjectId === 'mathematics') {
+  if (book?.subjectId === 'mathematics' && book?.gradeId === 'grade-10') {
     if (/مصفوف/.test(title)) tags.push('s1-matrices');
     if (/دائر/.test(title)) tags.push('s1-u2');
     if (/اشتقاق|مشتق/.test(title)) tags.push('s2-u6');
@@ -223,15 +231,41 @@ export function searchSupportResources(opts: {
   limit?: number;
   kinds?: readonly SourceKind[];
   subjectId?: string | null;
+  /** Pass explicitly when the caller drops `lesson` but still knows the grade — see buildSupportResourcesContext's widened retry. */
+  gradeId?: string | null;
 }): SupportResource[] {
   const query = opts.query ?? '';
-  const lessonTags = unitTagsForLesson(opts.lesson);
   const limit = opts.limit ?? 5;
   const kindFilter = opts.kinds;
-  const subjectHint =
-    opts.subjectId
-    ?? (opts.lesson ? getBookForLesson(opts.lesson)?.subjectId : null)
-    ?? detectSubjectFromQuery(query);
+  const lessonBook = opts.lesson ? getBookForLesson(opts.lesson) : undefined;
+
+  // A lesson was named but resolves to no book at all — true for any subject
+  // (English vocational tracks, currently) that's wired into the curriculum
+  // picker but not into KB_BOOKS here. Both hints below are `??`-chained
+  // through `getBookForLesson(...)?.subjectId`, which is `undefined` in this
+  // exact case — not null-from-a-known-mismatch — so the subject and grade
+  // gates that follow would silently no-op instead of rejecting, and an
+  // English lesson whose query happened to contain a word like "worksheet"
+  // or "exam" could match Math/Chemistry PDFs by keyword alone. Fail closed
+  // before either hint is even computed, the same call made for
+  // financial-literacy below (empty and honest beats wrongly scoped) — but
+  // only when a lesson was actually passed and came up empty; the widened
+  // retry below deliberately drops `lesson` and passes subjectId/gradeId
+  // explicitly, so it never hits this branch.
+  if (opts.lesson && !lessonBook) return [];
+
+  const lessonTags = unitTagsForLesson(opts.lesson);
+  const subjectHint = opts.subjectId ?? lessonBook?.subjectId ?? detectSubjectFromQuery(query);
+  const gradeHint = opts.gradeId ?? lessonBook?.gradeId;
+
+  // The whole bank is Grade 10 material — no PDF here has ever been scoped
+  // to any other grade. Title/keyword matching below has no grade awareness
+  // (it scores query tokens against resource titles directly), so without
+  // this a Grade 9 lesson sharing ordinary math vocabulary — «حل المعادلات»،
+  // «المعادلات» — pulled in Grade 10 worksheets and answer keys the moment
+  // Grade 9 Math had lessons in the KB to search from at all. Same shape as
+  // the financial-literacy case below: honestly empty beats wrongly scoped.
+  if (gradeHint && gradeHint !== 'grade-10') return [];
 
   const ranked = RESOURCES
     .filter(r => !kindFilter?.length || kindFilter.includes(r.kind))
@@ -283,14 +317,17 @@ export function buildSupportResourcesContext(
   const lesson = lessons[0] ?? null;
   const hits = searchSupportResources({ query, lesson, limit });
   // The widened retry drops the lesson to match on the query alone — but
-  // dropping the lesson also dropped the subject it implied, and
+  // dropping the lesson also dropped the subject and grade it implied, and
   // `detectSubjectFromQuery` only knows maths and chemistry. A
   // financial-literacy lesson therefore came back through this path with
-  // chemistry activity books attached. Widen the match, not the subject.
+  // chemistry activity books attached, and (before the grade gate above) a
+  // Grade 9 lesson came back with Grade 10 worksheets. Widen the match, not
+  // the subject or grade.
   const subjectId = lesson ? getBookForLesson(lesson)?.subjectId ?? null : null;
+  const gradeId = lesson ? getBookForLesson(lesson)?.gradeId ?? null : null;
   const resources = hits.length
     ? hits
-    : searchSupportResources({ query, limit, subjectId });
+    : searchSupportResources({ query, limit, subjectId, gradeId });
   return formatSupportResourcesBlock(resources, lang);
 }
 

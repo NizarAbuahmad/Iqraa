@@ -27,6 +27,7 @@ import {
   splitWarmup, withoutSlide,
 } from '../lessonSlides.ts';
 import { figuresForLesson } from '../bookFigures.ts';
+import { KB_LESSONS, getUnitsForSubjectGrade } from '../knowledgeBase.ts';
 import type { ActivitySlide, LessonPlanOutput } from '../ai/AIService.ts';
 import type { KBLesson } from '../knowledgeBase.ts';
 
@@ -140,6 +141,66 @@ describe('worked examples', () => {
     const deck = buildLessonDeck('x', true, { lesson: LESSON, plan: PLAN, includePractice: false });
     assert.equal(deck.slides.some(s => s.title.includes('تدريب')), false);
     assert.equal(deck.slides.some(s => s.title.includes('الواجب')), false);
+  });
+});
+
+describe('practice slides', () => {
+  // guidedPractice/independentPractice are the teacher's facilitation notes
+  // (LESSON_STYLE_RULES_AR/EN in prompts.ts write them as pedagogy, never as
+  // a line meant for a student to read off the screen). Projecting that
+  // narration used to be exactly what this deck did.
+  it('never projects the teacher narration onto the class-facing content', () => {
+    const deck = buildLessonDeck('x', true, { lesson: LESSON, plan: PLAN });
+    const guided = deck.slides.find(s => s.title.includes('تدريب موجّه'));
+    const independent = deck.slides.find(s => s.title.includes('تدريب مستقل'));
+    assert.ok(guided);
+    assert.ok(independent);
+    assert.equal(guided!.content.includes(PLAN.guidedPractice), false);
+    assert.equal(independent!.content.includes(PLAN.independentPractice), false);
+  });
+
+  it('keeps the full narration available to the teacher panel', () => {
+    const deck = buildLessonDeck('x', true, { lesson: LESSON, plan: PLAN });
+    const guided = deck.slides.find(s => s.title.includes('تدريب موجّه'));
+    const independent = deck.slides.find(s => s.title.includes('تدريب مستقل'));
+    assert.equal(guided!.teacher?.teachingTips, PLAN.guidedPractice);
+    assert.equal(independent!.teacher?.teachingTips, PLAN.independentPractice);
+  });
+});
+
+describe('hook / introduction', () => {
+  // PLAN.introduction ('ابدأ بسؤال عن مساحة حديقة.') has no quoted or
+  // colon-introduced question, so splitWarmup falls through — the same
+  // "narration, not a class-facing line" case as guidedPractice above.
+  it('falls back to a generic prompt instead of the teacher narration when nothing can be lifted', () => {
+    const deck = buildLessonDeck('x', true, { lesson: LESSON, plan: PLAN });
+    const warmup = deck.slides.find(s => s.title.includes('تمهيد'));
+    assert.ok(warmup);
+    assert.equal(warmup!.content.includes(PLAN.introduction), false);
+    assert.ok(warmup!.teacher?.teachingTips?.includes(PLAN.introduction));
+  });
+
+  it('still projects a lifted question directly, unchanged', () => {
+    const quoted: LessonPlanOutput = { ...PLAN, introduction: 'اسأل الطلاب: "كم يساوي محيط المربع؟" ثم استمع لإجاباتهم.' };
+    const deck = buildLessonDeck('x', true, { lesson: LESSON, plan: quoted });
+    const warmup = deck.slides.find(s => s.title.includes('تمهيد'));
+    assert.equal(warmup!.content, 'كم يساوي محيط المربع؟');
+  });
+});
+
+describe('closure', () => {
+  it('projects the synthesized summary, not the teacher narration', () => {
+    const deck = buildLessonDeck('x', true, { lesson: LESSON, plan: PLAN });
+    const summary = deck.slides.find(s => s.type === 'summary');
+    assert.ok(summary);
+    assert.equal(summary!.content.includes(PLAN.closure), false);
+    assert.equal(summary!.teacher?.teachingTips, PLAN.closure);
+  });
+
+  it('needs no teacher panel when the plan has no closure text', () => {
+    const deck = buildLessonDeck('x', true, { lesson: LESSON, plan: { ...PLAN, closure: '' } });
+    const summary = deck.slides.find(s => s.type === 'summary');
+    assert.equal(summary!.teacher, undefined);
   });
 });
 
@@ -391,8 +452,11 @@ describe('formative checks in the lesson deck', () => {
     // section title, because "تذكرة الخروج 1" is the first exit-ticket
     // question and not the first question in the deck.
     assert.ok(deck.answerKey.some(k => k.startsWith('مثال 1:')));
-    assert.ok(deck.answerKey.some(k => k.startsWith('✋ تحقّق سريع 1: ب1')));
-    assert.ok(deck.answerKey.some(k => k.startsWith('🎫 تذكرة الخروج 1: ب3')));
+    // Titles are bilingual now ("✋ تحقّق سريع 1 · Quick Check 1") since the
+    // check's own question/options can come back in either language — match
+    // on the Arabic half plus the answer rather than the whole prefix.
+    assert.ok(deck.answerKey.some(k => k.includes('✋ تحقّق سريع 1') && k.endsWith(': ب1')));
+    assert.ok(deck.answerKey.some(k => k.includes('🎫 تذكرة الخروج 1') && k.endsWith(': ب3')));
   });
 
   it('leaves open checks out of the answer key rather than printing a blank row', () => {
@@ -531,7 +595,16 @@ describe('splitWarmup', () => {
     assert.equal(notes, intro);
   });
 
-  it('projects the text unchanged when there is no quoted question', () => {
+  it('lifts an unquoted, colon-introduced question and keeps the rest for the teacher', () => {
+    const intro = 'يبدأ المعلم بمراجعة سريعة لمفهوم حد وحيد، ثم ينتقل إلى سؤال تمهيدي: '
+      + 'كيف يمكن جمع هذه الحدود أو ضربها لتكوين تعبيرات أكبر؟ بعد ذلك يوضح أن كثيرات '
+      + 'الحدود تُعد من أهم أنواع الاقترانات.';
+    const { projected, notes } = splitWarmup(intro);
+    assert.equal(projected, 'كيف يمكن جمع هذه الحدود أو ضربها لتكوين تعبيرات أكبر؟');
+    assert.equal(notes, intro);
+  });
+
+  it('projects the text unchanged when there is no quoted or colon-introduced question', () => {
     const intro = 'لعبة ما أعرفه: يكتب الطلاب ما يعرفونه عن الدرس.';
     assert.deepEqual(splitWarmup(intro), { projected: intro, notes: '' });
   });
@@ -564,15 +637,53 @@ describe('book figures on the deck', () => {
   const uri = (f: { file: string }) => `asset://${f.file}`;
   const figureSlides = (deck: { slides: ActivitySlide[] }) =>
     deck.slides.filter(s => s.type === 'media' && s.mediaUrl?.startsWith('asset://'));
+  /**
+   * A figure attached BESIDE a slide's text rather than given its own slide.
+   *
+   * The rule slide takes the first figure this way, so counting only
+   * standalone `media` slides now under-counts what a lesson actually shows —
+   * which is the whole point of the change and the reason these assertions
+   * moved rather than being deleted.
+   */
+  const sideFigures = (deck: { slides: ActivitySlide[] }) =>
+    deck.slides.filter(s => s.sideImageUrl?.startsWith('asset://'));
+  const allFigures = (deck: { slides: ActivitySlide[] }) =>
+    [...sideFigures(deck).map(s => s.sideImageUrl), ...figureSlides(deck).map(s => s.mediaUrl)];
 
   it('shows the lesson\'s own figures, captioned with the page', () => {
     const deck = buildLessonDeck('نظام معادلات', true, { lesson: WITH_FIGURES, figureUri: uri });
-    const shown = figureSlides(deck);
+    const shown = allFigures(deck);
     assert.ok(shown.length > 0, 'the lesson has figures and they reached the deck');
     const expected = figuresForLesson(WITH_FIGURES.id).slice(0, BOOK_FIGURE_MAX);
-    assert.deepEqual(shown.map(s => s.mediaUrl), expected.map(uri));
-    // The page number is what lets a teacher check the slide against the book.
-    for (const s of shown) assert.match(s.mediaCaption ?? '', /صفحة/);
+    assert.deepEqual(shown, expected.map(uri));
+    // The page number is what lets a teacher check the slide against the book,
+    // whether it is beside the text or on a slide of its own.
+    for (const s of figureSlides(deck)) assert.match(s.mediaCaption ?? '', /صفحة/);
+    for (const s of sideFigures(deck)) assert.match(s.sideImageCaption ?? '', /صفحة/);
+  });
+
+  it('puts the first one BESIDE the rule it illustrates, not on the next slide', () => {
+    // The deck was a single column throughout, so «العمود النازل من المركز
+    // ينصّف الوتر» and the book's drawing of exactly that were a click apart.
+    const deck = buildLessonDeck('نظام معادلات', true, { lesson: WITH_FIGURES, figureUri: uri });
+    const rule = deck.slides.find(s => s.title.includes('القاعدة'));
+    assert.ok(rule, 'the fixture lesson states a rule');
+    assert.ok(rule!.sideImageUrl?.startsWith('asset://'), 'the rule slide carries the figure');
+    assert.match(rule!.sideImageCaption ?? '', /صفحة/);
+    // And it is not ALSO a slide of its own.
+    assert.ok(
+      !figureSlides(deck).some(s => s.mediaUrl === rule!.sideImageUrl),
+      'the same figure must not appear twice',
+    );
+  });
+
+  it('leaves every figure standalone when the lesson states no rule', () => {
+    // Nothing to sit beside, so nothing is attached and the deck is exactly
+    // what it was before the split layout existed.
+    const noRule: KBLesson = { ...WITH_FIGURES, rulesAr: [], rulesEn: [] };
+    const deck = buildLessonDeck('نظام معادلات', true, { lesson: noRule, figureUri: uri });
+    assert.equal(sideFigures(deck).length, 0);
+    assert.equal(figureSlides(deck).length, BOOK_FIGURE_MAX);
   });
 
   it('caps them, so a six-figure lesson is not six slides of looking', () => {
@@ -581,24 +692,30 @@ describe('book figures on the deck', () => {
     const deck = buildLessonDeck('اقترانات نسبية', true, {
       lesson: { ...LESSON, id: 'kbl-math-s2-nccd-u5_l2' }, figureUri: uri,
     });
-    assert.equal(figureSlides(deck).length, BOOK_FIGURE_MAX);
+    // The cap is on figures shown, not on slides spent — one of them may now
+    // be riding along beside the rule instead of occupying a slide.
+    assert.equal(allFigures(deck).length, BOOK_FIGURE_MAX);
   });
 
   it('adds nothing when no resolver is passed — the pre-figures deck', () => {
     const before = buildLessonDeck('نظام معادلات', true, { lesson: WITH_FIGURES });
-    assert.equal(figureSlides(before).length, 0);
+    assert.equal(allFigures(before).length, 0);
   });
 
   it('drops a figure the bundler never got, rather than rendering it broken', () => {
     const deck = buildLessonDeck('نظام معادلات', true, {
       lesson: WITH_FIGURES, figureUri: () => null,
     });
-    assert.equal(figureSlides(deck).length, 0);
+    assert.equal(allFigures(deck).length, 0);
+    // And the rule slide stays a plain single column rather than reserving
+    // half its width for a picture that never arrives.
+    const rule = deck.slides.find(s => s.title.includes('القاعدة'));
+    assert.equal(rule?.sideImageUrl, undefined);
   });
 
   it('adds nothing for a lesson with no figures at all', () => {
     const deck = buildLessonDeck('درس بلا أشكال', true, { lesson: LESSON, figureUri: uri });
-    assert.equal(figureSlides(deck).length, 0);
+    assert.equal(allFigures(deck).length, 0);
   });
 
   it('keeps slide numbers consecutive with figures inserted', () => {
@@ -624,5 +741,71 @@ describe('bookFigureCaption', () => {
   it('reads the semester off the source id', () => {
     const s1 = { ...figure, sourceId: 'math-s1-student-book' };
     assert.match(bookFigureCaption(s1, true), /الفصل الأول/);
+  });
+});
+
+describe('bilingual chrome titles for the English subject', () => {
+  // Reported from the running app: a Grade 10 English-track deck's "مفردات
+  // الدرس" (Key Vocabulary) heading was Arabic-only even though the lesson
+  // itself teaches English — a teacher or student who does not read the
+  // Arabic label has no idea what the slide is. `opts.subject` is localised
+  // (the caller passes "English" or «اللغة الإنجليزية» depending on the app's
+  // UI language), so both spellings must trigger it.
+  const ENGLISH_PLAN: LessonPlanOutput = { ...PLAN, subject: 'English' };
+
+  it('shows every section heading in both languages when subject is English', () => {
+    const deck = buildLessonDeck('Farm Equipment', true, {
+      plan: ENGLISH_PLAN, subject: 'English',
+    });
+    const summary = deck.slides.find(s => s.type === 'summary')!;
+    assert.match(summary.title, /ملخص الدرس/);
+    assert.match(summary.title, /Lesson Summary/);
+  });
+
+  it('recognises the Arabic subject label too', () => {
+    const deck = buildLessonDeck('معدات المزرعة', true, {
+      plan: ENGLISH_PLAN, subject: 'اللغة الإنجليزية',
+    });
+    const summary = deck.slides.find(s => s.type === 'summary')!;
+    assert.match(summary.title, /Lesson Summary/);
+  });
+
+  it('trusts the lesson\'s own book over the subject string when both are present', () => {
+    // A real English-track KB lesson rather than a fabricated unitId —
+    // getBookForLesson resolves through the real KB_UNITS/KB_BOOKS tables, so
+    // a made-up id would just resolve to nothing.
+    //
+    // Named explicitly rather than taken as `getUnitsForSubjectGrade(...)[0]`,
+    // which is what this used to do. That worked only while the vocational
+    // tracks were the sole English books; general English arrived in front of
+    // them on 2026-09-05 and the [0] silently became a lesson with no key
+    // terms, so the vocabulary slide this asserts on stopped existing. The
+    // test is about bilingual chrome, not about which lesson — so it says
+    // which lesson.
+    const englishLesson = KB_LESSONS.find(l => l.id === 'kbl-eng-agri-s1-nccd-u1_l1')!;
+    assert.ok(englishLesson, 'the agriculture-track lesson still exists');
+    const deck = buildLessonDeck(englishLesson.titleAr, true, {
+      lesson: englishLesson, plan: ENGLISH_PLAN,
+      // Deliberately wrong subject string — a mismatched caller must not
+      // suppress the bilingual heading the book itself calls for.
+      subject: 'الرياضيات',
+    });
+    const vocab = deck.slides.find(s => s.title.includes('مفردات الدرس'));
+    assert.ok(vocab, 'the lesson has key terms, so a vocabulary slide exists');
+    assert.match(vocab!.title, /Key Vocabulary/);
+  });
+
+  it('leaves a non-English deck single-language, exactly as before', () => {
+    const deck = buildLessonDeck('حل المعادلات التربيعية', true, { lesson: LESSON, plan: PLAN });
+    const summary = deck.slides.find(s => s.type === 'summary')!;
+    assert.equal(summary.title, '🎉 ملخص الدرس');
+  });
+
+  it('still bilinguals the numbered check titles regardless of subject', () => {
+    const deck = buildLessonDeck('حل المعادلات التربيعية', true, {
+      lesson: LESSON, plan: PLAN, checks: [mcq(1), mcq(2), mcq(3), mcq(4), mcq(5)],
+    });
+    const check = deck.slides.find(s => s.title.includes('تحقّق سريع 1'))!;
+    assert.match(check.title, /Quick Check 1/);
   });
 });
