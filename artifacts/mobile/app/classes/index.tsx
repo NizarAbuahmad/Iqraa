@@ -25,10 +25,27 @@ import { useLanguage } from '@/context/LanguageContext';
 import { RosterError, createClass, listClasses, type ClassGroup } from '@/services/roster';
 import { countStudents, type TranslationKey } from '@/services/i18n';
 import { getPickerGrades } from '@/services/curriculumData';
+import { RosterConsentGate } from '@/components/RosterConsentGate';
 
 const ACCENT = '#1B6B62';
 
+/**
+ * The roster's front door, and so where the consent gate sits. A teacher with
+ * no attestation also has no classes — creating one is a write, and the server
+ * refuses roster writes without it — so there is nothing behind this screen to
+ * reach around it to. The server is the enforcement either way
+ * (`lib/rosterConsent.ts`); this is what stops a teacher meeting that refusal
+ * as a raw 403 after typing a name.
+ */
 export default function ClassesScreen() {
+  return (
+    <RosterConsentGate>
+      <ClassesList />
+    </RosterConsentGate>
+  );
+}
+
+function ClassesList() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();

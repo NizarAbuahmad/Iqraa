@@ -140,6 +140,32 @@ export default function AdminDashboardScreen() {
           <Text style={{ color: colors.destructive, textAlign: 'center', margin: 20, fontFamily: 'Almarai_400Regular' }}>{error}</Text>
         ) : (
           <>
+            {/* Moderation. Above usage on purpose: reported messages carry a
+                24-hour obligation (Apple 1.2) and usage counts do not. */}
+            <Pressable
+              onPress={() => router.push('/admin/moderation' as any)}
+              style={({ pressed }) => [
+                styles.card,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  borderRadius: colors.radius,
+                  marginHorizontal: 20,
+                  marginBottom: 16,
+                  flexDirection: isRTL ? 'row-reverse' : 'row',
+                  alignItems: 'center',
+                  gap: 12,
+                  opacity: pressed ? 0.7 : 1,
+                },
+              ]}
+            >
+              <Ionicons name="flag-outline" size={20} color={ACCENT} />
+              <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 14, flex: 1, textAlign: isRTL ? 'right' : 'left' }}>
+                {lang === 'ar' ? 'بلاغات الرسائل' : 'Message reports'}
+              </Text>
+              <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={16} color={colors.mutedForeground} />
+            </Pressable>
+
             {/* Usage summary */}
             {summary && (
               <View style={{ marginHorizontal: 20, marginBottom: 16 }}>

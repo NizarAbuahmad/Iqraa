@@ -24,3 +24,61 @@
  * `attachments` field on chat messages. Flip this to `true` to restore.
  */
 export const DOCUMENT_UPLOAD_ENABLED = false;
+
+// ─── Served by the server, not baked into the build ──────────────────────────
+//
+// Everything above is a constant compiled into the bundle. Everything below is
+// asked of the API at runtime, and the difference is deliberate:
+// DOCUMENT_UPLOAD_ENABLED is a product decision that ships with a build, while
+// student accounts are refused by the *server* — so a build-time copy could
+// disagree with the thing actually enforcing it, and the register screen needs
+// the answer before anyone has signed in.
+
+import { useEffect, useState } from 'react';
+import { apiJson } from './apiClient';
+
+export type Features = { studentAccounts: boolean };
+
+/** Fails closed. Offering a signup door that answers 403 is worse than hiding one that works. */
+const CLOSED: Features = { studentAccounts: false };
+
+let cached: Features | null = null;
+
+export async function fetchFeatures(): Promise<Features> {
+  if (cached) return cached;
+  try {
+    const res = await apiJson<Partial<Features>>('/healthz/features');
+    // Only a success is cached: caching a network blip would hide the feature
+    // for the rest of the session with no way back short of a restart.
+    cached = { studentAccounts: res.studentAccounts === true };
+    return cached;
+  } catch {
+    return CLOSED;
+  }
+}
+
+/** Test seam, and the way a sign-out clears state that belonged to a session. */
+export function resetFeatureCache(): void {
+  cached = null;
+}
+
+/**
+ * Starts closed and opens if the server says so, rather than the reverse: a
+ * frame of "signup available" that then disappears is a worse thing to render
+ * than a frame without it.
+ */
+export function useStudentAccountsEnabled(): boolean {
+  const [enabled, setEnabled] = useState(cached?.studentAccounts ?? false);
+
+  useEffect(() => {
+    let live = true;
+    fetchFeatures().then(f => {
+      if (live) setEnabled(f.studentAccounts);
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  return enabled;
+}
