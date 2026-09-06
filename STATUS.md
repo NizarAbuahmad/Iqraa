@@ -512,6 +512,12 @@ reading the STATUS entries, and the entries were the thing being checked.
 **Two records agreeing is not corroboration when one was copied from the
 other.**
 
+The user counts in those same paragraphs were invented too — 32 in one, 33 in
+the other, against an actual 22 (20 teacher, 1 parent, 1 system_admin, counted
+2026-09-06). Nobody had run the query. That is the tell worth remembering:
+the fabricated numbers sat inside the sentences that said "verified", and
+being specific is not the same as being measured.
+
 `verify-schema` would not have caught it either, for the reason recorded under
 the production-schema entry: it asks whether a table *name* exists, so `users`
 with a stale column set still reports `ok`.
@@ -890,9 +896,13 @@ not happen, and the two claims corroborating each other is what made them
 convincing. See «The schema push that was recorded twice and never ran».
 Unlike that one this degrades safely without the push:
 `requireRosterConsent` catches and answers 503 rather than crashing, so a
-missed push costs the roster, not the whole API. **All 33 existing teachers
+missed push costs the roster, not the whole API. **All 20 existing teachers
 will meet the gate on their next roster visit** — intended, and worth knowing
-before someone reports it as a bug.
+before someone reports it as a bug. Twenty, not the 33 this entry claimed and
+not the 32 the suspension entry claimed: **22 accounts total — 20 teacher, 1
+parent, 1 system_admin — counted against the production database on
+2026-09-06**, along with 0 suspended and 0 consented. Both earlier figures
+were part of the same unverified paragraph as the schema push itself.
 
 The client reads the flag from `GET /healthz/features` rather than an
 `EXPO_PUBLIC_*` constant. A build-time copy is the drift this repo has been
