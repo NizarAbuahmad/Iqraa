@@ -2,12 +2,14 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { isUnitScopedTag } from '@workspace/curriculum';
 import {
+  askAboutLessonHandoff,
+  askAboutResourceHandoff,
   askAboutResourceMessage,
   buildLessonShelf,
   type LessonShelf,
 } from '../lessonShelf.ts';
 import { KB_LESSONS, getBookForLesson } from '../knowledgeBase.ts';
-import { unitTagsForLesson } from '../mathSupportResources.ts';
+import { displayTitle, unitTagsForLesson } from '../mathSupportResources.ts';
 
 const lessonsBySubject = (subjectId: string) =>
   KB_LESSONS.filter(l => getBookForLesson(l)?.subjectId === subjectId);
@@ -152,12 +154,54 @@ describe('subject isolation', () => {
 
 describe('askAboutResourceMessage', () => {
   it('names the document and the lesson in both languages', () => {
+    // Names it as the row shows it, not as Drive stores it. This asserted
+    // `titleAr` until the shelf hand-off was fixed, which meant the teacher's
+    // own message quoted a filename back at them: «بالاستفادة من «… أ. أحمد
+    // المصري.pdf»». `displayTitle` is what the row they tapped displayed.
     const s = buildLessonShelf(KB_LESSONS.find(l => /أوتار الدائرة/.test(l.titleAr))!.id)!;
     const r = s.unit[0]!.items[0]!;
     const ar = askAboutResourceMessage(r, s.topic, 'ar');
-    assert.ok(ar.includes(r.titleAr));
+    assert.ok(ar.includes(displayTitle(r)));
     assert.ok(ar.includes(s.topic));
+    assert.ok(!ar.includes('.pdf'), ar);
     const en = askAboutResourceMessage(r, s.topic, 'en');
-    assert.ok(en.includes(r.titleAr));
+    assert.ok(en.includes(displayTitle(r)));
+  });
+});
+
+describe('the hand-off into chat', () => {
+  const shelved = () => shelves().filter(s => s.unit.length);
+
+  it('pins the lesson the shelf was built for', () => {
+    // Every row used to hand chat a message and nothing it could pin to.
+    for (const s of shelved()) {
+      for (const r of s.unit.flatMap(g => g.items)) {
+        const h = askAboutResourceHandoff(r, s, 'ar');
+        assert.equal(h.lessonId, s.lessonId);
+        assert.equal(h.resourceId, r.id);
+      }
+    }
+  });
+
+  it('quotes the row title, never the raw filename', () => {
+    for (const s of shelved()) {
+      for (const r of s.unit.flatMap(g => g.items)) {
+        assert.ok(
+          !askAboutResourceHandoff(r, s, 'ar').initialMessage.includes('.pdf'),
+          r.titleAr,
+        );
+      }
+    }
+  });
+
+  it('names the lesson in both languages', () => {
+    const s = shelved()[0]!;
+    assert.ok(askAboutLessonHandoff(s.lessonId, s.topic, 'ar').initialMessage.includes(s.topic));
+    assert.ok(askAboutLessonHandoff(s.lessonId, s.topic, 'en').initialMessage.includes(s.topic));
+  });
+
+  it('carries no document for the lesson button', () => {
+    const s = shelved()[0]!;
+    assert.equal(askAboutLessonHandoff(s.lessonId, s.topic, 'ar').resourceId, undefined);
   });
 });

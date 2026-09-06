@@ -27,6 +27,7 @@
 import { isUnitScopedTag, type SourceKind } from '@workspace/curriculum';
 import { getBookForLesson, getLessonById as getKbLesson } from './knowledgeBase.ts';
 import {
+  displayTitle,
   listAllSupportResources,
   unitTagsForLesson,
   type SupportResource,
@@ -163,13 +164,66 @@ export function buildLessonShelf(lessonId: string, lang: 'ar' | 'en' = 'ar'): Le
  * titles. The shelf names the file, and this is the way through to using it —
  * which matters because the app cannot hand over the PDF itself — the binaries
  * are gitignored, as the README in each `knowledge-base` subject folder says.
+ *
+ * Uses `displayTitle`, not `titleAr`. `titleAr` is the filename verbatim, so
+ * the teacher's own message read «بالاستفادة من «… أ. أحمد المصري.pdf»» — a
+ * file path quoted back at them, and not the title the row they tapped showed.
  */
 export function askAboutResourceMessage(
   resource: SupportResource,
   topic: string,
   lang: 'ar' | 'en',
 ): string {
+  const title = displayTitle(resource);
   return lang === 'ar'
-    ? `بالاستفادة من «${resource.titleAr}»، ساعدني في التحضير لدرس: ${topic}`
-    : `Using "${resource.titleAr}", help me prepare the lesson: ${topic}`;
+    ? `بالاستفادة من «${title}»، ساعدني في التحضير لدرس: ${topic}`
+    : `Using "${title}", help me prepare the lesson: ${topic}`;
+}
+
+/**
+ * Everything a jump into chat needs to answer about the right thing.
+ *
+ * The two entry points on the lesson page — the «اسأل اقرأ» button and every
+ * shelf row — used to assemble these params inline, and both omitted anything
+ * the chat screen could pin retrieval to. The lesson id was passed but only
+ * ever used to draw an "open lesson" chip, so a reply came back about whatever
+ * lesson chat had already selected. Building the hand-off in one place, in a
+ * file `node --test` can load, is what lets a test hold that shut.
+ *
+ * `resourceId` is the identity the free-text message could not carry: the title
+ * inside the sentence has to win a keyword race against ~34 siblings on the
+ * same shelf, and losing it is silent.
+ */
+export type ChatHandoff = {
+  initialMessage: string;
+  lessonId: string;
+  /** The document the teacher tapped, when they tapped one. */
+  resourceId?: string;
+};
+
+/** Hand-off for one document on the shelf. */
+export function askAboutResourceHandoff(
+  resource: SupportResource,
+  shelf: LessonShelf,
+  lang: 'ar' | 'en',
+): ChatHandoff {
+  return {
+    initialMessage: askAboutResourceMessage(resource, shelf.topic, lang),
+    lessonId: shelf.lessonId,
+    resourceId: resource.id,
+  };
+}
+
+/** Hand-off for the lesson itself — no document, so nothing to pin but the lesson. */
+export function askAboutLessonHandoff(
+  lessonId: string,
+  topic: string,
+  lang: 'ar' | 'en',
+): ChatHandoff {
+  return {
+    initialMessage: lang === 'ar'
+      ? `ما الذي يجب أن أعرفه قبل تدريس «${topic}»؟`
+      : `What should I know before teaching: ${topic}?`,
+    lessonId,
+  };
 }

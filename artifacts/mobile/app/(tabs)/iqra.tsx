@@ -100,6 +100,8 @@ import {
   type SessionDocument,
 } from '@/services/documents';
 import { lessonPickerParams } from '@/services/lessonPrep';
+import { resolveDeepLinkSend, type DeepLinkSend } from '@/services/chatDeepLink';
+import { pinnedResourceNote } from '@/services/mathSupportResources';
 import {
   buildCurrentLessonView,
   buildLessonSuggestions,
@@ -109,6 +111,7 @@ import {
   resolvePickedLesson,
   resourceRoute,
   seedDefaultLessonMemory,
+  softPinIfUnpinned,
   shouldReuseActiveLesson,
   type LessonSuggestion,
 } from '@/services/lessonCopilot';
@@ -1126,6 +1129,14 @@ export default function IqraScreen() {
     initialMessage?: string;
     lessonId?: string;
     subjectColor?: string;
+    resourceId?: string;
+    /**
+     * Nonce, set per tap by the lesson page. The effect below keys off param
+     * *strings*, so pushing this route twice with byte-identical params never
+     * re-fired it — tapping the same shelf row a second time was dead, which
+     * looked exactly like the icon doing nothing.
+     */
+    askId?: string;
   }>();
 
   const mode: Mode = 'teacher';
@@ -1182,8 +1193,16 @@ export default function IqraScreen() {
   // Deep-link state: curriculum lesson to surface as "Open lesson" chip
   const [deepLinkLessonId, setDeepLinkLessonId] = useState<string | null>(params.lessonId ?? null);
   const [deepLinkColor, setDeepLinkColor] = useState<string | null>(params.subjectColor ?? null);
-  // Auto-send: initial message from deep-link, fired once after welcome message appears
-  const [autoMessagePending, setAutoMessagePending] = useState<string | null>(params.initialMessage ?? null);
+  /**
+   * The send a deep link is asking for, or null. Holds the whole resolved
+   * `DeepLinkSend` rather than just the text: the lesson and the shelf document
+   * have to reach `sendMessage` as arguments, and reading them back off
+   * `deepLinkLessonId` would race the clear this same function does for the
+   * "Open lesson" chip.
+   */
+  const [autoSendPending, setAutoSendPending] = useState<DeepLinkSend | null>(
+    () => resolveDeepLinkSend(params),
+  );
   const listRef = useRef<FlatList>(null);
   /** Guards duplicate sends without relying on a stale useCallback closure. */
   const thinkingRef = useRef(false);
@@ -1444,7 +1463,10 @@ export default function IqraScreen() {
       // that «ابدأ الحصة» could open on something they never chose.
       const restored = resolvePickedLesson(pick.topic, pick, lang as 'ar' | 'en');
       if (restored) {
-        setSessionMemory(prev => pinLesson(prev, restored, 'soft'));
+        // Guarded: this promise can resolve after a deep link has already
+        // hard-pinned the lesson the teacher navigated from, and used to
+        // silently replace it with the home pick.
+        setSessionMemory(prev => softPinIfUnpinned(prev, restored));
       }
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1504,13 +1526,13 @@ export default function IqraScreen() {
   // effect re-applies fresh params each time the user taps "Ask iQra" on a
   // different lesson without unmounting the screen.
   useEffect(() => {
-    if (params.initialMessage) {
-      setDeepLinkLessonId(params.lessonId ?? null);
-      setDeepLinkColor(params.subjectColor ?? null);
-      setAutoMessagePending(params.initialMessage);
-    }
+    const send = resolveDeepLinkSend(params);
+    if (!send) return;
+    setDeepLinkLessonId(params.lessonId ?? null);
+    setDeepLinkColor(params.subjectColor ?? null);
+    setAutoSendPending(send);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.initialMessage, params.lessonId, params.subjectColor]);
+  }, [params.initialMessage, params.lessonId, params.subjectColor, params.resourceId, params.askId]);
 
   const sendMessage = useCallback(
     async (
@@ -1518,6 +1540,8 @@ export default function IqraScreen() {
       pinnedLessonId?: string,
       scopeSubjectId?: string,
       attachments?: ChatAttachment[],
+      /** Shelf document the teacher tapped — named first in the support block. */
+      pinnedResourceId?: string,
     ) => {
       const q = text.trim();
       if (!q && !(attachments && attachments.length)) return;
@@ -1725,15 +1749,25 @@ export default function IqraScreen() {
         .map(d => d.name);
 
       // 2. Build KB + document context for remote path
-      const teachingPrefix = teachingCtx
+      // A pinned lesson IS the teaching context, and outranks `teachingCtx`.
+      // `teachingCtx` in this closure still names the previous lesson whenever
+      // the send came from a deep link or the change-lesson sheet, so the
+      // prompt announced «المعلم يدرّس حاليًا» with the lesson the teacher had
+      // just left while the answer below was grounded on the new one. The
+      // offline path already resolved this the same way (`teachingContext`
+      // prefers `pinnedLesson`); this is the remote path catching up.
+      const teachingTopic = pinnedLesson
+        ? (lang === 'ar' ? pinnedLesson.titleAr : pinnedLesson.titleEn)
+        : teachingCtx;
+      const teachingPrefix = teachingTopic
         ? (lang === 'ar'
-          ? `[سياق التدريس: المعلم يدرّس حاليًا "${teachingCtx}"]\n\n`
-          : `[Teaching context: Teacher is currently teaching "${teachingCtx}"]\n\n`)
+          ? `[سياق التدريس: المعلم يدرّس حاليًا "${teachingTopic}"]\n\n`
+          : `[Teaching context: Teacher is currently teaching "${teachingTopic}"]\n\n`)
         : '';
 
       const kbPart = hasKBMatch
-        ? teachingPrefix + buildResponse(q, results, lang as 'ar' | 'en', mode)
-        : (teachingCtx ? teachingPrefix.trim() : '');
+        ? teachingPrefix + buildResponse(q, results, lang as 'ar' | 'en', mode, pinnedResourceId)
+        : (teachingTopic ? teachingPrefix.trim() : '');
       const kbContext = [docBundle.promptBlock, kbPart].filter(Boolean).join('\n\n') || undefined;
 
       // 3. Build conversation history (last 10 messages for context window)
@@ -1762,6 +1796,11 @@ export default function IqraScreen() {
           teachingContext: pinnedLesson
             ? (lang === 'ar' ? pinnedLesson.titleAr : pinnedLesson.titleEn)
             : (teachingCtx || sessionMemory.activeTopicAr || sessionMemory.activeTopicEn),
+          // DEMO_MODE is on by default, and in that path this — not
+          // `buildResponse` — writes the reply the teacher reads. Threading the
+          // pin only through the remote path would have left the fix invisible
+          // in the shipped build.
+          pinnedResourceId,
           memory: sessionMemory,
           documentContext: hasDocs ? docBundle.promptBlock : null,
           documentNames: docNames,
@@ -1893,7 +1932,12 @@ export default function IqraScreen() {
             documentContext: hasDocs ? docBundle.promptBlock : null,
             fromSoftPin: softBareArtifact && !topicStrong,
           });
-          responseText = generated.text;
+          // Name the file the teacher opened, and say plainly that the
+          // material above is not drawn from it. This branch emits no support
+          // pack, so without the line the tapped document is never mentioned
+          // at all — silence a teacher would reasonably read as "it used it".
+          const openedNote = pinnedResourceNote(pinnedResourceId, lang as 'ar' | 'en');
+          responseText = openedNote ? `${generated.text}\n\n${openedNote}` : generated.text;
           artifactData = generated.data;
           artifactProse = generated.prose;
           artifactMeta = {
@@ -2105,14 +2149,56 @@ export default function IqraScreen() {
     [deepLinkColor, deepLinkLessonId, lang, messages, mode, sessionMemory, t, teachingCtx, teachingCtxLessonId],
   );
 
-  // Auto-send deep-link message once welcome message is in place
+  /**
+   * Send what a deep link arrived asking for.
+   *
+   * Two things were wrong here and both had the same symptom — a teacher who
+   * tapped a worksheet in مكتبة الدرس got an answer about a different lesson.
+   *
+   * **The pin was dropped.** This called `sendMessage(msg)` with no
+   * `pinnedLessonId`, so the lesson that came with the link never reached
+   * retrieval and the reply fell through to keyword search on the message text,
+   * then to whatever lesson chat had already pinned — by default the seeded demo
+   * lesson. The lesson id was passed, received, and used only to draw an
+   * "Open lesson" chip.
+   *
+   * **And on a returning visit nothing was sent at all.** The guard required
+   * `messages.length === 1`, but the welcome message is only rebuilt on language
+   * change and this is a tab screen that stays mounted. So the second time a
+   * teacher tapped through, the message sat in state unsent and the tap looked
+   * like it had done nothing. It now appends to the conversation in progress:
+   * the teacher keeps their history and the new lesson is re-pinned below.
+   *
+   * `thinkingRef` rather than `isThinking`: `sendMessage` bails with a "busy"
+   * toast mid-flight, which would consume the deep link without answering it.
+   */
   useEffect(() => {
-    if (autoMessagePending && messages.length === 1 && messages[0].id === 'welcome') {
-      const msg = autoMessagePending;
-      setAutoMessagePending(null);
-      sendMessage(msg);
-    }
-  }, [messages, autoMessagePending, sendMessage]);
+    if (!autoSendPending || thinkingRef.current) return;
+    // Wait for the welcome message, so a cold start does not answer above it.
+    if (messages.length === 0) return;
+    const send = autoSendPending;
+    setAutoSendPending(null);
+    void sendMessage(send.text, send.pinnedLessonId, undefined, undefined, send.pinnedResourceId);
+  }, [messages, autoSendPending, sendMessage]);
+
+  /**
+   * Follow the deep-linked lesson in session memory too.
+   *
+   * Pinning the send fixes the answer; this fixes what the screen says about
+   * itself. Without it `CurrentLessonCard` still names the previously selected
+   * lesson — and worse, `teachingCtx` still holds it, so the *next* message the
+   * teacher types drifts straight back to it. Hard, for the same reason the
+   * change-lesson sheet pins hard: the teacher named this lesson by navigating
+   * from it.
+   */
+  useEffect(() => {
+    if (!autoSendPending?.pinnedLessonId) return;
+    const lesson = getLessonById(autoSendPending.pinnedLessonId);
+    if (!lesson) return;
+    setSessionMemory(prev => pinLesson(prev, lesson, 'hard'));
+    setTeachingCtx(lang === 'ar' ? lesson.titleAr : lesson.titleEn);
+    setTeachingCtxLessonId(lesson.id);
+  }, [autoSendPending, lang]);
 
   // Handle subject-clarification chip taps (ambiguous query flow)
   const handleClarifySubject = useCallback(

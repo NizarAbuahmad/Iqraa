@@ -12,6 +12,7 @@ import {
 } from '@/services/curriculumData';
 import { LessonPrepPanel } from '@/components/ui/LessonPrepPanel';
 import { LessonShelfPanel } from '@/components/ui/LessonShelfPanel';
+import { askAboutLessonHandoff } from '@/services/lessonShelf';
 
 const BLOOMS_COLORS: Record<string, string> = {
   Remember: '#6366F1',
@@ -118,12 +119,15 @@ export default function LessonDetailScreen() {
           <Pressable
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              const msgText = lang === 'ar'
-                ? `ما الذي يجب أن أعرفه قبل تدريس «${lessonTitle}»؟`
-                : `What should I know before teaching: ${lessonTitle}?`;
               router.push({
                 pathname: '/(tabs)/iqra',
-                params: { initialMessage: msgText, lessonId: lessonId, subjectColor: color },
+                params: {
+                  // `lesson.id`, not the route param: the shelf below pins on the
+                  // resolved lesson and both must name the same one.
+                  ...askAboutLessonHandoff(lesson.id, lessonTitle, lang as 'ar' | 'en'),
+                  subjectColor: color,
+                  askId: String(Date.now()),
+                },
               } as any);
             }}
             style={[styles.askIqraBtn, { backgroundColor: colors.card, borderColor: color, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}

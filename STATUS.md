@@ -410,6 +410,100 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The shelf's chat hand-off pinned nothing, 2026-09-06
+
+Reported from the app: tapping the chat icon on a file in **مكتبة الدرس** opens
+chat, and the reply comes back about a different lesson — «still answers based
+on the chat selection». It did. «The lesson page says what the library holds»
+(2026-08-25, below) says the row «already grounds its reply on these titles»;
+that was the intent and never the behaviour.
+
+**The icon was not the problem, and «اسأل اقرأ» had the identical bug.** Both
+push `/(tabs)/iqra` with `{initialMessage, lessonId, subjectColor}`, and the
+auto-send effect called `sendMessage(msg)` — no `pinnedLessonId`. The lesson id
+arrived, was stored, and was used only to draw a «📖 افتح الدرس» chip. Retrieval
+therefore fell to keyword search on the message text, then to `teachingCtx`,
+then to `sessionMemory.activeLessonId` — seeded to `DEFAULT_ACTIVE_LESSON_ID`
+(«تركيب الاقترانات»). So the default outcome for a teacher who had not already
+picked a lesson was an answer about a lesson they had never opened.
+
+**Four defects on the one path, all now closed:**
+
+- **No pin.** The auto-send passes the deep-linked lesson as `pinnedLessonId`,
+  and hard-pins it in `sessionMemory` so `CurrentLessonCard` and «ابدأ الحصة»
+  name it too. `resolveDeepLinkSend` (`services/chatDeepLink.ts`) holds the
+  decision outside the 2900-line screen `node --test` cannot load, which is why
+  it went untested for so long.
+- **On a returning visit nothing was sent at all.** The guard required
+  `messages.length === 1`, but the welcome message is rebuilt only on language
+  change and this is a tab screen that never unmounts. The second time a teacher
+  tapped through, the message sat unsent — the tap looked like it did nothing.
+  It now appends to the conversation in progress.
+- **Tapping the same row twice was also dead.** The param-sync effect keys off
+  param *strings*, so an identical push never re-fired it. The call sites stamp
+  an `askId` nonce per tap; the pure hand-off builders stay deterministic.
+- **A restored home pick could evict the deep-link pin.** `loadLessonPick()`
+  resolves asynchronously and soft-pinned unconditionally, so on a cold start it
+  could land *after* the hard pin and replace it. `softPinIfUnpinned` now guards
+  it.
+
+**The file identity, and the ceiling on it.** `askAboutResourceHandoff` carries
+the tapped document's id, and `searchSupportResources` lists it first instead of
+leaving it to win a keyword race against ~34 shelf siblings. It is exempt from
+the inferred `kinds` filter — the hand-off message quotes the file's own title,
+so tapping a worksheet titled «… اختبار …» inferred a quiz intent and filtered
+that worksheet out of its own answer — but **never from the subject gate**, or
+the pin would be a door past the rule that stopped financial-literacy queries
+returning mathematics files.
+
+**What it still cannot do is read the PDF**, and the change is careful not to
+imply otherwise. The block names title, author and kind off the manifest, and
+when a file is singled out it says so: «محتوى الـ PDF غير محمّل، فلا تنسب إليه
+أمثلة أو أسئلة». Two paths needed it, not one — `DEMO_MODE` is on by default and
+in that path `buildTeachingAssistantReply`, not `buildResponse`, writes the reply
+a teacher reads, so a pin threaded only through the remote path would have been
+invisible in the shipped build.
+
+**And a third path needed something else.** Measured: **83 of the 139**
+unit-scoped shelf rows produce a message the intent router sends to
+`generateChatArtifact`, a branch that emits no support pack at all — so on the
+majority of taps the opened file was never mentioned, which reads as though it
+had been used. `pinnedResourceNote` appends one line naming the file and saying
+the generated material is not drawn from it.
+
+**The message quoted a filename back at the teacher.** `askAboutResourceMessage`
+interpolated the raw `titleAr` — «بالاستفادة من «… أ. أحمد المصري.pdf»» — rather
+than the `displayTitle` the row they tapped displayed. The test that covered it
+asserted the filename, so it pinned the wart in place.
+
+1289 mobile tests pass (19 new in `chatHandoffPin.test.ts`, 7 in
+`chatDeepLink.test.ts`), typecheck clean across the monorepo.
+
+### Verified by driving the real UI
+
+Expo web on :8081, Chromium, `/auth/me` stubbed and every other API call
+aborted, so each write took the local fallback path. On «معمل برمجية جيوجبرا:
+حل أنظمة المعادلات بيانياً» — the lesson in the bug report, 35 files, 6
+unit-scoped — tapping «حل أنظمة المعادلات الرياضية الصف العاشر»:
+
+- the lesson pill reads **الأسس والمعادلات • معمل برمجية جيوجبرا**, and
+  «تركيب الاقترانات» appears nowhere;
+- the reply names the tapped file and carries the «غير محمّل» line;
+- exactly **one** hand-off bubble — the state initializer and the param-sync
+  effect do not both send;
+- tapping the same row a second time fires again (before `askId` it could not).
+
+**One thing the web run could not exercise:** navigating back from chat to the
+lesson page unmounts the chat screen on web, so the thread resets and the new
+turn starts under a fresh welcome. That is route behaviour, not the auto-send —
+nothing in this change clears `messages`. It also means the old
+`messages.length === 1` guard happened to work on web and failed only where the
+screen really does stay mounted, which is the native app. The append path is
+therefore verified by test, not by this run.
+
+**Still true and unchanged:** the PDFs are not shipped. Real file delivery is
+blocked on the same decision as before.
+
 ## Financial literacy and English S2 have readable text at last, 2026-09-06
 
 Three books whose PDFs were on file and whose text nobody could read are now
@@ -3548,8 +3642,9 @@ of 8.
 
 **What the shelf does not do: hand over the PDF.** The binaries are gitignored
 and not shipped, so a download button would fail. It says so once under the
-header and the only action on a row is «اسأل عنه», which routes to chat —
-which already grounds its reply on these titles. Wiring real file delivery is
+header and the only action on a row is «اسأل عنه», which routes to chat.
+~~which already grounds its reply on these titles.~~ **Not true as written —
+fixed 2026-09-06, see the entry at the top of this log.** Wiring real file delivery is
 still blocked on the same decision as the blueprint miner: get the PDFs
 somewhere the app can reach, or publish the Drive links (`driveUrl()` exists;
 whether the folder is shared with teachers is **not verified**).
