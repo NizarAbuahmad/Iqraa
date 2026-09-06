@@ -51,6 +51,7 @@ import { G10_SOURCES } from '../src/sources.ts';
 import { downloadFromR2, isLfsPointer, isR2Configured } from './r2.ts';
 import { LOCAL_FILES } from './localSources.ts';
 import { rejectReason } from './textQuality.ts';
+import { untransposeDocument, countRepairs } from './untranspose.ts';
 import { ocrPdf } from './ocr.ts';
 import { loadEnvFile } from '../../../scripts/load-env.mjs';
 
@@ -114,7 +115,33 @@ async function ensureLocal(sourceId: string, abs: string): Promise<string | null
   return null;
 }
 
-async function parseWithPdfParse(buf: Buffer): Promise<{ pages: ExtractedPage[]; reason: string | null }> {
+/**
+ * Repair the displaced definite article before anything judges the text.
+ *
+ * Order matters both ways. Ahead of `rejectReason`, because a book that only
+ * failed on transposition should now pass rather than fall through to a slow
+ * OCR pass that would read it less accurately. And ahead of the extracted
+ * JSON being written, because that file is what every generator and the
+ * passage index read — repairing later would leave the defect in the one
+ * artefact that matters.
+ *
+ * Applied to pdf-parse output only. OCR misreads a letter rather than
+ * misplacing one, so it produces no article to put back; running the repair
+ * over OCR text changes 17 words across the eight OCR extractions, all of
+ * them genuine instances of the same pattern, which is not worth coupling the
+ * two paths for.
+ */
+function repairArticle(sourceId: string, pages: ExtractedPage[]): ExtractedPage[] {
+  const texts = pages.map(p => p.text);
+  const fixed = untransposeDocument(texts);
+  const repairs = countRepairs(texts, fixed);
+  if (repairs > 0) {
+    console.log(`  ⤷ ${sourceId} — put back ${repairs} displaced definite article${repairs === 1 ? '' : 's'}`);
+  }
+  return pages.map((p, i) => ({ ...p, text: fixed[i] }));
+}
+
+async function parseWithPdfParse(sourceId: string, buf: Buffer): Promise<{ pages: ExtractedPage[]; reason: string | null }> {
   const parser = new PDFParse({ data: new Uint8Array(buf) });
   try {
     const result = await parser.getText();
@@ -130,7 +157,8 @@ async function parseWithPdfParse(buf: Buffer): Promise<{ pages: ExtractedPage[];
     if (!pages.length && result.text) {
       pages.push({ page: 1, text: result.text.trim() });
     }
-    return { pages, reason: rejectReason(pages.map(p => p.text).join('')) };
+    const repaired = repairArticle(sourceId, pages);
+    return { pages: repaired, reason: rejectReason(repaired.map(p => p.text).join('')) };
   } finally {
     await parser.destroy();
   }
@@ -176,7 +204,7 @@ async function extractOne(
     return buildDoc(sourceId, rel, buf, ocrResult.pages, 'tesseract-ocr (--ocr requested)');
   }
 
-  let { pages, reason } = await parseWithPdfParse(buf);
+  let { pages, reason } = await parseWithPdfParse(sourceId, buf);
   let tool = 'pdf-parse@2';
 
   if (reason) {
