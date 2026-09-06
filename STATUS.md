@@ -459,6 +459,116 @@ iOS is untouched and is blocked on a person: it needs an Apple Developer
 Program membership and an Apple ID sign-in. Android push also still needs an
 FCM service account key uploaded to EAS — not a build blocker, but until it is
 there `expo-notifications` will register tokens that nothing can deliver to.
+## One join code per class, and the two buttons nobody could find, 2026-09-06
+
+**Built 2026-09-05, parked the same day, un-parked 2026-09-06 on Nizar's call.**
+It was parked because v1 ships teacher-only and `constants/legal.ts` states in
+print that no minor holds an account; that is still true, and every line here
+is still gated behind `STUDENT_ACCOUNTS=false`, so nothing below is reachable
+today. Turning that flag on remains a change to a published legal document, not
+a config change — see «v1 is teacher-only» below.
+
+One overlap to know about: the roster icon swap (`chatbubble-outline` →
+`key-outline`) described below **already shipped separately** in PR #281, which
+reached the same conclusion independently while this was parked. This branch
+keeps #281's version of that comment; the swap is not counted twice.
+
+Started as "adding users to a group isn't easy" and turned out to be one
+problem wearing two hats. A group can only contain people the teacher is
+already *connected* to — a `roster_links` row, which exists only once somebody
+redeems a code. So the member picker was thin because the **code flow** was the
+bottleneck, not because the picker was bad.
+
+Getting a code was حسابي → صفوفي → the class → scroll the roster → an unlabelled
+`chatbubble-outline` → إنشاء رمز. Six taps, per child, and the icon read as
+"message this student" — something you cannot even do to a roster row that
+holds no account.
+
+**One code for a whole class now exists.** `class_groups.join_code` had been in
+the schema since the roster shipped, deliberately unused:
+`docs/student-evaluation-module-plan.md:244` deferred it because "a level
+attached to the wrong name is worse than no level". **That deferral is
+reversed** — the six-tap-per-child hunt was costing more than the wrong-name
+risk, and the risk is now paid for rather than wished away.
+
+- `POST /classes/:id/join-code` mints it (180-day TTL, not the per-student
+  code's 30 — a class code goes on a whiteboard in week 1 and is redeemed by
+  stragglers in week 6). Regenerating overwrites, same as before.
+- `GET /auth/join/:code` turns it into the list of names to pick from.
+- The rules live in `api-server/src/lib/claimDecision.ts`, with **no database
+  import**, and `resolveClaimCode` is now only the queries. That split is the
+  point: `@workspace/db` throws at import without `DATABASE_URL`, so anything
+  colocated with the queries is untestable, and this repo has no DB-backed
+  tests at all. Expiry, class membership and one-account-per-student are three
+  trust-boundary rules that would otherwise have had no check, ever.
+  `claimDecision.test.ts` covers them (15 assertions, verified by mutation:
+  disabling the membership check fails two).
+- **The undo exists now.** `DELETE /students/:id/links/:userId`. Before this,
+  `roster_links` was insert-only and a wrong claim was permanent — the only way
+  out was deleting the child's roster row. It rebuilds class threads via
+  `syncClassGroupThread`, moved to `api-server/src/lib/classThread.ts` so the
+  derivation rule has one implementation and not two.
+
+**`GET /auth/join/:code` is the only unauthenticated endpoint in the product
+that returns children's names.** That is the real price of the class-code
+model and it should not be widened casually. Four things hold it in: the
+`STUDENT_ACCOUNTS` flag (checked before any query), a 60/min limiter (not
+`/take`'s 240 — this grinds against every live code at once), the 180-day
+expiry, and the teacher's regenerate. It returns names and nothing else — no
+`externalRef`, which identifies far harder than a first name. It deliberately
+lives under `/auth`, **not** `/classes`: roster.ts prefix-matches
+`router.use(["/classes","/students"], authMiddleware, …)`, so `/classes/join/:code`
+would have silently answered 401 to the parents it exists for.
+`mountOrder.test.ts` pins that.
+
+Claimed names are returned with a `taken` flag rather than filtered out.
+Filtering looked safer and is wrong: only the one `self` link is exclusive,
+guardians are unlimited by design, so hiding claimed names would stop the
+second parent finding their own child and make the code look broken to them.
+The names are exposed either way, so filtering buys no privacy.
+
+**The two findability fixes**, which were the original complaint:
+
+- The group thread header now has a `person-add-outline` beside the ⋮. Adding
+  someone was five taps buried in a menu (⋮ → إدارة الأعضاء → a dashed row →
+  tick → إضافة); the picker was already mounted independently, so this cost six
+  lines. Gated on `isOwnerOfGroup`, so it correctly never appears on a class
+  group, whose membership is derived.
+- The class screen has a labelled «رمز الانضمام» pill next to the chat pill,
+  and the roster row's icon is now `key-outline`. Roster rows show who has
+  actually joined — the question a shared code immediately creates.
+
+Two adjacent bugs fixed because this work made them likely rather than
+hypothetical: `notifications.tsx` flat-mapped contacts with no dedupe while
+keying on `userId` (duplicate React keys the moment one parent has two children
+with the same teacher — `ParticipantPickerSheet` already deduped, so the two
+lists disagreed), and `POST /messaging/threads/:id/participants` enforced no
+size cap while create enforced 100, so a group could be grown past it by
+repeated adds.
+
+**Not done, and needed before this is switched on:**
+
+1. **The schema is not pushed.** `join_code_expires_at` is in
+   `lib/db/src/schema/students.ts` and nowhere else. Note `verify-schema`
+   checks table *names* only — it will report `ok` with the column missing, and
+   a missing column makes every join code look permanently expired. Confirm
+   with an `information_schema.columns` query, and check `join_code` itself is
+   there too: it has been in the schema file for weeks but only table names
+   have ever been verified.
+2. **`STUDENT_ACCOUNTS` is still false**, so none of this is reachable — by
+   design, and it is also the reason nobody has contacts today. Worth checking
+   that first if "my groups are empty" comes up again.
+3. **Not exercised end to end.** Typecheck and the full suites pass (re-run on
+   the un-parked tree against current main), and the register screen was
+   confirmed to render unchanged with the flag off. The picker, the mint-and-share sheet and the
+   unlink were not driven against a real database — that needs
+   `STUDENT_ACCOUNTS=true` and a seeded class.
+
+**Known residue on unlink, deliberately not cascaded:** class-group membership
+rebuilds, but custom-group membership and any existing direct thread do not.
+Those were a teacher's explicit choice rather than a derivation, and dropping a
+parent out of «أولياء أمور ١٠-أ» over a roster correction is a product
+decision, not a cleanup.
 
 ## v1 is teacher-only, and a roster now needs a consent to exist, 2026-09-05
 

@@ -12,7 +12,7 @@
  */
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { classGroups, classMemberships, students } from "@workspace/db";
+import { classGroups, classMemberships, rosterLinks, students } from "@workspace/db";
 import { and, asc, count, eq, inArray, isNull } from "drizzle-orm";
 import {
   authMiddleware,
@@ -25,6 +25,7 @@ import { isSchemaMissing } from "../lib/schemaMissing.js";
 import { generateShareCode } from "../modules/assessment/studentView.ts";
 import { requireRosterConsent } from "../lib/rosterConsent.js";
 import { studentAccountsEnabled } from "../lib/features.js";
+import { syncClassGroupThread } from "../lib/classThread.js";
 
 const router = Router();
 
@@ -144,6 +145,10 @@ router.get("/classes/:id", async (req: AuthenticatedRequest, res) => {
       return;
     }
 
+    // linkedCount answers the one question a shared join code creates: who has
+    // actually signed up, and who is still just a name I typed. Counted here
+    // rather than fetched per row — a thirty-name roster would otherwise be
+    // thirty round trips to render one column of ticks.
     const roster = await db
       .select({
         id: students.id,
@@ -152,13 +157,19 @@ router.get("/classes/:id", async (req: AuthenticatedRequest, res) => {
         gradeId: students.gradeId,
         teacherNote: students.teacherNote,
         createdAt: students.createdAt,
+        linkedCount: count(rosterLinks.id),
       })
       .from(classMemberships)
       .innerJoin(students, eq(students.id, classMemberships.studentId))
+      .leftJoin(rosterLinks, eq(rosterLinks.studentId, students.id))
       .where(and(eq(classMemberships.classGroupId, classId), isNull(students.archivedAt)))
+      .groupBy(students.id)
       .orderBy(asc(students.displayName));
 
-    res.json({ class: group, students: roster });
+    res.json({
+      class: group,
+      students: roster.map(({ linkedCount, ...s }) => ({ ...s, linked: linkedCount > 0 })),
+    });
   } catch (err) {
     failRoster(res, err, "get class", "Failed to load class");
   }
@@ -520,6 +531,126 @@ router.post("/students/:id/claim-code", async (req: AuthenticatedRequest, res) =
     res.status(201).json({ claimCode, claimCodeExpiresAt });
   } catch (err) {
     failRoster(res, err, "generate claim code", "Failed to generate claim code");
+  }
+});
+
+/**
+ * One code for the whole class — the joiner types it and picks their own name
+ * off the roster (see GET /auth/join/:code, which is where the picking
+ * happens, and lib/claimDecision.ts for the rules).
+ *
+ * Exists because the per-student route above is six taps deep and has to be
+ * repeated once per child: a class of thirty meant thirty codes handed out one
+ * at a time, which is why teachers had nobody to put in a group.
+ *
+ * Regenerating overwrites, same as the per-student code: a code the teacher no
+ * longer trusts stops working the moment they ask for a new one. Longer-lived
+ * though — a class code goes on the whiteboard in week 1 and is still being
+ * redeemed by stragglers in week 6.
+ */
+const JOIN_CODE_TTL_MS = 180 * 24 * 60 * 60 * 1000;
+
+router.post("/classes/:id/join-code", async (req: AuthenticatedRequest, res) => {
+  try {
+    // Same reasoning as the per-student route: a code that answers 403 at
+    // signup is worse than no code.
+    if (!studentAccountsEnabled()) {
+      res.status(403).json({
+        code: "student_accounts_disabled",
+        error: "Parent and student accounts are not enabled on this deployment.",
+      });
+      return;
+    }
+
+    const classId = req.params["id"] as string;
+    const joinCode = generateShareCode();
+    const joinCodeExpiresAt = new Date(Date.now() + JOIN_CODE_TTL_MS);
+
+    const [row] = await db
+      .update(classGroups)
+      .set({ joinCode, joinCodeExpiresAt, updatedAt: new Date() })
+      .where(and(eq(classGroups.id, classId), eq(classGroups.teacherId, req.user!.id)))
+      .returning({ id: classGroups.id });
+
+    if (!row) {
+      res.status(404).json({ error: "Class not found" });
+      return;
+    }
+    res.status(201).json({ joinCode, joinCodeExpiresAt });
+  } catch (err) {
+    failRoster(res, err, "generate join code", "Failed to generate join code");
+  }
+});
+
+/**
+ * Unlinks one account from one roster row — the undo for a wrong claim.
+ *
+ * A class code is one string shared with thirty families, so somebody
+ * eventually picks the wrong name. Until this route existed `roster_links` was
+ * insert-only and a mis-claim was permanent, with deleting the child's roster
+ * row as the sole way out.
+ *
+ * What this actually reverses, and what it does not:
+ *   - The teacher's contact list and `isConnected` both join `roster_links`
+ *     live, so the person disappears from both immediately — no new thread or
+ *     group can include them.
+ *   - Class-group chat membership is derived from the roster, so
+ *     syncClassGroupThread is called below to rebuild it now rather than
+ *     leaving the wrong adult in a thread full of children until the next time
+ *     somebody happens to open it.
+ *   - Custom groups and any existing direct thread are NOT touched. Those
+ *     memberships were a teacher's explicit choice, not a derivation, and
+ *     cascading them would silently drop a parent out of "أولياء أمور ١٠-أ"
+ *     over a roster correction. Removing them stays a deliberate act, in the
+ *     group's own member list.
+ */
+router.delete("/students/:id/links/:userId", async (req: AuthenticatedRequest, res) => {
+  try {
+    const studentId = req.params["id"] as string;
+    const linkedUserId = req.params["userId"] as string;
+
+    // Ownership first, and "not found" either way — saying "that student is
+    // not yours" would confirm the row exists on a colleague's roster.
+    const [student] = await db
+      .select({ id: students.id })
+      .from(students)
+      .where(and(eq(students.id, studentId), eq(students.teacherId, req.user!.id)))
+      .limit(1);
+    if (!student) {
+      res.status(404).json({ error: "Student not found" });
+      return;
+    }
+
+    const [removed] = await db
+      .delete(rosterLinks)
+      .where(and(eq(rosterLinks.studentId, studentId), eq(rosterLinks.userId, linkedUserId)))
+      .returning({ id: rosterLinks.id });
+    if (!removed) {
+      res.status(404).json({ error: "That account is not linked to this student" });
+      return;
+    }
+
+    // Rebuild every class thread this student sits in, so the unlinked account
+    // loses its place in them now. One derivation rule, one implementation —
+    // hand-writing the delete here would be a second copy that gets it wrong
+    // when the same user is self-linked to another child in the same class.
+    const memberships = await db
+      .select({
+        classGroupId: classMemberships.classGroupId,
+        teacherId: classGroups.teacherId,
+        name: classGroups.name,
+        nameAr: classGroups.nameAr,
+      })
+      .from(classMemberships)
+      .innerJoin(classGroups, eq(classGroups.id, classMemberships.classGroupId))
+      .where(and(eq(classMemberships.studentId, studentId), isNull(classGroups.archivedAt)));
+    for (const m of memberships) {
+      await syncClassGroupThread(m.classGroupId, m.teacherId, m.name, m.nameAr);
+    }
+
+    res.json({ removedUserId: linkedUserId });
+  } catch (err) {
+    failRoster(res, err, "unlink account", "Failed to unlink account");
   }
 });
 
