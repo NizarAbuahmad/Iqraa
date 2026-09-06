@@ -94,3 +94,11 @@ eval-out/
 
 # Byte-compiled helpers for scripts/ — regenerated on every run.
 scripts/__pycache__/
+
+# Firebase service-account private keys. The FCM V1 key is uploaded to EAS and
+# lives nowhere in this repo — it can send push as us and read Firebase
+# resources, so a commit of one is a rotate-immediately incident.
+# NOTE: google-services.json is NOT secret and IS committed — it ships inside
+# the APK and only identifies the Firebase project to the client.
+*firebase-adminsdk*.json
+*-service-account*.json
