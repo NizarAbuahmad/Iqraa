@@ -228,6 +228,13 @@ export const SUBJECTS: Subject[] = [
  * When true, curriculum UI exposes Jordan → {validated grades} → Mathematics +
  * Chemistry → S1/S2. Full catalog data below is retained for later expansion —
  * do not delete it.
+ *
+ * What that protects is a row that stands in for a real book we have not
+ * ingested yet. It is not a reason to keep a row that has been superseded by
+ * the real thing, or one whose emptiness reads as content: the two Grade 9
+ * placeholders were removed on 2026-09-07 for those two reasons respectively.
+ * Removing such a row is invisible under the lock — it was never in
+ * MVP_BOOK_IDS — and only changes what the un-locked catalogue would list.
  */
 export const INVESTOR_MVP_CURRICULUM = true;
 
@@ -732,9 +739,10 @@ export const BOOKS: Book[] = [
     semester: 2,
   },
   // ── Math Grade 9 – Semester 1 ───────────────────────────────────────────────
-  // Distinct id from the pre-existing inert `book-math-9` stub below (no real
-  // content, never referenced) — kept separate rather than reused so this
-  // NCCD-sourced book's provenance isn't attached to that stub's history.
+  // Given its own id rather than reusing the inert `book-math-9` stub that used
+  // to sit further down, so this NCCD-sourced book's provenance was never
+  // attached to that stub's history. The stub itself was deleted on 2026-09-07,
+  // superseded by this book and its S2 sibling.
   {
     id: 'book-math-9-s1',
     title: 'Mathematics – Grade 9, Semester 1',
@@ -908,26 +916,12 @@ export const BOOKS: Book[] = [
     language: 'Arabic',
     edition: '1st',
   },
-  {
-    id: 'book-arabic-9',
-    title: 'Arabic Language – Grade 9',
-    titleAr: 'اللغة العربية – الصف التاسع',
-    subjectId: 'arabic',
-    gradeId: 'grade-9',
-    academicYear: '2024-2025',
-    language: 'Arabic',
-    edition: '4th',
-  },
-  {
-    id: 'book-math-9',
-    title: 'Mathematics – Grade 9',
-    titleAr: 'الرياضيات – الصف التاسع',
-    subjectId: 'mathematics',
-    gradeId: 'grade-9',
-    academicYear: '2024-2025',
-    language: 'Arabic',
-    edition: '2nd',
-  },
+  // Grade 9 has no placeholder rows: `book-math-9` was superseded by the real
+  // book-math-9-s1 / -s2 (8 units, 31 lessons) and `book-arabic-9` never had
+  // any, so both were removed rather than left to be mistaken for content —
+  // book-arabic-9 was read as "arabic has a Grade 9 book" during the
+  // 2026-09-05 dead-end triage when it had nothing behind it. Grade 9 material
+  // now lives only where it is real.
   {
     id: 'book-phys-11',
     title: 'Physics – Grade 11',
