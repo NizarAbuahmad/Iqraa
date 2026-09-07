@@ -41,6 +41,25 @@ export interface ClassInsights {
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
+/**
+ * The papers this view is allowed to describe as marked.
+ *
+ * A result row exists as soon as the deterministic pass runs, scored over only
+ * the questions it could mark — so a link submission with six written answers
+ * still untouched carries one. Aggregating it would put a partial denominator
+ * into a class percentage and, worse, count that student under "N students
+ * whose papers were marked" on the panel that says exactly that.
+ *
+ * A separate function rather than a filter inside `aggregateClass` because the
+ * aggregation itself is indifferent to where its rows came from; what needs a
+ * name — and a test — is the rule about which rows are honest to include.
+ */
+export function finishedAttempts<T extends { isProvisional: boolean }>(
+  rows: readonly T[],
+): T[] {
+  return rows.filter(r => !r.isProvisional);
+}
+
 export function aggregateClass(
   attempts: readonly { objectiveScores: readonly ObjectiveScore[] }[],
 ): ClassInsights {

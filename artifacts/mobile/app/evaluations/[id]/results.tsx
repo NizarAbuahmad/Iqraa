@@ -8,9 +8,15 @@
  * error — twenty students losing 1 of 2 marks is not the same picture as one
  * losing 9 of 10.
  *
- * The client-side summary is over graded attempts only: a student still `not_started` or mid-entry has no percent to average
- * in, and folding them in as zeros would understate the class rather than
- * honestly say fewer students have been assessed than are on the roster.
+ * The client-side summary is over *finished* papers only — see
+ * `services/attemptSummary.ts` for the rule and its tests. A student still
+ * `not_started` or mid-entry has no percent to average in, and folding them in
+ * as zeros would understate the class rather than honestly say fewer students
+ * have been assessed than are on the roster. The opposite error is the one
+ * that actually shipped: a link submission is auto-marked on arrival and
+ * carries a result scored over only the questions the machine could mark, so
+ * counting it here read 100%/`proficient` off a paper with six answers still
+ * unmarked. Those are counted and named on their own line instead.
  */
 import React, { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -37,6 +43,7 @@ import {
   lessonPrepPickerIndices,
   scopePickerParams,
 } from '@/services/lessonPrep';
+import { summariseAttempts } from '@/services/attemptSummary';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { saveItem } from '@/services/workspace';
 import type { TranslationKey } from '@/services/i18n';
@@ -114,19 +121,10 @@ export default function ResultsDashboardScreen() {
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));
 
-  const graded = useMemo(() => attempts.filter(a => a.result && Number(a.result.totalMarks) > 0), [attempts]);
-  const meanPercent = useMemo(() => {
-    if (graded.length === 0) return null;
-    const sum = graded.reduce((s, a) => s + Number(a.result!.percent), 0);
-    return Math.round((sum / graded.length) * 100) / 100;
-  }, [graded]);
-  const levelCounts = useMemo(() => {
-    const counts = { beginner: 0, developing: 0, proficient: 0, advanced: 0 } as Record<LevelKey, number>;
-    for (const a of graded) {
-      if (a.result?.levelKey) counts[a.result.levelKey] += 1;
-    }
-    return counts;
-  }, [graded]);
+  const { gradedCount, provisionalCount, meanPercent, levelCounts } = useMemo(
+    () => summariseAttempts(attempts),
+    [attempts],
+  );
   const maxLevelCount = Math.max(1, ...LEVEL_ORDER.map(k => levelCounts[k]));
 
   if (loading) {
@@ -168,9 +166,19 @@ export default function ResultsDashboardScreen() {
           attempts.length === 0 ? null : (
             <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border, marginBottom: 16 }]}>
               <View style={[styles.summaryTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13 }}>
-                  {t('gradedCountLabel', graded.length, attempts.length)}
-                </Text>
+                <View style={{ alignItems: isRTL ? 'flex-end' : 'flex-start' }}>
+                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13 }}>
+                    {t('gradedCountLabel', gradedCount, attempts.length)}
+                  </Text>
+                  {/* Named rather than folded in: these papers carry a result
+                      the machine wrote over the questions it could mark, and
+                      averaging that in would flatter the class. */}
+                  {provisionalCount > 0 && (
+                    <Text style={{ color: '#EF4444', fontFamily: 'Almarai_400Regular', fontSize: 12, marginTop: 2 }}>
+                      {t('provisionalCountLabel', provisionalCount)}
+                    </Text>
+                  )}
+                </View>
                 {meanPercent !== null && (
                   <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 16, marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }}>
                     {t('classAverageLabel')}: {t('resultPercentLabel', String(meanPercent))}
@@ -178,7 +186,7 @@ export default function ResultsDashboardScreen() {
                 )}
               </View>
 
-              {graded.length > 0 && (
+              {gradedCount > 0 && (
                 <View style={{ marginTop: 14, gap: 8 }}>
                   <Text style={{ color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', fontSize: 12, textAlign: align }}>
                     {t('levelDistributionLabel')}
