@@ -436,12 +436,17 @@ no recovery route. Anyone in that position needs Google sign-in or manual
 intervention. That was accepted deliberately, not overlooked — worth revisiting
 if the share of email+password teachers turns out to be material.
 
-**Still to do:** `POST /auth/forgot-password` and `POST /auth/reset-password`
-are now unreachable from the app but still live, along with
-`forgotPasswordLimiter` and the `password_reset_tokens` table. Removing the two
-routes is a clean ~120-line deletion in `routes/auth.ts`, but the API is
-hand-deployed, so it was kept out of a client change that ships on merge. The
-table can stay; dropping it needs a manual schema push and buys nothing.
+**The server side followed, same day.** `POST /auth/forgot-password` and
+`POST /auth/reset-password` are gone from `routes/auth.ts` (122 lines), along
+with `forgotPasswordLimiter` and the `passwordResetTokens` import. Both now
+answer 404 on a running server while `/auth/login` still answers 401 and
+`/healthz/features` 200 — the router is intact, only those two routes left.
+It shipped as its own PR because **the API is hand-deployed**: until someone
+runs that deploy, production still carries the old routes. They are unreachable
+from the app either way, since the client no longer calls them.
+
+The `password_reset_tokens` table stays. Dropping it needs a manual schema push
+and buys nothing.
 
 **Verified:** 1246 mobile tests pass (0 fail), monorepo typecheck clean, no
 dangling references in source, and the login screen rendered in the running app
