@@ -410,6 +410,60 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The parent message can be delivered, not just copied, 2026-09-07
+
+`ai-tools/parent-message` composed a letter to a guardian and then could not
+deliver it. «أرسل» called `shareAsText`, which opens the OS share sheet — and on
+desktop web `navigator.share` does not exist, so it fell back to the clipboard.
+On the browser teachers are demoed in, «أرسل» and «نسخ» did the same thing, and
+the toast read «تم فتح المشاركة» because that was all that had happened. No
+email was ever involved: there is no provider, no env var and no guardian
+address column anywhere in the repo.
+
+It now sends through the messenger from PR #245 — `startThread` + `sendMessage`
+per linked guardian. No new endpoint, no schema change, no server code, no
+dependency. Three buttons where there were two, labelled for the difference:
+**أرسل عبر إقرأ** (real delivery), **مشاركة** (the old share sheet), **نسخ**.
+Collapsing them back into one «أرسل» would mean the same tap sometimes reaching
+a parent and sometimes only filling a clipboard, with nothing on screen to say
+which.
+
+**This shipped inert and is no longer inert.** It was written on 2026-09-07 when
+`STUDENT_ACCOUNTS` was false, so `POST /messaging/threads` refused every send —
+`isConnected()` needs a `roster_links` row and the claim flow that mints one
+answered 403. The flag went **true** in production the same day, confirmed live
+(`/healthz/features` → `{"studentAccounts":true}`), so guardians can hold
+accounts, claim a roster row, and receive these notes for real. The button is
+enabled exactly when the picked student has a linked guardian.
+
+Two rules in the code that are easy to lose later:
+
+- **Guardians only.** `guardiansForStudent()` filters to `role === 'parent'`. A
+  roster link can also be `relation: "self"` — the child's own account — and the
+  letter talks about them in the third person («ابنكم»). Sending it there is the
+  wrong reader receiving a message written to be read over their head, not a
+  redundant send. Five cases in `parentMessage.test.ts`.
+- **Editing the name drops the recipient.** Picking «أحمد» then typing over the
+  name clears `pickedStudentId`, so a note can never go to the guardian of a
+  student nobody chose. Fails back to sharing.
+
+When the button is disabled the screen says which reason applies — «اختر
+الطالب/ة من قائمة صفوفك» when the name was typed by hand, «لم يربط وليّ أمر هذا
+الطالب/ة حسابه بعد» when nobody has claimed that student.
+
+**One real gap now that the flag is on:** `/messaging/*` has **no rate limiter**
+— checked against `routes/messaging.ts`, zero `createRateLimiter` calls — while
+`/take` runs 240/min and `/auth/join/:code` 60/min. Sends accept attachments
+that upload to R2, so it is a cost vector, not only a spam one.
+
+Two adjacent worries were investigated and are **not** gaps, contrary to an
+earlier draft of this entry: `users.suspendedAt` is enforced globally at
+`middlewares/auth.ts:76` through `suspendedMayReach()`, which covers
+`/messaging/*` even though `messaging.ts` never mentions it; and `chatBlocks` is
+checked when a direct thread is created (`messaging.ts:433`), with the read path
+and push filtering blocked senders — only posting into an already-open thread
+skips the check.
+
 ## Password reset is gone rather than pretending, 2026-09-07
 
 `forgot-password` told the teacher «أرسلنا رابط استعادة كلمة المرور إلى بريدك»
