@@ -410,6 +410,70 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## A half-marked paper counted as a finished one, 2026-09-07
+
+Found by walking the evaluations lifecycle end to end against a local stack —
+create → generate → publish → student link → answer in a browser → mark →
+results — rather than by reading the code, which looked right.
+
+**The class dashboard reported a class average that no student had earned.**
+A link submission is auto-marked the moment it arrives, and `recomputeResult`
+writes an `attempt_results` row scored over *only* the questions the machine
+could mark. A student who answered 2 of 8 questions therefore carries
+`3.00/3.00 = 100%`, `levelKey: proficient`, `isProvisional: true`, with six
+written answers still untouched.
+
+Both halves of `/evaluations/:id/results` counted that row as a marked paper:
+
+- `results.tsx` filtered on `a.result && Number(a.result.totalMarks) > 0` —
+  a *result row with marks*, never `isProvisional`. Measured live with one
+  finished paper at 43.75% and one provisional at 100%: «قُيِّم ٢ من ٣»,
+  «المتوسط العام: ٧١٫٨٨٪», and a **متمكّن** in the level histogram off a paper
+  with six unmarked answers.
+- `GET /evaluations/:id/insights` selected every `attempt_results` row for the
+  evaluation with no status filter, so «ما الذي فات الصف» said «٢ طالبًا
+  صُحّحت أوراقهم» — on the panel whose own label makes that claim.
+
+The error ran the wrong way: it **overstates**. Auto-mark a batch of link
+submissions, glance at the dashboard before hand-marking, and the class looks
+better than it is. `answers/[studentId].tsx:508` had honoured `isProvisional`
+since the feature shipped, so the two screens disagreed about the same attempt
+— one printed «نتيجة أولية» while the other averaged it in at face value.
+
+The rule now lives in tested pure functions on both sides, because there are no
+screen tests and no DB-backed tests: `summariseAttempts`
+(`artifacts/mobile/services/attemptSummary.ts`, 8 tests) and `finishedAttempts`
+(`artifacts/api-server/src/modules/assessment/classInsights.ts`, 4 tests).
+Both are **verified by mutation** — dropping the `isProvisional` guard fails 5
+of the 8 mobile tests. Provisional papers are counted and named on their own
+line («N بانتظار إكمال التصحيح — خارج المتوسط») rather than dropped, so a
+teacher whose average covers 1 of 3 papers can see where the other two went.
+
+Re-measured on the same data after the fix: «قُيِّم ١ من ٣», «١ بانتظار إكمال
+التصحيح», «٤٣٫٧٥٪», متمكّن back to 0, and the gaps panel down to «١ طالبًا» —
+client and server now agreeing on the same number instead of two wrong ones.
+
+**Also confirmed on the same run, and not changed:** the roster-consent gate
+(403 before any student row exists), the mock's refusal to fake self-grading
+types, regenerate variation (0 of 6 stems repeated, structure identical),
+`name_taken` on a double claim, no answer key anywhere in the serialised
+student payload, `already_submitted` on a post-hand-in edit, marks *rejected*
+rather than clamped, a teacher's mark surviving a re-submit, and the
+competency sufficiency rule reporting `null` rather than a number off one
+question. The 2026-08-25 ceiling still holds exactly as written: the two
+self-grading questions used here had to be inserted with `psql`, because
+`PATCH /evaluations/:id/questions/:qid` validates against `existing.type` and
+cannot change it. All six generated questions were stamped
+`gradingMode: "ai_rubric"`, a mode nothing implements.
+
+**Found and left alone**, since it is advisory text no grader enforces:
+`buildRubric` in `mockGenerator.ts:307` computes its partial band as
+`Math.max(1, Math.round(marks / 2))`, so on every **1-mark** question the
+"partially correct" band awards the full mark — confirmed in the live payload
+as `levels: [1, 1, 0]`. A teacher following the printed rubric over-awards.
+There is no sensible integer partial on a 1-mark question, so the fix is to
+omit the band, not to floor it.
+
 ## Financial literacy and English S2 have readable text at last, 2026-09-06
 
 Three books whose PDFs were on file and whose text nobody could read are now

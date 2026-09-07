@@ -46,7 +46,7 @@ import { relateAnswerKey } from "../lib/mathVerifierClient.ts";
 import { QUESTION_TYPES } from "../modules/assessment/questionTypes";
 import { COMPETENCY_KEYS, type CompetencyKey } from "../modules/assessment/competency";
 import { isPaperQuestion, parsePaperRows } from "../modules/assessment/paperExam";
-import { aggregateClass } from "../modules/assessment/classInsights";
+import { aggregateClass, finishedAttempts } from "../modules/assessment/classInsights";
 import { generateShareCode } from "../modules/assessment/studentView";
 import {
   GENERATION_PROMPT_VERSION,
@@ -1133,16 +1133,25 @@ router.get("/evaluations/:id/insights", async (req: AuthenticatedRequest, res) =
     }
 
     const rows = await db
-      .select({ objectiveScores: attemptResults.objectiveScores })
+      .select({
+        objectiveScores: attemptResults.objectiveScores,
+        isProvisional: attemptResults.isProvisional,
+      })
       .from(attemptResults)
       .innerJoin(attempts, eq(attempts.id, attemptResults.attemptId))
       .where(eq(attempts.evaluationId, evaluation.id));
 
     const marked = rows
-      .map(r => ({ objectiveScores: (r.objectiveScores as ObjectiveScore[]) ?? [] }))
+      .map(r => ({
+        objectiveScores: (r.objectiveScores as ObjectiveScore[]) ?? [],
+        isProvisional: r.isProvisional === true,
+      }))
       .filter(a => a.objectiveScores.length > 0);
 
-    const insights = aggregateClass(marked);
+    // Only papers the teacher has finished marking. A provisional result is
+    // scored over the questions the machine could mark, so folding it in would
+    // report a partial denominator as a class percentage.
+    const insights = aggregateClass(finishedAttempts(marked));
 
     const { found } = resolveObjectiveIds(insights.objectiveScores.map(o => o.objectiveId));
     const byId = new Map(found.map(o => [o.id, o]));
