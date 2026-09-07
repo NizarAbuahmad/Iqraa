@@ -5,18 +5,27 @@
  * Same lesson-opener convention as biology, physics and earth science, with
  * two differences worth knowing before reading an empty field as a bug:
  *
- * 1. **No teacher guide exists for this subject.** Every `objectives` is empty
- *    and every `periods` is null, because the student book prints neither. It
- *    prints «الفكرة الرئيسة» and «مصطلحات ومفاهيم» per lesson, which are
- *    learning intentions and vocabulary, not a numbered outcomes list —
- *    deriving outcomes from them would be authoring, not transcription. The
- *    browser therefore shows every lesson with a defaulted 45-minute period
- *    and no outcomes, and `verify --gaps` reports it.
- * 2. **Titles were read from the printed page, not the extracted text.** The
- *    extraction passes the document-level gate comfortably (2.0% lam / 3.0%
- *    word transposition) but the display fonts used for headings still come
- *    out scrambled — page 1 yields «جلنة اإلرشاف عىل التأليف». Body text is
- *    clean, so passages ground fine; headings are what had to be read by eye.
+ * 1. **Only `periods` is missing.** No teacher guide exists for this subject
+ *    and period counts are a teacher-guide field, so every `periods` is null
+ *    and the browser falls back to a defaulted 45-minute lesson. Outcomes are
+ *    NOT missing: the student book prints «نتاجات التعلُّم» on every lesson
+ *    opener, together with «الفكرة الرئيسة» and a bilingual «المفاهيم
+ *    والمصطلحات», and all three are transcribed here. For lessons 2 and 3 of
+ *    unit 3 the outcomes sit on the page AFTER the opener (p. 26 and p. 40),
+ *    pushed over by a long vocabulary list.
+ * 2. **Everything was read from the printed page, not the extracted text.**
+ *    The extraction passes the document-level gate comfortably (2.0% lam /
+ *    3.0% word transposition) but the display fonts used for headings still
+ *    come out scrambled. That is not cosmetic: the «نتاجات التعلُّم» heading
+ *    is set in one of those fonts, so grepping the extracted text for it
+ *    badly under-counts. Reading the extraction and concluding "this book has
+ *    no outcomes" is the specific mistake this file exists to have already
+ *    made. Body text is clean, so passages ground fine.
+ * 3. **The units are numbered 3 and 4, not 1 and 2.** Unit numbering runs
+ *    across both semesters: the S2 table of contents shows the two units
+ *    unnumbered, while the opener pages (p. 8 and p. 76) print 3 and 4. The
+ *    printed number wins. Ids stay semester-scoped
+ *    (`kbu-digital-s2-nccd-u3`), so nothing collides with S1's u1/u2.
  *
  * Note: does not import knowledgeBase (avoids circular dependency).
  */
