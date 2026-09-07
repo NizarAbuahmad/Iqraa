@@ -114,7 +114,6 @@ const translations = {
     emailPlaceholder: 'you@school.edu.jo',
     password: 'كلمة المرور',
     passwordPlaceholder: 'كلمة مرورك',
-    forgotPassword: 'نسيت كلمة المرور؟',
     signIn: 'تسجيل الدخول',
     orDivider: 'أو',
     newToIqra: 'جديد على اقرأ؟',
@@ -149,14 +148,6 @@ const translations = {
     suggestAnotherVideo: 'اقترح فيديو آخر',
     noOtherVideo: 'لا توجد اقتراحات أخرى لهذا الدرس.',
     mediaUrlUnsupported: 'رابط غير مدعوم. استخدم رابط يوتيوب أو رابط صورة مباشرًا (‎.jpg / .png).',
-
-    // Forgot password
-    resetPassword: 'إعادة تعيين كلمة المرور',
-    resetSubtitle: 'أدخل بريدك وسنرسل رابط الاستعادة',
-    sendResetLink: 'أرسل رابط الاستعادة',
-    checkEmail: 'تحقق من بريدك',
-    resetSentMsg: 'أرسلنا رابط استعادة كلمة المرور إلى بريدك',
-    backToSignIn: 'العودة لتسجيل الدخول',
 
     // Dashboard
     goodMorning: 'صباح الخير',
@@ -1299,7 +1290,6 @@ const translations = {
     emailPlaceholder: 'you@school.edu.jo',
     password: 'Password',
     passwordPlaceholder: 'Your password',
-    forgotPassword: 'Forgot password?',
     signIn: 'Sign In',
     orDivider: 'OR',
     newToIqra: 'New to IQRA?',
@@ -1333,13 +1323,6 @@ const translations = {
     suggestAnotherVideo: 'Suggest another video',
     noOtherVideo: 'No other suggestions for this lesson.',
     mediaUrlUnsupported: 'Unsupported link. Use a YouTube URL or a direct image URL (.jpg / .png).',
-
-    resetPassword: 'Reset password',
-    resetSubtitle: 'Enter your email and we will send you a reset link',
-    sendResetLink: 'Send reset link',
-    checkEmail: 'Check your email',
-    resetSentMsg: 'We sent a password reset link to your email address',
-    backToSignIn: 'Back to sign in',
 
     goodMorning: 'Good morning',
     goodAfternoon: 'Good afternoon',

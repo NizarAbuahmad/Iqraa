@@ -66,8 +66,6 @@ interface AuthContextType {
   loginWithGoogle: (credential: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
-  forgotPassword: (email: string) => Promise<void>;
-  resetPassword: (token: string, password: string, confirmPassword: string) => Promise<void>;
   updateProfile: (data: { preferredLanguage?: string; firstName?: string; lastName?: string }) => Promise<void>;
   /**
    * Irreversible. Pass `password` for an ordinary account, or `confirmEmail`
@@ -265,25 +263,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }, []);
 
-  const forgotPassword = useCallback(async (email: string) => {
-    if (!email?.includes('@')) throw new Error('Valid email is required');
-    await apiJson('/auth/forgot-password', {
-      method: 'POST',
-      body: JSON.stringify({ email: email.trim() }),
-    });
-  }, []);
-
-  const resetPassword = useCallback(async (
-    token: string,
-    password: string,
-    confirmPassword: string,
-  ) => {
-    await apiJson('/auth/reset-password', {
-      method: 'POST',
-      body: JSON.stringify({ token, password, confirmPassword }),
-    });
-  }, []);
-
   const updateProfile = useCallback(async (data: {
     preferredLanguage?: string;
     firstName?: string;
@@ -325,8 +304,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loginWithGoogle,
         register,
         logout,
-        forgotPassword,
-        resetPassword,
         updateProfile,
         deleteAccount,
       }}

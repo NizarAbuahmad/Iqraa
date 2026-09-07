@@ -410,6 +410,43 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Password reset is gone rather than pretending, 2026-09-07
+
+`forgot-password` told the teacher «أرسلنا رابط استعادة كلمة المرور إلى بريدك»
+and sent nothing. `POST /auth/forgot-password` mints a token, stores its hash,
+`console.log`s it when `NODE_ENV !== "production"`, and returns `{ok:true}` —
+there is no email provider anywhere in this repo, so in production the token was
+created and discarded. There was also no reset screen: `AuthContext.resetPassword()`
+existed and nothing called it, so even a delivered link had nowhere to land.
+
+A reset link cannot go through in-app messaging — the person is locked out of
+the app, so the one channel we have is the one they cannot reach. The choice was
+build an email provider or remove the flow. **Removed.** Google sign-in already
+works and already sets `emailVerified`, and it is the prominent button on the
+login screen.
+
+Gone from the client: `app/(auth)/forgot-password.tsx`, its `Stack.Screen` in
+`(auth)/_layout.tsx`, the «نسيت كلمة المرور؟» link in `login.tsx` (and its two
+orphaned styles), `forgotPassword`/`resetPassword` on `AuthContext`,
+`/forgot-password` in `ENTRY_ROUTES`, and seven now-unused i18n keys in both
+languages. The compiled web bundle contains zero occurrences of any of them.
+
+**The cost, stated plainly:** an account created with email + password now has
+no recovery route. Anyone in that position needs Google sign-in or manual
+intervention. That was accepted deliberately, not overlooked — worth revisiting
+if the share of email+password teachers turns out to be material.
+
+**Still to do:** `POST /auth/forgot-password` and `POST /auth/reset-password`
+are now unreachable from the app but still live, along with
+`forgotPasswordLimiter` and the `password_reset_tokens` table. Removing the two
+routes is a clean ~120-line deletion in `routes/auth.ts`, but the API is
+hand-deployed, so it was kept out of a client change that ships on merge. The
+table can stay; dropping it needs a manual schema push and buys nothing.
+
+**Verified:** 1246 mobile tests pass (0 fail), monorepo typecheck clean, no
+dangling references in source, and the login screen rendered in the running app
+without the link.
+
 ## Financial literacy and English S2 have readable text at last, 2026-09-06
 
 Three books whose PDFs were on file and whose text nobody could read are now
