@@ -471,12 +471,81 @@ let one class 429 the building.
   them, so it works from the blocker's side — messages still accumulate and
   would appear in bulk on unblock. Whether a blocked sender should see an
   error is a product decision, not a bug.
-- **Every rate limiter is per-instance, and the service scales to 20.**
-  `lib/rateLimit.ts` holds counts in memory and its header calls that fine
-  "for a single-instance pilot deployment" — but `maxScale` is **20**. So the
-  login limiter's 10-per-15-minutes is really up to 10 × instances, and the
-  same goes for the new messaging limit. Bounded, loosely; not the number the
-  code appears to promise.
+**Found and fixed the same day: every rate limiter was per-instance while the
+service scales to 20.** `lib/rateLimit.ts` counted in container memory and its
+own header called that fine "for a single-instance pilot deployment" — but
+`maxScale` is **20**, so the login limiter's 10-per-15-minutes was really up to
+10 × instances. The counter now lives in Postgres (`rate_limit_buckets`,
+`api-server/src/lib/rateLimitStore.ts`) as a single
+`INSERT ... ON CONFLICT DO UPDATE`; PR #319, deployed as revision
+`iqraa-api-00023-4vt`. Not inferred from a digest: five requests to
+`/auth/join/:code` against production produced one `join-lookup:` row with
+count exactly 5, where the old code wrote nothing at all.
+
+Two consequences worth knowing. It **fails open** — if the database is
+unreachable the request passes and an error is logged, on the grounds that
+every route behind a limiter needs the database anyway and a 429 would relabel
+an outage as abuse; so a database outage is also a rate-limiting outage. And
+every rate-limited route now does one extra query, `/take` at 240/min being the
+busiest.
+
+Read-then-write was deliberately avoided: `SELECT` then `UPDATE` across
+instances is a lost-update race that would be *worse* than the per-instance
+bucket, because it still passes every single-process test. Verified against a
+real Postgres — 40 concurrent hits returned exactly 1..40 with none lost.
+## The parent message can be delivered, not just copied, 2026-09-07
+
+`ai-tools/parent-message` composed a letter to a guardian and then could not
+deliver it. «أرسل» called `shareAsText`, which opens the OS share sheet — and on
+desktop web `navigator.share` does not exist, so it fell back to the clipboard.
+On the browser teachers are demoed in, «أرسل» and «نسخ» did the same thing, and
+the toast read «تم فتح المشاركة» because that was all that had happened. No
+email was ever involved: there is no provider, no env var and no guardian
+address column anywhere in the repo.
+
+It now sends through the messenger from PR #245 — `startThread` + `sendMessage`
+per linked guardian. No new endpoint, no schema change, no server code, no
+dependency. Three buttons where there were two, labelled for the difference:
+**أرسل عبر إقرأ** (real delivery), **مشاركة** (the old share sheet), **نسخ**.
+Collapsing them back into one «أرسل» would mean the same tap sometimes reaching
+a parent and sometimes only filling a clipboard, with nothing on screen to say
+which.
+
+**This shipped inert and is no longer inert.** It was written on 2026-09-07 when
+`STUDENT_ACCOUNTS` was false, so `POST /messaging/threads` refused every send —
+`isConnected()` needs a `roster_links` row and the claim flow that mints one
+answered 403. The flag went **true** in production the same day, confirmed live
+(`/healthz/features` → `{"studentAccounts":true}`), so guardians can hold
+accounts, claim a roster row, and receive these notes for real. The button is
+enabled exactly when the picked student has a linked guardian.
+
+Two rules in the code that are easy to lose later:
+
+- **Guardians only.** `guardiansForStudent()` filters to `role === 'parent'`. A
+  roster link can also be `relation: "self"` — the child's own account — and the
+  letter talks about them in the third person («ابنكم»). Sending it there is the
+  wrong reader receiving a message written to be read over their head, not a
+  redundant send. Five cases in `parentMessage.test.ts`.
+- **Editing the name drops the recipient.** Picking «أحمد» then typing over the
+  name clears `pickedStudentId`, so a note can never go to the guardian of a
+  student nobody chose. Fails back to sharing.
+
+When the button is disabled the screen says which reason applies — «اختر
+الطالب/ة من قائمة صفوفك» when the name was typed by hand, «لم يربط وليّ أمر هذا
+الطالب/ة حسابه بعد» when nobody has claimed that student.
+
+**One real gap now that the flag is on:** `/messaging/*` has **no rate limiter**
+— checked against `routes/messaging.ts`, zero `createRateLimiter` calls — while
+`/take` runs 240/min and `/auth/join/:code` 60/min. Sends accept attachments
+that upload to R2, so it is a cost vector, not only a spam one.
+
+Two adjacent worries were investigated and are **not** gaps, contrary to an
+earlier draft of this entry: `users.suspendedAt` is enforced globally at
+`middlewares/auth.ts:76` through `suspendedMayReach()`, which covers
+`/messaging/*` even though `messaging.ts` never mentions it; and `chatBlocks` is
+checked when a direct thread is created (`messaging.ts:433`), with the read path
+and push filtering blocked senders — only posting into an already-open thread
+skips the check.
 
 ## Password reset is gone rather than pretending, 2026-09-07
 
@@ -1262,20 +1331,63 @@ now reaches someone»** — and ~~students get accounts by claim code with no
 birthdate, age or guardian-consent field anywhere in the schema~~ **the last
 one closed the same day too — a teacher now attests to school-held parental
 consent before entering any child's name. See «v1 is teacher-only, and a roster
-now needs a consent to exist».** The clause that said «v1 has no student
-accounts at all» was true when written and is **no longer true as of
-2026-09-07**: `STUDENT_ACCOUNTS` is on in production, so the attestation is now
-the only consent mechanism in play rather than a belt beside a closed door.
-See «Student accounts went live, reversing the v1 decision». ~~**No EAS build has ever been made**, so push delivery, image picking and the
-app icon remain unverified on a device~~ — **out of date as of 2026-09-06/07.**
-Three Android `preview` APKs exist, the app is installed on a real phone, and
-that install immediately found a layout bug no local testing had (the projector
-bottom bar, PR #308). **Google sign-in and account linking are verified on
-device** — an existing web Google user lands on their own account, not a
-duplicate, which was the untested branch that most warranted checking. **Push
-delivery, image picking and the app icon are still unverified.**
-`newArchEnabled` + `reactCompiler` remain experimental, and a release build now
-having run is evidence Expo Go never was. There are no store assets. ~~and no `google-services.json` for Android FCM~~
+now needs a consent to exist».** The clause that said «v1 has no student accounts
+at all» was true when written and is **no longer true as of 2026-09-07**:
+`STUDENT_ACCOUNTS` is on in production, so the attestation is now the only
+consent mechanism in play rather than a belt beside a closed door. See
+«Student accounts went live, reversing the v1 decision».** ~~No EAS
+build has ever been made~~ **— four have, as of 2026-09-07: `5c38a5fb`,
+`68522384`, `d32f5c0c` and `e9388ee1`, all Android `preview`, all finished.
+But building is not installing: nobody has put one on a phone, so push
+delivery, image picking and the app icon remain exactly as unverified on a
+device as when nothing had been compiled at all.** `newArchEnabled` +
+`reactCompiler` are both experimental — Expo Go over LAN is not evidence that a
+release build runs, and neither is a build artifact nobody has opened.
+
+**No `production`-profile build has been made**, which is the one that matters
+for submission: `preview` produces an APK for sideloading, Play needs the
+app-bundle that only `production` emits, and that profile carries
+`autoIncrement`. It would also be the first build to exercise `.easignore`,
+which was added *after* the build that motivated it.
+
+**The signing key changed on 2026-09-07.** `e9388ee1` and everything after it
+are signed with a new keystore (cert SHA256 `D1:32:E5:D6…`, alias
+`9f4ba23f…`); the three builds before it carry the retired one
+(`B4:A6:3B:ED…`, alias `96e2be27…`). Installing a new build over an old one
+therefore fails with `INSTALL_FAILED_UPDATE_INCOMPATIBLE` until the old app is
+uninstalled — expected, not a broken build. Verified by reading the
+certificate out of both APKs' signing blocks and out of the keystore itself,
+not by trusting the console.
+
+**That break also breaks Google sign-in, which was missed at the time.** An
+Android OAuth client is bound to a *signing certificate*, so changing the
+keystore invalidates it. `google-services.json` registers SHA-1
+`b1a46cca7dd267fd46af9e1ba578b2f7a6595ed2`, which is the **retired** key —
+verified by reading the certificate out of both APKs:
+
+| build | signing SHA-1 | registered in Firebase |
+| --- | --- | --- |
+| `d32f5c0c` (2026-09-06) | `b1a46cca…` | yes — Google sign-in verified working on a device |
+| `e9388ee1` (2026-09-07) and later | `189f8482…` | **no** |
+
+So `e9388ee1` fails Google sign-in with `DEVELOPER_ERROR`, and the successful
+device test of sign-in and account linking was performed on `d32f5c0c`, the
+older build. A config check done at the time reported the chain "verified end
+to end" — it compared `google-services.json` against `eas.json` and the server's
+accepted audiences, all of which agreed, and none of which is the signing key.
+Every link matched except the one nobody looked at.
+
+**To fix:** add SHA-1 `18:9F:84:82:5D:A3:1C:7B:5D:81:2C:02:53:20:4F:13:E0:4E:79:50`
+in the Firebase console (Project settings → Your apps → Add fingerprint), then
+re-download `google-services.json`, commit it and rebuild. Adding a fingerprint
+binds the *existing* Android client rather than creating a second one. Keeping
+the old fingerprint alongside costs nothing and keeps `d32f5c0c` working.
+
+**Read the certificate, do not trust the config.** `unzip` finds nothing:
+these APKs are signed v2/v3 only, so there is no `META-INF/*.RSA` and the
+certificate lives in the APK Signing Block before the central directory.
+
+There are no store assets. ~~and no `google-services.json` for Android FCM~~
 — the Firebase side landed 2026-09-06, see below.
 
 ## Arabic and Islamic Studies do not carry extractable figures, 2026-09-05
@@ -1665,6 +1777,33 @@ verified. The app's own Messages tab is the check that covers the third one.
 For the next schema change, prefer generating the SQL and applying it where
 you can see the connection, over swapping a URL into a file that four
 directories share.
+
+## Deleted 39 orphaned math-S2 crop PNGs, 2026-09-04
+
+`knowledge-base/grade-10-math/figures/math-s2-student-book/` held 144 `p*.png`
+against 105 `index.json` entries. The 39 extras are 1.44 MB of unreachable
+files — the same half-followed review step as the 13 chemistry-S1 crops below,
+in a second book.
+
+Not "never indexed". All 39 had a real `index.json` entry immediately before
+`29f2a8c` ("Stop cropping figures through their own labels, and let them be
+enlarged"), which removed 45 entries and added 14. These are the old crops that
+cut through their own labels — deliberately rejected by that re-extraction,
+which dropped the index entries and left the PNGs on disk. That is the reverse
+of `docs/adding-a-book.md` step 19: delete **both** the PNG and its
+`index.json` entry.
+
+Nothing referenced them. `figuresForLesson` and `gen_book_figure_assets.mjs`
+read `index.json` and never scan the directory; the generator re-runs to a
+no-op with `BOOK_FIGURE_COUNT` still 600 and no diff to `bookFigureAssets.ts`.
+
+**One grep here is a trap worth recording.** Searching the asset map for
+`math-s2-student-book/` matches every Grade 9 key too — `g9-math-s2-student-book/`
+ends with that string. It reported 6 of the 39 as still referenced; all six were
+substring hits on Grade 9 files. Match on the full quoted key
+(`'math-s2-student-book/p012.png'`), not the directory fragment.
+
+mobile 1131/1131, typecheck clean.
 
 ## The book's figures reach the surfaces that were quietly skipping them, 2026-09-04
 
