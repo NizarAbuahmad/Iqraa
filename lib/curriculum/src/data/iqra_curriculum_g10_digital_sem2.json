@@ -1,0 +1,126 @@
+{
+  "meta": {
+    "grade": "الصف العاشر",
+    "grade_en": "Grade 10",
+    "subject": "المهارات الرقمية",
+    "subject_en": "Digital Skills",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 2,
+    "schema_version": "1.0",
+    "provenance_note": "عناوينُ الوحدتين والدروسِ الثمانيةِ كلُّها من فهرس كتاب الطالب (ص 4-5)، قُرِئت من الصفحة المطبوعة نفسها لا من النص المستخرَج، للسبب المذكور في نظيرتها للفصل الأول. أرقامُ الصفحات في source_books هي أرقام الكتاب المطبوعة كما في الفهرس.",
+    "source_books": {
+      "units_1_2": "كتاب الطالب - المهارات الرقمية - الصف العاشر - الفصل الدراسي الثاني - sourceId: digital-s2-student-book (149 صفحة). الوحدة الأولى تبدأ ص 8 ودروسها ص 10 و25 و39 و56؛ الوحدة الثانية تبدأ ص 76 ودروسها ص 78 و90 و108 و130."
+    },
+    "known_gaps": [
+      "لا نتاجاتِ تعلُّمٍ لأيِّ درس، ولا دليلَ معلِّمٍ لهذه المادة على الملف — كما في الفصل الأول. تُركت objectives فارغةً بدل اشتقاقِها من «الفكرة الرئيسة».",
+      "لا عددَ حصصٍ لأيِّ درسٍ أو وحدة؛ عددُ الحصصِ يُطبع في دليل المعلم لا في كتاب الطالب.",
+      "general_idea_ar و main_idea_ar و vocabulary متروكةٌ فارغةً وإن كان الكتابُ يطبعها؛ نقلُها عملٌ لاحق، كما في الفصل الأول."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "إنترنت الأشياء",
+      "title_en": "Internet of Things (IoT)",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "مقدمة في إنترنت الأشياء: المكونات والوظائف",
+          "title_en": "Introduction to the Internet of Things (IoT): Components and Functions",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "أمثلة عملية على أنظمة ذكية",
+          "title_en": "Practical Examples of Smart Systems",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l3",
+          "order": 3,
+          "title_ar": "تصميم الشبكات وجمع البيانات",
+          "title_en": "Network Design and Data Collection",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l4",
+          "order": 4,
+          "title_ar": "تطبيقات عملية لتصميم شبكة إنترنت الأشياء",
+          "title_en": "IoT Network Design Applications",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "الذكاء الاصطناعي",
+      "title_en": "Artificial Intelligence",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "أنظمة قواعد المعرفة وأهميتها",
+          "title_en": "Knowledge Base Systems and Their Importance",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "المنطق وعلاقته بالذكاء الاصطناعي",
+          "title_en": "Logic and its Relationship to AI",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l3",
+          "order": 3,
+          "title_ar": "منطق الفرضيات ومنطق المسنَد",
+          "title_en": "Propositional Logic and Predicate Logic",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l4",
+          "order": 4,
+          "title_ar": "تطبيقات الذكاء الاصطناعي",
+          "title_en": "AI Applications",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}

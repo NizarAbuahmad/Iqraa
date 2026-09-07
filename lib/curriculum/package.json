@@ -22,6 +22,8 @@
     "./catalogs/g10EarthSem2": "./src/catalogs/g10EarthSem2.ts",
     "./catalogs/g10BioSem1": "./src/catalogs/g10BioSem1.ts",
     "./catalogs/g10BioSem2": "./src/catalogs/g10BioSem2.ts",
+    "./catalogs/g10DigitalSem1": "./src/catalogs/g10DigitalSem1.ts",
+    "./catalogs/g10DigitalSem2": "./src/catalogs/g10DigitalSem2.ts",
     "./catalogs/g10ChemSem2": "./src/catalogs/g10ChemSem2.ts",
     "./catalogs/g10FinlitSem1": "./src/catalogs/g10FinlitSem1.ts",
     "./catalogs/g10ArabicSem1": "./src/catalogs/g10ArabicSem1.ts",

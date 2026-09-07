@@ -9,7 +9,7 @@
  * pickers offer every MVP subject against every MVP grade.
  *
  * The answer turned out to be worse than the single pair that prompted this:
- * of the 18 MVP pairs, 8 have no book, and all 8 are grade-9 — the grade has
+ * of the 20 MVP pairs, 9 have no book, and all 9 are grade-9 — the grade has
  * mathematics and nothing else. That is a fact about the catalogue that was
  * true and unwritten, which is why it is spelled out below rather than
  * skipped or derived.
@@ -46,6 +46,9 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   'biology:grade-9',
   'arabic:grade-9',
   'islamic:grade-9',
+  // Digital Skills joined with Grade 10 student books for both semesters; the
+  // Grade 9 half of the subject has no book, same shape as every line above.
+  'digital-literacy:grade-9',
 ]);
 
 describe('subject/grade coverage across the MVP lists', () => {

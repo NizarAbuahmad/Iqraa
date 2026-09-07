@@ -1,0 +1,156 @@
+{
+  "meta": {
+    "grade": "الصف العاشر",
+    "grade_en": "Grade 10",
+    "subject": "المهارات الرقمية",
+    "subject_en": "Digital Skills",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 1,
+    "schema_version": "1.0",
+    "provenance_note": "عناوينُ الوحدتين والدروسِ الأحدَ عشرَ كلُّها من فهرس كتاب الطالب (ص 4-5)، قُرِئت من الصفحة المطبوعة نفسها لا من النص المستخرَج، لأن النص المستخرَج يقلب الحروف في العناوين المنسَّقة بخطوط العناوين (مثال ص 1: «جلنة اإلرشاف عىل التأليف» بدل «لجنة الإشراف على التأليف»). أرقامُ الصفحات في source_books هي أرقام الكتاب المطبوعة كما في الفهرس.",
+    "source_books": {
+      "units_1_2": "كتاب الطالب - المهارات الرقمية - الصف العاشر - الفصل الدراسي الأول - sourceId: digital-s1-student-book (208 صفحة، الطبعة الأولى التجريبية 2025، ISBN 978-9923-41-882-6). الوحدة الأولى تبدأ ص 8 ودروسها ص 10 و27 و49 و74؛ الوحدة الثانية تبدأ ص 114 ودروسها ص 116 و125 و138 و157 و168 و177 و188."
+    },
+    "known_gaps": [
+      "لا نتاجاتِ تعلُّمٍ لأيِّ درس. لا يطبع كتابُ الطالب قائمةَ نتاجاتٍ لكلِّ درس — يطبع «الفكرةَ الرئيسةَ» و«مصطلحاتٍ ومفاهيمَ» فقط — ولا يوجد دليلُ معلِّمٍ لهذه المادة على الملف. تُركت objectives فارغةً بدل اشتقاقِها من «الفكرة الرئيسة»، لأن ذلك تأليفٌ لا نقل. أضِفها يومَ يصل دليلُ المعلم.",
+      "لا عددَ حصصٍ لأيِّ درسٍ أو وحدة. عددُ الحصصِ يُطبع في دليل المعلم لا في كتاب الطالب، فبقيت periods و total_periods فارغةً (null).",
+      "general_idea_ar و main_idea_ar و vocabulary متروكةٌ فارغةً في هذه النسخة رغم أنّ الكتابَ يطبعها («نظرة عامة على الوحدة» في صفحة افتتاح الوحدة، و«الفكرة الرئيسة» و«مصطلحات ومفاهيم» في صفحة افتتاح كلِّ درس). نقلُها يحتاج قراءةَ ثلاثَ عشرةَ صفحةَ افتتاحٍ من الصفحة المطبوعة، لأن النصَّ المستخرَجَ لهذه الكتل مقلوبُ الحروف جزئيًّا (مثال ص 10: «سأتع ِرَّفُ»). عملٌ لاحق."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "تحليل البيانات",
+      "title_en": "Data Analysis",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "البيانات والمعلومات",
+          "title_en": "Information and Data",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "أنواع البيانات وطرائق تنظيمها",
+          "title_en": "Data Types and Data Organization",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l3",
+          "order": 3,
+          "title_ar": "التمثيل المرئي للبيانات",
+          "title_en": "Data Visualization",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l4",
+          "order": 4,
+          "title_ar": "تحليل البيانات",
+          "title_en": "Data Analysis",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "الخوارزميات والبرمجة",
+      "title_en": "Algorithms & Programming",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "مقدمة إلى المواقع الإلكترونية",
+          "title_en": "Introduction to Websites",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "إنشاء الصفحات الإلكترونية",
+          "title_en": "Creating Web Pages",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l3",
+          "order": 3,
+          "title_ar": "تنسيق النصوص",
+          "title_en": "Text Formatting",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l4",
+          "order": 4,
+          "title_ar": "التعليقات والقوائم",
+          "title_en": "Comments and Lists",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l5",
+          "order": 5,
+          "title_ar": "الصور",
+          "title_en": "Images",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l6",
+          "order": 6,
+          "title_ar": "الوسائط المتعددة والارتباطات التشعبية",
+          "title_en": "Multimedia and Hyperlinks",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l7",
+          "order": 7,
+          "title_ar": "الجداول",
+          "title_en": "Tables",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}

@@ -43,6 +43,14 @@ import {
   BIO_S2_CURRICULUM_BOOK_ID,
 } from './catalogs/g10BioSem2.ts';
 import {
+  buildDigitalSem1BrowserCatalog,
+  DIGITAL_S1_CURRICULUM_BOOK_ID,
+} from './catalogs/g10DigitalSem1.ts';
+import {
+  buildDigitalSem2BrowserCatalog,
+  DIGITAL_S2_CURRICULUM_BOOK_ID,
+} from './catalogs/g10DigitalSem2.ts';
+import {
   CHEM_S2_CURRICULUM_BOOK_ID,
   buildChemSem2BrowserCatalog,
 } from './catalogs/g10ChemSem2.ts';
@@ -205,6 +213,12 @@ export const SUBJECTS: Subject[] = [
   { id: 'islamic',     name: 'Islamic Studies',  nameAr: 'التربية الإسلامية',icon: 'moon',            color: '#F59E0B', grades: GRADES.map(g => g.id) },
   { id: 'social',      name: 'Social Studies',   nameAr: 'الدراسات الاجتماعية', icon: 'globe',        color: '#EC4899', grades: GRADES.slice(0, 9).map(g => g.id) },
   { id: 'computer',    name: 'Computer',         nameAr: 'الحاسوب',          icon: 'laptop-outline',  color: '#06B6D4', grades: GRADES.map(g => g.id) },
+  // NCCD teaches this as «المهارات الرقمية», which is what the Grade 10 books
+  // print and what a teacher searches for; `computer` above is the older name
+  // and has no books, so it stays out of the MVP list. The id matches
+  // BANK_SUBJECT_IDS['digital-literacy'], which already pointed here before
+  // any catalog subject existed to receive it.
+  { id: 'digital-literacy', name: 'Digital Skills', nameAr: 'المهارات الرقمية', icon: 'hardware-chip-outline', color: '#0EA5E9', grades: GRADES.map(g => g.id) },
   { id: 'financial-literacy', name: 'Financial Literacy', nameAr: 'الثقافة المالية', icon: 'wallet-outline', color: '#B45309', grades: GRADES.slice(9).map(g => g.id) },
   { id: 'earth-science', name: 'Earth and Environmental Science', nameAr: 'علوم الأرض والبيئة', icon: 'earth', color: '#65A30D', grades: GRADES.slice(9).map(g => g.id) },
 ];
@@ -245,7 +259,7 @@ export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9'];
 // where it was, so no existing index moves. `finlitCurriculum.test.ts` fails
 // the moment a subject is offered here with nothing to open, and now also the
 // reverse.
-export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy', 'english', 'physics', 'earth-science', 'biology', 'arabic', 'islamic'];
+export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy', 'english', 'physics', 'earth-science', 'biology', 'arabic', 'islamic', 'digital-literacy'];
 /** Main semester books only (guides/exercises stay in data, hidden from UI). */
 export const MVP_BOOK_IDS: readonly string[] = [
   'book-math-10',
@@ -287,6 +301,11 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // each semester here, because these books do.
   ISLAMIC_S1_CURRICULUM_BOOK_ID,
   ISLAMIC_S2_CURRICULUM_BOOK_ID,
+  // Digital Skills — both semesters, student books only. Titles are
+  // lesson-level; outcomes and period counts are absent because no teacher
+  // guide exists for this subject (see the JSONs' known_gaps).
+  DIGITAL_S1_CURRICULUM_BOOK_ID,
+  DIGITAL_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -555,6 +574,38 @@ export const BOOKS: Book[] = [
     pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/New%20folder/%D8%B9%D9%84%D9%88%D9%85%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%A3%D8%B1%D8%B6%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%A7%D8%B1%D8%B6%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D8%A7%D9%84%D8%AC%D8%B2%D8%A1%20%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A%20.pdf',
     guidePdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/%D8%A7%D8%AF%D9%84%D8%A9%20%D8%A7%D9%84%D8%B9%D9%84%D9%88%D9%85%20%D9%85%D9%86%201-10/%D8%A7%D8%AF%D9%84%D8%A9%20%D8%A7%D9%84%D9%85%D8%B9%D9%84%D9%85%20%D8%B9%D9%84%D9%88%D9%85%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D8%AC%D8%B2%D8%A1%20%D8%AB%D8%A7%D9%86%D9%8A/(2025)%20%D8%AF%D9%84%D9%8A%D9%84%20%D8%B9%D9%84%D9%88%D9%85%20%D8%A7%D9%84%D8%A7%D8%B1%D8%B6%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D8%AC%D9%802%20.pdf',
     activityPdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/New%20folder/%D8%B9%D9%84%D9%88%D9%85%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%A3%D8%B1%D8%B6%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%A7%D8%B1%D8%B6%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D9%86%D8%B4%D8%A7%D8%B7%20%D8%AC%D9%A2%20.pdf',
+  },
+  // ── Digital Skills Grade 10 ───────────────────────────────────────────────
+  // No `pdfUrl`: NCCD does not host these two on nccd.gov.jo, and they are not
+  // in the iqraa-public bucket either, so there is no download chip yet. The
+  // AI is grounded in them regardless — that path is the manifest plus
+  // extracted/digital-s{1,2}-student-book.json, which is independent of any
+  // download link (see docs/adding-a-book.md, "The two buckets").
+  {
+    id: DIGITAL_S1_CURRICULUM_BOOK_ID,
+    title: 'Digital Skills – Grade 10, Semester 1',
+    titleAr: 'المهارات الرقمية – الصف العاشر – الفصل الأول',
+    subjectId: 'digital-literacy',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: DIGITAL_S2_CURRICULUM_BOOK_ID,
+    title: 'Digital Skills – Grade 10, Semester 2',
+    titleAr: 'المهارات الرقمية – الصف العاشر – الفصل الثاني',
+    subjectId: 'digital-literacy',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
   },
   // ── Biology Grade 10 ───────────────────────────────────────────────────────
   {
@@ -1668,6 +1719,8 @@ const _earthSem1Browser = buildEarthSem1BrowserCatalog();
 const _earthSem2Browser = buildEarthSem2BrowserCatalog();
 const _bioSem1Browser = buildBioSem1BrowserCatalog();
 const _bioSem2Browser = buildBioSem2BrowserCatalog();
+const _digitalSem1Browser = buildDigitalSem1BrowserCatalog();
+const _digitalSem2Browser = buildDigitalSem2BrowserCatalog();
 const _chemSem2Browser = buildChemSem2BrowserCatalog();
 const _g9MathSem1Browser = buildG9MathSem1BrowserCatalog();
 const _g9MathSem2Browser = buildG9MathSem2BrowserCatalog();
@@ -1796,6 +1849,8 @@ export const UNITS: Unit[] = [
   ..._earthSem2Browser.units,
   ..._bioSem1Browser.units,
   ..._bioSem2Browser.units,
+  ..._digitalSem1Browser.units,
+  ..._digitalSem2Browser.units,
   ..._chemSem2Browser.units,
   ..._nccdSem1Browser.units,
   ..._nccdSem2Browser.units,
@@ -1824,6 +1879,8 @@ export const LESSONS: Lesson[] = [
   ..._earthSem2Browser.lessons,
   ..._bioSem1Browser.lessons,
   ..._bioSem2Browser.lessons,
+  ..._digitalSem1Browser.lessons,
+  ..._digitalSem2Browser.lessons,
   ..._chemSem2Merged.lessons,
   ..._nccdSem1Browser.lessons,
   ..._nccdSem2Browser.lessons,
