@@ -576,11 +576,16 @@ export const BOOKS: Book[] = [
     activityPdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/New%20folder/%D8%B9%D9%84%D9%88%D9%85%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%A3%D8%B1%D8%B6%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%A7%D8%B1%D8%B6%20%D8%B9%D8%A7%D8%B4%D8%B1%20%D9%86%D8%B4%D8%A7%D8%B7%20%D8%AC%D9%A2%20.pdf',
   },
   // ── Digital Skills Grade 10 ───────────────────────────────────────────────
-  // No `pdfUrl`: NCCD does not host these two on nccd.gov.jo, and they are not
-  // in the iqraa-public bucket either, so there is no download chip yet. The
-  // AI is grounded in them regardless — that path is the manifest plus
-  // extracted/digital-s{1,2}-student-book.json, which is independent of any
-  // download link (see docs/adding-a-book.md, "The two buckets").
+  // NCCD does not host these two on nccd.gov.jo, so the download links point at
+  // the project's own iqraa-public bucket and `downloadNote` says so, the same
+  // treatment as book-english-10-s1. Both URLs were checked before being wired:
+  // 200, application/pdf, and byte counts matching the manifest exactly
+  // (6674271 and 5960705) — so the copy a teacher downloads is the same file
+  // the AI was grounded in, not a different edition.
+  //
+  // The download link and the grounding are independent paths regardless: the
+  // AI reads extracted/digital-s{1,2}-student-book.json, which existed and
+  // worked before this bucket did (docs/adding-a-book.md, "The two buckets").
   {
     id: DIGITAL_S1_CURRICULUM_BOOK_ID,
     title: 'Digital Skills – Grade 10, Semester 1',
@@ -593,6 +598,9 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://pub-d9ddd8f74e734a21824518b812652124.r2.dev/%D9%83%D8%AA%D8%A7%D8%A8%20%D8%A7%D9%84%D8%B7%D8%A7%D9%84%D8%A8%20%D9%84%D9%85%D8%A7%D8%AF%D8%A9%20%D8%A7%D9%84%D9%85%D9%87%D8%A7%D8%B1%D8%A7%D8%AA%20%D8%A7%D9%84%D8%B1%D9%82%D9%85%D9%8A%D8%A9%20%D8%A7%D9%84%D8%B5%D9%81%20%D8%A7%D9%84%D8%B9%D8%A7%D8%B4%D8%B1%20%D8%A7%D9%84%D9%81%D8%B5%D9%84%20%D8%A7%D9%84%D8%A3%D9%88%D9%84.pdf',
+    downloadNote: 'Student Book · project storage copy',
+    downloadNoteAr: 'كتاب الطالب · نسخة على مساحة تخزين المشروع',
   },
   {
     id: DIGITAL_S2_CURRICULUM_BOOK_ID,
@@ -606,6 +614,9 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://pub-d9ddd8f74e734a21824518b812652124.r2.dev/%D9%83%D8%AA%D8%A7%D8%A8%20%D8%A7%D9%84%D8%B7%D8%A7%D9%84%D8%A8%20%D9%84%D9%85%D8%A7%D8%AF%D8%A9%20%D8%A7%D9%84%D9%85%D9%87%D8%A7%D8%B1%D8%A7%D8%AA%20%D8%A7%D9%84%D8%B1%D9%82%D9%85%D9%8A%D8%A9%20%D8%A7%D9%84%D8%B5%D9%81%20%D8%A7%D9%84%D8%B9%D8%A7%D8%B4%D8%B1%20%D8%A7%D9%84%D9%81%D8%B5%D9%84%20%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A.pdf',
+    downloadNote: 'Student Book · project storage copy',
+    downloadNoteAr: 'كتاب الطالب · نسخة على مساحة تخزين المشروع',
   },
   // ── Biology Grade 10 ───────────────────────────────────────────────────────
   {
