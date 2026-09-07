@@ -956,6 +956,11 @@ const translations = {
     addToClass: 'أضف إلى الصف',
     removeStudent: 'أزل من الصف',
     removeStudentConfirm: (name: string) => `إزالة ${name} من هذا الصف؟ سيبقى سجلّه محفوظًا.`,
+    deleteClass: 'حذف الصف',
+    // Says "archived", not "erased", because that is what the server does — it
+    // sets archivedAt and keeps the row. Promising deletion would be a lie.
+    deleteClassConfirm: (name: string) =>
+      `حذف «${name}»؟ سيُؤرشَف الصف ويختفي من قائمتك، وتبقى سجلّات الطلبة والمواد المرتبطة به محفوظة.`,
     studentsAdded: (n: number) => `تمت إضافة ${arCountStudents(n)}`,
     noNewStudents: 'لا أسماء جديدة لإضافتها',
     skippedExisting: (names: string) => `موجودون في الصف مسبقًا، لم تُضف: ${names}`,
@@ -2104,6 +2109,9 @@ const translations = {
     addToClass: 'Add to class',
     removeStudent: 'Remove from class',
     removeStudentConfirm: (name: string) => `Remove ${name} from this class? Their record is kept.`,
+    deleteClass: 'Delete class',
+    deleteClassConfirm: (name: string) =>
+      `Delete "${name}"? The class is archived and leaves your list; student records and attached materials are kept.`,
     studentsAdded: (n: number) => `Added ${n} ${n === 1 ? 'student' : 'students'}`,
     noNewStudents: 'No new names to add',
     skippedExisting: (names: string) => `Already in this class, not added: ${names}`,
