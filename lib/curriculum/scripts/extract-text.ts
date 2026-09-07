@@ -176,8 +176,32 @@ async function parseWithPdfParse(sourceId: string, buf: Buffer): Promise<{ pages
  * image, so OCR output is checked against the same `rejectReason` gate
  * rather than assumed clean.
  */
-async function tryOcr(abs: string): Promise<{ pages: ExtractedPage[]; reason: string | null } | null> {
-  const ocred = await ocrPdf(abs);
+/**
+ * Which tesseract model to read a book with.
+ *
+ * The default is Arabic, which is right for every book here but one kind. The
+ * English teacher's books are English on the page — `eng-s2-teacher-guide` is
+ * 451,343 Latin letters against 636 Arabic — and reading those pages with the
+ * Arabic model returns «0200110090065 عأسثانا 116 100111109» where the page
+ * says "Jordan High Note is a dynamic and intensive five-level course".
+ *
+ * That output passed the quality gate, because every gate here measures an
+ * Arabic defect and there was no recognisable Arabic left to measure. A book
+ * can therefore fail on a few pages of Arabic front matter, fall to OCR, come
+ * back destroyed, and be marked ingested with nothing red — which is what
+ * happened on 2026-09-07 before this existed.
+ *
+ * Both models together, rather than English alone, because the front matter
+ * and the rubrics really are Arabic.
+ */
+function ocrLanguageFor(sourceId: string): string | undefined {
+  const subject = G10_SOURCES.find(s => s.id === sourceId)?.subject;
+  return subject === 'english' ? 'eng+ara' : undefined;
+}
+
+async function tryOcr(abs: string, sourceId: string): Promise<{ pages: ExtractedPage[]; reason: string | null } | null> {
+  const lang = ocrLanguageFor(sourceId);
+  const ocred = await ocrPdf(abs, lang ? { lang } : {});
   if (!ocred) return null;
   const pages: ExtractedPage[] = ocred.map(p => ({ page: p.page, text: p.text.trim() }));
   return { pages, reason: rejectReason(pages.map(p => p.text).join('')) };
@@ -196,7 +220,7 @@ async function extractOne(
   if (isLfsPointer(buf)) return `Git-LFS pointer, run \`git lfs pull\`: ${rel}`;
 
   if (forceOcr) {
-    const ocrResult = await tryOcr(abs);
+    const ocrResult = await tryOcr(abs, sourceId);
     if (!ocrResult) {
       return `--ocr requested but OCR is unavailable — see lib/curriculum/scripts/ocr.ts. ${rel}`;
     }
@@ -213,7 +237,7 @@ async function extractOne(
 
   if (reason) {
     const pdfParseReason = reason;
-    const ocrResult = await tryOcr(abs);
+    const ocrResult = await tryOcr(abs, sourceId);
     if (ocrResult && !ocrResult.reason) {
       ({ pages, reason } = ocrResult);
       tool = `tesseract-ocr (pdf-parse rejected: ${pdfParseReason})`;
