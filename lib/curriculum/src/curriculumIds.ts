@@ -66,6 +66,9 @@ const SUBJECTS = {
   // `UNIT_ID_RE` sorts these keys longest-first precisely so this shorter slug
   // never shadows `eng-commerce` and friends.
   'eng': { tag: 'eng-', unitLevel: false },
+  // المهارات الرقمية. The slug follows the manifest, which already tags these
+  // books `digital-s1` / `digital-s2`, for the same reason `eng` does.
+  'digital': { tag: 'digital-', unitLevel: false },
   'eng-commerce': { tag: 'eng-commerce-', unitLevel: false },
   'eng-agri': { tag: 'eng-agri-', unitLevel: false },
   'eng-hospitality': { tag: 'eng-hospitality-', unitLevel: false },
