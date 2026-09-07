@@ -11,6 +11,7 @@ import {
   untransposeDocument,
   reattachMarks,
   repairLigatureWord,
+  repairNegations,
   repairExtraction,
   countRepairs,
 } from '../../scripts/untranspose.ts';
@@ -208,11 +209,24 @@ describe('reattachMarks', () => {
 
 describe('repairLigatureWord', () => {
   it('repairs a لا the wordlist attests', () => {
-    assert.equal(repairLigatureWord('العالقة'), 'العلاقة');
     assert.equal(repairLigatureWord('الخاليا'), 'الخلايا');
     assert.equal(repairLigatureWord('هؤالء'), 'هؤلاء');
     assert.equal(repairLigatureWord('إال'), 'إلا');
     assert.equal(repairLigatureWord('والصالة'), 'والصلاة');
+    assert.equal(repairLigatureWord('الالزمة'), 'اللازمة');
+  });
+
+  it('backs off once a book proves the other reading is also a word', () => {
+    // «العالقة» was repaired to «العلاقة» (the relationship) while the wordlist
+    // was built from eleven OCR books. The earth-science teacher's guide then
+    // came in using «المواد العالقة» — suspended matter — 42 times, which is
+    // real Arabic and exactly the term that subject needs. Both readings now
+    // have evidence, so the rule declines rather than picking the commoner one.
+    //
+    // It costs yield: ligature repairs across the corpus fell from ~3,741 to
+    // 1,189 as the OCR corpus doubled and taught the blocking set more real
+    // words. That is the guard working, not degrading.
+    assert.equal(repairLigatureWord('العالقة'), 'العالقة');
   });
 
   it('leaves a word the OCR books also spell that way', () => {
@@ -253,6 +267,43 @@ describe('repairLigatureWord', () => {
 
   it('does not touch the word-initial article, which is not its job', () => {
     assert.equal(repairLigatureWord('الكتاب'), 'الكتاب');
+  });
+});
+
+describe('repairNegations', () => {
+  const fix = (s: string): string => repairNegations([s])[0];
+
+  it('restores the negation before a word the evidence covers', () => {
+    assert.equal(fix('ال يمكن قياسه'), 'لا يمكن قياسه');
+    assert.equal(fix('ال يجوز'), 'لا يجوز');
+    assert.equal(fix('وال يبتعد عنه'), 'ولا يبتعد عنه');
+    assert.equal(fix('ال أستنتج'), 'لا أستنتج');
+  });
+
+  it('leaves an article that merely came away from its noun', () => {
+    // This is the failure the whole design exists to prevent: «ال» here is
+    // «الصورة»'s article, and making it «لا» would negate the sentence.
+    assert.equal(fix('طول الإطار ال صورة'), 'طول الإطار ال صورة');
+    assert.equal(fix('ال تعليم'), 'ال تعليم');
+    assert.equal(fix('ال نظام'), 'ال نظام');
+    assert.equal(fix('ال أرض'), 'ال أرض');
+  });
+
+  it('leaves a word no evidence covers', () => {
+    assert.equal(fix('ال زقالمثيل'), 'ال زقالمثيل');
+  });
+
+  it('does not touch a correctly attached article', () => {
+    const ok = 'الكتاب المدرسي للصف العاشر';
+    assert.equal(fix(ok), ok);
+  });
+
+  it('needs a following word at all', () => {
+    assert.equal(fix('ال'), 'ال');
+  });
+
+  it('preserves the surrounding text byte-for-byte', () => {
+    assert.equal(fix('يُذكر أنّه ال يمكن ذلك، (٢٠٢٦).'), 'يُذكر أنّه لا يمكن ذلك، (٢٠٢٦).');
   });
 });
 

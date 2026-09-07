@@ -22,7 +22,7 @@
       "status": "ingested",
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 132,
         "chars": 171775,
         "localPath": "attached_assets/10th_grade,_math,_2nd_semester_1785147978008.pdf",
@@ -59,7 +59,7 @@
       "status": "ingested",
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 150,
         "chars": 205650,
         "localPath": "attached_assets/10th_grade,_math,_1st_semester_1785071530816.pdf",
@@ -96,7 +96,7 @@
       "status": "ingested",
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 212,
         "chars": 512190,
         "localPath": "attached_assets/TE010_Book-teacher_guiede,_10th_grade,_semster_one_1785147998881.pdf",
@@ -130,9 +130,9 @@
       "status": "ingested",
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 218,
-        "chars": 556829,
+        "chars": 556826,
         "localPath": "attached_assets/Book10_2_Proof3_WEB-teacher_guiede,_10th_grade,_semster_two_1785147998881.pdf",
         "sha256": "f3c362a34c1b8862485b95a2944719eeea820dbaa4ca134cd90119507f318810"
       },
@@ -164,7 +164,7 @@
       "status": "ingested",
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 50,
         "chars": 45128,
         "localPath": "attached_assets/2026_MT10_WB1__10th_grade,_math_excersice_book,_semster_one_1785147998882.pdf",
@@ -197,7 +197,7 @@
       "status": "ingested",
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 56,
         "chars": 53818,
         "localPath": "attached_assets/MA_10_WB2_6_11_2025-mather_exccersie_book,_semster_2_1785147998882.pdf",
@@ -242,7 +242,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 1,
         "chars": 1683,
         "localPath": "attached_assets/knowledge-base-pending/math-remedial-plan.pdf",
@@ -273,9 +273,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 33,
-        "chars": 33344,
+        "chars": 33341,
         "localPath": "attached_assets/knowledge-base-pending/math-remedial-part1.pdf",
         "sha256": "0b2dd1d69907975179d0de269be9143c99032a01c13a9c7d1916ed6ca89ae558"
       }
@@ -350,7 +350,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 80,
         "chars": 95931,
         "localPath": "knowledge-base/grade-10-math/support-pdfs/المادة المساندة لمادة الرياضيات الصف العاشر الفصل الأول.pdf",
@@ -381,7 +381,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 20,
         "chars": 16193,
         "localPath": "attached_assets/knowledge-base-pending/math-s2-support-worksheets.pdf",
@@ -412,7 +412,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 12,
         "chars": 4461,
         "localPath": "attached_assets/knowledge-base-pending/math-diagnostic-test.pdf",
@@ -612,7 +612,7 @@
       "notes": "Worked solutions — the depth source for the linear+quadratic system lesson.",
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 6,
         "chars": 6917,
         "localPath": "attached_assets/knowledge-base-pending/math-ws-systems-solved-alkhatib.pdf",
@@ -644,7 +644,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 3,
         "chars": 2161,
         "localPath": "attached_assets/knowledge-base-pending/math-systems-almasri.pdf",
@@ -676,7 +676,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 6,
         "chars": 3619,
         "localPath": "attached_assets/knowledge-base-pending/math-ws-powers-almasri.pdf",
@@ -708,7 +708,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 3,
         "chars": 3396,
         "localPath": "attached_assets/knowledge-base-pending/math-ws-polynomials-almasri.pdf",
@@ -740,7 +740,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 3,
         "chars": 1376,
         "localPath": "attached_assets/knowledge-base-pending/math-ws-circle-full-alkhatib.pdf",
@@ -772,7 +772,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 2,
         "chars": 1332,
         "localPath": "attached_assets/knowledge-base-pending/math-ws-tangents-alhindi.pdf",
@@ -804,7 +804,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 2,
         "chars": 1509,
         "localPath": "attached_assets/knowledge-base-pending/math-ws-tangent-angle-alhindi.pdf",
@@ -836,7 +836,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 2,
         "chars": 1183,
         "localPath": "attached_assets/knowledge-base-pending/math-ws-cyclic-quad-1-alhindi.pdf",
@@ -868,7 +868,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 3,
         "chars": 1067,
         "localPath": "attached_assets/knowledge-base-pending/math-ws-cyclic-quad-2-alhindi.pdf",
@@ -900,7 +900,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 3,
         "chars": 2271,
         "localPath": "attached_assets/knowledge-base-pending/math-ws-angles-alhindi.pdf",
@@ -933,7 +933,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 2,
         "chars": 1516,
         "localPath": "attached_assets/knowledge-base-pending/math-ws-chords-1-alhindi.pdf",
@@ -990,7 +990,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 2,
         "chars": 1628,
         "localPath": "attached_assets/knowledge-base-pending/math-ws-chords-2-alhindi.pdf",
@@ -1022,7 +1022,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 5,
         "chars": 2633,
         "localPath": "attached_assets/knowledge-base-pending/math-mcq-circle-alkhatib.pdf",
@@ -1054,7 +1054,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 2,
         "chars": 1257,
         "localPath": "attached_assets/knowledge-base-pending/math-mcq-circle-suggested-alkhatib.pdf",
@@ -1111,7 +1111,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 3,
         "chars": 2093,
         "localPath": "attached_assets/knowledge-base-pending/math-matrices-suggested-alkhatib.pdf",
@@ -1142,7 +1142,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 5,
         "chars": 3260,
         "localPath": "attached_assets/knowledge-base-pending/math-final-alhindi.pdf",
@@ -1173,7 +1173,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 7,
         "chars": 6563,
         "localPath": "attached_assets/knowledge-base-pending/math-final-1-alkhatib.pdf",
@@ -1204,7 +1204,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 2,
         "chars": 2288,
         "localPath": "attached_assets/knowledge-base-pending/math-final-2-alkhatib.pdf",
@@ -1235,7 +1235,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 10,
         "chars": 2645,
         "localPath": "attached_assets/knowledge-base-pending/math-month1-alkhatib.pdf",
@@ -1266,7 +1266,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 2,
         "chars": 736,
         "localPath": "attached_assets/knowledge-base-pending/math-month2-alfarakh.pdf",
@@ -1298,7 +1298,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 2,
         "chars": 1137,
         "localPath": "attached_assets/knowledge-base-pending/math-u6-test-hussein.pdf",
@@ -1330,7 +1330,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 2,
         "chars": 1423,
         "localPath": "attached_assets/knowledge-base-pending/math-u7-test-hussein.pdf",
@@ -1361,7 +1361,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 25,
         "chars": 14370,
         "localPath": "attached_assets/knowledge-base-pending/math-foundation-lafi.pdf",
@@ -1426,7 +1426,7 @@
       "status": "ingested",
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 76,
         "chars": 106657,
         "localPath": "attached_assets/10th_grade,_alchamy1st_semester_1785071530814.pdf",
@@ -1496,7 +1496,7 @@
       "notes": "Units 4-5: التفاعلات والحسابات الكيميائية / الطاقة الكيميائية — three lessons each, plus a تجربة استهلالية, an إثراء وتوسع and a مراجعة per unit. Unit numbering continues from S1, so the two semesters are one course, not two editions. 84 pages, Adobe original: prefer for extraction. Ingested 2026-08-24 into iqra_curriculum_g10_chem_sem2.json: main ideas, outcomes and bilingual vocabulary from the six lesson openers.",
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 84,
         "chars": 122100,
         "localPath": "knowledge-base/grade-10-chemistry/support-pdfs/10th grade, alchamy.2nd semester.pdf",
@@ -1600,7 +1600,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 20,
         "chars": 26256,
         "localPath": "attached_assets/knowledge-base-pending/chem-s1-activity-book.pdf",
@@ -1631,7 +1631,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 26,
         "chars": 32559,
         "localPath": "attached_assets/knowledge-base-pending/chem-s2-activity-book.pdf",
@@ -1662,9 +1662,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 52,
-        "chars": 31127,
+        "chars": 31125,
         "localPath": "attached_assets/knowledge-base-pending/chem-loss-recovery.pdf",
         "sha256": "2c58785d854dfd24ba3e1e37652a7f75d75b4663ab56b7cb0b678ddbf43ba454"
       }
@@ -1693,7 +1693,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 149,
         "chars": 173948,
         "localPath": "attached_assets/knowledge-base-pending/chem-s1-pack-sartawi.pdf",
@@ -1823,7 +1823,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 52,
         "chars": 35424,
         "localPath": "attached_assets/knowledge-base-pending/chem-s1-pack-almasri.pdf",
@@ -1854,7 +1854,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 93,
         "chars": 46557,
         "localPath": "attached_assets/knowledge-base-pending/chem-s1-summary-shawata.pdf",
@@ -1909,7 +1909,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 140,
         "chars": 78249,
         "localPath": "attached_assets/knowledge-base-pending/chem-s2-pack-shawata.pdf",
@@ -1940,7 +1940,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 49,
         "chars": 20388,
         "localPath": "attached_assets/knowledge-base-pending/chem-s2-pack-almasri.pdf",
@@ -2045,7 +2045,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 14,
         "chars": 6637,
         "localPath": "attached_assets/knowledge-base-pending/chem-s1-mixed-questions-sartawi.pdf",
@@ -2078,7 +2078,7 @@
       "notes": "From منهاجي — a third-party network, not the ministry and not a named teacher.",
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 8,
         "chars": 3367,
         "localPath": "attached_assets/knowledge-base-pending/chem-ws-bohr-manhaji.pdf",
@@ -2158,7 +2158,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 2,
         "chars": 648,
         "localPath": "attached_assets/knowledge-base-pending/chem-ws-planck-almasri.pdf",
@@ -2190,7 +2190,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 7,
         "chars": 7002,
         "localPath": "attached_assets/knowledge-base-pending/chem-u1-test-shawata.pdf",
@@ -2302,9 +2302,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 88,
-        "chars": 122859,
+        "chars": 122857,
         "localPath": "knowledge-base/grade-10-physics/support-pdfs/كتاب الطالب لمادة الفيزياء للصف العاشر الفصل الأول.pdf",
         "sha256": "95fda6fdfdd99324fd5777d7e0563b05f346512d0f67ba41181203f5beb53b63"
       }
@@ -2332,7 +2332,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 132,
         "chars": 209731,
         "localPath": "knowledge-base/grade-10-physics/support-pdfs/كتاب الطالب لمادة الفيزياء للصف العاشر الفصل الثاني.pdf",
@@ -2424,7 +2424,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 36,
         "chars": 52819,
         "localPath": "knowledge-base/grade-10-physics/support-pdfs/كتاب الأنشطة لمادة الفيزياء للصف العاشر الفصل الأول.pdf",
@@ -2454,9 +2454,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 52,
-        "chars": 86669,
+        "chars": 86668,
         "localPath": "knowledge-base/grade-10-physics/support-pdfs/كتاب التمارين لمادة الفيزياء للصف العاشر الفصل الثاني.pdf",
         "sha256": "b815e584e4af0a4272557ae44dc23c79f2e13b7866a528c06aed96cce3ec6c99"
       }
@@ -2485,7 +2485,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 84,
         "chars": 93465,
         "localPath": "knowledge-base/grade-10-biology/support-pdfs/كتاب الطالب لمادة العلوم الحياتية للصف العاشر الفصل الأول.pdf",
@@ -2516,7 +2516,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 84,
         "chars": 112666,
         "localPath": "knowledge-base/grade-10-biology/support-pdfs/كتاب الطالب لمادة العلوم الحياتية للصف العاشر الفصل الثاني.pdf",
@@ -2609,7 +2609,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 32,
         "chars": 47317,
         "localPath": "knowledge-base/grade-10-biology/support-pdfs/كتاب الأنشطة والتجارب العملية لمادة العلوم الحياتية للصف العاشر الفصل الأول.pdf",
@@ -2640,7 +2640,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 40,
         "chars": 52348,
         "localPath": "knowledge-base/grade-10-biology/support-pdfs/كتاب الأنشطة والتجارب العملية لمادة العلوم الحياتية للصف العاشر الفصل الثاني.pdf",
@@ -2702,7 +2702,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 92,
         "chars": 143933,
         "localPath": "knowledge-base/grade-10-earth-science/support-pdfs/كتاب الطالب لمادة علوم الأرض والبيئة الصف العاشر الفصل الثاني.pdf",
@@ -2797,9 +2797,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 30,
-        "chars": 46878,
+        "chars": 46877,
         "localPath": "knowledge-base/grade-10-earth-science/support-pdfs/كتاب الأنشطة والتجارب العملية لمادة علوم الأرض الصف العاشر الفصل الأول.pdf",
         "sha256": "93b9e34c8256e7ee3001a7b767c2546155c574342e32c8e54e338412571ea2ae"
       }
@@ -2828,7 +2828,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 40,
         "chars": 69441,
         "localPath": "knowledge-base/grade-10-earth-science/support-pdfs/كتاب الأنشطة والتجارب العملية لمادة علوم الأرض الصف العاشر الفصل الثاني.pdf",
@@ -2859,9 +2859,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 144,
-        "chars": 196697,
+        "chars": 196696,
         "localPath": "knowledge-base/grade-10-arabic/support-pdfs/كتاب الطالب لمادة العربية لغتي للصف العاشر الفصل الأول.pdf",
         "sha256": "9caec4fbe79d9d63cf75c91792e4d93226183965f125ddd026f77116844cd5ee"
       }
@@ -2890,7 +2890,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 140,
         "chars": 210107,
         "localPath": "knowledge-base/grade-10-arabic/support-pdfs/كتاب الطالب لمادة اللغة العربية للصف العاشر الفصل الثاني.pdf",
@@ -2921,9 +2921,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 255,
-        "chars": 670420,
+        "chars": 670419,
         "localPath": "knowledge-base/grade-10-arabic/support-pdfs/دليل المعلم لمادة العربية لغتي الصف العاشر الفصل الأول.pdf",
         "sha256": "d0859534d64cd2a3edc3cc8cd1ef3b6a09c341910dd666e6e61d6e52db801add"
       }
@@ -2952,7 +2952,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 51,
         "chars": 69338,
         "localPath": "knowledge-base/grade-10-arabic/support-pdfs/كتاب التمارين لمادة اللغة العربية (العربية لغتي) للصف العاشر الفصل الأول.pdf",
@@ -2983,7 +2983,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 53,
         "chars": 74403,
         "localPath": "knowledge-base/grade-10-arabic/support-pdfs/كتاب التمارين لمادة اللغة العربية (العربية لغتي) للصف العاشر الفصل الثاني.pdf",
@@ -3014,9 +3014,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 64,
-        "chars": 97153,
+        "chars": 97152,
         "localPath": "knowledge-base/grade-10-earth-science/support-pdfs/كتاب الطالب لمادة علوم الأرض والبيئة الصف العاشر الفصل الأول.pdf",
         "sha256": "471202b6960d63b877c9634cc10dfa4a36720e1a39fd0d7df6b732b3fdb98c4e"
       }
@@ -3199,7 +3199,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 94,
         "chars": 102195,
         "localPath": "knowledge-base/grade-10-history/support-pdfs/كتاب الطالب لمادة التاريخ للصف العاشر الفصل الثاني.pdf",
@@ -3230,7 +3230,7 @@
       "notes": "المصدر غير مؤكد: لم يُعثر على نسخة NCCD معتمدة لهذه الطبعة (انظر STATUS.md، 2026-08-30)؛ الكتالوج يصفها بأنها «نسخة على مساحة تخزين المشروع». لذلك authority = third-party وليس nccd — لا يُدّعى مصدر لم يُتحقق منه.",
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 78,
         "chars": 183110,
         "localPath": "knowledge-base/grade-10-english/support-pdfs/كتاب الطالب لمادة اللغة الإنجليزية الصف العاشر الفصل الأول.pdf",
@@ -3261,7 +3261,7 @@
       "notes": "المصدر غير مؤكد: لم يُعثر على نسخة NCCD معتمدة لهذه الطبعة (انظر STATUS.md، 2026-08-30)؛ الكتالوج يصفها بأنها «نسخة على مساحة تخزين المشروع». لذلك authority = third-party وليس nccd — لا يُدّعى مصدر لم يُتحقق منه.",
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 52,
         "chars": 110720,
         "localPath": "knowledge-base/grade-10-english/support-pdfs/كتاب الأنشطة لمادة اللغة الإنجليزية للصف العاشر الفصل الأول.pdf",
@@ -3415,7 +3415,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 208,
         "chars": 294277,
         "localPath": "knowledge-base/grade-10-digital-literacy/support-pdfs/كتاب الطالب لمادة المهارات الرقمية الصف العاشر الفصل الأول.pdf",
@@ -3445,7 +3445,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 149,
         "chars": 247571,
         "localPath": "knowledge-base/grade-10-digital-literacy/support-pdfs/كتاب الطالب لمادة المهارات الرقمية الصف العاشر الفصل الثاني.pdf",
@@ -3599,7 +3599,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 131,
         "chars": 115196,
         "localPath": "knowledge-base/grade-10-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية الصف العاشر الجزء الأول.pdf",
@@ -3629,7 +3629,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 101,
         "chars": 96502,
         "localPath": "knowledge-base/grade-10-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية الصف العاشر الجزء الثاني.pdf",
@@ -3662,9 +3662,9 @@
       "notes": "أُعيد تنزيل الملف من nccd.gov.jo في 2026-09-06 لأنه كان الوحيد (مع الجزء الآخر) غير الموجود على القرص، فتخطّته إعادة الاستخراج. النسخة السابقة كانت مضغوطة من Drive؛ عدد الصفحات نفسه (151) والطبعة نفسها، والحجم أكبر لأن هذه نسخة NCCD الأصلية.",
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 151,
-        "chars": 193690,
+        "chars": 193682,
         "localPath": "knowledge-base/grade-9-math/support-pdfs/كتاب الطالب لمادة الرياضيات الصف التاسع الفصل الأول.pdf",
         "sha256": "17cc8131de24e1557f548a2f79e1c312d7727982d5b0e3c31e801b9755b28ed1"
       }
@@ -3695,9 +3695,9 @@
       "notes": "أُعيد تنزيل الملف من nccd.gov.jo في 2026-09-06 لأنه كان الوحيد (مع الجزء الآخر) غير الموجود على القرص، فتخطّته إعادة الاستخراج. النسخة السابقة كانت مضغوطة من Drive؛ عدد الصفحات نفسه (174) والطبعة نفسها، والحجم أكبر لأن هذه نسخة NCCD الأصلية.",
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 174,
-        "chars": 208267,
+        "chars": 208266,
         "localPath": "knowledge-base/grade-9-math/support-pdfs/كتاب الطالب لمادة الرياضيات الصف التاسع الفصل الثاني.pdf",
         "sha256": "c076fbd6ac6677adc300bff23af587425b649878a0f342e0908780d27661c171"
       }
@@ -3758,7 +3758,7 @@
       "notes": "نُزّل من nccd.gov.jo في 2026-09-06 واستُخرج في 2026-09-07 بـ pdf-parse. 170 صفحة، نصّ إنجليزي سليم.",
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-06",
+        "extractedAt": "2026-09-07",
         "pages": 170,
         "chars": 624980,
         "localPath": "knowledge-base/grade-10-english/support-pdfs/دليل المعلم لمادة اللغة الإنجليزية للصف العاشر الفصل الأول.pdf",

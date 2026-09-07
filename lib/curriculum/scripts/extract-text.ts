@@ -138,9 +138,11 @@ async function ensureLocal(sourceId: string, abs: string): Promise<string | null
  * `--ocr` and an eye, not this.
  */
 function repairArtifacts(sourceId: string, pages: ExtractedPage[]): ExtractedPage[] {
-  const { pages: fixed, marks, articles, ligatures } = repairWithCounts(pages.map(p => p.text));
-  if (marks || articles || ligatures) {
-    console.log(`  ⤷ ${sourceId} — ${marks} mark(s), ${articles} article(s), ${ligatures} ligature(s)`);
+  const { pages: fixed, marks, articles, ligatures, negations } = repairWithCounts(pages.map(p => p.text));
+  if (marks || articles || ligatures || negations) {
+    console.log(
+      `  ⤷ ${sourceId} — ${marks} mark(s), ${articles} article(s), ${ligatures} ligature(s), ${negations} negation(s)`,
+    );
   }
   return pages.map((p, i) => ({ ...p, text: fixed[i] }));
 }

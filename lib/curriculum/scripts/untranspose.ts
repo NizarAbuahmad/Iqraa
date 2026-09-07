@@ -40,7 +40,7 @@
  * it.
  */
 
-import wordlist from '../src/data/ligature-wordlist.json' with { type: 'json' };
+import wordlists from '../src/data/repair-wordlists.json' with { type: 'json' };
 
 /** Alef-with-hamza forms. A bare alef is never legitimately followed by one. */
 const HAMZA_CARRIERS = new Set(['أ', 'إ', 'آ']);
@@ -305,8 +305,8 @@ export function reattachMarks(text: string): string {
  * occurrences at the time of writing. A word neither list has seen is left
  * alone, which is the right way for this to fail.
  */
-const LIGATURE_CORRECT: ReadonlySet<string> = new Set(wordlist.correct);
-const LIGATURE_ATTESTED: ReadonlySet<string> = new Set(wordlist.attested);
+const LIGATURE_CORRECT: ReadonlySet<string> = new Set(wordlists.correct);
+const LIGATURE_ATTESTED: ReadonlySet<string> = new Set(wordlists.attested);
 
 /** Indexes of an internal «ال». Index 0 is the article, repaired elsewhere. */
 function internalArticlePositions(word: string): number[] {
@@ -370,15 +370,62 @@ export function repairLigatures(pages: readonly string[]): string[] {
 }
 
 /**
+ * The negation «لا» restored where it arrived as the article «ال».
+ *
+ * The same displacement as everything else here, on a two-letter word: «لا
+ * يمكن» is stored «ال يمكن». It is the largest single defect left — 5,239
+ * standalone occurrences — and the only repair in this file that can reverse
+ * an author's meaning, because a definite article that came away from its noun
+ * looks exactly the same, and turning one into "not" negates a sentence that
+ * asserted something.
+ *
+ * So nothing here is decided by shape. `negationBefore` is a generated list of
+ * the specific words after which a preceding «ال» has been established to be
+ * the negation — imperfect verbs, overwhelmingly, because the article never
+ * precedes a verb. A word not on that list keeps its «ال». That is why this
+ * repairs 717 of the 5,239 rather than all of them: the rest are either
+ * genuine detached articles, or contexts no evidence covers, and both are
+ * better left wrong than confidently reversed.
+ *
+ * The proclitic travels with the word: «وال يبتعد» becomes «ولا يبتعد».
+ */
+const NEGATION_BEFORE: ReadonlySet<string> = new Set(wordlists.negationBefore);
+const BROKEN_NEGATION: ReadonlyMap<string, string> = new Map([
+  ['ال', 'لا'],
+  ['وال', 'ولا'],
+  ['فال', 'فلا'],
+]);
+
+export function repairNegations(pages: readonly string[]): string[] {
+  return pages.map(page => {
+    // Split on whitespace but keep it, so the page is reassembled byte-for-byte
+    // apart from the words actually changed.
+    const parts = page.split(/(\s+)/);
+    for (let i = 0; i < parts.length; i++) {
+      const fixed = BROKEN_NEGATION.get(bareLetters(parts[i]));
+      if (fixed === undefined) continue;
+      let j = i + 1;
+      while (j < parts.length && parts[j].trim() === '') j++;
+      if (j >= parts.length) continue;
+      const next = bareLetters(parts[j].replace(/[^ء-ۿ]/gu, ''));
+      if (NEGATION_BEFORE.has(next)) parts[i] = fixed;
+    }
+    return parts.join('');
+  });
+}
+
+/**
  * Every pdf-parse ordering artifact, in the order they must be undone.
  *
  * Marks first, so the later rules see whole words rather than fragments. The
  * article before the ligature, because a word can carry both — «اإلسالم» needs
  * the article put back to become «الإسالم» before the ligature rule can
- * recognise it and finish the job as «الإسلام».
+ * recognise it and finish the job as «الإسلام». The negation last, since it
+ * reads the word *after* the one it changes and wants that word already
+ * repaired before deciding.
  */
 export function repairExtraction(pages: readonly string[]): string[] {
-  return repairLigatures(untransposeDocument(pages.map(reattachMarks)));
+  return repairNegations(repairLigatures(untransposeDocument(pages.map(reattachMarks))));
 }
 
 /**
@@ -416,18 +463,21 @@ export function repairWithCounts(pages: readonly string[]): {
   marks: number;
   articles: number;
   ligatures: number;
+  negations: number;
 } {
   const marks = countDetachedMarks(pages);
   const attached = pages.map(reattachMarks);
   const articled = untransposeDocument(attached);
   const ligatured = repairLigatures(articled);
+  const negated = repairNegations(ligatured);
   return {
-    pages: ligatured,
+    pages: negated,
     marks,
-    // Both counted against text that tokenises identically to their input:
-    // neither the article swap nor the ligature swap changes word boundaries,
+    // Each counted against text that tokenises identically to its input: none
+    // of the article, ligature or negation swaps changes a word boundary,
     // unlike reattaching marks. See the note on `countRepairs`.
     articles: countRepairs(attached, articled),
     ligatures: countRepairs(articled, ligatured),
+    negations: countRepairs(ligatured, negated),
   };
 }
