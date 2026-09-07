@@ -1242,10 +1242,30 @@ now reaches someone»** — and ~~students get accounts by claim code with no
 birthdate, age or guardian-consent field anywhere in the schema~~ **the last
 one closed the same day too: v1 has no student accounts at all, and a teacher
 now attests to school-held parental consent before entering any child's name.
-See «v1 is teacher-only, and a roster now needs a consent to exist».** **No EAS
-build has ever been made**, so push delivery, image picking and the app icon
-remain unverified on a device, and `newArchEnabled` + `reactCompiler` are both
-experimental — Expo Go over LAN is not evidence that a release build runs.
+See «v1 is teacher-only, and a roster now needs a consent to exist».** ~~No EAS
+build has ever been made~~ **— four have, as of 2026-09-07: `5c38a5fb`,
+`68522384`, `d32f5c0c` and `e9388ee1`, all Android `preview`, all finished.
+But building is not installing: nobody has put one on a phone, so push
+delivery, image picking and the app icon remain exactly as unverified on a
+device as when nothing had been compiled at all.** `newArchEnabled` +
+`reactCompiler` are both experimental — Expo Go over LAN is not evidence that a
+release build runs, and neither is a build artifact nobody has opened.
+
+**No `production`-profile build has been made**, which is the one that matters
+for submission: `preview` produces an APK for sideloading, Play needs the
+app-bundle that only `production` emits, and that profile carries
+`autoIncrement`. It would also be the first build to exercise `.easignore`,
+which was added *after* the build that motivated it.
+
+**The signing key changed on 2026-09-07.** `e9388ee1` and everything after it
+are signed with a new keystore (cert SHA256 `D1:32:E5:D6…`, alias
+`9f4ba23f…`); the three builds before it carry the retired one
+(`B4:A6:3B:ED…`, alias `96e2be27…`). Installing a new build over an old one
+therefore fails with `INSTALL_FAILED_UPDATE_INCOMPATIBLE` until the old app is
+uninstalled — expected, not a broken build. Verified by reading the
+certificate out of both APKs' signing blocks and out of the keystore itself,
+not by trusting the console.
+
 There are no store assets. ~~and no `google-services.json` for Android FCM~~
 — the Firebase side landed 2026-09-06, see below.
 
