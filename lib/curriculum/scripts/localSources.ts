@@ -187,4 +187,10 @@ export const LOCAL_FILES: Record<string, string> = {
   // filename.
   'g9-math-s1-student-book': 'knowledge-base/grade-9-math/support-pdfs/كتاب الطالب لمادة الرياضيات الصف التاسع الفصل الأول.pdf',
   'g9-math-s2-student-book': 'knowledge-base/grade-9-math/support-pdfs/كتاب الطالب لمادة الرياضيات الصف التاسع الفصل الثاني.pdf',
+  // Teacher guides — the only source of per-lesson period counts for Grade 9.
+  // These two files are ilovepdf-compressed copies, hence the `_compressed`
+  // suffix in the names: the text layer is intact, only the byte size differs
+  // from NCCD's original (recorded in each manifest row's `notes`).
+  'g9-math-s1-teacher-guide': 'knowledge-base/grade-9-math/support-pdfs/دليل المعلم لمادة الرياضيات الصف التاسع الفصل الأول_compressed.pdf',
+  'g9-math-s2-teacher-guide': 'knowledge-base/grade-9-math/support-pdfs/دليل المعلم لمادة الرياضيات الصف التاسع الفصل الثاني_compressed.pdf',
 };
