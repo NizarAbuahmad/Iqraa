@@ -410,6 +410,74 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Student accounts went live, reversing the v1 decision, 2026-09-07
+
+**`STUDENT_ACCOUNTS` is `true` in production.** Nizar was asked directly
+whether to leave it open or close it, and chose to leave it open. That reverses
+«v1 is teacher-only, and a roster now needs a consent to exist» below, which
+stays in this file as the record of the earlier decision — but its factual
+claims about the running system are **no longer true** and are marked where
+they appear.
+
+**Nothing in a git log marks the moment it turned on.** The environment
+variable had been set on the Cloud Run service long before any revision read
+it; the deploy that shipped `lib/features.ts` made it take effect silently. A
+config value that predates the code reading it is invisible to every
+change-tracking habit this project has.
+
+**Verified by probe, not assumed** — and the obvious probe is wrong. A bare
+`POST /auth/register` returns «First name is required» from the validation at
+`auth.ts:117`, long before the flag gate at `:143`, so it proves nothing. Fill
+every field and the student-role request reaches the class-code lookup instead
+of a 403 `student_accounts_disabled`:
+
+```bash
+API=https://iqraa-api-613126375862.europe-west1.run.app/api
+curl -s -X POST "$API/auth/register" -H 'Content-Type: application/json' \
+  -d '{"role":"student","firstName":"P","lastName":"D","email":"p@example.invalid","password":"Str0ng!Passw0rd#2026","claimCode":"ZZZZZZ"}'
+# {"error":"That code is invalid or has expired"}   <- past the gate
+```
+
+**What that opens:** student and parent registration, `POST /auth/claim`,
+`GET /auth/join/:code`, and with them the whole messaging surface — direct
+teacher↔parent/student threads and class groups. The join-code feature is no
+longer dormant.
+
+**Three things were already right, and are worth not re-litigating:**
+
+1. `constants/legal.ts` was deliberately written to describe the
+   students-and-parents world, on the reasoning that over-describing is the
+   safe direction. So the flip made nothing published false.
+2. **Suspension is enforced.** `middlewares/auth.ts:76` gates every
+   authenticated request through `suspendedMayReach()`, which covers
+   `/messaging/*` even though `messaging.ts` never mentions `suspendedAt`. A
+   note claiming otherwise was wrong.
+3. `join_code` and `join_code_expires_at` **do exist** in the production
+   database — `GET /api/auth/join/ABC234` returns **404** with a clean body,
+   and since the query reads both columns a missing one would 500 instead.
+   That closes a long-standing worry recorded against the join-code work.
+
+**One real gap was found and closed:** `POST /messaging/threads/:id/messages`
+had no rate limiter while every other public entry point had one, and it
+writes 12MB attachments to R2. Fixed in PR #314 — keyed by user id rather than
+client IP, because a school shares one NAT address and an IP-keyed limit would
+let one class 429 the building.
+
+**Still open, deliberately:**
+
+- **Blocks are soft on send.** `POST /messaging/threads` refuses when either
+  party has blocked the other, but sending into an existing thread does not
+  re-check `chatBlocks`. The reader filters blocked senders and push skips
+  them, so it works from the blocker's side — messages still accumulate and
+  would appear in bulk on unblock. Whether a blocked sender should see an
+  error is a product decision, not a bug.
+- **Every rate limiter is per-instance, and the service scales to 20.**
+  `lib/rateLimit.ts` holds counts in memory and its header calls that fine
+  "for a single-instance pilot deployment" — but `maxScale` is **20**. So the
+  login limiter's 10-per-15-minutes is really up to 10 × instances, and the
+  same goes for the new messaging limit. Bounded, loosely; not the number the
+  code appears to promise.
+
 ## Password reset is gone rather than pretending, 2026-09-07
 
 `forgot-password` told the teacher «أرسلنا رابط استعادة كلمة المرور إلى بريدك»
@@ -763,6 +831,7 @@ push has the credentials it needs» below.**
 It was parked because v1 ships teacher-only and `constants/legal.ts` states in
 print that no minor holds an account; that is still true, and every line here
 is still gated behind `STUDENT_ACCOUNTS=false`, so nothing below is reachable
+[**NO LONGER TRUE as of 2026-09-07** — `STUDENT_ACCOUNTS` is `true` in production; see «Student accounts went live, reversing the v1 decision».]
 today. Turning that flag on remains a change to a published legal document, not
 a config change — see «v1 is teacher-only» below.
 
@@ -860,7 +929,8 @@ repeated adds.
    success while production is untouched — check the host before trusting it.
    `verify-schema` would not have caught the gap either: it checks table
    *names* only, so it reports `ok` with a column missing.
-2. **`STUDENT_ACCOUNTS` is still false**, so none of this is reachable — by
+2. ~~**`STUDENT_ACCOUNTS` is still false**, so none of this is reachable.~~
+   **NO LONGER TRUE as of 2026-09-07** — `STUDENT_ACCOUNTS` is `true` in production; see «Student accounts went live, reversing the v1 decision». It is reachable. Was: by
    design, and it is also the reason nobody has contacts today. Worth checking
    that first if "my groups are empty" comes up again.
 3. **Not exercised end to end.** Typecheck and the full suites pass (re-run on
@@ -882,7 +952,11 @@ decision rather than a gap. Two answers shaped it: **student and parent
 accounts are off in v1**, and consent for student data is **teacher
 attestation of school-held parental consent** — not an in-app age gate.
 
-**No minor holds an account.** `STUDENT_ACCOUNTS` (default false, and the
+**No minor holds an account.** **NO LONGER TRUE as of 2026-09-07** — `STUDENT_ACCOUNTS` is `true` in production; see «Student accounts went live, reversing the v1 decision». A minor with a valid class code can
+hold one. The paragraph below describes the decision as taken on 2026-09-05 and
+is kept for that record, not as a description of the running system.
+
+`STUDENT_ACCOUNTS` (default false, and the
 default *is* the decision) makes `/auth/register` and `/auth/claim` refuse a
 student or parent outright, and `/students/:id/claim-code` refuse to mint a
 code nobody could redeem. Refused server-side, not merely hidden: the app is
@@ -1186,13 +1260,22 @@ nothing that can act on a report or eject a user (`routes/admin.ts` has one
 route, `usage-summary`),~~ **also closed the same day — see «The report button
 now reaches someone»** — and ~~students get accounts by claim code with no
 birthdate, age or guardian-consent field anywhere in the schema~~ **the last
-one closed the same day too: v1 has no student accounts at all, and a teacher
-now attests to school-held parental consent before entering any child's name.
-See «v1 is teacher-only, and a roster now needs a consent to exist».** **No EAS
-build has ever been made**, so push delivery, image picking and the app icon
-remain unverified on a device, and `newArchEnabled` + `reactCompiler` are both
-experimental — Expo Go over LAN is not evidence that a release build runs.
-There are no store assets. ~~and no `google-services.json` for Android FCM~~
+one closed the same day too — a teacher now attests to school-held parental
+consent before entering any child's name. See «v1 is teacher-only, and a roster
+now needs a consent to exist».** The clause that said «v1 has no student
+accounts at all» was true when written and is **no longer true as of
+2026-09-07**: `STUDENT_ACCOUNTS` is on in production, so the attestation is now
+the only consent mechanism in play rather than a belt beside a closed door.
+See «Student accounts went live, reversing the v1 decision». ~~**No EAS build has ever been made**, so push delivery, image picking and the
+app icon remain unverified on a device~~ — **out of date as of 2026-09-06/07.**
+Three Android `preview` APKs exist, the app is installed on a real phone, and
+that install immediately found a layout bug no local testing had (the projector
+bottom bar, PR #308). **Google sign-in and account linking are verified on
+device** — an existing web Google user lands on their own account, not a
+duplicate, which was the untested branch that most warranted checking. **Push
+delivery, image picking and the app icon are still unverified.**
+`newArchEnabled` + `reactCompiler` remain experimental, and a release build now
+having run is evidence Expo Go never was. There are no store assets. ~~and no `google-services.json` for Android FCM~~
 — the Firebase side landed 2026-09-06, see below.
 
 ## Arabic and Islamic Studies do not carry extractable figures, 2026-09-05
