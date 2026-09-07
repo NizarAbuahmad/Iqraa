@@ -56,6 +56,7 @@ import {
   type AuthenticatedRequest,
 } from "../middlewares/auth.js";
 import { logger } from "../lib/logger.js";
+import { createRateLimiter } from "../lib/rateLimit.js";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
 import { sendExpoPush } from "../lib/pushNotifications.js";
 import { isR2Configured, newChatMediaKey, presignedGetUrl, putObject } from "../lib/r2.js";
@@ -802,13 +803,36 @@ router.get("/messaging/threads/:id/messages", async (req: AuthenticatedRequest, 
 });
 
 /**
+ * Keyed by user, not IP: a school shares one NAT address, and an IP-keyed
+ * limit here would let one active class silence the rest of the building.
+ * Every request past authMiddleware has a user id, so there is no reason to
+ * settle for the coarser key (see lib/rateLimit.ts).
+ *
+ * 30/minute is set to stop a script, not to police a conversation — nobody
+ * types thirty messages a minute, and a person who briefly does is only
+ * delayed. It matters because this route writes to R2: a send may carry a
+ * 12MB attachment (`express.json` limit, app.ts), so unbounded sends are a
+ * storage bill as well as a spam channel.
+ *
+ * ponytail: one ceiling covers text and attachments together. If attachment
+ * abuse shows up on its own, give uploads a second, tighter limiter rather
+ * than dropping this one — text sends are cheap and shouldn't pay for it.
+ */
+const sendMessageLimiter = createRateLimiter({
+  windowMs: 60_000,
+  max: 30,
+  name: "message-send",
+  key: req => (req as AuthenticatedRequest).user?.id ?? req.ip ?? "unknown",
+});
+
+/**
  * Text and/or one attachment (`attachmentDataUrl`, a `data:` URL — same
  * shape `lessonMedia.ts` uses; there is no multipart path in this server).
  * At least one of the two is required. Attachment upload reuses R2 and the
  * mime allowlist from lib/lessonMediaUpload.ts wholesale — a chat photo has
  * the same size/type constraints a lesson photo does.
  */
-router.post("/messaging/threads/:id/messages", async (req: AuthenticatedRequest, res) => {
+router.post("/messaging/threads/:id/messages", sendMessageLimiter, async (req: AuthenticatedRequest, res) => {
   try {
     const threadId = req.params["id"] as string;
     if (!(await participantOf(threadId, req.user!.id))) {
