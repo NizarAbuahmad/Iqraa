@@ -7,7 +7,6 @@ import { db } from "@workspace/db";
 import {
   users,
   refreshTokens,
-  passwordResetTokens,
   rosterLinks,
   lessonMedia,
   chatMessages,
@@ -32,15 +31,10 @@ import { normalizeShareCode } from "../modules/assessment/studentView.ts";
 
 const router = Router();
 
-// Login gets more headroom than register/forgot-password since real users
-// mistype passwords; the other two are rarely legitimate at any volume.
+// Login gets more headroom than register since real users mistype passwords;
+// a burst of registrations is rarely legitimate at any volume.
 const loginLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, name: "login" });
 const registerLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5, name: "register" });
-const forgotPasswordLimiter = createRateLimiter({
-  windowMs: 60 * 60 * 1000,
-  max: 5,
-  name: "forgot-password",
-});
 const googleLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, name: "google-auth" });
 
 // Unset means the endpoint answers 503 and the client-side button never
@@ -386,8 +380,7 @@ router.post("/login", loginLimiter, async (req, res) => {
 
     if (!user || !user.passwordHash) {
       // No account, or a Google-only account with no password set — same
-      // generic message either way so this can't be used to enumerate emails
-      // (matches forgot-password's reasoning below).
+      // generic message either way so this can't be used to enumerate emails.
       res.status(401).json({ error: "Invalid email or password" });
       return;
     }
@@ -665,128 +658,6 @@ router.get("/me", authMiddleware, async (req: AuthenticatedRequest, res) => {
   } catch (err) {
     logger.error({ err }, "get profile failed");
     res.status(500).json({ error: "Failed to fetch user" });
-  }
-});
-
-// POST /auth/forgot-password
-router.post("/forgot-password", forgotPasswordLimiter, async (req, res) => {
-  try {
-    const { email } = req.body as { email?: string };
-    if (!email?.includes("@")) {
-      res.status(400).json({ error: "Valid email is required" });
-      return;
-    }
-
-    const [user] = await db
-      .select({ id: users.id, email: users.email })
-      .from(users)
-      .where(eq(users.email, email.toLowerCase().trim()))
-      .limit(1);
-
-    // Always return success to prevent email enumeration
-    if (!user) {
-      res.json({ ok: true });
-      return;
-    }
-
-    const resetTokenValue = crypto.randomBytes(32).toString("hex");
-    const tokenHash = crypto
-      .createHash("sha256")
-      .update(resetTokenValue)
-      .digest("hex");
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
-
-    // Invalidate any existing tokens for this user
-    await db
-      .delete(passwordResetTokens)
-      .where(eq(passwordResetTokens.userId, user.id));
-
-    await db.insert(passwordResetTokens).values({
-      userId: user.id,
-      tokenHash,
-      expiresAt,
-    });
-
-    // In local development only, log the token so engineers can test the flow
-    // without a real email service. Never log tokens in production.
-    if (process.env.NODE_ENV !== "production") {
-      console.log(
-        `[AUTH:dev] Password reset requested for ${user.email} — token expires ${expiresAt.toISOString()}`,
-        `\n[AUTH:dev] Reset token (redacted in prod): ${resetTokenValue}`,
-      );
-    }
-
-    res.json({ ok: true });
-  } catch (err) {
-    logger.error({ err }, "forgot password failed");
-    res.status(500).json({ error: "Failed to process request" });
-  }
-});
-
-// POST /auth/reset-password
-router.post("/reset-password", async (req, res) => {
-  try {
-    const { token, password, confirmPassword } = req.body as {
-      token?: string;
-      password?: string;
-      confirmPassword?: string;
-    };
-
-    if (!token) {
-      res.status(400).json({ error: "Reset token is required" });
-      return;
-    }
-    if (!password || !isStrongPassword(password)) {
-      res.status(400).json({ error: PASSWORD_POLICY_MESSAGE });
-      return;
-    }
-    if (confirmPassword !== undefined && confirmPassword !== password) {
-      res.status(400).json({ error: "Passwords do not match" });
-      return;
-    }
-
-    const tokenHash = crypto
-      .createHash("sha256")
-      .update(token)
-      .digest("hex");
-
-    const [stored] = await db
-      .select()
-      .from(passwordResetTokens)
-      .where(
-        and(
-          eq(passwordResetTokens.tokenHash, tokenHash),
-          eq(passwordResetTokens.used, false),
-          gt(passwordResetTokens.expiresAt, new Date()),
-        ),
-      )
-      .limit(1);
-
-    if (!stored) {
-      res.status(400).json({ error: "Invalid or expired reset token" });
-      return;
-    }
-
-    const passwordHash = await bcrypt.hash(password, 12);
-    await db
-      .update(users)
-      .set({ passwordHash })
-      .where(eq(users.id, stored.userId));
-
-    await db
-      .update(passwordResetTokens)
-      .set({ used: true })
-      .where(eq(passwordResetTokens.id, stored.id));
-
-    // Revoke all refresh tokens on password reset
-    await db
-      .delete(refreshTokens)
-      .where(eq(refreshTokens.userId, stored.userId));
-
-    res.json({ ok: true });
-  } catch (err) {
-    logger.error({ err }, "reset password failed");
-    res.status(500).json({ error: "Failed to reset password" });
   }
 });
 
