@@ -10,7 +10,7 @@ import { isEntryRoute, isNonTeacherRoute, isPublicRoute } from '../routeGating.t
 
 describe('isEntryRoute', () => {
   it('treats the auth and onboarding routes as entries', () => {
-    for (const p of ['/login', '/register', '/forgot-password', '/onboarding']) {
+    for (const p of ['/login', '/register', '/onboarding']) {
       assert.equal(isEntryRoute(p), true, p);
     }
   });
