@@ -124,6 +124,10 @@ import {
   buildG9DigitalSem1BrowserCatalog,
 } from './catalogs/g9DigitalSem1.ts';
 import {
+  G9_DIGITAL_S2_CURRICULUM_BOOK_ID,
+  buildG9DigitalSem2BrowserCatalog,
+} from './catalogs/g9DigitalSem2.ts';
+import {
   ENGLISH_COMMERCE_S1_CURRICULUM_BOOK_ID,
   ENGLISH_AGRICULTURE_S1_CURRICULUM_BOOK_ID,
   ENGLISH_HOSPITALITY_S1_CURRICULUM_BOOK_ID,
@@ -386,9 +390,11 @@ export const MVP_BOOK_IDS: readonly string[] = [
   G9_BIOLOGY_S2_CURRICULUM_BOOK_ID,
   G9_EARTHSCIENCE_S1_CURRICULUM_BOOK_ID,
   G9_EARTHSCIENCE_S2_CURRICULUM_BOOK_ID,
-  // Grade 9 Digital Skills — Semester 1 only for now; S2 is mapped but not
-  // yet transcribed. Same shape as Grade 10 financial literacy above.
+  // Grade 9 Digital Skills — both semesters. S2 joined once its lesson
+  // openers were transcribed; the S1-only note above described a gap that
+  // is now closed.
   G9_DIGITAL_S1_CURRICULUM_BOOK_ID,
+  G9_DIGITAL_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -980,10 +986,7 @@ export const BOOKS: Book[] = [
     audience: 'all',
     semester: 2,
   },
-  // ── Digital Skills Grade 9 – Semester 1 ───────────────────────────────────
-  // Semester 1 only: the S2 book is ingested and its structure mapped, but
-  // its lessons are not transcribed yet, and a Book row with no units behind
-  // it is the inert placeholder shape deleted in #313.
+  // ── Digital Skills Grade 9 – Semesters 1 and 2 ────────────────────────────
   {
     id: 'book-digital-9-s1',
     title: 'Digital Skills – Grade 9, Semester 1',
@@ -996,6 +999,19 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+  },
+  {
+    id: 'book-digital-9-s2',
+    title: 'Digital Skills – Grade 9, Semester 2',
+    titleAr: 'المهارات الرقمية – الصف التاسع – الفصل الثاني',
+    subjectId: 'digital-literacy',
+    gradeId: 'grade-9',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
   },
   // ── Other grades ───────────────────────────────────────────────────────────
   // General (non-vocational) Grade 10 English track — Student Book + Activity
@@ -1950,6 +1966,7 @@ const _g9BiologySem2Browser = buildG9BiologySem2BrowserCatalog();
 const _g9EarthScienceSem1Browser = buildG9EarthScienceSem1BrowserCatalog();
 const _g9EarthScienceSem2Browser = buildG9EarthScienceSem2BrowserCatalog();
 const _g9DigitalSem1Browser = buildG9DigitalSem1BrowserCatalog();
+const _g9DigitalSem2Browser = buildG9DigitalSem2BrowserCatalog();
 const _engCommerceBrowser = buildEnglishCommerceBrowserCatalog();
 const _engAgricultureBrowser = buildEnglishAgricultureBrowserCatalog();
 const _engHospitalityBrowser = buildEnglishHospitalityBrowserCatalog();
@@ -2096,6 +2113,7 @@ export const UNITS: Unit[] = [
   ..._g9EarthScienceSem1Browser.units,
   ..._g9EarthScienceSem2Browser.units,
   ..._g9DigitalSem1Browser.units,
+  ..._g9DigitalSem2Browser.units,
   ..._engCommerceBrowser.units,
   ..._engAgricultureBrowser.units,
   ..._engHospitalityBrowser.units,
@@ -2135,6 +2153,7 @@ export const LESSONS: Lesson[] = [
   ..._g9EarthScienceSem1Browser.lessons,
   ..._g9EarthScienceSem2Browser.lessons,
   ..._g9DigitalSem1Browser.lessons,
+  ..._g9DigitalSem2Browser.lessons,
   ..._engCommerceBrowser.lessons,
   ..._engAgricultureBrowser.lessons,
   ..._engHospitalityBrowser.lessons,
