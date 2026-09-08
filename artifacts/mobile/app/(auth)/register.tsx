@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView, Platform, Pressable, ScrollView,
   StyleSheet, Text, View,
@@ -14,6 +14,7 @@ import { GoogleSignInButton, isGoogleSignInAvailable } from '@/components/ui/Goo
 import { Input } from '@/components/ui/Input';
 import { PillSelector } from '@/components/ui/PillSelector';
 import { useStudentAccountsEnabled } from '@/services/features';
+import { lookupJoinCode, type JoinRosterEntry } from '@/services/roster';
 import { Ionicons } from '@expo/vector-icons';
 
 type SignupRole = 'teacher' | 'parent' | 'student';
@@ -31,6 +32,9 @@ export default function RegisterScreen() {
 
   const [role, setRole] = useState<SignupRole>('teacher');
   const [claimCode, setClaimCode] = useState('');
+  /** The class behind a join code, or null when the code names its own student (or is simply wrong). */
+  const [roster, setRoster] = useState<JoinRosterEntry[] | null>(null);
+  const [studentId, setStudentId] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -55,6 +59,37 @@ export default function RegisterScreen() {
     }
   };
 
+  /*
+    Codes are a fixed six characters, so "long enough to be a code" is the whole
+    trigger — no debounce timer to get wrong. A 404 is the ordinary answer for a
+    per-student claim code, which needs no picker, so it clears the roster
+    rather than surfacing an error; the server is still the thing that decides
+    whether the code is real.
+  */
+  useEffect(() => {
+    const code = claimCode.trim();
+    if (!studentAccounts || role === 'teacher' || code.length < 6) {
+      setRoster(null);
+      setStudentId('');
+      return;
+    }
+    let live = true;
+    void lookupJoinCode(code)
+      .then(res => {
+        if (!live) return;
+        setRoster(res.students);
+        setStudentId('');
+      })
+      .catch(() => {
+        if (!live) return;
+        setRoster(null);
+        setStudentId('');
+      });
+    return () => {
+      live = false;
+    };
+  }, [claimCode, role, studentAccounts]);
+
   const handleRegister = async () => {
     setError('');
     setLoading(true);
@@ -69,6 +104,10 @@ export default function RegisterScreen() {
         // screen is open, and the server would refuse it anyway.
         role: studentAccounts ? role : 'teacher',
         claimCode: !studentAccounts || role === 'teacher' ? undefined : claimCode.trim(),
+        // Only ever sent for a class code. The server checks the name is on
+        // that code's class and is not already claimed — this is a choice, not
+        // a credential.
+        studentId: roster ? studentId : undefined,
       });
       router.replace('/(tabs)');
     } catch (e: any) {
@@ -85,7 +124,10 @@ export default function RegisterScreen() {
     email.includes('@') &&
     password.length >= 8 &&
     (confirmPassword === '' || confirmPassword === password) &&
-    (!studentAccounts || role === 'teacher' || claimCode.trim().length > 0);
+    (!studentAccounts || role === 'teacher' || claimCode.trim().length > 0) &&
+    // A class code without a name picked would be refused by the server; say so
+    // by keeping the button off rather than by failing the submit.
+    (!roster || studentId !== '');
 
   return (
     <KeyboardAvoidingView
@@ -153,6 +195,54 @@ export default function RegisterScreen() {
               autoCapitalize="characters"
               isRTL={isRTL}
             />
+          ) : null}
+
+          {/*
+            Only a whole-class join code needs this: it names no student of its
+            own, so the joiner says which name on the roster is theirs. A
+            per-student claim code 404s the lookup and this never appears, which
+            is what keeps the original flow untouched.
+
+            `taken` means a student account already holds that name. Disabled
+            for a student — one account per child — but left open for a parent,
+            because both parents linking to the same child is the normal case.
+          */}
+          {roster && roster.length > 0 ? (
+            <View style={{ gap: 8 }}>
+              <Text style={[styles.pickLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
+                {t('joinPickYourName')}
+              </Text>
+              <View style={[styles.nameChips, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                {roster.map(entry => {
+                  const blocked = entry.taken && role === 'student';
+                  const picked = entry.id === studentId;
+                  return (
+                    <Pressable
+                      key={entry.id}
+                      onPress={() => { if (!blocked) setStudentId(entry.id); }}
+                      disabled={blocked}
+                      style={[
+                        styles.nameChip,
+                        {
+                          borderColor: picked ? colors.primary : colors.border,
+                          backgroundColor: picked ? colors.primary + '18' : 'transparent',
+                          opacity: blocked ? 0.45 : 1,
+                        },
+                      ]}
+                    >
+                      <Text style={{ color: picked ? colors.primary : colors.foreground, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>
+                        {entry.displayName}
+                      </Text>
+                      {entry.taken ? (
+                        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 10 }}>
+                          {t('joinNameTaken')}
+                        </Text>
+                      ) : null}
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
           ) : null}
 
           {isGoogleSignInAvailable() && (
@@ -279,6 +369,9 @@ const styles = StyleSheet.create({
   dividerLine: { flex: 1, height: 1 },
   dividerText: { fontSize: 12 },
   googleLoadingText: { fontSize: 12, textAlign: 'center', marginTop: -6 },
+  pickLabel: { fontSize: 13 },
+  nameChips: { flexWrap: 'wrap', gap: 8 },
+  nameChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, alignItems: 'center' },
   nameRow: { flexDirection: 'row', gap: 12 },
   nameField: { flex: 1 },
   terms: { fontSize: 11, textAlign: 'center', lineHeight: 17 },

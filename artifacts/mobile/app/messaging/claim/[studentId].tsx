@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { generateClaimCode, getClaimCode, RosterError } from '@/services/roster';
+import { generateClaimCode, getClaimCode, unlinkAccount, RosterError } from '@/services/roster';
 import { MessagingError, getTeacherContacts, startThread, type ChatRole } from '@/services/messaging';
 import { copyToClipboard, shareAsText } from '@/services/share.ts';
 import { composeClaimCodeMessage } from '@/services/claimCodeMessage.ts';
@@ -35,6 +35,8 @@ export default function ClaimCodeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
+  // The entry point in classes/[id].tsx is hidden while this is false, but a
+  // deep link, a back gesture or a stale history entry can still land here.
   const studentAccounts = useStudentAccountsEnabled();
 
   const [guardians, setGuardians] = useState<Guardian[]>([]);
@@ -44,6 +46,7 @@ export default function ClaimCodeScreen() {
   const [error, setError] = useState('');
   const [toast, setToast] = useState('');
   const [startingUserId, setStartingUserId] = useState<string | null>(null);
+  const [unlinkingUserId, setUnlinkingUserId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!studentId) return;
@@ -128,6 +131,26 @@ export default function ClaimCodeScreen() {
     );
     const outcome = await shareAsText(message, t('messagingClaimCodeTitle'));
     setToast(outcome === 'shared' ? t('messagingCodeShared') : t('copiedToClipboard'));
+  };
+
+  const onUnlink = async (guardian: Guardian) => {
+    const ok = await confirm({
+      title: `${t('unlinkAccount')} — ${guardian.firstName} ${guardian.lastName}`,
+      message: t('unlinkAccountConfirm'),
+      confirmLabel: t('unlinkAccount'),
+      cancelLabel: t('cancel'),
+      destructive: true,
+    });
+    if (!ok || !studentId) return;
+    setUnlinkingUserId(guardian.userId);
+    try {
+      await unlinkAccount(studentId, guardian.userId);
+      setGuardians(prev => prev.filter(g => g.userId !== guardian.userId));
+    } catch (e) {
+      setError(e instanceof RosterError ? e.message : t('messagingLoadError'));
+    } finally {
+      setUnlinkingUserId(null);
+    }
   };
 
   const openGuardian = async (userId: string) => {
@@ -283,6 +306,20 @@ export default function ClaimCodeScreen() {
                       <Text style={{ color: colors.primary, fontFamily: 'Cairo_500Medium', fontSize: 12 }}>
                         {t('messagingMessageAction')}
                       </Text>
+                    )}
+                  </Pressable>
+                  {/* The undo for a wrong claim. It belongs on this screen and
+                      not the roster row because this is the only place the
+                      linked accounts are named — a roster row shows a child,
+                      and "unlink" there could not say *whom*. Matters more now
+                      that one code is shared with a whole class: somebody
+                      eventually picks the wrong name, and until this existed a
+                      roster link could only be created, never removed. */}
+                  <Pressable onPress={() => { void onUnlink(g); }} disabled={unlinkingUserId === g.userId} hitSlop={10}>
+                    {unlinkingUserId === g.userId ? (
+                      <ActivityIndicator color={colors.destructive} size="small" />
+                    ) : (
+                      <Ionicons name="close-circle-outline" size={20} color={colors.destructive} />
                     )}
                   </Pressable>
                 </View>

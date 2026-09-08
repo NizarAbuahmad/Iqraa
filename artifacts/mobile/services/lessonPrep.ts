@@ -205,13 +205,18 @@ export function groundedSubjectConflict(
 
 /**
  * Which picker subjects have no book for this grade — index-aligned with
- * `getPickerSubjects()`, for greying out entries that cannot be chosen.
+ * `getPickerSubjects()`, for dropping those entries from the visible list.
  *
  * The list itself never shrinks: its positions are persisted as bare
  * `subjectIdx` values in formState and route URLs, and `getPickerSubjects()`
  * deliberately ignores a gradeId so every screen rebuilds the identical list
- * (see `scopePickerParams` above). So the fix is to keep every entry and mark
- * the unusable ones, never to filter them out.
+ * (see `scopePickerParams` above). So hiding is a RENDER-time decision: the
+ * flags stay index-aligned and each visible option still reports its position
+ * in the full list, never in the shortened one.
+ *
+ * A selection can therefore point at an entry that is no longer shown, which
+ * is what `StrandedSelectionNote` explains on screen and `scopeWithoutCurriculum`
+ * refuses at generate time.
  */
 export function subjectsWithoutCurriculum(gradeId: string): boolean[] {
   return getPickerSubjects().map(s => !hasCurriculumForSubjectGrade(s.id, gradeId));
@@ -222,9 +227,11 @@ export function subjectsWithoutCurriculum(gradeId: string): boolean[] {
  * `groundedSubjectConflict`, which only ever sees the subject and so cannot
  * tell that english/grade-9 has no curriculum while english/grade-10 does.
  *
- * The pickers grey these pairs out, but `gradeIdx`/`subjectIdx` also arrive
- * from formState and bookmarked URLs saved before they did, so generation asks
+ * The pickers hide these pairs, but `gradeIdx`/`subjectIdx` also arrive from
+ * formState and bookmarked URLs saved before they did, so generation asks
  * again rather than inventing a paper for a curriculum that does not exist.
+ * `StrandedSelectionNote` says the same thing in the form, for a teacher who
+ * is looking at it; this is the check for one who just presses generate.
  * Returns the pair's display names for the message, or null when it is fine.
  */
 export function scopeWithoutCurriculum(

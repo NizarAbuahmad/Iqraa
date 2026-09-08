@@ -12,7 +12,20 @@
           "package_name": "com.iqra.teachingassistant"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "784063967007-g1m2s0q6othh65oq1ab7ar074u61pgbu.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.iqra.teachingassistant",
+            "certificate_hash": "b1a46cca7dd267fd46af9e1ba578b2f7a6595ed2"
+          }
+        },
+        {
+          "client_id": "784063967007-86omgnji0cg28iaav1o1celb8cm9je26.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyD27GwkJth7BZg6-ctM3Rc7Q_qsOufFm6s"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "784063967007-86omgnji0cg28iaav1o1celb8cm9je26.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

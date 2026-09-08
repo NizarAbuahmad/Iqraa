@@ -49,16 +49,18 @@ import {
   devicePushTokens,
   type DevicePushPlatform,
 } from "@workspace/db";
-import { and, asc, desc, eq, inArray, isNull, lt, ne, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, isNull, lt, ne, or } from "drizzle-orm";
 import {
   authMiddleware,
   TEACHER_ROLES,
   type AuthenticatedRequest,
 } from "../middlewares/auth.js";
 import { logger } from "../lib/logger.js";
+import { createRateLimiter } from "../lib/rateLimit.js";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
 import { sendExpoPush } from "../lib/pushNotifications.js";
 import { isR2Configured, newChatMediaKey, presignedGetUrl, putObject } from "../lib/r2.js";
+import { syncClassGroupThread } from "../lib/classThread.js";
 import { EXTENSION_BY_MIME, MAX_DATA_URL_LENGTH, kindForMime, parseDataUrl } from "../lib/lessonMediaUpload.js";
 
 const router = Router();
@@ -209,73 +211,6 @@ async function notifyThreadParticipants(threadId: string, senderId: string, body
   await sendExpoPush(
     tokenRows.map(t => ({ to: t.expoPushToken, title: senderName, body: preview, data: { threadId } })),
   );
-}
-
-/**
- * Get-or-create the one thread for a class, then reconcile membership to
- * exactly the teacher plus every student self-linked to a current member of
- * the class. Never removes the teacher, even if some future bug left them
- * out of `desired` — that guarantee is the whole point of this function, so
- * it is asserted here directly rather than trusted to always fall out of the
- * query above it.
- */
-async function syncClassGroupThread(
-  classGroupId: string,
-  teacherId: string,
-  name: string,
-  nameAr: string,
-) {
-  let [thread] = await db.select().from(chatThreads).where(eq(chatThreads.classGroupId, classGroupId)).limit(1);
-  if (!thread) {
-    const inserted = await db
-      .insert(chatThreads)
-      .values({ type: "class_group", classGroupId, title: name, titleAr: nameAr })
-      .onConflictDoNothing()
-      .returning();
-    thread = inserted[0];
-    if (!thread) {
-      // Lost a create race to a concurrent request — the row exists now.
-      [thread] = await db.select().from(chatThreads).where(eq(chatThreads.classGroupId, classGroupId)).limit(1);
-    }
-  } else if (thread.title !== name || thread.titleAr !== nameAr) {
-    // Keep the thread's display name in sync with the class's — a rename
-    // shouldn't leave the thread showing the class's old name forever.
-    [thread] = await db
-      .update(chatThreads)
-      .set({ title: name, titleAr: nameAr, updatedAt: new Date() })
-      .where(eq(chatThreads.id, thread.id))
-      .returning();
-  }
-  if (!thread) throw new Error("Failed to create class thread");
-
-  const studentUserRows = await db
-    .select({ userId: rosterLinks.userId })
-    .from(classMemberships)
-    .innerJoin(students, eq(students.id, classMemberships.studentId))
-    .innerJoin(
-      rosterLinks,
-      and(eq(rosterLinks.studentId, classMemberships.studentId), eq(rosterLinks.relation, "self")),
-    )
-    .where(and(eq(classMemberships.classGroupId, classGroupId), isNull(students.archivedAt)));
-
-  const desired = new Set<string>([teacherId, ...studentUserRows.map(r => r.userId)]);
-
-  await db
-    .insert(chatParticipants)
-    .values([...desired].map(userId => ({ threadId: thread.id, userId })))
-    .onConflictDoNothing();
-
-  const current = await db.select().from(chatParticipants).where(eq(chatParticipants.threadId, thread.id));
-  const toRemove = current
-    .map(p => p.userId)
-    .filter(userId => userId !== teacherId && !desired.has(userId));
-  if (toRemove.length > 0) {
-    await db
-      .delete(chatParticipants)
-      .where(and(eq(chatParticipants.threadId, thread.id), inArray(chatParticipants.userId, toRemove)));
-  }
-
-  return thread;
 }
 
 // ─── Contacts ────────────────────────────────────────────────────────────────
@@ -658,6 +593,22 @@ router.post("/messaging/threads/:id/participants", async (req: AuthenticatedRequ
       return;
     }
 
+    // The cap belongs on the total, not the batch: it was only ever checked on
+    // create, so a group could be grown past MAX_CUSTOM_GROUP_MEMBERS by
+    // repeated adds — and each id in an unbounded array costs its own
+    // isConnected round trip below. Counted before that loop for exactly that
+    // reason. Already-present ids are conflict-ignored on insert rather than
+    // subtracted here, so re-adding an existing member can refuse near the
+    // ceiling; that is the safe direction to be wrong in.
+    const [{ count: currentMembers }] = await db
+      .select({ count: count() })
+      .from(chatParticipants)
+      .where(eq(chatParticipants.threadId, threadId));
+    if (currentMembers + memberIds.length > MAX_CUSTOM_GROUP_MEMBERS) {
+      res.status(400).json({ error: `A group can hold at most ${MAX_CUSTOM_GROUP_MEMBERS} members` });
+      return;
+    }
+
     const connected = await Promise.all(memberIds.map(id => isConnected(req.user!.id, id)));
     if (connected.some(ok => !ok)) {
       res.status(403).json({ error: "You are not connected to every person in this list" });
@@ -852,13 +803,36 @@ router.get("/messaging/threads/:id/messages", async (req: AuthenticatedRequest, 
 });
 
 /**
+ * Keyed by user, not IP: a school shares one NAT address, and an IP-keyed
+ * limit here would let one active class silence the rest of the building.
+ * Every request past authMiddleware has a user id, so there is no reason to
+ * settle for the coarser key (see lib/rateLimit.ts).
+ *
+ * 30/minute is set to stop a script, not to police a conversation — nobody
+ * types thirty messages a minute, and a person who briefly does is only
+ * delayed. It matters because this route writes to R2: a send may carry a
+ * 12MB attachment (`express.json` limit, app.ts), so unbounded sends are a
+ * storage bill as well as a spam channel.
+ *
+ * ponytail: one ceiling covers text and attachments together. If attachment
+ * abuse shows up on its own, give uploads a second, tighter limiter rather
+ * than dropping this one — text sends are cheap and shouldn't pay for it.
+ */
+const sendMessageLimiter = createRateLimiter({
+  windowMs: 60_000,
+  max: 30,
+  name: "message-send",
+  key: req => (req as AuthenticatedRequest).user?.id ?? req.ip ?? "unknown",
+});
+
+/**
  * Text and/or one attachment (`attachmentDataUrl`, a `data:` URL — same
  * shape `lessonMedia.ts` uses; there is no multipart path in this server).
  * At least one of the two is required. Attachment upload reuses R2 and the
  * mime allowlist from lib/lessonMediaUpload.ts wholesale — a chat photo has
  * the same size/type constraints a lesson photo does.
  */
-router.post("/messaging/threads/:id/messages", async (req: AuthenticatedRequest, res) => {
+router.post("/messaging/threads/:id/messages", sendMessageLimiter, async (req: AuthenticatedRequest, res) => {
   try {
     const threadId = req.params["id"] as string;
     if (!(await participantOf(threadId, req.user!.id))) {

@@ -7,16 +7,19 @@ import { db } from "@workspace/db";
 import {
   users,
   refreshTokens,
-  passwordResetTokens,
   rosterLinks,
   lessonMedia,
   chatMessages,
+  classGroups,
+  classMemberships,
+  students,
 } from "@workspace/db";
-import { eq, and, gt, isNotNull } from "drizzle-orm";
+import { eq, and, asc, gt, inArray, isNotNull, isNull } from "drizzle-orm";
 import { authMiddleware, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { logger } from "../lib/logger.js";
 import { createRateLimiter } from "../lib/rateLimit.js";
 import { deleteObject } from "../lib/r2.js";
+import { googleClientIds } from "../lib/googleClients.js";
 import { studentAccountsEnabled } from "../lib/features.js";
 import {
   ROSTER_CONSENT_STATEMENT_EN,
@@ -24,18 +27,14 @@ import {
 } from "../lib/rosterConsent.js";
 import { isStrongPassword, PASSWORD_POLICY_MESSAGE } from "../lib/passwordPolicy.js";
 import { resolveClaimCode, type ClaimRole } from "../lib/rosterClaim.js";
+import { normalizeShareCode } from "../modules/assessment/studentView.ts";
 
 const router = Router();
 
-// Login gets more headroom than register/forgot-password since real users
-// mistype passwords; the other two are rarely legitimate at any volume.
+// Login gets more headroom than register since real users mistype passwords;
+// a burst of registrations is rarely legitimate at any volume.
 const loginLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, name: "login" });
 const registerLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5, name: "register" });
-const forgotPasswordLimiter = createRateLimiter({
-  windowMs: 60 * 60 * 1000,
-  max: 5,
-  name: "forgot-password",
-});
 const googleLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, name: "google-auth" });
 // /claim was the only code-redeeming route without one, which made it an
 // authenticated guessing surface against a 6-character alphabet. More headroom
@@ -47,8 +46,16 @@ const claimLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 10, name
 // Unset means the endpoint answers 503 and the client-side button never
 // renders (see GoogleSignInButton) — never a failure, just no button, same
 // shape as the Unsplash/YouTube "no key" pattern elsewhere in this app.
-const googleClientId = process.env.GOOGLE_CLIENT_ID;
-const googleClient = googleClientId ? new OAuth2Client(googleClientId) : null;
+//
+// A list, not one value: an ID token carries the client that minted it, so
+// native sign-in and web sign-in present different audiences — and the move of
+// Google sign-in into the Firebase project puts two *projects* in play at once.
+// See lib/googleClients.ts for why swapping a single value would sign every
+// existing web user out. Read once at module scope like the original, so
+// changing it still needs a redeploy (the API is deployed by hand — see
+// docs/deploying.md).
+const googleClientIdList = googleClientIds();
+const googleClient = googleClientIdList.length > 0 ? new OAuth2Client(googleClientIdList[0]) : null;
 
 function getSecret(): string {
   const secret = process.env.SESSION_SECRET;
@@ -76,10 +83,16 @@ async function storeRefreshToken(userId: string, tokenValue: string): Promise<vo
   await db.insert(refreshTokens).values({ userId, tokenHash, expiresAt });
 }
 
+/** An empty or whitespace-only picked name is "none given", not a name that fails to match. */
+function trimmedOrUndefined(value: unknown): string | undefined {
+  const trimmed = typeof value === "string" ? value.trim() : "";
+  return trimmed === "" ? undefined : trimmed;
+}
+
 // POST /auth/register
 router.post("/register", registerLimiter, async (req, res) => {
   try {
-    const { firstName, lastName, email, password, confirmPassword, role: rawRole, claimCode } =
+    const { firstName, lastName, email, password, confirmPassword, role: rawRole, claimCode, studentId } =
       req.body as {
         firstName?: string;
         lastName?: string;
@@ -90,6 +103,14 @@ router.post("/register", registerLimiter, async (req, res) => {
         role?: string;
         /** Required for role 'student'/'parent' — see /students/:id/claim-code in roster.ts. */
         claimCode?: string;
+        /**
+         * Which roster row this person says they are. Required only when
+         * `claimCode` is a whole-class join code, which names no student of its
+         * own; a per-student claim code ignores it. Never trusted as identity —
+         * it is checked for membership of that code's class, and a name already
+         * held by a student account is refused (lib/claimDecision.ts).
+         */
+        studentId?: string;
       };
 
     if (!firstName?.trim()) {
@@ -136,7 +157,9 @@ router.post("/register", registerLimiter, async (req, res) => {
         res.status(400).json({ error: "A class code is required to sign up as a parent or student" });
         return;
       }
-      const resolved = await resolveClaimCode(code, role);
+      // studentId is the name picked off a class roster (see GET /auth/join/:code).
+      // A per-student claim code names its own student and ignores this.
+      const resolved = await resolveClaimCode(code, role, trimmedOrUndefined(studentId));
       if (!resolved.ok) {
         res.status(resolved.status).json({ error: resolved.error });
         return;
@@ -230,13 +253,14 @@ router.post("/claim", claimLimiter, authMiddleware, async (req: AuthenticatedReq
       return;
     }
 
-    const code = (req.body as { claimCode?: string })?.claimCode?.trim();
+    const { claimCode, studentId } = (req.body ?? {}) as { claimCode?: string; studentId?: string };
+    const code = claimCode?.trim();
     if (!code) {
       res.status(400).json({ error: "A class code is required" });
       return;
     }
 
-    const resolved = await resolveClaimCode(code, role);
+    const resolved = await resolveClaimCode(code, role, trimmedOrUndefined(studentId));
     if (!resolved.ok) {
       res.status(resolved.status).json({ error: resolved.error });
       return;
@@ -251,6 +275,96 @@ router.post("/claim", claimLimiter, authMiddleware, async (req: AuthenticatedReq
   } catch (err) {
     logger.error({ err }, "claim failed");
     res.status(500).json({ error: "Failed to link account" });
+  }
+});
+
+/**
+ * Turns a class join code into the list of names it can be claimed against, so
+ * a joiner can pick their own before they have an account. Modelled on
+ * GET /take/:code in studentAttempt.ts, the existing public "code → roster of
+ * names" surface.
+ *
+ * Deliberately under /auth and not /classes: roster.ts mounts
+ * `router.use(["/classes","/students"], authMiddleware, …)`, which prefix-matches,
+ * so a route named /classes/join/:code would silently answer 401 to the very
+ * people it exists for. mountOrder.test.ts pins this.
+ *
+ * This is the only unauthenticated endpoint in the product that returns
+ * children's names, and it is not something to make quietly broader later.
+ * Four things hold it in: the feature flag below, the rate limit, the 180-day
+ * expiry on the code itself, and the teacher's ability to regenerate. The
+ * payload carries names and nothing else — no externalRef (a school register
+ * number identifies far harder than a first name), no grade, no teacher.
+ *
+ * ponytail: one shared limiter, not per-code lockout. Revisit if anyone
+ * actually grinds it — 60/min against 31^6 is slow, but it is slow for every
+ * live code at once, not per code.
+ */
+const joinLookupLimiter = createRateLimiter({ windowMs: 60 * 1000, max: 60, name: "join-lookup" });
+
+router.get("/join/:code", joinLookupLimiter, async (req, res) => {
+  try {
+    if (!studentAccountsEnabled()) {
+      res.status(403).json({
+        code: "student_accounts_disabled",
+        error: "Parent and student accounts are not available yet.",
+      });
+      return;
+    }
+
+    const code = normalizeShareCode(req.params["code"]);
+    const [group] = code
+      ? await db
+          .select({ id: classGroups.id, name: classGroups.name, nameAr: classGroups.nameAr })
+          .from(classGroups)
+          .where(
+            and(
+              eq(classGroups.joinCode, code),
+              isNull(classGroups.archivedAt),
+              gt(classGroups.joinCodeExpiresAt, new Date()),
+            ),
+          )
+          .limit(1)
+      : [];
+
+    // Unknown, expired and archived all answer alike: a public endpoint must
+    // not confirm which codes exist. Same reasoning as evaluationByCode.
+    if (!group) {
+      res.status(404).json({ error: "This class code is not available", code: "code_not_found" });
+      return;
+    }
+
+    const roster = await db
+      .select({ id: students.id, displayName: students.displayName })
+      .from(classMemberships)
+      .innerJoin(students, eq(students.id, classMemberships.studentId))
+      .where(and(eq(classMemberships.classGroupId, group.id), isNull(students.archivedAt)))
+      .orderBy(asc(students.displayName));
+
+    // Every name is returned, with `taken` marking the ones a student account
+    // already holds — not filtered out. Only the one self-link is exclusive;
+    // guardians are deliberately unlimited, so hiding claimed names would mean
+    // the second parent could not find their own child and the class code
+    // would appear broken to them. The names are visible either way, so
+    // filtering would buy no privacy and cost a real case.
+    const selfLinked = await db
+      .select({ studentId: rosterLinks.studentId })
+      .from(rosterLinks)
+      .where(
+        and(
+          eq(rosterLinks.relation, "self"),
+          inArray(rosterLinks.studentId, roster.length > 0 ? roster.map(s => s.id) : [""]),
+        ),
+      );
+    const taken = new Set(selfLinked.map(r => r.studentId));
+
+    res.json({
+      class: { name: group.name, nameAr: group.nameAr },
+      students: roster.map(s => ({ ...s, taken: taken.has(s.id) })),
+    });
+  } catch (err) {
+    logger.error({ err }, "join code lookup failed");
+    res.status(500).json({ error: "Failed to open this class code" });
   }
 });
 
@@ -272,8 +386,7 @@ router.post("/login", loginLimiter, async (req, res) => {
 
     if (!user || !user.passwordHash) {
       // No account, or a Google-only account with no password set — same
-      // generic message either way so this can't be used to enumerate emails
-      // (matches forgot-password's reasoning below).
+      // generic message either way so this can't be used to enumerate emails.
       res.status(401).json({ error: "Invalid email or password" });
       return;
     }
@@ -331,7 +444,7 @@ router.post("/login", loginLimiter, async (req, res) => {
 // POST /auth/google
 router.post("/google", googleLimiter, async (req, res) => {
   try {
-    if (!googleClient || !googleClientId) {
+    if (!googleClient || googleClientIdList.length === 0) {
       res.status(503).json({ error: "Google sign-in is not configured" });
       return;
     }
@@ -344,9 +457,20 @@ router.post("/google", googleLimiter, async (req, res) => {
 
     let payload;
     try {
-      const ticket = await googleClient.verifyIdToken({ idToken: credential, audience: googleClientId });
+      const ticket = await googleClient.verifyIdToken({
+        idToken: credential,
+        audience: googleClientIdList,
+      });
       payload = ticket.getPayload();
-    } catch {
+    } catch (err) {
+      // Logged, because this catch swallows two very different things: a
+      // genuinely bad token, and a client ID this server does not accept. Both
+      // answered 401 with nothing written down, so a misconfigured audience was
+      // indistinguishable from an ordinary failed sign-in — and that is exactly
+      // the failure mode a client-ID migration produces. `warn`, not `error`:
+      // a bad token is routine, and the accepted list is included so the log
+      // line alone settles which of the two it was.
+      logger.warn({ err, acceptedAudiences: googleClientIdList }, "google id token rejected");
       res.status(401).json({ error: "Invalid Google credential" });
       return;
     }
@@ -540,128 +664,6 @@ router.get("/me", authMiddleware, async (req: AuthenticatedRequest, res) => {
   } catch (err) {
     logger.error({ err }, "get profile failed");
     res.status(500).json({ error: "Failed to fetch user" });
-  }
-});
-
-// POST /auth/forgot-password
-router.post("/forgot-password", forgotPasswordLimiter, async (req, res) => {
-  try {
-    const { email } = req.body as { email?: string };
-    if (!email?.includes("@")) {
-      res.status(400).json({ error: "Valid email is required" });
-      return;
-    }
-
-    const [user] = await db
-      .select({ id: users.id, email: users.email })
-      .from(users)
-      .where(eq(users.email, email.toLowerCase().trim()))
-      .limit(1);
-
-    // Always return success to prevent email enumeration
-    if (!user) {
-      res.json({ ok: true });
-      return;
-    }
-
-    const resetTokenValue = crypto.randomBytes(32).toString("hex");
-    const tokenHash = crypto
-      .createHash("sha256")
-      .update(resetTokenValue)
-      .digest("hex");
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
-
-    // Invalidate any existing tokens for this user
-    await db
-      .delete(passwordResetTokens)
-      .where(eq(passwordResetTokens.userId, user.id));
-
-    await db.insert(passwordResetTokens).values({
-      userId: user.id,
-      tokenHash,
-      expiresAt,
-    });
-
-    // In local development only, log the token so engineers can test the flow
-    // without a real email service. Never log tokens in production.
-    if (process.env.NODE_ENV !== "production") {
-      console.log(
-        `[AUTH:dev] Password reset requested for ${user.email} — token expires ${expiresAt.toISOString()}`,
-        `\n[AUTH:dev] Reset token (redacted in prod): ${resetTokenValue}`,
-      );
-    }
-
-    res.json({ ok: true });
-  } catch (err) {
-    logger.error({ err }, "forgot password failed");
-    res.status(500).json({ error: "Failed to process request" });
-  }
-});
-
-// POST /auth/reset-password
-router.post("/reset-password", async (req, res) => {
-  try {
-    const { token, password, confirmPassword } = req.body as {
-      token?: string;
-      password?: string;
-      confirmPassword?: string;
-    };
-
-    if (!token) {
-      res.status(400).json({ error: "Reset token is required" });
-      return;
-    }
-    if (!password || !isStrongPassword(password)) {
-      res.status(400).json({ error: PASSWORD_POLICY_MESSAGE });
-      return;
-    }
-    if (confirmPassword !== undefined && confirmPassword !== password) {
-      res.status(400).json({ error: "Passwords do not match" });
-      return;
-    }
-
-    const tokenHash = crypto
-      .createHash("sha256")
-      .update(token)
-      .digest("hex");
-
-    const [stored] = await db
-      .select()
-      .from(passwordResetTokens)
-      .where(
-        and(
-          eq(passwordResetTokens.tokenHash, tokenHash),
-          eq(passwordResetTokens.used, false),
-          gt(passwordResetTokens.expiresAt, new Date()),
-        ),
-      )
-      .limit(1);
-
-    if (!stored) {
-      res.status(400).json({ error: "Invalid or expired reset token" });
-      return;
-    }
-
-    const passwordHash = await bcrypt.hash(password, 12);
-    await db
-      .update(users)
-      .set({ passwordHash })
-      .where(eq(users.id, stored.userId));
-
-    await db
-      .update(passwordResetTokens)
-      .set({ used: true })
-      .where(eq(passwordResetTokens.id, stored.id));
-
-    // Revoke all refresh tokens on password reset
-    await db
-      .delete(refreshTokens)
-      .where(eq(refreshTokens.userId, stored.userId));
-
-    res.json({ ok: true });
-  } catch (err) {
-    logger.error({ err }, "reset password failed");
-    res.status(500).json({ error: "Failed to reset password" });
   }
 });
 

@@ -254,15 +254,6 @@ export default function LoginScreen() {
           isRTL={isRTL}
         />
 
-        <Pressable
-          onPress={() => router.push('/(auth)/forgot-password')}
-          style={[styles.forgotRow, { alignItems: isRTL ? 'flex-start' : 'flex-end' }]}
-        >
-          <Text style={[styles.forgotText, { color: colors.primary, fontFamily: 'Cairo_500Medium' }]}>
-            {t('forgotPassword')}
-          </Text>
-        </Pressable>
-
         <Button
           label={t('signIn')}
           onPress={handleLogin}
@@ -409,8 +400,6 @@ const styles = StyleSheet.create({
   dividerLine: { flex: 1, height: 1 },
   dividerText: { fontSize: 12 },
   googleLoadingText: { fontSize: 12, textAlign: 'center', marginTop: -6 },
-  forgotRow: { marginTop: -2, marginBottom: 4 },
-  forgotText: { fontSize: 13 },
   signInBtn: { marginTop: 4 },
   registerRow: {
     justifyContent: 'center',

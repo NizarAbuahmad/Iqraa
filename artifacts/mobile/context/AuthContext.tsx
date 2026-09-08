@@ -55,6 +55,8 @@ export interface RegisterData {
   role?: 'teacher' | 'student' | 'parent';
   /** Required when role is 'student' or 'parent' — see services/messaging.ts. */
   claimCode?: string;
+  /** Which roster name was picked, when `claimCode` is a whole-class join code. A per-student code names its own student and ignores this. */
+  studentId?: string;
 }
 
 interface AuthContextType {
@@ -64,8 +66,6 @@ interface AuthContextType {
   loginWithGoogle: (credential: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
-  forgotPassword: (email: string) => Promise<void>;
-  resetPassword: (token: string, password: string, confirmPassword: string) => Promise<void>;
   updateProfile: (data: { preferredLanguage?: string; firstName?: string; lastName?: string }) => Promise<void>;
   /**
    * Irreversible. Pass `password` for an ordinary account, or `confirmEmail`
@@ -239,6 +239,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           confirmPassword: payload.confirmPassword,
           role: payload.role,
           claimCode: payload.claimCode?.trim(),
+          studentId: payload.studentId,
         }),
       },
     );
@@ -260,25 +261,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     await clearTokens();
     setUser(null);
-  }, []);
-
-  const forgotPassword = useCallback(async (email: string) => {
-    if (!email?.includes('@')) throw new Error('Valid email is required');
-    await apiJson('/auth/forgot-password', {
-      method: 'POST',
-      body: JSON.stringify({ email: email.trim() }),
-    });
-  }, []);
-
-  const resetPassword = useCallback(async (
-    token: string,
-    password: string,
-    confirmPassword: string,
-  ) => {
-    await apiJson('/auth/reset-password', {
-      method: 'POST',
-      body: JSON.stringify({ token, password, confirmPassword }),
-    });
   }, []);
 
   const updateProfile = useCallback(async (data: {
@@ -322,8 +304,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loginWithGoogle,
         register,
         logout,
-        forgotPassword,
-        resetPassword,
         updateProfile,
         deleteAccount,
       }}

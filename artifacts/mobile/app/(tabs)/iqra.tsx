@@ -68,7 +68,7 @@ import {
   type SessionArtifact,
   type TeachingAction,
 } from '@/services/ai/teachingAssistant';
-import { classifyChatIntent } from '@/services/ai/intentRouter';
+import { classifyChatIntent, leavesClarificationStanding } from '@/services/ai/intentRouter';
 import { IqraaMark } from '@/components/ui/IqraaMark';
 import { CHAT_MAX_WIDTH } from '@/constants/layout';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
@@ -1683,6 +1683,7 @@ export default function IqraScreen() {
             : 'Happy to refine — which lesson or material should I adjust?',
           timestamp: new Date(),
         };
+        awaitingClarifyRef.current = true;
         setMessages(prev => [...prev, clarifyMsg]);
         return;
       }
@@ -1710,6 +1711,7 @@ export default function IqraScreen() {
             clarificationQuery: q,
             timestamp: new Date(),
           };
+          awaitingClarifyRef.current = true;
           setMessages(prev => [...prev, clarifyMsg]);
           return;
         }
@@ -1814,6 +1816,7 @@ export default function IqraScreen() {
         };
         // The `finally` on the enclosing try clears the thinking state, the
         // same way the subject-clarification branch above relies on it.
+        awaitingClarifyRef.current = true;
         setMessages(prev => [...prev, clarifyMsg]);
         return;
       }
@@ -2024,6 +2027,15 @@ export default function IqraScreen() {
         && !pedagogicalClarification
         && (quickTopic || (teachingActions && teachingActions.length > 0)),
       );
+
+      // Why this is not just `Boolean(pedagogicalClarification)`, and why the
+      // rule lives next to the classifier that consumes it: see
+      // `leavesClarificationStanding`.
+      awaitingClarifyRef.current = leavesClarificationStanding({
+        responseText,
+        hasStructuredClarification: Boolean(pedagogicalClarification),
+        producedArtifact: Boolean(artifactData),
+      });
 
       const assistantMsg: Message = {
         id: (Date.now() + 1).toString(),
@@ -2455,7 +2467,7 @@ export default function IqraScreen() {
           demo pill, which stays because hiding it would let sample content
           read as real.
         */}
-        <View style={[styles.headerTop, centered, isRTL && { flexDirection: 'row-reverse' }]}>
+        <View style={[styles.headerTop, centered]}>
           {/*
             The mark, not the lockup. BrandLogo is the full two-line lockup —
             اقرأ stacked over the IQRA wordmark — in a 1024px square; at the 28px
@@ -2464,12 +2476,29 @@ export default function IqraScreen() {
             (see its own note), and the word beside it is live text, so it stays
             sharp and reads at a glance.
           */}
-          <View style={[styles.brandRow, isRTL && { flexDirection: 'row-reverse' }]}>
+          <View style={[styles.brandCentre, isRTL && { flexDirection: 'row-reverse' }]}>
             <IqraaMark size={30} tone="brand" />
             <Text style={[styles.brandWord, { color: colors.foreground }]}>
               {t('appName')}
             </Text>
           </View>
+        </View>
+
+        {/*
+          The badge gets its own line rather than sharing the brand's row.
+          Sharing it is what pushed اقرأ off-centre, and centring the brand
+          while the badge stayed in the row would have overlapped it: the badge
+          renders «وضع العرض · محتوى تجريبي» or «تعذّر الاتصال · محتوى تجريبي»,
+          roughly 170-200px, against ~85px of centred brand on a 360px screen —
+          they collide, and DEMO_MODE defaults on, so the long label is the
+          normal case rather than an edge one. Truncating it was the
+          alternative and a worse one: the half that would disappear is
+          «محتوى تجريبي», which is the half that stops sample output reading as
+          real. This costs one row of header height, against the note above
+          about keeping this header short — a deliberate trade, not an
+          oversight.
+        */}
+        <View style={[styles.headerBadgeRow, centered]}>
           <AiSourceBadge isRTL={isRTL} />
         </View>
       </View>
@@ -2845,8 +2874,13 @@ const CONTENT_MAX_WIDTH = 760;
 
 const styles = StyleSheet.create({
   header: { borderBottomWidth: StyleSheet.hairlineWidth, paddingBottom: 10 },
-  headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16 },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
+  // `center`, not `space-between`: the brand is now this row's only child, and
+  // space-between would pin a lone child to the start — which is exactly where
+  // اقرأ used to sit.
+  headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
+  // Replaces the old `brandRow`, which space-between pinned to the row's start.
+  brandCentre: { flexDirection: 'row', alignItems: 'center', gap: 9 },
+  headerBadgeRow: { flexDirection: 'row', justifyContent: 'center', paddingHorizontal: 16, marginTop: 4 },
   brandWord: { fontFamily: 'Cairo_700Bold', fontSize: 19, letterSpacing: 0.2 },
   chip: { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
   chipText: { fontSize: 12 },

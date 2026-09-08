@@ -81,9 +81,19 @@ describe('extracted text', () => {
     // 2026-09-04, serving teachers, with nothing red. The quality gate cannot
     // catch these — both blocked files passed it — so the judgement is recorded
     // on the manifest and this asserts the record is honoured.
+    //
+    // This used to assert `blocked.length > 0` as a canary against someone
+    // deleting the field to make the test pass. That proxy expired on
+    // 2026-09-06: OCR cleared the last blocked entry (finlit-s1), which is the
+    // remedy `sources.ts` names for exactly this field, so an empty set is now
+    // the correct state and the count would fail on success. The canary moves
+    // to the declaration itself — that is the thing whose removal would be
+    // silent, and it cannot be satisfied by unblocking a source honestly.
+    const declaration = readFileSync(path.join(srcDir, 'sources.ts'), 'utf8');
+    assert.match(declaration, /extractionBlocked\?: string;/, 'the extractionBlocked field has been dropped');
+
     const onDisk = new Set(files.map(f => load(f).sourceId));
     const blocked = G10_SOURCES.filter(s => s.extractionBlocked);
-    assert.ok(blocked.length > 0, 'nothing is blocked — has the field been dropped?');
     for (const s of blocked) {
       assert.ok(!onDisk.has(s.id), `${s.id} is blocked but has an extraction on disk: ${s.extractionBlocked}`);
       assert.ok(!s.extraction, `${s.id} is blocked but the manifest claims an extraction`);

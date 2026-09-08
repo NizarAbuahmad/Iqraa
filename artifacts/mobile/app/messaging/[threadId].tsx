@@ -48,8 +48,8 @@ import { MessageBubble } from '@/components/ui/MessageBubble';
 import { Avatar } from '@/components/ui/Avatar';
 import { ParticipantPickerSheet } from '@/components/ui/ParticipantPickerSheet';
 import { mergeNewMessages } from '@/services/messageMerge';
-import { useStudentAccountsEnabled } from '@/services/features';
 import { usePollingRefresh } from '@/hooks/usePollingRefresh';
+import { useStudentAccountsEnabled } from '@/services/features';
 
 const REPORT_REASON_KEYS = ['reportReasonInappropriate', 'reportReasonBullying', 'reportReasonSpam', 'reportReasonOther'] as const;
 
@@ -58,8 +58,10 @@ export default function ThreadScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, lang, isRTL } = useLanguage();
-  const studentAccounts = useStudentAccountsEnabled();
   const { user } = useAuth();
+  // Same gate as the roster's own key icon on classes/[id].tsx — see
+  // services/features.ts. Both doors lead to the same v1-refused route.
+  const studentAccounts = useStudentAccountsEnabled();
 
   const [thread, setThread] = useState<ThreadDetail | null>(null);
   // Newest first, matching the inverted FlatList below.
@@ -301,6 +303,22 @@ export default function ThreadScreen() {
         ) : (
           <View style={{ flex: 1 }} />
         )}
+        {/*
+          Adding someone used to be five taps in — ⋮ → إدارة الأعضاء → the
+          dashed row → tick → إضافة — which is why nobody found it. The picker
+          is already mounted independently of the manage sheet, so opening it
+          straight from the header costs nothing. ⋮ keeps إدارة الأعضاء: it is
+          still the only route to *remove* someone.
+
+          Gated on isOwnerOfGroup, not thread.isOwner, so it stays off a class
+          group — that membership is derived from the roster and must never be
+          hand-edited (see routes/messaging.ts's syncClassGroupThread).
+        */}
+        {isOwnerOfGroup ? (
+          <Pressable onPress={() => setAddMembersOpen(true)} hitSlop={10}>
+            <Ionicons name="person-add-outline" size={20} color={colors.foreground} />
+          </Pressable>
+        ) : null}
         {(!isGroup && thread?.otherParticipant) || thread?.type === 'custom_group' || (isGroup && thread?.isOwner) ? (
           <Pressable onPress={() => setMenuOpen(true)} hitSlop={10}>
             <Ionicons name="ellipsis-vertical" size={20} color={colors.foreground} />
@@ -438,6 +456,12 @@ export default function ThreadScreen() {
                   to it from the one screen they are already on when they want
                   to invite someone. Not a code of its own: a class-wide join
                   code is a separate, deliberately-parked decision.
+
+                  Gated on `studentAccounts` for the same reason the roster's
+                  own key icon is: the route it opens mints a code that
+                  `studentAccountsEnabled()` refuses in v1. Making a dead end
+                  easier to reach is worse than leaving it buried — that is
+                  what this row did between #281 and this fix.
                 */}
                 {thread?.type === 'class_group' && thread.isOwner && thread.classGroupId && studentAccounts ? (
                   <Pressable
