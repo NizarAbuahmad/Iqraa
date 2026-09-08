@@ -75,6 +75,10 @@ import {
   buildG9DigitalSem1Catalog,
 } from './curriculumG9DigitalSem1.ts';
 import {
+  G9_DIGITAL_S2_BOOK_ID,
+  buildG9DigitalSem2Catalog,
+} from './curriculumG9DigitalSem2.ts';
+import {
   CHEM_S1_BOOK_ID,
   buildChemSem1Catalog,
 } from './curriculumG10ChemSem1.ts';
@@ -486,6 +490,15 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Digital Skills – Grade 9 – Semester 1',
     semester: 1,
     source: 'iqra_curriculum_g9_digital_sem1.json (NCCD)',
+  },
+  {
+    id: G9_DIGITAL_S2_BOOK_ID,
+    gradeId: 'grade-9',
+    subjectId: 'digital-literacy',
+    titleAr: 'المهارات الرقمية – الصف التاسع – الفصل الثاني',
+    titleEn: 'Digital Skills – Grade 9 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g9_digital_sem2.json (NCCD)',
   },
 ];
 
@@ -1454,6 +1467,7 @@ const _g9BiologySem2 = buildG9BiologySem2Catalog();
 const _g9EarthScienceSem1 = buildG9EarthScienceSem1Catalog();
 const _g9EarthScienceSem2 = buildG9EarthScienceSem2Catalog();
 const _g9DigitalSem1 = buildG9DigitalSem1Catalog();
+const _g9DigitalSem2 = buildG9DigitalSem2Catalog();
 const _g9MathSem2 = buildG9MathSem2Catalog();
 // General English — the two books that had a catalog row and no lessons
 // under it until 2026-09-05. Distinct from the four vocational ESP tracks
@@ -1610,6 +1624,7 @@ export const KB_UNITS: KBUnit[] = [
   ..._g9EarthScienceSem1.units,
   ..._g9EarthScienceSem2.units,
   ..._g9DigitalSem1.units,
+  ..._g9DigitalSem2.units,
   ..._g9MathSem2.units,
   ..._engCommerce.units,
   ..._engAgriculture.units,
@@ -1655,6 +1670,7 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g9EarthScienceSem1.lessons,
   ..._g9EarthScienceSem2.lessons,
   ..._g9DigitalSem1.lessons,
+  ..._g9DigitalSem2.lessons,
   ..._g9MathSem2.lessons,
   // No hand-authored rows exist for English either — these carry only what
   // g10EnglishVocational.ts's browser catalog already assembled.
