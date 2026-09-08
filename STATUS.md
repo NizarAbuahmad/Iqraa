@@ -6054,10 +6054,32 @@ product to Grade 10 is `INVESTOR_MVP_CURRICULUM = true` plus
 `isPickerCurriculumVisible` — **six call sites, all in `knowledgeBase.ts`.**
 Unlocking a grade is small; having content worth unlocking is not.
 
-**Correction to an earlier note in this file: Grade 9 is العلوم, not الكيمياء.**
+~~**Correction to an earlier note in this file: Grade 9 is العلوم, not الكيمياء.**
 The catalog already has this right — `science` is grades 1–9, and
 `chemistry`/`physics`/`biology` start at grade 10 — which matches the Jordanian
-system. Anyone sourcing Grade 9 books wants **الرياضيات + العلوم**.
+system. Anyone sourcing Grade 9 books wants **الرياضيات + العلوم**.~~
+
+**Struck 2026-09-08 — the books say otherwise.** NCCD publishes a separate
+Grade 9 student book, both semesters, for each of **الكيمياء، الفيزياء، العلوم
+الحياتية، علوم الأرض والبيئة** and **الثقافة المالية**; all ten were delivered
+and registered that day. Grade 9 is not served by a combined العلوم, so
+"anyone sourcing Grade 9 books wants الرياضيات + العلوم" was wrong, and so was
+"the catalog already has this right".
+
+The correction above was itself asserted from the catalog rather than from a
+book, which is how it survived: `SUBJECTS` said grades 1–9 for `science`, the
+note read that back as evidence, and the note was then cited as confirmation
+that `SUBJECTS` was right. Nothing in the loop had opened a Grade 9 book.
+
+The catalog was fixed the same day — `SPECIALISED_FROM = 8` in `catalog.ts`
+moves those five subjects to start at grade 9. The consequence of leaving it
+was silent rather than loud: `getSubjectsForGrade` filters on `Subject.grades`
+before anything else, so a Grade 9 chemistry book could have been catalogued,
+indexed and searchable while the subject never appeared in the grade.
+
+`science` is deliberately left spanning grades 1–9: no Grade 9 «العلوم» book
+arrived, and the absence of a book is not evidence that the subject stops at
+grade 8 — which is the same inference that produced the struck note.
 
 **What shipped:** `lib/curriculum/src/validateCurriculum.ts` plus
 `pnpm --filter @workspace/curriculum run verify`, wired into CI.

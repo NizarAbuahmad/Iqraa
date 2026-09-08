@@ -201,15 +201,41 @@ export const GRADES: Grade[] = Array.from({ length: 12 }, (_, i) => ({
   level: i + 1,
 }));
 
+/**
+ * Index into `GRADES` at which the sciences split out of combined «العلوم».
+ *
+ * 8 → grade-9. Named rather than written as a bare `slice(8)` in five places,
+ * because the five must agree: a subject left behind at `slice(9)` disappears
+ * from a grade its books cover, and nothing fails — `getSubjectsForGrade`
+ * just returns a shorter list.
+ */
+const SPECIALISED_FROM = 8;
+
 // ─── Subjects ─────────────────────────────────────────────────────────────────
 export const SUBJECTS: Subject[] = [
   { id: 'arabic',      name: 'Arabic',          nameAr: 'اللغة العربية',     icon: 'text',            color: '#1B6B62', grades: GRADES.map(g => g.id) },
   { id: 'english',     name: 'English',          nameAr: 'اللغة الإنجليزية', icon: 'language',        color: '#3B82F6', grades: GRADES.map(g => g.id) },
   { id: 'mathematics', name: 'Mathematics',      nameAr: 'الرياضيات',        icon: 'calculator',      color: '#8B5CF6', grades: GRADES.map(g => g.id) },
   { id: 'science',     name: 'Science',          nameAr: 'العلوم',           icon: 'flask',           color: '#10B981', grades: GRADES.slice(0, 9).map(g => g.id) },
-  { id: 'physics',     name: 'Physics',          nameAr: 'الفيزياء',         icon: 'nuclear',         color: '#0EA5E9', grades: GRADES.slice(9).map(g => g.id) },
-  { id: 'chemistry',   name: 'Chemistry',        nameAr: 'الكيمياء',         icon: 'beaker',          color: '#F97316', grades: GRADES.slice(9).map(g => g.id) },
-  { id: 'biology',     name: 'Biology',          nameAr: 'الأحياء',          icon: 'leaf',            color: '#22C55E', grades: GRADES.slice(9).map(g => g.id) },
+  // ⚠ `SPECIALISED_FROM` — grade-9, not grade-10.
+  //
+  // These four plus financial-literacy below were declared `GRADES.slice(9)`,
+  // i.e. specialising at Grade 10, on the assumption that Grade 9 is served by
+  // the combined `science` subject above. The Grade 9 books NCCD publishes say
+  // otherwise: there is a separate student book for each of الفيزياء,
+  // الكيمياء, العلوم الحياتية, علوم الأرض and الثقافة المالية, both semesters,
+  // all five ingested 2026-09-08.
+  //
+  // The consequence was silent. `getSubjectsForGrade` filters on this array
+  // first, so a Grade 9 chemistry book would have been catalogued, indexed and
+  // searchable while the subject never appeared in the grade — the book
+  // reachable by direct link and by nothing a teacher could click.
+  //
+  // `science` is left spanning grades 1-9 deliberately: no Grade 9 «العلوم»
+  // book arrived, and absence of a book is not evidence the subject ends at 8.
+  { id: 'physics',     name: 'Physics',          nameAr: 'الفيزياء',         icon: 'nuclear',         color: '#0EA5E9', grades: GRADES.slice(SPECIALISED_FROM).map(g => g.id) },
+  { id: 'chemistry',   name: 'Chemistry',        nameAr: 'الكيمياء',         icon: 'beaker',          color: '#F97316', grades: GRADES.slice(SPECIALISED_FROM).map(g => g.id) },
+  { id: 'biology',     name: 'Biology',          nameAr: 'الأحياء',          icon: 'leaf',            color: '#22C55E', grades: GRADES.slice(SPECIALISED_FROM).map(g => g.id) },
   { id: 'islamic',     name: 'Islamic Studies',  nameAr: 'التربية الإسلامية',icon: 'moon',            color: '#F59E0B', grades: GRADES.map(g => g.id) },
   { id: 'social',      name: 'Social Studies',   nameAr: 'الدراسات الاجتماعية', icon: 'globe',        color: '#EC4899', grades: GRADES.slice(0, 9).map(g => g.id) },
   { id: 'computer',    name: 'Computer',         nameAr: 'الحاسوب',          icon: 'laptop-outline',  color: '#06B6D4', grades: GRADES.map(g => g.id) },
@@ -219,8 +245,8 @@ export const SUBJECTS: Subject[] = [
   // BANK_SUBJECT_IDS['digital-literacy'], which already pointed here before
   // any catalog subject existed to receive it.
   { id: 'digital-literacy', name: 'Digital Skills', nameAr: 'المهارات الرقمية', icon: 'hardware-chip-outline', color: '#0EA5E9', grades: GRADES.map(g => g.id) },
-  { id: 'financial-literacy', name: 'Financial Literacy', nameAr: 'الثقافة المالية', icon: 'wallet-outline', color: '#B45309', grades: GRADES.slice(9).map(g => g.id) },
-  { id: 'earth-science', name: 'Earth and Environmental Science', nameAr: 'علوم الأرض والبيئة', icon: 'earth', color: '#65A30D', grades: GRADES.slice(9).map(g => g.id) },
+  { id: 'financial-literacy', name: 'Financial Literacy', nameAr: 'الثقافة المالية', icon: 'wallet-outline', color: '#B45309', grades: GRADES.slice(SPECIALISED_FROM).map(g => g.id) },
+  { id: 'earth-science', name: 'Earth and Environmental Science', nameAr: 'علوم الأرض والبيئة', icon: 'earth', color: '#65A30D', grades: GRADES.slice(SPECIALISED_FROM).map(g => g.id) },
 ];
 
 /**
