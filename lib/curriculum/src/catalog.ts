@@ -96,6 +96,14 @@ import {
   buildG9ChemSem2BrowserCatalog,
 } from './catalogs/g9ChemSem2.ts';
 import {
+  G9_PHYS_S1_CURRICULUM_BOOK_ID,
+  buildG9PhysSem1BrowserCatalog,
+} from './catalogs/g9PhysSem1.ts';
+import {
+  G9_PHYS_S2_CURRICULUM_BOOK_ID,
+  buildG9PhysSem2BrowserCatalog,
+} from './catalogs/g9PhysSem2.ts';
+import {
   ENGLISH_COMMERCE_S1_CURRICULUM_BOOK_ID,
   ENGLISH_AGRICULTURE_S1_CURRICULUM_BOOK_ID,
   ENGLISH_HOSPITALITY_S1_CURRICULUM_BOOK_ID,
@@ -352,6 +360,8 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // opener); only period counts are absent. Appended, never inserted.
   G9_CHEM_S1_CURRICULUM_BOOK_ID,
   G9_CHEM_S2_CURRICULUM_BOOK_ID,
+  G9_PHYS_S1_CURRICULUM_BOOK_ID,
+  G9_PHYS_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -851,6 +861,35 @@ export const BOOKS: Book[] = [
     title: 'Chemistry – Grade 9, Semester 2',
     titleAr: 'الكيمياء – الصف التاسع – الفصل الثاني',
     subjectId: 'chemistry',
+    gradeId: 'grade-9',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── Physics Grade 9 – Semesters 1 and 2 ────────────────────────────────────
+  // Same shape as the chemistry pair above, and same reason for no `pdfUrl`:
+  // the NCCD public URLs for these two have not been located.
+  {
+    id: 'book-phys-9-s1',
+    title: 'Physics – Grade 9, Semester 1',
+    titleAr: 'الفيزياء – الصف التاسع – الفصل الأول',
+    subjectId: 'physics',
+    gradeId: 'grade-9',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: 'book-phys-9-s2',
+    title: 'Physics – Grade 9, Semester 2',
+    titleAr: 'الفيزياء – الصف التاسع – الفصل الثاني',
+    subjectId: 'physics',
     gradeId: 'grade-9',
     academicYear: '2025-2026',
     language: 'Arabic',
@@ -1805,6 +1844,8 @@ const _g9MathSem1Browser = buildG9MathSem1BrowserCatalog();
 const _g9MathSem2Browser = buildG9MathSem2BrowserCatalog();
 const _g9ChemSem1Browser = buildG9ChemSem1BrowserCatalog();
 const _g9ChemSem2Browser = buildG9ChemSem2BrowserCatalog();
+const _g9PhysSem1Browser = buildG9PhysSem1BrowserCatalog();
+const _g9PhysSem2Browser = buildG9PhysSem2BrowserCatalog();
 const _engCommerceBrowser = buildEnglishCommerceBrowserCatalog();
 const _engAgricultureBrowser = buildEnglishAgricultureBrowserCatalog();
 const _engHospitalityBrowser = buildEnglishHospitalityBrowserCatalog();
@@ -1944,6 +1985,8 @@ export const UNITS: Unit[] = [
   ..._g9MathSem2Browser.units,
   ..._g9ChemSem1Browser.units,
   ..._g9ChemSem2Browser.units,
+  ..._g9PhysSem1Browser.units,
+  ..._g9PhysSem2Browser.units,
   ..._engCommerceBrowser.units,
   ..._engAgricultureBrowser.units,
   ..._engHospitalityBrowser.units,
@@ -1976,6 +2019,8 @@ export const LESSONS: Lesson[] = [
   ..._g9MathSem2Browser.lessons,
   ..._g9ChemSem1Browser.lessons,
   ..._g9ChemSem2Browser.lessons,
+  ..._g9PhysSem1Browser.lessons,
+  ..._g9PhysSem2Browser.lessons,
   ..._engCommerceBrowser.lessons,
   ..._engAgricultureBrowser.lessons,
   ..._engHospitalityBrowser.lessons,

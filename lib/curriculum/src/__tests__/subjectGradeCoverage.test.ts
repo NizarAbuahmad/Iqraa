@@ -42,7 +42,6 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // after mathematics to get a book.
   'financial-literacy:grade-9',
   'english:grade-9',
-  'physics:grade-9',
   'earth-science:grade-9',
   'biology:grade-9',
   'arabic:grade-9',
