@@ -128,6 +128,14 @@ import {
   buildG9DigitalSem2BrowserCatalog,
 } from './catalogs/g9DigitalSem2.ts';
 import {
+  G9_ENG_S1_CURRICULUM_BOOK_ID,
+  buildG9EngSem1BrowserCatalog,
+} from './catalogs/g9EngSem1.ts';
+import {
+  G9_ENG_S2_CURRICULUM_BOOK_ID,
+  buildG9EngSem2BrowserCatalog,
+} from './catalogs/g9EngSem2.ts';
+import {
   ENGLISH_COMMERCE_S1_CURRICULUM_BOOK_ID,
   ENGLISH_AGRICULTURE_S1_CURRICULUM_BOOK_ID,
   ENGLISH_HOSPITALITY_S1_CURRICULUM_BOOK_ID,
@@ -395,6 +403,8 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // is now closed.
   G9_DIGITAL_S1_CURRICULUM_BOOK_ID,
   G9_DIGITAL_S2_CURRICULUM_BOOK_ID,
+  G9_ENG_S1_CURRICULUM_BOOK_ID,
+  G9_ENG_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -1008,6 +1018,36 @@ export const BOOKS: Book[] = [
     gradeId: 'grade-9',
     academicYear: '2025-2026',
     language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── English Grade 9 – Semesters 1 and 2 ───────────────────────────────────
+  // Seven lessons per unit, unlike the Grade 10 English rows further down
+  // which sit at scope-and-sequence depth — see g9EngSem1.ts for why the
+  // finer breakdown is derivable here and was not there.
+  {
+    id: 'book-eng-9-s1',
+    title: 'English – Grade 9, Semester 1',
+    titleAr: 'اللغة الإنجليزية – الصف التاسع – الفصل الأول',
+    subjectId: 'english',
+    gradeId: 'grade-9',
+    academicYear: '2025-2026',
+    language: 'English',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: 'book-eng-9-s2',
+    title: 'English – Grade 9, Semester 2',
+    titleAr: 'اللغة الإنجليزية – الصف التاسع – الفصل الثاني',
+    subjectId: 'english',
+    gradeId: 'grade-9',
+    academicYear: '2025-2026',
+    language: 'English',
     edition: '1st',
     hasKnowledgeBase: true,
     audience: 'all',
@@ -1967,6 +2007,8 @@ const _g9EarthScienceSem1Browser = buildG9EarthScienceSem1BrowserCatalog();
 const _g9EarthScienceSem2Browser = buildG9EarthScienceSem2BrowserCatalog();
 const _g9DigitalSem1Browser = buildG9DigitalSem1BrowserCatalog();
 const _g9DigitalSem2Browser = buildG9DigitalSem2BrowserCatalog();
+const _g9EngSem1Browser = buildG9EngSem1BrowserCatalog();
+const _g9EngSem2Browser = buildG9EngSem2BrowserCatalog();
 const _engCommerceBrowser = buildEnglishCommerceBrowserCatalog();
 const _engAgricultureBrowser = buildEnglishAgricultureBrowserCatalog();
 const _engHospitalityBrowser = buildEnglishHospitalityBrowserCatalog();
@@ -2114,6 +2156,8 @@ export const UNITS: Unit[] = [
   ..._g9EarthScienceSem2Browser.units,
   ..._g9DigitalSem1Browser.units,
   ..._g9DigitalSem2Browser.units,
+  ..._g9EngSem1Browser.units,
+  ..._g9EngSem2Browser.units,
   ..._engCommerceBrowser.units,
   ..._engAgricultureBrowser.units,
   ..._engHospitalityBrowser.units,
@@ -2154,6 +2198,8 @@ export const LESSONS: Lesson[] = [
   ..._g9EarthScienceSem2Browser.lessons,
   ..._g9DigitalSem1Browser.lessons,
   ..._g9DigitalSem2Browser.lessons,
+  ..._g9EngSem1Browser.lessons,
+  ..._g9EngSem2Browser.lessons,
   ..._engCommerceBrowser.lessons,
   ..._engAgricultureBrowser.lessons,
   ..._engHospitalityBrowser.lessons,

@@ -1,0 +1,503 @@
+{
+  "meta": {
+    "grade": "الصف التاسع",
+    "grade_en": "Grade 9",
+    "subject": "اللغة الإنجليزية",
+    "subject_en": "English",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 1,
+    "schema_version": "1.0",
+    "provenance_note": "نُقلت الوحداتُ ودروسُها من كتاب الطالب في 2026-09-08. عناوينُ الوحداتِ من صفحةِ المحتوياتِ (ص 4 من الملفِّ)، وكلُّ درسٍ من رأسِ صفحتِه المطبوعِ «LESSON nA» معَ لافتةِ المهارةِ وعنوانِ الموضوعِ بعدَ «|» إنْ وُجد، ونتاجُهُ من عبارةِ «I can …» المطبوعةِ في الدرسِ نفسِه. العربيةُ هنا ترجمتُنا نحن: هذا الكتابُ إنجليزيٌّ بالكاملِ ولا يطبعُ عربيةً خارجَ غلافِه، وهو الوضعُ نفسُه المسجَّلُ في ملفَّي اللغةِ الإنجليزيةِ للصفِّ العاشرِ وملفّاتِ المسارات المهنيةِ الأربعةِ، وعُومل المعاملةَ نفسَها. تُرجمت عناوينُ الوحداتِ ولافتاتُ المهاراتِ فقط؛ أمّا عناوينُ الموضوعاتِ ونصوصُ النتاجاتِ (I can) فبقيت بالإنجليزيةِ حرفيًّا كما يطبعُها الكتابُ، لأنَّ ترجمةَ النتاجِ تُغيّرُ ما يُقالُ للمعلمِ إنَّ الدرسَ يُحقِّقُه.",
+    "source_books": {
+      "student_book": "كتاب الطالب - اللغة الإنجليزية - الصف التاسع - الفصل الدراسي الأول - المركز الوطني لتطوير المناهج والتقويم (sourceId: g9-english-s1-student-book، 76 صفحة)"
+    },
+    "known_gaps": [
+      "سبعةُ دروسٍ لكلِّ وحدةٍ، لا درسٌ واحدٌ كما في ملفَّي الصفِّ العاشرِ. يسجِّلُ ملفُّ العاشرِ أنَّ تفصيلَ الدروسِ السبعةِ «لا يمكنُ اشتقاقُه دونَ تخمينِ الصفحةِ التي يقعُ فيها كلُّ درسٍ». هذا صحيحٌ هناكَ ولا ينطبقُ هنا: كتابُ الصفِّ التاسعِ يطبعُ عبارةَ «I can» واحدةً في كلِّ درسٍ، وعددُها في كلِّ فصلٍ 35 = 5 وحداتٍ × 7 دروسٍ بالضبطِ، فاشتُقَّ الترقيمُ من ترتيبِ هذه العباراتِ داخلَ الوحدةِ لا من التخمينِ، ويرفضُ المولِّدُ الإخراجَ إذا لم تُعطِ وحدةٌ سبعةَ نتاجاتٍ بالضبطِ.",
+      "عددُ الحصصِ لكلِّ درسٍ غيرُ مملوءٍ (periods وtotal_periods = null) مع أنَّ دليلَي المعلمِ للفصلينِ موجودانِ على القرصِ في knowledge-base/grade-9-english/support-pdfs: لم يُسجَّلا ولم يُستخرَجا في هذه التمريرةِ. أقربُ نقصٍ إلى الإغلاقِ في هذا الملفِّ.",
+      "المصطلحاتُ (vocabulary) فارغةٌ: يوزِّعُ هذا الكتابُ المفرداتِ على تمارينِ الدرسِ وقائمةِ «Word List» في آخرِه، ولا يطبعُ صندوقَ مصطلحاتٍ على مفتتحِ الدرسِ كما تفعلُ كتبُ العلومِ. نقلُها يحتاجُ قراءةَ التمارينِ لا رأسَ الصفحةِ.",
+      "صفحاتُ «LIFE SKILLS» و«Culture Spot» و«Literature Spot» و«Grammar Reference» ليست دروسًا ولم تُدرَجْ؛ فهي مقاطعُ بينَ الوحداتِ لا تحملُ رأسَ «LESSON nA» ولا عبارةَ «I can»."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "قريبونَ منك",
+      "title_en": "Close to you",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: skill banner, topic label and one printed \"I can\" outcome per lesson; no vocabulary box and no teacher guide extracted, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary and Grammar",
+          "main_idea_ar": "I can use present tenses to talk about routines and temporary situations.",
+          "periods": null,
+          "objectives": [
+            "I can use present tenses to talk about routines and temporary situations."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "القراءة والمفردات",
+          "title_en": "Reading and Vocabulary",
+          "main_idea_ar": "I can understand the main topic in an article and talk about friends.",
+          "periods": null,
+          "objectives": [
+            "I can understand the main topic in an article and talk about friends."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l3",
+          "order": 3,
+          "title_ar": "المفردات: Family, personality",
+          "title_en": "Vocabulary: Family, personality",
+          "main_idea_ar": "I can describe my family using personality adjectives and reflexive pronouns.",
+          "periods": null,
+          "objectives": [
+            "I can describe my family using personality adjectives and reflexive pronouns."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l4",
+          "order": 4,
+          "title_ar": "القواعد",
+          "title_en": "Grammar",
+          "main_idea_ar": "I can use indefinite pronouns with prefixes some-, any-, every- and no-.",
+          "periods": null,
+          "objectives": [
+            "I can use indefinite pronouns with prefixes some-, any-, every- and no-."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l5",
+          "order": 5,
+          "title_ar": "الاستماع والمفردات",
+          "title_en": "Listening and Vocabulary",
+          "main_idea_ar": "I can find specific information in an interview and talk about language learning.",
+          "periods": null,
+          "objectives": [
+            "I can find specific information in an interview and talk about language learning."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l6",
+          "order": 6,
+          "title_ar": "المحادثة",
+          "title_en": "Speaking",
+          "main_idea_ar": "I can use echo questions and other expressions to show interest in a conversation.",
+          "periods": null,
+          "objectives": [
+            "I can use echo questions and other expressions to show interest in a conversation."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l7",
+          "order": 7,
+          "title_ar": "الكتابة: An informal email of introduction",
+          "title_en": "Writing: An informal email of introduction",
+          "main_idea_ar": "I can write an email to introduce my family and myself.",
+          "periods": null,
+          "objectives": [
+            "I can write an email to introduce my family and myself."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "تعلَّمْ لتلعبَ",
+      "title_en": "Learn to play",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: skill banner, topic label and one printed \"I can\" outcome per lesson; no vocabulary box and no teacher guide extracted, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary and Grammar",
+          "main_idea_ar": "I can use the Past Simple to talk about finished actions or states in the past.",
+          "periods": null,
+          "objectives": [
+            "I can use the Past Simple to talk about finished actions or states in the past."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "المفردات",
+          "title_en": "Vocabulary",
+          "main_idea_ar": "I can talk about learning and studying.",
+          "periods": null,
+          "objectives": [
+            "I can talk about learning and studying."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l3",
+          "order": 3,
+          "title_ar": "القواعد",
+          "title_en": "Grammar",
+          "main_idea_ar": "I can use used to to talk about habits or states in the past.",
+          "periods": null,
+          "objectives": [
+            "I can use used to to talk about habits or states in the past."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l4",
+          "order": 4,
+          "title_ar": "القراءة والمفردات",
+          "title_en": "Reading and Vocabulary",
+          "main_idea_ar": "I can predict what a text is going to be about and talk about sport.",
+          "periods": null,
+          "objectives": [
+            "I can predict what a text is going to be about and talk about sport."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l5",
+          "order": 5,
+          "title_ar": "الاستماع والمفردات",
+          "title_en": "Listening and Vocabulary",
+          "main_idea_ar": "I can identify specific information in an interview about famous sportspeople.",
+          "periods": null,
+          "objectives": [
+            "I can identify specific information in an interview about famous sportspeople."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l6",
+          "order": 6,
+          "title_ar": "المحادثة",
+          "title_en": "Speaking",
+          "main_idea_ar": "I can apologise, give explanations and accept a simple apology.",
+          "periods": null,
+          "objectives": [
+            "I can apologise, give explanations and accept a simple apology."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l7",
+          "order": 7,
+          "title_ar": "الكتابة",
+          "title_en": "Writing",
+          "main_idea_ar": "I can write a short biography.",
+          "periods": null,
+          "objectives": [
+            "I can write a short biography."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "بعيدًا عنِ الوطن",
+      "title_en": "Far from home",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: skill banner, topic label and one printed \"I can\" outcome per lesson; no vocabulary box and no teacher guide extracted, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary and Grammar",
+          "main_idea_ar": "I can use the Past Simple and Continuous to talk about past experiences.",
+          "periods": null,
+          "objectives": [
+            "I can use the Past Simple and Continuous to talk about past experiences."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "المفردات: Travelling",
+          "title_en": "Vocabulary: Travelling",
+          "main_idea_ar": "I can talk about holiday activities, transport and accommodation.",
+          "periods": null,
+          "objectives": [
+            "I can talk about holiday activities, transport and accommodation."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l3",
+          "order": 3,
+          "title_ar": "المحادثة والمفردات",
+          "title_en": "Speaking and Vocabulary",
+          "main_idea_ar": "I can ask for information in situations related to travelling.",
+          "periods": null,
+          "objectives": [
+            "I can ask for information in situations related to travelling."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l4",
+          "order": 4,
+          "title_ar": "القواعد",
+          "title_en": "Grammar",
+          "main_idea_ar": "I can use relative pronouns to talk about people, things and places.",
+          "periods": null,
+          "objectives": [
+            "I can use relative pronouns to talk about people, things and places."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l5",
+          "order": 5,
+          "title_ar": "الاستماع والمفردات",
+          "title_en": "Listening and Vocabulary",
+          "main_idea_ar": "I can predict what an audio recording is going to be about.",
+          "periods": null,
+          "objectives": [
+            "I can predict what an audio recording is going to be about."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l6",
+          "order": 6,
+          "title_ar": "القراءة والمفردات",
+          "title_en": "Reading and Vocabulary",
+          "main_idea_ar": "I can get the main idea and find specific details in an article and talk about travelling and charities.",
+          "periods": null,
+          "objectives": [
+            "I can get the main idea and find specific details in an article and talk about travelling and charities."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l7",
+          "order": 7,
+          "title_ar": "الكتابة والمفردات: A blog post The world is your oyster",
+          "title_en": "Writing and Vocabulary: A blog post The world is your oyster",
+          "main_idea_ar": "I can write a blog post.",
+          "periods": null,
+          "objectives": [
+            "I can write a blog post."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "صفقةٌ رابحة",
+      "title_en": "A good buy",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: skill banner, topic label and one printed \"I can\" outcome per lesson; no vocabulary box and no teacher guide extracted, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary and Grammar",
+          "main_idea_ar": "I can use comparatives and superlatives to compare things.",
+          "periods": null,
+          "objectives": [
+            "I can use comparatives and superlatives to compare things."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l2",
+          "order": 2,
+          "title_ar": "المفردات: Food and drink",
+          "title_en": "Vocabulary: Food and drink",
+          "main_idea_ar": "I can talk about food and drink from different countries.",
+          "periods": null,
+          "objectives": [
+            "I can talk about food and drink from different countries."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l3",
+          "order": 3,
+          "title_ar": "القواعد",
+          "title_en": "Grammar",
+          "main_idea_ar": "I can use quantifiers to talk about countable and uncountable nouns.",
+          "periods": null,
+          "objectives": [
+            "I can use quantifiers to talk about countable and uncountable nouns."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l4",
+          "order": 4,
+          "title_ar": "القراءة والمفردات",
+          "title_en": "Reading and Vocabulary",
+          "main_idea_ar": "I can understand the main idea of a text and a paragraph and talk about shopping.",
+          "periods": null,
+          "objectives": [
+            "I can understand the main idea of a text and a paragraph and talk about shopping."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l5",
+          "order": 5,
+          "title_ar": "الاستماع والمفردات",
+          "title_en": "Listening and Vocabulary",
+          "main_idea_ar": "I can understand the main idea and find specific details in a radio programme about shopping.",
+          "periods": null,
+          "objectives": [
+            "I can understand the main idea and find specific details in a radio programme about shopping."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l6",
+          "order": 6,
+          "title_ar": "المحادثة",
+          "title_en": "Speaking",
+          "main_idea_ar": "I can express, agree or disagree with opinions politely.",
+          "periods": null,
+          "objectives": [
+            "I can express, agree or disagree with opinions politely."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l7",
+          "order": 7,
+          "title_ar": "الكتابة: A formal letter of complaint",
+          "title_en": "Writing: A formal letter of complaint",
+          "main_idea_ar": "I can write a simple formal letter of complaint.",
+          "periods": null,
+          "objectives": [
+            "I can write a simple formal letter of complaint."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u5",
+      "number": 5,
+      "title_ar": "صحةٌ ولياقة",
+      "title_en": "Fit and well",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: skill banner, topic label and one printed \"I can\" outcome per lesson; no vocabulary box and no teacher guide extracted, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_ar": "المفردات والقواعد",
+          "title_en": "Vocabulary and Grammar",
+          "main_idea_ar": "I can use modal verbs to talk about suggestions and obligations.",
+          "periods": null,
+          "objectives": [
+            "I can use modal verbs to talk about suggestions and obligations."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l2",
+          "order": 2,
+          "title_ar": "المفردات: Household chores",
+          "title_en": "Vocabulary: Household chores",
+          "main_idea_ar": "I can talk about household chores.",
+          "periods": null,
+          "objectives": [
+            "I can talk about household chores."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l3",
+          "order": 3,
+          "title_ar": "القواعد",
+          "title_en": "Grammar",
+          "main_idea_ar": "I can use modal verbs to talk about the past.",
+          "periods": null,
+          "objectives": [
+            "I can use modal verbs to talk about the past."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l4",
+          "order": 4,
+          "title_ar": "المحادثة",
+          "title_en": "Speaking",
+          "main_idea_ar": "I can ask for, give and refuse permission.",
+          "periods": null,
+          "objectives": [
+            "I can ask for, give and refuse permission."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l5",
+          "order": 5,
+          "title_ar": "الاستماع والمفردات",
+          "title_en": "Listening and Vocabulary",
+          "main_idea_ar": "I can work out the meaning of new words in a web podcast and talk about health and fitness.",
+          "periods": null,
+          "objectives": [
+            "I can work out the meaning of new words in a web podcast and talk about health and fitness."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l6",
+          "order": 6,
+          "title_ar": "القراءة والمفردات",
+          "title_en": "Reading and Vocabulary",
+          "main_idea_ar": "I can find specific information in an article and talk about healthy living.",
+          "periods": null,
+          "objectives": [
+            "I can find specific information in an article and talk about healthy living."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l7",
+          "order": 7,
+          "title_ar": "الكتابة: A note/short message",
+          "title_en": "Writing: A note/short message",
+          "main_idea_ar": "I can write a short note or message.",
+          "periods": null,
+          "objectives": [
+            "I can write a short note or message."
+          ],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}
