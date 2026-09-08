@@ -44,9 +44,6 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   'english:grade-9',
   'arabic:grade-9',
   'islamic:grade-9',
-  // Digital Skills joined with Grade 10 student books for both semesters; the
-  // Grade 9 half of the subject has no book, same shape as every line above.
-  'digital-literacy:grade-9',
 ]);
 
 describe('subject/grade coverage across the MVP lists', () => {
