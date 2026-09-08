@@ -41,8 +41,6 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // chemistry:grade-9 left this list on 2026-09-08, the first Grade 9 subject
   // after mathematics to get a book.
   'financial-literacy:grade-9',
-  'english:grade-9',
-  'arabic:grade-9',
   'islamic:grade-9',
 ]);
 
