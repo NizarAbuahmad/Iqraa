@@ -39,6 +39,14 @@ import {
   buildG9MathSem2Catalog,
 } from './curriculumG9MathSem2.ts';
 import {
+  G9_CHEM_S1_BOOK_ID,
+  buildG9ChemSem1Catalog,
+} from './curriculumG9ChemSem1.ts';
+import {
+  G9_CHEM_S2_BOOK_ID,
+  buildG9ChemSem2Catalog,
+} from './curriculumG9ChemSem2.ts';
+import {
   CHEM_S1_BOOK_ID,
   buildChemSem1Catalog,
 } from './curriculumG10ChemSem1.ts';
@@ -369,6 +377,24 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Mathematics – Grade 9 – Semester 2',
     semester: 2,
     source: 'iqra_curriculum_g9_math_sem2.json (NCCD)',
+  },
+  {
+    id: G9_CHEM_S1_BOOK_ID,
+    gradeId: 'grade-9',
+    subjectId: 'chemistry',
+    titleAr: 'الكيمياء – الصف التاسع – الفصل الأول',
+    titleEn: 'Chemistry – Grade 9 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g9_chem_sem1.json (NCCD)',
+  },
+  {
+    id: G9_CHEM_S2_BOOK_ID,
+    gradeId: 'grade-9',
+    subjectId: 'chemistry',
+    titleAr: 'الكيمياء – الصف التاسع – الفصل الثاني',
+    titleEn: 'Chemistry – Grade 9 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g9_chem_sem2.json (NCCD)',
   },
 ];
 
@@ -1328,6 +1354,8 @@ const _arabicSem2 = buildArabicSem2Catalog();
 const _islamicSem1 = buildIslamicSem1Catalog();
 const _islamicSem2 = buildIslamicSem2Catalog();
 const _g9MathSem1 = buildG9MathSem1Catalog();
+const _g9ChemSem1 = buildG9ChemSem1Catalog();
+const _g9ChemSem2 = buildG9ChemSem2Catalog();
 const _g9MathSem2 = buildG9MathSem2Catalog();
 // General English — the two books that had a catalog row and no lessons
 // under it until 2026-09-05. Distinct from the four vocational ESP tracks
@@ -1475,6 +1503,8 @@ export const KB_UNITS: KBUnit[] = [
   ..._nccdSem1.units,
   ..._nccdSem2.units,
   ..._g9MathSem1.units,
+  ..._g9ChemSem1.units,
+  ..._g9ChemSem2.units,
   ..._g9MathSem2.units,
   ..._engCommerce.units,
   ..._engAgriculture.units,
@@ -1511,6 +1541,8 @@ export const KB_LESSONS: KBLesson[] = [
   ..._digitalSem2.lessons,
   ..._bioSem2.lessons,
   ..._g9MathSem1.lessons,
+  ..._g9ChemSem1.lessons,
+  ..._g9ChemSem2.lessons,
   ..._g9MathSem2.lessons,
   // No hand-authored rows exist for English either — these carry only what
   // g10EnglishVocational.ts's browser catalog already assembled.
