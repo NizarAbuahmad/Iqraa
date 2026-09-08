@@ -104,6 +104,22 @@ import {
   buildG9PhysSem2BrowserCatalog,
 } from './catalogs/g9PhysSem2.ts';
 import {
+  G9_BIOLOGY_S1_CURRICULUM_BOOK_ID,
+  buildG9BiologySem1BrowserCatalog,
+} from './catalogs/g9BiologySem1.ts';
+import {
+  G9_BIOLOGY_S2_CURRICULUM_BOOK_ID,
+  buildG9BiologySem2BrowserCatalog,
+} from './catalogs/g9BiologySem2.ts';
+import {
+  G9_EARTHSCIENCE_S1_CURRICULUM_BOOK_ID,
+  buildG9EarthScienceSem1BrowserCatalog,
+} from './catalogs/g9EarthScienceSem1.ts';
+import {
+  G9_EARTHSCIENCE_S2_CURRICULUM_BOOK_ID,
+  buildG9EarthScienceSem2BrowserCatalog,
+} from './catalogs/g9EarthScienceSem2.ts';
+import {
   ENGLISH_COMMERCE_S1_CURRICULUM_BOOK_ID,
   ENGLISH_AGRICULTURE_S1_CURRICULUM_BOOK_ID,
   ENGLISH_HOSPITALITY_S1_CURRICULUM_BOOK_ID,
@@ -362,6 +378,10 @@ export const MVP_BOOK_IDS: readonly string[] = [
   G9_CHEM_S2_CURRICULUM_BOOK_ID,
   G9_PHYS_S1_CURRICULUM_BOOK_ID,
   G9_PHYS_S2_CURRICULUM_BOOK_ID,
+  G9_BIOLOGY_S1_CURRICULUM_BOOK_ID,
+  G9_BIOLOGY_S2_CURRICULUM_BOOK_ID,
+  G9_EARTHSCIENCE_S1_CURRICULUM_BOOK_ID,
+  G9_EARTHSCIENCE_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -890,6 +910,61 @@ export const BOOKS: Book[] = [
     title: 'Physics – Grade 9, Semester 2',
     titleAr: 'الفيزياء – الصف التاسع – الفصل الثاني',
     subjectId: 'physics',
+    gradeId: 'grade-9',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── Biology Grade 9 – Semesters 1 and 2 ───────────────────────────────────
+  // Same shape as the chemistry and physics pairs above.
+  {
+    id: 'book-biology-9-s1',
+    title: 'Biology – Grade 9, Semester 1',
+    titleAr: 'العلوم الحياتية – الصف التاسع – الفصل الأول',
+    subjectId: 'biology',
+    gradeId: 'grade-9',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: 'book-biology-9-s2',
+    title: 'Biology – Grade 9, Semester 2',
+    titleAr: 'العلوم الحياتية – الصف التاسع – الفصل الثاني',
+    subjectId: 'biology',
+    gradeId: 'grade-9',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── Earth and Environmental Science Grade 9 – Semesters 1 and 2 ───────────
+  {
+    id: 'book-earth-science-9-s1',
+    title: 'Earth and Environmental Science – Grade 9, Semester 1',
+    titleAr: 'علوم الأرض والبيئة – الصف التاسع – الفصل الأول',
+    subjectId: 'earth-science',
+    gradeId: 'grade-9',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: 'book-earth-science-9-s2',
+    title: 'Earth and Environmental Science – Grade 9, Semester 2',
+    titleAr: 'علوم الأرض والبيئة – الصف التاسع – الفصل الثاني',
+    subjectId: 'earth-science',
     gradeId: 'grade-9',
     academicYear: '2025-2026',
     language: 'Arabic',
@@ -1846,6 +1921,10 @@ const _g9ChemSem1Browser = buildG9ChemSem1BrowserCatalog();
 const _g9ChemSem2Browser = buildG9ChemSem2BrowserCatalog();
 const _g9PhysSem1Browser = buildG9PhysSem1BrowserCatalog();
 const _g9PhysSem2Browser = buildG9PhysSem2BrowserCatalog();
+const _g9BiologySem1Browser = buildG9BiologySem1BrowserCatalog();
+const _g9BiologySem2Browser = buildG9BiologySem2BrowserCatalog();
+const _g9EarthScienceSem1Browser = buildG9EarthScienceSem1BrowserCatalog();
+const _g9EarthScienceSem2Browser = buildG9EarthScienceSem2BrowserCatalog();
 const _engCommerceBrowser = buildEnglishCommerceBrowserCatalog();
 const _engAgricultureBrowser = buildEnglishAgricultureBrowserCatalog();
 const _engHospitalityBrowser = buildEnglishHospitalityBrowserCatalog();
@@ -1987,6 +2066,10 @@ export const UNITS: Unit[] = [
   ..._g9ChemSem2Browser.units,
   ..._g9PhysSem1Browser.units,
   ..._g9PhysSem2Browser.units,
+  ..._g9BiologySem1Browser.units,
+  ..._g9BiologySem2Browser.units,
+  ..._g9EarthScienceSem1Browser.units,
+  ..._g9EarthScienceSem2Browser.units,
   ..._engCommerceBrowser.units,
   ..._engAgricultureBrowser.units,
   ..._engHospitalityBrowser.units,
@@ -2021,6 +2104,10 @@ export const LESSONS: Lesson[] = [
   ..._g9ChemSem2Browser.lessons,
   ..._g9PhysSem1Browser.lessons,
   ..._g9PhysSem2Browser.lessons,
+  ..._g9BiologySem1Browser.lessons,
+  ..._g9BiologySem2Browser.lessons,
+  ..._g9EarthScienceSem1Browser.lessons,
+  ..._g9EarthScienceSem2Browser.lessons,
   ..._engCommerceBrowser.lessons,
   ..._engAgricultureBrowser.lessons,
   ..._engHospitalityBrowser.lessons,
