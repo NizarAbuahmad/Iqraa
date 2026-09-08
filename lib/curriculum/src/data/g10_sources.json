@@ -289,7 +289,7 @@
       "semester": null,
       "kind": "ministry-support",
       "authority": "nccd",
-      "status": "pending",
+      "status": "ingested",
       "filename": "مادة التدخلات العلاجية لمادة الرياضيات للصف العاشر الجزء الثاني.pdf",
       "authorAr": null,
       "unitTags": [
@@ -301,7 +301,16 @@
         "math",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: no text layer)",
+        "extractedAt": "2026-09-08",
+        "pages": 25,
+        "chars": 17197,
+        "localPath": "attached_assets/knowledge-base-pending/math-remedial-part2.pdf",
+        "sha256": "e9fac1dd725fcfc402e7f4bce1d804e4d03c1a989249029e068bd6cf2bb11f98"
+      },
+      "notes": "استُخرج النصُّ في 2026-09-08 وقُرئ بالعين قبل قبوله."
     },
     {
       "id": "math-loss-recovery",
@@ -523,7 +532,7 @@
       "semester": null,
       "kind": "summary",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "ملخص الوحدة الثانية الاشتقاق الرياضيات الصف العاشر أ. رعد الخمايسة.pdf",
       "authorAr": "رعد الخمايسة",
       "unitTags": [
@@ -535,7 +544,16 @@
         "math",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: no text layer)",
+        "extractedAt": "2026-09-08",
+        "pages": 30,
+        "chars": 14173,
+        "localPath": "attached_assets/knowledge-base-pending/math-u2-summary-alkhamayseh.pdf",
+        "sha256": "82b0c74ed0d57ea765b1587055c9e7d850285b4d211e9db6bd47702a5d4341e2"
+      },
+      "notes": "استُخرج النصُّ في 2026-09-08 وقُرئ بالعين قبل قبوله. نصُّه مقروءٌ عمومًا مع زلّاتٍ متفرقةٍ في المسح الضوئي («سيدنا هد» بدل «سيدنا محمد»)."
     },
     {
       "id": "math-ws-systems-alhindi",
@@ -559,7 +577,8 @@
         "math",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "notes": "استخراجُ النص ضجيجٌ كاملٌ لا معنى له («ا ا > >5 75ت بسب ءل2ء ... ج+7لس سو ل له وودد»)؛ طبقةُ النص في هذا الملف الممسوح ضوئيًّا معطوبةٌ بالكامل. حُذف الاستخراج في 2026-09-08 وبقي status: pending. بوابةُ القلب أجازته لأنها لم تجد أداةَ تعريفٍ واحدةً تقيسها — اجتيازُ البوابة ليس شهادةَ سلامة. يحتاج OCR."
     },
     {
       "id": "math-ws-systems-alhindi-dup",
@@ -1389,7 +1408,8 @@
         "math",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "notes": "استخراجُ النص يستبدل حروفًا استبدالًا منتظمًا («إغصاد الأستاذ عبصالا ملحم» بدل «إعداد الأستاذ عبدالله ملحم»، ع→غ ود→ص وم→ه)، فحُذف الاستخراج في 2026-09-08 وبقي status: pending. بوابةُ القلب لا تراه لأنها تقيس قلبَ أداة التعريف لا استبدالَ الحروف، وتعيد n/a هنا لقصر النص. الملف نفسه سليم؛ يحتاج OCR."
     },
     {
       "id": "math-geometry-formulas-melhem",
@@ -1412,7 +1432,8 @@
         "math",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "notes": "استخراجُ النص يستبدل حروفًا استبدالًا منتظمًا، وهو العطبُ نفسُه في math-foundations-melhem ومن المُعِدِّ نفسِه؛ حُذف الاستخراج في 2026-09-08 وبقي status: pending. الملف نفسه سليم؛ يحتاج OCR."
     },
     {
       "id": "chem-s1-student-book",
@@ -2094,7 +2115,7 @@
       "semester": 1,
       "kind": "worksheet",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "ورقة عمل كيمياء الصف العاشر نظرية بور أ. محمد طارق.pdf",
       "authorAr": "محمد طارق",
       "unitTags": [
@@ -2107,7 +2128,16 @@
         "chemistry",
         "كيمياء",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic in reversed presentation-form glyphs, not the base Arabic block — unusable without un-shaping)",
+        "extractedAt": "2026-09-08",
+        "pages": 3,
+        "chars": 1208,
+        "localPath": "attached_assets/knowledge-base-pending/chem-ws-bohr-tareq.pdf",
+        "sha256": "22b8816250d8f446ba1a7c08255023d34539373bfc52746b4bc975a514170683"
+      },
+      "notes": "استُخرج النصُّ في 2026-09-08 وقُرئ بالعين قبل قبوله."
     },
     {
       "id": "chem-ws-reactions-tareq",
@@ -2118,7 +2148,7 @@
       "semester": 2,
       "kind": "worksheet",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "ورقة عمل التفاعلات الكيميائية كيمياء عاشر أ. محمد طارق.pdf",
       "authorAr": "محمد طارق",
       "unitTags": [
@@ -2131,7 +2161,16 @@
         "chemistry",
         "كيمياء",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic in reversed presentation-form glyphs, not the base Arabic block — unusable without un-shaping)",
+        "extractedAt": "2026-09-08",
+        "pages": 2,
+        "chars": 980,
+        "localPath": "attached_assets/knowledge-base-pending/chem-ws-reactions-tareq.pdf",
+        "sha256": "cb73f5ca1b2bd716d1564f2b26a58c95e632857a93a4c597ab1da80a6692b987"
+      },
+      "notes": "استُخرج النصُّ في 2026-09-08 وقُرئ بالعين قبل قبوله. نصُّه مقروءٌ مع زلّاتٍ متفرقةٍ («الآتن» بدل «الآتي»، «الموضع» بدل «الموضح»)؛ مقبولٌ لأن سلطتَه teacher أي مرجعيٌّ لا يُقتبَس حرفيًّا."
     },
     {
       "id": "chem-ws-planck-almasri",
@@ -2206,7 +2245,7 @@
       "semester": 2,
       "kind": "exam",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "اختبار الشهر الأول كيمياء الصف العاشر الفصل الثاني أ. محمد طارق عوض.pdf",
       "authorAr": "محمد طارق عوض",
       "unitTags": [
@@ -2218,7 +2257,16 @@
         "chemistry",
         "كيمياء",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic in reversed presentation-form glyphs, not the base Arabic block — unusable without un-shaping)",
+        "extractedAt": "2026-09-08",
+        "pages": 2,
+        "chars": 1035,
+        "localPath": "attached_assets/knowledge-base-pending/chem-s2-month1-tareq.pdf",
+        "sha256": "5ef8a9b08a0ec2e66d4505187d59158062e45311ddc728641f4e9c1b0b5bd48a"
+      },
+      "notes": "استُخرج النصُّ في 2026-09-08 وقُرئ بالعين قبل قبوله. نصُّه مقروءٌ مع زلّاتٍ متفرقةٍ («المبعث» بدل «المبحث»)؛ مقبولٌ لأن سلطتَه teacher أي مرجعيٌّ لا يُقتبَس حرفيًّا."
     },
     {
       "id": "finlit-s1-student-book",
