@@ -58,18 +58,28 @@ describe('manifest shape', () => {
       // Grade 10 keeps its bare `s1-u2` vocabulary; Grade 9 (2026-09-05) is
       // explicit — `g9-math-s1` — because `subject` here doesn't carry grade
       // and a bare tag would be ambiguous between the two.
+      //
+      // The Grade 9 half of each pattern below is `g9-${slug}-s${n}`, and the
+      // slug is the SUBJECTS key in `curriculumIds.ts` — NOT this record's key.
+      // They differ for four subjects: english→eng, chemistry→chem,
+      // physics→phys, financial-literacy→finlit, digital-literacy→digital.
+      // `bankTagsForParsedUnit` builds the tag a unit looks up from that slug,
+      // so a source tagged `g9-english-s1` is matched by nothing and grounds
+      // no passages — silently, which is how physics, earth science and
+      // biology sat unreachable for a day on 2026-09-03. Written out here so
+      // the two spellings have to be reconciled by a human, not assumed equal.
       math: /^(s[12](-u\d+|-matrices)?|g10-math-general|g\d+-math-s[12])$/,
-      chemistry: /^(chem-s[12](-u\d+)?|chem-g10-general)$/,
-      'financial-literacy': /^finlit-s[12]$/,
-      physics: /^phys-s[12]$/,
-      biology: /^(bio-s[12]|bio-g10-general)$/,
-      'earth-science': /^earth-s[12]$/,
-      arabic: /^arabic-s[12]$/,
-      islamic: /^islamic-s[12]$/,
+      chemistry: /^(chem-s[12](-u\d+)?|chem-g10-general|g9-chem-s[12])$/,
+      'financial-literacy': /^(finlit-s[12]|g9-finlit-s[12])$/,
+      physics: /^(phys-s[12]|g9-phys-s[12])$/,
+      biology: /^(bio-s[12]|bio-g10-general|g9-biology-s[12])$/,
+      'earth-science': /^(earth-s[12]|g9-earth-science-s[12])$/,
+      arabic: /^(arabic-s[12]|g9-arabic-s[12])$/,
+      islamic: /^(islamic-s[12]|g9-islamic-s[12])$/,
       history: /^history-s[12]$/,
-      english: /^eng-s[12]$/,
+      english: /^(eng-s[12]|g9-eng-s[12])$/,
       geography: /^geo-s[12]$/,
-      'digital-literacy': /^digital-s[12]$/,
+      'digital-literacy': /^(digital-s[12]|g9-digital-s[12])$/,
       civic: /^civic-s[12]$/,
       art: /^art-g10-general$/,
       vocational: /^vocational-s[12]$/,
