@@ -39,6 +39,38 @@ import {
   buildG9MathSem2Catalog,
 } from './curriculumG9MathSem2.ts';
 import {
+  G9_CHEM_S1_BOOK_ID,
+  buildG9ChemSem1Catalog,
+} from './curriculumG9ChemSem1.ts';
+import {
+  G9_CHEM_S2_BOOK_ID,
+  buildG9ChemSem2Catalog,
+} from './curriculumG9ChemSem2.ts';
+import {
+  G9_PHYS_S1_BOOK_ID,
+  buildG9PhysSem1Catalog,
+} from './curriculumG9PhysSem1.ts';
+import {
+  G9_PHYS_S2_BOOK_ID,
+  buildG9PhysSem2Catalog,
+} from './curriculumG9PhysSem2.ts';
+import {
+  G9_BIOLOGY_S1_BOOK_ID,
+  buildG9BiologySem1Catalog,
+} from './curriculumG9BiologySem1.ts';
+import {
+  G9_BIOLOGY_S2_BOOK_ID,
+  buildG9BiologySem2Catalog,
+} from './curriculumG9BiologySem2.ts';
+import {
+  G9_EARTHSCIENCE_S1_BOOK_ID,
+  buildG9EarthScienceSem1Catalog,
+} from './curriculumG9EarthScienceSem1.ts';
+import {
+  G9_EARTHSCIENCE_S2_BOOK_ID,
+  buildG9EarthScienceSem2Catalog,
+} from './curriculumG9EarthScienceSem2.ts';
+import {
   CHEM_S1_BOOK_ID,
   buildChemSem1Catalog,
 } from './curriculumG10ChemSem1.ts';
@@ -369,6 +401,78 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Mathematics – Grade 9 – Semester 2',
     semester: 2,
     source: 'iqra_curriculum_g9_math_sem2.json (NCCD)',
+  },
+  {
+    id: G9_CHEM_S1_BOOK_ID,
+    gradeId: 'grade-9',
+    subjectId: 'chemistry',
+    titleAr: 'الكيمياء – الصف التاسع – الفصل الأول',
+    titleEn: 'Chemistry – Grade 9 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g9_chem_sem1.json (NCCD)',
+  },
+  {
+    id: G9_CHEM_S2_BOOK_ID,
+    gradeId: 'grade-9',
+    subjectId: 'chemistry',
+    titleAr: 'الكيمياء – الصف التاسع – الفصل الثاني',
+    titleEn: 'Chemistry – Grade 9 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g9_chem_sem2.json (NCCD)',
+  },
+  {
+    id: G9_PHYS_S1_BOOK_ID,
+    gradeId: 'grade-9',
+    subjectId: 'physics',
+    titleAr: 'الفيزياء – الصف التاسع – الفصل الأول',
+    titleEn: 'Physics – Grade 9 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g9_phys_sem1.json (NCCD)',
+  },
+  {
+    id: G9_PHYS_S2_BOOK_ID,
+    gradeId: 'grade-9',
+    subjectId: 'physics',
+    titleAr: 'الفيزياء – الصف التاسع – الفصل الثاني',
+    titleEn: 'Physics – Grade 9 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g9_phys_sem2.json (NCCD)',
+  },
+  {
+    id: G9_BIOLOGY_S1_BOOK_ID,
+    gradeId: 'grade-9',
+    subjectId: 'biology',
+    titleAr: 'العلوم الحياتية – الصف التاسع – الفصل الأول',
+    titleEn: 'Biology – Grade 9 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g9_biology_sem1.json (NCCD)',
+  },
+  {
+    id: G9_BIOLOGY_S2_BOOK_ID,
+    gradeId: 'grade-9',
+    subjectId: 'biology',
+    titleAr: 'العلوم الحياتية – الصف التاسع – الفصل الثاني',
+    titleEn: 'Biology – Grade 9 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g9_biology_sem2.json (NCCD)',
+  },
+  {
+    id: G9_EARTHSCIENCE_S1_BOOK_ID,
+    gradeId: 'grade-9',
+    subjectId: 'earth-science',
+    titleAr: 'علوم الأرض والبيئة – الصف التاسع – الفصل الأول',
+    titleEn: 'Earth Science – Grade 9 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g9_earth_science_sem1.json (NCCD)',
+  },
+  {
+    id: G9_EARTHSCIENCE_S2_BOOK_ID,
+    gradeId: 'grade-9',
+    subjectId: 'earth-science',
+    titleAr: 'علوم الأرض والبيئة – الصف التاسع – الفصل الثاني',
+    titleEn: 'Earth Science – Grade 9 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g9_earth_science_sem2.json (NCCD)',
   },
 ];
 
@@ -1328,6 +1432,14 @@ const _arabicSem2 = buildArabicSem2Catalog();
 const _islamicSem1 = buildIslamicSem1Catalog();
 const _islamicSem2 = buildIslamicSem2Catalog();
 const _g9MathSem1 = buildG9MathSem1Catalog();
+const _g9ChemSem1 = buildG9ChemSem1Catalog();
+const _g9ChemSem2 = buildG9ChemSem2Catalog();
+const _g9PhysSem1 = buildG9PhysSem1Catalog();
+const _g9PhysSem2 = buildG9PhysSem2Catalog();
+const _g9BiologySem1 = buildG9BiologySem1Catalog();
+const _g9BiologySem2 = buildG9BiologySem2Catalog();
+const _g9EarthScienceSem1 = buildG9EarthScienceSem1Catalog();
+const _g9EarthScienceSem2 = buildG9EarthScienceSem2Catalog();
 const _g9MathSem2 = buildG9MathSem2Catalog();
 // General English — the two books that had a catalog row and no lessons
 // under it until 2026-09-05. Distinct from the four vocational ESP tracks
@@ -1475,6 +1587,14 @@ export const KB_UNITS: KBUnit[] = [
   ..._nccdSem1.units,
   ..._nccdSem2.units,
   ..._g9MathSem1.units,
+  ..._g9ChemSem1.units,
+  ..._g9ChemSem2.units,
+  ..._g9PhysSem1.units,
+  ..._g9PhysSem2.units,
+  ..._g9BiologySem1.units,
+  ..._g9BiologySem2.units,
+  ..._g9EarthScienceSem1.units,
+  ..._g9EarthScienceSem2.units,
   ..._g9MathSem2.units,
   ..._engCommerce.units,
   ..._engAgriculture.units,
@@ -1511,6 +1631,14 @@ export const KB_LESSONS: KBLesson[] = [
   ..._digitalSem2.lessons,
   ..._bioSem2.lessons,
   ..._g9MathSem1.lessons,
+  ..._g9ChemSem1.lessons,
+  ..._g9ChemSem2.lessons,
+  ..._g9PhysSem1.lessons,
+  ..._g9PhysSem2.lessons,
+  ..._g9BiologySem1.lessons,
+  ..._g9BiologySem2.lessons,
+  ..._g9EarthScienceSem1.lessons,
+  ..._g9EarthScienceSem2.lessons,
   ..._g9MathSem2.lessons,
   // No hand-authored rows exist for English either — these carry only what
   // g10EnglishVocational.ts's browser catalog already assembled.

@@ -38,12 +38,10 @@ import {
 const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // Grade 9 is in MVP_GRADE_IDS for its mathematics books (S1 lesson-level,
   // S2 title-only). No other subject has been ingested for it.
-  'chemistry:grade-9',
+  // chemistry:grade-9 left this list on 2026-09-08, the first Grade 9 subject
+  // after mathematics to get a book.
   'financial-literacy:grade-9',
   'english:grade-9',
-  'physics:grade-9',
-  'earth-science:grade-9',
-  'biology:grade-9',
   'arabic:grade-9',
   'islamic:grade-9',
   // Digital Skills joined with Grade 10 student books for both semesters; the

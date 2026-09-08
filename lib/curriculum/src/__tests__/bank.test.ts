@@ -69,7 +69,7 @@ describe('manifest shape', () => {
       // biology sat unreachable for a day on 2026-09-03. Written out here so
       // the two spellings have to be reconciled by a human, not assumed equal.
       math: /^(s[12](-u\d+|-matrices)?|g10-math-general|g\d+-math-s[12])$/,
-      chemistry: /^(chem-s[12](-u\d+)?|chem-g10-general|g9-chem-s[12])$/,
+      chemistry: /^(chem-s[12](-u\d+)?|chem-g10-general|g9-chem-s[12](-u\d+)?)$/,
       'financial-literacy': /^(finlit-s[12]|g9-finlit-s[12])$/,
       physics: /^(phys-s[12]|g9-phys-s[12])$/,
       biology: /^(bio-s[12]|bio-g10-general|g9-biology-s[12])$/,

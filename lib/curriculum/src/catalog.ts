@@ -88,6 +88,38 @@ import {
   isG9MathSem2TitleOnlyLesson,
 } from './catalogs/g9MathSem2.ts';
 import {
+  G9_CHEM_S1_CURRICULUM_BOOK_ID,
+  buildG9ChemSem1BrowserCatalog,
+} from './catalogs/g9ChemSem1.ts';
+import {
+  G9_CHEM_S2_CURRICULUM_BOOK_ID,
+  buildG9ChemSem2BrowserCatalog,
+} from './catalogs/g9ChemSem2.ts';
+import {
+  G9_PHYS_S1_CURRICULUM_BOOK_ID,
+  buildG9PhysSem1BrowserCatalog,
+} from './catalogs/g9PhysSem1.ts';
+import {
+  G9_PHYS_S2_CURRICULUM_BOOK_ID,
+  buildG9PhysSem2BrowserCatalog,
+} from './catalogs/g9PhysSem2.ts';
+import {
+  G9_BIOLOGY_S1_CURRICULUM_BOOK_ID,
+  buildG9BiologySem1BrowserCatalog,
+} from './catalogs/g9BiologySem1.ts';
+import {
+  G9_BIOLOGY_S2_CURRICULUM_BOOK_ID,
+  buildG9BiologySem2BrowserCatalog,
+} from './catalogs/g9BiologySem2.ts';
+import {
+  G9_EARTHSCIENCE_S1_CURRICULUM_BOOK_ID,
+  buildG9EarthScienceSem1BrowserCatalog,
+} from './catalogs/g9EarthScienceSem1.ts';
+import {
+  G9_EARTHSCIENCE_S2_CURRICULUM_BOOK_ID,
+  buildG9EarthScienceSem2BrowserCatalog,
+} from './catalogs/g9EarthScienceSem2.ts';
+import {
   ENGLISH_COMMERCE_S1_CURRICULUM_BOOK_ID,
   ENGLISH_AGRICULTURE_S1_CURRICULUM_BOOK_ID,
   ENGLISH_HOSPITALITY_S1_CURRICULUM_BOOK_ID,
@@ -339,6 +371,17 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // guide exists for this subject (see the JSONs' known_gaps).
   DIGITAL_S1_CURRICULUM_BOOK_ID,
   DIGITAL_S2_CURRICULUM_BOOK_ID,
+  // Grade 9 Chemistry — both semesters, student books only. Outcomes and
+  // bilingual vocabulary are present (this book prints them on every lesson
+  // opener); only period counts are absent. Appended, never inserted.
+  G9_CHEM_S1_CURRICULUM_BOOK_ID,
+  G9_CHEM_S2_CURRICULUM_BOOK_ID,
+  G9_PHYS_S1_CURRICULUM_BOOK_ID,
+  G9_PHYS_S2_CURRICULUM_BOOK_ID,
+  G9_BIOLOGY_S1_CURRICULUM_BOOK_ID,
+  G9_BIOLOGY_S2_CURRICULUM_BOOK_ID,
+  G9_EARTHSCIENCE_S1_CURRICULUM_BOOK_ID,
+  G9_EARTHSCIENCE_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -810,6 +853,125 @@ export const BOOKS: Book[] = [
     // (see iqra_curriculum_g9_math_sem2.json's source_books note).
     pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Math/2025/G09/2/MT09/SE/MT09_SE2_WEB.pdf',
     guidePdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Math/2025/MT09_TE2_PRINT.pdf',
+  },
+  // ── Chemistry Grade 9 – Semesters 1 and 2 ──────────────────────────────────
+  // The first Grade 9 subject after mathematics, catalogued 2026-09-08 from
+  // the two NCCD student books Nizar supplied.
+  //
+  // No `pdfUrl` on either: those point at NCCD's public site and are the
+  // download chips a teacher taps, and the Grade 9 chemistry books have not
+  // been located there. `hasKnowledgeBase` is what makes the subject appear in
+  // the grade, and that is satisfied by the local ingest — the two are
+  // independent, so a missing download link costs the chip, not the subject.
+  {
+    id: 'book-chem-9-s1',
+    title: 'Chemistry – Grade 9, Semester 1',
+    titleAr: 'الكيمياء – الصف التاسع – الفصل الأول',
+    subjectId: 'chemistry',
+    gradeId: 'grade-9',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: 'book-chem-9-s2',
+    title: 'Chemistry – Grade 9, Semester 2',
+    titleAr: 'الكيمياء – الصف التاسع – الفصل الثاني',
+    subjectId: 'chemistry',
+    gradeId: 'grade-9',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── Physics Grade 9 – Semesters 1 and 2 ────────────────────────────────────
+  // Same shape as the chemistry pair above, and same reason for no `pdfUrl`:
+  // the NCCD public URLs for these two have not been located.
+  {
+    id: 'book-phys-9-s1',
+    title: 'Physics – Grade 9, Semester 1',
+    titleAr: 'الفيزياء – الصف التاسع – الفصل الأول',
+    subjectId: 'physics',
+    gradeId: 'grade-9',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: 'book-phys-9-s2',
+    title: 'Physics – Grade 9, Semester 2',
+    titleAr: 'الفيزياء – الصف التاسع – الفصل الثاني',
+    subjectId: 'physics',
+    gradeId: 'grade-9',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── Biology Grade 9 – Semesters 1 and 2 ───────────────────────────────────
+  // Same shape as the chemistry and physics pairs above.
+  {
+    id: 'book-biology-9-s1',
+    title: 'Biology – Grade 9, Semester 1',
+    titleAr: 'العلوم الحياتية – الصف التاسع – الفصل الأول',
+    subjectId: 'biology',
+    gradeId: 'grade-9',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: 'book-biology-9-s2',
+    title: 'Biology – Grade 9, Semester 2',
+    titleAr: 'العلوم الحياتية – الصف التاسع – الفصل الثاني',
+    subjectId: 'biology',
+    gradeId: 'grade-9',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── Earth and Environmental Science Grade 9 – Semesters 1 and 2 ───────────
+  {
+    id: 'book-earth-science-9-s1',
+    title: 'Earth and Environmental Science – Grade 9, Semester 1',
+    titleAr: 'علوم الأرض والبيئة – الصف التاسع – الفصل الأول',
+    subjectId: 'earth-science',
+    gradeId: 'grade-9',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: 'book-earth-science-9-s2',
+    title: 'Earth and Environmental Science – Grade 9, Semester 2',
+    titleAr: 'علوم الأرض والبيئة – الصف التاسع – الفصل الثاني',
+    subjectId: 'earth-science',
+    gradeId: 'grade-9',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
   },
   // ── Other grades ───────────────────────────────────────────────────────────
   // General (non-vocational) Grade 10 English track — Student Book + Activity
@@ -1755,6 +1917,14 @@ const _digitalSem2Browser = buildDigitalSem2BrowserCatalog();
 const _chemSem2Browser = buildChemSem2BrowserCatalog();
 const _g9MathSem1Browser = buildG9MathSem1BrowserCatalog();
 const _g9MathSem2Browser = buildG9MathSem2BrowserCatalog();
+const _g9ChemSem1Browser = buildG9ChemSem1BrowserCatalog();
+const _g9ChemSem2Browser = buildG9ChemSem2BrowserCatalog();
+const _g9PhysSem1Browser = buildG9PhysSem1BrowserCatalog();
+const _g9PhysSem2Browser = buildG9PhysSem2BrowserCatalog();
+const _g9BiologySem1Browser = buildG9BiologySem1BrowserCatalog();
+const _g9BiologySem2Browser = buildG9BiologySem2BrowserCatalog();
+const _g9EarthScienceSem1Browser = buildG9EarthScienceSem1BrowserCatalog();
+const _g9EarthScienceSem2Browser = buildG9EarthScienceSem2BrowserCatalog();
 const _engCommerceBrowser = buildEnglishCommerceBrowserCatalog();
 const _engAgricultureBrowser = buildEnglishAgricultureBrowserCatalog();
 const _engHospitalityBrowser = buildEnglishHospitalityBrowserCatalog();
@@ -1892,6 +2062,14 @@ export const UNITS: Unit[] = [
   ..._islamicSem2Browser.units,
   ..._g9MathSem1Browser.units,
   ..._g9MathSem2Browser.units,
+  ..._g9ChemSem1Browser.units,
+  ..._g9ChemSem2Browser.units,
+  ..._g9PhysSem1Browser.units,
+  ..._g9PhysSem2Browser.units,
+  ..._g9BiologySem1Browser.units,
+  ..._g9BiologySem2Browser.units,
+  ..._g9EarthScienceSem1Browser.units,
+  ..._g9EarthScienceSem2Browser.units,
   ..._engCommerceBrowser.units,
   ..._engAgricultureBrowser.units,
   ..._engHospitalityBrowser.units,
@@ -1922,6 +2100,14 @@ export const LESSONS: Lesson[] = [
   ..._islamicSem2Browser.lessons,
   ..._g9MathSem1Browser.lessons,
   ..._g9MathSem2Browser.lessons,
+  ..._g9ChemSem1Browser.lessons,
+  ..._g9ChemSem2Browser.lessons,
+  ..._g9PhysSem1Browser.lessons,
+  ..._g9PhysSem2Browser.lessons,
+  ..._g9BiologySem1Browser.lessons,
+  ..._g9BiologySem2Browser.lessons,
+  ..._g9EarthScienceSem1Browser.lessons,
+  ..._g9EarthScienceSem2Browser.lessons,
   ..._engCommerceBrowser.lessons,
   ..._engAgricultureBrowser.lessons,
   ..._engHospitalityBrowser.lessons,
