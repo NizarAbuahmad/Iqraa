@@ -163,6 +163,11 @@ export const LOCAL_FILES: Record<string, string> = {
   'eng-s1-activity-book': 'knowledge-base/grade-10-english/support-pdfs/كتاب الأنشطة لمادة اللغة الإنجليزية للصف العاشر الفصل الأول.pdf',
   'eng-s2-student-book': 'knowledge-base/grade-10-english/support-pdfs/كتاب الطالب لمادة اللغة الإنجليزية الصف العاشر الفصل الثاني.pdf',
   'eng-s2-activity-book': 'knowledge-base/grade-10-english/support-pdfs/كتاب الأنشطة لمادة اللغة الإنجليزية للصف العاشر الفصل الثاني.pdf',
+  // The two teacher's books came off nccd.gov.jo on 2026-09-06, unlike the
+  // four student/activity books above, which is why their manifest rows carry
+  // authority 'nccd' where those carry 'third-party'.
+  'eng-s1-teacher-guide': 'knowledge-base/grade-10-english/support-pdfs/دليل المعلم لمادة اللغة الإنجليزية للصف العاشر الفصل الأول.pdf',
+  'eng-s2-teacher-guide': 'knowledge-base/grade-10-english/support-pdfs/دليل المعلم لمادة اللغة الإنجليزية للصف العاشر الفصل الثاني.pdf',
   'geo-s1-student-book': 'knowledge-base/grade-10-geography/support-pdfs/كتاب الطالب لمادة الجغرافيا للصف العاشر الفصل الأول.pdf',
   'geo-s2-student-book': 'knowledge-base/grade-10-geography/support-pdfs/كتاب الطالب لمادة الجغرافيا للصف العاشر الفصل الثاني.pdf',
   'digital-s1-student-book': 'knowledge-base/grade-10-digital-literacy/support-pdfs/كتاب الطالب لمادة المهارات الرقمية الصف العاشر الفصل الأول.pdf',
@@ -173,6 +178,7 @@ export const LOCAL_FILES: Record<string, string> = {
   'art-student-book': 'knowledge-base/grade-10-art/support-pdfs/كتاب الطالب لمادة التربية الفنية للصف العاشر.pdf',
   'vocational-p1-student-book': 'knowledge-base/grade-10-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية الصف العاشر الجزء الأول.pdf',
   'vocational-p2-student-book': 'knowledge-base/grade-10-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية الصف العاشر الجزء الثاني.pdf',
+  'pe-s1-student-book': 'knowledge-base/grade-10-pe/support-pdfs/كتاب الطالب لمادة التربية الرياضية للصف العاشر الفصل الأول.pdf',
   // Added 2026-09-05, closing the gap flagged in objectives.test.ts and
   // curriculumIds.test.ts: the Grade 9 maths catalog shipped with 0 sources
   // behind it. Filenames verified against content, not trusted blind — see
@@ -181,4 +187,43 @@ export const LOCAL_FILES: Record<string, string> = {
   // filename.
   'g9-math-s1-student-book': 'knowledge-base/grade-9-math/support-pdfs/كتاب الطالب لمادة الرياضيات الصف التاسع الفصل الأول.pdf',
   'g9-math-s2-student-book': 'knowledge-base/grade-9-math/support-pdfs/كتاب الطالب لمادة الرياضيات الصف التاسع الفصل الثاني.pdf',
+  // Teacher guides — the only source of per-lesson period counts for Grade 9.
+  // These two files are ilovepdf-compressed copies, hence the `_compressed`
+  // suffix in the names: the text layer is intact, only the byte size differs
+  // from NCCD's original (recorded in each manifest row's `notes`).
+  'g9-math-s1-teacher-guide': 'knowledge-base/grade-9-math/support-pdfs/دليل المعلم لمادة الرياضيات الصف التاسع الفصل الأول_compressed.pdf',
+  'g9-math-s2-teacher-guide': 'knowledge-base/grade-9-math/support-pdfs/دليل المعلم لمادة الرياضيات الصف التاسع الفصل الثاني_compressed.pdf',
+
+  // ── Grade 9, the other nine subjects ───────────────────────────────────────
+  // Delivered 2026-09-08. Student books only; the teacher guides, activity
+  // books and answer keys sitting beside them on disk are deliberately absent
+  // from both this map and the manifest until a depth pass needs them.
+  //
+  // Every path below is generated from the staged file, not typed: an Arabic
+  // path that differs from the real filename by one character reports as
+  // "missing on disk", which reads like a staging failure rather than a typo.
+  //
+  // `knowledge-base/**/support-pdfs/` is gitignored, and a worktree gets the
+  // tracked skeleton with none of the PDFs — which is what made five Grade 10
+  // sources "missing on disk" on 2026-09-08. The corpus lives in the main
+  // checkout; each worktree reaches it through a directory junction per
+  // support-pdfs folder.
+  'g9-arabic-s1-student-book': 'knowledge-base/grade-9-arabic/support-pdfs/كتاب الطالب لمادة العربية لغتي الصف التاسع الفصل الأول.pdf',
+  'g9-arabic-s2-student-book': 'knowledge-base/grade-9-arabic/support-pdfs/كتاب الطالب لمادة العربية لغتي الصف التاسع الفصل الثاني.pdf',
+  'g9-english-s1-student-book': 'knowledge-base/grade-9-english/support-pdfs/كتاب الطالب لمادة اللغة الإنجليزية الصف التاسع الفصل الأول.pdf',
+  'g9-english-s2-student-book': 'knowledge-base/grade-9-english/support-pdfs/كتاب الطالب لمادة اللغة الإنجليزية الصف التاسع الفصل الثاني.pdf',
+  'g9-chemistry-s1-student-book': 'knowledge-base/grade-9-chemistry/support-pdfs/كتاب الطالب لمادة الكيمياء الصف التاسع الفصل الأول.pdf',
+  'g9-chemistry-s2-student-book': 'knowledge-base/grade-9-chemistry/support-pdfs/كتاب الطالب لمادة الكيمياء الصف التاسع الفصل الثاني.pdf',
+  'g9-physics-s1-student-book': 'knowledge-base/grade-9-physics/support-pdfs/كتاب الطالب لمادة الفيزياء الصف التاسع الفصل الأول.pdf',
+  'g9-physics-s2-student-book': 'knowledge-base/grade-9-physics/support-pdfs/كتاب الطالب لمادة الفيزياء الصف التاسع الفصل الثاني.pdf',
+  'g9-biology-s1-student-book': 'knowledge-base/grade-9-biology/support-pdfs/كتاب الطالب لمادة العلوم الحياتية للصف التاسع الفصل الأول.pdf',
+  'g9-biology-s2-student-book': 'knowledge-base/grade-9-biology/support-pdfs/كتاب الطالب لمادة العلوم الحياتية للصف التاسع الفصل الثاني.pdf',
+  'g9-earth-science-s1-student-book': 'knowledge-base/grade-9-earth-science/support-pdfs/كتاب الطالب لمادة علوم الأرض للصف التاسع الفصل الأول.pdf',
+  'g9-earth-science-s2-student-book': 'knowledge-base/grade-9-earth-science/support-pdfs/كتاب الطالب لمادة علوم الأرض للصف التاسع الفصل الثاني.pdf',
+  'g9-islamic-s1-student-book': 'knowledge-base/grade-9-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف التاسع الفصل الأول.pdf',
+  'g9-islamic-s2-student-book': 'knowledge-base/grade-9-islamic/support-pdfs/كتاب الطالب لمادة التربية الإسلامية الصف التاسع الفصل الثاني.pdf',
+  'g9-financial-literacy-s1-student-book': 'knowledge-base/grade-9-finlit/support-pdfs/كتاب الطالب لمادة الثقافة المالية للصف التاسع الفصل الأول.pdf',
+  'g9-financial-literacy-s2-student-book': 'knowledge-base/grade-9-finlit/support-pdfs/كتاب الطالب لمادة الثقافة المالية للصف التاسع الفصل الثاني.pdf',
+  'g9-digital-literacy-s1-student-book': 'knowledge-base/grade-9-digital-literacy/support-pdfs/كتاب الطالب لمادة المهارات الرقمية الصف التاسع الفصل الأول.pdf',
+  'g9-digital-literacy-s2-student-book': 'knowledge-base/grade-9-digital-literacy/support-pdfs/كتاب الطالب لمادة المهارات الرقمية الصف التاسع الفصل الثاني.pdf',
 };

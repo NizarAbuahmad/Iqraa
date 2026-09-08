@@ -71,9 +71,12 @@ curl -s https://iqraa-api-613126375862.europe-west1.run.app/api/healthz/verifier
 Front End reserves that path and answers with its own 404 before the container
 sees it. That looks like a broken deploy and is not one.
 
-A health check proves the container booted and can reach the database. It does
-**not** prove the OpenAI or R2 credentials are right — nothing calls those on a
-health path. Generating a worksheet is the cheapest thing that does.
+A health check proves the container booted, and **that is all it proves.**
+`/healthz` is `res.json({ status: "ok" })` — a static literal that touches no
+database and no credential (`routes/health.ts`). This file claimed for a while
+that it proved the container "can reach the database" — corrected 2026-09-07
+after checking the handler. To prove a given secret, call something that uses
+it; *Rotating a secret* below lists the one cheap request per credential.
 
 ## Is a given change live? Probe the route, not the git log
 
@@ -133,6 +136,86 @@ as done that never ran (every command had failed on `PATH`, while `/api/healthz`
 answered `ok` from the *old* revision), and changes assumed undeployed that had
 shipped hours earlier from another session. In both cases a green health check
 looked identical to the truth and to its opposite.
+
+## Rotating a secret
+
+Same shape every time: **create the new credential, install it, prove it works
+with a real request, and only then revoke the old one.** Revoking first leaves
+no working key and a broken write path, and the failure will not be where you
+are looking.
+
+Install with `--update-env-vars`, never `--set-env-vars` — the latter replaces
+the whole environment, taking `DATABASE_URL`, `SESSION_SECRET` and everything
+else with it:
+
+```bash
+gcloud run services update iqraa-api \
+  --region europe-west1 --project iqraa-auth-507315 \
+  --update-env-vars KEY_NAME=NEW_VALUE
+```
+
+Traffic is `latestRevision: true`, so the new revision takes traffic by itself.
+Confirm it did — a revision can be created and serve nothing:
+
+```bash
+gcloud run services describe iqraa-api --region europe-west1 \
+  --project iqraa-auth-507315 --format="value(status.traffic[0].revisionName)"
+```
+
+### A health check does not test a secret
+
+`/api/healthz` returns a static `{ status: "ok" }` and touches no credential at
+all — not even the database — so every corrupted key passes it. On 2026-09-04 a
+hand-transcribed `OPENAI_API_KEY` arrived with a bullet character in it, passed
+every health check, and failed only when a teacher generated a worksheet.
+
+So each secret has one cheap request that actually exercises it, and that is the
+test — not the health path:
+
+| Secret | What proves it | Breaks if wrong |
+| --- | --- | --- |
+| `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` | Send a **chat attachment**, then attach lesson media | `routes/messaging.ts` (chat attachments), `routes/lessonMedia.ts` |
+| `OPENAI_API_KEY` | Generate a worksheet | every generator; the fallback hides it — see the mock-content note in CLAUDE.md |
+| `DATABASE_URL` | `POST /api/auth/login` with a **well-formed** wrong password — the `Invalid email or password` answer comes back only after a `users` lookup. An empty body short-circuits on validation and proves nothing | everything |
+| `GOOGLE_CLIENT_ID(S)` | Sign in with Google | login only; email+password still works, so this fails quietly |
+| `YOUTUBE_API_KEY`, `UNSPLASH_ACCESS_KEY` | Search a video / an image | degrades silently to no results — a missing key is a no-op, not an error |
+
+The R2 row lists two checks on purpose. Chat attachments and lesson media are
+separate call sites, both writing through `putObject`, and chat attachments are
+the newer path — it did not exist when the R2 keys were last touched.
+
+### R2 specifically
+
+Four variables, and **only two of them rotate**:
+
+```
+R2_ACCESS_KEY_ID       rotate
+R2_SECRET_ACCESS_KEY   rotate
+R2_ENDPOINT            leave alone
+R2_BUCKET              leave alone
+```
+
+Create the token in Cloudflare → R2 → Manage API Tokens, scoped to the
+**`iqraa-media` bucket only** with Object Read & Write. A token with account-wide
+scope is the thing you are trying not to have.
+
+### These are plain env vars, and that has cost something
+
+Every secret above sits in the Cloud Run revision spec as a plain environment
+variable, not a Secret Manager reference. That means anything that prints the
+service description prints the secrets: on 2026-09-06 a `gcloud run services
+describe` dump did exactly that and every `iqraa-api` secret had to be treated as
+exposed. When reading service config, ask for names and never values:
+
+```bash
+gcloud run services describe iqraa-api --region europe-west1 \
+  --project iqraa-auth-507315 \
+  --format="value(spec.template.spec.containers[0].env[].name)"
+```
+
+Moving these to Secret Manager would make that class of leak impossible rather
+than merely discouraged. Until then the rule is the awkward one: never print a
+value, and treat any transcript that shows one as a rotation trigger.
 
 ## Schema
 

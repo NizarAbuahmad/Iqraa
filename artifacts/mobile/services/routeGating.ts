@@ -72,7 +72,7 @@ export function isNonTeacherRoute(pathname: string | null | undefined): boolean 
 }
 
 /** Routes whose whole purpose is to lead somewhere else once you're signed in. */
-const ENTRY_ROUTES = ['/login', '/register', '/forgot-password', '/onboarding'];
+const ENTRY_ROUTES = ['/login', '/register', '/onboarding'];
 
 export function isEntryRoute(pathname: string | null | undefined): boolean {
   // No path yet (first paint) is treated as an entry: there is no destination

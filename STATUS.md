@@ -410,6 +410,184 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Student accounts went live, reversing the v1 decision, 2026-09-07
+
+**`STUDENT_ACCOUNTS` is `true` in production.** Nizar was asked directly
+whether to leave it open or close it, and chose to leave it open. That reverses
+«v1 is teacher-only, and a roster now needs a consent to exist» below, which
+stays in this file as the record of the earlier decision — but its factual
+claims about the running system are **no longer true** and are marked where
+they appear.
+
+**Nothing in a git log marks the moment it turned on.** The environment
+variable had been set on the Cloud Run service long before any revision read
+it; the deploy that shipped `lib/features.ts` made it take effect silently. A
+config value that predates the code reading it is invisible to every
+change-tracking habit this project has.
+
+**Verified by probe, not assumed** — and the obvious probe is wrong. A bare
+`POST /auth/register` returns «First name is required» from the validation at
+`auth.ts:117`, long before the flag gate at `:143`, so it proves nothing. Fill
+every field and the student-role request reaches the class-code lookup instead
+of a 403 `student_accounts_disabled`:
+
+```bash
+API=https://iqraa-api-613126375862.europe-west1.run.app/api
+curl -s -X POST "$API/auth/register" -H 'Content-Type: application/json' \
+  -d '{"role":"student","firstName":"P","lastName":"D","email":"p@example.invalid","password":"Str0ng!Passw0rd#2026","claimCode":"ZZZZZZ"}'
+# {"error":"That code is invalid or has expired"}   <- past the gate
+```
+
+**What that opens:** student and parent registration, `POST /auth/claim`,
+`GET /auth/join/:code`, and with them the whole messaging surface — direct
+teacher↔parent/student threads and class groups. The join-code feature is no
+longer dormant.
+
+**Three things were already right, and are worth not re-litigating:**
+
+1. `constants/legal.ts` was deliberately written to describe the
+   students-and-parents world, on the reasoning that over-describing is the
+   safe direction. So the flip made nothing published false.
+2. **Suspension is enforced.** `middlewares/auth.ts:76` gates every
+   authenticated request through `suspendedMayReach()`, which covers
+   `/messaging/*` even though `messaging.ts` never mentions `suspendedAt`. A
+   note claiming otherwise was wrong.
+3. `join_code` and `join_code_expires_at` **do exist** in the production
+   database — `GET /api/auth/join/ABC234` returns **404** with a clean body,
+   and since the query reads both columns a missing one would 500 instead.
+   That closes a long-standing worry recorded against the join-code work.
+
+**One real gap was found and closed:** `POST /messaging/threads/:id/messages`
+had no rate limiter while every other public entry point had one, and it
+writes 12MB attachments to R2. Fixed in PR #314 — keyed by user id rather than
+client IP, because a school shares one NAT address and an IP-keyed limit would
+let one class 429 the building.
+
+**Still open, deliberately:**
+
+- **Blocks are soft on send.** `POST /messaging/threads` refuses when either
+  party has blocked the other, but sending into an existing thread does not
+  re-check `chatBlocks`. The reader filters blocked senders and push skips
+  them, so it works from the blocker's side — messages still accumulate and
+  would appear in bulk on unblock. Whether a blocked sender should see an
+  error is a product decision, not a bug.
+**Found and fixed the same day: every rate limiter was per-instance while the
+service scales to 20.** `lib/rateLimit.ts` counted in container memory and its
+own header called that fine "for a single-instance pilot deployment" — but
+`maxScale` is **20**, so the login limiter's 10-per-15-minutes was really up to
+10 × instances. The counter now lives in Postgres (`rate_limit_buckets`,
+`api-server/src/lib/rateLimitStore.ts`) as a single
+`INSERT ... ON CONFLICT DO UPDATE`; PR #319, deployed as revision
+`iqraa-api-00023-4vt`. Not inferred from a digest: five requests to
+`/auth/join/:code` against production produced one `join-lookup:` row with
+count exactly 5, where the old code wrote nothing at all.
+
+Two consequences worth knowing. It **fails open** — if the database is
+unreachable the request passes and an error is logged, on the grounds that
+every route behind a limiter needs the database anyway and a 429 would relabel
+an outage as abuse; so a database outage is also a rate-limiting outage. And
+every rate-limited route now does one extra query, `/take` at 240/min being the
+busiest.
+
+Read-then-write was deliberately avoided: `SELECT` then `UPDATE` across
+instances is a lost-update race that would be *worse* than the per-instance
+bucket, because it still passes every single-process test. Verified against a
+real Postgres — 40 concurrent hits returned exactly 1..40 with none lost.
+## The parent message can be delivered, not just copied, 2026-09-07
+
+`ai-tools/parent-message` composed a letter to a guardian and then could not
+deliver it. «أرسل» called `shareAsText`, which opens the OS share sheet — and on
+desktop web `navigator.share` does not exist, so it fell back to the clipboard.
+On the browser teachers are demoed in, «أرسل» and «نسخ» did the same thing, and
+the toast read «تم فتح المشاركة» because that was all that had happened. No
+email was ever involved: there is no provider, no env var and no guardian
+address column anywhere in the repo.
+
+It now sends through the messenger from PR #245 — `startThread` + `sendMessage`
+per linked guardian. No new endpoint, no schema change, no server code, no
+dependency. Three buttons where there were two, labelled for the difference:
+**أرسل عبر إقرأ** (real delivery), **مشاركة** (the old share sheet), **نسخ**.
+Collapsing them back into one «أرسل» would mean the same tap sometimes reaching
+a parent and sometimes only filling a clipboard, with nothing on screen to say
+which.
+
+**This shipped inert and is no longer inert.** It was written on 2026-09-07 when
+`STUDENT_ACCOUNTS` was false, so `POST /messaging/threads` refused every send —
+`isConnected()` needs a `roster_links` row and the claim flow that mints one
+answered 403. The flag went **true** in production the same day, confirmed live
+(`/healthz/features` → `{"studentAccounts":true}`), so guardians can hold
+accounts, claim a roster row, and receive these notes for real. The button is
+enabled exactly when the picked student has a linked guardian.
+
+Two rules in the code that are easy to lose later:
+
+- **Guardians only.** `guardiansForStudent()` filters to `role === 'parent'`. A
+  roster link can also be `relation: "self"` — the child's own account — and the
+  letter talks about them in the third person («ابنكم»). Sending it there is the
+  wrong reader receiving a message written to be read over their head, not a
+  redundant send. Five cases in `parentMessage.test.ts`.
+- **Editing the name drops the recipient.** Picking «أحمد» then typing over the
+  name clears `pickedStudentId`, so a note can never go to the guardian of a
+  student nobody chose. Fails back to sharing.
+
+When the button is disabled the screen says which reason applies — «اختر
+الطالب/ة من قائمة صفوفك» when the name was typed by hand, «لم يربط وليّ أمر هذا
+الطالب/ة حسابه بعد» when nobody has claimed that student.
+
+**One real gap now that the flag is on:** `/messaging/*` has **no rate limiter**
+— checked against `routes/messaging.ts`, zero `createRateLimiter` calls — while
+`/take` runs 240/min and `/auth/join/:code` 60/min. Sends accept attachments
+that upload to R2, so it is a cost vector, not only a spam one.
+
+Two adjacent worries were investigated and are **not** gaps, contrary to an
+earlier draft of this entry: `users.suspendedAt` is enforced globally at
+`middlewares/auth.ts:76` through `suspendedMayReach()`, which covers
+`/messaging/*` even though `messaging.ts` never mentions it; and `chatBlocks` is
+checked when a direct thread is created (`messaging.ts:433`), with the read path
+and push filtering blocked senders — only posting into an already-open thread
+skips the check.
+
+## Password reset is gone rather than pretending, 2026-09-07
+
+`forgot-password` told the teacher «أرسلنا رابط استعادة كلمة المرور إلى بريدك»
+and sent nothing. `POST /auth/forgot-password` mints a token, stores its hash,
+`console.log`s it when `NODE_ENV !== "production"`, and returns `{ok:true}` —
+there is no email provider anywhere in this repo, so in production the token was
+created and discarded. There was also no reset screen: `AuthContext.resetPassword()`
+existed and nothing called it, so even a delivered link had nowhere to land.
+
+A reset link cannot go through in-app messaging — the person is locked out of
+the app, so the one channel we have is the one they cannot reach. The choice was
+build an email provider or remove the flow. **Removed.** Google sign-in already
+works and already sets `emailVerified`, and it is the prominent button on the
+login screen.
+
+Gone from the client: `app/(auth)/forgot-password.tsx`, its `Stack.Screen` in
+`(auth)/_layout.tsx`, the «نسيت كلمة المرور؟» link in `login.tsx` (and its two
+orphaned styles), `forgotPassword`/`resetPassword` on `AuthContext`,
+`/forgot-password` in `ENTRY_ROUTES`, and seven now-unused i18n keys in both
+languages. The compiled web bundle contains zero occurrences of any of them.
+
+**The cost, stated plainly:** an account created with email + password now has
+no recovery route. Anyone in that position needs Google sign-in or manual
+intervention. That was accepted deliberately, not overlooked — worth revisiting
+if the share of email+password teachers turns out to be material.
+
+**The server side followed, same day.** `POST /auth/forgot-password` and
+`POST /auth/reset-password` are gone from `routes/auth.ts` (122 lines), along
+with `forgotPasswordLimiter` and the `passwordResetTokens` import. Both now
+answer 404 on a running server while `/auth/login` still answers 401 and
+`/healthz/features` 200 — the router is intact, only those two routes left.
+It shipped as its own PR because **the API is hand-deployed**: until someone
+runs that deploy, production still carries the old routes. They are unreachable
+from the app either way, since the client no longer calls them.
+
+The `password_reset_tokens` table stays. Dropping it needs a manual schema push
+and buys nothing.
+
+**Verified:** 1246 mobile tests pass (0 fail), monorepo typecheck clean, no
+dangling references in source, and the login screen rendered in the running app
+without the link.
 ## The shelf's chat hand-off pinned nothing, 2026-09-06
 
 Reported from the app: tapping the chat icon on a file in **مكتبة الدرس** opens
@@ -477,7 +655,10 @@ than the `displayTitle` the row they tapped displayed. The test that covered it
 asserted the filename, so it pinned the wart in place.
 
 1289 mobile tests pass (19 new in `chatHandoffPin.test.ts`, 7 in
-`chatDeepLink.test.ts`), typecheck clean across the monorepo.
+`chatDeepLink.test.ts`), typecheck clean across the monorepo — **1294 after
+merging the Grade 9 corpus and the student-accounts work off `main`**, still
+0 fail. The pin tests derive their fixtures from `KB_LESSONS` rather than
+naming ids, so the new Grade 9 lessons moved through them without edits.
 
 ### Verified by driving the real UI
 
@@ -815,6 +996,7 @@ push has the credentials it needs» below.**
 It was parked because v1 ships teacher-only and `constants/legal.ts` states in
 print that no minor holds an account; that is still true, and every line here
 is still gated behind `STUDENT_ACCOUNTS=false`, so nothing below is reachable
+[**NO LONGER TRUE as of 2026-09-07** — `STUDENT_ACCOUNTS` is `true` in production; see «Student accounts went live, reversing the v1 decision».]
 today. Turning that flag on remains a change to a published legal document, not
 a config change — see «v1 is teacher-only» below.
 
@@ -912,7 +1094,8 @@ repeated adds.
    success while production is untouched — check the host before trusting it.
    `verify-schema` would not have caught the gap either: it checks table
    *names* only, so it reports `ok` with a column missing.
-2. **`STUDENT_ACCOUNTS` is still false**, so none of this is reachable — by
+2. ~~**`STUDENT_ACCOUNTS` is still false**, so none of this is reachable.~~
+   **NO LONGER TRUE as of 2026-09-07** — `STUDENT_ACCOUNTS` is `true` in production; see «Student accounts went live, reversing the v1 decision». It is reachable. Was: by
    design, and it is also the reason nobody has contacts today. Worth checking
    that first if "my groups are empty" comes up again.
 3. **Not exercised end to end.** Typecheck and the full suites pass (re-run on
@@ -934,7 +1117,11 @@ decision rather than a gap. Two answers shaped it: **student and parent
 accounts are off in v1**, and consent for student data is **teacher
 attestation of school-held parental consent** — not an in-app age gate.
 
-**No minor holds an account.** `STUDENT_ACCOUNTS` (default false, and the
+**No minor holds an account.** **NO LONGER TRUE as of 2026-09-07** — `STUDENT_ACCOUNTS` is `true` in production; see «Student accounts went live, reversing the v1 decision». A minor with a valid class code can
+hold one. The paragraph below describes the decision as taken on 2026-09-05 and
+is kept for that record, not as a description of the running system.
+
+`STUDENT_ACCOUNTS` (default false, and the
 default *is* the decision) makes `/auth/register` and `/auth/claim` refuse a
 student or parent outright, and `/students/:id/claim-code` refuse to mint a
 code nobody could redeem. Refused server-side, not merely hidden: the app is
@@ -1238,12 +1425,64 @@ nothing that can act on a report or eject a user (`routes/admin.ts` has one
 route, `usage-summary`),~~ **also closed the same day — see «The report button
 now reaches someone»** — and ~~students get accounts by claim code with no
 birthdate, age or guardian-consent field anywhere in the schema~~ **the last
-one closed the same day too: v1 has no student accounts at all, and a teacher
-now attests to school-held parental consent before entering any child's name.
-See «v1 is teacher-only, and a roster now needs a consent to exist».** **No EAS
-build has ever been made**, so push delivery, image picking and the app icon
-remain unverified on a device, and `newArchEnabled` + `reactCompiler` are both
-experimental — Expo Go over LAN is not evidence that a release build runs.
+one closed the same day too — a teacher now attests to school-held parental
+consent before entering any child's name. See «v1 is teacher-only, and a roster
+now needs a consent to exist».** The clause that said «v1 has no student accounts
+at all» was true when written and is **no longer true as of 2026-09-07**:
+`STUDENT_ACCOUNTS` is on in production, so the attestation is now the only
+consent mechanism in play rather than a belt beside a closed door. See
+«Student accounts went live, reversing the v1 decision».** ~~No EAS
+build has ever been made~~ **— four have, as of 2026-09-07: `5c38a5fb`,
+`68522384`, `d32f5c0c` and `e9388ee1`, all Android `preview`, all finished.
+But building is not installing: nobody has put one on a phone, so push
+delivery, image picking and the app icon remain exactly as unverified on a
+device as when nothing had been compiled at all.** `newArchEnabled` +
+`reactCompiler` are both experimental — Expo Go over LAN is not evidence that a
+release build runs, and neither is a build artifact nobody has opened.
+
+**No `production`-profile build has been made**, which is the one that matters
+for submission: `preview` produces an APK for sideloading, Play needs the
+app-bundle that only `production` emits, and that profile carries
+`autoIncrement`. It would also be the first build to exercise `.easignore`,
+which was added *after* the build that motivated it.
+
+**The signing key changed on 2026-09-07.** `e9388ee1` and everything after it
+are signed with a new keystore (cert SHA256 `D1:32:E5:D6…`, alias
+`9f4ba23f…`); the three builds before it carry the retired one
+(`B4:A6:3B:ED…`, alias `96e2be27…`). Installing a new build over an old one
+therefore fails with `INSTALL_FAILED_UPDATE_INCOMPATIBLE` until the old app is
+uninstalled — expected, not a broken build. Verified by reading the
+certificate out of both APKs' signing blocks and out of the keystore itself,
+not by trusting the console.
+
+**That break also breaks Google sign-in, which was missed at the time.** An
+Android OAuth client is bound to a *signing certificate*, so changing the
+keystore invalidates it. `google-services.json` registers SHA-1
+`b1a46cca7dd267fd46af9e1ba578b2f7a6595ed2`, which is the **retired** key —
+verified by reading the certificate out of both APKs:
+
+| build | signing SHA-1 | registered in Firebase |
+| --- | --- | --- |
+| `d32f5c0c` (2026-09-06) | `b1a46cca…` | yes — Google sign-in verified working on a device |
+| `e9388ee1` (2026-09-07) and later | `189f8482…` | **no** |
+
+So `e9388ee1` fails Google sign-in with `DEVELOPER_ERROR`, and the successful
+device test of sign-in and account linking was performed on `d32f5c0c`, the
+older build. A config check done at the time reported the chain "verified end
+to end" — it compared `google-services.json` against `eas.json` and the server's
+accepted audiences, all of which agreed, and none of which is the signing key.
+Every link matched except the one nobody looked at.
+
+**To fix:** add SHA-1 `18:9F:84:82:5D:A3:1C:7B:5D:81:2C:02:53:20:4F:13:E0:4E:79:50`
+in the Firebase console (Project settings → Your apps → Add fingerprint), then
+re-download `google-services.json`, commit it and rebuild. Adding a fingerprint
+binds the *existing* Android client rather than creating a second one. Keeping
+the old fingerprint alongside costs nothing and keeps `d32f5c0c` working.
+
+**Read the certificate, do not trust the config.** `unzip` finds nothing:
+these APKs are signed v2/v3 only, so there is no `META-INF/*.RSA` and the
+certificate lives in the APK Signing Block before the central directory.
+
 There are no store assets. ~~and no `google-services.json` for Android FCM~~
 — the Firebase side landed 2026-09-06, see below.
 
@@ -1634,6 +1873,33 @@ verified. The app's own Messages tab is the check that covers the third one.
 For the next schema change, prefer generating the SQL and applying it where
 you can see the connection, over swapping a URL into a file that four
 directories share.
+
+## Deleted 39 orphaned math-S2 crop PNGs, 2026-09-04
+
+`knowledge-base/grade-10-math/figures/math-s2-student-book/` held 144 `p*.png`
+against 105 `index.json` entries. The 39 extras are 1.44 MB of unreachable
+files — the same half-followed review step as the 13 chemistry-S1 crops below,
+in a second book.
+
+Not "never indexed". All 39 had a real `index.json` entry immediately before
+`29f2a8c` ("Stop cropping figures through their own labels, and let them be
+enlarged"), which removed 45 entries and added 14. These are the old crops that
+cut through their own labels — deliberately rejected by that re-extraction,
+which dropped the index entries and left the PNGs on disk. That is the reverse
+of `docs/adding-a-book.md` step 19: delete **both** the PNG and its
+`index.json` entry.
+
+Nothing referenced them. `figuresForLesson` and `gen_book_figure_assets.mjs`
+read `index.json` and never scan the directory; the generator re-runs to a
+no-op with `BOOK_FIGURE_COUNT` still 600 and no diff to `bookFigureAssets.ts`.
+
+**One grep here is a trap worth recording.** Searching the asset map for
+`math-s2-student-book/` matches every Grade 9 key too — `g9-math-s2-student-book/`
+ends with that string. It reported 6 of the 39 as still referenced; all six were
+substring hits on Grade 9 files. Match on the full quoted key
+(`'math-s2-student-book/p012.png'`), not the directory fragment.
+
+mobile 1131/1131, typecheck clean.
 
 ## The book's figures reach the surfaces that were quietly skipping them, 2026-09-04
 
@@ -5885,10 +6151,32 @@ product to Grade 10 is `INVESTOR_MVP_CURRICULUM = true` plus
 `isPickerCurriculumVisible` — **six call sites, all in `knowledgeBase.ts`.**
 Unlocking a grade is small; having content worth unlocking is not.
 
-**Correction to an earlier note in this file: Grade 9 is العلوم, not الكيمياء.**
+~~**Correction to an earlier note in this file: Grade 9 is العلوم, not الكيمياء.**
 The catalog already has this right — `science` is grades 1–9, and
 `chemistry`/`physics`/`biology` start at grade 10 — which matches the Jordanian
-system. Anyone sourcing Grade 9 books wants **الرياضيات + العلوم**.
+system. Anyone sourcing Grade 9 books wants **الرياضيات + العلوم**.~~
+
+**Struck 2026-09-08 — the books say otherwise.** NCCD publishes a separate
+Grade 9 student book, both semesters, for each of **الكيمياء، الفيزياء، العلوم
+الحياتية، علوم الأرض والبيئة** and **الثقافة المالية**; all ten were delivered
+and registered that day. Grade 9 is not served by a combined العلوم, so
+"anyone sourcing Grade 9 books wants الرياضيات + العلوم" was wrong, and so was
+"the catalog already has this right".
+
+The correction above was itself asserted from the catalog rather than from a
+book, which is how it survived: `SUBJECTS` said grades 1–9 for `science`, the
+note read that back as evidence, and the note was then cited as confirmation
+that `SUBJECTS` was right. Nothing in the loop had opened a Grade 9 book.
+
+The catalog was fixed the same day — `SPECIALISED_FROM = 8` in `catalog.ts`
+moves those five subjects to start at grade 9. The consequence of leaving it
+was silent rather than loud: `getSubjectsForGrade` filters on `Subject.grades`
+before anything else, so a Grade 9 chemistry book could have been catalogued,
+indexed and searchable while the subject never appeared in the grade.
+
+`science` is deliberately left spanning grades 1–9: no Grade 9 «العلوم» book
+arrived, and the absence of a book is not evidence that the subject stops at
+grade 8 — which is the same inference that produced the struck note.
 
 **What shipped:** `lib/curriculum/src/validateCurriculum.ts` plus
 `pnpm --filter @workspace/curriculum run verify`, wired into CI.

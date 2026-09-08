@@ -10,6 +10,7 @@ import {
   StatusBar,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -740,6 +741,17 @@ function SlideView({ slide, isRTL: appIsRTL }: { slide: ActivitySlide; isRTL: bo
 // ─── Main Presentation Screen ─────────────────────────────────────────────────
 export default function PresentationScreen() {
   const { t, isRTL, lang } = useLanguage();
+  // This screen was built for a projector. On a phone the bottom bar has to
+  // fit Prev + two action buttons + Next across ~360dp, and it cannot: the
+  // labelled action buttons need roughly twice the space that is left over,
+  // so they overflowed and overlapped rather than shrinking. Below the break
+  // the actions go icon-only and the nav buttons narrow.
+  const { width: viewportW } = useWindowDimensions();
+  // 600, not 480. Worked out rather than guessed: the labelled bar needs
+  // ~246dp for the two action buttons and only has (width - 252). At 480dp
+  // that is 208dp — still short, so a 480 break would have shown labels that
+  // do not fit. Tablets (768dp+) keep the labels, every phone drops to icons.
+  const compactBar = viewportW < 600;
   const insets = useSafeAreaInsets();
 
   const [activity, setActivity] = useState<ClassroomActivity | null>(null);
@@ -1234,12 +1246,16 @@ export default function PresentationScreen() {
         <Pressable
           onPress={() => goToSlide(slideIndex - 1)}
           disabled={isFirst}
-          style={[styles.navBtnWide, { opacity: isFirst ? 0.3 : 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+          style={[
+            styles.navBtnWide,
+            compactBar && styles.navBtnCompact,
+            { opacity: isFirst ? 0.3 : 1, flexDirection: isRTL ? 'row-reverse' : 'row' },
+          ]}
           accessibilityRole="button"
           accessibilityLabel={t('prevSlide')}
         >
           <Ionicons name={isRTL ? 'chevron-forward' : 'chevron-back'} size={20} color={TEXT_PRIMARY} />
-          <Text style={[styles.navLabel, { color: TEXT_PRIMARY, fontFamily: 'Cairo_500Medium' }]}>
+          <Text numberOfLines={1} style={[styles.navLabel, { color: TEXT_PRIMARY, fontFamily: 'Cairo_500Medium' }]}>
             {t('prevSlide')}
           </Text>
         </Pressable>
@@ -1247,15 +1263,35 @@ export default function PresentationScreen() {
         {/* Action row */}
         <View style={[styles.actionRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           {hasTimer && (
-            <Pressable onPress={restartTimer} style={styles.actionBtn} hitSlop={8}>
+            <Pressable
+              onPress={restartTimer}
+              style={styles.actionBtn}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={t('restartTimer')}
+            >
               <Ionicons name="refresh-outline" size={18} color={TEXT_MUTED} />
-              <Text style={[styles.actionLabel, { fontFamily: 'Almarai_400Regular' }]}>{t('restartTimer')}</Text>
+              {compactBar ? null : (
+                <Text numberOfLines={1} style={[styles.actionLabel, { fontFamily: 'Almarai_400Regular' }]}>
+                  {t('restartTimer')}
+                </Text>
+              )}
             </Pressable>
           )}
           {hasTeacherNotes && (
-            <Pressable onPress={() => setTeacherPanelOpen(true)} style={[styles.actionBtn, { borderColor: ACCENT + '50', backgroundColor: ACCENT + '12' }]} hitSlop={8}>
+            <Pressable
+              onPress={() => setTeacherPanelOpen(true)}
+              style={[styles.actionBtn, { borderColor: ACCENT + '50', backgroundColor: ACCENT + '12' }]}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={t('teacherPanelTitle')}
+            >
               <Ionicons name="school-outline" size={18} color={ACCENT} />
-              <Text style={[styles.actionLabel, { color: ACCENT, fontFamily: 'Cairo_500Medium' }]}>{t('teacherPanelTitle')}</Text>
+              {compactBar ? null : (
+                <Text numberOfLines={1} style={[styles.actionLabel, { color: ACCENT, fontFamily: 'Cairo_500Medium' }]}>
+                  {t('teacherPanelTitle')}
+                </Text>
+              )}
             </Pressable>
           )}
         </View>
@@ -1266,6 +1302,7 @@ export default function PresentationScreen() {
           disabled={isLast}
           style={[
             styles.navBtnWide,
+            compactBar && styles.navBtnCompact,
             {
               opacity: isLast ? 0.3 : 1,
               backgroundColor: isLast ? 'transparent' : ACCENT,
@@ -1275,7 +1312,7 @@ export default function PresentationScreen() {
           accessibilityRole="button"
           accessibilityLabel={t('nextSlide')}
         >
-          <Text style={[styles.navLabel, { color: isLast ? TEXT_MUTED : '#fff', fontFamily: 'Cairo_700Bold' }]}>
+          <Text numberOfLines={1} style={[styles.navLabel, { color: isLast ? TEXT_MUTED : '#fff', fontFamily: 'Cairo_700Bold' }]}>
             {t('nextSlide')}
           </Text>
           <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color={isLast ? TEXT_MUTED : '#fff'} />
@@ -1340,12 +1377,17 @@ const styles = StyleSheet.create({
   bottomBar: { alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: BORDER, backgroundColor: CARD_BG },
   navBtn: { width: 46, height: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 23 },
   navBtnWide: { alignItems: 'center', justifyContent: 'center', gap: 6, minWidth: 110, height: 46, borderRadius: 23, paddingHorizontal: 16 },
+  // 92 fits «التالي»/«السابق» plus the chevron at 360dp with the two
+  // icon-only action buttons still on the same row.
+  navBtnCompact: { minWidth: 92, paddingHorizontal: 10 },
   navLabel: { fontSize: 14 },
   dotTarget: { paddingVertical: 10, paddingHorizontal: 2, justifyContent: 'center' },
   counterBox: { minWidth: 54, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, backgroundColor: CARD_BG, borderWidth: 1, borderColor: BORDER },
   counterText: { fontSize: 13, color: TEXT_PRIMARY },
   actionRow: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, paddingHorizontal: 10 },
-  actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: BORDER },
+  // flexShrink so an unexpected width narrows these instead of letting them
+  // spill over the nav buttons, which is what the overlap on a real phone was.
+  actionBtn: { flexDirection: 'row', alignItems: 'center', flexShrink: 1, gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: BORDER },
   actionLabel: { fontSize: 12, color: TEXT_MUTED },
 });
 

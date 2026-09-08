@@ -22,9 +22,9 @@
       "status": "ingested",
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-25",
+        "extractedAt": "2026-09-07",
         "pages": 132,
-        "chars": 184065,
+        "chars": 171775,
         "localPath": "attached_assets/10th_grade,_math,_2nd_semester_1785147978008.pdf",
         "sha256": "31fb912092398e107f62505a4abbada0a571343cbcca69032cb541e1a5182668",
         "bytesDifferFromManifest": {
@@ -59,9 +59,9 @@
       "status": "ingested",
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-25",
+        "extractedAt": "2026-09-07",
         "pages": 150,
-        "chars": 220128,
+        "chars": 205650,
         "localPath": "attached_assets/10th_grade,_math,_1st_semester_1785071530816.pdf",
         "sha256": "284b59d944a0cc3be7232aa89f35ba2750e82da496917d53781fea4a26d4c14f",
         "bytesDifferFromManifest": {
@@ -96,9 +96,9 @@
       "status": "ingested",
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-02",
+        "extractedAt": "2026-09-07",
         "pages": 212,
-        "chars": 513732,
+        "chars": 512190,
         "localPath": "attached_assets/TE010_Book-teacher_guiede,_10th_grade,_semster_one_1785147998881.pdf",
         "sha256": "56fac019e4302ac92920f2d1bc7a2c9e760c806ee43d10353fd769b4b9753aab"
       },
@@ -130,9 +130,9 @@
       "status": "ingested",
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-25",
+        "extractedAt": "2026-09-07",
         "pages": 218,
-        "chars": 558414,
+        "chars": 556826,
         "localPath": "attached_assets/Book10_2_Proof3_WEB-teacher_guiede,_10th_grade,_semster_two_1785147998881.pdf",
         "sha256": "f3c362a34c1b8862485b95a2944719eeea820dbaa4ca134cd90119507f318810"
       },
@@ -164,9 +164,9 @@
       "status": "ingested",
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-25",
+        "extractedAt": "2026-09-07",
         "pages": 50,
-        "chars": 47275,
+        "chars": 45128,
         "localPath": "attached_assets/2026_MT10_WB1__10th_grade,_math_excersice_book,_semster_one_1785147998882.pdf",
         "sha256": "3fdcdea589cd02957375a0ef352a24ed5f905b9832b754dee58795a5d70ffb07"
       },
@@ -197,9 +197,9 @@
       "status": "ingested",
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-25",
+        "extractedAt": "2026-09-07",
         "pages": 56,
-        "chars": 57003,
+        "chars": 53818,
         "localPath": "attached_assets/MA_10_WB2_6_11_2025-mather_exccersie_book,_semster_2_1785147998882.pdf",
         "sha256": "302c2a3c58f34a9d4be13a89c7aebfa7f05f8d4a2ec96c07e8ea1aeaab64f5fb"
       },
@@ -242,7 +242,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 1,
         "chars": 1683,
         "localPath": "attached_assets/knowledge-base-pending/math-remedial-plan.pdf",
@@ -273,9 +273,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 33,
-        "chars": 35103,
+        "chars": 33341,
         "localPath": "attached_assets/knowledge-base-pending/math-remedial-part1.pdf",
         "sha256": "0b2dd1d69907975179d0de269be9143c99032a01c13a9c7d1916ed6ca89ae558"
       }
@@ -289,7 +289,7 @@
       "semester": null,
       "kind": "ministry-support",
       "authority": "nccd",
-      "status": "pending",
+      "status": "ingested",
       "filename": "مادة التدخلات العلاجية لمادة الرياضيات للصف العاشر الجزء الثاني.pdf",
       "authorAr": null,
       "unitTags": [
@@ -301,7 +301,16 @@
         "math",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: no text layer)",
+        "extractedAt": "2026-09-08",
+        "pages": 25,
+        "chars": 17197,
+        "localPath": "attached_assets/knowledge-base-pending/math-remedial-part2.pdf",
+        "sha256": "e9fac1dd725fcfc402e7f4bce1d804e4d03c1a989249029e068bd6cf2bb11f98"
+      },
+      "notes": "استُخرج النصُّ في 2026-09-08 وقُرئ بالعين قبل قبوله."
     },
     {
       "id": "math-loss-recovery",
@@ -350,9 +359,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-02",
+        "extractedAt": "2026-09-07",
         "pages": 80,
-        "chars": 101175,
+        "chars": 95931,
         "localPath": "knowledge-base/grade-10-math/support-pdfs/المادة المساندة لمادة الرياضيات الصف العاشر الفصل الأول.pdf",
         "sha256": "51dfb4306d812f4aa1eb2ebdec9048c01a4fdc3ec526a3a3549bb0ee4dd79692"
       }
@@ -381,9 +390,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 20,
-        "chars": 17041,
+        "chars": 16193,
         "localPath": "attached_assets/knowledge-base-pending/math-s2-support-worksheets.pdf",
         "sha256": "e6ddb27e2e77e57495097d815d62c19ea3d2393c0c2ab84fea0651ef9ebe17c4"
       }
@@ -412,9 +421,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 12,
-        "chars": 4762,
+        "chars": 4461,
         "localPath": "attached_assets/knowledge-base-pending/math-diagnostic-test.pdf",
         "sha256": "31ad1895582864acecaeb3b04b81a15cab5f06efe0b0abf0955d7f68bbf26cf6"
       }
@@ -523,7 +532,7 @@
       "semester": null,
       "kind": "summary",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "ملخص الوحدة الثانية الاشتقاق الرياضيات الصف العاشر أ. رعد الخمايسة.pdf",
       "authorAr": "رعد الخمايسة",
       "unitTags": [
@@ -535,7 +544,16 @@
         "math",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: no text layer)",
+        "extractedAt": "2026-09-08",
+        "pages": 30,
+        "chars": 14173,
+        "localPath": "attached_assets/knowledge-base-pending/math-u2-summary-alkhamayseh.pdf",
+        "sha256": "82b0c74ed0d57ea765b1587055c9e7d850285b4d211e9db6bd47702a5d4341e2"
+      },
+      "notes": "استُخرج النصُّ في 2026-09-08 وقُرئ بالعين قبل قبوله. نصُّه مقروءٌ عمومًا مع زلّاتٍ متفرقةٍ في المسح الضوئي («سيدنا هد» بدل «سيدنا محمد»)."
     },
     {
       "id": "math-ws-systems-alhindi",
@@ -559,7 +577,8 @@
         "math",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "notes": "استخراجُ النص ضجيجٌ كاملٌ لا معنى له («ا ا > >5 75ت بسب ءل2ء ... ج+7لس سو ل له وودد»)؛ طبقةُ النص في هذا الملف الممسوح ضوئيًّا معطوبةٌ بالكامل. حُذف الاستخراج في 2026-09-08 وبقي status: pending. بوابةُ القلب أجازته لأنها لم تجد أداةَ تعريفٍ واحدةً تقيسها — اجتيازُ البوابة ليس شهادةَ سلامة. يحتاج OCR."
     },
     {
       "id": "math-ws-systems-alhindi-dup",
@@ -612,9 +631,9 @@
       "notes": "Worked solutions — the depth source for the linear+quadratic system lesson.",
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 6,
-        "chars": 6918,
+        "chars": 6917,
         "localPath": "attached_assets/knowledge-base-pending/math-ws-systems-solved-alkhatib.pdf",
         "sha256": "3edfe97ec45974f3eaa493401572a7142592306a1b7153b85c96f99ec69c09b5"
       }
@@ -644,9 +663,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 3,
-        "chars": 2165,
+        "chars": 2161,
         "localPath": "attached_assets/knowledge-base-pending/math-systems-almasri.pdf",
         "sha256": "b6035becada95e1da32784f95f6fc6a949f3a671c9e80f400b69385262914c44"
       }
@@ -676,9 +695,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 6,
-        "chars": 3708,
+        "chars": 3619,
         "localPath": "attached_assets/knowledge-base-pending/math-ws-powers-almasri.pdf",
         "sha256": "4a477a733f2fc96489909377140fbfbaf9abf55fe853f499ba8b4cde09741774"
       }
@@ -708,9 +727,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 3,
-        "chars": 3407,
+        "chars": 3396,
         "localPath": "attached_assets/knowledge-base-pending/math-ws-polynomials-almasri.pdf",
         "sha256": "df3bad13d0ebae630fb2c374939f1b64d10341228ad22ff0863676bac240a64b"
       }
@@ -740,9 +759,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 3,
-        "chars": 1377,
+        "chars": 1376,
         "localPath": "attached_assets/knowledge-base-pending/math-ws-circle-full-alkhatib.pdf",
         "sha256": "7a703b58b5ee0f68fc9d77349181325f54404e6766e8c8394e358c272b301670"
       }
@@ -772,9 +791,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 2,
-        "chars": 1334,
+        "chars": 1332,
         "localPath": "attached_assets/knowledge-base-pending/math-ws-tangents-alhindi.pdf",
         "sha256": "def34e85674914a421f43b6704c9445ecca042f76f857044ba02f34b8dbdcb25"
       }
@@ -804,9 +823,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 2,
-        "chars": 1511,
+        "chars": 1509,
         "localPath": "attached_assets/knowledge-base-pending/math-ws-tangent-angle-alhindi.pdf",
         "sha256": "e7e1b943120ed3a2322249b6f100d2b9982821cd1569ad0a6f40be6822439cde"
       }
@@ -836,7 +855,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 2,
         "chars": 1183,
         "localPath": "attached_assets/knowledge-base-pending/math-ws-cyclic-quad-1-alhindi.pdf",
@@ -868,7 +887,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 3,
         "chars": 1067,
         "localPath": "attached_assets/knowledge-base-pending/math-ws-cyclic-quad-2-alhindi.pdf",
@@ -900,9 +919,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 3,
-        "chars": 2272,
+        "chars": 2271,
         "localPath": "attached_assets/knowledge-base-pending/math-ws-angles-alhindi.pdf",
         "sha256": "f27c08594e1c442228121ddd5e46c70ee53f05064e2196b3de1a3903592a8b99"
       }
@@ -933,9 +952,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 2,
-        "chars": 1517,
+        "chars": 1516,
         "localPath": "attached_assets/knowledge-base-pending/math-ws-chords-1-alhindi.pdf",
         "sha256": "dea74b3f525c7a6fbab36ac7978329082899f2d8d76df0813dacce63a64f2507"
       }
@@ -990,9 +1009,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 2,
-        "chars": 1631,
+        "chars": 1628,
         "localPath": "attached_assets/knowledge-base-pending/math-ws-chords-2-alhindi.pdf",
         "sha256": "b5458edacc81ed688d997fab3b52de332d8f7fa85460c5105f8e9fd6a3c7576b"
       }
@@ -1022,9 +1041,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 5,
-        "chars": 2659,
+        "chars": 2633,
         "localPath": "attached_assets/knowledge-base-pending/math-mcq-circle-alkhatib.pdf",
         "sha256": "93142df2322dd22333bfc4926e0616ff61e1a8f49f3764dfed725c3e846ef882"
       }
@@ -1054,9 +1073,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 2,
-        "chars": 1282,
+        "chars": 1257,
         "localPath": "attached_assets/knowledge-base-pending/math-mcq-circle-suggested-alkhatib.pdf",
         "sha256": "9c0fdac920f198a53804d0d01b24b581215c05b4602288339da4d47115253ff7"
       }
@@ -1111,9 +1130,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 3,
-        "chars": 2105,
+        "chars": 2093,
         "localPath": "attached_assets/knowledge-base-pending/math-matrices-suggested-alkhatib.pdf",
         "sha256": "ea7619687c0a0df99aa064a7277ba4012e25c091e769e10c60792335b845ac8b"
       }
@@ -1142,9 +1161,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 5,
-        "chars": 3261,
+        "chars": 3260,
         "localPath": "attached_assets/knowledge-base-pending/math-final-alhindi.pdf",
         "sha256": "8b7f8dfcb86c2636f4e32ada5d6501c3dc93ecbc287570d8582da6256da83d22"
       }
@@ -1173,9 +1192,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 7,
-        "chars": 6582,
+        "chars": 6563,
         "localPath": "attached_assets/knowledge-base-pending/math-final-1-alkhatib.pdf",
         "sha256": "6cdacb808f27d308a19b2b8c5bf932c5730c8f4f2c593d745e824751a9b6efa6"
       }
@@ -1204,9 +1223,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 2,
-        "chars": 2291,
+        "chars": 2288,
         "localPath": "attached_assets/knowledge-base-pending/math-final-2-alkhatib.pdf",
         "sha256": "20c17c27365119f24f5b4ef22c167827fd1fb433a354cb78fbb2f739ef0c62d7"
       }
@@ -1235,9 +1254,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 10,
-        "chars": 2650,
+        "chars": 2645,
         "localPath": "attached_assets/knowledge-base-pending/math-month1-alkhatib.pdf",
         "sha256": "cfa250c898d9ed246eda373a3d2646053ab1c9523215750a46d8d374e0dbec3f"
       }
@@ -1266,7 +1285,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 2,
         "chars": 736,
         "localPath": "attached_assets/knowledge-base-pending/math-month2-alfarakh.pdf",
@@ -1298,9 +1317,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 2,
-        "chars": 1138,
+        "chars": 1137,
         "localPath": "attached_assets/knowledge-base-pending/math-u6-test-hussein.pdf",
         "sha256": "e852ba2e198cb3bce752a7e17c90332ab9ca6c54ff72414e3988bdbbef2ae491"
       }
@@ -1330,9 +1349,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 2,
-        "chars": 1561,
+        "chars": 1423,
         "localPath": "attached_assets/knowledge-base-pending/math-u7-test-hussein.pdf",
         "sha256": "d470c655defbc2bbb6206924e2b5feceb24418458c964705da8d43c629277e94"
       }
@@ -1361,9 +1380,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 25,
-        "chars": 14417,
+        "chars": 14370,
         "localPath": "attached_assets/knowledge-base-pending/math-foundation-lafi.pdf",
         "sha256": "77bd743de09a2f27c673f1e247ccfb4aa0daeb6bdfbbe8b0c6d34d902ff41e8d"
       }
@@ -1389,7 +1408,8 @@
         "math",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "notes": "استخراجُ النص يستبدل حروفًا استبدالًا منتظمًا («إغصاد الأستاذ عبصالا ملحم» بدل «إعداد الأستاذ عبدالله ملحم»، ع→غ ود→ص وم→ه)، فحُذف الاستخراج في 2026-09-08 وبقي status: pending. بوابةُ القلب لا تراه لأنها تقيس قلبَ أداة التعريف لا استبدالَ الحروف، وتعيد n/a هنا لقصر النص. الملف نفسه سليم؛ يحتاج OCR."
     },
     {
       "id": "math-geometry-formulas-melhem",
@@ -1412,7 +1432,8 @@
         "math",
         "رياضيات",
         "عاشر"
-      ]
+      ],
+      "notes": "استخراجُ النص يستبدل حروفًا استبدالًا منتظمًا، وهو العطبُ نفسُه في math-foundations-melhem ومن المُعِدِّ نفسِه؛ حُذف الاستخراج في 2026-09-08 وبقي status: pending. الملف نفسه سليم؛ يحتاج OCR."
     },
     {
       "id": "chem-s1-student-book",
@@ -1426,9 +1447,9 @@
       "status": "ingested",
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-25",
+        "extractedAt": "2026-09-07",
         "pages": 76,
-        "chars": 113815,
+        "chars": 106657,
         "localPath": "attached_assets/10th_grade,_alchamy1st_semester_1785071530814.pdf",
         "sha256": "0df149c6402ff1163af158ad4a7f463d978b20897afba463f5150df0dea42456"
       },
@@ -1496,9 +1517,9 @@
       "notes": "Units 4-5: التفاعلات والحسابات الكيميائية / الطاقة الكيميائية — three lessons each, plus a تجربة استهلالية, an إثراء وتوسع and a مراجعة per unit. Unit numbering continues from S1, so the two semesters are one course, not two editions. 84 pages, Adobe original: prefer for extraction. Ingested 2026-08-24 into iqra_curriculum_g10_chem_sem2.json: main ideas, outcomes and bilingual vocabulary from the six lesson openers.",
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-02",
+        "extractedAt": "2026-09-07",
         "pages": 84,
-        "chars": 131290,
+        "chars": 122100,
         "localPath": "knowledge-base/grade-10-chemistry/support-pdfs/10th grade, alchamy.2nd semester.pdf",
         "sha256": "b3285eb5104b9e0249d5593569dd66497d50185420172baa9db1a69f05d899c8"
       }
@@ -1600,9 +1621,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 20,
-        "chars": 27630,
+        "chars": 26256,
         "localPath": "attached_assets/knowledge-base-pending/chem-s1-activity-book.pdf",
         "sha256": "e5b6b3a8409b2e9ea6b3a71847dc37f33bd8c3b449760119e177ab6c5474ff4b"
       }
@@ -1631,9 +1652,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 26,
-        "chars": 34380,
+        "chars": 32559,
         "localPath": "attached_assets/knowledge-base-pending/chem-s2-activity-book.pdf",
         "sha256": "e0940b450955483634b23055cc7ad04fe515a5ef1293be0168722d5f0770f243"
       }
@@ -1662,9 +1683,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 52,
-        "chars": 33715,
+        "chars": 31125,
         "localPath": "attached_assets/knowledge-base-pending/chem-loss-recovery.pdf",
         "sha256": "2c58785d854dfd24ba3e1e37652a7f75d75b4663ab56b7cb0b678ddbf43ba454"
       }
@@ -1693,9 +1714,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 149,
-        "chars": 174171,
+        "chars": 173948,
         "localPath": "attached_assets/knowledge-base-pending/chem-s1-pack-sartawi.pdf",
         "sha256": "212d6c63d7f71475e7accad86801425a77cd3a5fbb3c935bd4cbbbf00bdd2848"
       }
@@ -1823,9 +1844,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 52,
-        "chars": 35434,
+        "chars": 35424,
         "localPath": "attached_assets/knowledge-base-pending/chem-s1-pack-almasri.pdf",
         "sha256": "b713176b80d0dae787455e526053bdb43c79d6ff0ce54e3b9ca9c973af530782"
       }
@@ -1854,9 +1875,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 93,
-        "chars": 47748,
+        "chars": 46557,
         "localPath": "attached_assets/knowledge-base-pending/chem-s1-summary-shawata.pdf",
         "sha256": "ec3ca27a2c474c36d8acc4871029e8c677f531362a788e6dceb3ad0fe3623f3a"
       }
@@ -1909,9 +1930,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 140,
-        "chars": 80233,
+        "chars": 78249,
         "localPath": "attached_assets/knowledge-base-pending/chem-s2-pack-shawata.pdf",
         "sha256": "4d4249ce3e3efa693c23b5add1be17557b792cc6c7e0bec139ea463e01b186af"
       }
@@ -1940,9 +1961,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 49,
-        "chars": 20392,
+        "chars": 20388,
         "localPath": "attached_assets/knowledge-base-pending/chem-s2-pack-almasri.pdf",
         "sha256": "41be69178baccb461fc7a815010d21eb03591df0a285a27b9a4f34bfa28fb49e"
       }
@@ -2045,9 +2066,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 14,
-        "chars": 6644,
+        "chars": 6637,
         "localPath": "attached_assets/knowledge-base-pending/chem-s1-mixed-questions-sartawi.pdf",
         "sha256": "6b04303b25ac2c35b7daa18a30c753c6b8922c68f4c57f35c245af8396bd99fa"
       }
@@ -2078,9 +2099,9 @@
       "notes": "From منهاجي — a third-party network, not the ministry and not a named teacher.",
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 8,
-        "chars": 3373,
+        "chars": 3367,
         "localPath": "attached_assets/knowledge-base-pending/chem-ws-bohr-manhaji.pdf",
         "sha256": "f0bc7ff58c8dca85b2f482a88fe1701d62e3f512f7c3536be1024d71410c24a5"
       }
@@ -2094,7 +2115,7 @@
       "semester": 1,
       "kind": "worksheet",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "ورقة عمل كيمياء الصف العاشر نظرية بور أ. محمد طارق.pdf",
       "authorAr": "محمد طارق",
       "unitTags": [
@@ -2107,7 +2128,16 @@
         "chemistry",
         "كيمياء",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic in reversed presentation-form glyphs, not the base Arabic block — unusable without un-shaping)",
+        "extractedAt": "2026-09-08",
+        "pages": 3,
+        "chars": 1208,
+        "localPath": "attached_assets/knowledge-base-pending/chem-ws-bohr-tareq.pdf",
+        "sha256": "22b8816250d8f446ba1a7c08255023d34539373bfc52746b4bc975a514170683"
+      },
+      "notes": "استُخرج النصُّ في 2026-09-08 وقُرئ بالعين قبل قبوله."
     },
     {
       "id": "chem-ws-reactions-tareq",
@@ -2118,7 +2148,7 @@
       "semester": 2,
       "kind": "worksheet",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "ورقة عمل التفاعلات الكيميائية كيمياء عاشر أ. محمد طارق.pdf",
       "authorAr": "محمد طارق",
       "unitTags": [
@@ -2131,7 +2161,16 @@
         "chemistry",
         "كيمياء",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic in reversed presentation-form glyphs, not the base Arabic block — unusable without un-shaping)",
+        "extractedAt": "2026-09-08",
+        "pages": 2,
+        "chars": 980,
+        "localPath": "attached_assets/knowledge-base-pending/chem-ws-reactions-tareq.pdf",
+        "sha256": "cb73f5ca1b2bd716d1564f2b26a58c95e632857a93a4c597ab1da80a6692b987"
+      },
+      "notes": "استُخرج النصُّ في 2026-09-08 وقُرئ بالعين قبل قبوله. نصُّه مقروءٌ مع زلّاتٍ متفرقةٍ («الآتن» بدل «الآتي»، «الموضع» بدل «الموضح»)؛ مقبولٌ لأن سلطتَه teacher أي مرجعيٌّ لا يُقتبَس حرفيًّا."
     },
     {
       "id": "chem-ws-planck-almasri",
@@ -2158,7 +2197,7 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 2,
         "chars": 648,
         "localPath": "attached_assets/knowledge-base-pending/chem-ws-planck-almasri.pdf",
@@ -2190,9 +2229,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-08-26",
+        "extractedAt": "2026-09-07",
         "pages": 7,
-        "chars": 7072,
+        "chars": 7002,
         "localPath": "attached_assets/knowledge-base-pending/chem-u1-test-shawata.pdf",
         "sha256": "9d4715e23635d1480947cc1a69d2a7aaeb8a41eff5d34b237e6771feaf655ab9"
       }
@@ -2206,7 +2245,7 @@
       "semester": 2,
       "kind": "exam",
       "authority": "teacher",
-      "status": "pending",
+      "status": "ingested",
       "filename": "اختبار الشهر الأول كيمياء الصف العاشر الفصل الثاني أ. محمد طارق عوض.pdf",
       "authorAr": "محمد طارق عوض",
       "unitTags": [
@@ -2218,7 +2257,16 @@
         "chemistry",
         "كيمياء",
         "عاشر"
-      ]
+      ],
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic in reversed presentation-form glyphs, not the base Arabic block — unusable without un-shaping)",
+        "extractedAt": "2026-09-08",
+        "pages": 2,
+        "chars": 1035,
+        "localPath": "attached_assets/knowledge-base-pending/chem-s2-month1-tareq.pdf",
+        "sha256": "5ef8a9b08a0ec2e66d4505187d59158062e45311ddc728641f4e9c1b0b5bd48a"
+      },
+      "notes": "استُخرج النصُّ في 2026-09-08 وقُرئ بالعين قبل قبوله. نصُّه مقروءٌ مع زلّاتٍ متفرقةٍ («المبعث» بدل «المبحث»)؛ مقبولٌ لأن سلطتَه teacher أي مرجعيٌّ لا يُقتبَس حرفيًّا."
     },
     {
       "id": "finlit-s1-student-book",
@@ -2302,9 +2350,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-03",
+        "extractedAt": "2026-09-07",
         "pages": 88,
-        "chars": 130931,
+        "chars": 122857,
         "localPath": "knowledge-base/grade-10-physics/support-pdfs/كتاب الطالب لمادة الفيزياء للصف العاشر الفصل الأول.pdf",
         "sha256": "95fda6fdfdd99324fd5777d7e0563b05f346512d0f67ba41181203f5beb53b63"
       }
@@ -2332,9 +2380,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-03",
+        "extractedAt": "2026-09-07",
         "pages": 132,
-        "chars": 226951,
+        "chars": 209731,
         "localPath": "knowledge-base/grade-10-physics/support-pdfs/كتاب الطالب لمادة الفيزياء للصف العاشر الفصل الثاني.pdf",
         "sha256": "6320adc51501e6b60f08b8200f1765247aff2664189de9081fe607d0e4eed88b"
       }
@@ -2347,7 +2395,7 @@
       "semester": 1,
       "kind": "teacher-guide",
       "authority": "nccd",
-      "status": "pending",
+      "status": "ingested",
       "filename": "دليل المعلم لمادة الفيزياء الصف العاشر الفصل الأول.pdf",
       "authorAr": null,
       "unitTags": [
@@ -2360,7 +2408,15 @@
         "فيزياء",
         "عاشر"
       ],
-      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
+      "notes": "رُفض في 2026-09-03 لقلبه أداة التعريف. مرّ في 2026-09-07 على مُصحِّحات أداة التعريف والحركات المنفصلة ورباط لام-ألف، ومع ذلك بقي دون عتبة الجودة، فقُرئ بالتعرف الضوئي (tesseract, ara). النص مقروء ومفهوم، لكن فيه أخطاء على مستوى الكلمة المفردة (مثل «تحقيتق» بدل «تحقيق»، و«حمس» بدل «خمس»). صالح للاستناد والاسترجاع؛ يُراجَع بالعين قبل أي اقتباس حرفي.",
+      "extraction": {
+        "tool": "tesseract-ocr (--ocr requested)",
+        "extractedAt": "2026-09-07",
+        "pages": 154,
+        "chars": 301130,
+        "localPath": "knowledge-base/grade-10-physics/support-pdfs/دليل المعلم لمادة الفيزياء الصف العاشر الفصل الأول.pdf",
+        "sha256": "0f40a7a3aac211054fe1441677f4a571dceda788bbb49640d826a4a3f4741f3a"
+      }
     },
     {
       "id": "phys-s2-teacher-guide",
@@ -2370,7 +2426,7 @@
       "semester": 2,
       "kind": "teacher-guide",
       "authority": "nccd",
-      "status": "pending",
+      "status": "ingested",
       "filename": "دليل المعلم لمادة الفيزياء الصف العاشر الفصل الثاني.pdf",
       "authorAr": null,
       "unitTags": [
@@ -2383,7 +2439,15 @@
         "فيزياء",
         "عاشر"
       ],
-      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
+      "notes": "رُفض في 2026-09-03 لقلبه أداة التعريف. مرّ في 2026-09-07 على مُصحِّحات أداة التعريف والحركات المنفصلة ورباط لام-ألف، ومع ذلك بقي دون عتبة الجودة، فقُرئ بالتعرف الضوئي (tesseract, ara). النص مقروء ومفهوم، لكن فيه أخطاء على مستوى الكلمة المفردة (مثل «تحقيتق» بدل «تحقيق»، و«حمس» بدل «خمس»). صالح للاستناد والاسترجاع؛ يُراجَع بالعين قبل أي اقتباس حرفي.",
+      "extraction": {
+        "tool": "tesseract-ocr (--ocr requested)",
+        "extractedAt": "2026-09-07",
+        "pages": 154,
+        "chars": 369084,
+        "localPath": "knowledge-base/grade-10-physics/support-pdfs/دليل المعلم لمادة الفيزياء الصف العاشر الفصل الثاني.pdf",
+        "sha256": "3bb020b99d803906a9dc6c7b74f72f897fc46d4039e9eb8de07a061c33227fd0"
+      }
     },
     {
       "id": "phys-s1-activity-book",
@@ -2408,9 +2472,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-03",
+        "extractedAt": "2026-09-07",
         "pages": 36,
-        "chars": 55773,
+        "chars": 52819,
         "localPath": "knowledge-base/grade-10-physics/support-pdfs/كتاب الأنشطة لمادة الفيزياء للصف العاشر الفصل الأول.pdf",
         "sha256": "fd9a3bda70353cc81392114fe44f8a5ba4421c5ac6f4e5d5fcd026ec4ac710a0"
       }
@@ -2438,9 +2502,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-03",
+        "extractedAt": "2026-09-07",
         "pages": 52,
-        "chars": 91793,
+        "chars": 86668,
         "localPath": "knowledge-base/grade-10-physics/support-pdfs/كتاب التمارين لمادة الفيزياء للصف العاشر الفصل الثاني.pdf",
         "sha256": "b815e584e4af0a4272557ae44dc23c79f2e13b7866a528c06aed96cce3ec6c99"
       }
@@ -2469,9 +2533,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-03",
+        "extractedAt": "2026-09-07",
         "pages": 84,
-        "chars": 100250,
+        "chars": 93465,
         "localPath": "knowledge-base/grade-10-biology/support-pdfs/كتاب الطالب لمادة العلوم الحياتية للصف العاشر الفصل الأول.pdf",
         "sha256": "4e7a1e23d5b3012590624322b52fdd3e5d3e811301b2e68efe8d2214e0b905d4"
       }
@@ -2500,9 +2564,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-03",
+        "extractedAt": "2026-09-07",
         "pages": 84,
-        "chars": 121357,
+        "chars": 112666,
         "localPath": "knowledge-base/grade-10-biology/support-pdfs/كتاب الطالب لمادة العلوم الحياتية للصف العاشر الفصل الثاني.pdf",
         "sha256": "ba6402b35aa079cef91788ef56e390e5b2fcafced7656db86d2f42008b3421f9"
       }
@@ -2593,9 +2657,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-03",
+        "extractedAt": "2026-09-07",
         "pages": 32,
-        "chars": 49506,
+        "chars": 47317,
         "localPath": "knowledge-base/grade-10-biology/support-pdfs/كتاب الأنشطة والتجارب العملية لمادة العلوم الحياتية للصف العاشر الفصل الأول.pdf",
         "sha256": "40767a4855ad34c3a66ad8f95a9fe9cf3d757a02b9eff977be3f14d8cba7d45c"
       }
@@ -2624,9 +2688,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-03",
+        "extractedAt": "2026-09-07",
         "pages": 40,
-        "chars": 55367,
+        "chars": 52348,
         "localPath": "knowledge-base/grade-10-biology/support-pdfs/كتاب الأنشطة والتجارب العملية لمادة العلوم الحياتية للصف العاشر الفصل الثاني.pdf",
         "sha256": "f15a3484a5fc1526b71e91678efd73bfda6f2c48df2d26e7137a0be0e8b947ef"
       }
@@ -2686,9 +2750,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-03",
+        "extractedAt": "2026-09-07",
         "pages": 92,
-        "chars": 155561,
+        "chars": 143933,
         "localPath": "knowledge-base/grade-10-earth-science/support-pdfs/كتاب الطالب لمادة علوم الأرض والبيئة الصف العاشر الفصل الثاني.pdf",
         "sha256": "b5ac4142754f97756ffc1f7431eaa83b6caf5306fa6922ed40e1ebb1e7867280"
       }
@@ -2701,7 +2765,7 @@
       "semester": 1,
       "kind": "teacher-guide",
       "authority": "nccd",
-      "status": "pending",
+      "status": "ingested",
       "filename": "دليل المعلم لمادة علوم الأرض والبيئة الصف العاشر الفصل الأول.pdf",
       "authorAr": null,
       "unitTags": [
@@ -2715,7 +2779,15 @@
         "البيئة",
         "عاشر"
       ],
-      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
+      "notes": "رُفض في 2026-09-03 لقلبه أداة التعريف. مرّ في 2026-09-07 على مُصحِّحات أداة التعريف والحركات المنفصلة ورباط لام-ألف، ومع ذلك بقي دون عتبة الجودة، فقُرئ بالتعرف الضوئي (tesseract, ara). النص مقروء ومفهوم، لكن فيه أخطاء على مستوى الكلمة المفردة (مثل «تحقيتق» بدل «تحقيق»، و«حمس» بدل «خمس»). صالح للاستناد والاسترجاع؛ يُراجَع بالعين قبل أي اقتباس حرفي.",
+      "extraction": {
+        "tool": "tesseract-ocr (--ocr requested)",
+        "extractedAt": "2026-09-07",
+        "pages": 106,
+        "chars": 221184,
+        "localPath": "knowledge-base/grade-10-earth-science/support-pdfs/دليل المعلم لمادة علوم الأرض والبيئة الصف العاشر الفصل الأول.pdf",
+        "sha256": "3b61f52f334e6c64d878ceb6842d9da554a4c5ba9506b468dafcb1d11bd5f001"
+      }
     },
     {
       "id": "earth-s2-teacher-guide",
@@ -2725,7 +2797,7 @@
       "semester": 2,
       "kind": "teacher-guide",
       "authority": "nccd",
-      "status": "pending",
+      "status": "ingested",
       "filename": "دليل المعلم لمادة علوم الأرض والبيئة الصف العاشر الفصل الثاني.pdf",
       "authorAr": null,
       "unitTags": [
@@ -2739,7 +2811,15 @@
         "البيئة",
         "عاشر"
       ],
-      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) قلبًا غير منتظم؛ حُذف الاستخراج في 2026-09-03 لأنه كان يُقدَّم فقرات استشهادية للمعلمين. الملف نفسه سليم وموجود في R2؛ يحتاج استخراجًا أفضل أو OCR."
+      "notes": "رُفض في 2026-09-03 لقلبه أداة التعريف. مرّ في 2026-09-07 على مُصحِّحات أداة التعريف والحركات المنفصلة ورباط لام-ألف، ومع ذلك بقي دون عتبة الجودة، فقُرئ بالتعرف الضوئي (tesseract, ara). النص مقروء ومفهوم، لكن فيه أخطاء على مستوى الكلمة المفردة (مثل «تحقيتق» بدل «تحقيق»، و«حمس» بدل «خمس»). صالح للاستناد والاسترجاع؛ يُراجَع بالعين قبل أي اقتباس حرفي.",
+      "extraction": {
+        "tool": "tesseract-ocr (--ocr requested)",
+        "extractedAt": "2026-09-07",
+        "pages": 116,
+        "chars": 280599,
+        "localPath": "knowledge-base/grade-10-earth-science/support-pdfs/دليل المعلم لمادة علوم الأرض والبيئة الصف العاشر الفصل الثاني.pdf",
+        "sha256": "72a307a059b654611ea114bb4676b0e1f6fb58eae7c7bc57f1f96a8341321a1f"
+      }
     },
     {
       "id": "earth-s1-activity-book",
@@ -2765,9 +2845,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-03",
+        "extractedAt": "2026-09-07",
         "pages": 30,
-        "chars": 48931,
+        "chars": 46877,
         "localPath": "knowledge-base/grade-10-earth-science/support-pdfs/كتاب الأنشطة والتجارب العملية لمادة علوم الأرض الصف العاشر الفصل الأول.pdf",
         "sha256": "93b9e34c8256e7ee3001a7b767c2546155c574342e32c8e54e338412571ea2ae"
       }
@@ -2796,9 +2876,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-03",
+        "extractedAt": "2026-09-07",
         "pages": 40,
-        "chars": 72542,
+        "chars": 69441,
         "localPath": "knowledge-base/grade-10-earth-science/support-pdfs/كتاب الأنشطة والتجارب العملية لمادة علوم الأرض الصف العاشر الفصل الثاني.pdf",
         "sha256": "f2243dba4e3ff2e3e0cba1489b705ec8fc0ed6b14fea1c137ab2baa17055b987"
       }
@@ -2827,9 +2907,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-03",
+        "extractedAt": "2026-09-07",
         "pages": 144,
-        "chars": 207585,
+        "chars": 196696,
         "localPath": "knowledge-base/grade-10-arabic/support-pdfs/كتاب الطالب لمادة العربية لغتي للصف العاشر الفصل الأول.pdf",
         "sha256": "9caec4fbe79d9d63cf75c91792e4d93226183965f125ddd026f77116844cd5ee"
       }
@@ -2858,9 +2938,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-03",
+        "extractedAt": "2026-09-07",
         "pages": 140,
-        "chars": 223841,
+        "chars": 210107,
         "localPath": "knowledge-base/grade-10-arabic/support-pdfs/كتاب الطالب لمادة اللغة العربية للصف العاشر الفصل الثاني.pdf",
         "sha256": "99f4cbd774161d075638b4db644229721a7cc9f670f0578e7784980485c7bd26"
       }
@@ -2889,9 +2969,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-03",
+        "extractedAt": "2026-09-07",
         "pages": 255,
-        "chars": 674930,
+        "chars": 670419,
         "localPath": "knowledge-base/grade-10-arabic/support-pdfs/دليل المعلم لمادة العربية لغتي الصف العاشر الفصل الأول.pdf",
         "sha256": "d0859534d64cd2a3edc3cc8cd1ef3b6a09c341910dd666e6e61d6e52db801add"
       }
@@ -2920,9 +3000,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-03",
+        "extractedAt": "2026-09-07",
         "pages": 51,
-        "chars": 72370,
+        "chars": 69338,
         "localPath": "knowledge-base/grade-10-arabic/support-pdfs/كتاب التمارين لمادة اللغة العربية (العربية لغتي) للصف العاشر الفصل الأول.pdf",
         "sha256": "1e051f0f783f0bf6059f5705e7faf31f51d5272167d743754db73fdde07cab88"
       }
@@ -2951,9 +3031,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-03",
+        "extractedAt": "2026-09-07",
         "pages": 53,
-        "chars": 78355,
+        "chars": 74403,
         "localPath": "knowledge-base/grade-10-arabic/support-pdfs/كتاب التمارين لمادة اللغة العربية (العربية لغتي) للصف العاشر الفصل الثاني.pdf",
         "sha256": "efbe54284fe8ddf8f54d51ea8934628532bf15d01de9261997e5d5ed2926f8d7"
       }
@@ -2982,9 +3062,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-03",
+        "extractedAt": "2026-09-07",
         "pages": 64,
-        "chars": 104690,
+        "chars": 97152,
         "localPath": "knowledge-base/grade-10-earth-science/support-pdfs/كتاب الطالب لمادة علوم الأرض والبيئة الصف العاشر الفصل الأول.pdf",
         "sha256": "471202b6960d63b877c9634cc10dfa4a36720e1a39fd0d7df6b732b3fdb98c4e"
       }
@@ -3121,7 +3201,7 @@
       "semester": 1,
       "kind": "student-book",
       "authority": "nccd",
-      "status": "pending",
+      "status": "ingested",
       "filename": "كتاب الطالب لمادة التاريخ للصف العاشر الفصل الأول.pdf",
       "authorAr": null,
       "unitTags": [
@@ -3134,7 +3214,15 @@
         "التاريخ",
         "عاشر"
       ],
-      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة) بنسبة 42%؛ رفضه بوابة الجودة تلقائيًا في 2026-09-03 ولم يُستخرج. الملف نفسه سليم؛ يحتاج استخراجًا أفضل أو OCR."
+      "notes": "رُفض في 2026-09-03 لقلبه أداة التعريف. في 2026-09-06 تبيّن أن العطب أعمق: استخراج pdf-parse يقلب ترتيب المقاطع نفسها لا الحروف فقط — «سأتعلم؟ ماذا» بدل «ماذا سأتعلم؟»، و«م). 651 م - 226(» بدل «(226 م - 651 م)» — وهو عطب لا تقيسه أي بوابة هنا، وقد صار الكتاب يجتازها بعد إضافة مُصحِّح أداة التعريف. لذلك حُذف استخراج pdf-parse واستُخدم التعرف الضوئي (tesseract) صراحةً. الترتيب سليم الآن ونسبة الحركات المنفصلة 0.86% بدل 18.34%. تحذير خاص بهذه المادة: التعرف الضوئي يخطئ في العناوين المزخرفة («الإمبراطورية الساسانية» ← «الاك راطورية الشااسية») وفي التواريخ («560 ق.م» ← «560 0-8»). في كتاب تاريخ هذا خطر مباشر: لا يُقتبس تاريخ أو عنوان من هذا النص دون مقابلته بالصفحة.",
+      "extraction": {
+        "tool": "tesseract-ocr (--ocr requested)",
+        "extractedAt": "2026-09-06",
+        "pages": 76,
+        "chars": 66755,
+        "localPath": "knowledge-base/grade-10-history/support-pdfs/كتاب الطالب لمادة التاريخ للصف العاشر الفصل الأول.pdf",
+        "sha256": "97c72c5ea4e746b45462761d69faaf9de761e07600110e78c78fa68fcc9d82fe"
+      }
     },
     {
       "id": "history-s2-student-book",
@@ -3159,9 +3247,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-03",
+        "extractedAt": "2026-09-07",
         "pages": 94,
-        "chars": 108889,
+        "chars": 102195,
         "localPath": "knowledge-base/grade-10-history/support-pdfs/كتاب الطالب لمادة التاريخ للصف العاشر الفصل الثاني.pdf",
         "sha256": "2ce354159d52e0c2addf793b99a18b16413f9a37498084d027177a0d454f034b"
       }
@@ -3190,7 +3278,7 @@
       "notes": "المصدر غير مؤكد: لم يُعثر على نسخة NCCD معتمدة لهذه الطبعة (انظر STATUS.md، 2026-08-30)؛ الكتالوج يصفها بأنها «نسخة على مساحة تخزين المشروع». لذلك authority = third-party وليس nccd — لا يُدّعى مصدر لم يُتحقق منه.",
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-03",
+        "extractedAt": "2026-09-07",
         "pages": 78,
         "chars": 183110,
         "localPath": "knowledge-base/grade-10-english/support-pdfs/كتاب الطالب لمادة اللغة الإنجليزية الصف العاشر الفصل الأول.pdf",
@@ -3221,7 +3309,7 @@
       "notes": "المصدر غير مؤكد: لم يُعثر على نسخة NCCD معتمدة لهذه الطبعة (انظر STATUS.md، 2026-08-30)؛ الكتالوج يصفها بأنها «نسخة على مساحة تخزين المشروع». لذلك authority = third-party وليس nccd — لا يُدّعى مصدر لم يُتحقق منه.",
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-03",
+        "extractedAt": "2026-09-07",
         "pages": 52,
         "chars": 110720,
         "localPath": "knowledge-base/grade-10-english/support-pdfs/كتاب الأنشطة لمادة اللغة الإنجليزية للصف العاشر الفصل الأول.pdf",
@@ -3298,7 +3386,7 @@
       "semester": 1,
       "kind": "student-book",
       "authority": "nccd",
-      "status": "pending",
+      "status": "ingested",
       "filename": "كتاب الطالب لمادة الجغرافيا للصف العاشر الفصل الأول.pdf",
       "authorAr": null,
       "unitTags": [
@@ -3311,7 +3399,15 @@
         "الجغرافيا",
         "عاشر"
       ],
-      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة)؛ رفضته بوابة الجودة تلقائيًا في 2026-09-03 ولم يُستخرج. الملف نفسه سليم؛ يحتاج استخراجًا أفضل أو OCR."
+      "notes": "رُفض في 2026-09-03 لقلبه أداة التعريف. مرّ في 2026-09-07 على مُصحِّحات أداة التعريف والحركات المنفصلة ورباط لام-ألف، ومع ذلك بقي دون عتبة الجودة، فقُرئ بالتعرف الضوئي (tesseract, ara). النص مقروء ومفهوم، لكن فيه أخطاء على مستوى الكلمة المفردة (مثل «تحقيتق» بدل «تحقيق»، و«حمس» بدل «خمس»). صالح للاستناد والاسترجاع؛ يُراجَع بالعين قبل أي اقتباس حرفي. تحذير إضافي: التعرف الضوئي يخطئ في الأرقام والنسب (رُصد «9675- 1680» بدل قيم مئوية وارتفاعات)، وهي مادة قائمة على الأرقام — لا يُقتبس رقم من هذا النص دون مقابلته بالصفحة.",
+      "extraction": {
+        "tool": "tesseract-ocr (--ocr requested)",
+        "extractedAt": "2026-09-07",
+        "pages": 76,
+        "chars": 72798,
+        "localPath": "knowledge-base/grade-10-geography/support-pdfs/كتاب الطالب لمادة الجغرافيا للصف العاشر الفصل الأول.pdf",
+        "sha256": "eb9fa1a31612d2aae2663673b2cc108f45d1e8e91d4196f647bb025c1384ccf2"
+      }
     },
     {
       "id": "geo-s2-student-book",
@@ -3321,7 +3417,7 @@
       "semester": 2,
       "kind": "student-book",
       "authority": "nccd",
-      "status": "pending",
+      "status": "ingested",
       "filename": "كتاب الطالب لمادة الجغرافيا للصف العاشر الفصل الثاني.pdf",
       "authorAr": null,
       "unitTags": [
@@ -3334,7 +3430,15 @@
         "الجغرافيا",
         "عاشر"
       ],
-      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة)؛ رفضته بوابة الجودة تلقائيًا في 2026-09-03 ولم يُستخرج. الملف نفسه سليم؛ يحتاج استخراجًا أفضل أو OCR."
+      "notes": "رُفض في 2026-09-03 لقلبه أداة التعريف. مرّ في 2026-09-07 على مُصحِّحات أداة التعريف والحركات المنفصلة ورباط لام-ألف، ومع ذلك بقي دون عتبة الجودة، فقُرئ بالتعرف الضوئي (tesseract, ara). النص مقروء ومفهوم، لكن فيه أخطاء على مستوى الكلمة المفردة (مثل «تحقيتق» بدل «تحقيق»، و«حمس» بدل «خمس»). صالح للاستناد والاسترجاع؛ يُراجَع بالعين قبل أي اقتباس حرفي. تحذير إضافي: التعرف الضوئي يخطئ في الأرقام والنسب (رُصد «9675- 1680» بدل قيم مئوية وارتفاعات)، وهي مادة قائمة على الأرقام — لا يُقتبس رقم من هذا النص دون مقابلته بالصفحة.",
+      "extraction": {
+        "tool": "tesseract-ocr (--ocr requested)",
+        "extractedAt": "2026-09-07",
+        "pages": 88,
+        "chars": 80214,
+        "localPath": "knowledge-base/grade-10-geography/support-pdfs/كتاب الطالب لمادة الجغرافيا للصف العاشر الفصل الثاني.pdf",
+        "sha256": "888419704a493cf83e1364deda59ab4fa2041c2b38b4787f4a3436384a600f7d"
+      }
     },
     {
       "id": "digital-s1-student-book",
@@ -3359,9 +3463,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-03",
+        "extractedAt": "2026-09-07",
         "pages": 208,
-        "chars": 327833,
+        "chars": 294277,
         "localPath": "knowledge-base/grade-10-digital-literacy/support-pdfs/كتاب الطالب لمادة المهارات الرقمية الصف العاشر الفصل الأول.pdf",
         "sha256": "3a76f254361b50b30df39e01e0f10aeb252b4d7d5c594730182d9242078a61b4"
       }
@@ -3389,9 +3493,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-03",
+        "extractedAt": "2026-09-07",
         "pages": 149,
-        "chars": 277553,
+        "chars": 247571,
         "localPath": "knowledge-base/grade-10-digital-literacy/support-pdfs/كتاب الطالب لمادة المهارات الرقمية الصف العاشر الفصل الثاني.pdf",
         "sha256": "f9d37c035a0576db2b49fe2fb2699616dffac2877ca62dcfd1efe1f60e2bdd00"
       }
@@ -3404,7 +3508,7 @@
       "semester": 1,
       "kind": "student-book",
       "authority": "nccd",
-      "status": "pending",
+      "status": "ingested",
       "filename": "كتاب الطالب لمادة التربية الوطنية والمدنية للصف العاشر الفصل الأول.pdf",
       "authorAr": null,
       "unitTags": [
@@ -3417,7 +3521,15 @@
         "التربية الوطنية والمدنية",
         "عاشر"
       ],
-      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة)؛ رفضته بوابة الجودة تلقائيًا في 2026-09-03 ولم يُستخرج. الملف نفسه سليم؛ يحتاج استخراجًا أفضل أو OCR."
+      "notes": "رُفض في 2026-09-03 لقلبه أداة التعريف. مرّ في 2026-09-07 على مُصحِّحات أداة التعريف والحركات المنفصلة ورباط لام-ألف، ومع ذلك بقي دون عتبة الجودة، فقُرئ بالتعرف الضوئي (tesseract, ara). النص مقروء ومفهوم، لكن فيه أخطاء على مستوى الكلمة المفردة (مثل «تحقيتق» بدل «تحقيق»، و«حمس» بدل «خمس»). صالح للاستناد والاسترجاع؛ يُراجَع بالعين قبل أي اقتباس حرفي.",
+      "extraction": {
+        "tool": "tesseract-ocr (--ocr requested)",
+        "extractedAt": "2026-09-07",
+        "pages": 84,
+        "chars": 73242,
+        "localPath": "knowledge-base/grade-10-civic/support-pdfs/كتاب الطالب لمادة التربية الوطنية والمدنية للصف العاشر الفصل الأول.pdf",
+        "sha256": "16f94c2f97f8fe4f82b56b251d48ca33c54ddde281896dc30ddb2d3f0bbe599f"
+      }
     },
     {
       "id": "civic-s2-student-book",
@@ -3427,7 +3539,7 @@
       "semester": 2,
       "kind": "student-book",
       "authority": "nccd",
-      "status": "pending",
+      "status": "ingested",
       "filename": "كتاب الطالب لمادة التربية الوطنية والمدنية للصف العاشر الفصل الثاني.pdf",
       "authorAr": null,
       "unitTags": [
@@ -3440,7 +3552,15 @@
         "التربية الوطنية والمدنية",
         "عاشر"
       ],
-      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة)؛ رفضته بوابة الجودة تلقائيًا في 2026-09-03 ولم يُستخرج. الملف نفسه سليم؛ يحتاج استخراجًا أفضل أو OCR."
+      "notes": "استُخرج بالتعرف الضوئي (tesseract) بعد رفض pdf-parse لقلبه أداة التعريف بنسبة 55%. القلب زال تمامًا (0.00%)، لكن التعرف الضوئي يخطئ في كلمات مفردة — رُصد «العيش الكريه» بدل «العيش الكريم» في ص 11. صالح للاستناد والاسترجاع؛ يحتاج مراجعة بالعين قبل الاقتباس الحرفي أمام معلم أو طالب.",
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic with the definite article transposed (الحركة ← احلركة) in 55% of samples — readable by eye, not quotable)",
+        "extractedAt": "2026-09-06",
+        "pages": 100,
+        "chars": 79385,
+        "localPath": "knowledge-base/grade-10-civic/support-pdfs/كتاب الطالب لمادة التربية الوطنية والمدنية للصف العاشر الفصل الثاني.pdf",
+        "sha256": "c0abcd3d48657316a483551d1fdc19d0bcc8f65c76e467695f7546255905e22f"
+      }
     },
     {
       "id": "art-teacher-guide",
@@ -3450,7 +3570,7 @@
       "semester": null,
       "kind": "teacher-guide",
       "authority": "nccd",
-      "status": "pending",
+      "status": "ingested",
       "filename": "دليل المعلم التربية الفنية الصف العاشر.pdf",
       "authorAr": null,
       "unitTags": [
@@ -3463,7 +3583,15 @@
         "التربية الفنية",
         "عاشر"
       ],
-      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة)؛ رفضته بوابة الجودة تلقائيًا في 2026-09-03 ولم يُستخرج. الملف نفسه سليم؛ يحتاج استخراجًا أفضل أو OCR."
+      "notes": "رُفض في 2026-09-03 لقلبه أداة التعريف. أُعيد الاستخراج في 2026-09-06 بعد إضافة مُصحِّح أداة التعريف؛ لم يكفِ التصحيح وحده (بقيت النسبة 56% في كتاب الطالب)، فانتقل إلى التعرف الضوئي (tesseract). النص الناتج سليم القراءة بالمعاينة، ونسبة الحركات المنفصلة 0.10% — أقل بكثير من استخراج pdf-parse. يبقى التعرف الضوئي درجة أدنى من الاستخراج الرقمي النظيف: يُراجَع بالعين قبل الاقتباس الحرفي.",
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic with the definite article transposed (الحركة ← احلركة) in 54% of samples — readable by eye, not quotable)",
+        "extractedAt": "2026-09-06",
+        "pages": 131,
+        "chars": 95815,
+        "localPath": "knowledge-base/grade-10-art/support-pdfs/دليل المعلم التربية الفنية الصف العاشر.pdf",
+        "sha256": "687c318b547a17205ebb930d975d5765d3196cb194b0ce5262264c0f70f0ce35"
+      }
     },
     {
       "id": "art-student-book",
@@ -3473,7 +3601,7 @@
       "semester": null,
       "kind": "student-book",
       "authority": "nccd",
-      "status": "pending",
+      "status": "ingested",
       "filename": "كتاب الطالب لمادة التربية الفنية للصف العاشر.pdf",
       "authorAr": null,
       "unitTags": [
@@ -3486,7 +3614,15 @@
         "التربية الفنية",
         "عاشر"
       ],
-      "notes": "استخراج النص من هذا الملف يقلب الحروف حول أداة التعريف (الحركة ← احلركة)؛ رفضته بوابة الجودة تلقائيًا في 2026-09-03 ولم يُستخرج. الملف نفسه سليم؛ يحتاج استخراجًا أفضل أو OCR."
+      "notes": "رُفض في 2026-09-03 لقلبه أداة التعريف. أُعيد الاستخراج في 2026-09-06 بعد إضافة مُصحِّح أداة التعريف؛ لم يكفِ التصحيح وحده (بقيت النسبة 56% في كتاب الطالب)، فانتقل إلى التعرف الضوئي (tesseract). النص الناتج سليم القراءة بالمعاينة، ونسبة الحركات المنفصلة 1.20% — أقل بكثير من استخراج pdf-parse. يبقى التعرف الضوئي درجة أدنى من الاستخراج الرقمي النظيف: يُراجَع بالعين قبل الاقتباس الحرفي.",
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic with the definite article transposed (الحركة ← احلركة) in 56% of samples — readable by eye, not quotable)",
+        "extractedAt": "2026-09-06",
+        "pages": 125,
+        "chars": 67676,
+        "localPath": "knowledge-base/grade-10-art/support-pdfs/كتاب الطالب لمادة التربية الفنية للصف العاشر.pdf",
+        "sha256": "94fcd1825011d1afda8b9211c59ce82f2a26a490c0d6354eaec2b4dbe1ee00a6"
+      }
     },
     {
       "id": "vocational-p1-student-book",
@@ -3511,9 +3647,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-03",
+        "extractedAt": "2026-09-07",
         "pages": 131,
-        "chars": 124463,
+        "chars": 115196,
         "localPath": "knowledge-base/grade-10-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية الصف العاشر الجزء الأول.pdf",
         "sha256": "7862ab652cceebea3e72dc63814639d24d894a4c1f8a0d9108152954d8478ab0"
       }
@@ -3541,9 +3677,9 @@
       ],
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-03",
+        "extractedAt": "2026-09-07",
         "pages": 101,
-        "chars": 103861,
+        "chars": 96502,
         "localPath": "knowledge-base/grade-10-vocational/support-pdfs/كتاب الطالب لمادة التربية المهنية الصف العاشر الجزء الثاني.pdf",
         "sha256": "ecc9eeb9d18a35ef53056181e4d1a49523c2b3f0dea5c86aae2c68b767b70560"
       }
@@ -3551,7 +3687,7 @@
     {
       "id": "g9-math-s1-student-book",
       "title": "كتاب الطالب لمادة الرياضيات الصف التاسع الفصل الأول.pdf",
-      "bytes": 8883077,
+      "bytes": 20266657,
       "subject": "math",
       "semester": 1,
       "kind": "student-book",
@@ -3571,20 +3707,20 @@
         "كتاب الطالب",
         "الفصل الأول"
       ],
-      "notes": "ISBN 978-9923-41-408-8, 151ص. يطابق الطبعة المذكورة في source_books.student_book بملف iqra_curriculum_g9_math_sem1.json (نفس ISBN). محتوى الوحدة 2 (العلاقات والاقترانات) يطابق ترتيب الدروس الموجود فعلاً في المنهاج: الاقترانات، تفسير التمثيلات البيانية، الاقتران التربيعي، معمل جيوجبرا، التحويلات الهندسية للاقترانات التربيعية — الوحيدة التي لم يُعثر لها على جدول مخطط وحدة في أي مصدر متاح سابقًا.",
+      "notes": "أُعيد تنزيل الملف من nccd.gov.jo في 2026-09-06 لأنه كان الوحيد (مع الجزء الآخر) غير الموجود على القرص، فتخطّته إعادة الاستخراج. النسخة السابقة كانت مضغوطة من Drive؛ عدد الصفحات نفسه (151) والطبعة نفسها، والحجم أكبر لأن هذه نسخة NCCD الأصلية.",
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-05",
+        "extractedAt": "2026-09-07",
         "pages": 151,
-        "chars": 206330,
+        "chars": 193682,
         "localPath": "knowledge-base/grade-9-math/support-pdfs/كتاب الطالب لمادة الرياضيات الصف التاسع الفصل الأول.pdf",
-        "sha256": "87d9fdf3de414e3282407e9df1bc3a4c89b18c6344412edfcafe21e6d80f488b"
+        "sha256": "17cc8131de24e1557f548a2f79e1c312d7727982d5b0e3c31e801b9755b28ed1"
       }
     },
     {
       "id": "g9-math-s2-student-book",
       "title": "كتاب الطالب لمادة الرياضيات الصف التاسع الفصل الثاني.pdf",
-      "bytes": 27091457,
+      "bytes": 39977164,
       "subject": "math",
       "semester": 2,
       "kind": "student-book",
@@ -3604,14 +3740,729 @@
         "كتاب الطالب",
         "الفصل الثاني"
       ],
-      "notes": "ISBN 978-9923-41-407-1, 174ص. الوحدات 5-8 تطابق ترتيب المنهاج الموجود فعلاً في iqra_curriculum_g9_math_sem2.json.",
+      "notes": "أُعيد تنزيل الملف من nccd.gov.jo في 2026-09-06 لأنه كان الوحيد (مع الجزء الآخر) غير الموجود على القرص، فتخطّته إعادة الاستخراج. النسخة السابقة كانت مضغوطة من Drive؛ عدد الصفحات نفسه (174) والطبعة نفسها، والحجم أكبر لأن هذه نسخة NCCD الأصلية.",
       "extraction": {
         "tool": "pdf-parse@2",
-        "extractedAt": "2026-09-05",
+        "extractedAt": "2026-09-07",
         "pages": 174,
-        "chars": 222781,
+        "chars": 208266,
         "localPath": "knowledge-base/grade-9-math/support-pdfs/كتاب الطالب لمادة الرياضيات الصف التاسع الفصل الثاني.pdf",
-        "sha256": "c6c31ebc326dadb947d22233c71ef2c41477699743fc501f49d47153e9bb5a65"
+        "sha256": "c076fbd6ac6677adc300bff23af587425b649878a0f342e0908780d27661c171"
+      }
+    },
+    {
+      "id": "g9-math-s1-teacher-guide",
+      "title": "دليل المعلم لمادة الرياضيات الصف التاسع الفصل الأول_compressed.pdf",
+      "bytes": 40854472,
+      "subject": "math",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة الرياضيات الصف التاسع الفصل الأول_compressed.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g9-math-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-9",
+        "math",
+        "رياضيات",
+        "تاسع",
+        "دليل المعلم",
+        "الفصل الأول"
+      ],
+      "notes": "نسخة مضغوطة بأداة ilovepdf من دليل المعلم الأصلي الصادر عن المركز الوطني لتطوير المناهج (الطبعة الأولى التجريبية 2024، ISBN 978-9923-41-650-1). الضغطُ يغيّر البايتات وبصمة sha256 عن الملف الأصلي على موقع المركز، فلا تُقارَن بها؛ طبقةُ النص سليمة وهي المقصودة هنا. مصدرُ عدد الحصص لدروس الصف التاسع. استُخرج النصُّ في 2026-09-07 بـ pdf-parse@2 ونسبةُ قلبِ الحروف فيه 0.4% و0.5% (الفصل الأول) و0.3% و0.6% (الفصل الثاني) — أنظفُ استخراجٍ في المستودع، فلا حاجةَ إلى OCR.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-07",
+        "pages": 262,
+        "chars": 647107,
+        "localPath": "knowledge-base/grade-9-math/support-pdfs/دليل المعلم لمادة الرياضيات الصف التاسع الفصل الأول_compressed.pdf",
+        "sha256": "58d565f055e4d8902d70badb26e783c0850c11e6bd1a812bf1cf8da2aa888243"
+      }
+    },
+    {
+      "id": "g9-math-s2-teacher-guide",
+      "title": "دليل المعلم لمادة الرياضيات الصف التاسع الفصل الثاني_compressed.pdf",
+      "bytes": 33376360,
+      "subject": "math",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة الرياضيات الصف التاسع الفصل الثاني_compressed.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g9-math-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-9",
+        "math",
+        "رياضيات",
+        "تاسع",
+        "دليل المعلم",
+        "الفصل الثاني"
+      ],
+      "notes": "نسخة مضغوطة بأداة ilovepdf من دليل المعلم الأصلي الصادر عن المركز الوطني لتطوير المناهج (الطبعة الأولى التجريبية 2024، ISBN 978-9923-41-650-1). الضغطُ يغيّر البايتات وبصمة sha256 عن الملف الأصلي على موقع المركز، فلا تُقارَن بها؛ طبقةُ النص سليمة وهي المقصودة هنا. مصدرُ عدد الحصص لدروس الصف التاسع. استُخرج النصُّ في 2026-09-07 بـ pdf-parse@2 ونسبةُ قلبِ الحروف فيه 0.4% و0.5% (الفصل الأول) و0.3% و0.6% (الفصل الثاني) — أنظفُ استخراجٍ في المستودع، فلا حاجةَ إلى OCR.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-07",
+        "pages": 239,
+        "chars": 570565,
+        "localPath": "knowledge-base/grade-9-math/support-pdfs/دليل المعلم لمادة الرياضيات الصف التاسع الفصل الثاني_compressed.pdf",
+        "sha256": "046b3c143ed165e42add726364d505b324259ce295f59fab8d2b2bea31546214"
+      }
+    },
+    {
+      "id": "pe-s1-student-book",
+      "title": "كتاب الطالب لمادة التربية الرياضية للصف العاشر الفصل الأول.pdf",
+      "bytes": 36394455,
+      "subject": "physical-education",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة التربية الرياضية للصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "pe-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "physical-education",
+        "التربية الرياضية",
+        "عاشر"
+      ],
+      "notes": "نُزّل من nccd.gov.jo في 2026-09-06 واستُخرج في 2026-09-07 بـ pdf-parse. أول كتاب يمرّ على سلسلة الإصلاح الثلاث كاملةً من البداية: أُعيد وصل 2346 حركة، وأُعيدت 206 أداة تعريف، و21 رباط لام-ألف. استخراج رقمي نظيف، لا تعرف ضوئي.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-07",
+        "pages": 56,
+        "chars": 41817,
+        "localPath": "knowledge-base/grade-10-pe/support-pdfs/كتاب الطالب لمادة التربية الرياضية للصف العاشر الفصل الأول.pdf",
+        "sha256": "491b6213987459d1620d8a96082e94b44ddfa0f3552da6cf893a2f1b440e93fa"
+      }
+    },
+    {
+      "id": "eng-s1-teacher-guide",
+      "title": "دليل المعلم لمادة اللغة الإنجليزية للصف العاشر الفصل الأول.pdf",
+      "bytes": 12566679,
+      "subject": "english",
+      "semester": 1,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة اللغة الإنجليزية للصف العاشر الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "eng-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "english",
+        "اللغة الإنجليزية",
+        "دليل المعلم",
+        "عاشر"
+      ],
+      "notes": "نُزّل من nccd.gov.jo في 2026-09-06 واستُخرج في 2026-09-07 بـ pdf-parse. 170 صفحة، نصّ إنجليزي سليم.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-07",
+        "pages": 170,
+        "chars": 624980,
+        "localPath": "knowledge-base/grade-10-english/support-pdfs/دليل المعلم لمادة اللغة الإنجليزية للصف العاشر الفصل الأول.pdf",
+        "sha256": "aaee4f998e44b40f8e11275b9aadb1133e412612d4d34cd967a5e323c2f62b61"
+      }
+    },
+    {
+      "id": "eng-s2-teacher-guide",
+      "title": "دليل المعلم لمادة اللغة الإنجليزية للصف العاشر الفصل الثاني.pdf",
+      "bytes": 18132282,
+      "subject": "english",
+      "semester": 2,
+      "kind": "teacher-guide",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "دليل المعلم لمادة اللغة الإنجليزية للصف العاشر الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "eng-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-10",
+        "english",
+        "اللغة الإنجليزية",
+        "دليل المعلم",
+        "عاشر"
+      ],
+      "notes": "نُزّل من nccd.gov.jo في 2026-09-06. رفضه pdf-parse بسبب عربية بأشكال العرض في صفحات المقدمة فقط، مع أن متن الكتاب إنجليزي. أول محاولة تعرّف ضوئي استخدمت النموذج العربي (الافتراضي) فأعادت خليطًا لا معنى له («0200110090065 عأسثانا 116») واجتازت بوابة الجودة، لأن كل فحوص البوابة تقيس عطبًا عربيًا ولم يبقَ في النص عربية تُقاس. أُعيدت القراءة بـ eng+ara فجاء النص سليمًا (451,343 حرفًا لاتينيًا مقابل 636 عربيًا). اختيار اللغة صار مشتقًا من مادة الكتاب في extract-text.ts.",
+      "extraction": {
+        "tool": "tesseract-ocr (--ocr requested)",
+        "extractedAt": "2026-09-07",
+        "pages": 192,
+        "chars": 592905,
+        "localPath": "knowledge-base/grade-10-english/support-pdfs/دليل المعلم لمادة اللغة الإنجليزية للصف العاشر الفصل الثاني.pdf",
+        "sha256": "ca3427845982fdfc65b62ab40de402523732b946ab8ebb56a5a5608044ffef50"
+      }
+    },
+    {
+      "id": "g9-arabic-s1-student-book",
+      "title": "كتاب الطالب لمادة العربية لغتي الصف التاسع الفصل الأول.pdf",
+      "bytes": 25009918,
+      "subject": "arabic",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة العربية لغتي الصف التاسع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g9-arabic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-9",
+        "arabic",
+        "اللغة العربية",
+        "تاسع",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "سُلِّم الملفُ في 2026-09-08 ضمن دفعةِ كتبِ الصف التاسع، وسُجِّل هنا ضمن تمريرةِ العرض (وحدات ودروس بعناوينها). أدلةُ المعلم وكتبُ الأنشطة وإجاباتُ الأسئلة موجودةٌ على القرص بجانبه ولم تُسجَّل بعدُ عمدًا: تسجيلُ مصدرٍ دون استخراجِه يزيد قائمةَ pending دون فائدة. قُرئ النصُّ المستخرَجُ بالعينِ في 2026-09-08 قبلَ قبولِه. نصُّه مقروءٌ (نسبةُ قلبِ اللام 0.0%)، وفي جدولِ المحتوياتِ زلّاتٌ متفرقةٌ («أسكَمعُ» بدل «أستمعُ»)، وعنوانُ الوحدةِ الخامسةِ لم يُستخرَجْ لأنَّه مضبوطٌ بخطٍّ زخرفيٍّ في صفحةِ الافتتاح؛ عناوينُ دروسِها مقروءةٌ.",
+      "extraction": {
+        "tool": "tesseract-ocr (pdf-parse rejected: Arabic in reversed presentation-form glyphs, not the base Arabic block — unusable without un-shaping)",
+        "extractedAt": "2026-09-08",
+        "pages": 144,
+        "chars": 152882,
+        "localPath": "knowledge-base/grade-9-arabic/support-pdfs/كتاب الطالب لمادة العربية لغتي الصف التاسع الفصل الأول.pdf",
+        "sha256": "ee2bbb022cb9d504823eb265d8411c60218569f6d8bb36e19b8f5343dbf75f69"
+      }
+    },
+    {
+      "id": "g9-arabic-s2-student-book",
+      "title": "كتاب الطالب لمادة العربية لغتي الصف التاسع الفصل الثاني.pdf",
+      "bytes": 15667515,
+      "subject": "arabic",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "كتاب الطالب لمادة العربية لغتي الصف التاسع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g9-arabic-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-9",
+        "arabic",
+        "اللغة العربية",
+        "تاسع",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "سُلِّم الملفُ في 2026-09-08 ضمن دفعةِ كتبِ الصف التاسع، وسُجِّل هنا ضمن تمريرةِ العرض (وحدات ودروس بعناوينها). أدلةُ المعلم وكتبُ الأنشطة وإجاباتُ الأسئلة موجودةٌ على القرص بجانبه ولم تُسجَّل بعدُ عمدًا: تسجيلُ مصدرٍ دون استخراجِه يزيد قائمةَ pending دون فائدة. استخراجُ النصِّ يقلبُ ترتيبَ المقاطعِ داخلَ السطرِ قلبًا شاملًا: تطبعُ الصفحةُ 44 «الوحدةُ السابعةُ» فيخرجُ «ُةُ الّسّابعُةَُد الَوَح»، والحركاتُ منفصلةٌ عن حروفِها. وهذا هو العطبُ الذي يذكرُ رأسُ extract-text.ts أنَّ أيَّ بوابةٍ لا تقيسُه: نسبةُ قلبِ اللامِ 7.7% أي دونَ الحدِّ 40% بكثيرٍ، فاجتازَ. حُذف الاستخراجُ في 2026-09-08 وبقيَ status: pending. يحتاجُ OCR."
+    },
+    {
+      "id": "g9-english-s1-student-book",
+      "title": "كتاب الطالب لمادة اللغة الإنجليزية الصف التاسع الفصل الأول.pdf",
+      "bytes": 25684559,
+      "subject": "english",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة اللغة الإنجليزية الصف التاسع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g9-eng-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-9",
+        "english",
+        "اللغة الإنجليزية",
+        "تاسع",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "سُلِّم الملفُ في 2026-09-08 ضمن دفعةِ كتبِ الصف التاسع، وسُجِّل هنا ضمن تمريرةِ العرض (وحدات ودروس بعناوينها). أدلةُ المعلم وكتبُ الأنشطة وإجاباتُ الأسئلة موجودةٌ على القرص بجانبه ولم تُسجَّل بعدُ عمدًا: تسجيلُ مصدرٍ دون استخراجِه يزيد قائمةَ pending دون فائدة. قُرئ النصُّ المستخرَجُ بالعينِ في 2026-09-08 قبلَ قبولِه. الكتابُ إنجليزيٌّ، فبوابةُ قلبِ اللامِ لا تقيسُ فيه شيئًا وتعيدُ n/a — وهذا انعدامُ قياسٍ لا شهادةُ سلامة. قُرئ بالعينِ: نصُّه نظيفٌ وعناوينُ الدروسِ (LESSON 2A) ظاهرةٌ صراحةً.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-08",
+        "pages": 76,
+        "chars": 171904,
+        "localPath": "knowledge-base/grade-9-english/support-pdfs/كتاب الطالب لمادة اللغة الإنجليزية الصف التاسع الفصل الأول.pdf",
+        "sha256": "742042a7dc4e3d18fc8fbdac8d3448981f00ca77782d294d91247aa548953399"
+      }
+    },
+    {
+      "id": "g9-english-s2-student-book",
+      "title": "كتاب الطالب لمادة اللغة الإنجليزية الصف التاسع الفصل الثاني.pdf",
+      "bytes": 15743134,
+      "subject": "english",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة اللغة الإنجليزية الصف التاسع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g9-eng-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-9",
+        "english",
+        "اللغة الإنجليزية",
+        "تاسع",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "سُلِّم الملفُ في 2026-09-08 ضمن دفعةِ كتبِ الصف التاسع، وسُجِّل هنا ضمن تمريرةِ العرض (وحدات ودروس بعناوينها). أدلةُ المعلم وكتبُ الأنشطة وإجاباتُ الأسئلة موجودةٌ على القرص بجانبه ولم تُسجَّل بعدُ عمدًا: تسجيلُ مصدرٍ دون استخراجِه يزيد قائمةَ pending دون فائدة. قُرئ النصُّ المستخرَجُ بالعينِ في 2026-09-08 قبلَ قبولِه. إنجليزيٌّ كذلك، n/a للسببِ نفسِه، ونصُّه نظيفٌ بالقراءة.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-08",
+        "pages": 80,
+        "chars": 158748,
+        "localPath": "knowledge-base/grade-9-english/support-pdfs/كتاب الطالب لمادة اللغة الإنجليزية الصف التاسع الفصل الثاني.pdf",
+        "sha256": "fcff297417b3dad9acc0d84017566300fdc19fd112919a4890ed64b6c38011f8"
+      }
+    },
+    {
+      "id": "g9-chemistry-s1-student-book",
+      "title": "كتاب الطالب لمادة الكيمياء الصف التاسع الفصل الأول.pdf",
+      "bytes": 18365544,
+      "subject": "chemistry",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة الكيمياء الصف التاسع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g9-chem-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-9",
+        "chemistry",
+        "الكيمياء",
+        "تاسع",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "سُلِّم الملفُ في 2026-09-08 ضمن دفعةِ كتبِ الصف التاسع، وسُجِّل هنا ضمن تمريرةِ العرض (وحدات ودروس بعناوينها). أدلةُ المعلم وكتبُ الأنشطة وإجاباتُ الأسئلة موجودةٌ على القرص بجانبه ولم تُسجَّل بعدُ عمدًا: تسجيلُ مصدرٍ دون استخراجِه يزيد قائمةَ pending دون فائدة. قُرئ النصُّ المستخرَجُ بالعينِ في 2026-09-08 قبلَ قبولِه.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-08",
+        "pages": 64,
+        "chars": 86811,
+        "localPath": "knowledge-base/grade-9-chemistry/support-pdfs/كتاب الطالب لمادة الكيمياء الصف التاسع الفصل الأول.pdf",
+        "sha256": "dd69b2cb54957c2fcd1612c1b25e1bf1b3898fc8f838fabb58334266b43f4c19"
+      }
+    },
+    {
+      "id": "g9-chemistry-s2-student-book",
+      "title": "كتاب الطالب لمادة الكيمياء الصف التاسع الفصل الثاني.pdf",
+      "bytes": 22252305,
+      "subject": "chemistry",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة الكيمياء الصف التاسع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g9-chem-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-9",
+        "chemistry",
+        "الكيمياء",
+        "تاسع",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "سُلِّم الملفُ في 2026-09-08 ضمن دفعةِ كتبِ الصف التاسع، وسُجِّل هنا ضمن تمريرةِ العرض (وحدات ودروس بعناوينها). أدلةُ المعلم وكتبُ الأنشطة وإجاباتُ الأسئلة موجودةٌ على القرص بجانبه ولم تُسجَّل بعدُ عمدًا: تسجيلُ مصدرٍ دون استخراجِه يزيد قائمةَ pending دون فائدة. قُرئ النصُّ المستخرَجُ بالعينِ في 2026-09-08 قبلَ قبولِه.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-08",
+        "pages": 76,
+        "chars": 113807,
+        "localPath": "knowledge-base/grade-9-chemistry/support-pdfs/كتاب الطالب لمادة الكيمياء الصف التاسع الفصل الثاني.pdf",
+        "sha256": "4f79d4265ec9eb7b61985e50a1a099dcf302034d92b010579cc0672124d72fee"
+      }
+    },
+    {
+      "id": "g9-physics-s1-student-book",
+      "title": "كتاب الطالب لمادة الفيزياء الصف التاسع الفصل الأول.pdf",
+      "bytes": 22619925,
+      "subject": "physics",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة الفيزياء الصف التاسع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g9-phys-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-9",
+        "physics",
+        "الفيزياء",
+        "تاسع",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "سُلِّم الملفُ في 2026-09-08 ضمن دفعةِ كتبِ الصف التاسع، وسُجِّل هنا ضمن تمريرةِ العرض (وحدات ودروس بعناوينها). أدلةُ المعلم وكتبُ الأنشطة وإجاباتُ الأسئلة موجودةٌ على القرص بجانبه ولم تُسجَّل بعدُ عمدًا: تسجيلُ مصدرٍ دون استخراجِه يزيد قائمةَ pending دون فائدة. قُرئ النصُّ المستخرَجُ بالعينِ في 2026-09-08 قبلَ قبولِه.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-08",
+        "pages": 92,
+        "chars": 126829,
+        "localPath": "knowledge-base/grade-9-physics/support-pdfs/كتاب الطالب لمادة الفيزياء الصف التاسع الفصل الأول.pdf",
+        "sha256": "ffe3e39df75276c374f0e64bdf5ba35d216f9a107cdbdd8acbf3fa7f35dcf48c"
+      }
+    },
+    {
+      "id": "g9-physics-s2-student-book",
+      "title": "كتاب الطالب لمادة الفيزياء الصف التاسع الفصل الثاني.pdf",
+      "bytes": 30233434,
+      "subject": "physics",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة الفيزياء الصف التاسع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g9-phys-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-9",
+        "physics",
+        "الفيزياء",
+        "تاسع",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "سُلِّم الملفُ في 2026-09-08 ضمن دفعةِ كتبِ الصف التاسع، وسُجِّل هنا ضمن تمريرةِ العرض (وحدات ودروس بعناوينها). أدلةُ المعلم وكتبُ الأنشطة وإجاباتُ الأسئلة موجودةٌ على القرص بجانبه ولم تُسجَّل بعدُ عمدًا: تسجيلُ مصدرٍ دون استخراجِه يزيد قائمةَ pending دون فائدة. قُرئ النصُّ المستخرَجُ بالعينِ في 2026-09-08 قبلَ قبولِه.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-08",
+        "pages": 80,
+        "chars": 109456,
+        "localPath": "knowledge-base/grade-9-physics/support-pdfs/كتاب الطالب لمادة الفيزياء الصف التاسع الفصل الثاني.pdf",
+        "sha256": "b71861866d6a528a85359f71f990d1f1d1418c31eb73cbcbf18a106cfb970993"
+      }
+    },
+    {
+      "id": "g9-biology-s1-student-book",
+      "title": "كتاب الطالب لمادة العلوم الحياتية للصف التاسع الفصل الأول.pdf",
+      "bytes": 71552083,
+      "subject": "biology",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة العلوم الحياتية للصف التاسع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g9-biology-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-9",
+        "biology",
+        "العلوم الحياتية",
+        "تاسع",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "سُلِّم الملفُ في 2026-09-08 ضمن دفعةِ كتبِ الصف التاسع، وسُجِّل هنا ضمن تمريرةِ العرض (وحدات ودروس بعناوينها). أدلةُ المعلم وكتبُ الأنشطة وإجاباتُ الأسئلة موجودةٌ على القرص بجانبه ولم تُسجَّل بعدُ عمدًا: تسجيلُ مصدرٍ دون استخراجِه يزيد قائمةَ pending دون فائدة. قُرئ النصُّ المستخرَجُ بالعينِ في 2026-09-08 قبلَ قبولِه.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-08",
+        "pages": 72,
+        "chars": 96353,
+        "localPath": "knowledge-base/grade-9-biology/support-pdfs/كتاب الطالب لمادة العلوم الحياتية للصف التاسع الفصل الأول.pdf",
+        "sha256": "fe868109ef137f55b2fbd9d4e9608f8371515b0aef1eadc12d349f2aa59b58d4"
+      }
+    },
+    {
+      "id": "g9-biology-s2-student-book",
+      "title": "كتاب الطالب لمادة العلوم الحياتية للصف التاسع الفصل الثاني.pdf",
+      "bytes": 143950352,
+      "subject": "biology",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة العلوم الحياتية للصف التاسع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g9-biology-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-9",
+        "biology",
+        "العلوم الحياتية",
+        "تاسع",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "سُلِّم الملفُ في 2026-09-08 ضمن دفعةِ كتبِ الصف التاسع، وسُجِّل هنا ضمن تمريرةِ العرض (وحدات ودروس بعناوينها). أدلةُ المعلم وكتبُ الأنشطة وإجاباتُ الأسئلة موجودةٌ على القرص بجانبه ولم تُسجَّل بعدُ عمدًا: تسجيلُ مصدرٍ دون استخراجِه يزيد قائمةَ pending دون فائدة. قُرئ النصُّ المستخرَجُ بالعينِ في 2026-09-08 قبلَ قبولِه. نسبةُ قلبِ الكلماتِ فيه 34.5% وهي الأعلى بينَ المقبولاتِ، لكنَّها ناتجةٌ عن إعادةِ ترتيبِ مقاطعَ داخلَ السطرِ في تنضيدٍ ذي عمودينِ، والكلماتُ سليمةٌ والمعنى قائمٌ بالقراءة.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-08",
+        "pages": 86,
+        "chars": 121585,
+        "localPath": "knowledge-base/grade-9-biology/support-pdfs/كتاب الطالب لمادة العلوم الحياتية للصف التاسع الفصل الثاني.pdf",
+        "sha256": "c121be2a07c07cf7b17119b8381f8f27da536437a5a5f36a4706c27b332d234e"
+      }
+    },
+    {
+      "id": "g9-earth-science-s1-student-book",
+      "title": "كتاب الطالب لمادة علوم الأرض للصف التاسع الفصل الأول.pdf",
+      "bytes": 17118641,
+      "subject": "earth-science",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة علوم الأرض للصف التاسع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g9-earth-science-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-9",
+        "earth-science",
+        "علوم الأرض",
+        "تاسع",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "سُلِّم الملفُ في 2026-09-08 ضمن دفعةِ كتبِ الصف التاسع، وسُجِّل هنا ضمن تمريرةِ العرض (وحدات ودروس بعناوينها). أدلةُ المعلم وكتبُ الأنشطة وإجاباتُ الأسئلة موجودةٌ على القرص بجانبه ولم تُسجَّل بعدُ عمدًا: تسجيلُ مصدرٍ دون استخراجِه يزيد قائمةَ pending دون فائدة. قُرئ النصُّ المستخرَجُ بالعينِ في 2026-09-08 قبلَ قبولِه.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-08",
+        "pages": 64,
+        "chars": 89998,
+        "localPath": "knowledge-base/grade-9-earth-science/support-pdfs/كتاب الطالب لمادة علوم الأرض للصف التاسع الفصل الأول.pdf",
+        "sha256": "ee201921b03351e21af784112b2124b772bfa4a6cf8cae89f6ed499f6641fc86"
+      }
+    },
+    {
+      "id": "g9-earth-science-s2-student-book",
+      "title": "كتاب الطالب لمادة علوم الأرض للصف التاسع الفصل الثاني.pdf",
+      "bytes": 34035739,
+      "subject": "earth-science",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة علوم الأرض للصف التاسع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g9-earth-science-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-9",
+        "earth-science",
+        "علوم الأرض",
+        "تاسع",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "سُلِّم الملفُ في 2026-09-08 ضمن دفعةِ كتبِ الصف التاسع، وسُجِّل هنا ضمن تمريرةِ العرض (وحدات ودروس بعناوينها). أدلةُ المعلم وكتبُ الأنشطة وإجاباتُ الأسئلة موجودةٌ على القرص بجانبه ولم تُسجَّل بعدُ عمدًا: تسجيلُ مصدرٍ دون استخراجِه يزيد قائمةَ pending دون فائدة. قُرئ النصُّ المستخرَجُ بالعينِ في 2026-09-08 قبلَ قبولِه.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-08",
+        "pages": 80,
+        "chars": 115403,
+        "localPath": "knowledge-base/grade-9-earth-science/support-pdfs/كتاب الطالب لمادة علوم الأرض للصف التاسع الفصل الثاني.pdf",
+        "sha256": "404473e07dfc35d74b9553adc59806cd0c897401bfa014db491335016a92fb0f"
+      }
+    },
+    {
+      "id": "g9-islamic-s1-student-book",
+      "title": "كتاب الطالب لمادة التربية الإسلامية الصف التاسع الفصل الأول.pdf",
+      "bytes": 150078121,
+      "subject": "islamic",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "كتاب الطالب لمادة التربية الإسلامية الصف التاسع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g9-islamic-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-9",
+        "islamic",
+        "التربية الإسلامية",
+        "تاسع",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "سُلِّم الملفُ في 2026-09-08 ضمن دفعةِ كتبِ الصف التاسع، وسُجِّل هنا ضمن تمريرةِ العرض (وحدات ودروس بعناوينها). أدلةُ المعلم وكتبُ الأنشطة وإجاباتُ الأسئلة موجودةٌ على القرص بجانبه ولم تُسجَّل بعدُ عمدًا: تسجيلُ مصدرٍ دون استخراجِه يزيد قائمةَ pending دون فائدة. لم يُستخرَجْ: pdf-parse يتوقَّفُ عن التقدُّمِ على هذا الملفِ (150 ميجابايت) — بقيَ زمنُ المعالجِ ثابتًا عند 180 ثانيةً لأكثرَ من سبعِ دقائقَ دونَ أيِّ ناتجٍ، فأُوقفَ في 2026-09-08. الملفُ سليمٌ على القرصِ (تطابقَ حجمُه مع الأصلِ بايتًا ببايت)، والكتبُ الأربعةُ الصغيرةُ التي كانت خلفَه في الطابورِ استُخرجتْ في ثوانٍ بعدَ إيقافِه. يحتاجُ مسارًا آخرَ للاستخراج."
+    },
+    {
+      "id": "g9-islamic-s2-student-book",
+      "title": "كتاب الطالب لمادة التربية الإسلامية الصف التاسع الفصل الثاني.pdf",
+      "bytes": 167204577,
+      "subject": "islamic",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "كتاب الطالب لمادة التربية الإسلامية الصف التاسع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g9-islamic-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-9",
+        "islamic",
+        "التربية الإسلامية",
+        "تاسع",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "سُلِّم الملفُ في 2026-09-08 ضمن دفعةِ كتبِ الصف التاسع، وسُجِّل هنا ضمن تمريرةِ العرض (وحدات ودروس بعناوينها). أدلةُ المعلم وكتبُ الأنشطة وإجاباتُ الأسئلة موجودةٌ على القرص بجانبه ولم تُسجَّل بعدُ عمدًا: تسجيلُ مصدرٍ دون استخراجِه يزيد قائمةَ pending دون فائدة. لم يُستخرَجْ للسببِ نفسِه (167 ميجابايت)، وهو أكبرُ ملفٍّ في المستودعِ. يحتاجُ مسارًا آخرَ للاستخراج."
+    },
+    {
+      "id": "g9-financial-literacy-s1-student-book",
+      "title": "كتاب الطالب لمادة الثقافة المالية للصف التاسع الفصل الأول.pdf",
+      "bytes": 6230662,
+      "subject": "financial-literacy",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "كتاب الطالب لمادة الثقافة المالية للصف التاسع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g9-finlit-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-9",
+        "financial-literacy",
+        "الثقافة المالية",
+        "تاسع",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "سُلِّم الملفُ في 2026-09-08 ضمن دفعةِ كتبِ الصف التاسع، وسُجِّل هنا ضمن تمريرةِ العرض (وحدات ودروس بعناوينها). أدلةُ المعلم وكتبُ الأنشطة وإجاباتُ الأسئلة موجودةٌ على القرص بجانبه ولم تُسجَّل بعدُ عمدًا: تسجيلُ مصدرٍ دون استخراجِه يزيد قائمةَ pending دون فائدة. العطبُ نفسُه وأشدُّ: تُشَقُّ الكلماتُ ويُعادُ ترتيبُ أجزائِها داخلَ السطرِ، فتخرجُ «يمكنُ للفردِ أنْ يحملَ» هكذا: «مـلُْحَيْ نِ أ دُ للفـر نِـكُمي». نسبةُ قلبِ اللامِ 0.3% فقط — أي أنَّ البوابةَ أعطتْه أنظفَ درجةٍ في الدفعةِ كلِّها وهو أسوأُها. حُذف الاستخراجُ في 2026-09-08. يحتاجُ OCR."
+    },
+    {
+      "id": "g9-financial-literacy-s2-student-book",
+      "title": "كتاب الطالب لمادة الثقافة المالية للصف التاسع الفصل الثاني.pdf",
+      "bytes": 7861087,
+      "subject": "financial-literacy",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "pending",
+      "filename": "كتاب الطالب لمادة الثقافة المالية للصف التاسع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g9-finlit-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-9",
+        "financial-literacy",
+        "الثقافة المالية",
+        "تاسع",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "سُلِّم الملفُ في 2026-09-08 ضمن دفعةِ كتبِ الصف التاسع، وسُجِّل هنا ضمن تمريرةِ العرض (وحدات ودروس بعناوينها). أدلةُ المعلم وكتبُ الأنشطة وإجاباتُ الأسئلة موجودةٌ على القرص بجانبه ولم تُسجَّل بعدُ عمدًا: تسجيلُ مصدرٍ دون استخراجِه يزيد قائمةَ pending دون فائدة. العطبُ نفسُه الموجودُ في كتابِ الفصلِ الأولِ ومن الناشرِ نفسِه؛ حُذف الاستخراجُ في 2026-09-08 وبقيَ status: pending. يحتاجُ OCR."
+    },
+    {
+      "id": "g9-digital-literacy-s1-student-book",
+      "title": "كتاب الطالب لمادة المهارات الرقمية الصف التاسع الفصل الأول.pdf",
+      "bytes": 6341695,
+      "subject": "digital-literacy",
+      "semester": 1,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة المهارات الرقمية الصف التاسع الفصل الأول.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g9-digital-s1"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-9",
+        "digital-literacy",
+        "المهارات الرقمية",
+        "تاسع",
+        "كتاب الطالب",
+        "الفصل الأول"
+      ],
+      "notes": "سُلِّم الملفُ في 2026-09-08 ضمن دفعةِ كتبِ الصف التاسع، وسُجِّل هنا ضمن تمريرةِ العرض (وحدات ودروس بعناوينها). أدلةُ المعلم وكتبُ الأنشطة وإجاباتُ الأسئلة موجودةٌ على القرص بجانبه ولم تُسجَّل بعدُ عمدًا: تسجيلُ مصدرٍ دون استخراجِه يزيد قائمةَ pending دون فائدة. قُرئ النصُّ المستخرَجُ بالعينِ في 2026-09-08 قبلَ قبولِه. نصُّه مقروءٌ في معظمِه مع مقاطعَ مقلوبةٍ متفرقةٍ («ْْتِ الإنترنُ ممّا يُنشَرُ في شبكة»)، وهي أقلُّ من أن تمنعَ استخراجَ بنيةِ الوحداتِ والدروس.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-08",
+        "pages": 130,
+        "chars": 179136,
+        "localPath": "knowledge-base/grade-9-digital-literacy/support-pdfs/كتاب الطالب لمادة المهارات الرقمية الصف التاسع الفصل الأول.pdf",
+        "sha256": "ee78351507b77e512bb3748a247772044a9f671c551a6924ebde7056c9048f33"
+      }
+    },
+    {
+      "id": "g9-digital-literacy-s2-student-book",
+      "title": "كتاب الطالب لمادة المهارات الرقمية الصف التاسع الفصل الثاني.pdf",
+      "bytes": 8872404,
+      "subject": "digital-literacy",
+      "semester": 2,
+      "kind": "student-book",
+      "authority": "nccd",
+      "status": "ingested",
+      "filename": "كتاب الطالب لمادة المهارات الرقمية الصف التاسع الفصل الثاني.pdf",
+      "authorAr": null,
+      "unitTags": [
+        "g9-digital-s2"
+      ],
+      "objectiveIds": [],
+      "keywords": [
+        "grade-9",
+        "digital-literacy",
+        "المهارات الرقمية",
+        "تاسع",
+        "كتاب الطالب",
+        "الفصل الثاني"
+      ],
+      "notes": "سُلِّم الملفُ في 2026-09-08 ضمن دفعةِ كتبِ الصف التاسع، وسُجِّل هنا ضمن تمريرةِ العرض (وحدات ودروس بعناوينها). أدلةُ المعلم وكتبُ الأنشطة وإجاباتُ الأسئلة موجودةٌ على القرص بجانبه ولم تُسجَّل بعدُ عمدًا: تسجيلُ مصدرٍ دون استخراجِه يزيد قائمةَ pending دون فائدة. قُرئ النصُّ المستخرَجُ بالعينِ في 2026-09-08 قبلَ قبولِه.",
+      "extraction": {
+        "tool": "pdf-parse@2",
+        "extractedAt": "2026-09-08",
+        "pages": 161,
+        "chars": 214337,
+        "localPath": "knowledge-base/grade-9-digital-literacy/support-pdfs/كتاب الطالب لمادة المهارات الرقمية الصف التاسع الفصل الثاني.pdf",
+        "sha256": "6a54112fbf6dacffc96e184d4cedc3f25e8d5eea43103df910f4cb1fe4604470"
       }
     }
   ],

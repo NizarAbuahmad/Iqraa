@@ -72,6 +72,7 @@ export const BANK_SUBJECT_IDS: Record<CurriculumSource['subject'], string> = {
   civic: 'civic',
   art: 'art',
   vocational: 'vocational',
+  'physical-education': 'physical-education',
 };
 
 export function appSubjectId(subject: CurriculumSource['subject']): string {
@@ -334,6 +335,7 @@ const SUBJECT_LABEL_AR: Record<CurriculumSource['subject'], string> = {
   civic: 'التربية الوطنية والمدنية',
   art: 'التربية الفنية',
   vocational: 'التربية المهنية',
+  'physical-education': 'التربية الرياضية',
 };
 
 const SUBJECT_LABEL_EN: Record<CurriculumSource['subject'], string> = {
@@ -352,6 +354,7 @@ const SUBJECT_LABEL_EN: Record<CurriculumSource['subject'], string> = {
   civic: 'National and Civic Education',
   art: 'Art Education',
   vocational: 'Vocational Education',
+  'physical-education': 'Physical Education',
 };
 
 /**
