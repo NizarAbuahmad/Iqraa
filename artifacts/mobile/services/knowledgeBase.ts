@@ -147,6 +147,14 @@ import {
   buildG8FinlitSem1Catalog,
 } from './curriculumG8FinlitSem1.ts';
 import {
+  G8_DIGITAL_S1_BOOK_ID,
+  buildG8DigitalSem1Catalog,
+} from './curriculumG8DigitalSem1.ts';
+import {
+  G8_DIGITAL_S2_BOOK_ID,
+  buildG8DigitalSem2Catalog,
+} from './curriculumG8DigitalSem2.ts';
+import {
   G9_CIV_S1_BOOK_ID,
   buildG9CivSem1Catalog,
 } from './curriculumG9CivSem1.ts';
@@ -736,6 +744,24 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Financial Literacy – Grade 8 – Semester 1',
     semester: 1,
     source: 'iqra_curriculum_g8_financial_literacy_sem1.json (NCCD)',
+  },
+  {
+    id: G8_DIGITAL_S1_BOOK_ID,
+    gradeId: 'grade-8',
+    subjectId: 'digital-literacy',
+    titleAr: 'المهارات الرقمية – الصف الثامن – الفصل الأول',
+    titleEn: 'Digital Skills – Grade 8 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g8_digital_sem1.json (NCCD)',
+  },
+  {
+    id: G8_DIGITAL_S2_BOOK_ID,
+    gradeId: 'grade-8',
+    subjectId: 'digital-literacy',
+    titleAr: 'المهارات الرقمية – الصف الثامن – الفصل الثاني',
+    titleEn: 'Digital Skills – Grade 8 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g8_digital_sem2.json (NCCD)',
   },
   {
     id: G9_CIV_S1_BOOK_ID,
@@ -1758,6 +1784,8 @@ const _g9HistSem2 = buildG9HistSem2Catalog();
 const _histSem1 = buildHistSem1Catalog();
 const _histSem2 = buildHistSem2Catalog();
 const _g8FinlitSem1 = buildG8FinlitSem1Catalog();
+const _g8DigitalSem1 = buildG8DigitalSem1Catalog();
+const _g8DigitalSem2 = buildG8DigitalSem2Catalog();
 const _g9CivSem1 = buildG9CivSem1Catalog();
 const _g9CivSem2 = buildG9CivSem2Catalog();
 const _g9PeSem1 = buildG9PeSem1Catalog();
@@ -1936,6 +1964,8 @@ export const KB_UNITS: KBUnit[] = [
   ..._histSem1.units,
   ..._histSem2.units,
   ..._g8FinlitSem1.units,
+  ..._g8DigitalSem1.units,
+  ..._g8DigitalSem2.units,
   ..._g9CivSem1.units,
   ..._g9CivSem2.units,
   ..._g9PeSem1.units,
@@ -2003,6 +2033,8 @@ export const KB_LESSONS: KBLesson[] = [
   ..._histSem1.lessons,
   ..._histSem2.lessons,
   ..._g8FinlitSem1.lessons,
+  ..._g8DigitalSem1.lessons,
+  ..._g8DigitalSem2.lessons,
   ..._g9CivSem1.lessons,
   ..._g9CivSem2.lessons,
   ..._g9PeSem1.lessons,

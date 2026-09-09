@@ -52,8 +52,9 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // physics, biology, earth-science, geography, history, civic-education
   // are permanently bookless at grade-8, not gaps to be closed later.
   // physical-education has no grade-8 book at all on disk. mathematics,
-  // english, arabic, islamic and digital-literacy ARE being built this
-  // batch — delete each line here as its Grade 8 book lands.
+  // english, arabic and islamic ARE being built this batch — delete each
+  // line here as its Grade 8 book lands. digital-literacy:grade-8 closed
+  // 2026-09-09, the same day as financial-literacy.
   'mathematics:grade-8',
   'chemistry:grade-8',
   'english:grade-8',
@@ -62,7 +63,6 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   'biology:grade-8',
   'arabic:grade-8',
   'islamic:grade-8',
-  'digital-literacy:grade-8',
   'geography:grade-8',
   'history:grade-8',
   'civic-education:grade-8',
