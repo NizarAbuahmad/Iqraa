@@ -1,33 +1,29 @@
 /**
  * The AI-tools pickers offer grade and subject as two independent lists, so a
- * teacher CAN land on a pair no book covers — the topic field is free text,
- * so generation would proceed and invent a paper with no curriculum behind
- * it, unlike the curriculum browser which just dead-ends on an empty list.
- * `subjectsWithoutCurriculum` / `scopeWithoutCurriculum` are the two-layer
- * guard against that: one greys the pair out in the picker, the other
- * refuses it again at generate time for a formState or route URL saved
- * before the pair existed (or before it gained a book).
+ * teacher can land on a pair no book covers — الصف العاشر + الجغرافيا, where
+ * geography joined MVP_SUBJECT_IDS on 2026-09-09 as a brand-new subject with
+ * only a Grade 9 book behind it, so SUBJECTS scopes it to grade-9 only but
+ * the picker still offers it against every MVP grade. Unlike the curriculum
+ * browser, that pair does not dead-end on an empty list: the topic field is
+ * free text, so generation would proceed and invent a Grade 10 paper with no
+ * curriculum behind it.
  *
- * As of 2026-09-09 every MVP subject×grade pair in `MVP_SUBJECT_IDS` ×
- * `MVP_GRADE_IDS` has a book — `financial-literacy:grade-9` was the last
- * gap (see `subjectGradeCoverage.test.ts`, whose `KNOWN_BOOKLESS` allowlist
- * is now empty). So there is no live example left to pin a "this specific
- * pair is hidden" test against; the worked examples this file used to name
- * (english, then islamic, then financial-literacy) each stopped working the
- * day that pair gained a book. Rather than re-litigate that cycle, the tests
- * below assert the CURRENT fully-covered state directly, and keep validating
- * the underlying mechanism (index alignment, the render-time hiding
- * transform, agreement between the note and the refusal) against synthetic
- * data so a future gap is still caught the moment one appears.
+ * The worked example has moved before — english, then islamic, then
+ * financial-literacy, each retired the day that pair gained a book (see
+ * `subjectGradeCoverage.test.ts`'s `KNOWN_BOOKLESS`, which briefly went empty
+ * on 2026-09-09 before this same commit reopened it with geography:grade-10).
+ * That churn is the allowlist doing its job — a pair gaining a book is meant
+ * to fail a test and make someone look, and geography losing this slot the
+ * day a Grade 10 book arrives is expected, not a regression.
  *
- * The picker list itself cannot shrink to hide a gap when one does exist —
- * `getPickerSubjects()` positions are persisted as bare `subjectIdx` values
- * in formState and route URLs, and it deliberately ignores a gradeId so
- * every screen rebuilds the identical list (see `scopePickerParams`). So
- * hiding is a RENDER-time decision: the flags say which entries to grey out,
- * every screen keeps the same underlying list, and the index an option
- * reports is its position in that list rather than in the shortened visible
- * one.
+ * The list itself cannot shrink to fix this — `getPickerSubjects()` positions
+ * are persisted as bare `subjectIdx` values in formState and route URLs, and
+ * it deliberately ignores a gradeId so every screen rebuilds the identical
+ * list (see `scopePickerParams`). So the bookless entries are dropped at
+ * RENDER time only: the flags below say which, every screen keeps the same
+ * underlying list, and the index an option reports is its position in that
+ * list rather than in the shortened visible one. Generation re-checks anyway,
+ * for URLs saved before any of this existed.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -65,16 +61,13 @@ describe('picker scope — grade/subject pairs with no book', () => {
     }
   });
 
-  // As of 2026-09-09 there is no bookless MVP pair left to name — see the
-  // file header. This is the positive form of that fact: nothing is hidden.
-  it('hides nothing — every MVP pair currently has a book', () => {
-    for (const gradeId of MVP_GRADE_IDS) {
-      const flags = subjectsWithoutCurriculum(gradeId);
-      assert.ok(
-        flags.every(f => f === false),
-        `${gradeId} hides a subject that should now have a book`,
-      );
-    }
+  // The reported case, pinned by name: it is the PAIR that fails, so the same
+  // subject must stay pickable on the grade whose book does exist.
+  it('hides geography for grade-10 but not for grade-9', () => {
+    const idx = getPickerSubjects().findIndex(s => s.id === 'geography');
+    assert.ok(idx >= 0, 'geography is expected in the MVP picker list');
+    assert.equal(subjectsWithoutCurriculum('grade-10')[idx], true);
+    assert.equal(subjectsWithoutCurriculum('grade-9')[idx], false);
   });
 
   it('leaves the grades own subjects alone', () => {
@@ -104,11 +97,11 @@ describe('picker scope — grade/subject pairs with no book', () => {
     // position-preserving filter from one that re-indexes 0..n: both produce
     // [0]. Hiding the FIRST entry is the case that separates them.
     //
-    // As of 2026-09-09 the real grade-9 mask hides nothing at all (every MVP
-    // pair has a book — see the file header), so a live mask can no longer
-    // exercise this property either way. The synthetic mask stays regardless
-    // — it pins the property directly instead of depending on the catalogue
-    // continuing to supply an interesting shape.
+    // As of 2026-09-09 the real bookless mask lives on grade-10 (geography
+    // is the only gap there) rather than grade-9, and it is a single entry,
+    // not an interesting shape either way. The synthetic mask stays
+    // regardless — it pins the property directly instead of depending on the
+    // catalogue continuing to supply an interesting shape.
     const hidden = subjects.map((_, i) => i === 0);
     const visible = subjects
       .map((s, i) => ({ value: i, id: s.id }))
@@ -151,23 +144,24 @@ describe('picker scope — grade/subject pairs with no book', () => {
 
 describe('picker scope — the generate-time backstop', () => {
   // The pickers grey the pair out, but gradeIdx/subjectIdx also arrive from
-  // formState and bookmarked URLs written before they did. No real MVP pair
-  // is refused right now (see the file header), so this asserts the refusal
-  // path stays silent for every pair the pickers can actually express —
-  // the message-shape (naming the pair, answering in the display language)
-  // is exercised structurally below rather than against a live gap: the
-  // moment `KNOWN_BOOKLESS` in `subjectGradeCoverage.test.ts` gains an entry
-  // again, this same call starts returning the object these lines describe.
-  it('passes every MVP pair — none is refused right now', () => {
-    for (const gradeId of MVP_GRADE_IDS) {
-      for (const subject of getPickerSubjects()) {
-        assert.equal(
-          scopeWithoutCurriculum(gradeId, subject.id, 'ar'),
-          null,
-          `${subject.id} + ${gradeId} is refused but should now have a book`,
-        );
-      }
-    }
+  // formState and bookmarked URLs written before they did.
+  it('names the offending pair so the message can say which', () => {
+    const scope = scopeWithoutCurriculum('grade-10', 'geography', 'ar');
+    assert.ok(scope, 'grade-10 + geography must be refused');
+    assert.equal(scope.subject, 'الجغرافيا');
+    assert.equal(scope.grade, 'الصف العاشر');
+  });
+
+  it('answers in the display language', () => {
+    const scope = scopeWithoutCurriculum('grade-10', 'geography', 'en');
+    assert.ok(scope);
+    assert.equal(scope.subject, 'Geography');
+  });
+
+  it('passes a pair that has a book', () => {
+    assert.equal(scopeWithoutCurriculum('grade-9', 'geography', 'ar'), null);
+    assert.equal(scopeWithoutCurriculum('grade-10', 'mathematics', 'ar'), null);
+    assert.equal(scopeWithoutCurriculum('grade-9', 'mathematics', 'ar'), null);
   });
 
   // `StrandedSelectionNote` renders off `subjectsWithoutCurriculum`, generation
