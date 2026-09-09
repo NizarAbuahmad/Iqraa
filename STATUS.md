@@ -43,6 +43,24 @@ an announcement by default» below.
 
 ## What works today (verified, not assumed)
 
+- **A teacher can set, replace and remove their own profile picture**
+  (2026-09-09): `app/(tabs)/profile.tsx`, `POST`/`DELETE /auth/users/avatar`.
+  Uploads into the `iqraa-public` R2 bucket (anonymous-read, non-expiring
+  URL) rather than `iqraa-media`'s presigned-URL pattern, since an avatar is
+  rendered small and repeatedly. Scope is deliberately self-only: the shared
+  `Avatar.tsx` used in messaging/notifications/groups still shows initials
+  for everyone else — see «A profile picture landed, and it stops at the
+  signed-in user» below. Verified end to end against a local Postgres and a
+  stand-in for the public bucket, in a real browser: upload, the photo
+  rendering in the circular avatar, remove reverting to initials, and the
+  confirm dialog. **Not verified against real Cloudflare R2** — no
+  credentials in this sandbox — though `putPublicObject` is the same
+  `S3Client` call `putObject` already makes in production, just a different
+  `Bucket` name. **Schema not pushed to production** — `avatar_key` exists
+  only in the local DB this was tested against; `pnpm --filter @workspace/db
+  run push` still needs a human run against Neon, and `R2_PUBLIC_BUCKET`/
+  `R2_PUBLIC_BASE_URL` are unset there, so the feature will 503 until both
+  land.
 - **In-app messaging between teachers, parents and students** (2026-09-04):
   claim-code signup, teacher↔parent and teacher↔student direct threads,
   class-group and teacher-made custom groups, image attachments, block and
@@ -409,6 +427,78 @@ an announcement by default» below.
     deployed. The client's timeout is 2.5s, so the first call after idle fails.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
+
+## A profile picture landed, and it stops at the signed-in user, 2026-09-09
+
+A teacher can now tap their own avatar on `app/(tabs)/profile.tsx` to pick a
+photo (`services/avatarPick.ts`, downscaled to a 512px long edge — an avatar
+never needs a lesson-scan-sized image) or remove it back to initials. Server
+side: `lib/db/src/schema/users.ts` gained a nullable `avatarKey` (a key, not
+a URL — `DELETE` needs something to hand `deletePublicObject` without
+parsing one back out of a URL); `POST`/`DELETE /auth/users/avatar`
+(`routes/auth.ts`) follow `routes/lessonMedia.ts`'s existing data-URL-in-JSON
+pattern, with their own narrower `avatarUpload.ts` (image mimes only, a
+4MB cap — a third of lesson media's 8MB, since the client already downscaled)
+and `avatarUrlFor()` folding a null key to a null URL at every one of the
+five sites that serialise a `User` (register, login, google, `/me`, `PATCH
+/users/profile`).
+
+**Chose the public bucket over the private/presigned pattern deliberately.**
+`lessonMedia.ts` signs a 1-hour URL per fetch — fine for a document opened
+once, awkward for something rendered in a list repeatedly. An avatar goes
+into `iqraa-public` instead (see `docs/adding-a-book.md`'s "The two
+buckets") behind a stable, non-expiring URL. This is that bucket's **first
+runtime writer** — every book PDF in it before now arrived by hand through
+the Cloudflare dashboard. `lib/r2.ts` gained `putPublicObject`,
+`deletePublicObject`, `newAvatarKey` and `publicUrl`, all sharing the
+existing `S3Client` (same account, same credentials, just a different
+`Bucket` name) and gated by their own `isPublicR2Configured()` — true only
+when `R2_PUBLIC_BASE_URL` is *also* set, since composing a URL (rather than
+signing one) needs the bucket's own `pub-<hash>.r2.dev` origin.
+
+**Deliberately does not touch `components/ui/Avatar.tsx`.** That component
+renders *other* people — message senders, thread participants, group
+members — in six screens across messaging, notifications and group
+management. Making their photos appear there means threading `avatarUrl`
+through every message/notification/roster payload those screens read, not
+just adding an `<Image>` to one component; out of scope for "a teacher can
+change their own profile picture." `Avatar.tsx`'s own header comment now
+says so, so the gap reads as a decision, not a stale claim next time someone
+reaches for it.
+
+**Verified, with the limits stated plainly:**
+- Started a local Postgres, pushed the schema (`avatarKey` column exists —
+  confirmed with `\d users`), ran the real built api-server against it.
+  `POST /auth/register`, `GET /auth/me` and `PATCH /users/profile` all
+  return `avatarUrl` (null on a fresh account).
+- `POST /auth/users/avatar` correctly answers 503
+  (`{"code":"avatar_unavailable"}`) with `R2_PUBLIC_BASE_URL` unset —
+  proving the feature fails closed rather than silently, the same shape
+  every other optional integration in this app uses.
+- Full round trip in a real browser (Playwright against Expo web): set the
+  database's `avatar_key` to an object served by a local stand-in for the
+  public bucket, confirmed the photo actually renders inside the circular
+  avatar (not just that the URL resolves), that tapping the camera badge
+  opens a real OS file chooser, that the X badge only appears when a photo
+  is set, that removing it fires the Arabic confirm dialog
+  («هل تريد إزالة صورة الملف الشخصي؟») and reverts the UI to initials, and
+  that the DB's `avatar_key` actually clears — not merely that the client
+  stopped rendering it.
+- `pnpm run typecheck` clean across the whole monorepo; api-server 517/517
+  (8 new: `avatarUpload.test.ts`, `r2.test.ts`); mobile 1259/1259 (10 skipped,
+  pre-existing, unrelated).
+- **Not verified: real Cloudflare R2.** No credentials in this sandbox, so
+  `putPublicObject`/`deletePublicObject` were exercised against a local
+  stand-in, not the actual `iqraa-public` bucket — though the call shape is
+  identical to `putObject`, which is proven in production (see the R2 rows
+  in `docs/deploying.md`'s secret-proving table).
+- **Not verified: production.** The schema push
+  (`pnpm --filter @workspace/db run push`) and the two new env vars
+  (`R2_PUBLIC_BUCKET`, `R2_PUBLIC_BASE_URL`) are both still manual steps a
+  human has to run/set against Neon and Cloud Run — see
+  `docs/deploying.md`'s R2 section, updated with them. Until both land, this
+  ships correctly gated: the upload route 503s rather than 500ing or writing
+  to the wrong place.
 
 ## Student accounts went live, reversing the v1 decision, 2026-09-07
 

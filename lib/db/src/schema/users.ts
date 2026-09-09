@@ -12,6 +12,14 @@ export const users = pgTable("users", {
   googleId: text("google_id").unique(),
   preferredLanguage: text("preferred_language").notNull().default("en"),
   role: text("role").notNull().default("teacher"),
+  /**
+   * A key (not a URL) in the `iqraa-public` R2 bucket's `avatars/` prefix —
+   * null means show initials. Stored as a key rather than the resolved URL so
+   * `DELETE /auth/users/avatar` has something to hand `deletePublicObject`
+   * without parsing one back out of a URL; the public, non-expiring URL is
+   * computed from it at serialization time via `lib/r2.ts`'s `publicUrl`.
+   */
+  avatarKey: text("avatar_key"),
   emailVerified: boolean("email_verified").notNull().default(false),
   /**
    * Set by a moderator acting on a report — see `routes/moderation.ts`.

@@ -175,6 +175,7 @@ test — not the health path:
 | Secret | What proves it | Breaks if wrong |
 | --- | --- | --- |
 | `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` | Send a **chat attachment**, then attach lesson media | `routes/messaging.ts` (chat attachments), `routes/lessonMedia.ts` |
+| `R2_PUBLIC_BASE_URL` | Change your profile picture, then open the returned `avatarUrl` in a browser | `POST /auth/users/avatar` — a wrong or unset value means the upload succeeds but the photo never renders |
 | `OPENAI_API_KEY` | Generate a worksheet | every generator; the fallback hides it — see the mock-content note in CLAUDE.md |
 | `DATABASE_URL` | `POST /api/auth/login` with a **well-formed** wrong password — the `Invalid email or password` answer comes back only after a `users` lookup. An empty body short-circuits on validation and proves nothing | everything |
 | `GOOGLE_CLIENT_ID(S)` | Sign in with Google | login only; email+password still works, so this fails quietly |
@@ -186,18 +187,25 @@ the newer path — it did not exist when the R2 keys were last touched.
 
 ### R2 specifically
 
-Four variables, and **only two of them rotate**:
+Six variables, and **only two of them rotate**:
 
 ```
 R2_ACCESS_KEY_ID       rotate
 R2_SECRET_ACCESS_KEY   rotate
 R2_ENDPOINT            leave alone
 R2_BUCKET              leave alone
+R2_PUBLIC_BUCKET       leave alone
+R2_PUBLIC_BASE_URL     leave alone
 ```
 
 Create the token in Cloudflare → R2 → Manage API Tokens, scoped to the
-**`iqraa-media` bucket only** with Object Read & Write. A token with account-wide
-scope is the thing you are trying not to have.
+**`iqraa-media` and `iqraa-public` buckets only** with Object Read & Write. A
+token with account-wide scope is the thing you are trying not to have.
+`R2_PUBLIC_BASE_URL` is `iqraa-public`'s own `https://pub-<hash>.r2.dev`
+Public Development URL, not something the token grants — see
+`docs/adding-a-book.md`'s "The two buckets" for why a profile picture (and
+nothing else server-written today) belongs in the public one, not
+`iqraa-media`.
 
 ### These are plain env vars, and that has cost something
 
