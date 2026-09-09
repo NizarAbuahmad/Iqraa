@@ -118,6 +118,26 @@ function RootLayoutNav() {
     if (pathname) trackScreen(pathname);
   }, [pathname]);
 
+  /**
+   * Hold the logo until the app knows where it is going.
+   *
+   * This used to fire as soon as the fonts loaded, which is well before
+   * `/auth/me` answers — so reopening the app after Android had killed it
+   * revealed a bare header and tab bar with an empty screen between them, and
+   * only then the real destination. Gating on `isLoading` means the user sees
+   * the logo and then their screen, with nothing in between.
+   *
+   * Declared after the navigation effect above on purpose: that one dispatches
+   * its `router.replace` in the same commit, so the destination is already
+   * chosen by the time this reveals anything.
+   *
+   * It cannot stick: `isLoading` flips in AuthContext's `finally`, and every
+   * await inside that block now goes through `fetchWithTimeout`.
+   */
+  useEffect(() => {
+    if (!isLoading) SplashScreen.hideAsync().catch(() => {});
+  }, [isLoading]);
+
   return (
     <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
@@ -164,12 +184,9 @@ export default function RootLayout() {
     initAnalytics();
   }, []);
 
-  useEffect(() => {
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded, fontError]);
-
+  // The splash is hidden in RootLayoutNav, once auth has resolved — not here.
+  // Returning null while the fonts load is invisible because the splash is
+  // still up; it is only the *reason* AuthProvider cannot mount any earlier.
   if (!fontsLoaded && !fontError) return null;
 
   return (

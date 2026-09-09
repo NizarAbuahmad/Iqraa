@@ -25,6 +25,13 @@ import { Redirect } from 'expo-router';
 import { isTeacherRole, useAuth } from '@/context/AuthContext';
 
 export default function Index() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+  // `user` is null for the whole of the session restore, and null is not a
+  // teacher — so without this a teacher cold-booting was sent to Messages, and
+  // nothing brought them back: the boot effect in _layout.tsx only re-routes
+  // from an entry route or on a fresh sign-in, and /notifications is neither.
+  // Rendering nothing here is invisible; the splash is still up until auth
+  // resolves (see _layout.tsx).
+  if (isLoading) return null;
   return <Redirect href={isTeacherRole(user?.role) ? '/iqra' : '/notifications'} />;
 }
