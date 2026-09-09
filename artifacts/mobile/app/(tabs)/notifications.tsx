@@ -25,6 +25,7 @@ import {
   type ChatThreadSummary,
   type ChatRole,
 } from '@/services/messaging';
+import { chatRoleLabel } from '@/services/chatRoleLabel';
 import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import { usePollingRefresh } from '@/hooks/usePollingRefresh';
 import { useStudentAccountsEnabled } from '@/services/features';
@@ -237,6 +238,18 @@ export default function NotificationsScreen() {
                   >
                     {name}
                   </Text>
+                  {/* Direct threads only — a group has no single "other party"
+                      role to show, and otherParticipant is null for those
+                      server-side. Tells a student thread apart from a parent
+                      thread without opening either. */}
+                  {item.type === 'direct' && other ? (
+                    <Text
+                      style={[styles.threadRole, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}
+                      numberOfLines={1}
+                    >
+                      {chatRoleLabel(other.role, t)}
+                    </Text>
+                  ) : null}
                   <Text
                     style={[styles.threadPreview, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}
                     numberOfLines={1}
@@ -301,6 +314,7 @@ const styles = StyleSheet.create({
   threadCard: { padding: 14, gap: 12, borderWidth: 1, alignItems: 'center' },
   groupIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   threadName: { fontSize: 15, marginBottom: 3 },
+  threadRole: { fontSize: 12, marginBottom: 2 },
   threadPreview: { fontSize: 13 },
   dot: { width: 8, height: 8, borderRadius: 4, flexShrink: 0 },
   empty: { alignItems: 'center', paddingTop: 60, paddingBottom: 24, paddingHorizontal: 32, gap: 8 },

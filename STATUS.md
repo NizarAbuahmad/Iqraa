@@ -410,6 +410,53 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## A chat thread now says who's on the other end, 2026-09-09
+
+The inbox and the thread header showed a name and nothing else, so a message
+from a student and a message from that student's parent looked identical until
+you opened it and read it. The data to tell them apart was already flowing
+end-to-end — `GET /messaging/threads` already returns each direct thread's
+`otherParticipant.role`, and two screens already turned that role into a label
+inline (`ParticipantPickerSheet.tsx:275`, `messaging/claim/[studentId].tsx:208`)
+— it just never reached the inbox row or the header.
+
+Added `services/chatRoleLabel.ts`: one small function generalizing those two
+inline ternaries from a 2-way (student/parent) to the full 5-way `ChatRole`
+range, since a parent's or student's own inbox shows their *teacher* as the
+other party. No new i18n keys — reuses `roleTeacher`/`roleAdmin`/`roleParent`/
+`roleStudent`, already present in both languages. `school_admin` and
+`system_admin` collapse onto the same `roleAdmin` label, matching every other
+screen that shows role.
+
+Deliberately UI-only: no schema change, no server change, no new API field —
+everything needed was already returned and already typed on the client. Group
+threads (`class_group`/`custom_group`) show no role label, correctly — a group
+has no single "other party" (`otherParticipant` is `null` for those
+server-side), and the existing people-icon + group-title treatment is
+untouched.
+
+One thing worth flagging for whoever touches `messaging/[threadId].tsx` next:
+`styles.headerName` (`fontSize: 16, flex: 1`) is shared between the group
+header and the direct-thread header. The `flex: 1` moved onto a new wrapper
+`View` for the direct-thread branch only (paired with the role label
+underneath), and a non-flex `headerNameStacked` style replaces `headerName` on
+that Text — the group branch and `styles.headerName` itself are untouched. A
+naive "just give the name a role subtitle" edit that stripped `flex: 1` off
+the shared style directly would have broken the group header's row layout
+instead.
+
+**Not verified against a running render.** Typecheck is clean and the full
+mobile suite passes (1261/1261, including 5 new assertions pinning the
+`school_admin`/`system_admin` collapse and matching the exact strings the two
+existing screens already show). The dev bundle built clean from this branch's
+own worktree (2868 modules, 0 errors) and contains every new symbol
+(`chatRoleLabel`, `threadRole`, `headerNameStacked`, `headerRole`). But the
+Browser pane can only reach a server registered through `preview_start`, and
+`preview_start` resolves `.claude/launch.json` from the outer checkout rather
+than this worktree — a known scoping gap, not new — so a server started
+manually in the worktree is invisible to it. Confirm the actual pixel result
+once merged, or from a session whose `launch.json` matches its checkout.
+
 ## Student accounts went live, reversing the v1 decision, 2026-09-07
 
 **`STUDENT_ACCOUNTS` is `true` in production.** Nizar was asked directly

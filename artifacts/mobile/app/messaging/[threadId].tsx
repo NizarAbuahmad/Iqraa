@@ -46,6 +46,7 @@ import {
 } from '@/services/messaging';
 import { MessageBubble } from '@/components/ui/MessageBubble';
 import { Avatar } from '@/components/ui/Avatar';
+import { chatRoleLabel } from '@/services/chatRoleLabel';
 import { ParticipantPickerSheet } from '@/components/ui/ParticipantPickerSheet';
 import { mergeNewMessages } from '@/services/messageMerge';
 import { usePollingRefresh } from '@/hooks/usePollingRefresh';
@@ -293,12 +294,25 @@ export default function ThreadScreen() {
         ) : thread?.otherParticipant ? (
           <>
             <Avatar firstName={thread.otherParticipant.firstName} lastName={thread.otherParticipant.lastName} size={34} colors={colors} />
-            <Text
-              style={[styles.headerName, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}
-              numberOfLines={1}
-            >
-              {thread.otherParticipant.firstName} {thread.otherParticipant.lastName}
-            </Text>
+            {/* headerName carries flex:1 for the group branch above, whose
+                Text is the row's only flexible child — reused here would
+                make this whole wrapper (name + role) fight for that flex
+                against nothing, so the wrapper takes it instead and the
+                name inside uses the non-flex variant. */}
+            <View style={{ flex: 1 }}>
+              <Text
+                style={[styles.headerNameStacked, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: align }]}
+                numberOfLines={1}
+              >
+                {thread.otherParticipant.firstName} {thread.otherParticipant.lastName}
+              </Text>
+              <Text
+                style={[styles.headerRole, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}
+                numberOfLines={1}
+              >
+                {chatRoleLabel(thread.otherParticipant.role, t)}
+              </Text>
+            </View>
           </>
         ) : (
           <View style={{ flex: 1 }} />
@@ -586,6 +600,11 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 16, paddingBottom: 12, alignItems: 'center', gap: 10, borderBottomWidth: 1 },
   groupIcon: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
   headerName: { fontSize: 16, flex: 1 },
+  // No `flex: 1` — this sits inside its own `flex: 1` wrapper (with headerRole
+  // below it) rather than being the row's only flexible child, unlike
+  // headerName above which is shared with the group-thread branch.
+  headerNameStacked: { fontSize: 16 },
+  headerRole: { fontSize: 12 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 80, gap: 12 },
   emptyText: { fontSize: 14 },
