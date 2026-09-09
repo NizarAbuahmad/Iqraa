@@ -168,6 +168,14 @@ import {
   buildG9GeoSem2BrowserCatalog,
 } from './catalogs/g9GeoSem2.ts';
 import {
+  G9_HIST_S1_CURRICULUM_BOOK_ID,
+  buildG9HistSem1BrowserCatalog,
+} from './catalogs/g9HistSem1.ts';
+import {
+  G9_HIST_S2_CURRICULUM_BOOK_ID,
+  buildG9HistSem2BrowserCatalog,
+} from './catalogs/g9HistSem2.ts';
+import {
   ENGLISH_COMMERCE_S1_CURRICULUM_BOOK_ID,
   ENGLISH_AGRICULTURE_S1_CURRICULUM_BOOK_ID,
   ENGLISH_HOSPITALITY_S1_CURRICULUM_BOOK_ID,
@@ -332,6 +340,9 @@ export const SUBJECTS: Subject[] = [
   // or every grade, since nothing is known yet about geography at any other
   // grade. Extend this array the day a book for another grade arrives.
   { id: 'geography', name: 'Geography', nameAr: 'الجغرافيا', icon: 'map-outline', color: '#0D9488', grades: ['grade-9'] },
+  // Second brand-new subject added 2026-09-09, same day as geography.
+  // Scoped to grade-9 only for the same reason: no book at any other grade.
+  { id: 'history', name: 'History', nameAr: 'التاريخ', icon: 'time-outline', color: '#9F1239', grades: ['grade-9'] },
 ];
 
 /**
@@ -377,7 +388,7 @@ export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9'];
 // where it was, so no existing index moves. `finlitCurriculum.test.ts` fails
 // the moment a subject is offered here with nothing to open, and now also the
 // reverse.
-export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy', 'english', 'physics', 'earth-science', 'biology', 'arabic', 'islamic', 'digital-literacy', 'geography'];
+export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy', 'english', 'physics', 'earth-science', 'biology', 'arabic', 'islamic', 'digital-literacy', 'geography', 'history'];
 /** Main semester books only (guides/exercises stay in data, hidden from UI). */
 export const MVP_BOOK_IDS: readonly string[] = [
   'book-math-10',
@@ -470,6 +481,13 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // objectives are empty, same as Islamic Education.
   G9_GEO_S1_CURRICULUM_BOOK_ID,
   G9_GEO_S2_CURRICULUM_BOOK_ID,
+  // Grade 9 History — the third brand-new subject added this week. Same
+  // shape as Geography (unit-level «الفكرة العامة», per-lesson «الفكرة
+  // الرئيسة», bilingual «المصطلحات»); no teacher guide, so objectives are
+  // empty. Each lesson also prints «الأشخاص»/«الأماكن» boxes with no field
+  // in this schema — see the data file's known_gaps.
+  G9_HIST_S1_CURRICULUM_BOOK_ID,
+  G9_HIST_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -1262,6 +1280,38 @@ export const BOOKS: Book[] = [
     audience: 'all',
     semester: 2,
     pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/SS/G9/2/2/%D8%A7%D9%84%D8%AC%D8%BA%D8%B1%D8%A7%D9%81%D9%8A%D8%A7-%20%D8%A7%D9%84%D8%B5%D9%81%20%D8%A7%D9%84%D8%AA%D8%A7%D8%B3%D8%B9-%D9%812-Low.pdf',
+  },
+  // ── History Grade 9 – Semesters 1 and 2 ───────────────────────────────────
+  // Third brand-new subject added this week. No نتاجات التعلم and no teacher
+  // guide on disk, so objectives are empty; general_idea_ar is populated
+  // from each unit's «الفكرة العامة» box, same as Geography.
+  {
+    id: 'book-hist-9-s1',
+    title: 'History – Grade 9, Semester 1',
+    titleAr: 'التاريخ – الصف التاسع – الفصل الأول',
+    subjectId: 'history',
+    gradeId: 'grade-9',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+    pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/SS/G9/1/%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%20%D8%AA%D8%A7%D8%B3%D8%B9%20%D9%811%202026%20.pdf',
+  },
+  {
+    id: 'book-hist-9-s2',
+    title: 'History – Grade 9, Semester 2',
+    titleAr: 'التاريخ – الصف التاسع – الفصل الثاني',
+    subjectId: 'history',
+    gradeId: 'grade-9',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+    pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/SS/G9/2/2/%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%20%D8%A7%D9%84%D8%B5%D9%81%20%D8%A7%D9%84%D8%AA%D8%A7%D8%B3%D8%B9_%D9%812-Low.pdf',
   },
   // ── Other grades ───────────────────────────────────────────────────────────
   // General (non-vocational) Grade 10 English track — Student Book + Activity
@@ -2227,6 +2277,8 @@ const _g9FinlitSem1Browser = buildG9FinlitSem1BrowserCatalog();
 const _g9FinlitSem2Browser = buildG9FinlitSem2BrowserCatalog();
 const _g9GeoSem1Browser = buildG9GeoSem1BrowserCatalog();
 const _g9GeoSem2Browser = buildG9GeoSem2BrowserCatalog();
+const _g9HistSem1Browser = buildG9HistSem1BrowserCatalog();
+const _g9HistSem2Browser = buildG9HistSem2BrowserCatalog();
 const _engCommerceBrowser = buildEnglishCommerceBrowserCatalog();
 const _engAgricultureBrowser = buildEnglishAgricultureBrowserCatalog();
 const _engHospitalityBrowser = buildEnglishHospitalityBrowserCatalog();
@@ -2384,6 +2436,8 @@ export const UNITS: Unit[] = [
   ..._g9FinlitSem2Browser.units,
   ..._g9GeoSem1Browser.units,
   ..._g9GeoSem2Browser.units,
+  ..._g9HistSem1Browser.units,
+  ..._g9HistSem2Browser.units,
   ..._engCommerceBrowser.units,
   ..._engAgricultureBrowser.units,
   ..._engHospitalityBrowser.units,
@@ -2434,6 +2488,8 @@ export const LESSONS: Lesson[] = [
   ..._g9FinlitSem2Browser.lessons,
   ..._g9GeoSem1Browser.lessons,
   ..._g9GeoSem2Browser.lessons,
+  ..._g9HistSem1Browser.lessons,
+  ..._g9HistSem2Browser.lessons,
   ..._engCommerceBrowser.lessons,
   ..._engAgricultureBrowser.lessons,
   ..._engHospitalityBrowser.lessons,
