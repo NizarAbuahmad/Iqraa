@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/Button';
 import { GoogleSignInButton, isGoogleSignInAvailable } from '@/components/ui/GoogleSignInButton';
 import { Input } from '@/components/ui/Input';
 import { PillSelector } from '@/components/ui/PillSelector';
-import { useStudentAccountsEnabled } from '@/services/features';
+import { useStudentAccountsStatus } from '@/services/features';
 import { lookupJoinCode, type JoinRosterEntry } from '@/services/roster';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -28,7 +28,7 @@ export default function RegisterScreen() {
   // v1 is teacher-only; the server refuses a student or parent registration
   // outright (see lib/features.ts there). Asked of the server rather than
   // mirrored into a build-time constant so the two cannot disagree.
-  const studentAccounts = useStudentAccountsEnabled();
+  const { enabled: studentAccounts, loading: featuresLoading } = useStudentAccountsStatus();
 
   const [role, setRole] = useState<SignupRole>('teacher');
   const [claimCode, setClaimCode] = useState('');
@@ -50,7 +50,14 @@ export default function RegisterScreen() {
     setError('');
     setGoogleLoading(true);
     try {
-      await loginWithGoogle(credential);
+      // Same role/code the manual form below would send — a brand-new Google
+      // account used to always come out as a teacher, no matter which pill
+      // was selected, because this call carried nothing but the credential.
+      await loginWithGoogle(credential, {
+        role: studentAccounts ? role : 'teacher',
+        claimCode: !studentAccounts || role === 'teacher' ? undefined : claimCode,
+        studentId: roster ? studentId : undefined,
+      });
       router.replace('/(tabs)');
     } catch (e: any) {
       setError(e.message ?? (lang === 'ar' ? 'تعذّر تسجيل الدخول عبر Google' : 'Google sign-in failed'));
@@ -119,6 +126,7 @@ export default function RegisterScreen() {
   };
 
   const canSubmit =
+    !featuresLoading &&
     firstName.trim().length > 0 &&
     lastName.trim().length > 0 &&
     email.includes('@') &&

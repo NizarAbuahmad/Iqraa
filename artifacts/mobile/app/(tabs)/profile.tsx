@@ -61,11 +61,15 @@ export default function ProfileScreen() {
     : 'T';
 
   const roleLabel =
-    user?.role === 'teacher'
-      ? t('roleTeacher')
-      : user?.role === 'school_admin'
-        ? t('roleAdmin')
-        : t('roleSysAdmin');
+    user?.role === 'school_admin'
+      ? t('roleAdmin')
+      : user?.role === 'system_admin'
+        ? t('roleSysAdmin')
+        : user?.role === 'parent'
+          ? t('roleParent')
+          : user?.role === 'student'
+            ? t('roleStudent')
+            : t('roleTeacher');
 
   const memberSince = user?.createdAt
     ? new Date(user.createdAt).toLocaleDateString(isRTL ? 'ar-JO' : 'en-US', {
