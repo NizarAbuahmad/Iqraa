@@ -155,6 +155,10 @@ import {
   buildG8DigitalSem2Catalog,
 } from './curriculumG8DigitalSem2.ts';
 import {
+  G8_CREATIVE_ARTS_BOOK_ID,
+  buildG8CreativeArtsCatalog,
+} from './curriculumG8CreativeArts.ts';
+import {
   G9_CIV_S1_BOOK_ID,
   buildG9CivSem1Catalog,
 } from './curriculumG9CivSem1.ts';
@@ -762,6 +766,18 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Digital Skills – Grade 8 – Semester 2',
     semester: 2,
     source: 'iqra_curriculum_g8_digital_sem2.json (NCCD)',
+  },
+  {
+    id: G8_CREATIVE_ARTS_BOOK_ID,
+    gradeId: 'grade-8',
+    subjectId: 'creative-arts',
+    titleAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة – الصف الثامن',
+    titleEn: 'Art, Music and Drama Education – Grade 8',
+    // Not actually Semester 1 — this book has no semester split at all.
+    // `semester` is required on KBBook, so 1 is used as the same technical
+    // placeholder the id-namespacing scope uses (see g8CreativeArts.ts).
+    semester: 1,
+    source: 'iqra_curriculum_g8_creative_arts.json (NCCD)',
   },
   {
     id: G9_CIV_S1_BOOK_ID,
@@ -1786,6 +1802,7 @@ const _histSem2 = buildHistSem2Catalog();
 const _g8FinlitSem1 = buildG8FinlitSem1Catalog();
 const _g8DigitalSem1 = buildG8DigitalSem1Catalog();
 const _g8DigitalSem2 = buildG8DigitalSem2Catalog();
+const _g8CreativeArts = buildG8CreativeArtsCatalog();
 const _g9CivSem1 = buildG9CivSem1Catalog();
 const _g9CivSem2 = buildG9CivSem2Catalog();
 const _g9PeSem1 = buildG9PeSem1Catalog();
@@ -1966,6 +1983,7 @@ export const KB_UNITS: KBUnit[] = [
   ..._g8FinlitSem1.units,
   ..._g8DigitalSem1.units,
   ..._g8DigitalSem2.units,
+  ..._g8CreativeArts.units,
   ..._g9CivSem1.units,
   ..._g9CivSem2.units,
   ..._g9PeSem1.units,
@@ -2035,6 +2053,7 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g8FinlitSem1.lessons,
   ..._g8DigitalSem1.lessons,
   ..._g8DigitalSem2.lessons,
+  ..._g8CreativeArts.lessons,
   ..._g9CivSem1.lessons,
   ..._g9CivSem2.lessons,
   ..._g9PeSem1.lessons,

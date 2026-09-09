@@ -78,6 +78,10 @@ const SUBJECTS = {
   'eng-agri': { tag: 'eng-agri-', unitLevel: false },
   'eng-hospitality': { tag: 'eng-hospitality-', unitLevel: false },
   'eng-industry': { tag: 'eng-industry-', unitLevel: false },
+  // Art, Music and Drama Education (creative-arts). Grade 8's book is not
+  // split by semester — see g8CreativeArts.ts for why the scope still
+  // carries semester: 1.
+  'arts': { tag: 'arts-', unitLevel: false },
 } as const;
 
 /** Subject slug as it appears inside an id. Not the app's `subjectId`. */
