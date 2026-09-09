@@ -23,9 +23,16 @@ import {
 
 const FINLIT_BOOK = 'book-finlit-10';
 
+// Grade 10 pairs this file's hardcoded check has no book for on purpose —
+// the authoritative, multi-grade version of this same check is
+// `subjectGradeCoverage.test.ts`'s `KNOWN_BOOKLESS` allowlist; keep the two
+// in sync rather than letting this older, narrower check fight a real gap.
+const KNOWN_BOOKLESS_AT_GRADE_10 = new Set(['geography']);
+
 describe('Financial Literacy G10 S1 — curriculum browser', () => {
   it('every MVP subject resolves to at least one visible book', () => {
     for (const subjectId of MVP_SUBJECT_IDS) {
+      if (KNOWN_BOOKLESS_AT_GRADE_10.has(subjectId)) continue;
       const books = getBooksForSubjectGrade(subjectId, 'grade-10', 'teacher');
       assert.ok(
         books.length > 0,

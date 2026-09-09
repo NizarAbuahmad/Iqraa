@@ -134,6 +134,10 @@ describe('subject isolation', () => {
       // Grade 10 Islamic predates this map too and was likewise silently
       // unchecked. Added alongside the Grade 9 Islamic books.
       islamic: /^(islamic-s[12]|g9-islamic-s[12])$/,
+      // Geography is new to this repo entirely — no Grade 10 book exists yet,
+      // so only the g9- form appears. Added from day one rather than left to
+      // be discovered silently unchecked, like the three subjects above were.
+      geography: /^g9-geo-s[12]$/,
     };
     for (const lesson of KB_LESSONS) {
       const subjectId = getBookForLesson(lesson)?.subjectId;

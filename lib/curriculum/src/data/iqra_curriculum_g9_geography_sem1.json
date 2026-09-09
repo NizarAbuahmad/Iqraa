@@ -1,0 +1,201 @@
+{
+  "meta": {
+    "grade": "الصف التاسع",
+    "grade_en": "Grade 9",
+    "subject": "الجغرافيا",
+    "subject_en": "Geography",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 1,
+    "schema_version": "1.0",
+    "provenance_note": "نُقلت الوحداتُ الثلاثُ ودروسُها التسعةُ من كتاب الطالب (edition: الطبعة الثانية، مزيدة ومنقحة، 2026) في 2026-09-09، بقراءةِ صفحةِ المحتوياتِ لعناوينِ الوحداتِ والدروسِ، ثمَّ قراءةِ صفحةِ افتتاحِ كلِّ وحدةٍ (لِـ«الفكرةِ العامّةِ») وصفحةِ افتتاحِ كلِّ درسٍ (لِـ«الفكرةِ الرئيسةِ» و«المفاهيمِ والمصطلحاتِ») مباشرةً منَ الـ PDF (55.9 ميغابايت، ضمنَ حدِّ أداةِ القراءةِ المباشرةِ). لمْ يُسجَّلْ هذا الكتابُ بعدُ في g10_sources.json، فلا نصَّ مُستخرَجًا كاملًا وراءَ هذا الملفِّ — العناوينُ والأفكارُ والمصطلحاتُ هنا منقولةٌ حرفيًّا منْ صورِ صفحاتِ الكتابِ المقروءةِ مباشرةً، لا منْ أيِّ استخراجٍ آليٍّ.",
+    "source_books": {
+      "student_book": "كتاب الطالب لمادة الجغرافيا - الصف التاسع - الفصل الدراسي الأول - المركز الوطني لتطوير المناهج والتقويم (الطبعة الثانية، 2026)"
+    },
+    "known_gaps": [
+      "لا نتاجاتِ تعلُّمٍ مُرقَّمةً في هذا الكتابِ؛ بدلًا منها صندوقُ «الفكرةِ الرئيسةِ» (فقرةٌ واحدةٌ) لكلِّ درسٍ، وصندوقُ «الفكرةِ العامّةِ» لكلِّ وحدةٍ — وكلاهما منقولٌ هنا (main_idea_ar وgeneral_idea_ar). لا دليلَ معلمٍ لهذه المادةِ على القرصِ، فحقلُ objectives فارغٌ لكلِّ درسٍ عمدًا.",
+      "كلُّ درسٍ يحملُ أيضًا صندوقَ «مهاراتِ التعلُّمِ» (مثلُ: السببُ والنتيجةُ، التصنيفُ) — وهوَ وسمٌ تربويٌّ للمهارةِ المُمارَسةِ في الدرسِ لا محتوًى معرفيًّا، فلا حقلَ لهُ في هذا المخطَّطِ ولمْ يُنقَلْ.",
+      "عددُ الحصصِ لكلِّ درسٍ غيرُ معروفٍ (periods وtotal_periods = null): لا دليلَ معلمٍ لهذه المادةِ على القرصِ.",
+      "هذا أوّلُ كتابٍ لمادةِ الجغرافيا يُدخَلُ في نظامِ إقرأ؛ subjectId الجديدُ 'geography' والوسمُ الداخليُّ 'geo' مُستحدَثانِ في هذه الدفعةِ (راجع curriculumIds.ts وcatalog.ts)."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "الغلافُ الصخريُّ للكرةِ الأرضيةِ",
+      "title_en": "The Earth's Lithosphere",
+      "general_idea_ar": "التعرُّفُ إلى الغلافِ الصخريِّ للكرةِ الأرضيةِ، ومُكوِّناتِهِ، ودورِ العواملِ الخارجيةِ (الجوّ، والمياهِ، والرياحِ) في تشكيلِ معالمِ سطحِ الأرضِ، بالإضافةِ إلى دراسةِ التربةِ التي تُعدُّ الوسطَ الطبيعيَّ لنموِّ النباتاتِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المفاهيم والمصطلحات» box; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "مُكوِّناتُ الغلافِ الصخريِّ وأهمّيّتُهُ",
+          "title_en": "The Components of the Lithosphere and Its Importance",
+          "main_idea_ar": "التعرُّفُ إلى تركيبِ الغلافِ الصخريِّ، ونظريةِ الصفائحِ التكتونيةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الغلافُ الصخريُّ", "en": "Lithosphere" },
+            { "ar": "السيّالُ", "en": "Sial" },
+            { "ar": "السيّا", "en": "Sima" },
+            { "ar": "نظريةُ الصفائحِ التكتونيةِ", "en": "Plate Tectonics Theory" },
+            { "ar": "بانجايا", "en": "Pangaea" }
+          ]
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "التجويةُ والتعريةُ",
+          "title_en": "Weathering and Erosion",
+          "main_idea_ar": "التعرُّفُ إلى تأثيرِ العملياتِ الخارجيةِ (التجويةِ والتعريةِ) على القشرةِ الأرضيةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التجويةُ", "en": "Weathering" },
+            { "ar": "التجويةُ الميكانيكيةُ", "en": "Mechanical Weathering" },
+            { "ar": "التجويةُ الكيميائيةُ", "en": "Chemical Weathering" },
+            { "ar": "التعريةُ", "en": "Erosion" }
+          ]
+        },
+        {
+          "id": "u1_l3",
+          "order": 3,
+          "title_ar": "الصخورُ والتربةُ",
+          "title_en": "Rocks and Soil",
+          "main_idea_ar": "التعرُّفُ إلى أنواعِ الصخورِ، ودورةِ الصخورِ في الطبيعةِ، بالإضافةِ إلى تعرُّفِ مكوّناتِ التربةِ وطبقاتِها وأنواعِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الماغما", "en": "Magma" },
+            { "ar": "اللابةُ", "en": "Lava" },
+            { "ar": "الصخورُ الناريةُ", "en": "Igneous Rocks" },
+            { "ar": "الصخورُ الرسوبيةُ", "en": "Sedimentary Rocks" },
+            { "ar": "الصخورُ المُتحوّلةُ", "en": "Metamorphic Rocks" },
+            { "ar": "التربةُ", "en": "Soil" },
+            { "ar": "طبقاتُ التربةِ", "en": "Soil Layers" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "الغلافُ المائيُّ للكرةِ الأرضيةِ",
+      "title_en": "The Earth's Hydrosphere",
+      "general_idea_ar": "التعرُّفُ إلى الغلافِ المائيِّ، وأشكالِهِ المختلفةِ، والتعرُّفُ إلى أهمّيّتِهِ البيئيةِ والاقتصاديةِ، والعواملِ المُؤثِّرةِ فيهِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المفاهيم والمصطلحات» box; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "مُكوِّناتُ الغلافِ المائيِّ",
+          "title_en": "The Components of the Hydrosphere",
+          "main_idea_ar": "التعرُّفُ إلى الغلافِ المائيِّ، وأهمّيّتِهِ، ومُكوِّناتِهِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الغلافُ المائيُّ", "en": "Hydrosphere" },
+            { "ar": "المحيطاتُ", "en": "Oceans" },
+            { "ar": "البحارُ", "en": "Seas" },
+            { "ar": "البحيراتُ", "en": "Lakes" },
+            { "ar": "الأنهارُ", "en": "Rivers" },
+            { "ar": "المياهُ الجوفيةُ", "en": "Groundwater" }
+          ]
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "حركةُ المياهِ في البحارِ والمحيطاتِ",
+          "title_en": "The Movement of Water in Seas and Oceans",
+          "main_idea_ar": "التعرُّفُ إلى حركةِ المياهِ في البحارِ والمحيطاتِ، والعواملِ المُؤثِّرةِ فيها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الأمواجُ", "en": "Waves" },
+            { "ar": "المدُّ", "en": "Tide" },
+            { "ar": "الجَزْرُ", "en": "Ebb" },
+            { "ar": "التياراتُ البحريةُ", "en": "Ocean Currents" }
+          ]
+        },
+        {
+          "id": "u2_l3",
+          "order": 3,
+          "title_ar": "إدارةُ الموارِدِ المائيةِ",
+          "title_en": "Water Resources Management",
+          "main_idea_ar": "التعرُّفُ إلى أساليبِ استثمارِ الموارِدِ المائيةِ وطرقِ إدارتِها، وأهمِّ الموارِدِ المائيةِ في الأردنِّ، بالإضافةِ إلى التحدّياتِ التي يواجهُها قطاعُ المياهِ في الأردنِّ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الاستثمارُ الأمثلُ للموارِدِ", "en": "Optimal Investment of Resources" },
+            { "ar": "الموارِدُ المائيةُ", "en": "Water Resources" },
+            { "ar": "إدارةُ الموارِدِ المائيةِ", "en": "Water Resources Management" },
+            { "ar": "التغيُّرُ المناخيُّ", "en": "Climate Change" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "جغرافيةُ الوطنِ العربيِّ",
+      "title_en": "Geography of the Arab World",
+      "general_idea_ar": "دراسةُ الملامحِ الطبيعيةِ والبشريةِ لجغرافيةِ الوطنِ العربيِّ، وبيانُ العلاقةِ بينَهُما، والتعرُّفُ إلى التحدّياتِ التي تنتجُ عنْ تلكَ العلاقةِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المفاهيم والمصطلحات» box; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "الملامحُ الطبيعيةُ للوطنِ العربيِّ",
+          "title_en": "The Physical Features of the Arab World",
+          "main_idea_ar": "التعرُّفُ إلى الملامحِ الطبيعيةِ للوطنِ العربيِّ منْ حيثُ: موقعُهُ، وأهمّيّتُهُ الاستراتيجيةُ، وأشكالُ سطحِ الأرضِ الرئيسةُ فيهِ، وأقاليمُهُ المناخيةُ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الموقعُ الجغرافيُّ", "en": "Geographical Location" },
+            { "ar": "التضاريسُ", "en": "Topography" },
+            { "ar": "المناخُ", "en": "Climate" },
+            { "ar": "المواردُ الطبيعيةُ", "en": "Natural Resources" }
+          ]
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "الملامحُ البشريةُ للوطنِ العربيِّ",
+          "title_en": "The Human Features of the Arab World",
+          "main_idea_ar": "التعرُّفُ إلى الملامحِ البشريةِ للوطنِ العربيِّ منْ حيثُ: حجمُ السكّانِ، ومعدّلُ النموِّ السكّانيِّ، والتركيبُ العمريُّ للسكّانِ، والكثافةُ السكّانيةُ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "حجمُ السكّانِ", "en": "Population Size" },
+            { "ar": "النموُّ السكّانيُّ", "en": "Population Growth" },
+            { "ar": "معدّلُ المواليدِ", "en": "Birth Rate" },
+            { "ar": "معدّلُ الوفياتِ", "en": "Mortality Rate" },
+            { "ar": "التركيبُ العمريُّ للسكّانِ", "en": "Population Age Groups" },
+            { "ar": "الكثافةُ السكّانيةُ", "en": "Population Density" }
+          ]
+        },
+        {
+          "id": "u3_l3",
+          "order": 3,
+          "title_ar": "التحدّياتُ الاقتصاديةُ والاجتماعيةُ في الوطنِ العربيِّ",
+          "title_en": "Economic and Social Challenges in the Arab World",
+          "main_idea_ar": "التعرُّفُ إلى بعضِ التحدّياتِ الاقتصاديةِ والاجتماعيةِ في الوطنِ العربيِّ، وظواهرِها، وتبيُّنُ أهمّيّتِها، وأسبابِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الأمنُ الغذائيُّ", "en": "Food Security" },
+            { "ar": "الأمنُ المائيُّ", "en": "Water Security" },
+            { "ar": "الاستغلالُ الأمثلُ للموارِدِ الطبيعيةِ", "en": "Optimal Utilization of Natural Resources" }
+          ]
+        }
+      ]
+    }
+  ]
+}

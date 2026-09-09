@@ -61,6 +61,7 @@ const SUBJECTS = {
   'finlit': { tag: 'finlit-', unitLevel: false },
   'arabic': { tag: 'arabic-', unitLevel: false },
   'islamic': { tag: 'islamic-', unitLevel: false },
+  'geo': { tag: 'geo-', unitLevel: false },
   // General English, distinct from the four vocational ESP tracks below. The
   // manifest already tags its books `eng-s1` / `eng-s2`, so the stem matches.
   // `UNIT_ID_RE` sorts these keys longest-first precisely so this shorter slug
