@@ -134,11 +134,11 @@ describe('subject isolation', () => {
       // Grade 10 Islamic predates this map too and was likewise silently
       // unchecked. Added alongside the Grade 9 Islamic books.
       islamic: /^(islamic-s[12]|g9-islamic-s[12])$/,
-      // Geography is new to this repo entirely — no Grade 10 book exists yet,
-      // so only the g9- form appears. Added from day one rather than left to
-      // be discovered silently unchecked, like the three subjects above were.
-      geography: /^g9-geo-s[12]$/,
-      // Same as geography: new subject, Grade 9 only, no Grade 10 form yet.
+      // Geography is new to this repo entirely. Grade 10 (curriculumIds.ts's
+      // implicit grade) carries a bare tag; Grade 9 carries the explicit
+      // g9- form, same split as every pre-existing subject above.
+      geography: /^(geo-s[12]|g9-geo-s[12])$/,
+      // Same as geography, minus the Grade 10 form: no book there yet.
       history: /^g9-hist-s[12]$/,
       'civic-education': /^g9-civ-s[12]$/,
       'physical-education': /^g9-pe-s[12]$/,

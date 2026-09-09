@@ -168,6 +168,14 @@ import {
   buildG9GeoSem2BrowserCatalog,
 } from './catalogs/g9GeoSem2.ts';
 import {
+  GEO_S1_CURRICULUM_BOOK_ID,
+  buildGeoSem1BrowserCatalog,
+} from './catalogs/g10GeoSem1.ts';
+import {
+  GEO_S2_CURRICULUM_BOOK_ID,
+  buildGeoSem2BrowserCatalog,
+} from './catalogs/g10GeoSem2.ts';
+import {
   G9_HIST_S1_CURRICULUM_BOOK_ID,
   buildG9HistSem1BrowserCatalog,
 } from './catalogs/g9HistSem1.ts';
@@ -351,11 +359,9 @@ export const SUBJECTS: Subject[] = [
   { id: 'digital-literacy', name: 'Digital Skills', nameAr: 'المهارات الرقمية', icon: 'hardware-chip-outline', color: '#0EA5E9', grades: GRADES.map(g => g.id) },
   { id: 'financial-literacy', name: 'Financial Literacy', nameAr: 'الثقافة المالية', icon: 'wallet-outline', color: '#B45309', grades: GRADES.slice(SPECIALISED_FROM).map(g => g.id) },
   { id: 'earth-science', name: 'Earth and Environmental Science', nameAr: 'علوم الأرض والبيئة', icon: 'earth', color: '#65A30D', grades: GRADES.slice(SPECIALISED_FROM).map(g => g.id) },
-  // The first geography book in this repo, added 2026-09-09. Scoped to
-  // grade-9 only — the one grade with a book — rather than SPECIALISED_FROM
-  // or every grade, since nothing is known yet about geography at any other
-  // grade. Extend this array the day a book for another grade arrives.
-  { id: 'geography', name: 'Geography', nameAr: 'الجغرافيا', icon: 'map-outline', color: '#0D9488', grades: ['grade-9'] },
+  // The first geography book in this repo, added 2026-09-09 as grade-9-only.
+  // Extended to grade-10 the same week once its book arrived.
+  { id: 'geography', name: 'Geography', nameAr: 'الجغرافيا', icon: 'map-outline', color: '#0D9488', grades: ['grade-9', 'grade-10'] },
   // Second brand-new subject added 2026-09-09, same day as geography.
   // Scoped to grade-9 only for the same reason: no book at any other grade.
   { id: 'history', name: 'History', nameAr: 'التاريخ', icon: 'time-outline', color: '#9F1239', grades: ['grade-9'] },
@@ -505,6 +511,12 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // objectives are empty, same as Islamic Education.
   G9_GEO_S1_CURRICULUM_BOOK_ID,
   G9_GEO_S2_CURRICULUM_BOOK_ID,
+  // Grade 10 Geography — extends the subject beyond Grade 9, same week it
+  // was introduced. Same shape as the Grade 9 book (unit-level «الفكرة
+  // العامة», per-lesson «الفكرة الرئيسة», bilingual terms); no teacher
+  // guide, so objectives are empty.
+  GEO_S1_CURRICULUM_BOOK_ID,
+  GEO_S2_CURRICULUM_BOOK_ID,
   // Grade 9 History — the third brand-new subject added this week. Same
   // shape as Geography (unit-level «الفكرة العامة», per-lesson «الفكرة
   // الرئيسة», bilingual «المصطلحات»); no teacher guide, so objectives are
@@ -1318,6 +1330,38 @@ export const BOOKS: Book[] = [
     audience: 'all',
     semester: 2,
     pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/SS/G9/2/2/%D8%A7%D9%84%D8%AC%D8%BA%D8%B1%D8%A7%D9%81%D9%8A%D8%A7-%20%D8%A7%D9%84%D8%B5%D9%81%20%D8%A7%D9%84%D8%AA%D8%A7%D8%B3%D8%B9-%D9%812-Low.pdf',
+  },
+  // ── Geography Grade 10 – Semesters 1 and 2 ────────────────────────────────
+  // Extends the subject beyond Grade 9. S2's pdfUrl is not set: NCCD's own
+  // Grade 10 directory lists a "جغرافيا … الفصل الدراسي الثاني" entry with no
+  // href attached to it at all (not a 404 — no link exists to check), unlike
+  // every other S2 that at least has a candidate URL to verify.
+  {
+    id: 'book-geo-10-s1',
+    title: 'Geography – Grade 10, Semester 1',
+    titleAr: 'الجغرافيا – الصف العاشر – الفصل الأول',
+    subjectId: 'geography',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+    pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/SS/G10/1/%D8%A7%D9%84%D8%AC%D8%BA%D8%B1%D8%A7%D9%81%D9%8A%D8%A7%20%D8%A7%D9%84%D8%B9%D8%A7%D8%B4%D8%B1%20%D9%811%202026%20.pdf',
+  },
+  {
+    id: 'book-geo-10-s2',
+    title: 'Geography – Grade 10, Semester 2',
+    titleAr: 'الجغرافيا – الصف العاشر – الفصل الثاني',
+    subjectId: 'geography',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
   },
   // ── History Grade 9 – Semesters 1 and 2 ───────────────────────────────────
   // Third brand-new subject added this week. No نتاجات التعلم and no teacher
@@ -2380,6 +2424,8 @@ const _g9FinlitSem1Browser = buildG9FinlitSem1BrowserCatalog();
 const _g9FinlitSem2Browser = buildG9FinlitSem2BrowserCatalog();
 const _g9GeoSem1Browser = buildG9GeoSem1BrowserCatalog();
 const _g9GeoSem2Browser = buildG9GeoSem2BrowserCatalog();
+const _geoSem1Browser = buildGeoSem1BrowserCatalog();
+const _geoSem2Browser = buildGeoSem2BrowserCatalog();
 const _g9HistSem1Browser = buildG9HistSem1BrowserCatalog();
 const _g9HistSem2Browser = buildG9HistSem2BrowserCatalog();
 const _g9CivSem1Browser = buildG9CivSem1BrowserCatalog();
@@ -2543,6 +2589,8 @@ export const UNITS: Unit[] = [
   ..._g9FinlitSem2Browser.units,
   ..._g9GeoSem1Browser.units,
   ..._g9GeoSem2Browser.units,
+  ..._geoSem1Browser.units,
+  ..._geoSem2Browser.units,
   ..._g9HistSem1Browser.units,
   ..._g9HistSem2Browser.units,
   ..._g9CivSem1Browser.units,
@@ -2599,6 +2647,8 @@ export const LESSONS: Lesson[] = [
   ..._g9FinlitSem2Browser.lessons,
   ..._g9GeoSem1Browser.lessons,
   ..._g9GeoSem2Browser.lessons,
+  ..._geoSem1Browser.lessons,
+  ..._geoSem2Browser.lessons,
   ..._g9HistSem1Browser.lessons,
   ..._g9HistSem2Browser.lessons,
   ..._g9CivSem1Browser.lessons,
