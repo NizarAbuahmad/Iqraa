@@ -61,11 +61,15 @@ export default function ProfileScreen() {
     : 'T';
 
   const roleLabel =
-    user?.role === 'teacher'
-      ? t('roleTeacher')
-      : user?.role === 'school_admin'
-        ? t('roleAdmin')
-        : t('roleSysAdmin');
+    user?.role === 'school_admin'
+      ? t('roleAdmin')
+      : user?.role === 'system_admin'
+        ? t('roleSysAdmin')
+        : user?.role === 'parent'
+          ? t('roleParent')
+          : user?.role === 'student'
+            ? t('roleStudent')
+            : t('roleTeacher');
 
   const memberSince = user?.createdAt
     ? new Date(user.createdAt).toLocaleDateString(isRTL ? 'ar-JO' : 'en-US', {
@@ -193,6 +197,15 @@ export default function ProfileScreen() {
         <View style={{ gap: 8 }}>
           <SettingRow icon="folder-outline" label={t('myWorkspace')} onPress={() => router.push('/workspace')} isRTL={isRTL} colors={colors} />
           <SettingRow icon="people-outline" label={t('myClasses')} onPress={() => router.push('/classes')} isRTL={isRTL} colors={colors} />
+          {(user?.role === 'parent' || user?.role === 'student') && (
+            <SettingRow
+              icon="key-outline"
+              label={t('joinAnotherClass')}
+              onPress={() => router.push('/join-class' as any)}
+              isRTL={isRTL}
+              colors={colors}
+            />
+          )}
           {(user?.role === 'school_admin' || user?.role === 'system_admin') && (
             <SettingRow
               icon="bar-chart-outline"
