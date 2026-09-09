@@ -657,8 +657,10 @@ asserted the filename, so it pinned the wart in place.
 1289 mobile tests pass (19 new in `chatHandoffPin.test.ts`, 7 in
 `chatDeepLink.test.ts`), typecheck clean across the monorepo — **1294 after
 merging the Grade 9 corpus and the student-accounts work off `main`**, still
-0 fail. The pin tests derive their fixtures from `KB_LESSONS` rather than
-naming ids, so the new Grade 9 lessons moved through them without edits.
+0 fail — and 1289 after two further merges of `main` on 2026-09-09, still 0 fail.
+(The total tracks whatever `main` currently carries; it is not a count of this
+change.) The pin tests derive their fixtures from `KB_LESSONS` rather than
+naming ids, so the Grade 9 corpus moved through them without edits.
 
 ### Verified by driving the real UI
 
