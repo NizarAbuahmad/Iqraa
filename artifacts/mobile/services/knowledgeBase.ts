@@ -119,6 +119,14 @@ import {
   buildG9GeoSem2Catalog,
 } from './curriculumG9GeoSem2.ts';
 import {
+  GEO_S1_BOOK_ID,
+  buildGeoSem1Catalog,
+} from './curriculumG10GeoSem1.ts';
+import {
+  GEO_S2_BOOK_ID,
+  buildGeoSem2Catalog,
+} from './curriculumG10GeoSem2.ts';
+import {
   G9_HIST_S1_BOOK_ID,
   buildG9HistSem1Catalog,
 } from './curriculumG9HistSem1.ts';
@@ -653,6 +661,24 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Geography – Grade 9 – Semester 2',
     semester: 2,
     source: 'iqra_curriculum_g9_geography_sem2.json (NCCD)',
+  },
+  {
+    id: GEO_S1_BOOK_ID,
+    gradeId: 'grade-10',
+    subjectId: 'geography',
+    titleAr: 'الجغرافيا – الصف العاشر – الفصل الأول',
+    titleEn: 'Geography – Grade 10 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g10_geography_sem1.json (NCCD)',
+  },
+  {
+    id: GEO_S2_BOOK_ID,
+    gradeId: 'grade-10',
+    subjectId: 'geography',
+    titleAr: 'الجغرافيا – الصف العاشر – الفصل الثاني',
+    titleEn: 'Geography – Grade 10 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g10_geography_sem2.json (NCCD)',
   },
   {
     id: G9_HIST_S1_BOOK_ID,
@@ -1686,6 +1712,8 @@ const _g9FinlitSem1 = buildG9FinlitSem1Catalog();
 const _g9FinlitSem2 = buildG9FinlitSem2Catalog();
 const _g9GeoSem1 = buildG9GeoSem1Catalog();
 const _g9GeoSem2 = buildG9GeoSem2Catalog();
+const _geoSem1 = buildGeoSem1Catalog();
+const _geoSem2 = buildGeoSem2Catalog();
 const _g9HistSem1 = buildG9HistSem1Catalog();
 const _g9HistSem2 = buildG9HistSem2Catalog();
 const _g9CivSem1 = buildG9CivSem1Catalog();
@@ -1859,6 +1887,8 @@ export const KB_UNITS: KBUnit[] = [
   ..._g9FinlitSem2.units,
   ..._g9GeoSem1.units,
   ..._g9GeoSem2.units,
+  ..._geoSem1.units,
+  ..._geoSem2.units,
   ..._g9HistSem1.units,
   ..._g9HistSem2.units,
   ..._g9CivSem1.units,
@@ -1921,6 +1951,8 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g9FinlitSem2.lessons,
   ..._g9GeoSem1.lessons,
   ..._g9GeoSem2.lessons,
+  ..._geoSem1.lessons,
+  ..._geoSem2.lessons,
   ..._g9HistSem1.lessons,
   ..._g9HistSem2.lessons,
   ..._g9CivSem1.lessons,

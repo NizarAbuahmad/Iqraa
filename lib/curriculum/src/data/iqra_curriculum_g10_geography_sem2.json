@@ -1,0 +1,180 @@
+{
+  "meta": {
+    "grade": "الصف العاشر",
+    "grade_en": "Grade 10",
+    "subject": "الجغرافيا",
+    "subject_en": "Geography",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 2,
+    "schema_version": "1.0",
+    "provenance_note": "نُقلت الوحداتُ الثلاثُ (الرابعةُ والخامسةُ والسادسةُ، مُكمِّلةً لترقيمِ الفصلِ الأولِ) ودروسُها التسعةُ من كتاب الطالب (الطبعة الأولى، 2023) في 2026-09-09، بنفسِ طريقةِ الفصلِ الأولِ: قراءةِ صفحةِ المحتوياتِ، ثمَّ قراءةِ صفحةِ افتتاحِ كلِّ وحدةٍ ودرسٍ مباشرةً منَ الـ PDF (71.7 ميغابايت).",
+    "source_books": {
+      "student_book": "كتاب الطالب لمادة الجغرافيا - الصف العاشر - الفصل الدراسي الثاني - المركز الوطني لتطوير المناهج والتقويم (الطبعة الأولى، 2023)"
+    },
+    "known_gaps": [
+      "نفسُ الفجواتِ المُسجَّلةِ في ملفِّ الفصلِ الأولِ: لا نتاجاتِ تعلُّمٍ مُرقَّمةً (objectives فارغةٌ)، ولا دليلَ معلمٍ (periods وtotal_periods = null)، وصندوقُ «مهاراتِ التعلُّمِ» غيرُ منقولٍ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "قضايا بيئيّةٌ",
+      "title_en": "Environmental Issues",
+      "general_idea_ar": "تعرُّفُ التغيُّرِ المناخيِّ، وأهمِّ الآثارِ الناجمةِ عنهُ، وتوضيحُ أهمّيّةِ تقييمِ الأثرِ البيئيِّ، ودراسةُ التطوُّرِ التكنولوجيِّ وأثرِهِ في النظامِ البيئيِّ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المفاهيم والمصطلحات» box; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "التغيُّرُ المناخيُّ",
+          "title_en": "Climate Change",
+          "main_idea_ar": "تعرُّفُ مفهومِ التغيُّرِ المناخيِّ، وأسبابِهِ، وآثارِهِ، وطرقِ مواجهتِهِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "المناخُ", "en": "Climate" },
+            { "ar": "التغيُّرُ المناخيُّ", "en": "Climate Change" },
+            { "ar": "الهجرةُ القسريّةُ", "en": "Forced Migration" }
+          ]
+        },
+        {
+          "id": "u4_l2",
+          "order": 2,
+          "title_ar": "تقييمُ الأثرِ البيئيِّ",
+          "title_en": "Environmental Impact Assessment",
+          "main_idea_ar": "تعرُّفُ مفهومِ تقييمِ الأثرِ البيئيِّ، وأهمّيّتِهِ، ومراحلِهِ، وطُرُقِهِ، وتصنيفِ المشاريعِ التنمويّةِ وآثارِها البيئيّةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الأثرُ البيئيُّ", "en": "Environmental Impact" },
+            { "ar": "تقييمُ الأثرِ البيئيِّ", "en": "Environmental Impact Assessment (EIA)" },
+            { "ar": "الموائلُ الطبيعيّةُ", "en": "Natural Habitats" }
+          ]
+        },
+        {
+          "id": "u4_l3",
+          "order": 3,
+          "title_ar": "التطوُّرُ التكنولوجيُّ وأثرُهُ في النظامِ البيئيِّ",
+          "title_en": "Technological Development and Its Impact on the Ecosystem",
+          "main_idea_ar": "تعرُّفُ أثرِ التطوُّرِ التكنولوجيِّ في حياةِ الإنسانِ في مُختلفِ المجالاتِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التطوُّرُ التكنولوجيُّ", "en": "Technological Development" },
+            { "ar": "التكنولوجيا الزراعيّةُ", "en": "Agricultural Technology" },
+            { "ar": "التكنولوجيا البيئيّةُ", "en": "Environmental Technology" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u5",
+      "number": 5,
+      "title_ar": "التنميةُ",
+      "title_en": "Development",
+      "general_idea_ar": "إكسابُ الطلبةِ المهاراتِ والمعارفَ اللازمةَ لدعمِ التنميةِ المُستدامةِ، وتمكينُهُم معرفيًّا منَ المُستجَدّاتِ المُؤثِّرةِ في قطاعِ الطاقةِ عالميًّا، وأهمِّ مشاريعِ الطاقةِ المتجدّدةِ، وتنميةُ الاتجاهاتِ الإيجابيةِ نحوَ الريادةِ والابتكارِ في دعمِ الاقتصادِ الوطنيِّ وتوفيرِ فُرَصِ العملِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المفاهيم والمصطلحات» box; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_ar": "التنميةُ المُستدامةُ",
+          "title_en": "Sustainable Development",
+          "main_idea_ar": "تعرُّفُ التنميةَ المُستدامةَ منْ حيثُ: أهمّيّتُها، ومجالاتُها، وأهدافُها، ومُؤشِّراتُها، ومُعوِّقاتُها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التنميةُ المُستدامةُ", "en": "Sustainable Development" }
+          ]
+        },
+        {
+          "id": "u5_l2",
+          "order": 2,
+          "title_ar": "مصادرُ الطاقةِ وأنواعُها",
+          "title_en": "Energy Sources and Types",
+          "main_idea_ar": "تعرُّفُ أهمِّ مصادرِ الطاقةِ المتجدّدةِ وغيرِ المتجدّدةِ في كافّةِ البُلدانِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الطاقةُ", "en": "Energy" },
+            { "ar": "الطاقةُ المتجدّدةُ", "en": "Renewable Energy" },
+            { "ar": "الطاقةُ غيرُ المتجدّدةِ", "en": "Nonrenewable Energy" },
+            { "ar": "دُوَلُ الحزامِ الشمسيِّ", "en": "Sunbelt Countries" },
+            { "ar": "أمنُ الطاقةِ", "en": "Energy Security" }
+          ]
+        },
+        {
+          "id": "u5_l3",
+          "order": 3,
+          "title_ar": "الريادةُ والابتكارُ",
+          "title_en": "Entrepreneurship and Innovation",
+          "main_idea_ar": "تعرُّفُ مفهومِ المشاريعِ الرياديّةِ، وأهمّيّتِها، وخصائصِها، وأنواعِها، ومراحلِ إنشائِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "ريادةُ الأعمالِ", "en": "Entrepreneurship" },
+            { "ar": "الابتكارُ", "en": "Innovation" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u6",
+      "number": 6,
+      "title_ar": "جغرافيا العالمِ الجديدِ",
+      "title_en": "Geography of the New World",
+      "general_idea_ar": "تعرُّفُ الملامحِ الطبيعيّةِ والبشريّةِ لقارّاتِ العالمِ الجديدِ: أمريكا الشماليّةِ والوسطى، وأمريكا الجنوبيّةِ، وأوقيانوسيا.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المفاهيم والمصطلحات» box; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u6_l1",
+          "order": 1,
+          "title_ar": "أمريكا الشماليّةُ والوسطى: الملامحُ الطبيعيّةُ والبشريّةُ",
+          "title_en": "North and Central America: Physical and Human Features",
+          "main_idea_ar": "تعرُّفُ الملامحِ الطبيعيّةِ لقارّةِ أمريكا الشماليّةِ والوسطى منْ حيثُ: الموقعُ، ومظاهرُ السطحِ (التضاريسُ)، والمناخُ. وتعرُّفُ الملامحِ البشريّةِ منْ حيثُ: السكّانُ، والثرواتُ الطبيعيّةُ، والأنشطةُ الاقتصاديّةُ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التندرا", "en": "Tundra" },
+            { "ar": "البراري", "en": "Al Barari (Prairies)" }
+          ]
+        },
+        {
+          "id": "u6_l2",
+          "order": 2,
+          "title_ar": "أمريكا الجنوبيّةُ: الملامحُ الطبيعيّةُ والبشريّةُ",
+          "title_en": "South America: Physical and Human Features",
+          "main_idea_ar": "تعرُّفُ الملامحِ الطبيعيّةِ لقارّةِ أمريكا الجنوبيّةِ منْ حيثُ: الموقعُ، ومظاهرُ السطحِ (التضاريسُ)، والمناخُ. وتعرُّفُ ملامحِها البشريّةِ منْ حيثُ: السكّانُ، والثرواتُ الطبيعيّةُ، والأنشطةُ الاقتصاديّةُ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الكثافةُ السكّانيّةُ", "en": "Population Density" }
+          ]
+        },
+        {
+          "id": "u6_l3",
+          "order": 3,
+          "title_ar": "قارّةُ أوقيانوسيا",
+          "title_en": "The Continent of Oceania",
+          "main_idea_ar": "تعرُّفُ الملامحِ الطبيعيّةِ لقارّةِ أوقيانوسيا منْ حيثُ: الموقعُ، ومظاهرُ السطحِ (التضاريسُ)، والمناخُ. وتعرُّفُ ملامحَها البشريّةَ منْ حيثُ: السكّانُ، والثرواتُ الطبيعيّةُ، والأنشطةُ الاقتصاديّةُ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "أوقيانوسيا", "en": "Oceania" },
+            { "ar": "الجُزُرُ البركانيّةُ", "en": "Volcanic Islands" },
+            { "ar": "الجُزُرُ القارّيّةُ", "en": "Continental Islands" },
+            { "ar": "الجُزُرُ المَرجانيّةُ", "en": "Coral Islands" },
+            { "ar": "زراعةُ الكفافِ", "en": "Subsistence Farming" }
+          ]
+        }
+      ]
+    }
+  ]
+}
