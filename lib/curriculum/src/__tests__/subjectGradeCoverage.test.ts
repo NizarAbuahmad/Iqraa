@@ -40,8 +40,8 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // 2026-09-09, the same day each of these four subjects joined
   // MVP_SUBJECT_IDS brand-new with only a Grade 9 book behind it — so their
   // Grade 10 halves were bookless by construction, not by omission.
-  // geography:grade-10 closed the same week, once its Grade 10 book arrived.
-  'history:grade-10',
+  // geography:grade-10 and history:grade-10 closed the same week, once
+  // their Grade 10 books arrived.
   'civic-education:grade-10',
   'physical-education:grade-10',
 ]);
