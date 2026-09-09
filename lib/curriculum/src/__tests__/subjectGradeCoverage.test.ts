@@ -76,6 +76,12 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // is ['grade-8'] alone here too.
   'vocational-education:grade-9',
   'vocational-education:grade-10',
+  // social joined the same day. Unlike creative-arts/vocational-education,
+  // SUBJECTS.grades for social already spans grade-1..grade-9, so these
+  // are ordinary gaps (a Grade 9 or 10 book would close them normally),
+  // not permanent — delete the line once a book lands.
+  'social:grade-9',
+  'social:grade-10',
 ]);
 
 describe('subject/grade coverage across the MVP lists', () => {
