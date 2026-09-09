@@ -275,7 +275,7 @@ export interface BookFigureRef {
 /**
  * Cap on how many of a lesson's figures print in a document's appendix.
  *
- * Unlike a slide deck (`BOOK_FIGURE_MAX = 2`, one per beat), this is one
+ * Unlike a slide deck (`BOOK_FIGURE_MAX = 4`, one per beat), this is one
  * static page: the circle-geometry lesson alone has 25 figures, and printing
  * all of them before the answer key would bury it. Six is generous for "the
  * diagrams this lesson's exercises reference" while keeping the appendix a
