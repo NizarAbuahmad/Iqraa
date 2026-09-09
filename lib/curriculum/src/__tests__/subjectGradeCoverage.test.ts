@@ -72,6 +72,10 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // 10 book is expected, so these two are permanent, not gaps to close.
   'creative-arts:grade-9',
   'creative-arts:grade-10',
+  // vocational-education joined the same day, same reason — SUBJECTS.grades
+  // is ['grade-8'] alone here too.
+  'vocational-education:grade-9',
+  'vocational-education:grade-10',
 ]);
 
 describe('subject/grade coverage across the MVP lists', () => {

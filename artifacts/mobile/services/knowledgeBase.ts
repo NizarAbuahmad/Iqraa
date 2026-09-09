@@ -159,6 +159,14 @@ import {
   buildG8CreativeArtsCatalog,
 } from './curriculumG8CreativeArts.ts';
 import {
+  G8_VOC_S1_BOOK_ID,
+  buildG8VocSem1Catalog,
+} from './curriculumG8VocationalSem1.ts';
+import {
+  G8_VOC_S2_BOOK_ID,
+  buildG8VocSem2Catalog,
+} from './curriculumG8VocationalSem2.ts';
+import {
   G9_CIV_S1_BOOK_ID,
   buildG9CivSem1Catalog,
 } from './curriculumG9CivSem1.ts';
@@ -778,6 +786,24 @@ export const KB_BOOKS: KBBook[] = [
     // placeholder the id-namespacing scope uses (see g8CreativeArts.ts).
     semester: 1,
     source: 'iqra_curriculum_g8_creative_arts.json (NCCD)',
+  },
+  {
+    id: G8_VOC_S1_BOOK_ID,
+    gradeId: 'grade-8',
+    subjectId: 'vocational-education',
+    titleAr: 'التربية المهنية – الصف الثامن – الفصل الأول',
+    titleEn: 'Vocational Education – Grade 8 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g8_vocational_sem1.json (NCCD)',
+  },
+  {
+    id: G8_VOC_S2_BOOK_ID,
+    gradeId: 'grade-8',
+    subjectId: 'vocational-education',
+    titleAr: 'التربية المهنية – الصف الثامن – الفصل الثاني',
+    titleEn: 'Vocational Education – Grade 8 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g8_vocational_sem2.json (NCCD)',
   },
   {
     id: G9_CIV_S1_BOOK_ID,
@@ -1803,6 +1829,8 @@ const _g8FinlitSem1 = buildG8FinlitSem1Catalog();
 const _g8DigitalSem1 = buildG8DigitalSem1Catalog();
 const _g8DigitalSem2 = buildG8DigitalSem2Catalog();
 const _g8CreativeArts = buildG8CreativeArtsCatalog();
+const _g8VocSem1 = buildG8VocSem1Catalog();
+const _g8VocSem2 = buildG8VocSem2Catalog();
 const _g9CivSem1 = buildG9CivSem1Catalog();
 const _g9CivSem2 = buildG9CivSem2Catalog();
 const _g9PeSem1 = buildG9PeSem1Catalog();
@@ -1984,6 +2012,8 @@ export const KB_UNITS: KBUnit[] = [
   ..._g8DigitalSem1.units,
   ..._g8DigitalSem2.units,
   ..._g8CreativeArts.units,
+  ..._g8VocSem1.units,
+  ..._g8VocSem2.units,
   ..._g9CivSem1.units,
   ..._g9CivSem2.units,
   ..._g9PeSem1.units,
@@ -2054,6 +2084,8 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g8DigitalSem1.lessons,
   ..._g8DigitalSem2.lessons,
   ..._g8CreativeArts.lessons,
+  ..._g8VocSem1.lessons,
+  ..._g8VocSem2.lessons,
   ..._g9CivSem1.lessons,
   ..._g9CivSem2.lessons,
   ..._g9PeSem1.lessons,
