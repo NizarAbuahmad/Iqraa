@@ -185,7 +185,10 @@ export async function getEvaluation(
 }
 
 export async function generateEvaluation(id: string): Promise<GenerateResult> {
-  const res = await apiFetch(`/evaluations/${id}/generate`, { method: 'POST' });
+  // Writes a whole paper through OpenAI (api-server routes/evaluations.ts), so
+  // it is one of the two calls in the app that outlive apiFetch's 15s default.
+  // 45s is the number RemoteAIService.postJSON already uses for the same work.
+  const res = await apiFetch(`/evaluations/${id}/generate`, { method: 'POST', timeoutMs: 45_000 });
   return readJson(res, 'Generating questions');
 }
 
@@ -457,6 +460,9 @@ export async function scanMarks(
   const res = await apiFetch(`/attempts/${attemptId}/scan-marks`, {
     method: 'POST',
     body: JSON.stringify({ image }),
+    // The other long one: a base64 page through a vision model
+    // (api-server routes/attempts.ts). Same 45s as generateEvaluation.
+    timeoutMs: 45_000,
   });
   return readJson(res, 'Reading the marks');
 }

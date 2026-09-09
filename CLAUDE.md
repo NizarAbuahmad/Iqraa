@@ -46,9 +46,15 @@ cd artifacts/api-server && pnpm build && pnpm test   # build first — see below
 ```
 
 `artifacts/api-server`'s mount-order suite boots the built bundle, so run
-`pnpm build` before `pnpm test` there or it skips. Both `test` scripts glob
-`**/__tests__/**/*.test.ts`; they were once hand-listed and silently drifted, so
-**add tests inside those globs, and do not narrow them.**
+`pnpm build` before `pnpm test` there or it skips. They were once hand-listed
+and silently drifted, so **add tests inside these globs, and do not narrow
+them** — but note the two are not the same glob (checked 2026-09-08):
+api-server runs `src/**/__tests__/**/*.test.ts`, while mobile runs only
+`services/__tests__/**/*.test.ts`. A mobile test outside `services/__tests__/`
+never runs. That is deliberate: the mobile runner is bare `node --test` with no
+React Native transform, so anything importing `react-native` or `expo-*` at
+module scope cannot be loaded at all — which is why `routeGating.ts` and
+`fetchWithTimeout.ts` are split out of the files that use them.
 
 Local setup, env vars and troubleshooting: [`LOCAL_SETUP.md`](./LOCAL_SETUP.md).
 Before a live demo: [`docs/demo-checklist.md`](./docs/demo-checklist.md).

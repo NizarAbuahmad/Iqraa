@@ -3,6 +3,7 @@
  * Mirrors the URL pattern from RemoteAIService.
  */
 import * as storage from './secureStorage';
+import { fetchWithTimeout } from './fetchWithTimeout';
 
 const ACCESS_TOKEN_KEY = 'iqra_access_token';
 const REFRESH_TOKEN_KEY = 'iqra_refresh_token';
@@ -122,7 +123,10 @@ async function refreshAccessToken(): Promise<string | null> {
       const refreshToken = await getRefreshToken();
       if (!refreshToken) return null;
 
-      const res = await fetch(`${getApiBaseUrl()}/auth/refresh`, {
+      // The deadline here is what keeps `_refreshInFlight` from wedging: the
+      // reset below lives in this IIFE's `finally`, so a refresh that never
+      // settles leaves the latch set and every later 401 awaits a dead promise.
+      const res = await fetchWithTimeout(`${getApiBaseUrl()}/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refreshToken }),
@@ -149,19 +153,26 @@ async function refreshAccessToken(): Promise<string | null> {
   return _refreshInFlight;
 }
 
+/**
+ * `timeoutMs` overrides the 15s default for the handful of routes that call a
+ * model and legitimately run longer. Everything else is a database read.
+ */
+export type ApiOptions = RequestInit & { timeoutMs?: number };
+
 export async function apiFetch(
   path: string,
-  options: RequestInit = {},
+  options: ApiOptions = {},
   retry = true,
 ): Promise<Response> {
+  const { timeoutMs, ...init } = options;
   const accessToken = await getAccessToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...(options.headers as Record<string, string> ?? {}),
+    ...(init.headers as Record<string, string> ?? {}),
   };
   if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
 
-  const res = await fetch(`${getApiBaseUrl()}${path}`, { ...options, headers });
+  const res = await fetchWithTimeout(`${getApiBaseUrl()}${path}`, { ...init, headers }, timeoutMs);
 
   if (res.status === 401 && retry) {
     const newToken = await refreshAccessToken();
@@ -175,7 +186,7 @@ export async function apiFetch(
 
 export async function apiJson<T>(
   path: string,
-  options: RequestInit = {},
+  options: ApiOptions = {},
 ): Promise<T> {
   const res = await apiFetch(path, options);
   const data = await res.json();
