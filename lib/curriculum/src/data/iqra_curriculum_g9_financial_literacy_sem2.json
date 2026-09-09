@@ -1,0 +1,250 @@
+{
+  "meta": {
+    "grade": "الصف التاسع",
+    "grade_en": "Grade 9",
+    "subject": "الثقافة المالية",
+    "subject_en": "Financial Literacy",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 2,
+    "schema_version": "1.0",
+    "provenance_note": "نُقلت الوحدتانِ (الثالثةُ والرابعةُ، مُكمِّلتانِ لترقيمِ الفصلِ الأولِ) ودروسُهما الأحدَ عشرَ من كتاب الطالب (sourceId: g9-financial-literacy-s2-student-book) في 2026-09-09، بنفسِ طريقةِ الفصلِ الأولِ: قراءةِ فهرسِ الكتابِ (صفحة 3) ثمَّ قراءةِ صفحةِ افتتاحِ كلِّ درسٍ مباشرةً منَ الـ PDF (7.5 ميغابايت). هذه النسخةُ من الملفِّ تحملُ علامةَ «نسخة قيد الإعداد» مائيةً على كلِّ صفحةٍ — وهيَ مسودةٌ رسميةٌ لا مصدرٌ غيرُ رسميٍّ، والمحتوى النصيُّ غيرُ متأثرٍ بها.",
+    "source_books": {
+      "student_book": "كتاب الطالب لمادة الثقافة المالية - الصف التاسع - الفصل الدراسي الثاني - المركز الوطني لتطوير المناهج والتقويم (sourceId: g9-financial-literacy-s2-student-book)"
+    },
+    "known_gaps": [
+      "لا صندوقَ «الفكرةُ الرَّئيسةُ» في هذا الكتابِ، مثلَ الفصلِ الأولِ تمامًا؛ main_idea_ar فارغٌ لكلِّ درسٍ عمدًا.",
+      "لا فقرةَ عامةً لصفحةِ افتتاحِ أيِّ وحدةٍ؛ general_idea_ar فارغٌ لكلتا الوحدتينِ.",
+      "عددُ الحصصِ لكلِّ درسٍ غيرُ معروفٍ (periods وtotal_periods = null): لا دليلَ معلمٍ لهذه المادةِ على القرصِ.",
+      "الدرسُ الثالثُ منَ الوحدةِ الثالثةِ («مراحلُ المشروعِ الرياديِّ») لا صندوقَ مفاهيمَ فيهِ — vocabulary فارغةٌ لهُ تحديدًا، خلافًا لبقيةِ دروسِ الكتابِ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "الريادةُ",
+      "title_en": "Entrepreneurship",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, learning outcomes and key-terms lists copied verbatim from each lesson's own printed «نتاجات التعلّم» / «المفاهيم والمصطلحات الرئيسة» boxes; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "ريادةُ الأعمالِ",
+          "title_en": "Entrepreneurship",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "تعرُّفُ مفهومِ ريادةِ الأعمالِ.",
+            "بيانُ أهمّيّةِ العملِ الرياديِّ.",
+            "استنتاجُ الصفاتِ المُشتركةِ بينَ رُوّادِ الأعمالِ الناجحينَ وروائداتِ الأعمالِ الناجحاتِ."
+          ],
+          "vocabulary": [
+            { "ar": "ريادةُ الأعمالِ", "en": "Entrepreneurship" }
+          ]
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "فكرتي الرياديةُ",
+          "title_en": "My Entrepreneurial Idea",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "توليدُ أفكارٍ رياديةٍ مُتنوّعةٍ باستخدامِ أسلوبٍ إبداعيٍّ.",
+            "تحديدُ فكرةِ مشروعٍ رياديٍّ خاصٍّ بي."
+          ],
+          "vocabulary": [
+            { "ar": "الفكرةُ الرياديةُ", "en": "Entrepreneurial Idea" }
+          ]
+        },
+        {
+          "id": "u3_l3",
+          "order": 3,
+          "title_ar": "مراحلُ المشروعِ الرياديِّ",
+          "title_en": "Stages of an Entrepreneurial Project",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "تحديدُ مراحلِ إنشاءِ المشروعاتِ الرياديةِ.",
+            "الربطُ بينَ الفكرةِ والمراحلِ التي تمرُّ بها حتّى تصبحَ مشروعًا حقيقيًّا."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l4",
+          "order": 4,
+          "title_ar": "مهاراتُ الريادةِ: القيادةُ، والاتصالُ، والتواصلُ",
+          "title_en": "Entrepreneurial Skills: Leadership, Connection, and Communication",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "تعرُّفُ مهاراتِ القيادةِ والاتصالِ والتواصلِ، وتمييزُ بعضِها منْ بعضٍ.",
+            "بيانُ كيفَ تُسهمُ مهاراتُ القيادةِ والاتصالِ والتواصلِ في نجاحِ المشروعِ الرياديِّ.",
+            "تطبيقُ ممارساتِ القيادةِ التشاركيةِ والاتصالِ الواضحِ والتواصلِ الإيجابيِّ في مواقفَ صفّيّةٍ، ومحاكاةِ مشروعٍ ما.",
+            "تقييمُ الأداءِ وفقًا لقائمةِ مؤشّراتٍ بسيطةٍ."
+          ],
+          "vocabulary": [
+            { "ar": "القيادةُ", "en": "Leadership" },
+            { "ar": "الاتصالُ", "en": "Connection" },
+            { "ar": "التواصلُ", "en": "Communication" }
+          ]
+        },
+        {
+          "id": "u3_l5",
+          "order": 5,
+          "title_ar": "مهاراتُ الريادةِ: حلُّ المشكلاتِ، وإدارةُ الوقتِ",
+          "title_en": "Entrepreneurial Skills: Problem-Solving and Time Management",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "تعرُّفُ مهارةَ حلِّ المشكلاتِ، ومهارةَ إدارةِ الوقتِ.",
+            "التمييزُ بينَ خطواتِ حلِّ المشكلةِ وكيفيةِ ترتيبِ الأولوياتِ لإدارةِ الوقتِ.",
+            "تطبيقُ مهارةِ حلِّ المشكلاتِ ومهارةِ إدارةِ الوقتِ في مواقفَ عمليةٍ مُصغَّرةٍ.",
+            "تقييمُ الأداءِ الشخصيِّ، وتحديدُ المهارةِ التي تحتاجُ إلى صقلٍ وتطويرٍ."
+          ],
+          "vocabulary": [
+            { "ar": "حلُّ المشكلاتِ", "en": "Problem-Solving" },
+            { "ar": "إدارةُ الوقتِ", "en": "Time Management" }
+          ]
+        },
+        {
+          "id": "u3_l6",
+          "order": 6,
+          "title_ar": "الاستدامةُ والمسؤوليةُ المجتمعيةُ في إدارةِ الأعمالِ",
+          "title_en": "Sustainability and Social Responsibility in Business Management",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "تعرُّفُ مفهومِ الاستدامةِ في إدارةِ الأعمالِ.",
+            "بيانُ معنى المسؤوليةِ المجتمعيةِ وأهمّيّتِها.",
+            "تمييزُ الممارساتِ التي تراعي الاستدامةَ والمسؤوليةَ المجتمعيةَ منْ تلكَ التي لا تراعيها.",
+            "اقتراحُ أفكارٍ لمشروعاتٍ صغيرةٍ تراعي فيها الاستدامةَ والمسؤوليةَ المجتمعيةَ."
+          ],
+          "vocabulary": [
+            { "ar": "الاستدامةُ", "en": "Sustainability" },
+            { "ar": "المسؤوليةُ المجتمعيةُ", "en": "Social Responsibility" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "التطبيقاتُ الماليةُ",
+      "title_en": "Financial Applications",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, learning outcomes and key-terms lists copied verbatim from each lesson's own printed «نتاجات التعلّم» / «المفاهيم والمصطلحات الرئيسة» boxes; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "عالَمُ التطبيقاتِ الماليةِ",
+          "title_en": "The World of Financial Applications",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "تعرُّفُ مفهومِ التطبيقاتِ الماليةِ وأهمّيّتِها.",
+            "بيانُ أثرِ التطبيقاتِ الماليةِ في الحياةِ اليوميةِ.",
+            "تصنيفُ التطبيقاتِ الماليةِ تبعًا لوظائفِها المختلفةِ.",
+            "التمييزُ بينَ أنواعِ التطبيقاتِ الماليةِ.",
+            "ذكرُ أمثلةٍ على التطبيقاتِ الماليةِ المُستخدَمةِ.",
+            "فهمُ كيفَ تتكاملُ أنواعُ التطبيقاتِ الماليةِ معًا."
+          ],
+          "vocabulary": [
+            { "ar": "التطبيقاتُ الماليةُ", "en": "Financial Applications" },
+            { "ar": "تطبيقاتُ الدفعِ والتحويلِ", "en": "Payment and Transfer Apps" },
+            { "ar": "تطبيقاتُ الخدماتِ المصرفيةِ", "en": "Banking Service Apps" },
+            { "ar": "تطبيقاتُ إدارةِ الميزانيةِ", "en": "Budget Management Apps" },
+            { "ar": "تطبيقاتُ الاستثمارِ", "en": "Investment Apps" }
+          ]
+        },
+        {
+          "id": "u4_l2",
+          "order": 2,
+          "title_ar": "استخداماتُ التطبيقاتِ الماليةِ",
+          "title_en": "Uses of Financial Applications",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "تحديدُ الاستخداماتِ اليوميةِ للتطبيقاتِ الماليةِ في حياةِ الأفرادِ.",
+            "بيانُ مزايا استخدامِ التطبيقاتِ الماليةِ في مواقفَ حياتيةٍ مختلفةٍ.",
+            "المقارنةُ بينَ الطرائقِ التقليديةِ والطرائقِ الرقميةِ منْ حيثُ التعاملِ معَ المالِ.",
+            "تطبيقُ قواعدِ الأمانِ عندَ استخدامِ التطبيقاتِ الماليةِ.",
+            "تحديدُ مخاطرِ الاعتمادِ على التطبيقاتِ الماليةِ."
+          ],
+          "vocabulary": [
+            { "ar": "التجارةُ الإلكترونيةُ", "en": "E-Commerce" },
+            { "ar": "المصادقةُ الثنائيةُ", "en": "Two-Factor Authentication" },
+            { "ar": "رسائلُ الاحتيالِ الإلكترونيِّ", "en": "Phishing Messages" }
+          ]
+        },
+        {
+          "id": "u4_l3",
+          "order": 3,
+          "title_ar": "تطويرُ التطبيقاتِ الماليةِ",
+          "title_en": "Development of Financial Applications",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "تعرُّفُ مفهومِ تطويرِ التطبيقاتِ الماليةِ.",
+            "بيانُ مراحلِ تطويرِ التطبيقاتِ الماليةِ الأساسيةِ.",
+            "تحديدُ مخاطرِ تطويرِ التطبيقاتِ الماليةِ.",
+            "تقديمُ نصائحَ للمهتمّينَ بتطويرِ التطبيقاتِ الماليةِ.",
+            "تصميمُ نموذجٍ أوّليٍّ بسيطٍ لتطبيقٍ ماليٍّ."
+          ],
+          "vocabulary": [
+            { "ar": "تطويرُ التطبيقاتِ الماليةِ", "en": "Financial Application Development" },
+            { "ar": "واجهةُ المُستخدِمِ", "en": "User Interface" },
+            { "ar": "تجربةُ المُستخدِمِ", "en": "User Experience" },
+            { "ar": "اختبارُ التطبيقاتِ", "en": "Application Testing" },
+            { "ar": "النشرُ", "en": "Deployment" }
+          ]
+        },
+        {
+          "id": "u4_l4",
+          "order": 4,
+          "title_ar": "حمايةُ الأموالِ في العالَمِ الرقميِّ: الترميزُ، والتشفيرُ، والتجزئةُ (الهاشنج)",
+          "title_en": "Protecting Money in the Digital World: Tokenization, Encryption, and Hashing",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "تعرُّفُ مفهومِ كلٍّ منَ الترميزِ، والتشفيرِ، والتجزئةِ (الهاشنج).",
+            "توضيحُ أهدافِ كلٍّ منَ الترميزِ، والتشفيرِ، والتجزئةِ (الهاشنج).",
+            "تحديدُ كيفَ تُسهمُ هذهِ العملياتُ في حمايةِ البياناتِ والمعلوماتِ الماليةِ.",
+            "المقارنةُ بينَ عمليةِ الترميزِ وعمليةِ التشفيرِ وعمليةِ التجزئةِ (الهاشنج).",
+            "بيانُ مستوى الأمانِ للخدماتِ الماليةِ الإلكترونيةِ المُقدَّمةِ."
+          ],
+          "vocabulary": [
+            { "ar": "الترميزُ", "en": "Tokenization" },
+            { "ar": "التشفيرُ", "en": "Encryption" },
+            { "ar": "التجزئةُ (الهاشنج)", "en": "Hashing" }
+          ]
+        },
+        {
+          "id": "u4_l5",
+          "order": 5,
+          "title_ar": "الذكاءُ الاصطناعيُّ في عالَمِ المالِ",
+          "title_en": "Artificial Intelligence in the World of Finance",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "تعرُّفُ مفهومِ الذكاءِ الاصطناعيِّ في التطبيقاتِ الماليةِ.",
+            "تحديدُ تطبيقاتِ الذكاءِ الاصطناعيِّ في إدارةِ المالِ.",
+            "تقييمُ المزايا والمخاطرِ لاستخدامِ الذكاءِ الاصطناعيِّ في الشؤونِ الماليةِ.",
+            "استخدامُ أدواتِ الذكاءِ الاصطناعيِّ البسيطةِ في إدارةِ الميزانيةِ الشخصيةِ."
+          ],
+          "vocabulary": [
+            { "ar": "الذكاءُ الاصطناعيُّ", "en": "Artificial Intelligence" },
+            { "ar": "كشفُ الاحتيالِ", "en": "Fraud Detection" },
+            { "ar": "المساعدُ الماليُّ الذكيُّ", "en": "Smart Financial Assistant" }
+          ]
+        }
+      ]
+    }
+  ]
+}

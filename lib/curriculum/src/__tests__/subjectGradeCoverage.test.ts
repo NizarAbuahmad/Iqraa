@@ -36,12 +36,11 @@ import {
 
 /** `subjectId:gradeId` pairs that are offered by the MVP lists but have no book. */
 const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
-  // Grade 9 is in MVP_GRADE_IDS for its mathematics books (S1 lesson-level,
-  // S2 title-only). No other subject has been ingested for it.
-  // chemistry:grade-9 left this list on 2026-09-08, the first Grade 9 subject
-  // after mathematics to get a book.
-  'financial-literacy:grade-9',
-  'islamic:grade-9',
+  // Empty as of 2026-09-09: financial-literacy:grade-9 was the last gap,
+  // closed once both its semesters were catalogued. Every MVP subject×grade
+  // pair now has a book. Leave this empty rather than deleting the
+  // machinery — the next subject or grade added to either MVP array is
+  // exactly the case this file exists to catch.
 ]);
 
 describe('subject/grade coverage across the MVP lists', () => {

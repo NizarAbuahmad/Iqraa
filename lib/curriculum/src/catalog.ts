@@ -144,6 +144,22 @@ import {
   buildG9ArabicSem2BrowserCatalog,
 } from './catalogs/g9ArabicSem2.ts';
 import {
+  G9_ISLAMIC_S1_CURRICULUM_BOOK_ID,
+  buildG9IslamicSem1BrowserCatalog,
+} from './catalogs/g9IslamicSem1.ts';
+import {
+  G9_ISLAMIC_S2_CURRICULUM_BOOK_ID,
+  buildG9IslamicSem2BrowserCatalog,
+} from './catalogs/g9IslamicSem2.ts';
+import {
+  G9_FINLIT_S1_CURRICULUM_BOOK_ID,
+  buildG9FinlitSem1BrowserCatalog,
+} from './catalogs/g9FinlitSem1.ts';
+import {
+  G9_FINLIT_S2_CURRICULUM_BOOK_ID,
+  buildG9FinlitSem2BrowserCatalog,
+} from './catalogs/g9FinlitSem2.ts';
+import {
   ENGLISH_COMMERCE_S1_CURRICULUM_BOOK_ID,
   ENGLISH_AGRICULTURE_S1_CURRICULUM_BOOK_ID,
   ENGLISH_HOSPITALITY_S1_CURRICULUM_BOOK_ID,
@@ -418,6 +434,22 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // described a gap that is now closed.
   G9_ARABIC_S1_CURRICULUM_BOOK_ID,
   G9_ARABIC_S2_CURRICULUM_BOOK_ID,
+  // Grade 9 Islamic Education — both semesters, student books only. Neither
+  // prints نتاجات التعلم on its lesson openers and no teacher guide for this
+  // grade is on disk, so objectives are empty for every lesson (same
+  // precedent as Grade 10 Digital Skills). S1's PDF (143MB) exceeds the Read
+  // tool's 100MB cap, so every title and main idea in both semesters was read
+  // from rasterized page images, not from text extraction.
+  G9_ISLAMIC_S1_CURRICULUM_BOOK_ID,
+  G9_ISLAMIC_S2_CURRICULUM_BOOK_ID,
+  // Grade 9 Financial Literacy — both semesters, student books only. Unlike
+  // Islamic Education, this book prints نتاجات التعلّم and a bilingual terms
+  // box on nearly every lesson opener, so objectives and vocabulary are
+  // populated; it has no «الفكرة الرئيسة» box, so main ideas are empty. Its
+  // pdf-parse extraction was refused for whole-run reversal, but the PDFs are
+  // small enough (under 8MB each) to read directly rather than needing OCR.
+  G9_FINLIT_S1_CURRICULUM_BOOK_ID,
+  G9_FINLIT_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -1107,6 +1139,77 @@ export const BOOKS: Book[] = [
     audience: 'all',
     semester: 2,
     pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Arabic/2025/%D8%B9%D8%B1%D8%A8%D9%8A%206.7.2025/9/P2/%D8%AA%D8%A7%D8%B3%D8%B9%20%D9%812.pdf',
+  },
+  // ── Islamic Education Grade 9 – Semesters 1 and 2 ─────────────────────────
+  // Neither book prints نتاجات التعلم on its lesson openers and no teacher
+  // guide for this grade is registered, so lessons carry a main idea but no
+  // objectives — unlike the Grade 10 Islamic rows above, which are built from
+  // teacher guides and have real outcomes. S1's PDF is 143MB, over the Read
+  // tool's 100MB direct-PDF cap, so every title and main idea in both
+  // semesters was read from rasterized page images (pdftoppm), not from any
+  // text extraction attempt.
+  {
+    id: 'book-islamic-9-s1',
+    title: 'Islamic Education – Grade 9, Semester 1',
+    titleAr: 'التربية الإسلامية – الصف التاسع – الفصل الأول',
+    subjectId: 'islamic',
+    gradeId: 'grade-9',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+    pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Islamic/G9/1/%D8%A5%D8%B3%D9%84%D8%A7%D9%85%D9%8A%D8%A9%209%20%D9%811%20Pdf%202026%20.pdf',
+  },
+  {
+    id: 'book-islamic-9-s2',
+    title: 'Islamic Education – Grade 9, Semester 2',
+    titleAr: 'التربية الإسلامية – الصف التاسع – الفصل الثاني',
+    subjectId: 'islamic',
+    gradeId: 'grade-9',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+    pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Islam/Islam/2025/G9/2/islamic%20G9%20P2%20.pdf',
+  },
+  // ── Financial Literacy Grade 9 – Semesters 1 and 2 ────────────────────────
+  // Unlike the Islamic rows above, this book prints نتاجات التعلّم and a
+  // bilingual terms box on nearly every lesson opener, so both books carry
+  // real objectives and vocabulary — only main ideas and period counts are
+  // absent (see the JSONs' known_gaps). pdf-parse extraction was refused for
+  // whole-run reversal, but both PDFs are small enough to have been read
+  // directly rather than needing OCR.
+  {
+    id: 'book-finlit-9-s1',
+    title: 'Financial Literacy – Grade 9, Semester 1',
+    titleAr: 'الثقافة المالية – الصف التاسع – الفصل الأول',
+    subjectId: 'financial-literacy',
+    gradeId: 'grade-9',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+    pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Financial%20culture/G9/1/%D8%A7%D9%84%D8%AB%D9%82%D8%A7%D9%81%D8%A9%20%D8%A7%D9%84%D9%85%D8%A7%D9%84%D9%8A%D8%A9%209%20%D9%811%20small.pdf',
+  },
+  {
+    id: 'book-finlit-9-s2',
+    title: 'Financial Literacy – Grade 9, Semester 2',
+    titleAr: 'الثقافة المالية – الصف التاسع – الفصل الثاني',
+    subjectId: 'financial-literacy',
+    gradeId: 'grade-9',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+    pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/%D9%85%D8%A7%D9%84%D9%8A%D8%A9/G9/2/Financial_9_S2.pdf',
   },
   // ── Other grades ───────────────────────────────────────────────────────────
   // General (non-vocational) Grade 10 English track — Student Book + Activity
@@ -2066,6 +2169,10 @@ const _g9EngSem1Browser = buildG9EngSem1BrowserCatalog();
 const _g9EngSem2Browser = buildG9EngSem2BrowserCatalog();
 const _g9ArabicSem1Browser = buildG9ArabicSem1BrowserCatalog();
 const _g9ArabicSem2Browser = buildG9ArabicSem2BrowserCatalog();
+const _g9IslamicSem1Browser = buildG9IslamicSem1BrowserCatalog();
+const _g9IslamicSem2Browser = buildG9IslamicSem2BrowserCatalog();
+const _g9FinlitSem1Browser = buildG9FinlitSem1BrowserCatalog();
+const _g9FinlitSem2Browser = buildG9FinlitSem2BrowserCatalog();
 const _engCommerceBrowser = buildEnglishCommerceBrowserCatalog();
 const _engAgricultureBrowser = buildEnglishAgricultureBrowserCatalog();
 const _engHospitalityBrowser = buildEnglishHospitalityBrowserCatalog();
@@ -2217,6 +2324,10 @@ export const UNITS: Unit[] = [
   ..._g9EngSem2Browser.units,
   ..._g9ArabicSem1Browser.units,
   ..._g9ArabicSem2Browser.units,
+  ..._g9IslamicSem1Browser.units,
+  ..._g9IslamicSem2Browser.units,
+  ..._g9FinlitSem1Browser.units,
+  ..._g9FinlitSem2Browser.units,
   ..._engCommerceBrowser.units,
   ..._engAgricultureBrowser.units,
   ..._engHospitalityBrowser.units,
@@ -2261,6 +2372,10 @@ export const LESSONS: Lesson[] = [
   ..._g9EngSem2Browser.lessons,
   ..._g9ArabicSem1Browser.lessons,
   ..._g9ArabicSem2Browser.lessons,
+  ..._g9IslamicSem1Browser.lessons,
+  ..._g9IslamicSem2Browser.lessons,
+  ..._g9FinlitSem1Browser.lessons,
+  ..._g9FinlitSem2Browser.lessons,
   ..._engCommerceBrowser.lessons,
   ..._engAgricultureBrowser.lessons,
   ..._engHospitalityBrowser.lessons,

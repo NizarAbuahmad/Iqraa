@@ -1,0 +1,271 @@
+{
+  "meta": {
+    "grade": "الصف التاسع",
+    "grade_en": "Grade 9",
+    "subject": "التربية الإسلامية",
+    "subject_en": "Islamic Education",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 1,
+    "schema_version": "1.0",
+    "provenance_note": "نُقلت الوحداتُ الأربعُ ودروسُها العشرونَ من كتاب الطالب (sourceId: g9-islamic-s1-student-book) في 2026-09-09، بقراءةِ صفحاتِ الكتابِ كصورٍ مُرسَّمةٍ (pdftoppm عند 150dpi) لا بالاعتمادِ على استخراجِ النصِّ: عنوانُ كلِّ درسٍ والفكرةُ الرَّئيسةُ منْ صفحتِه الافتتاحيةِ مباشرةً. الملفُّ 143 ميغابايت فتجاوزَ حدَّ أداةِ القراءةِ المباشرةِ للنصِّ (100 ميغابايت)، فرُسِّمَتْ صفحاتُ الدروسِ العشرونَ فرادى إلى صورٍ PNG وقُرئت.",
+    "source_books": {
+      "student_book": "كتاب الطالب لمادة التربية الإسلامية - الصف التاسع - الفصل الدراسي الأول - المركز الوطني لتطوير المناهج والتقويم (sourceId: g9-islamic-s1-student-book، 143 ميغابايت)"
+    },
+    "known_gaps": [
+      "لا نتاجاتِ تعلُّمٍ مطبوعةً في هذا الكتابِ (خلافًا لكتابِ الصفِّ العاشرِ التربيةِ الإسلاميةِ، حيثُ تُطبَعُ نتاجاتُ التعلُّمِ في دليلِ المعلمِ لا الكتابِ). دليلُ معلمٍ لهذا الفصلِ غيرُ مسجَّلٍ على القرصِ، فحقلُ objectives فارغٌ لكلِّ درسٍ عمدًا لا سهوًا — نفسُ المعالجةِ المتَّبعةِ في مهاراتٍ رقميةٍ (الصفُّ العاشرُ) حينَ غابَ دليلُ المعلمِ.",
+      "عناوينُ الوحداتِ الأربعِ في هذا الكتابِ ليست وصفيةً: كلُّ صفحةِ افتتاحِ وحدةٍ تحملُ آيةً قرآنيةً وعنوانَ «الوحدةُ الأولى/الثانية/الثالثة/الرابعة» فقط، بلا فقرةِ تمهيدٍ نثريّةٍ ولا عنوانٍ موضوعيٍّ — لذا general_idea_ar فارغٌ لكلِّ وحدةٍ، وtitle_ar يحملُ الترقيمَ العربيَّ كما طُبعَ.",
+      "عددُ الحصصِ لكلِّ درسٍ غيرُ معروفٍ (periods وtotal_periods = null): لا دليلَ معلمٍ لهذا الفصلِ على القرصِ.",
+      "لا صندوقَ مصطلحاتٍ ثنائيَّ اللغةِ في هذا الكتابِ (vocabulary فارغةٌ لكلِّ درسٍ)."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "الوحدةُ الأولى",
+      "title_en": "Unit One",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only, read from rasterized page images: lesson title and «الفكرة الرئيسة» from each lesson's opener page; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "سورةُ الإسراءِ الآياتُ (1-8)",
+          "title_en": "Surat Al-Isra, Verses 1-8",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "من خصائصِ الشريعةِ الإسلاميةِ: الرَّبانيَّةُ",
+          "title_en": "A Characteristic of Islamic Law: Divine Origin",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l3",
+          "order": 3,
+          "title_ar": "التلاوةُ والتجويدُ: التفخيمُ والترقيقُ",
+          "title_en": "Recitation and Tajweed: Emphasis and Softening",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l4",
+          "order": 4,
+          "title_ar": "الإيمانُ بالقَدَرِ",
+          "title_en": "Belief in Divine Decree",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l5",
+          "order": 5,
+          "title_ar": "يومُ أُحُدٍ (3هـ)",
+          "title_en": "The Day of Uhud (3 AH)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "الوحدةُ الثانية",
+      "title_en": "Unit Two",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only, read from rasterized page images: lesson title and «الفكرة الرئيسة» from each lesson's opener page; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "سورةُ الإسراءِ الآياتُ (9-12)",
+          "title_en": "Surat Al-Isra, Verses 9-12",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "أحكامُ الأيمانِ في الإسلامِ",
+          "title_en": "Rulings on Oaths in Islam",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l3",
+          "order": 3,
+          "title_ar": "تفخيمُ لامِ لفظِ الجلالةِ (اللهِ) وترقيقُها",
+          "title_en": "Emphasis and Softening of the Lam in the Name of Allah",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l4",
+          "order": 4,
+          "title_ar": "من مصادرِ التشريعِ الإسلاميِّ: الإجماعُ",
+          "title_en": "A Source of Islamic Legislation: Consensus (Ijma)",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l5",
+          "order": 5,
+          "title_ar": "سيِّدُنا أيُّوبُ عليهِ السَّلامُ",
+          "title_en": "Prophet Ayyub (Job), Peace Be Upon Him",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "الوحدةُ الثالثةُ",
+      "title_en": "Unit Three",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only, read from rasterized page images: lesson title and «الفكرة الرئيسة» from each lesson's opener page; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "سورةُ الإسراءِ الآياتُ (13-17)",
+          "title_en": "Surat Al-Isra, Verses 13-17",
+          "main_idea_ar": "تُبيّنُ الآياتُ الكريمةُ (13-17) من سورةِ الإسراءِ أنَّ كلَّ إنسانٍ مسؤولٌ عنْ عملِهِ، وأنَّ اللهَ تعالى سوفَ يُحاسِبُهُ عليهِ يومَ القيامةِ. وتعرضُ الآياتُ الكريمةُ بعضَ مظاهرِ عدلِ اللهِ تعالى معَ عبادِهِ، وتتحدَّثُ عنْ عاقبةِ المُفسِدينَ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "أقسامُ الحديثِ الشريفِ",
+          "title_en": "The Categories of Hadith",
+          "main_idea_ar": "قسَّمَ العلماءُ الأحاديثَ الشريفةَ إلى أحاديثَ مقبولةٍ، وأحاديثَ مردودةٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l3",
+          "order": 3,
+          "title_ar": "التلاوةُ والتجويدُ: تطبيقاتٌ على أحكامِ التفخيمِ والترقيقِ",
+          "title_en": "Recitation and Tajweed: Applications of the Rules of Emphasis and Softening",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l4",
+          "order": 4,
+          "title_ar": "المسجدُ الحرامُ",
+          "title_en": "The Sacred Mosque",
+          "main_idea_ar": "يَحظى المسجدُ الحرامُ بأفضليةٍ وقدسيةٍ كبيرةٍ، وقدِ استمرَّ المسلمونَ في رعايتِهِ والاهتمامِ بهِ منذُ فجرِ الإسلامِ إلى وقتِنا الحاضرِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l5",
+          "order": 5,
+          "title_ar": "أحكامُ الطعامِ والشرابِ في الإسلامِ",
+          "title_en": "Rulings on Food and Drink in Islam",
+          "main_idea_ar": "أحلَّ اللهُ تعالى لعبادِهِ الطيّباتِ منَ الطعامِ والشرابِ؛ لِما فيهِ منفعتُهُم وصلاحُهُم، وحرَّمَ عليهِم ما يضرُّهُم منَ الخبائثِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "الوحدةُ الرابعةُ",
+      "title_en": "Unit Four",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only, read from rasterized page images: lesson title and «الفكرة الرئيسة» from each lesson's opener page; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "الحديثُ الشريفُ: علاماتُ المنافقِ",
+          "title_en": "Hadith: Signs of the Hypocrite",
+          "main_idea_ar": "توجدُ صفاتٌ إذا توافرَتْ كلُّها أوْ بعضُها في شخصٍ عُدَّ فيهِ صفةٌ منْ صفاتِ المنافقينَ، وهيَ: الكذبُ، وإخلافُ الوعدِ، وخيانةُ الأمانةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l2",
+          "order": 2,
+          "title_ar": "العُمرةُ",
+          "title_en": "The Umrah",
+          "main_idea_ar": "العُمرةُ منَ العباداتِ العظيمةِ التي يتقرَّبُ بها المسلمُ إلى اللهِ تعالى، ولها أركانٌ ينبغي التزامُها بالترتيبِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l3",
+          "order": 3,
+          "title_ar": "التلاوةُ والتجويدُ: تطبيقاتٌ على أحكامِ التفخيمِ والترقيقِ",
+          "title_en": "Recitation and Tajweed: Applications of the Rules of Emphasis and Softening",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l4",
+          "order": 4,
+          "title_ar": "موقفُ الإسلامِ منَ العنفِ المجتمعيِّ",
+          "title_en": "Islam's Position on Social Violence",
+          "main_idea_ar": "يدعونا الإسلامُ إلى التحلّي بالأخلاقِ الفاضلةِ التي تُسهمُ في تماسكِ المجتمعِ، كالتسامحِ والحِلمِ، واجتنابِ جميعِ صورِ الإيذاءِ والاعتداءِ على الآخرينَ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l5",
+          "order": 5,
+          "title_ar": "منْ أعلامِ الصحابةِ ﷺ على ثَرى الأردنِّ",
+          "title_en": "Notable Companions Buried in Jordan",
+          "main_idea_ar": "يحتضنُ ثَرى الأردنِّ عددًا كبيرًا منْ صحابةِ سيّدِنا رسولِ اللهِ ﷺ. ومنْ هؤلاءِ الصحابةِ: معاذُ بنُ جبلٍ رضي الله عنه، والحارثُ بنُ عُميرٍ الأزديُّ رضي الله عنه، وشُرَحبيلُ ابنُ حسَنةَ رضي الله عنه، وضِرارُ بنُ الأزْوَرِ رضي الله عنه.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}
