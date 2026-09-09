@@ -124,11 +124,16 @@ describe('subject isolation', () => {
       // pattern copied from the source-side vocabulary in bank.test.ts, where
       // documents only ever carry the semester tag, fails on the unit form.
       chemistry: /^(chem-s[12](-u\d+)?|chem-g10-general|g9-chem-s[12](-u\d+)?)$/,
-      'financial-literacy': /^finlit-s[12]$/,
+      // Grade 10 tag is bare (`finlit-s1`); Grade 9 gets the explicit
+      // `g9-` prefix like arabic and islamic below.
+      'financial-literacy': /^(finlit-s[12]|g9-finlit-s[12])$/,
       // Grade 10 Arabic predates this map and was silently unchecked — no
       // entry meant `continue`, not a pass. Added on 2026-09-08 alongside the
       // Grade 9 Arabic S1 book, so both grades are covered from here on.
       arabic: /^(arabic-s[12]|g9-arabic-s[12])$/,
+      // Grade 10 Islamic predates this map too and was likewise silently
+      // unchecked. Added alongside the Grade 9 Islamic books.
+      islamic: /^(islamic-s[12]|g9-islamic-s[12])$/,
     };
     for (const lesson of KB_LESSONS) {
       const subjectId = getBookForLesson(lesson)?.subjectId;

@@ -1,0 +1,292 @@
+{
+  "meta": {
+    "grade": "الصف التاسع",
+    "grade_en": "Grade 9",
+    "subject": "التربية الإسلامية",
+    "subject_en": "Islamic Education",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 2,
+    "schema_version": "1.0",
+    "provenance_note": "نُقلت الوحداتُ الأربعُ ودروسُها الاثنانِ والعشرونَ من كتاب الطالب (sourceId: g9-islamic-s2-student-book) في 2026-09-09، بقراءةِ فهرسِ الكتابِ (صفحة 4) لعناوينِ الدروسِ الدقيقةِ، ثمَّ قراءةِ صفحةِ افتتاحِ كلِّ درسٍ كصورةٍ مُرسَّمةٍ (pdftoppm عند 150dpi) للفكرةِ الرَّئيسةِ. خلافًا لكتابِ الفصلِ الأولِ، يطبعُ فهرسُ هذا الكتابِ عناوينَ الدروسِ الوصفيةَ كاملةً، فلم تكنْ هناكَ حاجةٌ لقراءةِ عنوانِ كلِّ درسٍ منْ صفحتِهِ.",
+    "source_books": {
+      "student_book": "كتاب الطالب لمادة التربية الإسلامية - الصف التاسع - الفصل الدراسي الثاني - المركز الوطني لتطوير المناهج والتقويم (sourceId: g9-islamic-s2-student-book)"
+    },
+    "known_gaps": [
+      "لا نتاجاتِ تعلُّمٍ مطبوعةً في هذا الكتابِ، مثلَ الفصلِ الأولِ تمامًا. دليلُ معلمٍ لهذا الفصلِ غيرُ مسجَّلٍ على القرصِ، فحقلُ objectives فارغٌ لكلِّ درسٍ عمدًا.",
+      "كلُّ وحدةٍ منَ الوحداتِ الأربعِ تحملُ آيةً قرآنيةً مختلفةً في صفحةِ افتتاحِها (مثلًا: ﴿فَاعْتَبِرُوا يَا أُولِي الأَبْصَارِ﴾ [الحشر: 2] للوحدةِ الأولى)، لكنْ لا فقرةَ تمهيدٍ نثريّةً ولا عنوانًا موضوعيًّا للوحدةِ نفسِها — فقط «الوحدةُ الأولى/الثانية/الثالثة/الرابعة». لذا title_ar يحملُ الترقيمَ العربيَّ فقط، وgeneral_idea_ar فارغٌ لكلِّ وحدةٍ، مطابقًا لملفِّ الفصلِ الأولِ.",
+      "عددُ الدروسِ يختلفُ بينَ الوحداتِ: سِتَّةُ دروسٍ في كلٍّ منَ الوحدتينِ الأولى والثانية، وخمسةُ دروسٍ في كلٍّ منَ الوحدتينِ الثالثةِ والرابعةِ — هكذا يطبعُها فهرسُ الكتابِ.",
+      "عددُ الحصصِ لكلِّ درسٍ غيرُ معروفٍ (periods وtotal_periods = null): لا دليلَ معلمٍ لهذا الفصلِ على القرصِ.",
+      "لا صندوقَ مصطلحاتٍ ثنائيَّ اللغةِ في هذا الكتابِ (vocabulary فارغةٌ لكلِّ درسٍ)."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "الوحدةُ الأولى",
+      "title_en": "Unit One",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: lesson titles from the contents page, main idea from each lesson's opener page read as a rasterized image; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "سورةُ الإسراءِ: الآياتُ الكريمةُ (18-25)",
+          "title_en": "Surat Al-Isra: Verses 18-25",
+          "main_idea_ar": "تُبيّنُ الآياتُ الكريمةُ أنَّ الناسَ في الحياةِ الدنيا فريقانِ: فريقٌ يسعى للدنيا، وفريقٌ يسعى للآخرةِ. وترشدُ إلى أنَّ برَّ الوالدينِ منْ أعظمِ أسبابِ دخولِ الجنةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "الحديثُ الشريفُ: احفظِ اللهَ يحفظْكَ",
+          "title_en": "Hadith: Preserve Allah's Commands and He Will Preserve You",
+          "main_idea_ar": "يتضمنُ الحديثُ الشريفُ توجيهاتٍ نبويةً عِلَّةً، وهيَ: طاعةُ اللهِ تعالى وتجنُّبُ معصيتِهِ، وسؤالُهُ وحدَهُ، والاستعانةُ بهِ تعالى، ويُبيّنُ أنَّ النفعَ والضُرَّ بيدِ اللهِ تعالى.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l3",
+          "order": 3,
+          "title_ar": "التلاوةُ والتجويدُ: أحكامُ تفخيمِ الراءِ وترقيقِها",
+          "title_en": "Recitation and Tajweed: The Rules of Emphasis and Softening of the Letter Ra",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l4",
+          "order": 4,
+          "title_ar": "التوبةُ إلى اللهِ تعالى: شروطُها وآدابُها",
+          "title_en": "Repentance to Allah: Its Conditions and Etiquette",
+          "main_idea_ar": "التوبةُ خُلُقٌ عظيمٌ يتحرى المسلمُ المواظبةَ عليها، ولها شروطٌ وآدابٌ ينبغي التزامُها؛ لكي يقبلَها اللهُ تعالى.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l5",
+          "order": 5,
+          "title_ar": "منْ مصادرِ التشريعِ الإسلاميّ: القياسُ",
+          "title_en": "A Source of Islamic Legislation: Analogy (Qiyas)",
+          "main_idea_ar": "القياسُ هوَ المصدرُ الرابعُ منْ مصادرِ التشريعِ الإسلاميِّ بعدَ القرآنِ الكريمِ، والسُّنَّةِ النبويةِ الشريفةِ، والإجماعِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l6",
+          "order": 6,
+          "title_ar": "شهداءُ منَ الصحابةِ الكرامِ ﷺ على ثرى الأردنِّ",
+          "title_en": "Martyrs Among the Noble Companions Buried in Jordan",
+          "main_idea_ar": "استُشهِدَ عددٌ منْ أصحابِ سيدِنا رسولِ اللهِ ﷺ على ثرى الأردنِّ، منهُمْ شهداءُ معركةِ مؤتةَ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "الوحدةُ الثانية",
+      "title_en": "Unit Two",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: lesson titles from the contents page, main idea from each lesson's opener page read as a rasterized image; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "سورةُ الإسراءِ: الآياتُ الكريمةُ (26-33)",
+          "title_en": "Surat Al-Isra: Verses 26-33",
+          "main_idea_ar": "تتحدثُ الآياتُ الكريمةُ عنِ الإحسانِ إلى الأقاربِ والمحتاجينَ، والنهيِ عنْ تبذيرِ المالِ والإسرافِ فيهِ، وتُبيّنُ كيفَ يتعاملُ المسلمُ معَ غيرِهِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "يومُ الخندقِ (5هـ)",
+          "title_en": "The Day of the Trench (5 AH)",
+          "main_idea_ar": "تحالفَتْ قريشٌ معَ عددٍ منَ القبائلِ العربيةِ واليهودِ في العامِ الخامسِ للهجرةِ؛ منْ أجلِ القضاءِ على المسلمينَ في المدينةِ المنورةِ، إلّا أنَّ خططَهُمْ فشلَتْ، وانتهى تحالفُهُمْ بانسحابِ المشركينَ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l3",
+          "order": 3,
+          "title_ar": "التلاوةُ والتجويدُ: تطبيقاتٌ على أحكامِ تفخيمِ الراءِ وترقيقِها",
+          "title_en": "Recitation and Tajweed: Applications of the Rules of Emphasis and Softening of the Letter Ra",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l4",
+          "order": 4,
+          "title_ar": "الحجُّ: فضلُهُ، وشروطُهُ، ومواقيتُهُ",
+          "title_en": "Hajj: Its Merit, Conditions, and Times",
+          "main_idea_ar": "الحجُّ هوَ الركنُ الخامسُ منْ أركانِ الإسلامِ، ولهُ فضائلُ ومواقيتُ وأحكامٌ وشروطٌ متعدِّدةٌ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l5",
+          "order": 5,
+          "title_ar": "مناسكُ الحجِّ",
+          "title_en": "The Rites of Hajj",
+          "main_idea_ar": "تتنوَّعُ أعمالُ الحجِّ بينَ الركنِ، والواجبِ، والسُّنَّةِ، وكلٌّ منها يُؤدّى بكيفيةٍ محدَّدةٍ، وفي أوقاتٍ وأماكنَ معيَّنةٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l6",
+          "order": 6,
+          "title_ar": "إدارةُ الوقتِ في الإسلامِ",
+          "title_en": "Time Management in Islam",
+          "main_idea_ar": "يُسهمُ حسنُ إدارةِ الوقتِ في تنظيمِ أولوياتِ العملِ وأدائهِ، والاستفادةِ منَ الوقتِ على أفضلِ وجهٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "الوحدةُ الثالثةُ",
+      "title_en": "Unit Three",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: lesson titles from the contents page, main idea from each lesson's opener page read as a rasterized image; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "سورةُ الإسراءِ: الآياتُ الكريمةُ (34-39)",
+          "title_en": "Surat Al-Isra: Verses 34-39",
+          "main_idea_ar": "تؤكِّدُ الآياتُ الكريمةُ حُرمةَ التعدّي على مالِ اليتيمِ، ووجوبَ الوفاءِ بالعهدِ، وإيفاءِ الكيلِ والميزانِ، واجتنابَ الكِبرِ والظنونِ التي لا دليلَ عليها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "المسجدُ النبويُّ الشريفُ",
+          "title_en": "The Noble Prophet's Mosque",
+          "main_idea_ar": "المسجدُ النبويُّ الشريفُ هوَ ثاني المساجدِ الإسلاميةِ في الفضلِ والمكانةِ بعدَ المسجدِ الحرامِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l3",
+          "order": 3,
+          "title_ar": "التلاوةُ والتجويدُ: تطبيقاتٌ على أحكامِ تفخيمِ الراءِ وترقيقِها",
+          "title_en": "Recitation and Tajweed: Applications of the Rules of Emphasis and Softening of the Letter Ra",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l4",
+          "order": 4,
+          "title_ar": "أحكامُ الأضحيةِ والعقيقةِ في الإسلامِ",
+          "title_en": "Rulings on the Sacrifice and the Aqiqah in Islam",
+          "main_idea_ar": "الأضحيةُ والعقيقةُ منَ العباداتِ التي يتقرَّبُ بها المسلمُ إلى اللهِ تعالى؛ لشكرِهِ على نعمِهِ، وقدْ بيَّنَتِ الشريعةُ الإسلاميةُ أحكامَهُما.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l5",
+          "order": 5,
+          "title_ar": "حقُّ الأمنِ في الإسلامِ",
+          "title_en": "The Right to Security in Islam",
+          "main_idea_ar": "حقُّ الأمنِ منَ الحقوقِ الأساسيةِ للإنسانِ، وقدْ أكَّدَهُ الإسلامُ واعتنى بهِ، وشرعَ لهُ أحكامًا تكفَلُهُ وتنظّمُهُ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "الوحدةُ الرابعةُ",
+      "title_en": "Unit Four",
+      "general_idea_ar": "",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: lesson titles from the contents page, main idea from each lesson's opener page read as a rasterized image; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "الحديثُ الشريفُ: التثبُّتُ في نقلِ الأخبارِ",
+          "title_en": "Hadith: Verifying News Before Spreading It",
+          "main_idea_ar": "ينبغي للإنسانِ ألّا يُحدِّثَ بما يقرأُ أو يسمعُ منْ أخبارٍ إلّا بعدَ أنْ يتثبَّتَ منْ صحتِها، ويُعدُّ نقلُ الحديثِ منْ غيرِ تثبُّتٍ أحدَ صورِ الكذبِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l2",
+          "order": 2,
+          "title_ar": "أسبابُ نزولِ القرآنِ الكريمِ",
+          "title_en": "The Reasons Behind the Revelation of the Quran",
+          "main_idea_ar": "نزلَتْ بعضُ سورِ القرآنِ الكريمِ وآياتِهِ الكريمةِ لأسبابٍ معيّنةٍ؛ مثلَ: وقوعِ حادثةٍ، أو للإجابةِ عنْ سؤالٍ وُجِّهَ إلى سيدِنا رسولِ اللهِ ﷺ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l3",
+          "order": 3,
+          "title_ar": "التلاوةُ والتجويدُ: تطبيقاتٌ على أحكامِ تفخيمِ الراءِ وترقيقِها",
+          "title_en": "Recitation and Tajweed: Applications of the Rules of Emphasis and Softening of the Letter Ra",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l4",
+          "order": 4,
+          "title_ar": "أحكامُ النُّذورِ في الإسلامِ",
+          "title_en": "Rulings on Vows in Islam",
+          "main_idea_ar": "النَّذْرُ منَ الطاعاتِ التي يتقرَّبُ بها المسلمُ إلى اللهِ تعالى، وقدْ بيَّنَتِ الشريعةُ الإسلاميةُ أحكامَهُ، وضوابطَهُ، وحُكمَ الوفاءِ بهِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l5",
+          "order": 5,
+          "title_ar": "المحافظةُ على النسلِ في الإسلامِ",
+          "title_en": "Preserving Lineage in Islam",
+          "main_idea_ar": "المحافظةُ على النسلِ أحدُ مقاصدِ الإسلامِ لبقاءِ النوعِ الإنسانيِّ، وإعمارِ الأرضِ، ومنعِ اختلاطِ الأنسابِ، وقدْ شُرِعَتْ لهُ أحكامٌ وتوجيهاتٌ عدَّةٌ لبيانِ طرقِ المحافظةِ عليهِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}
