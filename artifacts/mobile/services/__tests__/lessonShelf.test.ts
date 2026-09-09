@@ -117,7 +117,7 @@ describe('subject isolation', () => {
     const prefixFor: Record<string, RegExp> = {
       // Grade 10 math tags are bare (`s1-u2`); every other grade gets an
       // explicit `g{n}-` prefix (`g9-math-s1-u2`) — see bankTagsForParsedUnit.
-      mathematics: /^(s[12](-u\d+|-matrices)?|g10-math-general|g9-math-s[12](-u\d+)?)$/,
+      mathematics: /^(s[12](-u\d+|-matrices)?|g10-math-general|g9-math-s[12](-u\d+)?|g8-math-s[12](-u\d+)?)$/,
       // Chemistry is `unitLevel: true` in curriculumIds.ts, so a lesson emits
       // BOTH the semester scope and the narrower unit scope — `g9-chem-s1` and
       // `g9-chem-s1-u1`. The `(-u\d+)?` is doing real work here; a Grade 9
