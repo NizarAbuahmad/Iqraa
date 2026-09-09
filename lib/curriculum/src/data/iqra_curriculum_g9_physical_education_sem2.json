@@ -1,0 +1,255 @@
+{
+  "meta": {
+    "grade": "الصف التاسع",
+    "grade_en": "Grade 9",
+    "subject": "التربية الرياضية",
+    "subject_en": "Physical Education",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 2,
+    "schema_version": "1.0",
+    "provenance_note": "نُقلت الوحداتُ الأربعُ (السادسةُ والسابعةُ والثامنةُ والتاسعةُ، مُكمِّلةً لترقيمِ الفصلِ الأولِ) ودروسُها السّتّةَ عشرَ من كتاب الطالب (الطبعة الأولى، 2024) في 2026-09-09، بنفسِ طريقةِ الفصلِ الأولِ: قراءةِ صفحةِ المحتوياتِ، ثمَّ قراءةِ صفحةِ افتتاحِ كلِّ وحدةٍ ودرسٍ مباشرةً منَ الـ PDF (4.1 ميغابايت).",
+    "source_books": {
+      "student_book": "كتاب الطالب لمادة التربية الرياضية - الصف التاسع - الفصل الدراسي الثاني - المركز الوطني لتطوير المناهج والتقويم (الطبعة الأولى، 2024)"
+    },
+    "known_gaps": [
+      "نفسُ الفجواتِ المُسجَّلةِ في ملفِّ الفصلِ الأولِ: لا نتاجاتِ تعلُّمٍ مُرقَّمةً (objectives فارغةٌ)، ولا دليلَ معلمٍ (periods وtotal_periods = null)، وصناديقُ «النواحي الفَنّيّة» الحركيّةِ غيرُ منقولةٍ.",
+      "الوحدةُ التاسعةُ («المفاهيمُ والعاداتُ الصحّيّةُ») تختلِفُ عنْ بقيةِ هذا الكتابِ: هيَ محتوًى معرفيٌّ صحّيٌّ (مُراهقةٌ، أنشطةٌ اجتماعيّةٌ) لا مهاراتٌ حركيّةٌ، لكنّها لا تحملُ صندوقَ «مصطلحات» على الإطلاقِ — تُعرَضُ بصورةِ مُخطَّطاتٍ معلوماتيّةٍ (إنفوجرافيك) بدلًا منْ ذلكَ، فـ vocabulary فارغةٌ لكلا درسَيها.",
+      "لا صندوقَ «مصطلحات» أيضًا في دروسِ «ربطُ المهاراتِ بتدريباتٍ ومُنافساتٍ/ولَعِبٍ جماعيٍّ» في كلِّ وحدةٍ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u6",
+      "number": 6,
+      "title_ar": "ألعابُ القُوى",
+      "title_en": "Track and Field",
+      "general_idea_ar": "تأديةُ بعضِ الفعاليّاتِ الحركيّةِ الخاصّةِ بألعابِ القُوى، مِنْ مُسابقاتِ المِضمارِ والميدانِ منَ الثباتِ والحركةِ؛ بأدواتٍ ومِنْ دونِ أدواتٍ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms — where present — from each lesson's «المفاهيم والمصطلحات» box; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u6_l1",
+          "order": 1,
+          "title_ar": "عَدْوُ التتائُبِعِ 4×200 مترٍ",
+          "title_en": "4x200m Relay Race",
+          "main_idea_ar": "عَدْوُ التتائُبِعِ 4×200 مترٍ منْ فعاليّاتِ المِضمارِ يتناوَبُ فيها أعضاءُ الفريقِ على إكمالِ 800 مترٍ منْ مِضمارِ السباقِ، وتتطلَّبُ مزيجًا منَ السرعةِ والتحمُّلِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "سباقُ التتائُبِعِ", "en": "Relay Race" }
+          ]
+        },
+        {
+          "id": "u6_l2",
+          "order": 2,
+          "title_ar": "الوثبُ الطويلُ",
+          "title_en": "Long Jump",
+          "main_idea_ar": "يُعدُّ الوثبُ الطويلُ أحدَ فعاليّاتِ الميدانِ في ألعابِ القُوى، التي يَثِبُ فيها اللاعبُ إلى أبعدِ مسافةٍ أفقيّةٍ ممكنةٍ منْ مكانٍ مُحدَّدٍ، وتتطلَّبُ مواصفاتٍ يجبُ أنْ يمتلكَها اللاعبُ، مِثلَ السرعةِ والقوّةِ والرشاقةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الوثبُ الطويلُ", "en": "Long Jump" },
+            { "ar": "الهبوطُ", "en": "Landing" }
+          ]
+        },
+        {
+          "id": "u6_l3",
+          "order": 3,
+          "title_ar": "الوثبُ العالي (الفُسبوري)",
+          "title_en": "High Jump (Fosbury Flop)",
+          "main_idea_ar": "يُعدُّ الوثبُ العالي أحدَ فعاليّاتِ الميدانِ في ألعابِ القُوى، حيثُ يجبُ على المتنافسينَ القفزُ منْ دونِ مُساعدةٍ فوقَ عارضةٍ أفقيّةٍ موضوعةٍ على ارتفاعاتٍ مُحدَّدةٍ منْ دونِ إزاحتِها، وتتطلَّبُ مواصفاتٍ يجبُ أنْ يمتلكَها اللاعبُ مِثلَ المُرونةِ والرشاقةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الوثبُ العالي", "en": "High Jump" }
+          ]
+        },
+        {
+          "id": "u6_l4",
+          "order": 4,
+          "title_ar": "رميُ القرصِ (منَ الدورانِ)",
+          "title_en": "Discus Throw (from Rotation)",
+          "main_idea_ar": "يُعدُّ رميُ القرصِ أحدَ فعاليّاتِ الميدانِ، التي تحتاجُ إلى امتلاكِ اللاعبِ اللياقةَ البدنيّةَ وبخاصّةِ القوّةَ العضليّةَ، ويحتاجُ إلى أداءٍ فنّيٍّ جيّدٍ لتحقيقِ أكبرَ مسافةٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "رميُ القرصِ", "en": "Discus Throwing" }
+          ]
+        },
+        {
+          "id": "u6_l5",
+          "order": 5,
+          "title_ar": "ربطُ المهاراتِ بتدريباتٍ ومُنافساتٍ فرديّةٍ",
+          "title_en": "Linking Skills with Drills and Individual Competitions",
+          "main_idea_ar": "توظيفُ جميعِ ما تعلَّمتُهُ في هذهِ الوَحدةِ عنْ طريقِ دمجِها في تدريباتٍ ومُنافساتٍ فرديّةٍ وفقَ إطارِ قواعدِ اللعبةِ؛ وذلكَ لتنميةِ المهاراتِ عبرَ تأديَتِها في التدريباتِ والتنافُسِ بروحٍ رياضيّةٍ، ضِمنَ الأنظمةِ والقواعدِ الخاصّةِ باللعبةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u7",
+      "number": 7,
+      "title_ar": "كرةُ اليدِ",
+      "title_en": "Handball",
+      "general_idea_ar": "تأديةُ بعضِ المهاراتِ الحركيّةِ الخاصّةِ بكرةِ اليدِ منَ الثباتِ والحركةِ؛ بأدواتٍ ومِنْ دونِ أدواتٍ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms — where present — from each lesson's «المفاهيم والمصطلحات» box; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u7_l1",
+          "order": 1,
+          "title_ar": "تنطيطُ الكرةِ منَ الجريِ",
+          "title_en": "Dribbling While Running",
+          "main_idea_ar": "تُعدُّ مهارةُ تنطيطِ الكرةِ منَ الجريِ منَ المهاراتِ الحركيّةِ الأساسيّةِ التي تُمكِّنُ اللاعبَ المُهاجمَ/اللاعبةَ المهاجمةَ منَ الحفاظِ والسيطرةِ على الكرةِ، والتنقُّلِ بينَ المُدافعينَ/المُدافعاتِ، وتحريكِ الفريقِ إلى الأمامِ في الملعبِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التنطيطُ", "en": "Dribbling" }
+          ]
+        },
+        {
+          "id": "u7_l2",
+          "order": 2,
+          "title_ar": "تمريرُ واستلامُ الكراتِ المرتدّةِ",
+          "title_en": "Passing and Receiving Bounce Balls",
+          "main_idea_ar": "تمريرُ واستلامُ الكراتِ المرتدّةِ منَ المهاراتِ الحركيّةِ الأساسيّةِ في كرةِ اليدِ؛ لأنّها تُحقِّقُ تواصُلًا فعّالًا ومُستمرًّا يعملُ على تجاوزِ دفاعاتِ الخصمِ والسيطرةِ على الكرةِ، وتُستخدَمُ للمسافاتِ القصيرةِ، وتضمنُ استمراريّةَ الهجومِ منْ دونِ فُقدانِ الكرةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التمريرُ", "en": "Passing" },
+            { "ar": "الاستلامُ", "en": "Receiving" },
+            { "ar": "الكراتُ المرتدّةُ", "en": "Bouncing Balls" }
+          ]
+        },
+        {
+          "id": "u7_l3",
+          "order": 3,
+          "title_ar": "التمريرةُ الجانبيّةُ",
+          "title_en": "Side Pass",
+          "main_idea_ar": "التمريرةُ الجانبيّةُ منَ المهاراتِ الحركيّةِ الأساسيّةِ في كرةِ اليدِ، التي تُساعِدُ على نقلِ الكراتِ أُفقيًّا بينَ اللاعبينَ/اللاعباتِ على الجانبَينِ، وتُساعِدُ على توسيعِ الهجومِ وتجاوُزِ الضغطِ الدفاعيِّ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التمريرُ الجانبيُّ", "en": "Side Pass" }
+          ]
+        },
+        {
+          "id": "u7_l4",
+          "order": 4,
+          "title_ar": "تصويبُ الكرةِ منَ الثباتِ",
+          "title_en": "Standstill Shooting",
+          "main_idea_ar": "تُعدُّ مهارةُ التصويبِ منَ الثباتِ منَ المهاراتِ الحركيّةِ الأساسيّةِ الأكثرِ أهمّيّةً في كرةِ اليدِ لإحرازِ عددٍ منَ الأهدافِ؛ وهيَ الأساسُ الذي تنطلِقُ منهُ بقيّةُ التصويباتِ مِثلَ: التصويبِ منَ القفزِ، والتصويبِ الجانبيِّ، والتصويبِ منَ الجريِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التصويبُ منَ الثباتِ", "en": "Standstill shooting" }
+          ]
+        },
+        {
+          "id": "u7_l5",
+          "order": 5,
+          "title_ar": "ربطُ المهاراتِ بتدريباتٍ ولَعِبٍ جماعيٍّ",
+          "title_en": "Linking Skills with Drills and Team Play",
+          "main_idea_ar": "توظيفُ المهاراتِ المُكتسَبةِ عنْ طريقِ دمجِها في التدريباتِ واللَعِبِ الجماعيِّ وفقَ إطارِ قانونِ اللعبةِ؛ وذلكَ لتنميةِ المهاراتِ المُقرَّرةِ والتنافُسِ بروحٍ رياضيّةٍ، ضِمنَ الأنظمةِ والقواعدِ الخاصّةِ باللعبةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u8",
+      "number": 8,
+      "title_ar": "الكرةُ الطائرةُ",
+      "title_en": "Volleyball",
+      "general_idea_ar": "تأديةُ بعضِ المهاراتِ الحركيّةِ الخاصّةِ بالكرةِ الطائرةِ منَ الثباتِ والحركةِ؛ بأدواتٍ ومِنْ دونِ أدواتٍ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms — where present — from each lesson's «المفاهيم والمصطلحات» box; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u8_l1",
+          "order": 1,
+          "title_ar": "وقفةُ الاستعدادِ الدفاعيّةُ لاستقبالِ الإرسالِ",
+          "title_en": "Defensive Ready Position for Receiving Serve",
+          "main_idea_ar": "تُعدُّ مهارةُ وقفةِ الاستعدادِ الدفاعيّةِ لاستقبالِ الإرسالِ منَ المهاراتِ الحركيّةِ الأساسيّةِ في الكرةِ الطائرةِ، التي تُسهِمُ في التحكُّمِ والسيطرةِ على الكرةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "وقفةُ الاستعدادِ الدفاعيّةُ", "en": "Defense Position" }
+          ]
+        },
+        {
+          "id": "u8_l2",
+          "order": 2,
+          "title_ar": "استقبالُ وتمريرُ الكرةِ منَ الأسفَلِ بالساعِدَينِ",
+          "title_en": "Forearm Receive and Pass",
+          "main_idea_ar": "تُعدُّ مهارةُ التمريرِ والاستقبالِ منَ الأسفلِ بالساعِدَينِ، منَ المهاراتِ الحركيّةِ الأساسيّةِ لبدايةِ الهجومِ، ويكونُ لَها الأثرُ الكبيرُ بدقّةِ وصولِ الكرةِ إلى المكانِ المطلوبِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التمريرُ بالساعِدَينِ", "en": "Forearm Pass" }
+          ]
+        },
+        {
+          "id": "u8_l3",
+          "order": 3,
+          "title_ar": "الإرسالُ منْ أعلى الموجَّهُ",
+          "title_en": "High Directed Serve",
+          "main_idea_ar": "يُعدُّ الإرسالُ منْ أعلى الموجَّهُ الأكثرَ شُيوعًا واستخدامًا في المُنافساتِ لدقّتِهِ وقوّتِهِ، ويتطلَّبُ هذا الإرسالُ توافقًا بينَ حركتَي رميِ الكرةِ إلى الأعلى وضربِ الكرةِ، بالإضافةِ لاستخدامِ مقدارِ القوّةِ المناسبةِ والتركيزِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الإرسالُ منْ أعلى", "en": "High Serve" }
+          ]
+        },
+        {
+          "id": "u8_l4",
+          "order": 4,
+          "title_ar": "ربطُ المهاراتِ بتدريباتٍ ولَعِبٍ جماعيٍّ",
+          "title_en": "Linking Skills with Drills and Team Play",
+          "main_idea_ar": "توظيفُ جميعِ المهاراتِ التي تعلَّمتُها في هذهِ الوَحدةِ عنْ طريقِ دمجِها في التدريباتِ واللَعِبِ الجماعيِّ وفقَ إطارِ قانونِ اللعبةِ؛ لتنميةِ المهاراتِ المُقرَّرةِ عنْ طريقِ تأديَتِها في التدريباتِ واللَعِبِ الجماعيِّ والتنافُسِ بروحٍ رياضيّةٍ، وتطبيقِ الأنظمةِ والقوانينِ الخاصّةِ باللعبةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u9",
+      "number": 9,
+      "title_ar": "المفاهيمُ والعاداتُ الصحّيّةُ",
+      "title_en": "Health Concepts and Habits",
+      "general_idea_ar": "امتلاكُ المعرفةِ بأهمّيّةِ مُمارسةِ الرياضةِ والمُشاركةِ بالأنشطةِ المجتمعيّةِ للمُراهقينَ، وأثرِها في الصحّةِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes; no bilingual terms box in this unit — presented as infographics instead, so vocabulary is empty; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u9_l1",
+          "order": 1,
+          "title_ar": "المُراهقةُ والرياضةُ",
+          "title_en": "Adolescence and Sports",
+          "main_idea_ar": "مرحلةُ المُراهقةِ هيَ الفترةُ العُمريّةُ بينَ مرحلةِ الطفولةِ ومرحلةِ البلوغِ، وتُعدُّ الرياضةُ عاملًا مُهمًّا في وصولِ المُراهقِ إلى بدايةِ النضجِ البدنيِّ والعقليِّ والاجتماعيِّ، وهيَ الأساسُ للصحّةِ السليمةِ للجسمِ والعقلِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u9_l2",
+          "order": 2,
+          "title_ar": "الأنشطةُ الاجتماعيّةُ",
+          "title_en": "Social Activities",
+          "main_idea_ar": "تُعدُّ المُشاركةُ بالرياضةِ والأنشطةِ الاجتماعيّةِ وسيلةً فعّالةً للتخلُّصِ منَ الضغوطِ النفسيّةِ وتحسينِ الصحّةِ العامّةِ بصورةٍ عامّةٍ، والعقليّةِ بصورةٍ خاصّةٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}
