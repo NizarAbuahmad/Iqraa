@@ -1,0 +1,216 @@
+{
+  "meta": {
+    "grade": "الصف التاسع",
+    "grade_en": "Grade 9",
+    "subject": "التاريخ",
+    "subject_en": "History",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 2,
+    "schema_version": "1.0",
+    "provenance_note": "نُقلت الوحدتانِ (الرابعةُ والخامسةُ، مُكمِّلتانِ لترقيمِ الفصلِ الأولِ) ودروسُهما الثلاثةَ عشرَ من كتاب الطالب في 2026-09-09، بنفسِ طريقةِ الفصلِ الأولِ: قراءةِ صفحةِ المحتوياتِ، ثمَّ قراءةِ صفحةِ افتتاحِ كلِّ وحدةٍ ودرسٍ مباشرةً منَ الـ PDF (26.1 ميغابايت). هذه النسخةُ من الملفِّ تحملُ علامةَ «نسخة قيد الإعداد» مائيةً على كلِّ صفحةٍ — وهيَ مسودةٌ رسميةٌ لا مصدرٌ غيرُ رسميٍّ، والمحتوى النصيُّ غيرُ متأثرٍ بها.",
+    "source_books": {
+      "student_book": "كتاب الطالب لمادة التاريخ - الصف التاسع - الفصل الدراسي الثاني - المركز الوطني لتطوير المناهج والتقويم"
+    },
+    "known_gaps": [
+      "نفسُ الفجواتِ المُسجَّلةِ في ملفِّ الفصلِ الأولِ: لا نتاجاتِ تعلُّمٍ مُرقَّمةً (objectives فارغةٌ)، ولا دليلَ معلمٍ (periods وtotal_periods = null)، وصناديقُ «الأشخاصِ» و«الأماكنِ» و«مهاراتِ التعلُّمِ» غيرُ منقولةٍ.",
+      "الوحدةُ الخامسةُ («شخصيّاتٌ منَ التاريخِ») سيَرٌ ذاتيّةٌ لستِّ شخصياتٍ، لا دروسٌ موضوعيّةٌ؛ لذا صندوقُ «المصطلحاتِ» في درسَيْها الأوّلِ والثاني (أروى الصُلَيْحيّة، شَجَر الدُرّ) يحملُ مصطلحاتٍ عربيّةً فقط بلا مقابلٍ إنجليزيٍّ (لقبٌ أوِ اسمُ معركةٍ)، فحقلُ en تُرِكَ فارغًا لهذينِ الدرسينِ تحديدًا بدلًا مِن اختلاقِ ترجمةٍ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "أوروبّا في العصورِ الوُسطى وعصرِ النهضةِ",
+      "title_en": "Europe in the Middle Ages and the Renaissance",
+      "general_idea_ar": "شهدَتْ أوروبّا خلالَ عصرِ النهضةِ تحوُّلًا جذريًّا في المجالاتِ كافّةً؛ فأسهمَ ذلكَ في تشكيلِ الحضارةِ الغربيّةِ المُعاصرةِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المصطلحات» box; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "أوروبّا في العصورِ الوُسطى",
+          "title_en": "Europe in the Middle Ages",
+          "main_idea_ar": "أوضاعُ أوروبّا في العصورِ الوُسطى.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "العصورُ الوُسطى", "en": "Middle Ages" },
+            { "ar": "نظامُ الإقطاعِ", "en": "Feudal System" },
+            { "ar": "أمراءُ الإقطاعِ", "en": "Feudal lords" }
+          ]
+        },
+        {
+          "id": "u4_l2",
+          "order": 2,
+          "title_ar": "أوروبّا في عصرِ النهضَةِ",
+          "title_en": "Europe in the Renaissance",
+          "main_idea_ar": "عواملُ ظهورِ النهضةِ الأوروبيّةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "عصرُ النهضةِ", "en": "European Renaissance" },
+            { "ar": "الحركةُ الإنسانيّةُ", "en": "Humanitarian Movement" }
+          ]
+        },
+        {
+          "id": "u4_l3",
+          "order": 3,
+          "title_ar": "نتائجُ النهضةِ الأوروبيّةِ",
+          "title_en": "Results of the European Renaissance",
+          "main_idea_ar": "نتائجُ عصرِ النهضةِ في المجالاتِ كافّةً.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الرأسماليّةُ", "en": "Capitalism" },
+            { "ar": "الكالفنيّةُ", "en": "Calvinism" },
+            { "ar": "الإنجليكانيّةُ", "en": "Anglicanism" }
+          ]
+        },
+        {
+          "id": "u4_l4",
+          "order": 4,
+          "title_ar": "الإصلاحُ الدينيُّ في أوروبّا",
+          "title_en": "The Religious Reformation in Europe",
+          "main_idea_ar": "أسبابُ حركةِ الإصلاحِ الدينيِّ في أوروبّا ونتائجُها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "صكوكُ الغُفرانِ", "en": "Indulgences" },
+            { "ar": "البروتستانتيّةُ", "en": "Protestantism" }
+          ]
+        },
+        {
+          "id": "u4_l5",
+          "order": 5,
+          "title_ar": "الكشوفُ الجَغرافيّةُ",
+          "title_en": "The Geographical Discoveries",
+          "main_idea_ar": "مفهومُ حركةِ الكُشوفِ الجَغرافيّةِ وأسبابُها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الكشوفُ الجَغرافيّةُ", "en": "Geographical discoveries" },
+            { "ar": "الهنودُ الحُمْرُ", "en": "Native Americans" },
+            { "ar": "العالمُ الجديدُ", "en": "New World" }
+          ]
+        },
+        {
+          "id": "u4_l6",
+          "order": 6,
+          "title_ar": "نتائجُ الكُشوفِ الجَغرافيّةِ",
+          "title_en": "Results of the Geographical Discoveries",
+          "main_idea_ar": "حركةُ الكُشوفِ الجَغرافيّةِ في المجالاتِ كافّةً.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "حربُ السنواتِ السبعِ", "en": "Seven Years' War" },
+            { "ar": "البرجوازيّةُ", "en": "Bourgeoisie" },
+            { "ar": "الإرساليّاتُ التبشيريّةُ", "en": "Missionary Missions" }
+          ]
+        },
+        {
+          "id": "u4_l7",
+          "order": 7,
+          "title_ar": "أثرُ الحضارةِ العربيّةِ الإسلاميّةِ في النهضةِ الأوروبيّةِ",
+          "title_en": "The Impact of Arab Islamic Civilization on the European Renaissance",
+          "main_idea_ar": "أثرُ الحضارةِ العربيّةِ الإسلاميّةِ في النهضةِ الأوروبيّةِ، وكيفيّةُ انتقالِها إلى أوروبّا.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "مستشرقٌ", "en": "Orientalist" },
+            { "ar": "النورمانديّون", "en": "Normans" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u5",
+      "number": 5,
+      "title_ar": "شخصيّاتٌ منَ التاريخِ",
+      "title_en": "Figures from History",
+      "general_idea_ar": "عرفَ التاريخُ شخصيّاتٍ أثَّرتْ في العالمِ وأحدثَتْ تغييراتٍ كبيرةً بما قدّمتُهُ منْ أفكارٍ وإنجازاتٍ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms — where present — from each lesson's «المصطلحات» box; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_ar": "أروى الصُلَيْحيّةُ (1048-1138م)",
+          "title_en": "Arwa al-Sulayhi (1048-1138 CE)",
+          "main_idea_ar": "سيرةُ حياةِ أروى الصُلَيْحيّةِ وأبرزُ إنجازاتِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الدولةُ الصُلَيْحيّةُ", "en": "" },
+            { "ar": "بلقيسُ الصغرى", "en": "" }
+          ]
+        },
+        {
+          "id": "u5_l2",
+          "order": 2,
+          "title_ar": "شَجَر الدُرِّ (1210-1257م)",
+          "title_en": "Shajar al-Durr (1210-1257 CE)",
+          "main_idea_ar": "سيرةُ حياةِ شجرِ الدُرِّ وأبرزُ إنجازاتِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "معركةُ المنصورةِ", "en": "" }
+          ]
+        },
+        {
+          "id": "u5_l3",
+          "order": 3,
+          "title_ar": "الرحّالةُ ابنُ بطوطةَ (1304-1377م)",
+          "title_en": "The Traveler Ibn Battuta (1304-1377 CE)",
+          "main_idea_ar": "سيرةُ حياةِ ابنِ بطوطةَ وأبرزُ إنجازاتِهِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "رحّالةٌ", "en": "Traveler" },
+            { "ar": "العالمُ القديمُ", "en": "Old World" }
+          ]
+        },
+        {
+          "id": "u5_l4",
+          "order": 4,
+          "title_ar": "مونتيسكيو (1689-1755م)",
+          "title_en": "Montesquieu (1689-1755 CE)",
+          "main_idea_ar": "سيرةُ حياةِ مونتيسكيو وأبرزُ مؤلَّفاتِهِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "فصلُ السُلُطاتِ", "en": "Separation of Powers" },
+            { "ar": "سيادةُ القانونِ", "en": "Rule of Law" }
+          ]
+        },
+        {
+          "id": "u5_l5",
+          "order": 5,
+          "title_ar": "عبدُ الرحمنِ الكواكبيّ (1854-1902م)",
+          "title_en": "Abd al-Rahman al-Kawakibi (1854-1902 CE)",
+          "main_idea_ar": "سيرةُ حياةِ عبدِ الرحمنِ الكواكبيِّ وأبرزُ إنجازاتِهِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الاستبدادُ", "en": "Despotism/Autocracy" }
+          ]
+        },
+        {
+          "id": "u5_l6",
+          "order": 6,
+          "title_ar": "نيلسون مانديلا (1918-2013م)",
+          "title_en": "Nelson Mandela (1918-2013 CE)",
+          "main_idea_ar": "سيرةُ حياةِ نلسون مانديلا وأبرزُ إنجازاتِهِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التمييزُ العنصريُّ", "en": "Racial discrimination" },
+            { "ar": "الفصلُ العنصريُّ", "en": "Apartheid" }
+          ]
+        }
+      ]
+    }
+  ]
+}

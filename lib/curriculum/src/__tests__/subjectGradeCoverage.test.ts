@@ -37,10 +37,12 @@ import {
 /** `subjectId:gradeId` pairs that are offered by the MVP lists but have no book. */
 const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // financial-literacy:grade-9 was the last pre-existing gap, closed
-  // 2026-09-09. This entry reopened it the same day: 'geography' joined
-  // MVP_SUBJECT_IDS as a brand-new subject with only a Grade 9 book behind
-  // it, so its Grade 10 half is bookless by construction, not by omission.
+  // 2026-09-09. Both entries below reopened it the same day: 'geography' and
+  // 'history' each joined MVP_SUBJECT_IDS as brand-new subjects with only a
+  // Grade 9 book behind them, so their Grade 10 halves are bookless by
+  // construction, not by omission.
   'geography:grade-10',
+  'history:grade-10',
 ]);
 
 describe('subject/grade coverage across the MVP lists', () => {
