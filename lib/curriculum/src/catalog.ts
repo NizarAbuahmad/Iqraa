@@ -140,6 +140,10 @@ import {
   buildG9ArabicSem1BrowserCatalog,
 } from './catalogs/g9ArabicSem1.ts';
 import {
+  G9_ARABIC_S2_CURRICULUM_BOOK_ID,
+  buildG9ArabicSem2BrowserCatalog,
+} from './catalogs/g9ArabicSem2.ts';
+import {
   ENGLISH_COMMERCE_S1_CURRICULUM_BOOK_ID,
   ENGLISH_AGRICULTURE_S1_CURRICULUM_BOOK_ID,
   ENGLISH_HOSPITALITY_S1_CURRICULUM_BOOK_ID,
@@ -409,9 +413,11 @@ export const MVP_BOOK_IDS: readonly string[] = [
   G9_DIGITAL_S2_CURRICULUM_BOOK_ID,
   G9_ENG_S1_CURRICULUM_BOOK_ID,
   G9_ENG_S2_CURRICULUM_BOOK_ID,
-  // Grade 9 Arabic — Semester 1 only. S2 is refused (whole-run reversal in
-  // its extraction, see #322) and needs OCR before it can join.
+  // Grade 9 Arabic — both semesters. S2 joined 2026-09-09 once its OCR
+  // extraction was read and its units transcribed; the S1-only note above
+  // described a gap that is now closed.
   G9_ARABIC_S1_CURRICULUM_BOOK_ID,
+  G9_ARABIC_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -888,11 +894,13 @@ export const BOOKS: Book[] = [
   // The first Grade 9 subject after mathematics, catalogued 2026-09-08 from
   // the two NCCD student books Nizar supplied.
   //
-  // No `pdfUrl` on either: those point at NCCD's public site and are the
-  // download chips a teacher taps, and the Grade 9 chemistry books have not
-  // been located there. `hasKnowledgeBase` is what makes the subject appear in
-  // the grade, and that is satisfied by the local ingest — the two are
-  // independent, so a missing download link costs the chip, not the subject.
+  // `pdfUrl` on both, added 2026-09-09: NCCD's own site
+  // (nccd.gov.jo/ar/pages/TextBooksGrade/76) publishes every Grade 9 subject
+  // used in this file, not just math — checked with a HEAD request against
+  // each URL below (200, `application/pdf`) before it went in, the same way
+  // the math-9 links were verified. `hasKnowledgeBase` is what makes the
+  // subject appear in the grade; `pdfUrl` is only the download chip, and the
+  // two are independent — a book with a bad or missing link still teaches.
   {
     id: 'book-chem-9-s1',
     title: 'Chemistry – Grade 9, Semester 1',
@@ -905,6 +913,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/sciences/G9/1/%D9%83%D9%8A%D9%85%D9%8A%D8%A7%D8%A1%20%D8%AA%D8%A7%D8%B3%D8%B9%20%D9%811.pdf',
   },
   {
     id: 'book-chem-9-s2',
@@ -918,10 +927,10 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/New%20folder/New%20folder%20(2)/%D8%B9%D9%84%D9%88%D9%85%20%D8%AA%D8%A7%D8%B3%D8%B9%20%D9%812%20Pdf/%D9%83%D9%8A%D9%85%D9%8A%D8%A7%D8%A1%20%D8%AA%D8%A7%D8%B3%D8%B9%20%D9%812%20Pdf/%D9%83%D9%8A%D9%85%D9%8A%D8%A7%D8%A1%209%20%20%D8%A7%D9%84%D8%AC%D8%B2%D8%A1%20%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A%20%20.pdf',
   },
   // ── Physics Grade 9 – Semesters 1 and 2 ────────────────────────────────────
-  // Same shape as the chemistry pair above, and same reason for no `pdfUrl`:
-  // the NCCD public URLs for these two have not been located.
+  // Same shape as the chemistry pair above, `pdfUrl` included.
   {
     id: 'book-phys-9-s1',
     title: 'Physics – Grade 9, Semester 1',
@@ -934,6 +943,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/sciences/G9/1/%D9%81%D9%8A%D8%B2%D9%8A%D8%A7%D8%A1%D8%AA%D8%A7%D8%B3%D8%B9%20%D8%AC%D8%B2%D8%A1%20%D8%A3%D9%88%D9%84.pdf',
   },
   {
     id: 'book-phys-9-s2',
@@ -947,6 +957,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/New%20folder/New%20folder%20(2)/%D8%B9%D9%84%D9%88%D9%85%20%D8%AA%D8%A7%D8%B3%D8%B9%20%D9%812%20Pdf/%D9%81%D9%8A%D8%B2%D9%8A%D8%A7%D8%A1%20%D8%AA%D8%A7%D8%B3%D8%B9%20%D9%812%20Pdf/%D9%81%D9%8A%D8%B2%D9%8A%D8%A7%D8%A1%20%D8%AA%D8%A7%D8%B3%D8%B9%20%D8%B7%D8%A7%D9%84%D8%A8%20%D8%AC2%20.pdf',
   },
   // ── Biology Grade 9 – Semesters 1 and 2 ───────────────────────────────────
   // Same shape as the chemistry and physics pairs above.
@@ -962,6 +973,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/sciences/G9/1/%D8%A7%D9%84%D8%B9%D9%84%D9%88%D9%85%20%D8%A7%D9%84%D8%AD%D9%8A%D8%A7%D8%AA%D9%8A%D8%A9%20%D8%AA%D8%A7%D8%B3%D8%B9%20%D9%811.pdf',
   },
   {
     id: 'book-biology-9-s2',
@@ -975,6 +987,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/New%20folder/New%20folder%20(2)/%D8%B9%D9%84%D9%88%D9%85%20%D8%AA%D8%A7%D8%B3%D8%B9%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%AD%D9%8A%D8%A7%D8%AA%D9%8A%D8%A9%20%D8%AA%D8%A7%D8%B3%D8%B9%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%AD%D9%8A%D8%A7%D8%AA%D9%8A%D8%A9%20%D8%B5%D9%81%20%D8%AA%D8%A7%D8%B3%D8%B9%20%D8%AC2%20.pdf',
   },
   // ── Earth and Environmental Science Grade 9 – Semesters 1 and 2 ───────────
   {
@@ -989,6 +1002,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/sciences/G9/1/%D8%B9%D9%84%D9%88%D9%85%20%D8%A7%D9%84%D8%A3%D8%B1%D8%B6%20%D8%AA%D8%A7%D8%B3%D8%B9%20%D9%811.pdf',
   },
   {
     id: 'book-earth-science-9-s2',
@@ -1002,6 +1016,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/New%20folder/New%20folder%20(2)/%D8%B9%D9%84%D9%88%D9%85%20%D8%AA%D8%A7%D8%B3%D8%B9%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%A3%D8%B1%D8%B6%20%D8%AA%D8%A7%D8%B3%D8%B9%20%D9%812%20Pdf/%D8%B9%D9%84%D9%88%D9%85%20%D8%A7%D9%84%D8%A3%D8%B1%D8%B6%20%D8%AA%D8%A7%D8%B3%D8%B9%20%D8%B7%D8%A7%D9%84%D8%A8%20%D8%AC%D9%A2%20.pdf',
   },
   // ── Digital Skills Grade 9 – Semesters 1 and 2 ────────────────────────────
   {
@@ -1016,6 +1031,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/%D8%A7%D9%84%D9%85%D9%87%D8%A7%D8%B1%D8%A7%D8%AA%20%D8%A7%D9%84%D8%B1%D9%82%D9%85%D9%8A%D8%A9/G9/1/G9%20Digital%20Skills%20S1%20SB%20.pdf',
   },
   {
     id: 'book-digital-9-s2',
@@ -1029,6 +1045,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/%D8%A7%D9%84%D9%85%D9%87%D8%A7%D8%B1%D8%A7%D8%AA%20%D8%A7%D9%84%D8%B1%D9%82%D9%85%D9%8A%D8%A9/G9/2/G9%20Digital%20Skills%20S2%20SB%20U3%20.pdf',
   },
   // ── English Grade 9 – Semesters 1 and 2 ───────────────────────────────────
   // Seven lessons per unit, unlike the Grade 10 English rows further down
@@ -1046,6 +1063,7 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/EN/2026/G9/JOR-HN-G9-S1-SB-Reprint-2026%20.pdf',
   },
   {
     id: 'book-eng-9-s2',
@@ -1059,12 +1077,9 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+    pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/EN/2025/G9/2/JOR-HN-G9-S2-Reprints-2025-Students-Book-Updated.pdf',
   },
-  // ── Arabic Grade 9 – Semester 1 ────────────────────────────────────────────
-  // Semester 1 only: S2's extraction was refused for whole-run reversal (see
-  // g9_sources.json / #322) and needs OCR. A Book row with no units behind it
-  // is the inert placeholder shape deleted in #313, so S2 is not added here
-  // until it has content.
+  // ── Arabic Grade 9 – Semesters 1 and 2 ────────────────────────────────────
   {
     id: 'book-arabic-9-s1',
     title: 'Arabic – Grade 9, Semester 1',
@@ -1077,6 +1092,21 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+    pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/arabic/G9/1/009%20S.pdf',
+  },
+  {
+    id: 'book-arabic-9-s2',
+    title: 'Arabic – Grade 9, Semester 2',
+    titleAr: 'اللغة العربية – الصف التاسع – الفصل الثاني',
+    subjectId: 'arabic',
+    gradeId: 'grade-9',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+    pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Arabic/2025/%D8%B9%D8%B1%D8%A8%D9%8A%206.7.2025/9/P2/%D8%AA%D8%A7%D8%B3%D8%B9%20%D9%812.pdf',
   },
   // ── Other grades ───────────────────────────────────────────────────────────
   // General (non-vocational) Grade 10 English track — Student Book + Activity
@@ -2035,6 +2065,7 @@ const _g9DigitalSem2Browser = buildG9DigitalSem2BrowserCatalog();
 const _g9EngSem1Browser = buildG9EngSem1BrowserCatalog();
 const _g9EngSem2Browser = buildG9EngSem2BrowserCatalog();
 const _g9ArabicSem1Browser = buildG9ArabicSem1BrowserCatalog();
+const _g9ArabicSem2Browser = buildG9ArabicSem2BrowserCatalog();
 const _engCommerceBrowser = buildEnglishCommerceBrowserCatalog();
 const _engAgricultureBrowser = buildEnglishAgricultureBrowserCatalog();
 const _engHospitalityBrowser = buildEnglishHospitalityBrowserCatalog();
@@ -2185,6 +2216,7 @@ export const UNITS: Unit[] = [
   ..._g9EngSem1Browser.units,
   ..._g9EngSem2Browser.units,
   ..._g9ArabicSem1Browser.units,
+  ..._g9ArabicSem2Browser.units,
   ..._engCommerceBrowser.units,
   ..._engAgricultureBrowser.units,
   ..._engHospitalityBrowser.units,
@@ -2228,6 +2260,7 @@ export const LESSONS: Lesson[] = [
   ..._g9EngSem1Browser.lessons,
   ..._g9EngSem2Browser.lessons,
   ..._g9ArabicSem1Browser.lessons,
+  ..._g9ArabicSem2Browser.lessons,
   ..._engCommerceBrowser.lessons,
   ..._engAgricultureBrowser.lessons,
   ..._engHospitalityBrowser.lessons,
