@@ -196,6 +196,14 @@ import {
   buildG8FinlitSem1BrowserCatalog,
 } from './catalogs/g8FinlitSem1.ts';
 import {
+  G8_DIGITAL_S1_CURRICULUM_BOOK_ID,
+  buildG8DigitalSem1BrowserCatalog,
+} from './catalogs/g8DigitalSem1.ts';
+import {
+  G8_DIGITAL_S2_CURRICULUM_BOOK_ID,
+  buildG8DigitalSem2BrowserCatalog,
+} from './catalogs/g8DigitalSem2.ts';
+import {
   G9_CIV_S1_CURRICULUM_BOOK_ID,
   buildG9CivSem1BrowserCatalog,
 } from './catalogs/g9CivSem1.ts';
@@ -573,6 +581,9 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // 'islamic'/'computer' hit in 2026-09-05 (see MVP_SUBJECT_IDS above).
   // Semester 1 only — S2 has not been attached yet.
   G8_FINLIT_S1_CURRICULUM_BOOK_ID,
+  // Grade 8 Digital Skills — both semesters attached.
+  G8_DIGITAL_S1_CURRICULUM_BOOK_ID,
+  G8_DIGITAL_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -1219,6 +1230,37 @@ export const BOOKS: Book[] = [
     audience: 'all',
     semester: 2,
     pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/%D8%A7%D9%84%D9%85%D9%87%D8%A7%D8%B1%D8%A7%D8%AA%20%D8%A7%D9%84%D8%B1%D9%82%D9%85%D9%8A%D8%A9/G9/2/G9%20Digital%20Skills%20S2%20SB%20U3%20.pdf',
+  },
+  // ── Digital Skills Grade 8 – Semesters 1 and 2 ────────────────────────────
+  // Second Grade 8 subject, and unlike Financial Literacy it is one unit
+  // per semester rather than two — S1's single unit spans all 4 lessons.
+  // No teacher guide, but the student book itself prints real numbered
+  // «نتاجات التعلم» per lesson, same as Grade 8 Financial Literacy.
+  {
+    id: G8_DIGITAL_S1_CURRICULUM_BOOK_ID,
+    title: 'Digital Skills – Grade 8, Semester 1',
+    titleAr: 'المهارات الرقمية – الصف الثامن – الفصل الأول',
+    subjectId: 'digital-literacy',
+    gradeId: 'grade-8',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G8_DIGITAL_S2_CURRICULUM_BOOK_ID,
+    title: 'Digital Skills – Grade 8, Semester 2',
+    titleAr: 'المهارات الرقمية – الصف الثامن – الفصل الثاني',
+    subjectId: 'digital-literacy',
+    gradeId: 'grade-8',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st (تجريبية)',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
   },
   // ── English Grade 9 – Semesters 1 and 2 ───────────────────────────────────
   // Seven lessons per unit, unlike the Grade 10 English rows further down
@@ -2516,6 +2558,8 @@ const _g9HistSem2Browser = buildG9HistSem2BrowserCatalog();
 const _histSem1Browser = buildHistSem1BrowserCatalog();
 const _histSem2Browser = buildHistSem2BrowserCatalog();
 const _g8FinlitSem1Browser = buildG8FinlitSem1BrowserCatalog();
+const _g8DigitalSem1Browser = buildG8DigitalSem1BrowserCatalog();
+const _g8DigitalSem2Browser = buildG8DigitalSem2BrowserCatalog();
 const _g9CivSem1Browser = buildG9CivSem1BrowserCatalog();
 const _g9CivSem2Browser = buildG9CivSem2BrowserCatalog();
 const _g9PeSem1Browser = buildG9PeSem1BrowserCatalog();
@@ -2684,6 +2728,8 @@ export const UNITS: Unit[] = [
   ..._histSem1Browser.units,
   ..._histSem2Browser.units,
   ..._g8FinlitSem1Browser.units,
+  ..._g8DigitalSem1Browser.units,
+  ..._g8DigitalSem2Browser.units,
   ..._g9CivSem1Browser.units,
   ..._g9CivSem2Browser.units,
   ..._g9PeSem1Browser.units,
@@ -2745,6 +2791,8 @@ export const LESSONS: Lesson[] = [
   ..._histSem1Browser.lessons,
   ..._histSem2Browser.lessons,
   ..._g8FinlitSem1Browser.lessons,
+  ..._g8DigitalSem1Browser.lessons,
+  ..._g8DigitalSem2Browser.lessons,
   ..._g9CivSem1Browser.lessons,
   ..._g9CivSem2Browser.lessons,
   ..._g9PeSem1Browser.lessons,
