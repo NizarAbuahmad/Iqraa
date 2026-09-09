@@ -8,10 +8,14 @@ import {
   setOnRefreshFailed,
   getApiBaseUrl,
 } from '@/services/apiClient';
+import { fetchWithTimeout } from '@/services/fetchWithTimeout';
 import { setActiveLessonContextUser } from '@/services/lessonContext';
 import { setActiveMediaUser } from '@/services/lessonMedia';
 import { warmUpVerifier } from '@/services/ai/verifyMath';
 import { registerPushToken, unregisterPushToken } from '@/services/pushTokens';
+// Same package GoogleSignInButton uses — safe to import on web too, it ships
+// a `.web.js` stub so Metro never fails to resolve a native-only module.
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 export type UserRole = 'teacher' | 'school_admin' | 'system_admin' | 'student' | 'parent';
 
@@ -63,7 +67,13 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  loginWithGoogle: (credential: string) => Promise<void>;
+  /**
+   * `signup` is only consulted if this credential mints a brand-new account
+   * (an existing user's role never changes here) — see the register screen's
+   * "Continue with Google" button, which used to ignore the role pill
+   * entirely and silently create a teacher.
+   */
+  loginWithGoogle: (credential: string, signup?: Pick<RegisterData, 'role' | 'claimCode' | 'studentId'>) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: { preferredLanguage?: string; firstName?: string; lastName?: string }) => Promise<void>;
@@ -162,7 +172,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
 
           try {
-            const res = await fetch(`${getApiBaseUrl()}/auth/refresh`, {
+            // Needs the deadline more than anywhere else: `setIsLoading(false)`
+            // happens in this block's `finally`, and the splash now stays up
+            // until that flips.
+            const res = await fetchWithTimeout(`${getApiBaseUrl()}/auth/refresh`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ refreshToken }),
@@ -203,12 +216,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(toUser(data.user));
   }, []);
 
-  const loginWithGoogle = useCallback(async (credential: string) => {
+  const loginWithGoogle = useCallback(async (
+    credential: string,
+    signup?: Pick<RegisterData, 'role' | 'claimCode' | 'studentId'>,
+  ) => {
     const data = await apiJson<{ accessToken: string; refreshToken: string; user: ApiUser }>(
       '/auth/google',
       {
         method: 'POST',
-        body: JSON.stringify({ credential }),
+        body: JSON.stringify({
+          credential,
+          role: signup?.role,
+          claimCode: signup?.claimCode?.trim(),
+          studentId: signup?.studentId,
+        }),
       },
     );
 
@@ -259,6 +280,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       // Ignore errors — clear local state regardless
     }
+    try {
+      // The native SDK caches the last Google account and `signIn()` silently
+      // returns it on the next call, with no account picker — without this, a
+      // teacher can never sign up/in with a different Google account from the
+      // same device. Throws if Google was never configured on this device
+      // (password-only session), which is fine to ignore.
+      await GoogleSignin.signOut();
+    } catch {
+      // Ignore — device may never have used Google sign-in.
+    }
     await clearTokens();
     setUser(null);
   }, []);
@@ -289,6 +320,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         method: 'DELETE',
         body: JSON.stringify(proof),
       });
+      try {
+        // Same reason logout() does this — without it the native SDK still
+        // hands back the deleted account's session on the next sign-in.
+        await GoogleSignin.signOut();
+      } catch {
+        // Ignore — device may never have used Google sign-in.
+      }
       await clearTokens();
       setUser(null);
     },

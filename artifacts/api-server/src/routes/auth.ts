@@ -449,7 +449,13 @@ router.post("/google", googleLimiter, async (req, res) => {
       return;
     }
 
-    const { credential } = req.body as { credential?: string };
+    const { credential, role: rawRole, claimCode, studentId } = req.body as {
+      credential?: string;
+      /** Only consulted when Google is minting a brand-new account — see below. */
+      role?: string;
+      claimCode?: string;
+      studentId?: string;
+    };
     if (!credential) {
       res.status(400).json({ error: "Google credential is required" });
       return;
@@ -483,33 +489,71 @@ router.post("/google", googleLimiter, async (req, res) => {
     const email = payload.email.toLowerCase().trim();
 
     let [user] = await db.select().from(users).where(eq(users.googleId, payload.sub)).limit(1);
+    let newUserClaim: { studentId: string; relation: "self" | "guardian" } | null = null;
 
     if (!user) {
       // Link to an existing password account with the same email if one
       // exists, otherwise create a fresh Google-only account.
       [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
 
-      [user] = user
-        ? await db
-            .update(users)
-            .set({ googleId: payload.sub, emailVerified: true })
-            .where(eq(users.id, user.id))
-            .returning()
-        : await db
-            .insert(users)
-            .values({
-              firstName: payload.given_name?.trim() || email.split("@")[0],
-              lastName: payload.family_name?.trim() || "",
-              email,
-              googleId: payload.sub,
-              role: "teacher",
-              preferredLanguage: "en",
-              emailVerified: true,
-            })
-            .returning();
+      if (user) {
+        [user] = await db
+          .update(users)
+          .set({ googleId: payload.sub, emailVerified: true })
+          .where(eq(users.id, user.id))
+          .returning();
+      } else {
+        // A brand-new account: the register screen's role picker reaches this
+        // route too (its "Continue with Google" button), and used to always
+        // land here as a plain teacher with no code ever asked — same v1 gate
+        // as /register, checked before any row is written.
+        const role: "teacher" | ClaimRole =
+          rawRole === "student" || rawRole === "parent" ? rawRole : "teacher";
+
+        if (role !== "teacher") {
+          if (!studentAccountsEnabled()) {
+            res.status(403).json({
+              code: "student_accounts_disabled",
+              error: "Parent and student accounts are not available yet.",
+            });
+            return;
+          }
+          const code = claimCode?.trim();
+          if (!code) {
+            res.status(400).json({ error: "A class code is required to sign up as a parent or student" });
+            return;
+          }
+          const resolved = await resolveClaimCode(code, role, trimmedOrUndefined(studentId));
+          if (!resolved.ok) {
+            res.status(resolved.status).json({ error: resolved.error });
+            return;
+          }
+          newUserClaim = { studentId: resolved.studentId, relation: resolved.relation };
+        }
+
+        [user] = await db
+          .insert(users)
+          .values({
+            firstName: payload.given_name?.trim() || email.split("@")[0],
+            lastName: payload.family_name?.trim() || "",
+            email,
+            googleId: payload.sub,
+            role,
+            preferredLanguage: "en",
+            emailVerified: true,
+          })
+          .returning();
+      }
     }
 
     if (!user) throw new Error("Failed to resolve Google user");
+
+    if (newUserClaim) {
+      await db
+        .insert(rosterLinks)
+        .values({ studentId: newUserClaim.studentId, userId: user.id, relation: newUserClaim.relation })
+        .onConflictDoNothing();
+    }
 
     // Same check as the password path, for the same reason — and here it is
     // after Google has already proved who is asking. Without it, a suspended
