@@ -45,7 +45,21 @@ export interface ClaimInput {
   hasSelfLink: (studentId: string) => Promise<boolean>;
 }
 
-const live = (expiresAt: Date | null, now: Date): boolean => !!expiresAt && expiresAt > now;
+/**
+ * Whether a code (per-student or class-wide — both just have an expiry
+ * column) is still redeemable.
+ *
+ * Exported, not private, because `GET /students/:id/claim-code` needs the
+ * identical check outside `decideClaim`: the teacher isn't resolving a code
+ * to a student, they're asking "is the code I already have still good" so the
+ * screen can decide whether to show it or the empty state. One function keeps
+ * the two questions from ever disagreeing about what "still good" means.
+ */
+export function isCodeLive(expiresAt: Date | null, now: Date = new Date()): boolean {
+  return !!expiresAt && expiresAt > now;
+}
+
+const live = isCodeLive;
 
 export async function decideClaim(input: ClaimInput): Promise<ClaimResolution> {
   const { now, role, requestedStudentId, student, classGroup } = input;

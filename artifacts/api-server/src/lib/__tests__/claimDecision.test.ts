@@ -11,7 +11,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-import { decideClaim, type ClaimInput } from "../claimDecision.ts";
+import { decideClaim, isCodeLive, type ClaimInput } from "../claimDecision.ts";
 
 const NOW = new Date("2026-09-05T12:00:00Z");
 const LIVE = new Date("2026-10-05T12:00:00Z");
@@ -171,5 +171,25 @@ describe("no code at all", () => {
     const got = await decide({ requestedStudentId: "stu-1" });
     assert.equal(got.ok, false);
     assert.equal(got.ok === false && got.status, 400);
+  });
+});
+
+describe("isCodeLive", () => {
+  // Exported for GET /students/:id/claim-code, which asks the identical
+  // question outside decideClaim: not "does this code resolve to a student"
+  // but "is the code I already have still good enough to show". Tested
+  // directly because that route depends on it on its own, not through decide().
+  it("treats a missing expiry as not live", () => {
+    assert.equal(isCodeLive(null, NOW), false);
+  });
+
+  it("distinguishes past from future against the given `now`", () => {
+    assert.equal(isCodeLive(DEAD, NOW), false);
+    assert.equal(isCodeLive(LIVE, NOW), true);
+  });
+
+  it("defaults `now` to the real clock when the caller omits it", () => {
+    assert.equal(isCodeLive(new Date(Date.now() - 1000)), false);
+    assert.equal(isCodeLive(new Date(Date.now() + 60_000)), true);
   });
 });
