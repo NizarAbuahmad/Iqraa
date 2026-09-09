@@ -84,6 +84,10 @@ const SUBJECTS = {
   'arts': { tag: 'arts-', unitLevel: false },
   // Vocational Education (التربية المهنية).
   'voc': { tag: 'voc-', unitLevel: false },
+  // Social Studies (الدراسات الاجتماعية) — Grade 8's combined civics/
+  // history/geography/philosophy book. The 'social' app subjectId
+  // predates any book behind it; this is its first id-namespacing tag.
+  'social': { tag: 'social-', unitLevel: false },
 } as const;
 
 /** Subject slug as it appears inside an id. Not the app's `subjectId`. */

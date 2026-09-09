@@ -216,6 +216,14 @@ import {
   buildG8VocSem2BrowserCatalog,
 } from './catalogs/g8VocationalSem2.ts';
 import {
+  G8_SOCIAL_S1_CURRICULUM_BOOK_ID,
+  buildG8SocialSem1BrowserCatalog,
+} from './catalogs/g8SocialSem1.ts';
+import {
+  G8_SOCIAL_S2_CURRICULUM_BOOK_ID,
+  buildG8SocialSem2BrowserCatalog,
+} from './catalogs/g8SocialSem2.ts';
+import {
   G9_CIV_S1_CURRICULUM_BOOK_ID,
   buildG9CivSem1BrowserCatalog,
 } from './catalogs/g9CivSem1.ts';
@@ -476,8 +484,12 @@ export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9', 'grade-8
 // the same "listed but unreachable" trap 'physics' hit above.
 // 'vocational-education' joined 2026-09-09 alongside 'creative-arts', for
 // the same reason — its only books (Grade 8) joined MVP_BOOK_IDS the same
-// day.
-export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy', 'english', 'physics', 'earth-science', 'biology', 'arabic', 'islamic', 'digital-literacy', 'geography', 'history', 'civic-education', 'physical-education', 'creative-arts', 'vocational-education'];
+// day. 'social' joined the same day too, once its first-ever book arrived
+// (Grade 8) — unlike the other two, SUBJECTS.grades for 'social' already
+// spans grade-1..grade-9, so social:grade-9 and social:grade-10 are listed
+// bookless rather than permanently excluded — a book at either grade would
+// close the gap normally.
+export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy', 'english', 'physics', 'earth-science', 'biology', 'arabic', 'islamic', 'digital-literacy', 'geography', 'history', 'civic-education', 'physical-education', 'creative-arts', 'vocational-education', 'social'];
 /** Main semester books only (guides/exercises stay in data, hidden from UI). */
 export const MVP_BOOK_IDS: readonly string[] = [
   'book-math-10',
@@ -619,6 +631,9 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // Grade 8 Vocational Education — both semesters attached.
   G8_VOC_S1_CURRICULUM_BOOK_ID,
   G8_VOC_S2_CURRICULUM_BOOK_ID,
+  // Grade 8 Social Studies — both semesters attached.
+  G8_SOCIAL_S1_CURRICULUM_BOOK_ID,
+  G8_SOCIAL_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -1338,6 +1353,37 @@ export const BOOKS: Book[] = [
     academicYear: '2024-2025',
     language: 'Arabic',
     edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── Social Studies Grade 8 – Semesters 1 and 2 ────────────────────────────
+  // First real book behind the pre-existing 'social' subject (declared
+  // spanning grades 1-9, bookless until now). Combines civics, physical
+  // geography, ancient Mesopotamian history, demography, media studies and
+  // philosophy into one book — see g8SocialSem1.ts.
+  {
+    id: G8_SOCIAL_S1_CURRICULUM_BOOK_ID,
+    title: 'Social Studies – Grade 8, Semester 1',
+    titleAr: 'الدراسات الاجتماعية – الصف الثامن – الفصل الأول',
+    subjectId: 'social',
+    gradeId: 'grade-8',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G8_SOCIAL_S2_CURRICULUM_BOOK_ID,
+    title: 'Social Studies – Grade 8, Semester 2',
+    titleAr: 'الدراسات الاجتماعية – الصف الثامن – الفصل الثاني',
+    subjectId: 'social',
+    gradeId: 'grade-8',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
@@ -2643,6 +2689,8 @@ const _g8DigitalSem2Browser = buildG8DigitalSem2BrowserCatalog();
 const _g8CreativeArtsBrowser = buildG8CreativeArtsBrowserCatalog();
 const _g8VocSem1Browser = buildG8VocSem1BrowserCatalog();
 const _g8VocSem2Browser = buildG8VocSem2BrowserCatalog();
+const _g8SocialSem1Browser = buildG8SocialSem1BrowserCatalog();
+const _g8SocialSem2Browser = buildG8SocialSem2BrowserCatalog();
 const _g9CivSem1Browser = buildG9CivSem1BrowserCatalog();
 const _g9CivSem2Browser = buildG9CivSem2BrowserCatalog();
 const _g9PeSem1Browser = buildG9PeSem1BrowserCatalog();
@@ -2816,6 +2864,8 @@ export const UNITS: Unit[] = [
   ..._g8CreativeArtsBrowser.units,
   ..._g8VocSem1Browser.units,
   ..._g8VocSem2Browser.units,
+  ..._g8SocialSem1Browser.units,
+  ..._g8SocialSem2Browser.units,
   ..._g9CivSem1Browser.units,
   ..._g9CivSem2Browser.units,
   ..._g9PeSem1Browser.units,
@@ -2882,6 +2932,8 @@ export const LESSONS: Lesson[] = [
   ..._g8CreativeArtsBrowser.lessons,
   ..._g8VocSem1Browser.lessons,
   ..._g8VocSem2Browser.lessons,
+  ..._g8SocialSem1Browser.lessons,
+  ..._g8SocialSem2Browser.lessons,
   ..._g9CivSem1Browser.lessons,
   ..._g9CivSem2Browser.lessons,
   ..._g9PeSem1Browser.lessons,
