@@ -208,6 +208,14 @@ import {
   buildG8CreativeArtsBrowserCatalog,
 } from './catalogs/g8CreativeArts.ts';
 import {
+  G8_VOC_S1_CURRICULUM_BOOK_ID,
+  buildG8VocSem1BrowserCatalog,
+} from './catalogs/g8VocationalSem1.ts';
+import {
+  G8_VOC_S2_CURRICULUM_BOOK_ID,
+  buildG8VocSem2BrowserCatalog,
+} from './catalogs/g8VocationalSem2.ts';
+import {
   G9_CIV_S1_CURRICULUM_BOOK_ID,
   buildG9CivSem1BrowserCatalog,
 } from './catalogs/g9CivSem1.ts';
@@ -405,6 +413,11 @@ export const SUBJECTS: Subject[] = [
   // see g8CreativeArts.ts. grades: ['grade-8'] for the same reason as the
   // other five: no book at any other grade.
   { id: 'creative-arts', name: 'Art, Music and Drama Education', nameAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة', icon: 'color-palette-outline', color: '#A21CAF', grades: ['grade-8'] },
+  // Seventh brand-new subject, added 2026-09-09 as part of the Grade 8
+  // batch. Seven vocational tracks packed into one book per semester
+  // (life skills, home economics, agriculture, health/safety, industry,
+  // entrepreneurship, tourism) — see g8VocationalSem1.ts.
+  { id: 'vocational-education', name: 'Vocational Education', nameAr: 'التربية المهنية', icon: 'construct-outline', color: '#B91C1C', grades: ['grade-8'] },
 ];
 
 /**
@@ -461,7 +474,10 @@ export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9', 'grade-8
 // added to MVP_BOOK_IDS. Without this, the book sits in MVP_BOOK_IDS while
 // getSubjectsForGrade never offers it and its lessons resolve to nothing —
 // the same "listed but unreachable" trap 'physics' hit above.
-export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy', 'english', 'physics', 'earth-science', 'biology', 'arabic', 'islamic', 'digital-literacy', 'geography', 'history', 'civic-education', 'physical-education', 'creative-arts'];
+// 'vocational-education' joined 2026-09-09 alongside 'creative-arts', for
+// the same reason — its only books (Grade 8) joined MVP_BOOK_IDS the same
+// day.
+export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy', 'english', 'physics', 'earth-science', 'biology', 'arabic', 'islamic', 'digital-literacy', 'geography', 'history', 'civic-education', 'physical-education', 'creative-arts', 'vocational-education'];
 /** Main semester books only (guides/exercises stay in data, hidden from UI). */
 export const MVP_BOOK_IDS: readonly string[] = [
   'book-math-10',
@@ -600,6 +616,9 @@ export const MVP_BOOK_IDS: readonly string[] = [
   G8_DIGITAL_S2_CURRICULUM_BOOK_ID,
   // Grade 8 Art, Music and Drama Education — one book, no semester.
   G8_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
+  // Grade 8 Vocational Education — both semesters attached.
+  G8_VOC_S1_CURRICULUM_BOOK_ID,
+  G8_VOC_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -1292,6 +1311,36 @@ export const BOOKS: Book[] = [
     edition: '1st',
     hasKnowledgeBase: true,
     audience: 'all',
+  },
+  // ── Vocational Education Grade 8 – Semesters 1 and 2 ──────────────────────
+  // Seventh brand-new subject added this week. Seven vocational tracks in
+  // S1, ten more units (some sharing a track) in S2 — see
+  // g8VocationalSem1.ts.
+  {
+    id: G8_VOC_S1_CURRICULUM_BOOK_ID,
+    title: 'Vocational Education – Grade 8, Semester 1',
+    titleAr: 'التربية المهنية – الصف الثامن – الفصل الأول',
+    subjectId: 'vocational-education',
+    gradeId: 'grade-8',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G8_VOC_S2_CURRICULUM_BOOK_ID,
+    title: 'Vocational Education – Grade 8, Semester 2',
+    titleAr: 'التربية المهنية – الصف الثامن – الفصل الثاني',
+    subjectId: 'vocational-education',
+    gradeId: 'grade-8',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
   },
   // ── English Grade 9 – Semesters 1 and 2 ───────────────────────────────────
   // Seven lessons per unit, unlike the Grade 10 English rows further down
@@ -2592,6 +2641,8 @@ const _g8FinlitSem1Browser = buildG8FinlitSem1BrowserCatalog();
 const _g8DigitalSem1Browser = buildG8DigitalSem1BrowserCatalog();
 const _g8DigitalSem2Browser = buildG8DigitalSem2BrowserCatalog();
 const _g8CreativeArtsBrowser = buildG8CreativeArtsBrowserCatalog();
+const _g8VocSem1Browser = buildG8VocSem1BrowserCatalog();
+const _g8VocSem2Browser = buildG8VocSem2BrowserCatalog();
 const _g9CivSem1Browser = buildG9CivSem1BrowserCatalog();
 const _g9CivSem2Browser = buildG9CivSem2BrowserCatalog();
 const _g9PeSem1Browser = buildG9PeSem1BrowserCatalog();
@@ -2763,6 +2814,8 @@ export const UNITS: Unit[] = [
   ..._g8DigitalSem1Browser.units,
   ..._g8DigitalSem2Browser.units,
   ..._g8CreativeArtsBrowser.units,
+  ..._g8VocSem1Browser.units,
+  ..._g8VocSem2Browser.units,
   ..._g9CivSem1Browser.units,
   ..._g9CivSem2Browser.units,
   ..._g9PeSem1Browser.units,
@@ -2827,6 +2880,8 @@ export const LESSONS: Lesson[] = [
   ..._g8DigitalSem1Browser.lessons,
   ..._g8DigitalSem2Browser.lessons,
   ..._g8CreativeArtsBrowser.lessons,
+  ..._g8VocSem1Browser.lessons,
+  ..._g8VocSem2Browser.lessons,
   ..._g9CivSem1Browser.lessons,
   ..._g9CivSem2Browser.lessons,
   ..._g9PeSem1Browser.lessons,
