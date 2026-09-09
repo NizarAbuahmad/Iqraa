@@ -135,6 +135,14 @@ import {
   buildG9HistSem2Catalog,
 } from './curriculumG9HistSem2.ts';
 import {
+  HIST_S1_BOOK_ID,
+  buildHistSem1Catalog,
+} from './curriculumG10HistSem1.ts';
+import {
+  HIST_S2_BOOK_ID,
+  buildHistSem2Catalog,
+} from './curriculumG10HistSem2.ts';
+import {
   G9_CIV_S1_BOOK_ID,
   buildG9CivSem1Catalog,
 } from './curriculumG9CivSem1.ts';
@@ -697,6 +705,24 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'History – Grade 9 – Semester 2',
     semester: 2,
     source: 'iqra_curriculum_g9_history_sem2.json (NCCD)',
+  },
+  {
+    id: HIST_S1_BOOK_ID,
+    gradeId: 'grade-10',
+    subjectId: 'history',
+    titleAr: 'التاريخ – الصف العاشر – الفصل الأول',
+    titleEn: 'History – Grade 10 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g10_history_sem1.json (NCCD)',
+  },
+  {
+    id: HIST_S2_BOOK_ID,
+    gradeId: 'grade-10',
+    subjectId: 'history',
+    titleAr: 'التاريخ – الصف العاشر – الفصل الثاني',
+    titleEn: 'History – Grade 10 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g10_history_sem2.json (NCCD)',
   },
   {
     id: G9_CIV_S1_BOOK_ID,
@@ -1716,6 +1742,8 @@ const _geoSem1 = buildGeoSem1Catalog();
 const _geoSem2 = buildGeoSem2Catalog();
 const _g9HistSem1 = buildG9HistSem1Catalog();
 const _g9HistSem2 = buildG9HistSem2Catalog();
+const _histSem1 = buildHistSem1Catalog();
+const _histSem2 = buildHistSem2Catalog();
 const _g9CivSem1 = buildG9CivSem1Catalog();
 const _g9CivSem2 = buildG9CivSem2Catalog();
 const _g9PeSem1 = buildG9PeSem1Catalog();
@@ -1891,6 +1919,8 @@ export const KB_UNITS: KBUnit[] = [
   ..._geoSem2.units,
   ..._g9HistSem1.units,
   ..._g9HistSem2.units,
+  ..._histSem1.units,
+  ..._histSem2.units,
   ..._g9CivSem1.units,
   ..._g9CivSem2.units,
   ..._g9PeSem1.units,
@@ -1955,6 +1985,8 @@ export const KB_LESSONS: KBLesson[] = [
   ..._geoSem2.lessons,
   ..._g9HistSem1.lessons,
   ..._g9HistSem2.lessons,
+  ..._histSem1.lessons,
+  ..._histSem2.lessons,
   ..._g9CivSem1.lessons,
   ..._g9CivSem2.lessons,
   ..._g9PeSem1.lessons,

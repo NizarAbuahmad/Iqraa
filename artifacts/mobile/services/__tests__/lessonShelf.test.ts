@@ -138,8 +138,8 @@ describe('subject isolation', () => {
       // implicit grade) carries a bare tag; Grade 9 carries the explicit
       // g9- form, same split as every pre-existing subject above.
       geography: /^(geo-s[12]|g9-geo-s[12])$/,
-      // Same as geography, minus the Grade 10 form: no book there yet.
-      history: /^g9-hist-s[12]$/,
+      // Same as geography — Grade 10 gained a book the same week.
+      history: /^(hist-s[12]|g9-hist-s[12])$/,
       'civic-education': /^g9-civ-s[12]$/,
       'physical-education': /^g9-pe-s[12]$/,
     };

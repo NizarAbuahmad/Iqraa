@@ -184,6 +184,14 @@ import {
   buildG9HistSem2BrowserCatalog,
 } from './catalogs/g9HistSem2.ts';
 import {
+  HIST_S1_CURRICULUM_BOOK_ID,
+  buildHistSem1BrowserCatalog,
+} from './catalogs/g10HistSem1.ts';
+import {
+  HIST_S2_CURRICULUM_BOOK_ID,
+  buildHistSem2BrowserCatalog,
+} from './catalogs/g10HistSem2.ts';
+import {
   G9_CIV_S1_CURRICULUM_BOOK_ID,
   buildG9CivSem1BrowserCatalog,
 } from './catalogs/g9CivSem1.ts';
@@ -364,7 +372,7 @@ export const SUBJECTS: Subject[] = [
   { id: 'geography', name: 'Geography', nameAr: 'الجغرافيا', icon: 'map-outline', color: '#0D9488', grades: ['grade-9', 'grade-10'] },
   // Second brand-new subject added 2026-09-09, same day as geography.
   // Scoped to grade-9 only for the same reason: no book at any other grade.
-  { id: 'history', name: 'History', nameAr: 'التاريخ', icon: 'time-outline', color: '#9F1239', grades: ['grade-9'] },
+  { id: 'history', name: 'History', nameAr: 'التاريخ', icon: 'time-outline', color: '#9F1239', grades: ['grade-9', 'grade-10'] },
   // Fourth brand-new subject added this week. grades: ['grade-9'] for the
   // same reason as geography/history — no book at any other grade yet.
   { id: 'civic-education', name: 'National and Civic Education', nameAr: 'التربية الوطنية والمدنية', icon: 'flag-outline', color: '#1D4ED8', grades: ['grade-9'] },
@@ -524,6 +532,12 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // in this schema — see the data file's known_gaps.
   G9_HIST_S1_CURRICULUM_BOOK_ID,
   G9_HIST_S2_CURRICULUM_BOOK_ID,
+  // Grade 10 History — extends the subject beyond Grade 9, same shape as
+  // the Grade 9 book. Semester 2's second unit («شخصيّات من التاريخ») is
+  // biographical rather than thematic, same pattern as Grade 9's own
+  // Semester 2 unit 5.
+  HIST_S1_CURRICULUM_BOOK_ID,
+  HIST_S2_CURRICULUM_BOOK_ID,
   // Grade 9 National and Civic Education — the fourth brand-new subject
   // added this week. Same shape as Geography/History; no teacher guide, so
   // objectives are empty. Each lesson also prints a «مهارات التعلم» skills
@@ -1394,6 +1408,38 @@ export const BOOKS: Book[] = [
     audience: 'all',
     semester: 2,
     pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/SS/G9/2/2/%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%20%D8%A7%D9%84%D8%B5%D9%81%20%D8%A7%D9%84%D8%AA%D8%A7%D8%B3%D8%B9_%D9%812-Low.pdf',
+  },
+  // ── History Grade 10 – Semesters 1 and 2 ──────────────────────────────────
+  // Extends the subject beyond Grade 9, same shape as the Grade 9 book. S2's
+  // pdfUrl is not set: NCCD's own Grade 10 directory lists a "تاريخ … الفصل
+  // الدراسي الثاني" entry with no href attached (not a 404 — no link exists
+  // to check), same pattern as Geography Grade 10's S2.
+  {
+    id: 'book-hist-10-s1',
+    title: 'History – Grade 10, Semester 1',
+    titleAr: 'التاريخ – الصف العاشر – الفصل الأول',
+    subjectId: 'history',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+    pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/SS/G10/1/%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%20%D8%A7%D9%84%D8%B9%D8%A7%D8%B4%D8%B1%20%D9%811%202026%20.pdf',
+  },
+  {
+    id: 'book-hist-10-s2',
+    title: 'History – Grade 10, Semester 2',
+    titleAr: 'التاريخ – الصف العاشر – الفصل الثاني',
+    subjectId: 'history',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
   },
   // ── National and Civic Education Grade 9 – Semesters 1 and 2 ─────────────
   // Fourth brand-new subject added this week. No نتاجات التعلم and no
@@ -2428,6 +2474,8 @@ const _geoSem1Browser = buildGeoSem1BrowserCatalog();
 const _geoSem2Browser = buildGeoSem2BrowserCatalog();
 const _g9HistSem1Browser = buildG9HistSem1BrowserCatalog();
 const _g9HistSem2Browser = buildG9HistSem2BrowserCatalog();
+const _histSem1Browser = buildHistSem1BrowserCatalog();
+const _histSem2Browser = buildHistSem2BrowserCatalog();
 const _g9CivSem1Browser = buildG9CivSem1BrowserCatalog();
 const _g9CivSem2Browser = buildG9CivSem2BrowserCatalog();
 const _g9PeSem1Browser = buildG9PeSem1BrowserCatalog();
@@ -2593,6 +2641,8 @@ export const UNITS: Unit[] = [
   ..._geoSem2Browser.units,
   ..._g9HistSem1Browser.units,
   ..._g9HistSem2Browser.units,
+  ..._histSem1Browser.units,
+  ..._histSem2Browser.units,
   ..._g9CivSem1Browser.units,
   ..._g9CivSem2Browser.units,
   ..._g9PeSem1Browser.units,
@@ -2651,6 +2701,8 @@ export const LESSONS: Lesson[] = [
   ..._geoSem2Browser.lessons,
   ..._g9HistSem1Browser.lessons,
   ..._g9HistSem2Browser.lessons,
+  ..._histSem1Browser.lessons,
+  ..._histSem2Browser.lessons,
   ..._g9CivSem1Browser.lessons,
   ..._g9CivSem2Browser.lessons,
   ..._g9PeSem1Browser.lessons,
