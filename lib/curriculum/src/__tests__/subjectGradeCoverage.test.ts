@@ -44,6 +44,29 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // their Grade 10 books arrived.
   'civic-education:grade-10',
   'physical-education:grade-10',
+  // grade-8 joined MVP_GRADE_IDS 2026-09-09 with only financial-literacy
+  // built. Grade 8 does not split science or social studies the way Grade
+  // 9/10 do — NCCD combines them into single «العلوم» and «الدراسات
+  // الاجتماعية» books, catalogued under the pre-existing 'science'/'social'
+  // subjects, neither of which is in MVP_SUBJECT_IDS yet — so chemistry,
+  // physics, biology, earth-science, geography, history, civic-education
+  // are permanently bookless at grade-8, not gaps to be closed later.
+  // physical-education has no grade-8 book at all on disk. mathematics,
+  // english, arabic, islamic and digital-literacy ARE being built this
+  // batch — delete each line here as its Grade 8 book lands.
+  'mathematics:grade-8',
+  'chemistry:grade-8',
+  'english:grade-8',
+  'physics:grade-8',
+  'earth-science:grade-8',
+  'biology:grade-8',
+  'arabic:grade-8',
+  'islamic:grade-8',
+  'digital-literacy:grade-8',
+  'geography:grade-8',
+  'history:grade-8',
+  'civic-education:grade-8',
+  'physical-education:grade-8',
 ]);
 
 describe('subject/grade coverage across the MVP lists', () => {
