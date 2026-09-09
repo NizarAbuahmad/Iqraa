@@ -82,6 +82,10 @@ import {
   isG9MathSem1TitleOnlyLesson,
 } from './catalogs/g9MathSem1.ts';
 import {
+  G8_MATH_S2_CURRICULUM_BOOK_ID,
+  buildG8MathSem2BrowserCatalog,
+} from './catalogs/g8MathSem2.ts';
+import {
   G9_MATH_S2_CURRICULUM_BOOK_ID,
   buildG9MathSem2BrowserCatalog,
   isG9MathSem2TitleOnlyUnit,
@@ -634,6 +638,8 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // Grade 8 Social Studies — both semesters attached.
   G8_SOCIAL_S1_CURRICULUM_BOOK_ID,
   G8_SOCIAL_S2_CURRICULUM_BOOK_ID,
+  // Grade 8 Math — Semester 2 only; S1 has not been attached.
+  G8_MATH_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -1123,6 +1129,24 @@ export const BOOKS: Book[] = [
     // (see iqra_curriculum_g9_math_sem2.json's source_books note).
     pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Math/2025/G09/2/MT09/SE/MT09_SE2_WEB.pdf',
     guidePdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Math/2025/MT09_TE2_PRINT.pdf',
+  },
+  // ── Math Grade 8 – Semester 2 ────────────────────────────────────────────
+  // First Grade 8 Math book. Semester 1 has not been attached — only S2's
+  // teacher guide and student book were supplied, so no book-math-8-s1 row
+  // exists yet. Objectives here come from the teacher guide's own «نتاجات
+  // الدرس» box, verbatim — see g8MathSem2.ts.
+  {
+    id: G8_MATH_S2_CURRICULUM_BOOK_ID,
+    title: 'Mathematics – Grade 8, Semester 2',
+    titleAr: 'الرياضيات – الصف الثامن – الفصل الثاني',
+    subjectId: 'mathematics',
+    gradeId: 'grade-8',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
   },
   // ── Chemistry Grade 9 – Semesters 1 and 2 ──────────────────────────────────
   // The first Grade 9 subject after mathematics, catalogued 2026-09-08 from
@@ -2691,6 +2715,7 @@ const _g8VocSem1Browser = buildG8VocSem1BrowserCatalog();
 const _g8VocSem2Browser = buildG8VocSem2BrowserCatalog();
 const _g8SocialSem1Browser = buildG8SocialSem1BrowserCatalog();
 const _g8SocialSem2Browser = buildG8SocialSem2BrowserCatalog();
+const _g8MathSem2Browser = buildG8MathSem2BrowserCatalog();
 const _g9CivSem1Browser = buildG9CivSem1BrowserCatalog();
 const _g9CivSem2Browser = buildG9CivSem2BrowserCatalog();
 const _g9PeSem1Browser = buildG9PeSem1BrowserCatalog();
@@ -2866,6 +2891,7 @@ export const UNITS: Unit[] = [
   ..._g8VocSem2Browser.units,
   ..._g8SocialSem1Browser.units,
   ..._g8SocialSem2Browser.units,
+  ..._g8MathSem2Browser.units,
   ..._g9CivSem1Browser.units,
   ..._g9CivSem2Browser.units,
   ..._g9PeSem1Browser.units,
@@ -2934,6 +2960,7 @@ export const LESSONS: Lesson[] = [
   ..._g8VocSem2Browser.lessons,
   ..._g8SocialSem1Browser.lessons,
   ..._g8SocialSem2Browser.lessons,
+  ..._g8MathSem2Browser.lessons,
   ..._g9CivSem1Browser.lessons,
   ..._g9CivSem2Browser.lessons,
   ..._g9PeSem1Browser.lessons,
