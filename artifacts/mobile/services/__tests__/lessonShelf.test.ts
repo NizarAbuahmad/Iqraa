@@ -140,6 +140,7 @@ describe('subject isolation', () => {
       geography: /^g9-geo-s[12]$/,
       // Same as geography: new subject, Grade 9 only, no Grade 10 form yet.
       history: /^g9-hist-s[12]$/,
+      'civic-education': /^g9-civ-s[12]$/,
     };
     for (const lesson of KB_LESSONS) {
       const subjectId = getBookForLesson(lesson)?.subjectId;
