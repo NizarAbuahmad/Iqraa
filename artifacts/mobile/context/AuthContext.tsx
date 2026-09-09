@@ -8,7 +8,6 @@ import {
   setOnRefreshFailed,
   getApiBaseUrl,
 } from '@/services/apiClient';
-import { fetchWithTimeout } from '@/services/fetchWithTimeout';
 import { setActiveLessonContextUser } from '@/services/lessonContext';
 import { setActiveMediaUser } from '@/services/lessonMedia';
 import { warmUpVerifier } from '@/services/ai/verifyMath';
@@ -172,10 +171,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
 
           try {
-            // Needs the deadline more than anywhere else: `setIsLoading(false)`
-            // happens in this block's `finally`, and the splash now stays up
-            // until that flips.
-            const res = await fetchWithTimeout(`${getApiBaseUrl()}/auth/refresh`, {
+            const res = await fetch(`${getApiBaseUrl()}/auth/refresh`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ refreshToken }),
