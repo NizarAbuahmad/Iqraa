@@ -126,7 +126,7 @@ describe('subject isolation', () => {
       chemistry: /^(chem-s[12](-u\d+)?|chem-g10-general|g9-chem-s[12](-u\d+)?)$/,
       // Grade 10 tag is bare (`finlit-s1`); Grade 9 gets the explicit
       // `g9-` prefix like arabic and islamic below.
-      'financial-literacy': /^(finlit-s[12]|g9-finlit-s[12])$/,
+      'financial-literacy': /^(finlit-s[12]|g9-finlit-s[12]|g8-finlit-s[12])$/,
       // Grade 10 Arabic predates this map and was silently unchecked — no
       // entry meant `continue`, not a pass. Added on 2026-09-08 alongside the
       // Grade 9 Arabic S1 book, so both grades are covered from here on.

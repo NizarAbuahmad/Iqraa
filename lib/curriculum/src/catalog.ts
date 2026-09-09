@@ -192,6 +192,10 @@ import {
   buildHistSem2BrowserCatalog,
 } from './catalogs/g10HistSem2.ts';
 import {
+  G8_FINLIT_S1_CURRICULUM_BOOK_ID,
+  buildG8FinlitSem1BrowserCatalog,
+} from './catalogs/g8FinlitSem1.ts';
+import {
   G9_CIV_S1_CURRICULUM_BOOK_ID,
   buildG9CivSem1BrowserCatalog,
 } from './catalogs/g9CivSem1.ts';
@@ -365,7 +369,10 @@ export const SUBJECTS: Subject[] = [
   // BANK_SUBJECT_IDS['digital-literacy'], which already pointed here before
   // any catalog subject existed to receive it.
   { id: 'digital-literacy', name: 'Digital Skills', nameAr: 'المهارات الرقمية', icon: 'hardware-chip-outline', color: '#0EA5E9', grades: GRADES.map(g => g.id) },
-  { id: 'financial-literacy', name: 'Financial Literacy', nameAr: 'الثقافة المالية', icon: 'wallet-outline', color: '#B45309', grades: GRADES.slice(SPECIALISED_FROM).map(g => g.id) },
+  // Extended to grade-8 on 2026-09-09 — grades is deliberately not a slice
+  // for this one subject, since grade-8 is not contiguous with the
+  // SPECIALISED_FROM=8 (grade-9-onward) range.
+  { id: 'financial-literacy', name: 'Financial Literacy', nameAr: 'الثقافة المالية', icon: 'wallet-outline', color: '#B45309', grades: ['grade-8', ...GRADES.slice(SPECIALISED_FROM).map(g => g.id)] },
   { id: 'earth-science', name: 'Earth and Environmental Science', nameAr: 'علوم الأرض والبيئة', icon: 'earth', color: '#65A30D', grades: GRADES.slice(SPECIALISED_FROM).map(g => g.id) },
   // The first geography book in this repo, added 2026-09-09 as grade-9-only.
   // Extended to grade-10 the same week once its book arrived.
@@ -407,7 +414,13 @@ export const INVESTOR_MVP_CURRICULUM = true;
  * it yet) — shown anyway, honestly thin rather than hidden, per known_gaps in
  * iqra_curriculum_g9_math_sem2.json.
  */
-export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9'];
+// 'grade-8' joined 2026-09-09 with only Financial Literacy S1 behind it —
+// getSubjectsForGrade already filters to subjects that both are in
+// MVP_SUBJECT_IDS and have a book (hasCurriculumForSubjectGrade), so the
+// grade-8 tile shows exactly that one subject rather than a page of dead
+// tiles; the rest of MVP_SUBJECT_IDS is deliberately left bookless at
+// grade-8 for now — see KNOWN_BOOKLESS in subjectGradeCoverage.test.ts.
+export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9', 'grade-8'];
 // Appended, never inserted: these positions are persisted as bare indices in
 // formState and route URLs, so inserting shifts what a saved URL resolves to.
 // 'physics' joined on 2026-09-03 with the Grade 10 S1 curriculum. Without it,
@@ -552,6 +565,14 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // objectives are empty.
   G9_PE_S1_CURRICULUM_BOOK_ID,
   G9_PE_S2_CURRICULUM_BOOK_ID,
+  // Grade 8 Financial Literacy — the first Grade 8 book in this repo. Only
+  // in MVP_BOOK_IDS (curriculum browser), not in MVP_SUBJECT_IDS/
+  // MVP_GRADE_IDS (AI-tools pickers) — grade-8 is deliberately held out of
+  // the AI-tools picker until enough of its ten subjects are built to turn
+  // it on without offering mostly-empty tiles, the same trap 'arabic'/
+  // 'islamic'/'computer' hit in 2026-09-05 (see MVP_SUBJECT_IDS above).
+  // Semester 1 only — S2 has not been attached yet.
+  G8_FINLIT_S1_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -911,6 +932,24 @@ export const BOOKS: Book[] = [
     audience: 'all',
     semester: 1,
     pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Financial%20culture/G10/1/%D8%A7%D9%84%D8%AB%D9%82%D8%A7%D9%81%D8%A9%20%D8%A7%D9%84%D9%85%D8%A7%D9%84%D9%8A%D8%A9%2010%20%D9%811%20small%20.pdf',
+  },
+  // ── Financial Literacy Grade 8 – Semester 1 ────────────────────────────────
+  // First grade-8 book in this repo. Real numbered «نتاجات التعلم» print
+  // directly in the student book — no teacher guide needed for objectives,
+  // unlike every subject above. Semester 2 has not been attached; no pdfUrl
+  // set — not yet checked against NCCD's own hosted copy.
+  {
+    id: G8_FINLIT_S1_CURRICULUM_BOOK_ID,
+    title: 'Financial Literacy – Grade 8, Semester 1',
+    titleAr: 'الثقافة المالية – الصف الثامن – الفصل الأول',
+    subjectId: 'financial-literacy',
+    gradeId: 'grade-8',
+    academicYear: '2026-2027',
+    language: 'Arabic',
+    edition: '1st (تجريبية)',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
   },
   // ── Arabic Grade 10 – Semester 1 ───────────────────────────────────────────
   // No pdfUrl/guidePdfUrl: the three S1 PDFs (student book, teacher guide,
@@ -2476,6 +2515,7 @@ const _g9HistSem1Browser = buildG9HistSem1BrowserCatalog();
 const _g9HistSem2Browser = buildG9HistSem2BrowserCatalog();
 const _histSem1Browser = buildHistSem1BrowserCatalog();
 const _histSem2Browser = buildHistSem2BrowserCatalog();
+const _g8FinlitSem1Browser = buildG8FinlitSem1BrowserCatalog();
 const _g9CivSem1Browser = buildG9CivSem1BrowserCatalog();
 const _g9CivSem2Browser = buildG9CivSem2BrowserCatalog();
 const _g9PeSem1Browser = buildG9PeSem1BrowserCatalog();
@@ -2643,6 +2683,7 @@ export const UNITS: Unit[] = [
   ..._g9HistSem2Browser.units,
   ..._histSem1Browser.units,
   ..._histSem2Browser.units,
+  ..._g8FinlitSem1Browser.units,
   ..._g9CivSem1Browser.units,
   ..._g9CivSem2Browser.units,
   ..._g9PeSem1Browser.units,
@@ -2703,6 +2744,7 @@ export const LESSONS: Lesson[] = [
   ..._g9HistSem2Browser.lessons,
   ..._histSem1Browser.lessons,
   ..._histSem2Browser.lessons,
+  ..._g8FinlitSem1Browser.lessons,
   ..._g9CivSem1Browser.lessons,
   ..._g9CivSem2Browser.lessons,
   ..._g9PeSem1Browser.lessons,

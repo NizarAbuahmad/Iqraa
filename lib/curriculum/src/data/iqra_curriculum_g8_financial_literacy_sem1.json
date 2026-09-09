@@ -1,0 +1,186 @@
+{
+  "meta": {
+    "grade": "الصف الثامن",
+    "grade_en": "Grade 8",
+    "subject": "الثقافة المالية",
+    "subject_en": "Financial Literacy",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 1,
+    "provenance_note": "نُقلت الوحدتانِ ودروسُهما الثمانيةُ من كتاب الطالب (الطبعةُ الأولى التجريبيةُ، 1447هـ/2026م، رقم الإيداع 2026/5/3024) في 2026-09-09. نتاجاتُ التعلُّمِ المُرقَّمةُ منسوخةٌ حرفيًّا مِنْ صندوقِ «نتاجاتُ التعلُّمِ» في صفحةِ افتتاحِ كلِّ درسٍ — لا اجتهادَ ولا توليدَ. المفرداتُ الثنائيةُ اللغةِ مأخوذةٌ منْ «مسردِ المصطلحاتِ» في نهايةِ الكتابِ (صفحتا 53-54)، لا مِنَ الصندوقِ المختصرِ في صفحةِ افتتاحِ الدرسِ، لأنَّ المسردَ يحملُ المقابلَ الإنجليزيَّ لكلِّ مصطلحٍ فيما يكتفي الصندوقُ بالعربيةِ فقط. لا صندوقَ «الفكرةِ الرئيسةِ» في هذا الكتابِ (خلافًا لكتبِ الجغرافيا والتاريخ)، فحقلُ main_idea_ar فارغٌ لكلِّ درسٍ عمدًا — نتاجاتُ التعلُّمِ المُرقَّمةُ تُغني عنهُ.",
+    "source_books": {
+      "student_book": "كتاب الطالب لمادة الثقافة المالية - الصف الثامن - الفصل الدراسي الأول - المركز الوطني لتطوير المناهج والتقويم (الطبعة الأولى التجريبية، 2026)"
+    },
+    "known_gaps": [
+      "لا يتضمَّنُ كتابُ الطالبِ عددَ الحصصِ لكلِّ درسٍ (periods وtotal_periods = null) — لا دليلَ معلمٍ لهذه المادةِ على القرصِ.",
+      "لا يطبَعُ هذا الكتابُ «فكرةً عامّةً» نثريّةً للوحدةِ؛ تفتتِحُ كلُّ وحدةٍ بسؤالٍ موجِّهٍ بدلًا مِنْ ذلكَ — أُدرِجَ نصُّهُ في general_idea_ar بينَ علامتَيْ اقتباسٍ.",
+      "الفصلُ الدراسيُّ الثاني (S2) لهذه المادةِ لمْ يُرفَقْ بعدُ؛ لا يوجدُ ملفٌّ لهُ على القرصِ.",
+      "أقسامُ «اختبارُ نهايةِ الوحدةِ» و«مشروعُ الوحدةِ» و«أستكشِفُ» لمْ تُدرَجْ كدروسٍ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "الاستهلاكُ",
+      "title_en": "Consumption",
+      "general_idea_ar": "«كيفَ أكونُ مُستهلِكًا رشيدًا؟»",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: numbered «نتاجات التعلم» copied verbatim from each lesson's opener page; bilingual vocabulary from the book's own end-of-book glossary, not the shorter concept box on the lesson page; no teacher guide on disk, so periods are null)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "أنماطُ الاستهلاكِ",
+          "title_en": "Consumption Patterns",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "تعرُّفُ مفهومِ الاستهلاكِ.",
+            "تعرُّفُ أنماطِ الاستهلاكِ.",
+            "تحديدُ خياراتِ الإنفاقِ المختلفةِ.",
+            "تحديدُ أولوياتِ الإنفاقِ بناءً على الحاجاتِ والرغباتِ."
+          ],
+          "vocabulary": [
+            { "ar": "الاستهلاكُ", "en": "Consumption" },
+            { "ar": "أنماطُ الاستهلاكِ", "en": "Consumption patterns" },
+            { "ar": "الاستهلاكُ الرشيدُ", "en": "Rational (or responsible) consumption" },
+            { "ar": "الاستهلاكُ غيرُ الرشيدِ", "en": "Irrational (or irresponsible) consumption" },
+            { "ar": "الاستهلاكُ الضروريُّ", "en": "Essential consumption" },
+            { "ar": "الاستهلاكُ الكماليُّ", "en": "Luxury consumption" },
+            { "ar": "أولوياتُ الإنفاقِ", "en": "Spending priorities" }
+          ]
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "التخطيطُ الماليُّ",
+          "title_en": "Financial Planning",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "تعرُّفُ مفهومِ التخطيطِ الماليِّ.",
+            "بيانُ الطرائقِ التي يُمكِنُ استخدامُها للتحكُّمِ في النفقاتِ.",
+            "توضيحُ دورِ أنماطِ الاستهلاكِ في تخطيطِ النفقاتِ الشخصيةِ."
+          ],
+          "vocabulary": [
+            { "ar": "التخطيطُ الماليُّ", "en": "Financial planning" }
+          ]
+        },
+        {
+          "id": "u1_l3",
+          "order": 3,
+          "title_ar": "الميزانيّةُ الشخصيّةُ",
+          "title_en": "Personal Budget",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "إعدادُ خُطّةٍ للنفقاتِ الشخصيةِ."
+          ],
+          "vocabulary": [
+            { "ar": "الميزانيّةُ الشخصيّةُ", "en": "Personal budget" },
+            { "ar": "العجزُ الماليُّ", "en": "Financial deficit" }
+          ]
+        },
+        {
+          "id": "u1_l4",
+          "order": 4,
+          "title_ar": "قراراتي الماليّةُ وترشيدُ الاستهلاكِ",
+          "title_en": "My Financial Decisions and Rationalizing Consumption",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "تعرُّفُ مفهومِ اتّخاذِ القرارِ الماليِّ.",
+            "اتّخاذُ قراراتٍ ماليّةٍ تختصُّ بخياراتِ الإنفاقِ.",
+            "تعرُّفُ مفهومِ ترشيدِ الاستهلاكِ.",
+            "توضيحُ دورِ ترشيدِ الاستهلاكِ في اتّخاذِ القراراتِ الماليّةِ."
+          ],
+          "vocabulary": [
+            { "ar": "اتّخاذُ القرارِ الماليِّ", "en": "Decision making" },
+            { "ar": "ترشيدُ الاستهلاكِ", "en": "Rationalization of consumption" }
+          ]
+        },
+        {
+          "id": "u1_l5",
+          "order": 5,
+          "title_ar": "أثرُ الإعلاناتِ في اتّخاذِ القراراتِ الماليّةِ",
+          "title_en": "The Effect of Advertisements on Financial Decisions",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "بيانُ أثرِ الإعلاناتِ في اتّخاذِ قراراتِ شراءٍ مستدامةٍ.",
+            "توضيحُ تأثيرِ وسائلِ الإعلامِ في عاداتِ الإنفاقِ.",
+            "توضيحُ تأثيرِ وسائلِ التواصلِ الاجتماعيِّ في عاداتِ الإنفاقِ."
+          ],
+          "vocabulary": [
+            { "ar": "الإعلانُ", "en": "Advertising" },
+            { "ar": "الشراءُ المستدامُ", "en": "Sustainable purchasing" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "العملُ والدخلُ",
+      "title_en": "Work and Income",
+      "general_idea_ar": "«كيفَ أُطوِّرُ مهاراتي لأحصلَ على عملٍ يُوفِّرُ لي دَخلًا مشروعًا ومُستقِرًّا؟»",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: numbered «نتاجات التعلم» copied verbatim from each lesson's opener page; bilingual vocabulary from the book's own end-of-book glossary, not the shorter concept box on the lesson page; no teacher guide on disk, so periods are null)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "العملُ والدخلُ",
+          "title_en": "Work and Income",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "تعرُّفُ مفهومِ كلٍّ منَ العملِ والدخلِ.",
+            "فهمُ العلاقةِ بينَ العملِ والدخلِ."
+          ],
+          "vocabulary": [
+            { "ar": "العملُ", "en": "The job" },
+            { "ar": "الدخلُ", "en": "Income" }
+          ]
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "مهارتي مستقبلي",
+          "title_en": "My Future Skills",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "استنتاجُ دورِ الدخلِ والعملِ في تحقيقِ الاستقرارِ الماليِّ.",
+            "اكتسابُ مهاراتٍ مختلفةٍ تساعدُ على العملِ."
+          ],
+          "vocabulary": [
+            { "ar": "المهارةُ", "en": "Skill" },
+            { "ar": "الاستقرارُ الماليُّ", "en": "Financial stability" }
+          ]
+        },
+        {
+          "id": "u2_l3",
+          "order": 3,
+          "title_ar": "مصادرُ الدخلِ المشروعةُ",
+          "title_en": "Sources of Legitimate Income",
+          "main_idea_ar": "",
+          "periods": null,
+          "objectives": [
+            "إدراكُ أهمّيّةِ الحصولِ على الدخلِ منْ مصادرَ مشروعةٍ."
+          ],
+          "vocabulary": [
+            { "ar": "الدخلُ المشروعُ", "en": "Legitimate income" },
+            { "ar": "دخلُ الربحِ", "en": "Profit Income" },
+            { "ar": "دخلُ الإيجارِ", "en": "Rental Income" },
+            { "ar": "دخلُ الأرباحِ المُوزَّعةِ", "en": "Dividend Income" },
+            { "ar": "مُكسَبُ رأسِ المالِ", "en": "Capital Gains" },
+            { "ar": "الدخلُ المُكتسَبُ", "en": "Earned Income" }
+          ]
+        }
+      ]
+    }
+  ]
+}
