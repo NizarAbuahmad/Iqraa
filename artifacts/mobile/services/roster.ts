@@ -172,9 +172,23 @@ export async function archiveClass(classId: string): Promise<void> {
 }
 
 /**
+ * The code this student currently has, or `null` when there is none.
+ *
+ * The server reports an expired code as no code, so a caller never has to ask
+ * whether what it is about to display would actually still work.
+ */
+export async function getClaimCode(
+  studentId: string,
+): Promise<{ claimCode: string | null; claimCodeExpiresAt: string | null }> {
+  const res = await apiFetch(`/students/${studentId}/claim-code`);
+  return readJson(res, 'Loading link code');
+}
+
+/**
  * Mints a fresh code so a parent or the student can link to this exact
  * roster row when they sign up — see services/messaging.ts. Regenerating
- * invalidates any code shared before.
+ * invalidates any code shared before, which is why the screen confirms first
+ * when `getClaimCode` says one is already live.
  */
 export async function generateClaimCode(
   studentId: string,
@@ -224,6 +238,23 @@ export async function lookupJoinCode(
 ): Promise<{ class: { name: string; nameAr: string }; students: JoinRosterEntry[] }> {
   const res = await apiFetch(`/auth/join/${encodeURIComponent(code)}`);
   return readJson(res, 'Opening class code');
+}
+
+/**
+ * Links the signed-in student/parent account to one more roster row — a
+ * second child, a second parent, or a second teacher's class. Same server-side
+ * resolver as registration's `claimCode` (`POST /auth/register`), just for an
+ * account that already exists. See `POST /auth/claim` in auth.ts.
+ */
+export async function claimRosterCode(
+  code: string,
+  studentId?: string,
+): Promise<{ studentId: string; relation: 'self' | 'guardian' }> {
+  const res = await apiFetch('/auth/claim', {
+    method: 'POST',
+    body: JSON.stringify({ claimCode: code, studentId }),
+  });
+  return readJson(res, 'Joining class');
 }
 
 /** Re-exported so screens have one roster import. Lives apart to stay testable. */

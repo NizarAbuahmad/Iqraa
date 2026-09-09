@@ -193,6 +193,20 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     }
   });
 
+  it("mounts both claim-code routes inside the roster's guarded prefix", async () => {
+    // The read route is new. Had it landed outside `router.use(["/classes",
+    // "/students"], …)` it would answer 404 rather than 401 — and a teacher's
+    // link code would be readable with no token at all. That is the exact
+    // mount-order failure this suite exists to catch, and it is invisible from
+    // the client, which would just see a working screen.
+    const id = "00000000-0000-0000-0000-000000000000";
+    const get = await fetch(`${base}/students/${id}/claim-code`);
+    assert.equal(get.status, 401, "reading a link code must require a token");
+
+    const post = await fetch(`${base}/students/${id}/claim-code`, { method: "POST" });
+    assert.equal(post.status, 401, "minting a link code must require a token");
+  });
+
   it("mounts account deletion, and refuses it without a token", async () => {
     // Apple 5.1.1(v) and Play both require this route to exist, so the thing
     // worth pinning is that it is *mounted* — a 404 here is a submission

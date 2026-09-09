@@ -52,7 +52,7 @@ export function isPublicRoute(pathname: string | null | undefined): boolean {
  * the tab bar — a bookmark, a typed URL, a shared link — so the app stops
  * rendering a screen whose every call is going to come back 403.
  */
-const NON_TEACHER_ROUTES = ['/notifications', '/messaging', '/curriculum', '/profile'];
+const NON_TEACHER_ROUTES = ['/notifications', '/messaging', '/curriculum', '/profile', '/join-class'];
 
 /**
  * Teacher-only despite sitting under an allowed prefix: this is the screen

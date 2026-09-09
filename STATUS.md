@@ -936,6 +936,137 @@ button with a sentence saying the capability is not in this release, both off
 `useStudentAccountsEnabled()`. A disabled control was rejected deliberately —
 it invites "when?", which neither screen can answer.
 
+## The link code a teacher shares, 2026-09-06
+
+**Written the day before student accounts went live** (see the entry above) —
+the off-state behaviour below (`STUDENT_ACCOUNTS` false: entry points hidden,
+screen explains) describes what the code does when that flag is false, which
+was production's state at the time and is not any more. The rest — the
+destructive-regenerate fix, the share message, the normalisation fix, the rate
+limiter — is unconditional and stayed exactly as true after the flip.
+
+Asked "where does a teacher find the code to share?", the answer was: حسابي →
+الإعدادات → صفوفي → a class → an unlabelled grey speech-bubble icon on a
+student row, between a pencil and an ×. Classes are not on the tab bar at all.
+
+Chasing that found something worse than a hidden button.
+
+**The only action on that screen destroyed the code you had already shared.**
+Nothing returned an existing code — `claimCode` appeared in `routes/roster.ts`
+only inside the mint handler, never in a projection — so re-opening the screen
+showed an empty card whose one button minted a *new* code, overwriting the old
+one in place. A teacher who generated a code, gave it to a parent, and came
+back silently broke it. No warning existed because nothing knew.
+
+`GET /students/:id/claim-code` now returns the live code, and an expired one as
+`null` so the screen has two states rather than three. Sharing became the
+primary action; replacing is a demoted text button whose label states the
+consequence («إنشاء رمز جديد بدل الحالي») behind a confirm that spells it out.
+The confirm goes through `services/confirm.ts` and not `Alert.alert`, which
+does nothing on react-native web — the build teachers are demoed on.
+
+**The code also left the app as six bare characters.** It now leaves as a
+message: greeting, the child's name, the code alone on its own line so a
+long-press selects it, the expiry, and a link to the web app with what to tap.
+`services/claimCodeMessage.ts` composes it — pure, so `node --test` can load
+it, and deliberately *not* `parentMessage.ts`, which requires a
+`studentGender` the roster does not record.
+
+Three smaller things the same trail turned up:
+
+- **The teacher and the parent called it different names.** The screen said
+  «رمز الربط»; the sign-up field said «رمز الصف». A teacher relaying the first
+  sent a parent hunting for a label that did not exist. Both are «رمز الربط»
+  now, and the composer is *passed* the register screen's own label so a rename
+  cannot silently re-open the gap — `claimCodeMessage.test.ts` asserts it.
+- **A pasted code was rejected for being pasted.** `normalizeShareCode` was
+  applied to exam codes and never to claim codes; both call sites only
+  `.trim()`. «abc-234 » answered "invalid or has expired", which was neither.
+  Normalising now happens once in the shared resolver, so the third caller
+  cannot forget. Verified live: a parent redeemed `sp7-p2c` for `SP7P2C`.
+- **`POST /auth/claim` had no rate limiter** while register, login and
+  forgot-password all did — an authenticated 6-character guessing surface. 10/hr.
+
+**Reconciled with a teacher-only v1 rather than shipped against it.** Two
+unmerged branches pulled opposite ways: one made the code findable (key icon,
+class-chat menu entry), the other turned parent and student accounts off by
+default. Landed as written, a teacher would have got a clearly-labelled key
+leading to a button that 403s. So when `STUDENT_ACCOUNTS` is off the entry
+points are **hidden** — an affordance whose only purpose is handing out a
+redeemable code is meaningless when nothing can redeem it — and the screen
+itself **explains**, because the route stays reachable by URL. Hiding is not
+the enforcement: the server refuses both routes regardless, and that was
+verified separately with a real teacher token.
+
+Also corrected: the findability branch renamed the icon and left the sentence
+naming it, so `messagingNoContactsDesc` still told teachers to press «أيقونة
+المحادثة». That string is rendered in two places and was false the moment that
+branch landed.
+
+**Verified against a running stack, both ways.** Flag off: both routes 403
+`student_accounts_disabled` with a teacher token; the key icon absent from the
+roster; the screen explaining. Flag on: read-before-mint returns null; mint;
+**re-read returns the same code** — the bug, gone; another teacher gets 404;
+the confirm fires and cancelling leaves the code untouched; the old code is
+rejected after a replace. The share message was captured from the page.
+`schema-push:` **none** — both columns already exist.
+
+## Arabic and Islamic Studies do not carry extractable figures, 2026-09-05
+
+Measured, then abandoned. Recording it so the next person does not spend the
+same afternoon rediscovering it — everything below is a count, not an
+impression.
+
+**These are text-and-ornament books, not diagram-bearing ones.** Both
+extractors misfire on them in the same way: the vector tool captures whole
+pages of Quranic text, ruled exercise boxes and «الدَّرْسُ الأوَّل» banners; the
+raster tool finds page-background washes. What each actually yielded:
+
+| | vector crops | usable | raster candidates | usable | lesson outline |
+| --- | --- | --- | --- | --- | --- |
+| Arabic s1+s2 | 173 | ~20 of the 105 reviewed | 56 | ~8 of the 26 reviewed | **none** |
+| Islamic s1+s2 | 106 | ~10 of the 36 reviewed | 14 | ~6 of the 8 reviewed | readable, wrong shape |
+
+For scale, physics semester 2 alone yields **84** usable crops across 7
+lessons. Islamic would yield roughly 12 across 50.
+
+**Arabic cannot be placed at lesson level at all.** Its lesson headers are
+*rendered as images*, not text — which is why the opener detector returns
+nothing and why those banners turn up as crops in the contact sheet. No font
+threshold reaches them. Its UNIT openers are text and detectable
+(«الوحدة الأولى» at 18-20pt, 5 per book, matching the catalog's units 1-5 and
+6-10 exactly), so unit-level placement is possible — but
+`figure-lesson-map.json` keys on `(sourceId, unit, lesson)` and a unit here
+spans five lessons, so that needs a model change, not a map entry.
+
+**Islamic prints a third opener layout the detector does not know.** It is the
+better of the two — 24 opener pages against the catalog's 24 lessons in
+semester 1, and 26 against 26 in semester 2, an exact join with no offset —
+but every threshold in `lesson_start` is tuned for the maths and science
+layouts. Measured on its own pages, what it would need:
+
+| | maths / science | Islamic |
+| --- | --- | --- |
+| «الدرس» size | ≥20pt | **15.9pt**, y=48-57 |
+| lesson number | ≥40pt, bare digits, y<65 | **15.9pt, parenthesised `(1)`**, y=75 |
+| lesson title | ≥24pt, y<60 | **21.9pt**, y=62 |
+
+Raising only the first (tried, as a per-subject override) still placed zero,
+because `lesson_start` returns `None` when it cannot read a number. Supporting
+Islamic means a per-subject opener *profile* — three geometry facts, not one
+threshold — and the payoff is ~12 photographs.
+
+**Nothing was kept.** The `BOOKS` entries, the per-subject opener size and 279
+crops were all reverted; only this note survives. That is the point: the
+figures pipeline was built for books that draw their content, and this is the
+edge of where it pays.
+
+**If it is ever revisited**, start from the table above rather than from the
+extractors — and note the one thing both books genuinely do have is a good
+unit-opener illustration card (scales, the Kaaba, a gavel on a Quran, a
+microscope; a caravan, Jerusalem, manuscript pages). Ten of those, one per
+unit, is a smaller and much better-defined target than "the figures in this
+book".
 ## The app has been built for a real device, 2026-09-05
 
 The first EAS build in the project's life. `artifacts/mobile` has always been
@@ -1485,63 +1616,6 @@ certificate lives in the APK Signing Block before the central directory.
 
 There are no store assets. ~~and no `google-services.json` for Android FCM~~
 — the Firebase side landed 2026-09-06, see below.
-
-## Arabic and Islamic Studies do not carry extractable figures, 2026-09-05
-
-Measured, then abandoned. Recording it so the next person does not spend the
-same afternoon rediscovering it — everything below is a count, not an
-impression.
-
-**These are text-and-ornament books, not diagram-bearing ones.** Both
-extractors misfire on them in the same way: the vector tool captures whole
-pages of Quranic text, ruled exercise boxes and «الدَّرْسُ الأوَّل» banners; the
-raster tool finds page-background washes. What each actually yielded:
-
-| | vector crops | usable | raster candidates | usable | lesson outline |
-| --- | --- | --- | --- | --- | --- |
-| Arabic s1+s2 | 173 | ~20 of the 105 reviewed | 56 | ~8 of the 26 reviewed | **none** |
-| Islamic s1+s2 | 106 | ~10 of the 36 reviewed | 14 | ~6 of the 8 reviewed | readable, wrong shape |
-
-For scale, physics semester 2 alone yields **84** usable crops across 7
-lessons. Islamic would yield roughly 12 across 50.
-
-**Arabic cannot be placed at lesson level at all.** Its lesson headers are
-*rendered as images*, not text — which is why the opener detector returns
-nothing and why those banners turn up as crops in the contact sheet. No font
-threshold reaches them. Its UNIT openers are text and detectable
-(«الوحدة الأولى» at 18-20pt, 5 per book, matching the catalog's units 1-5 and
-6-10 exactly), so unit-level placement is possible — but
-`figure-lesson-map.json` keys on `(sourceId, unit, lesson)` and a unit here
-spans five lessons, so that needs a model change, not a map entry.
-
-**Islamic prints a third opener layout the detector does not know.** It is the
-better of the two — 24 opener pages against the catalog's 24 lessons in
-semester 1, and 26 against 26 in semester 2, an exact join with no offset —
-but every threshold in `lesson_start` is tuned for the maths and science
-layouts. Measured on its own pages, what it would need:
-
-| | maths / science | Islamic |
-| --- | --- | --- |
-| «الدرس» size | ≥20pt | **15.9pt**, y=48-57 |
-| lesson number | ≥40pt, bare digits, y<65 | **15.9pt, parenthesised `(1)`**, y=75 |
-| lesson title | ≥24pt, y<60 | **21.9pt**, y=62 |
-
-Raising only the first (tried, as a per-subject override) still placed zero,
-because `lesson_start` returns `None` when it cannot read a number. Supporting
-Islamic means a per-subject opener *profile* — three geometry facts, not one
-threshold — and the payoff is ~12 photographs.
-
-**Nothing was kept.** The `BOOKS` entries, the per-subject opener size and 279
-crops were all reverted; only this note survives. That is the point: the
-figures pipeline was built for books that draw their content, and this is the
-edge of where it pays.
-
-**If it is ever revisited**, start from the table above rather than from the
-extractors — and note the one thing both books genuinely do have is a good
-unit-opener illustration card (scales, the Kaaba, a gavel on a Quran, a
-microscope; a caravan, Jerusalem, manuscript pages). Ten of those, one per
-unit, is a smaller and much better-defined target than "the figures in this
-book".
 
 ## English teaches something at last, and its book photographs reach it, 2026-09-05
 
