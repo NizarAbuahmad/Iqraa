@@ -204,6 +204,10 @@ import {
   buildG8DigitalSem2BrowserCatalog,
 } from './catalogs/g8DigitalSem2.ts';
 import {
+  G8_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
+  buildG8CreativeArtsBrowserCatalog,
+} from './catalogs/g8CreativeArts.ts';
+import {
   G9_CIV_S1_CURRICULUM_BOOK_ID,
   buildG9CivSem1BrowserCatalog,
 } from './catalogs/g9CivSem1.ts';
@@ -396,6 +400,11 @@ export const SUBJECTS: Subject[] = [
   // about the data shape. grades: ['grade-9'] for the same reason as the
   // other four.
   { id: 'physical-education', name: 'Physical Education', nameAr: 'التربية الرياضية', icon: 'fitness-outline', color: '#DC2626', grades: ['grade-9'] },
+  // Sixth brand-new subject, added 2026-09-09 as part of the Grade 8 batch.
+  // Combines three domains (Art, Music, Drama) NCCD prints as one book —
+  // see g8CreativeArts.ts. grades: ['grade-8'] for the same reason as the
+  // other five: no book at any other grade.
+  { id: 'creative-arts', name: 'Art, Music and Drama Education', nameAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة', icon: 'color-palette-outline', color: '#A21CAF', grades: ['grade-8'] },
 ];
 
 /**
@@ -447,7 +456,12 @@ export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9', 'grade-8
 // where it was, so no existing index moves. `finlitCurriculum.test.ts` fails
 // the moment a subject is offered here with nothing to open, and now also the
 // reverse.
-export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy', 'english', 'physics', 'earth-science', 'biology', 'arabic', 'islamic', 'digital-literacy', 'geography', 'history', 'civic-education', 'physical-education'];
+// 'creative-arts' joined 2026-09-09 with its only book (Grade 8, no other
+// grade — SUBJECTS.grades is ['grade-8'] alone), the same day its book was
+// added to MVP_BOOK_IDS. Without this, the book sits in MVP_BOOK_IDS while
+// getSubjectsForGrade never offers it and its lessons resolve to nothing —
+// the same "listed but unreachable" trap 'physics' hit above.
+export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy', 'english', 'physics', 'earth-science', 'biology', 'arabic', 'islamic', 'digital-literacy', 'geography', 'history', 'civic-education', 'physical-education', 'creative-arts'];
 /** Main semester books only (guides/exercises stay in data, hidden from UI). */
 export const MVP_BOOK_IDS: readonly string[] = [
   'book-math-10',
@@ -584,6 +598,8 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // Grade 8 Digital Skills — both semesters attached.
   G8_DIGITAL_S1_CURRICULUM_BOOK_ID,
   G8_DIGITAL_S2_CURRICULUM_BOOK_ID,
+  // Grade 8 Art, Music and Drama Education — one book, no semester.
+  G8_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -1261,6 +1277,21 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+  },
+  // ── Art, Music and Drama Education Grade 8 ────────────────────────────────
+  // Sixth brand-new subject added this week. One book for the whole year —
+  // no semester field, unlike every other row in this table.
+  {
+    id: G8_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
+    title: 'Art, Music and Drama Education – Grade 8',
+    titleAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة – الصف الثامن',
+    subjectId: 'creative-arts',
+    gradeId: 'grade-8',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
   },
   // ── English Grade 9 – Semesters 1 and 2 ───────────────────────────────────
   // Seven lessons per unit, unlike the Grade 10 English rows further down
@@ -2560,6 +2591,7 @@ const _histSem2Browser = buildHistSem2BrowserCatalog();
 const _g8FinlitSem1Browser = buildG8FinlitSem1BrowserCatalog();
 const _g8DigitalSem1Browser = buildG8DigitalSem1BrowserCatalog();
 const _g8DigitalSem2Browser = buildG8DigitalSem2BrowserCatalog();
+const _g8CreativeArtsBrowser = buildG8CreativeArtsBrowserCatalog();
 const _g9CivSem1Browser = buildG9CivSem1BrowserCatalog();
 const _g9CivSem2Browser = buildG9CivSem2BrowserCatalog();
 const _g9PeSem1Browser = buildG9PeSem1BrowserCatalog();
@@ -2730,6 +2762,7 @@ export const UNITS: Unit[] = [
   ..._g8FinlitSem1Browser.units,
   ..._g8DigitalSem1Browser.units,
   ..._g8DigitalSem2Browser.units,
+  ..._g8CreativeArtsBrowser.units,
   ..._g9CivSem1Browser.units,
   ..._g9CivSem2Browser.units,
   ..._g9PeSem1Browser.units,
@@ -2793,6 +2826,7 @@ export const LESSONS: Lesson[] = [
   ..._g8FinlitSem1Browser.lessons,
   ..._g8DigitalSem1Browser.lessons,
   ..._g8DigitalSem2Browser.lessons,
+  ..._g8CreativeArtsBrowser.lessons,
   ..._g9CivSem1Browser.lessons,
   ..._g9CivSem2Browser.lessons,
   ..._g9PeSem1Browser.lessons,
