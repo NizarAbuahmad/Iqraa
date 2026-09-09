@@ -240,5 +240,22 @@ export async function lookupJoinCode(
   return readJson(res, 'Opening class code');
 }
 
+/**
+ * Links the signed-in student/parent account to one more roster row — a
+ * second child, a second parent, or a second teacher's class. Same server-side
+ * resolver as registration's `claimCode` (`POST /auth/register`), just for an
+ * account that already exists. See `POST /auth/claim` in auth.ts.
+ */
+export async function claimRosterCode(
+  code: string,
+  studentId?: string,
+): Promise<{ studentId: string; relation: 'self' | 'guardian' }> {
+  const res = await apiFetch('/auth/claim', {
+    method: 'POST',
+    body: JSON.stringify({ claimCode: code, studentId }),
+  });
+  return readJson(res, 'Joining class');
+}
+
 /** Re-exported so screens have one roster import. Lives apart to stay testable. */
 export { parseStudentNames } from './rosterNames.ts';

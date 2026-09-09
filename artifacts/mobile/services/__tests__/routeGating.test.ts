@@ -97,6 +97,7 @@ describe('isNonTeacherRoute', () => {
       '/curriculum',
       '/curriculum/lesson-detail',
       '/profile',
+      '/join-class',
     ]) {
       assert.equal(isNonTeacherRoute(p), true, p);
     }
