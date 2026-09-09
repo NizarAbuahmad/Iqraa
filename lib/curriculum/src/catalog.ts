@@ -184,6 +184,14 @@ import {
   buildG9CivSem2BrowserCatalog,
 } from './catalogs/g9CivSem2.ts';
 import {
+  G9_PE_S1_CURRICULUM_BOOK_ID,
+  buildG9PeSem1BrowserCatalog,
+} from './catalogs/g9PeSem1.ts';
+import {
+  G9_PE_S2_CURRICULUM_BOOK_ID,
+  buildG9PeSem2BrowserCatalog,
+} from './catalogs/g9PeSem2.ts';
+import {
   ENGLISH_COMMERCE_S1_CURRICULUM_BOOK_ID,
   ENGLISH_AGRICULTURE_S1_CURRICULUM_BOOK_ID,
   ENGLISH_HOSPITALITY_S1_CURRICULUM_BOOK_ID,
@@ -354,6 +362,11 @@ export const SUBJECTS: Subject[] = [
   // Fourth brand-new subject added this week. grades: ['grade-9'] for the
   // same reason as geography/history — no book at any other grade yet.
   { id: 'civic-education', name: 'National and Civic Education', nameAr: 'التربية الوطنية والمدنية', icon: 'flag-outline', color: '#1D4ED8', grades: ['grade-9'] },
+  // Fifth brand-new subject added this week, and the first skills-based
+  // rather than knowledge-based one — see g9PeSem1.ts for what that changes
+  // about the data shape. grades: ['grade-9'] for the same reason as the
+  // other four.
+  { id: 'physical-education', name: 'Physical Education', nameAr: 'التربية الرياضية', icon: 'fitness-outline', color: '#DC2626', grades: ['grade-9'] },
 ];
 
 /**
@@ -399,7 +412,7 @@ export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9'];
 // where it was, so no existing index moves. `finlitCurriculum.test.ts` fails
 // the moment a subject is offered here with nothing to open, and now also the
 // reverse.
-export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy', 'english', 'physics', 'earth-science', 'biology', 'arabic', 'islamic', 'digital-literacy', 'geography', 'history', 'civic-education'];
+export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy', 'english', 'physics', 'earth-science', 'biology', 'arabic', 'islamic', 'digital-literacy', 'geography', 'history', 'civic-education', 'physical-education'];
 /** Main semester books only (guides/exercises stay in data, hidden from UI). */
 export const MVP_BOOK_IDS: readonly string[] = [
   'book-math-10',
@@ -505,6 +518,14 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // box with no field in this schema.
   G9_CIV_S1_CURRICULUM_BOOK_ID,
   G9_CIV_S2_CURRICULUM_BOOK_ID,
+  // Grade 9 Physical Education — the fifth brand-new subject added this
+  // week, and the first skills-based one. Title/main-idea/vocabulary come
+  // from the same lesson-opener boxes as every other new subject, but the
+  // bulk of each lesson (step-by-step technique instructions) has no field
+  // in this schema — see the data files' known_gaps. No teacher guide, so
+  // objectives are empty.
+  G9_PE_S1_CURRICULUM_BOOK_ID,
+  G9_PE_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -1363,6 +1384,37 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+  },
+  // ── Physical Education Grade 9 – Semesters 1 and 2 ────────────────────────
+  // Fifth brand-new subject added this week, and the first skills-based one
+  // (see g9PeSem1.ts). No teacher guide on disk, so objectives are empty.
+  {
+    id: 'book-pe-9-s1',
+    title: 'Physical Education – Grade 9, Semester 1',
+    titleAr: 'التربية الرياضية – الصف التاسع – الفصل الأول',
+    subjectId: 'physical-education',
+    gradeId: 'grade-9',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+    pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/2026-2027%20book/Sport/G9/1/Sport%20G9%20P1%202026%20.pdf',
+  },
+  {
+    id: 'book-pe-9-s2',
+    title: 'Physical Education – Grade 9, Semester 2',
+    titleAr: 'التربية الرياضية – الصف التاسع – الفصل الثاني',
+    subjectId: 'physical-education',
+    gradeId: 'grade-9',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+    pdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%8A%D8%A9%20%D8%A7%D9%84%D8%B1%D9%8A%D8%A7%D8%B6%D9%8A%D8%A9/9/2/Grade%2009_SE2.pdf',
   },
   // ── Other grades ───────────────────────────────────────────────────────────
   // General (non-vocational) Grade 10 English track — Student Book + Activity
@@ -2332,6 +2384,8 @@ const _g9HistSem1Browser = buildG9HistSem1BrowserCatalog();
 const _g9HistSem2Browser = buildG9HistSem2BrowserCatalog();
 const _g9CivSem1Browser = buildG9CivSem1BrowserCatalog();
 const _g9CivSem2Browser = buildG9CivSem2BrowserCatalog();
+const _g9PeSem1Browser = buildG9PeSem1BrowserCatalog();
+const _g9PeSem2Browser = buildG9PeSem2BrowserCatalog();
 const _engCommerceBrowser = buildEnglishCommerceBrowserCatalog();
 const _engAgricultureBrowser = buildEnglishAgricultureBrowserCatalog();
 const _engHospitalityBrowser = buildEnglishHospitalityBrowserCatalog();
@@ -2493,6 +2547,8 @@ export const UNITS: Unit[] = [
   ..._g9HistSem2Browser.units,
   ..._g9CivSem1Browser.units,
   ..._g9CivSem2Browser.units,
+  ..._g9PeSem1Browser.units,
+  ..._g9PeSem2Browser.units,
   ..._engCommerceBrowser.units,
   ..._engAgricultureBrowser.units,
   ..._engHospitalityBrowser.units,
@@ -2547,6 +2603,8 @@ export const LESSONS: Lesson[] = [
   ..._g9HistSem2Browser.lessons,
   ..._g9CivSem1Browser.lessons,
   ..._g9CivSem2Browser.lessons,
+  ..._g9PeSem1Browser.lessons,
+  ..._g9PeSem2Browser.lessons,
   ..._engCommerceBrowser.lessons,
   ..._engAgricultureBrowser.lessons,
   ..._engHospitalityBrowser.lessons,

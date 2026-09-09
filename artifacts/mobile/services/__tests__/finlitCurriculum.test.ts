@@ -27,7 +27,7 @@ const FINLIT_BOOK = 'book-finlit-10';
 // the authoritative, multi-grade version of this same check is
 // `subjectGradeCoverage.test.ts`'s `KNOWN_BOOKLESS` allowlist; keep the two
 // in sync rather than letting this older, narrower check fight a real gap.
-const KNOWN_BOOKLESS_AT_GRADE_10 = new Set(['geography', 'history', 'civic-education']);
+const KNOWN_BOOKLESS_AT_GRADE_10 = new Set(['geography', 'history', 'civic-education', 'physical-education']);
 
 describe('Financial Literacy G10 S1 — curriculum browser', () => {
   it('every MVP subject resolves to at least one visible book', () => {

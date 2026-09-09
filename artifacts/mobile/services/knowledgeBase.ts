@@ -135,6 +135,14 @@ import {
   buildG9CivSem2Catalog,
 } from './curriculumG9CivSem2.ts';
 import {
+  G9_PE_S1_BOOK_ID,
+  buildG9PeSem1Catalog,
+} from './curriculumG9PeSem1.ts';
+import {
+  G9_PE_S2_BOOK_ID,
+  buildG9PeSem2Catalog,
+} from './curriculumG9PeSem2.ts';
+import {
   CHEM_S1_BOOK_ID,
   buildChemSem1Catalog,
 } from './curriculumG10ChemSem1.ts';
@@ -681,6 +689,24 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'National and Civic Education – Grade 9 – Semester 2',
     semester: 2,
     source: 'iqra_curriculum_g9_civic_education_sem2.json (NCCD)',
+  },
+  {
+    id: G9_PE_S1_BOOK_ID,
+    gradeId: 'grade-9',
+    subjectId: 'physical-education',
+    titleAr: 'التربية الرياضية – الصف التاسع – الفصل الأول',
+    titleEn: 'Physical Education – Grade 9 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g9_physical_education_sem1.json (NCCD)',
+  },
+  {
+    id: G9_PE_S2_BOOK_ID,
+    gradeId: 'grade-9',
+    subjectId: 'physical-education',
+    titleAr: 'التربية الرياضية – الصف التاسع – الفصل الثاني',
+    titleEn: 'Physical Education – Grade 9 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g9_physical_education_sem2.json (NCCD)',
   },
 ];
 
@@ -1664,6 +1690,8 @@ const _g9HistSem1 = buildG9HistSem1Catalog();
 const _g9HistSem2 = buildG9HistSem2Catalog();
 const _g9CivSem1 = buildG9CivSem1Catalog();
 const _g9CivSem2 = buildG9CivSem2Catalog();
+const _g9PeSem1 = buildG9PeSem1Catalog();
+const _g9PeSem2 = buildG9PeSem2Catalog();
 const _g9MathSem2 = buildG9MathSem2Catalog();
 // General English — the two books that had a catalog row and no lessons
 // under it until 2026-09-05. Distinct from the four vocational ESP tracks
@@ -1835,6 +1863,8 @@ export const KB_UNITS: KBUnit[] = [
   ..._g9HistSem2.units,
   ..._g9CivSem1.units,
   ..._g9CivSem2.units,
+  ..._g9PeSem1.units,
+  ..._g9PeSem2.units,
   ..._g9MathSem2.units,
   ..._engCommerce.units,
   ..._engAgriculture.units,
@@ -1895,6 +1925,8 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g9HistSem2.lessons,
   ..._g9CivSem1.lessons,
   ..._g9CivSem2.lessons,
+  ..._g9PeSem1.lessons,
+  ..._g9PeSem2.lessons,
   ..._g9MathSem2.lessons,
   // No hand-authored rows exist for English either — these carry only what
   // g10EnglishVocational.ts's browser catalog already assembled.

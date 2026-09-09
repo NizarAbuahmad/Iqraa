@@ -64,6 +64,8 @@ const SUBJECTS = {
   'geo': { tag: 'geo-', unitLevel: false },
   'hist': { tag: 'hist-', unitLevel: false },
   'civ': { tag: 'civ-', unitLevel: false },
+  // Physical Education. Tagged 'pe', not 'phys', to stay clear of physics.
+  'pe': { tag: 'pe-', unitLevel: false },
   // General English, distinct from the four vocational ESP tracks below. The
   // manifest already tags its books `eng-s1` / `eng-s2`, so the stem matches.
   // `UNIT_ID_RE` sorts these keys longest-first precisely so this shorter slug
