@@ -84,6 +84,20 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // not permanent — delete the line once a book lands.
   'social:grade-9',
   'social:grade-10',
+  // science joined 2026-09-10 with its first-ever book (Grade 8, Semester 1).
+  // Its two gaps are not the same kind, and the difference is the whole
+  // reason this list is written out rather than derived:
+  //   - science:grade-9 is ORDINARY. SUBJECTS.grades for science spans
+  //     grade-1..grade-9, so a Grade 9 science book would close it the way
+  //     any other pair closes — delete the line when one lands.
+  //   - science:grade-10 is PERMANENT. Grade 10 has no «العلوم» book because
+  //     it teaches the subject split into physics/chemistry/biology/
+  //     earth-science. That is the exact mirror of the four grade-8 entries
+  //     above: those four are permanently bookless at grade-8 because Grade 8
+  //     combines them into this one science book. Same fact, read from each
+  //     end.
+  'science:grade-9',
+  'science:grade-10',
 ]);
 
 describe('subject/grade coverage across the MVP lists', () => {

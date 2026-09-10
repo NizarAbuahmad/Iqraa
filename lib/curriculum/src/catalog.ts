@@ -232,6 +232,10 @@ import {
   buildG8SocialSem2BrowserCatalog,
 } from './catalogs/g8SocialSem2.ts';
 import {
+  G8_SCIENCE_S1_CURRICULUM_BOOK_ID,
+  buildG8ScienceSem1BrowserCatalog,
+} from './catalogs/g8ScienceSem1.ts';
+import {
   G8_ARABIC_S1_CURRICULUM_BOOK_ID,
   buildG8ArabicSem1BrowserCatalog,
 } from './catalogs/g8ArabicSem1.ts';
@@ -521,7 +525,14 @@ export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9', 'grade-8
 // spans grade-1..grade-9, so social:grade-9 and social:grade-10 are listed
 // bookless rather than permanently excluded — a book at either grade would
 // close the gap normally.
-export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy', 'english', 'physics', 'earth-science', 'biology', 'arabic', 'islamic', 'digital-literacy', 'geography', 'history', 'civic-education', 'physical-education', 'creative-arts', 'vocational-education', 'social'];
+// 'science' joined 2026-09-10, once its first-ever book arrived (Grade 8,
+// Semester 1) — same story as 'social': the subjectId already spanned
+// grade-1..grade-9 with nothing behind it. APPENDED at the tail, like every
+// entry above it, so no stored `subjectIdx` moves. science:grade-9 is an
+// ordinary gap; science:grade-10 is permanent, because Grade 10 splits
+// science into physics/chemistry/biology/earth-science — see
+// subjectGradeCoverage.test.ts.
+export const MVP_SUBJECT_IDS: readonly string[] = ['mathematics', 'chemistry', 'financial-literacy', 'english', 'physics', 'earth-science', 'biology', 'arabic', 'islamic', 'digital-literacy', 'geography', 'history', 'civic-education', 'physical-education', 'creative-arts', 'vocational-education', 'social', 'science'];
 /** Main semester books only (guides/exercises stay in data, hidden from UI). */
 export const MVP_BOOK_IDS: readonly string[] = [
   'book-math-10',
@@ -679,6 +690,9 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // series/format as Grade 9 English above.
   G8_ENG_S1_CURRICULUM_BOOK_ID,
   G8_ENG_S2_CURRICULUM_BOOK_ID,
+  // Grade 8 Science — Semester 1 only so far; the first book behind the
+  // pre-existing 'science' subject.
+  G8_SCIENCE_S1_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -1582,6 +1596,25 @@ export const BOOKS: Book[] = [
     audience: 'all',
     semester: 2,
   },
+  // ── Science Grade 8 – Semester 1 ──────────────────────────────────────────
+  // First real book behind the pre-existing 'science' subject (declared
+  // spanning grades 1-9, bookless until now). Grade 8 is the last grade NCCD
+  // teaches science as one subject: four units covering heredity, atomic
+  // structure, fluid mechanics and earth science, which Grade 9/10 split into
+  // biology/chemistry/physics/earth-science — see g8ScienceSem1.ts.
+  {
+    id: G8_SCIENCE_S1_CURRICULUM_BOOK_ID,
+    title: 'Science – Grade 8, Semester 1',
+    titleAr: 'العلوم – الصف الثامن – الفصل الأول',
+    subjectId: 'science',
+    gradeId: 'grade-8',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
   // ── English Grade 9 – Semesters 1 and 2 ───────────────────────────────────
   // Seven lessons per unit, unlike the Grade 10 English rows further down
   // which sit at scope-and-sequence depth — see g9EngSem1.ts for why the
@@ -2028,16 +2061,15 @@ export const BOOKS: Book[] = [
     downloadNote: "Teacher's Book — Vocational English series (York Press, 2023) · copy on Google Drive",
     downloadNoteAr: 'كتاب المعلم — سلسلة Vocational English (York Press، طبعة 2023) · نسخة على Google Drive',
   },
-  {
-    id: 'book-science-8',
-    title: 'Science – Grade 8',
-    titleAr: 'العلوم – الصف الثامن',
-    subjectId: 'science',
-    gradeId: 'grade-8',
-    academicYear: '2024-2025',
-    language: 'Arabic',
-    edition: '1st',
-  },
+  // `book-science-8` used to sit here: a hand-written placeholder carrying one
+  // invented unit and one invented lesson («States of Matter»), which is the
+  // whole of what Grade 8 Science was until 2026-09-10. Removed the day the
+  // real book-science-8-s1 arrived, for the same reason `unit-eng-10-1` and
+  // `book-math-9` were — a placeholder inside an MVP subject reads as content
+  // and opens as a dead end. `objectives.test.ts` had been excluding its
+  // outcome from the kbl- namespace check on the grounds that science was not
+  // an MVP subject; joining MVP_SUBJECT_IDS is exactly the moment that
+  // exemption expires.
   // Grade 9 has no placeholder rows: `book-math-9` was superseded by the real
   // book-math-9-s1 / -s2 (8 units, 31 lessons) and `book-arabic-9` never had
   // any, so both were removed rather than left to be mistaken for content —
@@ -2188,15 +2220,8 @@ const _HARDCODED_UNITS: Unit[] = [
   // lesson-level dead end for as long as the catalog has existed. Replaced
   // 2026-09-05 by the five real units the student book prints, built from
   // data/iqra_curriculum_g10_english_sem1.json. Nothing referenced its id.
-  {
-    id: 'unit-sci-8-1',
-    bookId: 'book-science-8',
-    name: 'Matter and Its Properties',
-    nameAr: 'المادة وخواصها',
-    description: 'Physical and chemical properties of matter',
-    descriptionAr: 'الخواص الفيزيائية والكيميائية للمادة',
-    order: 1,
-  },
+  // `unit-sci-8-1` ('Matter and Its Properties') went with `book-science-8` on
+  // 2026-09-10 — see the note where that book row used to be.
 ];
 
 // ─── Lessons ──────────────────────────────────────────────────────────────────
@@ -2811,22 +2836,8 @@ const _HARDCODED_LESSONS: Lesson[] = [
   },
 
   // ── Other books ───────────────────────────────────────────────────────────
-  {
-    id: 'lesson-sci-1',
-    unitId: 'unit-sci-8-1',
-    title: 'States of Matter',
-    titleAr: 'حالات المادة',
-    estimatedDuration: 40,
-    objectives: ['Describe solids, liquids, gases', 'Explain state changes using particle theory'],
-    objectivesAr: ['يصف الصلب والسائل والغاز', 'يفسر تغيرات الحالة باستخدام نظرية الجسيمات'],
-    keywords: ['solid', 'liquid', 'gas', 'particle theory', 'melting', 'boiling'],
-    keywordsAr: ['صلب', 'سائل', 'غاز', 'نظرية الجسيمات', 'انصهار', 'غليان'],
-    teacherNotes: "Use ice-to-water-to-steam demonstration. Connect to students' daily experiences.",
-    teacherNotesAr: 'استخدم تجربة الجليد إلى الماء إلى البخار. اربط بتجارب الطلاب اليومية.',
-    outcomes: [
-      { id: 'o-sci-1-1', lessonId: 'lesson-sci-1', description: 'Students explain state changes using kinetic theory', descriptionAr: 'يشرح الطلاب تغيرات الحالة باستخدام النظرية الحركية', bloomsLevel: 'Understand', skills: ['Scientific reasoning'] },
-    ],
-  },
+  // `lesson-sci-1` ('States of Matter') went with `book-science-8` on
+  // 2026-09-10 — see the note where that book row used to be.
 ];
 
 // ─── Active catalog: hide legacy Math/Chem G10 rows, inject NCCD catalogs ────
@@ -2893,6 +2904,7 @@ const _g8IslamicSem1Browser = buildG8IslamicSem1BrowserCatalog();
 const _g8IslamicSem2Browser = buildG8IslamicSem2BrowserCatalog();
 const _g8EngSem1Browser = buildG8EngSem1BrowserCatalog();
 const _g8EngSem2Browser = buildG8EngSem2BrowserCatalog();
+const _g8ScienceSem1Browser = buildG8ScienceSem1BrowserCatalog();
 const _g9CivSem1Browser = buildG9CivSem1BrowserCatalog();
 const _g9CivSem2Browser = buildG9CivSem2BrowserCatalog();
 const _g9PeSem1Browser = buildG9PeSem1BrowserCatalog();
@@ -3076,6 +3088,7 @@ export const UNITS: Unit[] = [
   ..._g8IslamicSem2Browser.units,
   ..._g8EngSem1Browser.units,
   ..._g8EngSem2Browser.units,
+  ..._g8ScienceSem1Browser.units,
   ..._g9CivSem1Browser.units,
   ..._g9CivSem2Browser.units,
   ..._g9PeSem1Browser.units,
@@ -3152,6 +3165,7 @@ export const LESSONS: Lesson[] = [
   ..._g8IslamicSem2Browser.lessons,
   ..._g8EngSem1Browser.lessons,
   ..._g8EngSem2Browser.lessons,
+  ..._g8ScienceSem1Browser.lessons,
   ..._g9CivSem1Browser.lessons,
   ..._g9CivSem2Browser.lessons,
   ..._g9PeSem1Browser.lessons,
