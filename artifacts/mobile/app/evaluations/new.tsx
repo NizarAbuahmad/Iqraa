@@ -52,6 +52,7 @@ const ALL_TYPES: QuestionType[] = [
   'open_ended',
   'problem_solving',
   'practical_task',
+  'read_aloud',
 ];
 const TYPE_LABEL_KEY: Record<QuestionType, TranslationKey> = {
   multiple_choice: 'typeMultipleChoice',
@@ -62,6 +63,7 @@ const TYPE_LABEL_KEY: Record<QuestionType, TranslationKey> = {
   open_ended: 'typeOpenEnded',
   problem_solving: 'typeProblemSolving',
   practical_task: 'typePracticalTask',
+  read_aloud: 'typeReadAloud',
 };
 const DIFFICULTIES: Difficulty[] = ['basic', 'standard', 'advanced'];
 const DIFFICULTY_KEY: Record<Difficulty, TranslationKey> = {

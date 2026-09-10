@@ -1068,6 +1068,7 @@ const translations = {
     typeOpenEnded: 'سؤال مفتوح',
     typeProblemSolving: 'حل مسألة',
     typePracticalTask: 'مهمة عملية',
+    typeReadAloud: 'قراءة جهرية',
     marksAbbrev: (n: string) => `${n} ع`,
     // «تم التحقق» يوصف المفتاح لا السؤال: البرنامج يتحقق من صحة الإجابة
     // رياضيًا، ولا يحكم على جودة السؤال نفسه.
@@ -2248,6 +2249,7 @@ const translations = {
     typeOpenEnded: 'Open-Ended',
     typeProblemSolving: 'Problem Solving',
     typePracticalTask: 'Practical Task',
+    typeReadAloud: 'Read Aloud',
     marksAbbrev: (n: string) => `${n} pts`,
     keyVerifiedBadge: 'Key verified',
     keysVerifiedSummary: (n: string, m: string) =>

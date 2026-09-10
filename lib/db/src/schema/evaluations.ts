@@ -35,7 +35,16 @@ export type QuestionType =
   | "short_answer"
   | "open_ended"
   | "problem_solving"
-  | "practical_task";
+  | "practical_task"
+  /**
+   * Read a printed passage aloud; the recording is transcribed and compared to
+   * the passage. The one type whose prompt IS the answer key, which is why it
+   * keeps its reference text in `body` and leaves `expectedAnswer` empty —
+   * see `questionTypes.ts`.
+   *
+   * The column is `text()`, not a pg enum, so adding this needs no schema push.
+   */
+  | "read_aloud";
 
 /**
  * How a question's marks are decided.

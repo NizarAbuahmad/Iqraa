@@ -55,6 +55,7 @@ const TYPE_LABEL_KEY: Record<QuestionType, TranslationKey> = {
   open_ended: 'typeOpenEnded',
   problem_solving: 'typeProblemSolving',
   practical_task: 'typePracticalTask',
+  read_aloud: 'typeReadAloud',
 };
 
 /**
