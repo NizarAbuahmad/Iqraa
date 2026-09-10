@@ -184,17 +184,6 @@ export async function apiFetch(
   return res;
 }
 
-/** Thrown by apiJson on a non-ok response. Carries the server's `code`
- * (e.g. "email_not_verified") alongside the human-readable message, so a
- * caller can branch on it instead of pattern-matching error text. */
-export class ApiError extends Error {
-  code?: string;
-  constructor(message: string, code?: string) {
-    super(message);
-    this.code = code;
-  }
-}
-
 export async function apiJson<T>(
   path: string,
   options: ApiOptions = {},
@@ -202,8 +191,7 @@ export async function apiJson<T>(
   const res = await apiFetch(path, options);
   const data = await res.json();
   if (!res.ok) {
-    const body = data as { error?: string; code?: string };
-    throw new ApiError(body.error ?? `Request failed: ${res.status}`, body.code);
+    throw new Error((data as { error?: string }).error ?? `Request failed: ${res.status}`);
   }
   return data as T;
 }

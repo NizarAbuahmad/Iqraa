@@ -76,17 +76,7 @@ interface AuthContextType {
    * entirely and silently create a teacher.
    */
   loginWithGoogle: (credential: string, signup?: Pick<RegisterData, 'role'>) => Promise<void>;
-  /**
-   * Creates the account but does NOT sign in — a password account starts
-   * unverified and the server refuses login until `verifyEmail` succeeds.
-   * Returns the email the code was sent to, for the caller to carry to the
-   * verify screen (the trimmed/lowercased form the server actually used).
-   */
-  register: (data: RegisterData) => Promise<{ email: string }>;
-  /** Submits the 6-digit code from the verification email. Signs the user in on success, same as login. */
-  verifyEmail: (email: string, code: string) => Promise<void>;
-  /** Requests a fresh code for an unverified account. Always resolves — the server never confirms whether the email exists. */
-  resendVerification: (email: string) => Promise<void>;
+  register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: { preferredLanguage?: string; firstName?: string; lastName?: string }) => Promise<void>;
   /**
@@ -264,7 +254,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (payload.confirmPassword && payload.confirmPassword !== payload.password)
       throw new Error('Passwords do not match');
 
-    const data = await apiJson<{ email: string; message: string }>(
+    const data = await apiJson<{ accessToken: string; refreshToken: string; user: ApiUser }>(
       '/auth/register',
       {
         method: 'POST',
@@ -279,27 +269,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
     );
 
-    return { email: data.email };
-  }, []);
-
-  const verifyEmail = useCallback(async (email: string, code: string) => {
-    const data = await apiJson<{ accessToken: string; refreshToken: string; user: ApiUser }>(
-      '/auth/verify-email',
-      {
-        method: 'POST',
-        body: JSON.stringify({ email: email.trim(), code: code.trim() }),
-      },
-    );
-
     await storeTokens(data.accessToken, data.refreshToken);
     setUser(toUser(data.user));
-  }, []);
-
-  const resendVerification = useCallback(async (email: string) => {
-    await apiJson('/auth/resend-verification', {
-      method: 'POST',
-      body: JSON.stringify({ email: email.trim() }),
-    });
   }, []);
 
   const logout = useCallback(async () => {
@@ -378,8 +349,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         loginWithGoogle,
         register,
-        verifyEmail,
-        resendVerification,
         logout,
         updateProfile,
         deleteAccount,

@@ -55,12 +55,6 @@ export default function LoginScreen() {
     try {
       await login(email, password);
     } catch (e: any) {
-      if (e.code === 'email_not_verified') {
-        // Their only way back in if the original code email never arrived —
-        // this is the recovery path for it, not just a nicer error message.
-        router.push({ pathname: '/(auth)/verify-email', params: { email: email.trim() } });
-        return;
-      }
       setError(e.message ?? (lang === 'ar' ? 'تعذّر تسجيل الدخول' : 'Login failed'));
     } finally {
       setLoading(false);
