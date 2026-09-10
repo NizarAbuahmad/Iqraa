@@ -78,10 +78,24 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // is ['grade-8'] alone here too.
   'vocational-education:grade-9',
   'vocational-education:grade-10',
-  // social joined the same day. Unlike creative-arts/vocational-education,
-  // SUBJECTS.grades for social already spans grade-1..grade-9, so these
-  // are ordinary gaps (a Grade 9 or 10 book would close them normally),
-  // not permanent — delete the line once a book lands.
+  // social joined the same day, and both entries are PERMANENT — corrected
+  // on 2026-09-10, having been recorded here as ordinary gaps to "delete the
+  // line once a book lands". No such book will land. NCCD teaches «الدراسات
+  // الاجتماعية» as one combined subject only at Grade 8; from Grade 9 up it
+  // is split into geography, history and civic-education, each its own
+  // subject with its own books — all three now complete at both grades
+  // (book-geo/hist/civ-9-s1|s2 and -10-s1|s2, twelve books). So the content
+  // is fully covered; it just answers to three subjectIds instead of one.
+  //
+  // Note SUBJECTS.grades for social still spans grade-1..grade-9, which is
+  // what made this look ordinary: that range is about the primary grades the
+  // subject is declared for, and cannot on its own tell you a grade-9 book
+  // exists. The declaration outran the curriculum here — do not read it as
+  // evidence a book is merely missing.
+  //
+  // Same shape as science:grade-10 below, in the opposite direction: there a
+  // Grade 10 subject dissolves into four, here a Grade 8 subject dissolves
+  // into three.
   'social:grade-9',
   'social:grade-10',
   // science joined 2026-09-10 with its first-ever book (Grade 8, Semester 1).
