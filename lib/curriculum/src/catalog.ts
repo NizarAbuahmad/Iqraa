@@ -236,6 +236,10 @@ import {
   buildG8ScienceSem1BrowserCatalog,
 } from './catalogs/g8ScienceSem1.ts';
 import {
+  G8_SCIENCE_S2_CURRICULUM_BOOK_ID,
+  buildG8ScienceSem2BrowserCatalog,
+} from './catalogs/g8ScienceSem2.ts';
+import {
   G8_ARABIC_S1_CURRICULUM_BOOK_ID,
   buildG8ArabicSem1BrowserCatalog,
 } from './catalogs/g8ArabicSem1.ts';
@@ -690,9 +694,11 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // series/format as Grade 9 English above.
   G8_ENG_S1_CURRICULUM_BOOK_ID,
   G8_ENG_S2_CURRICULUM_BOOK_ID,
-  // Grade 8 Science — Semester 1 only so far; the first book behind the
-  // pre-existing 'science' subject.
+  // Grade 8 Science — both semesters now attached; the first (and only) books
+  // behind the pre-existing 'science' subject. Semester 2 numbers its units
+  // 5-9, continuing Semester 1's 1-4 rather than restarting.
   G8_SCIENCE_S1_CURRICULUM_BOOK_ID,
+  G8_SCIENCE_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -1614,6 +1620,23 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+  },
+  // ── Science Grade 8 – Semester 2 ──────────────────────────────────────────
+  // Five more units — the human body, heat, chemical bonds and reactions,
+  // magnetism, weather and space — numbered 5-9 in the book itself, continuing
+  // Semester 1's 1-4 rather than restarting. See g8ScienceSem2.ts.
+  {
+    id: G8_SCIENCE_S2_CURRICULUM_BOOK_ID,
+    title: 'Science – Grade 8, Semester 2',
+    titleAr: 'العلوم – الصف الثامن – الفصل الثاني',
+    subjectId: 'science',
+    gradeId: 'grade-8',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
   },
   // ── English Grade 9 – Semesters 1 and 2 ───────────────────────────────────
   // Seven lessons per unit, unlike the Grade 10 English rows further down
@@ -2905,6 +2928,7 @@ const _g8IslamicSem2Browser = buildG8IslamicSem2BrowserCatalog();
 const _g8EngSem1Browser = buildG8EngSem1BrowserCatalog();
 const _g8EngSem2Browser = buildG8EngSem2BrowserCatalog();
 const _g8ScienceSem1Browser = buildG8ScienceSem1BrowserCatalog();
+const _g8ScienceSem2Browser = buildG8ScienceSem2BrowserCatalog();
 const _g9CivSem1Browser = buildG9CivSem1BrowserCatalog();
 const _g9CivSem2Browser = buildG9CivSem2BrowserCatalog();
 const _g9PeSem1Browser = buildG9PeSem1BrowserCatalog();
@@ -3089,6 +3113,7 @@ export const UNITS: Unit[] = [
   ..._g8EngSem1Browser.units,
   ..._g8EngSem2Browser.units,
   ..._g8ScienceSem1Browser.units,
+  ..._g8ScienceSem2Browser.units,
   ..._g9CivSem1Browser.units,
   ..._g9CivSem2Browser.units,
   ..._g9PeSem1Browser.units,
@@ -3166,6 +3191,7 @@ export const LESSONS: Lesson[] = [
   ..._g8EngSem1Browser.lessons,
   ..._g8EngSem2Browser.lessons,
   ..._g8ScienceSem1Browser.lessons,
+  ..._g8ScienceSem2Browser.lessons,
   ..._g9CivSem1Browser.lessons,
   ..._g9CivSem2Browser.lessons,
   ..._g9PeSem1Browser.lessons,

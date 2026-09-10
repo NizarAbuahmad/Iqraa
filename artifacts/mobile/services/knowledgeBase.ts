@@ -211,6 +211,10 @@ import {
   buildG8ScienceSem1Catalog,
 } from './curriculumG8ScienceSem1.ts';
 import {
+  G8_SCIENCE_S2_BOOK_ID,
+  buildG8ScienceSem2Catalog,
+} from './curriculumG8ScienceSem2.ts';
+import {
   G9_CIV_S1_BOOK_ID,
   buildG9CivSem1Catalog,
 } from './curriculumG9CivSem1.ts';
@@ -947,6 +951,15 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Science – Grade 8 – Semester 1',
     semester: 1,
     source: 'iqra_curriculum_g8_science_sem1.json (NCCD)',
+  },
+  {
+    id: G8_SCIENCE_S2_BOOK_ID,
+    gradeId: 'grade-8',
+    subjectId: 'science',
+    titleAr: 'العلوم – الصف الثامن – الفصل الثاني',
+    titleEn: 'Science – Grade 8 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g8_science_sem2.json (NCCD)',
   },
   {
     id: G9_CIV_S1_BOOK_ID,
@@ -1985,6 +1998,7 @@ const _g8IslamicSem2 = buildG8IslamicSem2Catalog();
 const _g8EngSem1 = buildG8EngSem1Catalog();
 const _g8EngSem2 = buildG8EngSem2Catalog();
 const _g8ScienceSem1 = buildG8ScienceSem1Catalog();
+const _g8ScienceSem2 = buildG8ScienceSem2Catalog();
 const _g9CivSem1 = buildG9CivSem1Catalog();
 const _g9CivSem2 = buildG9CivSem2Catalog();
 const _g9PeSem1 = buildG9PeSem1Catalog();
@@ -2179,6 +2193,7 @@ export const KB_UNITS: KBUnit[] = [
   ..._g8EngSem1.units,
   ..._g8EngSem2.units,
   ..._g8ScienceSem1.units,
+  ..._g8ScienceSem2.units,
   ..._g9CivSem1.units,
   ..._g9CivSem2.units,
   ..._g9PeSem1.units,
@@ -2262,6 +2277,7 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g8EngSem1.lessons,
   ..._g8EngSem2.lessons,
   ..._g8ScienceSem1.lessons,
+  ..._g8ScienceSem2.lessons,
   ..._g9CivSem1.lessons,
   ..._g9CivSem2.lessons,
   ..._g9PeSem1.lessons,
