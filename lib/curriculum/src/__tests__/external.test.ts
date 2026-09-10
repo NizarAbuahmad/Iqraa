@@ -15,6 +15,7 @@ import {
   LICENSE_CHECK_MAX_AGE_DAYS,
   externalResourcesForLesson,
   getExternalResource,
+  ingestRefusal,
   isLicenseCheckStale,
   isRedistributable,
   validateExternalResources,
@@ -122,6 +123,61 @@ describe('validation catches what would ship silently', () => {
 
   it('accepts a well-formed entry', () => {
     assert.deepEqual(check({}), []);
+  });
+});
+
+/**
+ * The gate `fetch-external.ts` runs before taking a copy of anything.
+ *
+ * Ingesting is redistribution, so each refusal here is a case where copying
+ * would be the wrong thing to do — and the failure mode of letting one through
+ * is a working feature serving material we had no right to serve.
+ */
+describe('ingest refusal', () => {
+  const now = new Date('2026-09-10T00:00:00Z');
+  const ok: ExternalResource = { ...base, fetchUrl: 'https://example.invalid/a.mp3' };
+
+  it('permits a fresh, openly-licensed resource with a named asset', () => {
+    assert.equal(ingestRefusal(ok, now), null);
+  });
+
+  it('refuses a licence that grants no redistribution right', () => {
+    for (const license of ['embed-terms', 'CC-BY-SA-4.0'] as const) {
+      assert.match(
+        ingestRefusal({ ...ok, license }, now) ?? '',
+        /grants no redistribution right/,
+        license,
+      );
+    }
+  });
+
+  it('refuses a stale licence check', () => {
+    // The PhET case exactly: accurate when written, wrong a week later.
+    const stale = { ...ok, licenseCheckedAt: '2025-01-01' };
+    assert.match(ingestRefusal(stale, now) ?? '', /licence last checked/);
+  });
+
+  it('refuses an unparseable licence date without claiming it is old', () => {
+    const bad = ingestRefusal({ ...ok, licenseCheckedAt: 'whenever' }, now) ?? '';
+    assert.match(bad, /unparseable date/);
+    assert.doesNotMatch(bad, /NaN/);
+  });
+
+  it('refuses to guess the asset from the article page', () => {
+    const { fetchUrl: _drop, ...noFetch } = ok;
+    assert.match(ingestRefusal(noFetch, now) ?? '', /never inferred from the page/);
+  });
+
+  it('refuses a non-https asset', () => {
+    assert.match(ingestRefusal({ ...ok, fetchUrl: 'http://x.invalid/a.mp3' }, now) ?? '', /not https/);
+  });
+
+  it('checks the licence before the mechanics', () => {
+    // Order matters for the message a person reads: a CC-BY-NC resource with
+    // no fetchUrl should say the licence forbids copying, not that a field is
+    // missing — fixing the field would not make it fetchable.
+    const both = { ...ok, license: 'embed-terms' as const, fetchUrl: undefined };
+    assert.match(ingestRefusal(both, now) ?? '', /grants no redistribution right/);
   });
 });
 

@@ -158,6 +158,35 @@ export function getExternalResource(id: string): ExternalResource | undefined {
 }
 
 /**
+ * Why this resource must not be copied into our own storage, or null if it may be.
+ *
+ * The licence decision, kept here with the rest of the licence model rather
+ * than inside `fetch-external.ts`: a script that runs on demand is not where a
+ * rule this consequential should live, and a rule nothing can import is a rule
+ * nothing can test.
+ *
+ * Every branch states its reason as prose. A skipped resource with no stated
+ * cause is indistinguishable from one nobody got to, and this text is what a
+ * person reads to decide what to fix.
+ */
+export function ingestRefusal(r: ExternalResource, now = new Date()): string | null {
+  if (!isRedistributable(r)) {
+    return `${r.license} grants no redistribution right — point at it, do not copy it`;
+  }
+  if (isLicenseCheckStale(r, now)) {
+    const age = licenseCheckAgeDays(r, now);
+    const when = Number.isFinite(age) ? `${Math.round(age)} days ago` : 'unparseable date';
+    return `licence last checked ${r.licenseCheckedAt} (${when}, limit ${LICENSE_CHECK_MAX_AGE_DAYS} days)`
+      + ' — re-read the terms and update licenseCheckedAt';
+  }
+  if (!r.fetchUrl) {
+    return 'no fetchUrl — the asset must be named explicitly, never inferred from the page';
+  }
+  if (!r.fetchUrl.startsWith('https://')) return `fetchUrl is not https: ${r.fetchUrl}`;
+  return null;
+}
+
+/**
  * Structural problems that make a manifest entry unusable, as messages.
  *
  * Same posture as `validateCurriculum`: this reports, and the verify script
