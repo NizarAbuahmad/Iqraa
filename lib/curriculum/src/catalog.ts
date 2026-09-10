@@ -236,6 +236,10 @@ import {
   buildG8ArabicSem1BrowserCatalog,
 } from './catalogs/g8ArabicSem1.ts';
 import {
+  G8_ISLAMIC_S1_CURRICULUM_BOOK_ID,
+  buildG8IslamicSem1BrowserCatalog,
+} from './catalogs/g8IslamicSem1.ts';
+import {
   G9_CIV_S1_CURRICULUM_BOOK_ID,
   buildG9CivSem1BrowserCatalog,
 } from './catalogs/g9CivSem1.ts';
@@ -651,6 +655,8 @@ export const MVP_BOOK_IDS: readonly string[] = [
   G8_MATH_S1_CURRICULUM_BOOK_ID,
   // Grade 8 Arabic — Semester 1 only; S2 has not been attached.
   G8_ARABIC_S1_CURRICULUM_BOOK_ID,
+  // Grade 8 Islamic Education — Semester 1 only; S2 has not been attached.
+  G8_ISLAMIC_S1_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -1451,6 +1457,28 @@ export const BOOKS: Book[] = [
     title: 'Arabic – Grade 8, Semester 1',
     titleAr: 'اللغة العربية – الصف الثامن – الفصل الأول',
     subjectId: 'arabic',
+    gradeId: 'grade-8',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  // ── Islamic Education Grade 8 – Semester 1 ────────────────────────────────
+  // First Grade 8 book behind the pre-existing 'islamic' subject (already
+  // spans every grade). Semester 2 has not been attached. Objectives and
+  // periods come from the teacher guide, matched by lesson title/content
+  // rather than position — the guide's own lesson order diverges from the
+  // book's structurally (a merged Hujurat lesson, one lesson with no guide
+  // counterpart, one guide lesson with no book counterpart, one book lesson
+  // the guide splits in two) — see g8IslamicSem1.ts and the JSON's
+  // known_gaps.
+  {
+    id: G8_ISLAMIC_S1_CURRICULUM_BOOK_ID,
+    title: 'Islamic Education – Grade 8, Semester 1',
+    titleAr: 'التربية الإسلامية – الصف الثامن – الفصل الأول',
+    subjectId: 'islamic',
     gradeId: 'grade-8',
     academicYear: '2024-2025',
     language: 'Arabic',
@@ -2765,6 +2793,7 @@ const _g8SocialSem2Browser = buildG8SocialSem2BrowserCatalog();
 const _g8MathSem2Browser = buildG8MathSem2BrowserCatalog();
 const _g8MathSem1Browser = buildG8MathSem1BrowserCatalog();
 const _g8ArabicSem1Browser = buildG8ArabicSem1BrowserCatalog();
+const _g8IslamicSem1Browser = buildG8IslamicSem1BrowserCatalog();
 const _g9CivSem1Browser = buildG9CivSem1BrowserCatalog();
 const _g9CivSem2Browser = buildG9CivSem2BrowserCatalog();
 const _g9PeSem1Browser = buildG9PeSem1BrowserCatalog();
@@ -2943,6 +2972,7 @@ export const UNITS: Unit[] = [
   ..._g8MathSem2Browser.units,
   ..._g8MathSem1Browser.units,
   ..._g8ArabicSem1Browser.units,
+  ..._g8IslamicSem1Browser.units,
   ..._g9CivSem1Browser.units,
   ..._g9CivSem2Browser.units,
   ..._g9PeSem1Browser.units,
@@ -3014,6 +3044,7 @@ export const LESSONS: Lesson[] = [
   ..._g8MathSem2Browser.lessons,
   ..._g8MathSem1Browser.lessons,
   ..._g8ArabicSem1Browser.lessons,
+  ..._g8IslamicSem1Browser.lessons,
   ..._g9CivSem1Browser.lessons,
   ..._g9CivSem2Browser.lessons,
   ..._g9PeSem1Browser.lessons,
