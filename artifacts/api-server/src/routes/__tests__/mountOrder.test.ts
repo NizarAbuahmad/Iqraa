@@ -395,6 +395,69 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
   });
 });
 
+describe("API register (student accounts enabled)", { skip: built ? false : "run `pnpm build` first" }, () => {
+  // Separate server/describe from the suite above: that one pins the
+  // shipping default (STUDENT_ACCOUNTS unset), so proving the *other* branch
+  // — the code requirement actually removed from /register's validation —
+  // needs its own child process with the flag flipped on.
+  let child: ChildProcess;
+  let base: string;
+
+  before(async () => {
+    const port = 8500 + Math.floor(Math.random() * 400);
+    base = `http://127.0.0.1:${port}/api`;
+    child = spawn(process.execPath, [entry], {
+      env: {
+        ...process.env,
+        PORT: String(port),
+        STUDENT_ACCOUNTS: "true",
+        DATABASE_URL: "postgres://u:p@127.0.0.1:5432/none",
+        SESSION_SECRET: "test-secret",
+        OPENAI_API_KEY: "sk-test-placeholder",
+      },
+      stdio: "ignore",
+    });
+
+    const deadline = Date.now() + 20_000;
+    for (;;) {
+      try {
+        const res = await fetch(`${base}/healthz`);
+        if (res.ok) break;
+      } catch {
+        /* not listening yet */
+      }
+      if (Date.now() > deadline) throw new Error("server did not start");
+      await new Promise((r) => setTimeout(r, 150));
+    }
+  });
+
+  after(() => child?.kill());
+
+  it("no longer requires a class code to register as a parent or student", async () => {
+    // Decoupled account creation from roster-code claiming: a parent/student
+    // account is created bare now, and claims a roster row afterwards through
+    // POST /auth/claim. The old behavior refused this with 400 "A class code
+    // is required..." before ever touching the database — proving that is
+    // gone means proving the request instead reaches the database call, which
+    // this suite's deliberately unreachable DATABASE_URL turns into a 500.
+    // A 500 here is progress, not a flaw — same reasoning the /take/:code and
+    // /auth/join/:code tests above rely on.
+    const res = await fetch(`${base}/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        firstName: "A",
+        lastName: "B",
+        email: "child@example.com",
+        password: "Sufficiently1Strong!",
+        role: "parent",
+      }),
+    });
+    assert.notEqual(res.status, 400, "a missing class code must not be refused anymore");
+    assert.equal(res.status, 500, "no database in this suite — reaching it is the proof");
+  });
+});
+
 describe("the built bundle ships its data, not just its code", { skip: built ? false : "run `pnpm build` first" }, () => {
   it("puts the extracted knowledge-bank text where the bundle actually looks for it", () => {
     // `@workspace/curriculum/passages.ts` resolves `data/extracted` relative
