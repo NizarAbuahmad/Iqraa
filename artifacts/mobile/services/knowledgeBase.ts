@@ -223,6 +223,14 @@ import {
   buildG9CivSem2Catalog,
 } from './curriculumG9CivSem2.ts';
 import {
+  CIV_S1_BOOK_ID,
+  buildCivSem1Catalog,
+} from './curriculumG10CivSem1.ts';
+import {
+  CIV_S2_BOOK_ID,
+  buildCivSem2Catalog,
+} from './curriculumG10CivSem2.ts';
+import {
   G9_PE_S1_BOOK_ID,
   buildG9PeSem1Catalog,
 } from './curriculumG9PeSem1.ts';
@@ -978,6 +986,24 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'National and Civic Education – Grade 9 – Semester 2',
     semester: 2,
     source: 'iqra_curriculum_g9_civic_education_sem2.json (NCCD)',
+  },
+  {
+    id: CIV_S1_BOOK_ID,
+    gradeId: 'grade-10',
+    subjectId: 'civic-education',
+    titleAr: 'التربية الوطنية والمدنية – الصف العاشر – الفصل الأول',
+    titleEn: 'National and Civic Education – Grade 10 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g10_civic_education_sem1.json (NCCD)',
+  },
+  {
+    id: CIV_S2_BOOK_ID,
+    gradeId: 'grade-10',
+    subjectId: 'civic-education',
+    titleAr: 'التربية الوطنية والمدنية – الصف العاشر – الفصل الثاني',
+    titleEn: 'National and Civic Education – Grade 10 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g10_civic_education_sem2.json (NCCD)',
   },
   {
     id: G9_PE_S1_BOOK_ID,
@@ -2001,6 +2027,8 @@ const _g8ScienceSem1 = buildG8ScienceSem1Catalog();
 const _g8ScienceSem2 = buildG8ScienceSem2Catalog();
 const _g9CivSem1 = buildG9CivSem1Catalog();
 const _g9CivSem2 = buildG9CivSem2Catalog();
+const _civSem1 = buildCivSem1Catalog();
+const _civSem2 = buildCivSem2Catalog();
 const _g9PeSem1 = buildG9PeSem1Catalog();
 const _g9PeSem2 = buildG9PeSem2Catalog();
 const _g9MathSem2 = buildG9MathSem2Catalog();
@@ -2196,6 +2224,8 @@ export const KB_UNITS: KBUnit[] = [
   ..._g8ScienceSem2.units,
   ..._g9CivSem1.units,
   ..._g9CivSem2.units,
+  ..._civSem1.units,
+  ..._civSem2.units,
   ..._g9PeSem1.units,
   ..._g9PeSem2.units,
   ..._g9MathSem2.units,
@@ -2280,6 +2310,8 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g8ScienceSem2.lessons,
   ..._g9CivSem1.lessons,
   ..._g9CivSem2.lessons,
+  ..._civSem1.lessons,
+  ..._civSem2.lessons,
   ..._g9PeSem1.lessons,
   ..._g9PeSem2.lessons,
   ..._g9MathSem2.lessons,
