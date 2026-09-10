@@ -107,11 +107,11 @@ const translations = {
 
     // Auth
     welcomeBack: 'مرحبًا بعودتك',
-    signInSubtitle: 'ادخل إلى مساحة التحضير',
-    loginValueProp: 'مساعد عربي لتحضير الدروس وفق المنهاج الأردني',
-    loginBrandEyebrow: 'للمعلمين والمدارس',
+    signInSubtitle: 'سجّل الدخول إلى حسابك',
+    loginValueProp: 'منصة عربية لتحضير الدروس ومتابعة الصفوف وفق المنهاج الأردني',
+    loginBrandEyebrow: 'للمعلمين وأولياء الأمور والطلبة',
     emailAddress: 'البريد الإلكتروني',
-    emailPlaceholder: 'you@school.edu.jo',
+    emailPlaceholder: 'name@email.com',
     password: 'كلمة المرور',
     passwordPlaceholder: 'كلمة مرورك',
     signIn: 'تسجيل الدخول',
@@ -121,7 +121,7 @@ const translations = {
 
     // Register
     createYourAccount: 'أنشئ حسابك',
-    registerSubtitle: 'انضم إلى معلمي الأردن',
+    registerSubtitle: 'انضم إلى مجتمع اقرأ في الأردن',
     fullName: 'الاسم الكامل',
     fullNamePlaceholder: 'اسمك الكامل',
     firstName: 'الاسم الأول',
@@ -1308,11 +1308,11 @@ const translations = {
     tabProfile: 'Profile',
 
     welcomeBack: 'Welcome back',
-    signInSubtitle: 'Enter your teaching workspace',
-    loginValueProp: 'An Arabic AI platform for lesson preparation aligned with the Jordanian curriculum',
-    loginBrandEyebrow: 'For teachers and schools',
+    signInSubtitle: 'Sign in to your account',
+    loginValueProp: 'An Arabic platform for lesson preparation and following a class, aligned with the Jordanian curriculum',
+    loginBrandEyebrow: 'For teachers, parents and students',
     emailAddress: 'Email address',
-    emailPlaceholder: 'you@school.edu.jo',
+    emailPlaceholder: 'name@email.com',
     password: 'Password',
     passwordPlaceholder: 'Your password',
     signIn: 'Sign In',
@@ -1321,7 +1321,7 @@ const translations = {
     createAccount: 'Create account',
 
     createYourAccount: 'Create your account',
-    registerSubtitle: 'Join thousands of Jordanian teachers',
+    registerSubtitle: 'Join the IQRA community in Jordan',
     fullName: 'Full name',
     fullNamePlaceholder: 'Your full name',
     firstName: 'First name',
