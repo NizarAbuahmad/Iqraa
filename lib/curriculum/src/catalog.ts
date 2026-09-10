@@ -236,6 +236,10 @@ import {
   buildG8ArabicSem1BrowserCatalog,
 } from './catalogs/g8ArabicSem1.ts';
 import {
+  G8_ARABIC_S2_CURRICULUM_BOOK_ID,
+  buildG8ArabicSem2BrowserCatalog,
+} from './catalogs/g8ArabicSem2.ts';
+import {
   G8_ISLAMIC_S1_CURRICULUM_BOOK_ID,
   buildG8IslamicSem1BrowserCatalog,
 } from './catalogs/g8IslamicSem1.ts';
@@ -665,8 +669,9 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // Grade 8 Math — both semesters attached.
   G8_MATH_S2_CURRICULUM_BOOK_ID,
   G8_MATH_S1_CURRICULUM_BOOK_ID,
-  // Grade 8 Arabic — Semester 1 only; S2 has not been attached.
+  // Grade 8 Arabic — both semesters now attached.
   G8_ARABIC_S1_CURRICULUM_BOOK_ID,
+  G8_ARABIC_S2_CURRICULUM_BOOK_ID,
   // Grade 8 Islamic Education — both semesters now attached.
   G8_ISLAMIC_S1_CURRICULUM_BOOK_ID,
   G8_ISLAMIC_S2_CURRICULUM_BOOK_ID,
@@ -1466,9 +1471,11 @@ export const BOOKS: Book[] = [
   },
   // ── Arabic Grade 8 – Semester 1 ───────────────────────────────────────────
   // First Grade 8 book behind the pre-existing 'arabic' subject (already
-  // spans every grade). Semester 2 has not been attached — a Grade 7 file
-  // was misfiled into this grade's folder and was ignored, not used as a
-  // substitute — see g8ArabicSem1.ts and the JSON's known_gaps.
+  // spans every grade). Semester 2 is attached too — the file in the same
+  // folder is misNAMED «للصف السابع», not misfiled: its cover, copyright page
+  // and unit numbering (6-10) are all Grade 8 Semester 2. It was once ignored
+  // on the strength of its filename alone; that call was wrong and has been
+  // reversed — see g8ArabicSem1.ts and the JSON's known_gaps.
   {
     id: G8_ARABIC_S1_CURRICULUM_BOOK_ID,
     title: 'Arabic – Grade 8, Semester 1',
@@ -1481,6 +1488,25 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+  },
+  // ── Arabic Grade 8 – Semester 2 ───────────────────────────────────────────
+  // Direct sequel to Semester 1, closing out grade-8 Arabic. Same «العربية
+  // لغتي» shape: five units (numbered 6-10, continuing S1's 1-5), five fixed
+  // skill-lessons apiece, objectives verbatim from each unit's «كفايات
+  // الوحدة» page. Its source PDF is the one named «للصف السابع» — a wrong
+  // filename on the genuine Grade 8 Semester 2 book — see g8ArabicSem2.ts.
+  {
+    id: G8_ARABIC_S2_CURRICULUM_BOOK_ID,
+    title: 'Arabic – Grade 8, Semester 2',
+    titleAr: 'اللغة العربية – الصف الثامن – الفصل الثاني',
+    subjectId: 'arabic',
+    gradeId: 'grade-8',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
   },
   // ── Islamic Education Grade 8 – Semester 1 ────────────────────────────────
   // First Grade 8 book behind the pre-existing 'islamic' subject (already
@@ -2862,6 +2888,7 @@ const _g8SocialSem2Browser = buildG8SocialSem2BrowserCatalog();
 const _g8MathSem2Browser = buildG8MathSem2BrowserCatalog();
 const _g8MathSem1Browser = buildG8MathSem1BrowserCatalog();
 const _g8ArabicSem1Browser = buildG8ArabicSem1BrowserCatalog();
+const _g8ArabicSem2Browser = buildG8ArabicSem2BrowserCatalog();
 const _g8IslamicSem1Browser = buildG8IslamicSem1BrowserCatalog();
 const _g8IslamicSem2Browser = buildG8IslamicSem2BrowserCatalog();
 const _g8EngSem1Browser = buildG8EngSem1BrowserCatalog();
@@ -3044,6 +3071,7 @@ export const UNITS: Unit[] = [
   ..._g8MathSem2Browser.units,
   ..._g8MathSem1Browser.units,
   ..._g8ArabicSem1Browser.units,
+  ..._g8ArabicSem2Browser.units,
   ..._g8IslamicSem1Browser.units,
   ..._g8IslamicSem2Browser.units,
   ..._g8EngSem1Browser.units,
@@ -3119,6 +3147,7 @@ export const LESSONS: Lesson[] = [
   ..._g8MathSem2Browser.lessons,
   ..._g8MathSem1Browser.lessons,
   ..._g8ArabicSem1Browser.lessons,
+  ..._g8ArabicSem2Browser.lessons,
   ..._g8IslamicSem1Browser.lessons,
   ..._g8IslamicSem2Browser.lessons,
   ..._g8EngSem1Browser.lessons,

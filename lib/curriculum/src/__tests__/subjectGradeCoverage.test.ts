@@ -56,7 +56,8 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // financial-literacy. mathematics:grade-8 closed the same week once its
   // Semester 2 book arrived (Semester 1 still unattached, but one semester
   // is enough for hasCurriculumForSubjectGrade). arabic:grade-8 closed the
-  // same week once its Semester 1 book arrived (Semester 2 not attached).
+  // same week once its Semester 1 book arrived; Semester 2 followed on
+  // 2026-09-10, from the book whose filename wrongly says «للصف السابع».
   // islamic:grade-8 closed the same way once its Semester 1 book arrived.
   // english:grade-8 closed 2026-09-10 once its Semester 1 book arrived —
   // the last Grade 8 subject this comment block still listed as pending.
