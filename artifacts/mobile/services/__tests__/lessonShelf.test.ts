@@ -130,7 +130,8 @@ describe('subject isolation', () => {
       // Grade 10 Arabic predates this map and was silently unchecked — no
       // entry meant `continue`, not a pass. Added on 2026-09-08 alongside the
       // Grade 9 Arabic S1 book, so both grades are covered from here on.
-      arabic: /^(arabic-s[12]|g9-arabic-s[12])$/,
+      // Grade 8 (Semester 1 only) joined 2026-09-10.
+      arabic: /^(arabic-s[12]|g9-arabic-s[12]|g8-arabic-s1)$/,
       // Grade 10 Islamic predates this map too and was likewise silently
       // unchecked. Added alongside the Grade 9 Islamic books.
       islamic: /^(islamic-s[12]|g9-islamic-s[12])$/,
