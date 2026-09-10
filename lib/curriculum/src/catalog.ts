@@ -272,6 +272,14 @@ import {
   buildG9CivSem2BrowserCatalog,
 } from './catalogs/g9CivSem2.ts';
 import {
+  CIV_S1_CURRICULUM_BOOK_ID,
+  buildCivSem1BrowserCatalog,
+} from './catalogs/g10CivSem1.ts';
+import {
+  CIV_S2_CURRICULUM_BOOK_ID,
+  buildCivSem2BrowserCatalog,
+} from './catalogs/g10CivSem2.ts';
+import {
   G9_PE_S1_CURRICULUM_BOOK_ID,
   buildG9PeSem1BrowserCatalog,
 } from './catalogs/g9PeSem1.ts';
@@ -448,9 +456,9 @@ export const SUBJECTS: Subject[] = [
   // Second brand-new subject added 2026-09-09, same day as geography.
   // Scoped to grade-9 only for the same reason: no book at any other grade.
   { id: 'history', name: 'History', nameAr: 'التاريخ', icon: 'time-outline', color: '#9F1239', grades: ['grade-9', 'grade-10'] },
-  // Fourth brand-new subject added this week. grades: ['grade-9'] for the
-  // same reason as geography/history — no book at any other grade yet.
-  { id: 'civic-education', name: 'National and Civic Education', nameAr: 'التربية الوطنية والمدنية', icon: 'flag-outline', color: '#1D4ED8', grades: ['grade-9'] },
+  // Fourth brand-new subject added this week, grade-9-only at first.
+  // Extended to grade-10 once its book arrived, same as geography/history.
+  { id: 'civic-education', name: 'National and Civic Education', nameAr: 'التربية الوطنية والمدنية', icon: 'flag-outline', color: '#1D4ED8', grades: ['grade-9', 'grade-10'] },
   // Fifth brand-new subject added this week, and the first skills-based
   // rather than knowledge-based one — see g9PeSem1.ts for what that changes
   // about the data shape. grades: ['grade-9'] for the same reason as the
@@ -654,6 +662,11 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // box with no field in this schema.
   G9_CIV_S1_CURRICULUM_BOOK_ID,
   G9_CIV_S2_CURRICULUM_BOOK_ID,
+  // Grade 10 National and Civic Education — extends the subject beyond
+  // Grade 9, same shape as the Grade 9 book. Semester 2's five units
+  // continue Semester 1's numbering (u3…u7).
+  CIV_S1_CURRICULUM_BOOK_ID,
+  CIV_S2_CURRICULUM_BOOK_ID,
   // Grade 9 Physical Education — the fifth brand-new subject added this
   // week, and the first skills-based one. Title/main-idea/vocabulary come
   // from the same lesson-opener boxes as every other new subject, but the
@@ -1932,6 +1945,38 @@ export const BOOKS: Book[] = [
     audience: 'all',
     semester: 2,
   },
+  // ── National and Civic Education Grade 10 – Semesters 1 and 2 ───────────
+  // Extends the subject beyond Grade 9; both books are 2nd editions (ISBNs
+  // 978-9923-41-578-8 and 978-9923-41-584-9). Neither pdfUrl is set: this
+  // pair was built from the PDFs on disk and no NCCD link for either was
+  // HEAD-verified, and an unchecked URL is worse than none — same reason
+  // book-geo-10-s2 and book-hist-10-s2 carry no link.
+  {
+    id: 'book-civ-10-s1',
+    title: 'National and Civic Education – Grade 10, Semester 1',
+    titleAr: 'التربية الوطنية والمدنية – الصف العاشر – الفصل الأول',
+    subjectId: 'civic-education',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: 'book-civ-10-s2',
+    title: 'National and Civic Education – Grade 10, Semester 2',
+    titleAr: 'التربية الوطنية والمدنية – الصف العاشر – الفصل الثاني',
+    subjectId: 'civic-education',
+    gradeId: 'grade-10',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
   // ── Physical Education Grade 9 – Semesters 1 and 2 ────────────────────────
   // Fifth brand-new subject added this week, and the first skills-based one
   // (see g9PeSem1.ts). No teacher guide on disk, so objectives are empty.
@@ -2931,6 +2976,8 @@ const _g8ScienceSem1Browser = buildG8ScienceSem1BrowserCatalog();
 const _g8ScienceSem2Browser = buildG8ScienceSem2BrowserCatalog();
 const _g9CivSem1Browser = buildG9CivSem1BrowserCatalog();
 const _g9CivSem2Browser = buildG9CivSem2BrowserCatalog();
+const _civSem1Browser = buildCivSem1BrowserCatalog();
+const _civSem2Browser = buildCivSem2BrowserCatalog();
 const _g9PeSem1Browser = buildG9PeSem1BrowserCatalog();
 const _g9PeSem2Browser = buildG9PeSem2BrowserCatalog();
 const _engCommerceBrowser = buildEnglishCommerceBrowserCatalog();
@@ -3116,6 +3163,8 @@ export const UNITS: Unit[] = [
   ..._g8ScienceSem2Browser.units,
   ..._g9CivSem1Browser.units,
   ..._g9CivSem2Browser.units,
+  ..._civSem1Browser.units,
+  ..._civSem2Browser.units,
   ..._g9PeSem1Browser.units,
   ..._g9PeSem2Browser.units,
   ..._engCommerceBrowser.units,
@@ -3194,6 +3243,8 @@ export const LESSONS: Lesson[] = [
   ..._g8ScienceSem2Browser.lessons,
   ..._g9CivSem1Browser.lessons,
   ..._g9CivSem2Browser.lessons,
+  ..._civSem1Browser.lessons,
+  ..._civSem2Browser.lessons,
   ..._g9PeSem1Browser.lessons,
   ..._g9PeSem2Browser.lessons,
   ..._engCommerceBrowser.lessons,
