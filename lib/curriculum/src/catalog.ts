@@ -86,6 +86,10 @@ import {
   buildG8MathSem2BrowserCatalog,
 } from './catalogs/g8MathSem2.ts';
 import {
+  G8_MATH_S1_CURRICULUM_BOOK_ID,
+  buildG8MathSem1BrowserCatalog,
+} from './catalogs/g8MathSem1.ts';
+import {
   G9_MATH_S2_CURRICULUM_BOOK_ID,
   buildG9MathSem2BrowserCatalog,
   isG9MathSem2TitleOnlyUnit,
@@ -642,8 +646,9 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // Grade 8 Social Studies — both semesters attached.
   G8_SOCIAL_S1_CURRICULUM_BOOK_ID,
   G8_SOCIAL_S2_CURRICULUM_BOOK_ID,
-  // Grade 8 Math — Semester 2 only; S1 has not been attached.
+  // Grade 8 Math — both semesters attached.
   G8_MATH_S2_CURRICULUM_BOOK_ID,
+  G8_MATH_S1_CURRICULUM_BOOK_ID,
   // Grade 8 Arabic — Semester 1 only; S2 has not been attached.
   G8_ARABIC_S1_CURRICULUM_BOOK_ID,
 ];
@@ -1137,10 +1142,9 @@ export const BOOKS: Book[] = [
     guidePdfUrl: 'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Math/2025/MT09_TE2_PRINT.pdf',
   },
   // ── Math Grade 8 – Semester 2 ────────────────────────────────────────────
-  // First Grade 8 Math book. Semester 1 has not been attached — only S2's
-  // teacher guide and student book were supplied, so no book-math-8-s1 row
-  // exists yet. Objectives here come from the teacher guide's own «نتاجات
-  // الدرس» box, verbatim — see g8MathSem2.ts.
+  // First Grade 8 Math book. Objectives here come from the teacher guide's
+  // own «نتاجات الدرس» box, verbatim — see g8MathSem2.ts. Semester 1 landed
+  // 2026-09-10 — see book-math-8-s1 below.
   {
     id: G8_MATH_S2_CURRICULUM_BOOK_ID,
     title: 'Mathematics – Grade 8, Semester 2',
@@ -1153,6 +1157,25 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+  },
+  // ── Math Grade 8 – Semester 1 ────────────────────────────────────────────
+  // Closes the Grade 8 Math gap. The attached teacher guide is a later,
+  // expanded trial edition covering lessons the attached student book
+  // doesn't print (rational exponents, scientific notation, etc.) — those
+  // are skipped, and one book lesson has no matching guide entry at all, so
+  // its objectives are empty. See g8MathSem1.ts and the JSON's known_gaps.
+  {
+    id: G8_MATH_S1_CURRICULUM_BOOK_ID,
+    title: 'Mathematics – Grade 8, Semester 1',
+    titleAr: 'الرياضيات – الصف الثامن – الفصل الأول',
+    subjectId: 'mathematics',
+    gradeId: 'grade-8',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
   },
   // ── Chemistry Grade 9 – Semesters 1 and 2 ──────────────────────────────────
   // The first Grade 9 subject after mathematics, catalogued 2026-09-08 from
@@ -2740,6 +2763,7 @@ const _g8VocSem2Browser = buildG8VocSem2BrowserCatalog();
 const _g8SocialSem1Browser = buildG8SocialSem1BrowserCatalog();
 const _g8SocialSem2Browser = buildG8SocialSem2BrowserCatalog();
 const _g8MathSem2Browser = buildG8MathSem2BrowserCatalog();
+const _g8MathSem1Browser = buildG8MathSem1BrowserCatalog();
 const _g8ArabicSem1Browser = buildG8ArabicSem1BrowserCatalog();
 const _g9CivSem1Browser = buildG9CivSem1BrowserCatalog();
 const _g9CivSem2Browser = buildG9CivSem2BrowserCatalog();
@@ -2917,6 +2941,7 @@ export const UNITS: Unit[] = [
   ..._g8SocialSem1Browser.units,
   ..._g8SocialSem2Browser.units,
   ..._g8MathSem2Browser.units,
+  ..._g8MathSem1Browser.units,
   ..._g8ArabicSem1Browser.units,
   ..._g9CivSem1Browser.units,
   ..._g9CivSem2Browser.units,
@@ -2987,6 +3012,7 @@ export const LESSONS: Lesson[] = [
   ..._g8SocialSem1Browser.lessons,
   ..._g8SocialSem2Browser.lessons,
   ..._g8MathSem2Browser.lessons,
+  ..._g8MathSem1Browser.lessons,
   ..._g8ArabicSem1Browser.lessons,
   ..._g9CivSem1Browser.lessons,
   ..._g9CivSem2Browser.lessons,
