@@ -13,8 +13,9 @@ import {
   classGroups,
   classMemberships,
   students,
+  emailVerificationTokens,
 } from "@workspace/db";
-import { eq, and, asc, gt, inArray, isNotNull, isNull } from "drizzle-orm";
+import { eq, and, asc, desc, gt, inArray, isNotNull, isNull } from "drizzle-orm";
 import { authMiddleware, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { logger } from "../lib/logger.js";
 import { createRateLimiter } from "../lib/rateLimit.js";
@@ -26,6 +27,13 @@ import {
   ROSTER_CONSENT_VERSION,
 } from "../lib/rosterConsent.js";
 import { isStrongPassword, PASSWORD_POLICY_MESSAGE } from "../lib/passwordPolicy.js";
+import { sendVerificationEmail } from "../lib/email.js";
+import {
+  generateVerificationCode,
+  hashVerificationCode,
+  VERIFICATION_CODE_TTL_MS,
+  VERIFICATION_MAX_ATTEMPTS,
+} from "../lib/emailVerification.js";
 import { resolveClaimCode, type ClaimRole } from "../lib/rosterClaim.js";
 import { normalizeShareCode } from "../modules/assessment/studentView.ts";
 
@@ -36,6 +44,10 @@ const router = Router();
 const loginLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, name: "login" });
 const registerLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5, name: "register" });
 const googleLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, name: "google-auth" });
+const verifyEmailLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, name: "verify-email" });
+// Tighter than register: this exists to recover from a failed send, not to
+// resend on a whim, and an unlimited resend is a free email-bombing vector.
+const resendVerificationLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 3, name: "resend-verification" });
 // /claim was the only code-redeeming route without one, which made it an
 // authenticated guessing surface against a 6-character alphabet. More headroom
 // than register because a parent with three children legitimately claims three
@@ -81,6 +93,25 @@ async function storeRefreshToken(userId: string, tokenValue: string): Promise<vo
     .digest("hex");
   const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
   await db.insert(refreshTokens).values({ userId, tokenHash, expiresAt });
+}
+
+/**
+ * Mints a fresh 6-digit code, stores its hash, and emails it. Does not throw
+ * on a failed send — an email outage must not strand a real signup with no
+ * account at all; /auth/resend-verification is the recovery path once the
+ * outage clears.
+ */
+async function issueVerificationCode(userId: string, email: string): Promise<void> {
+  const code = generateVerificationCode();
+  await db.insert(emailVerificationTokens).values({
+    userId,
+    codeHash: hashVerificationCode(code),
+    expiresAt: new Date(Date.now() + VERIFICATION_CODE_TTL_MS),
+  });
+  const sent = await sendVerificationEmail(email, code);
+  if (!sent) {
+    logger.error({ userId, email }, "verification email not sent — account created unverified with no code delivered");
+  }
 }
 
 /** An empty or whitespace-only picked name is "none given", not a name that fails to match. */
@@ -201,21 +232,15 @@ router.post("/register", registerLimiter, async (req, res) => {
         .onConflictDoNothing();
     }
 
-    const { accessToken, refreshTokenValue } = generateTokens(user.id, user.email, user.role);
-    await storeRefreshToken(user.id, refreshTokenValue);
+    // No tokens issued here: a password account is unverified until it
+    // proves the address at POST /auth/verify-email, which is what hands
+    // back the session. Google accounts skip all of this — they set
+    // emailVerified: true and log in immediately, further down this file.
+    await issueVerificationCode(user.id, user.email);
 
     res.status(201).json({
-      accessToken,
-      refreshToken: refreshTokenValue,
-      user: {
-        id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        role: user.role,
-        preferredLanguage: user.preferredLanguage,
-        createdAt: user.createdAt,
-      },
+      email: user.email,
+      message: "Account created. Check your email for a 6-digit verification code.",
     });
   } catch (err: any) {
     if (err.code === "23505") {
@@ -224,6 +249,126 @@ router.post("/register", registerLimiter, async (req, res) => {
     }
     logger.error({ err }, "register failed");
     res.status(500).json({ error: "Registration failed" });
+  }
+});
+
+// POST /auth/verify-email
+router.post("/verify-email", verifyEmailLimiter, async (req, res) => {
+  try {
+    const { email, code } = req.body as { email?: string; code?: string };
+    if (!email || !code) {
+      res.status(400).json({ error: "Email and code are required" });
+      return;
+    }
+
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email.toLowerCase().trim()))
+      .limit(1);
+
+    // Same generic message for "no such account" and "wrong/expired code" —
+    // same shape as login's "invalid email or password" — so a wrong guess
+    // here cannot be used to enumerate which codes are close. Registration's
+    // own duplicate-email check already tells a caller an address is taken,
+    // so this isn't hiding account existence, just not adding a second,
+    // finer-grained oracle on top of it.
+    const invalid = () => res.status(400).json({ error: "Invalid or expired code" });
+
+    if (!user) {
+      invalid();
+      return;
+    }
+    if (user.emailVerified) {
+      res.status(400).json({ error: "This email is already verified" });
+      return;
+    }
+
+    const [token] = await db
+      .select()
+      .from(emailVerificationTokens)
+      .where(
+        and(
+          eq(emailVerificationTokens.userId, user.id),
+          eq(emailVerificationTokens.used, false),
+          gt(emailVerificationTokens.expiresAt, new Date()),
+        ),
+      )
+      .orderBy(desc(emailVerificationTokens.createdAt))
+      .limit(1);
+
+    if (!token || token.attempts >= VERIFICATION_MAX_ATTEMPTS) {
+      invalid();
+      return;
+    }
+
+    if (token.codeHash !== hashVerificationCode(code.trim())) {
+      await db
+        .update(emailVerificationTokens)
+        .set({ attempts: token.attempts + 1 })
+        .where(eq(emailVerificationTokens.id, token.id));
+      invalid();
+      return;
+    }
+
+    await db
+      .update(emailVerificationTokens)
+      .set({ used: true })
+      .where(eq(emailVerificationTokens.id, token.id));
+    const [verified] = await db
+      .update(users)
+      .set({ emailVerified: true })
+      .where(eq(users.id, user.id))
+      .returning();
+
+    const { accessToken, refreshTokenValue } = generateTokens(verified.id, verified.email, verified.role);
+    await storeRefreshToken(verified.id, refreshTokenValue);
+
+    res.json({
+      accessToken,
+      refreshToken: refreshTokenValue,
+      user: {
+        id: verified.id,
+        firstName: verified.firstName,
+        lastName: verified.lastName,
+        email: verified.email,
+        role: verified.role,
+        preferredLanguage: verified.preferredLanguage,
+        createdAt: verified.createdAt,
+      },
+    });
+  } catch (err) {
+    logger.error({ err }, "verify email failed");
+    res.status(500).json({ error: "Verification failed" });
+  }
+});
+
+// POST /auth/resend-verification
+router.post("/resend-verification", resendVerificationLimiter, async (req, res) => {
+  try {
+    const { email } = req.body as { email?: string };
+    if (!email) {
+      res.status(400).json({ error: "Email is required" });
+      return;
+    }
+
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email.toLowerCase().trim()))
+      .limit(1);
+
+    // Same response either way — an unknown address, an already-verified
+    // account, and a fresh code all answer identically so this cannot be
+    // used to probe which emails are registered.
+    if (user && !user.emailVerified) {
+      await issueVerificationCode(user.id, user.email);
+    }
+
+    res.json({ ok: true, message: "If that email needs verifying, a new code was sent." });
+  } catch (err) {
+    logger.error({ err }, "resend verification failed");
+    res.status(500).json({ error: "Failed to resend code" });
   }
 });
 
@@ -394,6 +539,20 @@ router.post("/login", loginLimiter, async (req, res) => {
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
       res.status(401).json({ error: "Invalid email or password" });
+      return;
+    }
+
+    // Checked after the password too, and before suspension, for the same
+    // enumeration reason as the suspension check below: nothing about this
+    // account is confirmed until the password has already proved who is
+    // asking. A Google account never reaches this false — see /auth/google,
+    // which sets emailVerified: true itself, and register's pre-existing
+    // account-linking path, which does the same.
+    if (!user.emailVerified) {
+      res.status(403).json({
+        error: "Please verify your email before signing in.",
+        code: "email_not_verified",
+      });
       return;
     }
 

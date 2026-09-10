@@ -101,7 +101,7 @@ export default function RegisterScreen() {
     setError('');
     setLoading(true);
     try {
-      await register({
+      const { email: registeredEmail } = await register({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         email: email.trim(),
@@ -116,7 +116,10 @@ export default function RegisterScreen() {
         // a credential.
         studentId: roster ? studentId : undefined,
       });
-      router.replace('/(tabs)');
+      // No session yet — a password account is unverified until it proves
+      // the address it just typed. Google's "Continue with" button above
+      // still signs straight in via handleGoogleCredential, unaffected.
+      router.replace({ pathname: '/(auth)/verify-email', params: { email: registeredEmail } });
     } catch (e: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setError(e.message ?? 'Registration failed. Please try again.');
