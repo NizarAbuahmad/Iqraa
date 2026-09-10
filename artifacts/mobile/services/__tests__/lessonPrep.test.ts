@@ -10,7 +10,9 @@
  *  2. The topic is the localised title — an Arabic UI searches the KB in Arabic,
  *     which is what makes a curriculum lesson resolve as grounded at all.
  *  3. Objectives from the lesson are passed through.
- *  4. Ungrounded lessons carry the explicit "do not claim textbook grounding" note.
+ *  4. Every browsable lesson grounds — the catalog carries no placeholder rows
+ *     any more — and the "do not claim textbook grounding" note still fires for
+ *     the free-text topics that are now its only route in.
  *  5. Picker indices point at the lesson's own grade/subject for the handoff to
  *     the full tool.
  *  6. `lessonPickerParams` turns those indices into route params, and returns
@@ -30,7 +32,8 @@ import {
   scopePickerParams,
   topicPickerParams,
 } from '../lessonPrep.ts';
-import { getObjectivesForLesson, getPickerGrades, getPickerSubjects, getLessonById } from '../curriculumData.ts';
+import { getObjectivesForLesson, getPickerGrades, getPickerSubjects, getLessonById, LESSONS } from '../curriculumData.ts';
+import { buildGeneratorContext, resolveGeneratorGrounding } from '../kbContext.ts';
 
 /**
  * Chemistry G10 S1 — has distinct Arabic and English titles, and is in the KB.
@@ -104,14 +107,46 @@ describe('buildLessonPrepRequest', () => {
     assert.ok(!built.request.objectives?.includes('صعوبات في القراءة'));
   });
 
-  it('labels an ungrounded lesson honestly instead of claiming the textbook', () => {
-    // Find a browsable lesson whose title does not resolve in the KB.
-    const ungrounded = ['lesson-chem-3', 'lesson-sci-1']
-      .map(id => buildLessonPrepRequest({ lessonId: id, lang: 'ar' }))
-      .find(b => b && !b.grounded);
-    assert.ok(ungrounded, 'expected at least one non-KB lesson fixture');
-    assert.equal(ungrounded.groundedLessonTitle, null);
-    assert.match(ungrounded.request.additionalContext ?? '', /غير موجود في المنهاج/);
+  it('has no browsable lesson left that fails to ground', () => {
+    // This used to be "labels an ungrounded lesson honestly instead of
+    // claiming the textbook", picking whichever of `lesson-chem-3` /
+    // `lesson-sci-1` still resolved. Both are gone: they were hand-written
+    // placeholder rows, and the last of them went with the `book-science-8`
+    // placeholder on 2026-09-10, when Grade 8 Science got a real book. Every
+    // row in LESSONS is now an NCCD `kbl-` lesson whose Arabic title resolves,
+    // so the ungrounded branch is no longer reachable from the catalog.
+    //
+    // Checked structurally over the whole catalog, not on a sample: what makes
+    // a row ungroundable is being a hand-written placeholder rather than an
+    // NCCD row, and that is exactly what an id without the `kbl-` prefix is.
+    // Grounding all 1006 rows for real is O(n²) — every call searches the KB —
+    // so the two spot checks below carry the end-to-end assertion and this
+    // carries the breadth.
+    const placeholders = LESSONS.map(l => l.id).filter(id => !id.startsWith('kbl-'));
+    assert.deepEqual(placeholders, [], `non-NCCD placeholder rows are browsable again: ${placeholders.join(', ')}`);
+
+    for (const id of [MATH_LESSON_ID, CHEM_LESSON_ID]) {
+      const built = buildLessonPrepRequest({ lessonId: id, lang: 'ar' })!;
+      assert.ok(built.grounded, `${id} did not ground`);
+      assert.ok(built.groundedLessonTitle, `${id} grounded with no lesson title`);
+    }
+  });
+
+  it('still labels a free-text topic honestly instead of claiming the textbook', () => {
+    // The ungrounded branch survived the placeholder removal above — it is now
+    // reached only by free-text topics, which is the path a teacher takes when
+    // they type their own subject instead of picking a lesson. Asserted here
+    // directly on `resolveGeneratorGrounding` because no catalog row can reach
+    // it any more. `lessonPickFidelity.test.ts` also sends an off-curriculum
+    // topic, but what it asserts is question content falling back to the
+    // caller's subject — not this notice.
+    const grounding = resolveGeneratorGrounding('موضوع حر غير موجود في المنهاج', 'ar');
+    assert.equal(grounding.grounded, false);
+    assert.equal(grounding.lesson, null);
+    assert.match(grounding.ungroundedNote, /غير موجود في المنهاج/);
+    // The note, not an empty string, is what must reach the prompt — see
+    // buildGeneratorContext's comment on the seven callers that dropped it.
+    assert.match(buildGeneratorContext('موضوع حر غير موجود في المنهاج', 'ar'), /غير موجود في المنهاج/);
   });
 
   it('returns null for an unknown lesson', () => {

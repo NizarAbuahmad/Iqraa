@@ -10,8 +10,10 @@
  * grade would silently overwrite the first in every `Map` keyed by unit id.
  *
  * The grade was never missing from the data — every unit reaches one through
- * `book.gradeId`, and the catalog already spans `grade-10` and a `grade-8`
- * science stub. It was missing only from the strings, and only because each of
+ * `book.gradeId`, and the catalog already spanned `grade-10` and a `grade-8`
+ * science stub (since replaced by the real Grade 8 books, `grade-8` and
+ * `grade-9` now being fully catalogued). It was missing only from the strings,
+ * and only because each of
  * the five catalog modules interpolated its own prefix inline:
  * `` `kbu-math-s1-nccd-${jsonUnitId}` ``, five times, with five different
  * objective shapes and the prefix repeated again as a string literal wherever
@@ -88,6 +90,13 @@ const SUBJECTS = {
   // history/geography/philosophy book. The 'social' app subjectId
   // predates any book behind it; this is its first id-namespacing tag.
   'social': { tag: 'social-', unitLevel: false },
+  // General Science (العلوم) — Grade 8's single book covering biology,
+  // chemistry, physics and earth science together, which Grade 9/10 split
+  // into 'chem'/'phys'/'biology'/'earth-science' above. The 'science' app
+  // subjectId predates any book behind it; this is its first id-namespacing
+  // tag. `unitLevel: false` like every other new subject — the bank holds no
+  // Grade 8 science material, so `g8-science-s1-u2` would name nothing.
+  'science': { tag: 'science-', unitLevel: false },
 } as const;
 
 /** Subject slug as it appears inside an id. Not the app's `subjectId`. */
