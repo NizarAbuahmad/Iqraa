@@ -187,6 +187,10 @@ import {
   buildG8ArabicSem1Catalog,
 } from './curriculumG8ArabicSem1.ts';
 import {
+  G8_ARABIC_S2_BOOK_ID,
+  buildG8ArabicSem2Catalog,
+} from './curriculumG8ArabicSem2.ts';
+import {
   G8_ISLAMIC_S1_BOOK_ID,
   buildG8IslamicSem1Catalog,
 } from './curriculumG8IslamicSem1.ts';
@@ -885,6 +889,15 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Arabic – Grade 8 – Semester 1',
     semester: 1,
     source: 'iqra_curriculum_g8_arabic_sem1.json (NCCD)',
+  },
+  {
+    id: G8_ARABIC_S2_BOOK_ID,
+    gradeId: 'grade-8',
+    subjectId: 'arabic',
+    titleAr: 'اللغة العربية – الصف الثامن – الفصل الثاني',
+    titleEn: 'Arabic – Grade 8 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g8_arabic_sem2.json (NCCD)',
   },
   {
     id: G8_ISLAMIC_S1_BOOK_ID,
@@ -1953,6 +1966,7 @@ const _g8SocialSem2 = buildG8SocialSem2Catalog();
 const _g8MathSem2 = buildG8MathSem2Catalog();
 const _g8MathSem1 = buildG8MathSem1Catalog();
 const _g8ArabicSem1 = buildG8ArabicSem1Catalog();
+const _g8ArabicSem2 = buildG8ArabicSem2Catalog();
 const _g8IslamicSem1 = buildG8IslamicSem1Catalog();
 const _g8IslamicSem2 = buildG8IslamicSem2Catalog();
 const _g8EngSem1 = buildG8EngSem1Catalog();
@@ -2145,6 +2159,7 @@ export const KB_UNITS: KBUnit[] = [
   ..._g8MathSem2.units,
   ..._g8MathSem1.units,
   ..._g8ArabicSem1.units,
+  ..._g8ArabicSem2.units,
   ..._g8IslamicSem1.units,
   ..._g8IslamicSem2.units,
   ..._g8EngSem1.units,
@@ -2226,6 +2241,7 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g8MathSem2.lessons,
   ..._g8MathSem1.lessons,
   ..._g8ArabicSem1.lessons,
+  ..._g8ArabicSem2.lessons,
   ..._g8IslamicSem1.lessons,
   ..._g8IslamicSem2.lessons,
   ..._g8EngSem1.lessons,

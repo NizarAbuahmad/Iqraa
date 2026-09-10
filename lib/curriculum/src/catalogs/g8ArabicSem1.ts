@@ -10,8 +10,9 @@
  * «كفايات الوحدة» page — copied verbatim, not summarised.
  *
  * Periods are null: no teacher guide for this semester is on disk. Vocabulary
- * is empty: this book prints no bilingual terms box. Semester 2 is not yet
- * attached — see the JSON's `known_gaps`.
+ * is empty: this book prints no bilingual terms box. Semester 2 is attached
+ * too, in g8ArabicSem2.ts — the file once ignored here as a misfiled Grade 7
+ * book is only misNAMED; see the JSON's `known_gaps`.
  *
  * Note: does not import knowledgeBase (avoids circular dependency).
  */
