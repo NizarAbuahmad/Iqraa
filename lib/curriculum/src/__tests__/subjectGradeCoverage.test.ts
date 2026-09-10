@@ -98,18 +98,24 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // into three.
   'social:grade-9',
   'social:grade-10',
-  // science joined 2026-09-10 with its first-ever book (Grade 8, Semester 1).
-  // Its two gaps are not the same kind, and the difference is the whole
-  // reason this list is written out rather than derived:
-  //   - science:grade-9 is ORDINARY. SUBJECTS.grades for science spans
-  //     grade-1..grade-9, so a Grade 9 science book would close it the way
-  //     any other pair closes — delete the line when one lands.
-  //   - science:grade-10 is PERMANENT. Grade 10 has no «العلوم» book because
-  //     it teaches the subject split into physics/chemistry/biology/
-  //     earth-science. That is the exact mirror of the four grade-8 entries
-  //     above: those four are permanently bookless at grade-8 because Grade 8
-  //     combines them into this one science book. Same fact, read from each
-  //     end.
+  // science joined 2026-09-10 with its first-ever book (Grade 8). BOTH
+  // entries are PERMANENT: Grade 8 is the only grade NCCD teaches «العلوم»
+  // as one subject. Grade 9 and Grade 10 each split it into physics,
+  // chemistry, biology and earth-science, and all four are built at both
+  // grades — which is why none of them appears in this list at grade-9 or
+  // grade-10, only at grade-8. Read the two ends together: those four are
+  // permanently bookless at grade-8 because Grade 8 combines them into the
+  // science book; science is permanently bookless at grade-9 and grade-10
+  // because those grades dissolve it back into the four. Same fact twice.
+  //
+  // science:grade-9 was first recorded here as an ORDINARY gap — "delete the
+  // line when a Grade 9 science book lands". Corrected 2026-09-10; no such
+  // book exists or will. The bad inference was SUBJECTS.grades spanning
+  // grade-1..grade-9, which says which grades the subject is declared for
+  // and cannot tell you a book exists at any of them. That is the same
+  // misreading corrected for social:grade-9/10 above, and it is worth
+  // noticing that both slipped through: a declared range is never evidence
+  // of a book, and this file is the place that distinction has to hold.
   'science:grade-9',
   'science:grade-10',
 ]);
