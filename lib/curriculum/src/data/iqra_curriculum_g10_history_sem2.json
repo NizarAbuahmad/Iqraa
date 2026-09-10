@@ -1,0 +1,207 @@
+{
+  "meta": {
+    "grade": "الصف العاشر",
+    "grade_en": "Grade 10",
+    "subject": "التاريخ",
+    "subject_en": "History",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 2,
+    "schema_version": "1.0",
+    "provenance_note": "نُقلت الوحدتانِ (الثالثةُ والرابعةُ، مُكمِّلتانِ لترقيمِ الفصلِ الأولِ) ودروسُهما الأحدَ عشرَ من كتاب الطالب (الطبعة الأولى التجريبية، ISBN غيرُ مطبوعٍ على الغلافِ، رقمُ الإيداعِ 2023/7/3830) في 2026-09-09، بنفسِ طريقةِ الفصلِ الأولِ: قراءةِ صفحةِ المحتوياتِ، ثمَّ قراءةِ صفحةِ افتتاحِ كلِّ وحدةٍ ودرسٍ مباشرةً منَ الـ PDF (29.6 ميغابايت).",
+    "source_books": {
+      "student_book": "كتاب الطالب لمادة التاريخ - الصف العاشر - الفصل الدراسي الثاني - المركز الوطني لتطوير المناهج والتقويم (الطبعة الأولى التجريبية، 2023)"
+    },
+    "known_gaps": [
+      "نفسُ الفجواتِ المُسجَّلةِ في ملفِّ الفصلِ الأولِ: لا نتاجاتِ تعلُّمٍ مُرقَّمةً (objectives فارغةٌ)، ولا دليلَ معلمٍ (periods وtotal_periods = null)، وصناديقُ «الأشخاصِ» و«الأماكنِ» و«مهاراتِ التعلُّمِ» غيرُ منقولةٍ.",
+      "الوحدةُ الرابعةُ («شخصيّاتٌ منَ التاريخِ») سِيَرٌ ذاتيّةٌ لثلاثِ شخصياتٍ، لا دروسٌ موضوعيّةٌ؛ لذا صندوقُ «المصطلحاتِ» في درسِها الثاني (المهاتما غاندي) يحملُ مصطلحًا واحدًا بلا مقابلٍ إنجليزيٍّ (دُرّة التاج البريطانيّ)، فحقلُ en تُرِكَ فارغًا لهُ بدلًا مِن اختلاقِ ترجمةٍ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "ثوراتٌ غيَّرَتِ العالَمَ الحديثَ",
+      "title_en": "Revolutions that Changed the Modern World",
+      "general_idea_ar": "ظهَرَتْ في أوروبا في القرنِ الثامنَ عشرَ مجموعةٌ منَ التطوُّراتِ والتغيّراتِ السياسيّةِ والاقتصاديّةِ، أدَّتْ إلى تغييرِ الأنظمةِ الاجتماعيّةِ والاقتصاديّةِ القديمةِ، وتأسيسِ إمبراطوريّاتٍ استعماريّةٍ كبرى.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المصطلحات» box; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "الثورةُ الصناعيّةُ",
+          "title_en": "The Industrial Revolution",
+          "main_idea_ar": "معرفةُ أوضاعِ أوروبا قبيلَ قيامِ الثورةِ الصناعيّةِ، وعواملِ قيامِها، وتتبُّعِ انتشارِها في القارّةِ الأوروبيّةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الثورةُ الصناعيّةُ", "en": "The Industrial Revolution" },
+            { "ar": "الاتّحادُ الجمركيُّ الألمانيُّ", "en": "Zollverein" }
+          ]
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "إنجازاتُ الثورةِ الصناعيّةِ",
+          "title_en": "Achievements of the Industrial Revolution",
+          "main_idea_ar": "معرفةُ إنجازاتِ الثورةِ الصناعيّةِ، ونتائجِها في أوروبا والعالَمِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التلغرافُ", "en": "Telegraph" },
+            { "ar": "النقاباتُ المهنيّةُ", "en": "" },
+            { "ar": "الطبقةُ الرأسماليّةُ", "en": "The Capitalist Class" },
+            { "ar": "البروليتاريا", "en": "Proletariat" }
+          ]
+        },
+        {
+          "id": "u3_l3",
+          "order": 3,
+          "title_ar": "الثورةُ الأمريكيّةُ",
+          "title_en": "The American Revolution",
+          "main_idea_ar": "معرفةُ تاريخِ الثورةِ الأمريكيّةِ، وعواملِ قيامِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "المستعمراتُ", "en": "Colonies" },
+            { "ar": "الحُكمُ الذاتيُّ", "en": "Autonomy" },
+            { "ar": "أزمةُ الشاي", "en": "" },
+            { "ar": "مذبحةُ بوسطن", "en": "" },
+            { "ar": "المطهَّرونَ", "en": "The puritans" }
+          ]
+        },
+        {
+          "id": "u3_l4",
+          "order": 4,
+          "title_ar": "مراحلُ الثورةِ الأمريكيّةِ",
+          "title_en": "Stages of the American Revolution",
+          "main_idea_ar": "معرفةُ مراحلِ الثورةِ الأمريكيّةِ ونتائجِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الولاياتُ المتّحدةُ الأمريكيّةُ", "en": "United States of America" },
+            { "ar": "المؤتمراتُ القارّيّةُ", "en": "Continental Conferences" },
+            { "ar": "الكونغرسُ الأمريكيُّ", "en": "US Congress" },
+            { "ar": "ساراتوغا", "en": "Saratoga" },
+            { "ar": "بانكر هيل", "en": "Bunker Hill" }
+          ]
+        },
+        {
+          "id": "u3_l5",
+          "order": 5,
+          "title_ar": "الثورةُ الفرنسيّةُ",
+          "title_en": "The French Revolution",
+          "main_idea_ar": "معرفةُ عواملِ قيامِ الثورةِ الفرنسيّةِ ومجرياتِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الثورةُ الفرنسيّةُ", "en": "French Revolution" },
+            { "ar": "الجمعيّةُ الوطنيّةُ", "en": "National Assembly" },
+            { "ar": "نظامُ الإقطاعِ", "en": "Feudal System" }
+          ]
+        },
+        {
+          "id": "u3_l6",
+          "order": 6,
+          "title_ar": "نتائجُ الثورةِ الفرنسيّةِ",
+          "title_en": "The Results of the French Revolution",
+          "main_idea_ar": "معرفةُ نتائجِ الثورةِ الفرنسيّةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الحركاتُ القوميّةُ", "en": "Nationalist Movements" },
+            { "ar": "إعلانُ حقوقِ الإنسانِ", "en": "Human Rights Declaration" }
+          ]
+        },
+        {
+          "id": "u3_l7",
+          "order": 7,
+          "title_ar": "الثورةُ الروسيّةُ",
+          "title_en": "The Russian Revolution",
+          "main_idea_ar": "معرفةُ عواملِ قيامِ الثورةِ الروسيّةِ (البلشفيّةِ) ومجرياتِها ونتائجِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الثورةُ الروسيّةُ (البلشفيّةُ)", "en": "The Bolshevik Revolution" },
+            { "ar": "الدوما", "en": "Duma" },
+            { "ar": "مجالسُ السوفياتِ", "en": "The Soviet Councils" },
+            { "ar": "الشيوعيّةُ", "en": "Communism" }
+          ]
+        },
+        {
+          "id": "u3_l8",
+          "order": 8,
+          "title_ar": "العالَمُ في القرنِ العشرينَ",
+          "title_en": "The World in the 20th Century",
+          "main_idea_ar": "معرفةُ أسبابِ حروبِ القرنِ العشرينَ، ونتائجِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "النازيّةُ", "en": "Nazism" },
+            { "ar": "الفاشيّةُ", "en": "Fascism" },
+            { "ar": "الشيوعيّةُ", "en": "Communism" },
+            { "ar": "حلفُ شمالِ الأطلسيِّ (NATO)", "en": "North Atlantic Treaty Organization" },
+            { "ar": "المعسكرُ الرأسماليُّ", "en": "Capitalist Camp" },
+            { "ar": "حلفُ وارسو", "en": "Warsaw Pact" },
+            { "ar": "الحربُ الباردةُ", "en": "The Cold War" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "شخصيّاتٌ من التاريخِ",
+      "title_en": "Personalities from History",
+      "general_idea_ar": "ظهَرَتْ في تاريخِ العالَمِ شخصيّاتٌ استطاعَتْ إحداثَ تغييرٍ في التاريخِ بما قدَّمَتْهُ منْ أفكارٍ وأبدَعَتْهُ منْ إنجازاتٍ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المصطلحات» box; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "محمد عليّ باشا (1769م-1849م)",
+          "title_en": "Muhammad Ali Pasha (1769–1849 AD)",
+          "main_idea_ar": "معرفةُ سِيَرةِ حياةِ محمد علي باشا، ودورِهِ في بناءِ الدولةِ المصريةِ الحديثةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الفَرَمانُ", "en": "Firman" },
+            { "ar": "مجلسُ المشورةِ", "en": "Advice Council" },
+            { "ar": "الديوانُ العالي", "en": "The High Court" },
+            { "ar": "المجلسُ الخصوصيُّ", "en": "Privy Council" },
+            { "ar": "كوتاهية، نفارينُ، دارُ الألسُنِ", "en": "" }
+          ]
+        },
+        {
+          "id": "u4_l2",
+          "order": 2,
+          "title_ar": "المَهاتْما (غاندي) (1869م-1948م)",
+          "title_en": "Mahatma Gandhi (1869–1948 AD)",
+          "main_idea_ar": "معرفةُ سِيَرةِ حياةِ المَهاتْما غاندي وأهمِّ مبادئِهِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "دُرَّةُ التاجِ البريطانيِّ", "en": "" },
+            { "ar": "المقاومةُ باللّاعنفِ", "en": "Resistance without violence" }
+          ]
+        },
+        {
+          "id": "u4_l3",
+          "order": 3,
+          "title_ar": "زيغريد هونكه (1913م-1999م)",
+          "title_en": "Sigrid Hunke (1913–1999 AD)",
+          "main_idea_ar": "معرفةُ سِيَرةِ حياةِ المُستَشرِقةِ الألمانيّةِ زيغريد هونكه، وأهمِّ مؤلَّفاتِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الاستشراقُ", "en": "Orientalism" },
+            { "ar": "المُستَشرِقُ", "en": "Orientalist" }
+          ]
+        }
+      ]
+    }
+  ]
+}

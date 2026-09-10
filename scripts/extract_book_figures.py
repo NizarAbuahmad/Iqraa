@@ -218,6 +218,31 @@ MARGIN = 10
 # body text.
 LABEL_REACH = 22
 DPI = 160
+# Per-book override. Biology's content is illustrated cell/virus/organism art
+# rather than the thin-stroke coordinate-graph line art this script was built
+# for, so it reads noticeably softer than maths at the same DPI — its crops
+# already run ~4x heavier than maths's at DPI=160 for that reason (STATUS.md,
+# 2026-09-05). Checked at slide scale against 160/180/200/220: 200 is the
+# lowest of those that reads clearly. Per-sourceId rather than raising DPI
+# globally — maths/chemistry's line art is already crisp at 160, and bumping
+# those too would only grow the app bundle for no visual gain.
+DPI_OVERRIDES: dict[str, int] = {
+    "bio-s1-student-book": 200,
+    "bio-s2-student-book": 200,
+}
+# Books where a curve-seed crop should prefer the printed figure card's own
+# border over the clustered curve rect, when one is found — see
+# `card_boundary()`. Traced against bio-s1 page 23: the crop absorbed the
+# «أتحقّق» question line above the virus-comparison figure because that
+# question's checkmark icon is itself a 21×26pt vector path, well above
+# `curve_seeds`'s 8pt dot filter, so it joined the same cluster as the
+# illustration. Scoped to biology rather than applied everywhere; the other
+# five vector-pipeline books were not observed to have this failure mode and
+# were not re-verified against it.
+PREFER_CARD_BOUNDARY: set[str] = {
+    "bio-s1-student-book",
+    "bio-s2-student-book",
+}
 
 
 
@@ -694,7 +719,58 @@ def uncut_labels(page: pymupdf.Page, r: pymupdf.Rect) -> pymupdf.Rect:
     return out
 
 
-def figures_in(pdf: Path):
+def card_boundary(page: pymupdf.Page, seed: pymupdf.Rect) -> pymupdf.Rect | None:
+    """The printed white "figure card" a seed sits inside, if there is one.
+
+    Some pages set a multi-image figure inside an explicit bordered panel — a
+    filled rounded rectangle drawn behind the images, big enough that
+    `curve_seeds` correctly refuses to seed on it (page furniture, excluded by
+    its own >55%-of-page width/height rule). But once a real seed lands inside
+    one, the panel's own border is a far more reliable figure boundary than
+    curve-clustering can reconstruct — it is what the book itself drew to mark
+    "this is the figure," so this REPLACES the clustered seed with it rather
+    than growing into it. Only ever tightens or repositions a crop toward that
+    known-good boundary; a page with no such card returns `None` and nothing
+    downstream changes.
+
+    A caller must not rely on this alone to fix bad crops — it never runs
+    unless a real filled, oversized panel is present.
+
+    Learned by looking, in two rounds. First: on bio-s1 page 40 the seed sits
+    inside the page's whole cream-coloured lesson-opener background, which
+    passes the size and overlap tests just as well as a real figure card does
+    — nothing distinguishes "a card drawn around this one figure" from "the
+    page background behind this figure and also a paragraph, a key-terms box
+    and a portrait." A text-share check on the CANDIDATE was the first fix
+    tried and was not enough: a candidate the size of the whole page dilutes
+    its own text share under any reasonable threshold even when it contains a
+    paragraph, simply because most of a normal page is not text. What actually
+    holds: a genuine figure card has to coexist with other content — a title,
+    body prose — so it is never close to the full page. Capped well under
+    that, at 65% of the page's area.
+    """
+    W = page.rect.width
+    page_area = page.rect.get_area()
+    best = None
+    for d in page.get_drawings():
+        if d.get("fill") is None:
+            continue
+        r = pymupdf.Rect(d["rect"])
+        if r.get_area() > page_area * 0.65:
+            continue
+        if r.width < W * 0.4 or r.height < seed.height * 0.5:
+            continue
+        overlap = r & seed
+        if overlap.is_empty or overlap.get_area() < seed.get_area() * 0.6:
+            continue
+        if text_fraction(page, r) > MAX_TEXT_SHARE:
+            continue
+        if best is None or r.get_area() < best.get_area():
+            best = r
+    return best
+
+
+def figures_in(pdf: Path, source_id: str | None = None):
     """Yield (page_number, page, rect, lesson) for every figure found.
 
     Two seed families, and a page can yield several of each. Axis pairs find
@@ -723,6 +799,8 @@ def figures_in(pdf: Path):
             # border to the box edge. Visible in the contact sheet as four bad
             # crops in eighteen; not visible in any count.
             r = drawing_cluster(page, seed) if kind == "axis" else pymupdf.Rect(seed)
+            if source_id in PREFER_CARD_BOUNDARY:
+                r = card_boundary(page, r) or r
             r = with_labels(page, r)
             r = pymupdf.Rect(r + (-MARGIN, -MARGIN, MARGIN, MARGIN)) & page.rect
             # After the margin, because the margin is what does the cutting.
@@ -853,13 +931,13 @@ def main() -> None:
         # generated asset map, not from the lesson map, so this churns only
         # what `gen_book_figure_assets.mjs` regenerates.
         seen_on_page: dict[int, int] = {}
-        for n, page, r, lesson in figures_in(pdf):
+        for n, page, r, lesson in figures_in(pdf, source_id):
             k = seen_on_page.get(n, 0)
             seen_on_page[n] = k + 1
             suffix = "" if k == 0 else chr(ord("b") + k - 1)
             name = f"p{n + 1:03d}{suffix}.png"
             path = outdir / name
-            page.get_pixmap(clip=r, dpi=DPI).save(path)
+            page.get_pixmap(clip=r, dpi=DPI_OVERRIDES.get(source_id, DPI)).save(path)
             # Rendered, measured, and dropped again if it turned out to be a
             # flat decorative panel. Judged after rendering because that is
             # what the measure needs; the file is unlinked and the page's

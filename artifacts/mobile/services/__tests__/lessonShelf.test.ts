@@ -117,7 +117,7 @@ describe('subject isolation', () => {
     const prefixFor: Record<string, RegExp> = {
       // Grade 10 math tags are bare (`s1-u2`); every other grade gets an
       // explicit `g{n}-` prefix (`g9-math-s1-u2`) — see bankTagsForParsedUnit.
-      mathematics: /^(s[12](-u\d+|-matrices)?|g10-math-general|g9-math-s[12](-u\d+)?)$/,
+      mathematics: /^(s[12](-u\d+|-matrices)?|g10-math-general|g9-math-s[12](-u\d+)?|g8-math-s[12](-u\d+)?)$/,
       // Chemistry is `unitLevel: true` in curriculumIds.ts, so a lesson emits
       // BOTH the semester scope and the narrower unit scope — `g9-chem-s1` and
       // `g9-chem-s1-u1`. The `(-u\d+)?` is doing real work here; a Grade 9
@@ -126,20 +126,22 @@ describe('subject isolation', () => {
       chemistry: /^(chem-s[12](-u\d+)?|chem-g10-general|g9-chem-s[12](-u\d+)?)$/,
       // Grade 10 tag is bare (`finlit-s1`); Grade 9 gets the explicit
       // `g9-` prefix like arabic and islamic below.
-      'financial-literacy': /^(finlit-s[12]|g9-finlit-s[12])$/,
+      'financial-literacy': /^(finlit-s[12]|g9-finlit-s[12]|g8-finlit-s[12])$/,
       // Grade 10 Arabic predates this map and was silently unchecked — no
       // entry meant `continue`, not a pass. Added on 2026-09-08 alongside the
       // Grade 9 Arabic S1 book, so both grades are covered from here on.
-      arabic: /^(arabic-s[12]|g9-arabic-s[12])$/,
+      // Grade 8 (Semester 1 only) joined 2026-09-10.
+      arabic: /^(arabic-s[12]|g9-arabic-s[12]|g8-arabic-s1)$/,
       // Grade 10 Islamic predates this map too and was likewise silently
       // unchecked. Added alongside the Grade 9 Islamic books.
-      islamic: /^(islamic-s[12]|g9-islamic-s[12])$/,
-      // Geography is new to this repo entirely — no Grade 10 book exists yet,
-      // so only the g9- form appears. Added from day one rather than left to
-      // be discovered silently unchecked, like the three subjects above were.
-      geography: /^g9-geo-s[12]$/,
-      // Same as geography: new subject, Grade 9 only, no Grade 10 form yet.
-      history: /^g9-hist-s[12]$/,
+      // Grade 8 joined 2026-09-10, semester 1 then semester 2.
+      islamic: /^(islamic-s[12]|g9-islamic-s[12]|g8-islamic-s[12])$/,
+      // Geography is new to this repo entirely. Grade 10 (curriculumIds.ts's
+      // implicit grade) carries a bare tag; Grade 9 carries the explicit
+      // g9- form, same split as every pre-existing subject above.
+      geography: /^(geo-s[12]|g9-geo-s[12])$/,
+      // Same as geography — Grade 10 gained a book the same week.
+      history: /^(hist-s[12]|g9-hist-s[12])$/,
       'civic-education': /^g9-civ-s[12]$/,
       'physical-education': /^g9-pe-s[12]$/,
     };

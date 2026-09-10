@@ -41,8 +41,11 @@ export default function VerifyEmailScreen() {
     setNotice('');
     setLoading(true);
     try {
+      // No navigation here, same as the login screen: signing in flips
+      // `authChanged` in app/_layout.tsx, which picks the destination. A
+      // parent/student lands on the claim screen rather than the tabs, and
+      // replacing to the tabs here would flash them past it.
       await verifyEmail(email ?? '', code);
-      router.replace('/(tabs)');
     } catch (e: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setError(e.message ?? t('invalidVerificationCode'));

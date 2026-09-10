@@ -78,6 +78,16 @@ const SUBJECTS = {
   'eng-agri': { tag: 'eng-agri-', unitLevel: false },
   'eng-hospitality': { tag: 'eng-hospitality-', unitLevel: false },
   'eng-industry': { tag: 'eng-industry-', unitLevel: false },
+  // Art, Music and Drama Education (creative-arts). Grade 8's book is not
+  // split by semester — see g8CreativeArts.ts for why the scope still
+  // carries semester: 1.
+  'arts': { tag: 'arts-', unitLevel: false },
+  // Vocational Education (التربية المهنية).
+  'voc': { tag: 'voc-', unitLevel: false },
+  // Social Studies (الدراسات الاجتماعية) — Grade 8's combined civics/
+  // history/geography/philosophy book. The 'social' app subjectId
+  // predates any book behind it; this is its first id-namespacing tag.
+  'social': { tag: 'social-', unitLevel: false },
 } as const;
 
 /** Subject slug as it appears inside an id. Not the app's `subjectId`. */

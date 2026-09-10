@@ -37,13 +37,52 @@ import {
 /** `subjectId:gradeId` pairs that are offered by the MVP lists but have no book. */
 const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // financial-literacy:grade-9 was the last pre-existing gap, closed
-  // 2026-09-09. All four entries below reopened it the same day: each
-  // subject joined MVP_SUBJECT_IDS brand-new with only a Grade 9 book behind
-  // it, so its Grade 10 half is bookless by construction, not by omission.
-  'geography:grade-10',
-  'history:grade-10',
+  // 2026-09-09, the same day each of these four subjects joined
+  // MVP_SUBJECT_IDS brand-new with only a Grade 9 book behind it — so their
+  // Grade 10 halves were bookless by construction, not by omission.
+  // geography:grade-10 and history:grade-10 closed the same week, once
+  // their Grade 10 books arrived.
   'civic-education:grade-10',
   'physical-education:grade-10',
+  // grade-8 joined MVP_GRADE_IDS 2026-09-09 with only financial-literacy
+  // built. Grade 8 does not split science or social studies the way Grade
+  // 9/10 do — NCCD combines them into single «العلوم» and «الدراسات
+  // الاجتماعية» books, catalogued under the pre-existing 'science'/'social'
+  // subjects, neither of which is in MVP_SUBJECT_IDS yet — so chemistry,
+  // physics, biology, earth-science, geography, history, civic-education
+  // are permanently bookless at grade-8, not gaps to be closed later.
+  // physical-education has no grade-8 book at all on disk.
+  // digital-literacy:grade-8 closed 2026-09-09, the same day as
+  // financial-literacy. mathematics:grade-8 closed the same week once its
+  // Semester 2 book arrived (Semester 1 still unattached, but one semester
+  // is enough for hasCurriculumForSubjectGrade). arabic:grade-8 closed the
+  // same week once its Semester 1 book arrived (Semester 2 not attached).
+  // islamic:grade-8 closed the same way once its Semester 1 book arrived.
+  // english:grade-8 closed 2026-09-10 once its Semester 1 book arrived —
+  // the last Grade 8 subject this comment block still listed as pending.
+  'chemistry:grade-8',
+  'physics:grade-8',
+  'earth-science:grade-8',
+  'biology:grade-8',
+  'geography:grade-8',
+  'history:grade-8',
+  'civic-education:grade-8',
+  'physical-education:grade-8',
+  // creative-arts joined MVP_SUBJECT_IDS the same day as its only book
+  // (Grade 8). SUBJECTS.grades for it is ['grade-8'] alone — no Grade 9 or
+  // 10 book is expected, so these two are permanent, not gaps to close.
+  'creative-arts:grade-9',
+  'creative-arts:grade-10',
+  // vocational-education joined the same day, same reason — SUBJECTS.grades
+  // is ['grade-8'] alone here too.
+  'vocational-education:grade-9',
+  'vocational-education:grade-10',
+  // social joined the same day. Unlike creative-arts/vocational-education,
+  // SUBJECTS.grades for social already spans grade-1..grade-9, so these
+  // are ordinary gaps (a Grade 9 or 10 book would close them normally),
+  // not permanent — delete the line once a book lands.
+  'social:grade-9',
+  'social:grade-10',
 ]);
 
 describe('subject/grade coverage across the MVP lists', () => {

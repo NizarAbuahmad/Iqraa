@@ -41,6 +41,12 @@ export interface User {
   role: UserRole;
   preferredLanguage: 'en' | 'ar';
   createdAt: string;
+  /**
+   * Whether a parent/student account has claimed any roster row yet. Absent
+   * for a teacher (never applicable) — see `needsRosterClaim` in
+   * services/routeGating.ts, the gate this field exists for.
+   */
+  hasRosterLink?: boolean;
   // Legacy optional fields kept for profile screen compatibility
   phone?: string;
   school?: string;
@@ -57,10 +63,6 @@ export interface RegisterData {
   confirmPassword?: string;
   /** Defaults to 'teacher' server-side when omitted. */
   role?: 'teacher' | 'student' | 'parent';
-  /** Required when role is 'student' or 'parent' — see services/messaging.ts. */
-  claimCode?: string;
-  /** Which roster name was picked, when `claimCode` is a whole-class join code. A per-student code names its own student and ignores this. */
-  studentId?: string;
 }
 
 interface AuthContextType {
@@ -73,7 +75,7 @@ interface AuthContextType {
    * "Continue with Google" button, which used to ignore the role pill
    * entirely and silently create a teacher.
    */
-  loginWithGoogle: (credential: string, signup?: Pick<RegisterData, 'role' | 'claimCode' | 'studentId'>) => Promise<void>;
+  loginWithGoogle: (credential: string, signup?: Pick<RegisterData, 'role'>) => Promise<void>;
   /**
    * Creates the account but does NOT sign in — a password account starts
    * unverified and the server refuses login until `verifyEmail` succeeds.
@@ -93,6 +95,12 @@ interface AuthContextType {
    * whether the account has a password hash at all, and refuses 401 otherwise.
    */
   deleteAccount: (proof: { password?: string; confirmEmail?: string }) => Promise<void>;
+  /**
+   * Flips `hasRosterLink` to true locally right after a successful
+   * `POST /auth/claim`, so the routing gate clears without a round trip to
+   * `/auth/me` just to learn something this call already knows.
+   */
+  markRosterClaimed: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -106,6 +114,7 @@ type ApiUser = {
   preferredLanguage: string;
   createdAt: string;
   lastLogin?: string;
+  hasRosterLink?: boolean;
 };
 
 function toUser(apiUser: ApiUser): User {
@@ -119,6 +128,7 @@ function toUser(apiUser: ApiUser): User {
     preferredLanguage: (apiUser.preferredLanguage as 'en' | 'ar') ?? 'en',
     language: (apiUser.preferredLanguage as 'en' | 'ar') ?? 'en',
     createdAt: apiUser.createdAt,
+    hasRosterLink: apiUser.hasRosterLink,
     subjects: [],
     grades: [],
   };
@@ -228,7 +238,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginWithGoogle = useCallback(async (
     credential: string,
-    signup?: Pick<RegisterData, 'role' | 'claimCode' | 'studentId'>,
+    signup?: Pick<RegisterData, 'role'>,
   ) => {
     const data = await apiJson<{ accessToken: string; refreshToken: string; user: ApiUser }>(
       '/auth/google',
@@ -237,8 +247,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({
           credential,
           role: signup?.role,
-          claimCode: signup?.claimCode?.trim(),
-          studentId: signup?.studentId,
         }),
       },
     );
@@ -255,8 +263,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error('Password must be at least 8 characters');
     if (payload.confirmPassword && payload.confirmPassword !== payload.password)
       throw new Error('Passwords do not match');
-    if (payload.role && payload.role !== 'teacher' && !payload.claimCode?.trim())
-      throw new Error('A class code is required');
 
     const data = await apiJson<{ email: string; message: string }>(
       '/auth/register',
@@ -269,8 +275,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           password: payload.password,
           confirmPassword: payload.confirmPassword,
           role: payload.role,
-          claimCode: payload.claimCode?.trim(),
-          studentId: payload.studentId,
         }),
       },
     );
@@ -362,6 +366,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
+  const markRosterClaimed = useCallback(() => {
+    setUser(u => (u ? { ...u, hasRosterLink: true } : u));
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -375,6 +383,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logout,
         updateProfile,
         deleteAccount,
+        markRosterClaimed,
       }}
     >
       {children}
