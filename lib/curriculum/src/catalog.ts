@@ -228,6 +228,10 @@ import {
   buildG8SocialSem2BrowserCatalog,
 } from './catalogs/g8SocialSem2.ts';
 import {
+  G8_ARABIC_S1_CURRICULUM_BOOK_ID,
+  buildG8ArabicSem1BrowserCatalog,
+} from './catalogs/g8ArabicSem1.ts';
+import {
   G9_CIV_S1_CURRICULUM_BOOK_ID,
   buildG9CivSem1BrowserCatalog,
 } from './catalogs/g9CivSem1.ts';
@@ -640,6 +644,8 @@ export const MVP_BOOK_IDS: readonly string[] = [
   G8_SOCIAL_S2_CURRICULUM_BOOK_ID,
   // Grade 8 Math — Semester 2 only; S1 has not been attached.
   G8_MATH_S2_CURRICULUM_BOOK_ID,
+  // Grade 8 Arabic — Semester 1 only; S2 has not been attached.
+  G8_ARABIC_S1_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -1411,6 +1417,24 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+  },
+  // ── Arabic Grade 8 – Semester 1 ───────────────────────────────────────────
+  // First Grade 8 book behind the pre-existing 'arabic' subject (already
+  // spans every grade). Semester 2 has not been attached — a Grade 7 file
+  // was misfiled into this grade's folder and was ignored, not used as a
+  // substitute — see g8ArabicSem1.ts and the JSON's known_gaps.
+  {
+    id: G8_ARABIC_S1_CURRICULUM_BOOK_ID,
+    title: 'Arabic – Grade 8, Semester 1',
+    titleAr: 'اللغة العربية – الصف الثامن – الفصل الأول',
+    subjectId: 'arabic',
+    gradeId: 'grade-8',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
   },
   // ── English Grade 9 – Semesters 1 and 2 ───────────────────────────────────
   // Seven lessons per unit, unlike the Grade 10 English rows further down
@@ -2716,6 +2740,7 @@ const _g8VocSem2Browser = buildG8VocSem2BrowserCatalog();
 const _g8SocialSem1Browser = buildG8SocialSem1BrowserCatalog();
 const _g8SocialSem2Browser = buildG8SocialSem2BrowserCatalog();
 const _g8MathSem2Browser = buildG8MathSem2BrowserCatalog();
+const _g8ArabicSem1Browser = buildG8ArabicSem1BrowserCatalog();
 const _g9CivSem1Browser = buildG9CivSem1BrowserCatalog();
 const _g9CivSem2Browser = buildG9CivSem2BrowserCatalog();
 const _g9PeSem1Browser = buildG9PeSem1BrowserCatalog();
@@ -2892,6 +2917,7 @@ export const UNITS: Unit[] = [
   ..._g8SocialSem1Browser.units,
   ..._g8SocialSem2Browser.units,
   ..._g8MathSem2Browser.units,
+  ..._g8ArabicSem1Browser.units,
   ..._g9CivSem1Browser.units,
   ..._g9CivSem2Browser.units,
   ..._g9PeSem1Browser.units,
@@ -2961,6 +2987,7 @@ export const LESSONS: Lesson[] = [
   ..._g8SocialSem1Browser.lessons,
   ..._g8SocialSem2Browser.lessons,
   ..._g8MathSem2Browser.lessons,
+  ..._g8ArabicSem1Browser.lessons,
   ..._g9CivSem1Browser.lessons,
   ..._g9CivSem2Browser.lessons,
   ..._g9PeSem1Browser.lessons,

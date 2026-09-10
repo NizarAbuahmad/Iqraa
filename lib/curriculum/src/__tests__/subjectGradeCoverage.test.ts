@@ -51,18 +51,18 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // subjects, neither of which is in MVP_SUBJECT_IDS yet — so chemistry,
   // physics, biology, earth-science, geography, history, civic-education
   // are permanently bookless at grade-8, not gaps to be closed later.
-  // physical-education has no grade-8 book at all on disk. english, arabic
-  // and islamic ARE being built this batch — delete each line here as its
-  // Grade 8 book lands. digital-literacy:grade-8 closed 2026-09-09, the
-  // same day as financial-literacy. mathematics:grade-8 closed the same
-  // week once its Semester 2 book arrived (Semester 1 still unattached,
-  // but one semester is enough for hasCurriculumForSubjectGrade).
+  // physical-education has no grade-8 book at all on disk. english and
+  // islamic ARE being built this batch — delete each line here as its Grade
+  // 8 book lands. digital-literacy:grade-8 closed 2026-09-09, the same day
+  // as financial-literacy. mathematics:grade-8 closed the same week once its
+  // Semester 2 book arrived (Semester 1 still unattached, but one semester
+  // is enough for hasCurriculumForSubjectGrade). arabic:grade-8 closed the
+  // same week once its Semester 1 book arrived (Semester 2 not attached).
   'chemistry:grade-8',
   'english:grade-8',
   'physics:grade-8',
   'earth-science:grade-8',
   'biology:grade-8',
-  'arabic:grade-8',
   'islamic:grade-8',
   'geography:grade-8',
   'history:grade-8',
