@@ -62,6 +62,17 @@ export function newChatMediaKey(extension: string): string {
   return `chat-media/${randomUUID()}${extension}`;
 }
 
+/**
+ * A student's read-aloud recording. Own prefix for the same reasons as the two
+ * above, and one more that is specific to it: this is the only object in the
+ * bucket that is a minor's voice. Keeping it in a namespace of its own is what
+ * makes "delete every recording for this attempt" — or for this class, or this
+ * year — a prefix operation rather than a query someone has to get right.
+ */
+export function newAttemptAudioKey(extension: string): string {
+  return `attempt-audio/${randomUUID()}${extension}`;
+}
+
 export async function putObject(key: string, body: Buffer, contentType: string): Promise<void> {
   const client = r2Client();
   if (!client) throw new Error("R2 is not configured");

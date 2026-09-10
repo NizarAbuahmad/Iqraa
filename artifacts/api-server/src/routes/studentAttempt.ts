@@ -41,6 +41,16 @@ import { lessonIdsForObjectiveIds } from "@workspace/curriculum";
 import { logger } from "../lib/logger";
 import { createRateLimiter } from "../lib/rateLimit";
 import {
+  AiBudgetExceededError,
+  AiLiveModeOffError,
+  assertBudgetAvailable,
+  assertLiveModeEnabled,
+  recordAudioUsage,
+} from "../lib/aiBudget";
+import { MAX_DATA_URL_LENGTH, parseDataUrl } from "../lib/lessonMediaUpload";
+import { newAttemptAudioKey, putObject } from "../lib/r2";
+import { MAX_TAKES_PER_QUESTION, checkRecording, isRejection } from "../lib/readAloudUpload";
+import {
   hashAccessToken,
   issueAccessToken,
   normalizeShareCode,
@@ -361,6 +371,148 @@ router.put("/take/attempt/answers/:questionId", async (req, res) => {
   } catch (err) {
     logger.error({ err }, "student autosave failed");
     res.status(500).json({ error: "Failed to save your answer" });
+  }
+});
+
+/**
+ * A read-aloud recording: store it, transcribe it, keep both on the answer.
+ *
+ * This is the only route in the API that spends money on behalf of someone who
+ * has no account. The identity is a shared exam link, which a student can
+ * forward to anyone, so every ceiling below is doing real work rather than
+ * being defensive for its own sake. The `/take` limiter above was sized for
+ * thirty students clicking through a paper — generous on purpose, because a
+ * classroom shares one IP — and that generosity is exactly wrong for a paid
+ * endpoint, hence the second, tighter limiter keyed on the attempt.
+ *
+ * Transcription happens here rather than at grading time so that
+ * `TypeModule.grade` can stay synchronous for all nine types.
+ */
+
+/**
+ * Keyed on the attempt, not the IP.
+ *
+ * A per-IP ceiling cannot separate one student re-recording from a whole class
+ * working, so the number that would stop abuse would also stop a lesson. The
+ * attempt is the right unit: it is one student, one sitting. Hashed because a
+ * raw bearer token has no business in a rate-limit key, which is stored and
+ * logged. Falls back to the IP when there is no token — an unauthenticated
+ * caller still must not get an unlimited bucket.
+ */
+router.use(
+  "/take/attempt/audio",
+  createRateLimiter({
+    windowMs: 60_000,
+    max: 12,
+    name: "take-audio",
+    key: req => {
+      const header = req.headers.authorization;
+      const token = header?.startsWith("Bearer ") ? header.slice(7).trim() : "";
+      return token ? hashAccessToken(token) : (req.ip ?? "unknown");
+    },
+  }),
+);
+
+router.post("/take/attempt/audio/:questionId", async (req, res) => {
+  try {
+    const attempt = await attemptForToken(req.headers.authorization);
+    if (!attempt) {
+      res.status(401).json({ error: "This session has expired", code: "token_invalid" });
+      return;
+    }
+    if (attempt.submittedAt) {
+      res.status(409).json({ error: "This exam was already submitted", code: "already_submitted" });
+      return;
+    }
+
+    const questionId = req.params["questionId"] as string;
+    const snapshot = (attempt.questionSnapshot as EvaluationQuestion[]) ?? [];
+    const question = snapshot.find(q => q.id === questionId);
+    if (!question) {
+      res.status(404).json({ error: "Question not found in this exam" });
+      return;
+    }
+    // Only one type has anything to do with a recording. Without this, any
+    // question in any paper becomes an upload-and-transcribe endpoint.
+    if (question.type !== "read_aloud") {
+      res.status(400).json({ error: "This question does not take a recording", code: "not_read_aloud" });
+      return;
+    }
+
+    const [existing] = await db
+      .select({ response: attemptAnswers.response })
+      .from(attemptAnswers)
+      .where(and(eq(attemptAnswers.attemptId, attempt.id), eq(attemptAnswers.questionId, questionId)))
+      .limit(1);
+    const previous = (existing?.response ?? {}) as Record<string, unknown>;
+    const takes = typeof previous["takes"] === "number" ? previous["takes"] : 0;
+
+    const rawAudio = typeof req.body?.audio === "string" ? req.body.audio : "";
+    const parsed = rawAudio ? parseDataUrl(rawAudio) : null;
+    const verdict = checkRecording({
+      mime: parsed?.mime ?? null,
+      durationMs: req.body?.durationMs,
+      previousTakes: takes,
+      dataUrlLength: rawAudio.length,
+      maxDataUrlLength: MAX_DATA_URL_LENGTH,
+    });
+    if (isRejection(verdict)) {
+      res.status(verdict.status).json({ error: verdict.error, code: verdict.code });
+      return;
+    }
+    // `parsed` is non-null whenever the verdict accepted a mime, but the
+    // compiler cannot see that through the boundary, and an assertion here
+    // would be a lie if the two ever drifted apart.
+    if (!parsed) {
+      res.status(400).json({ error: "audio must be a base64 data URL", code: "bad_audio" });
+      return;
+    }
+
+    // Called by hand: the budget guard is not middleware anywhere in this API.
+    // Without these the endpoint transcribes regardless of AI_LIVE_MODE and
+    // past AI_BUDGET_USD.
+    assertLiveModeEnabled();
+    assertBudgetAvailable();
+
+    const key = newAttemptAudioKey(verdict.extension);
+    await putObject(key, parsed.buffer, parsed.mime);
+
+    /*
+     * Imported inside the handler, never at module scope.
+     *
+     * `lib/integrations-openai-ai-server` builds its OpenAI client while the
+     * module is evaluating and throws without OPENAI_API_KEY. A top-level
+     * import here would take the entire student exam route — every paper, not
+     * just the ones with a recording — down on any deploy missing that key.
+     */
+    const { speechToText } = await import("@workspace/integrations-openai-ai-server/audio");
+    // `speechToText` accepts webm directly. Do NOT route this through
+    // `ensureCompatibleFormat`: it shells out to ffmpeg, which is not in the
+    // runtime image, so every browser recording would fail on conversion.
+    const transcript = await speechToText(parsed.buffer, verdict.transcribeAs);
+    recordAudioUsage(verdict.durationMs / 1000, "gpt-4o-mini-transcribe");
+
+    const response = { audioKey: key, transcript, durationMs: verdict.durationMs, takes: takes + 1 };
+    await db
+      .insert(attemptAnswers)
+      .values({ attemptId: attempt.id, questionId, response, isFinal: false })
+      .onConflictDoUpdate({
+        target: [attemptAnswers.attemptId, attemptAnswers.questionId],
+        set: { response, updatedAt: new Date() },
+      });
+
+    // The transcript goes back so the student can see what was heard and
+    // decide whether to use a remaining take. The score does not: releasing a
+    // result here would tell them their mark before the teacher has the paper.
+    res.json({ saved: true, transcript, takesLeft: MAX_TAKES_PER_QUESTION - (takes + 1) });
+  } catch (err) {
+    if (err instanceof AiLiveModeOffError || err instanceof AiBudgetExceededError) {
+      logger.warn({ err: err.message }, "read-aloud transcription refused");
+      res.status(503).json({ error: "Recording is unavailable right now", code: "ai_unavailable" });
+      return;
+    }
+    logger.error({ err }, "read-aloud upload failed");
+    res.status(500).json({ error: "Failed to save your recording" });
   }
 });
 
