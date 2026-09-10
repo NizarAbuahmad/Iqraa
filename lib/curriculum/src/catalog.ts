@@ -244,6 +244,10 @@ import {
   buildG8IslamicSem2BrowserCatalog,
 } from './catalogs/g8IslamicSem2.ts';
 import {
+  G8_ENG_S1_CURRICULUM_BOOK_ID,
+  buildG8EngSem1BrowserCatalog,
+} from './catalogs/g8EngSem1.ts';
+import {
   G9_CIV_S1_CURRICULUM_BOOK_ID,
   buildG9CivSem1BrowserCatalog,
 } from './catalogs/g9CivSem1.ts';
@@ -662,6 +666,9 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // Grade 8 Islamic Education — both semesters now attached.
   G8_ISLAMIC_S1_CURRICULUM_BOOK_ID,
   G8_ISLAMIC_S2_CURRICULUM_BOOK_ID,
+  // Grade 8 English — Semester 1 only; S2 has not been attached. Same
+  // Pearson series/format as Grade 9 English above.
+  G8_ENG_S1_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -1510,6 +1517,23 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
+  },
+  // ── English Grade 8 – Semester 1 ──────────────────────────────────────────
+  // Same Pearson "Jordan High Note" series/format as the Grade 9 English rows
+  // below: seven lessons per unit, unlike the Grade 10 English rows further
+  // down. See g8EngSem1.ts and the JSON's known_gaps.
+  {
+    id: G8_ENG_S1_CURRICULUM_BOOK_ID,
+    title: 'English – Grade 8, Semester 1',
+    titleAr: 'اللغة الإنجليزية – الصف الثامن – الفصل الأول',
+    subjectId: 'english',
+    gradeId: 'grade-8',
+    academicYear: '2025-2026',
+    language: 'English',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
   },
   // ── English Grade 9 – Semesters 1 and 2 ───────────────────────────────────
   // Seven lessons per unit, unlike the Grade 10 English rows further down
@@ -2819,6 +2843,7 @@ const _g8MathSem1Browser = buildG8MathSem1BrowserCatalog();
 const _g8ArabicSem1Browser = buildG8ArabicSem1BrowserCatalog();
 const _g8IslamicSem1Browser = buildG8IslamicSem1BrowserCatalog();
 const _g8IslamicSem2Browser = buildG8IslamicSem2BrowserCatalog();
+const _g8EngSem1Browser = buildG8EngSem1BrowserCatalog();
 const _g9CivSem1Browser = buildG9CivSem1BrowserCatalog();
 const _g9CivSem2Browser = buildG9CivSem2BrowserCatalog();
 const _g9PeSem1Browser = buildG9PeSem1BrowserCatalog();
@@ -2999,6 +3024,7 @@ export const UNITS: Unit[] = [
   ..._g8ArabicSem1Browser.units,
   ..._g8IslamicSem1Browser.units,
   ..._g8IslamicSem2Browser.units,
+  ..._g8EngSem1Browser.units,
   ..._g9CivSem1Browser.units,
   ..._g9CivSem2Browser.units,
   ..._g9PeSem1Browser.units,
@@ -3072,6 +3098,7 @@ export const LESSONS: Lesson[] = [
   ..._g8ArabicSem1Browser.lessons,
   ..._g8IslamicSem1Browser.lessons,
   ..._g8IslamicSem2Browser.lessons,
+  ..._g8EngSem1Browser.lessons,
   ..._g9CivSem1Browser.lessons,
   ..._g9CivSem2Browser.lessons,
   ..._g9PeSem1Browser.lessons,
