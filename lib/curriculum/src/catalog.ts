@@ -240,6 +240,10 @@ import {
   buildG8IslamicSem1BrowserCatalog,
 } from './catalogs/g8IslamicSem1.ts';
 import {
+  G8_ISLAMIC_S2_CURRICULUM_BOOK_ID,
+  buildG8IslamicSem2BrowserCatalog,
+} from './catalogs/g8IslamicSem2.ts';
+import {
   G9_CIV_S1_CURRICULUM_BOOK_ID,
   buildG9CivSem1BrowserCatalog,
 } from './catalogs/g9CivSem1.ts';
@@ -655,8 +659,9 @@ export const MVP_BOOK_IDS: readonly string[] = [
   G8_MATH_S1_CURRICULUM_BOOK_ID,
   // Grade 8 Arabic — Semester 1 only; S2 has not been attached.
   G8_ARABIC_S1_CURRICULUM_BOOK_ID,
-  // Grade 8 Islamic Education — Semester 1 only; S2 has not been attached.
+  // Grade 8 Islamic Education — both semesters now attached.
   G8_ISLAMIC_S1_CURRICULUM_BOOK_ID,
+  G8_ISLAMIC_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -1467,13 +1472,12 @@ export const BOOKS: Book[] = [
   },
   // ── Islamic Education Grade 8 – Semester 1 ────────────────────────────────
   // First Grade 8 book behind the pre-existing 'islamic' subject (already
-  // spans every grade). Semester 2 has not been attached. Objectives and
-  // periods come from the teacher guide, matched by lesson title/content
-  // rather than position — the guide's own lesson order diverges from the
-  // book's structurally (a merged Hujurat lesson, one lesson with no guide
-  // counterpart, one guide lesson with no book counterpart, one book lesson
-  // the guide splits in two) — see g8IslamicSem1.ts and the JSON's
-  // known_gaps.
+  // spans every grade). Objectives and periods come from the teacher guide,
+  // matched by lesson title/content rather than position — the guide's own
+  // lesson order diverges from the book's structurally (a merged Hujurat
+  // lesson, one lesson with no guide counterpart, one guide lesson with no
+  // book counterpart, one book lesson the guide splits in two) — see
+  // g8IslamicSem1.ts and the JSON's known_gaps.
   {
     id: G8_ISLAMIC_S1_CURRICULUM_BOOK_ID,
     title: 'Islamic Education – Grade 8, Semester 1',
@@ -1486,6 +1490,26 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+  },
+  // ── Islamic Education Grade 8 – Semester 2 ────────────────────────────────
+  // Direct sequel to Semester 1, now closing out grade-8 Islamic Education.
+  // Unlike Semester 1's guide, this semester's four teacher-guide unit-plan
+  // tables (مخطط الوحدة) list all 23 lessons in the same title and order as
+  // the student book — no merges, splits, or one-sided lessons — so
+  // objectives/periods are matched by position. See g8IslamicSem2.ts and the
+  // JSON's known_gaps for the two lessons with no main-idea box.
+  {
+    id: G8_ISLAMIC_S2_CURRICULUM_BOOK_ID,
+    title: 'Islamic Education – Grade 8, Semester 2',
+    titleAr: 'التربية الإسلامية – الصف الثامن – الفصل الثاني',
+    subjectId: 'islamic',
+    gradeId: 'grade-8',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
   },
   // ── English Grade 9 – Semesters 1 and 2 ───────────────────────────────────
   // Seven lessons per unit, unlike the Grade 10 English rows further down
@@ -2794,6 +2818,7 @@ const _g8MathSem2Browser = buildG8MathSem2BrowserCatalog();
 const _g8MathSem1Browser = buildG8MathSem1BrowserCatalog();
 const _g8ArabicSem1Browser = buildG8ArabicSem1BrowserCatalog();
 const _g8IslamicSem1Browser = buildG8IslamicSem1BrowserCatalog();
+const _g8IslamicSem2Browser = buildG8IslamicSem2BrowserCatalog();
 const _g9CivSem1Browser = buildG9CivSem1BrowserCatalog();
 const _g9CivSem2Browser = buildG9CivSem2BrowserCatalog();
 const _g9PeSem1Browser = buildG9PeSem1BrowserCatalog();
@@ -2973,6 +2998,7 @@ export const UNITS: Unit[] = [
   ..._g8MathSem1Browser.units,
   ..._g8ArabicSem1Browser.units,
   ..._g8IslamicSem1Browser.units,
+  ..._g8IslamicSem2Browser.units,
   ..._g9CivSem1Browser.units,
   ..._g9CivSem2Browser.units,
   ..._g9PeSem1Browser.units,
@@ -3045,6 +3071,7 @@ export const LESSONS: Lesson[] = [
   ..._g8MathSem1Browser.lessons,
   ..._g8ArabicSem1Browser.lessons,
   ..._g8IslamicSem1Browser.lessons,
+  ..._g8IslamicSem2Browser.lessons,
   ..._g9CivSem1Browser.lessons,
   ..._g9CivSem2Browser.lessons,
   ..._g9PeSem1Browser.lessons,

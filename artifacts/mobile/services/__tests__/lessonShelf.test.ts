@@ -134,8 +134,8 @@ describe('subject isolation', () => {
       arabic: /^(arabic-s[12]|g9-arabic-s[12]|g8-arabic-s1)$/,
       // Grade 10 Islamic predates this map too and was likewise silently
       // unchecked. Added alongside the Grade 9 Islamic books.
-      // Grade 8 (Semester 1 only) joined 2026-09-10.
-      islamic: /^(islamic-s[12]|g9-islamic-s[12]|g8-islamic-s1)$/,
+      // Grade 8 joined 2026-09-10, semester 1 then semester 2.
+      islamic: /^(islamic-s[12]|g9-islamic-s[12]|g8-islamic-s[12])$/,
       // Geography is new to this repo entirely. Grade 10 (curriculumIds.ts's
       // implicit grade) carries a bare tag; Grade 9 carries the explicit
       // g9- form, same split as every pre-existing subject above.
