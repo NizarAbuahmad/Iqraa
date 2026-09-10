@@ -10,6 +10,7 @@
     "./blooms": "./src/blooms.ts",
     "./sources": "./src/sources.ts",
     "./bank": "./src/bank.ts",
+    "./external": "./src/external.ts",
     "./passages": "./src/passages.ts",
     "./catalogs/*": "./src/catalogs/*.ts",
     "./validateCurriculum": "./src/validateCurriculum.ts"
