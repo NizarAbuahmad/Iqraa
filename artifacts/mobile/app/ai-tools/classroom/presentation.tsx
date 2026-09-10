@@ -332,6 +332,17 @@ function HeroSlideView({ slide, accent }: { slide: ActivitySlide; accent: string
         style={StyleSheet.absoluteFill}
       />
       {body}
+      {/* The credit is a licence condition, not decoration. Unsplash requires
+          photographer attribution, CC-BY requires it by name, and VOA asks for
+          it — and this slide type carried `mediaCaption` for months without
+          ever drawing it, so every hero photo shipped uncredited. Media slides
+          already render theirs; this is the same line, sized not to compete
+          with the title. */}
+      {!!slide.mediaCaption && (
+        <Text style={[heroStyles.credit, { fontFamily: 'Cairo_400Regular' }]}>
+          {isolateForeignRuns(slide.mediaCaption)}
+        </Text>
+      )}
     </View>
   );
 }
@@ -1428,6 +1439,15 @@ const heroStyles = StyleSheet.create({
   textWrap: { alignItems: 'center', maxWidth: 560 },
   title: { fontSize: 34, color: '#fff', textAlign: 'center', lineHeight: 46 },
   subtitle: { fontSize: 16, color: 'rgba(255,255,255,0.85)', textAlign: 'center', marginTop: 12, lineHeight: 24 },
+  credit: {
+    position: 'absolute',
+    bottom: 10,
+    left: 16,
+    right: 16,
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.72)',
+    textAlign: 'center',
+  },
 });
 
 // Graph + media slides: the frame is the star, sized for a projector.

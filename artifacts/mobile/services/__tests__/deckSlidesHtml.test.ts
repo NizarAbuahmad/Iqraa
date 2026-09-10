@@ -23,6 +23,12 @@ function stripIsolates(html: string): string {
   return html.replace(/[\u2066\u2069]/g, '');
 }
 
+// The document carries a <style> block naming every class, so searching or
+// counting across the whole file hits the CSS rule too \u2014 `doesNotMatch` on a
+// class name can never pass against the full document. Assertions about what
+// actually *rendered* have to look at the markup only.
+const markup = (html: string) => html.slice(html.lastIndexOf('</style>'));
+
 function deck(slides: ActivitySlide[]): ClassroomActivity {
   return {
     activityName: 'الاشتقاق',
@@ -62,6 +68,49 @@ describe('buildDeckSlidesHTML — structure', () => {
   it('page numbers reflect the deck size, not a fixed count', () => {
     const html = buildDeckSlidesHTML(deck([titleSlide]), true);
     assert.match(html, /1 \/ 1/);
+  });
+});
+
+/**
+ * Attribution is a licence condition, not decoration. Unsplash requires
+ * photographer credit, CC-BY requires it by name, VOA asks for it — and this
+ * exporter carried `mediaCaption` to the hero slides and then dropped it,
+ * emitting `alt=""` as well, so every hero photo reached the PDF uncredited.
+ * A silently-missing credit is a breach that looks exactly like a clean slide,
+ * which is why it survived so long and why it is pinned here.
+ */
+describe('buildDeckSlidesHTML — media attribution', () => {
+  const credit = 'Photo by Jane Roe on Unsplash';
+  const withPhoto: ActivitySlide = {
+    ...titleSlide,
+    mediaUrl: 'https://images.example/photo.jpg',
+    mediaCaption: credit,
+  };
+
+  it('renders the credit on a title slide that has a photo', () => {
+    const html = markup(stripIsolates(buildDeckSlidesHTML(deck([withPhoto]), true)));
+    assert.match(html, /deck-hero-credit/);
+    assert.ok(html.includes(credit), 'the credit text itself must reach the PDF');
+  });
+
+  it('renders the credit on a divider slide too', () => {
+    const html = markup(stripIsolates(buildDeckSlidesHTML(deck([
+      titleSlide,
+      { ...withPhoto, slideNumber: 2, type: 'divider', title: 'الوحدة 2' },
+    ]), true)));
+    assert.ok(html.includes(credit));
+  });
+
+  it('describes the image to a screen reader instead of alt=""', () => {
+    const html = markup(buildDeckSlidesHTML(deck([withPhoto]), true));
+    assert.doesNotMatch(html, /class="deck-hero-img"[^>]*alt=""/);
+  });
+
+  it('emits no empty credit element when there is no caption', () => {
+    const html = markup(buildDeckSlidesHTML(deck([
+      { ...titleSlide, mediaUrl: 'https://images.example/photo.jpg' },
+    ]), true));
+    assert.doesNotMatch(html, /deck-hero-credit/);
   });
 });
 
@@ -368,11 +417,6 @@ describe('buildDeckSlidesHTML — whole-class MCQ slides', () => {
     });
     assert.match(html, /2x/);
   });
-
-  // The document carries a <style> block naming every class, so counting
-  // occurrences across the whole file counts the CSS rule too. Assertions
-  // about *how many* of something rendered have to look at the markup only.
-  const markup = (html: string) => html.slice(html.lastIndexOf('</style>'));
 
   it('marks the correct option, and only that one', () => {
     const html = markup(buildDeckSlidesHTML(deck([titleSlide, question]), true));
