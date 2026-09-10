@@ -89,10 +89,24 @@ function trimmedOrUndefined(value: unknown): string | undefined {
   return trimmed === "" ? undefined : trimmed;
 }
 
+/**
+ * Whether a parent/student account has claimed any roster row yet. Only ever
+ * queried for those two roles — a teacher never has rosterLinks, and running
+ * this on every teacher request would be a wasted query on the common path.
+ */
+async function hasAnyRosterLink(userId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: rosterLinks.id })
+    .from(rosterLinks)
+    .where(eq(rosterLinks.userId, userId))
+    .limit(1);
+  return !!row;
+}
+
 // POST /auth/register
 router.post("/register", registerLimiter, async (req, res) => {
   try {
-    const { firstName, lastName, email, password, confirmPassword, role: rawRole, claimCode, studentId } =
+    const { firstName, lastName, email, password, confirmPassword, role: rawRole } =
       req.body as {
         firstName?: string;
         lastName?: string;
@@ -101,16 +115,6 @@ router.post("/register", registerLimiter, async (req, res) => {
         confirmPassword?: string;
         /** Defaults to 'teacher' — the only role that needed no signup step until now. */
         role?: string;
-        /** Required for role 'student'/'parent' — see /students/:id/claim-code in roster.ts. */
-        claimCode?: string;
-        /**
-         * Which roster row this person says they are. Required only when
-         * `claimCode` is a whole-class join code, which names no student of its
-         * own; a per-student claim code ignores it. Never trusted as identity —
-         * it is checked for membership of that code's class, and a name already
-         * held by a student account is refused (lib/claimDecision.ts).
-         */
-        studentId?: string;
       };
 
     if (!firstName?.trim()) {
@@ -137,34 +141,21 @@ router.post("/register", registerLimiter, async (req, res) => {
     const role: "teacher" | ClaimRole =
       rawRole === "student" || rawRole === "parent" ? rawRole : "teacher";
 
-    // Resolved before any write: a student/parent account must never be
-    // created dangling off an invalid code.
-    let claim: { studentId: string; relation: "self" | "guardian" } | null = null;
-    if (role !== "teacher") {
-      // v1 is teacher-only. A student account is an account for a minor, and
-      // the consent posture around one needs a lawyer and a matching store
-      // declaration — see lib/features.ts. Refused here rather than hidden in
-      // the app, because the app is not the security boundary.
-      if (!studentAccountsEnabled()) {
-        res.status(403).json({
-          code: "student_accounts_disabled",
-          error: "Parent and student accounts are not available yet.",
-        });
-        return;
-      }
-      const code = claimCode?.trim();
-      if (!code) {
-        res.status(400).json({ error: "A class code is required to sign up as a parent or student" });
-        return;
-      }
-      // studentId is the name picked off a class roster (see GET /auth/join/:code).
-      // A per-student claim code names its own student and ignores this.
-      const resolved = await resolveClaimCode(code, role, trimmedOrUndefined(studentId));
-      if (!resolved.ok) {
-        res.status(resolved.status).json({ error: resolved.error });
-        return;
-      }
-      claim = { studentId: resolved.studentId, relation: resolved.relation };
+    // v1 is teacher-only. A student account is an account for a minor, and
+    // the consent posture around one needs a lawyer and a matching store
+    // declaration — see lib/features.ts. Refused here rather than hidden in
+    // the app, because the app is not the security boundary.
+    //
+    // No roster code is asked for or resolved at this point anymore: a
+    // parent/student account is created bare, and links to a roster row
+    // afterwards through the one claiming path, POST /auth/claim — see
+    // hasAnyRosterLink and the client-side gate that gets them there.
+    if (role !== "teacher" && !studentAccountsEnabled()) {
+      res.status(403).json({
+        code: "student_accounts_disabled",
+        error: "Parent and student accounts are not available yet.",
+      });
+      return;
     }
 
     // Check duplicate email
@@ -194,13 +185,6 @@ router.post("/register", registerLimiter, async (req, res) => {
 
     if (!user) throw new Error("Failed to create user");
 
-    if (claim) {
-      await db
-        .insert(rosterLinks)
-        .values({ studentId: claim.studentId, userId: user.id, relation: claim.relation })
-        .onConflictDoNothing();
-    }
-
     const { accessToken, refreshTokenValue } = generateTokens(user.id, user.email, user.role);
     await storeRefreshToken(user.id, refreshTokenValue);
 
@@ -215,6 +199,9 @@ router.post("/register", registerLimiter, async (req, res) => {
         role: user.role,
         preferredLanguage: user.preferredLanguage,
         createdAt: user.createdAt,
+        // Always false here — a brand-new user row can never already hold a
+        // roster link, since register no longer creates one. No query needed.
+        ...(role === "teacher" ? {} : { hasRosterLink: false }),
       },
     });
   } catch (err: any) {
@@ -421,6 +408,13 @@ router.post("/login", loginLimiter, async (req, res) => {
     const { accessToken, refreshTokenValue } = generateTokens(user.id, user.email, user.role);
     await storeRefreshToken(user.id, refreshTokenValue);
 
+    // Only asked of the database for the two roles the app's routing gate
+    // cares about — a teacher never has (or needs) a rosterLinks row.
+    const hasRosterLink =
+      user.role === "student" || user.role === "parent"
+        ? await hasAnyRosterLink(user.id)
+        : undefined;
+
     res.json({
       accessToken,
       refreshToken: refreshTokenValue,
@@ -433,6 +427,7 @@ router.post("/login", loginLimiter, async (req, res) => {
         preferredLanguage: user.preferredLanguage,
         createdAt: user.createdAt,
         lastLogin: user.lastLogin,
+        ...(hasRosterLink === undefined ? {} : { hasRosterLink }),
       },
     });
   } catch (err) {
@@ -449,12 +444,10 @@ router.post("/google", googleLimiter, async (req, res) => {
       return;
     }
 
-    const { credential, role: rawRole, claimCode, studentId } = req.body as {
+    const { credential, role: rawRole } = req.body as {
       credential?: string;
       /** Only consulted when Google is minting a brand-new account — see below. */
       role?: string;
-      claimCode?: string;
-      studentId?: string;
     };
     if (!credential) {
       res.status(400).json({ error: "Google credential is required" });
@@ -489,7 +482,12 @@ router.post("/google", googleLimiter, async (req, res) => {
     const email = payload.email.toLowerCase().trim();
 
     let [user] = await db.select().from(users).where(eq(users.googleId, payload.sub)).limit(1);
-    let newUserClaim: { studentId: string; relation: "self" | "guardian" } | null = null;
+    // True only for the branch below that inserts a brand-new row — that
+    // account can never already hold a roster link, so its hasRosterLink is
+    // known without a query. Every other branch (matched or email-linked) may
+    // have claimed one at any point in the past via /auth/claim, so those
+    // still need to ask.
+    let isNewAccount = false;
 
     if (!user) {
       // Link to an existing password account with the same email if one
@@ -506,31 +504,21 @@ router.post("/google", googleLimiter, async (req, res) => {
         // A brand-new account: the register screen's role picker reaches this
         // route too (its "Continue with Google" button), and used to always
         // land here as a plain teacher with no code ever asked — same v1 gate
-        // as /register, checked before any row is written.
+        // as /register, checked before any row is written. No roster code is
+        // asked for here either anymore — see the matching change in
+        // /register; claiming happens afterwards through POST /auth/claim.
         const role: "teacher" | ClaimRole =
           rawRole === "student" || rawRole === "parent" ? rawRole : "teacher";
 
-        if (role !== "teacher") {
-          if (!studentAccountsEnabled()) {
-            res.status(403).json({
-              code: "student_accounts_disabled",
-              error: "Parent and student accounts are not available yet.",
-            });
-            return;
-          }
-          const code = claimCode?.trim();
-          if (!code) {
-            res.status(400).json({ error: "A class code is required to sign up as a parent or student" });
-            return;
-          }
-          const resolved = await resolveClaimCode(code, role, trimmedOrUndefined(studentId));
-          if (!resolved.ok) {
-            res.status(resolved.status).json({ error: resolved.error });
-            return;
-          }
-          newUserClaim = { studentId: resolved.studentId, relation: resolved.relation };
+        if (role !== "teacher" && !studentAccountsEnabled()) {
+          res.status(403).json({
+            code: "student_accounts_disabled",
+            error: "Parent and student accounts are not available yet.",
+          });
+          return;
         }
 
+        isNewAccount = true;
         [user] = await db
           .insert(users)
           .values({
@@ -548,13 +536,6 @@ router.post("/google", googleLimiter, async (req, res) => {
 
     if (!user) throw new Error("Failed to resolve Google user");
 
-    if (newUserClaim) {
-      await db
-        .insert(rosterLinks)
-        .values({ studentId: newUserClaim.studentId, userId: user.id, relation: newUserClaim.relation })
-        .onConflictDoNothing();
-    }
-
     // Same check as the password path, for the same reason — and here it is
     // after Google has already proved who is asking. Without it, a suspended
     // teacher with a Google account keeps a working sign-in button.
@@ -571,6 +552,13 @@ router.post("/google", googleLimiter, async (req, res) => {
     const { accessToken, refreshTokenValue } = generateTokens(user.id, user.email, user.role);
     await storeRefreshToken(user.id, refreshTokenValue);
 
+    const hasRosterLink =
+      user.role !== "student" && user.role !== "parent"
+        ? undefined
+        : isNewAccount
+          ? false
+          : await hasAnyRosterLink(user.id);
+
     res.json({
       accessToken,
       refreshToken: refreshTokenValue,
@@ -583,6 +571,7 @@ router.post("/google", googleLimiter, async (req, res) => {
         preferredLanguage: user.preferredLanguage,
         createdAt: user.createdAt,
         lastLogin: user.lastLogin,
+        ...(hasRosterLink === undefined ? {} : { hasRosterLink }),
       },
     });
   } catch (err: any) {
@@ -681,6 +670,15 @@ router.get("/me", authMiddleware, async (req: AuthenticatedRequest, res) => {
       return;
     }
 
+    // The mobile app's routing gate reads this to decide whether a
+    // parent/student may reach the tabs yet, on every boot and refresh — not
+    // just right after signup — so it has to be answered here, not only at
+    // login/register/google.
+    const hasRosterLink =
+      user.role === "student" || user.role === "parent"
+        ? await hasAnyRosterLink(user.id)
+        : undefined;
+
     res.json({
       id: user.id,
       firstName: user.firstName,
@@ -704,6 +702,7 @@ router.get("/me", authMiddleware, async (req: AuthenticatedRequest, res) => {
       rosterConsentVersion: user.rosterConsentVersion,
       createdAt: user.createdAt,
       lastLogin: user.lastLogin,
+      ...(hasRosterLink === undefined ? {} : { hasRosterLink }),
     });
   } catch (err) {
     logger.error({ err }, "get profile failed");
