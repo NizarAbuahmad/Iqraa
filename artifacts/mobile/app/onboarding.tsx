@@ -21,11 +21,17 @@ type Slide = {
 // One idea per slide, in the order a teacher would actually discover them:
 // what this is, how a full lesson comes together, why the math can be
 // trusted, then the tools that carry a class from before to after.
+//
+// The last slide is the exception, and it is here because this screen is shown
+// before login — to everyone, not only to teachers. Parents and students have
+// been able to sign up since STUDENT_ACCOUNTS went on, and four slides of
+// lesson-preparation features told them they had the wrong app.
 const SLIDES: Slide[] = [
   { icon: 'sparkles-outline', color: '#00A99D', titleKey: 'onboardingSlide1Title', descKey: 'onboardingSlide1Desc' },
   { icon: 'git-branch-outline', color: '#0EA5E9', titleKey: 'onboardingSlide2Title', descKey: 'onboardingSlide2Desc' },
   { icon: 'shield-checkmark-outline', color: '#1B6B62', titleKey: 'onboardingSlide3Title', descKey: 'onboardingSlide3Desc' },
   { icon: 'tv-outline', color: '#F59E0B', titleKey: 'onboardingSlide4Title', descKey: 'onboardingSlide4Desc' },
+  { icon: 'people-outline', color: '#7C3AED', titleKey: 'onboardingSlide5Title', descKey: 'onboardingSlide5Desc' },
 ];
 
 /**
