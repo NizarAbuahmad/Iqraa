@@ -561,10 +561,11 @@ export const MVP_BOOK_IDS: readonly string[] = [
   ENGLISH_AGRICULTURE_S1_CURRICULUM_BOOK_ID,
   ENGLISH_HOSPITALITY_S1_CURRICULUM_BOOK_ID,
   ENGLISH_INDUSTRY_S1_CURRICULUM_BOOK_ID,
-  // General (non-vocational) Grade 10 English — Student + Activity Book
-  // download links only; unit/lesson content is still a placeholder (one
-  // stub unit on S1, none on S2), shown anyway per the same
-  // honestly-thin-rather-than-hidden precedent as Grade 9 Math S2 above.
+  // General (non-vocational) Grade 10 English — five units of seven lessons
+  // per semester, each lesson carrying the outcome its page prints. (This
+  // comment claimed a placeholder "one stub unit on S1, none on S2" long after
+  // both semesters had five units, and both books had five title-only stub
+  // lessons until 2026-09-10.)
   'book-english-10-s1',
   'book-english-10-s2',
   // Physics S1 — the first subject from the 2026-09-03 intake to have a
@@ -2987,7 +2988,10 @@ const _engIndustryBrowser = buildEnglishIndustryBrowserCatalog();
 // General English. `book-english-10-s1` and `-s2` are the two rows that
 // have existed since this file was written and carried ZERO lessons until
 // 2026-09-05 — a teacher who picked English and opened either saw an empty
-// book, one level below the dead end the MVP-subject test catches.
+// book, one level below the dead end the MVP-subject test catches. What
+// 2026-09-05 gave them was one stub lesson per unit, repeating the unit title
+// with no outcomes; the seven real lessons per unit the book prints landed
+// 2026-09-10.
 const _engSem1Browser = buildEngSem1BrowserCatalog();
 const _engSem2Browser = buildEngSem2BrowserCatalog();
 
