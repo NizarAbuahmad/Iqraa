@@ -228,6 +228,32 @@ export async function setPaperQuestions(
   return readJson(res, 'Saving the paper');
 }
 
+/**
+ * Append one question the teacher wrote themselves.
+ *
+ * Appends, unlike `setPaperQuestions` and generation, which both replace the
+ * whole set. That is what a hand-authored question needs — adding a read-aloud
+ * passage must not wipe the questions already there.
+ */
+export async function addEvaluationQuestion(
+  evaluationId: string,
+  question: {
+    type: QuestionType;
+    objectiveId: string;
+    competencyKey: CompetencyKey;
+    marks: number;
+    difficulty?: Difficulty;
+    body: Record<string, unknown>;
+    expectedAnswer?: Record<string, unknown>;
+  },
+): Promise<{ question: EvaluationQuestion; totalMarks: number }> {
+  const res = await apiFetch(`/evaluations/${evaluationId}/questions`, {
+    method: 'POST',
+    body: JSON.stringify(question),
+  });
+  return readJson(res, 'Adding the question');
+}
+
 export async function publishEvaluation(id: string): Promise<Evaluation> {
   const res = await apiFetch(`/evaluations/${id}/publish`, { method: 'POST' });
   const data = await readJson<{ evaluation: Evaluation }>(res, 'Publishing evaluation');

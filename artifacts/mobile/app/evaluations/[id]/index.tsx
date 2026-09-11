@@ -29,6 +29,7 @@ import {
 import { summariseKeyChecks, type KeyCheckSummary } from '@/services/keyCheckSummary';
 import { isolateForeignRuns, prettifySymPy } from '@/services/mathRender';
 import { copyToClipboard } from '@/services/share';
+import { AddReadAloudModal } from '@/components/AddReadAloudModal';
 import { ClassPickerSheet } from '@/components/ui/ClassPickerSheet';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { bookFigureRefsForObjectives } from '@/services/bookFigureUri';
@@ -100,6 +101,7 @@ export default function EvaluationDetailScreen() {
 
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
   const [pickingClass, setPickingClass] = useState(false);
+  const [addingReadAloud, setAddingReadAloud] = useState(false);
   const [questions, setQuestions] = useState<EvaluationQuestion[]>([]);
   // Silence used to be the answer for three different situations — keys
   // verified, verifier unreachable, nothing checkable — and a teacher cannot
@@ -417,8 +419,36 @@ export default function EvaluationDetailScreen() {
               </>
             )}
           </Pressable>
+          {/* Note this sits next to "regenerate" but is not part of it. A
+              read-aloud question is written by a person and appended; the
+              generator both writes and replaces, and would wipe this one. */}
+          <Pressable
+            onPress={() => setAddingReadAloud(true)}
+            disabled={!!busy}
+            style={[styles.actionBtnOutline, { borderColor: ACCENT, opacity: !!busy ? 0.6 : 1, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+          >
+            <Ionicons name="mic-outline" size={16} color={ACCENT} />
+            <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 14 }}>
+              {t('addReadAloudBtn')}
+            </Text>
+          </Pressable>
         </View>
       )}
+
+      <AddReadAloudModal
+        visible={addingReadAloud}
+        onClose={() => setAddingReadAloud(false)}
+        evaluationId={id}
+        objectiveIds={evaluation?.objectiveIds ?? []}
+        onAdded={(question, totalMarks) => {
+          setQuestions(prev => [...prev, question]);
+          // `toFixed(2)` is not cosmetic: `evaluations.total_marks` is
+          // numeric(6,2) and `recomputeTotal` writes `total.toFixed(2)`, so
+          // this is exactly the string a reload would bring back. Storing the
+          // bare number would show "25" until the next focus and then "25.00".
+          setEvaluation(prev => (prev ? { ...prev, totalMarks: totalMarks.toFixed(2) } : prev));
+        }}
+      />
     </ScrollView>
   );
 }
