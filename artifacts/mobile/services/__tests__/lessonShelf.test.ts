@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { isUnitScopedTag } from '@workspace/curriculum';
+import { EXTERNAL_RESOURCES, isUnitScopedTag } from '@workspace/curriculum';
 import {
   askAboutResourceMessage,
   buildLessonShelf,
@@ -177,6 +177,44 @@ describe('subject isolation', () => {
         .filter(l => (buildLessonShelf(l.id)?.total ?? 0) > 0).length;
       assert.ok(withItems > 0, `no ${subject} lesson shelved anything`);
     }
+  });
+});
+
+/**
+ * Curated third-party material is a separate list from the bank, and the
+ * separation is load-bearing: these attach to a lesson id rather than a unit
+ * tag, they carry a licence rather than an authority, and every one requires
+ * its credit rendered next to it. Counting them into `total` would put them
+ * under a "we cannot hand you these files" note that is false of them.
+ */
+describe('external resources on the shelf', () => {
+  const lessonWithExternal = EXTERNAL_RESOURCES[0]?.lessonIds[0];
+
+  it('attaches curated resources to the lesson they name', () => {
+    assert.ok(lessonWithExternal, 'the manifest is empty — this test proves nothing');
+    const shelf = buildLessonShelf(lessonWithExternal);
+    assert.ok(shelf, `no lesson found for ${lessonWithExternal}`);
+    assert.ok(shelf.external.length > 0);
+  });
+
+  it('keeps them out of the bank counts', () => {
+    const shelf = buildLessonShelf(lessonWithExternal!)!;
+    const bankItems = [...shelf.unit, ...shelf.semester].reduce((n, g) => n + g.items.length, 0);
+    assert.equal(shelf.total, bankItems);
+  });
+
+  it('carries an attribution on every one, because the licence requires it', () => {
+    for (const r of EXTERNAL_RESOURCES) {
+      assert.ok(r.attribution.trim().length > 0, r.id);
+    }
+  });
+
+  it('gives a lesson with no curated material an empty list, not a missing one', () => {
+    // The panel reads `.length`, so `undefined` here would crash a lesson page
+    // rather than render nothing.
+    const bare = KB_LESSONS.find(l => buildLessonShelf(l.id)?.external.length === 0);
+    assert.ok(bare, 'every lesson has external material — unexpected');
+    assert.deepEqual(buildLessonShelf(bare.id)!.external, []);
   });
 });
 

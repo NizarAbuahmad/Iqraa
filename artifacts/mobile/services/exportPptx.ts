@@ -152,11 +152,24 @@ function addPlotChart(
   );
 }
 
-async function addHeroBackground(s: PptxSlide, url: string): Promise<boolean> {
+/**
+ * `credit` is a licence condition, not decoration: Unsplash requires
+ * photographer attribution, CC-BY requires it by name, VOA asks for it. A
+ * .pptx travels further than any other export here — it gets emailed, reused
+ * and re-presented — so a hero photo leaving without its credit is the worst
+ * of the three paths that used to drop it.
+ */
+async function addHeroBackground(s: PptxSlide, url: string, credit?: string): Promise<boolean> {
   const dataUrl = await fetchAsDataUrl(url);
   if (!dataUrl) return false;
   s.addImage({ data: dataUrl, x: 0, y: 0, w: 10, h: 5.63, sizing: { type: 'cover', w: 10, h: 5.63 } });
   s.addShape('rect', { x: 0, y: 0, w: 10, h: 5.63, fill: { color: DECK_BG, transparency: 25 } });
+  if (credit) {
+    s.addText(credit, {
+      x: 0.4, y: 5.18, w: 9.2, h: 0.28, align: 'center',
+      fontSize: 9, color: 'FFFFFF', transparency: 28,
+    });
+  }
   return true;
 }
 
@@ -201,7 +214,7 @@ export async function exportDeckAsPptx(
 
     if (i === 0) {
       // Title slide.
-      const onPhoto = slide.mediaUrl ? await addHeroBackground(s, slide.mediaUrl) : false;
+      const onPhoto = slide.mediaUrl ? await addHeroBackground(s, slide.mediaUrl, slide.mediaCaption) : false;
       if (!onPhoto) addBlobs(s);
       const [meta, ...rest] = slide.content.split('\n\n');
       s.addText('IQRA', {
@@ -233,7 +246,7 @@ export async function exportDeckAsPptx(
     if (slide.type === 'divider') {
       // Full-bleed, like the title slide — a pacing break, not another
       // header-bar-and-bullets content slide.
-      const gotPhoto = slide.mediaUrl ? await addHeroBackground(s, slide.mediaUrl) : false;
+      const gotPhoto = slide.mediaUrl ? await addHeroBackground(s, slide.mediaUrl, slide.mediaCaption) : false;
       if (!gotPhoto) s.background = { color: deckSlideAccent('divider') };
       s.addText(slide.title, {
         x: 0.6, y: 2.1, w: 8.8, h: 1.2, align: 'center', valign: 'middle',

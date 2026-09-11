@@ -105,6 +105,42 @@ export function getPricing(model: string): { input: number; output: number } {
   return FALLBACK_PRICING_PER_MILLION_USD;
 }
 
+/**
+ * Transcription, billed by audio duration rather than by tokens.
+ *
+ * A deliberate ceiling, not a quoted rate: `gpt-4o-mini-transcribe` and
+ * `whisper-1` both sit well under this, so an over-estimate can only trip
+ * AI_BUDGET_USD early. That is the same direction the token fallback above
+ * chooses, and for the same reason — the guard's job is to stop a runaway,
+ * and a cap that under-counts is not a cap.
+ *
+ * It matters more here than elsewhere: the route that spends this is
+ * identified by a shared exam link, not a login, so its ceiling is the last
+ * line rather than a formality.
+ */
+const AUDIO_USD_PER_MINUTE = 0.01;
+
+/**
+ * Add a transcription's cost to the running total.
+ *
+ * Separate from `recordUsage` because that function returns immediately when
+ * `usage` is falsy — and a transcription response carries no token usage at
+ * all, so routing audio through it would record the spend as zero and leave
+ * the budget blind to the one workload a stranger with a link can trigger.
+ */
+export function recordAudioUsage(seconds: number, model: string): void {
+  rollPeriodIfNeeded();
+  // Negative or non-finite duration bills as zero rather than crediting the
+  // budget: a bad number must never buy someone more spend.
+  const safeSeconds = Number.isFinite(seconds) && seconds > 0 ? seconds : 0;
+  const cost = (safeSeconds / 60) * AUDIO_USD_PER_MINUTE;
+  spentUsd += cost;
+  logger.info(
+    { spentUsd: Number(spentUsd.toFixed(4)), limitUsd: getBudgetLimitUsd(), model, seconds: safeSeconds },
+    "ai audio spend updated",
+  );
+}
+
 /** Every model the guard prices, for the same test. */
 export function pricedModels(): string[] {
   return Object.keys(PRICING_PER_MILLION_USD);

@@ -359,6 +359,20 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(res.status, 401);
   });
 
+  it("guards the external-asset route, and never takes a bucket key", async () => {
+    // It hands out signed URLs into a private bucket, so it must sit behind
+    // the same auth as the rest of /media.
+    const res = await fetch(`${base}/media/external/voa-nutrients-and-nutrition`);
+    assert.equal(res.status, 401);
+
+    // And the id is looked up in the manifest rather than used as a key —
+    // a traversal attempt must not even reach the bucket. It is refused by
+    // auth first here, which is the point: there is no unauthenticated path
+    // to it at all.
+    const traversal = await fetch(`${base}/media/external/${encodeURIComponent("../../secret")}`);
+    assert.equal(traversal.status, 401);
+  });
+
   it("guards feedback and admin-usage-summary routes", async () => {
     const postRes = await fetch(`${base}/feedback`, {
       method: "POST",

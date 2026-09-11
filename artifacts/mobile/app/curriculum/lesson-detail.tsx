@@ -11,6 +11,7 @@ import {
   isBrowserLessonTitleOnly,
 } from '@/services/curriculumData';
 import { LessonPrepPanel } from '@/components/ui/LessonPrepPanel';
+import { LessonMediaPanel } from '@/components/ui/LessonMediaPanel';
 import { LessonShelfPanel } from '@/components/ui/LessonShelfPanel';
 
 const BLOOMS_COLORS: Record<string, string> = {
@@ -142,6 +143,13 @@ export default function LessonDetailScreen() {
             curriculum sections because a teacher preparing tomorrow wants the
             worksheets before they want the Bloom's levels. */}
         <LessonShelfPanel lessonId={lesson.id} accent={color} />
+
+        {/* Curated video and images, played and shown in place rather than
+            linked. Below the shelf, which lists everything including these:
+            the shelf answers "what is there", this answers "show me". Renders
+            nothing when the lesson has no curated media, which is most of
+            them until the library is curated. */}
+        <LessonMediaPanel lessonId={lesson.id} accent={color} />
 
         {/* Objectives */}
         <Section title={t('learningObjectives')} icon="checkmark-circle-outline" color={color} isRTL={isRTL}>

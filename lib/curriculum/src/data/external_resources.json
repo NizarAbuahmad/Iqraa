@@ -1,0 +1,22 @@
+{
+  "note": "Curated third-party material attached to lessons. Schema and rules: ../external.ts. Every entry's licence was read on the date in licenseCheckedAt — do not add one from memory of what a provider 'is', because PhET relicensed its whole library to CC BY-NC on 2026-03-29 and anything trusting a remembered CC BY was wrong the next day. Ingestion (fetch-external.ts) refuses a check older than 180 days.",
+  "capturedAt": "2026-09-10",
+  "resources": [
+    {
+      "id": "voa-nutrients-and-nutrition",
+      "lessonIds": ["kbl-eng-s1-nccd-u3_l1"],
+      "kind": "text",
+      "titleEn": "Nutrients and Nutrition",
+      "titleAr": "العناصر الغذائية والتغذية",
+      "provider": "voa",
+      "license": "public-domain",
+      "licenseUrl": "https://learningenglish.voanews.com/p/6021.html",
+      "sourceUrl": "https://learningenglish.voanews.com/a/nutrients-and-nutrition/5827060.html",
+      "attribution": "Voice of America — learningenglish.voanews.com",
+      "licenseCheckedAt": "2026-09-10",
+      "authority": "third-party",
+      "words": 375,
+      "level": "b1"
+    }
+  ]
+}

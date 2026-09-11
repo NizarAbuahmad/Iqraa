@@ -24,7 +24,13 @@
  * Pure TypeScript, no React: the screen renders it, this decides it, and the
  * tests can run it. Same split as `lessonPrep.ts`.
  */
-import { isUnitScopedTag, type SourceKind } from '@workspace/curriculum';
+import {
+  externalResourcesForLesson,
+  isUnitScopedTag,
+  usePolicy,
+  type ExternalResource,
+  type SourceKind,
+} from '@workspace/curriculum';
 import { getBookForLesson, getLessonById as getKbLesson } from './knowledgeBase.ts';
 import {
   listAllSupportResources,
@@ -52,7 +58,19 @@ export type LessonShelf = {
   unitTags: string[];
   unit: ShelfGroup[];
   semester: ShelfGroup[];
-  /** Every document on the shelf, both scopes. */
+  /**
+   * Openly-licensed third-party material curated onto this specific lesson —
+   * a public-domain listening passage, a NASA photograph, a simulation.
+   *
+   * A separate list rather than a third `ShelfGroup`, because these are not
+   * bank documents and must not be counted as if they were. They attach to a
+   * lesson id rather than a unit tag, they carry a licence rather than an
+   * authority, and every one of them requires its credit to be shown — which
+   * is why `attribution` travels with the item to the row that renders it,
+   * instead of being summarised into a count the way `referenceOnly` is.
+   */
+  external: ExternalResource[];
+  /** Every document on the shelf, both scopes. Excludes `external`. */
   total: number;
   /**
    * How many may not be reproduced. Surfaced as a count so the teacher is told
@@ -150,9 +168,21 @@ export function buildLessonShelf(lessonId: string, lang: 'ar' | 'en' = 'ar'): Le
     unitTags,
     unit: group(unitItems),
     semester: group(semesterItems),
+    external: externalResourcesForLesson(lessonId),
     total: all.length,
     referenceOnly: all.filter(r => r.usePolicy === 'reference-only').length,
   };
+}
+
+/**
+ * Whether this resource's text may be reproduced, or only pointed at.
+ *
+ * Re-exported through the shelf so a screen rendering a row does not have to
+ * reach into `@workspace/curriculum` for the policy rule and risk applying a
+ * different one. There is exactly one definition of this, in `bank.ts`.
+ */
+export function externalUsePolicy(r: ExternalResource) {
+  return usePolicy(r);
 }
 
 /**
