@@ -12,7 +12,7 @@ import { fetchWithTimeout } from '@/services/fetchWithTimeout';
 import { setActiveLessonContextUser } from '@/services/lessonContext';
 import { setActiveMediaUser } from '@/services/lessonMedia';
 import { warmUpVerifier } from '@/services/ai/verifyMath';
-import { registerPushToken, unregisterPushToken } from '@/services/pushTokens';
+import { registerNotificationTapHandler, registerPushToken, unregisterPushToken } from '@/services/pushTokens';
 // Same package GoogleSignInButton uses — safe to import on web too, it ships
 // a `.web.js` stub so Metro never fails to resolve a native-only module.
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
@@ -154,6 +154,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       warmUpVerifier();
       void registerPushToken();
     }
+  }, [user?.id]);
+
+  /**
+   * Tapping a push opens the thread it names.
+   *
+   * Registered here, keyed on the signed-in user, rather than in the root
+   * layout: `/messaging/*` is not a public route, so a tap handled while
+   * signed out is one that route gating turns into a trip to the login
+   * screen, and the thread the notification named is gone. Keying it on
+   * `user?.id` also means a tap that cold-starts the app while signed out is
+   * still honoured — it lands once sign-in completes, rather than being
+   * swallowed by a handler that ran too early.
+   *
+   * The cleanup matters: without it, signing in and out repeatedly stacks
+   * listeners, and one tap would navigate once per accumulated listener.
+   */
+  useEffect(() => {
+    if (!user?.id) return;
+    return registerNotificationTapHandler();
   }, [user?.id]);
 
   // Register redirect callback so token-refresh failures can navigate to login
