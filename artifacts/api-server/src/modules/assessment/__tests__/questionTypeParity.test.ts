@@ -24,6 +24,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { QUESTION_TYPES } from "../questionTypes.ts";
+import { TYPE_CONTRACTS } from "../llmGenerator.ts";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, "../../../../../..");
@@ -64,6 +65,34 @@ describe("QuestionType stays in sync across the two packages", () => {
       "artifacts/mobile/services/evaluations.ts and lib/db/src/schema/evaluations.ts disagree"
         + " — a type the client does not know is a type the teacher can never pick",
     );
+  });
+
+  it("never offers read_aloud to the generator", () => {
+    /*
+     * The prompt builder emits an uncontracted type as `- <type>: {}` —
+     * free rein — so a type with no entry in TYPE_CONTRACTS is one the model
+     * will happily invent from nothing. For read_aloud that means fabricating
+     * an English passage and putting it in front of a class as a reading
+     * exercise, which is the line every other generator here declines to cross.
+     *
+     * Two independent guards, and this pins both: the teacher's picker does
+     * not list it, and the server filters it out of a generate request anyway
+     * because a picker is a client and a stale one still gets a vote.
+     */
+    const picker = readFileSync(
+      path.join(repoRoot, "artifacts/mobile/app/evaluations/new.tsx"),
+      "utf8",
+    );
+    const allTypes = /const ALL_TYPES: QuestionType\[\] = \[([\s\S]*?)\]/.exec(picker);
+    assert.ok(allTypes, "ALL_TYPES not found in new.tsx — has it been renamed?");
+    assert.doesNotMatch(allTypes[1]!, /read_aloud/, "the generator picker must not offer read_aloud");
+
+    const routes = readFileSync(path.join(repoRoot, "artifacts/api-server/src/routes/evaluations.ts"), "utf8");
+    assert.match(routes, /NOT_AI_GENERATABLE[\s\S]{0,200}read_aloud/, "the server must refuse it too");
+    assert.match(routes, /GENERATABLE_TYPES\.includes/, "the generate route must filter on the narrowed list");
+
+    // And it must stay contract-less: adding one would quietly re-enable it.
+    assert.equal(TYPE_CONTRACTS["read_aloud"], undefined);
   });
 
   it("gives every declared type a registry entry", () => {
