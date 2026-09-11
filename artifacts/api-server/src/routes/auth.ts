@@ -13,8 +13,9 @@ import {
   classGroups,
   classMemberships,
   students,
+  emailVerificationTokens,
 } from "@workspace/db";
-import { eq, and, asc, gt, inArray, isNotNull, isNull } from "drizzle-orm";
+import { eq, and, asc, desc, gt, inArray, isNotNull, isNull } from "drizzle-orm";
 import { authMiddleware, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { logger } from "../lib/logger.js";
 import { createRateLimiter } from "../lib/rateLimit.js";
@@ -26,6 +27,13 @@ import {
   ROSTER_CONSENT_VERSION,
 } from "../lib/rosterConsent.js";
 import { isStrongPassword, PASSWORD_POLICY_MESSAGE } from "../lib/passwordPolicy.js";
+import { sendVerificationEmail } from "../lib/email.js";
+import {
+  generateVerificationCode,
+  hashVerificationCode,
+  VERIFICATION_CODE_TTL_MS,
+  VERIFICATION_MAX_ATTEMPTS,
+} from "../lib/emailVerification.js";
 import { resolveClaimCode, type ClaimRole } from "../lib/rosterClaim.js";
 import { normalizeShareCode } from "../modules/assessment/studentView.ts";
 import { extensionForAvatarMime, MAX_AVATAR_DATA_URL_LENGTH } from "../lib/avatarUpload.js";
@@ -43,6 +51,10 @@ function avatarUrlFor(avatarKey: string | null): string | null {
 const loginLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, name: "login" });
 const registerLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5, name: "register" });
 const googleLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, name: "google-auth" });
+const verifyEmailLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, name: "verify-email" });
+// Tighter than register: this exists to recover from a failed send, not to
+// resend on a whim, and an unlimited resend is a free email-bombing vector.
+const resendVerificationLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 3, name: "resend-verification" });
 // /claim was the only code-redeeming route without one, which made it an
 // authenticated guessing surface against a 6-character alphabet. More headroom
 // than register because a parent with three children legitimately claims three
@@ -90,16 +102,49 @@ async function storeRefreshToken(userId: string, tokenValue: string): Promise<vo
   await db.insert(refreshTokens).values({ userId, tokenHash, expiresAt });
 }
 
+/**
+ * Mints a fresh 6-digit code, stores its hash, and emails it. Does not throw
+ * on a failed send — an email outage must not strand a real signup with no
+ * account at all; /auth/resend-verification is the recovery path once the
+ * outage clears.
+ */
+async function issueVerificationCode(userId: string, email: string): Promise<void> {
+  const code = generateVerificationCode();
+  await db.insert(emailVerificationTokens).values({
+    userId,
+    codeHash: hashVerificationCode(code),
+    expiresAt: new Date(Date.now() + VERIFICATION_CODE_TTL_MS),
+  });
+  const sent = await sendVerificationEmail(email, code);
+  if (!sent) {
+    logger.error({ userId, email }, "verification email not sent — account created unverified with no code delivered");
+  }
+}
+
 /** An empty or whitespace-only picked name is "none given", not a name that fails to match. */
 function trimmedOrUndefined(value: unknown): string | undefined {
   const trimmed = typeof value === "string" ? value.trim() : "";
   return trimmed === "" ? undefined : trimmed;
 }
 
+/**
+ * Whether a parent/student account has claimed any roster row yet. Only ever
+ * queried for those two roles — a teacher never has rosterLinks, and running
+ * this on every teacher request would be a wasted query on the common path.
+ */
+async function hasAnyRosterLink(userId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: rosterLinks.id })
+    .from(rosterLinks)
+    .where(eq(rosterLinks.userId, userId))
+    .limit(1);
+  return !!row;
+}
+
 // POST /auth/register
 router.post("/register", registerLimiter, async (req, res) => {
   try {
-    const { firstName, lastName, email, password, confirmPassword, role: rawRole, claimCode, studentId } =
+    const { firstName, lastName, email, password, confirmPassword, role: rawRole } =
       req.body as {
         firstName?: string;
         lastName?: string;
@@ -108,16 +153,6 @@ router.post("/register", registerLimiter, async (req, res) => {
         confirmPassword?: string;
         /** Defaults to 'teacher' — the only role that needed no signup step until now. */
         role?: string;
-        /** Required for role 'student'/'parent' — see /students/:id/claim-code in roster.ts. */
-        claimCode?: string;
-        /**
-         * Which roster row this person says they are. Required only when
-         * `claimCode` is a whole-class join code, which names no student of its
-         * own; a per-student claim code ignores it. Never trusted as identity —
-         * it is checked for membership of that code's class, and a name already
-         * held by a student account is refused (lib/claimDecision.ts).
-         */
-        studentId?: string;
       };
 
     if (!firstName?.trim()) {
@@ -144,34 +179,21 @@ router.post("/register", registerLimiter, async (req, res) => {
     const role: "teacher" | ClaimRole =
       rawRole === "student" || rawRole === "parent" ? rawRole : "teacher";
 
-    // Resolved before any write: a student/parent account must never be
-    // created dangling off an invalid code.
-    let claim: { studentId: string; relation: "self" | "guardian" } | null = null;
-    if (role !== "teacher") {
-      // v1 is teacher-only. A student account is an account for a minor, and
-      // the consent posture around one needs a lawyer and a matching store
-      // declaration — see lib/features.ts. Refused here rather than hidden in
-      // the app, because the app is not the security boundary.
-      if (!studentAccountsEnabled()) {
-        res.status(403).json({
-          code: "student_accounts_disabled",
-          error: "Parent and student accounts are not available yet.",
-        });
-        return;
-      }
-      const code = claimCode?.trim();
-      if (!code) {
-        res.status(400).json({ error: "A class code is required to sign up as a parent or student" });
-        return;
-      }
-      // studentId is the name picked off a class roster (see GET /auth/join/:code).
-      // A per-student claim code names its own student and ignores this.
-      const resolved = await resolveClaimCode(code, role, trimmedOrUndefined(studentId));
-      if (!resolved.ok) {
-        res.status(resolved.status).json({ error: resolved.error });
-        return;
-      }
-      claim = { studentId: resolved.studentId, relation: resolved.relation };
+    // v1 is teacher-only. A student account is an account for a minor, and
+    // the consent posture around one needs a lawyer and a matching store
+    // declaration — see lib/features.ts. Refused here rather than hidden in
+    // the app, because the app is not the security boundary.
+    //
+    // No roster code is asked for or resolved at this point anymore: a
+    // parent/student account is created bare, and links to a roster row
+    // afterwards through the one claiming path, POST /auth/claim — see
+    // hasAnyRosterLink and the client-side gate that gets them there.
+    if (role !== "teacher" && !studentAccountsEnabled()) {
+      res.status(403).json({
+        code: "student_accounts_disabled",
+        error: "Parent and student accounts are not available yet.",
+      });
+      return;
     }
 
     // Check duplicate email
@@ -201,29 +223,15 @@ router.post("/register", registerLimiter, async (req, res) => {
 
     if (!user) throw new Error("Failed to create user");
 
-    if (claim) {
-      await db
-        .insert(rosterLinks)
-        .values({ studentId: claim.studentId, userId: user.id, relation: claim.relation })
-        .onConflictDoNothing();
-    }
-
-    const { accessToken, refreshTokenValue } = generateTokens(user.id, user.email, user.role);
-    await storeRefreshToken(user.id, refreshTokenValue);
+    // No tokens issued here: a password account is unverified until it
+    // proves the address at POST /auth/verify-email, which is what hands
+    // back the session. Google accounts skip all of this — they set
+    // emailVerified: true and log in immediately, further down this file.
+    await issueVerificationCode(user.id, user.email);
 
     res.status(201).json({
-      accessToken,
-      refreshToken: refreshTokenValue,
-      user: {
-        id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        role: user.role,
-        preferredLanguage: user.preferredLanguage,
-        avatarUrl: avatarUrlFor(user.avatarKey),
-        createdAt: user.createdAt,
-      },
+      email: user.email,
+      message: "Account created. Check your email for a 6-digit verification code.",
     });
   } catch (err: any) {
     if (err.code === "23505") {
@@ -232,6 +240,134 @@ router.post("/register", registerLimiter, async (req, res) => {
     }
     logger.error({ err }, "register failed");
     res.status(500).json({ error: "Registration failed" });
+  }
+});
+
+// POST /auth/verify-email
+router.post("/verify-email", verifyEmailLimiter, async (req, res) => {
+  try {
+    const { email, code } = req.body as { email?: string; code?: string };
+    if (!email || !code) {
+      res.status(400).json({ error: "Email and code are required" });
+      return;
+    }
+
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email.toLowerCase().trim()))
+      .limit(1);
+
+    // Same generic message for "no such account" and "wrong/expired code" —
+    // same shape as login's "invalid email or password" — so a wrong guess
+    // here cannot be used to enumerate which codes are close. Registration's
+    // own duplicate-email check already tells a caller an address is taken,
+    // so this isn't hiding account existence, just not adding a second,
+    // finer-grained oracle on top of it.
+    const invalid = () => res.status(400).json({ error: "Invalid or expired code" });
+
+    if (!user) {
+      invalid();
+      return;
+    }
+    if (user.emailVerified) {
+      res.status(400).json({ error: "This email is already verified" });
+      return;
+    }
+
+    const [token] = await db
+      .select()
+      .from(emailVerificationTokens)
+      .where(
+        and(
+          eq(emailVerificationTokens.userId, user.id),
+          eq(emailVerificationTokens.used, false),
+          gt(emailVerificationTokens.expiresAt, new Date()),
+        ),
+      )
+      .orderBy(desc(emailVerificationTokens.createdAt))
+      .limit(1);
+
+    if (!token || token.attempts >= VERIFICATION_MAX_ATTEMPTS) {
+      invalid();
+      return;
+    }
+
+    if (token.codeHash !== hashVerificationCode(code.trim())) {
+      await db
+        .update(emailVerificationTokens)
+        .set({ attempts: token.attempts + 1 })
+        .where(eq(emailVerificationTokens.id, token.id));
+      invalid();
+      return;
+    }
+
+    await db
+      .update(emailVerificationTokens)
+      .set({ used: true })
+      .where(eq(emailVerificationTokens.id, token.id));
+    const [verified] = await db
+      .update(users)
+      .set({ emailVerified: true })
+      .where(eq(users.id, user.id))
+      .returning();
+
+    const { accessToken, refreshTokenValue } = generateTokens(verified.id, verified.email, verified.role);
+    await storeRefreshToken(verified.id, refreshTokenValue);
+
+    res.json({
+      accessToken,
+      refreshToken: refreshTokenValue,
+      user: {
+        id: verified.id,
+        firstName: verified.firstName,
+        lastName: verified.lastName,
+        email: verified.email,
+        role: verified.role,
+        preferredLanguage: verified.preferredLanguage,
+        avatarUrl: avatarUrlFor(verified.avatarKey),
+        createdAt: verified.createdAt,
+        // This is the call that hands back the session register used to, so
+        // it owes the client the same field login does — without it a
+        // freshly verified parent/student arrives with hasRosterLink absent
+        // and the claim gate cannot tell "no link yet" from "not asked".
+        // Always false rather than queried: nothing between register and here
+        // can have created a roster link for this account.
+        ...(verified.role === "teacher" ? {} : { hasRosterLink: false }),
+      },
+    });
+  } catch (err) {
+    logger.error({ err }, "verify email failed");
+    res.status(500).json({ error: "Verification failed" });
+  }
+});
+
+// POST /auth/resend-verification
+router.post("/resend-verification", resendVerificationLimiter, async (req, res) => {
+  try {
+    const { email } = req.body as { email?: string };
+    if (!email) {
+      res.status(400).json({ error: "Email is required" });
+      return;
+    }
+
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email.toLowerCase().trim()))
+      .limit(1);
+
+    // Same response either way — an unknown address, an already-verified
+    // account, and a fresh code all answer identically so this cannot be
+    // used to probe which emails are registered.
+    if (user && !user.emailVerified) {
+      await issueVerificationCode(user.id, user.email);
+    }
+
+    res.json({ ok: true, message: "If that email needs verifying, a new code was sent." });
+  } catch (err) {
+    logger.error({ err }, "resend verification failed");
+    res.status(500).json({ error: "Failed to resend code" });
   }
 });
 
@@ -270,7 +406,10 @@ router.post("/claim", claimLimiter, authMiddleware, async (req: AuthenticatedReq
 
     const resolved = await resolveClaimCode(code, role, trimmedOrUndefined(studentId));
     if (!resolved.ok) {
-      res.status(resolved.status).json({ error: resolved.error });
+      // `code` as well as `error`: the app is Arabic-first and these strings
+      // are English, so the screen translates the code rather than printing
+      // the sentence (services/claimCodeGate.ts).
+      res.status(resolved.status).json({ error: resolved.error, code: resolved.code });
       return;
     }
 
@@ -355,15 +494,25 @@ router.get("/join/:code", joinLookupLimiter, async (req, res) => {
     // the second parent could not find their own child and the class code
     // would appear broken to them. The names are visible either way, so
     // filtering would buy no privacy and cost a real case.
-    const selfLinked = await db
-      .select({ studentId: rosterLinks.studentId })
-      .from(rosterLinks)
-      .where(
-        and(
-          eq(rosterLinks.relation, "self"),
-          inArray(rosterLinks.studentId, roster.length > 0 ? roster.map(s => s.id) : [""]),
-        ),
-      );
+    // Skipped entirely on an empty roster rather than asked with a placeholder
+    // id. `rosterLinks.studentId` is a uuid column, so the `[""]` that used to
+    // stand in for "no ids" made Postgres reject the whole statement — every
+    // class whose teacher had minted a join code before adding any names
+    // answered 500 here, the app read that as "not a class code", hid the
+    // picker, and let the joiner submit a nameless claim that came back
+    // "Choose your name from the class list".
+    const selfLinked =
+      roster.length === 0
+        ? []
+        : await db
+            .select({ studentId: rosterLinks.studentId })
+            .from(rosterLinks)
+            .where(
+              and(
+                eq(rosterLinks.relation, "self"),
+                inArray(rosterLinks.studentId, roster.map(s => s.id)),
+              ),
+            );
     const taken = new Set(selfLinked.map(r => r.studentId));
 
     res.json({
@@ -405,6 +554,20 @@ router.post("/login", loginLimiter, async (req, res) => {
       return;
     }
 
+    // Checked after the password too, and before suspension, for the same
+    // enumeration reason as the suspension check below: nothing about this
+    // account is confirmed until the password has already proved who is
+    // asking. A Google account never reaches this false — see /auth/google,
+    // which sets emailVerified: true itself, and register's pre-existing
+    // account-linking path, which does the same.
+    if (!user.emailVerified) {
+      res.status(403).json({
+        error: "Please verify your email before signing in.",
+        code: "email_not_verified",
+      });
+      return;
+    }
+
     // Checked after the password, not before: answering differently to a
     // suspended account before proving who is asking would turn this into an
     // oracle for which addresses are suspended. Past the password there is no
@@ -429,6 +592,13 @@ router.post("/login", loginLimiter, async (req, res) => {
     const { accessToken, refreshTokenValue } = generateTokens(user.id, user.email, user.role);
     await storeRefreshToken(user.id, refreshTokenValue);
 
+    // Only asked of the database for the two roles the app's routing gate
+    // cares about — a teacher never has (or needs) a rosterLinks row.
+    const hasRosterLink =
+      user.role === "student" || user.role === "parent"
+        ? await hasAnyRosterLink(user.id)
+        : undefined;
+
     res.json({
       accessToken,
       refreshToken: refreshTokenValue,
@@ -442,6 +612,7 @@ router.post("/login", loginLimiter, async (req, res) => {
         avatarUrl: avatarUrlFor(user.avatarKey),
         createdAt: user.createdAt,
         lastLogin: user.lastLogin,
+        ...(hasRosterLink === undefined ? {} : { hasRosterLink }),
       },
     });
   } catch (err) {
@@ -458,12 +629,10 @@ router.post("/google", googleLimiter, async (req, res) => {
       return;
     }
 
-    const { credential, role: rawRole, claimCode, studentId } = req.body as {
+    const { credential, role: rawRole } = req.body as {
       credential?: string;
       /** Only consulted when Google is minting a brand-new account — see below. */
       role?: string;
-      claimCode?: string;
-      studentId?: string;
     };
     if (!credential) {
       res.status(400).json({ error: "Google credential is required" });
@@ -498,7 +667,12 @@ router.post("/google", googleLimiter, async (req, res) => {
     const email = payload.email.toLowerCase().trim();
 
     let [user] = await db.select().from(users).where(eq(users.googleId, payload.sub)).limit(1);
-    let newUserClaim: { studentId: string; relation: "self" | "guardian" } | null = null;
+    // True only for the branch below that inserts a brand-new row — that
+    // account can never already hold a roster link, so its hasRosterLink is
+    // known without a query. Every other branch (matched or email-linked) may
+    // have claimed one at any point in the past via /auth/claim, so those
+    // still need to ask.
+    let isNewAccount = false;
 
     if (!user) {
       // Link to an existing password account with the same email if one
@@ -515,31 +689,21 @@ router.post("/google", googleLimiter, async (req, res) => {
         // A brand-new account: the register screen's role picker reaches this
         // route too (its "Continue with Google" button), and used to always
         // land here as a plain teacher with no code ever asked — same v1 gate
-        // as /register, checked before any row is written.
+        // as /register, checked before any row is written. No roster code is
+        // asked for here either anymore — see the matching change in
+        // /register; claiming happens afterwards through POST /auth/claim.
         const role: "teacher" | ClaimRole =
           rawRole === "student" || rawRole === "parent" ? rawRole : "teacher";
 
-        if (role !== "teacher") {
-          if (!studentAccountsEnabled()) {
-            res.status(403).json({
-              code: "student_accounts_disabled",
-              error: "Parent and student accounts are not available yet.",
-            });
-            return;
-          }
-          const code = claimCode?.trim();
-          if (!code) {
-            res.status(400).json({ error: "A class code is required to sign up as a parent or student" });
-            return;
-          }
-          const resolved = await resolveClaimCode(code, role, trimmedOrUndefined(studentId));
-          if (!resolved.ok) {
-            res.status(resolved.status).json({ error: resolved.error });
-            return;
-          }
-          newUserClaim = { studentId: resolved.studentId, relation: resolved.relation };
+        if (role !== "teacher" && !studentAccountsEnabled()) {
+          res.status(403).json({
+            code: "student_accounts_disabled",
+            error: "Parent and student accounts are not available yet.",
+          });
+          return;
         }
 
+        isNewAccount = true;
         [user] = await db
           .insert(users)
           .values({
@@ -557,13 +721,6 @@ router.post("/google", googleLimiter, async (req, res) => {
 
     if (!user) throw new Error("Failed to resolve Google user");
 
-    if (newUserClaim) {
-      await db
-        .insert(rosterLinks)
-        .values({ studentId: newUserClaim.studentId, userId: user.id, relation: newUserClaim.relation })
-        .onConflictDoNothing();
-    }
-
     // Same check as the password path, for the same reason — and here it is
     // after Google has already proved who is asking. Without it, a suspended
     // teacher with a Google account keeps a working sign-in button.
@@ -580,6 +737,13 @@ router.post("/google", googleLimiter, async (req, res) => {
     const { accessToken, refreshTokenValue } = generateTokens(user.id, user.email, user.role);
     await storeRefreshToken(user.id, refreshTokenValue);
 
+    const hasRosterLink =
+      user.role !== "student" && user.role !== "parent"
+        ? undefined
+        : isNewAccount
+          ? false
+          : await hasAnyRosterLink(user.id);
+
     res.json({
       accessToken,
       refreshToken: refreshTokenValue,
@@ -593,6 +757,7 @@ router.post("/google", googleLimiter, async (req, res) => {
         avatarUrl: avatarUrlFor(user.avatarKey),
         createdAt: user.createdAt,
         lastLogin: user.lastLogin,
+        ...(hasRosterLink === undefined ? {} : { hasRosterLink }),
       },
     });
   } catch (err: any) {
@@ -691,6 +856,15 @@ router.get("/me", authMiddleware, async (req: AuthenticatedRequest, res) => {
       return;
     }
 
+    // The mobile app's routing gate reads this to decide whether a
+    // parent/student may reach the tabs yet, on every boot and refresh — not
+    // just right after signup — so it has to be answered here, not only at
+    // login/register/google.
+    const hasRosterLink =
+      user.role === "student" || user.role === "parent"
+        ? await hasAnyRosterLink(user.id)
+        : undefined;
+
     res.json({
       id: user.id,
       firstName: user.firstName,
@@ -715,6 +889,7 @@ router.get("/me", authMiddleware, async (req: AuthenticatedRequest, res) => {
       rosterConsentVersion: user.rosterConsentVersion,
       createdAt: user.createdAt,
       lastLogin: user.lastLogin,
+      ...(hasRosterLink === undefined ? {} : { hasRosterLink }),
     });
   } catch (err) {
     logger.error({ err }, "get profile failed");

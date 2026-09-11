@@ -52,7 +52,7 @@ export function isPublicRoute(pathname: string | null | undefined): boolean {
  * the tab bar — a bookmark, a typed URL, a shared link — so the app stops
  * rendering a screen whose every call is going to come back 403.
  */
-const NON_TEACHER_ROUTES = ['/notifications', '/messaging', '/curriculum', '/profile', '/join-class'];
+const NON_TEACHER_ROUTES = ['/notifications', '/messaging', '/curriculum', '/profile', '/join-class', '/claim-required'];
 
 /**
  * Teacher-only despite sitting under an allowed prefix: this is the screen
@@ -79,4 +79,24 @@ export function isEntryRoute(pathname: string | null | undefined): boolean {
   // to preserve, and failing the other way would strand the teacher nowhere.
   if (!pathname || pathname === '/') return true;
   return ENTRY_ROUTES.some(p => pathname === p || pathname.startsWith(`${p}/`));
+}
+
+/** The one screen a signed-in parent/student with no roster link may reach. */
+export const CLAIM_REQUIRED_ROUTE = '/claim-required';
+
+/**
+ * A parent or student account with zero roster links has nothing to do in
+ * the app yet — every data-serving endpoint scopes by rosterLinks.userId, so
+ * an unlinked account sees empty everywhere. This is the client-side gate
+ * that routes them to the mandatory claim screen before that empty app
+ * renders, on first signup, on every login, and on every app boot.
+ */
+export function needsRosterClaim(
+  user: { role: string; hasRosterLink?: boolean } | null | undefined,
+): boolean {
+  if (!user) return false;
+  // `=== false`, not falsy: `undefined` means "not applicable" (a teacher) or
+  // "not yet answered" (an older cached shape) — either must not trigger the
+  // gate. Only an explicit false, from a server that has actually checked, does.
+  return (user.role === 'parent' || user.role === 'student') && user.hasRosterLink === false;
 }

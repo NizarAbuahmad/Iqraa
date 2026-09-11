@@ -25,6 +25,8 @@ const ADMIN_ROLES = ['school_admin', 'system_admin'];
 type UsageSummary = {
   totalUsers: number;
   totalEvaluations: number;
+  /** Accounts with a password and no linked Google account — see the card below. */
+  usersWithoutRecovery: number;
   materialsByType: Record<string, number>;
   feedbackByRating: Record<string, number>;
 };
@@ -181,6 +183,31 @@ export default function AdminDashboardScreen() {
                     colors={colors}
                   />
                 </View>
+                {/*
+                  Not a usage number, which is why it sits outside the row above:
+                  it is the count of people who cannot get back into their own
+                  account. Password reset was removed on 2026-09-10 with no email
+                  provider to replace it, so a forgotten password here costs an
+                  out-of-band conversation with an admin. Watch it — if it grows,
+                  the answer is a real reset flow, not more admin tooling.
+                */}
+                {summary.usersWithoutRecovery > 0 && (
+                  <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, marginTop: 10 }]}>
+                    <View style={[styles.barRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                      <Text style={[styles.cardLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', flex: 1, textAlign: isRTL ? 'right' : 'left', marginBottom: 0 }]}>
+                        {lang === 'ar' ? 'حسابات لا يمكن استعادتها' : 'Accounts with no way back in'}
+                      </Text>
+                      <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 20 }}>
+                        {summary.usersWithoutRecovery}
+                      </Text>
+                    </View>
+                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11.5, textAlign: isRTL ? 'right' : 'left' }}>
+                      {lang === 'ar'
+                        ? 'تدخل بكلمة مرور ولا حساب Google لها. إن نسي أصحابها كلمة المرور فلا سبيل إلى استعادتها إلا بتدخّل مشرف.'
+                        : 'They sign in with a password and have no Google account. If the owner forgets it, only an admin can get them back in.'}
+                    </Text>
+                  </View>
+                )}
                 <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, marginTop: 10 }]}>
                   <Text style={[styles.cardLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
                     {lang === 'ar' ? 'المواد المحفوظة حسب النوع' : 'Saved materials by type'}

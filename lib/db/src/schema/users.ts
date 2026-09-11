@@ -1,4 +1,4 @@
-import { pgTable, text, boolean, timestamp, uuid } from "drizzle-orm/pg-core";
+import { pgTable, text, boolean, timestamp, uuid, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -77,6 +77,32 @@ export const passwordResetTokens = pgTable("password_reset_tokens", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+/**
+ * DEPLOY NOTE — one-time backfill required alongside this table's push,
+ * against production, before this deploy goes live:
+ *
+ *   UPDATE users SET email_verified = true
+ *   WHERE password_hash IS NOT NULL AND email_verified = false;
+ *
+ * Login now refuses an unverified password account (see routes/auth.ts).
+ * Every account created before this table existed has emailVerified=false
+ * and no way to have earned true — skipping this locks out every existing
+ * teacher. New registrations start false and verify through the code this
+ * table stores; existing ones are grandfathered in once, here.
+ */
+export const emailVerificationTokens = pgTable("email_verification_tokens", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  // sha256 of the 6-digit code — never the code itself, same as the other token tables.
+  codeHash: text("code_hash").notNull(),
+  // Wrong-guess counter. A 6-digit code is only 1e6 possibilities, so this
+  // caps brute-forcing one token far below its 15-minute expiry.
+  attempts: integer("attempts").notNull().default(0),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  used: boolean("used").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
@@ -90,3 +116,4 @@ export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type RefreshToken = typeof refreshTokens.$inferSelect;
 export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+export type EmailVerificationToken = typeof emailVerificationTokens.$inferSelect;

@@ -1,13 +1,13 @@
 /**
  * Lets a signed-in student/parent account link to one more roster row — a
  * second child, a second parent for the same child, or a second teacher's
- * class. `POST /auth/register` only ever runs this once, at signup; this
- * screen is the same code + roster-name-picker flow from register.tsx,
- * against `POST /auth/claim` instead, for an account that already exists.
+ * class — via `POST /auth/claim`. The mandatory first claim right after
+ * signup is a separate, non-skippable screen: `app/claim-required.tsx`. Both
+ * share the code-lookup-and-picker flow via `useJoinCodeLookup` and
+ * `RosterCodeClaimForm`.
  */
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -23,14 +23,11 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/context/AuthContext';
-import {
-  RosterError,
-  claimRosterCode,
-  lookupJoinCode,
-  type JoinRosterEntry,
-} from '@/services/roster';
+import { useJoinCodeLookup } from '@/hooks/useJoinCodeLookup';
+import { RosterCodeClaimForm } from '@/components/RosterCodeClaimForm';
+import { RosterError, claimRosterCode } from '@/services/roster';
+import { claimErrorKey } from '@/services/claimCodeGate';
 
 export default function JoinClassScreen() {
   const colors = useColors();
@@ -38,49 +35,14 @@ export default function JoinClassScreen() {
   const { t, isRTL } = useLanguage();
   const { user } = useAuth();
 
-  const [code, setCode] = useState('');
-  /** The class behind a whole-class code, or null when the code names its own student (or is simply wrong). */
-  const [roster, setRoster] = useState<JoinRosterEntry[] | null>(null);
-  const [className, setClassName] = useState('');
-  const [studentId, setStudentId] = useState('');
+  const { code, setCode, roster, className, studentId, setStudentId, state, canSubmit: canSubmitCode } = useJoinCodeLookup();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [joined, setJoined] = useState(false);
 
   const align = isRTL ? 'right' : 'left';
 
-  // Same trigger as register.tsx: a fixed six-character code, so length is the
-  // whole condition. A 404 is the normal answer for a per-student code, which
-  // needs no picker, so it clears the roster instead of surfacing an error.
-  useEffect(() => {
-    const trimmed = code.trim();
-    if (trimmed.length < 6) {
-      setRoster(null);
-      setClassName('');
-      setStudentId('');
-      return;
-    }
-    let live = true;
-    void lookupJoinCode(trimmed)
-      .then(res => {
-        if (!live) return;
-        setRoster(res.students);
-        setClassName(res.class.name);
-        setStudentId('');
-      })
-      .catch(() => {
-        if (!live) return;
-        setRoster(null);
-        setClassName('');
-        setStudentId('');
-      });
-    return () => {
-      live = false;
-    };
-  }, [code]);
-
-  const canSubmit =
-    code.trim().length >= 6 && (!roster || roster.length === 0 || studentId !== '') && !submitting;
+  const canSubmit = canSubmitCode && !submitting;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -92,7 +54,7 @@ export default function JoinClassScreen() {
       setJoined(true);
     } catch (err) {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setError(err instanceof RosterError ? err.message : t('joinAnotherClassFailed'));
+      setError(t(err instanceof RosterError ? claimErrorKey(err.code) : 'joinAnotherClassFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -142,54 +104,19 @@ export default function JoinClassScreen() {
           {t('joinAnotherClassDesc')}
         </Text>
 
-        <Input
-          label={t('classCode')}
-          placeholder={t('classCodePlaceholder')}
-          hint={t('classCodeHint')}
-          value={code}
-          onChangeText={text => setCode(text.toUpperCase())}
-          leftIcon="key-outline"
-          autoCapitalize="characters"
+        <RosterCodeClaimForm
+          code={code}
+          onChangeCode={setCode}
+          roster={roster}
+          className={className}
+          studentId={studentId}
+          onSelectStudent={setStudentId}
+          state={state}
+          userRole={user?.role}
+          colors={colors}
           isRTL={isRTL}
+          t={t}
         />
-
-        {roster && roster.length > 0 ? (
-          <View style={{ gap: 8, marginTop: 16 }}>
-            <Text style={[styles.pickLabel, { color: colors.foreground, fontFamily: 'Cairo_500Medium', textAlign: align }]}>
-              {className ? t('joinPickYourNameFor', className) : t('joinPickYourName')}
-            </Text>
-            <View style={[styles.nameChips, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-              {roster.map(entry => {
-                const blocked = entry.taken && user?.role === 'student';
-                const picked = entry.id === studentId;
-                return (
-                  <Pressable
-                    key={entry.id}
-                    onPress={() => { if (!blocked) setStudentId(entry.id); }}
-                    disabled={blocked}
-                    style={[
-                      styles.nameChip,
-                      {
-                        borderColor: picked ? colors.primary : colors.border,
-                        backgroundColor: picked ? colors.primary + '18' : 'transparent',
-                        opacity: blocked ? 0.45 : 1,
-                      },
-                    ]}
-                  >
-                    <Text style={{ color: picked ? colors.primary : colors.foreground, fontFamily: 'Cairo_500Medium', fontSize: 13 }}>
-                      {entry.displayName}
-                    </Text>
-                    {entry.taken ? (
-                      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 10 }}>
-                        {t('joinNameTaken')}
-                      </Text>
-                    ) : null}
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-        ) : null}
 
         {error ? (
           <View style={[styles.errorBanner, { backgroundColor: colors.destructive + '18', borderColor: colors.destructive + '44', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -218,9 +145,6 @@ const styles = StyleSheet.create({
   backBtn: { padding: 4, marginBottom: 8 },
   title: { fontSize: 22 },
   desc: { fontSize: 14, lineHeight: 22, marginBottom: 20 },
-  pickLabel: { fontSize: 13 },
-  nameChips: { flexWrap: 'wrap', gap: 8 },
-  nameChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, alignItems: 'center' },
   errorBanner: { alignItems: 'center', gap: 8, padding: 12, borderWidth: 1, marginTop: 16 },
   errorText: { flex: 1, fontSize: 13 },
   successWrap: { flex: 1, alignItems: 'center', paddingHorizontal: 32 },

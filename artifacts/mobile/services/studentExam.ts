@@ -129,6 +129,30 @@ export function saveStudentAnswer(
   });
 }
 
+/**
+ * Send a read-aloud recording to be stored and transcribed.
+ *
+ * Unlike every other answer this file saves, the server owns what gets
+ * written: it stores the audio, transcribes it, and composes the response
+ * itself. The client cannot be the one to say what was heard.
+ *
+ * `durationMs` is measured by the caller and travels separately from the
+ * blob because it is what gets billed, and bytes are a poor proxy — a few
+ * hundred kilobytes of opus can be an hour of audio.
+ */
+export function uploadReadAloud(
+  token: string,
+  questionId: string,
+  audioDataUrl: string,
+  durationMs: number,
+): Promise<{ saved: boolean; transcript: string; takesLeft: number }> {
+  return call(`/take/attempt/audio/${questionId}`, {
+    method: 'POST',
+    token,
+    body: JSON.stringify({ audio: audioDataUrl, durationMs }),
+  });
+}
+
 export function submitStudentExam(token: string): Promise<{ submitted: boolean }> {
   return call('/take/attempt/submit', { method: 'POST', token });
 }

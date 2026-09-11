@@ -111,12 +111,14 @@ describe('lessonIdsForObjectiveIds', () => {
   });
 
   it('mints every MVP subject id in the kbl- namespace', () => {
-    // Asserted per-subject rather than globally because one legacy row is not:
-    // `lesson-sci-1` (grade-8 science, `catalog.ts` « Other books ») is
-    // hand-written rather than minted through `lessonKbId()`. It is outside
-    // MVP_SUBJECT_IDS and carries no figures, so nothing reads it — but a
-    // blanket /^kbl-/ here would fail on it and teach the next person to
-    // loosen the assertion instead of noticing the row.
+    // Asserted per-subject rather than globally, because non-MVP subjects may
+    // still carry hand-written rows whose ids were never minted through
+    // `lessonKbId()` — a blanket /^kbl-/ would fail on one of those and teach
+    // the next person to loosen the assertion instead of noticing the row.
+    // That is what happened on 2026-09-10: `lesson-sci-1` (grade-8 science)
+    // was exempt only because science was outside MVP_SUBJECT_IDS, and when
+    // science joined with its first real book this failed, as intended. The
+    // fix was to delete the placeholder, not to widen the filter.
     const mvp = getAllObjectives().filter(o => MVP_SUBJECT_IDS.includes(o.subjectId));
     const lessonIds = lessonIdsForObjectiveIds(mvp.map(o => o.id));
     assert.ok(lessonIds.length > 50, 'the MVP subjects carry plenty of lessons');

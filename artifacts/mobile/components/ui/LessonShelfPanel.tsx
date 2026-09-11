@@ -1,16 +1,27 @@
 import React, { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import type { ExternalResource, ExternalResourceKind } from '@workspace/curriculum';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import {
   askAboutResourceMessage,
   buildLessonShelf,
+  externalUsePolicy,
   type ShelfGroup,
 } from '@/services/lessonShelf';
 import { displayTitle, kindLabel, type SupportResource } from '@/services/mathSupportResources';
+import type { TranslationKey } from '@/services/i18n';
+
+const EXTERNAL_KIND_KEY: Record<ExternalResourceKind, TranslationKey> = {
+  text: 'extKindText',
+  audio: 'extKindAudio',
+  image: 'extKindImage',
+  simulation: 'extKindSimulation',
+  video: 'extKindVideo',
+};
 
 type Props = {
   lessonId: string;
@@ -105,6 +116,71 @@ export function LessonShelfPanel({ lessonId, accent }: Props) {
   const groups = (list: ShelfGroup[]) =>
     list.map(g => <View key={g.kind} style={styles.group}>{g.items.map(row)}</View>);
 
+  /**
+   * A curated third-party resource.
+   *
+   * Different from a bank row in the one way that matters: this opens. Bank
+   * documents are gitignored PDFs the app cannot hand over, so their only
+   * honest action is to take the title to chat; these are links under licences
+   * that permit them being followed.
+   *
+   * The credit renders on every row rather than being summarised into a count
+   * the way `referenceOnly` is. Every licence represented here requires
+   * attribution wherever the material appears, and a count cannot satisfy
+   * that — it has to be the actual string, next to the actual thing.
+   */
+  const externalRow = (r: ExternalResource) => {
+    const policy = externalUsePolicy(r);
+    return (
+      <Pressable
+        key={r.id}
+        onPress={() => { void Linking.openURL(r.sourceUrl); }}
+        accessibilityRole="link"
+        accessibilityLabel={`${lang === 'ar' ? r.titleAr : r.titleEn} — ${r.attribution}`}
+        style={[
+          styles.row,
+          {
+            backgroundColor: colors.card,
+            borderColor: colors.border,
+            borderRadius: colors.radius,
+            flexDirection: isRTL ? 'row-reverse' : 'row',
+          },
+        ]}
+      >
+        <View style={[styles.kindPill, { backgroundColor: accent + '15', borderColor: accent + '30' }]}>
+          <Text style={[styles.kindText, { color: accent, fontFamily: 'Cairo_500Medium' }]}>
+            {t(EXTERNAL_KIND_KEY[r.kind])}
+          </Text>
+        </View>
+        <View style={styles.rowBody}>
+          <Text
+            numberOfLines={2}
+            style={[styles.rowTitle, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}
+          >
+            {lang === 'ar' ? r.titleAr : r.titleEn}
+          </Text>
+          <Text
+            numberOfLines={2}
+            style={[styles.rowAuthor, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}
+          >
+            {r.attribution}
+          </Text>
+          {/* Says what a teacher may do with it, because "openly licensed"
+              covers both "reprint this in a worksheet" and "show it, never
+              copy it", and the difference is the teacher's to respect. */}
+          {policy !== 'quotable' ? (
+            <Text
+              style={[styles.rowAuthor, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}
+            >
+              {t(policy === 'embed-only' ? 'shelfEmbedOnly' : 'shelfNoReprint')}
+            </Text>
+          ) : null}
+        </View>
+        <Ionicons name="open-outline" size={16} color={colors.mutedForeground} />
+      </Pressable>
+    );
+  };
+
   return (
     <View style={styles.section}>
       <View style={[styles.sectionHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -122,19 +198,40 @@ export function LessonShelfPanel({ lessonId, accent }: Props) {
       </View>
 
       <View style={[styles.sectionBody, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        {shelf.total === 0 ? (
+        {/* External resources are counted separately from `total`, so the
+            empty state has to ask about both — a lesson whose only material is
+            a curated public-domain passage is not an empty shelf. */}
+        {shelf.total === 0 && shelf.external.length === 0 ? (
           <Text style={[styles.note, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
             {t('shelfEmpty')}
           </Text>
         ) : (
           <>
-            <Text style={[styles.note, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
-              {t('shelfNotInApp')}
-            </Text>
-            {shelf.referenceOnly > 0 ? (
-              <Text style={[styles.note, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
-                {t('shelfReferenceOnly', shelf.referenceOnly)}
-              </Text>
+            {shelf.external.length > 0 ? (
+              <>
+                <Text style={[styles.groupLabel, { color: accent, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+                  {t('shelfExternal', shelf.external.length)}
+                </Text>
+                <View style={styles.group}>{shelf.external.map(externalRow)}</View>
+              </>
+            ) : null}
+
+            {/* Both notes are about the bank: "we hold these but cannot hand
+                you the PDF", and how many are a named teacher's own work.
+                Neither is true of the external list above — those are links
+                that do open, under licences that permit it — so a lesson
+                carrying only external material must not show either. */}
+            {shelf.total > 0 ? (
+              <>
+                <Text style={[styles.note, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+                  {t('shelfNotInApp')}
+                </Text>
+                {shelf.referenceOnly > 0 ? (
+                  <Text style={[styles.note, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+                    {t('shelfReferenceOnly', shelf.referenceOnly)}
+                  </Text>
+                ) : null}
+              </>
             ) : null}
 
             {shelf.unit.length > 0 ? (

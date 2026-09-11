@@ -42,18 +42,70 @@ import {
 /**
  * What a caller may do with a document's content.
  *
- * Deliberately two values, not a score. "How much do we trust this" invites a
- * threshold nobody can defend; "may this text be reproduced" has an answer.
+ * Still not a score. "How much do we trust this" invites a threshold nobody
+ * can defend; each value below answers "may this text be reproduced", which
+ * has an answer.
+ *
+ * The third value arrived with externally-sourced material. It is not a
+ * softening of the two-value rule — it names a permission the original pair
+ * could not express, because they were derived from `authority` alone and
+ * every non-NCCD source collapsed to `reference-only`. That is wrong in both
+ * directions for open content: a public-domain VOA transcript may be reprinted
+ * outright, while a PhET simulation may be shown to a class and never copied.
+ * "Not ours to reprint" turned out to cover two different permissions.
  */
 export type BankUsePolicy =
-  /** NCCD-published. May be quoted as curriculum, with attribution. */
+  /** NCCD-published, or openly licensed for reuse. May be quoted, with attribution. */
   | 'quotable'
   /**
    * Someone else's work. May be read to inform generation — its difficulty,
    * its phrasing conventions, which objectives it emphasises — and must never
    * be emitted verbatim into anything a teacher exports.
    */
-  | 'reference-only';
+  | 'reference-only'
+  /**
+   * May be pointed at, never copied. The licence permits an embed or a link
+   * and grants no redistribution right, so the bytes stay on the origin's
+   * servers: PhET simulations, YouTube videos. Never reaches a model prompt —
+   * there is no text of ours to ground on.
+   */
+  | 'embed-only';
+
+/**
+ * Licences this project has actually read, and what each one permits.
+ *
+ * A licence is a different axis from `authority`, which answers "who made
+ * this". Recording only the latter is what made every third-party source
+ * reference-only regardless of how freely it was published.
+ *
+ * Kept as a closed set rather than a free-text SPDX string so that adding a
+ * licence is a deliberate act with a policy decision attached, and so the
+ * `Record` below fails to compile until someone makes that decision.
+ */
+export type LicenseId =
+  /** US federal government work or otherwise out of copyright. Reprintable. */
+  | 'public-domain'
+  /** Explicit dedication to the public domain. Reprintable. */
+  | 'CC0-1.0'
+  /** Reprintable, commercial use included, provided the credit is rendered. */
+  | 'CC-BY-4.0'
+  /** Reprintable in principle, but see the policy map — we decline it. */
+  | 'CC-BY-SA-4.0'
+  /** No redistribution right; the terms permit an embed or a link only. */
+  | 'embed-terms';
+
+const POLICY_BY_LICENSE: Record<LicenseId, BankUsePolicy> = {
+  'public-domain': 'quotable',
+  'CC0-1.0': 'quotable',
+  'CC-BY-4.0': 'quotable',
+  // Share-alike obliges a derivative to carry the same licence. A worksheet
+  // quoting the passage is plausibly a derivative, and the cost of being wrong
+  // is having licensed our own material to the world. Treated as read-only
+  // until someone with authority to make that call decides otherwise — the
+  // conservative direction, and reversible.
+  'CC-BY-SA-4.0': 'reference-only',
+  'embed-terms': 'embed-only',
+};
 
 /** The `subject` values the manifest uses, mapped to the app's `subjectId`. */
 export const BANK_SUBJECT_IDS: Record<CurriculumSource['subject'], string> = {
@@ -140,11 +192,26 @@ export function itemsForUnit(unitId: string, filter: BankFilter = {}): Curriculu
 /**
  * Whether this document's content may be reproduced.
  *
- * `third-party` is grouped with `teacher` rather than given a third value:
- * both are "not ours to reprint", and the provenance difference between them
- * is already recorded in `authority` for anyone who needs it.
+ * An explicit licence wins when the item carries one, because it is a direct
+ * statement of what the rightsholder permits. Everything in `G10_SOURCES`
+ * predates the field and carries none, so all of them keep the original rule
+ * unchanged: NCCD is quotable, and `third-party` stays grouped with `teacher`
+ * — both "not ours to reprint", with the provenance difference already
+ * recorded in `authority` for anyone who needs it.
+ *
+ * Structural `Pick`, so this stays the single policy function for both
+ * `CurriculumSource` and the external-resource records, which share no type.
  */
-export function usePolicy(item: Pick<CurriculumSource, 'authority'>): BankUsePolicy {
+export function usePolicy(
+  item: Pick<CurriculumSource, 'authority'> & { license?: LicenseId },
+): BankUsePolicy {
+  if (item.license) {
+    // The manifest is JSON, cast on load, so a licence string this build does
+    // not know is reachable at runtime however exhaustive the Record is.
+    // Falling to the most restrictive value makes a typo a visible loss of
+    // access rather than a silent grant of one.
+    return POLICY_BY_LICENSE[item.license] ?? 'reference-only';
+  }
   return item.authority === 'nccd' ? 'quotable' : 'reference-only';
 }
 
@@ -156,10 +223,16 @@ export function usePolicy(item: Pick<CurriculumSource, 'authority'>): BankUsePol
  * named teacher's paper should be impossible to do by forgetting, in the same
  * way that `verified` is not settable from a fallback.
  */
-export function assertQuotable(item: CurriculumSource): void {
-  if (usePolicy(item) === 'quotable') return;
+export function assertQuotable(item: CurriculumSource & { license?: LicenseId }): void {
+  const policy = usePolicy(item);
+  if (policy === 'quotable') return;
   throw new Error(
-    `Bank item ${item.id} is reference-only (authority: ${item.authority})`
+    // Naming the licence as well as the authority: once a licence can decide
+    // the policy, a message reporting only `authority: nccd` describes a
+    // refusal it did not cause, and reads as a bug in the gate.
+    `Bank item ${item.id} is ${policy} (authority: ${item.authority}`
+      + (item.license ? `, licence: ${item.license}` : '')
+      + ')'
       + (item.authorAr ? ` — written by ${item.authorAr}` : '')
       + '. It may inform generation but must not be reproduced verbatim.',
   );
@@ -258,7 +331,7 @@ export function bankStats(): {
   const usable = bankItems();
   const byKind: Record<string, number> = {};
   const bySubject: Record<string, number> = {};
-  const byPolicy: Record<BankUsePolicy, number> = { quotable: 0, 'reference-only': 0 };
+  const byPolicy: Record<BankUsePolicy, number> = { quotable: 0, 'reference-only': 0, 'embed-only': 0 };
   for (const s of usable) {
     byKind[s.kind] = (byKind[s.kind] ?? 0) + 1;
     const id = appSubjectId(s.subject);

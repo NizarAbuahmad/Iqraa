@@ -359,6 +359,20 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(res.status, 401);
   });
 
+  it("guards the external-asset route, and never takes a bucket key", async () => {
+    // It hands out signed URLs into a private bucket, so it must sit behind
+    // the same auth as the rest of /media.
+    const res = await fetch(`${base}/media/external/voa-nutrients-and-nutrition`);
+    assert.equal(res.status, 401);
+
+    // And the id is looked up in the manifest rather than used as a key —
+    // a traversal attempt must not even reach the bucket. It is refused by
+    // auth first here, which is the point: there is no unauthenticated path
+    // to it at all.
+    const traversal = await fetch(`${base}/media/external/${encodeURIComponent("../../secret")}`);
+    assert.equal(traversal.status, 401);
+  });
+
   it("guards feedback and admin-usage-summary routes", async () => {
     const postRes = await fetch(`${base}/feedback`, {
       method: "POST",
@@ -392,6 +406,69 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
       body: "{}",
     });
     assert.equal(res.status, 404);
+  });
+});
+
+describe("API register (student accounts enabled)", { skip: built ? false : "run `pnpm build` first" }, () => {
+  // Separate server/describe from the suite above: that one pins the
+  // shipping default (STUDENT_ACCOUNTS unset), so proving the *other* branch
+  // — the code requirement actually removed from /register's validation —
+  // needs its own child process with the flag flipped on.
+  let child: ChildProcess;
+  let base: string;
+
+  before(async () => {
+    const port = 8500 + Math.floor(Math.random() * 400);
+    base = `http://127.0.0.1:${port}/api`;
+    child = spawn(process.execPath, [entry], {
+      env: {
+        ...process.env,
+        PORT: String(port),
+        STUDENT_ACCOUNTS: "true",
+        DATABASE_URL: "postgres://u:p@127.0.0.1:5432/none",
+        SESSION_SECRET: "test-secret",
+        OPENAI_API_KEY: "sk-test-placeholder",
+      },
+      stdio: "ignore",
+    });
+
+    const deadline = Date.now() + 20_000;
+    for (;;) {
+      try {
+        const res = await fetch(`${base}/healthz`);
+        if (res.ok) break;
+      } catch {
+        /* not listening yet */
+      }
+      if (Date.now() > deadline) throw new Error("server did not start");
+      await new Promise((r) => setTimeout(r, 150));
+    }
+  });
+
+  after(() => child?.kill());
+
+  it("no longer requires a class code to register as a parent or student", async () => {
+    // Decoupled account creation from roster-code claiming: a parent/student
+    // account is created bare now, and claims a roster row afterwards through
+    // POST /auth/claim. The old behavior refused this with 400 "A class code
+    // is required..." before ever touching the database — proving that is
+    // gone means proving the request instead reaches the database call, which
+    // this suite's deliberately unreachable DATABASE_URL turns into a 500.
+    // A 500 here is progress, not a flaw — same reasoning the /take/:code and
+    // /auth/join/:code tests above rely on.
+    const res = await fetch(`${base}/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        firstName: "A",
+        lastName: "B",
+        email: "child@example.com",
+        password: "Sufficiently1Strong!",
+        role: "parent",
+      }),
+    });
+    assert.notEqual(res.status, 400, "a missing class code must not be refused anymore");
+    assert.equal(res.status, 500, "no database in this suite — reaching it is the proof");
   });
 });
 

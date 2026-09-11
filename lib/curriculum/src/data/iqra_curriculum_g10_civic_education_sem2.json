@@ -1,0 +1,221 @@
+{
+  "meta": {
+    "grade": "الصف العاشر",
+    "grade_en": "Grade 10",
+    "subject": "التربية الوطنية والمدنية",
+    "subject_en": "National and Civic Education",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 2,
+    "schema_version": "1.0",
+    "provenance_note": "نُقلت الوحداتُ الخمسُ (الثالثةُ حتى السابعةِ، مُكمِّلةً لترقيمِ الفصلِ الأولِ) ودروسُها العشرةُ من كتاب الطالب (الطبعة الثانية، مزيدة ومنقَّحة، ISBN 978-9923-41-584-9) في 2026-09-10، بنفسِ طريقةِ الفصلِ الأولِ: قراءةِ صفحةِ المحتوياتِ، ثمَّ قراءةِ صفحةِ افتتاحِ كلِّ وحدةٍ ودرسٍ مباشرةً منَ الـ PDF؛ أرقامُ صفحاتِ الـ PDF مطابقةٌ لأرقامِ الصفحاتِ المطبوعةِ.",
+    "source_books": {
+      "student_book": "كتاب الطالب لمادة التربية الوطنية والمدنية - الصف العاشر - الفصل الدراسي الثاني - المركز الوطني لتطوير المناهج والتقويم (الطبعة الثانية، مزيدة ومنقَّحة، ISBN 978-9923-41-584-9)"
+    },
+    "known_gaps": [
+      "نفسُ الفجواتِ المُسجَّلةِ في ملفِّ الفصلِ الأولِ: لا نتاجاتِ تعلُّمٍ مُرقَّمةً (objectives فارغةٌ)، ولا دليلَ معلمٍ (periods وtotal_periods = null)، وصندوقُ «مهاراتِ التعلُّمِ» غيرُ منقولٍ لعدمِ وجودِ حقلٍ لهُ، و«مراجعةُ الوحدةِ» ليستْ درسًا فلمْ تُدرَجْ، ولا معارفَ سابقةً مطبوعةً (prior_knowledge = []).",
+      "بعضُ الأسطرِ في صندوقِ «المصطلحاتِ» طُبِعَتْ من دونِ مقابلٍ إنجليزيٍّ ظاهرٍ (كـ«اتفاقيةِ الضمانِ الجماعيِّ» و«اتفاقيةِ التضامنِ العربيِّ» في الوحدةِ الرابعةِ، و«قوّاتِ حفظِ السلامِ الدوليةِ» و«منظَّمةِ التعاونِ الإسلاميِّ» في درسِها الثاني)؛ تُرِكَ en فارغًا في هذه الحالاتِ بدلًا مِنِ اختلاقِ ترجمةٍ. ومقابلُ «منظَّمةِ الصحةِ العالميةِ» منقولٌ حرفيًّا كما طُبِعَ (World Health Organizatoin) بخطئِهِ المطبعيِّ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "حقوقُ الإنسانِ",
+      "title_en": "Human Rights",
+      "general_idea_ar": "يولدُ جميعُ الناسِ أحرارًا ومتساوينَ في الكرامةِ والحقوقِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المصطلحات» box; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "الشرعةُ الدوليةُ لحقوقِ الإنسانِ",
+          "title_en": "The International Bill of Human Rights",
+          "main_idea_ar": "معرفةُ الشرعةِ الدوليةِ لحقوقِ الإنسانِ وأهميتِها، والمواثيقِ الدوليةِ الخاصةِ بها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الشرعةُ الدوليةُ لحقوقِ الإنسانِ", "en": "International Legitimacy/ Law of Human Rights" },
+            { "ar": "الإعلانُ العالميُّ لحقوقِ الإنسانِ", "en": "Universal Declaration of Human Rights" },
+            { "ar": "مجلسُ حقوقِ الإنسانِ", "en": "Human Rights Council" },
+            { "ar": "القانونُ الدوليُّ الإنسانيُّ", "en": "International Humanitarian Law" }
+          ]
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "حقوقُ الإنسانِ في الأردنِّ",
+          "title_en": "Human Rights in Jordan",
+          "main_idea_ar": "معرفةُ دورِ الأردنِّ في حمايةِ حقوقِ الإنسانِ، وبعضِ موادِّ الدستورِ الأردنيِّ الخاصةِ بحقوقِ المواطنِ الأردنيِّ، والمؤسساتِ الوطنيةِ التي تُعنى بحقوقِ الإنسانِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "حمايةُ حقوقِ الإنسانِ", "en": "Protection of Human Rights" },
+            { "ar": "المركزُ الوطنيُّ لحقوقِ الإنسانِ", "en": "National Center for Human Rights" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "العلاقاتُ الأردنيةُ الدوليةُ",
+      "title_en": "Jordan's International Relations",
+      "general_idea_ar": "العلاقاتُ الأردنيةُ الدوليةُ قائمةٌ على الاحترامِ المتبادَلِ، والانفتاحِ على دُوَلِ العالمِ والمنظَّماتِ الدوليةِ، والتفاعلِ معها، وتبادلِ الخبراتِ والتعاونِ في شتّى الميادينِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المصطلحات» box; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "العلاقاتُ الأردنيةُ العربيةُ",
+          "title_en": "Jordanian-Arab Relations",
+          "main_idea_ar": "معرفةُ مفهومِ التضامنِ العربيِّ، والتعاونِ بينَ الدُّوَلِ العربيةِ، ومواقفِ الأردنِّ القوميةِ بصورةٍ عامةٍ، ومواقفِهِ تُجاهَ القضيةِ الفلسطينيةِ بصورةٍ خاصةٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التضامنُ العربيُّ", "en": "Arab Solidarity" },
+            { "ar": "القوميةُ العربيةُ", "en": "Arab Nationalism" },
+            { "ar": "جامعةُ الدُّوَلِ العربيةِ", "en": "League of Arab States" },
+            { "ar": "اتفاقيةُ الضمانِ الجماعيِّ", "en": "" },
+            { "ar": "اتفاقيةُ التضامنِ العربيِّ", "en": "" }
+          ]
+        },
+        {
+          "id": "u4_l2",
+          "order": 2,
+          "title_ar": "العلاقاتُ الأردنيةُ الدوليةُ",
+          "title_en": "Jordan's International Relations",
+          "main_idea_ar": "معرفةُ أهدافِ السياسةِ الخارجيةِ الأردنيةِ وسماتِها، وعلاقةِ الأردنِّ بالمنظَّماتِ الدوليةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "منظَّمةُ التجارةِ العالميةِ", "en": "World Trade Organization" },
+            { "ar": "منظَّمةُ الصحةِ العالميةِ", "en": "World Health Organizatoin" },
+            { "ar": "وكالةُ الأُمَمِ المتحدةِ لإغاثةِ وتشغيلِ لاجئي فلسطينَ في الشرقِ الأدنى", "en": "UNRWA" },
+            { "ar": "قوّاتُ حفظِ السلامِ الدوليةُ", "en": "" },
+            { "ar": "منظَّمةُ التعاونِ الإسلاميِّ", "en": "" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u5",
+      "number": 5,
+      "title_ar": "التراثُ",
+      "title_en": "Heritage",
+      "general_idea_ar": "لقدْ تركَ لنا أسلافُنا تراثًا كثيرًا نفخرُ بهِ ونعتزُّ، ونحافظُ عليهِ ونطوّرُهُ؛ ليبقى ذُخرًا لهذا الوطنِ وللأجيالِ القادمةِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المصطلحات» box; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_ar": "التراثُ الوطنيُّ",
+          "title_en": "National Heritage",
+          "main_idea_ar": "معرفةُ التراثِ الوطنيِّ وأهميتِهِ، ونماذجَ منَ التراثِ الوطنيِّ والعالميِّ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التراثُ الوطنيُّ", "en": "National Heritage" },
+            { "ar": "التراثُ العالميُّ", "en": "World Heritage" }
+          ]
+        },
+        {
+          "id": "u5_l2",
+          "order": 2,
+          "title_ar": "المحافظةُ على التراثِ",
+          "title_en": "Preserving Heritage",
+          "main_idea_ar": "تعرّفُ أهميةِ المحافظةِ على التراثِ وطرقِ حمايتِهِ، ودورِ المؤسساتِ الوطنيةِ والمنظَّماتِ الدوليةِ في الحفاظِ عليهِ، وتعرّفُ نماذجَ من التراثِ العالميِّ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الترميمُ", "en": "Restoration" },
+            { "ar": "المنظَّمةُ العربيةُ للتربيةِ والثقافةِ والعلومِ", "en": "ALECSO" },
+            { "ar": "المنظَّمةُ الإسلاميةُ للتربيةِ والعلومِ والثقافةِ", "en": "ICESCO" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u6",
+      "number": 6,
+      "title_ar": "النزاهةُ ومُكافحةُ الفسادِ",
+      "title_en": "Integrity and Anti-Corruption",
+      "general_idea_ar": "يهدفُ نظامُ النزاهةِ الوطنيةِ إلى مُكافحةِ الفسادِ بوصفِهِ جزءًا مِنْ منظومةٍ أوسعَ لمُكافحةِ إساءةِ الاستخدامِ وهدرِ المواردِ العامّةِ. سعيًا إلى الوصولِ إلى حوكمةٍ رشيدةٍ، وبيئةٍ وطنيةٍ نزيهةٍ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المصطلحات» box; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u6_l1",
+          "order": 1,
+          "title_ar": "النزاهةُ الوطنيةُ",
+          "title_en": "National Integrity",
+          "main_idea_ar": "التعرُّفُ إلى مفهومِ النزاهةِ الوطنيةِ وأهمِّيَتِها ومعاييرِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "النزاهةُ الوطنيةُ", "en": "National Integrity" },
+            { "ar": "الشفافيةُ", "en": "Transparency" }
+          ]
+        },
+        {
+          "id": "u6_l2",
+          "order": 2,
+          "title_ar": "مُكافحةُ الفسادِ والمحسوبيةِ",
+          "title_en": "Combating Corruption and Nepotism",
+          "main_idea_ar": "التعرُّفُ إلى مفهومَي الفسادِ والمحسوبيةِ وآثارِهما السلبيةِ في المجتمعِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الفسادُ", "en": "Corruption" },
+            { "ar": "المحسوبيةُ", "en": "Nepotism" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u7",
+      "number": 7,
+      "title_ar": "مهاراتٌ حياتيةٌ",
+      "title_en": "Life Skills",
+      "general_idea_ar": "اكتسابُ المهاراتِ يبدأُ ببرمجةِ العقلِ بالخطواتِ الصحيحةِ، ثمَّ بالممارسةِ المتكرّرةِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المصطلحات» box; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u7_l1",
+          "order": 1,
+          "title_ar": "المحتوى الإعلاميُّ",
+          "title_en": "Media Content",
+          "main_idea_ar": "معرفةُ مفهومِ المحتوى الإعلاميِّ، وأهميتِهِ، ومقوِّماتِهِ، وتحليلِهِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "المحتوى الإعلاميُّ", "en": "Media Content" },
+            { "ar": "الذكاءُ الاصطناعيُّ", "en": "Artificial Intelligence" },
+            { "ar": "الإعلانُ", "en": "Advertisement" }
+          ]
+        },
+        {
+          "id": "u7_l2",
+          "order": 2,
+          "title_ar": "السلوكُ",
+          "title_en": "Behaviour",
+          "main_idea_ar": "معرفةُ السلوكِ الإيجابيِّ، وأهميتِهِ، وآثارِهِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "السلوكُ الإيجابيُّ", "en": "Positive Behaviour" },
+            { "ar": "السلوكُ السلبيُّ", "en": "Negative Behaviour" }
+          ]
+        }
+      ]
+    }
+  ]
+}

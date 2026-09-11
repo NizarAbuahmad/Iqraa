@@ -7,7 +7,9 @@
  * instead of every device burning its own.
  */
 import { Router } from "express";
+import { getExternalResource } from "@workspace/curriculum";
 import { logger } from "../lib/logger";
+import { isR2Configured, presignedGetUrl } from "../lib/r2";
 
 const mediaRouter = Router();
 
@@ -142,6 +144,56 @@ mediaRouter.get("/media/youtube-video", async (req, res) => {
   } catch (err) {
     logger.error({ err }, "youtube-video lookup failed");
     res.json({ video: null, videos: [] });
+  }
+});
+
+/**
+ * Serve our own copy of a curated external resource.
+ *
+ * Only resources carrying an `ingest` block have one: those are the ones whose
+ * licence granted redistribution, so they were copied into R2 by
+ * `fetch-external.ts`. A resource without one is pointed at, never served —
+ * `sourceUrl` is the only address it has, and that is the whole distinction
+ * `embed-only` exists to record.
+ *
+ * **The manifest is the allowlist.** The client names a resource id, never an
+ * R2 key, so this cannot be turned into a read-anything-in-the-bucket
+ * endpoint by editing a URL — which it would be if it took the key directly.
+ *
+ * The attribution travels with the URL rather than being looked up separately
+ * by whatever renders it. Every licence here requires the credit wherever the
+ * asset appears, and a caller that has to make a second call to find out what
+ * to print is a caller that will eventually skip it.
+ */
+mediaRouter.get("/media/external/:id", async (req, res) => {
+  try {
+    const resource = getExternalResource(req.params["id"] as string);
+    if (!resource) {
+      res.status(404).json({ error: "Unknown resource" });
+      return;
+    }
+    if (!resource.ingest) {
+      res.status(404).json({
+        error: "This resource is not stored here — open it at its source",
+        code: "not_ingested",
+        sourceUrl: resource.sourceUrl,
+      });
+      return;
+    }
+    if (!isR2Configured()) {
+      res.status(503).json({ error: "Media storage is not configured" });
+      return;
+    }
+    res.json({
+      url: await presignedGetUrl(resource.ingest.r2Key),
+      kind: resource.kind,
+      attribution: resource.attribution,
+      sourceUrl: resource.sourceUrl,
+      licenseUrl: resource.licenseUrl,
+    });
+  } catch (err) {
+    logger.error({ err }, "external media lookup failed");
+    res.status(500).json({ error: "Failed to load that resource" });
   }
 });
 

@@ -49,7 +49,7 @@ import {
   type StudentQuestion,
   type StudentResponse,
 } from '@/services/studentExam';
-import { FillBlankInput, MatchingInput } from '@/components/QuestionInputs';
+import { FillBlankInput, MatchingInput, ReadAloudInput } from '@/components/QuestionInputs';
 import { isolateForeignRuns } from '@/services/mathRender';
 import type { TranslationKey } from '@/services/i18n';
 
@@ -368,6 +368,7 @@ export default function TakeExamScreen() {
             isRTL={isRTL}
             align={align}
             t={t}
+            token={token}
           />
         ) : null}
 
@@ -421,7 +422,7 @@ export default function TakeExamScreen() {
  * press one will not.
  */
 function QuestionCard({
-  question, response, onAnswer, colors, isRTL, align, t,
+  question, response, onAnswer, colors, isRTL, align, t, token,
 }: {
   question: StudentQuestion;
   response: StudentResponse;
@@ -430,6 +431,13 @@ function QuestionCard({
   isRTL: boolean;
   align: 'left' | 'right';
   t: (key: TranslationKey, ...args: any[]) => string;
+  /**
+   * Only `read_aloud` needs this: its answer is uploaded directly rather than
+   * autosaved through the parent, because the server stores the audio and
+   * composes the response itself. The token stays in this tree and never
+   * reaches the shared token store — see the header.
+   */
+  token: string;
 }) {
   const body = question.body;
   // Isolated at the source: this is the paper a student actually sits, so an
@@ -562,6 +570,18 @@ function QuestionCard({
             t={t}
           />
         </View>
+      )}
+
+      {question.type === 'read_aloud' && (
+        <ReadAloudInput
+          body={body}
+          response={response}
+          questionId={question.id}
+          token={token}
+          onSaved={onAnswer}
+          colors={colors}
+          t={t}
+        />
       )}
 
       {['short_answer', 'open_ended', 'problem_solving', 'practical_task'].includes(question.type) && (

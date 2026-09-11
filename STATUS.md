@@ -428,6 +428,52 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The GeoGebra embed is gone; graph slides draw their own curve, 2026-09-11
+
+**The class deck no longer frames geogebra.org.** `GraphView` in
+`app/ai-tools/classroom/presentation.tsx` used to render an `<iframe>` of
+GeoGebra's calculator on web (native already opened a browser instead). It now
+renders `VisualView` — the same `visualForSlide` → react-native-svg plot the
+PDF and PPTX exports have drawn since `services/deckVisuals.ts` landed, so all
+three surfaces finally show the same picture.
+
+**Why, since the iframe was the better teaching tool.** GeoGebra's licence
+(read 2026-09-10, November 2025 revision) makes any commercial use subject to a
+separate agreement, and says explicitly that "non-commercial" **depends on the
+use, not the user**. Its commercial examples name online schools and even
+non-profits, and catch materials given away free that are "used to gain a
+commercial advantage". The non-commercial grant is limited to "personal or
+individual classroom teaching" and is **personal to the holder** — clause 10
+forbids permitting "any third party to benefit from it" without written
+consent. Framing their calculator inside a product we distribute to teachers is
+not something that grant covers. Their own commercial terms name framing as a
+restricted act (cl. 3.1a).
+
+**The link-out stayed, deliberately, and now runs on web too.** A teacher
+opening geogebra.org in a browser is an ordinary visit to a free site.
+It is also the only fallback when `visualForSlide` refuses a command it cannot
+plot honestly (`Circle(...)`, trig), where `VisualView` renders nothing at all
+— so the button is load-bearing, not a leftover. `visualForSlide` gained its
+first direct tests in `services/__tests__/deckVisuals.test.ts` for exactly this
+reason: it is now the only thing that puts a curve on a classroom wall.
+
+**Not decided here:** whether to pursue a License and Collaboration Agreement
+(office@geogebra.org). That is a business call. One thing to weigh first —
+clause 7.2 of their commercial terms makes GeoGebra **joint copyright owner of
+materials generated using it**, which for a product whose output is generated
+decks is a larger concession than the fee. Nothing is signed, and nothing here
+depends on signing.
+
+**Not verified in a browser.** The presenter sits behind auth and
+`dev:mobile:web` signs in against production, and `.claude/launch.json` lives
+at the main checkout rather than the worktree. Typecheck and the full mobile
+suite (1280 tests) pass; the projected slide itself has not been looked at.
+
+**Still parked:** the GeoGebra tool card in `services/toolCatalog.ts` remains
+`hidden: true` (since 2026-08-18) and was not touched. The «GeoGebra» strings
+in `lib/curriculum/src/data/extracted/*.json` are the MoE textbooks telling
+students to use it — quoted curriculum, not an integration.
+
 ## A profile picture landed, and it stops at the signed-in user, 2026-09-09
 
 A teacher can now tap their own avatar on `app/(tabs)/profile.tsx` to pick a

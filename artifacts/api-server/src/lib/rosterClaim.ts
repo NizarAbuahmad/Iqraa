@@ -41,7 +41,12 @@ export async function resolveClaimCode(
   // Applied here rather than in each caller, so /register and /auth/claim
   // cannot disagree about what counts as the same code.
   const code = normalizeShareCode(rawCode);
-  if (!code) return { ok: false, status: 400, error: "That code is invalid or has expired" };
+  if (!code) {
+    // Same code as decideClaim's INVALID: to the joiner "this is not even
+    // code-shaped" and "no such code" are one answer, and the screen should
+    // not have to learn two ways to say it.
+    return { ok: false, status: 400, code: "claim_code_invalid", error: "That code is invalid or has expired" };
+  }
 
   const [student] = await db
     .select({ id: students.id, expiresAt: students.claimCodeExpiresAt })

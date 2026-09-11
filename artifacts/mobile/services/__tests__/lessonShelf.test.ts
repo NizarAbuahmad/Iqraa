@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { isUnitScopedTag } from '@workspace/curriculum';
+import { EXTERNAL_RESOURCES, isUnitScopedTag } from '@workspace/curriculum';
 import {
   askAboutResourceMessage,
   buildLessonShelf,
@@ -130,18 +130,26 @@ describe('subject isolation', () => {
       // Grade 10 Arabic predates this map and was silently unchecked — no
       // entry meant `continue`, not a pass. Added on 2026-09-08 alongside the
       // Grade 9 Arabic S1 book, so both grades are covered from here on.
-      arabic: /^(arabic-s[12]|g9-arabic-s[12])$/,
+      // Grade 8 joined 2026-09-10, semester 1 then semester 2.
+      arabic: /^(arabic-s[12]|g9-arabic-s[12]|g8-arabic-s[12])$/,
       // Grade 10 Islamic predates this map too and was likewise silently
       // unchecked. Added alongside the Grade 9 Islamic books.
-      islamic: /^(islamic-s[12]|g9-islamic-s[12])$/,
+      // Grade 8 joined 2026-09-10, semester 1 then semester 2.
+      islamic: /^(islamic-s[12]|g9-islamic-s[12]|g8-islamic-s[12])$/,
       // Geography is new to this repo entirely. Grade 10 (curriculumIds.ts's
       // implicit grade) carries a bare tag; Grade 9 carries the explicit
       // g9- form, same split as every pre-existing subject above.
       geography: /^(geo-s[12]|g9-geo-s[12])$/,
       // Same as geography — Grade 10 gained a book the same week.
       history: /^(hist-s[12]|g9-hist-s[12])$/,
-      'civic-education': /^g9-civ-s[12]$/,
+      // Same again — Grade 10 gained a book on 2026-09-10, so both the bare
+      // and the g9- form appear.
+      'civic-education': /^(civ-s[12]|g9-civ-s[12])$/,
       'physical-education': /^g9-pe-s[12]$/,
+      // Grade 8's combined «العلوم» book, the only one this subject has. No
+      // grade-10 alternative here: Grade 10 splits science into the four
+      // subjects above, so there is no bare `science-s[12]` form to allow.
+      science: /^g8-science-s[12]$/,
     };
     for (const lesson of KB_LESSONS) {
       const subjectId = getBookForLesson(lesson)?.subjectId;
@@ -169,6 +177,59 @@ describe('subject isolation', () => {
         .filter(l => (buildLessonShelf(l.id)?.total ?? 0) > 0).length;
       assert.ok(withItems > 0, `no ${subject} lesson shelved anything`);
     }
+  });
+});
+
+/**
+ * Curated third-party material is a separate list from the bank, and the
+ * separation is load-bearing: these attach to a lesson id rather than a unit
+ * tag, they carry a licence rather than an authority, and every one requires
+ * its credit rendered next to it. Counting them into `total` would put them
+ * under a "we cannot hand you these files" note that is false of them.
+ */
+describe('external resources on the shelf', () => {
+  const lessonWithExternal = EXTERNAL_RESOURCES[0]?.lessonIds[0];
+
+  it('attaches curated resources to the lesson they name', () => {
+    assert.ok(lessonWithExternal, 'the manifest is empty — this test proves nothing');
+    const shelf = buildLessonShelf(lessonWithExternal);
+    assert.ok(shelf, `no lesson found for ${lessonWithExternal}`);
+    assert.ok(shelf.external.length > 0);
+  });
+
+  it('keeps them out of the bank counts', () => {
+    const shelf = buildLessonShelf(lessonWithExternal!)!;
+    const bankItems = [...shelf.unit, ...shelf.semester].reduce((n, g) => n + g.items.length, 0);
+    assert.equal(shelf.total, bankItems);
+  });
+
+  it('carries an attribution on every one, because the licence requires it', () => {
+    for (const r of EXTERNAL_RESOURCES) {
+      assert.ok(r.attribution.trim().length > 0, r.id);
+    }
+  });
+
+  it('names only lessons that exist', () => {
+    // `validateExternalResources` can only check the `kbl-` prefix — the
+    // curriculum package has no view of KB_LESSONS, which is what the shelf
+    // actually looks up. So a typo, or an id left behind when a book is
+    // restructured, passes validation and then attaches the resource to
+    // nothing: no error, no row, no way to tell from the manifest that it is
+    // orphaned. English went from one lesson per unit to seven while this
+    // branch was open, which is exactly how such an id goes stale.
+    const known = new Set(KB_LESSONS.map(l => l.id));
+    const orphans = EXTERNAL_RESOURCES.flatMap(r =>
+      r.lessonIds.filter(id => !known.has(id)).map(id => `${r.id} -> ${id}`),
+    );
+    assert.deepEqual(orphans, [], 'these resources name lessons that do not exist');
+  });
+
+  it('gives a lesson with no curated material an empty list, not a missing one', () => {
+    // The panel reads `.length`, so `undefined` here would crash a lesson page
+    // rather than render nothing.
+    const bare = KB_LESSONS.find(l => buildLessonShelf(l.id)?.external.length === 0);
+    assert.ok(bare, 'every lesson has external material — unexpected');
+    assert.deepEqual(buildLessonShelf(bare.id)!.external, []);
   });
 });
 

@@ -37,12 +37,12 @@ import {
 /** `subjectId:gradeId` pairs that are offered by the MVP lists but have no book. */
 const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // financial-literacy:grade-9 was the last pre-existing gap, closed
-  // 2026-09-09, the same day each of these four subjects joined
-  // MVP_SUBJECT_IDS brand-new with only a Grade 9 book behind it — so their
-  // Grade 10 halves were bookless by construction, not by omission.
-  // geography:grade-10 and history:grade-10 closed the same week, once
-  // their Grade 10 books arrived.
-  'civic-education:grade-10',
+  // 2026-09-09, the same day four subjects joined MVP_SUBJECT_IDS brand-new
+  // with only a Grade 9 book behind them — so their Grade 10 halves were
+  // bookless by construction, not by omission. Three of the four have since
+  // closed as their Grade 10 books arrived: geography and history that same
+  // week, civic-education on 2026-09-10. physical-education is the last one
+  // still true of that sentence.
   'physical-education:grade-10',
   // grade-8 joined MVP_GRADE_IDS 2026-09-09 with only financial-literacy
   // built. Grade 8 does not split science or social studies the way Grade
@@ -51,19 +51,20 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // subjects, neither of which is in MVP_SUBJECT_IDS yet — so chemistry,
   // physics, biology, earth-science, geography, history, civic-education
   // are permanently bookless at grade-8, not gaps to be closed later.
-  // physical-education has no grade-8 book at all on disk. english, arabic
-  // and islamic ARE being built this batch — delete each line here as its
-  // Grade 8 book lands. digital-literacy:grade-8 closed 2026-09-09, the
-  // same day as financial-literacy. mathematics:grade-8 closed the same
-  // week once its Semester 2 book arrived (Semester 1 still unattached,
-  // but one semester is enough for hasCurriculumForSubjectGrade).
+  // physical-education has no grade-8 book at all on disk.
+  // digital-literacy:grade-8 closed 2026-09-09, the same day as
+  // financial-literacy. mathematics:grade-8 closed the same week once its
+  // Semester 2 book arrived (Semester 1 still unattached, but one semester
+  // is enough for hasCurriculumForSubjectGrade). arabic:grade-8 closed the
+  // same week once its Semester 1 book arrived; Semester 2 followed on
+  // 2026-09-10, from the book whose filename wrongly says «للصف السابع».
+  // islamic:grade-8 closed the same way once its Semester 1 book arrived.
+  // english:grade-8 closed 2026-09-10 once its Semester 1 book arrived —
+  // the last Grade 8 subject this comment block still listed as pending.
   'chemistry:grade-8',
-  'english:grade-8',
   'physics:grade-8',
   'earth-science:grade-8',
   'biology:grade-8',
-  'arabic:grade-8',
-  'islamic:grade-8',
   'geography:grade-8',
   'history:grade-8',
   'civic-education:grade-8',
@@ -77,12 +78,46 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // is ['grade-8'] alone here too.
   'vocational-education:grade-9',
   'vocational-education:grade-10',
-  // social joined the same day. Unlike creative-arts/vocational-education,
-  // SUBJECTS.grades for social already spans grade-1..grade-9, so these
-  // are ordinary gaps (a Grade 9 or 10 book would close them normally),
-  // not permanent — delete the line once a book lands.
+  // social joined the same day, and both entries are PERMANENT — corrected
+  // on 2026-09-10, having been recorded here as ordinary gaps to "delete the
+  // line once a book lands". No such book will land. NCCD teaches «الدراسات
+  // الاجتماعية» as one combined subject only at Grade 8; from Grade 9 up it
+  // is split into geography, history and civic-education, each its own
+  // subject with its own books — all three now complete at both grades
+  // (book-geo/hist/civ-9-s1|s2 and -10-s1|s2, twelve books). So the content
+  // is fully covered; it just answers to three subjectIds instead of one.
+  //
+  // Note SUBJECTS.grades for social still spans grade-1..grade-9, which is
+  // what made this look ordinary: that range is about the primary grades the
+  // subject is declared for, and cannot on its own tell you a grade-9 book
+  // exists. The declaration outran the curriculum here — do not read it as
+  // evidence a book is merely missing.
+  //
+  // Same shape as science:grade-10 below, in the opposite direction: there a
+  // Grade 10 subject dissolves into four, here a Grade 8 subject dissolves
+  // into three.
   'social:grade-9',
   'social:grade-10',
+  // science joined 2026-09-10 with its first-ever book (Grade 8). BOTH
+  // entries are PERMANENT: Grade 8 is the only grade NCCD teaches «العلوم»
+  // as one subject. Grade 9 and Grade 10 each split it into physics,
+  // chemistry, biology and earth-science, and all four are built at both
+  // grades — which is why none of them appears in this list at grade-9 or
+  // grade-10, only at grade-8. Read the two ends together: those four are
+  // permanently bookless at grade-8 because Grade 8 combines them into the
+  // science book; science is permanently bookless at grade-9 and grade-10
+  // because those grades dissolve it back into the four. Same fact twice.
+  //
+  // science:grade-9 was first recorded here as an ORDINARY gap — "delete the
+  // line when a Grade 9 science book lands". Corrected 2026-09-10; no such
+  // book exists or will. The bad inference was SUBJECTS.grades spanning
+  // grade-1..grade-9, which says which grades the subject is declared for
+  // and cannot tell you a book exists at any of them. That is the same
+  // misreading corrected for social:grade-9/10 above, and it is worth
+  // noticing that both slipped through: a declared range is never evidence
+  // of a book, and this file is the place that distinction has to hold.
+  'science:grade-9',
+  'science:grade-10',
 ]);
 
 describe('subject/grade coverage across the MVP lists', () => {

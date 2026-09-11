@@ -36,10 +36,14 @@ before they are wired into the app.
 Placement
 ─────────
 These books print «LESSON 1A».."7A" at 18pt in the page header and restart the
-count in each unit, which is the whole outline. The catalog models one lesson
-per unit (see `lib/curriculum/src/catalogs/g10EnglishSem1.ts` for why), so a
-page needs only its UNIT number, and that is the reset count. Pages before the
-first LESSON header are front matter and yield nothing.
+count in each unit, which is the whole outline. This script uses only the reset
+count — the UNIT number — and stamps every crop `lesson: 1`. That was exact
+while the catalog modelled a unit as one lesson; since 2026-09-10 it models the
+seven the book prints, so a crop now lands on the unit's FIRST lesson rather
+than on the lesson whose page it came from. The header it already matches
+carries the lesson number, so closing that is a small change here plus a
+re-run and a re-map. Pages before the first LESSON header are front matter and
+yield nothing.
 
 Usage
 ─────
@@ -199,9 +203,9 @@ def main() -> None:
                 "pdfPage": n + 1,
                 "rect": [round(v, 1) for v in rect],
                 "unit": unit,
-                # One lesson per unit, so every photo lands on lesson 1 of its
-                # unit. Not a placeholder — see the catalog's header for why
-                # the seven printed slots are not modelled.
+                # Unit granularity: every photo lands on lesson 1 of its unit.
+                # See "Placement" above — this is now an approximation, not an
+                # identity, and the page header carries what would fix it.
                 "lesson": 1,
                 "lessonTitleEn": None,
                 "lessonTitleAr": None,
