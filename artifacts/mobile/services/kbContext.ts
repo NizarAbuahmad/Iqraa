@@ -513,13 +513,20 @@ export function buildResponse(
   results: KBLesson[],
   lang: 'ar' | 'en',
   mode?: string,
+  /**
+   * The shelf document the teacher tapped to get here, when they did. It is
+   * listed first in the support block instead of having to win a keyword race
+   * against the ~34 other files on the same shelf. It names the file — it does
+   * not supply its contents; the PDFs are not shipped.
+   */
+  pinnedResourceId?: string,
 ): string {
   if (results.length === 0) return '';
 
   const isAr = lang === 'ar';
   const top = results.slice(0, 3);
   const multiResult = top.length > 1;
-  const supportBlock = buildSupportResourcesContext(query, top, lang, 4);
+  const supportBlock = buildSupportResourcesContext(query, top, lang, 4, pinnedResourceId);
 
   // Try each trim tier until the combined context fits within the budget
   for (const opts of TRIM_TIERS) {

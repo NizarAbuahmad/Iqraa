@@ -15,6 +15,8 @@ import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
 
 import type { BlockOpts } from '../kbContext.ts';
+import { buildLessonShelf } from '../lessonShelf.ts';
+import { displayTitle } from '../mathSupportResources.ts';
 import {
   buildResponse,
   buildLessonBlock,
@@ -25,7 +27,7 @@ import {
   CONTEXT_CHAR_BUDGET,
   deduplicateByUnit,
 } from '../kbContext.ts';
-import { getLessonById, KB_LESSONS } from '../knowledgeBase.ts';
+import { getBookForLesson, getLessonById, KB_LESSONS } from '../knowledgeBase.ts';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -369,5 +371,44 @@ describe('sourceCitationLine', () => {
 
   it('is empty for no sources so callers can render conditionally', () => {
     assert.equal(sourceCitationLine([], true), '');
+  });
+});
+
+describe('buildResponse — a document the teacher opened', () => {
+  // The remote path's half of the shelf hand-off. `buildResponse` feeds
+  // `remoteAIService.chat`; the DEMO_MODE reply is covered in
+  // chatHandoffPin.test.ts, and both had to move for the fix to be visible.
+  const fixture = () => {
+    for (const l of KB_LESSONS) {
+      if (getBookForLesson(l)?.subjectId !== 'mathematics') continue;
+      const shelf = buildLessonShelf(l.id);
+      const items = shelf ? shelf.unit.flatMap(g => g.items) : [];
+      if (items.length >= 2) return { lesson: l, items };
+    }
+    throw new Error('no maths lesson with a unit shelf');
+  };
+
+  it('names the opened file in the support block', () => {
+    const { lesson, items } = fixture();
+    const out = buildResponse('اشرح الدرس', [lesson], 'ar', 'teacher', items[0]!.id);
+    assert.ok(out.includes(displayTitle(items[0]!)), out.slice(-400));
+  });
+
+  it('still fits the budget with a pinned file', () => {
+    // The support block is built once, outside the trim tiers, so anything
+    // added to it rides over the budget rather than being trimmed out of it.
+    const { lesson, items } = fixture();
+    for (const r of items) {
+      const out = buildResponse('اشرح الدرس', [lesson], 'ar', 'teacher', r.id);
+      assert.ok(out.length <= CONTEXT_CHAR_BUDGET, `${r.id}: ${out.length}`);
+    }
+  });
+
+  it('is unchanged when nothing was opened', () => {
+    const { lesson } = fixture();
+    assert.equal(
+      buildResponse('اشرح الدرس', [lesson], 'ar', 'teacher', undefined),
+      buildResponse('اشرح الدرس', [lesson], 'ar', 'teacher'),
+    );
   });
 });

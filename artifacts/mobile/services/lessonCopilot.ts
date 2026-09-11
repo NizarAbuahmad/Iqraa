@@ -185,6 +185,24 @@ export function pinLesson(
   };
 }
 
+/**
+ * Soft-restore a lesson without stepping on a hard pin.
+ *
+ * The saved home pick is loaded asynchronously on mount and soft-pinned. That
+ * was unconditional, so on a cold start reached through a deep link the promise
+ * could resolve *after* the deep-linked lesson was hard-pinned and quietly
+ * replace it — the lesson card then names the home pick while the answer is
+ * about the lesson the teacher navigated from. A hard pin is something the
+ * teacher said out loud (the picker, or arriving from a lesson page); a restore
+ * is only what they said last time.
+ */
+export function softPinIfUnpinned(
+  memory: ChatSessionMemory,
+  lesson: KBLesson,
+): ChatSessionMemory {
+  return memory.lessonPin === 'hard' ? memory : pinLesson(memory, lesson, 'soft');
+}
+
 export type CurrentLessonView = {
   curriculumLabel: string;
   subjectGrade: string;

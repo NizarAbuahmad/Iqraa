@@ -125,6 +125,12 @@ export type TeachingAssistantInput = {
   documentContext?: string | null;
   /** Display names of ready uploaded files. */
   documentNames?: string[];
+  /**
+   * A library document the teacher opened from مكتبة الدرس. Listed first in the
+   * support pack instead of having to win a keyword race against the ~34 other
+   * files on the same shelf. Its title only — the PDFs are not shipped.
+   */
+  pinnedResourceId?: string | null;
 };
 
 export type ClarificationOption = {
@@ -843,6 +849,7 @@ export function buildTeachingAssistantReply(
     routeIntent,
     documentContext,
     documentNames = [],
+    pinnedResourceId,
   } = input;
   const isAr = lang === 'ar';
   let intent = detectIntent(query);
@@ -1070,6 +1077,7 @@ export function buildTeachingAssistantReply(
       query,
       lesson,
       limit: 3,
+      pinnedResourceId: pinnedResourceId ?? undefined,
       // A quiz intent now reaches the real test papers. Under the old
       // vocabulary `quiz` covered practice sheets and past papers alike, so
       // asking for quiz material could not prefer either.
@@ -1079,7 +1087,7 @@ export function buildTeachingAssistantReply(
             : intent === 'lesson_plan' ? (['summary', 'worksheet', 'question-bank'] as const)
               : undefined,
     });
-    const packBlock = formatSupportResourcesBlock(pack, isAr ? 'ar' : 'en');
+    const packBlock = formatSupportResourcesBlock(pack, isAr ? 'ar' : 'en', pinnedResourceId ?? undefined);
     if (packBlock) {
       parts.push('');
       parts.push(packBlock);
