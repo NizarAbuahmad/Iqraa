@@ -19,6 +19,7 @@ import {
   isRenderableVisual,
   plotGeometry,
   samplePlot,
+  visualForSlide,
   visualToSvg,
   type VisualBlock,
 } from '../deckVisuals.ts';
@@ -353,5 +354,47 @@ describe('chartForLesson', () => {
 
   it('returns null when there is no dataset', () => {
     assert.equal(chartForLesson('أوجد المتوسط الحسابي للبيانات: 2، 4، 6'), null);
+  });
+});
+
+// Since the live presenter stopped embedding GeoGebra (2026-09-10) this is the
+// only thing that puts a curve on the classroom wall — the projected picture
+// and both exports now come through here. The two cases that matter are "the
+// teacher sees the graph" and "the teacher sees no graph rather than a wrong
+// one"; the second is why the open-in-GeoGebra button had to stay.
+describe('visualForSlide — what the projector draws', () => {
+  it('plots the commands the generator actually emits', () => {
+    const visual = visualForSlide({ graphCommands: ['f(x)=x^2', 'g(x)=x+1'] });
+    assert.equal(visual?.kind, 'plot');
+    assert.equal(visual?.kind === 'plot' && visual.series.length, 2);
+    assert.equal(
+      visual?.kind === 'plot' && visual.series[0].label,
+      'f(x)=x^2',
+      'the pill and the curve must name the same function',
+    );
+  });
+
+  it('refuses a command it cannot plot instead of drawing something else', () => {
+    assert.equal(visualForSlide({ graphCommands: ['Circle((0,0),5)'] }), null);
+  });
+
+  it('draws the curves it knows and drops the ones it does not', () => {
+    const visual = visualForSlide({ graphCommands: ['Circle((0,0),5)', 'y=2x+1'] });
+    assert.equal(visual?.kind === 'plot' && visual.series.length, 1);
+  });
+
+  it('has nothing to draw without commands', () => {
+    assert.equal(visualForSlide({}), null);
+    assert.equal(visualForSlide({ graphCommands: [] }), null);
+  });
+
+  it('prefers an explicit visual over the commands', () => {
+    const chart: VisualBlock = {
+      kind: 'chart',
+      chartType: 'bar',
+      categories: ['أ', 'ب', 'ج'],
+      values: [1, 2, 3],
+    };
+    assert.equal(visualForSlide({ graphCommands: ['f(x)=x^2'], visual: chart }), chart);
   });
 });
