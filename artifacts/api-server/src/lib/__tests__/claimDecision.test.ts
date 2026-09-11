@@ -174,6 +174,45 @@ describe("no code at all", () => {
   });
 });
 
+describe("machine-readable rejection codes", () => {
+  // The app is Arabic-first and this server answers in English, so every
+  // rejection carries a `code` the screen can translate. Without one the
+  // client had nothing to branch on and printed the English sentence — which
+  // is how "Choose your name from the class list" reached a parent in the
+  // middle of an otherwise Arabic screen.
+  const classGroup = { id: "cls-1", expiresAt: LIVE };
+  const codeOf = (got: Awaited<ReturnType<typeof decide>>) =>
+    got.ok === false ? got.code : undefined;
+
+  it("codes a code that matched nothing", async () => {
+    assert.equal(codeOf(await decide({ requestedStudentId: "stu-1" })), "claim_code_invalid");
+  });
+
+  it("codes an expired per-student code the same way", async () => {
+    assert.equal(codeOf(await decide({ student: { id: "stu-1", expiresAt: DEAD } })), "claim_code_invalid");
+  });
+
+  it("codes a live class code with no name picked distinctly from invalid", async () => {
+    assert.equal(codeOf(await decide({ classGroup })), "claim_needs_name");
+  });
+
+  it("codes a name that is not on the class list", async () => {
+    const got = await decide({ classGroup, requestedStudentId: "stu-9", isMember: async () => false });
+    assert.equal(codeOf(got), "claim_name_not_in_class");
+  });
+
+  it("codes a student name already held by an account", async () => {
+    const got = await decide({
+      role: "student",
+      classGroup,
+      requestedStudentId: "stu-1",
+      isMember: async () => true,
+      hasSelfLink: async () => true,
+    });
+    assert.equal(codeOf(got), "claim_already_linked");
+  });
+});
+
 describe("isCodeLive", () => {
   // Exported for GET /students/:id/claim-code, which asks the identical
   // question outside decideClaim: not "does this code resolve to a student"

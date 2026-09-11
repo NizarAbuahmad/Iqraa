@@ -249,7 +249,10 @@ router.post("/claim", claimLimiter, authMiddleware, async (req: AuthenticatedReq
 
     const resolved = await resolveClaimCode(code, role, trimmedOrUndefined(studentId));
     if (!resolved.ok) {
-      res.status(resolved.status).json({ error: resolved.error });
+      // `code` as well as `error`: the app is Arabic-first and these strings
+      // are English, so the screen translates the code rather than printing
+      // the sentence (services/claimCodeGate.ts).
+      res.status(resolved.status).json({ error: resolved.error, code: resolved.code });
       return;
     }
 
@@ -334,15 +337,25 @@ router.get("/join/:code", joinLookupLimiter, async (req, res) => {
     // the second parent could not find their own child and the class code
     // would appear broken to them. The names are visible either way, so
     // filtering would buy no privacy and cost a real case.
-    const selfLinked = await db
-      .select({ studentId: rosterLinks.studentId })
-      .from(rosterLinks)
-      .where(
-        and(
-          eq(rosterLinks.relation, "self"),
-          inArray(rosterLinks.studentId, roster.length > 0 ? roster.map(s => s.id) : [""]),
-        ),
-      );
+    // Skipped entirely on an empty roster rather than asked with a placeholder
+    // id. `rosterLinks.studentId` is a uuid column, so the `[""]` that used to
+    // stand in for "no ids" made Postgres reject the whole statement — every
+    // class whose teacher had minted a join code before adding any names
+    // answered 500 here, the app read that as "not a class code", hid the
+    // picker, and let the joiner submit a nameless claim that came back
+    // "Choose your name from the class list".
+    const selfLinked =
+      roster.length === 0
+        ? []
+        : await db
+            .select({ studentId: rosterLinks.studentId })
+            .from(rosterLinks)
+            .where(
+              and(
+                eq(rosterLinks.relation, "self"),
+                inArray(rosterLinks.studentId, roster.map(s => s.id)),
+              ),
+            );
     const taken = new Set(selfLinked.map(r => r.studentId));
 
     res.json({

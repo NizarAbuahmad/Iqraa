@@ -27,6 +27,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useJoinCodeLookup } from '@/hooks/useJoinCodeLookup';
 import { RosterCodeClaimForm } from '@/components/RosterCodeClaimForm';
 import { RosterError, claimRosterCode } from '@/services/roster';
+import { claimErrorKey } from '@/services/claimCodeGate';
 
 export default function JoinClassScreen() {
   const colors = useColors();
@@ -34,7 +35,7 @@ export default function JoinClassScreen() {
   const { t, isRTL } = useLanguage();
   const { user } = useAuth();
 
-  const { code, setCode, roster, className, studentId, setStudentId, canSubmit: canSubmitCode } = useJoinCodeLookup();
+  const { code, setCode, roster, className, studentId, setStudentId, state, canSubmit: canSubmitCode } = useJoinCodeLookup();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [joined, setJoined] = useState(false);
@@ -53,7 +54,7 @@ export default function JoinClassScreen() {
       setJoined(true);
     } catch (err) {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setError(err instanceof RosterError ? err.message : t('joinAnotherClassFailed'));
+      setError(t(err instanceof RosterError ? claimErrorKey(err.code) : 'joinAnotherClassFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -110,6 +111,7 @@ export default function JoinClassScreen() {
           className={className}
           studentId={studentId}
           onSelectStudent={setStudentId}
+          state={state}
           userRole={user?.role}
           colors={colors}
           isRTL={isRTL}
