@@ -8,7 +8,7 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { db, evaluations, feedback, refreshTokens, savedMaterials, users } from "@workspace/db";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import {
   authMiddleware,
   requireRole,
@@ -30,23 +30,41 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 router.get("/admin/usage-summary", authMiddleware, requireRole(...ADMIN_ROLES), async (_req, res) => {
   try {
-    const [[{ count: totalUsers }], materialsByType, [{ count: totalEvaluations }], feedbackByRating] =
-      await Promise.all([
-        db.select({ count: sql<number>`count(*)::int` }).from(users),
-        db
-          .select({ type: savedMaterials.type, count: sql<number>`count(*)::int` })
-          .from(savedMaterials)
-          .groupBy(savedMaterials.type),
-        db.select({ count: sql<number>`count(*)::int` }).from(evaluations),
-        db
-          .select({ rating: feedback.rating, count: sql<number>`count(*)::int` })
-          .from(feedback)
-          .groupBy(feedback.rating),
-      ]);
+    const [
+      [{ count: totalUsers }],
+      materialsByType,
+      [{ count: totalEvaluations }],
+      feedbackByRating,
+      [{ count: usersWithoutRecovery }],
+    ] = await Promise.all([
+      db.select({ count: sql<number>`count(*)::int` }).from(users),
+      db
+        .select({ type: savedMaterials.type, count: sql<number>`count(*)::int` })
+        .from(savedMaterials)
+        .groupBy(savedMaterials.type),
+      db.select({ count: sql<number>`count(*)::int` }).from(evaluations),
+      db
+        .select({ rating: feedback.rating, count: sql<number>`count(*)::int` })
+        .from(feedback)
+        .groupBy(feedback.rating),
+      /**
+       * Accounts with a password and no Google account to fall back on —
+       * the ones that removing password reset on 2026-09-10 left with no
+       * way back in at all. Counted here rather than guessed at, because it
+       * is the number that decides whether a reset flow is worth building
+       * an email provider for, or whether the admin set-password route
+       * below already over-serves the problem.
+       */
+      db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(users)
+        .where(and(isNotNull(users.passwordHash), isNull(users.googleId))),
+    ]);
 
     res.json({
       totalUsers,
       totalEvaluations,
+      usersWithoutRecovery,
       materialsByType: Object.fromEntries(materialsByType.map((r) => [r.type, r.count])),
       feedbackByRating: Object.fromEntries(feedbackByRating.map((r) => [r.rating, r.count])),
     });
