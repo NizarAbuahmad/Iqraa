@@ -9,6 +9,7 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { AuthModeSwitch } from '@/components/ui/AuthModeSwitch';
 import { Button } from '@/components/ui/Button';
 import { GoogleSignInButton, isGoogleSignInAvailable } from '@/components/ui/GoogleSignInButton';
 import { Input } from '@/components/ui/Input';
@@ -114,6 +115,8 @@ export default function RegisterScreen() {
         >
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.foreground} />
         </Pressable>
+
+        <AuthModeSwitch mode="register" />
 
         <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'Cairo_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
           {t('createYourAccount')}
@@ -246,17 +249,6 @@ export default function RegisterScreen() {
             {t('registerTerms')}
           </Text>
         </View>
-
-        <View style={[styles.loginRow, isRTL && { flexDirection: 'row-reverse' }]}>
-          <Text style={[styles.loginText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
-            {t('alreadyHaveAccount')}{'  '}
-          </Text>
-          <Pressable onPress={() => router.replace('/(auth)/login')}>
-            <Text style={[styles.loginLink, { color: colors.primary, fontFamily: 'Cairo_600SemiBold' }]}>
-              {t('signIn')}
-            </Text>
-          </Pressable>
-        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -277,7 +269,4 @@ const styles = StyleSheet.create({
   nameRow: { flexDirection: 'row', gap: 12 },
   nameField: { flex: 1 },
   terms: { fontSize: 11, textAlign: 'center', lineHeight: 17 },
-  loginRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
-  loginText: { fontSize: 14 },
-  loginLink: { fontSize: 14 },
 });
