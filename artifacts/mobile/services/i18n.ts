@@ -1272,6 +1272,16 @@ const translations = {
     claimRequiredTitle: 'اربط حساب ابنك أو ابنتك',
     claimRequiredDesc: 'أدخل رمز الصف الذي حصلت عليه من المعلم لإكمال إعداد حسابك.',
     claimRequiredSubmit: 'متابعة',
+    // Rejections from POST /auth/claim, keyed by the server's `code` — the
+    // server answers in English (services/claimCodeGate.ts).
+    claimCodeInvalid: 'هذا الرمز غير صالح أو انتهت صلاحيته',
+    claimNeedsName: 'اختر اسمك من قائمة الصف أولًا',
+    claimNameNotInClass: 'هذا الاسم ليس في قائمة هذا الصف',
+    claimAlreadyLinked: 'هذا الطالب مرتبط بحساب آخر بالفعل',
+    claimEmptyClass: 'لا توجد أسماء في هذا الصف بعد. اطلب من المعلم إضافة أسماء الطلبة، ثم أعد المحاولة.',
+    claimEmptyClassFor: (className: string) =>
+      `لا توجد أسماء في صف «${className}» بعد. اطلب من المعلم إضافة أسماء الطلبة، ثم أعد المحاولة.`,
+    claimLookupFailed: 'تعذّر التحقق من الرمز الآن. تأكد من اتصالك بالإنترنت وأعد المحاولة.',
     rosterLinked: 'انضم',
     rosterNotLinked: 'لم ينضم بعد',
     unlinkAccount: 'إلغاء الربط',
@@ -2437,6 +2447,16 @@ const translations = {
     claimRequiredTitle: "Link your child's class",
     claimRequiredDesc: "Enter the class code your teacher gave you to finish setting up your account.",
     claimRequiredSubmit: 'Continue',
+    // Rejections from POST /auth/claim, keyed by the server's `code` — the
+    // server answers in English (services/claimCodeGate.ts).
+    claimCodeInvalid: 'That code is invalid or has expired',
+    claimNeedsName: 'Choose your name from the class list first',
+    claimNameNotInClass: 'That name is not on this class list',
+    claimAlreadyLinked: 'This student is already linked to another account',
+    claimEmptyClass: 'This class has no names on it yet. Ask the teacher to add the students, then try again.',
+    claimEmptyClassFor: (className: string) =>
+      `"${className}" has no names on it yet. Ask the teacher to add the students, then try again.`,
+    claimLookupFailed: 'Could not check this code right now. Check your connection and try again.',
     rosterLinked: 'Joined',
     rosterNotLinked: 'Not joined yet',
     unlinkAccount: 'Unlink',

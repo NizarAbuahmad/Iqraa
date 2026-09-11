@@ -7,6 +7,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Input } from '@/components/ui/Input';
 import type { JoinRosterEntry } from '@/services/roster';
+import type { JoinCodeState } from '@/services/claimCodeGate';
 import type { TranslationKey } from '@/services/i18n';
 
 export interface RosterCodeClaimFormProps {
@@ -16,6 +17,8 @@ export interface RosterCodeClaimFormProps {
   className: string;
   studentId: string;
   onSelectStudent: (id: string) => void;
+  /** What the lookup made of the code — see hooks/useJoinCodeLookup.ts. */
+  state: JoinCodeState;
   /** A name already claimed by a student account blocks another student — one account per child — but not a second parent. */
   userRole: string | undefined;
   colors: any;
@@ -30,6 +33,7 @@ export function RosterCodeClaimForm({
   className,
   studentId,
   onSelectStudent,
+  state,
   userRole,
   colors,
   isRTL,
@@ -94,11 +98,36 @@ export function RosterCodeClaimForm({
           </View>
         </View>
       ) : null}
+
+      {/*
+        Why there is no picker, when there is no picker. Both of these used to
+        render as nothing at all next to an enabled Continue button, so the
+        only feedback the joiner got was the server's refusal after pressing
+        it — and in the empty-class case that refusal asked them to pick from
+        a list that does not exist yet.
+      */}
+      {state === 'empty-class' ? (
+        <View style={[styles.notice, { borderColor: colors.border, backgroundColor: colors.muted }]}>
+          <Text style={[styles.noticeText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+            {className ? t('claimEmptyClassFor', className) : t('claimEmptyClass')}
+          </Text>
+        </View>
+      ) : null}
+
+      {state === 'error' ? (
+        <View style={[styles.notice, { borderColor: colors.border, backgroundColor: colors.muted }]}>
+          <Text style={[styles.noticeText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+            {t('claimLookupFailed')}
+          </Text>
+        </View>
+      ) : null}
     </>
   );
 }
 
 const styles = StyleSheet.create({
+  notice: { borderWidth: 1, borderRadius: 12, padding: 12, marginTop: 12 },
+  noticeText: { fontSize: 13, lineHeight: 21 },
   pickLabel: { fontSize: 13 },
   nameChips: { flexWrap: 'wrap', gap: 8 },
   nameChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, alignItems: 'center' },

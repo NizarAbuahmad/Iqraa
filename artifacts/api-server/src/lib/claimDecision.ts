@@ -24,13 +24,25 @@ export type ClaimRole = "student" | "parent";
 
 export type ClaimResolution =
   | { ok: true; studentId: string; relation: ClaimRelation }
-  | { ok: false; status: number; error: string };
+  | { ok: false; status: number; error: string; code: ClaimErrorCode };
+
+/**
+ * What the screen branches on. The `error` strings below are English and this
+ * app is Arabic-first, so a client that printed them put an English sentence
+ * in the middle of an Arabic screen — carry the code and let the screen choose
+ * the wording (the same contract `RosterError` states on the app side).
+ */
+export type ClaimErrorCode =
+  | "claim_code_invalid"
+  | "claim_needs_name"
+  | "claim_name_not_in_class"
+  | "claim_already_linked";
 
 /** Every rejection a caller may show. Kept in one place so the wording can't drift between the two callers. */
-const INVALID = { ok: false, status: 400, error: "That code is invalid or has expired" } as const;
-const NEEDS_NAME = { ok: false, status: 400, error: "Choose your name from the class list" } as const;
-const NOT_IN_CLASS = { ok: false, status: 400, error: "That name is not on this class list" } as const;
-const ALREADY_LINKED = { ok: false, status: 409, error: "This student is already linked to an account" } as const;
+const INVALID = { ok: false, status: 400, code: "claim_code_invalid", error: "That code is invalid or has expired" } as const;
+const NEEDS_NAME = { ok: false, status: 400, code: "claim_needs_name", error: "Choose your name from the class list" } as const;
+const NOT_IN_CLASS = { ok: false, status: 400, code: "claim_name_not_in_class", error: "That name is not on this class list" } as const;
+const ALREADY_LINKED = { ok: false, status: 409, code: "claim_already_linked", error: "This student is already linked to an account" } as const;
 
 export interface ClaimInput {
   now: Date;
