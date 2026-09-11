@@ -1,10 +1,14 @@
 {
   "note": "Curated third-party material attached to lessons. Schema and rules: ../external.ts. Every entry's licence was read on the date in licenseCheckedAt — do not add one from memory of what a provider 'is', because PhET relicensed its whole library to CC BY-NC on 2026-03-29 and anything trusting a remembered CC BY was wrong the next day. Ingestion (fetch-external.ts) refuses a check older than 180 days.",
-  "capturedAt": "2026-09-10",
+  "voaRule": "VOA Learning English is public domain ONLY where the material is produced exclusively by VOA. A large share of their Health and Science output is reported by the Associated Press and merely adapted by a VOA writer — AP material may not be redistributed, so those articles are NOT usable however they are labelled. Check the byline of every single article before adding it: a VOA staff writer and editor with no agency credit is the test. Verified 2026-09-11: 'What Is the healthiest way to prepare vegetables' (7967294) and 'How to Reduce Risks of Bad Air Quality' (7980912) both failed it, and are deliberately absent below.",
+  "capturedAt": "2026-09-11",
   "resources": [
     {
       "id": "voa-nutrients-and-nutrition",
-      "lessonIds": ["kbl-eng-s1-nccd-u3_l1"],
+      "lessonIds": [
+        "kbl-eng-s1-nccd-u3_l3",
+        "kbl-eng-s1-nccd-u3_l6"
+      ],
       "kind": "text",
       "titleEn": "Nutrients and Nutrition",
       "titleAr": "العناصر الغذائية والتغذية",
@@ -13,9 +17,49 @@
       "licenseUrl": "https://learningenglish.voanews.com/p/6021.html",
       "sourceUrl": "https://learningenglish.voanews.com/a/nutrients-and-nutrition/5827060.html",
       "attribution": "Voice of America — learningenglish.voanews.com",
-      "licenseCheckedAt": "2026-09-10",
+      "licenseCheckedAt": "2026-09-11",
       "authority": "third-party",
       "words": 375,
+      "durationSec": 187,
+      "level": "b1"
+    },
+    {
+      "id": "voa-nouns-as-adjectives",
+      "lessonIds": [
+        "kbl-eng-s1-nccd-u1_l2",
+        "kbl-eng-s1-nccd-u1_l5"
+      ],
+      "kind": "text",
+      "titleEn": "Everyday Grammar: When Nouns Act Like Adjectives",
+      "titleAr": "قواعد يومية: عندما تعمل الأسماء عمل الصفات",
+      "provider": "voa",
+      "license": "public-domain",
+      "licenseUrl": "https://learningenglish.voanews.com/p/6021.html",
+      "sourceUrl": "https://learningenglish.voanews.com/a/everyday-grammar-when-nouns-act-like-adjectives/2998821.html",
+      "attribution": "Voice of America — learningenglish.voanews.com",
+      "licenseCheckedAt": "2026-09-11",
+      "authority": "third-party",
+      "words": 900,
+      "level": "b1"
+    },
+    {
+      "id": "voa-fun-with-future-tenses",
+      "lessonIds": [
+        "kbl-eng-s1-nccd-u5_l3",
+        "kbl-eng-s1-nccd-u5_l5"
+      ],
+      "kind": "text",
+      "titleEn": "Everyday Grammar: Fun with Future Tenses",
+      "titleAr": "قواعد يومية: أزمنة المستقبل",
+      "provider": "voa",
+      "license": "public-domain",
+      "licenseUrl": "https://learningenglish.voanews.com/p/6021.html",
+      "sourceUrl": "https://learningenglish.voanews.com/a/everyday-grammar-fun-with-future-tenses/2935173.html",
+      "attribution": "Voice of America — learningenglish.voanews.com",
+      "licenseCheckedAt": "2026-09-11",
+      "authority": "third-party",
+      "words": 1100,
+      "durationSec": 374,
       "level": "b1"
     }
   ]
