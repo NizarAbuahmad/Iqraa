@@ -237,10 +237,17 @@ describe('general English carries its book photographs', () => {
     assert.ok(u10.every(f => f.unit === 5), 'curriculum u10 is the book\'s unit 5');
   });
 
-  it('files every English photo on lesson 1, because a unit IS one lesson', () => {
-    // The catalog models one lesson per unit — the book prints seven lesson
-    // slots and titles none of them. Any other lesson number here would mean
-    // the extractor and the catalog had drifted apart about that.
+  it('files every English photo on lesson 1, at unit granularity', () => {
+    // `extract_book_photos.py` reads only the UNIT (it counts LESSON-header
+    // resets) and stamps lesson 1 on every crop. That was exact while the
+    // catalog modelled a unit as one lesson; since 2026-09-10 it models the
+    // seven the book prints, so this is now an approximation — a photo from
+    // the reading spread resolves to the unit's first lesson. It is still the
+    // assertion that catches extractor/catalog drift: any other lesson number
+    // here means the extractor started claiming a precision the map does not
+    // have. Closing the gap means re-running the extractor to read the
+    // LESSON number off the page header; recorded in both English JSONs'
+    // known_gaps.
     for (const id of LESSONS) {
       for (const f of figuresForLesson(id)) {
         assert.equal(f.lesson, 1, `${f.file} is on lesson ${f.lesson}`);

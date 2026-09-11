@@ -6,17 +6,19 @@
     "subject_en": "English",
     "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
     "semester_covered": 2,
-    "provenance_note": "Every English field is copied from the two-page 'Contents' scope-and-sequence spread printed on pages 4-5 of the student book — the columns are UNIT, GRAMMAR, VOCABULARY, READING, LISTENING, SPEAKING, WRITING, and each entry keeps the book's own page references. Arabic titles and topic labels are OUR OWN TRANSLATIONS: this book is English-only and prints no Arabic beyond its cover and its draft stamp, exactly as the four vocational English catalogs record for the same reason. Each unit is represented as ONE lesson at scope-and-sequence depth. Unit numbering continues the year: this book prints units 06-10, and those printed numbers are kept rather than renumbered from 1, the same convention the physics and chemistry semester-2 catalogs follow.",
+    "provenance_note": "Seven lessons per unit, transcribed 2026-09-10 from the student book itself. Each unit prints exactly seven «LESSON nA» page headers (1A..7A, 18pt), each carrying a skill banner and, after a «|», a topic label when the book gives one; and each lesson prints exactly one «□ I can …» statement, 35 per semester = 5 units × 7. Lesson identity and order come from those headers, and the «I can» statement is the lesson's outcome, held verbatim in objectives[]. Same Pearson «Jordan High Note» series and same format as the Grade 8 and Grade 9 English books, which this repo already models the same way. The two-page 'Contents' scope-and-sequence spread (PDF pages 4-5; columns UNIT, GRAMMAR, VOCABULARY, READING, LISTENING, SPEAKING, WRITING) is still carried in the six *_topic / writing_task fields, with the book's own page references intact — but distributed onto the lesson whose printed pages each entry names. Arabic titles and topic labels are OUR OWN TRANSLATIONS: this book is English-only and prints no Arabic beyond its cover and its draft stamp. Only unit titles and skill banners are translated; topic labels and every «I can» outcome stay verbatim in English, because translating an outcome changes what a teacher is told the lesson delivers. Unit numbering continues the year: this book prints units 06-10, and those printed numbers are kept rather than renumbered from 1, the same convention the physics and chemistry semester-2 catalogs follow.",
     "source_books": {
       "student_book_s2": "كتاب الطالب لمادة اللغة الإنجليزية الصف العاشر الفصل الثاني.pdf — 80 pages, sourceId eng-s2-student-book. Contents spread: pages 4-5."
     },
     "schema_version": "1.0",
     "known_gaps": [
       "THIS BOOK IS A DRAFT. 79 of its 80 pages carry the stamp «نسخة قيد الإعداد والتجهيز» (a copy under preparation); the semester-1 book carries it on none. Everything here is transcribed from that draft and may not match the final printed edition. Re-check this file against the final book when it is published. The stamp is only findable in extracted text as Arabic presentation forms, not as normal codepoints — a plain search for «قيد الإعداد» returns nothing.",
-      "One lesson per unit, at scope-and-sequence depth — same reason as semester 1: the book prints seven lesson slots per unit (LESSON 1A..7A) named only by a skill banner whose order varies, so a seven-lesson breakdown cannot be derived from the PDF without judgement.",
-      "No learning outcomes (نتاجات التعلم). This book prints none, so objectives[] is empty rather than invented.",
+      "Unit 6's vocabulary column disagrees with the book's own pages. The contents spread lists «p9 Relationships and caring for others», but printed page 9 is LESSON 4A GRAMMAR (the zero conditional) and the slot whose banner reads «LESSON 6A VOCABULARY | Relationships, caring for others» is printed on page 11. The banner decides, so that entry is filed on LESSON 6A; its page reference is kept exactly as the contents spread prints it rather than silently corrected. Consistent with this book being a draft (see the first gap above). Every other scope-and-sequence entry in both semesters lands on a lesson whose printed pages it names.",
+      "No نتاجات التعلم boxes. This series prints none of the Arabic learning-outcome lists the science student books carry; what it prints instead is one «□ I can …» statement per lesson, and that is what objectives[] holds. So the outcomes here are the book's own words, not invented — but they are not NCCD نتاجات and should not be read as such.",
       "No period counts — the English teacher's guide is not in the repo.",
-      "The LIFE SKILLS spreads (after units 6 and 8) and the end matter — Grammar Reference pp69-73, Irregular Verbs p74, Communication pp75-76 — are recorded on the units they follow but are not modelled as lessons of their own."
+      "vocabulary[] is empty everywhere. This book scatters its words through the lesson exercises and the Word List on pp64-68 rather than printing a terms box on the lesson opener — the same gap recorded in the Grade 8 and Grade 9 English files.",
+      "The LIFE SKILLS spreads (after units 6, 8 and 10) print no «LESSON nA» header and no «I can», so they are not lessons. Each is kept in the life_skill field of the last lesson of the unit it follows — the lesson it is printed immediately after — so that its title and pages stay in the catalog rather than being dropped; it is not a claim that the spread belongs to that lesson. The third of them, «How to identify fake news» pp58-59 after unit 10, was missing from this file entirely before 2026-09-10 and is now recorded the same way as the other two. The end matter — Culture Spot pp60-61, Literature Spot pp62-63, Word List pp64-68, Grammar Reference pp69-73, Irregular Verbs p74, Communication pp75-76 — is not modelled at all.",
+      "The book photographs in knowledge-base/figure-lesson-map.json are still filed at UNIT granularity, on each unit's lesson 1 — see the matching gap in the semester-1 file."
     ]
   },
   "units": [
@@ -25,38 +27,129 @@
       "number": 6,
       "title_en": "Do the right thing",
       "title_ar": "افعل الصواب",
-      "data_tier": "textbook-scope-sequence",
+      "data_tier": "lesson-level (student book: printed LESSON nA banner, its single \"I can\" outcome, and the contents spread's scope-and-sequence entries distributed onto the lesson whose pages they name)",
       "total_periods": null,
       "prior_knowledge": [],
       "lessons": [
         {
           "id": "u6_l1",
           "order": 1,
-          "title_en": "Do the right thing",
-          "title_ar": "افعل الصواب",
+          "title_en": "Vocabulary and Grammar",
+          "title_ar": "المفردات والقواعد",
+          "main_idea_ar": "I can use the first and second conditional to talk about possible and hypothetical situations.",
           "periods": null,
-          "objectives": [],
+          "objectives": [
+            "I can use the first and second conditional to talk about possible and hypothetical situations."
+          ],
           "vocabulary": [],
           "grammar_topic": {
-            "en": "pp4-5 The first and second conditionals; p9 The zero conditional and alternatives to if",
-            "ar": "الجملة الشرطية الأولى والثانية؛ الشرطية الصفرية وبدائل if"
+            "en": "pp4-5 The first and second conditionals",
+            "ar": "الجملة الشرطية الأولى والثانية"
           },
           "vocabulary_topic": {
-            "en": "pp4-5 Dos and don'ts of using a mobile phone in public; pp6-7 Communicating; p8 Emotions; p9 Relationships and caring for others",
-            "ar": "ما يُفعل وما لا يُفعل عند استخدام الهاتف في الأماكن العامة؛ التواصل؛ المشاعر؛ العلاقات ورعاية الآخرين"
+            "en": "pp4-5 Dos and don'ts of using a mobile phone in public",
+            "ar": "ما يُفعل وما لا يُفعل عند استخدام الهاتف في الأماكن العامة"
+          }
+        },
+        {
+          "id": "u6_l2",
+          "order": 2,
+          "title_en": "Reading and Vocabulary",
+          "title_ar": "القراءة والمفردات",
+          "main_idea_ar": "I can understand the development of ideas in a short story and talk about being honest.",
+          "periods": null,
+          "objectives": [
+            "I can understand the development of ideas in a short story and talk about being honest."
+          ],
+          "vocabulary": [],
+          "vocabulary_topic": {
+            "en": "pp6-7 Communicating",
+            "ar": "التواصل"
           },
           "reading_topic": {
             "en": "pp6-7 If we kept it, we'd be rich",
             "ar": "لو احتفظنا به لأصبحنا أثرياء"
+          }
+        },
+        {
+          "id": "u6_l3",
+          "order": 3,
+          "title_en": "Listening and Vocabulary",
+          "title_ar": "الاستماع والمفردات",
+          "main_idea_ar": "I can identify specific details in a radio programme and talk about giving to charity.",
+          "periods": null,
+          "objectives": [
+            "I can identify specific details in a radio programme and talk about giving to charity."
+          ],
+          "vocabulary": [],
+          "vocabulary_topic": {
+            "en": "p8 Emotions",
+            "ar": "المشاعر"
           },
           "listening_topic": {
             "en": "p8 A radio programme about being rich; Pronunciation: The schwa /ə/ sound",
             "ar": "برنامج إذاعي عن الثراء؛ اللفظ: صوت الشوا"
-          },
+          }
+        },
+        {
+          "id": "u6_l4",
+          "order": 4,
+          "title_en": "Grammar",
+          "title_ar": "القواعد",
+          "main_idea_ar": "I can use the zero conditional to talk about real situations that are always true.",
+          "periods": null,
+          "objectives": [
+            "I can use the zero conditional to talk about real situations that are always true."
+          ],
+          "vocabulary": [],
+          "grammar_topic": {
+            "en": "p9 The zero conditional and alternatives to if",
+            "ar": "الشرطية الصفرية وبدائل if"
+          }
+        },
+        {
+          "id": "u6_l5",
+          "order": 5,
+          "title_en": "Speaking",
+          "title_ar": "المحادثة",
+          "main_idea_ar": "I can ask for, give and react to advice on a wide range of subjects.",
+          "periods": null,
+          "objectives": [
+            "I can ask for, give and react to advice on a wide range of subjects."
+          ],
+          "vocabulary": [],
           "speaking_topic": {
             "en": "p10 Asking for, giving and reacting to advice",
             "ar": "طلب النصيحة وتقديمها والتجاوب معها"
-          },
+          }
+        },
+        {
+          "id": "u6_l6",
+          "order": 6,
+          "title_en": "Vocabulary: Relationships, caring for others",
+          "title_ar": "المفردات: Relationships, caring for others",
+          "main_idea_ar": "I can talk about relationships and caring for others.",
+          "periods": null,
+          "objectives": [
+            "I can talk about relationships and caring for others."
+          ],
+          "vocabulary": [],
+          "vocabulary_topic": {
+            "en": "p9 Relationships and caring for others",
+            "ar": "العلاقات ورعاية الآخرين"
+          }
+        },
+        {
+          "id": "u6_l7",
+          "order": 7,
+          "title_en": "Writing: A for-and-against essay",
+          "title_ar": "الكتابة: A for-and-against essay",
+          "main_idea_ar": "I can write a for-and-against essay.",
+          "periods": null,
+          "objectives": [
+            "I can write a for-and-against essay."
+          ],
+          "vocabulary": [],
           "writing_task": {
             "en": "pp12-13 A for-and-against essay",
             "ar": "مقال يعرض الرأي والرأي المضاد"
@@ -73,38 +166,129 @@
       "number": 7,
       "title_en": "In the spotlight",
       "title_ar": "تحت الأضواء",
-      "data_tier": "textbook-scope-sequence",
+      "data_tier": "lesson-level (student book: printed LESSON nA banner, its single \"I can\" outcome, and the contents spread's scope-and-sequence entries distributed onto the lesson whose pages they name)",
       "total_periods": null,
       "prior_knowledge": [],
       "lessons": [
         {
           "id": "u7_l1",
           "order": 1,
-          "title_en": "In the spotlight",
-          "title_ar": "تحت الأضواء",
+          "title_en": "Vocabulary and Grammar",
+          "title_ar": "المفردات والقواعد",
+          "main_idea_ar": "I can use reporting verbs to report stories.",
           "periods": null,
-          "objectives": [],
+          "objectives": [
+            "I can use reporting verbs to report stories."
+          ],
           "vocabulary": [],
           "grammar_topic": {
-            "en": "pp16-17 Reported speech; p22 Reported questions",
-            "ar": "الكلام المنقول؛ الأسئلة المنقولة"
+            "en": "pp16-17 Reported speech",
+            "ar": "الكلام المنقول"
           },
           "vocabulary_topic": {
-            "en": "pp16-17 TV news; p18 Viewing habits; Pronunciation: Syllable stress; p19 Success and failure; pp20-21 Describing visual arts",
-            "ar": "الأخبار التلفزيونية؛ عادات المشاهدة؛ اللفظ: نبر المقاطع؛ النجاح والإخفاق؛ وصف الفنون البصرية"
-          },
-          "reading_topic": {
-            "en": "pp20-21 What is and isn't art?",
-            "ar": "ما هو الفن وما ليس فنًا؟"
+            "en": "pp16-17 TV news",
+            "ar": "الأخبار التلفزيونية"
+          }
+        },
+        {
+          "id": "u7_l2",
+          "order": 2,
+          "title_en": "Vocabulary: Viewing habits",
+          "title_ar": "المفردات: Viewing habits",
+          "main_idea_ar": "I can talk about viewing habits.",
+          "periods": null,
+          "objectives": [
+            "I can talk about viewing habits."
+          ],
+          "vocabulary": [],
+          "vocabulary_topic": {
+            "en": "p18 Viewing habits; Pronunciation: Syllable stress",
+            "ar": "عادات المشاهدة؛ اللفظ: نبر المقاطع"
+          }
+        },
+        {
+          "id": "u7_l3",
+          "order": 3,
+          "title_en": "Listening and Vocabulary",
+          "title_ar": "الاستماع والمفردات",
+          "main_idea_ar": "I can identify specific details in a radio programme and talk about promoting work on social media.",
+          "periods": null,
+          "objectives": [
+            "I can identify specific details in a radio programme and talk about promoting work on social media."
+          ],
+          "vocabulary": [],
+          "vocabulary_topic": {
+            "en": "p19 Success and failure",
+            "ar": "النجاح والإخفاق"
           },
           "listening_topic": {
             "en": "p19 A radio programme about promoting your work on social media",
             "ar": "برنامج إذاعي عن الترويج لعملك على وسائل التواصل"
+          }
+        },
+        {
+          "id": "u7_l4",
+          "order": 4,
+          "title_en": "Reading and Vocabulary",
+          "title_ar": "القراءة والمفردات",
+          "main_idea_ar": "I can identify specific details in an article and talk about art.",
+          "periods": null,
+          "objectives": [
+            "I can identify specific details in an article and talk about art."
+          ],
+          "vocabulary": [],
+          "vocabulary_topic": {
+            "en": "pp20-21 Describing visual arts",
+            "ar": "وصف الفنون البصرية"
           },
+          "reading_topic": {
+            "en": "pp20-21 What is and isn't art?",
+            "ar": "ما هو الفن وما ليس فنًا؟"
+          }
+        },
+        {
+          "id": "u7_l5",
+          "order": 5,
+          "title_en": "Grammar",
+          "title_ar": "القواعد",
+          "main_idea_ar": "I can use reported questions to talk about what someone else said.",
+          "periods": null,
+          "objectives": [
+            "I can use reported questions to talk about what someone else said."
+          ],
+          "vocabulary": [],
+          "grammar_topic": {
+            "en": "p22 Reported questions",
+            "ar": "الأسئلة المنقولة"
+          }
+        },
+        {
+          "id": "u7_l6",
+          "order": 6,
+          "title_en": "Speaking",
+          "title_ar": "المحادثة",
+          "main_idea_ar": "I can describe a personal experience.",
+          "periods": null,
+          "objectives": [
+            "I can describe a personal experience."
+          ],
+          "vocabulary": [],
           "speaking_topic": {
             "en": "p23 Describing a personal experience",
             "ar": "وصف تجربة شخصية"
-          },
+          }
+        },
+        {
+          "id": "u7_l7",
+          "order": 7,
+          "title_en": "Writing and Vocabulary: A review of a play",
+          "title_ar": "الكتابة والمفردات: A review of a play",
+          "main_idea_ar": "I can write a review of a play.",
+          "periods": null,
+          "objectives": [
+            "I can write a review of a play."
+          ],
+          "vocabulary": [],
           "writing_task": {
             "en": "pp24-25 A review of a play",
             "ar": "مراجعة نقدية لمسرحية"
@@ -117,38 +301,129 @@
       "number": 8,
       "title_en": "The evolution of advertising",
       "title_ar": "تطوّر الإعلان",
-      "data_tier": "textbook-scope-sequence",
+      "data_tier": "lesson-level (student book: printed LESSON nA banner, its single \"I can\" outcome, and the contents spread's scope-and-sequence entries distributed onto the lesson whose pages they name)",
       "total_periods": null,
       "prior_knowledge": [],
       "lessons": [
         {
           "id": "u8_l1",
           "order": 1,
-          "title_en": "The evolution of advertising",
-          "title_ar": "تطوّر الإعلان",
+          "title_en": "Vocabulary and Grammar",
+          "title_ar": "المفردات والقواعد",
+          "main_idea_ar": "I can use the passive to talk about different actions.",
           "periods": null,
-          "objectives": [],
+          "objectives": [
+            "I can use the passive to talk about different actions."
+          ],
           "vocabulary": [],
           "grammar_topic": {
-            "en": "pp26-27 The passive; p33 have/get something done",
-            "ar": "المبني للمجهول؛ have/get something done"
+            "en": "pp26-27 The passive",
+            "ar": "المبني للمجهول"
           },
           "vocabulary_topic": {
-            "en": "pp26-27 Advertising; p28 Spending habits; p29 Money; pp30-31 Payments, trading and banking",
-            "ar": "الإعلان؛ عادات الإنفاق؛ المال؛ المدفوعات والتجارة والصيرفة"
-          },
-          "reading_topic": {
-            "en": "pp30-31 The way we pay; Active Reading: Understanding links in a text",
-            "ar": "الطريقة التي ندفع بها؛ القراءة النشطة: فهم الروابط في النص"
+            "en": "pp26-27 Advertising",
+            "ar": "الإعلان"
+          }
+        },
+        {
+          "id": "u8_l2",
+          "order": 2,
+          "title_en": "Listening and Vocabulary",
+          "title_ar": "الاستماع والمفردات",
+          "main_idea_ar": "I can identify specific details in a podcast and talk about spending habits.",
+          "periods": null,
+          "objectives": [
+            "I can identify specific details in a podcast and talk about spending habits."
+          ],
+          "vocabulary": [],
+          "vocabulary_topic": {
+            "en": "p28 Spending habits",
+            "ar": "عادات الإنفاق"
           },
           "listening_topic": {
             "en": "p28 A podcast about spending and saving money",
             "ar": "بودكاست عن الإنفاق وادخار المال"
+          }
+        },
+        {
+          "id": "u8_l3",
+          "order": 3,
+          "title_en": "Vocabulary: Money",
+          "title_ar": "المفردات: Money",
+          "main_idea_ar": "I can talk about money.",
+          "periods": null,
+          "objectives": [
+            "I can talk about money."
+          ],
+          "vocabulary": [],
+          "vocabulary_topic": {
+            "en": "p29 Money",
+            "ar": "المال"
+          }
+        },
+        {
+          "id": "u8_l4",
+          "order": 4,
+          "title_en": "Reading and Vocabulary",
+          "title_ar": "القراءة والمفردات",
+          "main_idea_ar": "I can understand links and identify specific details in a text and talk about money.",
+          "periods": null,
+          "objectives": [
+            "I can understand links and identify specific details in a text and talk about money."
+          ],
+          "vocabulary": [],
+          "vocabulary_topic": {
+            "en": "pp30-31 Payments, trading and banking",
+            "ar": "المدفوعات والتجارة والصيرفة"
           },
+          "reading_topic": {
+            "en": "pp30-31 The way we pay; Active Reading: Understanding links in a text",
+            "ar": "الطريقة التي ندفع بها؛ القراءة النشطة: فهم الروابط في النص"
+          }
+        },
+        {
+          "id": "u8_l5",
+          "order": 5,
+          "title_en": "Speaking",
+          "title_ar": "المحادثة",
+          "main_idea_ar": "I can make and respond to complaints.",
+          "periods": null,
+          "objectives": [
+            "I can make and respond to complaints."
+          ],
+          "vocabulary": [],
           "speaking_topic": {
             "en": "p32 Complaints; Pronunciation: Sounds /eɪ/ and /aɪ/",
             "ar": "الشكاوى؛ اللفظ"
-          },
+          }
+        },
+        {
+          "id": "u8_l6",
+          "order": 6,
+          "title_en": "Grammar",
+          "title_ar": "القواعد",
+          "main_idea_ar": "I can use have/get something done to talk about services.",
+          "periods": null,
+          "objectives": [
+            "I can use have/get something done to talk about services."
+          ],
+          "vocabulary": [],
+          "grammar_topic": {
+            "en": "p33 have/get something done",
+            "ar": "have/get something done"
+          }
+        },
+        {
+          "id": "u8_l7",
+          "order": 7,
+          "title_en": "Writing: An opinion essay",
+          "title_ar": "الكتابة: An opinion essay",
+          "main_idea_ar": "I can write an opinion essay.",
+          "periods": null,
+          "objectives": [
+            "I can write an opinion essay."
+          ],
+          "vocabulary": [],
           "writing_task": {
             "en": "pp34-35 An opinion essay",
             "ar": "مقال رأي"
@@ -165,37 +440,132 @@
       "number": 9,
       "title_en": "The power of nature",
       "title_ar": "قوة الطبيعة",
-      "data_tier": "textbook-scope-sequence",
+      "data_tier": "lesson-level (student book: printed LESSON nA banner, its single \"I can\" outcome, and the contents spread's scope-and-sequence entries distributed onto the lesson whose pages they name)",
       "total_periods": null,
       "prior_knowledge": [],
       "lessons": [
         {
           "id": "u9_l1",
           "order": 1,
-          "title_en": "The power of nature",
-          "title_ar": "قوة الطبيعة",
+          "title_en": "Vocabulary and Grammar",
+          "title_ar": "المفردات والقواعد",
+          "main_idea_ar": "I can use the third conditional to talk about unreal situations in the past.",
           "periods": null,
-          "objectives": [],
+          "objectives": [
+            "I can use the third conditional to talk about unreal situations in the past."
+          ],
           "vocabulary": [],
           "grammar_topic": {
-            "en": "pp38-39 The third conditional; p42 I wish/If only for regrets",
-            "ar": "الجملة الشرطية الثالثة؛ I wish/If only للتعبير عن الندم"
+            "en": "pp38-39 The third conditional",
+            "ar": "الجملة الشرطية الثالثة"
           },
           "vocabulary_topic": {
-            "en": "pp38-39 Water and the ocean; p40 Natural disasters and dealing with them; p41 Environmental responsibility; pp44-45 Urban and rural life; pp46-47 Sustainable homes",
-            "ar": "الماء والمحيط؛ الكوارث الطبيعية والتعامل معها؛ المسؤولية البيئية؛ الحياة في المدينة والريف؛ المنازل المستدامة"
-          },
-          "reading_topic": {
-            "en": "pp44-45 How a wildlife documentary changed my life; Active Reading: Summarising texts",
-            "ar": "كيف غيّر فيلم وثائقي عن الحياة البرية حياتي؛ القراءة النشطة: تلخيص النصوص"
+            "en": "pp38-39 Water and the ocean",
+            "ar": "الماء والمحيط"
+          }
+        },
+        {
+          "id": "u9_l2",
+          "order": 2,
+          "title_en": "Listening and Vocabulary",
+          "title_ar": "الاستماع والمفردات",
+          "main_idea_ar": "I can identify specific details in an interview and talk about natural disasters.",
+          "periods": null,
+          "objectives": [
+            "I can identify specific details in an interview and talk about natural disasters."
+          ],
+          "vocabulary": [],
+          "vocabulary_topic": {
+            "en": "p40 Natural disasters and dealing with them",
+            "ar": "الكوارث الطبيعية والتعامل معها"
           },
           "listening_topic": {
             "en": "p40 An interview about surviving an earthquake",
             "ar": "مقابلة عن النجاة من زلزال"
-          },
+          }
+        },
+        {
+          "id": "u9_l3",
+          "order": 3,
+          "title_en": "Vocabulary: Environmental responsibility",
+          "title_ar": "المفردات: Environmental responsibility",
+          "main_idea_ar": "I can talk about environmental responsibility.",
+          "periods": null,
+          "objectives": [
+            "I can talk about environmental responsibility."
+          ],
+          "vocabulary": [],
+          "vocabulary_topic": {
+            "en": "p41 Environmental responsibility",
+            "ar": "المسؤولية البيئية"
+          }
+        },
+        {
+          "id": "u9_l4",
+          "order": 4,
+          "title_en": "Grammar",
+          "title_ar": "القواعد",
+          "main_idea_ar": "I can use I wish and if only to express regrets.",
+          "periods": null,
+          "objectives": [
+            "I can use I wish and if only to express regrets."
+          ],
+          "vocabulary": [],
+          "grammar_topic": {
+            "en": "p42 I wish/If only for regrets",
+            "ar": "I wish/If only للتعبير عن الندم"
+          }
+        },
+        {
+          "id": "u9_l5",
+          "order": 5,
+          "title_en": "Speaking",
+          "title_ar": "المحادثة",
+          "main_idea_ar": "I can express and respond to regrets.",
+          "periods": null,
+          "objectives": [
+            "I can express and respond to regrets."
+          ],
+          "vocabulary": [],
           "speaking_topic": {
             "en": "p43 Expressing and responding to regrets; Pronunciation: unstressed have/not have",
             "ar": "التعبير عن الندم والتجاوب معه؛ اللفظ"
+          }
+        },
+        {
+          "id": "u9_l6",
+          "order": 6,
+          "title_en": "Reading and Vocabulary",
+          "title_ar": "القراءة والمفردات",
+          "main_idea_ar": "I can summarise a text and talk about places to live.",
+          "periods": null,
+          "objectives": [
+            "I can summarise a text and talk about places to live."
+          ],
+          "vocabulary": [],
+          "vocabulary_topic": {
+            "en": "pp44-45 Urban and rural life",
+            "ar": "الحياة في المدينة والريف"
+          },
+          "reading_topic": {
+            "en": "pp44-45 How a wildlife documentary changed my life; Active Reading: Summarising texts",
+            "ar": "كيف غيّر فيلم وثائقي عن الحياة البرية حياتي؛ القراءة النشطة: تلخيص النصوص"
+          }
+        },
+        {
+          "id": "u9_l7",
+          "order": 7,
+          "title_en": "Writing and Vocabulary: An article",
+          "title_ar": "الكتابة والمفردات: An article",
+          "main_idea_ar": "I can write an article.",
+          "periods": null,
+          "objectives": [
+            "I can write an article."
+          ],
+          "vocabulary": [],
+          "vocabulary_topic": {
+            "en": "pp46-47 Sustainable homes",
+            "ar": "المنازل المستدامة"
           },
           "writing_task": {
             "en": "pp46-47 An article",
@@ -209,41 +579,136 @@
       "number": 10,
       "title_en": "Food for thought",
       "title_ar": "مادة للتفكير",
-      "data_tier": "textbook-scope-sequence",
+      "data_tier": "lesson-level (student book: printed LESSON nA banner, its single \"I can\" outcome, and the contents spread's scope-and-sequence entries distributed onto the lesson whose pages they name)",
       "total_periods": null,
       "prior_knowledge": [],
       "lessons": [
         {
           "id": "u10_l1",
           "order": 1,
-          "title_en": "Food for thought",
-          "title_ar": "مادة للتفكير",
+          "title_en": "Vocabulary and Grammar",
+          "title_ar": "المفردات والقواعد",
+          "main_idea_ar": "I can use modal verbs to speculate about the present.",
           "periods": null,
-          "objectives": [],
+          "objectives": [
+            "I can use modal verbs to speculate about the present."
+          ],
           "vocabulary": [],
           "grammar_topic": {
-            "en": "pp48-49 Modal verbs for speculating about the present; p51 Modal verbs for speculating about the past",
-            "ar": "الأفعال الناقصة للتخمين في الحاضر؛ الأفعال الناقصة للتخمين في الماضي"
+            "en": "pp48-49 Modal verbs for speculating about the present",
+            "ar": "الأفعال الناقصة للتخمين في الحاضر"
           },
           "vocabulary_topic": {
-            "en": "p48 Food tastes; p50 Ways of cooking and cooking equipment; pp52-53 Dining and restaurants; p55 Healthy eating",
-            "ar": "مذاقات الطعام؛ طرائق الطهي وأدواته؛ تناول الطعام والمطاعم؛ الأكل الصحي"
+            "en": "p48 Food tastes",
+            "ar": "مذاقات الطعام"
+          }
+        },
+        {
+          "id": "u10_l2",
+          "order": 2,
+          "title_en": "Vocabulary: Ways of cooking and cooking equipment",
+          "title_ar": "المفردات: Ways of cooking and cooking equipment",
+          "main_idea_ar": "I can talk about preparing food in the kitchen.",
+          "periods": null,
+          "objectives": [
+            "I can talk about preparing food in the kitchen."
+          ],
+          "vocabulary": [],
+          "vocabulary_topic": {
+            "en": "p50 Ways of cooking and cooking equipment",
+            "ar": "طرائق الطهي وأدواته"
+          }
+        },
+        {
+          "id": "u10_l3",
+          "order": 3,
+          "title_en": "Grammar",
+          "title_ar": "القواعد",
+          "main_idea_ar": "I can use modal verbs to speculate about the past.",
+          "periods": null,
+          "objectives": [
+            "I can use modal verbs to speculate about the past."
+          ],
+          "vocabulary": [],
+          "grammar_topic": {
+            "en": "p51 Modal verbs for speculating about the past",
+            "ar": "الأفعال الناقصة للتخمين في الماضي"
+          }
+        },
+        {
+          "id": "u10_l4",
+          "order": 4,
+          "title_en": "Reading and Vocabulary",
+          "title_ar": "القراءة والمفردات",
+          "main_idea_ar": "I can find specific details in a text about unusual restaurants.",
+          "periods": null,
+          "objectives": [
+            "I can find specific details in a text about unusual restaurants."
+          ],
+          "vocabulary": [],
+          "vocabulary_topic": {
+            "en": "pp52-53 Dining and restaurants",
+            "ar": "تناول الطعام والمطاعم"
           },
           "reading_topic": {
             "en": "pp52-53 Dining with a difference!",
             "ar": "تناول الطعام على نحو مختلف!"
+          }
+        },
+        {
+          "id": "u10_l5",
+          "order": 5,
+          "title_en": "Speaking",
+          "title_ar": "المحادثة",
+          "main_idea_ar": "I can compare, contrast and speculate about the contents of photos.",
+          "periods": null,
+          "objectives": [
+            "I can compare, contrast and speculate about the contents of photos."
+          ],
+          "vocabulary": [],
+          "speaking_topic": {
+            "en": "p54 Comparing and contrasting photographs",
+            "ar": "المقارنة والمقابلة بين الصور"
+          }
+        },
+        {
+          "id": "u10_l6",
+          "order": 6,
+          "title_en": "Listening and Vocabulary",
+          "title_ar": "الاستماع والمفردات",
+          "main_idea_ar": "I can tell the difference between a fact, an opinion and a speculation in a radio discussion.",
+          "periods": null,
+          "objectives": [
+            "I can tell the difference between a fact, an opinion and a speculation in a radio discussion."
+          ],
+          "vocabulary": [],
+          "vocabulary_topic": {
+            "en": "p55 Healthy eating",
+            "ar": "الأكل الصحي"
           },
           "listening_topic": {
             "en": "p55 A radio discussion about healthy food and nutrition; Active Listening: Facts, opinions and speculation",
             "ar": "نقاش إذاعي عن الغذاء الصحي والتغذية؛ الاستماع النشط: الحقائق والآراء والتخمين"
-          },
-          "speaking_topic": {
-            "en": "p54 Comparing and contrasting photographs",
-            "ar": "المقارنة والمقابلة بين الصور"
-          },
+          }
+        },
+        {
+          "id": "u10_l7",
+          "order": 7,
+          "title_en": "Writing: A formal letter",
+          "title_ar": "الكتابة: A formal letter",
+          "main_idea_ar": "I can write a formal letter using appropriate register.",
+          "periods": null,
+          "objectives": [
+            "I can write a formal letter using appropriate register."
+          ],
+          "vocabulary": [],
           "writing_task": {
             "en": "pp56-57 A formal letter",
             "ar": "رسالة رسمية"
+          },
+          "life_skill": {
+            "en": "pp58-59 How to identify fake news",
+            "ar": "كيف تتعرّف على الأخبار الزائفة"
           }
         }
       ]
