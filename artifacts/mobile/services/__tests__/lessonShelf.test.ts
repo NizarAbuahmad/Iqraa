@@ -209,6 +209,21 @@ describe('external resources on the shelf', () => {
     }
   });
 
+  it('names only lessons that exist', () => {
+    // `validateExternalResources` can only check the `kbl-` prefix — the
+    // curriculum package has no view of KB_LESSONS, which is what the shelf
+    // actually looks up. So a typo, or an id left behind when a book is
+    // restructured, passes validation and then attaches the resource to
+    // nothing: no error, no row, no way to tell from the manifest that it is
+    // orphaned. English went from one lesson per unit to seven while this
+    // branch was open, which is exactly how such an id goes stale.
+    const known = new Set(KB_LESSONS.map(l => l.id));
+    const orphans = EXTERNAL_RESOURCES.flatMap(r =>
+      r.lessonIds.filter(id => !known.has(id)).map(id => `${r.id} -> ${id}`),
+    );
+    assert.deepEqual(orphans, [], 'these resources name lessons that do not exist');
+  });
+
   it('gives a lesson with no curated material an empty list, not a missing one', () => {
     // The panel reads `.length`, so `undefined` here would crash a lesson page
     // rather than render nothing.
