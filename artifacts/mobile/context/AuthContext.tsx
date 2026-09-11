@@ -87,6 +87,13 @@ interface AuthContextType {
   verifyEmail: (email: string, code: string) => Promise<void>;
   /** Requests a fresh code for an unverified account. Always resolves — the server never confirms whether the email exists. */
   resendVerification: (email: string) => Promise<void>;
+  /**
+   * Repoints a pending signup at a different address when the one typed at
+   * signup was wrong. Needs the password: the account has no session yet, so
+   * that is the only proof it belongs to whoever is asking. Returns the
+   * address the new code went to.
+   */
+  changeUnverifiedEmail: (email: string, password: string, newEmail: string) => Promise<{ email: string }>;
   logout: () => Promise<void>;
   updateProfile: (data: { preferredLanguage?: string; firstName?: string; lastName?: string }) => Promise<void>;
   /**
@@ -302,6 +309,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const changeUnverifiedEmail = useCallback(
+    async (email: string, password: string, newEmail: string) => {
+      const data = await apiJson<{ email: string; message: string }>(
+        '/auth/change-unverified-email',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            email: email.trim(),
+            password,
+            newEmail: newEmail.trim(),
+          }),
+        },
+      );
+      return { email: data.email };
+    },
+    [],
+  );
+
   const logout = useCallback(async () => {
     await unregisterPushToken();
     try {
@@ -380,6 +405,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         register,
         verifyEmail,
         resendVerification,
+        changeUnverifiedEmail,
         logout,
         updateProfile,
         deleteAccount,

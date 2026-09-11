@@ -48,6 +48,10 @@ const verifyEmailLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10
 // Tighter than register: this exists to recover from a failed send, not to
 // resend on a whim, and an unlimited resend is a free email-bombing vector.
 const resendVerificationLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 3, name: "resend-verification" });
+// Password-checking, like login, so it gets login's ceiling rather than
+// resend's — a mistyped address is worth a few honest retries, and every
+// attempt here has to survive a bcrypt compare anyway.
+const changeEmailLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, name: "change-unverified-email" });
 // /claim was the only code-redeeming route without one, which made it an
 // authenticated guessing surface against a 6-character alphabet. More headroom
 // than register because a parent with three children legitimately claims three
@@ -360,6 +364,100 @@ router.post("/resend-verification", resendVerificationLimiter, async (req, res) 
   } catch (err) {
     logger.error({ err }, "resend verification failed");
     res.status(500).json({ error: "Failed to resend code" });
+  }
+});
+
+/**
+ * POST /auth/change-unverified-email
+ *
+ * Repoints a pending signup at a different address. Without this a typo is
+ * unrecoverable: the account exists on an address its owner cannot read, no
+ * code can arrive, and the unique constraint means a mistyped *real* address
+ * is squatted — the person who actually owns it can then never register.
+ *
+ * The password is what makes this safe to leave unauthenticated. The account
+ * has no session yet (that is the whole point of the screen this serves), so
+ * the password is the only proof of ownership available, and without it
+ * anyone could redirect a stranger's pending signup to an address they
+ * control and collect the code.
+ *
+ * Deliberately refuses once the account is verified: past that point changing
+ * an address is a profile edit made from a real session, with the old address
+ * owed a notification — a different feature with a different threat model,
+ * not this one widened.
+ */
+router.post("/change-unverified-email", changeEmailLimiter, async (req, res) => {
+  try {
+    const { email, password, newEmail } = req.body as {
+      email?: string;
+      password?: string;
+      newEmail?: string;
+    };
+
+    if (!email || !password || !newEmail?.includes("@")) {
+      res.status(400).json({ error: "Current email, password and a valid new email are required" });
+      return;
+    }
+
+    const current = email.toLowerCase().trim();
+    const next = newEmail.toLowerCase().trim();
+
+    if (current === next) {
+      res.status(400).json({ error: "That is already the address on this account" });
+      return;
+    }
+
+    const [user] = await db.select().from(users).where(eq(users.email, current)).limit(1);
+
+    // One message for "no such account" and "wrong password", same as login:
+    // this route is reachable without a session, so it must not confirm which
+    // addresses have pending signups.
+    if (!user?.passwordHash || !(await bcrypt.compare(password, user.passwordHash))) {
+      res.status(401).json({ error: "Invalid email or password" });
+      return;
+    }
+
+    if (user.emailVerified) {
+      res.status(400).json({ error: "This account is already verified" });
+      return;
+    }
+
+    const [taken] = await db.select({ id: users.id }).from(users).where(eq(users.email, next)).limit(1);
+    if (taken) {
+      res.status(409).json({ error: "An account with this email already exists" });
+      return;
+    }
+
+    const [updated] = await db
+      .update(users)
+      .set({ email: next })
+      .where(eq(users.id, user.id))
+      .returning();
+
+    // Codes already sent named the old address. Burn them rather than leave
+    // them usable — /verify-email takes the newest unused token, so a stale
+    // one would otherwise stay valid until it expired.
+    await db
+      .update(emailVerificationTokens)
+      .set({ used: true })
+      .where(
+        and(
+          eq(emailVerificationTokens.userId, user.id),
+          eq(emailVerificationTokens.used, false),
+        ),
+      );
+
+    await issueVerificationCode(updated.id, updated.email);
+
+    logger.info({ userId: updated.id }, "pending signup repointed to a new email");
+    res.json({ email: updated.email, message: "A new code was sent to that address." });
+  } catch (err: any) {
+    if (err.code === "23505") {
+      res.status(409).json({ error: "An account with this email already exists" });
+      return;
+    }
+    logger.error({ err }, "change unverified email failed");
+    res.status(500).json({ error: "Failed to change email" });
   }
 });
 
