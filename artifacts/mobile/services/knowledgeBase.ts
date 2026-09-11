@@ -183,6 +183,14 @@ import {
   buildG8MathSem1Catalog,
 } from './curriculumG8MathSem1.ts';
 import {
+  G7_MATH_S2_KB_BOOK_ID,
+  buildG7MathSem2Catalog,
+} from './curriculumG7MathSem2.ts';
+import {
+  G7_MATH_S1_KB_BOOK_ID,
+  buildG7MathSem1Catalog,
+} from './curriculumG7MathSem1.ts';
+import {
   G8_ARABIC_S1_BOOK_ID,
   buildG8ArabicSem1Catalog,
 } from './curriculumG8ArabicSem1.ts';
@@ -896,6 +904,24 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Mathematics – Grade 8 – Semester 1',
     semester: 1,
     source: 'iqra_curriculum_g8_math_sem1.json (NCCD)',
+  },
+  {
+    id: G7_MATH_S2_KB_BOOK_ID,
+    gradeId: 'grade-7',
+    subjectId: 'mathematics',
+    titleAr: 'الرياضيات – الصف السابع – الفصل الثاني',
+    titleEn: 'Mathematics – Grade 7 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g7_math_sem2.json (NCCD)',
+  },
+  {
+    id: G7_MATH_S1_KB_BOOK_ID,
+    gradeId: 'grade-7',
+    subjectId: 'mathematics',
+    titleAr: 'الرياضيات – الصف السابع – الفصل الأول',
+    titleEn: 'Mathematics – Grade 7 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g7_math_sem1.json (NCCD)',
   },
   {
     id: G8_ARABIC_S1_BOOK_ID,
@@ -2017,6 +2043,8 @@ const _g8SocialSem1 = buildG8SocialSem1Catalog();
 const _g8SocialSem2 = buildG8SocialSem2Catalog();
 const _g8MathSem2 = buildG8MathSem2Catalog();
 const _g8MathSem1 = buildG8MathSem1Catalog();
+const _g7MathSem2 = buildG7MathSem2Catalog();
+const _g7MathSem1 = buildG7MathSem1Catalog();
 const _g8ArabicSem1 = buildG8ArabicSem1Catalog();
 const _g8ArabicSem2 = buildG8ArabicSem2Catalog();
 const _g8IslamicSem1 = buildG8IslamicSem1Catalog();
@@ -2233,6 +2261,8 @@ export const KB_UNITS: KBUnit[] = [
   ..._engAgriculture.units,
   ..._engHospitality.units,
   ..._engIndustry.units,
+  ..._g7MathSem1.units,
+  ..._g7MathSem2.units,
 ];
 
 /** Active lessons: NCCD Chem S1/S2 + NCCD Math S1/S2 (G10 + G9) + NCCD FinLit S1 + English vocational tracks. */
@@ -2321,6 +2351,8 @@ export const KB_LESSONS: KBLesson[] = [
   ..._engAgriculture.lessons,
   ..._engHospitality.lessons,
   ..._engIndustry.lessons,
+  ..._g7MathSem1.lessons,
+  ..._g7MathSem2.lessons,
 ];
 
 // ─────────────────────────────────────────────────────

@@ -90,6 +90,14 @@ import {
   buildG8MathSem1BrowserCatalog,
 } from './catalogs/g8MathSem1.ts';
 import {
+  G7_MATH_S2_CURRICULUM_BOOK_ID,
+  buildG7MathSem2BrowserCatalog,
+} from './catalogs/g7MathSem2.ts';
+import {
+  G7_MATH_S1_CURRICULUM_BOOK_ID,
+  buildG7MathSem1BrowserCatalog,
+} from './catalogs/g7MathSem1.ts';
+import {
   G9_MATH_S2_CURRICULUM_BOOK_ID,
   buildG9MathSem2BrowserCatalog,
   isG9MathSem2TitleOnlyUnit,
@@ -713,6 +721,12 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // 5-9, continuing Semester 1's 1-4 rather than restarting.
   G8_SCIENCE_S1_CURRICULUM_BOOK_ID,
   G8_SCIENCE_S2_CURRICULUM_BOOK_ID,
+  // Grade 7 Math — both semesters attached, the first Grade 7 book in this
+  // repo. In MVP_BOOK_IDS only (curriculum browser); grade-7 stays out of
+  // MVP_GRADE_IDS/MVP_SUBJECT_IDS (AI-tools pickers) until the rest of the
+  // grade-7 batch lands — see the book rows' comment in BOOKS above.
+  G7_MATH_S1_CURRICULUM_BOOK_ID,
+  G7_MATH_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -1238,6 +1252,39 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+  },
+  // ── Math Grade 7 – Semesters 1 and 2 ────────────────────────────────────
+  // First Grade 7 book in this repo. Both semesters have a full teacher
+  // guide, so objectives are populated the same way as G8 Math S2 — verbatim
+  // from the teacher guide's own «نتاجات الدرس» / unit-plan box. Only in
+  // MVP_BOOK_IDS (curriculum browser), not MVP_SUBJECT_IDS/MVP_GRADE_IDS —
+  // grade-7 stays out of the AI-tools picker until the rest of its batch
+  // lands, same treatment grade-8 got before it was turned on.
+  {
+    id: G7_MATH_S1_CURRICULUM_BOOK_ID,
+    title: 'Mathematics – Grade 7, Semester 1',
+    titleAr: 'الرياضيات – الصف السابع – الفصل الأول',
+    subjectId: 'mathematics',
+    gradeId: 'grade-7',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G7_MATH_S2_CURRICULUM_BOOK_ID,
+    title: 'Mathematics – Grade 7, Semester 2',
+    titleAr: 'الرياضيات – الصف السابع – الفصل الثاني',
+    subjectId: 'mathematics',
+    gradeId: 'grade-7',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
   },
   // ── Chemistry Grade 9 – Semesters 1 and 2 ──────────────────────────────────
   // The first Grade 9 subject after mathematics, catalogued 2026-09-08 from
@@ -2967,6 +3014,8 @@ const _g8SocialSem1Browser = buildG8SocialSem1BrowserCatalog();
 const _g8SocialSem2Browser = buildG8SocialSem2BrowserCatalog();
 const _g8MathSem2Browser = buildG8MathSem2BrowserCatalog();
 const _g8MathSem1Browser = buildG8MathSem1BrowserCatalog();
+const _g7MathSem2Browser = buildG7MathSem2BrowserCatalog();
+const _g7MathSem1Browser = buildG7MathSem1BrowserCatalog();
 const _g8ArabicSem1Browser = buildG8ArabicSem1BrowserCatalog();
 const _g8ArabicSem2Browser = buildG8ArabicSem2BrowserCatalog();
 const _g8IslamicSem1Browser = buildG8IslamicSem1BrowserCatalog();
@@ -3177,6 +3226,8 @@ export const UNITS: Unit[] = [
   ..._engIndustryBrowser.units,
   ..._engSem1Browser.units,
   ..._engSem2Browser.units,
+  ..._g7MathSem1Browser.units,
+  ..._g7MathSem2Browser.units,
 ];
 
 /** Active lessons — legacy Math/Chem G10 rows replaced by NCCD-sourced browser rows. */
@@ -3257,6 +3308,8 @@ export const LESSONS: Lesson[] = [
   ..._engIndustryBrowser.lessons,
   ..._engSem1Browser.lessons,
   ..._engSem2Browser.lessons,
+  ..._g7MathSem1Browser.lessons,
+  ..._g7MathSem2Browser.lessons,
 ];
 
 /** Math Grade 10 Semester 1 book id (NCCD-backed). */

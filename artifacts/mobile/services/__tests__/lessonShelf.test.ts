@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { EXTERNAL_RESOURCES, isUnitScopedTag } from '@workspace/curriculum';
+import { EXTERNAL_RESOURCES, isUnitScopedTag, isPickerCurriculumVisible } from '@workspace/curriculum';
 import {
   askAboutResourceMessage,
   buildLessonShelf,
@@ -22,8 +22,23 @@ describe('buildLessonShelf', () => {
     assert.equal(buildLessonShelf('no-such-lesson'), null);
   });
 
-  it('builds a shelf for every lesson in the catalog', () => {
-    assert.equal(shelves().length, KB_LESSONS.length);
+  it('builds a shelf for every visible lesson in the catalog', () => {
+    // Grade 7 lessons exist in KB_LESSONS but grade-7 is deliberately kept
+    // out of MVP_GRADE_IDS until its whole batch lands (see catalog.ts's
+    // Grade 7 Math BOOKS comment) — every prior grade turned its picker
+    // entry on with its first subject instead, so this is the first time a
+    // catalogued lesson is expected to be invisible on purpose.
+    const visible = KB_LESSONS.filter(l => {
+      const book = getBookForLesson(l);
+      return book ? isPickerCurriculumVisible(book.subjectId, book.gradeId) : false;
+    });
+    assert.equal(shelves().length, visible.length);
+  });
+
+  it('returns null for a lesson whose grade is held out of the picker on purpose', () => {
+    const hidden = KB_LESSONS.find(l => getBookForLesson(l)?.gradeId === 'grade-7');
+    assert.ok(hidden, 'expected at least one grade-7 lesson for this test to mean anything');
+    assert.equal(buildLessonShelf(hidden.id), null);
   });
 
   it('counts what it holds', () => {
@@ -117,7 +132,8 @@ describe('subject isolation', () => {
     const prefixFor: Record<string, RegExp> = {
       // Grade 10 math tags are bare (`s1-u2`); every other grade gets an
       // explicit `g{n}-` prefix (`g9-math-s1-u2`) — see bankTagsForParsedUnit.
-      mathematics: /^(s[12](-u\d+|-matrices)?|g10-math-general|g9-math-s[12](-u\d+)?|g8-math-s[12](-u\d+)?)$/,
+      // Grade 7 joined 2026-09-11.
+      mathematics: /^(s[12](-u\d+|-matrices)?|g10-math-general|g9-math-s[12](-u\d+)?|g8-math-s[12](-u\d+)?|g7-math-s[12](-u\d+)?)$/,
       // Chemistry is `unitLevel: true` in curriculumIds.ts, so a lesson emits
       // BOTH the semester scope and the narrower unit scope — `g9-chem-s1` and
       // `g9-chem-s1-u1`. The `(-u\d+)?` is doing real work here; a Grade 9
