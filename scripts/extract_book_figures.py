@@ -338,6 +338,29 @@ BOOKS: dict[str, tuple[str, str]] = {
     # thing to check against the review sheet: ~10 usable crops per 36
     # reviewed. These are text-and-ornament books; the extractor was built for
     # books that draw their content.
+    # ISLAMIC YIELDS NOTHING PLACEABLE — all four books, measured 2026-09-12
+    # after the opener profile made them extractable at all. The profile works
+    # (24/24 openers in Grade 10 S1); what fails is the content.
+    #
+    # Grade 10 crops the whole PAGE: these pages carry an ornamental vector
+    # border, so `drawing_cluster` grows every seed to the page frame — median
+    # crop 94% x 96% of the page, 28 of 36 covering more than half of it,
+    # against g9-physics-s1's healthy 23% x 17%. `MAX_W`/`MAX_H` do not catch
+    # it because they filter seeds, not the grown cluster.
+    #
+    # Grade 9 has no such border and crops small — 5% of page area — but that
+    # is not the good news it looks like: what it is cropping is small blocks
+    # of QURANIC TEXT, not figures. Reviewed 15 crops across both semesters;
+    # every one was a verse box, a lesson-header banner or the NCC logo.
+    #
+    # What all four books genuinely have is one good illustration card per unit
+    # (the Kaaba, the Dome of the Rock, a gavel on a Quran, a microscope) — and
+    # every one sits on the front-matter contents spread BEFORE lesson 1, so a
+    # map keyed on (sourceId, unit, lesson) cannot address it whatever
+    # extractor produces it. That is the real blocker for this subject, and it
+    # is a data-model question, not a detector one.
+    #
+    # Left registered so the finding travels with the path.
     "islamic-s1-student-book": (
         "grade-10-islamic",
         KB_ISLAMIC + "كتاب الطالب لمادة التربية الإسلامية الصف العاشر الفصل الأول.pdf",

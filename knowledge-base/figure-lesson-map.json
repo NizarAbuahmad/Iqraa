@@ -1857,6 +1857,97 @@
       "score": 1,
       "matchedBy": "book-opener-title",
       "why": "Offset by 3, same as its Grade 10 sibling. ONE figure survived review out of 14 crops — this book's maps and photographs are rasters the vector extractor cannot seed on, so all it found was drawn page furniture. It is wired for that single Asia map; the rest of the book needs the raster pipeline (`extract_book_photos.py`), not another run of this one."
+    },
+    {
+      "sourceId": "g8-science-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "المادةُ الوراثيةُ",
+      "kbLessonId": "kbl-g8-science-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 8's first book of any kind, added 2026-09-12. Nine of its ten lesson titles land exactly on the opener page `outline` detected; the tenth («تركيب الذرّة والتوزيع الإلكترونيّ») is a long title whose RTL extraction breaks a substring match, not a disagreement. Its SEMESTER 2 book is absent on purpose: only two pages in it carry «الدرس» as text and both are the contents spread, so `outline` returns nothing and every crop would be unplaced."
+    },
+    {
+      "sourceId": "g8-science-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "التكاثُرُ",
+      "kbLessonId": "kbl-g8-science-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-science-s1-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "الوراثةُ",
+      "kbLessonId": "kbl-g8-science-s1-nccd-u1_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-science-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "تركيبُ الذرّةِ والتوزيعُ الإلكترونيُّ",
+      "kbLessonId": "kbl-g8-science-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-science-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "الجدولُ الدوريُّ وخصائصُ العناصرِ",
+      "kbLessonId": "kbl-g8-science-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-science-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "الضغطُ",
+      "kbLessonId": "kbl-g8-science-s1-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-science-s1-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "الكثافةُ والطَّفوُ",
+      "kbLessonId": "kbl-g8-science-s1-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-science-s1-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "الصفائحُ التكتونيةُ وحركتُها",
+      "kbLessonId": "kbl-g8-science-s1-nccd-u4_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-science-s1-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "الموارِدُ الطبيعيةُ",
+      "kbLessonId": "kbl-g8-science-s1-nccd-u4_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-science-s1-student-book",
+      "unit": 4,
+      "lesson": 3,
+      "bookTitleAr": "استدامةُ المواردِ الطبيعيةِ",
+      "kbLessonId": "kbl-g8-science-s1-nccd-u4_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
     }
   ],
   "unitNumbering": "The curriculum's `u{n}_l{m}` matches the number the book PRINTS in every unit except unit 1, where the book has an extra opening lesson («حل معادلات خاصة») and the rest shift by one. Units 1-4 are semester 1 and units 5-8 are semester 2, so the printed unit number also identifies which student book a figure came from — `check_semester` in scripts/extract_book_figures.py enforces that. Note the maths PDFs in attached_assets are named backwards: the file called `1st_semester` is the second-semester book. Source ids follow the books' contents, not their filenames."
