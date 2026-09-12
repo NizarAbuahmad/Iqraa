@@ -658,6 +658,50 @@ Arabic, art, civic education and PE have zero extracted figures between them,
 and 138 of these 186 codes — so for those lessons the book's QR video is the
 only media the book offers. Nothing consumes the manifest yet.
 
+## The plot sampler learned trigonometry, 2026-09-12
+
+**`sin`, `cos` and `tan` now plot.** They were not merely unsupported — they
+were untokenisable: `tokenize` emitted one token per letter, so `sin` became
+`s*i*n`, three unknown symbols, and `compileExpression` refused it. That is why
+«حساب المثلثات» lessons projected no curve at all. The tokenizer now reads a
+run of letters as one identifier, the shunting-yard treats known function names
+as prefix operators, and `evalRpn` applies them.
+
+**Radians, decided deliberately.** The books write «جا ٣٠ = ٠٫٥», which is
+degrees — but this module plots curves rather than evaluating values, and
+`f(x)=sin(x)` sampled over a degree domain is a nearly flat line instead of the
+wave a teacher points at. Value questions stay SymPy's job. `sin(30)` here is
+−0.988, not 0.5, and a test pins that so nobody "fixes" it by accident.
+
+**Two traps found while building it, both now guarded:**
+
+- **`tan` does not return Infinity** near π/2 — it returns about 1e15, which is
+  finite, so the existing filter kept it. One such point set the y-range for the
+  whole slide and flattened every other curve on it into a horizontal line.
+  `SampleOptions.maxAbsY` drops those points, leaving a gap at the asymptote —
+  the same thing the sampler already did for a hyperbola, and what the
+  mathematics actually looks like.
+- **Brackets are now required after a function.** `sin x + 1` would otherwise
+  parse as `sin(x + 1)`: the shunting-yard drains `sin` last and swallows the
+  whole sum. A different curve, drawn confidently. It is refused instead.
+
+**The window is per slide, not per curve** (`sampleOptionsFor`). Trig widens to
+−2π..2π at 240 steps; everything else keeps −5..5 at 80. All series on a slide
+share one window, because they share one set of axes — a line sampled −5..5
+beside a wave sampled −2π..2π stops short of the edge and reads as a bug.
+
+**Three existing tests changed meaning and were updated, not deleted.** They
+used `sin(x)` as the canonical example of something the evaluator refuses. They
+now use `log`/`sqrt`/`sec`, which are still outside it, and a new test asserts
+`expressionFromCommand('f(x)=sin(x)')` returns the body rather than null.
+
+**Not done:** circles. `Circle((h,k),r)` fits `PlotSeries.points` without a type
+change (a parametric polyline), but `plotGeometry` scales x and y independently
+to fill the box, so a circle would render as an ellipse — worse than nothing in
+a maths lesson. Fixing that needs an equal-aspect mode honoured by all three
+renderers, and `exportPptx` draws through a native PowerPoint chart that may not
+support it. Decide that before starting.
+
 ## The GeoGebra embed is gone; graph slides draw their own curve, 2026-09-11
 
 **The class deck no longer frames geogebra.org.** `GraphView` in
