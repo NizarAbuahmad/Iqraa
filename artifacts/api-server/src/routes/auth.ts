@@ -19,6 +19,7 @@ import { eq, and, asc, desc, gt, inArray, isNotNull, isNull } from "drizzle-orm"
 import { authMiddleware, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { logger } from "../lib/logger.js";
 import { createRateLimiter } from "../lib/rateLimit.js";
+import { emailKey } from "../lib/rateLimitKeys.js";
 import { deleteObject } from "../lib/r2.js";
 import { googleClientIds } from "../lib/googleClients.js";
 import { studentAccountsEnabled } from "../lib/features.js";
@@ -39,15 +40,37 @@ import { normalizeShareCode } from "../modules/assessment/studentView.ts";
 
 const router = Router();
 
+/*
+ * A school is one NAT address. An IP-keyed signup limit is therefore a limit
+ * on the school: the sixth teacher to sign up on the staffroom wifi was told
+ * "too many attempts" for something five colleagues had already done, with
+ * nothing in the message to explain it and nothing they could do about it.
+ * The tight limits below are keyed on the address instead — see
+ * lib/rateLimitKeys.ts.
+ */
+
 // Login gets more headroom than register since real users mistype passwords;
 // a burst of registrations is rarely legitimate at any volume.
 const loginLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, name: "login" });
-const registerLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5, name: "register" });
 const googleLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, name: "google-auth" });
-const verifyEmailLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, name: "verify-email" });
-// Tighter than register: this exists to recover from a failed send, not to
-// resend on a whim, and an unlimited resend is a free email-bombing vector.
-const resendVerificationLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 3, name: "resend-verification" });
+
+/*
+ * The signup and verification routes are limited twice: tightly per address,
+ * loosely per IP. Neither alone is right — per-IP alone punishes a shared
+ * school connection, and per-address alone leaves bulk automation free to
+ * create unlimited accounts from one host as long as each uses a fresh email.
+ */
+const registerEmailLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 3, name: "register-email", key: emailKey });
+const registerLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 30, name: "register" });
+
+const verifyEmailAddressLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, name: "verify-email-address", key: emailKey });
+const verifyEmailLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 60, name: "verify-email" });
+
+// Tighter than register per address: this exists to recover from a failed
+// send, not to resend on a whim, and an unlimited resend is a free
+// email-bombing vector aimed at whoever owns that mailbox.
+const resendVerificationEmailLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 3, name: "resend-verification-email", key: emailKey });
+const resendVerificationLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 20, name: "resend-verification" });
 // /claim was the only code-redeeming route without one, which made it an
 // authenticated guessing surface against a 6-character alphabet. More headroom
 // than register because a parent with three children legitimately claims three
@@ -135,7 +158,7 @@ async function hasAnyRosterLink(userId: string): Promise<boolean> {
 }
 
 // POST /auth/register
-router.post("/register", registerLimiter, async (req, res) => {
+router.post("/register", registerLimiter, registerEmailLimiter, async (req, res) => {
   try {
     const { firstName, lastName, email, password, confirmPassword, role: rawRole } =
       req.body as {
@@ -237,7 +260,7 @@ router.post("/register", registerLimiter, async (req, res) => {
 });
 
 // POST /auth/verify-email
-router.post("/verify-email", verifyEmailLimiter, async (req, res) => {
+router.post("/verify-email", verifyEmailLimiter, verifyEmailAddressLimiter, async (req, res) => {
   try {
     const { email, code } = req.body as { email?: string; code?: string };
     if (!email || !code) {
@@ -335,7 +358,7 @@ router.post("/verify-email", verifyEmailLimiter, async (req, res) => {
 });
 
 // POST /auth/resend-verification
-router.post("/resend-verification", resendVerificationLimiter, async (req, res) => {
+router.post("/resend-verification", resendVerificationLimiter, resendVerificationEmailLimiter, async (req, res) => {
   try {
     const { email } = req.body as { email?: string };
     if (!email) {
