@@ -87,6 +87,13 @@ interface AuthContextType {
   verifyEmail: (email: string, code: string) => Promise<void>;
   /** Requests a fresh code for an unverified account. Always resolves — the server never confirms whether the email exists. */
   resendVerification: (email: string) => Promise<void>;
+  /**
+   * Always resolves when the request was accepted, whether or not that address
+   * has an account — the server refuses to say, so the UI must not imply it
+   * either (see the subtitle on the reset screen).
+   */
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (email: string, code: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: { preferredLanguage?: string; firstName?: string; lastName?: string }) => Promise<void>;
   /**
@@ -321,6 +328,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const forgotPassword = useCallback(async (email: string) => {
+    await apiJson('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email: email.trim() }),
+    });
+  }, []);
+
+  /**
+   * Deliberately does not sign the user in on success, unlike verifyEmail.
+   * The server ends every session the account had — including any an attacker
+   * held — and handing back a fresh one here would undo half of that.
+   */
+  const resetPassword = useCallback(async (email: string, code: string, password: string) => {
+    await apiJson('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ email: email.trim(), code: code.trim(), password }),
+    });
+  }, []);
+
   const logout = useCallback(async () => {
     await unregisterPushToken();
     try {
@@ -399,6 +425,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         register,
         verifyEmail,
         resendVerification,
+        forgotPassword,
+        resetPassword,
         logout,
         updateProfile,
         deleteAccount,
