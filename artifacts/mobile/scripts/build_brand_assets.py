@@ -78,6 +78,29 @@ def fit_on_canvas(
     return canvas
 
 
+def brighten_tagline(im: Image.Image) -> Image.Image:
+    """
+    The official lockup's Arabic tagline ("ذكاء يساعدك لتعليم أفضل") ships in a
+    dim cool gray (~4.8:1 contrast on navy) that reads as illegible on the
+    splash screen. Recolor it to a brighter neutral (~6.4:1) without touching
+    the white glyphs or teal accents.
+    """
+    arr = np.array(im).copy()
+    rgb = arr[:, :, :3].astype(np.float32)
+    alpha = arr[:, :, 3]
+
+    is_teal = (rgb[:, :, 1] > rgb[:, :, 0] + 35) & (rgb[:, :, 2] > rgb[:, :, 0] + 25)
+    luminance = 0.2126 * rgb[:, :, 0] + 0.7152 * rgb[:, :, 1] + 0.0722 * rgb[:, :, 2]
+    channel_spread = np.max(rgb, axis=2) - np.min(rgb, axis=2)
+    is_dim_gray = (luminance > 100) & (luminance < 235) & (channel_spread < 40)
+
+    target = is_dim_gray & ~is_teal & (alpha > 8)
+    arr[target, 0] = 224
+    arr[target, 1] = 232
+    arr[target, 2] = 234
+    return Image.fromarray(arr, "RGBA")
+
+
 def mark_only(full: Image.Image) -> Image.Image:
     """
     Keep Arabic calligraphy + IQRA wordmark; drop lower taglines for small icons.
@@ -120,7 +143,7 @@ def to_dark_variant(im: Image.Image) -> Image.Image:
 
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
-    full = cutout(load_official())
+    full = brighten_tagline(cutout(load_official()))
     mark = mark_only(full)
 
     # Light glyphs (for dark backgrounds) — login, splash, teal icon chip

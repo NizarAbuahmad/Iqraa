@@ -195,7 +195,7 @@ export default function AdminDashboardScreen() {
                   <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, marginTop: 10 }]}>
                     <View style={[styles.barRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                       <Text style={[styles.cardLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', flex: 1, textAlign: isRTL ? 'right' : 'left', marginBottom: 0 }]}>
-                        {lang === 'ar' ? 'حسابات بلا وسيلة استعادة' : 'Accounts with no way back in'}
+                        {lang === 'ar' ? 'حسابات لا يمكن استعادتها' : 'Accounts with no way back in'}
                       </Text>
                       <Text style={{ color: colors.foreground, fontFamily: 'Cairo_700Bold', fontSize: 20 }}>
                         {summary.usersWithoutRecovery}
@@ -203,8 +203,8 @@ export default function AdminDashboardScreen() {
                     </View>
                     <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11.5, textAlign: isRTL ? 'right' : 'left' }}>
                       {lang === 'ar'
-                        ? 'دخول بكلمة مرور دون حساب Google مرتبط. نسيان كلمة المرور يحتاج تدخّل مشرف.'
-                        : 'Password sign-in with no linked Google account. A forgotten password needs an admin.'}
+                        ? 'تدخل بكلمة مرور ولا حساب Google لها. إن نسي أصحابها كلمة المرور فلا سبيل إلى استعادتها إلا بتدخّل مشرف.'
+                        : 'They sign in with a password and have no Google account. If the owner forgets it, only an admin can get them back in.'}
                     </Text>
                   </View>
                 )}
