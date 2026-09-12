@@ -63,6 +63,17 @@ export function newChatMediaKey(extension: string): string {
 }
 
 /**
+ * A profile picture. Own prefix for the same reasons as the others, plus one
+ * of its own: this is the only object here that is replaced rather than
+ * accumulated — a fresh UUID every time a user changes their picture is what
+ * makes the swap atomic (write the new object, repoint the row, then delete
+ * the old one), so no reader ever sees a key whose bytes are mid-overwrite.
+ */
+export function newAvatarKey(extension: string): string {
+  return `avatars/${randomUUID()}${extension}`;
+}
+
+/**
  * A student's read-aloud recording. Own prefix for the same reasons as the two
  * above, and one more that is specific to it: this is the only object in the
  * bucket that is a minor's voice. Keeping it in a namespace of its own is what

@@ -48,6 +48,17 @@ export const users = pgTable("users", {
    * changes more often than schemas do.
    */
   rosterConsentVersion: text("roster_consent_version").notNull().default(""),
+  /**
+   * R2 object key for this user's profile picture, or null for the initials
+   * fallback every account starts with.
+   *
+   * The key, never a URL. R2 objects here are private — the bucket's public
+   * URL is meant to stay off (STATUS.md, 2026-08-30) — so what a client can
+   * use is a time-limited signed GET, minted per response by
+   * `presignedGetUrl`. Storing a URL would bake an expiry into the database
+   * and hand every reader a link that stops working an hour later.
+   */
+  avatarKey: text("avatar_key"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   lastLogin: timestamp("last_login", { withTimezone: true }),
 });

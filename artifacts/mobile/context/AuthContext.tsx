@@ -42,6 +42,14 @@ export interface User {
   preferredLanguage: 'en' | 'ar';
   createdAt: string;
   /**
+   * A time-limited signed URL for this user's profile picture, or null for
+   * the initials fallback. Minted per response by the server and good for
+   * about an hour — so it is a thing to render, never a thing to cache or
+   * persist. A screen that finds it expired gets a fresh one on the next
+   * sign-in or app start.
+   */
+  avatarUrl?: string | null;
+  /**
    * Whether a parent/student account has claimed any roster row yet. Absent
    * for a teacher (never applicable) — see `needsRosterClaim` in
    * services/routeGating.ts, the gate this field exists for.
@@ -104,6 +112,15 @@ interface AuthContextType {
   logout: () => Promise<void>;
   updateProfile: (data: { preferredLanguage?: string; firstName?: string; lastName?: string }) => Promise<void>;
   /**
+   * Replaces the profile picture with `dataUrl` (see services/profilePhoto.ts).
+   * Its own call rather than a field on `updateProfile`: this one writes an
+   * object to object storage, and the server answers 503 where R2 is not
+   * configured — a failure a name change should never be able to inherit.
+   */
+  updateAvatar: (dataUrl: string) => Promise<void>;
+  /** Back to initials. Idempotent — an account with no picture is not an error. */
+  removeAvatar: () => Promise<void>;
+  /**
    * Irreversible. Pass `password` for an ordinary account, or `confirmEmail`
    * for a Google-only one — the server picks which it will accept based on
    * whether the account has a password hash at all, and refuses 401 otherwise.
@@ -129,6 +146,7 @@ type ApiUser = {
   createdAt: string;
   lastLogin?: string;
   hasRosterLink?: boolean;
+  avatarUrl?: string | null;
 };
 
 function toUser(apiUser: ApiUser): User {
@@ -142,6 +160,7 @@ function toUser(apiUser: ApiUser): User {
     preferredLanguage: (apiUser.preferredLanguage as 'en' | 'ar') ?? 'en',
     language: (apiUser.preferredLanguage as 'en' | 'ar') ?? 'en',
     createdAt: apiUser.createdAt,
+    avatarUrl: apiUser.avatarUrl ?? null,
     hasRosterLink: apiUser.hasRosterLink,
     subjects: [],
     grades: [],
@@ -409,6 +428,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(toUser(updated));
   }, []);
 
+  // Both of these patch `avatarUrl` onto the user already in state rather than
+  // rebuilding it from the response. The avatar endpoints answer with the URL
+  // and nothing else — they are not a user serialisation — so `toUser` here
+  // would blank every other field.
+  const updateAvatar = useCallback(async (dataUrl: string) => {
+    const { avatarUrl } = await apiJson<{ avatarUrl: string | null }>(
+      '/auth/users/profile/avatar',
+      { method: 'PUT', body: JSON.stringify({ avatarDataUrl: dataUrl }) },
+    );
+    setUser(prev => (prev ? { ...prev, avatarUrl } : prev));
+  }, []);
+
+  const removeAvatar = useCallback(async () => {
+    await apiJson('/auth/users/profile/avatar', { method: 'DELETE' });
+    setUser(prev => (prev ? { ...prev, avatarUrl: null } : prev));
+  }, []);
+
   const deleteAccount = useCallback(
     async (proof: { password?: string; confirmEmail?: string }) => {
       // Push token first, for the same reason logout does it first: after the
@@ -455,6 +491,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         resetPassword,
         logout,
         updateProfile,
+        updateAvatar,
+        removeAvatar,
         deleteAccount,
         markRosterClaimed,
       }}

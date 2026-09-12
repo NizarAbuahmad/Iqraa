@@ -21,7 +21,8 @@ import { authMiddleware, type AuthenticatedRequest } from "../middlewares/auth.j
 import { logger } from "../lib/logger.js";
 import { createRateLimiter } from "../lib/rateLimit.js";
 import { emailKey } from "../lib/rateLimitKeys.js";
-import { deleteObject } from "../lib/r2.js";
+import { deleteObject, isR2Configured, newAvatarKey, presignedGetUrl, putObject } from "../lib/r2.js";
+import { parseAvatarDataUrl } from "../lib/avatarUpload.js";
 import { googleClientIds } from "../lib/googleClients.js";
 import { studentAccountsEnabled } from "../lib/features.js";
 import {
@@ -381,6 +382,11 @@ router.post("/verify-email", verifyEmailLimiter, verifyEmailAddressLimiter, asyn
         email: verified.email,
         role: verified.role,
         preferredLanguage: verified.preferredLanguage,
+        // Always null, and said out loud rather than omitted: this account was
+        // created minutes ago and cannot have a picture yet, but the client
+        // reads the field's absence and its null the same way only because
+        // every sibling response sends it.
+        avatarUrl: null,
         createdAt: verified.createdAt,
         // This is the call that hands back the session register used to, so
         // it owes the client the same field login does — without it a
@@ -911,6 +917,11 @@ router.post("/login", loginLimiter, async (req, res) => {
         email: user.email,
         role: user.role,
         preferredLanguage: user.preferredLanguage,
+        // Here as well as on /me, not only there: the app sets its user from
+        // this response and does not call /me again until the next cold
+        // start, so leaving it out would show every teacher their initials
+        // until they restarted the app.
+        avatarUrl: user.avatarKey ? await presignedGetUrl(user.avatarKey) : null,
         createdAt: user.createdAt,
         lastLogin: user.lastLogin,
         ...(hasRosterLink === undefined ? {} : { hasRosterLink }),
@@ -1055,6 +1066,11 @@ router.post("/google", googleLimiter, async (req, res) => {
         email: user.email,
         role: user.role,
         preferredLanguage: user.preferredLanguage,
+        // Here as well as on /me, not only there: the app sets its user from
+        // this response and does not call /me again until the next cold
+        // start, so leaving it out would show every teacher their initials
+        // until they restarted the app.
+        avatarUrl: user.avatarKey ? await presignedGetUrl(user.avatarKey) : null,
         createdAt: user.createdAt,
         lastLogin: user.lastLogin,
         ...(hasRosterLink === undefined ? {} : { hasRosterLink }),
@@ -1186,6 +1202,12 @@ router.get("/me", authMiddleware, async (req: AuthenticatedRequest, res) => {
       // as "not consented", which is the safe direction.
       rosterConsentAt: user.rosterConsentAt,
       rosterConsentVersion: user.rosterConsentVersion,
+      // Minted fresh on every /me, never stored: the key in the row is
+      // permanent, the signed URL it becomes expires in an hour. Null covers
+      // three states the client treats identically — no picture set, R2 not
+      // configured on this server, presigning failed — because all three mean
+      // the same thing to a screen: draw the initials.
+      avatarUrl: user.avatarKey ? await presignedGetUrl(user.avatarKey) : null,
       createdAt: user.createdAt,
       lastLogin: user.lastLogin,
       ...(hasRosterLink === undefined ? {} : { hasRosterLink }),
@@ -1235,6 +1257,139 @@ router.patch("/users/profile", authMiddleware, async (req: AuthenticatedRequest,
     res.status(500).json({ error: "Failed to update profile" });
   }
 });
+
+/**
+ * Remove the object a replaced or cleared avatar used to point at.
+ *
+ * Best effort by design. The row has already been repointed by the time this
+ * runs, so the user's change has succeeded; throwing here would fail a
+ * request that did what was asked. A failure leaves an unreferenced blob,
+ * which is logged because nothing else will ever notice it — same call, and
+ * the same ponytail, as the account-deletion cleanup below.
+ */
+async function discardAvatarObject(key: string | null, userId: string): Promise<void> {
+  if (!key) return;
+  try {
+    await deleteObject(key);
+  } catch (err) {
+    logger.error({ err, key, userId }, "avatar replaced but R2 object remains");
+  }
+}
+
+const avatarLimiter = createRateLimiter({
+  // Each call writes an object to R2 and deletes one. Twenty an hour is far
+  // more than a person changing their picture needs and far less than a loop
+  // needs to be expensive.
+  windowMs: 60 * 60 * 1000,
+  max: 20,
+  name: "profile-avatar",
+});
+
+/**
+ * PUT /auth/users/profile/avatar — set or replace this user's profile picture.
+ *
+ * Separate from `PATCH /users/profile` rather than another optional field on
+ * it. That route is a small JSON patch a screen fires on any edit; this one
+ * writes an object to R2 and deletes another, and folding the two together
+ * would mean a language change and a megabyte upload sharing a rate limit, a
+ * failure mode and a response shape. It also keeps "the picture failed but
+ * the name saved" from being a state that can happen at all.
+ *
+ * The picture arrives as a `data:` URL, the same way a chat attachment and a
+ * lesson photo do — one shape for uploads across the API, and no multipart
+ * parser in the dependency list.
+ */
+router.put(
+  "/users/profile/avatar",
+  authMiddleware,
+  avatarLimiter,
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      if (!isR2Configured()) {
+        // 503, not 500: a server without R2 is a known, supported deployment
+        // (see lib/r2.ts) — the same shape lesson media and chat attachments
+        // already answer with, so the client has one case to handle.
+        res.status(503).json({
+          code: "avatar_unavailable",
+          error: "Profile pictures are not set up on this server yet.",
+        });
+        return;
+      }
+
+      const parsed = parseAvatarDataUrl((req.body as { avatarDataUrl?: unknown })?.avatarDataUrl);
+      if (!parsed.ok) {
+        res.status(parsed.status).json({ error: parsed.error, code: parsed.code });
+        return;
+      }
+
+      // Read the old key before writing anything — both to know what to clean
+      // up afterwards, and so an account that no longer exists is refused
+      // before it has cost an object in the bucket that nothing will
+      // reference.
+      const [existing] = await db
+        .select({ avatarKey: users.avatarKey })
+        .from(users)
+        .where(eq(users.id, req.user!.id))
+        .limit(1);
+      if (!existing) {
+        res.status(404).json({ error: "User not found" });
+        return;
+      }
+
+      const key = newAvatarKey(parsed.extension);
+      await putObject(key, parsed.buffer, parsed.mime);
+      await db.update(users).set({ avatarKey: key }).where(eq(users.id, req.user!.id));
+
+      // Old object last: the picture the user asked for is already stored and
+      // pointed at, and failing this request because the *previous* one could
+      // not be removed would undo a change that succeeded.
+      await discardAvatarObject(existing.avatarKey, req.user!.id);
+
+      res.json({ avatarUrl: await presignedGetUrl(key) });
+    } catch (err) {
+      logger.error({ err }, "avatar upload failed");
+      res.status(500).json({ error: "Failed to update your profile picture" });
+    }
+  },
+);
+
+/**
+ * DELETE /auth/users/profile/avatar — back to initials.
+ *
+ * Idempotent: an account with no picture gets the same `{ avatarUrl: null }`
+ * as one that just lost theirs, rather than a 404. The client's job is "there
+ * is no picture now", and that is true either way.
+ */
+router.delete(
+  "/users/profile/avatar",
+  authMiddleware,
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      // Read before the update: `returning` hands back the row *after* it, by
+      // which point the key this needs to delete has already been nulled out.
+      // Skipping this read is how the bucket fills with objects nothing
+      // references and nothing will ever look for.
+      const [existing] = await db
+        .select({ avatarKey: users.avatarKey })
+        .from(users)
+        .where(eq(users.id, req.user!.id))
+        .limit(1);
+
+      if (!existing) {
+        res.status(404).json({ error: "User not found" });
+        return;
+      }
+
+      await db.update(users).set({ avatarKey: null }).where(eq(users.id, req.user!.id));
+      await discardAvatarObject(existing.avatarKey, req.user!.id);
+
+      res.json({ avatarUrl: null });
+    } catch (err) {
+      logger.error({ err }, "avatar removal failed");
+      res.status(500).json({ error: "Failed to remove your profile picture" });
+    }
+  },
+);
 
 // DELETE /auth/users/me
 //
@@ -1321,6 +1476,11 @@ router.delete(
       const keys = [
         ...media.map(m => m.key),
         ...attachments.map(a => a.key as string),
+        // The profile picture goes with the account. It is one object rather
+        // than a query's worth, which is exactly why it is easy to forget —
+        // and it is the one object in the bucket that is a photograph of the
+        // person asking to be erased.
+        ...(account.avatarKey ? [account.avatarKey] : []),
       ];
       let orphaned = 0;
       for (const key of keys) {

@@ -410,6 +410,65 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## A teacher can change their profile picture, 2026-09-12
+
+Until now the only picture of a user anywhere in the app was two letters on a
+teal circle. `components/ui/Avatar.tsx` said so in its own header comment —
+"no photo upload exists anywhere in this app to hang a picture on".
+
+**What shipped:** an account can set, replace and remove its own profile
+picture, from the header of «حسابي». Tap the avatar (it now carries a camera
+badge, on the leading side in both directions) to pick and square-crop a photo;
+a «إزالة الصورة» link appears under the role badge once there is one to remove.
+
+The pieces:
+
+- `users.avatar_key` — the R2 object key, nullable, null meaning initials.
+  **The key, never a URL:** R2 objects here are private, so what a client gets
+  is a signed GET minted per response and good for an hour. Storing the URL
+  would bake an expiry into the database.
+- `PUT` and `DELETE /auth/users/profile/avatar`. Deliberately not another
+  optional field on `PATCH /users/profile`: that route is a small JSON patch,
+  these write and delete an object in R2, and folding them together would make
+  "the picture failed but the name saved" a reachable state. 20/hour per
+  account. The picture arrives as a `data:` URL, the same shape chat
+  attachments and lesson media already use — no multipart parser added.
+- `avatarUrl` on `/auth/me` **and** on the login, Google and verify-email
+  responses. The app sets its user from those and does not call `/me` again
+  until the next cold start, so `/me` alone would have shown every teacher
+  their initials until they restarted.
+- The allowlist is JPEG/PNG/WebP — **narrower than lesson media's on purpose**.
+  HEIC is fine to store and cannot be drawn by react-native-web, which is the
+  build teachers actually use, so accepting it would store a picture that
+  renders as a broken box. The list exists twice (server
+  `lib/avatarUpload.ts`, client `services/avatarImage.ts`) and a test on each
+  side pins the exact three; they are kept in step by hand.
+- Cleanup: replacing a picture deletes the old object, removing one deletes it,
+  and deleting an account now takes the avatar with the lesson media and chat
+  attachments it already took. All best-effort after the row is repointed —
+  failing a change that already succeeded because the *previous* object could
+  not be deleted would be the wrong trade. Orphans are logged.
+
+**Not done, and worth knowing:** this is the signed-in user's own picture only.
+Nothing that renders *someone else* — a thread header, a message bubble, a
+participant list, the notifications tab — is served their picture, because all
+six participant selects in `routes/messaging.ts` would have to carry
+`avatarKey`. `Avatar.tsx` is still initials-only and its comment now says which
+of the two states it is in.
+
+**schema-push: this adds a column, and `verify-schema` cannot see it.** That
+script asks `to_regclass` whether each table *name* exists — a table whose
+columns have drifted still reports `ok`. So a skipped
+`pnpm --filter @workspace/db run push` leaves the avatar routes answering 500
+on a missing column while `Schema check` stays green, which is the exact shape
+of the failure «The schema push that was recorded twice and never ran»
+describes. Push before this deploy is called done.
+
+Also unverified here: R2 is not configured in this checkout, so the upload path
+was not exercised against a real bucket. The routes answer 503 with
+`code: "avatar_unavailable"` where it is absent, and the client says so in
+Arabic. Typecheck, 1331 mobile tests and 580 API tests pass.
+
 ## The first-run carousel stopped promising what the app does not do, 2026-09-12
 
 Shipped inside #390 rather than under its own PR — the branch it sat on was cut
