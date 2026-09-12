@@ -77,7 +77,13 @@
       "fetchUrl": "https://upload.wikimedia.org/wikipedia/commons/c/cc/Ocean_surface_currents.jpg",
       "attribution": "NOAA, public domain, via Wikimedia Commons",
       "licenseCheckedAt": "2026-09-11",
-      "authority": "third-party"
+      "authority": "third-party",
+      "ingest": {
+        "r2Key": "external/noaa-ocean-surface-currents.jpg",
+        "sha256": "699f5f6d5381cf26df4ee060b949a216ab0f77b9d18a3c4373774c05cb46766c",
+        "bytes": 117930,
+        "ingestedAt": "2026-09-12"
+      }
     },
     {
       "id": "noaa-gulf-stream-sst",
@@ -92,7 +98,13 @@
       "fetchUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1d/The_Gulf_Stream_Seen_Through_Sea_Surface_Temperature_%28NESDIS_2016-06-03%29.png/1280px-The_Gulf_Stream_Seen_Through_Sea_Surface_Temperature_%28NESDIS_2016-06-03%29.png",
       "attribution": "NOAA, public domain, via Wikimedia Commons",
       "licenseCheckedAt": "2026-09-11",
-      "authority": "third-party"
+      "authority": "third-party",
+      "ingest": {
+        "r2Key": "external/noaa-gulf-stream-sst.png",
+        "sha256": "45c9e2a21a4108d594d92ae155efa5954b28f4fe5c744b6d29079a1125c99041",
+        "bytes": 952025,
+        "ingestedAt": "2026-09-12"
+      }
     },
     {
       "id": "commons-basalt-columbia-river",
@@ -107,7 +119,13 @@
       "fetchUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f5/Basalt_%28Columbia_River_Flood_Basalt%2C_Miocene%2C_~15-17_Ma%3B_Mud_Hollow%2C_Oregon%2C_USA%29.jpg/1280px-Basalt_%28Columbia_River_Flood_Basalt%2C_Miocene%2C_~15-17_Ma%3B_Mud_Hollow%2C_Oregon%2C_USA%29.jpg",
       "attribution": "James St. John, CC BY 2.0, via Wikimedia Commons",
       "licenseCheckedAt": "2026-09-11",
-      "authority": "third-party"
+      "authority": "third-party",
+      "ingest": {
+        "r2Key": "external/commons-basalt-columbia-river.jpg",
+        "sha256": "66152f95340efd6a843724015e46c19e7962c74d91636671f02d84efb56c5b23",
+        "bytes": 494980,
+        "ingestedAt": "2026-09-12"
+      }
     },
     {
       "id": "commons-conglomerate-sharon",
@@ -122,7 +140,13 @@
       "fetchUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/44/Clast_of_siliciclastic_sedimentary_rock_in_quartz-pebble_conglomerate_%28Sharon_Conglomerate%2C_Lower_Pennsylvanian%3B_Jackson_North_roadcut%2C_Ohio%2C_USA%29_2_%2837034583584%29.jpg/1280px-thumbnail.jpg",
       "attribution": "James St. John, CC BY 2.0, via Wikimedia Commons",
       "licenseCheckedAt": "2026-09-11",
-      "authority": "third-party"
+      "authority": "third-party",
+      "ingest": {
+        "r2Key": "external/commons-conglomerate-sharon.jpg",
+        "sha256": "61fa43b2a59e68d212382aa5fcea00771e780fda3054c5dc07a0b07b9806559b",
+        "bytes": 520701,
+        "ingestedAt": "2026-09-12"
+      }
     },
     {
       "id": "commons-gneiss-ellsworth",
@@ -137,7 +161,13 @@
       "fetchUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5d/Gneiss_%28Ellsworth_Schist%2C_Cambrian%3B_Seal_Cove%2C_Mt._Desert_Island%2C_Maine%2C_USA%29_10.jpg/1280px-Gneiss_%28Ellsworth_Schist%2C_Cambrian%3B_Seal_Cove%2C_Mt._Desert_Island%2C_Maine%2C_USA%29_10.jpg",
       "attribution": "James St. John, CC BY 2.0, via Wikimedia Commons",
       "licenseCheckedAt": "2026-09-11",
-      "authority": "third-party"
+      "authority": "third-party",
+      "ingest": {
+        "r2Key": "external/commons-gneiss-ellsworth.jpg",
+        "sha256": "70d4ef95f4dd991c2f4afcd095d074941d43c7b19066f5cf6d4a5024ea34e78c",
+        "bytes": 596200,
+        "ingestedAt": "2026-09-12"
+      }
     },
 
     {
