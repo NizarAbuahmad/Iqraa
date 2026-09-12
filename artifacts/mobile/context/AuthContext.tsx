@@ -88,6 +88,13 @@ interface AuthContextType {
   /** Requests a fresh code for an unverified account. Always resolves — the server never confirms whether the email exists. */
   resendVerification: (email: string) => Promise<void>;
   /**
+   * Repoints a pending signup at a different address when the one typed at
+   * signup was wrong. Needs the password: the account has no session yet, so
+   * that is the only proof it belongs to whoever is asking. Returns the
+   * address the new code went to.
+   */
+  changeUnverifiedEmail: (email: string, password: string, newEmail: string) => Promise<{ email: string }>;
+  /**
    * Always resolves when the request was accepted, whether or not that address
    * has an account — the server refuses to say, so the UI must not imply it
    * either (see the subtitle on the reset screen).
@@ -328,6 +335,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const changeUnverifiedEmail = useCallback(
+    async (email: string, password: string, newEmail: string) => {
+      const data = await apiJson<{ email: string; message: string }>(
+        '/auth/change-unverified-email',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            email: email.trim(),
+            password,
+            newEmail: newEmail.trim(),
+          }),
+        },
+      );
+      return { email: data.email };
+    },
+    [],
+  );
+
   const forgotPassword = useCallback(async (email: string) => {
     await apiJson('/auth/forgot-password', {
       method: 'POST',
@@ -425,6 +450,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         register,
         verifyEmail,
         resendVerification,
+        changeUnverifiedEmail,
         forgotPassword,
         resetPassword,
         logout,

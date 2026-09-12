@@ -19,16 +19,25 @@ const RESEND_COOLDOWN_S = 30;
 export default function VerifyEmailScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { verifyEmail, resendVerification } = useAuth();
+  const { verifyEmail, resendVerification, changeUnverifiedEmail } = useAuth();
   const { t, lang, isRTL } = useLanguage();
-  const { email } = useLocalSearchParams<{ email: string }>();
+  const params = useLocalSearchParams<{ email: string }>();
 
+  // Held in state, not read from the route param directly: changing the
+  // address below has to move what this screen says the code went to, and the
+  // param it arrived with is fixed.
+  const [email, setEmail] = useState(params.email ?? '');
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+
+  const [editingEmail, setEditingEmail] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [changing, setChanging] = useState(false);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -45,7 +54,7 @@ export default function VerifyEmailScreen() {
       // `authChanged` in app/_layout.tsx, which picks the destination. A
       // parent/student lands on the claim screen rather than the tabs, and
       // replacing to the tabs here would flash them past it.
-      await verifyEmail(email ?? '', code);
+      await verifyEmail(email, code);
     } catch (e: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setError(e.message ?? t('invalidVerificationCode'));
@@ -59,7 +68,7 @@ export default function VerifyEmailScreen() {
     setNotice('');
     setResending(true);
     try {
-      await resendVerification(email ?? '');
+      await resendVerification(email);
       setNotice(t('codeResent'));
       setCooldown(RESEND_COOLDOWN_S);
     } catch (e: any) {
@@ -69,7 +78,31 @@ export default function VerifyEmailScreen() {
     }
   };
 
+  const handleChangeEmail = async () => {
+    setError('');
+    setNotice('');
+    setChanging(true);
+    try {
+      const { email: changed } = await changeUnverifiedEmail(email, password, newEmail);
+      setEmail(changed);
+      setNotice(t('emailChanged', changed));
+      // The code that was just sent belongs to the new address, so clear the
+      // one typed against the old one rather than leaving it to fail.
+      setCode('');
+      setEditingEmail(false);
+      setNewEmail('');
+      setPassword('');
+      setCooldown(RESEND_COOLDOWN_S);
+    } catch (e: any) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setError(e.message ?? (lang === 'ar' ? 'تعذّر تغيير البريد الإلكتروني' : 'Failed to change email'));
+    } finally {
+      setChanging(false);
+    }
+  };
+
   const canSubmit = /^\d{6}$/.test(code);
+  const canChangeEmail = newEmail.includes('@') && password.length > 0;
 
   return (
     <KeyboardAvoidingView
@@ -95,7 +128,7 @@ export default function VerifyEmailScreen() {
           {t('verifyEmailTitle')}
         </Text>
         <Text style={[styles.sub, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
-          {t('verifyEmailSubtitle', email ?? '')}
+          {t('verifyEmailSubtitle', email)}
         </Text>
 
         <View style={[styles.card, { backgroundColor: colors.card, borderRadius: colors.radius * 1.5, borderColor: colors.border }]}>
@@ -139,6 +172,65 @@ export default function VerifyEmailScreen() {
             </Text>
           </Pressable>
         </View>
+
+        {/*
+          The way out of a typo. Without it the address typed at signup is
+          final, and a wrong one leaves an account nobody can reach — see
+          POST /auth/change-unverified-email, which is why this asks for the
+          password rather than taking the new address on trust.
+        */}
+        {editingEmail ? (
+          <View style={[styles.card, { backgroundColor: colors.card, borderRadius: colors.radius * 1.5, borderColor: colors.border }]}>
+            <Text style={[styles.changeTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+              {t('changeEmailTitle')}
+            </Text>
+
+            <Input
+              label={t('newEmail')}
+              placeholder={t('emailPlaceholder')}
+              value={newEmail}
+              onChangeText={setNewEmail}
+              leftIcon="mail-outline"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              isRTL={isRTL}
+            />
+
+            <Input
+              label={t('password')}
+              placeholder={t('passwordPlaceholder')}
+              hint={t('changeEmailPasswordHint')}
+              value={password}
+              onChangeText={setPassword}
+              leftIcon="lock-closed-outline"
+              secureTextEntry
+              isRTL={isRTL}
+            />
+
+            <Button
+              label={t('changeEmailButton')}
+              onPress={handleChangeEmail}
+              loading={changing}
+              disabled={!canChangeEmail}
+              fullWidth
+            />
+
+            <Pressable
+              onPress={() => { setEditingEmail(false); setNewEmail(''); setPassword(''); }}
+              style={styles.resendRow}
+            >
+              <Text style={[styles.resendText, { color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }]}>
+                {t('cancel')}
+              </Text>
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable onPress={() => { setEditingEmail(true); setError(''); setNotice(''); }} style={styles.resendRow}>
+            <Text style={[styles.resendText, { color: colors.mutedForeground, fontFamily: 'Cairo_600SemiBold' }]}>
+              {t('wrongEmail')}
+            </Text>
+          </Pressable>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -154,4 +246,5 @@ const styles = StyleSheet.create({
   bannerText: { flex: 1, fontSize: 13 },
   resendRow: { alignItems: 'center', paddingVertical: 8 },
   resendText: { fontSize: 14 },
+  changeTitle: { fontSize: 16, marginBottom: 2 },
 });
