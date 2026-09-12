@@ -14,11 +14,13 @@ import {
   classMemberships,
   students,
   emailVerificationTokens,
+  passwordResetTokens,
 } from "@workspace/db";
 import { eq, and, asc, desc, gt, inArray, isNotNull, isNull } from "drizzle-orm";
 import { authMiddleware, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { logger } from "../lib/logger.js";
 import { createRateLimiter } from "../lib/rateLimit.js";
+import { emailKey } from "../lib/rateLimitKeys.js";
 import { deleteObject } from "../lib/r2.js";
 import { googleClientIds } from "../lib/googleClients.js";
 import { studentAccountsEnabled } from "../lib/features.js";
@@ -27,37 +29,94 @@ import {
   ROSTER_CONSENT_VERSION,
 } from "../lib/rosterConsent.js";
 import { isStrongPassword, PASSWORD_POLICY_MESSAGE } from "../lib/passwordPolicy.js";
-import { sendVerificationEmail } from "../lib/email.js";
+import { sendPasswordResetEmail, sendVerificationEmail } from "../lib/email.js";
 import {
   generateVerificationCode,
   hashVerificationCode,
   VERIFICATION_CODE_TTL_MS,
   VERIFICATION_MAX_ATTEMPTS,
 } from "../lib/emailVerification.js";
+import {
+  generateResetCode,
+  hashResetCode,
+  RESET_CODE_TTL_MS,
+} from "../lib/passwordReset.js";
 import { resolveClaimCode, type ClaimRole } from "../lib/rosterClaim.js";
 import { normalizeShareCode } from "../modules/assessment/studentView.ts";
 
 const router = Router();
 
+/*
+ * A school is one NAT address. An IP-keyed signup limit is therefore a limit
+ * on the school: the sixth teacher to sign up on the staffroom wifi was told
+ * "too many attempts" for something five colleagues had already done, with
+ * nothing in the message to explain it and nothing they could do about it.
+ * The tight limits below are keyed on the address instead — see
+ * lib/rateLimitKeys.ts.
+ */
+
 // Login gets more headroom than register since real users mistype passwords;
 // a burst of registrations is rarely legitimate at any volume.
 const loginLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, name: "login" });
-const registerLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5, name: "register" });
 const googleLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, name: "google-auth" });
-const verifyEmailLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, name: "verify-email" });
-// Tighter than register: this exists to recover from a failed send, not to
-// resend on a whim, and an unlimited resend is a free email-bombing vector.
-const resendVerificationLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 3, name: "resend-verification" });
-// Password-checking, like login, so it gets login's ceiling rather than
-// resend's — a mistyped address is worth a few honest retries, and every
-// attempt here has to survive a bcrypt compare anyway.
-const changeEmailLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, name: "change-unverified-email" });
+
+/*
+ * The signup and verification routes are limited twice: tightly per address,
+ * loosely per IP. Neither alone is right — per-IP alone punishes a shared
+ * school connection, and per-address alone leaves bulk automation free to
+ * create unlimited accounts from one host as long as each uses a fresh email.
+ */
+const registerEmailLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 3, name: "register-email", key: emailKey });
+const registerLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 30, name: "register" });
+
+const verifyEmailAddressLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, name: "verify-email-address", key: emailKey });
+const verifyEmailLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 60, name: "verify-email" });
+
+// Tighter than register per address: this exists to recover from a failed
+// send, not to resend on a whim, and an unlimited resend is a free
+// email-bombing vector aimed at whoever owns that mailbox.
+const resendVerificationEmailLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 3, name: "resend-verification-email", key: emailKey });
+const resendVerificationLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 20, name: "resend-verification" });
+
+// Same pair, keyed on the address the pending signup currently has. Every
+// attempt also has to survive a bcrypt compare, so the per-address ceiling
+// can match login's rather than resend's — a mistyped address is worth a few
+// honest retries, and this route sends mail only once the password checks out.
+const changeEmailAddressLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, name: "change-unverified-email-address", key: emailKey });
+const changeEmailLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 30, name: "change-unverified-email" });
 // /claim was the only code-redeeming route without one, which made it an
 // authenticated guessing surface against a 6-character alphabet. More headroom
 // than register because a parent with three children legitimately claims three
 // times in a sitting. Dormant while STUDENT_ACCOUNTS is off — the route 403s
 // before reaching the handler — so this is insurance for the day it flips.
 const claimLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 10, name: "claim" });
+// Same reasoning as resend-verification: asking costs someone else an email.
+const forgotPasswordLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 3, name: "forgot-password" });
+/**
+ * Keyed on the **email**, not the caller's IP.
+ *
+ * `password_reset_tokens` has no attempts column — the email-verification
+ * table grew one, this older table predates it, and adding one would mean a
+ * hand-run migration against production for a flow that can be made safe
+ * without it. A 6-digit code is 1e6 possibilities, so what actually has to be
+ * capped is guesses *against one account*, and an IP-keyed limiter caps
+ * nothing an attacker with a handful of addresses cares about. The counter is
+ * shared Postgres (lib/rateLimit.ts), so this holds across instances.
+ *
+ * Falls back to the IP when no email was sent, so a malformed body still
+ * meets a limit rather than slipping past one.
+ */
+const resetPasswordLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  name: "reset-password",
+  key: req => {
+    const email = (req.body as { email?: unknown } | undefined)?.email;
+    return typeof email === "string" && email.trim() !== ""
+      ? email.toLowerCase().trim()
+      : req.ip ?? "unknown";
+  },
+});
 
 // Unset means the endpoint answers 503 and the client-side button never
 // renders (see GoogleSignInButton) — never a failure, just no button, same
@@ -139,7 +198,7 @@ async function hasAnyRosterLink(userId: string): Promise<boolean> {
 }
 
 // POST /auth/register
-router.post("/register", registerLimiter, async (req, res) => {
+router.post("/register", registerLimiter, registerEmailLimiter, async (req, res) => {
   try {
     const { firstName, lastName, email, password, confirmPassword, role: rawRole } =
       req.body as {
@@ -241,7 +300,7 @@ router.post("/register", registerLimiter, async (req, res) => {
 });
 
 // POST /auth/verify-email
-router.post("/verify-email", verifyEmailLimiter, async (req, res) => {
+router.post("/verify-email", verifyEmailLimiter, verifyEmailAddressLimiter, async (req, res) => {
   try {
     const { email, code } = req.body as { email?: string; code?: string };
     if (!email || !code) {
@@ -339,7 +398,7 @@ router.post("/verify-email", verifyEmailLimiter, async (req, res) => {
 });
 
 // POST /auth/resend-verification
-router.post("/resend-verification", resendVerificationLimiter, async (req, res) => {
+router.post("/resend-verification", resendVerificationLimiter, resendVerificationEmailLimiter, async (req, res) => {
   try {
     const { email } = req.body as { email?: string };
     if (!email) {
@@ -386,7 +445,7 @@ router.post("/resend-verification", resendVerificationLimiter, async (req, res) 
  * owed a notification — a different feature with a different threat model,
  * not this one widened.
  */
-router.post("/change-unverified-email", changeEmailLimiter, async (req, res) => {
+router.post("/change-unverified-email", changeEmailLimiter, changeEmailAddressLimiter, async (req, res) => {
   try {
     const { email, password, newEmail } = req.body as {
       email?: string;
@@ -467,6 +526,159 @@ router.post("/change-unverified-email", changeEmailLimiter, async (req, res) => 
  * second teacher's roster for the same student. Same resolver as /register,
  * just without creating a user row first.
  */
+/**
+ * POST /auth/forgot-password
+ *
+ * Restored 2026-09-12. It was deleted on 2026-09-10 because there was no way
+ * to send the email — that was true for about thirty hours, until the Resend
+ * integration landed with email verification. What it left behind was 23
+ * accounts holding a password and no Google account, one forgotten password
+ * away from needing an administrator.
+ *
+ * Answers `{ ok: true }` in every case that is not a malformed request:
+ * account found, account absent, account exists but signs in with Google and
+ * has no password to reset, mail provider refused the send. The caller learns
+ * only that the request was accepted, which is the point — anything finer is
+ * an oracle for which addresses have accounts here.
+ */
+router.post("/forgot-password", forgotPasswordLimiter, async (req, res) => {
+  try {
+    const { email } = req.body as { email?: string };
+    if (!email?.includes("@")) {
+      res.status(400).json({ error: "Valid email is required" });
+      return;
+    }
+
+    const [user] = await db
+      .select({ id: users.id, email: users.email, passwordHash: users.passwordHash })
+      .from(users)
+      .where(eq(users.email, email.toLowerCase().trim()))
+      .limit(1);
+
+    // No account, or a Google-only account with no password to reset. Both
+    // stop here, and both answer exactly as success does.
+    if (!user || !user.passwordHash) {
+      res.json({ ok: true });
+      return;
+    }
+
+    const code = generateResetCode();
+
+    // One live code per account: asking again replaces the previous one rather
+    // than leaving two valid. Without this, every request widens the window an
+    // attacker is guessing against instead of resetting it.
+    await db.delete(passwordResetTokens).where(eq(passwordResetTokens.userId, user.id));
+    await db.insert(passwordResetTokens).values({
+      userId: user.id,
+      tokenHash: hashResetCode(user.id, code),
+      expiresAt: new Date(Date.now() + RESET_CODE_TTL_MS),
+    });
+
+    const sent = await sendPasswordResetEmail(user.email, code);
+    // Logged without the code and without a way to tie it back to one, because
+    // a failed send is an operational problem and a code in a log is a
+    // takeover. lib/email.ts records the provider's own reason.
+    if (!sent) logger.error({ userId: user.id }, "password reset code could not be emailed");
+
+    res.json({ ok: true });
+  } catch (err) {
+    logger.error({ err }, "forgot password failed");
+    res.status(500).json({ error: "Failed to process request" });
+  }
+});
+
+/**
+ * POST /auth/reset-password
+ *
+ * Takes the email alongside the code: the code is hashed together with the
+ * user id (lib/passwordReset.ts), so it cannot be looked up on its own, and a
+ * code is only ever valid for the account it was sent to.
+ */
+router.post("/reset-password", resetPasswordLimiter, async (req, res) => {
+  try {
+    const { email, code, password, confirmPassword } = req.body as {
+      email?: string;
+      code?: string;
+      password?: string;
+      confirmPassword?: string;
+    };
+
+    if (!email || !code) {
+      res.status(400).json({ error: "Email and code are required" });
+      return;
+    }
+    if (!password || !isStrongPassword(password)) {
+      res.status(400).json({ error: PASSWORD_POLICY_MESSAGE });
+      return;
+    }
+    if (confirmPassword !== undefined && confirmPassword !== password) {
+      res.status(400).json({ error: "Passwords do not match" });
+      return;
+    }
+
+    // One message for every way this can fail, same as /verify-email: a wrong
+    // code, an expired one, an address with no account, an account that has
+    // no password. Distinguishing them tells a guesser which door to keep
+    // knocking on.
+    const invalid = () => res.status(400).json({ error: "Invalid or expired code" });
+
+    const [user] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.email, email.toLowerCase().trim()))
+      .limit(1);
+
+    if (!user) {
+      invalid();
+      return;
+    }
+
+    const [stored] = await db
+      .select()
+      .from(passwordResetTokens)
+      .where(
+        and(
+          eq(passwordResetTokens.userId, user.id),
+          eq(passwordResetTokens.tokenHash, hashResetCode(user.id, code.trim())),
+          eq(passwordResetTokens.used, false),
+          gt(passwordResetTokens.expiresAt, new Date()),
+        ),
+      )
+      .limit(1);
+
+    if (!stored) {
+      invalid();
+      return;
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+    await db.update(users).set({
+      passwordHash,
+      // Reading a code sent to that address is the same proof registration
+      // asks for, so a reset settles verification too. Without this, someone
+      // who reset their password could still be refused at login for an
+      // address they just demonstrably control.
+      emailVerified: true,
+    }).where(eq(users.id, user.id));
+
+    await db
+      .update(passwordResetTokens)
+      .set({ used: true })
+      .where(eq(passwordResetTokens.id, stored.id));
+
+    // Every existing session dies with the old password. If this reset was
+    // someone taking their account back, the sessions worth ending are exactly
+    // the ones already open.
+    await db.delete(refreshTokens).where(eq(refreshTokens.userId, user.id));
+
+    logger.info({ userId: user.id }, "password reset completed");
+    res.json({ ok: true });
+  } catch (err) {
+    logger.error({ err }, "reset password failed");
+    res.status(500).json({ error: "Failed to reset password" });
+  }
+});
+
 router.post("/claim", claimLimiter, authMiddleware, async (req: AuthenticatedRequest, res) => {
   try {
     // Closed for the same reason /register is. No such account can exist

@@ -12,7 +12,7 @@ import { fetchWithTimeout } from '@/services/fetchWithTimeout';
 import { setActiveLessonContextUser } from '@/services/lessonContext';
 import { setActiveMediaUser } from '@/services/lessonMedia';
 import { warmUpVerifier } from '@/services/ai/verifyMath';
-import { registerPushToken, unregisterPushToken } from '@/services/pushTokens';
+import { registerNotificationTapHandler, registerPushToken, unregisterPushToken } from '@/services/pushTokens';
 // Same package GoogleSignInButton uses — safe to import on web too, it ships
 // a `.web.js` stub so Metro never fails to resolve a native-only module.
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
@@ -94,6 +94,13 @@ interface AuthContextType {
    * address the new code went to.
    */
   changeUnverifiedEmail: (email: string, password: string, newEmail: string) => Promise<{ email: string }>;
+  /**
+   * Always resolves when the request was accepted, whether or not that address
+   * has an account — the server refuses to say, so the UI must not imply it
+   * either (see the subtitle on the reset screen).
+   */
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (email: string, code: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: { preferredLanguage?: string; firstName?: string; lastName?: string }) => Promise<void>;
   /**
@@ -161,6 +168,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       warmUpVerifier();
       void registerPushToken();
     }
+  }, [user?.id]);
+
+  /**
+   * Tapping a push opens the thread it names.
+   *
+   * Registered here, keyed on the signed-in user, rather than in the root
+   * layout: `/messaging/*` is not a public route, so a tap handled while
+   * signed out is one that route gating turns into a trip to the login
+   * screen, and the thread the notification named is gone. Keying it on
+   * `user?.id` also means a tap that cold-starts the app while signed out is
+   * still honoured — it lands once sign-in completes, rather than being
+   * swallowed by a handler that ran too early.
+   *
+   * The cleanup matters: without it, signing in and out repeatedly stacks
+   * listeners, and one tap would navigate once per accumulated listener.
+   */
+  useEffect(() => {
+    if (!user?.id) return;
+    return registerNotificationTapHandler();
   }, [user?.id]);
 
   // Register redirect callback so token-refresh failures can navigate to login
@@ -327,6 +353,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
+  const forgotPassword = useCallback(async (email: string) => {
+    await apiJson('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email: email.trim() }),
+    });
+  }, []);
+
+  /**
+   * Deliberately does not sign the user in on success, unlike verifyEmail.
+   * The server ends every session the account had — including any an attacker
+   * held — and handing back a fresh one here would undo half of that.
+   */
+  const resetPassword = useCallback(async (email: string, code: string, password: string) => {
+    await apiJson('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ email: email.trim(), code: code.trim(), password }),
+    });
+  }, []);
+
   const logout = useCallback(async () => {
     await unregisterPushToken();
     try {
@@ -406,6 +451,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         verifyEmail,
         resendVerification,
         changeUnverifiedEmail,
+        forgotPassword,
+        resetPassword,
         logout,
         updateProfile,
         deleteAccount,

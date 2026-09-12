@@ -410,6 +410,176 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## Grade 9's sciences, then history and geography, get the book's figures, 2026-09-11/12
+
+**The question was "do the slides show the book's pictures for every subject
+and grade?". Measured first, through the real deck builder** — `buildLessonDeck`
+run over all 1097 catalog lessons with a stub `figureUri`, counting the media
+slides it returns:
+
+| | before | after sciences | after history/geography |
+| --- | --- | --- | --- |
+| lessons whose deck carries a book figure | **122 of 1097** | 159 | **210** |
+| figure slides across all decks | 388 | 515 | **604** |
+| live subject×grade pairs with nothing | 29 of 37 | 25 of 37 | **21 of 37** |
+
+**Nothing was wrong with the wiring.** Every deck entry point already passes
+`figureUri` — `buildLessonDeck`, `buildDeckFromQuiz/Worksheet`, `startClass`,
+the four `/ai-tools` screens, the exam panel and the four document exports.
+The 2026-09-04 sweep closed those gaps and they stayed closed. What is missing
+is **supply**: a lesson gets a picture only if its book was run through
+`extract_book_figures.py` and its crops were mapped, and eight books had been.
+
+**Four Grade 9 sciences, eight books, added to `BOOKS` and `EXPECTED_UNITS`.**
+No detector work was needed: these are the same NCCD series as their Grade 10
+counterparts, down to the page furniture.
+
+| book | extracted | kept after review | lessons |
+| --- | --- | --- | --- |
+| g9-physics-s1 | 45 | 33 | 6 of 7 |
+| g9-physics-s2 | 73 | 63 | 5 of 5 |
+| g9-chemistry-s1 | 37 | 17 | 4 of 4 |
+| g9-chemistry-s2 | 52 | 28 | 4 of 4 |
+| g9-biology-s1 | 44 | 29 | 4 of 5 |
+| g9-biology-s2 | 57 | 45 | 4 of 5 |
+| g9-earth-science-s1 | 39 | 17 | 4 of 4 |
+| g9-earth-science-s2 | 46 | 18 | 6 of 6 |
+
+**250 kept of 393, and the 143 dropped are all page furniture** — the orange
+«مراد» wave bands, «الدرسُ ٢» opener cards, «الفكرةُ العامة» banners, cover
+pages, and crops that sliced a table or a question in half. `BOOK_FIGURE_COUNT`
+875 → 1125, and 1223 once history and geography landed. Coverage by subject: physics 0 → 11/12, chemistry 0 → 8/8, earth
+science 0 → 10/10, biology 0 → 8/10. Grade 9 was maths-and-nothing-else before
+this. **Cost: +30 MB of PNGs**, of which ~7 MB is the eight `_review.png`
+contact sheets — the same order as the 2026-09-05 batch, and the same lever
+still unused (quantisation, not fewer figures).
+
+**The lesson join is 1:1 and was read, not assumed.** Each book's lesson-opener
+pages print the curriculum's own lesson titles in order — «المائعُ الساكنُ»
+opens u4 l1 of physics S2, and so on for all 33 mapped lessons — so the printed
+lesson number IS the curriculum's, with none of the offset Grade 10 maths has.
+The one detector miss is recorded on the map entry rather than left to be
+rediscovered: in `g9-bio-s2` the unit-4 lesson-2 opener («دراسةُ الجماعاتِ
+الحيويةِ», p49) is not seen, so pages 49-54 file under u4_l1 — harmless today
+because no crop from them survived review, and a trap for the next re-run.
+Three crops were dropped rather than filed: two sat on chemistry's unit-opener
+spread, which belongs to no lesson, and physics's `p045` is unit 2's opening
+experiment printed on the last page of unit 1 lesson 3, where the outline would
+have captioned it as a measurement-errors figure.
+
+**`g9-bio-s2` took an hour on its own** — one page's vector cluster takes
+`drawing_cluster` into the tens of minutes, with nothing on stdout to say so.
+Worth knowing before anyone assumes a hung run: it finishes. Running the eight
+books as eight processes rather than one sequential pass is what kept the whole
+set inside an afternoon.
+
+**Then history and geography, seven of eight books, 2026-09-12.** 89 more
+figures on 51 more lessons.
+
+| book | extracted | kept after review | lessons |
+| --- | --- | --- | --- |
+| history-s1 | 29 | 17 | 11 of 12 |
+| history-s2 | 43 | 12 | 9 of 11 |
+| geo-s1 | 35 | 19 | 7 of 9 |
+| geo-s2 | 38 | 19 | 7 of 9 |
+| g9-history-s1 | 29 | 12 | 8 of 10 |
+| g9-geography-s1 | 39 | 18 | 8 of 9 |
+| g9-geography-s2 | 14 | **1** | 1 of 9 |
+
+Coverage: Grade 10 history 0 → 20/23, Grade 10 geography 0 → 14/18, Grade 9
+geography 0 → 9/18, Grade 9 history 0 → 8/23. Cost: **+23 MB of PNGs**. What
+these books draw is **maps,
+timelines and process diagrams** — the vector extractor finds them, which the
+op counts alone would not have predicted: history runs ~8-14k drawing ops per
+60 pages against physics's ~509k, close to the ~3.4k that sent English to the
+raster pipeline. Measure the yield, not just the density.
+
+**Three findings from this batch that cost time to learn:**
+
+- **The Grade 9 science source ids had to be renamed first.** They were minted
+  `g9-phys-s1-student-book`; `g10_sources.json` spells those same books
+  `g9-physics-s1-student-book`, and `docs/adding-a-book.md` makes the manifest
+  the contract precisely so a figure can be traced to its source row. Renamed
+  across the eight directories, their `index.json` `sourceId`s, the map, the
+  imports and the test's prefix table. Note Grade 10 abbreviates in the other
+  direction (`phys-s1-student-book` for physics), so the prefix table now
+  carries three spellings and cannot be derived by string surgery.
+- **`EXPECTED_UNITS` is wrong for these four subjects, and the entry was
+  removed.** These books print no «الوحدة N» running header, so `outline`
+  falls back to counting opener resets inside one PDF and every S2 book reports
+  units 1-3 where the curriculum says 4-6. The first entry written for them
+  rejected all four S2 books outright. The offset lives on the map entries
+  instead, as it already does for English S2, and was verified against printed
+  titles: all eight of history-s2's unit-3 lesson titles land exactly on the
+  opener page `outline` detected, and five of geo-s2's nine.
+- **Grade 9 history S2 is the one book left out.** `lesson_start` finds ONE
+  opener in it against 13 catalog lessons, so `outline` refuses the book and
+  every crop would be unplaced. Its S1 sibling detects all 10. Recorded in
+  `BOOKS` with the measurement so the next run does not rediscover it.
+  Grade 9 geography S2 is nearly as thin for a different reason — 14 crops, of
+  which **one** is a figure and the rest are drawn page furniture, because its
+  maps are rasters. That book wants `extract_book_photos.py`.
+
+**What still has no figure at all, and why:**
+
+- **Grade 8 — all ten subjects, 344 lessons.** Never run. Probed: the Grade 8
+  **science** book's openers detect cleanly (10 lesson starts in S1), so it is
+  the same afternoon's work as these four were. The Grade 8 **maths** book
+  detects **zero** — its 2023 edition prints a different opener, so it needs
+  the per-subject opener profile Islamic needed.
+- **Arabic and Islamic** (192 lessons): measured and abandoned 2026-09-05, see
+  the section below. Unchanged.
+- **English** (240 lessons across three grades): Grade 10 has 40 photos from
+  `extract_book_photos.py`; Grade 9 and Grade 8 English have never been run
+  through it.
+- **Grade 9 history S2** (13 lessons) and most of **Grade 9 geography S2** —
+  the two books above that this batch could not use.
+- **Civic education and digital literacy**: probed, **0 lesson starts** in
+  either Grade 10 S1 book. Like Islamic, they print an opener the detector does
+  not know, so they need a per-subject profile before extraction is worth
+  running.
+- **PE, social, creative arts, vocational**: never run, no measurement either
+  way.
+
+## Every QR code in the books, decoded — and the ministry's certificate expired
+
+**186 QR codes in 23 of the 48 student books**, in
+`knowledge-base/book-qr-links.json`. They are drawn, not embedded as images,
+and **not one book in the set carries a clickable link annotation** — so they
+are invisible to both the text layer and `page.get_links()`, and were found by
+rendering every page and running OpenCV's detector over it. 112 are videos
+(mostly ministry-hosted `.mp4`, 3 YouTube), 33 are PDFs, 38 public pages, 3
+images.
+
+**One render scale is not enough, and the under-count is silent.** The first
+pass rendered at 150 dpi and reported 44 codes; at 150/200/260 the same books
+yield 186 — only 44 of them decode at 150. The detector is scale-sensitive in
+both directions, not just "higher is better": the Grade 10 history S1 code on
+page 12 decodes at 200 and fails at 150, 300 **and** 400. Anything re-running
+this must take the union of several scales or it will quietly agree with a
+number that was four times too low.
+
+**The printed URLs do not work.** Every ministry code prints
+`https://qr.nccd.gov.jo/…` and that host's TLS certificate has expired
+(`SEC_E_CERT_EXPIRED`), so the URL as printed fails — 100 of the 186. The same
+paths over `http://` serve the file, and that is what `workingUrl` holds; 169
+of 186 resolve that way and 17 are dead even then. Note an https page cannot
+embed an http video, so these are open-in-a-new-tab links, not slides that
+play.
+
+**12 are joined to a lesson; the rest carry a page only.** A code is located by
+page, and a page becomes a lesson only in books whose openers `outline()` can
+read — which since 2026-09-12 means history and geography (5 and 7 codes). The
+other 174 sit in Islamic (80), Arabic (34), English (24), art (13), civic (8),
+digital literacy (9), PE (3) and maths (3), none of which have a readable
+lesson outline. Joining those needs a per-book page→lesson table read off each
+contents spread.
+
+**Where the codes are is almost exactly where the figures are not.** Islamic,
+Arabic, art, civic education and PE have zero extracted figures between them,
+and 138 of these 186 codes — so for those lessons the book's QR video is the
+only media the book offers. Nothing consumes the manifest yet.
+
 ## The GeoGebra embed is gone; graph slides draw their own curve, 2026-09-11
 
 **The class deck no longer frames geogebra.org.** `GraphView` in
