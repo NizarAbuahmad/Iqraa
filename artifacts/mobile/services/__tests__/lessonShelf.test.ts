@@ -141,8 +141,23 @@ describe('subject isolation', () => {
       // documents only ever carry the semester tag, fails on the unit form.
       chemistry: /^(chem-s[12](-u\d+)?|chem-g10-general|g9-chem-s[12](-u\d+)?)$/,
       // Grade 10 tag is bare (`finlit-s1`); Grade 9 gets the explicit
-      // `g9-` prefix like arabic and islamic below.
-      'financial-literacy': /^(finlit-s[12]|g9-finlit-s[12]|g8-finlit-s[12])$/,
+      // `g9-` prefix like arabic and islamic below. Grade 8 joined
+      // 2026-09-09, Grade 7 joined 2026-09-12.
+      'financial-literacy': /^(finlit-s[12]|g9-finlit-s[12]|g8-finlit-s[12]|g7-finlit-s[12])$/,
+      // Digital Skills spans every grade the same way arabic/islamic do.
+      'digital-literacy': /^(digital-s[12]|g9-digital-s[12]|g8-digital-s[12]|g7-digital-s[12])$/,
+      // Social Studies only ever has Grade 7/8 books — it splits into
+      // geography/history/civic-education from Grade 9 up, so there is no
+      // bare or g9- form to allow (see subjectGradeCoverage.test.ts).
+      social: /^(g8-social-s[12]|g7-social-s[12])$/,
+      // Vocational Education: Grade 7/8 only, a different seven tracks per
+      // book — no grade-9/10 form exists.
+      'vocational-education': /^(g8-voc-s[12]|g7-voc-s[12])$/,
+      // Art, Music and Drama Education: Grade 7/8 only, one book per grade
+      // with no semester split — CurriculumIdScope still requires a
+      // semester number for id-namespacing, hardcoded to 1, so only the
+      // `-s1` form ever appears.
+      'creative-arts': /^(g8-arts-s1|g7-arts-s1)$/,
       // Grade 10 Arabic predates this map and was silently unchecked — no
       // entry meant `continue`, not a pass. Added on 2026-09-08 alongside the
       // Grade 9 Arabic S1 book, so both grades are covered from here on.
@@ -162,7 +177,9 @@ describe('subject isolation', () => {
       // Same again — Grade 10 gained a book on 2026-09-10, so both the bare
       // and the g9- form appear.
       'civic-education': /^(civ-s[12]|g9-civ-s[12])$/,
-      'physical-education': /^g9-pe-s[12]$/,
+      // Grade 9 predates Grade 7 here (no Grade 8 PE book exists at all).
+      // Grade 7 joined 2026-09-12.
+      'physical-education': /^(g9-pe-s[12]|g7-pe-s[12])$/,
       // Grade 7 and 8's combined «العلوم» books, the only ones this subject
       // has. No grade-10 alternative here: Grade 10 splits science into the
       // four subjects above, so there is no bare `science-s[12]` form to
@@ -182,7 +199,12 @@ describe('subject isolation', () => {
   it('leaves financial literacy with an empty shelf, and says so honestly', () => {
     // Not "no lesson" and not an error — a real empty. Its S1 book is usable
     // but held out of the app view while the edition conflict is unresolved.
+    // Grade 7's financial-literacy lessons are excluded here: they exist in
+    // KB_LESSONS but grade-7 is entirely held out of the picker on purpose
+    // (see "returns null for a lesson whose grade is held out" above), so
+    // they correctly produce no shelf at all rather than an empty one.
     for (const lesson of lessonsBySubject('financial-literacy')) {
+      if (getBookForLesson(lesson)?.gradeId === 'grade-7') continue;
       const s = buildLessonShelf(lesson.id);
       assert.ok(s, `${lesson.id} produced no shelf at all`);
       assert.equal(s.total, 0, `${lesson.id} shelved ${s.total}`);
