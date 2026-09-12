@@ -98,6 +98,12 @@ export type LicenseId =
    * line has to name the version the file was actually released under.
    */
   | 'CC-BY-2.0'
+  /**
+   * And the 3.0 generation, for the same reason: attribution-only, commercial
+   * use permitted, no share-alike. Most of Commons' diagram work — periodic
+   * tables, physics figures — sits on 2.0 or 3.0 rather than 4.0.
+   */
+  | 'CC-BY-3.0'
   /** Reprintable in principle, but see the policy map — we decline it. */
   | 'CC-BY-SA-4.0'
   /** No redistribution right; the terms permit an embed or a link only. */
@@ -108,6 +114,7 @@ const POLICY_BY_LICENSE: Record<LicenseId, BankUsePolicy> = {
   'CC0-1.0': 'quotable',
   'CC-BY-4.0': 'quotable',
   'CC-BY-2.0': 'quotable',
+  'CC-BY-3.0': 'quotable',
   // Share-alike obliges a derivative to carry the same licence. A worksheet
   // quoting the passage is plausibly a derivative, and the cost of being wrong
   // is having licensed our own material to the world. Treated as read-only
