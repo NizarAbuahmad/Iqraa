@@ -191,6 +191,14 @@ import {
   buildG7MathSem1Catalog,
 } from './curriculumG7MathSem1.ts';
 import {
+  G7_ISLAMIC_S1_BOOK_ID,
+  buildG7IslamicSem1Catalog,
+} from './curriculumG7IslamicSem1.ts';
+import {
+  G7_ISLAMIC_S2_BOOK_ID,
+  buildG7IslamicSem2Catalog,
+} from './curriculumG7IslamicSem2.ts';
+import {
   G8_ARABIC_S1_BOOK_ID,
   buildG8ArabicSem1Catalog,
 } from './curriculumG8ArabicSem1.ts';
@@ -922,6 +930,24 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Mathematics – Grade 7 – Semester 1',
     semester: 1,
     source: 'iqra_curriculum_g7_math_sem1.json (NCCD)',
+  },
+  {
+    id: G7_ISLAMIC_S1_BOOK_ID,
+    gradeId: 'grade-7',
+    subjectId: 'islamic',
+    titleAr: 'التربية الإسلامية – الصف السابع – الفصل الأول',
+    titleEn: 'Islamic Education – Grade 7 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g7_islamic_sem1.json (NCCD)',
+  },
+  {
+    id: G7_ISLAMIC_S2_BOOK_ID,
+    gradeId: 'grade-7',
+    subjectId: 'islamic',
+    titleAr: 'التربية الإسلامية – الصف السابع – الفصل الثاني',
+    titleEn: 'Islamic Education – Grade 7 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g7_islamic_sem2.json (NCCD)',
   },
   {
     id: G8_ARABIC_S1_BOOK_ID,
@@ -2045,6 +2071,8 @@ const _g8MathSem2 = buildG8MathSem2Catalog();
 const _g8MathSem1 = buildG8MathSem1Catalog();
 const _g7MathSem2 = buildG7MathSem2Catalog();
 const _g7MathSem1 = buildG7MathSem1Catalog();
+const _g7IslamicSem1 = buildG7IslamicSem1Catalog();
+const _g7IslamicSem2 = buildG7IslamicSem2Catalog();
 const _g8ArabicSem1 = buildG8ArabicSem1Catalog();
 const _g8ArabicSem2 = buildG8ArabicSem2Catalog();
 const _g8IslamicSem1 = buildG8IslamicSem1Catalog();
@@ -2263,6 +2291,8 @@ export const KB_UNITS: KBUnit[] = [
   ..._engIndustry.units,
   ..._g7MathSem1.units,
   ..._g7MathSem2.units,
+  ..._g7IslamicSem1.units,
+  ..._g7IslamicSem2.units,
 ];
 
 /** Active lessons: NCCD Chem S1/S2 + NCCD Math S1/S2 (G10 + G9) + NCCD FinLit S1 + English vocational tracks. */
@@ -2353,6 +2383,8 @@ export const KB_LESSONS: KBLesson[] = [
   ..._engIndustry.lessons,
   ..._g7MathSem1.lessons,
   ..._g7MathSem2.lessons,
+  ..._g7IslamicSem1.lessons,
+  ..._g7IslamicSem2.lessons,
 ];
 
 // ─────────────────────────────────────────────────────

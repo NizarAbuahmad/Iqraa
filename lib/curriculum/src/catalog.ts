@@ -98,6 +98,14 @@ import {
   buildG7MathSem1BrowserCatalog,
 } from './catalogs/g7MathSem1.ts';
 import {
+  G7_ISLAMIC_S1_CURRICULUM_BOOK_ID,
+  buildG7IslamicSem1BrowserCatalog,
+} from './catalogs/g7IslamicSem1.ts';
+import {
+  G7_ISLAMIC_S2_CURRICULUM_BOOK_ID,
+  buildG7IslamicSem2BrowserCatalog,
+} from './catalogs/g7IslamicSem2.ts';
+import {
   G9_MATH_S2_CURRICULUM_BOOK_ID,
   buildG9MathSem2BrowserCatalog,
   isG9MathSem2TitleOnlyUnit,
@@ -727,6 +735,10 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // grade-7 batch lands — see the book rows' comment in BOOKS above.
   G7_MATH_S1_CURRICULUM_BOOK_ID,
   G7_MATH_S2_CURRICULUM_BOOK_ID,
+  // Grade 7 Islamic Education — both semesters attached. Same held-out
+  // treatment as Grade 7 Math above.
+  G7_ISLAMIC_S1_CURRICULUM_BOOK_ID,
+  G7_ISLAMIC_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -1278,6 +1290,40 @@ export const BOOKS: Book[] = [
     title: 'Mathematics – Grade 7, Semester 2',
     titleAr: 'الرياضيات – الصف السابع – الفصل الثاني',
     subjectId: 'mathematics',
+    gradeId: 'grade-7',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── Islamic Education Grade 7 – Semesters 1 and 2 ──────────────────────────
+  // Second Grade 7 book in this repo. Both semesters have a full teacher
+  // guide. Semester 1's guide has a genuine structural gap in Unit 1 only
+  // (u1_l1 has no guide counterpart; the guide's own extra lesson there has
+  // no book counterpart and is unused) — Units 2-4 and all of Semester 2
+  // match the book title-for-title and order-for-order. See g7IslamicSem1.ts/
+  // g7IslamicSem2.ts and the JSONs' known_gaps. Same held-out picker
+  // treatment as Grade 7 Math above.
+  {
+    id: G7_ISLAMIC_S1_CURRICULUM_BOOK_ID,
+    title: 'Islamic Education – Grade 7, Semester 1',
+    titleAr: 'التربية الإسلامية – الصف السابع – الفصل الأول',
+    subjectId: 'islamic',
+    gradeId: 'grade-7',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G7_ISLAMIC_S2_CURRICULUM_BOOK_ID,
+    title: 'Islamic Education – Grade 7, Semester 2',
+    titleAr: 'التربية الإسلامية – الصف السابع – الفصل الثاني',
+    subjectId: 'islamic',
     gradeId: 'grade-7',
     academicYear: '2025-2026',
     language: 'Arabic',
@@ -3016,6 +3062,8 @@ const _g8MathSem2Browser = buildG8MathSem2BrowserCatalog();
 const _g8MathSem1Browser = buildG8MathSem1BrowserCatalog();
 const _g7MathSem2Browser = buildG7MathSem2BrowserCatalog();
 const _g7MathSem1Browser = buildG7MathSem1BrowserCatalog();
+const _g7IslamicSem1Browser = buildG7IslamicSem1BrowserCatalog();
+const _g7IslamicSem2Browser = buildG7IslamicSem2BrowserCatalog();
 const _g8ArabicSem1Browser = buildG8ArabicSem1BrowserCatalog();
 const _g8ArabicSem2Browser = buildG8ArabicSem2BrowserCatalog();
 const _g8IslamicSem1Browser = buildG8IslamicSem1BrowserCatalog();
@@ -3228,6 +3276,8 @@ export const UNITS: Unit[] = [
   ..._engSem2Browser.units,
   ..._g7MathSem1Browser.units,
   ..._g7MathSem2Browser.units,
+  ..._g7IslamicSem1Browser.units,
+  ..._g7IslamicSem2Browser.units,
 ];
 
 /** Active lessons — legacy Math/Chem G10 rows replaced by NCCD-sourced browser rows. */
@@ -3310,6 +3360,8 @@ export const LESSONS: Lesson[] = [
   ..._engSem2Browser.lessons,
   ..._g7MathSem1Browser.lessons,
   ..._g7MathSem2Browser.lessons,
+  ..._g7IslamicSem1Browser.lessons,
+  ..._g7IslamicSem2Browser.lessons,
 ];
 
 /** Math Grade 10 Semester 1 book id (NCCD-backed). */
