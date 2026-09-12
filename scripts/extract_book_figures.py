@@ -56,6 +56,7 @@ from __future__ import annotations
 
 import json
 import re
+from typing import NamedTuple
 import sys
 import os
 from pathlib import Path
@@ -126,6 +127,9 @@ KB_GEO = "knowledge-base/grade-10-geography/support-pdfs/"
 # later needs no rename (`g9-physics-s1-student-book` had to be renamed once
 # already for exactly this reason).
 MIRROR_G9 = "C:/Users/Lenovo/Downloads/Raya studio/Iqraa/Calude app/Knowledge Base/9th grade/"
+MIRROR_G8 = "C:/Users/Lenovo/Downloads/Raya studio/Iqraa/Calude app/Knowledge Base/8th grade/"
+KB_ISLAMIC = "knowledge-base/grade-10-islamic/support-pdfs/"
+KB_G9_ISLAMIC = "knowledge-base/grade-9-islamic/support-pdfs/"
 
 BOOKS: dict[str, tuple[str, str]] = {
     "math-s1-student-book": (
@@ -301,6 +305,55 @@ BOOKS: dict[str, tuple[str, str]] = {
         "grade-9-geography",
         MIRROR_G9 + "geography/كتاب الطالب لمادة الجغرافيا للصف التاسع الفصل الثاني.pdf",
     ),
+    # ── Grade 8 science, added 2026-09-12 ────────────────────────────────────
+    # Grade 8's first book of any kind. Like Grade 9 history and geography it
+    # has no row in g10_sources.json and no extracted text — its catalog was
+    # authored from the book directly — so these ids are the ones a manifest
+    # row would have to use.
+    #
+    # One book covers all of science at this grade rather than splitting into
+    # physics/chemistry/biology, so its units run 1-9 across the year: 1-4 in
+    # semester 1 and 5-9 in semester 2.
+    "g8-science-s1-student-book": (
+        "grade-8-science",
+        MIRROR_G8 + "العلوم/كتاب الطالب لمادة العلوم الصف الثامن الفصل الأول.pdf",
+    ),
+    # Measured 2026-09-12 and left unextracted: only TWO pages in this book
+    # carry «الدرس» as text in the top 200pt, and both are the contents
+    # spread — its lesson openers do not print the word at all, so there is
+    # nothing for `lesson_start` to profile the way Islamic was profiled.
+    # `outline` returns {} and every crop would be unplaced. Its S1 sibling
+    # detects all 10 openers. Same failure as g9-history-s2.
+    "g8-science-s2-student-book": (
+        "grade-8-science",
+        MIRROR_G8 + "العلوم/كتاب الطالب لمادة العلوم الصف الثامن الفصل الثاني.pdf",
+    ),
+    # ── Islamic Studies, added 2026-09-12 ────────────────────────────────────
+    # Abandoned on 2026-09-05 for want of a lesson-opener profile; these four
+    # are back because `OPENER_PROFILES` now has one. ISLAMIC_OPENER finds
+    # 24/24 openers in the S1 book — units 1-4 of six lessons, the catalog
+    # exactly — where the default profile found zero.
+    #
+    # The 2026-09-05 measurement of what they CONTAIN still stands and is the
+    # thing to check against the review sheet: ~10 usable crops per 36
+    # reviewed. These are text-and-ornament books; the extractor was built for
+    # books that draw their content.
+    "islamic-s1-student-book": (
+        "grade-10-islamic",
+        KB_ISLAMIC + "كتاب الطالب لمادة التربية الإسلامية الصف العاشر الفصل الأول.pdf",
+    ),
+    "islamic-s2-student-book": (
+        "grade-10-islamic",
+        KB_ISLAMIC + "كتاب الطالب لمادة التربية الإسلامية الصف العاشر الفصل الثاني.pdf",
+    ),
+    "g9-islamic-s1-student-book": (
+        "grade-9-islamic",
+        KB_G9_ISLAMIC + "كتاب الطالب لمادة التربية الإسلامية الصف التاسع الفصل الأول.pdf",
+    ),
+    "g9-islamic-s2-student-book": (
+        "grade-9-islamic",
+        KB_G9_ISLAMIC + "كتاب الطالب لمادة التربية الإسلامية الصف التاسع الفصل الثاني.pdf",
+    ),
 }
 
 # A real figure sits in a column; one filling the page is a failed detection.
@@ -338,6 +391,50 @@ DPI_OVERRIDES: dict[str, int] = {
 PREFER_CARD_BOUNDARY: set[str] = {
     "bio-s1-student-book",
     "bio-s2-student-book",
+}
+
+
+# ─── Per-book lesson-opener profiles ─────────────────────────────────────────
+#
+# `lesson_start`'s defaults are the maths/science layout: «الدرس» at 20pt+ in
+# the top band with a big bare number under it. Islamic Studies prints a third
+# layout, and NO amount of loosening the defaults reaches it without also
+# catching body text — measured 2026-09-05, re-measured 2026-09-12:
+#
+#   | | maths / science | Islamic |
+#   | «الدرس» size | >= 20pt | 15.9pt, y=48-75 |
+#   | lesson number | >= 40pt, bare digits, y < 65 | 15.9pt, PARENTHESISED, y=72-81 |
+#   | Arabic title | >= 24pt, y < 60 | 21.9-24pt, y=49-86 |
+#
+# So it is a profile — three geometry facts together — rather than a threshold
+# to relax. The parenthesised number is what makes it safe: the book's own
+# contents page (p4) carries «الدرس» at the same 15.9pt and is rejected because
+# its numbers are bare page numbers, not «)1(».
+class OpenerProfile(NamedTuple):
+    dars_size: float
+    dars_top: float
+    number_size: float
+    number_top: float
+    number_parenthesised: bool
+    title_size: float
+    title_top: float
+
+
+DEFAULT_OPENER = OpenerProfile(
+    dars_size=20, dars_top=90,
+    number_size=40, number_top=65, number_parenthesised=False,
+    title_size=24, title_top=60,
+)
+ISLAMIC_OPENER = OpenerProfile(
+    dars_size=15, dars_top=90,
+    number_size=15, number_top=95, number_parenthesised=True,
+    title_size=20, title_top=95,
+)
+OPENER_PROFILES: dict[str, OpenerProfile] = {
+    "islamic-s1-student-book": ISLAMIC_OPENER,
+    "islamic-s2-student-book": ISLAMIC_OPENER,
+    "g9-islamic-s1-student-book": ISLAMIC_OPENER,
+    "g9-islamic-s2-student-book": ISLAMIC_OPENER,
 }
 
 
@@ -390,7 +487,7 @@ def _dedupe(parts) -> str:
     return " ".join(out)
 
 
-def lesson_start(page: pymupdf.Page) -> dict | None:
+def lesson_start(page: pymupdf.Page, profile: OpenerProfile = DEFAULT_OPENER) -> dict | None:
     """A lesson opener: «الدرس» set at 22pt in the top band, its number at 45pt,
     and titles beneath.
 
@@ -428,7 +525,9 @@ def lesson_start(page: pymupdf.Page) -> dict | None:
       reach in body text.
     """
     if not any(
-        _bare(s["text"]) == "\u0627\u0644\u062F\u0631\u0633" and s["size"] >= 20 and s["bbox"][1] < 90
+        _bare(s["text"]) == "\u0627\u0644\u062F\u0631\u0633"
+        and s["size"] >= profile.dars_size
+        and s["bbox"][1] < profile.dars_top
         for s in _spans(page)
     ):
         return None
@@ -441,12 +540,22 @@ def lesson_start(page: pymupdf.Page) -> dict | None:
     heading_parts: list[tuple[float, float, str]] = []
     for s in _spans(page):
         t = s["text"].strip()
-        if s["size"] >= 40 and s["bbox"][1] < 65 and t.translate(ARABIC_DIGITS).isdigit():
-            number = int(t.translate(ARABIC_DIGITS))
+        # Islamic parenthesises its lesson number — «)1(» in the extracted
+        # stream, RTL-reversed from «(1)». Stripping the brackets is gated on
+        # the profile rather than done always: a bare-number book that also
+        # prints «(3)» as a footnote marker would start reading footnotes as
+        # lesson numbers.
+        digits = t.translate(ARABIC_DIGITS)
+        if profile.number_parenthesised:
+            digits = digits.strip("() ").strip()
+        if (s["size"] >= profile.number_size and s["bbox"][1] < profile.number_top
+                and digits.isdigit()):
+            number = int(digits)
         # The Arabic lesson title: the largest text in the very top band. It is
         # the only identifier chemistry states plainly, and it is what the
         # curriculum's own lesson titles are written in.
-        if s["size"] >= 24 and s["bbox"][1] < 60 and t and not all(ord(c) < 0x0600 for c in t):
+        if (s["size"] >= profile.title_size and s["bbox"][1] < profile.title_top
+                and t and not all(ord(c) < 0x0600 for c in t)):
             heading_parts.append((round(s["bbox"][1], 1), s["bbox"][0], t))
         if 13 <= s["size"] <= 20 and 60 < s["bbox"][1] < 115:
             if not t:
@@ -497,7 +606,7 @@ def unit_start(page: pymupdf.Page) -> int | None:
     return None
 
 
-def outline(doc: pymupdf.Document) -> dict[int, dict]:
+def outline(doc: pymupdf.Document, profile: OpenerProfile = DEFAULT_OPENER) -> dict[int, dict]:
     """Map every 1-based page to the lesson it belongs to.
 
     Lesson openers give the boundaries and the lesson number. The UNIT number
@@ -514,7 +623,7 @@ def outline(doc: pymupdf.Document) -> dict[int, dict]:
     """
     lessons: list[dict] = []
     for n in range(len(doc)):
-        start = lesson_start(doc[n])
+        start = lesson_start(doc[n], profile)
         if start:
             lessons.append({**start, "startPage": n + 1, "unit": None})
 
@@ -875,7 +984,7 @@ def figures_in(pdf: Path, source_id: str | None = None):
     invisible to it. Seeds that grow into the same region are one figure.
     """
     doc = pymupdf.open(pdf)
-    where = outline(doc)
+    where = outline(doc, OPENER_PROFILES.get(source_id or "", DEFAULT_OPENER))
     for n in range(len(doc)):
         page = doc[n]
 
