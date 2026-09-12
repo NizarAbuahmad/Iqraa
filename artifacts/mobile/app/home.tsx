@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View,
 } from 'react-native';
@@ -27,7 +27,7 @@ import {
   type HomeToolId,
 } from '@/services/homeAiTools';
 import { TopicSelector, type TopicSelectionDetail } from '@/components/ui/TopicSelector';
-import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
+import { getPickerGrades, getPickerSubjects, hasCurriculumForSubjectGrade } from '@/services/curriculumData';
 import { lessonPickerParams } from '@/services/lessonPrep';
 import {
   loadLessonPick,
@@ -88,6 +88,21 @@ export default function DashboardScreen() {
   });
   const pickerSubjects = getPickerSubjects();
   const pickerGrades = getPickerGrades();
+  /**
+   * Subjects to actually render for the grade drafted in the picker. The full
+   * `pickerSubjects` list stays for lookups — the banner resolves the *picked*
+   * lesson's subject through it, and that lesson can be at a different grade
+   * than the one currently drafted, so filtering it in place would blank the
+   * banner label. Only what renders is filtered, same as the chat sheet.
+   *
+   * Without this the sheet offered all eighteen against every grade: Grade 8
+   * showed pills for chemistry, physics, biology, earth science, geography,
+   * history and civic education, none of which NCCD teaches at Grade 8.
+   */
+  const visibleSubjects = useMemo(
+    () => pickerSubjects.filter(s => hasCurriculumForSubjectGrade(s.id, draftGradeId)),
+    [draftGradeId],
+  );
   // Class Mode media attached to the CURRENT lesson (shown as deck slides).
   const [media, setMedia] = useState<LessonMediaItem[]>([]);
   const [mediaUrl, setMediaUrl] = useState('');
@@ -806,6 +821,14 @@ export default function DashboardScreen() {
                           // Changing grade invalidates the unit/lesson draft,
                           // same as changing subject does below.
                           setDraftGradeId(g.id);
+                          // ...and can strand the pick on a subject the new
+                          // grade does not teach, leaving a selection the
+                          // teacher can no longer see. Move to the first it
+                          // does teach.
+                          if (!hasCurriculumForSubjectGrade(draftSubjectId, g.id)) {
+                            const first = pickerSubjects.find(s => hasCurriculumForSubjectGrade(s.id, g.id));
+                            if (first) setDraftSubjectId(first.id);
+                          }
                           setDraftTopic('');
                           setDraftDetail({ unitOrder: null, unitTitle: null, lessonTitle: null, lessonId: null });
                         }}
@@ -847,7 +870,7 @@ export default function DashboardScreen() {
               {lang === 'ar' ? 'المادة' : 'Subject'}
             </Text>
             <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-              {pickerSubjects.map(s => {
+              {visibleSubjects.map(s => {
                 const active = draftSubjectId === s.id;
                 return (
                   <Pressable
