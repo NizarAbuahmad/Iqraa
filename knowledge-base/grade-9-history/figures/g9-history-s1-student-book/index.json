@@ -1,0 +1,197 @@
+{
+  "sourceId": "g9-history-s1-student-book",
+  "figures": [
+    {
+      "file": "p008.png",
+      "sourceId": "g9-history-s1-student-book",
+      "pdfPage": 8,
+      "rect": [
+        60.5,
+        380.1,
+        366.7,
+        627.7
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 8
+    },
+    {
+      "file": "p009.png",
+      "sourceId": "g9-history-s1-student-book",
+      "pdfPage": 9,
+      "rect": [
+        46.9,
+        149.2,
+        549.2,
+        289.9
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 8
+    },
+    {
+      "file": "p010.png",
+      "sourceId": "g9-history-s1-student-book",
+      "pdfPage": 10,
+      "rect": [
+        55.9,
+        413.2,
+        531.5,
+        708.4
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 8
+    },
+    {
+      "file": "p018.png",
+      "sourceId": "g9-history-s1-student-book",
+      "pdfPage": 18,
+      "rect": [
+        50.7,
+        368.2,
+        371.5,
+        630.5
+      ],
+      "unit": 1,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 18
+    },
+    {
+      "file": "p028.png",
+      "sourceId": "g9-history-s1-student-book",
+      "pdfPage": 28,
+      "rect": [
+        291.7,
+        101.1,
+        551.2,
+        476.7
+      ],
+      "unit": 1,
+      "lesson": 4,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 22
+    },
+    {
+      "file": "p036.png",
+      "sourceId": "g9-history-s1-student-book",
+      "pdfPage": 36,
+      "rect": [
+        52.1,
+        396.2,
+        367.6,
+        746.2
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 36
+    },
+    {
+      "file": "p039.png",
+      "sourceId": "g9-history-s1-student-book",
+      "pdfPage": 39,
+      "rect": [
+        0.0,
+        590.6,
+        342.8,
+        772.1
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 39
+    },
+    {
+      "file": "p047.png",
+      "sourceId": "g9-history-s1-student-book",
+      "pdfPage": 47,
+      "rect": [
+        44.0,
+        482.4,
+        372.1,
+        724.0
+      ],
+      "unit": 2,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 47
+    },
+    {
+      "file": "p048.png",
+      "sourceId": "g9-history-s1-student-book",
+      "pdfPage": 48,
+      "rect": [
+        47.9,
+        177.4,
+        342.0,
+        584.9
+      ],
+      "unit": 2,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 47
+    },
+    {
+      "file": "p064.png",
+      "sourceId": "g9-history-s1-student-book",
+      "pdfPage": 64,
+      "rect": [
+        361.9,
+        91.4,
+        595.3,
+        545.7
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 64
+    },
+    {
+      "file": "p064b.png",
+      "sourceId": "g9-history-s1-student-book",
+      "pdfPage": 64,
+      "rect": [
+        74.1,
+        414.5,
+        359.9,
+        735.7
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 64
+    },
+    {
+      "file": "p071.png",
+      "sourceId": "g9-history-s1-student-book",
+      "pdfPage": 71,
+      "rect": [
+        100.4,
+        109.7,
+        493.1,
+        395.7
+      ],
+      "unit": 3,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 70
+    }
+  ]
+}
