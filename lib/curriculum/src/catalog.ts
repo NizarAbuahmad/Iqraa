@@ -591,7 +591,14 @@ export const INVESTOR_MVP_CURRICULUM = true;
 // grade-8 tile shows exactly that one subject rather than a page of dead
 // tiles; the rest of MVP_SUBJECT_IDS is deliberately left bookless at
 // grade-8 for now — see KNOWN_BOOKLESS in subjectGradeCoverage.test.ts.
-export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9', 'grade-8'];
+// 'grade-7' joined 2026-09-12, on explicit instruction, only once its whole
+// eleven-subject batch (Math, Islamic, Science, Digital Skills, Social
+// Studies, Financial Literacy, Vocational Education, Creative Arts,
+// Physical Education, Arabic, English) had landed — a deliberate departure
+// from grade-8/9's precedent of turning the grade on with their first
+// subject, since getSubjectsForGrade's same bookless-filtering made that
+// unnecessary caution rather than a real requirement.
+export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9', 'grade-8', 'grade-7'];
 // Appended, never inserted: these positions are persisted as bare indices in
 // formState and route URLs, so inserting shifts what a saved URL resolves to.
 // 'physics' joined on 2026-09-03 with the Grade 10 S1 curriculum. Without it,

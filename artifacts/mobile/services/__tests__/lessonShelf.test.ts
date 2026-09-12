@@ -23,22 +23,18 @@ describe('buildLessonShelf', () => {
   });
 
   it('builds a shelf for every visible lesson in the catalog', () => {
-    // Grade 7 lessons exist in KB_LESSONS but grade-7 is deliberately kept
-    // out of MVP_GRADE_IDS until its whole batch lands (see catalog.ts's
-    // Grade 7 Math BOOKS comment) — every prior grade turned its picker
-    // entry on with its first subject instead, so this is the first time a
-    // catalogued lesson is expected to be invisible on purpose.
+    // Grade 7 sat here as KB_LESSONS-but-invisible from 2026-09-11 to
+    // 2026-09-12, while its eleven-subject batch was still landing — see
+    // catalog.ts's MVP_GRADE_IDS comment. Nothing is currently held out
+    // this way, but the filter (rather than a bare KB_LESSONS.length
+    // equality) stays: it is what catches the next time a catalogued
+    // lesson is invisible on purpose, instead of silently passing on a
+    // coincidence.
     const visible = KB_LESSONS.filter(l => {
       const book = getBookForLesson(l);
       return book ? isPickerCurriculumVisible(book.subjectId, book.gradeId) : false;
     });
     assert.equal(shelves().length, visible.length);
-  });
-
-  it('returns null for a lesson whose grade is held out of the picker on purpose', () => {
-    const hidden = KB_LESSONS.find(l => getBookForLesson(l)?.gradeId === 'grade-7');
-    assert.ok(hidden, 'expected at least one grade-7 lesson for this test to mean anything');
-    assert.equal(buildLessonShelf(hidden.id), null);
   });
 
   it('counts what it holds', () => {
@@ -208,12 +204,7 @@ describe('subject isolation', () => {
   it('leaves financial literacy with an empty shelf, and says so honestly', () => {
     // Not "no lesson" and not an error — a real empty. Its S1 book is usable
     // but held out of the app view while the edition conflict is unresolved.
-    // Grade 7's financial-literacy lessons are excluded here: they exist in
-    // KB_LESSONS but grade-7 is entirely held out of the picker on purpose
-    // (see "returns null for a lesson whose grade is held out" above), so
-    // they correctly produce no shelf at all rather than an empty one.
     for (const lesson of lessonsBySubject('financial-literacy')) {
-      if (getBookForLesson(lesson)?.gradeId === 'grade-7') continue;
       const s = buildLessonShelf(lesson.id);
       assert.ok(s, `${lesson.id} produced no shelf at all`);
       assert.equal(s.total, 0, `${lesson.id} shelved ${s.total}`);

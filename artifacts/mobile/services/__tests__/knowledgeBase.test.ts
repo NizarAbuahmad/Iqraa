@@ -103,14 +103,17 @@ describe('searchKB — Arabic prefix stripping', () => {
   it('"الاحتمال" returns a probability lesson first', () => {
     const results = searchKB('الاحتمال', 'ar');
     assert.ok(results.length > 0, 'searchKB returned no results for "الاحتمال"');
-    // Both Grade 10 (kbl-math-s2-nccd-u8_*) and Grade 9 Semester 2
-    // (kbl-g9-math-s2-nccd-u8_*) have a statistics/probability unit 8 — a bare
-    // "الاحتمال" is genuinely ambiguous between them now, so this only checks
-    // that prefix-stripping still lands on *a* probability lesson, not a
-    // specific grade's.
+    // Grade 10 (kbl-math-s2-nccd-u8_*), Grade 9 Semester 2
+    // (kbl-g9-math-s2-nccd-u8_*), and — since 2026-09-12 — Grade 7 Semester 2
+    // (kbl-g7-math-s2-nccd-u8_*, «الإحصاء والاحتمالات») all have a
+    // statistics/probability unit 8 — a bare "الاحتمال" is genuinely
+    // ambiguous between them now, so this only checks that prefix-stripping
+    // still lands on *a* probability lesson, not a specific grade's.
     assert.ok(
-      results[0].id.startsWith('kbl-math-s2-nccd-u8_') || results[0].id.startsWith('kbl-g9-math-s2-nccd-u8_'),
-      `Expected a Sem2 probability lesson (u8_*, either grade) first for "الاحتمال", got "${results[0].id}"`,
+      results[0].id.startsWith('kbl-math-s2-nccd-u8_')
+        || results[0].id.startsWith('kbl-g9-math-s2-nccd-u8_')
+        || results[0].id.startsWith('kbl-g7-math-s2-nccd-u8_'),
+      `Expected a Sem2 probability lesson (u8_*, any grade) first for "الاحتمال", got "${results[0].id}"`,
     );
   });
 });
