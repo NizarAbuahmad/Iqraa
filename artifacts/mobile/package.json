@@ -74,6 +74,7 @@
     "expo-print": "~15.0.8",
     "expo-secure-store": "^15.0.8",
     "expo-sharing": "~14.0.8",
+    "expo-updates": "~29.0.20",
     "posthog-react-native": "^4.63.2",
     "pptxgenjs": "^4.0.1"
   }

@@ -1,0 +1,86 @@
+# What this is for
+#
+# Three surfaces carry the same `@workspace/curriculum` package and used to
+# move at three different speeds: web auto-deploys on every merge (render.yaml
+# has no buildFilter), the API is deployed by hand, and the app only moved when
+# somebody remembered to build it. A curriculum change could sit on the web for
+# days before reaching a single phone.
+#
+# This workflow removes the "somebody remembered" step for JS and content: the
+# same merge that triggers Render's web deploy publishes an over-the-air update
+# for the app. Native changes still need a real build — expo-updates refuses to
+# serve an update across a runtimeVersion boundary, and app.json's fingerprint
+# policy moves that boundary whenever the native surface changes.
+#
+# Publishes to the `preview` channel, which is what the internally distributed
+# APK builds carry. When the Play Store listing goes live, the store build will
+# carry `production` and this needs a second publish (or a channel switch) —
+# see .claude/plans for the store-release step.
+name: Mobile OTA update
+
+on:
+  push:
+    branches: [main]
+
+# Two updates racing on the same branch would leave devices on whichever
+# finished last rather than whichever was merged last.
+concurrency:
+  group: mobile-update
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: eas update
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Job-level so the step `if:` conditions below can read it. A step's own
+    # `env:` block is NOT visible to that step's `if:`.
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # `git log -1` needs the commit itself; depth 2 keeps that working on
+          # a squash-merge commit without cloning the whole history.
+          fetch-depth: 2
+
+      # Same Node and pnpm as ci.yml and the Render build, so a bundle that
+      # builds here is one that builds there.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.18.0 --activate
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Publish update
+        if: ${{ env.EXPO_TOKEN != '' }}
+        working-directory: artifacts/mobile
+        env:
+          # eas update does NOT read eas.json's build-profile `env` blocks —
+          # those apply to builds only. Omit these and the update ships
+          # pointing at nothing, which fails silently on the device rather than
+          # here. Duplicated from eas.json's `preview` profile; they are public
+          # client config, not secrets.
+          EXPO_PUBLIC_API_BASE_URL: https://iqraa-api-613126375862.europe-west1.run.app/api
+          EXPO_PUBLIC_DEMO_MODE: "false"
+          EXPO_PUBLIC_GOOGLE_CLIENT_ID: 784063967007-86omgnji0cg28iaav1o1celb8cm9je26.apps.googleusercontent.com
+        run: |
+          npx eas-cli@latest update \
+            --branch preview \
+            --message "$(git log -1 --pretty=%s)" \
+            --non-interactive
+
+      # A red X on every merge would train people to ignore CI, so an absent
+      # token is a clean skip that says what to do about it.
+      - name: Explain a skipped publish
+        if: ${{ env.EXPO_TOKEN == '' }}
+        run: |
+          echo "EXPO_TOKEN is not set — no update published."
+          echo "Add it under Settings → Secrets and variables → Actions."
+          echo "Until then the app only changes when someone runs a build by hand."

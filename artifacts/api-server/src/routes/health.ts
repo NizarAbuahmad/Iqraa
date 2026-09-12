@@ -14,6 +14,31 @@ router.get("/healthz", (_req, res) => {
 });
 
 /**
+ * Which build is actually serving this request.
+ *
+ * Three surfaces carry the same `@workspace/curriculum` package and move at
+ * three different speeds: web auto-deploys on every merge, this API is
+ * deployed by hand, and the app ships on its own cadence. Until this route
+ * existed there was no way to ask any of them which commit they were on — you
+ * grepped the served bundle hash and guessed. A stale API is the failure that
+ * broke production signups on 2026-09-10.
+ *
+ * Deliberately NOT folded into /healthz: that response is pinned by the
+ * `HealthCheckResponse` zod contract in @workspace/api-zod and is what Render
+ * polls. Adding a field there means versioning a contract to report a string.
+ *
+ * `K_REVISION` is injected by Cloud Run for free. `GIT_SHA` is not — it has to
+ * be passed at deploy time (see docs/deploying.md), so "unknown" here means the
+ * deploy omitted it, not that the route is broken.
+ */
+router.get("/healthz/version", (_req, res) => {
+  res.json({
+    commit: process.env.GIT_SHA ?? "unknown",
+    revision: process.env.K_REVISION ?? null,
+  });
+});
+
+/**
  * Is the SymPy verifier actually reachable from this API?
  *
  * Deliberately a separate endpoint from /healthz: Render's health check points
