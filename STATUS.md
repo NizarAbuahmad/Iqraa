@@ -410,6 +410,81 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The first-run carousel stopped promising what the app does not do, 2026-09-12
+
+Shipped inside #390 rather than under its own PR — the branch it sat on was cut
+from this work and merged with it, so the reasoning lives here and in the two
+commit messages (`e5da577`, `64ae2ce`).
+
+**This screen is the one place the product describes itself, and it is shown
+before login — to every role, not to teachers.** Read that way, three of its
+five slides said something the rest of the app contradicts.
+
+**«رمز الصف» came back, four days after being renamed away.** The 2026-09-06
+entry below («The link code a teacher shares») ends by saying the teacher's
+screen and the parent's field both say «رمز الربط» now. That was true when
+written. Then three new strings were added — `joinAnotherClassDesc`
+(`41f3e84`, 09-08), `claimRequiredDesc` (`f367193`, 09-10) and
+`onboardingSlide5Desc` (`81c4fc7`, 09-10) — and each independently reached for
+«رمز الصف» again.
+
+**The test that was supposed to stop this cannot see a new string.**
+`claimCodeMessage.test.ts` pins the composer's `fieldLabel` against the
+register form's own label, which is why the composer takes it as an input at
+all. That guards one path. Nothing guards a *fourth* screen that writes the
+name into a fresh translation key — and three of them did, in four days. The
+rename is applied again; the gap that let it regress is still open. A grep-level
+test over `i18n.ts` would close it and does not exist yet.
+
+«رمز الربط» is also the truthful name, not merely the consistent one: the claim
+screen accepts a per-student code as well as a class code (`student-code` in
+`claimCodeGate.ts`), and a parent is usually handed the former.
+
+**Two slides claimed more than the code does.**
+
+| slide | said | why it was wrong |
+| --- | --- | --- |
+| 2 | «بضغطة واحدة» — one tap | the flow needs grade/subject/unit/lesson picked first, then runs six steps. English already said "one pass"; Arabic now matches it |
+| 1 | "fully in Arabic" | wrong about content — `curriculumG10EnglishSem1` and `curriculumG8EngSem1` exist — and in the English locale it was a sentence *in English* announcing that everything is in Arabic, directly beneath the toggle that got you there. Now "Arabic-first" |
+
+Slide 1 also stopped naming grades 8–10 (Nizar's call): the grade set expands,
+and the slide reads as a statement about the national curriculum either way.
+Both locales, so they cannot drift apart again.
+
+**The math-verification slide is gone.** Four slides now: what this is, how a
+lesson comes together, the in-class tools, the parent/student one. Symbolic
+verification is still the strongest thing the product does, but it applies to
+maths answer keys only — and a teacher of any other subject, and every parent,
+were reading it before login as a description of what they were about to use.
+The claim is better made where it is true: the «تم التحقق من الإجابة رياضيًا
+(SymPy)» badge in `deckSlidesHtml.ts`, which says it about one answer rather
+than about the app.
+
+The surviving keys keep their numbers — `onboardingSlide4*`/`5*` follow
+`Slide2*`. They are identifiers, not positions, and renumbering costs every one
+of them in two locales for nothing. The comment above `SLIDES` says so, so the
+gap does not read as an accident.
+
+Also: «إقرأ» → «اقرأ» in the two `parentMsg*` strings, against 27 correct
+spellings elsewhere. Hamzat wasl.
+
+**What was checked and left alone.** Each remaining claim was read against the
+code rather than taken from the copy: grades 8/9/10 coverage (46 G8/G9 + 26 G10
+curriculum files), the SymPy badge, the phone-free team challenge
+(`classGame.ts`), and slide 5's promises to parents — `/curriculum` and
+`/messaging` are both in `NON_TEACHER_ROUTES`, so browsing the curriculum and
+receiving a teacher's messages are real. `DEMO_MODE` is false in the preview and
+production EAS profiles, so slides 2 and 3 were not selling sample content.
+
+`pnpm test` in `artifacts/mobile`: 1297 passed, 0 failed, 10 skipped.
+`tsc --noEmit` clean. The carousel was driven end to end in the web build in
+both locales — four dots, slide 3 is the in-class tools one, the last slide
+swaps تخطي for ابدأ الآن. `schema-push:` **none.**
+
+One thing noticed and not fixed: the five pager dots are bare `Pressable`s with
+no `accessibilityRole` or label, so the a11y tree shows five unnamed targets
+with no position.
+
 ## Grade 9's sciences, then history and geography, get the book's figures, 2026-09-11/12
 
 **The question was "do the slides show the book's pictures for every subject
@@ -1102,6 +1177,10 @@ Three smaller things the same trail turned up:
   sent a parent hunting for a label that did not exist. Both are «رمز الربط»
   now, and the composer is *passed* the register screen's own label so a rename
   cannot silently re-open the gap — `claimCodeMessage.test.ts` asserts it.
+  **Held for two days.** Three strings added on 09-08 and 09-10 each wrote
+  «رمز الصف» again; the test above pins the composer, and cannot see a new
+  screen that hardcodes the name. Renamed again 2026-09-12 — see the entry at
+  the top of this file.
 - **A pasted code was rejected for being pasted.** `normalizeShareCode` was
   applied to exam codes and never to claim codes; both call sites only
   `.trim()`. «abc-234 » answered "invalid or has expired", which was neither.
