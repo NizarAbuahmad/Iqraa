@@ -122,11 +122,21 @@ export default function OnboardingScreen() {
 
       <View style={styles.footer}>
         <View style={[styles.dots, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          {/* A dot has no text child, so nothing names it: the a11y tree showed
+              four unlabelled targets in a row and no way to tell which was
+              current. The label is the position rather than the slide's title —
+              the title is already read out as the heading directly above, and
+              hearing it twice says nothing about where you are. `selected`
+              carries the current one, which is the part the visual width
+              conveys and assistive tech otherwise cannot see. */}
           {SLIDES.map((s, i) => (
             <Pressable
               key={s.titleKey}
               onPress={() => { Haptics.selectionAsync(); setIndex(i); }}
               hitSlop={6}
+              accessibilityRole="button"
+              accessibilityLabel={t('onboardingSlideLabel', i + 1, SLIDES.length)}
+              accessibilityState={{ selected: i === index }}
               style={[
                 styles.dot,
                 {
