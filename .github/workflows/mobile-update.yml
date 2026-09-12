@@ -83,9 +83,15 @@ jobs:
           EXPO_PUBLIC_API_BASE_URL: https://iqraa-api-613126375862.europe-west1.run.app/api
           EXPO_PUBLIC_DEMO_MODE: "false"
           EXPO_PUBLIC_GOOGLE_CLIENT_ID: 784063967007-86omgnji0cg28iaav1o1celb8cm9je26.apps.googleusercontent.com
+        # --platform android because eas.json declares no iOS build profile at
+        # all: an iOS bundle here would be exported, uploaded and stored for a
+        # binary that does not exist. It also roughly doubles export time and
+        # adds a second way for this job to fail on a platform nobody has ever
+        # built.
         run: |
           npx eas-cli@latest update \
             --branch "${{ inputs.branch || 'preview' }}" \
+            --platform android \
             --message "$(git log -1 --pretty=%s)" \
             --non-interactive
 
