@@ -120,7 +120,7 @@ export default function LoginScreen() {
         </Text>
 
         <BrandLogo
-          variant="lockup"
+          variant="mark"
           onDark
           style={[styles.logo, isWide ? styles.logoWide : styles.logoNarrow]}
           accessibilityLabel="IQRA"
