@@ -14,6 +14,7 @@ import {
 import * as Clipboard from 'expo-clipboard';
 import { router, useLocalSearchParams } from 'expo-router';
 import { TopicSelector } from '@/components/ui/TopicSelector';
+import { PillSelector } from '@/components/ui/PillSelector';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
@@ -486,73 +487,39 @@ function ContextBanner({
           >
             {/* Grade pills — only worth showing once there is a real choice. */}
             {CONTEXT_GRADES.length > 1 ? (
-              <>
-                <Text style={[ctxStyles.modalSectionLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left' }]}>
-                  {lang === 'ar' ? 'الصف' : 'Grade'}
-                </Text>
-                <View style={[ctxStyles.subjRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                  {CONTEXT_GRADES.map(g => (
-                    <Pressable
-                      key={g.id}
-                      onPress={() => {
-                        // Changing grade invalidates the unit/lesson draft,
-                        // same as changing subject does below.
-                        setDraftGradeId(g.id);
-                        setDraftTopic('');
-                        setDraftLessonId(null);
-                      }}
-                      style={[ctxStyles.subjPill, {
-                        backgroundColor: draftGradeId === g.id ? colors.primary : colors.muted,
-                        borderRadius: 16,
-                        borderWidth: 1.5,
-                        borderColor: draftGradeId === g.id ? colors.primary : colors.border,
-                      }]}
-                    >
-                      <Text style={[ctxStyles.subjText, {
-                        color: draftGradeId === g.id ? colors.primaryForeground : colors.mutedForeground,
-                        fontFamily: draftGradeId === g.id ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
-                      }]}>
-                        {lang === 'ar' ? g.nameAr : g.name}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </>
+              <PillSelector
+                label={lang === 'ar' ? 'الصف' : 'Grade'}
+                options={CONTEXT_GRADES.map(g => ({ value: g.id, label: lang === 'ar' ? g.nameAr : g.name }))}
+                value={draftGradeId}
+                onChange={id => {
+                  // Changing grade invalidates the unit/lesson draft,
+                  // same as changing subject does below.
+                  setDraftGradeId(id);
+                  setDraftTopic('');
+                  setDraftLessonId(null);
+                }}
+                colors={colors}
+                isRTL={isRTL}
+                accent={colors.primary}
+              />
             ) : null}
 
             {/* Subject pills */}
-            <Text style={[ctxStyles.modalSectionLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left', marginTop: CONTEXT_GRADES.length > 1 ? 18 : 0 }]}>
-              {lang === 'ar' ? 'المادة' : 'Subject'}
-            </Text>
-            <View style={[ctxStyles.subjRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-              {visibleSubjIdxs.map(i => CONTEXT_SUBJECTS[i]).map((s, vi) => {
-                const i = visibleSubjIdxs[vi];
-                return (
-                <Pressable
-                  key={s.subjectId}
-                  onPress={() => { setDraftSubjIdx(i); setDraftTopic(''); setDraftLessonId(null); }}
-                  style={[ctxStyles.subjPill, {
-                    backgroundColor: draftSubjIdx === i ? colors.primary : colors.muted,
-                    borderRadius: 16,
-                    borderWidth: 1.5,
-                    borderColor: draftSubjIdx === i ? colors.primary : colors.border,
-                  }]}
-                >
-                  <Text style={[ctxStyles.subjText, {
-                    color: draftSubjIdx === i ? colors.primaryForeground : colors.mutedForeground,
-                    fontFamily: draftSubjIdx === i ? 'Cairo_600SemiBold' : 'Almarai_400Regular',
-                  }]}>
-                    {lang === 'ar' ? s.labelAr : s.labelEn}
-                  </Text>
-                </Pressable>
-                );
-              })}
-            </View>
+            <PillSelector
+              label={lang === 'ar' ? 'المادة' : 'Subject'}
+              options={visibleSubjIdxs.map(i => ({
+                value: i,
+                label: lang === 'ar' ? CONTEXT_SUBJECTS[i].labelAr : CONTEXT_SUBJECTS[i].labelEn,
+              }))}
+              value={draftSubjIdx}
+              onChange={i => { setDraftSubjIdx(i); setDraftTopic(''); setDraftLessonId(null); }}
+              colors={colors}
+              isRTL={isRTL}
+              accent={colors.primary}
+            />
 
-            {/* Topic selector */}
-            <Text style={[ctxStyles.modalSectionLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left', marginTop: 18 }]}>
-              {lang === 'ar' ? 'الدرس' : 'Lesson'}
-            </Text>
+            {/* Topic selector — TopicSelector renders its own «موضوع الدرس» label,
+                so the section header above it was a second label for one field. */}
             <TopicSelector
               subjectId={subj.subjectId}
               gradeId={draftGradeId}
@@ -2993,9 +2960,6 @@ const ctxStyles = StyleSheet.create({
   pill:       { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
   pillText:   { fontSize: 12 },
   clearBtn:   { padding: 4 },
-  subjRow:    { flexDirection: 'row', gap: 8, marginBottom: 4 },
-  subjPill:   { paddingHorizontal: 14, paddingVertical: 6 },
-  subjText:   { fontSize: 13 },
   // Modal
   modal:        { flex: 1 },
   modalHeader:  { alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1 },
@@ -3003,7 +2967,6 @@ const ctxStyles = StyleSheet.create({
   modalCancelText: { fontSize: 14 },
   modalTitle:   { fontSize: 16 },
   modalBody:    { padding: 20, paddingBottom: 40 },
-  modalSectionLabel: { fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
   modalFooter:  { padding: 16, borderTopWidth: 1 },
   askBtn:       { alignItems: 'center', justifyContent: 'center', gap: 10, padding: 16 },
   askBtnText:   { fontSize: 15, flexShrink: 1 },
