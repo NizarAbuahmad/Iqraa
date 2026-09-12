@@ -118,6 +118,21 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   // of a book, and this file is the place that distinction has to hold.
   'science:grade-9',
   'science:grade-10',
+  // grade-7 joined MVP_GRADE_IDS 2026-09-12 with all eleven of its subjects
+  // already built (Math, Islamic, Science, Digital Skills, Social Studies,
+  // Financial Literacy, Vocational Education, Creative Arts, Physical
+  // Education, Arabic, English) — unlike grade-8's staged rollout, so this
+  // grade never passed through an ordinary/temporary-gap phase. Same reason
+  // as grade-8: NCCD combines science and social studies into one book each
+  // at Grade 7 too, so the four split-science subjects and the three
+  // split-social subjects are permanently bookless here, not gaps to close.
+  'chemistry:grade-7',
+  'physics:grade-7',
+  'earth-science:grade-7',
+  'biology:grade-7',
+  'geography:grade-7',
+  'history:grade-7',
+  'civic-education:grade-7',
 ]);
 
 describe('subject/grade coverage across the MVP lists', () => {

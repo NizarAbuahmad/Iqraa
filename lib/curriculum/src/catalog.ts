@@ -90,6 +90,90 @@ import {
   buildG8MathSem1BrowserCatalog,
 } from './catalogs/g8MathSem1.ts';
 import {
+  G7_MATH_S2_CURRICULUM_BOOK_ID,
+  buildG7MathSem2BrowserCatalog,
+} from './catalogs/g7MathSem2.ts';
+import {
+  G7_MATH_S1_CURRICULUM_BOOK_ID,
+  buildG7MathSem1BrowserCatalog,
+} from './catalogs/g7MathSem1.ts';
+import {
+  G7_ISLAMIC_S1_CURRICULUM_BOOK_ID,
+  buildG7IslamicSem1BrowserCatalog,
+} from './catalogs/g7IslamicSem1.ts';
+import {
+  G7_ISLAMIC_S2_CURRICULUM_BOOK_ID,
+  buildG7IslamicSem2BrowserCatalog,
+} from './catalogs/g7IslamicSem2.ts';
+import {
+  G7_SCIENCE_S1_CURRICULUM_BOOK_ID,
+  buildG7ScienceSem1BrowserCatalog,
+} from './catalogs/g7ScienceSem1.ts';
+import {
+  G7_SCIENCE_S2_CURRICULUM_BOOK_ID,
+  buildG7ScienceSem2BrowserCatalog,
+} from './catalogs/g7ScienceSem2.ts';
+import {
+  G7_DIGITAL_S1_CURRICULUM_BOOK_ID,
+  buildG7DigitalSem1BrowserCatalog,
+} from './catalogs/g7DigitalSem1.ts';
+import {
+  G7_DIGITAL_S2_CURRICULUM_BOOK_ID,
+  buildG7DigitalSem2BrowserCatalog,
+} from './catalogs/g7DigitalSem2.ts';
+import {
+  G7_SOCIAL_S1_CURRICULUM_BOOK_ID,
+  buildG7SocialSem1BrowserCatalog,
+} from './catalogs/g7SocialSem1.ts';
+import {
+  G7_SOCIAL_S2_CURRICULUM_BOOK_ID,
+  buildG7SocialSem2BrowserCatalog,
+} from './catalogs/g7SocialSem2.ts';
+import {
+  G7_FINLIT_S1_CURRICULUM_BOOK_ID,
+  buildG7FinlitSem1BrowserCatalog,
+} from './catalogs/g7FinlitSem1.ts';
+import {
+  G7_FINLIT_S2_CURRICULUM_BOOK_ID,
+  buildG7FinlitSem2BrowserCatalog,
+} from './catalogs/g7FinlitSem2.ts';
+import {
+  G7_VOC_S1_CURRICULUM_BOOK_ID,
+  buildG7VocSem1BrowserCatalog,
+} from './catalogs/g7VocationalSem1.ts';
+import {
+  G7_VOC_S2_CURRICULUM_BOOK_ID,
+  buildG7VocSem2BrowserCatalog,
+} from './catalogs/g7VocationalSem2.ts';
+import {
+  G7_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
+  buildG7CreativeArtsBrowserCatalog,
+} from './catalogs/g7CreativeArts.ts';
+import {
+  G7_PE_S1_CURRICULUM_BOOK_ID,
+  buildG7PeSem1BrowserCatalog,
+} from './catalogs/g7PeSem1.ts';
+import {
+  G7_PE_S2_CURRICULUM_BOOK_ID,
+  buildG7PeSem2BrowserCatalog,
+} from './catalogs/g7PeSem2.ts';
+import {
+  G7_ARABIC_S1_CURRICULUM_BOOK_ID,
+  buildG7ArabicSem1BrowserCatalog,
+} from './catalogs/g7ArabicSem1.ts';
+import {
+  G7_ARABIC_S2_CURRICULUM_BOOK_ID,
+  buildG7ArabicSem2BrowserCatalog,
+} from './catalogs/g7ArabicSem2.ts';
+import {
+  G7_ENG_S1_CURRICULUM_BOOK_ID,
+  buildG7EngSem1BrowserCatalog,
+} from './catalogs/g7EngSem1.ts';
+import {
+  G7_ENG_S2_CURRICULUM_BOOK_ID,
+  buildG7EngSem2BrowserCatalog,
+} from './catalogs/g7EngSem2.ts';
+import {
   G9_MATH_S2_CURRICULUM_BOOK_ID,
   buildG9MathSem2BrowserCatalog,
   isG9MathSem2TitleOnlyUnit,
@@ -445,10 +529,10 @@ export const SUBJECTS: Subject[] = [
   // BANK_SUBJECT_IDS['digital-literacy'], which already pointed here before
   // any catalog subject existed to receive it.
   { id: 'digital-literacy', name: 'Digital Skills', nameAr: 'المهارات الرقمية', icon: 'hardware-chip-outline', color: '#0EA5E9', grades: GRADES.map(g => g.id) },
-  // Extended to grade-8 on 2026-09-09 — grades is deliberately not a slice
-  // for this one subject, since grade-8 is not contiguous with the
-  // SPECIALISED_FROM=8 (grade-9-onward) range.
-  { id: 'financial-literacy', name: 'Financial Literacy', nameAr: 'الثقافة المالية', icon: 'wallet-outline', color: '#B45309', grades: ['grade-8', ...GRADES.slice(SPECIALISED_FROM).map(g => g.id)] },
+  // Extended to grade-8 on 2026-09-09, then grade-7 on 2026-09-12 — grades
+  // is deliberately not a slice for this one subject, since grade-7/8 are
+  // not contiguous with the SPECIALISED_FROM=8 (grade-9-onward) range.
+  { id: 'financial-literacy', name: 'Financial Literacy', nameAr: 'الثقافة المالية', icon: 'wallet-outline', color: '#B45309', grades: ['grade-7', 'grade-8', ...GRADES.slice(SPECIALISED_FROM).map(g => g.id)] },
   { id: 'earth-science', name: 'Earth and Environmental Science', nameAr: 'علوم الأرض والبيئة', icon: 'earth', color: '#65A30D', grades: GRADES.slice(SPECIALISED_FROM).map(g => g.id) },
   // The first geography book in this repo, added 2026-09-09 as grade-9-only.
   // Extended to grade-10 the same week once its book arrived.
@@ -461,19 +545,20 @@ export const SUBJECTS: Subject[] = [
   { id: 'civic-education', name: 'National and Civic Education', nameAr: 'التربية الوطنية والمدنية', icon: 'flag-outline', color: '#1D4ED8', grades: ['grade-9', 'grade-10'] },
   // Fifth brand-new subject added this week, and the first skills-based
   // rather than knowledge-based one — see g9PeSem1.ts for what that changes
-  // about the data shape. grades: ['grade-9'] for the same reason as the
-  // other four.
-  { id: 'physical-education', name: 'Physical Education', nameAr: 'التربية الرياضية', icon: 'fitness-outline', color: '#DC2626', grades: ['grade-9'] },
+  // about the data shape. Extended to grade-7 on 2026-09-12 once its book
+  // arrived — the two are not contiguous (no Grade 8 PE book exists).
+  { id: 'physical-education', name: 'Physical Education', nameAr: 'التربية الرياضية', icon: 'fitness-outline', color: '#DC2626', grades: ['grade-7', 'grade-9'] },
   // Sixth brand-new subject, added 2026-09-09 as part of the Grade 8 batch.
   // Combines three domains (Art, Music, Drama) NCCD prints as one book —
-  // see g8CreativeArts.ts. grades: ['grade-8'] for the same reason as the
-  // other five: no book at any other grade.
-  { id: 'creative-arts', name: 'Art, Music and Drama Education', nameAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة', icon: 'color-palette-outline', color: '#A21CAF', grades: ['grade-8'] },
+  // see g8CreativeArts.ts. Extended to grade-7 on 2026-09-12 once its book
+  // arrived (also one book, no semester split, same as grade-8's).
+  { id: 'creative-arts', name: 'Art, Music and Drama Education', nameAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة', icon: 'color-palette-outline', color: '#A21CAF', grades: ['grade-7', 'grade-8'] },
   // Seventh brand-new subject, added 2026-09-09 as part of the Grade 8
   // batch. Seven vocational tracks packed into one book per semester
   // (life skills, home economics, agriculture, health/safety, industry,
-  // entrepreneurship, tourism) — see g8VocationalSem1.ts.
-  { id: 'vocational-education', name: 'Vocational Education', nameAr: 'التربية المهنية', icon: 'construct-outline', color: '#B91C1C', grades: ['grade-8'] },
+  // entrepreneurship, tourism) — see g8VocationalSem1.ts. Extended to
+  // grade-7 on 2026-09-12 once its book arrived (a different seven tracks).
+  { id: 'vocational-education', name: 'Vocational Education', nameAr: 'التربية المهنية', icon: 'construct-outline', color: '#B91C1C', grades: ['grade-7', 'grade-8'] },
 ];
 
 /**
@@ -506,7 +591,14 @@ export const INVESTOR_MVP_CURRICULUM = true;
 // grade-8 tile shows exactly that one subject rather than a page of dead
 // tiles; the rest of MVP_SUBJECT_IDS is deliberately left bookless at
 // grade-8 for now — see KNOWN_BOOKLESS in subjectGradeCoverage.test.ts.
-export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9', 'grade-8'];
+// 'grade-7' joined 2026-09-12, on explicit instruction, only once its whole
+// eleven-subject batch (Math, Islamic, Science, Digital Skills, Social
+// Studies, Financial Literacy, Vocational Education, Creative Arts,
+// Physical Education, Arabic, English) had landed — a deliberate departure
+// from grade-8/9's precedent of turning the grade on with their first
+// subject, since getSubjectsForGrade's same bookless-filtering made that
+// unnecessary caution rather than a real requirement.
+export const MVP_GRADE_IDS: readonly string[] = ['grade-10', 'grade-9', 'grade-8', 'grade-7'];
 // Appended, never inserted: these positions are persisted as bare indices in
 // formState and route URLs, so inserting shifts what a saved URL resolves to.
 // 'physics' joined on 2026-09-03 with the Grade 10 S1 curriculum. Without it,
@@ -713,6 +805,49 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // 5-9, continuing Semester 1's 1-4 rather than restarting.
   G8_SCIENCE_S1_CURRICULUM_BOOK_ID,
   G8_SCIENCE_S2_CURRICULUM_BOOK_ID,
+  // Grade 7 Math — both semesters attached, the first Grade 7 book in this
+  // repo. In MVP_BOOK_IDS only (curriculum browser); grade-7 stays out of
+  // MVP_GRADE_IDS/MVP_SUBJECT_IDS (AI-tools pickers) until the rest of the
+  // grade-7 batch lands — see the book rows' comment in BOOKS above.
+  G7_MATH_S1_CURRICULUM_BOOK_ID,
+  G7_MATH_S2_CURRICULUM_BOOK_ID,
+  // Grade 7 Islamic Education — both semesters attached. Same held-out
+  // treatment as Grade 7 Math above.
+  G7_ISLAMIC_S1_CURRICULUM_BOOK_ID,
+  G7_ISLAMIC_S2_CURRICULUM_BOOK_ID,
+  // Grade 7 Science — both semesters attached. Same held-out treatment as
+  // Grade 7 Math above. Semester 2 numbers its units 6-10, continuing
+  // Semester 1's 1-5 rather than restarting.
+  G7_SCIENCE_S1_CURRICULUM_BOOK_ID,
+  G7_SCIENCE_S2_CURRICULUM_BOOK_ID,
+  // Grade 7 Digital Skills — both semesters attached. Same held-out
+  // treatment as Grade 7 Math above.
+  G7_DIGITAL_S1_CURRICULUM_BOOK_ID,
+  G7_DIGITAL_S2_CURRICULUM_BOOK_ID,
+  // Grade 7 Social Studies — both semesters attached.
+  G7_SOCIAL_S1_CURRICULUM_BOOK_ID,
+  G7_SOCIAL_S2_CURRICULUM_BOOK_ID,
+  // Grade 7 Financial Literacy — both semesters attached.
+  G7_FINLIT_S1_CURRICULUM_BOOK_ID,
+  G7_FINLIT_S2_CURRICULUM_BOOK_ID,
+  // Grade 7 Vocational Education — both semesters attached.
+  G7_VOC_S1_CURRICULUM_BOOK_ID,
+  G7_VOC_S2_CURRICULUM_BOOK_ID,
+  // Grade 7 Art, Music and Drama Education — one book, no semester.
+  G7_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
+  // Grade 7 Physical Education — both semesters attached. First Grade 7
+  // subject with no Grade 8 precedent at all.
+  G7_PE_S1_CURRICULUM_BOOK_ID,
+  G7_PE_S2_CURRICULUM_BOOK_ID,
+  // Grade 7 Arabic — both semesters attached, using the «العربية لغتي»
+  // series. Same held-out treatment as the other Grade 7 subjects above.
+  G7_ARABIC_S1_CURRICULUM_BOOK_ID,
+  G7_ARABIC_S2_CURRICULUM_BOOK_ID,
+  // Grade 7 English — both semesters attached, from the "Jordan Team
+  // Together" series — a different publisher series and structure from
+  // the "Jordan High Note" series used at Grade 8/9/10 (see g7EngSem1.ts).
+  G7_ENG_S1_CURRICULUM_BOOK_ID,
+  G7_ENG_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -1238,6 +1373,343 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+  },
+  // ── Math Grade 7 – Semesters 1 and 2 ────────────────────────────────────
+  // First Grade 7 book in this repo. Both semesters have a full teacher
+  // guide, so objectives are populated the same way as G8 Math S2 — verbatim
+  // from the teacher guide's own «نتاجات الدرس» / unit-plan box. Only in
+  // MVP_BOOK_IDS (curriculum browser), not MVP_SUBJECT_IDS/MVP_GRADE_IDS —
+  // grade-7 stays out of the AI-tools picker until the rest of its batch
+  // lands, same treatment grade-8 got before it was turned on.
+  {
+    id: G7_MATH_S1_CURRICULUM_BOOK_ID,
+    title: 'Mathematics – Grade 7, Semester 1',
+    titleAr: 'الرياضيات – الصف السابع – الفصل الأول',
+    subjectId: 'mathematics',
+    gradeId: 'grade-7',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G7_MATH_S2_CURRICULUM_BOOK_ID,
+    title: 'Mathematics – Grade 7, Semester 2',
+    titleAr: 'الرياضيات – الصف السابع – الفصل الثاني',
+    subjectId: 'mathematics',
+    gradeId: 'grade-7',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── Islamic Education Grade 7 – Semesters 1 and 2 ──────────────────────────
+  // Second Grade 7 book in this repo. Both semesters have a full teacher
+  // guide. Semester 1's guide has a genuine structural gap in Unit 1 only
+  // (u1_l1 has no guide counterpart; the guide's own extra lesson there has
+  // no book counterpart and is unused) — Units 2-4 and all of Semester 2
+  // match the book title-for-title and order-for-order. See g7IslamicSem1.ts/
+  // g7IslamicSem2.ts and the JSONs' known_gaps. Same held-out picker
+  // treatment as Grade 7 Math above.
+  {
+    id: G7_ISLAMIC_S1_CURRICULUM_BOOK_ID,
+    title: 'Islamic Education – Grade 7, Semester 1',
+    titleAr: 'التربية الإسلامية – الصف السابع – الفصل الأول',
+    subjectId: 'islamic',
+    gradeId: 'grade-7',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G7_ISLAMIC_S2_CURRICULUM_BOOK_ID,
+    title: 'Islamic Education – Grade 7, Semester 2',
+    titleAr: 'التربية الإسلامية – الصف السابع – الفصل الثاني',
+    subjectId: 'islamic',
+    gradeId: 'grade-7',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── Science Grade 7 – Semesters 1 and 2 ────────────────────────────────────
+  // Third Grade 7 book. Grade 7/8 both teach combined «العلوم» before it
+  // splits into physics/chemistry/biology/earth-science from Grade 9. The
+  // teacher guide is a first trial edition (2020) that predates the attached
+  // 2026 student book by six years, so three of Semester 1's five units have
+  // a genuinely different lesson structure between the two books — periods
+  // are left null wherever the guide has no title-matching lesson, cross-
+  // checked against the activity book's own numbering. Semester 2 has no
+  // such mismatch (11/11 lessons match exactly) and numbers its units 6-10,
+  // continuing Semester 1's 1-5. See g7ScienceSem1.ts/g7ScienceSem2.ts and
+  // the JSONs' known_gaps. Same held-out picker treatment as the other
+  // Grade 7 subjects above.
+  {
+    id: G7_SCIENCE_S1_CURRICULUM_BOOK_ID,
+    title: 'Science – Grade 7, Semester 1',
+    titleAr: 'العلوم – الصف السابع – الفصل الأول',
+    subjectId: 'science',
+    gradeId: 'grade-7',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G7_SCIENCE_S2_CURRICULUM_BOOK_ID,
+    title: 'Science – Grade 7, Semester 2',
+    titleAr: 'العلوم – الصف السابع – الفصل الثاني',
+    subjectId: 'science',
+    gradeId: 'grade-7',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── Digital Skills Grade 7 – Semesters 1 and 2 ─────────────────────────────
+  // Fourth Grade 7 book. Semester 1 has a full teacher guide (real periods);
+  // Semester 2 has none (periods null throughout). Same held-out picker
+  // treatment as the other Grade 7 subjects above.
+  {
+    id: G7_DIGITAL_S1_CURRICULUM_BOOK_ID,
+    title: 'Digital Skills – Grade 7, Semester 1',
+    titleAr: 'المهارات الرقمية – الصف السابع – الفصل الأول',
+    subjectId: 'digital-literacy',
+    gradeId: 'grade-7',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G7_DIGITAL_S2_CURRICULUM_BOOK_ID,
+    title: 'Digital Skills – Grade 7, Semester 2',
+    titleAr: 'المهارات الرقمية – الصف السابع – الفصل الثاني',
+    subjectId: 'digital-literacy',
+    gradeId: 'grade-7',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── Social Studies Grade 7 – Semesters 1 and 2 ─────────────────────────────
+  // Grade 7/8 both teach combined «الدراسات الاجتماعية» before it splits
+  // into geography/history/civic-education from Grade 9. No teacher guide
+  // exists for this subject at any grade — objectives: [] throughout,
+  // matching the Grade 8 precedent.
+  {
+    id: G7_SOCIAL_S1_CURRICULUM_BOOK_ID,
+    title: 'Social Studies – Grade 7, Semester 1',
+    titleAr: 'الدراسات الاجتماعية – الصف السابع – الفصل الأول',
+    subjectId: 'social',
+    gradeId: 'grade-7',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G7_SOCIAL_S2_CURRICULUM_BOOK_ID,
+    title: 'Social Studies – Grade 7, Semester 2',
+    titleAr: 'الدراسات الاجتماعية – الصف السابع – الفصل الثاني',
+    subjectId: 'social',
+    gradeId: 'grade-7',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── Financial Literacy Grade 7 – Semesters 1 and 2 ─────────────────────────
+  // Extends the subject to grade-7 (SUBJECTS.grades updated). No teacher
+  // guide, but the book's own numbered «نتاجات التعلم» give real objectives,
+  // same as the Grade 8/9 precedent.
+  {
+    id: G7_FINLIT_S1_CURRICULUM_BOOK_ID,
+    title: 'Financial Literacy – Grade 7, Semester 1',
+    titleAr: 'الثقافة المالية – الصف السابع – الفصل الأول',
+    subjectId: 'financial-literacy',
+    gradeId: 'grade-7',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G7_FINLIT_S2_CURRICULUM_BOOK_ID,
+    title: 'Financial Literacy – Grade 7, Semester 2',
+    titleAr: 'الثقافة المالية – الصف السابع – الفصل الثاني',
+    subjectId: 'financial-literacy',
+    gradeId: 'grade-7',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── Vocational Education Grade 7 – Semesters 1 and 2 ───────────────────────
+  // Extends the subject to grade-7 (SUBJECTS.grades updated). Seven
+  // independent tracks per semester, same shape as the Grade 8 precedent
+  // but a different seven tracks each semester.
+  {
+    id: G7_VOC_S1_CURRICULUM_BOOK_ID,
+    title: 'Vocational Education – Grade 7, Semester 1',
+    titleAr: 'التربية المهنية – الصف السابع – الفصل الأول',
+    subjectId: 'vocational-education',
+    gradeId: 'grade-7',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G7_VOC_S2_CURRICULUM_BOOK_ID,
+    title: 'Vocational Education – Grade 7, Semester 2',
+    titleAr: 'التربية المهنية – الصف السابع – الفصل الثاني',
+    subjectId: 'vocational-education',
+    gradeId: 'grade-7',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── Art, Music and Drama Education Grade 7 ─────────────────────────────────
+  // Extends the subject to grade-7 (SUBJECTS.grades updated). One book, no
+  // semester split, same as Grade 8. The teacher guide on disk turned out to
+  // be for a wholly different, older (2016) edition — not used for anything.
+  {
+    id: G7_CREATIVE_ARTS_CURRICULUM_BOOK_ID,
+    title: 'Art, Music and Drama Education – Grade 7',
+    titleAr: 'التربية الفنّيّة والموسيقيّة والمسرحيّة – الصف السابع',
+    subjectId: 'creative-arts',
+    gradeId: 'grade-7',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+  },
+  // ── Physical Education Grade 7 – Semesters 1 and 2 ─────────────────────────
+  // Extends the subject to grade-7 (SUBJECTS.grades updated) — the first
+  // Grade 7 subject with no Grade 8 precedent at all (no Grade 8 PE book
+  // exists). Skills-based, no teacher guide, same shape as Grade 9 PE.
+  {
+    id: G7_PE_S1_CURRICULUM_BOOK_ID,
+    title: 'Physical Education – Grade 7, Semester 1',
+    titleAr: 'التربية الرياضية – الصف السابع – الفصل الأول',
+    subjectId: 'physical-education',
+    gradeId: 'grade-7',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G7_PE_S2_CURRICULUM_BOOK_ID,
+    title: 'Physical Education – Grade 7, Semester 2',
+    titleAr: 'التربية الرياضية – الصف السابع – الفصل الثاني',
+    subjectId: 'physical-education',
+    gradeId: 'grade-7',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── Arabic Grade 7 – Semesters 1 and 2 ──────────────────────────────────────
+  // Tenth Grade 7 book (series title «العربية لغتي», printed as «اللغة
+  // العربية» on some accompanying filenames — same book, not two). Same
+  // shape as the Grade 8 precedent: five units, five lessons apiece (one
+  // per language strand). Unlike Grade 8, Semester 1's teacher guide DOES
+  // supply real periods for most lessons. Same held-out picker treatment.
+  {
+    id: G7_ARABIC_S1_CURRICULUM_BOOK_ID,
+    title: 'Arabic – Grade 7, Semester 1',
+    titleAr: 'اللغة العربية – الصف السابع – الفصل الأول',
+    subjectId: 'arabic',
+    gradeId: 'grade-7',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G7_ARABIC_S2_CURRICULUM_BOOK_ID,
+    title: 'Arabic – Grade 7, Semester 2',
+    titleAr: 'اللغة العربية – الصف السابع – الفصل الثاني',
+    subjectId: 'arabic',
+    gradeId: 'grade-7',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── English Grade 7 – Semesters 1 and 2 ─────────────────────────────────────
+  // Eleventh and last Grade 7 subject in this batch. A DIFFERENT publisher
+  // series ("Jordan Team Together") from the "Jordan High Note" series used
+  // at Grade 8/9/10 — confirmed from the book's own cover, not assumed. See
+  // g7EngSem1.ts/g7EngSem2.ts for the real structural differences (four
+  // units not five, no boxed "I can" statement, teacher-guide-sourced
+  // objectives).
+  {
+    id: G7_ENG_S1_CURRICULUM_BOOK_ID,
+    title: 'English – Grade 7, Semester 1',
+    titleAr: 'اللغة الإنجليزية – الصف السابع – الفصل الأول',
+    subjectId: 'english',
+    gradeId: 'grade-7',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G7_ENG_S2_CURRICULUM_BOOK_ID,
+    title: 'English – Grade 7, Semester 2',
+    titleAr: 'اللغة الإنجليزية – الصف السابع – الفصل الثاني',
+    subjectId: 'english',
+    gradeId: 'grade-7',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
   },
   // ── Chemistry Grade 9 – Semesters 1 and 2 ──────────────────────────────────
   // The first Grade 9 subject after mathematics, catalogued 2026-09-08 from
@@ -2967,6 +3439,27 @@ const _g8SocialSem1Browser = buildG8SocialSem1BrowserCatalog();
 const _g8SocialSem2Browser = buildG8SocialSem2BrowserCatalog();
 const _g8MathSem2Browser = buildG8MathSem2BrowserCatalog();
 const _g8MathSem1Browser = buildG8MathSem1BrowserCatalog();
+const _g7MathSem2Browser = buildG7MathSem2BrowserCatalog();
+const _g7MathSem1Browser = buildG7MathSem1BrowserCatalog();
+const _g7IslamicSem1Browser = buildG7IslamicSem1BrowserCatalog();
+const _g7IslamicSem2Browser = buildG7IslamicSem2BrowserCatalog();
+const _g7ScienceSem1Browser = buildG7ScienceSem1BrowserCatalog();
+const _g7ScienceSem2Browser = buildG7ScienceSem2BrowserCatalog();
+const _g7DigitalSem1Browser = buildG7DigitalSem1BrowserCatalog();
+const _g7DigitalSem2Browser = buildG7DigitalSem2BrowserCatalog();
+const _g7SocialSem1Browser = buildG7SocialSem1BrowserCatalog();
+const _g7SocialSem2Browser = buildG7SocialSem2BrowserCatalog();
+const _g7FinlitSem1Browser = buildG7FinlitSem1BrowserCatalog();
+const _g7FinlitSem2Browser = buildG7FinlitSem2BrowserCatalog();
+const _g7VocSem1Browser = buildG7VocSem1BrowserCatalog();
+const _g7VocSem2Browser = buildG7VocSem2BrowserCatalog();
+const _g7CreativeArtsBrowser = buildG7CreativeArtsBrowserCatalog();
+const _g7PeSem1Browser = buildG7PeSem1BrowserCatalog();
+const _g7PeSem2Browser = buildG7PeSem2BrowserCatalog();
+const _g7ArabicSem1Browser = buildG7ArabicSem1BrowserCatalog();
+const _g7ArabicSem2Browser = buildG7ArabicSem2BrowserCatalog();
+const _g7EngSem1Browser = buildG7EngSem1BrowserCatalog();
+const _g7EngSem2Browser = buildG7EngSem2BrowserCatalog();
 const _g8ArabicSem1Browser = buildG8ArabicSem1BrowserCatalog();
 const _g8ArabicSem2Browser = buildG8ArabicSem2BrowserCatalog();
 const _g8IslamicSem1Browser = buildG8IslamicSem1BrowserCatalog();
@@ -3177,6 +3670,27 @@ export const UNITS: Unit[] = [
   ..._engIndustryBrowser.units,
   ..._engSem1Browser.units,
   ..._engSem2Browser.units,
+  ..._g7MathSem1Browser.units,
+  ..._g7MathSem2Browser.units,
+  ..._g7IslamicSem1Browser.units,
+  ..._g7IslamicSem2Browser.units,
+  ..._g7ScienceSem1Browser.units,
+  ..._g7ScienceSem2Browser.units,
+  ..._g7DigitalSem1Browser.units,
+  ..._g7DigitalSem2Browser.units,
+  ..._g7SocialSem1Browser.units,
+  ..._g7SocialSem2Browser.units,
+  ..._g7FinlitSem1Browser.units,
+  ..._g7FinlitSem2Browser.units,
+  ..._g7VocSem1Browser.units,
+  ..._g7VocSem2Browser.units,
+  ..._g7CreativeArtsBrowser.units,
+  ..._g7PeSem1Browser.units,
+  ..._g7PeSem2Browser.units,
+  ..._g7ArabicSem1Browser.units,
+  ..._g7ArabicSem2Browser.units,
+  ..._g7EngSem1Browser.units,
+  ..._g7EngSem2Browser.units,
 ];
 
 /** Active lessons — legacy Math/Chem G10 rows replaced by NCCD-sourced browser rows. */
@@ -3257,6 +3771,27 @@ export const LESSONS: Lesson[] = [
   ..._engIndustryBrowser.lessons,
   ..._engSem1Browser.lessons,
   ..._engSem2Browser.lessons,
+  ..._g7MathSem1Browser.lessons,
+  ..._g7MathSem2Browser.lessons,
+  ..._g7IslamicSem1Browser.lessons,
+  ..._g7IslamicSem2Browser.lessons,
+  ..._g7ScienceSem1Browser.lessons,
+  ..._g7ScienceSem2Browser.lessons,
+  ..._g7DigitalSem1Browser.lessons,
+  ..._g7DigitalSem2Browser.lessons,
+  ..._g7SocialSem1Browser.lessons,
+  ..._g7SocialSem2Browser.lessons,
+  ..._g7FinlitSem1Browser.lessons,
+  ..._g7FinlitSem2Browser.lessons,
+  ..._g7VocSem1Browser.lessons,
+  ..._g7VocSem2Browser.lessons,
+  ..._g7CreativeArtsBrowser.lessons,
+  ..._g7PeSem1Browser.lessons,
+  ..._g7PeSem2Browser.lessons,
+  ..._g7ArabicSem1Browser.lessons,
+  ..._g7ArabicSem2Browser.lessons,
+  ..._g7EngSem1Browser.lessons,
+  ..._g7EngSem2Browser.lessons,
 ];
 
 /** Math Grade 10 Semester 1 book id (NCCD-backed). */
