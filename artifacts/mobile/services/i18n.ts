@@ -1261,6 +1261,10 @@ const translations = {
     onboardingSkip: 'تخطي',
     onboardingNext: 'التالي',
     onboardingGetStarted: 'ابدأ الآن',
+    // Latin digits, like `gradedCountLabel` and every other counted string
+    // here — the nine Arabic-Indic digits in this table are hand-written
+    // literals, not a convention.
+    onboardingSlideLabel: (n: number, total: number) => `الشريحة ${n} من ${total}`,
     onboardingSlide1Title: 'المنهاج الأردني، بالعربية أولًا',
     onboardingSlide1Desc: 'اقرأ يتبع المنهاج الوطني المعتمد بوحداته ودروسه: المعلم يحضّر حصصه، والأهل والطلبة يتابعون صفهم.',
     onboardingSlide2Title: 'رحلة حصة كاملة في مسار واحد',
@@ -2491,6 +2495,7 @@ const translations = {
     onboardingSkip: 'Skip',
     onboardingNext: 'Next',
     onboardingGetStarted: 'Get started',
+    onboardingSlideLabel: (n: number, total: number) => `Slide ${n} of ${total}`,
     onboardingSlide1Title: 'The Jordanian curriculum, Arabic-first',
     onboardingSlide1Desc: 'IQRA follows the official national curriculum, unit by unit: teachers prepare their lessons, parents and students follow their class.',
     onboardingSlide2Title: 'A full lesson journey, one pass',
