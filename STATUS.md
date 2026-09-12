@@ -459,10 +459,16 @@ of the two states it is in.
 **schema-push: this adds a column, and `verify-schema` cannot see it.** That
 script asks `to_regclass` whether each table *name* exists — a table whose
 columns have drifted still reports `ok`. So a skipped
-`pnpm --filter @workspace/db run push` leaves the avatar routes answering 500
-on a missing column while `Schema check` stays green, which is the exact shape
-of the failure «The schema push that was recorded twice and never ran»
-describes. Push before this deploy is called done.
+`pnpm --filter @workspace/db run push` is invisible to both it and
+`Schema check`, which is the exact shape of the failure «The schema push that
+was recorded twice and never ran» describes.
+
+**And the damage is not confined to the new feature.** `/auth/me`, login and
+`/auth/google` all read the row with a bare `db.select().from(users)`, which
+names every declared column — so against a database without `avatar_key` they
+error, and sign-in stops working for everyone. This is not a feature that
+degrades quietly if the push is skipped; it is the front door. Push before
+this deploy is called done.
 
 Also unverified here: R2 is not configured in this checkout, so the upload path
 was not exercised against a real bucket. The routes answer 503 with
