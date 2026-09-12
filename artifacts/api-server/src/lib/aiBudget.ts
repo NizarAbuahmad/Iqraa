@@ -121,14 +121,27 @@ export function getPricing(model: string): { input: number; output: number } {
 const AUDIO_USD_PER_MINUTE = 0.01;
 
 /**
- * Add a transcription's cost to the running total.
+ * Add a transcription's cost to the running total, and to the ledger.
  *
  * Separate from `recordUsage` because that function returns immediately when
  * `usage` is falsy — and a transcription response carries no token usage at
  * all, so routing audio through it would record the spend as zero and leave
  * the budget blind to the one workload a stranger with a link can trigger.
+ *
+ * **`userId` is what makes the per-user cap real.** Until this wrote a row,
+ * `assertUserQuotaAvailable` — which reads `ai_generations` — could not see
+ * audio at all, so `AI_USER_BUDGET_USD` bounded every workload except the one
+ * a caller can trigger without an account. The global `spentUsd` was the only
+ * thing standing behind transcription.
+ *
+ * Pass `null` where there is genuinely no user to bill: a student sitting an
+ * exam has no account, and the exam's teacher is the right owner there.
  */
-export function recordAudioUsage(seconds: number, model: string): void {
+export function recordAudioUsage(
+  seconds: number,
+  model: string,
+  userId?: string | null,
+): void {
   rollPeriodIfNeeded();
   // Negative or non-finite duration bills as zero rather than crediting the
   // budget: a bad number must never buy someone more spend.
@@ -139,6 +152,30 @@ export function recordAudioUsage(seconds: number, model: string): void {
     { spentUsd: Number(spentUsd.toFixed(4)), limitUsd: getBudgetLimitUsd(), model, seconds: safeSeconds },
     "ai audio spend updated",
   );
+
+  // Not awaited, for the reason `recordUsage` gives: the transcription is
+  // already paid for, and making a student wait on a metrics insert — or
+  // failing their recording when it errors — trades something that matters for
+  // something that does not. `recordGeneration` never rejects.
+  void recordGeneration({
+    userId: userId ?? null,
+    kind: "transcription",
+    model,
+    promptVersion: "audio-v1",
+    // No cache key: a recording is never served from the variant pool, and a
+    // constant key here would read as a 100% hit rate on a workload that can
+    // never hit — the exact trap GenerationDetail's own comment describes.
+    coarseKey: "",
+    strictKey: "",
+    hasContext: false,
+    cacheStatus: "miss",
+    artifactId: null,
+    // Billed by duration, not tokens. Zeroes are honest here; the cost column
+    // is the one that carries the meaning.
+    promptTokens: 0,
+    completionTokens: 0,
+    costUsd: cost,
+  });
 }
 
 /** Every model the guard prices, for the same test. */
