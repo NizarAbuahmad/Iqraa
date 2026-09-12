@@ -240,6 +240,7 @@ describe('use policy — explicit licences', () => {
     // Wikimedia Commons was released under. Attribution-only, no share-alike,
     // commercial use permitted — same substance as 4.0 for our purposes.
     assert.equal(usePolicy(item('CC-BY-2.0')), 'quotable');
+    assert.equal(usePolicy(item('CC-BY-3.0')), 'quotable');
   });
 
   it('keeps embed-only material out of anything that reproduces text', () => {

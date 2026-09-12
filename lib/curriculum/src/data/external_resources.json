@@ -171,6 +171,155 @@
     },
 
     {
+      "id": "commons-hydrogen-emission-spectrum",
+      "lessonIds": ["kbl-chem-s1-nccd-u1_lab", "kbl-chem-s1-nccd-u1_l1"],
+      "kind": "image",
+      "titleEn": "Hydrogen emission spectrum, with wavelengths labelled",
+      "titleAr": "طيف انبعاث الهيدروجين مع الأطوال الموجية",
+      "provider": "wikimedia",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Emission_spectrum-H_labeled.svg",
+      "fetchUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fb/Emission_spectrum-H_labeled.svg/1280px-Emission_spectrum-H_labeled.svg.png",
+      "attribution": "Merikanto and Adrignola, CC0, via Wikimedia Commons",
+      "licenseCheckedAt": "2026-09-12",
+      "authority": "third-party",
+      "ingest": {
+        "r2Key": "external/commons-hydrogen-emission-spectrum.png",
+        "sha256": "ccaa79af212b1dac4cd76539511921bfe68b1a9fbcae5ef69f921734a00b4bc2",
+        "bytes": 6575,
+        "ingestedAt": "2026-09-12"
+      }
+    },
+    {
+      "id": "commons-periodic-table",
+      "lessonIds": ["kbl-chem-s1-nccd-u2_l2"],
+      "kind": "image",
+      "titleEn": "Periodic table of the elements",
+      "titleAr": "الجدول الدوري للعناصر",
+      "provider": "wikimedia",
+      "license": "CC-BY-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Periodic_table_large.svg",
+      "fetchUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4d/Periodic_table_large.svg/1280px-Periodic_table_large.svg.png",
+      "attribution": "2012rc, CC BY 3.0, via Wikimedia Commons",
+      "licenseCheckedAt": "2026-09-12",
+      "authority": "third-party",
+      "ingest": {
+        "r2Key": "external/commons-periodic-table.png",
+        "sha256": "21fd1843bb394c73ca4ff83a21e1628fbc18b3f2bc9d4c4d0126c81d46dbb43f",
+        "bytes": 500284,
+        "ingestedAt": "2026-09-12"
+      }
+    },
+    {
+      "id": "commons-force-parallelogram",
+      "lessonIds": ["kbl-phys-s1-nccd-u1_lab", "kbl-phys-s1-nccd-u1_l2"],
+      "kind": "image",
+      "titleEn": "Parallelogram of forces — the resultant of two forces",
+      "titleAr": "متوازي أضلاع القوى — محصّلة قوّتين",
+      "provider": "wikimedia",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Kraefteparallelogramm.svg",
+      "fetchUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e8/Kraefteparallelogramm.svg/1280px-Kraefteparallelogramm.svg.png",
+      "attribution": "Stündle, CC0, via Wikimedia Commons",
+      "licenseCheckedAt": "2026-09-12",
+      "authority": "third-party",
+      "ingest": {
+        "r2Key": "external/commons-force-parallelogram.png",
+        "sha256": "2c29be582be89a516f1255270bd71f3273f61036caea5a3062c0d20b0156bee5",
+        "bytes": 56538,
+        "ingestedAt": "2026-09-12"
+      }
+    },
+    {
+      "id": "commons-net-force",
+      "lessonIds": ["kbl-phys-s1-nccd-u2_l3"],
+      "kind": "image",
+      "titleEn": "Net force on a body",
+      "titleAr": "القوة المحصّلة المؤثرة في جسم",
+      "provider": "wikimedia",
+      "license": "public-domain",
+      "licenseUrl": "https://commons.wikimedia.org/wiki/File:Net_force.svg",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Net_force.svg",
+      "fetchUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/75/Net_force.svg/1280px-Net_force.svg.png",
+      "attribution": "Mpfiz, public domain, via Wikimedia Commons",
+      "licenseCheckedAt": "2026-09-12",
+      "authority": "third-party",
+      "ingest": {
+        "r2Key": "external/commons-net-force.png",
+        "sha256": "022524c7d32d695ddd0da37bac6e435c389dc344480192d40d0453bf648c126d",
+        "bytes": 38930,
+        "ingestedAt": "2026-09-12"
+      }
+    },
+    {
+      "id": "commons-projectile-motion",
+      "lessonIds": ["kbl-phys-s1-nccd-u2_l2"],
+      "kind": "image",
+      "titleEn": "Projectile motion — the path of a thrown object",
+      "titleAr": "حركة المقذوف — مسار جسم مقذوف",
+      "provider": "wikimedia",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Projectile_motion.png",
+      "fetchUrl": "https://upload.wikimedia.org/wikipedia/commons/7/75/Projectile_motion.png",
+      "attribution": "Py4nf, CC0, via Wikimedia Commons",
+      "licenseCheckedAt": "2026-09-12",
+      "authority": "third-party",
+      "ingest": {
+        "r2Key": "external/commons-projectile-motion.png",
+        "sha256": "c16bea27f377a4e5eabeaf383d392cccc70d8eb6bade037f0ed62c0b75ca4749",
+        "bytes": 8650,
+        "ingestedAt": "2026-09-12"
+      }
+    },
+
+    {
+      "id": "yt-nasa-newtons-second-law",
+      "lessonIds": ["kbl-phys-s1-nccd-u2_l3"],
+      "kind": "video",
+      "titleEn": "STEMonstrations: Newton's 2nd Law of Motion",
+      "titleAr": "ناسا: قانون نيوتن الثاني للحركة",
+      "provider": "youtube",
+      "license": "embed-terms",
+      "licenseUrl": "https://www.youtube.com/t/terms",
+      "sourceUrl": "https://www.youtube.com/watch?v=sPZ2bjW53c8",
+      "attribution": "NASA Johnson",
+      "licenseCheckedAt": "2026-09-12",
+      "authority": "third-party"
+    },
+    {
+      "id": "yt-nasa-newtons-laws-iss",
+      "lessonIds": ["kbl-phys-s1-nccd-u2_l1", "kbl-phys-s1-nccd-u2_l3"],
+      "kind": "video",
+      "titleEn": "Launchpad: Newton's Laws on board the International Space Station",
+      "titleAr": "قوانين نيوتن على متن محطة الفضاء الدولية",
+      "provider": "youtube",
+      "license": "embed-terms",
+      "licenseUrl": "https://www.youtube.com/t/terms",
+      "sourceUrl": "https://www.youtube.com/watch?v=KvPF0cQUW7s",
+      "attribution": "NASA eClips",
+      "licenseCheckedAt": "2026-09-12",
+      "authority": "third-party"
+    },
+    {
+      "id": "yt-harvard-flame-tests",
+      "lessonIds": ["kbl-chem-s1-nccd-u1_lab", "kbl-chem-s1-nccd-u1_l1"],
+      "kind": "video",
+      "titleEn": "Flame Tests of Metals",
+      "titleAr": "اختبار اللهب للفلزّات",
+      "provider": "youtube",
+      "license": "embed-terms",
+      "licenseUrl": "https://www.youtube.com/t/terms",
+      "sourceUrl": "https://www.youtube.com/watch?v=cBGTskrLn18",
+      "attribution": "Harvard Natural Sciences Lecture Demonstrations",
+      "licenseCheckedAt": "2026-09-12",
+      "authority": "third-party"
+    },
+
+    {
       "id": "yt-nasa-large-scale-ocean-currents",
       "lessonIds": ["kbl-earth-science-s2-nccd-u4_l3"],
       "kind": "video",
