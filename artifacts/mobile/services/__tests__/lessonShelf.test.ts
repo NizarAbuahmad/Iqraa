@@ -162,7 +162,16 @@ describe('subject isolation', () => {
       // entry meant `continue`, not a pass. Added on 2026-09-08 alongside the
       // Grade 9 Arabic S1 book, so both grades are covered from here on.
       // Grade 8 joined 2026-09-10, semester 1 then semester 2.
-      arabic: /^(arabic-s[12]|g9-arabic-s[12]|g8-arabic-s[12])$/,
+      // Grade 7 joined 2026-09-12.
+      arabic: /^(arabic-s[12]|g9-arabic-s[12]|g8-arabic-s[12]|g7-arabic-s[12])$/,
+      // English spans every grade the same way. Grade 7 joined 2026-09-12,
+      // from a different publisher series than Grade 8/9/10 (see
+      // g7EngSem1.ts) — the unit-tag namespace is identical either way.
+      // The four `eng-commerce`/`eng-agri`/`eng-hospitality`/`eng-industry`
+      // forms are the Grade 10 vocational ESP tracks — separate
+      // curriculumIds.ts subject slugs, but the same 'english' app
+      // subjectId, so they show up under this key too.
+      english: /^(eng-s[12]|g9-eng-s[12]|g8-eng-s[12]|g7-eng-s[12]|eng-(commerce|agri|hospitality|industry)-s[12])$/,
       // Grade 10 Islamic predates this map too and was likewise silently
       // unchecked. Added alongside the Grade 9 Islamic books.
       // Grade 8 joined 2026-09-10, semester 1 then semester 2. Grade 7

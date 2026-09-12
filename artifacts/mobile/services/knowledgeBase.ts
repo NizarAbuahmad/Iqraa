@@ -251,6 +251,22 @@ import {
   buildG7PeSem2Catalog,
 } from './curriculumG7PeSem2.ts';
 import {
+  G7_ARABIC_S1_BOOK_ID,
+  buildG7ArabicSem1Catalog,
+} from './curriculumG7ArabicSem1.ts';
+import {
+  G7_ARABIC_S2_BOOK_ID,
+  buildG7ArabicSem2Catalog,
+} from './curriculumG7ArabicSem2.ts';
+import {
+  G7_ENG_S1_BOOK_ID,
+  buildG7EngSem1Catalog,
+} from './curriculumG7EngSem1.ts';
+import {
+  G7_ENG_S2_BOOK_ID,
+  buildG7EngSem2Catalog,
+} from './curriculumG7EngSem2.ts';
+import {
   G8_ARABIC_S1_BOOK_ID,
   buildG8ArabicSem1Catalog,
 } from './curriculumG8ArabicSem1.ts';
@@ -1120,6 +1136,42 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Physical Education – Grade 7 – Semester 2',
     semester: 2,
     source: 'iqra_curriculum_g7_physical_education_sem2.json (NCCD)',
+  },
+  {
+    id: G7_ARABIC_S1_BOOK_ID,
+    gradeId: 'grade-7',
+    subjectId: 'arabic',
+    titleAr: 'اللغة العربية – الصف السابع – الفصل الأول',
+    titleEn: 'Arabic – Grade 7 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g7_arabic_sem1.json (NCCD)',
+  },
+  {
+    id: G7_ARABIC_S2_BOOK_ID,
+    gradeId: 'grade-7',
+    subjectId: 'arabic',
+    titleAr: 'اللغة العربية – الصف السابع – الفصل الثاني',
+    titleEn: 'Arabic – Grade 7 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g7_arabic_sem2.json (NCCD)',
+  },
+  {
+    id: G7_ENG_S1_BOOK_ID,
+    gradeId: 'grade-7',
+    subjectId: 'english',
+    titleAr: 'اللغة الإنجليزية – الصف السابع – الفصل الأول',
+    titleEn: 'English – Grade 7 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g7_eng_sem1.json (NCCD)',
+  },
+  {
+    id: G7_ENG_S2_BOOK_ID,
+    gradeId: 'grade-7',
+    subjectId: 'english',
+    titleAr: 'اللغة الإنجليزية – الصف السابع – الفصل الثاني',
+    titleEn: 'English – Grade 7 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g7_eng_sem2.json (NCCD)',
   },
   {
     id: G8_ARABIC_S1_BOOK_ID,
@@ -2258,6 +2310,10 @@ const _g7VocSem2 = buildG7VocSem2Catalog();
 const _g7CreativeArts = buildG7CreativeArtsCatalog();
 const _g7PeSem1 = buildG7PeSem1Catalog();
 const _g7PeSem2 = buildG7PeSem2Catalog();
+const _g7ArabicSem1 = buildG7ArabicSem1Catalog();
+const _g7ArabicSem2 = buildG7ArabicSem2Catalog();
+const _g7EngSem1 = buildG7EngSem1Catalog();
+const _g7EngSem2 = buildG7EngSem2Catalog();
 const _g8ArabicSem1 = buildG8ArabicSem1Catalog();
 const _g8ArabicSem2 = buildG8ArabicSem2Catalog();
 const _g8IslamicSem1 = buildG8IslamicSem1Catalog();
@@ -2491,6 +2547,10 @@ export const KB_UNITS: KBUnit[] = [
   ..._g7CreativeArts.units,
   ..._g7PeSem1.units,
   ..._g7PeSem2.units,
+  ..._g7ArabicSem1.units,
+  ..._g7ArabicSem2.units,
+  ..._g7EngSem1.units,
+  ..._g7EngSem2.units,
 ];
 
 /** Active lessons: NCCD Chem S1/S2 + NCCD Math S1/S2 (G10 + G9) + NCCD FinLit S1 + English vocational tracks. */
@@ -2596,6 +2656,10 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g7CreativeArts.lessons,
   ..._g7PeSem1.lessons,
   ..._g7PeSem2.lessons,
+  ..._g7ArabicSem1.lessons,
+  ..._g7ArabicSem2.lessons,
+  ..._g7EngSem1.lessons,
+  ..._g7EngSem2.lessons,
 ];
 
 // ─────────────────────────────────────────────────────

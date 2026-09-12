@@ -158,6 +158,22 @@ import {
   buildG7PeSem2BrowserCatalog,
 } from './catalogs/g7PeSem2.ts';
 import {
+  G7_ARABIC_S1_CURRICULUM_BOOK_ID,
+  buildG7ArabicSem1BrowserCatalog,
+} from './catalogs/g7ArabicSem1.ts';
+import {
+  G7_ARABIC_S2_CURRICULUM_BOOK_ID,
+  buildG7ArabicSem2BrowserCatalog,
+} from './catalogs/g7ArabicSem2.ts';
+import {
+  G7_ENG_S1_CURRICULUM_BOOK_ID,
+  buildG7EngSem1BrowserCatalog,
+} from './catalogs/g7EngSem1.ts';
+import {
+  G7_ENG_S2_CURRICULUM_BOOK_ID,
+  buildG7EngSem2BrowserCatalog,
+} from './catalogs/g7EngSem2.ts';
+import {
   G9_MATH_S2_CURRICULUM_BOOK_ID,
   buildG9MathSem2BrowserCatalog,
   isG9MathSem2TitleOnlyUnit,
@@ -816,6 +832,15 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // subject with no Grade 8 precedent at all.
   G7_PE_S1_CURRICULUM_BOOK_ID,
   G7_PE_S2_CURRICULUM_BOOK_ID,
+  // Grade 7 Arabic — both semesters attached, using the «العربية لغتي»
+  // series. Same held-out treatment as the other Grade 7 subjects above.
+  G7_ARABIC_S1_CURRICULUM_BOOK_ID,
+  G7_ARABIC_S2_CURRICULUM_BOOK_ID,
+  // Grade 7 English — both semesters attached, from the "Jordan Team
+  // Together" series — a different publisher series and structure from
+  // the "Jordan High Note" series used at Grade 8/9/10 (see g7EngSem1.ts).
+  G7_ENG_S1_CURRICULUM_BOOK_ID,
+  G7_ENG_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -1606,6 +1631,71 @@ export const BOOKS: Book[] = [
     title: 'Physical Education – Grade 7, Semester 2',
     titleAr: 'التربية الرياضية – الصف السابع – الفصل الثاني',
     subjectId: 'physical-education',
+    gradeId: 'grade-7',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── Arabic Grade 7 – Semesters 1 and 2 ──────────────────────────────────────
+  // Tenth Grade 7 book (series title «العربية لغتي», printed as «اللغة
+  // العربية» on some accompanying filenames — same book, not two). Same
+  // shape as the Grade 8 precedent: five units, five lessons apiece (one
+  // per language strand). Unlike Grade 8, Semester 1's teacher guide DOES
+  // supply real periods for most lessons. Same held-out picker treatment.
+  {
+    id: G7_ARABIC_S1_CURRICULUM_BOOK_ID,
+    title: 'Arabic – Grade 7, Semester 1',
+    titleAr: 'اللغة العربية – الصف السابع – الفصل الأول',
+    subjectId: 'arabic',
+    gradeId: 'grade-7',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G7_ARABIC_S2_CURRICULUM_BOOK_ID,
+    title: 'Arabic – Grade 7, Semester 2',
+    titleAr: 'اللغة العربية – الصف السابع – الفصل الثاني',
+    subjectId: 'arabic',
+    gradeId: 'grade-7',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── English Grade 7 – Semesters 1 and 2 ─────────────────────────────────────
+  // Eleventh and last Grade 7 subject in this batch. A DIFFERENT publisher
+  // series ("Jordan Team Together") from the "Jordan High Note" series used
+  // at Grade 8/9/10 — confirmed from the book's own cover, not assumed. See
+  // g7EngSem1.ts/g7EngSem2.ts for the real structural differences (four
+  // units not five, no boxed "I can" statement, teacher-guide-sourced
+  // objectives).
+  {
+    id: G7_ENG_S1_CURRICULUM_BOOK_ID,
+    title: 'English – Grade 7, Semester 1',
+    titleAr: 'اللغة الإنجليزية – الصف السابع – الفصل الأول',
+    subjectId: 'english',
+    gradeId: 'grade-7',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G7_ENG_S2_CURRICULUM_BOOK_ID,
+    title: 'English – Grade 7, Semester 2',
+    titleAr: 'اللغة الإنجليزية – الصف السابع – الفصل الثاني',
+    subjectId: 'english',
     gradeId: 'grade-7',
     academicYear: '2025-2026',
     language: 'Arabic',
@@ -3359,6 +3449,10 @@ const _g7VocSem2Browser = buildG7VocSem2BrowserCatalog();
 const _g7CreativeArtsBrowser = buildG7CreativeArtsBrowserCatalog();
 const _g7PeSem1Browser = buildG7PeSem1BrowserCatalog();
 const _g7PeSem2Browser = buildG7PeSem2BrowserCatalog();
+const _g7ArabicSem1Browser = buildG7ArabicSem1BrowserCatalog();
+const _g7ArabicSem2Browser = buildG7ArabicSem2BrowserCatalog();
+const _g7EngSem1Browser = buildG7EngSem1BrowserCatalog();
+const _g7EngSem2Browser = buildG7EngSem2BrowserCatalog();
 const _g8ArabicSem1Browser = buildG8ArabicSem1BrowserCatalog();
 const _g8ArabicSem2Browser = buildG8ArabicSem2BrowserCatalog();
 const _g8IslamicSem1Browser = buildG8IslamicSem1BrowserCatalog();
@@ -3586,6 +3680,10 @@ export const UNITS: Unit[] = [
   ..._g7CreativeArtsBrowser.units,
   ..._g7PeSem1Browser.units,
   ..._g7PeSem2Browser.units,
+  ..._g7ArabicSem1Browser.units,
+  ..._g7ArabicSem2Browser.units,
+  ..._g7EngSem1Browser.units,
+  ..._g7EngSem2Browser.units,
 ];
 
 /** Active lessons — legacy Math/Chem G10 rows replaced by NCCD-sourced browser rows. */
@@ -3683,6 +3781,10 @@ export const LESSONS: Lesson[] = [
   ..._g7CreativeArtsBrowser.lessons,
   ..._g7PeSem1Browser.lessons,
   ..._g7PeSem2Browser.lessons,
+  ..._g7ArabicSem1Browser.lessons,
+  ..._g7ArabicSem2Browser.lessons,
+  ..._g7EngSem1Browser.lessons,
+  ..._g7EngSem2Browser.lessons,
 ];
 
 /** Math Grade 10 Semester 1 book id (NCCD-backed). */
