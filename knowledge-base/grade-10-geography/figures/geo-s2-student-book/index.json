@@ -1,0 +1,309 @@
+{
+  "sourceId": "geo-s2-student-book",
+  "figures": [
+    {
+      "file": "p009.png",
+      "sourceId": "geo-s2-student-book",
+      "pdfPage": 9,
+      "rect": [
+        122.6,
+        154.0,
+        457.3,
+        345.3
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "التغّيُّرُ المناخُّي",
+      "lessonStartPage": 8
+    },
+    {
+      "file": "p022.png",
+      "sourceId": "geo-s2-student-book",
+      "pdfPage": 22,
+      "rect": [
+        77.8,
+        310.3,
+        546.7,
+        652.3
+      ],
+      "unit": 1,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "ييُمُ األثِرِ البيئِّي تق",
+      "lessonStartPage": 16
+    },
+    {
+      "file": "p033.png",
+      "sourceId": "geo-s2-student-book",
+      "pdfPage": 33,
+      "rect": [
+        171.3,
+        330.3,
+        424.7,
+        561.6
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "ُالتنم يُةُ الُمُستدامُة",
+      "lessonStartPage": 32
+    },
+    {
+      "file": "p049.png",
+      "sourceId": "geo-s2-student-book",
+      "pdfPage": 49,
+      "rect": [
+        59.0,
+        446.2,
+        537.3,
+        734.4
+      ],
+      "unit": 2,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الريادُةُ واالبتكاُر",
+      "lessonStartPage": 48
+    },
+    {
+      "file": "p056.png",
+      "sourceId": "geo-s2-student-book",
+      "pdfPage": 56,
+      "rect": [
+        44.1,
+        406.0,
+        385.7,
+        740.0
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 56
+    },
+    {
+      "file": "p057.png",
+      "sourceId": "geo-s2-student-book",
+      "pdfPage": 57,
+      "rect": [
+        46.4,
+        299.1,
+        550.0,
+        705.4
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 56
+    },
+    {
+      "file": "p060.png",
+      "sourceId": "geo-s2-student-book",
+      "pdfPage": 60,
+      "rect": [
+        40.1,
+        423.7,
+        337.7,
+        724.9
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 56
+    },
+    {
+      "file": "p067.png",
+      "sourceId": "geo-s2-student-book",
+      "pdfPage": 67,
+      "rect": [
+        45.5,
+        35.0,
+        224.9,
+        110.8
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 56
+    },
+    {
+      "file": "p067b.png",
+      "sourceId": "geo-s2-student-book",
+      "pdfPage": 67,
+      "rect": [
+        129.9,
+        140.9,
+        440.3,
+        526.1
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 56
+    },
+    {
+      "file": "p068.png",
+      "sourceId": "geo-s2-student-book",
+      "pdfPage": 68,
+      "rect": [
+        47.8,
+        307.0,
+        382.1,
+        741.9
+      ],
+      "unit": 3,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 68
+    },
+    {
+      "file": "p069.png",
+      "sourceId": "geo-s2-student-book",
+      "pdfPage": 69,
+      "rect": [
+        45.3,
+        298.7,
+        382.3,
+        733.7
+      ],
+      "unit": 3,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 68
+    },
+    {
+      "file": "p072.png",
+      "sourceId": "geo-s2-student-book",
+      "pdfPage": 72,
+      "rect": [
+        59.5,
+        27.4,
+        298.5,
+        343.6
+      ],
+      "unit": 3,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 68
+    },
+    {
+      "file": "p077.png",
+      "sourceId": "geo-s2-student-book",
+      "pdfPage": 77,
+      "rect": [
+        0.0,
+        327.6,
+        304.3,
+        621.2
+      ],
+      "unit": 3,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "قاّرُّةُ أوقيانوسيا",
+      "lessonStartPage": 77
+    },
+    {
+      "file": "p077b.png",
+      "sourceId": "geo-s2-student-book",
+      "pdfPage": 77,
+      "rect": [
+        294.9,
+        527.9,
+        385.6,
+        633.1
+      ],
+      "unit": 3,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "قاّرُّةُ أوقيانوسيا",
+      "lessonStartPage": 77
+    },
+    {
+      "file": "p078.png",
+      "sourceId": "geo-s2-student-book",
+      "pdfPage": 78,
+      "rect": [
+        69.4,
+        45.5,
+        242.1,
+        193.0
+      ],
+      "unit": 3,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "قاّرُّةُ أوقيانوسيا",
+      "lessonStartPage": 77
+    },
+    {
+      "file": "p080.png",
+      "sourceId": "geo-s2-student-book",
+      "pdfPage": 80,
+      "rect": [
+        105.6,
+        159.0,
+        362.7,
+        368.7
+      ],
+      "unit": 3,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "قاّرُّةُ أوقيانوسيا",
+      "lessonStartPage": 77
+    },
+    {
+      "file": "p084.png",
+      "sourceId": "geo-s2-student-book",
+      "pdfPage": 84,
+      "rect": [
+        185.9,
+        184.7,
+        556.2,
+        519.3
+      ],
+      "unit": 3,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "قاّرُّةُ أوقيانوسيا",
+      "lessonStartPage": 77
+    },
+    {
+      "file": "p086.png",
+      "sourceId": "geo-s2-student-book",
+      "pdfPage": 86,
+      "rect": [
+        0.0,
+        0.0,
+        419.6,
+        342.8
+      ],
+      "unit": 3,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "قاّرُّةُ أوقيانوسيا",
+      "lessonStartPage": 77
+    },
+    {
+      "file": "p088.png",
+      "sourceId": "geo-s2-student-book",
+      "pdfPage": 88,
+      "rect": [
+        46.3,
+        288.7,
+        287.1,
+        603.0
+      ],
+      "unit": 3,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "قاّرُّةُ أوقيانوسيا",
+      "lessonStartPage": 77
+    }
+  ]
+}

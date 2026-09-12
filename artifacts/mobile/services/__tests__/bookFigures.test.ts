@@ -87,6 +87,23 @@ describe('figuresForLesson', () => {
       eng: 'eng',
       biology: 'bio',
       'earth-science': 'earth',
+      // Grade 9 sciences, added 2026-09-11. Slug and prefix disagree for two
+      // of the four, in the opposite direction to Grade 10's: the lesson slug
+      // is the curriculum's abbreviation ('g9-phys', 'g9-chem') while the
+      // source id is the manifest's spelled-out g9 row ('g9-physics-s1-…').
+      // Grade 10 abbreviates the source id instead ('phys-s1-…' for
+      // 'physics'). Both are the manifest's own spelling, which is the rule.
+      'g9-phys': 'g9-physics',
+      'g9-chem': 'g9-chemistry',
+      'g9-biology': 'g9-biology',
+      'g9-earth-science': 'g9-earth-science',
+      // History and geography, added 2026-09-11. Grade 10 history is the
+      // third spelling this map has had to carry: the lesson slug is 'hist'
+      // and the manifest's source id is 'history-s1-student-book'.
+      'hist': 'history',
+      'geo': 'geo',
+      'g9-hist': 'g9-history',
+      'g9-geo': 'g9-geography',
     };
 
     for (const id of lessonsWithFigures()) {

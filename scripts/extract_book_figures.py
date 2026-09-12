@@ -114,6 +114,18 @@ def resolve_pdf(filename: str) -> Path:
 KB_PHYS = "knowledge-base/grade-10-physics/support-pdfs/"
 KB_BIO = "knowledge-base/grade-10-biology/support-pdfs/"
 KB_EARTH = "knowledge-base/grade-10-earth-science/support-pdfs/"
+KB_G9_PHYS = "knowledge-base/grade-9-physics/support-pdfs/"
+KB_G9_CHEM = "knowledge-base/grade-9-chemistry/support-pdfs/"
+KB_G9_BIO = "knowledge-base/grade-9-biology/support-pdfs/"
+KB_G9_EARTH = "knowledge-base/grade-9-earth-science/support-pdfs/"
+KB_HIST = "knowledge-base/grade-10-history/support-pdfs/"
+KB_GEO = "knowledge-base/grade-10-geography/support-pdfs/"
+# Grade 9 history and geography are the only two books here with no row in
+# g10_sources.json and no extracted text — their catalogs came from elsewhere.
+# The ids below are the ones a manifest row would have to use, so adding one
+# later needs no rename (`g9-physics-s1-student-book` had to be renamed once
+# already for exactly this reason).
+MIRROR_G9 = "C:/Users/Lenovo/Downloads/Raya studio/Iqraa/Calude app/Knowledge Base/9th grade/"
 
 BOOKS: dict[str, tuple[str, str]] = {
     "math-s1-student-book": (
@@ -204,6 +216,90 @@ BOOKS: dict[str, tuple[str, str]] = {
     "earth-s2-student-book": (
         "grade-10-earth-science",
         KB_EARTH + "كتاب الطالب لمادة علوم الأرض والبيئة الصف العاشر الفصل الثاني.pdf",
+    ),
+    # ── Grade 9 sciences, added 2026-09-11 ───────────────────────────────────
+    # Same NCCD series and page furniture as their Grade 10 counterparts above,
+    # so they need no detector work — only these rows and an EXPECTED_UNITS
+    # range each. Repo-relative like the Grade 10 sciences; `support-pdfs/` is
+    # gitignored, so this runs on a checkout that has the mirror and reports
+    # "missing … — skipped" on one that does not.
+    #
+    # Filenames are NOT swapped here either — `check_semester` asserts it from
+    # the units the pages themselves print, which is the only reason to trust
+    # it (see the maths warning at the top of this map).
+    "g9-physics-s1-student-book": (
+        "grade-9-physics",
+        KB_G9_PHYS + "كتاب الطالب لمادة الفيزياء الصف التاسع الفصل الأول.pdf",
+    ),
+    "g9-physics-s2-student-book": (
+        "grade-9-physics",
+        KB_G9_PHYS + "كتاب الطالب لمادة الفيزياء الصف التاسع الفصل الثاني.pdf",
+    ),
+    "g9-chemistry-s1-student-book": (
+        "grade-9-chemistry",
+        KB_G9_CHEM + "كتاب الطالب لمادة الكيمياء الصف التاسع الفصل الأول.pdf",
+    ),
+    "g9-chemistry-s2-student-book": (
+        "grade-9-chemistry",
+        KB_G9_CHEM + "كتاب الطالب لمادة الكيمياء الصف التاسع الفصل الثاني.pdf",
+    ),
+    "g9-biology-s1-student-book": (
+        "grade-9-biology",
+        KB_G9_BIO + "كتاب الطالب لمادة العلوم الحياتية للصف التاسع الفصل الأول.pdf",
+    ),
+    "g9-biology-s2-student-book": (
+        "grade-9-biology",
+        KB_G9_BIO + "كتاب الطالب لمادة العلوم الحياتية للصف التاسع الفصل الثاني.pdf",
+    ),
+    "g9-earth-science-s1-student-book": (
+        "grade-9-earth-science",
+        KB_G9_EARTH + "كتاب الطالب لمادة علوم الأرض للصف التاسع الفصل الأول.pdf",
+    ),
+    "g9-earth-science-s2-student-book": (
+        "grade-9-earth-science",
+        KB_G9_EARTH + "كتاب الطالب لمادة علوم الأرض للصف التاسع الفصل الثاني.pdf",
+    ),
+    # ── History and geography, added 2026-09-11 ──────────────────────────────
+    # Probed before being added rather than after: `outline` reads 12 lesson
+    # starts in history S1 against the catalog's 12 lessons, and 9 in geography
+    # S1 against its 9. That exact agreement is the reason these two were worth
+    # running and civic education and digital literacy (0 starts each) were not.
+    "history-s1-student-book": (
+        "grade-10-history",
+        KB_HIST + "كتاب الطالب لمادة التاريخ للصف العاشر الفصل الأول.pdf",
+    ),
+    "history-s2-student-book": (
+        "grade-10-history",
+        KB_HIST + "كتاب الطالب لمادة التاريخ للصف العاشر الفصل الثاني.pdf",
+    ),
+    "geo-s1-student-book": (
+        "grade-10-geography",
+        KB_GEO + "كتاب الطالب لمادة الجغرافيا للصف العاشر الفصل الأول.pdf",
+    ),
+    "geo-s2-student-book": (
+        "grade-10-geography",
+        KB_GEO + "كتاب الطالب لمادة الجغرافيا للصف العاشر الفصل الثاني.pdf",
+    ),
+    "g9-history-s1-student-book": (
+        "grade-9-history",
+        MIRROR_G9 + "history/كتاب الطالب لمادة التاريخ للصف التاسع الفصل الأول.pdf",
+    ),
+    # Measured 2026-09-11 and left unextracted: `lesson_start` finds exactly
+    # ONE opener in this book (page 8) against the catalog's 13 lessons, so
+    # `outline` refuses it and every crop would be unplaced. Its sibling S1
+    # book detects all 10. Kept here so the path is recorded and the next
+    # person does not re-derive it — running it is harmless and yields nothing.
+    "g9-history-s2-student-book": (
+        "grade-9-history",
+        MIRROR_G9 + "history/كتاب الطالب لمادة التاريخ للصف التاسع الفصل الثاني.pdf",
+    ),
+    "g9-geography-s1-student-book": (
+        "grade-9-geography",
+        MIRROR_G9 + "geography/كتاب الطالب لمادة الجغرافيا للصف التاسع الفصل الأول.pdf",
+    ),
+    "g9-geography-s2-student-book": (
+        "grade-9-geography",
+        MIRROR_G9 + "geography/كتاب الطالب لمادة الجغرافيا للصف التاسع الفصل الثاني.pdf",
     ),
 }
 
@@ -865,6 +961,22 @@ EXPECTED_UNITS: dict[str, dict[int, range]] = {
     "grade-10-physics": {1: range(1, 3), 2: range(4, 7)},
     "grade-10-biology": {1: range(1, 4), 2: range(3, 5)},
     "grade-10-earth-science": {1: range(1, 3), 2: range(3, 6)},
+    # Grade 9, read off each subject's own catalog the same way. All four run
+    # straight through the year with no repeat and no skip.
+    "grade-9-physics": {1: range(1, 4), 2: range(4, 6)},
+    "grade-9-chemistry": {1: range(1, 3), 2: range(3, 5)},
+    "grade-9-biology": {1: range(1, 3), 2: range(3, 5)},
+    "grade-9-earth-science": {1: range(1, 3), 2: range(3, 6)},
+    # History and geography are deliberately ABSENT, and the reason is the
+    # reason `check_semester` exists at all. Those books print no «الوحدة N»
+    # running header — checked on three pages of each S2 book — so `outline`
+    # falls back to counting unit-opener resets INSIDE one PDF, and every
+    # semester-2 book therefore reports units 1..3 rather than the curriculum's
+    # 4..6. An entry here would reject all four S2 books, and an entry written
+    # to match what they report (1..3 in both semesters) would make the check
+    # unable to tell the semesters apart, which is its only job. The offset is
+    # carried by `figure-lesson-map.json` instead, as it already is for the
+    # English S2 book, with a test pinning it.
 }
 
 

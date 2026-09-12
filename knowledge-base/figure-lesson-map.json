@@ -1050,6 +1050,813 @@
       "lesson": 1,
       "kbLessonId": "kbl-eng-s2-nccd-u10_l1",
       "matchedBy": "hand-checked: unit granularity, filed on the unit first lesson (the extractor reads the unit, not the LESSON header); s2 book units 1-5 are curriculum units 6-10"
+    },
+    {
+      "sourceId": "g9-biology-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "العلومُ الحياتيةُ وأهميتُها",
+      "kbLessonId": "kbl-g9-biology-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 9 sciences, added 2026-09-11. The join is 1:1 with no offset, and that is checked rather than assumed: each book's lesson-opener pages were read and print exactly the curriculum's lesson titles, in order — «العلومُ الحياتيةُ وأهميتُها» opens u1 l2. Unlike Grade 10 maths, these books carry no extra opening lesson, so the printed number is the curriculum's number."
+    },
+    {
+      "sourceId": "g9-biology-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "تركيبُ الخليةِ ووظائفُ مُكوِّناتِها",
+      "kbLessonId": "kbl-g9-biology-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-biology-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "عملياتٌ حيويةٌ في الخليةِ",
+      "kbLessonId": "kbl-g9-biology-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-biology-s1-student-book",
+      "unit": 2,
+      "lesson": 3,
+      "bookTitleAr": "دورةُ الخليةِ",
+      "kbLessonId": "kbl-g9-biology-s1-nccd-u2_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-chemistry-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "مكوِّناتُ الذرَّةِ",
+      "kbLessonId": "kbl-g9-chem-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 9 sciences, added 2026-09-11. The join is 1:1 with no offset, and that is checked rather than assumed: each book's lesson-opener pages were read and print exactly the curriculum's lesson titles, in order — «مكوِّناتُ الذرَّةِ» opens u1 l1. Unlike Grade 10 maths, these books carry no extra opening lesson, so the printed number is the curriculum's number."
+    },
+    {
+      "sourceId": "g9-chemistry-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "التوزيعُ الإلكترونيُّ والجدولُ الدوريُّ",
+      "kbLessonId": "kbl-g9-chem-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-chemistry-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "خصائصُ الحُموضِ والقواعدِ",
+      "kbLessonId": "kbl-g9-chem-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-chemistry-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "تفاعلُ الحُموضِ والقواعدِ",
+      "kbLessonId": "kbl-g9-chem-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-chemistry-s2-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "تفاعلاتُ الفلزاتِ",
+      "kbLessonId": "kbl-g9-chem-s2-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 9 sciences, added 2026-09-11. The join is 1:1 with no offset, and that is checked rather than assumed: each book's lesson-opener pages were read and print exactly the curriculum's lesson titles, in order — «تفاعلاتُ الفلزاتِ» opens u3 l1. Unlike Grade 10 maths, these books carry no extra opening lesson, so the printed number is the curriculum's number."
+    },
+    {
+      "sourceId": "g9-chemistry-s2-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "سلسلةُ النشاطِ الكيميائيِّ وتآكُلُ الفلزاتِ",
+      "kbLessonId": "kbl-g9-chem-s2-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-chemistry-s2-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "التأكسدُ والاختزالُ والخلايا الجلفانيةُ",
+      "kbLessonId": "kbl-g9-chem-s2-nccd-u4_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-chemistry-s2-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "خلايا التحليلِ الكهربائيِّ",
+      "kbLessonId": "kbl-g9-chem-s2-nccd-u4_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-earth-science-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "المعادنُ وأنظمتُها البلَّوريةُ",
+      "kbLessonId": "kbl-g9-earth-science-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 9 sciences, added 2026-09-11. The join is 1:1 with no offset, and that is checked rather than assumed: each book's lesson-opener pages were read and print exactly the curriculum's lesson titles, in order — «المعادنُ وأنظمتُها البلَّوريةُ» opens u1 l1. Unlike Grade 10 maths, these books carry no extra opening lesson, so the printed number is the curriculum's number."
+    },
+    {
+      "sourceId": "g9-earth-science-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "مجموعاتُ المعادنِ",
+      "kbLessonId": "kbl-g9-earth-science-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-earth-science-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "المياهُ السطحيةُ",
+      "kbLessonId": "kbl-g9-earth-science-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-earth-science-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "المياهُ الجوفيةُ",
+      "kbLessonId": "kbl-g9-earth-science-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-earth-science-s2-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "نشأةُ النظامِ الشمسيِّ",
+      "kbLessonId": "kbl-g9-earth-science-s2-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 9 sciences, added 2026-09-11. The join is 1:1 with no offset, and that is checked rather than assumed: each book's lesson-opener pages were read and print exactly the curriculum's lesson titles, in order — «نشأةُ النظامِ الشمسيِّ» opens u3 l1. Unlike Grade 10 maths, these books carry no extra opening lesson, so the printed number is the curriculum's number."
+    },
+    {
+      "sourceId": "g9-earth-science-s2-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "مكوّناتُ النظامِ الشمسيِّ",
+      "kbLessonId": "kbl-g9-earth-science-s2-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-earth-science-s2-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "مصادرُ النفاياتِ الصُّلبةِ",
+      "kbLessonId": "kbl-g9-earth-science-s2-nccd-u4_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-earth-science-s2-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "التخلّصُ من النفاياتِ الصُّلبةِ",
+      "kbLessonId": "kbl-g9-earth-science-s2-nccd-u4_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-earth-science-s2-student-book",
+      "unit": 5,
+      "lesson": 1,
+      "bookTitleAr": "خصائصُ الغلافِ الجويِّ",
+      "kbLessonId": "kbl-g9-earth-science-s2-nccd-u5_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-earth-science-s2-student-book",
+      "unit": 5,
+      "lesson": 2,
+      "bookTitleAr": "تسخينُ الغلافِ الجويِّ",
+      "kbLessonId": "kbl-g9-earth-science-s2-nccd-u5_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-physics-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "النظامُ الدوليُّ للوَحداتِ",
+      "kbLessonId": "kbl-g9-phys-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 9 sciences, added 2026-09-11. The join is 1:1 with no offset, and that is checked rather than assumed: each book's lesson-opener pages were read and print exactly the curriculum's lesson titles, in order — «النظامُ الدوليُّ للوَحداتِ» opens u1 l1. Unlike Grade 10 maths, these books carry no extra opening lesson, so the printed number is the curriculum's number."
+    },
+    {
+      "sourceId": "g9-physics-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "القياسُ والأرقامُ المعنويّةُ",
+      "kbLessonId": "kbl-g9-phys-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-physics-s1-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "أخطاءُ القياسِ",
+      "kbLessonId": "kbl-g9-phys-s1-nccd-u1_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-physics-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "تطبيقاتٌ على القوى",
+      "kbLessonId": "kbl-g9-phys-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-physics-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "الشغلُ والقدرةُ",
+      "kbLessonId": "kbl-g9-phys-s1-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-physics-s1-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "الآلاتُ البسيطةُ",
+      "kbLessonId": "kbl-g9-phys-s1-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-physics-s2-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "المائعُ الساكنُ",
+      "kbLessonId": "kbl-g9-phys-s2-nccd-u4_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 9 sciences, added 2026-09-11. The join is 1:1 with no offset, and that is checked rather than assumed: each book's lesson-opener pages were read and print exactly the curriculum's lesson titles, in order — «المائعُ الساكنُ» opens u4 l1. Unlike Grade 10 maths, these books carry no extra opening lesson, so the printed number is the curriculum's number."
+    },
+    {
+      "sourceId": "g9-physics-s2-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "قياسُ الضغطِ",
+      "kbLessonId": "kbl-g9-phys-s2-nccd-u4_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-physics-s2-student-book",
+      "unit": 5,
+      "lesson": 1,
+      "bookTitleAr": "انكسارُ الضوءِ",
+      "kbLessonId": "kbl-g9-phys-s2-nccd-u5_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-physics-s2-student-book",
+      "unit": 5,
+      "lesson": 2,
+      "bookTitleAr": "تطبيقاتٌ وظواهرُ بصريّةٌ",
+      "kbLessonId": "kbl-g9-phys-s2-nccd-u5_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-physics-s2-student-book",
+      "unit": 5,
+      "lesson": 3,
+      "bookTitleAr": "العدساتُ الرقيقةُ",
+      "kbLessonId": "kbl-g9-phys-s2-nccd-u5_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-biology-s2-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "الأنسجةُ الحيوانيةُ",
+      "kbLessonId": "kbl-g9-biology-s2-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 9 sciences, added 2026-09-11 — see the g9-bio-s1 entry. One thing is specific to this book: `lesson_start` misses unit 4's SECOND lesson opener («دراسةُ الجماعاتِ الحيويةِ», p49), so pages 49-54 are filed under u4_l1. It costs nothing today because no crop from those pages survived review, but a re-run that finds one would file it a lesson early."
+    },
+    {
+      "sourceId": "g9-biology-s2-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "الأنسجةُ النباتيةُ",
+      "kbLessonId": "kbl-g9-biology-s2-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-biology-s2-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "الأنظمةُ البيئيةُ",
+      "kbLessonId": "kbl-g9-biology-s2-nccd-u4_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-biology-s2-student-book",
+      "unit": 4,
+      "lesson": 3,
+      "bookTitleAr": "استدامةُ الطاقةِ والموادِّ في الأنظمةِ البيئيةِ",
+      "kbLessonId": "kbl-g9-biology-s2-nccd-u4_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "geo-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "الغلافُ الجوّيُّ",
+      "kbLessonId": "kbl-geo-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 10 geography S1."
+    },
+    {
+      "sourceId": "geo-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "الغلافُ الحيويُّ",
+      "kbLessonId": "kbl-geo-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "geo-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "مُقوِّماتُ السّياحةِ",
+      "kbLessonId": "kbl-geo-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "geo-s1-student-book",
+      "unit": 2,
+      "lesson": 3,
+      "bookTitleAr": "النقلُ",
+      "kbLessonId": "kbl-geo-s1-nccd-u2_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "geo-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "الخرائطُ الموضوعيّةُ",
+      "kbLessonId": "kbl-geo-s1-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "geo-s1-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "نُظُمُ المعلوماتِ الجغرافيّةِ",
+      "kbLessonId": "kbl-geo-s1-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "geo-s1-student-book",
+      "unit": 3,
+      "lesson": 3,
+      "bookTitleAr": "الأقمارُ الصناعيّةُ وتحليلُ الصورِ الفضائيّةِ",
+      "kbLessonId": "kbl-geo-s1-nccd-u3_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "history-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "الإمبراطوريّةُ الفارسيّةُ: النشأةُ والتطوُّرُ (560ق.م-651م)",
+      "kbLessonId": "kbl-hist-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "History and geography, added 2026-09-11. Checked the way the sciences were: every lesson title the page text yields unscrambled lands exactly on the opener page `outline` detected (8 of 12 here; the four blanks are titles whose RTL extraction breaks the substring, not mismatches), and the number of openers equals the catalog's lesson count. These books print no unit running header, which is why `EXPECTED_UNITS` has no entry for them — see the comment there."
+    },
+    {
+      "sourceId": "history-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "الدَّولةُ الساسانيّةُ (226م-651م)",
+      "kbLessonId": "kbl-hist-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "history-s1-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "الحكمُ والمُؤسَّساتُ في الدَّولةِ الساسانيّةِ",
+      "kbLessonId": "kbl-hist-s1-nccd-u1_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "history-s1-student-book",
+      "unit": 1,
+      "lesson": 5,
+      "bookTitleAr": "علاقاتُ الدَّولةِ الساسانيّةِ الخارجيّةُ",
+      "kbLessonId": "kbl-hist-s1-nccd-u1_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "history-s1-student-book",
+      "unit": 1,
+      "lesson": 6,
+      "bookTitleAr": "نهايةُ الدَّولةِ الساسانيّةِ",
+      "kbLessonId": "kbl-hist-s1-nccd-u1_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "history-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "نشأةُ الدَّولةِ العثمانيّةِ",
+      "kbLessonId": "kbl-hist-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "history-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "فتحُ القسطنطينيّةِ (إسطنبولَ)",
+      "kbLessonId": "kbl-hist-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "history-s1-student-book",
+      "unit": 2,
+      "lesson": 3,
+      "bookTitleAr": "الحياةُ العامّةُ في الدَّولةِ العثمانيّةِ",
+      "kbLessonId": "kbl-hist-s1-nccd-u2_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "history-s1-student-book",
+      "unit": 2,
+      "lesson": 4,
+      "bookTitleAr": "الوطنُ العربيُّ في ظِلِّ الحُكمِ العثمانيِّ",
+      "kbLessonId": "kbl-hist-s1-nccd-u2_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "history-s1-student-book",
+      "unit": 2,
+      "lesson": 5,
+      "bookTitleAr": "الأردنُّ في ظِلِّ الحُكمِ العثمانيِّ",
+      "kbLessonId": "kbl-hist-s1-nccd-u2_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "history-s1-student-book",
+      "unit": 2,
+      "lesson": 6,
+      "bookTitleAr": "نهايةُ الدَّولةِ العثمانيّةِ",
+      "kbLessonId": "kbl-hist-s1-nccd-u2_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-geography-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "مُكوِّناتُ الغلافِ الصخريِّ وأهمّيّتُهُ",
+      "kbLessonId": "kbl-g9-geo-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 9 geography S1."
+    },
+    {
+      "sourceId": "g9-geography-s1-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "الصخورُ والتربةُ",
+      "kbLessonId": "kbl-g9-geo-s1-nccd-u1_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-geography-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "مُكوِّناتُ الغلافِ المائيِّ",
+      "kbLessonId": "kbl-g9-geo-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-geography-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "حركةُ المياهِ في البحارِ والمحيطاتِ",
+      "kbLessonId": "kbl-g9-geo-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-geography-s1-student-book",
+      "unit": 2,
+      "lesson": 3,
+      "bookTitleAr": "إدارةُ الموارِدِ المائيةِ",
+      "kbLessonId": "kbl-g9-geo-s1-nccd-u2_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-geography-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "الملامحُ الطبيعيةُ للوطنِ العربيِّ",
+      "kbLessonId": "kbl-g9-geo-s1-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-geography-s1-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "الملامحُ البشريةُ للوطنِ العربيِّ",
+      "kbLessonId": "kbl-g9-geo-s1-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-geography-s1-student-book",
+      "unit": 3,
+      "lesson": 3,
+      "bookTitleAr": "التحدّياتُ الاقتصاديةُ والاجتماعيةُ في الوطنِ العربيِّ",
+      "kbLessonId": "kbl-g9-geo-s1-nccd-u3_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-history-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "الحضارةُ اليونانيّةُ",
+      "kbLessonId": "kbl-g9-hist-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 9 history S1. 7 of its 10 lesson titles land on the detected opener page; the three blanks are the Ayyubid/Mamluk titles, whose Hijri-Gregorian date parentheses break a substring match. Its SEMESTER 2 book is absent on purpose: `lesson_start` finds one opener in it against 13 lessons, so `outline` refuses it and every crop would be unplaced."
+    },
+    {
+      "sourceId": "g9-history-s1-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "الحضارةُ الرومانيّةُ",
+      "kbLessonId": "kbl-g9-hist-s1-nccd-u1_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-history-s1-student-book",
+      "unit": 1,
+      "lesson": 4,
+      "bookTitleAr": "الحياةُ العامّةُ في الحضارةِ الرومانيّةِ",
+      "kbLessonId": "kbl-g9-hist-s1-nccd-u1_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-history-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "الدولةُ الأيّوبيّةُ (569-648هـ/1174-1250م)",
+      "kbLessonId": "kbl-g9-hist-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-history-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "الحياةُ العامّةُ في الدولةِ الأيّوبيّةِ",
+      "kbLessonId": "kbl-g9-hist-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-history-s1-student-book",
+      "unit": 2,
+      "lesson": 3,
+      "bookTitleAr": "الدولةُ المملوكيّةُ (648-923هـ/1250-1517م)",
+      "kbLessonId": "kbl-g9-hist-s1-nccd-u2_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-history-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "الغزوُ الفِرِنجيُّ للعالمِ العربيِّ الإسلاميِّ",
+      "kbLessonId": "kbl-g9-hist-s1-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-history-s1-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "الغزوُ المغوليُّ للعالمِ العربيِّ الإسلاميِّ",
+      "kbLessonId": "kbl-g9-hist-s1-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "geo-s2-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "التغيُّرُ المناخيُّ",
+      "kbLessonId": "kbl-geo-s2-nccd-u4_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Offset by 3 — book units 1-3 are the curriculum's 4-6, for the reason the history-s2 entry gives. Five of the nine titles land exactly on their detected opener; the other four are titles whose RTL extraction breaks a substring match, not disagreements."
+    },
+    {
+      "sourceId": "geo-s2-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "تقييمُ الأثرِ البيئيِّ",
+      "kbLessonId": "kbl-geo-s2-nccd-u4_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "geo-s2-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "التنميةُ المُستدامةُ",
+      "kbLessonId": "kbl-geo-s2-nccd-u5_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "geo-s2-student-book",
+      "unit": 2,
+      "lesson": 3,
+      "bookTitleAr": "الريادةُ والابتكارُ",
+      "kbLessonId": "kbl-geo-s2-nccd-u5_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "geo-s2-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "أمريكا الشماليّةُ والوسطى: الملامحُ الطبيعيّةُ والبشريّةُ",
+      "kbLessonId": "kbl-geo-s2-nccd-u6_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "geo-s2-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "أمريكا الجنوبيّةُ: الملامحُ الطبيعيّةُ والبشريّةُ",
+      "kbLessonId": "kbl-geo-s2-nccd-u6_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "geo-s2-student-book",
+      "unit": 3,
+      "lesson": 3,
+      "bookTitleAr": "قارّةُ أوقيانوسيا",
+      "kbLessonId": "kbl-geo-s2-nccd-u6_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "history-s2-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "الثورةُ الصناعيّةُ",
+      "kbLessonId": "kbl-hist-s2-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "UNIT NUMBERS ARE OFFSET BY 2 HERE, and the offset is the entry, not a bug to correct upstream. This book prints no «الوحدة N» running header, so `outline` counts opener resets inside the one PDF and calls its units 1 and 2; the curriculum numbers them 3 and 4 across the year. Verified before it was written down: all eight of unit 3's lesson titles land exactly on the opener page `outline` detected. Same shape as the English S2 offset."
+    },
+    {
+      "sourceId": "history-s2-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "إنجازاتُ الثورةِ الصناعيّةِ",
+      "kbLessonId": "kbl-hist-s2-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "history-s2-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "الثورةُ الأمريكيّةُ",
+      "kbLessonId": "kbl-hist-s2-nccd-u3_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "history-s2-student-book",
+      "unit": 1,
+      "lesson": 4,
+      "bookTitleAr": "مراحلُ الثورةِ الأمريكيّةِ",
+      "kbLessonId": "kbl-hist-s2-nccd-u3_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "history-s2-student-book",
+      "unit": 1,
+      "lesson": 5,
+      "bookTitleAr": "الثورةُ الفرنسيّةُ",
+      "kbLessonId": "kbl-hist-s2-nccd-u3_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "history-s2-student-book",
+      "unit": 1,
+      "lesson": 6,
+      "bookTitleAr": "نتائجُ الثورةِ الفرنسيّةِ",
+      "kbLessonId": "kbl-hist-s2-nccd-u3_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "history-s2-student-book",
+      "unit": 1,
+      "lesson": 7,
+      "bookTitleAr": "الثورةُ الروسيّةُ",
+      "kbLessonId": "kbl-hist-s2-nccd-u3_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "history-s2-student-book",
+      "unit": 1,
+      "lesson": 8,
+      "bookTitleAr": "العالَمُ في القرنِ العشرينَ",
+      "kbLessonId": "kbl-hist-s2-nccd-u3_l8",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "history-s2-student-book",
+      "unit": 2,
+      "lesson": 3,
+      "bookTitleAr": "زيغريد هونكه (1913م-1999م)",
+      "kbLessonId": "kbl-hist-s2-nccd-u4_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-geography-s2-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "قارّةُ آسيا: الملامحُ الطبيعيةُ والبشريةُ",
+      "kbLessonId": "kbl-g9-geo-s2-nccd-u6_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Offset by 3, same as its Grade 10 sibling. ONE figure survived review out of 14 crops — this book's maps and photographs are rasters the vector extractor cannot seed on, so all it found was drawn page furniture. It is wired for that single Asia map; the rest of the book needs the raster pipeline (`extract_book_photos.py`), not another run of this one."
     }
   ],
   "unitNumbering": "The curriculum's `u{n}_l{m}` matches the number the book PRINTS in every unit except unit 1, where the book has an extra opening lesson («حل معادلات خاصة») and the rest shift by one. Units 1-4 are semester 1 and units 5-8 are semester 2, so the printed unit number also identifies which student book a figure came from — `check_semester` in scripts/extract_book_figures.py enforces that. Note the maths PDFs in attached_assets are named backwards: the file called `1st_semester` is the second-semester book. Source ids follow the books' contents, not their filenames."
