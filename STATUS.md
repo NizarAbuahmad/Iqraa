@@ -492,11 +492,11 @@ and grade?". Measured first, through the real deck builder** — `buildLessonDec
 run over all 1097 catalog lessons with a stub `figureUri`, counting the media
 slides it returns:
 
-| | before | after sciences | after history/geography |
-| --- | --- | --- | --- |
-| lessons whose deck carries a book figure | **122 of 1097** | 159 | **210** |
-| figure slides across all decks | 388 | 515 | **604** |
-| live subject×grade pairs with nothing | 29 of 37 | 25 of 37 | **21 of 37** |
+| | before | sciences | history/geography | grade 8 science |
+| --- | --- | --- | --- | --- |
+| lessons whose deck carries a book figure | **122 of 1097** | 159 | 210 | **220** |
+| figure slides across all decks | 388 | 515 | 604 | **643** |
+| live subject×grade pairs with nothing | 29 of 37 | 25 of 37 | 21 of 37 | **20 of 37** |
 
 **Nothing was wrong with the wiring.** Every deck entry point already passes
 `figureUri` — `buildLessonDeck`, `buildDeckFromQuiz/Worksheet`, `startClass`,
@@ -598,13 +598,36 @@ raster pipeline. Measure the yield, not just the density.
   which **one** is a figure and the rest are drawn page furniture, because its
   maps are rasters. That book wants `extract_book_photos.py`.
 
+**Grade 8 gets its first figures, 2026-09-12.** `g8-science-s1` alone: 133
+crops, **65 kept**, covering all 10 of its Semester 1 lessons. What survived is
+strong — DNA and chromosome diagrams, binary-fission stages, Mendel's pea
+traits with a Punnett square, sixteen per-element electron-shell diagrams
+(Na, Mg, Ne, Ar, Cl, S and their ions), the pressure/buoyancy set, tectonic
+maps, the ring of fire, acid rain. What was dropped is almost entirely purple
+banner strips. Nine of the ten lesson titles land exactly on their detected
+opener page.
+
+**Semester 2 of the same book is out**: only two pages in it carry «الدرس» as
+text and both are the contents spread, so `outline` returns nothing. Same
+failure as `g9-history-s2`, and not fixable with a profile — there is no
+opener text to profile.
+
+**A generator bug found while wiring this, worth knowing about.** The
+map-entry generator derived a book's prefix with `sid.split("-s")[0]`, which
+splits inside `-science`: `g8-science-s1-student-book` became `g8`, matched no
+scope, and emitted **nothing, silently**. It had already been wrong for
+`g9-earth-science-*` since the 2026-09-11 rename and went unnoticed only
+because those entries were already in the map. Fixed to strip the
+`-s{n}-student-book` suffix; the generator now emits 98 entries across all 16
+books. Any future book whose subject slug contains an `-s` would have hit the
+same trap.
+
 **What still has no figure at all, and why:**
 
-- **Grade 8 — all ten subjects, 344 lessons.** Never run. Probed: the Grade 8
-  **science** book's openers detect cleanly (10 lesson starts in S1), so it is
-  the same afternoon's work as these four were. The Grade 8 **maths** book
-  detects **zero** — its 2023 edition prints a different opener, so it needs
-  the per-subject opener profile Islamic needed.
+- **Grade 8 — nine of ten subjects, 323 lessons.** Science S1 is done (above);
+  science S2 has no opener text. The Grade 8 **maths** book detects **zero**
+  openers — its 2023 edition prints a different layout, so it needs its own
+  entry in `OPENER_PROFILES`, which now exists as a mechanism.
 - **Arabic and Islamic** (192 lessons): measured and abandoned 2026-09-05, see
   the section below. Unchanged.
 - **English** (240 lessons across three grades): Grade 10 has 40 photos from
@@ -1258,6 +1281,40 @@ rejected after a replace. The share message was captured from the page.
 `schema-push:` **none** — both columns already exist.
 
 ## Arabic and Islamic Studies do not carry extractable figures, 2026-09-05
+## — re-tested 2026-09-12, and the conclusion holds for a sharper reason
+
+**Retested in full on 2026-09-12 because the note below named a fixable
+blocker.** It was fixable, and fixing it did not help. `OPENER_PROFILES` in
+`extract_book_figures.py` now carries the Islamic opener geometry this section
+asked for, and it finds **24 of 24** openers in the Grade 10 S1 book. All four
+Islamic books were then extracted and reviewed. The result:
+
+- **Grade 10 crops the whole page.** These pages carry an ornamental vector
+  border, so `drawing_cluster` grows every seed out to the page frame — median
+  crop **94% × 96%** of the page, 28 of 36 covering more than half of it,
+  against g9-physics-s1's healthy 23% × 17%. `MAX_W`/`MAX_H` do not catch this
+  because they filter *seeds*, not the grown cluster.
+- **Grade 9 crops small — and that is not good news.** Median 5% of page area,
+  which looks healthy and is not: what it crops is small blocks of Quranic
+  text. All 15 crops across both semesters were verse boxes, header banners or
+  the NCC logo.
+- **The real blocker is the data model, not the detector.** What all four books
+  genuinely have is one good illustration card per unit (the Kaaba, the Dome of
+  the Rock, a gavel on a Quran, a microscope) — and every one sits on the
+  front-matter contents spread **before lesson 1**, so a map keyed on
+  `(sourceId, unit, lesson)` cannot address it whatever extractor produces it.
+
+Everything extracted was deleted; only the profile and this note survive. The
+estimate below of "~12 usable across 50 lessons" for Islamic was optimistic:
+placed and usable, it is **zero**.
+
+**Arabic was re-confirmed in the same pass and needs no re-test.** Its «الدرس»
+is a 13pt *running header* at y=9-16 and there is no lesson-number span
+anywhere near the top of any opener — so there is no third threshold to tune,
+which is what separates it from Islamic. Placing its figures would need a
+page→lesson table parsed from each book's contents spread.
+
+The 2026-09-05 measurement follows, unchanged.
 
 Measured, then abandoned. Recording it so the next person does not spend the
 same afternoon rediscovering it — everything below is a count, not an

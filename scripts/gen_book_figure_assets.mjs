@@ -59,6 +59,7 @@ const indexes = [
   'knowledge-base/grade-10-history/figures/history-s2-student-book/index.json',
   'knowledge-base/grade-10-geography/figures/geo-s2-student-book/index.json',
   'knowledge-base/grade-9-geography/figures/g9-geography-s2-student-book/index.json',
+  'knowledge-base/grade-8-science/figures/g8-science-s1-student-book/index.json',
 ];
 
 const rows = [];

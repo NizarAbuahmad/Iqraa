@@ -104,6 +104,10 @@ describe('figuresForLesson', () => {
       'geo': 'geo',
       'g9-hist': 'g9-history',
       'g9-geo': 'g9-geography',
+      // Grade 8's first, added 2026-09-12. Slug and source-id prefix agree
+      // here — but note neither can be derived by splitting on '-s', which
+      // lands inside '-science'.
+      'g8-science': 'g8-science',
     };
 
     for (const id of lessonsWithFigures()) {
