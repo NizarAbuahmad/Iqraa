@@ -450,9 +450,11 @@ counterparts, down to the page furniture.
 pages, and crops that sliced a table or a question in half. `BOOK_FIGURE_COUNT`
 875 → 1125, and 1223 once history and geography landed. Coverage by subject: physics 0 → 11/12, chemistry 0 → 8/8, earth
 science 0 → 10/10, biology 0 → 8/10. Grade 9 was maths-and-nothing-else before
-this. **Cost: +30 MB of PNGs**, of which ~7 MB is the eight `_review.png`
-contact sheets — the same order as the 2026-09-05 batch, and the same lever
-still unused (quantisation, not fewer figures).
+this. **Cost: +30 MB of PNGs.** The `_review.png` contact sheets are no longer
+part of that: all thirty were deleted and gitignored on 2026-09-12 (30 MB, and
+every byte of it bundled into the app for a file the human pass reads once and
+nothing reads at runtime). Re-run the extractor to get one back. The other
+lever on figure weight is still unused — quantisation, not fewer figures.
 
 **The lesson join is 1:1 and was read, not assumed.** Each book's lesson-opener
 pages print the curriculum's own lesson titles in order — «المائعُ الساكنُ»
@@ -487,7 +489,8 @@ figures on 51 more lessons.
 | g9-geography-s2 | 14 | **1** | 1 of 9 |
 
 Coverage: Grade 10 history 0 → 20/23, Grade 10 geography 0 → 14/18, Grade 9
-geography 0 → 9/18, Grade 9 history 0 → 8/23. Cost: **+23 MB of PNGs**. What
+geography 0 → 9/18, Grade 9 history 0 → 8/23. Cost: **+23 MB of PNGs**, less
+the contact sheets (see above). What
 these books draw is **maps,
 timelines and process diagrams** — the vector extractor finds them, which the
 op counts alone would not have predicted: history runs ~8-14k drawing ops per
