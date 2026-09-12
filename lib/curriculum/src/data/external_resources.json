@@ -1,6 +1,7 @@
 {
   "note": "Curated third-party material attached to lessons. Schema and rules: ../external.ts. Every entry's licence was read on the date in licenseCheckedAt — do not add one from memory of what a provider 'is', because PhET relicensed its whole library to CC BY-NC on 2026-03-29 and anything trusting a remembered CC BY was wrong the next day. Ingestion (fetch-external.ts) refuses a check older than 180 days.",
   "voaRule": "VOA Learning English is public domain ONLY where the material is produced exclusively by VOA. A large share of their Health and Science output is reported by the Associated Press and merely adapted by a VOA writer — AP material may not be redistributed, so those articles are NOT usable however they are labelled. Check the byline of every single article before adding it: a VOA staff writer and editor with no agency credit is the test. Verified 2026-09-11: 'What Is the healthiest way to prepare vegetables' (7967294) and 'How to Reduce Risks of Bad Air Quality' (7980912) both failed it, and are deliberately absent below.",
+  "thumbnailRule": "An image fetchUrl points at Commons' 1280px rendition, never the original — these source files run 5-8 MB and a lesson page on a classroom phone cannot carry that; the renditions are 0.5-0.95 MB. Get the URL from the API (prop=imageinfo&iiurlwidth=1024) and strip its utm_ query. Do NOT construct it: the host is thumb.wikimedia.org rather than upload.wikimedia.org, and the last path segment is sometimes 1280px-<filename> and sometimes the generic 1280px-thumbnail.jpg, so a hand-built URL 400s.",
   "capturedAt": "2026-09-11",
   "resources": [
     {
@@ -61,6 +62,129 @@
       "words": 1100,
       "durationSec": 374,
       "level": "b1"
+    },
+
+    {
+      "id": "noaa-ocean-surface-currents",
+      "lessonIds": ["kbl-earth-science-s2-nccd-u4_l3"],
+      "kind": "image",
+      "titleEn": "Map of ocean surface currents",
+      "titleAr": "خريطة تيّارات سطح المحيط",
+      "provider": "wikimedia",
+      "license": "public-domain",
+      "licenseUrl": "https://commons.wikimedia.org/wiki/File:Ocean_surface_currents.jpg",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Ocean_surface_currents.jpg",
+      "fetchUrl": "https://upload.wikimedia.org/wikipedia/commons/c/cc/Ocean_surface_currents.jpg",
+      "attribution": "NOAA, public domain, via Wikimedia Commons",
+      "licenseCheckedAt": "2026-09-11",
+      "authority": "third-party"
+    },
+    {
+      "id": "noaa-gulf-stream-sst",
+      "lessonIds": ["kbl-earth-science-s2-nccd-u4_l3"],
+      "kind": "image",
+      "titleEn": "The Gulf Stream seen through sea-surface temperature",
+      "titleAr": "تيّار الخليج مرئيًّا بدرجة حرارة سطح البحر",
+      "provider": "wikimedia",
+      "license": "public-domain",
+      "licenseUrl": "https://commons.wikimedia.org/wiki/File:The_Gulf_Stream_Seen_Through_Sea_Surface_Temperature_(NESDIS_2016-06-03).png",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:The_Gulf_Stream_Seen_Through_Sea_Surface_Temperature_(NESDIS_2016-06-03).png",
+      "fetchUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1d/The_Gulf_Stream_Seen_Through_Sea_Surface_Temperature_%28NESDIS_2016-06-03%29.png/1280px-The_Gulf_Stream_Seen_Through_Sea_Surface_Temperature_%28NESDIS_2016-06-03%29.png",
+      "attribution": "NOAA, public domain, via Wikimedia Commons",
+      "licenseCheckedAt": "2026-09-11",
+      "authority": "third-party"
+    },
+    {
+      "id": "commons-basalt-columbia-river",
+      "lessonIds": ["kbl-earth-science-s1-nccd-u1_l1"],
+      "kind": "image",
+      "titleEn": "Basalt — Columbia River flood basalt, Oregon",
+      "titleAr": "البازلت — بازلت نهر كولومبيا الفيضي، أوريغون",
+      "provider": "wikimedia",
+      "license": "CC-BY-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Basalt_(Columbia_River_Flood_Basalt,_Miocene,_~15-17_Ma;_Mud_Hollow,_Oregon,_USA).jpg",
+      "fetchUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f5/Basalt_%28Columbia_River_Flood_Basalt%2C_Miocene%2C_~15-17_Ma%3B_Mud_Hollow%2C_Oregon%2C_USA%29.jpg/1280px-Basalt_%28Columbia_River_Flood_Basalt%2C_Miocene%2C_~15-17_Ma%3B_Mud_Hollow%2C_Oregon%2C_USA%29.jpg",
+      "attribution": "James St. John, CC BY 2.0, via Wikimedia Commons",
+      "licenseCheckedAt": "2026-09-11",
+      "authority": "third-party"
+    },
+    {
+      "id": "commons-conglomerate-sharon",
+      "lessonIds": ["kbl-earth-science-s1-nccd-u1_l2"],
+      "kind": "image",
+      "titleEn": "Quartz-pebble conglomerate — Sharon Conglomerate, Ohio",
+      "titleAr": "الكونغلوميرات الحصوي — تكوين شارون، أوهايو",
+      "provider": "wikimedia",
+      "license": "CC-BY-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Clast_of_siliciclastic_sedimentary_rock_in_quartz-pebble_conglomerate_(Sharon_Conglomerate,_Lower_Pennsylvanian;_Jackson_North_roadcut,_Ohio,_USA)_2_(37034583584).jpg",
+      "fetchUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/44/Clast_of_siliciclastic_sedimentary_rock_in_quartz-pebble_conglomerate_%28Sharon_Conglomerate%2C_Lower_Pennsylvanian%3B_Jackson_North_roadcut%2C_Ohio%2C_USA%29_2_%2837034583584%29.jpg/1280px-thumbnail.jpg",
+      "attribution": "James St. John, CC BY 2.0, via Wikimedia Commons",
+      "licenseCheckedAt": "2026-09-11",
+      "authority": "third-party"
+    },
+    {
+      "id": "commons-gneiss-ellsworth",
+      "lessonIds": ["kbl-earth-science-s1-nccd-u1_l3"],
+      "kind": "image",
+      "titleEn": "Gneiss — Ellsworth Schist, Maine",
+      "titleAr": "النايس — شيست إلزوورث، ماين",
+      "provider": "wikimedia",
+      "license": "CC-BY-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Gneiss_(Ellsworth_Schist,_Cambrian;_Seal_Cove,_Mt._Desert_Island,_Maine,_USA)_10.jpg",
+      "fetchUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5d/Gneiss_%28Ellsworth_Schist%2C_Cambrian%3B_Seal_Cove%2C_Mt._Desert_Island%2C_Maine%2C_USA%29_10.jpg/1280px-Gneiss_%28Ellsworth_Schist%2C_Cambrian%3B_Seal_Cove%2C_Mt._Desert_Island%2C_Maine%2C_USA%29_10.jpg",
+      "attribution": "James St. John, CC BY 2.0, via Wikimedia Commons",
+      "licenseCheckedAt": "2026-09-11",
+      "authority": "third-party"
+    },
+
+    {
+      "id": "yt-nasa-large-scale-ocean-currents",
+      "lessonIds": ["kbl-earth-science-s2-nccd-u4_l3"],
+      "kind": "video",
+      "titleEn": "NASA: Large Scale Ocean Currents",
+      "titleAr": "ناسا: تيّارات المحيط واسعة النطاق",
+      "provider": "youtube",
+      "license": "embed-terms",
+      "licenseUrl": "https://www.youtube.com/t/terms",
+      "sourceUrl": "https://www.youtube.com/watch?v=ObzlDSa8mJg",
+      "attribution": "My NASA Data — NASA",
+      "licenseCheckedAt": "2026-09-11",
+      "authority": "third-party"
+    },
+    {
+      "id": "yt-nasa-ocean-in-motion",
+      "lessonIds": ["kbl-earth-science-s2-nccd-u4_l2", "kbl-earth-science-s2-nccd-u4_l3"],
+      "kind": "video",
+      "titleEn": "An Ocean in Motion: NASA's view of Earth's underwater highways",
+      "titleAr": "محيط في حركة: رؤية ناسا لطرق الأعماق",
+      "provider": "youtube",
+      "license": "embed-terms",
+      "licenseUrl": "https://www.youtube.com/t/terms",
+      "sourceUrl": "https://www.youtube.com/watch?v=R5-s6O8qyvE",
+      "attribution": "NASA Goddard",
+      "licenseCheckedAt": "2026-09-11",
+      "authority": "third-party"
+    },
+    {
+      "id": "yt-nasa-rock-cycle",
+      "lessonIds": [
+        "kbl-earth-science-s1-nccd-u1_l1",
+        "kbl-earth-science-s1-nccd-u1_l2",
+        "kbl-earth-science-s1-nccd-u1_l3"
+      ],
+      "kind": "video",
+      "titleEn": "Our World: The Rock Cycle",
+      "titleAr": "عالمنا: دورة الصخور",
+      "provider": "youtube",
+      "license": "embed-terms",
+      "licenseUrl": "https://www.youtube.com/t/terms",
+      "sourceUrl": "https://www.youtube.com/watch?v=0anfmqvpYfg",
+      "attribution": "NASA Video Collection",
+      "licenseCheckedAt": "2026-09-11",
+      "authority": "third-party"
     }
   ]
 }
