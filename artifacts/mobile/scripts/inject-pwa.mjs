@@ -58,8 +58,18 @@ html = html.replace(
 // instead, per scheme.
 html = html.replace(/\s*<meta name="theme-color" content="[^"]*">/g, '');
 
+// Which commit this bundle was built from, readable with view-source.
+//
+// Web auto-deploys on every merge; the API is deployed by hand and the app
+// ships on its own cadence. Comparing them used to mean grepping the served
+// bundle hash. Render sets RENDER_GIT_COMMIT during its build; a local
+// `build:web` has no such variable, so 'dev' marks "not a deployed build"
+// rather than pretending to a commit.
+const buildCommit = process.env.RENDER_GIT_COMMIT ?? 'dev';
+
 const TAGS = `
     <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="build-commit" content="${buildCommit}" />
     <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0D2247" media="(prefers-color-scheme: dark)" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
