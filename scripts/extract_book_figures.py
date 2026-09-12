@@ -56,6 +56,7 @@ from __future__ import annotations
 
 import json
 import re
+from typing import NamedTuple
 import sys
 import os
 from pathlib import Path
@@ -114,6 +115,21 @@ def resolve_pdf(filename: str) -> Path:
 KB_PHYS = "knowledge-base/grade-10-physics/support-pdfs/"
 KB_BIO = "knowledge-base/grade-10-biology/support-pdfs/"
 KB_EARTH = "knowledge-base/grade-10-earth-science/support-pdfs/"
+KB_G9_PHYS = "knowledge-base/grade-9-physics/support-pdfs/"
+KB_G9_CHEM = "knowledge-base/grade-9-chemistry/support-pdfs/"
+KB_G9_BIO = "knowledge-base/grade-9-biology/support-pdfs/"
+KB_G9_EARTH = "knowledge-base/grade-9-earth-science/support-pdfs/"
+KB_HIST = "knowledge-base/grade-10-history/support-pdfs/"
+KB_GEO = "knowledge-base/grade-10-geography/support-pdfs/"
+# Grade 9 history and geography are the only two books here with no row in
+# g10_sources.json and no extracted text — their catalogs came from elsewhere.
+# The ids below are the ones a manifest row would have to use, so adding one
+# later needs no rename (`g9-physics-s1-student-book` had to be renamed once
+# already for exactly this reason).
+MIRROR_G9 = "C:/Users/Lenovo/Downloads/Raya studio/Iqraa/Calude app/Knowledge Base/9th grade/"
+MIRROR_G8 = "C:/Users/Lenovo/Downloads/Raya studio/Iqraa/Calude app/Knowledge Base/8th grade/"
+KB_ISLAMIC = "knowledge-base/grade-10-islamic/support-pdfs/"
+KB_G9_ISLAMIC = "knowledge-base/grade-9-islamic/support-pdfs/"
 
 BOOKS: dict[str, tuple[str, str]] = {
     "math-s1-student-book": (
@@ -205,6 +221,139 @@ BOOKS: dict[str, tuple[str, str]] = {
         "grade-10-earth-science",
         KB_EARTH + "كتاب الطالب لمادة علوم الأرض والبيئة الصف العاشر الفصل الثاني.pdf",
     ),
+    # ── Grade 9 sciences, added 2026-09-11 ───────────────────────────────────
+    # Same NCCD series and page furniture as their Grade 10 counterparts above,
+    # so they need no detector work — only these rows and an EXPECTED_UNITS
+    # range each. Repo-relative like the Grade 10 sciences; `support-pdfs/` is
+    # gitignored, so this runs on a checkout that has the mirror and reports
+    # "missing … — skipped" on one that does not.
+    #
+    # Filenames are NOT swapped here either — `check_semester` asserts it from
+    # the units the pages themselves print, which is the only reason to trust
+    # it (see the maths warning at the top of this map).
+    "g9-physics-s1-student-book": (
+        "grade-9-physics",
+        KB_G9_PHYS + "كتاب الطالب لمادة الفيزياء الصف التاسع الفصل الأول.pdf",
+    ),
+    "g9-physics-s2-student-book": (
+        "grade-9-physics",
+        KB_G9_PHYS + "كتاب الطالب لمادة الفيزياء الصف التاسع الفصل الثاني.pdf",
+    ),
+    "g9-chemistry-s1-student-book": (
+        "grade-9-chemistry",
+        KB_G9_CHEM + "كتاب الطالب لمادة الكيمياء الصف التاسع الفصل الأول.pdf",
+    ),
+    "g9-chemistry-s2-student-book": (
+        "grade-9-chemistry",
+        KB_G9_CHEM + "كتاب الطالب لمادة الكيمياء الصف التاسع الفصل الثاني.pdf",
+    ),
+    "g9-biology-s1-student-book": (
+        "grade-9-biology",
+        KB_G9_BIO + "كتاب الطالب لمادة العلوم الحياتية للصف التاسع الفصل الأول.pdf",
+    ),
+    "g9-biology-s2-student-book": (
+        "grade-9-biology",
+        KB_G9_BIO + "كتاب الطالب لمادة العلوم الحياتية للصف التاسع الفصل الثاني.pdf",
+    ),
+    "g9-earth-science-s1-student-book": (
+        "grade-9-earth-science",
+        KB_G9_EARTH + "كتاب الطالب لمادة علوم الأرض للصف التاسع الفصل الأول.pdf",
+    ),
+    "g9-earth-science-s2-student-book": (
+        "grade-9-earth-science",
+        KB_G9_EARTH + "كتاب الطالب لمادة علوم الأرض للصف التاسع الفصل الثاني.pdf",
+    ),
+    # ── History and geography, added 2026-09-11 ──────────────────────────────
+    # Probed before being added rather than after: `outline` reads 12 lesson
+    # starts in history S1 against the catalog's 12 lessons, and 9 in geography
+    # S1 against its 9. That exact agreement is the reason these two were worth
+    # running and civic education and digital literacy (0 starts each) were not.
+    "history-s1-student-book": (
+        "grade-10-history",
+        KB_HIST + "كتاب الطالب لمادة التاريخ للصف العاشر الفصل الأول.pdf",
+    ),
+    "history-s2-student-book": (
+        "grade-10-history",
+        KB_HIST + "كتاب الطالب لمادة التاريخ للصف العاشر الفصل الثاني.pdf",
+    ),
+    "geo-s1-student-book": (
+        "grade-10-geography",
+        KB_GEO + "كتاب الطالب لمادة الجغرافيا للصف العاشر الفصل الأول.pdf",
+    ),
+    "geo-s2-student-book": (
+        "grade-10-geography",
+        KB_GEO + "كتاب الطالب لمادة الجغرافيا للصف العاشر الفصل الثاني.pdf",
+    ),
+    "g9-history-s1-student-book": (
+        "grade-9-history",
+        MIRROR_G9 + "history/كتاب الطالب لمادة التاريخ للصف التاسع الفصل الأول.pdf",
+    ),
+    # Measured 2026-09-11 and left unextracted: `lesson_start` finds exactly
+    # ONE opener in this book (page 8) against the catalog's 13 lessons, so
+    # `outline` refuses it and every crop would be unplaced. Its sibling S1
+    # book detects all 10. Kept here so the path is recorded and the next
+    # person does not re-derive it — running it is harmless and yields nothing.
+    "g9-history-s2-student-book": (
+        "grade-9-history",
+        MIRROR_G9 + "history/كتاب الطالب لمادة التاريخ للصف التاسع الفصل الثاني.pdf",
+    ),
+    "g9-geography-s1-student-book": (
+        "grade-9-geography",
+        MIRROR_G9 + "geography/كتاب الطالب لمادة الجغرافيا للصف التاسع الفصل الأول.pdf",
+    ),
+    "g9-geography-s2-student-book": (
+        "grade-9-geography",
+        MIRROR_G9 + "geography/كتاب الطالب لمادة الجغرافيا للصف التاسع الفصل الثاني.pdf",
+    ),
+    # ── Grade 8 science, added 2026-09-12 ────────────────────────────────────
+    # Grade 8's first book of any kind. Like Grade 9 history and geography it
+    # has no row in g10_sources.json and no extracted text — its catalog was
+    # authored from the book directly — so these ids are the ones a manifest
+    # row would have to use.
+    #
+    # One book covers all of science at this grade rather than splitting into
+    # physics/chemistry/biology, so its units run 1-9 across the year: 1-4 in
+    # semester 1 and 5-9 in semester 2.
+    "g8-science-s1-student-book": (
+        "grade-8-science",
+        MIRROR_G8 + "العلوم/كتاب الطالب لمادة العلوم الصف الثامن الفصل الأول.pdf",
+    ),
+    # Measured 2026-09-12 and left unextracted: only TWO pages in this book
+    # carry «الدرس» as text in the top 200pt, and both are the contents
+    # spread — its lesson openers do not print the word at all, so there is
+    # nothing for `lesson_start` to profile the way Islamic was profiled.
+    # `outline` returns {} and every crop would be unplaced. Its S1 sibling
+    # detects all 10 openers. Same failure as g9-history-s2.
+    "g8-science-s2-student-book": (
+        "grade-8-science",
+        MIRROR_G8 + "العلوم/كتاب الطالب لمادة العلوم الصف الثامن الفصل الثاني.pdf",
+    ),
+    # ── Islamic Studies, added 2026-09-12 ────────────────────────────────────
+    # Abandoned on 2026-09-05 for want of a lesson-opener profile; these four
+    # are back because `OPENER_PROFILES` now has one. ISLAMIC_OPENER finds
+    # 24/24 openers in the S1 book — units 1-4 of six lessons, the catalog
+    # exactly — where the default profile found zero.
+    #
+    # The 2026-09-05 measurement of what they CONTAIN still stands and is the
+    # thing to check against the review sheet: ~10 usable crops per 36
+    # reviewed. These are text-and-ornament books; the extractor was built for
+    # books that draw their content.
+    "islamic-s1-student-book": (
+        "grade-10-islamic",
+        KB_ISLAMIC + "كتاب الطالب لمادة التربية الإسلامية الصف العاشر الفصل الأول.pdf",
+    ),
+    "islamic-s2-student-book": (
+        "grade-10-islamic",
+        KB_ISLAMIC + "كتاب الطالب لمادة التربية الإسلامية الصف العاشر الفصل الثاني.pdf",
+    ),
+    "g9-islamic-s1-student-book": (
+        "grade-9-islamic",
+        KB_G9_ISLAMIC + "كتاب الطالب لمادة التربية الإسلامية الصف التاسع الفصل الأول.pdf",
+    ),
+    "g9-islamic-s2-student-book": (
+        "grade-9-islamic",
+        KB_G9_ISLAMIC + "كتاب الطالب لمادة التربية الإسلامية الصف التاسع الفصل الثاني.pdf",
+    ),
 }
 
 # A real figure sits in a column; one filling the page is a failed detection.
@@ -242,6 +391,50 @@ DPI_OVERRIDES: dict[str, int] = {
 PREFER_CARD_BOUNDARY: set[str] = {
     "bio-s1-student-book",
     "bio-s2-student-book",
+}
+
+
+# ─── Per-book lesson-opener profiles ─────────────────────────────────────────
+#
+# `lesson_start`'s defaults are the maths/science layout: «الدرس» at 20pt+ in
+# the top band with a big bare number under it. Islamic Studies prints a third
+# layout, and NO amount of loosening the defaults reaches it without also
+# catching body text — measured 2026-09-05, re-measured 2026-09-12:
+#
+#   | | maths / science | Islamic |
+#   | «الدرس» size | >= 20pt | 15.9pt, y=48-75 |
+#   | lesson number | >= 40pt, bare digits, y < 65 | 15.9pt, PARENTHESISED, y=72-81 |
+#   | Arabic title | >= 24pt, y < 60 | 21.9-24pt, y=49-86 |
+#
+# So it is a profile — three geometry facts together — rather than a threshold
+# to relax. The parenthesised number is what makes it safe: the book's own
+# contents page (p4) carries «الدرس» at the same 15.9pt and is rejected because
+# its numbers are bare page numbers, not «)1(».
+class OpenerProfile(NamedTuple):
+    dars_size: float
+    dars_top: float
+    number_size: float
+    number_top: float
+    number_parenthesised: bool
+    title_size: float
+    title_top: float
+
+
+DEFAULT_OPENER = OpenerProfile(
+    dars_size=20, dars_top=90,
+    number_size=40, number_top=65, number_parenthesised=False,
+    title_size=24, title_top=60,
+)
+ISLAMIC_OPENER = OpenerProfile(
+    dars_size=15, dars_top=90,
+    number_size=15, number_top=95, number_parenthesised=True,
+    title_size=20, title_top=95,
+)
+OPENER_PROFILES: dict[str, OpenerProfile] = {
+    "islamic-s1-student-book": ISLAMIC_OPENER,
+    "islamic-s2-student-book": ISLAMIC_OPENER,
+    "g9-islamic-s1-student-book": ISLAMIC_OPENER,
+    "g9-islamic-s2-student-book": ISLAMIC_OPENER,
 }
 
 
@@ -294,7 +487,7 @@ def _dedupe(parts) -> str:
     return " ".join(out)
 
 
-def lesson_start(page: pymupdf.Page) -> dict | None:
+def lesson_start(page: pymupdf.Page, profile: OpenerProfile = DEFAULT_OPENER) -> dict | None:
     """A lesson opener: «الدرس» set at 22pt in the top band, its number at 45pt,
     and titles beneath.
 
@@ -332,7 +525,9 @@ def lesson_start(page: pymupdf.Page) -> dict | None:
       reach in body text.
     """
     if not any(
-        _bare(s["text"]) == "\u0627\u0644\u062F\u0631\u0633" and s["size"] >= 20 and s["bbox"][1] < 90
+        _bare(s["text"]) == "\u0627\u0644\u062F\u0631\u0633"
+        and s["size"] >= profile.dars_size
+        and s["bbox"][1] < profile.dars_top
         for s in _spans(page)
     ):
         return None
@@ -345,12 +540,22 @@ def lesson_start(page: pymupdf.Page) -> dict | None:
     heading_parts: list[tuple[float, float, str]] = []
     for s in _spans(page):
         t = s["text"].strip()
-        if s["size"] >= 40 and s["bbox"][1] < 65 and t.translate(ARABIC_DIGITS).isdigit():
-            number = int(t.translate(ARABIC_DIGITS))
+        # Islamic parenthesises its lesson number — «)1(» in the extracted
+        # stream, RTL-reversed from «(1)». Stripping the brackets is gated on
+        # the profile rather than done always: a bare-number book that also
+        # prints «(3)» as a footnote marker would start reading footnotes as
+        # lesson numbers.
+        digits = t.translate(ARABIC_DIGITS)
+        if profile.number_parenthesised:
+            digits = digits.strip("() ").strip()
+        if (s["size"] >= profile.number_size and s["bbox"][1] < profile.number_top
+                and digits.isdigit()):
+            number = int(digits)
         # The Arabic lesson title: the largest text in the very top band. It is
         # the only identifier chemistry states plainly, and it is what the
         # curriculum's own lesson titles are written in.
-        if s["size"] >= 24 and s["bbox"][1] < 60 and t and not all(ord(c) < 0x0600 for c in t):
+        if (s["size"] >= profile.title_size and s["bbox"][1] < profile.title_top
+                and t and not all(ord(c) < 0x0600 for c in t)):
             heading_parts.append((round(s["bbox"][1], 1), s["bbox"][0], t))
         if 13 <= s["size"] <= 20 and 60 < s["bbox"][1] < 115:
             if not t:
@@ -401,7 +606,7 @@ def unit_start(page: pymupdf.Page) -> int | None:
     return None
 
 
-def outline(doc: pymupdf.Document) -> dict[int, dict]:
+def outline(doc: pymupdf.Document, profile: OpenerProfile = DEFAULT_OPENER) -> dict[int, dict]:
     """Map every 1-based page to the lesson it belongs to.
 
     Lesson openers give the boundaries and the lesson number. The UNIT number
@@ -418,7 +623,7 @@ def outline(doc: pymupdf.Document) -> dict[int, dict]:
     """
     lessons: list[dict] = []
     for n in range(len(doc)):
-        start = lesson_start(doc[n])
+        start = lesson_start(doc[n], profile)
         if start:
             lessons.append({**start, "startPage": n + 1, "unit": None})
 
@@ -779,7 +984,7 @@ def figures_in(pdf: Path, source_id: str | None = None):
     invisible to it. Seeds that grow into the same region are one figure.
     """
     doc = pymupdf.open(pdf)
-    where = outline(doc)
+    where = outline(doc, OPENER_PROFILES.get(source_id or "", DEFAULT_OPENER))
     for n in range(len(doc)):
         page = doc[n]
 
@@ -865,6 +1070,22 @@ EXPECTED_UNITS: dict[str, dict[int, range]] = {
     "grade-10-physics": {1: range(1, 3), 2: range(4, 7)},
     "grade-10-biology": {1: range(1, 4), 2: range(3, 5)},
     "grade-10-earth-science": {1: range(1, 3), 2: range(3, 6)},
+    # Grade 9, read off each subject's own catalog the same way. All four run
+    # straight through the year with no repeat and no skip.
+    "grade-9-physics": {1: range(1, 4), 2: range(4, 6)},
+    "grade-9-chemistry": {1: range(1, 3), 2: range(3, 5)},
+    "grade-9-biology": {1: range(1, 3), 2: range(3, 5)},
+    "grade-9-earth-science": {1: range(1, 3), 2: range(3, 6)},
+    # History and geography are deliberately ABSENT, and the reason is the
+    # reason `check_semester` exists at all. Those books print no «الوحدة N»
+    # running header — checked on three pages of each S2 book — so `outline`
+    # falls back to counting unit-opener resets INSIDE one PDF, and every
+    # semester-2 book therefore reports units 1..3 rather than the curriculum's
+    # 4..6. An entry here would reject all four S2 books, and an entry written
+    # to match what they report (1..3 in both semesters) would make the check
+    # unable to tell the semesters apart, which is its only job. The offset is
+    # carried by `figure-lesson-map.json` instead, as it already is for the
+    # English S2 book, with a test pinning it.
 }
 
 

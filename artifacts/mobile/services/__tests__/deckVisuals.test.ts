@@ -18,6 +18,7 @@ import {
   sampleCurve,
   isRenderableVisual,
   plotGeometry,
+  sampleOptionsFor,
   samplePlot,
   visualForSlide,
   visualToSvg,
@@ -59,7 +60,9 @@ describe('compileExpression — school arithmetic', () => {
 
 describe('compileExpression — fails closed', () => {
   it('refuses functions it cannot evaluate', () => {
-    for (const src of ['sin(x)', 'log(x)', 'sqrt(x)']) {
+    // `sin(x)` used to head this list. It is supported now — see the trig
+    // suite — so the examples here are the ones still outside the evaluator.
+    for (const src of ['log(x)', 'sqrt(x)', 'sec(x)', 'arcsin(x)']) {
       assert.equal(compileExpression(src), null, src);
     }
   });
@@ -80,6 +83,34 @@ describe('compileExpression — fails closed', () => {
   });
 });
 
+describe('compileExpression — trig, in radians', () => {
+  const near = (actual: number | null | undefined, expected: number, msg?: string) =>
+    assert.ok(actual !== null && actual !== undefined && Math.abs(actual - expected) < 1e-9, msg);
+
+  it('evaluates the three functions in radians', () => {
+    near(at('sin(x)', Math.PI / 2), 1);
+    near(at('cos(x)', 0), 1);
+    near(at('tan(x)', Math.PI / 4), 1);
+    // Radians, not degrees — sin(30) is NOT 0.5 here. See FUNCTIONS.
+    assert.ok(Math.abs(at('sin(x)', 30)! - 0.5) > 0.1);
+  });
+
+  it('composes with the arithmetic already supported', () => {
+    near(at('2sin(x)', Math.PI / 2), 2, 'implicit multiply before a function');
+    near(at('sin(2x)', Math.PI / 4), 1, 'implicit multiply inside the argument');
+    near(at('sin(x)^2+cos(x)^2', 1.234), 1, 'the identity every Grade 10 book prints');
+    near(at('-sin(x)', Math.PI / 2), -1, 'unary minus before a function');
+    near(at('sin(cos(x))', 0), Math.sin(1), 'nesting');
+  });
+
+  it('still refuses what it cannot evaluate', () => {
+    assert.equal(compileExpression('sec(x)'), null, 'unknown function');
+    assert.equal(compileExpression('sinx'), null, 'no brackets, and not a known symbol');
+    assert.equal(compileExpression('sin(x'), null, 'unbalanced');
+    assert.equal(compileExpression('ax'), null, 'unknown identifier is not a hidden product');
+  });
+});
+
 describe('samplePlot', () => {
   it('samples across the range', () => {
     const pts = samplePlot('x^2', { from: -3, to: 3, steps: 7 });
@@ -97,8 +128,15 @@ describe('samplePlot', () => {
   });
 
   it('returns null when nothing plottable survives', () => {
-    assert.equal(samplePlot('sin(x)'), null);
+    assert.equal(samplePlot('sqrt(x)'), null); // was sin(x), now supported
     assert.equal(samplePlot('x^2', { from: 5, to: 5 }), null);
+  });
+
+  it('drops points beyond maxAbsY instead of letting them set the scale', () => {
+    const all = samplePlot('1/x', { from: 0.01, to: 1, steps: 20 });
+    const clipped = samplePlot('1/x', { from: 0.01, to: 1, steps: 20, maxAbsY: 10 });
+    assert.ok(all!.length > clipped!.length, 'clamp removed nothing');
+    assert.ok(Math.max(...clipped!.map(p => Math.abs(p.y))) <= 10);
   });
 });
 
@@ -160,10 +198,16 @@ describe('expressionFromCommand', () => {
     assert.equal(expressionFromCommand('k(x)=x'), null);
   });
 
+  it('extracts trig, which this build can now plot', () => {
+    // Until the evaluator learned sin/cos/tan this returned null, because the
+    // body has to compile before it is offered. Changed deliberately.
+    assert.equal(expressionFromCommand('f(x)=sin(x)'), 'sin(x)');
+  });
+
   it('returns null for commands it cannot plot', () => {
-    assert.equal(expressionFromCommand('f(x)=sin(x)'), null);
     assert.equal(expressionFromCommand('Circle((0,0),3)'), null);
     assert.equal(expressionFromCommand('f(x)=7'), null); // no x — a constant, nothing to show
+    assert.equal(expressionFromCommand('f(x)=sec(x)'), null); // not a function we know
   });
 });
 
@@ -386,6 +430,53 @@ describe('visualForSlide — what the projector draws', () => {
   it('has nothing to draw without commands', () => {
     assert.equal(visualForSlide({}), null);
     assert.equal(visualForSlide({ graphCommands: [] }), null);
+  });
+
+  it('plots a wave, over a window wide enough to show its shape', () => {
+    const visual = visualForSlide({ graphCommands: ['f(x)=sin(x)'] });
+    assert.equal(visual?.kind, 'plot');
+    const pts = visual?.kind === 'plot' ? visual.series[0].points : [];
+    const ys = pts.map(p => p.y);
+    // A full sine, not a fragment: it must reach both turning points.
+    assert.ok(Math.max(...ys) > 0.99, 'peak not reached');
+    assert.ok(Math.min(...ys) < -0.99, 'trough not reached');
+    // Over (−2π, 2π) sin changes sign at −π, 0 and π. The zeros at ±2π sit on
+    // the boundary with nothing beyond them, so they are not sign changes.
+    const crossings = pts.slice(1).filter((p, i) => p.y === 0 || p.y * pts[i].y < 0).length;
+    assert.equal(crossings, 3, 'not two full cycles');
+  });
+
+  it('keeps tan on the slide instead of letting it set the scale', () => {
+    const visual = visualForSlide({ graphCommands: ['f(x)=tan(x)'] });
+    const pts = visual?.kind === 'plot' ? visual.series[0].points : [];
+    assert.ok(pts.length > 0, 'tan drew nothing at all');
+    // Math.tan near pi/2 returns ~1e15 — finite, so the old filter kept it.
+    // One such point would flatten every other curve on the slide.
+    assert.ok(
+      Math.max(...pts.map(p => Math.abs(p.y))) <= 10,
+      'an asymptote spike survived and will flatten the slide',
+    );
+  });
+
+  it('shares one window across the slide so no curve stops short', () => {
+    const visual = visualForSlide({ graphCommands: ['f(x)=sin(x)', 'g(x)=x'] });
+    assert.equal(visual?.kind === 'plot' && visual.series.length, 2);
+    const [wave, line] = visual?.kind === 'plot' ? visual.series : [];
+    const span = (s: typeof wave) => {
+      const xs = s.points.map(p => p.x);
+      return Math.max(...xs) - Math.min(...xs);
+    };
+    assert.ok(Math.abs(span(wave) - span(line)) < 1e-9, 'series were sampled over different windows');
+  });
+
+  it('leaves ordinary polynomials on the default window', () => {
+    assert.deepEqual(sampleOptionsFor('f(x)=x^2-5x+6'), {});
+    assert.equal(sampleOptionsFor('f(x)=sin(x)').from! < -6, true);
+  });
+
+  it('refuses a function without brackets rather than guessing the argument', () => {
+    // `sin x + 1` would otherwise parse as sin(x + 1) — a different curve.
+    assert.equal(visualForSlide({ graphCommands: ['f(x)=sin x + 1'] }), null);
   });
 
   it('prefers an explicit visual over the commands', () => {

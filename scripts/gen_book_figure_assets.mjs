@@ -44,6 +44,21 @@ const indexes = [
   'knowledge-base/grade-10-earth-science/figures/earth-s2-student-book/index.json',
   'knowledge-base/grade-10-english/figures/eng-s1-student-book/index.json',
   'knowledge-base/grade-10-english/figures/eng-s2-student-book/index.json',
+  'knowledge-base/grade-9-physics/figures/g9-physics-s1-student-book/index.json',
+  'knowledge-base/grade-9-physics/figures/g9-physics-s2-student-book/index.json',
+  'knowledge-base/grade-9-chemistry/figures/g9-chemistry-s1-student-book/index.json',
+  'knowledge-base/grade-9-chemistry/figures/g9-chemistry-s2-student-book/index.json',
+  'knowledge-base/grade-9-biology/figures/g9-biology-s1-student-book/index.json',
+  'knowledge-base/grade-9-biology/figures/g9-biology-s2-student-book/index.json',
+  'knowledge-base/grade-9-earth-science/figures/g9-earth-science-s1-student-book/index.json',
+  'knowledge-base/grade-9-earth-science/figures/g9-earth-science-s2-student-book/index.json',
+  'knowledge-base/grade-10-history/figures/history-s1-student-book/index.json',
+  'knowledge-base/grade-10-geography/figures/geo-s1-student-book/index.json',
+  'knowledge-base/grade-9-history/figures/g9-history-s1-student-book/index.json',
+  'knowledge-base/grade-9-geography/figures/g9-geography-s1-student-book/index.json',
+  'knowledge-base/grade-10-history/figures/history-s2-student-book/index.json',
+  'knowledge-base/grade-10-geography/figures/geo-s2-student-book/index.json',
+  'knowledge-base/grade-9-geography/figures/g9-geography-s2-student-book/index.json',
 ];
 
 const rows = [];

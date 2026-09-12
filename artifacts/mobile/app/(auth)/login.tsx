@@ -270,6 +270,15 @@ export default function LoginScreen() {
           isRTL={isRTL}
         />
 
+        <Pressable
+          onPress={() => router.push('/(auth)/forgot-password' as any)}
+          style={{ alignSelf: isRTL ? 'flex-start' : 'flex-end', paddingVertical: 4 }}
+        >
+          <Text style={{ color: colors.primary, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+            {t('forgotPasswordLink')}
+          </Text>
+        </Pressable>
+
         <Button
           label={t('signIn')}
           onPress={handleLogin}

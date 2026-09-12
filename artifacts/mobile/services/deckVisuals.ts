@@ -81,12 +81,41 @@ function tokenize(src: string): string[] | null {
       out.push(n);
       continue;
     }
-    if (/[a-zA-Z]/.test(c)) { out.push(c); i++; continue; }
+    // A run of letters is ONE token. Single characters would make `sin` into
+    // `s*i*n` — three unknown symbols — which is why trig used to be
+    // unplottable rather than merely unsupported. `xy` now tokenises as one
+    // unknown identifier instead of `x*y`; both were refused before and both
+    // are refused now, so nothing that used to draw stops drawing.
+    if (/[a-zA-Z]/.test(c)) {
+      let id = '';
+      while (i < src.length && /[a-zA-Z]/.test(src[i]!)) id += src[i++]!;
+      out.push(id);
+      continue;
+    }
     if ('+-*/^()'.includes(c)) { out.push(c); i++; continue; }
     return null; // anything else — give up rather than guess
   }
   return out;
 }
+
+/**
+ * The functions this evaluator knows, in radians.
+ *
+ * **Radians, not degrees** — decided deliberately. The Grade 10 books write
+ * «جا ٣٠ = ٠٫٥», which is degrees, but this module plots curves rather than
+ * evaluating single values: `f(x)=sin(x)` sampled over a degree domain is a
+ * nearly flat line, while over −2π..2π it is the wave a teacher expects to
+ * point at. A value question is SymPy's job, server-side; this is the
+ * projector's.
+ */
+const FUNCTIONS: Record<string, (v: number) => number> = {
+  sin: Math.sin,
+  cos: Math.cos,
+  tan: Math.tan,
+};
+
+const isIdentifier = (t: string) => /^[a-zA-Z]+$/.test(t);
+const isFunction = (t: string) => Object.prototype.hasOwnProperty.call(FUNCTIONS, t);
 
 /** Insert the multiplication school notation leaves implicit: 3x → 3*x. */
 function withImplicitMultiplication(tokens: string[]): string[] {
@@ -96,8 +125,10 @@ function withImplicitMultiplication(tokens: string[]): string[] {
     const next = tokens[i + 1];
     out.push(t);
     if (next === undefined) continue;
-    const endsValue = /^[0-9.]+$/.test(t) || /^[a-zA-Z]$/.test(t) || t === ')';
-    const startsValue = /^[0-9.]+$/.test(next) || /^[a-zA-Z]$/.test(next) || next === '(';
+    // A function name is not a value: `sin(x)` must not become `sin*(x)`.
+    // It still *starts* one, so `2sin(x)` and `xsin(x)` get their `*`.
+    const endsValue = /^[0-9.]+$/.test(t) || (isIdentifier(t) && !isFunction(t)) || t === ')';
+    const startsValue = /^[0-9.]+$/.test(next) || isIdentifier(next) || next === '(';
     if (endsValue && startsValue) out.push('*');
   }
   return out;
@@ -110,12 +141,21 @@ function toRpn(tokens: string[]): string[] | null {
   const out: string[] = [];
   const ops: string[] = [];
   for (const t of tokens) {
-    if (/^[0-9.]+$/.test(t) || /^[a-zA-Z]$/.test(t)) { out.push(t); continue; }
+    if (/^[0-9.]+$/.test(t)) { out.push(t); continue; }
+    if (isIdentifier(t)) {
+      // A function waits on the stack until its closing bracket; a plain
+      // symbol is a value and goes straight out.
+      if (isFunction(t)) ops.push(t);
+      else out.push(t);
+      continue;
+    }
     if (t === '(') { ops.push(t); continue; }
     if (t === ')') {
       while (ops.length && ops[ops.length - 1] !== '(') out.push(ops.pop()!);
       if (!ops.length) return null; // unbalanced
       ops.pop();
+      // The bracket just closed may be a function's argument list.
+      if (ops.length && isFunction(ops[ops.length - 1]!)) out.push(ops.pop()!);
       continue;
     }
     const p = PRECEDENCE[t];
@@ -141,7 +181,13 @@ function evalRpn(rpn: string[], variable: string, x: number): number | null {
   const st: number[] = [];
   for (const t of rpn) {
     if (/^[0-9.]+$/.test(t)) { st.push(Number(t)); continue; }
-    if (/^[a-zA-Z]$/.test(t)) {
+    if (isFunction(t)) {
+      const arg = st.pop();
+      if (arg === undefined) return null;
+      st.push(FUNCTIONS[t]!(arg));
+      continue;
+    }
+    if (isIdentifier(t)) {
       if (t !== variable) return null; // an unknown symbol is not something to guess at
       st.push(x);
       continue;
@@ -180,6 +226,13 @@ export type CompiledExpression = (x: number) => number | null;
 export function compileExpression(src: string, variable = 'x'): CompiledExpression | null {
   const tokens = tokenize(src);
   if (!tokens || tokens.length === 0) return null;
+  // Brackets are required after a function. Without this, `sin x + 1` parses
+  // as sin(x + 1) — the shunting-yard drains `sin` last and swallows the whole
+  // sum — which is a different curve, drawn confidently. Refusing is the same
+  // posture the rest of this module takes.
+  for (let i = 0; i < tokens.length; i++) {
+    if (isFunction(tokens[i]!) && tokens[i + 1] !== '(') return null;
+  }
   const rpn = toRpn(withImplicitMultiplication(normaliseUnaryMinus(tokens)));
   if (!rpn) return null;
   // Reject up front rather than at render time: an expression that cannot be
@@ -192,7 +245,40 @@ export type SampleOptions = {
   from?: number;
   to?: number;
   steps?: number;
+  /**
+   * Drop points further than this from the axis.
+   *
+   * `tan` does not return Infinity near π/2 — it returns something like 1e15,
+   * which is finite, so the existing filter keeps it. One such point sets the
+   * y-range for the whole slide and flattens every other curve on it into a
+   * horizontal line. Dropping the point leaves a gap at the asymptote, which
+   * is the same thing this sampler already does for a hyperbola and is what
+   * the mathematics actually looks like.
+   */
+  maxAbsY?: number;
 };
+
+/** Two full cycles: enough to read the period off the wall, few enough to see. */
+const TRIG_SPAN = 2 * Math.PI;
+
+/**
+ * Sampling window for a command, widened for trig.
+ *
+ * The default −5..5 is right for the polynomials the books are full of, and
+ * wrong for a wave: it cuts `sin` mid-cycle and makes `tan` look like noise.
+ * Exported so the choice is testable rather than buried in a caller.
+ */
+export function sampleOptionsFor(command: string): SampleOptions {
+  if (!/\b(sin|cos|tan)\s*\(/i.test(command)) return {};
+  return {
+    from: -TRIG_SPAN,
+    to: TRIG_SPAN,
+    // ~3° per step. At 80 the wave visibly corners at its peaks on a projector.
+    steps: 240,
+    // Past ±10 a tan branch is off the top of the slide anyway.
+    maxAbsY: 10,
+  };
+}
 
 /**
  * Sample an expression into points, dropping anything not finite.
@@ -203,7 +289,7 @@ export type SampleOptions = {
  */
 export function samplePlot(
   expression: string,
-  { from = -5, to = 5, steps = 80 }: SampleOptions = {},
+  { from = -5, to = 5, steps = 80, maxAbsY }: SampleOptions = {},
 ): { x: number; y: number }[] | null {
   const f = compileExpression(expression);
   if (!f || steps < 2 || !(to > from)) return null;
@@ -212,7 +298,9 @@ export function samplePlot(
   for (let i = 0; i < steps; i++) {
     const x = from + i * dx;
     const y = f(x);
-    if (y !== null && Number.isFinite(y)) points.push({ x, y });
+    if (y === null || !Number.isFinite(y)) continue;
+    if (maxAbsY !== undefined && Math.abs(y) > maxAbsY) continue;
+    points.push({ x, y });
   }
   // Two points is a line segment, not a curve — below that there is nothing
   // worth projecting.
@@ -312,7 +400,7 @@ export function curveFromCommand(command: string): CompiledExpression | null {
 /** `samplePlot`, for a curve already compiled rather than named by a string. */
 export function sampleCurve(
   f: CompiledExpression,
-  { from = -5, to = 5, steps = 80 }: SampleOptions = {},
+  { from = -5, to = 5, steps = 80, maxAbsY }: SampleOptions = {},
 ): { x: number; y: number }[] | null {
   if (steps < 2 || !(to > from)) return null;
   const points: { x: number; y: number }[] = [];
@@ -320,7 +408,9 @@ export function sampleCurve(
   for (let i = 0; i < steps; i++) {
     const x = from + i * dx;
     const y = f(x);
-    if (y !== null && Number.isFinite(y)) points.push({ x, y });
+    if (y === null || !Number.isFinite(y)) continue;
+    if (maxAbsY !== undefined && Math.abs(y) > maxAbsY) continue;
+    points.push({ x, y });
   }
   return points.length >= 2 ? points : null;
 }
@@ -539,10 +629,14 @@ export function visualForSlide(slide: VisualSource): VisualBlock | null {
   if (!commands.length) return null;
 
   const series: PlotSeries[] = [];
+  // One window for the whole slide, not one per curve: every series is drawn
+  // against the same axes, so a line sampled −5..5 beside a wave sampled
+  // −2π..2π would stop short of the edge and read as a rendering bug.
+  const options = sampleOptionsFor(commands.join(' '));
   for (const command of commands) {
     const curve = curveFromCommand(command);
     if (!curve) continue;
-    const points = sampleCurve(curve);
+    const points = sampleCurve(curve, options);
     if (points) series.push({ label: command, points });
   }
   return series.length ? { kind: 'plot', series } : null;

@@ -87,6 +87,20 @@ interface AuthContextType {
   verifyEmail: (email: string, code: string) => Promise<void>;
   /** Requests a fresh code for an unverified account. Always resolves — the server never confirms whether the email exists. */
   resendVerification: (email: string) => Promise<void>;
+  /**
+   * Repoints a pending signup at a different address when the one typed at
+   * signup was wrong. Needs the password: the account has no session yet, so
+   * that is the only proof it belongs to whoever is asking. Returns the
+   * address the new code went to.
+   */
+  changeUnverifiedEmail: (email: string, password: string, newEmail: string) => Promise<{ email: string }>;
+  /**
+   * Always resolves when the request was accepted, whether or not that address
+   * has an account — the server refuses to say, so the UI must not imply it
+   * either (see the subtitle on the reset screen).
+   */
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (email: string, code: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: { preferredLanguage?: string; firstName?: string; lastName?: string }) => Promise<void>;
   /**
@@ -321,6 +335,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const changeUnverifiedEmail = useCallback(
+    async (email: string, password: string, newEmail: string) => {
+      const data = await apiJson<{ email: string; message: string }>(
+        '/auth/change-unverified-email',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            email: email.trim(),
+            password,
+            newEmail: newEmail.trim(),
+          }),
+        },
+      );
+      return { email: data.email };
+    },
+    [],
+  );
+
+  const forgotPassword = useCallback(async (email: string) => {
+    await apiJson('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email: email.trim() }),
+    });
+  }, []);
+
+  /**
+   * Deliberately does not sign the user in on success, unlike verifyEmail.
+   * The server ends every session the account had — including any an attacker
+   * held — and handing back a fresh one here would undo half of that.
+   */
+  const resetPassword = useCallback(async (email: string, code: string, password: string) => {
+    await apiJson('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ email: email.trim(), code: code.trim(), password }),
+    });
+  }, []);
+
   const logout = useCallback(async () => {
     await unregisterPushToken();
     try {
@@ -399,6 +450,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         register,
         verifyEmail,
         resendVerification,
+        changeUnverifiedEmail,
+        forgotPassword,
+        resetPassword,
         logout,
         updateProfile,
         deleteAccount,

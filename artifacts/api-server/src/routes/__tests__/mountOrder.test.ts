@@ -217,6 +217,22 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(res.status, 401, "account deletion must exist and require a token");
   });
 
+  it("keeps the unverified-email routes public, since the caller has no session yet", async () => {
+    // All three serve the verify screen, which by definition runs before any
+    // session exists — a 401 on any of them means somebody moved them behind
+    // authMiddleware and locked every pending signup out of finishing.
+    // 400 is the intended answer to an empty body, and it is reached before
+    // the database this suite deliberately cannot supply.
+    for (const path of ["/auth/verify-email", "/auth/resend-verification", "/auth/change-unverified-email"]) {
+      const res = await fetch(`${base}${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      });
+      assert.equal(res.status, 400, `${path} must be mounted, public, and validate its body`);
+    }
+  });
+
   it("reports that student accounts are off, and refuses one", async () => {
     // v1 is teacher-only, and the app reads this endpoint rather than a
     // build-time copy so the two cannot disagree about which doors to show.

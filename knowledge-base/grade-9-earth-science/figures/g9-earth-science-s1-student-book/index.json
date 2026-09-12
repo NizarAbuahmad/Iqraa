@@ -1,0 +1,277 @@
+{
+  "sourceId": "g9-earth-science-s1-student-book",
+  "figures": [
+    {
+      "file": "p014.png",
+      "sourceId": "g9-earth-science-s1-student-book",
+      "pdfPage": 14,
+      "rect": [
+        93.2,
+        513.5,
+        266.0,
+        678.5
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p015.png",
+      "sourceId": "g9-earth-science-s1-student-book",
+      "pdfPage": 15,
+      "rect": [
+        57.3,
+        230.0,
+        199.9,
+        380.5
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p016.png",
+      "sourceId": "g9-earth-science-s1-student-book",
+      "pdfPage": 16,
+      "rect": [
+        399.5,
+        527.4,
+        509.1,
+        667.6
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p020.png",
+      "sourceId": "g9-earth-science-s1-student-book",
+      "pdfPage": 20,
+      "rect": [
+        430.8,
+        311.8,
+        549.8,
+        395.1
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p029.png",
+      "sourceId": "g9-earth-science-s1-student-book",
+      "pdfPage": 29,
+      "rect": [
+        222.9,
+        15.2,
+        422.7,
+        154.4
+      ],
+      "unit": 1,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 25
+    },
+    {
+      "file": "p030.png",
+      "sourceId": "g9-earth-science-s1-student-book",
+      "pdfPage": 30,
+      "rect": [
+        48.1,
+        528.5,
+        389.1,
+        732.5
+      ],
+      "unit": 1,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 25
+    },
+    {
+      "file": "p035.png",
+      "sourceId": "g9-earth-science-s1-student-book",
+      "pdfPage": 35,
+      "rect": [
+        0.0,
+        0.0,
+        201.7,
+        458.1
+      ],
+      "unit": 1,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 25
+    },
+    {
+      "file": "p041.png",
+      "sourceId": "g9-earth-science-s1-student-book",
+      "pdfPage": 41,
+      "rect": [
+        200.8,
+        437.5,
+        553.9,
+        653.2
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 40
+    },
+    {
+      "file": "p043.png",
+      "sourceId": "g9-earth-science-s1-student-book",
+      "pdfPage": 43,
+      "rect": [
+        110.9,
+        449.1,
+        475.5,
+        736.1
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 40
+    },
+    {
+      "file": "p046.png",
+      "sourceId": "g9-earth-science-s1-student-book",
+      "pdfPage": 46,
+      "rect": [
+        103.9,
+        381.5,
+        457.3,
+        585.9
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 40
+    },
+    {
+      "file": "p049.png",
+      "sourceId": "g9-earth-science-s1-student-book",
+      "pdfPage": 49,
+      "rect": [
+        45.0,
+        524.4,
+        298.9,
+        702.7
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 47
+    },
+    {
+      "file": "p049b.png",
+      "sourceId": "g9-earth-science-s1-student-book",
+      "pdfPage": 49,
+      "rect": [
+        293.0,
+        524.4,
+        546.9,
+        702.7
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 47
+    },
+    {
+      "file": "p050.png",
+      "sourceId": "g9-earth-science-s1-student-book",
+      "pdfPage": 50,
+      "rect": [
+        37.4,
+        24.0,
+        562.6,
+        174.4
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 47
+    },
+    {
+      "file": "p050b.png",
+      "sourceId": "g9-earth-science-s1-student-book",
+      "pdfPage": 50,
+      "rect": [
+        64.0,
+        554.4,
+        414.8,
+        750.8
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 47
+    },
+    {
+      "file": "p052.png",
+      "sourceId": "g9-earth-science-s1-student-book",
+      "pdfPage": 52,
+      "rect": [
+        53.4,
+        574.4,
+        441.7,
+        745.2
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 47
+    },
+    {
+      "file": "p053.png",
+      "sourceId": "g9-earth-science-s1-student-book",
+      "pdfPage": 53,
+      "rect": [
+        32.5,
+        399.2,
+        338.9,
+        771.5
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 47
+    },
+    {
+      "file": "p060b.png",
+      "sourceId": "g9-earth-science-s1-student-book",
+      "pdfPage": 60,
+      "rect": [
+        43.4,
+        164.3,
+        300.1,
+        312.2
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 47
+    }
+  ]
+}
