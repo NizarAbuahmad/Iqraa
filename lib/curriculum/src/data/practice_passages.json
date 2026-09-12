@@ -1,0 +1,7 @@
+{
+  "note": "Read-aloud practice passages. Schema and rules: ../practice.ts. Each entry names an ExternalResource in external_resources.json, which carries the licence and the credit — so a passage may only exist where usePolicy() says quotable, and the resource must be flagged readAloudPractice. Both directions are checked by validatePracticePassages.",
+  "verbatimRule": "A passage must be the source's ACTUAL words, excerpted, never summarised or paraphrased. Attributing a paraphrase to VOA (or anyone) is a misattribution, and it is the specific failure this curation has rejected candidates over twice already — AP bylines inside VOA, and ESA imagery inside NASA. If the verbatim text cannot be obtained, the passage does not get added.",
+  "lengthRule": "60-150 words. The ceiling comes from the recording limit, not taste: uploads stop at 120 seconds and read-aloud speech runs ~130 words a minute, so a longer passage guarantees the student is cut off and scored on a fragment. Note the three VOA articles in the manifest run 375, 900 and 1100 words — full articles are reference material; an excerpt has to be chosen.",
+  "capturedAt": "2026-09-12",
+  "passages": []
+}
