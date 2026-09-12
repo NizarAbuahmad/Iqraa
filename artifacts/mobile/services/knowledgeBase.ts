@@ -199,6 +199,14 @@ import {
   buildG7IslamicSem2Catalog,
 } from './curriculumG7IslamicSem2.ts';
 import {
+  G7_SCIENCE_S1_BOOK_ID,
+  buildG7ScienceSem1Catalog,
+} from './curriculumG7ScienceSem1.ts';
+import {
+  G7_SCIENCE_S2_BOOK_ID,
+  buildG7ScienceSem2Catalog,
+} from './curriculumG7ScienceSem2.ts';
+import {
   G8_ARABIC_S1_BOOK_ID,
   buildG8ArabicSem1Catalog,
 } from './curriculumG8ArabicSem1.ts';
@@ -948,6 +956,24 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Islamic Education – Grade 7 – Semester 2',
     semester: 2,
     source: 'iqra_curriculum_g7_islamic_sem2.json (NCCD)',
+  },
+  {
+    id: G7_SCIENCE_S1_BOOK_ID,
+    gradeId: 'grade-7',
+    subjectId: 'science',
+    titleAr: 'العلوم – الصف السابع – الفصل الأول',
+    titleEn: 'Science – Grade 7 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g7_science_sem1.json (NCCD)',
+  },
+  {
+    id: G7_SCIENCE_S2_BOOK_ID,
+    gradeId: 'grade-7',
+    subjectId: 'science',
+    titleAr: 'العلوم – الصف السابع – الفصل الثاني',
+    titleEn: 'Science – Grade 7 – Semester 2',
+    semester: 2,
+    source: 'iqra_curriculum_g7_science_sem2.json (NCCD)',
   },
   {
     id: G8_ARABIC_S1_BOOK_ID,
@@ -2073,6 +2099,8 @@ const _g7MathSem2 = buildG7MathSem2Catalog();
 const _g7MathSem1 = buildG7MathSem1Catalog();
 const _g7IslamicSem1 = buildG7IslamicSem1Catalog();
 const _g7IslamicSem2 = buildG7IslamicSem2Catalog();
+const _g7ScienceSem1 = buildG7ScienceSem1Catalog();
+const _g7ScienceSem2 = buildG7ScienceSem2Catalog();
 const _g8ArabicSem1 = buildG8ArabicSem1Catalog();
 const _g8ArabicSem2 = buildG8ArabicSem2Catalog();
 const _g8IslamicSem1 = buildG8IslamicSem1Catalog();
@@ -2293,6 +2321,8 @@ export const KB_UNITS: KBUnit[] = [
   ..._g7MathSem2.units,
   ..._g7IslamicSem1.units,
   ..._g7IslamicSem2.units,
+  ..._g7ScienceSem1.units,
+  ..._g7ScienceSem2.units,
 ];
 
 /** Active lessons: NCCD Chem S1/S2 + NCCD Math S1/S2 (G10 + G9) + NCCD FinLit S1 + English vocational tracks. */
@@ -2385,6 +2415,8 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g7MathSem2.lessons,
   ..._g7IslamicSem1.lessons,
   ..._g7IslamicSem2.lessons,
+  ..._g7ScienceSem1.lessons,
+  ..._g7ScienceSem2.lessons,
 ];
 
 // ─────────────────────────────────────────────────────

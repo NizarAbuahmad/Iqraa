@@ -163,10 +163,11 @@ describe('subject isolation', () => {
       // and the g9- form appear.
       'civic-education': /^(civ-s[12]|g9-civ-s[12])$/,
       'physical-education': /^g9-pe-s[12]$/,
-      // Grade 8's combined «العلوم» book, the only one this subject has. No
-      // grade-10 alternative here: Grade 10 splits science into the four
-      // subjects above, so there is no bare `science-s[12]` form to allow.
-      science: /^g8-science-s[12]$/,
+      // Grade 7 and 8's combined «العلوم» books, the only ones this subject
+      // has. No grade-10 alternative here: Grade 10 splits science into the
+      // four subjects above, so there is no bare `science-s[12]` form to
+      // allow. Grade 7 joined 2026-09-12.
+      science: /^(g8-science-s[12]|g7-science-s[12])$/,
     };
     for (const lesson of KB_LESSONS) {
       const subjectId = getBookForLesson(lesson)?.subjectId;

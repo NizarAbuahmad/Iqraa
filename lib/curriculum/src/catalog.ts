@@ -106,6 +106,14 @@ import {
   buildG7IslamicSem2BrowserCatalog,
 } from './catalogs/g7IslamicSem2.ts';
 import {
+  G7_SCIENCE_S1_CURRICULUM_BOOK_ID,
+  buildG7ScienceSem1BrowserCatalog,
+} from './catalogs/g7ScienceSem1.ts';
+import {
+  G7_SCIENCE_S2_CURRICULUM_BOOK_ID,
+  buildG7ScienceSem2BrowserCatalog,
+} from './catalogs/g7ScienceSem2.ts';
+import {
   G9_MATH_S2_CURRICULUM_BOOK_ID,
   buildG9MathSem2BrowserCatalog,
   isG9MathSem2TitleOnlyUnit,
@@ -739,6 +747,11 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // treatment as Grade 7 Math above.
   G7_ISLAMIC_S1_CURRICULUM_BOOK_ID,
   G7_ISLAMIC_S2_CURRICULUM_BOOK_ID,
+  // Grade 7 Science — both semesters attached. Same held-out treatment as
+  // Grade 7 Math above. Semester 2 numbers its units 6-10, continuing
+  // Semester 1's 1-5 rather than restarting.
+  G7_SCIENCE_S1_CURRICULUM_BOOK_ID,
+  G7_SCIENCE_S2_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -1328,6 +1341,44 @@ export const BOOKS: Book[] = [
     academicYear: '2025-2026',
     language: 'Arabic',
     edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
+  },
+  // ── Science Grade 7 – Semesters 1 and 2 ────────────────────────────────────
+  // Third Grade 7 book. Grade 7/8 both teach combined «العلوم» before it
+  // splits into physics/chemistry/biology/earth-science from Grade 9. The
+  // teacher guide is a first trial edition (2020) that predates the attached
+  // 2026 student book by six years, so three of Semester 1's five units have
+  // a genuinely different lesson structure between the two books — periods
+  // are left null wherever the guide has no title-matching lesson, cross-
+  // checked against the activity book's own numbering. Semester 2 has no
+  // such mismatch (11/11 lessons match exactly) and numbers its units 6-10,
+  // continuing Semester 1's 1-5. See g7ScienceSem1.ts/g7ScienceSem2.ts and
+  // the JSONs' known_gaps. Same held-out picker treatment as the other
+  // Grade 7 subjects above.
+  {
+    id: G7_SCIENCE_S1_CURRICULUM_BOOK_ID,
+    title: 'Science – Grade 7, Semester 1',
+    titleAr: 'العلوم – الصف السابع – الفصل الأول',
+    subjectId: 'science',
+    gradeId: 'grade-7',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '2nd',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
+  {
+    id: G7_SCIENCE_S2_CURRICULUM_BOOK_ID,
+    title: 'Science – Grade 7, Semester 2',
+    titleAr: 'العلوم – الصف السابع – الفصل الثاني',
+    subjectId: 'science',
+    gradeId: 'grade-7',
+    academicYear: '2025-2026',
+    language: 'Arabic',
+    edition: '2nd',
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 2,
@@ -3064,6 +3115,8 @@ const _g7MathSem2Browser = buildG7MathSem2BrowserCatalog();
 const _g7MathSem1Browser = buildG7MathSem1BrowserCatalog();
 const _g7IslamicSem1Browser = buildG7IslamicSem1BrowserCatalog();
 const _g7IslamicSem2Browser = buildG7IslamicSem2BrowserCatalog();
+const _g7ScienceSem1Browser = buildG7ScienceSem1BrowserCatalog();
+const _g7ScienceSem2Browser = buildG7ScienceSem2BrowserCatalog();
 const _g8ArabicSem1Browser = buildG8ArabicSem1BrowserCatalog();
 const _g8ArabicSem2Browser = buildG8ArabicSem2BrowserCatalog();
 const _g8IslamicSem1Browser = buildG8IslamicSem1BrowserCatalog();
@@ -3278,6 +3331,8 @@ export const UNITS: Unit[] = [
   ..._g7MathSem2Browser.units,
   ..._g7IslamicSem1Browser.units,
   ..._g7IslamicSem2Browser.units,
+  ..._g7ScienceSem1Browser.units,
+  ..._g7ScienceSem2Browser.units,
 ];
 
 /** Active lessons — legacy Math/Chem G10 rows replaced by NCCD-sourced browser rows. */
@@ -3362,6 +3417,8 @@ export const LESSONS: Lesson[] = [
   ..._g7MathSem2Browser.lessons,
   ..._g7IslamicSem1Browser.lessons,
   ..._g7IslamicSem2Browser.lessons,
+  ..._g7ScienceSem1Browser.lessons,
+  ..._g7ScienceSem2Browser.lessons,
 ];
 
 /** Math Grade 10 Semester 1 book id (NCCD-backed). */
