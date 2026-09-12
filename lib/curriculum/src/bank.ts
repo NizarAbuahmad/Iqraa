@@ -89,6 +89,15 @@ export type LicenseId =
   | 'CC0-1.0'
   /** Reprintable, commercial use included, provided the credit is rendered. */
   | 'CC-BY-4.0'
+  /**
+   * The 2.0 generation of the same attribution-only licence, and by far the
+   * most common one on Wikimedia Commons — most of the usable geology and
+   * science photography there predates 4.0. Same substance for our purposes:
+   * commercial use permitted, no share-alike clause, credit required.
+   * Listed separately rather than folded into `CC-BY-4.0` because a credit
+   * line has to name the version the file was actually released under.
+   */
+  | 'CC-BY-2.0'
   /** Reprintable in principle, but see the policy map — we decline it. */
   | 'CC-BY-SA-4.0'
   /** No redistribution right; the terms permit an embed or a link only. */
@@ -98,6 +107,7 @@ const POLICY_BY_LICENSE: Record<LicenseId, BankUsePolicy> = {
   'public-domain': 'quotable',
   'CC0-1.0': 'quotable',
   'CC-BY-4.0': 'quotable',
+  'CC-BY-2.0': 'quotable',
   // Share-alike obliges a derivative to carry the same licence. A worksheet
   // quoting the passage is plausibly a derivative, and the cost of being wrong
   // is having licensed our own material to the world. Treated as read-only
