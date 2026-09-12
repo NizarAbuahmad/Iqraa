@@ -1,0 +1,506 @@
+{
+  "meta": {
+    "grade": "الصف السابع",
+    "grade_en": "Grade 7",
+    "subject": "اللغة الإنجليزية",
+    "subject_en": "English",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 1,
+    "schema_version": "1.0",
+    "provenance_note": "نُقلت الوحداتُ ودروسُها من كتاب الطالب «Jordan Team Together, Grade 7, Semester 1» (تأليف Anna Osborn with Kay Bentley، Pearson Education Limited و York Press Ltd.، الطبعة الثانية المنقَّحة 2025، ISBN 978-9923-41-917-5) في 2026-09-12. هذا كتابٌ من سلسلةٍ مختلفةٍ تمامًا عن سلسلة «Jordan High Note» المستخدَمة في ملفَّات الصفوف 8 و9 و10 (الفرقُ ظاهرٌ من غلافِ الكتابِ نفسِه، لا استنتاجًا)، وبنيتُه مختلفةٌ فعلًا: أربعُ وحداتٍ مرقَّمةٍ فقط لكامل الفصلِ الأول (City life، Our future، Let's read!، Our planet) لا خمسٌ، تحقَّقتُ من ذلك من جدولِ المحتوياتِ (صفحة iii) ومن فتحاتِ كلِّ وحدةٍ نفسِها. عناوينُ الوحداتِ وعناوينُ الدروسِ ترجمتُنا نحن؛ عباراتُ «Lesson aims» في main_idea_ar وobjectives أُبقيت بالإنجليزيةِ حرفيًّا كما تطبعُها دليلُ المعلمِ، اتّساقًا مع المعاملةِ نفسِها في ملفَّي الصفَّين 8 و9 (لأنَّ ترجمةَ عبارةِ النتاجِ تُغيّرُ ما يُقالُ للمعلمِ إنَّ الدرسَ يُحقِّقُه).",
+    "source_books": {
+      "student_book": "Jordan Team Together, Grade 7: Pupil's Book, Semester 1 (Pearson Education Limited / York Press Ltd.، الطبعة الثانية المنقَّحة 2025) - المركز الوطني لتطوير المناهج والتقويم، 62 صفحة محتوى (من أصل 64 صفحة في ملفِّ الـPDF)",
+      "teacher_guide": "Jordan Team Together, Grade 7: Teacher's Book, Semester 1 (الناشر نفسه)، 140 صفحة — رُوجعت فعليًّا صفحةً صفحةً لاستخراج «Lesson aims» كلِّ درسٍ وعددِ الحصصِ لكلِّ وحدةٍ، لا للاطّلاعِ العابرِ فقط"
+    },
+    "known_gaps": [
+      "لا يطبعُ هذا الكتابُ مربَّعَ «I can …» واحدًا في أسفلِ كلِّ درسٍ كما تفعلُ سلسلةُ Jordan High Note؛ فكتابُ الطالبِ لا يذكرُ نتاجَ الدرسِ بالكلماتِ إطلاقًا. الحقلُ الوحيدُ الذي يحملُ نتاجًا فعليًّا مطبوعًا هو سطرُ «Lesson aims:» داخلَ صندوقِ «Objectives» في دليلِ المعلمِ لكلِّ درسٍ، وهو ما نُقل حرفيًّا (بالإنجليزيةِ) إلى main_idea_ar وobjectives هنا. أي أنَّ مصدرَ هذا الحقلِ في هذا الملفِّ هو دليلُ المعلمِ لا كتابُ الطالبِ، خلافًا لملفَّي الصفَّين 8 و9 اللذين نُقلت فيهما «I can» من كتابِ الطالبِ نفسِه.",
+      "كلُّ وحدةٍ رئيسةٍ تحتوي 12 «Lesson» فعليًّا حسبَ تصريحِ دليلِ المعلمِ نفسِه (صفحة 7: «There are 12 lessons in each main unit»)، لا 9 ولا 11: الدروسُ 1 و2 و3 و5 و6 و8 و9 و10 و11 لها صفحاتٌ في كتابِ الطالبِ (وهي التسعةُ المُدرَجةُ في هذا الملفِّ)، أمّا الدروسُ 4 و7 و12 فهي تدريباتٌ في كتابِ الأنشطةِ فقط بلا أيِّ صفحةٍ مقابلةٍ في كتابِ الطالبِ (تحقَّقتُ من ذلك بمطابقةِ ترقيمِ الصفحاتِ بين الكتابين لكلِّ وحدةٍ)، فاستُبعدت هنا اتّساقًا مع توجيهِ المهمةِ بأنَّ كتابَ الأنشطةِ مرجعٌ فقط. النتيجةُ 9 دروسٍ لكلِّ وحدةٍ × 4 وحداتٍ = 36 درسًا في هذا الملفِّ، لا 35 كما في نمطِ الصفوفِ 8/9/10.",
+      "periods = 1 لكلِّ درسٍ مُدرَجٍ وtotal_periods = 12 لكلِّ وحدةٍ (لا null كما في ملفَّي الصفَّين 8 و9): دليلُ المعلمِ هنا يصرِّحُ فعلًا بعددِ الحصصِ الكلّيِّ للوحدةِ (12 «Lesson» = 12 حصةً، كلُّ «Lesson N» حصةٌ واحدةٌ)، بخلافِ دليلَي الصفَّين 8 و9 اللذين — بحسبِ ما سُجِّل هناك — لا يطبعانِ سوى تقسيمِ الدرسِ الواحدِ إلى مراحلَ زمنيةٍ داخلَ حصةٍ واحدةٍ. الرقمُ 12 هنا يشملُ الدروسَ الثلاثةَ المستبعدةَ (كتابُ الأنشطةِ فقط)، فهو العددُ الحقيقيُّ للحصصِ المُدرَّسةِ لا عددُ عناصرِ مصفوفةِ lessons.",
+      "vocabulary: [] لكلِّ الدروسِ: يوزِّعُ هذا الكتابُ أيضًا المفرداتِ على تمارينِ الدرسِ وقائمةِ كلماتٍ ختاميةٍ، ولا يطبعُ صندوقَ مفرداتٍ ثنائيَّ اللغةِ في مفتتحِ الدرسِ. دليلُ المعلمِ يذكرُ فعلًا قائمةَ «Target language» لكلِّ درسٍ لكنْ بالإنجليزيةِ فقط بلا مقابلٍ عربيٍّ مطبوعٍ في أيٍّ من الكتابين، وترجمتُها اجتهادًا منّا لا تُعدُّ نقلًا لمحتوًى مطبوعٍ فتُرِكت فارغةً — الأمرُ نفسُه المسجَّلُ في ملفَّي الصفَّين 8 و9.",
+      "general_idea_ar تُركت فارغةً لكلِّ وحدةٍ، اتّساقًا مع ملفَّي الصفَّين 8 و9 اللذين تركاها فارغةً أيضًا؛ سطرُ «Unit objectives» المطبوعُ في دليلِ المعلمِ (مثل «To talk about jobs and life events») لم يُنقَل إلى هذا الحقلِ لتجنُّبِ خلطِه بترجمةِ عنوانِ الوحدةِ.",
+      "استُبعدت من هذا الملفِّ الأقسامُ التالية لأنَّها ليست دروسًا من إحدى الوحداتِ الأربعِ المرقَّمةِ (لا رأسَ «LESSON n» تابعًا لوحدةٍ رقميةٍ ولا صندوقَ نتاجٍ خاصًّا بها)، تمامًا كما استُبعدت فتحاتُ LIFE SKILLS في نمطِ الرياضياتِ/الكيمياءِ: قسمُ Welcome (Let's get started!) في مستهلِّ الكتابِ؛ Dana's Learning Club: Language booster 1 وLanguage booster 2 (وكلٌّ منهما درسانِ بترقيمٍ مستقلٍّ يُعيدُ العدَّ من 1)؛ فتحتا Social Studies المُلحقتانِ بهما (درسانِ إضافيانِ بترقيمٍ مستقلٍّ أيضًا)؛ قسمُ Festivals؛ وملاحقُ Grammar reference وHow to write وEnglish in action reference (وهي تكرارٌ مجمَّعٌ لما وردَ داخلَ الدروسِ نفسِها، لا محتوًى جديدًا)."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "الحياة في المدينة",
+      "title_en": "City life",
+      "general_idea_ar": "",
+      "total_periods": 12,
+      "data_tier": "lesson-level (student book: skill banner + topic label per lesson, no boxed lesson outcome; teacher's guide: verbatim \"Lesson aims\" line per lesson, used here, plus the unit's total 12-lesson/period count)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "المفردات: السياحة في المدينة",
+          "title_en": "Vocabulary: City tourism",
+          "main_idea_ar": "Lesson aims: to learn and use words for city tourism.",
+          "periods": 1,
+          "objectives": [
+            "Lesson aims: to learn and use words for city tourism."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "حوار الفريق: نصب حريق لندن الكبير التذكاري",
+          "title_en": "Team Talk: The Monument to the Great Fire of London",
+          "main_idea_ar": "Lesson aims: to listen to and read a dialogue about the Monument in London.",
+          "periods": 1,
+          "objectives": [
+            "Lesson aims: to listen to and read a dialogue about the Monument in London."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l3",
+          "order": 3,
+          "title_ar": "القواعد: used to",
+          "title_en": "Grammar: used to",
+          "main_idea_ar": "Lesson aims: to learn and use used to; to understand a listening task.",
+          "periods": 1,
+          "objectives": [
+            "Lesson aims: to learn and use used to; to understand a listening task."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l5",
+          "order": 5,
+          "title_ar": "نادي الكتاب: مطاردة الكنز (قصة مصورة)",
+          "title_en": "Book Club: A treasure hunt (picture story)",
+          "main_idea_ar": "Lesson aims: to understand a reading text; to introduce compound nouns.",
+          "periods": 1,
+          "objectives": [
+            "Lesson aims: to understand a reading text; to introduce compound nouns."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l6",
+          "order": 6,
+          "title_ar": "المفردات والقواعد: المواصلات؛ المضارع المستمر والمضارع البسيط للمستقبل",
+          "title_en": "Vocabulary and Grammar: Transport; Present continuous and Present simple for future",
+          "main_idea_ar": "Lesson aims: to learn and use vocabulary for city travel and transport; to learn and use Present continuous for future plans; to learn and use Present simple for timetables and scheduled events.",
+          "periods": 1,
+          "objectives": [
+            "Lesson aims: to learn and use vocabulary for city travel and transport; to learn and use Present continuous for future plans; to learn and use Present simple for timetables and scheduled events."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l8",
+          "order": 8,
+          "title_ar": "الثقافة: مدينة كبيرة، مدينة صغيرة",
+          "title_en": "Culture: Big city, small city",
+          "main_idea_ar": "Lesson aims: to learn about Tokyo, Japan, and Nuuk, Greenland.",
+          "periods": 1,
+          "objectives": [
+            "Lesson aims: to learn about Tokyo, Japan, and Nuuk, Greenland."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l9",
+          "order": 9,
+          "title_ar": "الإنجليزية في الاستخدام: السؤال عن معلومات السفر",
+          "title_en": "English in action: Asking for travel information",
+          "main_idea_ar": "Lesson aims: to learn to ask for travel information; to differentiate between the sounds of the hard and soft c in words.",
+          "periods": 1,
+          "objectives": [
+            "Lesson aims: to learn to ask for travel information; to differentiate between the sounds of the hard and soft c in words."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l10",
+          "order": 10,
+          "title_ar": "المهارة القرائية: مقالات — مدينة مذهلة في الإمارات",
+          "title_en": "Literacy: articles — An amazing city in the UAE",
+          "main_idea_ar": "Lesson aims: to read and understand a reading text.",
+          "periods": 1,
+          "objectives": [
+            "Lesson aims: to read and understand a reading text."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l11",
+          "order": 11,
+          "title_ar": "الكتابة: مقالة عن المكان الذي تعيش فيه",
+          "title_en": "Writing: An article about the place where you live",
+          "main_idea_ar": "Lesson aims: to write an article about the place where you live.",
+          "periods": 1,
+          "objectives": [
+            "Lesson aims: to write an article about the place where you live."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "مستقبلنا",
+      "title_en": "Our future",
+      "general_idea_ar": "",
+      "total_periods": 12,
+      "data_tier": "lesson-level (student book: skill banner + topic label per lesson, no boxed lesson outcome; teacher's guide: verbatim \"Lesson aims\" line per lesson, used here, plus the unit's total 12-lesson/period count)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "المفردات: المهن",
+          "title_en": "Vocabulary: Jobs",
+          "main_idea_ar": "Lesson aims: to learn and use words for jobs.",
+          "periods": 1,
+          "objectives": [
+            "Lesson aims: to learn and use words for jobs."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "حوار الفريق: توقّع وظيفة أليكس المستقبلية",
+          "title_en": "Team Talk: Predicting Alex's future job",
+          "main_idea_ar": "Lesson aims: to listen to and read a dialogue about future jobs.",
+          "periods": 1,
+          "objectives": [
+            "Lesson aims: to listen to and read a dialogue about future jobs."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l3",
+          "order": 3,
+          "title_ar": "القواعد: will للتنبؤ",
+          "title_en": "Grammar: will for predictions",
+          "main_idea_ar": "Lesson aims: to learn and use will for predictions; to understand a listening task.",
+          "periods": 1,
+          "objectives": [
+            "Lesson aims: to learn and use will for predictions; to understand a listening task."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l5",
+          "order": 5,
+          "title_ar": "نادي الكتاب: ربما... (قصيدة)",
+          "title_en": "Book Club: I might... (poem)",
+          "main_idea_ar": "Lesson aims: to understand a reading text; to introduce life events vocabulary.",
+          "periods": 1,
+          "objectives": [
+            "Lesson aims: to understand a reading text; to introduce life events vocabulary."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l6",
+          "order": 6,
+          "title_ar": "المفردات والقواعد: أحداث الحياة؛ might وmay وcould للتنبؤ",
+          "title_en": "Vocabulary and Grammar: Life events; might, may and could for predictions",
+          "main_idea_ar": "Lesson aims: to learn and use words for life events; to learn and use might, may and could for predictions.",
+          "periods": 1,
+          "objectives": [
+            "Lesson aims: to learn and use words for life events; to learn and use might, may and could for predictions."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l8",
+          "order": 8,
+          "title_ar": "الثقافة: دراسات جامعية غير معتادة",
+          "title_en": "Culture: Unusual university studies",
+          "main_idea_ar": "Lesson aims: to learn about unusual university degrees.",
+          "periods": 1,
+          "objectives": [
+            "Lesson aims: to learn about unusual university degrees."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l9",
+          "order": 9,
+          "title_ar": "الإنجليزية في الاستخدام: تقديم المساعدة والرد عليها",
+          "title_en": "English in action: Making and responding to offers of help",
+          "main_idea_ar": "Lesson aims: to learn to make and respond to offers of help; to learn and practise intonation in questions and statements.",
+          "periods": 1,
+          "objectives": [
+            "Lesson aims: to learn to make and respond to offers of help; to learn and practise intonation in questions and statements."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l10",
+          "order": 10,
+          "title_ar": "المهارة القرائية: مدونات — الروبوتات قادمة لتأخذ وظائفنا...",
+          "title_en": "Literacy: blogs — Robots are coming for our jobs...",
+          "main_idea_ar": "Lesson aims: to read and understand a reading text.",
+          "periods": 1,
+          "objectives": [
+            "Lesson aims: to read and understand a reading text."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l11",
+          "order": 11,
+          "title_ar": "الكتابة: مدونة — هل سنحتاج إلى معلمين في المستقبل؟",
+          "title_en": "Writing: A blog — Will we need teachers in the future?",
+          "main_idea_ar": "Lesson aims: to write a blog.",
+          "periods": 1,
+          "objectives": [
+            "Lesson aims: to write a blog."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "هيا نقرأ!",
+      "title_en": "Let's read!",
+      "general_idea_ar": "",
+      "total_periods": 12,
+      "data_tier": "lesson-level (student book: skill banner + topic label per lesson, no boxed lesson outcome; teacher's guide: verbatim \"Lesson aims\" line per lesson, used here, plus the unit's total 12-lesson/period count)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "المفردات: أنواع الكتب",
+          "title_en": "Vocabulary: Types of books",
+          "main_idea_ar": "Lesson aims: to learn and use words for types of books.",
+          "periods": 1,
+          "objectives": [
+            "Lesson aims: to learn and use words for types of books."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "حوار الفريق: استطلاع القراءة الصفي",
+          "title_en": "Team Talk: The class book survey",
+          "main_idea_ar": "Lesson aims: to listen to and read a dialogue about a book survey.",
+          "periods": 1,
+          "objectives": [
+            "Lesson aims: to listen to and read a dialogue about a book survey."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l3",
+          "order": 3,
+          "title_ar": "القواعد: الكلام المنقول (الجمل الخبرية)",
+          "title_en": "Grammar: Reported speech (statements)",
+          "main_idea_ar": "Lesson aims: to learn and use reported speech; to understand a listening task.",
+          "periods": 1,
+          "objectives": [
+            "Lesson aims: to learn and use reported speech; to understand a listening task."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l5",
+          "order": 5,
+          "title_ar": "نادي الكتاب: ما الذي في البرج؟ (قصة غامضة)",
+          "title_en": "Book Club: What's in the tower? (mystery story)",
+          "main_idea_ar": "Lesson aims: to understand a reading text; to introduce adjectives to describe places.",
+          "periods": 1,
+          "objectives": [
+            "Lesson aims: to understand a reading text; to introduce adjectives to describe places."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l6",
+          "order": 6,
+          "title_ar": "المفردات والقواعد: الصفات؛ المبني للمجهول في المضارع والماضي البسيطين",
+          "title_en": "Vocabulary and Grammar: Adjectives; Present and Past simple passive",
+          "main_idea_ar": "Lesson aims: to learn and use adjectives for places; to learn and use the Present simple passive and the Past simple passive.",
+          "periods": 1,
+          "objectives": [
+            "Lesson aims: to learn and use adjectives for places; to learn and use the Present simple passive and the Past simple passive."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l8",
+          "order": 8,
+          "title_ar": "الثقافة: ألغاز بلا إجابات",
+          "title_en": "Culture: Mysteries with no answers",
+          "main_idea_ar": "Lesson aims: to learn about unexplained mysteries.",
+          "periods": 1,
+          "objectives": [
+            "Lesson aims: to learn about unexplained mysteries."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l9",
+          "order": 9,
+          "title_ar": "الإنجليزية في الاستخدام: الموافقة والاعتراض",
+          "title_en": "English in action: Agreeing and disagreeing",
+          "main_idea_ar": "Lesson aims: to learn to agree and disagree; to learn and practise intonation for agreeing and disagreeing.",
+          "periods": 1,
+          "objectives": [
+            "Lesson aims: to learn to agree and disagree; to learn and practise intonation for agreeing and disagreeing."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l10",
+          "order": 10,
+          "title_ar": "المهارة القرائية: قصص بوليسية — عصبة ذوي الشعر الأحمر",
+          "title_en": "Literacy: detective stories — The Red-headed League",
+          "main_idea_ar": "Lesson aims: to read and understand a reading text.",
+          "periods": 1,
+          "objectives": [
+            "Lesson aims: to read and understand a reading text."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l11",
+          "order": 11,
+          "title_ar": "الكتابة: قصة بوليسية",
+          "title_en": "Writing: A detective story",
+          "main_idea_ar": "Lesson aims: to write a detective story.",
+          "periods": 1,
+          "objectives": [
+            "Lesson aims: to write a detective story."
+          ],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "كوكبنا",
+      "title_en": "Our planet",
+      "general_idea_ar": "",
+      "total_periods": 12,
+      "data_tier": "lesson-level (student book: skill banner + topic label per lesson, no boxed lesson outcome; teacher's guide: verbatim \"Lesson aims\" line per lesson, used here, plus the unit's total 12-lesson/period count)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "المفردات: البيئة",
+          "title_en": "Vocabulary: The environment",
+          "main_idea_ar": "Lesson aims: to learn and use words related to the environment.",
+          "periods": 1,
+          "objectives": [
+            "Lesson aims: to learn and use words related to the environment."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l2",
+          "order": 2,
+          "title_ar": "حوار الفريق: التخطيط لمسابقة توفير الطاقة",
+          "title_en": "Team Talk: Planning an energy-saving competition",
+          "main_idea_ar": "Lesson aims: to listen to and read a dialogue about a competition.",
+          "periods": 1,
+          "objectives": [
+            "Lesson aims: to listen to and read a dialogue about a competition."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l3",
+          "order": 3,
+          "title_ar": "القواعد: الأفعال الناقصة (المودالات)",
+          "title_en": "Grammar: Modal verbs",
+          "main_idea_ar": "Lesson aims: to learn and use modal verbs; to understand a listening task.",
+          "periods": 1,
+          "objectives": [
+            "Lesson aims: to learn and use modal verbs; to understand a listening task."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l5",
+          "order": 5,
+          "title_ar": "نادي الكتاب: تجربة مرعبة (يوميات)",
+          "title_en": "Book Club: A frightening experience (diary)",
+          "main_idea_ar": "Lesson aims: to understand a reading text; to introduce extreme weather words.",
+          "periods": 1,
+          "objectives": [
+            "Lesson aims: to understand a reading text; to introduce extreme weather words."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l6",
+          "order": 6,
+          "title_ar": "المفردات والقواعد: الطقس المتطرف؛ الأسئلة والأوامر المنقولة",
+          "title_en": "Vocabulary and Grammar: Extreme weather; Reported questions and commands",
+          "main_idea_ar": "Lesson aims: to learn and use words for extreme weather; to learn and use reported questions and commands.",
+          "periods": 1,
+          "objectives": [
+            "Lesson aims: to learn and use words for extreme weather; to learn and use reported questions and commands."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l8",
+          "order": 8,
+          "title_ar": "الثقافة: التغيّر المناخي والحيوانات",
+          "title_en": "Culture: Climate change and animals",
+          "main_idea_ar": "Lesson aims: to learn about climate change and endangered animals.",
+          "periods": 1,
+          "objectives": [
+            "Lesson aims: to learn about climate change and endangered animals."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l9",
+          "order": 9,
+          "title_ar": "الإنجليزية في الاستخدام: تقديم النصيحة",
+          "title_en": "English in action: Giving advice",
+          "main_idea_ar": "Lesson aims: to learn to give advice; to practise the voiced and unvoiced th sound.",
+          "periods": 1,
+          "objectives": [
+            "Lesson aims: to learn to give advice; to practise the voiced and unvoiced th sound."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l10",
+          "order": 10,
+          "title_ar": "المهارة القرائية: تقارير — التلوث البلاستيكي في البحر",
+          "title_en": "Literacy: reports — Plastic pollution in the sea",
+          "main_idea_ar": "Lesson aims: to read and understand a reading text.",
+          "periods": 1,
+          "objectives": [
+            "Lesson aims: to read and understand a reading text."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l11",
+          "order": 11,
+          "title_ar": "الكتابة: تقرير عن استطلاع حول الحيوانات المهددة بالانقراض",
+          "title_en": "Writing: A report on a survey about endangered animals",
+          "main_idea_ar": "Lesson aims: to write a report.",
+          "periods": 1,
+          "objectives": [
+            "Lesson aims: to write a report."
+          ],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}

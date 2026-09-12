@@ -1,6 +1,7 @@
 {
   "note": "Curated third-party material attached to lessons. Schema and rules: ../external.ts. Every entry's licence was read on the date in licenseCheckedAt — do not add one from memory of what a provider 'is', because PhET relicensed its whole library to CC BY-NC on 2026-03-29 and anything trusting a remembered CC BY was wrong the next day. Ingestion (fetch-external.ts) refuses a check older than 180 days.",
   "voaRule": "VOA Learning English is public domain ONLY where the material is produced exclusively by VOA. A large share of their Health and Science output is reported by the Associated Press and merely adapted by a VOA writer — AP material may not be redistributed, so those articles are NOT usable however they are labelled. Check the byline of every single article before adding it: a VOA staff writer and editor with no agency credit is the test. Verified 2026-09-11: 'What Is the healthiest way to prepare vegetables' (7967294) and 'How to Reduce Risks of Bad Air Quality' (7980912) both failed it, and are deliberately absent below.",
+  "thumbnailRule": "An image fetchUrl points at Commons' 1280px rendition, never the original — these source files run 5-8 MB and a lesson page on a classroom phone cannot carry that; the renditions are 0.5-0.95 MB. Get the URL from the API (prop=imageinfo&iiurlwidth=1024) and strip its utm_ query. Do NOT construct it: the host is thumb.wikimedia.org rather than upload.wikimedia.org, and the last path segment is sometimes 1280px-<filename> and sometimes the generic 1280px-thumbnail.jpg, so a hand-built URL 400s.",
   "capturedAt": "2026-09-11",
   "resources": [
     {
@@ -61,6 +62,308 @@
       "words": 1100,
       "durationSec": 374,
       "level": "b1"
+    },
+
+    {
+      "id": "noaa-ocean-surface-currents",
+      "lessonIds": ["kbl-earth-science-s2-nccd-u4_l3"],
+      "kind": "image",
+      "titleEn": "Map of ocean surface currents",
+      "titleAr": "خريطة تيّارات سطح المحيط",
+      "provider": "wikimedia",
+      "license": "public-domain",
+      "licenseUrl": "https://commons.wikimedia.org/wiki/File:Ocean_surface_currents.jpg",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Ocean_surface_currents.jpg",
+      "fetchUrl": "https://upload.wikimedia.org/wikipedia/commons/c/cc/Ocean_surface_currents.jpg",
+      "attribution": "NOAA, public domain, via Wikimedia Commons",
+      "licenseCheckedAt": "2026-09-11",
+      "authority": "third-party",
+      "ingest": {
+        "r2Key": "external/noaa-ocean-surface-currents.jpg",
+        "sha256": "699f5f6d5381cf26df4ee060b949a216ab0f77b9d18a3c4373774c05cb46766c",
+        "bytes": 117930,
+        "ingestedAt": "2026-09-12"
+      }
+    },
+    {
+      "id": "noaa-gulf-stream-sst",
+      "lessonIds": ["kbl-earth-science-s2-nccd-u4_l3"],
+      "kind": "image",
+      "titleEn": "The Gulf Stream seen through sea-surface temperature",
+      "titleAr": "تيّار الخليج مرئيًّا بدرجة حرارة سطح البحر",
+      "provider": "wikimedia",
+      "license": "public-domain",
+      "licenseUrl": "https://commons.wikimedia.org/wiki/File:The_Gulf_Stream_Seen_Through_Sea_Surface_Temperature_(NESDIS_2016-06-03).png",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:The_Gulf_Stream_Seen_Through_Sea_Surface_Temperature_(NESDIS_2016-06-03).png",
+      "fetchUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1d/The_Gulf_Stream_Seen_Through_Sea_Surface_Temperature_%28NESDIS_2016-06-03%29.png/1280px-The_Gulf_Stream_Seen_Through_Sea_Surface_Temperature_%28NESDIS_2016-06-03%29.png",
+      "attribution": "NOAA, public domain, via Wikimedia Commons",
+      "licenseCheckedAt": "2026-09-11",
+      "authority": "third-party",
+      "ingest": {
+        "r2Key": "external/noaa-gulf-stream-sst.png",
+        "sha256": "45c9e2a21a4108d594d92ae155efa5954b28f4fe5c744b6d29079a1125c99041",
+        "bytes": 952025,
+        "ingestedAt": "2026-09-12"
+      }
+    },
+    {
+      "id": "commons-basalt-columbia-river",
+      "lessonIds": ["kbl-earth-science-s1-nccd-u1_l1"],
+      "kind": "image",
+      "titleEn": "Basalt — Columbia River flood basalt, Oregon",
+      "titleAr": "البازلت — بازلت نهر كولومبيا الفيضي، أوريغون",
+      "provider": "wikimedia",
+      "license": "CC-BY-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Basalt_(Columbia_River_Flood_Basalt,_Miocene,_~15-17_Ma;_Mud_Hollow,_Oregon,_USA).jpg",
+      "fetchUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f5/Basalt_%28Columbia_River_Flood_Basalt%2C_Miocene%2C_~15-17_Ma%3B_Mud_Hollow%2C_Oregon%2C_USA%29.jpg/1280px-Basalt_%28Columbia_River_Flood_Basalt%2C_Miocene%2C_~15-17_Ma%3B_Mud_Hollow%2C_Oregon%2C_USA%29.jpg",
+      "attribution": "James St. John, CC BY 2.0, via Wikimedia Commons",
+      "licenseCheckedAt": "2026-09-11",
+      "authority": "third-party",
+      "ingest": {
+        "r2Key": "external/commons-basalt-columbia-river.jpg",
+        "sha256": "66152f95340efd6a843724015e46c19e7962c74d91636671f02d84efb56c5b23",
+        "bytes": 494980,
+        "ingestedAt": "2026-09-12"
+      }
+    },
+    {
+      "id": "commons-conglomerate-sharon",
+      "lessonIds": ["kbl-earth-science-s1-nccd-u1_l2"],
+      "kind": "image",
+      "titleEn": "Quartz-pebble conglomerate — Sharon Conglomerate, Ohio",
+      "titleAr": "الكونغلوميرات الحصوي — تكوين شارون، أوهايو",
+      "provider": "wikimedia",
+      "license": "CC-BY-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Clast_of_siliciclastic_sedimentary_rock_in_quartz-pebble_conglomerate_(Sharon_Conglomerate,_Lower_Pennsylvanian;_Jackson_North_roadcut,_Ohio,_USA)_2_(37034583584).jpg",
+      "fetchUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/44/Clast_of_siliciclastic_sedimentary_rock_in_quartz-pebble_conglomerate_%28Sharon_Conglomerate%2C_Lower_Pennsylvanian%3B_Jackson_North_roadcut%2C_Ohio%2C_USA%29_2_%2837034583584%29.jpg/1280px-thumbnail.jpg",
+      "attribution": "James St. John, CC BY 2.0, via Wikimedia Commons",
+      "licenseCheckedAt": "2026-09-11",
+      "authority": "third-party",
+      "ingest": {
+        "r2Key": "external/commons-conglomerate-sharon.jpg",
+        "sha256": "61fa43b2a59e68d212382aa5fcea00771e780fda3054c5dc07a0b07b9806559b",
+        "bytes": 520701,
+        "ingestedAt": "2026-09-12"
+      }
+    },
+    {
+      "id": "commons-gneiss-ellsworth",
+      "lessonIds": ["kbl-earth-science-s1-nccd-u1_l3"],
+      "kind": "image",
+      "titleEn": "Gneiss — Ellsworth Schist, Maine",
+      "titleAr": "النايس — شيست إلزوورث، ماين",
+      "provider": "wikimedia",
+      "license": "CC-BY-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Gneiss_(Ellsworth_Schist,_Cambrian;_Seal_Cove,_Mt._Desert_Island,_Maine,_USA)_10.jpg",
+      "fetchUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5d/Gneiss_%28Ellsworth_Schist%2C_Cambrian%3B_Seal_Cove%2C_Mt._Desert_Island%2C_Maine%2C_USA%29_10.jpg/1280px-Gneiss_%28Ellsworth_Schist%2C_Cambrian%3B_Seal_Cove%2C_Mt._Desert_Island%2C_Maine%2C_USA%29_10.jpg",
+      "attribution": "James St. John, CC BY 2.0, via Wikimedia Commons",
+      "licenseCheckedAt": "2026-09-11",
+      "authority": "third-party",
+      "ingest": {
+        "r2Key": "external/commons-gneiss-ellsworth.jpg",
+        "sha256": "70d4ef95f4dd991c2f4afcd095d074941d43c7b19066f5cf6d4a5024ea34e78c",
+        "bytes": 596200,
+        "ingestedAt": "2026-09-12"
+      }
+    },
+
+    {
+      "id": "commons-hydrogen-emission-spectrum",
+      "lessonIds": ["kbl-chem-s1-nccd-u1_lab", "kbl-chem-s1-nccd-u1_l1"],
+      "kind": "image",
+      "titleEn": "Hydrogen emission spectrum, with wavelengths labelled",
+      "titleAr": "طيف انبعاث الهيدروجين مع الأطوال الموجية",
+      "provider": "wikimedia",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Emission_spectrum-H_labeled.svg",
+      "fetchUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fb/Emission_spectrum-H_labeled.svg/1280px-Emission_spectrum-H_labeled.svg.png",
+      "attribution": "Merikanto and Adrignola, CC0, via Wikimedia Commons",
+      "licenseCheckedAt": "2026-09-12",
+      "authority": "third-party",
+      "ingest": {
+        "r2Key": "external/commons-hydrogen-emission-spectrum.png",
+        "sha256": "ccaa79af212b1dac4cd76539511921bfe68b1a9fbcae5ef69f921734a00b4bc2",
+        "bytes": 6575,
+        "ingestedAt": "2026-09-12"
+      }
+    },
+    {
+      "id": "commons-periodic-table",
+      "lessonIds": ["kbl-chem-s1-nccd-u2_l2"],
+      "kind": "image",
+      "titleEn": "Periodic table of the elements",
+      "titleAr": "الجدول الدوري للعناصر",
+      "provider": "wikimedia",
+      "license": "CC-BY-3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Periodic_table_large.svg",
+      "fetchUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4d/Periodic_table_large.svg/1280px-Periodic_table_large.svg.png",
+      "attribution": "2012rc, CC BY 3.0, via Wikimedia Commons",
+      "licenseCheckedAt": "2026-09-12",
+      "authority": "third-party",
+      "ingest": {
+        "r2Key": "external/commons-periodic-table.png",
+        "sha256": "21fd1843bb394c73ca4ff83a21e1628fbc18b3f2bc9d4c4d0126c81d46dbb43f",
+        "bytes": 500284,
+        "ingestedAt": "2026-09-12"
+      }
+    },
+    {
+      "id": "commons-force-parallelogram",
+      "lessonIds": ["kbl-phys-s1-nccd-u1_lab", "kbl-phys-s1-nccd-u1_l2"],
+      "kind": "image",
+      "titleEn": "Parallelogram of forces — the resultant of two forces",
+      "titleAr": "متوازي أضلاع القوى — محصّلة قوّتين",
+      "provider": "wikimedia",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Kraefteparallelogramm.svg",
+      "fetchUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e8/Kraefteparallelogramm.svg/1280px-Kraefteparallelogramm.svg.png",
+      "attribution": "Stündle, CC0, via Wikimedia Commons",
+      "licenseCheckedAt": "2026-09-12",
+      "authority": "third-party",
+      "ingest": {
+        "r2Key": "external/commons-force-parallelogram.png",
+        "sha256": "2c29be582be89a516f1255270bd71f3273f61036caea5a3062c0d20b0156bee5",
+        "bytes": 56538,
+        "ingestedAt": "2026-09-12"
+      }
+    },
+    {
+      "id": "commons-net-force",
+      "lessonIds": ["kbl-phys-s1-nccd-u2_l3"],
+      "kind": "image",
+      "titleEn": "Net force on a body",
+      "titleAr": "القوة المحصّلة المؤثرة في جسم",
+      "provider": "wikimedia",
+      "license": "public-domain",
+      "licenseUrl": "https://commons.wikimedia.org/wiki/File:Net_force.svg",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Net_force.svg",
+      "fetchUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/75/Net_force.svg/1280px-Net_force.svg.png",
+      "attribution": "Mpfiz, public domain, via Wikimedia Commons",
+      "licenseCheckedAt": "2026-09-12",
+      "authority": "third-party",
+      "ingest": {
+        "r2Key": "external/commons-net-force.png",
+        "sha256": "022524c7d32d695ddd0da37bac6e435c389dc344480192d40d0453bf648c126d",
+        "bytes": 38930,
+        "ingestedAt": "2026-09-12"
+      }
+    },
+    {
+      "id": "commons-projectile-motion",
+      "lessonIds": ["kbl-phys-s1-nccd-u2_l2"],
+      "kind": "image",
+      "titleEn": "Projectile motion — the path of a thrown object",
+      "titleAr": "حركة المقذوف — مسار جسم مقذوف",
+      "provider": "wikimedia",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Projectile_motion.png",
+      "fetchUrl": "https://upload.wikimedia.org/wikipedia/commons/7/75/Projectile_motion.png",
+      "attribution": "Py4nf, CC0, via Wikimedia Commons",
+      "licenseCheckedAt": "2026-09-12",
+      "authority": "third-party",
+      "ingest": {
+        "r2Key": "external/commons-projectile-motion.png",
+        "sha256": "c16bea27f377a4e5eabeaf383d392cccc70d8eb6bade037f0ed62c0b75ca4749",
+        "bytes": 8650,
+        "ingestedAt": "2026-09-12"
+      }
+    },
+
+    {
+      "id": "yt-nasa-newtons-second-law",
+      "lessonIds": ["kbl-phys-s1-nccd-u2_l3"],
+      "kind": "video",
+      "titleEn": "STEMonstrations: Newton's 2nd Law of Motion",
+      "titleAr": "ناسا: قانون نيوتن الثاني للحركة",
+      "provider": "youtube",
+      "license": "embed-terms",
+      "licenseUrl": "https://www.youtube.com/t/terms",
+      "sourceUrl": "https://www.youtube.com/watch?v=sPZ2bjW53c8",
+      "attribution": "NASA Johnson",
+      "licenseCheckedAt": "2026-09-12",
+      "authority": "third-party"
+    },
+    {
+      "id": "yt-nasa-newtons-laws-iss",
+      "lessonIds": ["kbl-phys-s1-nccd-u2_l1", "kbl-phys-s1-nccd-u2_l3"],
+      "kind": "video",
+      "titleEn": "Launchpad: Newton's Laws on board the International Space Station",
+      "titleAr": "قوانين نيوتن على متن محطة الفضاء الدولية",
+      "provider": "youtube",
+      "license": "embed-terms",
+      "licenseUrl": "https://www.youtube.com/t/terms",
+      "sourceUrl": "https://www.youtube.com/watch?v=KvPF0cQUW7s",
+      "attribution": "NASA eClips",
+      "licenseCheckedAt": "2026-09-12",
+      "authority": "third-party"
+    },
+    {
+      "id": "yt-harvard-flame-tests",
+      "lessonIds": ["kbl-chem-s1-nccd-u1_lab", "kbl-chem-s1-nccd-u1_l1"],
+      "kind": "video",
+      "titleEn": "Flame Tests of Metals",
+      "titleAr": "اختبار اللهب للفلزّات",
+      "provider": "youtube",
+      "license": "embed-terms",
+      "licenseUrl": "https://www.youtube.com/t/terms",
+      "sourceUrl": "https://www.youtube.com/watch?v=cBGTskrLn18",
+      "attribution": "Harvard Natural Sciences Lecture Demonstrations",
+      "licenseCheckedAt": "2026-09-12",
+      "authority": "third-party"
+    },
+
+    {
+      "id": "yt-nasa-large-scale-ocean-currents",
+      "lessonIds": ["kbl-earth-science-s2-nccd-u4_l3"],
+      "kind": "video",
+      "titleEn": "NASA: Large Scale Ocean Currents",
+      "titleAr": "ناسا: تيّارات المحيط واسعة النطاق",
+      "provider": "youtube",
+      "license": "embed-terms",
+      "licenseUrl": "https://www.youtube.com/t/terms",
+      "sourceUrl": "https://www.youtube.com/watch?v=ObzlDSa8mJg",
+      "attribution": "My NASA Data — NASA",
+      "licenseCheckedAt": "2026-09-11",
+      "authority": "third-party"
+    },
+    {
+      "id": "yt-nasa-ocean-in-motion",
+      "lessonIds": ["kbl-earth-science-s2-nccd-u4_l2", "kbl-earth-science-s2-nccd-u4_l3"],
+      "kind": "video",
+      "titleEn": "An Ocean in Motion: NASA's view of Earth's underwater highways",
+      "titleAr": "محيط في حركة: رؤية ناسا لطرق الأعماق",
+      "provider": "youtube",
+      "license": "embed-terms",
+      "licenseUrl": "https://www.youtube.com/t/terms",
+      "sourceUrl": "https://www.youtube.com/watch?v=R5-s6O8qyvE",
+      "attribution": "NASA Goddard",
+      "licenseCheckedAt": "2026-09-11",
+      "authority": "third-party"
+    },
+    {
+      "id": "yt-nasa-rock-cycle",
+      "lessonIds": [
+        "kbl-earth-science-s1-nccd-u1_l1",
+        "kbl-earth-science-s1-nccd-u1_l2",
+        "kbl-earth-science-s1-nccd-u1_l3"
+      ],
+      "kind": "video",
+      "titleEn": "Our World: The Rock Cycle",
+      "titleAr": "عالمنا: دورة الصخور",
+      "provider": "youtube",
+      "license": "embed-terms",
+      "licenseUrl": "https://www.youtube.com/t/terms",
+      "sourceUrl": "https://www.youtube.com/watch?v=0anfmqvpYfg",
+      "attribution": "NASA Video Collection",
+      "licenseCheckedAt": "2026-09-11",
+      "authority": "third-party"
     }
   ]
 }

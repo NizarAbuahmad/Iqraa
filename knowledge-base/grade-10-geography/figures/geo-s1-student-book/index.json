@@ -1,0 +1,309 @@
+{
+  "sourceId": "geo-s1-student-book",
+  "figures": [
+    {
+      "file": "p009.png",
+      "sourceId": "geo-s1-student-book",
+      "pdfPage": 9,
+      "rect": [
+        102.4,
+        515.7,
+        549.8,
+        793.7
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الغالفُ الجوِّي",
+      "lessonStartPage": 8
+    },
+    {
+      "file": "p015.png",
+      "sourceId": "geo-s1-student-book",
+      "pdfPage": 15,
+      "rect": [
+        51.0,
+        104.9,
+        377.0,
+        388.7
+      ],
+      "unit": 1,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الغالفُ الحيوي",
+      "lessonStartPage": 14
+    },
+    {
+      "file": "p030.png",
+      "sourceId": "geo-s1-student-book",
+      "pdfPage": 30,
+      "rect": [
+        47.2,
+        26.1,
+        358.8,
+        307.7
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "ِمُقوِّماتُ السِّياحة",
+      "lessonStartPage": 28
+    },
+    {
+      "file": "p046.png",
+      "sourceId": "geo-s1-student-book",
+      "pdfPage": 46,
+      "rect": [
+        20.0,
+        344.4,
+        295.0,
+        649.5
+      ],
+      "unit": 2,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "ُالنقل",
+      "lessonStartPage": 44
+    },
+    {
+      "file": "p051.png",
+      "sourceId": "geo-s1-student-book",
+      "pdfPage": 51,
+      "rect": [
+        145.4,
+        198.9,
+        449.7,
+        568.8
+      ],
+      "unit": 2,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "ُالنقل",
+      "lessonStartPage": 44
+    },
+    {
+      "file": "p055.png",
+      "sourceId": "geo-s1-student-book",
+      "pdfPage": 55,
+      "rect": [
+        47.8,
+        317.1,
+        398.9,
+        732.7
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 54
+    },
+    {
+      "file": "p056.png",
+      "sourceId": "geo-s1-student-book",
+      "pdfPage": 56,
+      "rect": [
+        90.7,
+        296.5,
+        486.8,
+        726.4
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 54
+    },
+    {
+      "file": "p057.png",
+      "sourceId": "geo-s1-student-book",
+      "pdfPage": 57,
+      "rect": [
+        57.2,
+        138.6,
+        405.3,
+        551.4
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 54
+    },
+    {
+      "file": "p058b.png",
+      "sourceId": "geo-s1-student-book",
+      "pdfPage": 58,
+      "rect": [
+        38.7,
+        161.5,
+        303.0,
+        441.8
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 54
+    },
+    {
+      "file": "p058c.png",
+      "sourceId": "geo-s1-student-book",
+      "pdfPage": 58,
+      "rect": [
+        37.8,
+        426.0,
+        302.7,
+        723.3
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 54
+    },
+    {
+      "file": "p059.png",
+      "sourceId": "geo-s1-student-book",
+      "pdfPage": 59,
+      "rect": [
+        34.8,
+        32.3,
+        320.9,
+        328.0
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 54
+    },
+    {
+      "file": "p059b.png",
+      "sourceId": "geo-s1-student-book",
+      "pdfPage": 59,
+      "rect": [
+        44.1,
+        348.2,
+        323.0,
+        643.0
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 54
+    },
+    {
+      "file": "p060.png",
+      "sourceId": "geo-s1-student-book",
+      "pdfPage": 60,
+      "rect": [
+        92.8,
+        215.2,
+        491.3,
+        635.4
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 54
+    },
+    {
+      "file": "p061b.png",
+      "sourceId": "geo-s1-student-book",
+      "pdfPage": 61,
+      "rect": [
+        49.0,
+        424.6,
+        345.1,
+        720.6
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 54
+    },
+    {
+      "file": "p062.png",
+      "sourceId": "geo-s1-student-book",
+      "pdfPage": 62,
+      "rect": [
+        46.9,
+        484.2,
+        289.7,
+        642.2
+      ],
+      "unit": 3,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "ِنُظُمُ المعلوماتِ الجغرافيَّة",
+      "lessonStartPage": 62
+    },
+    {
+      "file": "p064.png",
+      "sourceId": "geo-s1-student-book",
+      "pdfPage": 64,
+      "rect": [
+        45.3,
+        466.8,
+        343.0,
+        719.8
+      ],
+      "unit": 3,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "ِنُظُمُ المعلوماتِ الجغرافيَّة",
+      "lessonStartPage": 62
+    },
+    {
+      "file": "p067.png",
+      "sourceId": "geo-s1-student-book",
+      "pdfPage": 67,
+      "rect": [
+        41.0,
+        200.4,
+        457.5,
+        481.6
+      ],
+      "unit": 3,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "ِنُظُمُ المعلوماتِ الجغرافيَّة",
+      "lessonStartPage": 62
+    },
+    {
+      "file": "p072.png",
+      "sourceId": "geo-s1-student-book",
+      "pdfPage": 72,
+      "rect": [
+        41.2,
+        42.2,
+        333.9,
+        226.2
+      ],
+      "unit": 3,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 69
+    },
+    {
+      "file": "p072b.png",
+      "sourceId": "geo-s1-student-book",
+      "pdfPage": 72,
+      "rect": [
+        39.9,
+        255.9,
+        154.9,
+        330.5
+      ],
+      "unit": 3,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 69
+    }
+  ]
+}

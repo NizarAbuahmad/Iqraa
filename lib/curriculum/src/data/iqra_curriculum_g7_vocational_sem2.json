@@ -1,0 +1,284 @@
+{
+  "meta": {
+    "grade": "الصف السابع",
+    "grade_en": "Grade 7",
+    "subject": "التربية المهنية",
+    "subject_en": "Vocational Education",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 2,
+    "schema_version": "1.0",
+    "provenance_note": "نُقلَتِ الوحداتُ السبعُ ودروسُها العشرةُ (كما وردَتْ بترقيمِها الخاصِّ في هذا الكتابِ، منَ الوحدةِ الأولى إلى الوحدةِ السابعةِ) من كتاب الطالب (الطبعةُ الأولى التجريبيةُ، 2025م، رقمُ الإيداعِ 2025/2/1176، ISBN 978-9923-41-893-2) في 2026-09-12، بقراءةِ صفحةِ افتتاحِ كلِّ وحدةٍ وصفحةِ افتتاحِ كلِّ درسٍ مباشرةً منَ الـ PDF (104 صفحاتٍ، قُرِئَتْ كاملةً).",
+    "source_books": {
+      "student_book": "كتاب الطالب لمادة التربية المهنية - الصف السابع - الفصل الدراسي الثاني - المركز الوطني لتطوير المناهج (الطبعة الأولى التجريبية، 2025)"
+    },
+    "known_gaps": [
+      "لا دليلَ معلمٍ لهذه المادةِ على القرصِ، فحقلُ periods وtotal_periods = null لكلِّ درسٍ.",
+      "يطبَعُ كلُّ درسٍ أيضًا صندوقَ «القِيَمِ والاتّجاهاتِ» — سماتٌ وجدانيّةٌ لا مصطلحاتٌ مُعرَّفةٌ، فلمْ تُنقَلْ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "المخبوزاتُ والحَلْوَياتُ",
+      "title_en": "Baked Goods and Sweets",
+      "general_idea_ar": "تُعَدُّ صناعةُ المخبوزاتِ والحَلْوَياتِ مِنَ المجالاتِ الحيويّةِ في حياتِنا اليوميّةِ؛ لِما لها مِنْ أهمّيّةٍ في توفيرِ الغذاءِ وتقديمِ الضيافةِ. وقدْ شهدَتْ هذهِ الصناعةُ تطوُّرًا كبيرًا واهتمامًا واسعًا عبرَ الزمنِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from the lesson's opener box, objectives from the box's own «ماذا سأتعلم؟» list, bilingual vocabulary from the box's own «المفاهيم والمصطلحات» list; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "إعدادُ المخبوزاتِ والحَلْوَياتِ",
+          "title_en": "Preparing Baked Goods and Sweets",
+          "main_idea_ar": "تفنَّنَتِ الشعوبُ في صنعِ المخبوزاتِ والحَلْوَياتِ وتزيينِها بأشكالٍ جميلةٍ ومُميَّزةٍ، ومعَ تطوُّرِ الأدواتِ وطرقِ التحضيرِ، أصبَحَتْ هذهِ الصناعاتُ تجمَعُ بينَ الفنِّ والمهارةِ والمعرفةِ.",
+          "periods": null,
+          "objectives": [
+            "الموادُّ والأدواتُ المُستخدَمةُ في صنعِ المخبوزاتِ والحَلْوَياتِ.",
+            "أنواعُ المخبوزاتِ.",
+            "تحضيرُ بعضِ المخبوزاتِ والحلوياتِ (البيتزا، الكيك الأساسيّ)."
+          ],
+          "vocabulary": [
+            { "ar": "المخبوزاتُ", "en": "Bakeries" },
+            { "ar": "الخبزُ", "en": "Bread" },
+            { "ar": "الحَلْوَياتُ", "en": "Sweets" },
+            { "ar": "أدواتُ المطبخِ", "en": "Kitchenware" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "نظافةُ اليافعينَ وسلامتُهُمْ",
+      "title_en": "Adolescent Hygiene and Safety",
+      "general_idea_ar": "تمتدُّ مرحلةُ اليافعينَ مِنْ سنِّ 10 إلى 19 سنةً. وتشملُ تغيُّراتٍ جسديّةً وعقليّةً واجتماعيّةً ونفسيّةً كبيرةً. ويتكوَّنُ فيها نمطُ شخصيّةِ الفردِ وطموحاتُهُ المُستقبَليّةُ؛ لذا لا بدَّ مِنَ الاهتمامِ بصحّتِنا في هذهِ المرحلةِ مِنَ الجوانبِ كافّةً، بدنيّةً ونفسيّةً واجتماعيّةً.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box, objectives from the box's own «ماذا سأتعلم؟» list, bilingual vocabulary from the box's own «المفاهيم والمصطلحات» list; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "النظافةُ الشخصيّةُ لليافعينَ",
+          "title_en": "Personal Hygiene for Young People",
+          "main_idea_ar": "تشملُ النظافةُ الشخصيّةُ لليافعينَ مجموعةً منَ المُمارَساتِ اليوميّةِ، مثلَ الاستحمامِ المُنتظِمِ، وتنظيفِ الأسنانِ، وغَسْلِ اليدينِ بشكلٍ مُتكرِّرٍ، وتغييرِ الملابسِ الداخليّةِ والجواربِ يوميًّا، واستخدامِ مُزيلٍ مُريحٍ للعرقِ.",
+          "periods": null,
+          "objectives": [
+            "أهمّيّةُ النظافةِ الشخصيّةِ.",
+            "أساليبُ العنايةِ بالنظافةِ الشخصيّةِ وطرائقُها، في مرحلةِ اليافعينَ."
+          ],
+          "vocabulary": [
+            { "ar": "النظافةُ الشخصيّةُ", "en": "Personal Hygiene" },
+            { "ar": "اليافعونَ", "en": "Young People" }
+          ]
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "وسائلُ العنايةِ بالنظافةِ الشخصيّةِ",
+          "title_en": "Means of Personal Hygiene Care",
+          "main_idea_ar": "تُعدُّ النظافةُ الشخصيّةُ ضروريّةً وذلكَ باتّباعِ مجموعةٍ منَ العاداتِ الصحيّةِ المُنتظَمةِ واستخدامِ الأدواتِ الخاصّةِ.",
+          "periods": null,
+          "objectives": [
+            "العنايةُ بالنظافةِ الشخصيّةِ وَفْقَ قواعدِ السلامةِ والصحّةِ والبيئةِ."
+          ],
+          "vocabulary": [
+            { "ar": "وسائلُ النظافةِ الشخصيّةِ", "en": "Personal Hygiene Means" },
+            { "ar": "مُزيلُ العرقِ", "en": "Deodorant" },
+            { "ar": "مانعُ التعرُّقِ", "en": "Antiperspirant" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "الذكاءُ العاطفيُّ والذكاءُ الاجتماعيُّ",
+      "title_en": "Emotional Intelligence and Social Intelligence",
+      "general_idea_ar": "الذكاءُ العاطفيُّ هوَ قدرةُ الإنسانِ على فهمِ مشاعرِهِ ومشاعرِ الآخرينَ، مثلِ الفرحِ أوِ الحزنِ، وكيفيّةِ التعاملِ معَها بطريقةٍ مناسبةٍ. أمّا الذكاءُ الاجتماعيُّ فهوَ فهمُ الإنسانِ العلاقاتِ بينَ الناسِ، ومعرفةُ كيفَ يتفاعلُ معهُمْ بشكلٍ جيّدٍ باستخدامِ مهاراتٍ مثلِ التعاونِ والتواصلِ واحترامِ الآخرينَ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from the lesson's opener box, objectives from the box's own «ماذا سأتعلم؟» list, bilingual vocabulary from the box's own «المفاهيم والمصطلحات» list; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "مهاراتُ الذَّكائينِ العاطفيِّ والاجتماعيِّ",
+          "title_en": "Skills of Emotional and Social Intelligence",
+          "main_idea_ar": "يُفيدُ الذكاءُ العاطفيُّ والذكاءُ الاجتماعيُّ في تحسينِ صحّةِ الإنسانِ النفسيّةِ والجسديّةِ، ويُساعدُهُ على النجاحِ والتفوُّقِ في حياتِهِ العمليّةِ والاجتماعيّةِ.",
+          "periods": null,
+          "objectives": [
+            "التواصلُ السليمُ معَ الآخرينَ بذكاءٍ.",
+            "تحديدُ المشاعرِ السلبيّةِ وتقويمُها.",
+            "التعاطفُ معَ الآخرينَ."
+          ],
+          "vocabulary": [
+            { "ar": "الذكاءُ الاجتماعيُّ", "en": "Social Intelligence" },
+            { "ar": "الذكاءُ العاطفيُّ", "en": "Emotional Intelligence" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "القيادةُ الناجحةُ",
+      "title_en": "Successful Leadership",
+      "general_idea_ar": "تسهمُ القيادةُ الناجحةُ في بناءِ فِرَقٍ قويّةٍ والعملِ معًا لتحقيقِ الأهدافِ، وتشكِّلُ عنصرًا رئيسًا في نجاحِ روّادِ الأعمالِ في المستقبلِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from the lesson's opener box, objectives from the box's own «ماذا سأتعلم؟» list, bilingual vocabulary from the box's own «المفاهيم والمصطلحات» list; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "القائدُ الناجحُ",
+          "title_en": "The Successful Leader",
+          "main_idea_ar": "يتميَّزُ القائدُ الناجحُ بصفاتٍ ومهاراتٍ تُساعدُهُ على التأثيرِ في الآخرينَ وتحفيزِهمْ.",
+          "periods": null,
+          "objectives": [
+            "صفاتُ القائدِ الناجحِ.",
+            "تمييزُ أنواعِ القيادةِ.",
+            "المشاركةُ في نشاطٍ جماعيٍّ يُعزِّزُ العملَ بروحِ القائدِ المسؤولِ."
+          ],
+          "vocabulary": [
+            { "ar": "القيادةُ", "en": "Leadership" },
+            { "ar": "القائدُ", "en": "The Leader" },
+            { "ar": "مهاراتُ القيادةِ", "en": "Leadership Skills" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u5",
+      "number": 5,
+      "title_ar": "الغطاءُ النباتيُّ",
+      "title_en": "Vegetation Cover",
+      "general_idea_ar": "تُعَدُّ زراعةُ الخضراواتِ والأشجارِ الحَرَجيّةِ جزءًا مِنَ الغطاءِ النباتيِّ في الأردنِّ، إذْ يُشكِّلُ ما نسبتُهُ 3.5% مِنْ إجماليِّ مساحةِ اليابسةِ في المملكةِ، ويُسهِمُ هذا الغطاءُ النباتيُّ في تحسينِ البيئةِ، وحمايةِ الغلافِ الجويِّ، والتخفيفِ مِنْ آثارِ التغيُّرِ المناخيِّ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box, objectives from the box's own «ماذا سأتعلم؟» list, bilingual vocabulary from the box's own «المفاهيم والمصطلحات» list; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_ar": "زراعةُ الخضراواتِ وخدمتُها",
+          "title_en": "Vegetable Cultivation and Its Service",
+          "main_idea_ar": "تمرُّ زراعةُ الخضرواتِ بعدّةِ مراحلَ أساسيّةٍ تضمنُ نموًّا صحيًّا وإنتاجًا جيّدًا.",
+          "periods": null,
+          "objectives": [
+            "زراعةُ الخضراواتِ في المواسمِ والبيئاتِ الصحيحةِ.",
+            "خدمةُ الخضراواتِ المزروعةِ بالريِّ، والتسميدِ، والرشِّ بطرقٍ آليّةٍ حديثةٍ."
+          ],
+          "vocabulary": [
+            { "ar": "زراعةُ الخضراواتِ", "en": "Vegetable Cultivation" },
+            { "ar": "الريُّ", "en": "Irrigation" },
+            { "ar": "التسميدُ", "en": "Fertilization" },
+            { "ar": "الرشُّ", "en": "Spraying" }
+          ]
+        },
+        {
+          "id": "u5_l2",
+          "order": 2,
+          "title_ar": "زراعةُ الأشجارِ الحَرَجيّةِ وخدمتُها",
+          "title_en": "Forest Tree Cultivation and Its Service",
+          "main_idea_ar": "تنتشرُ الأشجارُ الحَرَجيّةُ في الأردنِّ ما يقارِبُ (1.2%) مِنْ إجماليِّ مساحةِ المملكةِ الأردنيّةِ الهاشميّةِ، وهيَ نسبةٌ محدودةٌ تعكسُ التحدّياتِ البيئيّةَ التي تواجهُ الغطاءَ النباتيَّ.",
+          "periods": null,
+          "objectives": [
+            "زراعةُ الأشجارِ الحَرَجيّةِ.",
+            "طُرُقُ خدمةِ الأشجارِ الحَرَجيّةِ.",
+            "تقديمُ خدمةٍ تطوُّعيّةٍ في الاهتمامِ بزراعةِ الأشجارِ الحَرَجيّةِ."
+          ],
+          "vocabulary": [
+            { "ar": "الأشجارُ الحَرَجيّةُ", "en": "Forest Trees" },
+            { "ar": "خدمةُ الأشجارِ", "en": "Tree Service" },
+            { "ar": "المُبادراتُ التطوُّعيّةُ", "en": "Voluntary Initiatives" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u6",
+      "number": 6,
+      "title_ar": "الصناعاتُ المنزليّةُ",
+      "title_en": "Home Industries",
+      "general_idea_ar": "تُعَدُّ الصناعاتُ المنزليّةُ اليدويّةُ نمطًا إنتاجيًّا محدودَ الحجمِ، ومعَ ذلكَ تؤدّي دورًا فاعلًا في دعمِ الاقتصادِ الوطنيِّ والتخفيفِ منَ البطالةِ، إذْ تُلبّي العديدُ مِنْ هذهِ الصناعاتِ، مثلَ صناعةِ الصابونِ، وإنتاجِ الملابسِ يدويًّا، احتياجاتِ سوقٍ يُفضِّلُ الجودةَ والأصالةَ، ويبحثُ عنْ مُنتَجاتٍ تتَّسِمُ بالجودةِ العاليةِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box, objectives from the box's own «ماذا سأتعلم؟» list, bilingual vocabulary from the box's own «المفاهيم والمصطلحات» list; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u6_l1",
+          "order": 1,
+          "title_ar": "صناعةُ الصابونِ",
+          "title_en": "Soap Making",
+          "main_idea_ar": "يسهمُ الصابونُ المُصنَّعُ يدويًّا في المنزلِ باستخدامِ الزيوتِ الطبيعيّةِ في معالجةِ مشاكلِ البشرةِ، مثلِ جفافِ البشرةِ، إذْ يمتازُ بقدرتِهِ على الترطيبِ وتحسينِ المظهرِ العامِّ للجلدِ.",
+          "periods": null,
+          "objectives": [
+            "طُرُقُ إنتاجِ الصابونِ.",
+            "إنتاجُ قِطَعٍ منَ الصابونِ."
+          ],
+          "vocabulary": [
+            { "ar": "الصابونُ", "en": "Soap" },
+            { "ar": "الصودا الكاويةُ", "en": "Caustic Soda" },
+            { "ar": "الزيتُ المُستعمَلُ", "en": "Used Oil" },
+            { "ar": "التصبُّنُ", "en": "Saponification" }
+          ]
+        },
+        {
+          "id": "u6_l2",
+          "order": 2,
+          "title_ar": "إنتاجُ الملابسِ",
+          "title_en": "Clothing Production",
+          "main_idea_ar": "يُسهمُ إنتاجُ الملابسِ في توفيرِ فرصِ عملٍ مُتنوِّعةٍ، ويُتيحُ للأفرادِ التعبيرَ عنْ ذوقِهمُ الشخصيِّ، ويُساعدُ على تنميةِ المهاراتِ اليدويّةِ، والقدرةِ على اختيارِ الأقمشةِ بجودةٍ مناسبةٍ، وتوفيرِ مُنتَجاتٍ بأسعارٍ متفاوتةٍ تُراعي احتياجاتِ مختلَفِ الفئاتِ المجتمعيّةِ.",
+          "periods": null,
+          "objectives": [
+            "طُرُقُ إنتاجِ الملابسِ.",
+            "إنتاجُ قِطعةِ ملابسَ بسيطةٍ.",
+            "إصلاحُ قِطَعِ ملابسَ."
+          ],
+          "vocabulary": [
+            { "ar": "إنتاجُ الملابسِ", "en": "Clothing Production" },
+            { "ar": "غرزةُ الشلالةِ", "en": "Running Stitch" },
+            { "ar": "الخياطةُ المنزليّةُ", "en": "Home Sewing" },
+            { "ar": "الخياطةُ الصناعيّةُ", "en": "Industrial Sewing" },
+            { "ar": "إصلاحُ الملابسِ", "en": "Clothing Repair" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u7",
+      "number": 7,
+      "title_ar": "مهاراتُ الضيافةِ",
+      "title_en": "Hospitality Skills",
+      "general_idea_ar": "تسهمُ آدابُ خدمةِ الطعامِ في تقديمِ خدمةٍ راقيةٍ ومُرضيةٍ للضيوفِ، ويعكسُ صورةً إيجابيّةً عنِ العاملينَ والعاملاتِ في المجالِ الفندقيِّ، ويُعدُّ الخطوةَ الأولى في طريقِ التميُّزِ في عالَمِ الفندقةِ والسياحةِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from the lesson's opener box, objectives from the box's own «ماذا سأتعلم؟» list, bilingual vocabulary from the box's own «المفاهيم والمصطلحات» list; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u7_l1",
+          "order": 1,
+          "title_ar": "خدمةُ الطعامِ",
+          "title_en": "Food Service",
+          "main_idea_ar": "إنَّ تنميةَ المهاراتِ في مجالِ الضيافةِ واللباقةِ والنظافةِ في تقديمِ الطعامِ، وتعرُّفُ آدابِ خدمةِ الطعامِ وإجراءاتِها وطرقِ تقديمِها.",
+          "periods": null,
+          "objectives": [
+            "توضيحُ آدابِ خدمةِ الطعامِ.",
+            "ترتيبُ مائدةِ الطعامِ.",
+            "طُرُقُ خدمةِ الطعامِ."
+          ],
+          "vocabulary": [
+            { "ar": "آدابُ الطعامِ", "en": "Food Etiquette" },
+            { "ar": "خدمةُ الطاولةِ", "en": "Table Service" },
+            { "ar": "خدمةُ البوفيهِ", "en": "Buffet Service" },
+            { "ar": "الضيافةُ", "en": "Hospitality" }
+          ]
+        }
+      ]
+    }
+  ]
+}

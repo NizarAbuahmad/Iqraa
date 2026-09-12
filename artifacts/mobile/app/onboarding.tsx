@@ -19,17 +19,19 @@ type Slide = {
 };
 
 // One idea per slide, in the order a teacher would actually discover them:
-// what this is, how a full lesson comes together, why the math can be
-// trusted, then the tools that carry a class from before to after.
+// what this is, how a full lesson comes together, then the tools that carry a
+// class from before to after.
 //
 // The last slide is the exception, and it is here because this screen is shown
 // before login — to everyone, not only to teachers. Parents and students have
-// been able to sign up since STUDENT_ACCOUNTS went on, and four slides of
+// been able to sign up since STUDENT_ACCOUNTS went on, and three slides of
 // lesson-preparation features told them they had the wrong app.
+//
+// The keys are not renumbered as slides come and go: they are identifiers, and
+// a gap costs nothing next to rewriting every one of them in two locales.
 const SLIDES: Slide[] = [
   { icon: 'sparkles-outline', color: '#00A99D', titleKey: 'onboardingSlide1Title', descKey: 'onboardingSlide1Desc' },
   { icon: 'git-branch-outline', color: '#0EA5E9', titleKey: 'onboardingSlide2Title', descKey: 'onboardingSlide2Desc' },
-  { icon: 'shield-checkmark-outline', color: '#1B6B62', titleKey: 'onboardingSlide3Title', descKey: 'onboardingSlide3Desc' },
   { icon: 'tv-outline', color: '#F59E0B', titleKey: 'onboardingSlide4Title', descKey: 'onboardingSlide4Desc' },
   { icon: 'people-outline', color: '#7C3AED', titleKey: 'onboardingSlide5Title', descKey: 'onboardingSlide5Desc' },
 ];
@@ -120,11 +122,30 @@ export default function OnboardingScreen() {
 
       <View style={styles.footer}>
         <View style={[styles.dots, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          {/* A dot has no text child, so nothing names it: the a11y tree showed
+              four unlabelled targets in a row and no way to tell which was
+              current. The label is the position rather than the slide's title —
+              the title is already read out as the heading directly above, and
+              hearing it twice says nothing about where you are.
+
+              Which dot is current needs saying twice, because the two
+              platforms disagree. `accessibilityState.selected` is the native
+              API and is what iOS and Android read. React Native Web drops it
+              here — `aria-selected` is not valid on `role="button"`, so it
+              emits nothing at all, and the current dot was announced exactly
+              like the other three. Verified in the web build: with only
+              `accessibilityState`, all four came back with every aria-*
+              attribute null. `aria-current="step"` passes straight through
+              RNW and lands on the selected dot alone. */}
           {SLIDES.map((s, i) => (
             <Pressable
               key={s.titleKey}
               onPress={() => { Haptics.selectionAsync(); setIndex(i); }}
               hitSlop={6}
+              accessibilityRole="button"
+              accessibilityLabel={t('onboardingSlideLabel', i + 1, SLIDES.length)}
+              accessibilityState={{ selected: i === index }}
+              aria-current={i === index ? 'step' : undefined}
               style={[
                 styles.dot,
                 {

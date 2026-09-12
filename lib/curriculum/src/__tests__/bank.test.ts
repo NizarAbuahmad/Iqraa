@@ -236,6 +236,11 @@ describe('use policy — explicit licences', () => {
     assert.equal(usePolicy(item('public-domain')), 'quotable');
     assert.equal(usePolicy(item('CC0-1.0')), 'quotable');
     assert.equal(usePolicy(item('CC-BY-4.0')), 'quotable');
+    // 2.0 is the generation most of the usable science photography on
+    // Wikimedia Commons was released under. Attribution-only, no share-alike,
+    // commercial use permitted — same substance as 4.0 for our purposes.
+    assert.equal(usePolicy(item('CC-BY-2.0')), 'quotable');
+    assert.equal(usePolicy(item('CC-BY-3.0')), 'quotable');
   });
 
   it('keeps embed-only material out of anything that reproduces text', () => {

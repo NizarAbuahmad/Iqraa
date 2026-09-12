@@ -122,6 +122,8 @@ export const REDISTRIBUTABLE_LICENSES: readonly LicenseId[] = [
   'public-domain',
   'CC0-1.0',
   'CC-BY-4.0',
+  'CC-BY-2.0',
+  'CC-BY-3.0',
 ];
 
 export function isRedistributable(r: Pick<ExternalResource, 'license'>): boolean {

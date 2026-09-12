@@ -2993,7 +2993,10 @@ const ctxStyles = StyleSheet.create({
   pill:       { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
   pillText:   { fontSize: 12 },
   clearBtn:   { padding: 4 },
-  subjRow:    { flexDirection: 'row', gap: 8, marginBottom: 4 },
+  // Must wrap: Grade 10 offers 13 subjects, and an unwrapped row pushed all but
+  // the first four off the screen edge (RTL row-reverse, so off to the left)
+  // with no scroll to reach them — the subjects were rendered but unreachable.
+  subjRow:    { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 },
   subjPill:   { paddingHorizontal: 14, paddingVertical: 6 },
   subjText:   { fontSize: 13 },
   // Modal

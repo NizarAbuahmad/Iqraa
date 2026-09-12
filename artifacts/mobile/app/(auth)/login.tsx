@@ -120,7 +120,7 @@ export default function LoginScreen() {
         </Text>
 
         <BrandLogo
-          variant="lockup"
+          variant="mark"
           onDark
           style={[styles.logo, isWide ? styles.logoWide : styles.logoNarrow]}
           accessibilityLabel="IQRA"
@@ -269,6 +269,15 @@ export default function LoginScreen() {
           onRightIconPress={() => setShowPassword(v => !v)}
           isRTL={isRTL}
         />
+
+        <Pressable
+          onPress={() => router.push('/(auth)/forgot-password' as any)}
+          style={{ alignSelf: isRTL ? 'flex-start' : 'flex-end', paddingVertical: 4 }}
+        >
+          <Text style={{ color: colors.primary, fontFamily: 'Cairo_600SemiBold', fontSize: 13 }}>
+            {t('forgotPasswordLink')}
+          </Text>
+        </Pressable>
 
         <Button
           label={t('signIn')}

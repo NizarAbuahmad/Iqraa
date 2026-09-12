@@ -40,8 +40,16 @@ Run from a clean checkout of merged `main`, with `gcloud` authenticated against
 truth if these ever drift:
 
 ```bash
-gcloud run deploy iqraa-api --source . --region europe-west1 --allow-unauthenticated --port 8080
+gcloud run deploy iqraa-api --source . --region europe-west1 --allow-unauthenticated --port 8080 \
+  --update-env-vars GIT_SHA=$(git rev-parse --short HEAD)
 ```
+
+`GIT_SHA` is what `/healthz/version` reports back. It is the only way to tell
+whether a deploy actually happened, because this service is hand-deployed while
+web ships on every merge — a stale API looks identical to a current one from
+the outside. Omit the flag and the route answers `"unknown"`, which is honest
+but useless. `--update-env-vars` (not `--set-env-vars`) leaves the existing
+secrets alone; see the warning below.
 
 ```bash
 gcloud run deploy iqraa-verifier --source artifacts/math-verifier --region europe-west1 --allow-unauthenticated --port 8080

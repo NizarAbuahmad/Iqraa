@@ -18,6 +18,7 @@ import {
   ingestRefusal,
   isLicenseCheckStale,
   isRedistributable,
+  REDISTRIBUTABLE_LICENSES,
   validateExternalResources,
   type ExternalResource,
 } from '../external.ts';
@@ -133,6 +134,30 @@ describe('validation catches what would ship silently', () => {
  * would be the wrong thing to do — and the failure mode of letting one through
  * is a working feature serving material we had no right to serve.
  */
+describe('the two licence lists cannot disagree', () => {
+  it('treats exactly the redistributable licences as quotable', () => {
+    /*
+     * `REDISTRIBUTABLE_LICENSES` (here) decides what may be copied into our R2;
+     * `POLICY_BY_LICENSE` (bank.ts) decides what may be reproduced in a
+     * worksheet. They are different questions with, so far, the same answer —
+     * and they are maintained in two files, so adding a licence to one and
+     * forgetting the other is a matter of time.
+     *
+     * Getting it wrong is silent in the direction that matters: a licence
+     * marked redistributable but not quotable would have its bytes copied and
+     * then be refused at the point of use, which reads as a broken feature
+     * rather than a licence decision.
+     */
+    for (const license of REDISTRIBUTABLE_LICENSES) {
+      assert.equal(
+        usePolicy({ authority: 'third-party', license }),
+        'quotable',
+        `${license} is redistributable but not quotable`,
+      );
+    }
+  });
+});
+
 describe('ingest refusal', () => {
   const now = new Date('2026-09-10T00:00:00Z');
   const ok: ExternalResource = { ...base, fetchUrl: 'https://example.invalid/a.mp3' };

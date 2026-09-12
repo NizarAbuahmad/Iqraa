@@ -428,6 +428,321 @@ an announcement by default» below.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
 
+## The first-run carousel stopped promising what the app does not do, 2026-09-12
+
+Shipped inside #390 rather than under its own PR — the branch it sat on was cut
+from this work and merged with it, so the reasoning lives here and in the two
+commit messages (`e5da577`, `64ae2ce`).
+
+**This screen is the one place the product describes itself, and it is shown
+before login — to every role, not to teachers.** Read that way, three of its
+five slides said something the rest of the app contradicts.
+
+**«رمز الصف» came back, four days after being renamed away.** The 2026-09-06
+entry below («The link code a teacher shares») ends by saying the teacher's
+screen and the parent's field both say «رمز الربط» now. That was true when
+written. Then three new strings were added — `joinAnotherClassDesc`
+(`41f3e84`, 09-08), `claimRequiredDesc` (`f367193`, 09-10) and
+`onboardingSlide5Desc` (`81c4fc7`, 09-10) — and each independently reached for
+«رمز الصف» again.
+
+**The test that was supposed to stop this cannot see a new string.**
+`claimCodeMessage.test.ts` pins the composer's `fieldLabel` against the
+register form's own label, which is why the composer takes it as an input at
+all. That guards one path. Nothing guards a *fourth* screen that writes the
+name into a fresh translation key — and three of them did, in four days. The
+rename is applied again; the gap that let it regress is still open. A grep-level
+test over `i18n.ts` would close it and does not exist yet.
+
+«رمز الربط» is also the truthful name, not merely the consistent one: the claim
+screen accepts a per-student code as well as a class code (`student-code` in
+`claimCodeGate.ts`), and a parent is usually handed the former.
+
+**Two slides claimed more than the code does.**
+
+| slide | said | why it was wrong |
+| --- | --- | --- |
+| 2 | «بضغطة واحدة» — one tap | the flow needs grade/subject/unit/lesson picked first, then runs six steps. English already said "one pass"; Arabic now matches it |
+| 1 | "fully in Arabic" | wrong about content — `curriculumG10EnglishSem1` and `curriculumG8EngSem1` exist — and in the English locale it was a sentence *in English* announcing that everything is in Arabic, directly beneath the toggle that got you there. Now "Arabic-first" |
+
+Slide 1 also stopped naming grades 8–10 (Nizar's call): the grade set expands,
+and the slide reads as a statement about the national curriculum either way.
+Both locales, so they cannot drift apart again.
+
+**The math-verification slide is gone.** Four slides now: what this is, how a
+lesson comes together, the in-class tools, the parent/student one. Symbolic
+verification is still the strongest thing the product does, but it applies to
+maths answer keys only — and a teacher of any other subject, and every parent,
+were reading it before login as a description of what they were about to use.
+The claim is better made where it is true: the «تم التحقق من الإجابة رياضيًا
+(SymPy)» badge in `deckSlidesHtml.ts`, which says it about one answer rather
+than about the app.
+
+The surviving keys keep their numbers — `onboardingSlide4*`/`5*` follow
+`Slide2*`. They are identifiers, not positions, and renumbering costs every one
+of them in two locales for nothing. The comment above `SLIDES` says so, so the
+gap does not read as an accident.
+
+Also: «إقرأ» → «اقرأ» in the two `parentMsg*` strings, against 27 correct
+spellings elsewhere. Hamzat wasl.
+
+**What was checked and left alone.** Each remaining claim was read against the
+code rather than taken from the copy: grades 8/9/10 coverage (46 G8/G9 + 26 G10
+curriculum files), the SymPy badge, the phone-free team challenge
+(`classGame.ts`), and slide 5's promises to parents — `/curriculum` and
+`/messaging` are both in `NON_TEACHER_ROUTES`, so browsing the curriculum and
+receiving a teacher's messages are real. `DEMO_MODE` is false in the preview and
+production EAS profiles, so slides 2 and 3 were not selling sample content.
+
+`pnpm test` in `artifacts/mobile`: 1297 passed, 0 failed, 10 skipped.
+`tsc --noEmit` clean. The carousel was driven end to end in the web build in
+both locales — four dots, slide 3 is the in-class tools one, the last slide
+swaps تخطي for ابدأ الآن. `schema-push:` **none.**
+
+One thing noticed and not fixed: the five pager dots are bare `Pressable`s with
+no `accessibilityRole` or label, so the a11y tree shows five unnamed targets
+with no position.
+
+## Grade 9's sciences, then history and geography, get the book's figures, 2026-09-11/12
+
+**The question was "do the slides show the book's pictures for every subject
+and grade?". Measured first, through the real deck builder** — `buildLessonDeck`
+run over all 1097 catalog lessons with a stub `figureUri`, counting the media
+slides it returns:
+
+| | before | sciences | history/geography | grade 8 science |
+| --- | --- | --- | --- | --- |
+| lessons whose deck carries a book figure | **122 of 1097** | 159 | 210 | **220** |
+| figure slides across all decks | 388 | 515 | 604 | **643** |
+| live subject×grade pairs with nothing | 29 of 37 | 25 of 37 | 21 of 37 | **20 of 37** |
+
+**Nothing was wrong with the wiring.** Every deck entry point already passes
+`figureUri` — `buildLessonDeck`, `buildDeckFromQuiz/Worksheet`, `startClass`,
+the four `/ai-tools` screens, the exam panel and the four document exports.
+The 2026-09-04 sweep closed those gaps and they stayed closed. What is missing
+is **supply**: a lesson gets a picture only if its book was run through
+`extract_book_figures.py` and its crops were mapped, and eight books had been.
+
+**Four Grade 9 sciences, eight books, added to `BOOKS` and `EXPECTED_UNITS`.**
+No detector work was needed: these are the same NCCD series as their Grade 10
+counterparts, down to the page furniture.
+
+| book | extracted | kept after review | lessons |
+| --- | --- | --- | --- |
+| g9-physics-s1 | 45 | 33 | 6 of 7 |
+| g9-physics-s2 | 73 | 63 | 5 of 5 |
+| g9-chemistry-s1 | 37 | 17 | 4 of 4 |
+| g9-chemistry-s2 | 52 | 28 | 4 of 4 |
+| g9-biology-s1 | 44 | 29 | 4 of 5 |
+| g9-biology-s2 | 57 | 45 | 4 of 5 |
+| g9-earth-science-s1 | 39 | 17 | 4 of 4 |
+| g9-earth-science-s2 | 46 | 18 | 6 of 6 |
+
+**250 kept of 393, and the 143 dropped are all page furniture** — the orange
+«مراد» wave bands, «الدرسُ ٢» opener cards, «الفكرةُ العامة» banners, cover
+pages, and crops that sliced a table or a question in half. `BOOK_FIGURE_COUNT`
+875 → 1125, and 1223 once history and geography landed. Coverage by subject: physics 0 → 11/12, chemistry 0 → 8/8, earth
+science 0 → 10/10, biology 0 → 8/10. Grade 9 was maths-and-nothing-else before
+this. **Cost: +30 MB of PNGs.** The `_review.png` contact sheets are no longer
+part of that: all thirty were deleted and gitignored on 2026-09-12 (30 MB, and
+every byte of it bundled into the app for a file the human pass reads once and
+nothing reads at runtime). Re-run the extractor to get one back. The other
+lever on figure weight is still unused — quantisation, not fewer figures.
+
+**The lesson join is 1:1 and was read, not assumed.** Each book's lesson-opener
+pages print the curriculum's own lesson titles in order — «المائعُ الساكنُ»
+opens u4 l1 of physics S2, and so on for all 33 mapped lessons — so the printed
+lesson number IS the curriculum's, with none of the offset Grade 10 maths has.
+The one detector miss is recorded on the map entry rather than left to be
+rediscovered: in `g9-bio-s2` the unit-4 lesson-2 opener («دراسةُ الجماعاتِ
+الحيويةِ», p49) is not seen, so pages 49-54 file under u4_l1 — harmless today
+because no crop from them survived review, and a trap for the next re-run.
+Three crops were dropped rather than filed: two sat on chemistry's unit-opener
+spread, which belongs to no lesson, and physics's `p045` is unit 2's opening
+experiment printed on the last page of unit 1 lesson 3, where the outline would
+have captioned it as a measurement-errors figure.
+
+**`g9-bio-s2` took an hour on its own** — one page's vector cluster takes
+`drawing_cluster` into the tens of minutes, with nothing on stdout to say so.
+Worth knowing before anyone assumes a hung run: it finishes. Running the eight
+books as eight processes rather than one sequential pass is what kept the whole
+set inside an afternoon.
+
+**Then history and geography, seven of eight books, 2026-09-12.** 89 more
+figures on 51 more lessons.
+
+| book | extracted | kept after review | lessons |
+| --- | --- | --- | --- |
+| history-s1 | 29 | 17 | 11 of 12 |
+| history-s2 | 43 | 12 | 9 of 11 |
+| geo-s1 | 35 | 19 | 7 of 9 |
+| geo-s2 | 38 | 19 | 7 of 9 |
+| g9-history-s1 | 29 | 12 | 8 of 10 |
+| g9-geography-s1 | 39 | 18 | 8 of 9 |
+| g9-geography-s2 | 14 | **1** | 1 of 9 |
+
+Coverage: Grade 10 history 0 → 20/23, Grade 10 geography 0 → 14/18, Grade 9
+geography 0 → 9/18, Grade 9 history 0 → 8/23. Cost: **+23 MB of PNGs**, less
+the contact sheets (see above). What
+these books draw is **maps,
+timelines and process diagrams** — the vector extractor finds them, which the
+op counts alone would not have predicted: history runs ~8-14k drawing ops per
+60 pages against physics's ~509k, close to the ~3.4k that sent English to the
+raster pipeline. Measure the yield, not just the density.
+
+**Three findings from this batch that cost time to learn:**
+
+- **The Grade 9 science source ids had to be renamed first.** They were minted
+  `g9-phys-s1-student-book`; `g10_sources.json` spells those same books
+  `g9-physics-s1-student-book`, and `docs/adding-a-book.md` makes the manifest
+  the contract precisely so a figure can be traced to its source row. Renamed
+  across the eight directories, their `index.json` `sourceId`s, the map, the
+  imports and the test's prefix table. Note Grade 10 abbreviates in the other
+  direction (`phys-s1-student-book` for physics), so the prefix table now
+  carries three spellings and cannot be derived by string surgery.
+- **`EXPECTED_UNITS` is wrong for these four subjects, and the entry was
+  removed.** These books print no «الوحدة N» running header, so `outline`
+  falls back to counting opener resets inside one PDF and every S2 book reports
+  units 1-3 where the curriculum says 4-6. The first entry written for them
+  rejected all four S2 books outright. The offset lives on the map entries
+  instead, as it already does for English S2, and was verified against printed
+  titles: all eight of history-s2's unit-3 lesson titles land exactly on the
+  opener page `outline` detected, and five of geo-s2's nine.
+- **Grade 9 history S2 is the one book left out.** `lesson_start` finds ONE
+  opener in it against 13 catalog lessons, so `outline` refuses the book and
+  every crop would be unplaced. Its S1 sibling detects all 10. Recorded in
+  `BOOKS` with the measurement so the next run does not rediscover it.
+  Grade 9 geography S2 is nearly as thin for a different reason — 14 crops, of
+  which **one** is a figure and the rest are drawn page furniture, because its
+  maps are rasters. That book wants `extract_book_photos.py`.
+
+**Grade 8 gets its first figures, 2026-09-12.** `g8-science-s1` alone: 133
+crops, **65 kept**, covering all 10 of its Semester 1 lessons. What survived is
+strong — DNA and chromosome diagrams, binary-fission stages, Mendel's pea
+traits with a Punnett square, sixteen per-element electron-shell diagrams
+(Na, Mg, Ne, Ar, Cl, S and their ions), the pressure/buoyancy set, tectonic
+maps, the ring of fire, acid rain. What was dropped is almost entirely purple
+banner strips. Nine of the ten lesson titles land exactly on their detected
+opener page.
+
+**Semester 2 of the same book is out**: only two pages in it carry «الدرس» as
+text and both are the contents spread, so `outline` returns nothing. Same
+failure as `g9-history-s2`, and not fixable with a profile — there is no
+opener text to profile.
+
+**A generator bug found while wiring this, worth knowing about.** The
+map-entry generator derived a book's prefix with `sid.split("-s")[0]`, which
+splits inside `-science`: `g8-science-s1-student-book` became `g8`, matched no
+scope, and emitted **nothing, silently**. It had already been wrong for
+`g9-earth-science-*` since the 2026-09-11 rename and went unnoticed only
+because those entries were already in the map. Fixed to strip the
+`-s{n}-student-book` suffix; the generator now emits 98 entries across all 16
+books. Any future book whose subject slug contains an `-s` would have hit the
+same trap.
+
+**What still has no figure at all, and why:**
+
+- **Grade 8 — nine of ten subjects, 323 lessons.** Science S1 is done (above);
+  science S2 has no opener text. The Grade 8 **maths** book detects **zero**
+  openers — its 2023 edition prints a different layout, so it needs its own
+  entry in `OPENER_PROFILES`, which now exists as a mechanism.
+- **Arabic and Islamic** (192 lessons): measured and abandoned 2026-09-05, see
+  the section below. Unchanged.
+- **English** (240 lessons across three grades): Grade 10 has 40 photos from
+  `extract_book_photos.py`; Grade 9 and Grade 8 English have never been run
+  through it.
+- **Grade 9 history S2** (13 lessons) and most of **Grade 9 geography S2** —
+  the two books above that this batch could not use.
+- **Civic education and digital literacy**: probed, **0 lesson starts** in
+  either Grade 10 S1 book. Like Islamic, they print an opener the detector does
+  not know, so they need a per-subject profile before extraction is worth
+  running.
+- **PE, social, creative arts, vocational**: never run, no measurement either
+  way.
+
+## Every QR code in the books, decoded — and the ministry's certificate expired
+
+**186 QR codes in 23 of the 48 student books**, in
+`knowledge-base/book-qr-links.json`. They are drawn, not embedded as images,
+and **not one book in the set carries a clickable link annotation** — so they
+are invisible to both the text layer and `page.get_links()`, and were found by
+rendering every page and running OpenCV's detector over it. 112 are videos
+(mostly ministry-hosted `.mp4`, 3 YouTube), 33 are PDFs, 38 public pages, 3
+images.
+
+**One render scale is not enough, and the under-count is silent.** The first
+pass rendered at 150 dpi and reported 44 codes; at 150/200/260 the same books
+yield 186 — only 44 of them decode at 150. The detector is scale-sensitive in
+both directions, not just "higher is better": the Grade 10 history S1 code on
+page 12 decodes at 200 and fails at 150, 300 **and** 400. Anything re-running
+this must take the union of several scales or it will quietly agree with a
+number that was four times too low.
+
+**The printed URLs do not work.** Every ministry code prints
+`https://qr.nccd.gov.jo/…` and that host's TLS certificate has expired
+(`SEC_E_CERT_EXPIRED`), so the URL as printed fails — 100 of the 186. The same
+paths over `http://` serve the file, and that is what `workingUrl` holds; 169
+of 186 resolve that way and 17 are dead even then. Note an https page cannot
+embed an http video, so these are open-in-a-new-tab links, not slides that
+play.
+
+**12 are joined to a lesson; the rest carry a page only.** A code is located by
+page, and a page becomes a lesson only in books whose openers `outline()` can
+read — which since 2026-09-12 means history and geography (5 and 7 codes). The
+other 174 sit in Islamic (80), Arabic (34), English (24), art (13), civic (8),
+digital literacy (9), PE (3) and maths (3), none of which have a readable
+lesson outline. Joining those needs a per-book page→lesson table read off each
+contents spread.
+
+**Where the codes are is almost exactly where the figures are not.** Islamic,
+Arabic, art, civic education and PE have zero extracted figures between them,
+and 138 of these 186 codes — so for those lessons the book's QR video is the
+only media the book offers. Nothing consumes the manifest yet.
+
+## The plot sampler learned trigonometry, 2026-09-12
+
+**`sin`, `cos` and `tan` now plot.** They were not merely unsupported — they
+were untokenisable: `tokenize` emitted one token per letter, so `sin` became
+`s*i*n`, three unknown symbols, and `compileExpression` refused it. That is why
+«حساب المثلثات» lessons projected no curve at all. The tokenizer now reads a
+run of letters as one identifier, the shunting-yard treats known function names
+as prefix operators, and `evalRpn` applies them.
+
+**Radians, decided deliberately.** The books write «جا ٣٠ = ٠٫٥», which is
+degrees — but this module plots curves rather than evaluating values, and
+`f(x)=sin(x)` sampled over a degree domain is a nearly flat line instead of the
+wave a teacher points at. Value questions stay SymPy's job. `sin(30)` here is
+−0.988, not 0.5, and a test pins that so nobody "fixes" it by accident.
+
+**Two traps found while building it, both now guarded:**
+
+- **`tan` does not return Infinity** near π/2 — it returns about 1e15, which is
+  finite, so the existing filter kept it. One such point set the y-range for the
+  whole slide and flattened every other curve on it into a horizontal line.
+  `SampleOptions.maxAbsY` drops those points, leaving a gap at the asymptote —
+  the same thing the sampler already did for a hyperbola, and what the
+  mathematics actually looks like.
+- **Brackets are now required after a function.** `sin x + 1` would otherwise
+  parse as `sin(x + 1)`: the shunting-yard drains `sin` last and swallows the
+  whole sum. A different curve, drawn confidently. It is refused instead.
+
+**The window is per slide, not per curve** (`sampleOptionsFor`). Trig widens to
+−2π..2π at 240 steps; everything else keeps −5..5 at 80. All series on a slide
+share one window, because they share one set of axes — a line sampled −5..5
+beside a wave sampled −2π..2π stops short of the edge and reads as a bug.
+
+**Three existing tests changed meaning and were updated, not deleted.** They
+used `sin(x)` as the canonical example of something the evaluator refuses. They
+now use `log`/`sqrt`/`sec`, which are still outside it, and a new test asserts
+`expressionFromCommand('f(x)=sin(x)')` returns the body rather than null.
+
+**Not done:** circles. `Circle((h,k),r)` fits `PlotSeries.points` without a type
+change (a parametric polyline), but `plotGeometry` scales x and y independently
+to fill the box, so a circle would render as an ellipse — worse than nothing in
+a maths lesson. Fixing that needs an equal-aspect mode honoured by all three
+renderers, and `exportPptx` draws through a native PowerPoint chart that may not
+support it. Decide that before starting.
+
 ## The GeoGebra embed is gone; graph slides draw their own curve, 2026-09-11
 
 **The class deck no longer frames geogebra.org.** `GraphView` in
@@ -1019,6 +1334,10 @@ Three smaller things the same trail turned up:
   sent a parent hunting for a label that did not exist. Both are «رمز الربط»
   now, and the composer is *passed* the register screen's own label so a rename
   cannot silently re-open the gap — `claimCodeMessage.test.ts` asserts it.
+  **Held for two days.** Three strings added on 09-08 and 09-10 each wrote
+  «رمز الصف» again; the test above pins the composer, and cannot see a new
+  screen that hardcodes the name. Renamed again 2026-09-12 — see the entry at
+  the top of this file.
 - **A pasted code was rejected for being pasted.** `normalizeShareCode` was
   applied to exam codes and never to claim codes; both call sites only
   `.trim()`. «abc-234 » answered "invalid or has expired", which was neither.
@@ -1052,6 +1371,40 @@ rejected after a replace. The share message was captured from the page.
 `schema-push:` **none** — both columns already exist.
 
 ## Arabic and Islamic Studies do not carry extractable figures, 2026-09-05
+## — re-tested 2026-09-12, and the conclusion holds for a sharper reason
+
+**Retested in full on 2026-09-12 because the note below named a fixable
+blocker.** It was fixable, and fixing it did not help. `OPENER_PROFILES` in
+`extract_book_figures.py` now carries the Islamic opener geometry this section
+asked for, and it finds **24 of 24** openers in the Grade 10 S1 book. All four
+Islamic books were then extracted and reviewed. The result:
+
+- **Grade 10 crops the whole page.** These pages carry an ornamental vector
+  border, so `drawing_cluster` grows every seed out to the page frame — median
+  crop **94% × 96%** of the page, 28 of 36 covering more than half of it,
+  against g9-physics-s1's healthy 23% × 17%. `MAX_W`/`MAX_H` do not catch this
+  because they filter *seeds*, not the grown cluster.
+- **Grade 9 crops small — and that is not good news.** Median 5% of page area,
+  which looks healthy and is not: what it crops is small blocks of Quranic
+  text. All 15 crops across both semesters were verse boxes, header banners or
+  the NCC logo.
+- **The real blocker is the data model, not the detector.** What all four books
+  genuinely have is one good illustration card per unit (the Kaaba, the Dome of
+  the Rock, a gavel on a Quran, a microscope) — and every one sits on the
+  front-matter contents spread **before lesson 1**, so a map keyed on
+  `(sourceId, unit, lesson)` cannot address it whatever extractor produces it.
+
+Everything extracted was deleted; only the profile and this note survive. The
+estimate below of "~12 usable across 50 lessons" for Islamic was optimistic:
+placed and usable, it is **zero**.
+
+**Arabic was re-confirmed in the same pass and needs no re-test.** Its «الدرس»
+is a 13pt *running header* at y=9-16 and there is no lesson-number span
+anywhere near the top of any opener — so there is no third threshold to tune,
+which is what separates it from Islamic. Placing its figures would need a
+page→lesson table parsed from each book's contents spread.
+
+The 2026-09-05 measurement follows, unchanged.
 
 Measured, then abandoned. Recording it so the next person does not spend the
 same afternoon rediscovering it — everything below is a count, not an
