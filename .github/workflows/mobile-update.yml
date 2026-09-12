@@ -21,6 +21,19 @@ name: Mobile OTA update
 on:
   push:
     branches: [main]
+  # Manual trigger, for two cases that would otherwise force a junk commit to
+  # main: proving a newly added EXPO_TOKEN actually works, and re-publishing
+  # after a failed run. The `branch` input also makes this the mechanism for
+  # publishing to the `production` channel once a Play Store build exists,
+  # without needing a second workflow.
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: EAS update branch to publish to
+        required: true
+        default: preview
+        type: choice
+        options: [preview, production]
 
 # Two updates racing on the same branch would leave devices on whichever
 # finished last rather than whichever was merged last.
@@ -72,7 +85,7 @@ jobs:
           EXPO_PUBLIC_GOOGLE_CLIENT_ID: 784063967007-86omgnji0cg28iaav1o1celb8cm9je26.apps.googleusercontent.com
         run: |
           npx eas-cli@latest update \
-            --branch preview \
+            --branch "${{ inputs.branch || 'preview' }}" \
             --message "$(git log -1 --pretty=%s)" \
             --non-interactive
 
