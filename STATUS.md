@@ -166,8 +166,9 @@ an announcement by default» below.
 - **A student has a place to go, as of 2026-09-13.** They land on the curriculum
   rather than an empty chat inbox, `/curriculum/resources` lists the **169
   working QR links printed in the ministry books** (98 video, 32 documents, 20
-  audio) by book and page, and the **1,409 book figures** now appear on the
-  lesson page instead of only inside an exam. Grades 6–8 have no printed codes,
+  audio) by book and page, and the book's own figures now appear on the lesson
+  page instead of only inside an exam — **1,505 figures across 324 lessons**,
+  measured 2026-09-13 and growing with each book. Grades 6–8 have no printed codes,
   so the entry hides itself there. See «The student has a place to go» below —
   particularly why these are link-outs and can never be inline players.
 - **Read-aloud works as an assigned question type; practice mode is built but
@@ -503,13 +504,21 @@ Proxying was considered and rejected: it needs an undeployable route, pays our
 egress for ministry video, and would make us the redistributor of material with
 no `licenseCheckedAt`, which is the one thing `ingestRefusal` exists to prevent.
 
-**1,409 book figures were bundled and a student could only see them in an exam.**
+**The book figures were bundled and a student could only see them in an exam.**
 `BookFiguresPanel` was on six teacher screens and `/take/[code]` but not on the
 lesson page — the one place a diagram from your own book is most obviously
-wanted. It is now on `lesson-detail` for the 249 lessons that have figures, at
-zero added bundle bytes since the PNGs already ship unconditionally. It needed a
-new note key: the existing student one says «الدروس التي يغطّيها هذا الاختبار»,
-which would name an exam that does not exist on that page.
+wanted. It is now on `lesson-detail`, at zero added bundle bytes since the PNGs
+already ship unconditionally. It needed a new note key: the existing student one
+says «الدروس التي يغطّيها هذا الاختبار», which would name an exam that does not
+exist on that page.
+
+**Measured after merging #413, which added English's photographs mid-change:
+`lessonsWithFigures()` returns 324 lessons carrying 1,505 figures.** Worth
+re-measuring rather than quoting this line — it moved from 249/1,409 to
+324/1,505 inside one afternoon because another branch landed, and it will move
+again with the next book. `lessonsWithFigures()` is the number that matters
+because it is what the panel actually reads; the raw map currently holds 332
+joined entries, and the gap is sources the mobile asset map does not carry.
 
 ### Three bugs on the path a student already had
 
