@@ -128,6 +128,7 @@ KB_GEO = "knowledge-base/grade-10-geography/support-pdfs/"
 # already for exactly this reason).
 MIRROR_G9 = "C:/Users/Lenovo/Downloads/Raya studio/Iqraa/Calude app/Knowledge Base/9th grade/"
 MIRROR_G8 = "C:/Users/Lenovo/Downloads/Raya studio/Iqraa/Calude app/Knowledge Base/8th grade/"
+MIRROR_G6 = "C:/Users/Lenovo/Downloads/Raya studio/Iqraa/Calude app/Knowledge Base/6th grade/"
 KB_ISLAMIC = "knowledge-base/grade-10-islamic/support-pdfs/"
 KB_G9_ISLAMIC = "knowledge-base/grade-9-islamic/support-pdfs/"
 
@@ -332,6 +333,30 @@ BOOKS: dict[str, tuple[str, str]] = {
     # nothing for `lesson_start` to profile the way Islamic was profiled.
     # `outline` returns {} and every crop would be unplaced. Its S1 sibling
     # detects all 10 openers. Same failure as g9-history-s2.
+    # ── Grade 6, added 2026-09-13 ────────────────────────────────────────────
+    # Its curriculum landed this week (maths S1, science S1+S2). Ids match the
+    # manifest rows the same change created. Note the mirror holds a duplicate
+    # of two of these with a « (1)» suffix; these point at the originals.
+    # NOT EXTRACTED, measured 2026-09-13. With the small-maths profile this
+    # book yields 6 openers against the catalog's 18, and five of those six
+    # resolve to unit `None`: its openers largely do not carry the big lesson
+    # number the profile keys on (p43's «الدرس» sits with 11.78pt digits, not
+    # 50pt), and one stray unit header on p67 defeats `outline`'s
+    # reset-derived fallback, which only fires when NOTHING found a unit.
+    # Extracting it would file most of the book against no lesson at all.
+    # Its science siblings detect 9/9 and 10/10 and are in.
+    "g6-math-s1-student-book": (
+        "grade-6-math",
+        MIRROR_G6 + "كتاب الطالب لمادة الرياضيات الصف السادس الفصل الأول.pdf",
+    ),
+    "g6-science-s1-student-book": (
+        "grade-6-science",
+        MIRROR_G6 + "كتاب الطالب لمادة العلوم الصف السادس الفصل الأول.pdf",
+    ),
+    "g6-science-s2-student-book": (
+        "grade-6-science",
+        MIRROR_G6 + "كتاب الطالب لمادة العلوم الصف السادس الفصل الثاني.pdf",
+    ),
     "g8-science-s2-student-book": (
         "grade-8-science",
         MIRROR_G8 + "العلوم/كتاب الطالب لمادة العلوم الصف الثامن الفصل الثاني.pdf",
@@ -478,7 +503,25 @@ G8_MATH_OPENER = OpenerProfile(
     number_size=40, number_top=65, number_parenthesised=False,
     title_size=16, title_top=60,
 )
+# Grade 6 science sets its lesson number at 37.08pt on some openers and 40.0pt
+# on others — measured 2026-09-13, alternating within the same book. The
+# default's `>= 40` therefore found 3 of its 9 openers, which is the worst
+# possible outcome: the six it missed do not leave gaps, they extend the
+# previous lesson over their pages. Everything else about the layout is the
+# default (dars 20pt at y=47-59, number at y=31-41), so this lowers one number
+# and nothing else.
+G6_SCIENCE_OPENER = OpenerProfile(
+    dars_size=20, dars_top=90, dars_prefix=False,
+    number_size=35, number_top=65, number_parenthesised=False,
+    title_size=24, title_top=60,
+)
 OPENER_PROFILES: dict[str, OpenerProfile] = {
+    "g6-science-s1-student-book": G6_SCIENCE_OPENER,
+    "g6-science-s2-student-book": G6_SCIENCE_OPENER,
+    # Grade 6 maths prints the SAME small-maths layout as Grade 8 — «الدرس» at
+    # 17pt on y=46 with a 50pt number at y=17 — measured, not assumed from the
+    # subject. Reused rather than copied so the two cannot drift apart.
+    "g6-math-s1-student-book": G8_MATH_OPENER,
     "g8-math-s1-student-book": G8_MATH_OPENER,
     "g8-math-s2-student-book": G8_MATH_OPENER,
     "islamic-s1-student-book": ISLAMIC_OPENER,

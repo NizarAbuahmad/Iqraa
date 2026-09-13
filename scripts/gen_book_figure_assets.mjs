@@ -68,6 +68,8 @@ const indexes = [
   'knowledge-base/grade-8-english/figures/g8-english-s2-student-book/index.json',
   'knowledge-base/grade-7-english/figures/g7-english-s1-student-book/index.json',
   'knowledge-base/grade-7-english/figures/g7-english-s2-student-book/index.json',
+  'knowledge-base/grade-6-science/figures/g6-science-s1-student-book/index.json',
+  'knowledge-base/grade-6-science/figures/g6-science-s2-student-book/index.json',
 ];
 
 const rows = [];

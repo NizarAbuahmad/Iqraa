@@ -3087,6 +3087,161 @@
       "kbLessonId": "kbl-g7-eng-s2-nccd-u8_l2",
       "score": 1,
       "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g6-science-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "الخَلِيَّةُ",
+      "kbLessonId": "kbl-g6-science-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 6's first figures, added 2026-09-13, the week its curriculum landed. Its openers set the lesson number at 37.08pt on some pages and 40.0pt on others WITHIN THE SAME BOOK, so the default profile's `>= 40` found 3 of the 9 — the worst outcome, because the six misses extend the previous lesson over their pages rather than leaving a gap. `G6_SCIENCE_OPENER` lowers that one gate to 35 and detection is 9/9 and 10/10."
+    },
+    {
+      "sourceId": "g6-science-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "نَقْلُ المَوادِّ وَالعَمَلِيّاتُ الحَيَوِيَّةُ في الخَلِيَّةِ",
+      "kbLessonId": "kbl-g6-science-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g6-science-s1-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "مُسْتَوَياتُ التَّنْظيمِ في الكائِناتِ الحَيَّةِ",
+      "kbLessonId": "kbl-g6-science-s1-nccd-u1_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g6-science-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "الذَّرّاتُ وَالجُزَيْئاتُ",
+      "kbLessonId": "kbl-g6-science-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g6-science-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "الفِلِزّاتُ وَاللّافِلِزّاتُ",
+      "kbLessonId": "kbl-g6-science-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g6-science-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "الطّاقَةُ الميكانيكِيَّةُ",
+      "kbLessonId": "kbl-g6-science-s1-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g6-science-s1-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "الآلاتُ البَسيطَةُ",
+      "kbLessonId": "kbl-g6-science-s1-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g6-science-s1-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "التَّلَوُّثُ",
+      "kbLessonId": "kbl-g6-science-s1-nccd-u4_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g6-science-s2-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "الأَنْظِمَةُ البيئِيَّةُ",
+      "kbLessonId": "kbl-g6-science-s2-nccd-u5_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Offset by 4: the extractor reports units 1-5, the catalog numbers them 5-9. Corroborated by content rather than arithmetic alone — the waves and bat-echolocation crops land on «الموجات»/«الصوت والسمع», the kettle and convection arrows on «الحرارة», the star discs on «المجرات»."
+    },
+    {
+      "sourceId": "g6-science-s2-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "الجَماعاتُ الحَيَوِيَّةُ",
+      "kbLessonId": "kbl-g6-science-s2-nccd-u5_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g6-science-s2-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "فَصْلُ المَخاليطِ",
+      "kbLessonId": "kbl-g6-science-s2-nccd-u6_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g6-science-s2-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "المَوْجاتُ",
+      "kbLessonId": "kbl-g6-science-s2-nccd-u7_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g6-science-s2-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "الصَّوْتُ وَالسَّمْعُ",
+      "kbLessonId": "kbl-g6-science-s2-nccd-u7_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g6-science-s2-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "الحَرارَةُ وَطَرائِقُ انْتِقالِها",
+      "kbLessonId": "kbl-g6-science-s2-nccd-u8_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g6-science-s2-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "الحَرارَةُ في حَياتِنا",
+      "kbLessonId": "kbl-g6-science-s2-nccd-u8_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g6-science-s2-student-book",
+      "unit": 5,
+      "lesson": 1,
+      "bookTitleAr": "المَجَرّاتُ",
+      "kbLessonId": "kbl-g6-science-s2-nccd-u9_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g6-science-s2-student-book",
+      "unit": 5,
+      "lesson": 2,
+      "bookTitleAr": "الفَضاءُ وَالكَوْنُ",
+      "kbLessonId": "kbl-g6-science-s2-nccd-u9_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
     }
   ],
   "unitNumbering": "The curriculum's `u{n}_l{m}` matches the number the book PRINTS in every unit except unit 1, where the book has an extra opening lesson («حل معادلات خاصة») and the rest shift by one. Units 1-4 are semester 1 and units 5-8 are semester 2, so the printed unit number also identifies which student book a figure came from — `check_semester` in scripts/extract_book_figures.py enforces that. Note the maths PDFs in attached_assets are named backwards: the file called `1st_semester` is the second-semester book. Source ids follow the books' contents, not their filenames."
