@@ -818,11 +818,11 @@ and grade?". Measured first, through the real deck builder** — `buildLessonDec
 run over all 1097 catalog lessons with a stub `figureUri`, counting the media
 slides it returns:
 
-| | before | sciences | hist/geo | g8 sci | g8 maths | English |
-| --- | --- | --- | --- | --- | --- | --- |
-| lessons whose deck carries a book figure | **122** | 159 | 210 | 220 | 249 | **324** |
-| figure slides across all decks | 388 | 515 | 604 | 643 | 726 | **822** |
-| live subject×grade pairs with nothing | 29 of 37 | 25 | 21 | 20 | 19 | **17 of 39** |
+| | before | sciences | hist/geo | g8 sci | g8 maths | English | +g7 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| lessons whose deck carries a book figure | **122** | 159 | 210 | 220 | 249 | 324 | **336** |
+| figure slides across all decks | 388 | 515 | 604 | 643 | 726 | 822 | **835** |
+| live subject×grade pairs with nothing | 29 of 37 | 25 | 21 | 20 | 19 | 17 | **16 of 40** |
 
 (The catalog itself grew from 1097 to 1134 lessons over these days, so the
 denominator moves; the numerator is what these changes did.)
@@ -1062,6 +1062,37 @@ workflow in two days. The map-entry generator's SCOPE edit did not match
 zero English entries without complaining — found only because the count was
 obviously wrong. Both are now assert-on-match.
 
+**Grade 7 English, 2026-09-13 — the same series, and none of the same rules.**
+31 photos extracted, **16 kept**, 12 of its 72 lessons. Its yield is poor
+because this book renders many whole text pages as images and the raster
+filters cannot tell one from a photo.
+
+Three differences from Grades 8-10, each of which silently breaks placement on
+its own, and none of which announces itself:
+
+- **Its header is «Lesson 7» at 14.999968528747559pt**, not «LESSON 7A» at
+  18pt. A `>= 15` gate — which is what anyone would write — matches NONE of the
+  94 headers, and the book yields nothing with no error. The gate is 14.5.
+- **Its body cross-references lessons**: «Read the dialogue in Lesson 2» at
+  13-14pt. Counted as headers, those produced **17 units for a 4-unit book**.
+- **Its lesson numbers have gaps** — 1,2,3,5,6,8,9,10,11, nine per unit — so
+  "the number went down" is not a unit boundary. The boundary is «In this unit
+  I will …», which appears exactly 4 times per semester book.
+
+**And the two semesters number their lessons differently.** Both books PRINT
+the gapped set; the S1 catalog carries those numbers verbatim, the S2 catalog
+renumbers them 1..9. They are positionally identical — checked title by title
+against u4 against u7: Vocabulary, Team Talk, Grammar, Book Club, Vocabulary
+and Grammar, Culture, English in action, Reading, Writing — so the S2 join is
+the printed number's POSITION, held in `LESSON_REMAP`. Joining l9 to l9 there
+would have filed «English in action» photos under «Writing», which is the
+failure that reads like success. The S2 unit offset is +4, not the +5 the other
+three grades use.
+
+One crop was dropped rather than mapped: S1 unit 4 prints a «Lesson 4» the
+catalog has no lesson for, so its photo is unused rather than filed against an
+id that does not exist.
+
 **What still has no figure at all, and why:**
 
 - **Grade 8 — eight of ten subjects, 286 lessons.** Science S1 and both maths
@@ -1070,11 +1101,8 @@ obviously wrong. Both are now assert-on-match.
   creative arts, vocational.
 - **Arabic and Islamic** (192 lessons): measured and abandoned 2026-09-05, see
   the section below. Unchanged.
-- **English**: done for Grades 10, 9 and 8 (above). **Grade 7** English is
-  the one left — 72 lessons, and its catalog arrived while this was in flight,
-  so it has never been through the photo pipeline. Note its S2 units start at
-  5, not 6 like the other three grades, so it needs its own `UNIT_OFFSET`
-  rather than a copied one.
+- **English**: done for Grades 10, 9, 8 and 7 (above). Grade 7 is thin at
+  12 of 72 lessons — the ceiling is its book, not the pipeline.
 - **Grade 9 history S2** (13 lessons) and most of **Grade 9 geography S2** —
   the two books above that this batch could not use.
 - **Civic education and digital literacy**: probed, **0 lesson starts** in

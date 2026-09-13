@@ -252,6 +252,19 @@ export const BOOK_FIGURE_ASSETS: Record<string, BookFigureAsset> = {
   'finlit-s1-student-book/p053.png': require('../../../knowledge-base/grade-10-finlit/figures/finlit-s1-student-book/p053.png'),
   'finlit-s1-student-book/p059.png': require('../../../knowledge-base/grade-10-finlit/figures/finlit-s1-student-book/p059.png'),
   'finlit-s1-student-book/p059b.png': require('../../../knowledge-base/grade-10-finlit/figures/finlit-s1-student-book/p059b.png'),
+  'g7-english-s1-student-book/p017.png': require('../../../knowledge-base/grade-7-english/figures/g7-english-s1-student-book/p017.png'),
+  'g7-english-s1-student-book/p017b.png': require('../../../knowledge-base/grade-7-english/figures/g7-english-s1-student-book/p017b.png'),
+  'g7-english-s1-student-book/p027.png': require('../../../knowledge-base/grade-7-english/figures/g7-english-s1-student-book/p027.png'),
+  'g7-english-s1-student-book/p036.png': require('../../../knowledge-base/grade-7-english/figures/g7-english-s1-student-book/p036.png'),
+  'g7-english-s1-student-book/p038.png': require('../../../knowledge-base/grade-7-english/figures/g7-english-s1-student-book/p038.png'),
+  'g7-english-s1-student-book/p040.png': require('../../../knowledge-base/grade-7-english/figures/g7-english-s1-student-book/p040.png'),
+  'g7-english-s1-student-book/p041.png': require('../../../knowledge-base/grade-7-english/figures/g7-english-s1-student-book/p041.png'),
+  'g7-english-s1-student-book/p048.png': require('../../../knowledge-base/grade-7-english/figures/g7-english-s1-student-book/p048.png'),
+  'g7-english-s1-student-book/p050.png': require('../../../knowledge-base/grade-7-english/figures/g7-english-s1-student-book/p050.png'),
+  'g7-english-s1-student-book/p051.png': require('../../../knowledge-base/grade-7-english/figures/g7-english-s1-student-book/p051.png'),
+  'g7-english-s2-student-book/p041.png': require('../../../knowledge-base/grade-7-english/figures/g7-english-s2-student-book/p041.png'),
+  'g7-english-s2-student-book/p056.png': require('../../../knowledge-base/grade-7-english/figures/g7-english-s2-student-book/p056.png'),
+  'g7-english-s2-student-book/p059.png': require('../../../knowledge-base/grade-7-english/figures/g7-english-s2-student-book/p059.png'),
   'g8-english-s1-student-book/p008.png': require('../../../knowledge-base/grade-8-english/figures/g8-english-s1-student-book/p008.png'),
   'g8-english-s1-student-book/p011.png': require('../../../knowledge-base/grade-8-english/figures/g8-english-s1-student-book/p011.png'),
   'g8-english-s1-student-book/p016.png': require('../../../knowledge-base/grade-8-english/figures/g8-english-s1-student-book/p016.png'),
@@ -1526,4 +1539,4 @@ export const BOOK_FIGURE_ASSETS: Record<string, BookFigureAsset> = {
 };
 
 /** How many figures ship with the app. Asserted by the drift test. */
-export const BOOK_FIGURE_COUNT = 1505;
+export const BOOK_FIGURE_COUNT = 1518;

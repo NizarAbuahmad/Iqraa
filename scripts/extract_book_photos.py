@@ -83,6 +83,8 @@ KB_G9 = "knowledge-base/grade-9-english/support-pdfs/"
 # that reason).
 MIRROR_G8 = ("C:/Users/Lenovo/Downloads/Raya studio/Iqraa/Calude app/"
              "Knowledge Base/8th grade/English/")
+MIRROR_G7 = ("C:/Users/Lenovo/Downloads/Raya studio/Iqraa/Calude app/"
+             "Knowledge Base/7th grade/")
 
 BOOKS: dict[str, tuple[str, str]] = {
     "eng-s1-student-book": (
@@ -116,6 +118,20 @@ BOOKS: dict[str, tuple[str, str]] = {
         "grade-8-english",
         MIRROR_G8 + "كتاب الطالب لمادة اللغة الإنجليزية للصف الثامن الفصل الثاني.pdf",
     ),
+    # ── Grade 7, added 2026-09-13 ────────────────────────────────────────────
+    # Same series, but NOT the same shape as the other three grades: its
+    # catalog is FOUR units of nine lessons where 8, 9 and 10 are five of
+    # seven, and its semester-2 units are numbered 5-8, so the map offset is
+    # +4 rather than +5. Copying either from a sibling grade would file every
+    # semester-2 photo one unit out.
+    "g7-english-s1-student-book": (
+        "grade-7-english",
+        MIRROR_G7 + "كتاب الطالب لمادة اللغة الإنجليزية للصف السابع الفصل الأول.pdf",
+    ),
+    "g7-english-s2-student-book": (
+        "grade-7-english",
+        MIRROR_G7 + "كتاب الطالب لمادة اللغة الإنجليزية للصف السابع الفصل الثاني.pdf",
+    ),
 }
 
 # A raster on more than this many pages is furniture. Two is a real photo
@@ -127,6 +143,52 @@ MIN_W, MIN_H = 220, 165
 MAX_ASPECT = 4.0
 # Enough pixels to be worth a slide; excludes thumbnails that survived above.
 MIN_PIXELS = 60_000
+
+
+# Grade 7 prints a different book under the same series name, measured
+# 2026-09-13. Three differences, and each one alone corrupts the placement:
+#
+#   * its header is «Lesson 7» at 15pt, not «LESSON 7A» at 18pt;
+#   * its BODY text cross-references lessons — «Read the dialogue in Lesson 2»
+#     — at 13-14pt. Counted as headers, those produced 17 units for a 4-unit
+#     book. Measured: 94 header spans at 15pt against 3 at 13-14pt, so the
+#     size gate separates them cleanly. Gate at 14.5, NOT 15: the headers
+#     measure 14.999968528747559pt, so `>= 15` excludes every one of them and
+#     the book silently yields nothing;
+#   * its lesson numbers run 1,2,3,5,6,8,9,10,11 — nine per unit WITH GAPS —
+#     so "the number went down" is not a unit boundary here. The boundary is
+#     «In this unit I will …», which appears exactly 4 times in each semester
+#     book, matching the catalog.
+#
+# The gaps need no remapping: the catalog carries the printed numbers verbatim
+# as `order`, gaps included.
+G7_UNIT_MARK = re.compile(r"In this unit I will", re.I)
+G7_LESSON = re.compile(r"Lesson\s*(\d+)\.?", re.I)
+
+
+def where_of_page_g7(doc) -> dict[int, tuple[int, int]]:
+    """Grade 7's variant of `where_of_page`. See G7_UNIT_MARK above."""
+    at: dict[int, tuple[int, int]] = {}
+    unit, lesson = 0, None
+    for i, page in enumerate(doc):
+        if G7_UNIT_MARK.search(page.get_text()):
+            unit, lesson = unit + 1, None
+        for block in page.get_text("dict")["blocks"]:
+            for line in block.get("lines", []):
+                for span in line["spans"]:
+                    m = G7_LESSON.fullmatch(" ".join(span["text"].split()))
+                    if m and span["size"] >= 14.5:
+                        lesson = int(m.group(1))
+        if unit and lesson:
+            at[i + 1] = (unit, lesson)
+    return at
+
+
+# Books whose placement needs the variant above rather than the default.
+WHERE_OVERRIDES = {
+    "g7-english-s1-student-book": where_of_page_g7,
+    "g7-english-s2-student-book": where_of_page_g7,
+}
 
 
 def where_of_page(doc) -> dict[int, tuple[int, int]]:
@@ -221,7 +283,7 @@ def main() -> None:
             continue
 
         doc = pymupdf.open(pdf)
-        where = where_of_page(doc)
+        where = WHERE_OVERRIDES.get(source_id, where_of_page)(doc)
         outdir = ROOT / "knowledge-base" / subject / "figures" / source_id
         outdir.mkdir(parents=True, exist_ok=True)
 

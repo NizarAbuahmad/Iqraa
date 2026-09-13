@@ -2959,6 +2959,134 @@
       "kbLessonId": "kbl-g9-eng-s2-nccd-u10_l7",
       "score": 1,
       "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-english-s1-student-book",
+      "unit": 1,
+      "lesson": 9,
+      "bookTitleAr": "الإنجليزية في الاستخدام: السؤال عن معلومات السفر",
+      "kbLessonId": "kbl-g7-eng-s1-nccd-u1_l9",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 7 English, added 2026-09-13, and it is the odd one of the four grades. FOUR units of nine lessons where 8, 9 and 10 are five of seven; its header is «Lesson 7» at 14.999968528747559pt, not «LESSON 7A» at 18pt (a `>= 15` gate silently matches NONE of them); its unit boundary is «In this unit I will …» rather than a lesson-number reset, because its numbering has gaps — 1,2,3,5,6,8,9,10,11. `where_of_page_g7` in extract_book_photos.py carries all three."
+    },
+    {
+      "sourceId": "g7-english-s1-student-book",
+      "unit": 2,
+      "lesson": 9,
+      "bookTitleAr": "الإنجليزية في الاستخدام: تقديم المساعدة والرد عليها",
+      "kbLessonId": "kbl-g7-eng-s1-nccd-u2_l9",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-english-s1-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "حوار الفريق: استطلاع القراءة الصفي",
+      "kbLessonId": "kbl-g7-eng-s1-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-english-s1-student-book",
+      "unit": 3,
+      "lesson": 5,
+      "bookTitleAr": "نادي الكتاب: ما الذي في البرج؟ (قصة غامضة)",
+      "kbLessonId": "kbl-g7-eng-s1-nccd-u3_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-english-s1-student-book",
+      "unit": 3,
+      "lesson": 8,
+      "bookTitleAr": "الثقافة: ألغاز بلا إجابات",
+      "kbLessonId": "kbl-g7-eng-s1-nccd-u3_l8",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-english-s1-student-book",
+      "unit": 3,
+      "lesson": 9,
+      "bookTitleAr": "الإنجليزية في الاستخدام: الموافقة والاعتراض",
+      "kbLessonId": "kbl-g7-eng-s1-nccd-u3_l9",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-english-s1-student-book",
+      "unit": 4,
+      "lesson": 5,
+      "bookTitleAr": "نادي الكتاب: تجربة مرعبة (يوميات)",
+      "kbLessonId": "kbl-g7-eng-s1-nccd-u4_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-english-s1-student-book",
+      "unit": 4,
+      "lesson": 8,
+      "bookTitleAr": "الثقافة: التغيّر المناخي والحيوانات",
+      "kbLessonId": "kbl-g7-eng-s1-nccd-u4_l8",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-english-s1-student-book",
+      "unit": 4,
+      "lesson": 9,
+      "bookTitleAr": "الإنجليزية في الاستخدام: تقديم النصيحة",
+      "kbLessonId": "kbl-g7-eng-s1-nccd-u4_l9",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-english-s2-student-book",
+      "unit": 2,
+      "lesson": 7,
+      "bookTitleAr": "اللغة في الاستخدام",
+      "kbLessonId": "kbl-g7-eng-s2-nccd-u6_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Offset by 4 (S2 units are 5-8, not 6-10 like the other grades) AND lesson-remapped. Both Grade 7 books PRINT 1,2,3,5,6,8,9,10,11, but only the S1 catalog carries those numbers; the S2 catalog renumbers them 1..9. The two are positionally identical — checked title by title against u4/u7 — so the join here is the printed number's POSITION. Mapping l9 to l9 would file «English in action» photos under «Writing»."
+    },
+    {
+      "sourceId": "g7-english-s2-student-book",
+      "unit": 3,
+      "lesson": 7,
+      "bookTitleAr": "اللغة في الاستخدام",
+      "kbLessonId": "kbl-g7-eng-s2-nccd-u7_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-english-s2-student-book",
+      "unit": 3,
+      "lesson": 9,
+      "bookTitleAr": "الكتابة: مقابلة",
+      "kbLessonId": "kbl-g7-eng-s2-nccd-u7_l9",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-english-s2-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "المفردات",
+      "kbLessonId": "kbl-g7-eng-s2-nccd-u8_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-english-s2-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "حوار الفريق",
+      "kbLessonId": "kbl-g7-eng-s2-nccd-u8_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
     }
   ],
   "unitNumbering": "The curriculum's `u{n}_l{m}` matches the number the book PRINTS in every unit except unit 1, where the book has an extra opening lesson («حل معادلات خاصة») and the rest shift by one. Units 1-4 are semester 1 and units 5-8 are semester 2, so the printed unit number also identifies which student book a figure came from — `check_semester` in scripts/extract_book_figures.py enforces that. Note the maths PDFs in attached_assets are named backwards: the file called `1st_semester` is the second-semester book. Source ids follow the books' contents, not their filenames."
