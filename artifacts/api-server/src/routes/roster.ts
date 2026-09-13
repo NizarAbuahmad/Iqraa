@@ -12,8 +12,19 @@
  */
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { classGroups, classMemberships, rosterLinks, students } from "@workspace/db";
+import {
+  attemptResults,
+  attempts,
+  classGroups,
+  classMemberships,
+  evaluations,
+  rosterLinks,
+  students,
+} from "@workspace/db";
 import { and, asc, count, eq, inArray, isNull } from "drizzle-orm";
+import { resolveObjectiveIds } from "@workspace/curriculum";
+import { aggregateClass } from "../modules/assessment/classInsights.ts";
+import type { ObjectiveScore } from "../modules/assessment/scoring.ts";
 import {
   authMiddleware,
   requireRole,
@@ -173,6 +184,111 @@ router.get("/classes/:id", async (req: AuthenticatedRequest, res) => {
     });
   } catch (err) {
     failRoster(res, err, "get class", "Failed to load class");
+  }
+});
+
+/**
+ * What this class has been weak on all term — not just in one exam.
+ *
+ * `/evaluations/:id/insights` answers "what did they miss on Tuesday's paper".
+ * That is one datapoint, and one datapoint is a grade book. The question a
+ * teacher can actually act on is which objectives keep coming back: "weak on
+ * quadratics across four checks since September" is a lesson plan, "weak on
+ * quadratics on Tuesday" is a bad afternoon.
+ *
+ * Nothing new is stored. Every attempt already writes `objectiveScores`, so
+ * this is the same aggregation `aggregateClass` does within one evaluation,
+ * applied one level up again across all of them — marks-weighted, for the
+ * reason spelled out in classInsights.ts: averaging percentages would rank the
+ * class's real problem below a rounding error.
+ *
+ * Aggregated on read rather than kept in a rollup table. A class is on the
+ * order of five evaluations by thirty students; a table to avoid summing 150
+ * rows would be a cache to maintain and a second place for the truth to live.
+ *
+ * `evaluationCount` travels with the result because the weight of evidence
+ * changes what the number means, and a teacher reading "48%" deserves to know
+ * whether it rests on one check or six.
+ */
+router.get("/classes/:id/mastery", async (req: AuthenticatedRequest, res) => {
+  try {
+    const classId = req.params["id"] as string;
+    const [group] = await db
+      .select({ id: classGroups.id })
+      .from(classGroups)
+      .where(and(eq(classGroups.id, classId), eq(classGroups.teacherId, req.user!.id)))
+      .limit(1);
+
+    if (!group) {
+      res.status(404).json({ error: "Class not found" });
+      return;
+    }
+
+    const rows = await db
+      .select({
+        objectiveScores: attemptResults.objectiveScores,
+        studentId: attempts.studentId,
+        evaluationId: attempts.evaluationId,
+        displayName: students.displayName,
+      })
+      .from(attemptResults)
+      .innerJoin(attempts, eq(attempts.id, attemptResults.attemptId))
+      .innerJoin(evaluations, eq(evaluations.id, attempts.evaluationId))
+      .innerJoin(students, eq(students.id, attempts.studentId))
+      .where(and(eq(evaluations.classGroupId, classId), isNull(students.archivedAt)));
+
+    // Same rule as the per-evaluation insights: an attempt nobody has marked
+    // carries an empty breakdown, and letting those in would drag the term
+    // average toward zero as the roster grows — "the class is at 31%" would
+    // quietly mean "you have not finished marking".
+    const marked = rows
+      .map(r => ({ ...r, objectiveScores: (r.objectiveScores as ObjectiveScore[]) ?? [] }))
+      .filter(r => r.objectiveScores.length > 0);
+
+    const classRollup = aggregateClass(marked);
+
+    const byStudent = new Map<string, { displayName: string; scores: ObjectiveScore[][] }>();
+    for (const row of marked) {
+      const entry = byStudent.get(row.studentId) ?? { displayName: row.displayName, scores: [] };
+      entry.scores.push(row.objectiveScores);
+      byStudent.set(row.studentId, entry);
+    }
+
+    const { found } = resolveObjectiveIds(classRollup.objectiveScores.map(o => o.objectiveId));
+    const byId = new Map(found.map(o => [o.id, o]));
+    const titled = <T extends ObjectiveScore>(o: T) => ({
+      ...o,
+      title: byId.get(o.objectiveId)?.description ?? "",
+      titleAr:
+        byId.get(o.objectiveId)?.descriptionAr || byId.get(o.objectiveId)?.description || "",
+    });
+
+    res.json({
+      evaluationCount: new Set(marked.map(r => r.evaluationId)).size,
+      studentCount: byStudent.size,
+      mastery: { ...classRollup, objectiveScores: classRollup.objectiveScores.map(titled) },
+      students: [...byStudent.entries()]
+        .map(([studentId, { displayName, scores }]) => {
+          const rollup = aggregateClass(scores.map(objectiveScores => ({ objectiveScores })));
+          return {
+            studentId,
+            displayName,
+            attemptCount: scores.length,
+            percent: rollup.percent,
+            // Projected down to the base ObjectiveScore fields on purpose:
+            // `studentsBelowGap` and `studentCount` only mean something when the
+            // rows being summed are different students. Here they are the same
+            // student across weeks, so carrying them would be a number that
+            // reads like a class statistic and is not one.
+            objectiveScores: rollup.objectiveScores.map(
+              ({ studentsBelowGap: _b, studentCount: _c, ...base }) => titled(base),
+            ),
+          };
+        })
+        .sort((a, b) => a.percent - b.percent),
+    });
+  } catch (err) {
+    failRoster(res, err, "class mastery", "Failed to load class mastery");
   }
 });
 

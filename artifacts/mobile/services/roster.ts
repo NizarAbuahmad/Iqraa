@@ -117,6 +117,53 @@ export async function getClass(
   return { group: data.class, students: data.students };
 }
 
+/** One objective's standing, summed over every marked attempt in the class. */
+export interface MasteryObjective {
+  objectiveId: string;
+  title: string;
+  titleAr: string;
+  earned: number;
+  total: number;
+  percent: number;
+  marksLost: number;
+  questionCount: number;
+  bloomsRank: number;
+  /** Class-level only — how many students sat below the gap line on this. */
+  studentsBelowGap?: number;
+  studentCount?: number;
+}
+
+export interface ClassMastery {
+  /** How many evaluations this rests on. A percentage from one check and one from six are different claims. */
+  evaluationCount: number;
+  studentCount: number;
+  mastery: {
+    percent: number;
+    earnedMarks: number;
+    totalMarks: number;
+    objectiveScores: MasteryObjective[];
+    gaps: MasteryObjective[];
+    strengths: MasteryObjective[];
+  };
+  students: {
+    studentId: string;
+    displayName: string;
+    attemptCount: number;
+    percent: number;
+    objectiveScores: MasteryObjective[];
+  }[];
+}
+
+/**
+ * What the class has been weak on all term, across every evaluation rather
+ * than within one. Server-side aggregation — see roster.ts on the API for why
+ * this is computed on read instead of kept in a table.
+ */
+export async function getClassMastery(classId: string): Promise<ClassMastery> {
+  const res = await apiFetch(`/classes/${classId}/mastery`);
+  return readJson<ClassMastery>(res, 'Loading class mastery');
+}
+
 /**
  * Add students to a class. Send the whole list in one call — a teacher entering
  * a register of thirty should not generate thirty round trips, each of which

@@ -42,10 +42,12 @@ import {
   addStudents,
   generateJoinCode,
   getClass,
+  getClassMastery,
   parseStudentNames,
   removeStudentFromClass,
   updateStudent,
   type ClassGroup,
+  type ClassMastery,
   type RosterStudent,
 } from '@/services/roster';
 import { copyToClipboard, shareAsText } from '@/services/share';
@@ -94,6 +96,7 @@ export default function ClassDetailScreen() {
   const [attachable, setAttachable] = useState<SavedMaterial[]>([]);
   const [attachingId, setAttachingId] = useState<string | null>(null);
   const [savedCount, setSavedCount] = useState(0);
+  const [mastery, setMastery] = useState<ClassMastery | null>(null);
   const [noteStudent, setNoteStudent] = useState<RosterStudent | null>(null);
   const [noteText, setNoteText] = useState('');
   const [savingNote, setSavingNote] = useState(false);
@@ -131,6 +134,10 @@ export default function ClassDetailScreen() {
     // outside the try above for exactly that reason.
     setMaterials(await getItems({ classId: id }));
     setExams(await listEvaluations({ classId: id }));
+    // Term mastery is a nice-to-have on this screen, not a reason to fail it.
+    // A class with no marked attempts yet answers with empty objectives, which
+    // the section renders as "nothing yet" rather than as an error.
+    setMastery(await getClassMastery(id).catch(() => null));
   }, [id, describe]);
 
   useFocusEffect(
@@ -648,6 +655,34 @@ export default function ClassDetailScreen() {
           keyExtractor={e => e.id}
           contentContainerStyle={{ padding: 20, paddingBottom: 100, gap: 10 }}
           showsVerticalScrollIndicator={false}
+          ListHeaderComponent={
+            <View style={{ gap: 10, marginBottom: 10 }}>
+              <Pressable
+                onPress={() => router.push({ pathname: '/evaluations/mini', params: { classId: id } })}
+                style={[
+                  styles.row,
+                  {
+                    backgroundColor: ACCENT + '12',
+                    borderColor: ACCENT,
+                    flexDirection: isRTL ? 'row-reverse' : 'row',
+                    alignItems: 'center',
+                    gap: 10,
+                  },
+                ]}
+              >
+                <Ionicons name="flash-outline" size={20} color={ACCENT} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: ACCENT, fontFamily: 'Cairo_600SemiBold', fontSize: 14, textAlign: align }}>
+                    {t('miniEvalBtn')}
+                  </Text>
+                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, textAlign: align }}>
+                    {t('miniEvalSubtitle')}
+                  </Text>
+                </View>
+              </Pressable>
+              <MasterySection mastery={mastery} colors={colors} isRTL={isRTL} align={align} lang={lang} t={t} />
+            </View>
+          }
           ListEmptyComponent={empty('clipboard-outline', 'noExamsYet', 'noExamsDesc')}
           renderItem={({ item }) => {
             const title = (lang === 'ar' ? item.titleAr : item.title) || t('newEvaluation');
@@ -1166,6 +1201,91 @@ export default function ClassDetailScreen() {
       </Modal>
 
       <Toast visible={!!toast} message={toast} onHide={() => setToast('')} />
+    </View>
+  );
+}
+
+/**
+ * What the class has been weak on all term.
+ *
+ * Ordered by marks lost, not by percentage — the same rule the server
+ * aggregates by, and for the same reason: an objective at 62% that half the
+ * room is under water on is a different lesson than one at 62% that three
+ * students missed. `studentsBelowGap` is shown next to the percentage so the
+ * two cannot be confused.
+ *
+ * Capped at five. A teacher deciding what to go back over tomorrow can act on
+ * a handful; a ranked list of every objective they have ever examined is a
+ * spreadsheet, and they already have one of those.
+ */
+function MasterySection({
+  mastery, colors, isRTL, align, lang, t,
+}: {
+  mastery: ClassMastery | null;
+  colors: ReturnType<typeof useColors>;
+  isRTL: boolean;
+  align: 'left' | 'right';
+  lang: string;
+  t: (key: any, ...args: any[]) => string;
+}) {
+  if (!mastery) return null;
+  const gaps = [...mastery.mastery.objectiveScores]
+    .sort((a, b) => b.marksLost - a.marksLost)
+    .slice(0, 5);
+
+  return (
+    <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border, gap: 10 }]}>
+      <View style={{ gap: 2 }}>
+        <Text style={{ color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 14, textAlign: align }}>
+          {t('masteryTitle')}
+        </Text>
+        {gaps.length > 0 && (
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, textAlign: align }}>
+            {t('masteryBasis', t('countExams', mastery.evaluationCount))}
+          </Text>
+        )}
+      </View>
+
+      {gaps.length === 0 ? (
+        <View style={{ gap: 2 }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: align }}>
+            {t('masteryEmpty')}
+          </Text>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, textAlign: align }}>
+            {t('masteryEmptyDesc')}
+          </Text>
+        </View>
+      ) : (
+        gaps.map(o => (
+          <View key={o.objectiveId} style={{ gap: 3 }}>
+            <Text
+              style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: align }}
+              numberOfLines={2}
+            >
+              {(lang === 'ar' ? o.titleAr : o.title) || o.objectiveId}
+            </Text>
+            <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
+              <View style={{ flex: 1, height: 5, borderRadius: 3, backgroundColor: colors.border, overflow: 'hidden' }}>
+                <View
+                  style={{
+                    width: `${Math.max(0, Math.min(100, o.percent))}%`,
+                    height: '100%',
+                    backgroundColor: o.percent < 60 ? '#DC2626' : o.percent < 80 ? '#F59E0B' : '#059669',
+                  }}
+                />
+              </View>
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11 }}>
+                {`${Math.round(o.percent)}%`}
+              </Text>
+            </View>
+            {typeof o.studentsBelowGap === 'number' && typeof o.studentCount === 'number' && (
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 10, textAlign: align }}>
+                {t('masteryBelowGap', String(o.studentsBelowGap), String(o.studentCount))}
+              </Text>
+            )}
+          </View>
+        ))
+      )}
     </View>
   );
 }
