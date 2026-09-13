@@ -306,9 +306,25 @@ const DIFFICULTY_RUBRIC_AR: Record<CompetencyKey, string> = {
   critical_thinking: "عمق التحليل وقوة التعليل",
 };
 
+/**
+ * The printed mark scheme for one open-response question.
+ *
+ * Nothing grades against these bands — a teacher reads them while marking by
+ * hand — so a wrong band is quieter than a wrong grader and no less costly:
+ * it moves real marks, and nothing on screen contradicts it.
+ *
+ * The partial band therefore only exists where a mark strictly between 0 and
+ * full can be awarded. `knowledge` questions are worth 1 (MARKS_BY_COMPETENCY),
+ * and the old `Math.max(1, Math.round(marks / 2))` floor made their
+ * "partially correct" band worth **the full mark** — a rubric instructing a
+ * teacher to award everything for an answer that same rubric calls incomplete.
+ * The floor was there to avoid a partial band worth 0, identical to the
+ * "incorrect" band; the honest answer to that is no partial band at all.
+ */
 function buildRubric(competency: CompetencyKey, marks: number): Record<string, unknown> {
   const full = marks;
-  const half = Math.max(1, Math.round(marks / 2));
+  const partial = Math.round(marks / 2);
+  const partialIsReal = partial > 0 && partial < full;
   return {
     criteria: [
       {
@@ -317,7 +333,9 @@ function buildRubric(competency: CompetencyKey, marks: number): Record<string, u
         marks: full,
         levels: [
           { marks: full, descriptor_ar: "إجابة كاملة وصحيحة" },
-          { marks: half, descriptor_ar: "إجابة صحيحة جزئيًا تنقصها بعض العناصر" },
+          ...(partialIsReal
+            ? [{ marks: partial, descriptor_ar: "إجابة صحيحة جزئيًا تنقصها بعض العناصر" }]
+            : []),
           { marks: 0, descriptor_ar: "إجابة غير صحيحة أو غير متصلة بالسؤال" },
         ],
       },

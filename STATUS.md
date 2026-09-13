@@ -1494,13 +1494,29 @@ self-grading questions used here had to be inserted with `psql`, because
 cannot change it. All six generated questions were stamped
 `gradingMode: "ai_rubric"`, a mode nothing implements.
 
-**Found and left alone**, since it is advisory text no grader enforces:
-`buildRubric` in `mockGenerator.ts:307` computes its partial band as
-`Math.max(1, Math.round(marks / 2))`, so on every **1-mark** question the
-"partially correct" band awards the full mark — confirmed in the live payload
-as `levels: [1, 1, 0]`. A teacher following the printed rubric over-awards.
-There is no sensible integer partial on a 1-mark question, so the fix is to
-omit the band, not to floor it.
+**A printed rubric told teachers to award full marks for a partial answer**,
+found on the same run and fixed on 2026-09-13. `buildRubric` in
+`mockGenerator.ts` computed its partial band as
+`Math.max(1, Math.round(marks / 2))`, so on every **1-mark** question
+"partially correct" was worth the full mark — `levels: [1, 1, 0]` in the live
+payload. That is not a rare shape: `MARKS_BY_COMPETENCY.knowledge` is 1, so
+every knowledge question on every mock paper carried it.
+
+Nothing grades against these bands — a teacher reads them while marking by
+hand — which makes the error quieter than a wrong grader and no less costly:
+it moves real marks and nothing on screen contradicts it.
+
+The `Math.max(1, …)` floor existed to avoid a partial band worth 0, identical
+to the "incorrect" band. The honest answer to that is **no partial band at
+all**: there is no integer strictly between 0 and 1. A 1-mark rubric is now
+`[1, 0]`, and every multi-mark rubric is byte-for-byte what it was — verified
+by printing a real generated paper: `2/1/0`, `3/2/0`, `4/2/0` unchanged,
+1-mark down to two levels. `rubricBands.test.ts` pins all four rules
+(no band ties full, none on a 1-mark question, one wherever it can honestly
+exist, strictly descending) and is verified by mutation: restoring the floor
+fails 3 of its 4. Note the third test **passed before the fix** — the
+multi-mark path was already right, and it now guards against a fix that
+over-reaches.
 
 ## Student accounts went live, reversing the v1 decision, 2026-09-07
 
