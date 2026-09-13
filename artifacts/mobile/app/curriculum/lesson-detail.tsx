@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import {
   getLessonById,
   isBrowserLessonTitleOnly,
@@ -27,6 +28,8 @@ export default function LessonDetailScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
+  const { user } = useAuth();
+  const isTeacher = isTeacherRole(user?.role);
   const { lessonId, subjectColor, openLessonPlan } = useLocalSearchParams<{
     lessonId: string;
     subjectColor: string;
@@ -102,7 +105,22 @@ export default function LessonDetailScreen() {
       </View>
 
       <View style={styles.body}>
-        {/* Action buttons row */}
+        {/*
+          Teacher-only, and not merely cosmetically.
+
+          A student can reach this page — `/curriculum` is on the non-teacher
+          allowlist — and both buttons were shown to every role. «حضّر» runs
+          generation, which the server refuses without a teacher role; but
+          `RemoteAIService` falls back to `MockAIService` on failure, and its own
+          header says mock output "is indistinguishable from a real answer by
+          inspection: it is a well-formed Arabic lesson plan either way". So a
+          student did not get a 403 — they got a fabricated lesson plan. "Ask
+          iQra" pushes `/(tabs)/iqra`, which the route guard bounces.
+
+          Gated here rather than in `routeGating`: allowlisting the iQra tab
+          would hand students the teacher chat, which is the opposite of the fix.
+        */}
+        {isTeacher ? (
         <View style={[styles.actionRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <Pressable
             onPress={() => {
@@ -135,9 +153,11 @@ export default function LessonDetailScreen() {
             </Text>
           </Pressable>
         </View>
+        ) : null}
 
-        {/* Preparation — in place, on the lesson it belongs to */}
-        {prepOpen ? <LessonPrepPanel lessonId={lesson.id} accent={color} /> : null}
+        {/* Preparation — in place, on the lesson it belongs to. Teacher-only
+            for the same reason as the button that opens it. */}
+        {isTeacher && prepOpen ? <LessonPrepPanel lessonId={lesson.id} accent={color} /> : null}
 
         {/* What the library actually holds for this lesson. Above the
             curriculum sections because a teacher preparing tomorrow wants the
