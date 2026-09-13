@@ -66,6 +66,53 @@ services:
     # cannot come from app/+html.tsx.
     buildCommand: corepack enable && corepack prepare pnpm@11.18.0 --activate && pnpm install --frozen-lockfile && cd artifacts/mobile && pnpm run build:web
     staticPublishPath: artifacts/mobile/dist
+    # Only rebuild for changes that can reach the web bundle.
+    #
+    # On 2026-09-12 the workspace ran out of Render build pipeline minutes
+    # (500/500) and EVERY deploy was cancelled before it started — 0.9s, all
+    # three services, for about a day. Nothing was wrong with the code: five
+    # merges sat undeployed and the site quietly kept serving an old bundle,
+    # which is the worst shape for this to fail in, because a merged change
+    # simply never appears and nothing says why.
+    #
+    # The cause was cadence. Ten PRs in a day, each triggering a full
+    # `pnpm install --frozen-lockfile` plus an Expo export of the monorepo, and
+    # most of them could not have changed a single byte of the bundle: API
+    # work, content ingestion, STATUS.md edits.
+    #
+    # `ignoredPaths` only — no `paths` allowlist. An allowlist fails by NOT
+    # deploying something that mattered, which is the failure we just spent
+    # hours diagnosing; a denylist fails by building too often, which only
+    # costs minutes. Everything below is excluded because it provably cannot
+    # reach the bundle, not because it seemed unlikely to:
+    #
+    #   artifacts/api-server, artifacts/math-verifier — deployed by hand to
+    #     Cloud Run (see docs/deploying.md); the mobile bundle never imports
+    #     either. Note the root pnpm-lock.yaml is NOT ignored, so a dependency
+    #     change in those packages still rebuilds.
+    #   knowledge-base — 3.2GB of source PDFs, read by extraction scripts on a
+    #     developer's machine. The app reads lib/curriculum/src/data/extracted,
+    #     which is NOT ignored.
+    #   attached_assets — the rest of the ingestion corpus. Checked: referenced
+    #     by no build script. `link-main-assets.ps1` junctions it into
+    #     worktrees, which is a local dev concern, not a Render one.
+    #   cqv-reports, docs, *.md — documentation and audit output.
+    #   main.py, pyproject.toml, uv.lock — the Python side of the verifier.
+    #
+    # If a change is not showing up on the web app, check this list before
+    # debugging anything else.
+    buildFilter:
+      ignoredPaths:
+        - artifacts/api-server/**
+        - artifacts/math-verifier/**
+        - knowledge-base/**
+        - attached_assets/**
+        - cqv-reports/**
+        - docs/**
+        - "**/*.md"
+        - main.py
+        - pyproject.toml
+        - uv.lock
     envVars:
       - key: NODE_VERSION
         value: 24.15.0
