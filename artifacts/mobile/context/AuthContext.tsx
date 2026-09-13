@@ -31,6 +31,19 @@ export function isTeacherRole(role: UserRole | null | undefined): boolean {
   return !!role && TEACHER_ROLES.includes(role);
 }
 
+/**
+ * A student specifically, which is not the same as "not a teacher".
+ *
+ * `!isTeacherRole(...)` covers parents too, and the two want different things:
+ * a parent opens this app for messages about their child, a student opens it to
+ * study. Every student check used to be a hand-written `role === 'student'`
+ * literal in four files, which is how the landing screen ended up treating both
+ * roles alike.
+ */
+export function isStudentRole(role: UserRole | null | undefined): boolean {
+  return role === 'student';
+}
+
 export interface User {
   id: string;
   firstName: string;

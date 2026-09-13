@@ -163,6 +163,14 @@ an announcement by default» below.
     publish, validators), plus deterministic marking and level aggregation.
     What is missing is any evaluation UI, the attempts/answer-entry endpoints,
     and the dashboard.
+- **A student has a place to go, as of 2026-09-13.** They land on the curriculum
+  rather than an empty chat inbox, `/curriculum/resources` lists the **169
+  working QR links printed in the ministry books** (98 video, 32 documents, 20
+  audio) by book and page, and the book's own figures now appear on the lesson
+  page instead of only inside an exam — **1,505 figures across 324 lessons**,
+  measured 2026-09-13 and growing with each book. Grades 6–8 have no printed codes,
+  so the entry hides itself there. See «The student has a place to go» below —
+  particularly why these are link-outs and can never be inline players.
 - **Read-aloud works as an assigned question type; practice mode is built but
   has no passages.** A teacher can set a passage, a student reads it in a
   browser, and `scoreReading` marks it deterministically (word-level WER).
@@ -438,6 +446,107 @@ an announcement by default» below.
     deployed. The client's timeout is 2.5s, so the first call after idle fails.
     **Warm the verifier as well as the API before a demo** — a sleeping
     verifier and an undeployed one look the same from the app.
+
+## The student has a place to go, 2026-09-13
+
+**A student opening this app landed in a chat inbox.** Not a home screen — the
+message thread list, empty for most of them. `(tabs)/index.tsx` branched
+teacher-or-everyone-else, so students and parents got the same destination, and
+a student's tab bar has no home. They now land on the curriculum, which was
+already their first visible tab. Parents still land on Messages, which is what a
+parent opens this app for. `isStudentRole` exists now beside `isTeacherRole` —
+there was no student helper at all, so every student check was a hand-written
+`role === 'student'` in four files, which is how one branch came to serve two
+roles that want different things.
+
+**The library is `/curriculum/resources`, and it cost no gating change.**
+`isNonTeacherRoute` matches by prefix and `/curriculum` was already allowlisted,
+so the route is student-reachable because the file exists. `routeGating.test.ts`
+now pins `/curriculum/resources` so converting that allowlist to exact matching
+fails loudly rather than silently ejecting a student. A new tab would have cost
+an allowlist entry, a role-gated tab, two icons and a locale pair for the same
+result.
+
+**What it holds: the 169 reachable QR codes the ministry printed in the books.**
+`knowledge-base/book-qr-links.json` had sat unread since it was decoded. 98
+video, 32 documents, **20 audio**, 16 pages, 3 images, across 22 books —
+grade-10 97, grade-9 72, and nothing at all for grades 6–8, which is why the
+entry row hides itself rather than opening onto an empty screen. Grouped by the
+book and the printed page, deliberately: only 12 of 186 carry a lesson id, and
+«صفحة ٤٥» is a better locator anyway for someone holding the book.
+
+**Three things in that data would each have failed silently**, and each is now a
+test:
+
+- **All 20 `.mp3` rows are declared `kind: "page"`.** The entire curriculum audio
+  inventory — 13 English, 7 music — was labelled "web page". `kindOf` derives
+  from the extension where there is one; reading the declared kind finds zero
+  audio and nothing looks broken.
+- **3 rows declared `video` have no extension**, so deriving from the extension
+  *alone* files those as pages. Both directions are needed.
+- **`art`, `civic`, `pe` and `math` are not catalog subject ids.** The alias map
+  is spelled out because the obvious shortcut is wrong: a substring test for
+  `art` resolves to `earth-science`.
+
+**Grouped by the manifest's own book string, never a catalog `Book`.**
+`creative-arts` and `physical-education` have **no book in the catalog at all**,
+so a catalog join drops those 16 rows — including 7 of the 20 audio files —
+without an error. The printed filename is already a correct Arabic title.
+
+**These are link-outs and cannot become players.** Every code prints
+`https://qr.nccd.gov.jo/…` and that certificate has expired; the same path over
+`http://` serves the file. So over https the handshake fails with no
+click-through a subresource can offer, and over http a page served from https
+blocks it as mixed content. An inline `<audio>` here would look right and render
+dead. The insecure ones say so **per row**, not once per screen — on a screen
+mixing both, a header note tells you nothing about the link you are about to tap.
+Proxying was considered and rejected: it needs an undeployable route, pays our
+egress for ministry video, and would make us the redistributor of material with
+no `licenseCheckedAt`, which is the one thing `ingestRefusal` exists to prevent.
+
+**The book figures were bundled and a student could only see them in an exam.**
+`BookFiguresPanel` was on six teacher screens and `/take/[code]` but not on the
+lesson page — the one place a diagram from your own book is most obviously
+wanted. It is now on `lesson-detail`, at zero added bundle bytes since the PNGs
+already ship unconditionally. It needed a new note key: the existing student one
+says «الدروس التي يغطّيها هذا الاختبار», which would name an exam that does not
+exist on that page.
+
+**Measured after merging #413, which added English's photographs mid-change:
+`lessonsWithFigures()` returns 324 lessons carrying 1,505 figures.** Worth
+re-measuring rather than quoting this line — it moved from 249/1,409 to
+324/1,505 inside one afternoon because another branch landed, and it will move
+again with the next book. `lessonsWithFigures()` is the number that matters
+because it is what the panel actually reads; the raw map currently holds 332
+joined entries, and the gap is sources the mobile asset map does not carry.
+
+### Three bugs on the path a student already had
+
+- **The teacher guide was offered to students.** `catalog.ts` says «Hidden from
+  students» on `guidePdfUrl`; `subjects.tsx` rendered it to everyone on the
+  strength of a comment claiming `UserRole` has no `'student'`. It has had one
+  since student accounts went live.
+- **Tapping a shelf row ejected a student from the curriculum.** Bank rows push
+  `/(tabs)/iqra`, which is not allowlisted, so the root guard bounced them to
+  `/notifications` and they lost the lesson. The whole bank half is now
+  teacher-only — a guard on the row would have left a list that looks tappable
+  and does nothing, and the PDFs are gitignored so there is nothing to hand over
+  either. The count pill counts what is rendered, not what is hidden.
+- **`Linking.openURL` replaced the running app on web** — the exact failure
+  `services/externalLinks.ts` was written to fix. Five call sites still had it,
+  three of them student-reachable, including the book-download chips. All now use
+  `openExternal`. `presentation.tsx` also held a **fourth hand-rolled copy** of
+  that helper; `externalLinks.ts`'s header records that "a third copy was about
+  to land, so it moved here instead".
+
+**Not verified in a browser.** Two reasons, both worth knowing. Reaching
+`/curriculum/resources` needs a signed-in student. And **the dev server cannot
+serve a worktree**: `artifacts/mobile/node_modules` is a junction to the main
+checkout, so `expo start` reports «Starting project at …/Iqraa/artifacts/mobile»
+and bundles the original repo whatever the cwd — so a preview from a worktree
+shows main's code and reads as a pass. Logic and data are covered by 9 new tests
+in `services/__tests__/bookQrLinks.test.ts` pinning the counts (169 / 97 / 72 /
+20) and every normalisation above; what nobody has looked at is the layout.
 
 ## The web app stopped deploying for a day, and nobody noticed, 2026-09-13
 
@@ -1012,7 +1121,9 @@ contents spread.
 **Where the codes are is almost exactly where the figures are not.** Islamic,
 Arabic, art, civic education and PE have zero extracted figures between them,
 and 138 of these 186 codes — so for those lessons the book's QR video is the
-only media the book offers. Nothing consumes the manifest yet.
+only media the book offers. ~~Nothing consumes the manifest yet.~~
+**`artifacts/mobile/services/bookQrLinks.ts` reads it since 2026-09-13** — see
+«The student has a place to go» below.
 
 ## The plot sampler learned trigonometry, 2026-09-12
 

@@ -1,11 +1,13 @@
 import React, { useMemo, useState } from 'react';
-import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import type { ExternalResource, ExternalResourceKind } from '@workspace/curriculum';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { isTeacherRole, useAuth } from '@/context/AuthContext';
+import { openExternal } from '@/services/externalLinks';
 import {
   askAboutResourceMessage,
   buildLessonShelf,
@@ -42,10 +44,19 @@ type Props = {
  * shipped, so the only honest action on a row is to take it to chat, which
  * already grounds its reply on these titles. Saying so once, under the header,
  * is better than a download button that fails.
+ *
+ * That reasoning is also why the bank half is teacher-only. Its rows push
+ * `/(tabs)/iqra`, which is not on the non-teacher allowlist — so a student who
+ * tapped one was bounced by the root guard all the way out to `/notifications`,
+ * losing the lesson they were reading. A guard on the row would have left a
+ * list that looks tappable and does nothing; the whole half is dead weight for
+ * someone who cannot reach chat and cannot be handed the file either.
  */
 export function LessonShelfPanel({ lessonId, accent }: Props) {
   const colors = useColors();
   const { t, isRTL, lang } = useLanguage();
+  const { user } = useAuth();
+  const showBank = isTeacherRole(user?.role);
   const [showSemester, setShowSemester] = useState(false);
 
   const shelf = useMemo(
@@ -59,6 +70,10 @@ export function LessonShelfPanel({ lessonId, accent }: Props) {
   // whole shelf, the unit heading counts what is listed, and this counts what
   // is behind the fold. 11 + 24 = 35, visibly.
   const semesterCount = shelf.semester.reduce((n, g) => n + g.items.length, 0);
+
+  // What the pill and the empty state may claim. For a student the bank is not
+  // rendered, so counting it would promise 35 files on a shelf showing one.
+  const bankTotal = showBank ? shelf.total : 0;
 
   const ask = (r: SupportResource) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -134,7 +149,7 @@ export function LessonShelfPanel({ lessonId, accent }: Props) {
     return (
       <Pressable
         key={r.id}
-        onPress={() => { void Linking.openURL(r.sourceUrl); }}
+        onPress={() => { void openExternal(r.sourceUrl); }}
         accessibilityRole="link"
         accessibilityLabel={`${lang === 'ar' ? r.titleAr : r.titleEn} — ${r.attribution}`}
         style={[
@@ -188,10 +203,10 @@ export function LessonShelfPanel({ lessonId, accent }: Props) {
         <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }]}>
           {t('shelfTitle')}
         </Text>
-        {shelf.total > 0 ? (
+        {bankTotal > 0 ? (
           <View style={[styles.countPill, { backgroundColor: accent + '15' }]}>
             <Text style={[styles.countText, { color: accent, fontFamily: 'Cairo_600SemiBold' }]}>
-              {t('shelfCount', shelf.total)}
+              {t('shelfCount', bankTotal)}
             </Text>
           </View>
         ) : null}
@@ -201,7 +216,7 @@ export function LessonShelfPanel({ lessonId, accent }: Props) {
         {/* External resources are counted separately from `total`, so the
             empty state has to ask about both — a lesson whose only material is
             a curated public-domain passage is not an empty shelf. */}
-        {shelf.total === 0 && shelf.external.length === 0 ? (
+        {bankTotal === 0 && shelf.external.length === 0 ? (
           <Text style={[styles.note, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
             {t('shelfEmpty')}
           </Text>
@@ -221,7 +236,7 @@ export function LessonShelfPanel({ lessonId, accent }: Props) {
                 Neither is true of the external list above — those are links
                 that do open, under licences that permit it — so a lesson
                 carrying only external material must not show either. */}
-            {shelf.total > 0 ? (
+            {bankTotal > 0 ? (
               <>
                 <Text style={[styles.note, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
                   {t('shelfNotInApp')}
@@ -234,7 +249,7 @@ export function LessonShelfPanel({ lessonId, accent }: Props) {
               </>
             ) : null}
 
-            {shelf.unit.length > 0 ? (
+            {showBank && shelf.unit.length > 0 ? (
               <>
                 <Text style={[styles.groupLabel, { color: accent, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
                   {t('shelfUnitScoped', shelf.unit.reduce((n, g) => n + g.items.length, 0))}
@@ -246,7 +261,7 @@ export function LessonShelfPanel({ lessonId, accent }: Props) {
             {/* Semester-wide material is collapsed by default. It is the same
                 twenty-odd files on every lesson in the semester — real, but it
                 would bury the handful that are about this lesson. */}
-            {shelf.semester.length > 0 ? (
+            {showBank && shelf.semester.length > 0 ? (
               <>
                 <Pressable
                   onPress={() => setShowSemester(v => !v)}
