@@ -1,0 +1,124 @@
+# Build the web bundle and publish it to Cloudflare Pages.
+#
+# Why this exists at all: the web app used to be built by Render, and on
+# 2026-09-12 that stopped working in the worst possible way. The workspace hit
+# 500/500 build pipeline minutes, every deploy was cancelled after ~0.9s, and
+# the site kept serving a bundle from 2026-09-11 — CI green, render.yaml
+# correct, nothing down, five merges silently unshipped for a day.
+#
+# The ceiling was structural, not bad luck: `pnpm install --frozen-lockfile`
+# plus a full Expo export of the monorepo, at roughly ten merges a day, does
+# not fit in 500 minutes a month. `buildFilter` cut the cadence but could not
+# change the ceiling.
+#
+# This repo is PUBLIC, so GitHub Actions standard runners are free and
+# unmetered — there is no build ceiling here at any cadence. Cloudflare Pages
+# then receives an already-built directory (Direct Upload), so its own
+# 500-builds/month limit is not involved either, and static bandwidth is
+# unmetered. Both ceilings are gone rather than raised.
+name: Web deploy
+
+on:
+  push:
+    branches: [main]
+    # Mirrors render.yaml's buildFilter.ignoredPaths — the paths that provably
+    # cannot reach the web bundle. Kept as an ignore list, not a `paths:`
+    # allowlist, for the reason render.yaml gives: an allowlist fails by NOT
+    # deploying something that mattered, which is the failure that cost a day.
+    # A denylist fails by building too often, which costs nothing now.
+    #
+    # pnpm-lock.yaml is deliberately absent, so a dependency change inside an
+    # ignored package still ships.
+    paths-ignore:
+      - 'artifacts/api-server/**'
+      - 'artifacts/math-verifier/**'
+      - 'knowledge-base/**'
+      - 'attached_assets/**'
+      - 'cqv-reports/**'
+      - 'docs/**'
+      - '**/*.md'
+      - 'main.py'
+      - 'pyproject.toml'
+      - 'uv.lock'
+  # Manual trigger, for the two cases that would otherwise force a junk commit
+  # to main: proving newly added Cloudflare credentials actually work, and
+  # re-publishing after a failed run. Same reasoning as mobile-update.yml.
+  workflow_dispatch:
+
+# A newer merge supersedes one still building — devices should land on
+# whichever was merged last, not whichever finished last.
+concurrency:
+  group: web-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: build and publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Same Node and pnpm as ci.yml and the old Render build, so a green CI
+      # means this build has already been exercised on these versions.
+      # No `cache: pnpm` here: setup-node's pnpm cache resolves the store path
+      # by running pnpm, which corepack has not activated yet at this point in
+      # the job, and the step fails outright. Caching the pnpm store with
+      # actions/cache after the corepack step does work — it is left out
+      # deliberately because Actions is unmetered on a public repo, so a cache
+      # buys wall-clock, not money, at the cost of another way for the deploy
+      # path to fail. Add it if build time ever becomes the complaint.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+
+      # scripts/preinstall.mjs hard-fails any non-pnpm agent, so corepack has
+      # to activate pnpm before install — this is what the Render buildCommand
+      # prefix was for.
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.18.0 --activate
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build web bundle
+        working-directory: artifacts/mobile
+        env:
+          # Every EXPO_PUBLIC_* is inlined into the JS bundle by Metro at
+          # EXPORT time, so these are public the moment the site ships and are
+          # plain values here on purpose — the same call mobile-update.yml
+          # makes, for the same reason. Treating them as secrets would hide
+          # them from the repo and not from the browser.
+          #
+          # These three carry over verbatim from render.yaml's envVars.
+          EXPO_PUBLIC_API_BASE_URL: https://iqraa-api-613126375862.europe-west1.run.app/api
+          EXPO_PUBLIC_GOOGLE_CLIENT_ID: 784063967007-86omgnji0cg28iaav1o1celb8cm9je26.apps.googleusercontent.com
+          EXPO_PUBLIC_POSTHOG_API_KEY: phc_t7Gd3Z4L7v3zDkPAciXoCvndiVqGfVxzGquEfbJPq9r8
+          # Read by scripts/inject-pwa.mjs for <meta name="build-commit">, and
+          # the only way to tell which commit a served bundle came from.
+          # Replaces Render's RENDER_GIT_COMMIT, which does not exist here.
+          BUILD_COMMIT: ${{ github.sha }}
+          #
+          # EXPO_PUBLIC_DEMO_MODE is deliberately NOT set.
+          #
+          # render.yaml never set it either, and demoMode.ts defaults it to
+          # true (`!== "false"`), so the web app has always shipped with mocked
+          # AI prose. Setting it here would flip live generation on for every
+          # web teacher as a side effect of changing hosts — a product and
+          # cost decision, not a migration detail. Omitting it keeps today's
+          # behaviour exactly. Note mobile-update.yml DOES set "false", so
+          # web and Android differ; that gap predates this workflow.
+        run: pnpm run build:web
+
+      # Direct Upload: Cloudflare receives artifacts/mobile/dist as-is and
+      # runs no build of its own, which is what keeps its build quota out of
+      # the picture entirely.
+      - name: Publish to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy artifacts/mobile/dist --project-name=iqraa-web --branch=main

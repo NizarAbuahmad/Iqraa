@@ -62,10 +62,18 @@ html = html.replace(/\s*<meta name="theme-color" content="[^"]*">/g, '');
 //
 // Web auto-deploys on every merge; the API is deployed by hand and the app
 // ships on its own cadence. Comparing them used to mean grepping the served
-// bundle hash. Render sets RENDER_GIT_COMMIT during its build; a local
-// `build:web` has no such variable, so 'dev' marks "not a deployed build"
-// rather than pretending to a commit.
-const buildCommit = process.env.RENDER_GIT_COMMIT ?? 'dev';
+// bundle hash. A local `build:web` has no such variable, so 'dev' marks
+// "not a deployed build" rather than pretending to a commit.
+//
+// BUILD_COMMIT first, host-neutral, because the build moved off Render to
+// GitHub Actions on 2026-09-13 and RENDER_GIT_COMMIT does not exist there.
+// The failure it prevents is silent: every deployed bundle would have said
+// `dev`, which reads as "someone deployed a local build" and destroys the one
+// marker that answers "is this change live?" — the exact question that went
+// unanswered for a day when Render stopped deploying. RENDER_GIT_COMMIT is
+// kept as a fallback so a Render build (or a rollback to one) still stamps
+// correctly.
+const buildCommit = process.env.BUILD_COMMIT ?? process.env.RENDER_GIT_COMMIT ?? 'dev';
 
 const TAGS = `
     <link rel="manifest" href="/manifest.webmanifest" />
