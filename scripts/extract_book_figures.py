@@ -345,6 +345,45 @@ BOOKS: dict[str, tuple[str, str]] = {
     # reset-derived fallback, which only fires when NOTHING found a unit.
     # Extracting it would file most of the book against no lesson at all.
     # Its science siblings detect 9/9 and 10/10 and are in.
+    # ── Grade 8's remaining subjects, added 2026-09-13 ───────────────────────
+    # Registered together and probed together; only the ones whose openers
+    # `outline` can actually read are extracted. Arabic and Islamic are NOT
+    # here — both were measured and closed on 2026-09-05 and again on
+    # 2026-09-12; see the Islamic entry above.
+    "g8-social-s1-student-book": (
+        "grade-8-social",
+        MIRROR_G8 + "ejtma3iat/كتاب الطالب لمادة الدراسات الاجتماعية للصف الثامن الفصل الأول.pdf",
+    ),
+    "g8-social-s2-student-book": (
+        "grade-8-social",
+        MIRROR_G8 + "ejtma3iat/كتاب الطالب لمادة الدراسات الاجتماعية للصف الثامن الفصل الثاني.pdf",
+    ),
+    # One book for the year, like Grade 10 art — so no «-s1-»/«-s2-» in the id
+    # and `check_semester` returns early on it.
+    "g8-arts-student-book": (
+        "grade-8-creative-arts",
+        MIRROR_G8 + "art/كتاب الطالب لمادة التربية الفنية للصف الثامن.pdf",
+    ),
+    "g8-voc-s1-student-book": (
+        "grade-8-vocational",
+        MIRROR_G8 + "mhni/كتاب الطالب لمادة التربية المهنية الصف الثامن الفصل الأول.pdf",
+    ),
+    "g8-voc-s2-student-book": (
+        "grade-8-vocational",
+        MIRROR_G8 + "mhni/كتاب الطالب لمادة التربية المهنية الصف الثامن الفصل الثاني.pdf",
+    ),
+    "g8-digital-s1-student-book": (
+        "grade-8-digital-literacy",
+        MIRROR_G8 + "7asob/كتاب الطالب لمادة المهارات الرقمية الصف الثامن الفصل الأول.pdf",
+    ),
+    "g8-digital-s2-student-book": (
+        "grade-8-digital-literacy",
+        MIRROR_G8 + "7asob/كتاب الطالب لمادة المهارات الرقمية الصف الثامن الفصل الثاني.pdf",
+    ),
+    "g8-finlit-s1-student-book": (
+        "grade-8-finlit",
+        MIRROR_G8 + "finnance/كتاب الطالب لمادة الثقافة المالية للصف الثامن الفصل الأول.pdf",
+    ),
     "g6-math-s1-student-book": (
         "grade-6-math",
         MIRROR_G6 + "كتاب الطالب لمادة الرياضيات الصف السادس الفصل الأول.pdf",
@@ -515,7 +554,23 @@ G6_SCIENCE_OPENER = OpenerProfile(
     number_size=35, number_top=65, number_parenthesised=False,
     title_size=24, title_top=60,
 )
+# Grade 8 social studies sets its lesson number at y=51 on most openers and
+# y=69 on six of them — measured 2026-09-13 against the book's own contents
+# spread, which lists all 21 lessons and their pages. The default's `y < 65`
+# found 15 of 21 in S1 and 14 of 22 in S2, and the six it missed carry a
+# perfectly good «الدرس» at 21.6pt with a 57.3pt number four points too low.
+# That is the dangerous kind of miss: an undetected opener does not leave a
+# gap, it extends the PREVIOUS lesson across its pages. Only the ceiling
+# moves, and only for this book — 75 is still far above the y=120+ where its
+# contents pages put the word.
+G8_SOCIAL_OPENER = OpenerProfile(
+    dars_size=20, dars_top=90, dars_prefix=False,
+    number_size=40, number_top=75, number_parenthesised=False,
+    title_size=24, title_top=60,
+)
 OPENER_PROFILES: dict[str, OpenerProfile] = {
+    "g8-social-s1-student-book": G8_SOCIAL_OPENER,
+    "g8-social-s2-student-book": G8_SOCIAL_OPENER,
     "g6-science-s1-student-book": G6_SCIENCE_OPENER,
     "g6-science-s2-student-book": G6_SCIENCE_OPENER,
     # Grade 6 maths prints the SAME small-maths layout as Grade 8 — «الدرس» at

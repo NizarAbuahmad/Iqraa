@@ -880,11 +880,11 @@ and grade?". Measured first, through the real deck builder** — `buildLessonDec
 run over all 1097 catalog lessons with a stub `figureUri`, counting the media
 slides it returns:
 
-| | before | sciences | hist/geo | g8 sci | g8 maths | English | +g7 | +g6 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| lessons whose deck carries a book figure | **122** | 159 | 210 | 220 | 249 | 324 | 336 | **353** |
-| figure slides across all decks | 388 | 515 | 604 | 643 | 726 | 822 | 835 | **872** |
-| live subject×grade pairs with nothing | 29 of 37 | 25 | 21 | 20 | 19 | 17 | 16 | **15 of 40** |
+| | before | sciences | hist/geo | g8 sci | g8 maths | English | +g7 | +g6 | +g8 rest |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| lessons whose deck carries a book figure | **122** | 159 | 210 | 220 | 249 | 324 | 336 | 353 | **380** |
+| figure slides across all decks | 388 | 515 | 604 | 643 | 726 | 822 | 835 | 872 | **916** |
+| live subject×grade pairs with nothing | 29 of 37 | 25 | 21 | 20 | 19 | 17 | 16 | 15 | **13 of 40** |
 
 (The catalog itself grew from 1097 to 1134 lessons over these days, so the
 denominator moves; the numerator is what these changes did.)
@@ -1180,12 +1180,44 @@ carry the big lesson number the profile keys on (p43's «الدرس» sits besid
 `outline`'s reset-derived fallback, which only fires when NOTHING found a unit
 anywhere. Extracting it would file most of the book against no lesson at all.
 
+**Grade 8's remaining subjects, 2026-09-13.** Five probed together, two
+shipped: **social studies 24 of 43 lessons** (49 figures kept of 154 crops) and
+**financial literacy 3 of 8** (5 of 8 — a thin book, kept on the "carry on"
+call rather than a yield judgement).
+
+**Social was nearly written off on a false reading.** The first summary said
+0 openers for all eight books; that was a counting command run before the
+probes finished, not a result. Re-read, the default found 15 of 21 and 14 of
+22 — and the misses were not missing headers. Those six pages carry «الدرس» at
+21.6pt with a 57.3pt number at **y=69**, where the default ceiling is y<65.
+Four points. `G8_SOCIAL_OPENER` raises only that ceiling, to 75 — still far
+above the y=120+ where this book's contents pages put the word — and detection
+becomes 21/21 and 22/22, unit-for-unit against the catalog.
+
+That the misses were REAL lessons rather than a catalog that over-splits was
+proved against the book's own contents spread, which lists all 21 with their
+pages (6, 8, 14, 19, 26, 28, 36, 43, …).
+
+**Three subjects are closed on measurement**, all with the same shape as
+Arabic: creative arts (29 lessons) and vocational education (26) yield no
+readable openers — vocational carries «الدرس» on 5 pages, all of them the
+contents spread — and **digital literacy (13) carries it on ZERO of its 187
+pages**.
+
+**The contents spread is the mechanism that would unlock them.** Every book
+that has defeated the opener detector — Arabic, Islamic, vocational, creative
+arts, Grade 6 maths, Grade 8 science S2, Grade 9 history S2 — prints a
+contents page listing each lesson against its page number, and the Grade 8
+social diagnosis above shows those tables are accurate. Parsing them would give
+an exact page→lesson join with no opener needed, worth roughly 250 lessons.
+That is a new mechanism, not a threshold, and is the next thing to build.
+
 **What still has no figure at all, and why:**
 
-- **Grade 8 — eight of ten subjects, 286 lessons.** Science S1 and both maths
-  books are done (above). Science S2 has no opener text at all. Untouched:
-  Arabic, Islamic, social, digital literacy, financial literacy,
-  creative arts, vocational.
+- **Grade 8 — five of ten subjects, 165 lessons.** English, maths, science,
+  social and financial literacy are done (above). Left: Arabic and Islamic
+  (closed on measurement), creative arts, vocational education and digital
+  literacy (no readable openers; the contents-spread parser is the way in).
 - **Arabic and Islamic** (192 lessons): measured and abandoned 2026-09-05, see
   the section below. Unchanged.
 - **English**: done for Grades 10, 9, 8 and 7 (above). Grade 7 is thin at

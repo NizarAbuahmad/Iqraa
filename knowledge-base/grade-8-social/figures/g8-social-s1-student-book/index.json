@@ -1,0 +1,213 @@
+{
+  "sourceId": "g8-social-s1-student-book",
+  "figures": [
+    {
+      "file": "p029.png",
+      "sourceId": "g8-social-s1-student-book",
+      "pdfPage": 29,
+      "rect": [
+        129.1,
+        476.4,
+        529.1,
+        682.9
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 28
+    },
+    {
+      "file": "p030.png",
+      "sourceId": "g8-social-s1-student-book",
+      "pdfPage": 30,
+      "rect": [
+        109.3,
+        383.4,
+        539.0,
+        514.2
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 28
+    },
+    {
+      "file": "p030b.png",
+      "sourceId": "g8-social-s1-student-book",
+      "pdfPage": 30,
+      "rect": [
+        0.0,
+        405.5,
+        118.5,
+        515.0
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 28
+    },
+    {
+      "file": "p031.png",
+      "sourceId": "g8-social-s1-student-book",
+      "pdfPage": 31,
+      "rect": [
+        31.0,
+        45.2,
+        317.3,
+        320.4
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 28
+    },
+    {
+      "file": "p032.png",
+      "sourceId": "g8-social-s1-student-book",
+      "pdfPage": 32,
+      "rect": [
+        61.4,
+        57.3,
+        560.1,
+        337.7
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 28
+    },
+    {
+      "file": "p033.png",
+      "sourceId": "g8-social-s1-student-book",
+      "pdfPage": 33,
+      "rect": [
+        51.3,
+        77.9,
+        499.1,
+        311.0
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 28
+    },
+    {
+      "file": "p034.png",
+      "sourceId": "g8-social-s1-student-book",
+      "pdfPage": 34,
+      "rect": [
+        198.6,
+        112.7,
+        595.3,
+        271.3
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 28
+    },
+    {
+      "file": "p034b.png",
+      "sourceId": "g8-social-s1-student-book",
+      "pdfPage": 34,
+      "rect": [
+        187.7,
+        407.5,
+        319.2,
+        551.7
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 28
+    },
+    {
+      "file": "p040.png",
+      "sourceId": "g8-social-s1-student-book",
+      "pdfPage": 40,
+      "rect": [
+        61.2,
+        148.0,
+        350.2,
+        387.5
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 36
+    },
+    {
+      "file": "p058.png",
+      "sourceId": "g8-social-s1-student-book",
+      "pdfPage": 58,
+      "rect": [
+        69.0,
+        35.7,
+        557.0,
+        367.7
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 56
+    },
+    {
+      "file": "p075.png",
+      "sourceId": "g8-social-s1-student-book",
+      "pdfPage": 75,
+      "rect": [
+        70.8,
+        133.6,
+        509.7,
+        434.6
+      ],
+      "unit": 3,
+      "lesson": 5,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 71
+    },
+    {
+      "file": "p087.png",
+      "sourceId": "g8-social-s1-student-book",
+      "pdfPage": 87,
+      "rect": [
+        101.7,
+        83.9,
+        464.5,
+        446.7
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 84
+    },
+    {
+      "file": "p092.png",
+      "sourceId": "g8-social-s1-student-book",
+      "pdfPage": 92,
+      "rect": [
+        60.7,
+        13.8,
+        536.3,
+        280.5
+      ],
+      "unit": 4,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 89
+    }
+  ]
+}

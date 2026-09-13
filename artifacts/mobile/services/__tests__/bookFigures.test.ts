@@ -112,6 +112,8 @@ describe('figuresForLesson', () => {
       'g8-eng': 'g8-english',
       'g7-eng': 'g7-english',
       'g6-science': 'g6-science',
+      'g8-finlit': 'g8-finlit',
+      'g8-social': 'g8-social',
       'g8-math': 'g8-math',
     };
 
