@@ -57,6 +57,17 @@ services:
   #
   # iqraa-web stays on Render: static, free, never sleeps, nothing to gain
   # from moving. Neon and R2 are unaffected by where compute runs.
+  # ⚠ NOT the deploy path any more, as of 2026-09-13.
+  #
+  # `.github/workflows/web-deploy.yml` builds the bundle and publishes it to
+  # Cloudflare Pages. This block is kept as a rollback route only: Render's
+  # build minutes are capped, so it will serve whatever it last built rather
+  # than anything current. Change EXPO_PUBLIC_* values in that workflow, not
+  # here — editing them here now changes nothing that ships.
+  #
+  # Why the move: Render meters build MINUTES (500/month free), and
+  # `pnpm install` plus an Expo export of this monorepo at ten merges a day
+  # does not fit. See the incident note below, which is what this cost.
   - type: web
     name: iqraa-web
     runtime: static
