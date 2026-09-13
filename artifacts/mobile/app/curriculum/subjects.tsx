@@ -1,12 +1,13 @@
 import React from 'react';
-import { FlatList, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { useAuth } from '@/context/AuthContext';
+import { isTeacherRole, useAuth } from '@/context/AuthContext';
+import { openExternal } from '@/services/externalLinks';
 import {
   Book,
   getBooksForSubjectGrade,
@@ -23,7 +24,10 @@ function DownloadChip({ label, url, icon, color }: {
     <Pressable
       onPress={() => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        Linking.openURL(url);
+        // `openExternal`, not `Linking.openURL`: on react-native-web the latter
+        // replaces the running app in the same tab, so downloading a book threw
+        // away wherever the reader was. That file documents the same failure.
+        void openExternal(url);
       }}
       style={({ pressed }) => [
         styles.downloadChip,
@@ -105,9 +109,13 @@ export default function SubjectsScreen() {
           </View>
         }
         renderItem={({ item: book }) => {
-          // Every mobile role is teacher-or-admin (UserRole has no 'student'),
-          // so the teacher-guide chip renders unconditionally here.
-          const guideUrl = book.guidePdfUrl;
+          // The teacher guide is teacher-only — `catalog.ts` says «Hidden from
+          // students» on the field itself. It rendered to everyone on the
+          // strength of a comment here claiming `UserRole` has no 'student';
+          // it has had one since student accounts went live, and `/curriculum`
+          // is on the non-teacher allowlist, so students were being handed the
+          // answers-and-notes edition of their own book.
+          const guideUrl = isTeacherRole(user?.role) ? book.guidePdfUrl : undefined;
           const units = getUnitsForBook(book.id);
           const lessonCount = units.reduce((n, u) => n + getLessonsForUnit(u.id).length, 0);
           const semesterLabel = getSemesterLabel(book, lang);

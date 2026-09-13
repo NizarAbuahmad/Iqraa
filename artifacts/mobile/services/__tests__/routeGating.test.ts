@@ -96,6 +96,10 @@ describe('isNonTeacherRoute', () => {
       '/messaging/abc-123',
       '/curriculum',
       '/curriculum/lesson-detail',
+      // The library. Reachable only because this allowlist matches by prefix —
+      // pinned here so converting it to exact matching fails loudly instead of
+      // quietly ejecting a student to /notifications.
+      '/curriculum/resources',
       '/profile',
       '/join-class',
       '/claim-required',

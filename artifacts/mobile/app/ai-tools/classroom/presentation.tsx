@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Image,
-  Linking,
   Modal,
   Platform,
   Pressable,
@@ -27,6 +26,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { ActivitySlide, ClassroomActivity } from '@/services/ai/AIService';
 import { getPendingClassroomActivity, clearClassroomActivity } from '@/services/classroomStore';
 import { timerColor, timerSecondsForSlide } from '@/services/presentationUtils';
+import { openExternal } from '@/services/externalLinks';
 import Svg, { Line, Polyline, Rect } from 'react-native-svg';
 import { plotGeometry, visualForSlide } from '@/services/deckVisuals';
 // Shared with both exports so the projected slide and the exported one cannot
@@ -44,12 +44,13 @@ import { hasRenderableMath, isolateForeignRuns, prettifySymPy } from '@/services
 /** Open a media URL outside the app (native fallback — no WebView dep). */
 async function openExternalMedia(url: string): Promise<void> {
   if (!url) return;
+  // `externalLinks.ts` exists because this dance had already been written
+  // twice and drifted; its header records that "a third copy was about to
+  // land, so it moved here instead". This was the fourth. What stays local is
+  // the swallow: mid-presentation there is nothing useful to say, and an
+  // unhandled rejection would surface over the projected slide.
   try {
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      window.open(url, '_blank', 'noopener,noreferrer');
-      return;
-    }
-    await Linking.openURL(url);
+    await openExternal(url);
   } catch {
     // ignore — nothing to project
   }

@@ -15,6 +15,8 @@ import { LessonPrepPanel } from '@/components/ui/LessonPrepPanel';
 import { LessonMediaPanel } from '@/components/ui/LessonMediaPanel';
 import { ReadAloudPracticePanel } from '@/components/ui/ReadAloudPracticePanel';
 import { LessonShelfPanel } from '@/components/ui/LessonShelfPanel';
+import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
+import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
 
 const BLOOMS_COLORS: Record<string, string> = {
   Remember: '#6366F1',
@@ -171,6 +173,27 @@ export default function LessonDetailScreen() {
             nothing when the lesson has no curated media, which is most of
             them until the library is curated. */}
         <LessonMediaPanel lessonId={lesson.id} accent={color} />
+
+        {/* The book's own diagrams for this lesson.
+
+            These were already bundled and already resolved — `BookFiguresPanel`
+            has been rendering them on six teacher screens and inside the exam a
+            student sits since `bookFigureAssets.ts` landed. They were never on
+            the page a student reads while studying, which is the one place a
+            diagram from their own book is most obviously wanted. 249 lessons
+            have them; the panel returns null for the rest.
+
+            Its own note key is exam-worded («الدروس التي يغطّيها هذا الاختبار»),
+            so this passes a lesson-page one instead of reusing a sentence that
+            would name an exam that does not exist here. */}
+        <View style={{ paddingHorizontal: 20 }}>
+          <BookFiguresPanel
+            figures={bookFigureRefsForLesson(lesson.id, lang === 'ar')}
+            isRTL={isRTL}
+            colors={colors}
+            labels={{ title: t('bookFiguresTitle'), note: t('bookFiguresLessonNote') }}
+          />
+        </View>
 
         {/* The one thing on this page built for a student rather than a
             teacher. Renders nothing when the lesson has no curated passage,

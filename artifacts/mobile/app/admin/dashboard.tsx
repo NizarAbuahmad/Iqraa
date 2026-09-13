@@ -10,7 +10,7 @@
  * GET /feedback both 403 for anything but school_admin/system_admin.
  */
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,6 +18,7 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { apiJson } from '@/services/apiClient';
+import { openExternal } from '@/services/externalLinks';
 
 const ACCENT = '#4F46E5';
 const ADMIN_ROLES = ['school_admin', 'system_admin'];
@@ -226,7 +227,7 @@ export default function AdminDashboardScreen() {
                   )}
                 </View>
                 <Pressable
-                  onPress={() => Linking.openURL('https://us.posthog.com')}
+                  onPress={() => { void openExternal('https://us.posthog.com'); }}
                   style={[styles.posthogLink, { borderColor: colors.border, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
                 >
                   <Ionicons name="analytics-outline" size={15} color={colors.mutedForeground} />

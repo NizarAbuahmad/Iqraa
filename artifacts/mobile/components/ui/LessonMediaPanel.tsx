@@ -25,13 +25,14 @@
  * attribution fix.
  */
 import React, { useEffect, useState } from 'react';
-import { Image, Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { externalResourcesForLesson, type ExternalResource } from '@workspace/curriculum';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { youtubeEmbedUrl } from '@/services/classMedia';
 import { loadExternalAsset } from '@/services/externalMedia';
+import { openExternal } from '@/services/externalLinks';
 
 /**
  * One embedded video. Web gets the player; native opens it.
@@ -60,7 +61,7 @@ function VideoItem({ resource, align }: { resource: ExternalResource; align: 'le
         </View>
       ) : (
         <Pressable
-          onPress={() => { void Linking.openURL(resource.sourceUrl); }}
+          onPress={() => { void openExternal(resource.sourceUrl); }}
           style={[styles.openBtn, { borderColor: colors.border, backgroundColor: colors.card }]}
         >
           <Ionicons name="play-circle" size={20} color={colors.foreground} />
