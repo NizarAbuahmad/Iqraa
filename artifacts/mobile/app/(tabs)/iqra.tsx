@@ -549,22 +549,23 @@ function ContextBanner({
               })}
             </View>
 
-            {/* Topic selector */}
-            <Text style={[ctxStyles.modalSectionLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left', marginTop: 18 }]}>
-              {lang === 'ar' ? 'الدرس' : 'Lesson'}
-            </Text>
-            <TopicSelector
-              subjectId={subj.subjectId}
-              gradeId={draftGradeId}
-              value={draftTopic}
-              onChange={setDraftTopic}
-              onSelectionDetail={d => setDraftLessonId(d.lessonId)}
-              lang={lang}
-              isRTL={isRTL}
-              colors={colors}
-              accent={colors.primary}
-              t={t}
-            />
+            {/* Topic selector — no section header here: TopicSelector renders its
+                own «موضوع الدرس» label, so one field carried two labels. The
+                wrapper keeps the 18px gap the removed header used to provide. */}
+            <View style={{ marginTop: 18 }}>
+              <TopicSelector
+                subjectId={subj.subjectId}
+                gradeId={draftGradeId}
+                value={draftTopic}
+                onChange={setDraftTopic}
+                onSelectionDetail={d => setDraftLessonId(d.lessonId)}
+                lang={lang}
+                isRTL={isRTL}
+                colors={colors}
+                accent={colors.primary}
+                t={t}
+              />
+            </View>
           </ScrollView>
 
           {/* CTA at bottom */}
@@ -2997,7 +2998,9 @@ const ctxStyles = StyleSheet.create({
   // the first four off the screen edge (RTL row-reverse, so off to the left)
   // with no scroll to reach them — the subjects were rendered but unreachable.
   subjRow:    { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 },
-  subjPill:   { paddingHorizontal: 14, paddingVertical: 6 },
+  // paddingVertical 8, not 6: at 6 the pill is ~26px tall, well under the 44px
+  // touch target, and these wrap to several rows of small tap targets.
+  subjPill:   { paddingHorizontal: 14, paddingVertical: 8 },
   subjText:   { fontSize: 13 },
   // Modal
   modal:        { flex: 1 },
