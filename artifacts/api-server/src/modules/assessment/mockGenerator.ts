@@ -40,6 +40,7 @@ import {
   type CompetencyKey,
 } from "./competency.ts";
 import type { AnswerKeyCheck } from "@workspace/math-verify";
+import { takeConcreteMath, type DiffTier } from "@workspace/math-practice";
 import { mockableTypes, QUESTION_TYPES } from "./questionTypes.ts";
 
 export interface GeneratedQuestion {
@@ -76,6 +77,13 @@ export interface GenerationRequest {
    * the result so `generationParams` can make the paper reproducible.
    */
   seed?: number;
+  /**
+   * The evaluation's subject. Only `"mathematics"` unlocks the concrete bank
+   * below, because that is the only subject it holds items for — and a bank
+   * item is the one way this generator can produce a question whose answer it
+   * actually knows.
+   */
+  subjectId?: string;
 }
 
 export interface GenerationResult {
@@ -340,6 +348,59 @@ function keyConceptsFor(objective: CurriculumObjective): string[] {
   return [...new Set([...vocabulary.slice(0, 6), ...fromObjective])].slice(0, 8);
 }
 
+/** Difficulty as the practice bank tiers it. */
+const BANK_TIER: Record<Difficulty, DiffTier> = {
+  basic: "easy",
+  standard: "medium",
+  advanced: "hard",
+};
+
+/**
+ * A multiple-choice question drawn from the concrete maths bank.
+ *
+ * This is the only route by which this generator produces a self-marking
+ * question, and it works for exactly one reason: the bank's items are built so
+ * the answer is known by construction, with real misconception distractors
+ * rather than invented ones. Everything else here restates an objective in
+ * prose and leaves the marking to a teacher.
+ *
+ * Returns null rather than guessing whenever the item does not map cleanly —
+ * too few options, or an answer that is not among them. A wrong `optionIds`
+ * here would not look like a bug; it would silently mark a correct student
+ * answer wrong, automatically, for the whole class.
+ */
+function bankMultipleChoice(
+  objective: CurriculumObjective,
+  difficulty: Difficulty,
+  marks: number,
+  session: Set<string>,
+): { body: Record<string, unknown>; expectedAnswer: Record<string, unknown> } | null {
+  const topic = objective.descriptionAr || objective.description;
+  const item = takeConcreteMath(
+    "multiple_choice",
+    topic,
+    null,
+    BANK_TIER[difficulty],
+    "ar",
+    marks,
+    session,
+  );
+  if (!item?.options || item.options.length < 3) return null;
+
+  const texts = item.options.map(o => o.trim()).filter(Boolean);
+  if (texts.length !== item.options.length) return null;
+  if (new Set(texts).size !== texts.length) return null;
+
+  const correctIndex = texts.indexOf(item.answer.trim());
+  if (correctIndex < 0) return null;
+
+  const options = texts.map((text, i) => ({ id: `o${i}`, text }));
+  return {
+    body: { stem: item.text, multiSelect: false, options },
+    expectedAnswer: { optionIds: [options[correctIndex]!.id] },
+  };
+}
+
 /**
  * Open-response type best suited to a competency. Recall and comprehension fit
  * a short answer; application and analysis need room to show working.
@@ -361,7 +422,26 @@ export function generateMockEvaluation(req: GenerationRequest): GenerationResult
   const notes: string[] = [];
   const seed = req.seed ?? Math.floor(Math.random() * 0xffffffff);
   const rng = mulberry32(seed);
-  const available = mockableTypes(req.assessmentTypes);
+  /*
+    Maths unlocks multiple choice. `mockable: false` on that type is the right
+    default — distractors cannot be invented from an objective's title — but it
+    stops being true when there is a bank of items whose answers are known by
+    construction, which is exactly what the maths bank is. Bank-backed types
+    are added here rather than by flipping the flag, because the flag describes
+    the general case and this is the exception to it.
+
+    This is what makes a self-marking evaluation possible with live AI off. For
+    every other subject the bank holds nothing, so nothing changes.
+  */
+  const bankBacked: QuestionType[] =
+    req.subjectId === "mathematics" ? ["multiple_choice"] : [];
+  // Per-request, never the bank module's own set — see takeConcreteMath.
+  const bankSession = new Set<string>();
+
+  const available = [
+    ...mockableTypes(req.assessmentTypes),
+    ...req.assessmentTypes.filter(t => bankBacked.includes(t)),
+  ];
   const unavailableTypes = req.assessmentTypes.filter(t => !available.includes(t));
 
   if (req.objectives.length === 0) {
@@ -421,10 +501,16 @@ export function generateMockEvaluation(req: GenerationRequest): GenerationResult
   }
 
   let objectiveCursor = 0;
+  const mcqAvailable = available.includes("multiple_choice");
+
   for (const competency of COMPETENCY_KEYS) {
     const wanted = allocation[competency];
     const type = pickType(competency, available);
-    if (!type) continue;
+    // `pickType` only ever returns an open-response type. Without this second
+    // condition a request for self-marking types alone — which is precisely
+    // what the quick-evaluation preset sends — fell through every competency
+    // and produced an empty paper.
+    if (!type && !mcqAvailable) continue;
 
     // A random starting phrasing, then cycle: consecutive questions of the
     // same competency never share a stem wording, and regenerating re-rolls
@@ -440,6 +526,40 @@ export function generateMockEvaluation(req: GenerationRequest): GenerationResult
 
       const topic = objective.descriptionAr || objective.description;
       const marks = MARKS_BY_COMPETENCY[competency];
+
+      // The bank first, when the subject has one. A question that marks itself
+      // is worth more to a teacher than a prose prompt they mark by hand, so
+      // this only falls through to the templates when the bank has nothing
+      // left for the objective.
+      if (mcqAvailable) {
+        const mcq = bankMultipleChoice(objective, req.difficulty, marks, bankSession);
+        if (mcq) {
+          questions.push({
+            type: "multiple_choice",
+            body: mcq.body,
+            expectedAnswer: mcq.expectedAnswer,
+            rubric: null,
+            objectiveId: objective.id,
+            competencyKey: competency,
+            difficulty: req.difficulty,
+            marks,
+            skill: objective.skills?.[0] ?? null,
+            gradingMode: QUESTION_TYPES["multiple_choice"].defaultGradingMode,
+            aiMetadata: {
+              generator: "mock",
+              // Deliberately different wording from the template note below:
+              // this one is a real item with a known answer, not a restated
+              // objective, and a teacher reviewing the paper should be able to
+              // tell those apart.
+              note: "drawn from the curated concrete maths bank; not model-authored",
+              objectiveBloomsSource: objective.bloomsSource,
+            },
+          });
+          continue;
+        }
+      }
+
+      if (!type) continue;
       const typeModule = QUESTION_TYPES[type];
       const needsRubric = typeModule.defaultGradingMode === "ai_rubric";
 

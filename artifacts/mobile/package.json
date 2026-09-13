@@ -66,6 +66,7 @@
   "dependencies": {
     "@react-native-google-signin/google-signin": "^16.1.5",
     "@react-navigation/bottom-tabs": "^7.18.14",
+    "@workspace/math-practice": "workspace:*",
     "docx": "^9.7.1",
     "expo-clipboard": "~8.0.8",
     "expo-dev-client": "~6.0.21",

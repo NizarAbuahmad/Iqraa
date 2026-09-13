@@ -110,8 +110,19 @@ export default function NewEvaluationScreen() {
   const [bookId, setBookId] = useState<string | null>(null);
   const [objectives, setObjectives] = useState<CurriculumObjective[]>([]);
   const [selectedObjectives, setSelectedObjectives] = useState<Set<string>>(new Set());
+  /**
+   * The default must not be all-manual. `short_answer` + `open_ended` were both
+   * types `gradeAttempt` leaves out entirely (no deterministic `grade()`), so a
+   * teacher who accepted the defaults got ten questions to mark by hand for
+   * every student — thirty students is three hundred marks, and the tool that
+   * was supposed to save the evening cost it.
+   *
+   * Mixed rather than all-auto on purpose: `multiple_choice` self-marks, and one
+   * open-response type survives so the default paper is still a defensible
+   * assessment and not a quiz.
+   */
   const [selectedTypes, setSelectedTypes] = useState<Set<QuestionType>>(
-    new Set(['short_answer', 'open_ended']),
+    new Set(['multiple_choice', 'short_answer']),
   );
   const [difficulty, setDifficulty] = useState<Difficulty>('standard');
   const [countIdx, setCountIdx] = useState(1); // 10

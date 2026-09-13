@@ -490,6 +490,9 @@ router.post("/evaluations/:id/generate", async (req: AuthenticatedRequest, res) 
         assessmentTypes: evaluation.assessmentTypes,
         count: evaluation.targetQuestionCount,
         difficulty: evaluation.difficulty,
+        // Unlocks the concrete maths bank, and with it the only self-marking
+        // questions this generator can honestly produce.
+        subjectId: evaluation.subjectId,
       });
       // The seed the template variation ran on — with it, this exact paper
       // can be regenerated; without it, "reproducible" would be a lie.
