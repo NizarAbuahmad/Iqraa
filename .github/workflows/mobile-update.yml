@@ -14,18 +14,32 @@
 #
 # Publishes to the `preview` channel, which is what the internally distributed
 # APK builds carry. When the Play Store listing goes live, the store build will
-# carry `production` and this needs a second publish (or a channel switch) —
-# see .claude/plans for the store-release step.
+# carry `production` and this needs a second publish (or a channel switch).
+#
+# BLOCKED, and why the merge trigger is off: EAS caps an update at 1000 assets
+# and this app ships 1368, of which 1290 are the figure PNGs `require()`d by
+# services/bookFigureAssets.ts.
+#
+#   Each update is limited to a maximum of 1000 assets (attempted 1368).
+#
+# No flag fixes that — the cap counts everything the bundle references, not
+# what a device would actually download. Every merge would fail here, and a
+# workflow that always fails is one people stop reading, so it runs by hand
+# until the asset count comes down (serving figures rather than bundling them)
+# or the cap is raised. The figure corpus grows ~25 MB per grade batch, so this
+# gets worse on its own, and the same bundling pushes at Play's AAB size limit.
 name: Mobile OTA update
 
+# DISABLED ON MERGE, deliberately — see the asset-limit note below. Restore
+# the `push` trigger once an update can actually publish:
+#
+#   push:
+#     branches: [main]
+#
 on:
-  push:
-    branches: [main]
-  # Manual trigger, for two cases that would otherwise force a junk commit to
-  # main: proving a newly added EXPO_TOKEN actually works, and re-publishing
-  # after a failed run. The `branch` input also makes this the mechanism for
-  # publishing to the `production` channel once a Play Store build exists,
-  # without needing a second workflow.
+  # Manual only for now. Also covers re-publishing after a failed run, and the
+  # `branch` input is what will publish to the `production` channel once a
+  # Play Store build exists, without needing a second workflow.
   workflow_dispatch:
     inputs:
       branch:
