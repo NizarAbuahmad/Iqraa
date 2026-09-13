@@ -15,6 +15,7 @@ import { LessonPrepPanel } from '@/components/ui/LessonPrepPanel';
 import { LessonMediaPanel } from '@/components/ui/LessonMediaPanel';
 import { ReadAloudPracticePanel } from '@/components/ui/ReadAloudPracticePanel';
 import { LessonShelfPanel } from '@/components/ui/LessonShelfPanel';
+import { askAboutLessonHandoff } from '@/services/lessonShelf';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
 
@@ -140,12 +141,15 @@ export default function LessonDetailScreen() {
           <Pressable
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              const msgText = lang === 'ar'
-                ? `ما الذي يجب أن أعرفه قبل تدريس «${lessonTitle}»؟`
-                : `What should I know before teaching: ${lessonTitle}?`;
               router.push({
                 pathname: '/(tabs)/iqra',
-                params: { initialMessage: msgText, lessonId: lessonId, subjectColor: color },
+                params: {
+                  // `lesson.id`, not the route param: the shelf below pins on the
+                  // resolved lesson and both must name the same one.
+                  ...askAboutLessonHandoff(lesson.id, lessonTitle, lang as 'ar' | 'en'),
+                  subjectColor: color,
+                  askId: String(Date.now()),
+                },
               } as any);
             }}
             style={[styles.askIqraBtn, { backgroundColor: colors.card, borderColor: color, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}

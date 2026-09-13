@@ -233,6 +233,11 @@ export function searchSupportResources(opts: {
   subjectId?: string | null;
   /** Pass explicitly when the caller drops `lesson` but still knows the grade — see buildSupportResourcesContext's widened retry. */
   gradeId?: string | null;
+  /**
+   * A document the teacher named by tapping it, listed first when it survives
+   * the same subject and kind gates as everything else. Unknown id: no-op.
+   */
+  pinnedResourceId?: string;
 }): SupportResource[] {
   const query = opts.query ?? '';
   const limit = opts.limit ?? 5;
@@ -273,9 +278,33 @@ export function searchSupportResources(opts: {
     .filter(x => x.score > 0)
     .sort((a, b) => b.score - a.score || a.r.titleAr.localeCompare(b.r.titleAr, 'ar'));
 
+  // A document the teacher tapped by name outranks the keyword race.
+  //
+  // It cannot be expressed as a score bonus: `scoreResource` legitimately
+  // returns 0 for the right file, because the shelf is built from unit tags and
+  // the score from title tokens, and the two disagree often. So the pin is
+  // admitted ahead of the ranking rather than added to it.
+  //
+  // **Exempt from `kinds`, never from subject.** The kind filter is inferred
+  // from the wording of the query — it guesses what the teacher meant, and here
+  // they said, by tapping a row. It also misfires on exactly this path: the
+  // hand-off message quotes the file's own title, so a worksheet titled «…
+  // اختبار …» infers a quiz intent and filters that very worksheet out of its
+  // own answer. The subject gate is the opposite case and stays: `scoreResource`
+  // returns 0 on a subject mismatch — the rule that stopped «المشروع وإدارته»
+  // coming back with mathematics files — so hoisting blind would make a stale
+  // id a door past it. (The grade and unresolvable-book gates above have already
+  // returned empty by this point, so the pin never reaches them.)
+  const pinned = opts.pinnedResourceId
+    ? RESOURCES.find(r => r.id === opts.pinnedResourceId)
+    : undefined;
+  const pinnedOk = !!pinned && (!subjectHint || pinned.subjectId === subjectHint);
+
   const seen = new Set<string>();
   const out: SupportResource[] = [];
-  for (const { r } of ranked) {
+  // Dedup is by title, so the pinned file appearing again in `ranked` collapses.
+  const ordered = pinnedOk && pinned ? [pinned, ...ranked.map(x => x.r)] : ranked.map(x => x.r);
+  for (const r of ordered) {
     const key = r.titleAr.replace(/\s+/g, ' ').trim();
     if (seen.has(key)) continue;
     seen.add(key);
@@ -285,26 +314,47 @@ export function searchSupportResources(opts: {
   return out;
 }
 
+/**
+ * The support pack as a prompt block.
+ *
+ * `pinnedResourceId` marks the row the teacher opened. It also triggers the
+ * honesty line: naming one file so prominently invites a model to write as
+ * though it had read it, and it has not — the PDFs are gitignored and never
+ * shipped, so all that exists here is a title, an author and a kind off the
+ * manifest. Saying so in the prompt is the difference between citing a
+ * worksheet and inventing its questions.
+ */
 export function formatSupportResourcesBlock(
   resources: SupportResource[],
   lang: 'ar' | 'en',
+  pinnedResourceId?: string,
 ): string {
   if (!resources.length) return '';
   const isAr = lang === 'ar';
   const header = isAr
     ? '📎 مواد مساندة متوفرة في مكتبة اقرأ (للمعلم):'
     : '📎 Support materials in the Iqra library:';
+  const pinnedPresent = !!pinnedResourceId && resources.some(r => r.id === pinnedResourceId);
   const lines = resources.map(r => {
     const kind = kindLabel(r.kind, isAr ? 'ar' : 'en');
     const author = r.authorAr
       ? (isAr ? ` — أ. ${r.authorAr}` : ` — ${r.authorAr}`)
       : '';
-    return `• [${kind}] ${displayTitle(r)}${author}`;
+    const mark = r.id === pinnedResourceId
+      ? (isAr ? ' ← الملف الذي فتحه المعلم' : ' ← the file the teacher opened')
+      : '';
+    return `• [${kind}] ${displayTitle(r)}${author}${mark}`;
   });
+  const notLoaded = isAr
+    ? 'المتوفر عن هذه الملفات عنوانها وكاتبها فقط — محتوى الـ PDF غير محمّل، فلا تنسب إليه أمثلة أو أسئلة.'
+    : 'Only the title and author of these files are known — the PDF content is not loaded, so do not attribute examples or questions to it.';
   const tip = isAr
     ? 'يمكنك رفع أحد هذه الملفات في المحادثة لخطة درس / ورقة عمل أدق.'
     : 'Attach one of these PDFs in chat for a tighter lesson plan / worksheet.';
-  return [header, ...lines, tip].join('\n');
+  // Only when a file is singled out: the plain list already reads as a
+  // bibliography, and a warning on every reply is a warning nobody reads.
+  const body = pinnedPresent ? [...lines, notLoaded] : lines;
+  return [header, ...body, tip].join('\n');
 }
 
 /** Compact block for KB chat / generator grounding. */
@@ -313,9 +363,10 @@ export function buildSupportResourcesContext(
   lessons: KBLesson[],
   lang: 'ar' | 'en',
   limit = 4,
+  pinnedResourceId?: string,
 ): string {
   const lesson = lessons[0] ?? null;
-  const hits = searchSupportResources({ query, lesson, limit });
+  const hits = searchSupportResources({ query, lesson, limit, pinnedResourceId });
   // The widened retry drops the lesson to match on the query alone — but
   // dropping the lesson also dropped the subject and grade it implied, and
   // `detectSubjectFromQuery` only knows maths and chemistry. A
@@ -327,8 +378,37 @@ export function buildSupportResourcesContext(
   const gradeId = lesson ? getBookForLesson(lesson)?.gradeId ?? null : null;
   const resources = hits.length
     ? hits
-    : searchSupportResources({ query, limit, subjectId, gradeId });
-  return formatSupportResourcesBlock(resources, lang);
+    : searchSupportResources({ query, limit, subjectId, gradeId, pinnedResourceId });
+  return formatSupportResourcesBlock(resources, lang, pinnedResourceId);
+}
+
+/** One bank document by id, or null. `RESOURCES` is module-private. */
+export function getSupportResourceById(id: string | null | undefined): SupportResource | null {
+  if (!id) return null;
+  return RESOURCES.find(r => r.id === id) ?? null;
+}
+
+/**
+ * One line acknowledging the document a teacher opened, for replies that carry
+ * no support pack.
+ *
+ * Most shelf hand-off messages quote the file's own title, and a title like
+ * «ورقة عمل …» routes the ask to generation — a branch that produces a
+ * worksheet and never lists support material. So on the majority of taps the
+ * file the teacher opened went entirely unmentioned, which reads as though it
+ * had been used. It was not: nothing reads the PDF. This says both halves —
+ * which file, and that the generated material is not drawn from it.
+ */
+export function pinnedResourceNote(
+  resourceId: string | null | undefined,
+  lang: 'ar' | 'en',
+): string {
+  const r = getSupportResourceById(resourceId);
+  if (!r) return '';
+  const title = displayTitle(r);
+  return lang === 'ar'
+    ? `📎 فتحتَ «${title}» من مكتبة الدرس. محتوى الملف غير محمّل داخل التطبيق، فما ولّدته أعلاه ليس مأخوذًا منه.`
+    : `📎 You opened "${title}" from the lesson library. Its contents are not loaded in the app, so what I generated above is not drawn from it.`;
 }
 
 export function listAllSupportResources(): SupportResource[] {

@@ -9,7 +9,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import { openExternal } from '@/services/externalLinks';
 import {
-  askAboutResourceMessage,
+  askAboutResourceHandoff,
   buildLessonShelf,
   externalUsePolicy,
   type ShelfGroup,
@@ -75,14 +75,19 @@ export function LessonShelfPanel({ lessonId, accent }: Props) {
   // rendered, so counting it would promise 35 files on a shelf showing one.
   const bankTotal = showBank ? shelf.total : 0;
 
+  // The hand-off carries the lesson AND the tapped document, because chat pins
+  // retrieval on both. Passing only the message left the reply to be grounded
+  // by keyword search, which is how tapping a worksheet on this lesson could
+  // come back answering about the lesson chat happened to have selected.
   const ask = (r: SupportResource) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push({
       pathname: '/(tabs)/iqra',
       params: {
-        initialMessage: askAboutResourceMessage(r, shelf.topic, lang as 'ar' | 'en'),
-        lessonId,
+        ...askAboutResourceHandoff(r, shelf, lang as 'ar' | 'en'),
         subjectColor: accent,
+        // Per tap, so asking about the same file twice is not a no-op.
+        askId: String(Date.now()),
       },
     } as any);
   };
