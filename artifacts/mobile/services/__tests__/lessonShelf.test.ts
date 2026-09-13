@@ -129,7 +129,10 @@ describe('subject isolation', () => {
       // Grade 10 math tags are bare (`s1-u2`); every other grade gets an
       // explicit `g{n}-` prefix (`g9-math-s1-u2`) — see bankTagsForParsedUnit.
       // Grade 7 joined 2026-09-11.
-      mathematics: /^(s[12](-u\d+|-matrices)?|g10-math-general|g9-math-s[12](-u\d+)?|g8-math-s[12](-u\d+)?|g7-math-s[12](-u\d+)?)$/,
+      // Grade 6 joined 2026-09-13 and takes the unit form too — maths is
+      // `unitLevel: true`, and only Grade 10 gets the bare `s1-u1` vocabulary,
+      // so Grade 6 units tag `g6-math-s1-u1` with no risk of colliding with it.
+      mathematics: /^(s[12](-u\d+|-matrices)?|g10-math-general|g9-math-s[12](-u\d+)?|g8-math-s[12](-u\d+)?|g7-math-s[12](-u\d+)?|g6-math-s[12](-u\d+)?)$/,
       // Chemistry is `unitLevel: true` in curriculumIds.ts, so a lesson emits
       // BOTH the semester scope and the narrower unit scope — `g9-chem-s1` and
       // `g9-chem-s1-u1`. The `(-u\d+)?` is doing real work here; a Grade 9
@@ -185,11 +188,11 @@ describe('subject isolation', () => {
       // Grade 9 predates Grade 7 here (no Grade 8 PE book exists at all).
       // Grade 7 joined 2026-09-12.
       'physical-education': /^(g9-pe-s[12]|g7-pe-s[12])$/,
-      // Grade 7 and 8's combined «العلوم» books, the only ones this subject
-      // has. No grade-10 alternative here: Grade 10 splits science into the
-      // four subjects above, so there is no bare `science-s[12]` form to
-      // allow. Grade 7 joined 2026-09-12.
-      science: /^(g8-science-s[12]|g7-science-s[12])$/,
+      // The combined «العلوم» books at Grades 6, 7 and 8, the only ones this
+      // subject has. No grade-10 alternative here: Grade 10 splits science into
+      // the four subjects above, so there is no bare `science-s[12]` form to
+      // allow. Grade 7 joined 2026-09-12, Grade 6 on 2026-09-13.
+      science: /^(g8-science-s[12]|g7-science-s[12]|g6-science-s[12])$/,
     };
     for (const lesson of KB_LESSONS) {
       const subjectId = getBookForLesson(lesson)?.subjectId;

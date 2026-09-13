@@ -133,6 +133,45 @@ const KNOWN_BOOKLESS: ReadonlySet<string> = new Set([
   'geography:grade-7',
   'history:grade-7',
   'civic-education:grade-7',
+  // grade-6 joined MVP_GRADE_IDS 2026-09-13 with Mathematics S1 and Science
+  // S1/S2 built — a staged rollout like grade-8's, not grade-7's all-at-once
+  // one, so the sixteen pairs below split three ways. The split is the point:
+  // a flat list would read as "sixteen gaps to close", and eight of them will
+  // never close.
+  //
+  // PERMANENT — the subject does not exist at Grade 6 at all. NCCD teaches one
+  // «العلوم» and one «الدراسات الاجتماعية» book through the primary grades;
+  // the sciences split out at grade-9 and social studies at grade-9, and
+  // financial literacy starts at grade-7. SUBJECTS.grades already says so for
+  // each of these — none declares grade-6 — which is why no book will arrive.
+  // Same fact as the grade-7 and grade-8 halves of this list, one grade down.
+  'chemistry:grade-6',
+  'physics:grade-6',
+  'biology:grade-6',
+  'earth-science:grade-6',
+  'geography:grade-6',
+  'history:grade-6',
+  'civic-education:grade-6',
+  'financial-literacy:grade-6',
+  //
+  // ORDINARY GAPS — the subject is declared at grade-6 and a Grade 6 book for
+  // it exists on disk; it is simply not ingested yet. Delete the line when it
+  // is.
+  'arabic:grade-6',
+  'english:grade-6',
+  'islamic:grade-6',
+  'social:grade-6',
+  'digital-literacy:grade-6',
+  //
+  // ORDINARY GAPS, WITH AN EXTRA STEP — a Grade 6 book exists for each, but
+  // SUBJECTS.grades does not declare grade-6 for them yet (grade-7/8 for the
+  // first two, grade-7/9 for the third). Closing these means extending that
+  // array as well as ingesting the book, so do not read the undeclared range
+  // as evidence the subject stops above Grade 6 — for these three it is the
+  // declaration that trails the curriculum, not the reverse.
+  'creative-arts:grade-6',
+  'vocational-education:grade-6',
+  'physical-education:grade-6',
 ]);
 
 describe('subject/grade coverage across the MVP lists', () => {
