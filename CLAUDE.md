@@ -181,6 +181,23 @@ Shipping to production: [`docs/deploying.md`](./docs/deploying.md).
   teachers since 2026-09-02 as «بلّغ عن مشكلة» in `GeneratorResultActions`. It
   is deliberately open to any authenticated teacher, and it retires
   immediately rather than queuing a review.
+- **`app.json`'s `version` is the OTA compatibility key, not a label.**
+  `runtimeVersion.policy` is `appVersion`, so every build and every published
+  update carries `"1.0.0"` until someone edits that string. An update only
+  reaches a binary with a matching runtime version — which is the whole
+  mechanism, and the trap: **add or remove a native module without bumping
+  `version` and the next `eas update` ships JS that calls into a module the
+  installed binary does not have.** That crashes on launch, and the bad bundle
+  persists across launches, so recovery is a reinstall. Bump `version`
+  whenever the native surface changes — a dependency with a config plugin, an
+  `expo-*` package, anything touching `android/`. Pure JS, content and styling
+  changes never need it. `appVersionSource: "remote"` in `eas.json` bumps
+  `versionCode` only and never touches `version`, so nothing bumps it for you.
+  The `fingerprint` policy would detect this automatically and was tried
+  first: it hashes autolinking output, which embeds `.pnpm/` store paths, so
+  local and EAS fingerprints never matched and every build failed at
+  `CONFIGURE_EXPO_UPDATES`. In a pnpm monorepo that policy is not usable
+  without excluding the very inputs it exists to watch.
 - **Extensionless relative imports only work through esbuild.** Anything loaded
   directly by `node --test` needs an explicit `.ts` extension.
 - **The OpenAI client throws at module scope without a key**, which makes
