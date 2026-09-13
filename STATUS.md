@@ -43,6 +43,26 @@ an announcement by default» below.
 
 ## What works today (verified, not assumed)
 
+- **A teacher can set, replace and remove their own profile picture**
+  (2026-09-09): `app/(tabs)/profile.tsx`, `POST`/`DELETE /auth/users/avatar`.
+  Uploads into the `iqraa-public` R2 bucket (anonymous-read, non-expiring
+  URL) rather than `iqraa-media`'s presigned-URL pattern, since an avatar is
+  rendered small and repeatedly. Scope is deliberately self-only: the shared
+  `Avatar.tsx` used in messaging/notifications/groups still shows initials
+  for everyone else — see «A profile picture landed, and it stops at the
+  signed-in user» below. Verified end to end against a local Postgres and a
+  stand-in for the public bucket, in a real browser: upload, the photo
+  rendering in the circular avatar, remove reverting to initials, and the
+  confirm dialog. **Not verified against real Cloudflare R2** — no
+  credentials in this sandbox — though `putPublicObject` is the same
+  `S3Client` call `putObject` already makes in production, just a different
+  `Bucket` name. **Schema pushed to production 2026-09-13** — `avatar_key` was
+  added to Neon directly as `ALTER TABLE users ADD COLUMN avatar_key text`
+  rather than through `drizzle-kit push`; the column is nullable with no
+  default, which is what the schema declares, so the two are identical in
+  effect. `R2_PUBLIC_BUCKET`/`R2_PUBLIC_BASE_URL` are **still unset on Cloud
+  Run**, so the upload route 503s in production until they are set and the API
+  is hand-deployed.
 - **In-app messaging between teachers, parents and students** (2026-09-04):
   claim-code signup, teacher↔parent and teacher↔student direct threads,
   class-group and teacher-made custom groups, image attachments, block and
@@ -789,11 +809,11 @@ and grade?". Measured first, through the real deck builder** — `buildLessonDec
 run over all 1097 catalog lessons with a stub `figureUri`, counting the media
 slides it returns:
 
-| | before | sciences | hist/geo | g8 science | g8 maths |
-| --- | --- | --- | --- | --- | --- |
-| lessons whose deck carries a book figure | **122** | 159 | 210 | 220 | **249** |
-| figure slides across all decks | 388 | 515 | 604 | 643 | **726** |
-| live subject×grade pairs with nothing | 29 of 37 | 25 | 21 | 20 | **19 of 37** |
+| | before | sciences | hist/geo | g8 sci | g8 maths | English |
+| --- | --- | --- | --- | --- | --- | --- |
+| lessons whose deck carries a book figure | **122** | 159 | 210 | 220 | 249 | **324** |
+| figure slides across all decks | 388 | 515 | 604 | 643 | 726 | **822** |
+| live subject×grade pairs with nothing | 29 of 37 | 25 | 21 | 20 | 19 | **17 of 39** |
 
 (The catalog itself grew from 1097 to 1134 lessons over these days, so the
 denominator moves; the numerator is what these changes did.)
@@ -1006,17 +1026,46 @@ y=90% in S1 and y=84-88% in S2 — so they were culled by that signature after
 sampling 18 of each to confirm, rather than by eye. Note the two books differ
 enough that a filter tuned on S1 caught **none** of S2's.
 
+**English, all three grades, 2026-09-13 — and a wrong-placement bug closed
+with it.** 110 photos extracted, **96 kept**; Grade 9 35 of 70 lessons, Grade 8
+23 of 70, Grade 10 10 → 27 of 100.
+
+The Grade 10 half was already shipped and **already wrong**.
+`extract_book_photos.py` returned only the unit — it counts «LESSON 1A» header
+resets — and stamped `lesson: 1` on every crop. That was exact while the
+catalog modelled a unit as ONE lesson, and silently wrong from 2026-09-10, when
+the catalogs took the seven the book prints: **38 of Grade 10's 40 photos were
+filed under a lesson they do not come from**. Nothing failed, because a wrong
+lesson reads exactly like a right one — and two tests plus both catalogs'
+`known_gaps` recorded the behaviour as a known approximation rather than a
+defect, which is how it survived.
+
+The fix is four lines: the header the extractor already parses carries the
+lesson number, and `where_of_page` now returns `(unit, lesson)` instead of the
+unit alone. Grade 10's index was **re-stamped in place** rather than
+re-extracted, so the human review of those 40 crops was not thrown away; 38 of
+40 moved. The two tests that asserted `lesson === 1` are inverted, and a third
+now fails if any grade's photos collapse back onto lesson 1.
+
+Worth noting for the next book: this is the second silent no-op in this
+workflow in two days. The map-entry generator's SCOPE edit did not match
+(a previous round had appended a key to the line being replaced) and it emitted
+zero English entries without complaining — found only because the count was
+obviously wrong. Both are now assert-on-match.
+
 **What still has no figure at all, and why:**
 
 - **Grade 8 — eight of ten subjects, 286 lessons.** Science S1 and both maths
   books are done (above). Science S2 has no opener text at all. Untouched:
-  Arabic, English, Islamic, social, digital literacy, financial literacy,
+  Arabic, Islamic, social, digital literacy, financial literacy,
   creative arts, vocational.
 - **Arabic and Islamic** (192 lessons): measured and abandoned 2026-09-05, see
   the section below. Unchanged.
-- **English** (240 lessons across three grades): Grade 10 has 40 photos from
-  `extract_book_photos.py`; Grade 9 and Grade 8 English have never been run
-  through it.
+- **English**: done for Grades 10, 9 and 8 (above). **Grade 7** English is
+  the one left — 72 lessons, and its catalog arrived while this was in flight,
+  so it has never been through the photo pipeline. Note its S2 units start at
+  5, not 6 like the other three grades, so it needs its own `UNIT_OFFSET`
+  rather than a copied one.
 - **Grade 9 history S2** (13 lessons) and most of **Grade 9 geography S2** —
   the two books above that this batch could not use.
 - **Civic education and digital literacy**: probed, **0 lesson starts** in
@@ -1156,6 +1205,82 @@ suite (1280 tests) pass; the projected slide itself has not been looked at.
 `hidden: true` (since 2026-08-18) and was not touched. The «GeoGebra» strings
 in `lib/curriculum/src/data/extracted/*.json` are the MoE textbooks telling
 students to use it — quoted curriculum, not an integration.
+
+## A profile picture landed, and it stops at the signed-in user, 2026-09-09
+
+A teacher can now tap their own avatar on `app/(tabs)/profile.tsx` to pick a
+photo (`services/avatarPick.ts`, downscaled to a 512px long edge — an avatar
+never needs a lesson-scan-sized image) or remove it back to initials. Server
+side: `lib/db/src/schema/users.ts` gained a nullable `avatarKey` (a key, not
+a URL — `DELETE` needs something to hand `deletePublicObject` without
+parsing one back out of a URL); `POST`/`DELETE /auth/users/avatar`
+(`routes/auth.ts`) follow `routes/lessonMedia.ts`'s existing data-URL-in-JSON
+pattern, with their own narrower `avatarUpload.ts` (image mimes only, a
+4MB cap — a third of lesson media's 8MB, since the client already downscaled)
+and `avatarUrlFor()` folding a null key to a null URL at every one of the
+five sites that serialise a `User` (register, login, google, `/me`, `PATCH
+/users/profile`).
+
+**Chose the public bucket over the private/presigned pattern deliberately.**
+`lessonMedia.ts` signs a 1-hour URL per fetch — fine for a document opened
+once, awkward for something rendered in a list repeatedly. An avatar goes
+into `iqraa-public` instead (see `docs/adding-a-book.md`'s "The two
+buckets") behind a stable, non-expiring URL. This is that bucket's **first
+runtime writer** — every book PDF in it before now arrived by hand through
+the Cloudflare dashboard. `lib/r2.ts` gained `putPublicObject`,
+`deletePublicObject`, `newAvatarKey` and `publicUrl`, all sharing the
+existing `S3Client` (same account, same credentials, just a different
+`Bucket` name) and gated by their own `isPublicR2Configured()` — true only
+when `R2_PUBLIC_BASE_URL` is *also* set, since composing a URL (rather than
+signing one) needs the bucket's own `pub-<hash>.r2.dev` origin.
+
+**Deliberately does not touch `components/ui/Avatar.tsx`.** That component
+renders *other* people — message senders, thread participants, group
+members — in six screens across messaging, notifications and group
+management. Making their photos appear there means threading `avatarUrl`
+through every message/notification/roster payload those screens read, not
+just adding an `<Image>` to one component; out of scope for "a teacher can
+change their own profile picture." `Avatar.tsx`'s own header comment now
+says so, so the gap reads as a decision, not a stale claim next time someone
+reaches for it.
+
+**Verified, with the limits stated plainly:**
+- Started a local Postgres, pushed the schema (`avatarKey` column exists —
+  confirmed with `\d users`), ran the real built api-server against it.
+  `POST /auth/register`, `GET /auth/me` and `PATCH /users/profile` all
+  return `avatarUrl` (null on a fresh account).
+- `POST /auth/users/avatar` correctly answers 503
+  (`{"code":"avatar_unavailable"}`) with `R2_PUBLIC_BASE_URL` unset —
+  proving the feature fails closed rather than silently, the same shape
+  every other optional integration in this app uses.
+- Full round trip in a real browser (Playwright against Expo web): set the
+  database's `avatar_key` to an object served by a local stand-in for the
+  public bucket, confirmed the photo actually renders inside the circular
+  avatar (not just that the URL resolves), that tapping the camera badge
+  opens a real OS file chooser, that the X badge only appears when a photo
+  is set, that removing it fires the Arabic confirm dialog
+  («هل تريد إزالة صورة الملف الشخصي؟») and reverts the UI to initials, and
+  that the DB's `avatar_key` actually clears — not merely that the client
+  stopped rendering it.
+- `pnpm run typecheck` clean across the whole monorepo; api-server 517/517
+  (8 new: `avatarUpload.test.ts`, `r2.test.ts`); mobile 1259/1259 (10 skipped,
+  pre-existing, unrelated).
+- **Not verified: real Cloudflare R2.** No credentials in this sandbox, so
+  `putPublicObject`/`deletePublicObject` were exercised against a local
+  stand-in, not the actual `iqraa-public` bucket — though the call shape is
+  identical to `putObject`, which is proven in production (see the R2 rows
+  in `docs/deploying.md`'s secret-proving table).
+- **Production, partly.** The schema half is done: `avatar_key` was added to
+  Neon on 2026-09-13, applied as the equivalent `ALTER TABLE users ADD COLUMN
+  avatar_key text` rather than through `drizzle-kit push` — nullable, no
+  default, exactly what the schema declares. Confirm with `pnpm --filter
+  @workspace/db run verify-schema`, which asks only whether the table exists,
+  so it will not catch a column typo; the `/auth/me` payload carrying
+  `avatarUrl` will. Still outstanding: `R2_PUBLIC_BUCKET` and
+  `R2_PUBLIC_BASE_URL` on Cloud Run, and the hand deploy of `iqraa-api` that a
+  merge does not do — see `docs/deploying.md`'s R2 section, updated with them.
+  Until those land this ships correctly gated: the upload route 503s rather
+  than 500ing or writing to the wrong place.
 
 ## Student accounts went live, reversing the v1 decision, 2026-09-07
 

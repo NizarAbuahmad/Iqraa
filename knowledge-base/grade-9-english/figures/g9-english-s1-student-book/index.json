@@ -1,0 +1,357 @@
+{
+  "sourceId": "g9-english-s1-student-book",
+  "figures": [
+    {
+      "file": "p013.png",
+      "sourceId": "g9-english-s1-student-book",
+      "pdfPage": 13,
+      "rect": [
+        14.2,
+        598.6,
+        618.0,
+        869.8
+      ],
+      "unit": 1,
+      "lesson": 6,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p014.png",
+      "sourceId": "g9-english-s1-student-book",
+      "pdfPage": 14,
+      "rect": [
+        0.0,
+        615.8,
+        609.4,
+        870.4
+      ],
+      "unit": 1,
+      "lesson": 7,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p014b.png",
+      "sourceId": "g9-english-s1-student-book",
+      "pdfPage": 14,
+      "rect": [
+        360.1,
+        313.7,
+        609.5,
+        616.1
+      ],
+      "unit": 1,
+      "lesson": 7,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p016.png",
+      "sourceId": "g9-english-s1-student-book",
+      "pdfPage": 16,
+      "rect": [
+        302.8,
+        289.8,
+        653.7,
+        616.9
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p018.png",
+      "sourceId": "g9-english-s1-student-book",
+      "pdfPage": 18,
+      "rect": [
+        312.3,
+        415.3,
+        609.4,
+        664.3
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p019.png",
+      "sourceId": "g9-english-s1-student-book",
+      "pdfPage": 19,
+      "rect": [
+        310.6,
+        284.8,
+        586.6,
+        699.4
+      ],
+      "unit": 2,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p022.png",
+      "sourceId": "g9-english-s1-student-book",
+      "pdfPage": 22,
+      "rect": [
+        304.6,
+        33.2,
+        593.2,
+        257.7
+      ],
+      "unit": 2,
+      "lesson": 5,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p024.png",
+      "sourceId": "g9-english-s1-student-book",
+      "pdfPage": 24,
+      "rect": [
+        107.0,
+        400.2,
+        610.5,
+        870.2
+      ],
+      "unit": 2,
+      "lesson": 7,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p025.png",
+      "sourceId": "g9-english-s1-student-book",
+      "pdfPage": 25,
+      "rect": [
+        329.9,
+        378.7,
+        563.4,
+        685.0
+      ],
+      "unit": 2,
+      "lesson": 7,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p026.png",
+      "sourceId": "g9-english-s1-student-book",
+      "pdfPage": 26,
+      "rect": [
+        73.1,
+        698.6,
+        566.9,
+        870.3
+      ],
+      "unit": 2,
+      "lesson": 7,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p028.png",
+      "sourceId": "g9-english-s1-student-book",
+      "pdfPage": 28,
+      "rect": [
+        -0.0,
+        375.5,
+        609.5,
+        744.8
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p034.png",
+      "sourceId": "g9-english-s1-student-book",
+      "pdfPage": 34,
+      "rect": [
+        81.6,
+        117.9,
+        547.1,
+        434.0
+      ],
+      "unit": 3,
+      "lesson": 6,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p036.png",
+      "sourceId": "g9-english-s1-student-book",
+      "pdfPage": 36,
+      "rect": [
+        6.6,
+        97.5,
+        609.7,
+        530.8
+      ],
+      "unit": 3,
+      "lesson": 7,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p042.png",
+      "sourceId": "g9-english-s1-student-book",
+      "pdfPage": 42,
+      "rect": [
+        272.8,
+        295.7,
+        695.8,
+        858.8
+      ],
+      "unit": 4,
+      "lesson": 4,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p044.png",
+      "sourceId": "g9-english-s1-student-book",
+      "pdfPage": 44,
+      "rect": [
+        -18.7,
+        66.4,
+        301.5,
+        301.0
+      ],
+      "unit": 4,
+      "lesson": 5,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p046.png",
+      "sourceId": "g9-english-s1-student-book",
+      "pdfPage": 46,
+      "rect": [
+        53.8,
+        84.7,
+        557.9,
+        300.8
+      ],
+      "unit": 4,
+      "lesson": 7,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p048.png",
+      "sourceId": "g9-english-s1-student-book",
+      "pdfPage": 48,
+      "rect": [
+        0.0,
+        -0.2,
+        609.4,
+        268.2
+      ],
+      "unit": 4,
+      "lesson": 7,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p049.png",
+      "sourceId": "g9-english-s1-student-book",
+      "pdfPage": 49,
+      "rect": [
+        -13.6,
+        38.9,
+        341.6,
+        211.5
+      ],
+      "unit": 4,
+      "lesson": 7,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p050.png",
+      "sourceId": "g9-english-s1-student-book",
+      "pdfPage": 50,
+      "rect": [
+        271.3,
+        239.1,
+        633.9,
+        571.8
+      ],
+      "unit": 5,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p052.png",
+      "sourceId": "g9-english-s1-student-book",
+      "pdfPage": 52,
+      "rect": [
+        310.8,
+        77.7,
+        590.6,
+        415.7
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p056.png",
+      "sourceId": "g9-english-s1-student-book",
+      "pdfPage": 56,
+      "rect": [
+        -0.1,
+        -0.1,
+        511.3,
+        186.8
+      ],
+      "unit": 5,
+      "lesson": 6,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p062.png",
+      "sourceId": "g9-english-s1-student-book",
+      "pdfPage": 62,
+      "rect": [
+        56.9,
+        554.9,
+        303.3,
+        867.4
+      ],
+      "unit": 5,
+      "lesson": 7,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    }
+  ]
+}

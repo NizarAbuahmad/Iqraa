@@ -36,14 +36,14 @@ before they are wired into the app.
 Placement
 ─────────
 These books print «LESSON 1A».."7A" at 18pt in the page header and restart the
-count in each unit, which is the whole outline. This script uses only the reset
-count — the UNIT number — and stamps every crop `lesson: 1`. That was exact
-while the catalog modelled a unit as one lesson; since 2026-09-10 it models the
-seven the book prints, so a crop now lands on the unit's FIRST lesson rather
-than on the lesson whose page it came from. The header it already matches
-carries the lesson number, so closing that is a small change here plus a
-re-run and a re-map. Pages before the first LESSON header are front matter and
-yield nothing.
+count in each unit, which is the whole outline: the RESET gives the unit and
+the header itself gives the lesson. `where_of_page` returns both.
+
+It returned the unit alone until 2026-09-13 and stamped every crop `lesson: 1`.
+That was exact while the catalog modelled a unit as one lesson; the 2026-09-10
+catalogs carry the seven the book prints, which left six of every seven photos
+filed under a lesson they do not come from. Pages before the first LESSON
+header are front matter and yield nothing.
 
 Usage
 ─────
@@ -76,6 +76,13 @@ ROOT = Path(__file__).resolve().parents[1]
 PDF_ROOT = Path(os.environ.get("IQRAA_PDF_ROOT") or ROOT)
 
 KB = "knowledge-base/grade-10-english/support-pdfs/"
+KB_G9 = "knowledge-base/grade-9-english/support-pdfs/"
+# Grade 8 has no `knowledge-base/` tree and no manifest row; the id below is
+# the one a manifest row would have to use, so adding one later needs no
+# rename (`g9-physics-s1-student-book` had to be renamed once for exactly
+# that reason).
+MIRROR_G8 = ("C:/Users/Lenovo/Downloads/Raya studio/Iqraa/Calude app/"
+             "Knowledge Base/8th grade/English/")
 
 BOOKS: dict[str, tuple[str, str]] = {
     "eng-s1-student-book": (
@@ -88,6 +95,26 @@ BOOKS: dict[str, tuple[str, str]] = {
     "eng-s2-student-book": (
         "grade-10-english",
         KB + "كتاب الطالب لمادة اللغة الإنجليزية الصف العاشر الفصل الثاني.pdf",
+    ),
+    # ── Grades 9 and 8, added 2026-09-13 ─────────────────────────────────────
+    # Same series and same «LESSON 1A» header as Grade 10, and their catalogs
+    # carry the same five units of seven lessons — so they need no new
+    # detection, only these rows.
+    "g9-english-s1-student-book": (
+        "grade-9-english",
+        KB_G9 + "كتاب الطالب لمادة اللغة الإنجليزية الصف التاسع الفصل الأول.pdf",
+    ),
+    "g9-english-s2-student-book": (
+        "grade-9-english",
+        KB_G9 + "كتاب الطالب لمادة اللغة الإنجليزية الصف التاسع الفصل الثاني.pdf",
+    ),
+    "g8-english-s1-student-book": (
+        "grade-8-english",
+        MIRROR_G8 + "كتاب الطالب لمادة اللغة الإنجليزية للصف الثامن الفصل الأول.pdf",
+    ),
+    "g8-english-s2-student-book": (
+        "grade-8-english",
+        MIRROR_G8 + "كتاب الطالب لمادة اللغة الإنجليزية للصف الثامن الفصل الثاني.pdf",
     ),
 }
 
@@ -102,9 +129,25 @@ MAX_ASPECT = 4.0
 MIN_PIXELS = 60_000
 
 
-def unit_of_page(doc) -> dict[int, int]:
-    """Page number (1-based) → unit number, from the LESSON header resets."""
-    at: dict[int, int] = {}
+def where_of_page(doc) -> dict[int, tuple[int, int]]:
+    """Page number (1-based) → (unit, lesson), from the LESSON headers.
+
+    The unit comes from the header RESETS — «LESSON 1A» starting over is a new
+    unit, which is the only statement of the unit these books make. The lesson
+    is the header itself, and taking it is the whole difference between this
+    and the version that shipped on 2026-09-05.
+
+    That version returned the unit alone and every crop was stamped
+    `lesson: 1`. It was exact while the catalog modelled a unit as ONE lesson;
+    since 2026-09-10 the catalogs carry the seven the book prints, so stamping
+    1 put six of every seven photos on a lesson they do not come from — a
+    wrong lesson, which reads exactly like a right one. The number was being
+    parsed and discarded on the line below.
+
+    A page with no header inherits the last one seen, which is what carries a
+    lesson across its own continuation pages.
+    """
+    at: dict[int, tuple[int, int]] = {}
     unit, prev = 0, None
     for i, page in enumerate(doc):
         nums = set()
@@ -119,7 +162,7 @@ def unit_of_page(doc) -> dict[int, int]:
                 unit += 1
             prev = num
         if unit:
-            at[i + 1] = unit
+            at[i + 1] = (unit, prev)
     return at
 
 
@@ -178,7 +221,7 @@ def main() -> None:
             continue
 
         doc = pymupdf.open(pdf)
-        units = unit_of_page(doc)
+        where = where_of_page(doc)
         outdir = ROOT / "knowledge-base" / subject / "figures" / source_id
         outdir.mkdir(parents=True, exist_ok=True)
 
@@ -186,8 +229,8 @@ def main() -> None:
         seen_on_page: dict[int, int] = {}
         skipped_front = 0
         for n, rect, _digest in photos_in(doc):
-            unit = units.get(n + 1)
-            if unit is None:
+            at = where.get(n + 1)
+            if at is None:
                 # Before the first LESSON header: cover, contents, credits.
                 skipped_front += 1
                 continue
@@ -202,11 +245,8 @@ def main() -> None:
                 "sourceId": source_id,
                 "pdfPage": n + 1,
                 "rect": [round(v, 1) for v in rect],
-                "unit": unit,
-                # Unit granularity: every photo lands on lesson 1 of its unit.
-                # See "Placement" above — this is now an approximation, not an
-                # identity, and the page header carries what would fix it.
-                "lesson": 1,
+                "unit": at[0],
+                "lesson": at[1],
                 "lessonTitleEn": None,
                 "lessonTitleAr": None,
                 "lessonStartPage": None,

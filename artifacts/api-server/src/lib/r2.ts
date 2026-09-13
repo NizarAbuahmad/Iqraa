@@ -41,8 +41,27 @@ function bucket(): string {
   return process.env.R2_BUCKET || "iqraa-media";
 }
 
+/**
+ * A second, anonymous-read bucket — see `docs/adding-a-book.md`'s "The two
+ * buckets". Same account and credentials as the private one, just a
+ * different `Bucket` name, so it shares `r2Client()`.
+ */
+function publicBucket(): string {
+  return process.env.R2_PUBLIC_BUCKET || "iqraa-public";
+}
+
 export function isR2Configured(): boolean {
   return r2Client() !== null;
+}
+
+/**
+ * Distinct from `isR2Configured()`: an avatar upload also needs
+ * `R2_PUBLIC_BASE_URL` (the bucket's `pub-<hash>.r2.dev` origin) to hand back
+ * a URL the client can render, which the private-bucket lesson-media path
+ * never needed since it signs a URL instead of composing one.
+ */
+export function isPublicR2Configured(): boolean {
+  return r2Client() !== null && !!process.env.R2_PUBLIC_BASE_URL;
 }
 
 /**
@@ -62,6 +81,11 @@ export function newChatMediaKey(extension: string): string {
   return `chat-media/${randomUUID()}${extension}`;
 }
 
+/** Same reasoning as newLessonMediaKey, but under the public bucket's own `avatars/` prefix. */
+export function newAvatarKey(extension: string): string {
+  return `avatars/${randomUUID()}${extension}`;
+}
+
 /**
  * A student's read-aloud recording. Own prefix for the same reasons as the two
  * above, and one more that is specific to it: this is the only object in the
@@ -77,6 +101,28 @@ export async function putObject(key: string, body: Buffer, contentType: string):
   const client = r2Client();
   if (!client) throw new Error("R2 is not configured");
   await client.send(new PutObjectCommand({ Bucket: bucket(), Key: key, Body: body, ContentType: contentType }));
+}
+
+/** Like `putObject`, but into the anonymous-read bucket — for content meant to be linked directly, not signed. */
+export async function putPublicObject(key: string, body: Buffer, contentType: string): Promise<void> {
+  const client = r2Client();
+  if (!client) throw new Error("R2 is not configured");
+  await client.send(
+    new PutObjectCommand({ Bucket: publicBucket(), Key: key, Body: body, ContentType: contentType }),
+  );
+}
+
+/**
+ * A stable, non-expiring URL for an object in the public bucket — no
+ * signing, unlike `presignedGetUrl`, since the bucket already answers
+ * anonymous GETs. Null when `R2_PUBLIC_BASE_URL` isn't set, the same
+ * "can't resolve right now" shape `presignedGetUrl` uses for its own failure
+ * case.
+ */
+export function publicUrl(key: string): string | null {
+  const base = process.env.R2_PUBLIC_BASE_URL;
+  if (!base) return null;
+  return `${base.replace(/\/+$/, "")}/${key}`;
 }
 
 /**
@@ -104,4 +150,11 @@ export async function deleteObject(key: string): Promise<void> {
   const client = r2Client();
   if (!client) return;
   await client.send(new DeleteObjectCommand({ Bucket: bucket(), Key: key }));
+}
+
+/** Like `deleteObject`, but from the public bucket. */
+export async function deletePublicObject(key: string): Promise<void> {
+  const client = r2Client();
+  if (!client) return;
+  await client.send(new DeleteObjectCommand({ Bucket: publicBucket(), Key: key }));
 }

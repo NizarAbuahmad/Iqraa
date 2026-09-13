@@ -1,6 +1,10 @@
 /**
- * Initials-only avatar — no photo upload exists anywhere in this app to hang
- * a picture on, so this is the whole of "who is this" for now.
+ * Initials-only avatar for *other* people — messaging, notifications, group
+ * member lists. Since 2026-09-09 a teacher can set their own profile picture
+ * (`app/(tabs)/profile.tsx`, `user.avatarUrl`), but that hasn't propagated
+ * here yet: doing so means threading `avatarUrl` through every message,
+ * notification and roster payload this component reads from, not just
+ * adding an `<Image>` here.
  */
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';

@@ -53,6 +53,8 @@ export interface User {
   email: string;
   role: UserRole;
   preferredLanguage: 'en' | 'ar';
+  /** A public, stable R2 URL, or null to show initials. */
+  avatarUrl: string | null;
   createdAt: string;
   /**
    * Whether a parent/student account has claimed any roster row yet. Absent
@@ -116,6 +118,9 @@ interface AuthContextType {
   resetPassword: (email: string, code: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: { preferredLanguage?: string; firstName?: string; lastName?: string }) => Promise<void>;
+  /** Throws with the server's own message (e.g. "too large", "not set up yet") on failure. */
+  uploadAvatar: (dataUrl: string) => Promise<void>;
+  removeAvatar: () => Promise<void>;
   /**
    * Irreversible. Pass `password` for an ordinary account, or `confirmEmail`
    * for a Google-only one — the server picks which it will accept based on
@@ -139,6 +144,7 @@ type ApiUser = {
   email: string;
   role: string;
   preferredLanguage: string;
+  avatarUrl?: string | null;
   createdAt: string;
   lastLogin?: string;
   hasRosterLink?: boolean;
@@ -154,6 +160,7 @@ function toUser(apiUser: ApiUser): User {
     role: apiUser.role as UserRole,
     preferredLanguage: (apiUser.preferredLanguage as 'en' | 'ar') ?? 'en',
     language: (apiUser.preferredLanguage as 'en' | 'ar') ?? 'en',
+    avatarUrl: apiUser.avatarUrl ?? null,
     createdAt: apiUser.createdAt,
     hasRosterLink: apiUser.hasRosterLink,
     subjects: [],
@@ -422,6 +429,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(toUser(updated));
   }, []);
 
+  const uploadAvatar = useCallback(async (dataUrl: string) => {
+    const { avatarUrl } = await apiJson<{ avatarUrl: string | null }>('/auth/users/avatar', {
+      method: 'POST',
+      body: JSON.stringify({ dataUrl }),
+    });
+    setUser(prev => (prev ? { ...prev, avatarUrl } : prev));
+  }, []);
+
+  const removeAvatar = useCallback(async () => {
+    await apiJson<{ avatarUrl: string | null }>('/auth/users/avatar', { method: 'DELETE' });
+    setUser(prev => (prev ? { ...prev, avatarUrl: null } : prev));
+  }, []);
+
   const deleteAccount = useCallback(
     async (proof: { password?: string; confirmEmail?: string }) => {
       // Push token first, for the same reason logout does it first: after the
@@ -468,6 +488,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         resetPassword,
         logout,
         updateProfile,
+        uploadAvatar,
+        removeAvatar,
         deleteAccount,
         markRosterClaimed,
       }}
