@@ -16,6 +16,21 @@
 # APK builds carry. When the Play Store listing goes live, the store build will
 # carry `production` and this needs a second publish (or a channel switch) —
 # see .claude/plans for the store-release step.
+#
+# Asset count is the constraint to respect here. EAS caps an update at 1000
+# assets and this app references 1368, 1290 of them the figure PNGs that
+# services/bookFigureAssets.ts require()s. app.json's
+# `updates.assetPatternsToBeBundled` keeps those out of updates — they stay
+# embedded in the binary, which is what preserves bookFigureUri.ts's "figures
+# need no network and no API" property.
+#
+# The consequence to remember: a figure added after a build cannot reach a
+# device over the air. It will be missing until the next build, which
+# bookFigureUri.ts already degrades gracefully for (it returns null and callers
+# drop the slide). So a grade that adds figures rides a rebuild — which is also
+# Expo's own advice, and the reason the rule exists rather than being a
+# workaround. `npx expo-updates assets:verify` checks this properly, but needs
+# an app.manifest from a real build, so it cannot run here yet.
 name: Mobile OTA update
 
 on:
