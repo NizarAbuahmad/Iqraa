@@ -10,7 +10,10 @@
     "newArchEnabled": true,
     "updates": {
       "url": "https://u.expo.dev/83fc6522-3051-4916-a830-35e0d88f9dd2",
-      "fallbackToCacheTimeout": 0
+      "fallbackToCacheTimeout": 0,
+      "assetPatternsToBeBundled": [
+        "assets/images/**/*.png"
+      ]
     },
     "runtimeVersion": {
       "policy": "fingerprint"
