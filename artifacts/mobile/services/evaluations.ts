@@ -8,6 +8,16 @@
  */
 import { apiFetch } from './apiClient.ts';
 
+/**
+ * Mirrors `QuestionType` in `lib/db/src/schema/evaluations.ts`.
+ *
+ * Copied rather than imported on purpose: `@workspace/db` is Drizzle and `pg`,
+ * and making the client depend on the database layer to share one string union
+ * would pull a Postgres driver towards a phone bundle. The cost of the copy is
+ * that it can drift silently — the server would happily serve a type this list
+ * has never heard of — so `questionTypeParity.test.ts` in api-server reads this
+ * file and fails when the two disagree.
+ */
 export type QuestionType =
   | 'multiple_choice'
   | 'true_false'
@@ -16,7 +26,8 @@ export type QuestionType =
   | 'short_answer'
   | 'open_ended'
   | 'problem_solving'
-  | 'practical_task';
+  | 'practical_task'
+  | 'read_aloud';
 
 export type Difficulty = 'basic' | 'standard' | 'advanced';
 export type EvaluationStatus = 'draft' | 'published' | 'closed';
@@ -185,7 +196,10 @@ export async function getEvaluation(
 }
 
 export async function generateEvaluation(id: string): Promise<GenerateResult> {
-  const res = await apiFetch(`/evaluations/${id}/generate`, { method: 'POST' });
+  // Writes a whole paper through OpenAI (api-server routes/evaluations.ts), so
+  // it is one of the two calls in the app that outlive apiFetch's 15s default.
+  // 45s is the number RemoteAIService.postJSON already uses for the same work.
+  const res = await apiFetch(`/evaluations/${id}/generate`, { method: 'POST', timeoutMs: 45_000 });
   return readJson(res, 'Generating questions');
 }
 
@@ -212,6 +226,32 @@ export async function setPaperQuestions(
     body: JSON.stringify({ questions }),
   });
   return readJson(res, 'Saving the paper');
+}
+
+/**
+ * Append one question the teacher wrote themselves.
+ *
+ * Appends, unlike `setPaperQuestions` and generation, which both replace the
+ * whole set. That is what a hand-authored question needs — adding a read-aloud
+ * passage must not wipe the questions already there.
+ */
+export async function addEvaluationQuestion(
+  evaluationId: string,
+  question: {
+    type: QuestionType;
+    objectiveId: string;
+    competencyKey: CompetencyKey;
+    marks: number;
+    difficulty?: Difficulty;
+    body: Record<string, unknown>;
+    expectedAnswer?: Record<string, unknown>;
+  },
+): Promise<{ question: EvaluationQuestion; totalMarks: number }> {
+  const res = await apiFetch(`/evaluations/${evaluationId}/questions`, {
+    method: 'POST',
+    body: JSON.stringify(question),
+  });
+  return readJson(res, 'Adding the question');
 }
 
 export async function publishEvaluation(id: string): Promise<Evaluation> {
@@ -457,6 +497,9 @@ export async function scanMarks(
   const res = await apiFetch(`/attempts/${attemptId}/scan-marks`, {
     method: 'POST',
     body: JSON.stringify({ image }),
+    // The other long one: a base64 page through a vision model
+    // (api-server routes/attempts.ts). Same 45s as generateEvaluation.
+    timeoutMs: 45_000,
   });
   return readJson(res, 'Reading the marks');
 }

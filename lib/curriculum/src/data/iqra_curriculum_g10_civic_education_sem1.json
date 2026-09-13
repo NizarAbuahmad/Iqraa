@@ -1,0 +1,178 @@
+{
+  "meta": {
+    "grade": "الصف العاشر",
+    "grade_en": "Grade 10",
+    "subject": "التربية الوطنية والمدنية",
+    "subject_en": "National and Civic Education",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 1,
+    "schema_version": "1.0",
+    "provenance_note": "نُقلت الوحدتانِ الاثنتانِ ودروسُهما العشرةُ من كتاب الطالب (الطبعة الثانية، مزيدة ومنقحة، ISBN 978-9923-41-578-8) في 2026-09-10، بقراءةِ صفحةِ المحتوياتِ لعناوينِ الوحداتِ والدروسِ، ثمَّ قراءةِ صفحةِ افتتاحِ كلِّ وحدةٍ (لِـ«الفكرةِ العامّةِ») وصفحةِ افتتاحِ كلِّ درسٍ (لِـ«الفكرةِ الرئيسةِ» و«المصطلحاتِ») مباشرةً منَ الـ PDF؛ أرقامُ صفحاتِ الـ PDF مطابقةٌ لأرقامِ الصفحاتِ المطبوعةِ (تُحُقِّقَ مِنْ ذلكَ أثناءَ القراءةِ). هذا امتدادُ الصفِّ العاشرِ لمادةِ التربيةِ الوطنيةِ والمدنيةِ، بعدَ أنْ بُنيَ الصفُّ التاسعُ منها كمادةٍ جديدةٍ كليًّا على النظامِ؛ subjectId وTag الداخليُّ (civ) نفسُهما، وبنيةُ الكتابينِ واحدةٌ.",
+    "source_books": {
+      "student_book": "كتاب الطالب لمادة التربية الوطنية والمدنية - الصف العاشر - الفصل الدراسي الأول - المركز الوطني لتطوير المناهج والتقويم (الطبعة الثانية، مزيدة ومنقحة، ISBN 978-9923-41-578-8)"
+    },
+    "known_gaps": [
+      "لا نتاجاتِ تعلُّمٍ مُرقَّمةً في هذا الكتابِ؛ بدلًا منها صندوقُ «الفكرةِ الرئيسةِ» (فقرةٌ واحدةٌ) لكلِّ درسٍ، وصندوقُ «الفكرةِ العامّةِ» لكلِّ وحدةٍ — وكلاهما منقولٌ هنا (main_idea_ar وgeneral_idea_ar). لا دليلَ معلمٍ لهذه المادةِ على القرصِ لأيِّ فصلٍ، فحقلُ objectives فارغٌ لكلِّ درسٍ عمدًا.",
+      "كلُّ درسٍ يحملُ أيضًا صندوقَ «مهاراتِ التعلُّمِ» — وسمٌ تربويٌّ للمهارةِ المُمارَسةِ في الدرسِ (كالشبهِ والاختلافِ، أوِ المشكلةِ والحلِّ) لا مصطلحًا مُعرَّفًا، فلا حقلَ لهُ في هذا المخطَّطِ ولمْ يُنقَلْ.",
+      "عددُ الحصصِ لكلِّ درسٍ غيرُ معروفٍ (periods وtotal_periods = null): لا دليلَ معلمٍ لهذه المادةِ على القرصِ.",
+      "«مراجعةُ الوحدةِ» تظهرُ في صفحةِ المحتوياتِ بلا رقمِ درسٍ في كِلتا الوحدتينِ، فهيَ ليستْ درسًا ولمْ تُدرَجْ.",
+      "لا معارفَ سابقةً مطبوعةً في افتتاحِ الوحداتِ (prior_knowledge = [])."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "التربيةُ الوطنيةُ والمدنيةُ",
+      "title_en": "National and Civic Education",
+      "general_idea_ar": "الوطنُ يجمعُ ولا يفرِّقُ، ويوحِّدُ الناسَ على حبِّهِ والانتماءِ لَهُ، والتفاني في العملِ لرفعتِهِ، والدفاعِ عنْهُ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المصطلحات» box; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "التربيةُ الوطنيةُ والمدنيةُ: المفهومُ والدلالاتُ",
+          "title_en": "National and Civic Education: Concept and Implications",
+          "main_idea_ar": "معرفةُ التربيةِ الوطنيةِ والمدنيةِ وأهميّتِها، وأهدافِها، وأثرِها على الفردِ والمجتمعِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التربيةُ الوطنيةُ", "en": "National Education" },
+            { "ar": "التربيةُ المدنيةُ", "en": "Civic Education" }
+          ]
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "هُوِيَّتي الأردنيةُ",
+          "title_en": "My Jordanian Identity",
+          "main_idea_ar": "معرفةُ هُوِيَّتي الأردنيةِ، ومفهومِ: الهُوِيَّةِ الوطنيةِ، والوحدةِ الوطنيةِ، وقيمِ المواطَنةِ الفاعلةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الهُوِيَّةُ الوطنيةُ", "en": "National Identity" },
+            { "ar": "الوحدةُ الوطنيةُ", "en": "National Unity" }
+          ]
+        },
+        {
+          "id": "u1_l3",
+          "order": 3,
+          "title_ar": "المواطَنةُ",
+          "title_en": "Citizenship",
+          "main_idea_ar": "معرفةُ المواطَنةِ وأبعادِها، وعلاقةُ المواطنِ بالدولةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الانتماءُ", "en": "Belonging" },
+            { "ar": "المواطَنةُ", "en": "Citizenship" }
+          ]
+        },
+        {
+          "id": "u1_l4",
+          "order": 4,
+          "title_ar": "الديمقراطيةُ",
+          "title_en": "Democracy",
+          "main_idea_ar": "معرفةُ مفهومِ الديمقراطيةِ والتعدديةِ السياسيةِ، وأهميتِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الديمقراطيةُ", "en": "Democracy" },
+            { "ar": "التعدديةُ السياسيةُ", "en": "Political Pluralism" }
+          ]
+        },
+        {
+          "id": "u1_l5",
+          "order": 5,
+          "title_ar": "خدمةُ العلمِ",
+          "title_en": "National Service",
+          "main_idea_ar": "خدمةُ العلمِ من أهمِّ البرامجِ التي تُسهمُ في بناءِ شخصيةِ الشبابِ الأردنيِّ، وتعزيزِ قِيَمِ الانضباطِ والمسؤوليةِ، وغرسِ الانتماءِ للوطنِ والولاءِ للقيادةِ الهاشميةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الولاءُ", "en": "Loyalty" },
+            { "ar": "الانتماءُ", "en": "Belonging" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "المشاركةُ في الحياةِ العامةِ",
+      "title_en": "Participation in Public Life",
+      "general_idea_ar": "لكلِّ شخصٍ حقُّ المشاركةِ في إدارةِ الشؤونِ العامةِ لبلدِهِ، إمّا مباشرةً وإمّا بواسطةِ ممثِّلينَ يُختارونَ بِحريةٍ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المصطلحات» box; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "الدستورُ الأردنيُّ وسيادةُ القانونِ",
+          "title_en": "The Jordanian Constitution and the Rule of Law",
+          "main_idea_ar": "معرفةُ الدستورِ وأهميتِهِ، ومراحلِ تطوُّرِ الدستورِ الأردنيِّ، ومعرفةُ سيادةِ القانونِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الدستورُ", "en": "Constitution" },
+            { "ar": "الدولةُ المدنيةُ", "en": "Civic state" },
+            { "ar": "سيادةُ القانونِ", "en": "Supremacy of law" }
+          ]
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "المشاركةُ في الحياةِ العامةِ",
+          "title_en": "Participation in Public Life",
+          "main_idea_ar": "معرفةُ المشاركةِ في الحياةِ العامةِ، وأهميتِها، ومجالاتِها، وآثارِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "المشاركةُ في الحياةِ العامةِ", "en": "Participation in public life" },
+            { "ar": "العملُ التطوعيُّ", "en": "Voluntary work" }
+          ]
+        },
+        {
+          "id": "u2_l3",
+          "order": 3,
+          "title_ar": "الانتخاباتُ (أنا والصُّندوقُ)",
+          "title_en": "Elections (Me and the Ballot Box)",
+          "main_idea_ar": "معرفةُ الانتخاباتِ وأهميتِها، ومعرفةُ خطواتِ العمليةِ الانتخابيةِ، ومراحلِ تطوُّرِ قانونِ الانتخابِ في الأردنِّ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الترشُّحُ", "en": "Nomination" },
+            { "ar": "الاقتراعُ", "en": "Election" }
+          ]
+        },
+        {
+          "id": "u2_l4",
+          "order": 4,
+          "title_ar": "الأحزابُ السياسيةُ",
+          "title_en": "Political Parties",
+          "main_idea_ar": "معرفةُ الأحزابِ السياسيةِ وأهميتِها، وتاريخِ الحياةِ الحزبيةِ في الأردنِّ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الحزبُ السياسيُّ", "en": "Political Party" }
+          ]
+        },
+        {
+          "id": "u2_l5",
+          "order": 5,
+          "title_ar": "أردنُّ المستقبلِ",
+          "title_en": "The Jordan of the Future",
+          "main_idea_ar": "تعرُّفُ متطلباتِ أردنِّ المستقبلِ، والتحدياتِ التي تواجهُهُ، والفرصِ المتاحةِ نحوَ التقدمِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الشبابُ", "en": "Youths" },
+            { "ar": "الدولةُ الديمقراطيةُ", "en": "Democratic State" }
+          ]
+        }
+      ]
+    }
+  ]
+}

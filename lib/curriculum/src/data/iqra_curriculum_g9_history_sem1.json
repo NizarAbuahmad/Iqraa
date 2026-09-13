@@ -1,0 +1,193 @@
+{
+  "meta": {
+    "grade": "الصف التاسع",
+    "grade_en": "Grade 9",
+    "subject": "التاريخ",
+    "subject_en": "History",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 1,
+    "schema_version": "1.0",
+    "provenance_note": "نُقلت الوحداتُ الثلاثُ ودروسُها العشرةُ من كتاب الطالب (edition: الطبعة الثانية، مزيدة ومنقحة، 2026) في 2026-09-09، بقراءةِ صفحةِ المحتوياتِ لعناوينِ الوحداتِ والدروسِ، ثمَّ قراءةِ صفحةِ افتتاحِ كلِّ وحدةٍ (لِـ«الفكرةِ العامّةِ») وصفحةِ افتتاحِ كلِّ درسٍ (لِـ«الفكرةِ الرئيسةِ» و«المصطلحاتِ») مباشرةً منَ الـ PDF (10.3 ميغابايت، ضمنَ حدِّ أداةِ القراءةِ المباشرةِ). هذا أوّلُ كتابِ تاريخٍ يُدخَلُ في نظامِ إقرأ.",
+    "source_books": {
+      "student_book": "كتاب الطالب لمادة التاريخ - الصف التاسع - الفصل الدراسي الأول - المركز الوطني لتطوير المناهج والتقويم (الطبعة الثانية، 2026)"
+    },
+    "known_gaps": [
+      "لا نتاجاتِ تعلُّمٍ مُرقَّمةً في هذا الكتابِ؛ بدلًا منها صندوقُ «الفكرةِ الرئيسةِ» (فقرةٌ واحدةٌ) لكلِّ درسٍ، وصندوقُ «الفكرةِ العامّةِ» لكلِّ وحدةٍ — وكلاهما منقولٌ هنا (main_idea_ar وgeneral_idea_ar). لا دليلَ معلمٍ لهذه المادةِ على القرصِ، فحقلُ objectives فارغٌ لكلِّ درسٍ عمدًا.",
+      "كلُّ درسٍ يحملُ أيضًا صندوقَيْ «الأشخاصِ» و«الأماكنِ» (أسماءُ أعلامٍ ومواقعَ وردَتْ في الدرسِ) وصندوقَ «مهاراتِ التعلُّمِ» — هذهِ الثلاثةُ لا حقلَ لها في هذا المخطَّطِ ولمْ تُنقَلْ، لأنَّها أسماءُ أعلامٍ ووسومٌ تربويةٌ لا مصطلحاتٍ مُعرَّفةً.",
+      "الدرسُ الثاني منَ الوحدةِ الثالثةِ («الغزوُ المغوليُّ للعالمِ العربيِّ الإسلاميِّ») يحملُ في صندوقِ «الفكرةِ الرئيسةِ» نصَّ الدرسِ الأوّلِ حرفيًّا («التعرُّفُ إلى الغزوِ الفِرِنجيِّ...»)، وهوَ خطأٌ مطبعيٌّ واضحٌ (نسخٌ منَ الدرسِ السابقِ) إذْ إنَّ محتوى الدرسِ كلَّهُ عنِ الغزوِ المغوليِّ لا الفِرِنجيِّ. نُقِلَ هنا كما طُبعَ، دونَ تصحيحٍ، لأنَّهُ ما ورد فعليًّا في الكتابِ.",
+      "عددُ الحصصِ لكلِّ درسٍ غيرُ معروفٍ (periods وtotal_periods = null): لا دليلَ معلمٍ لهذه المادةِ على القرصِ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "الحضارتانِ اليونانيّةُ والرومانيّةُ",
+      "title_en": "The Greek and Roman Civilizations",
+      "general_idea_ar": "الحضارتانِ اليونانيّةُ والرومانيّةُ مِنَ الحضاراتِ القديمةِ التي تركَتْ أثرًا كبيرًا في العالمِ، وقَدْ أسهمَتْ هاتانِ الحضارتانِ في تطويرِ العلومِ والمعارفِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المصطلحات» box; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "الحضارةُ اليونانيّةُ",
+          "title_en": "The Greek Civilization",
+          "main_idea_ar": "التعرُّفُ إلى نشأةِ وتطوُّرِ الحضارةِ اليونانيّةِ والمراحلِ التي مرَّتْ بها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الحضارةُ اليونانيّةُ", "en": "Greek Civilization" },
+            { "ar": "دويلاتُ المدنِ", "en": "City-States" },
+            { "ar": "الحضارةُ الهلنستيّةُ", "en": "Hellenistic Civilization" }
+          ]
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "الحياةُ العامّةُ في الحضارةِ اليونانيّةِ",
+          "title_en": "Public Life in the Greek Civilization",
+          "main_idea_ar": "التعرُّفُ إلى مظاهرِ الحياةِ العامّةِ في الحضارةِ اليونانيّةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التراجيديا", "en": "Tragedy" },
+            { "ar": "الكوميديا", "en": "Comedy" }
+          ]
+        },
+        {
+          "id": "u1_l3",
+          "order": 3,
+          "title_ar": "الحضارةُ الرومانيّةُ",
+          "title_en": "The Roman Civilization",
+          "main_idea_ar": "التعرُّفُ إلى نشأةِ الحضارةِ الرومانيّةِ، والتطوُّرِ التاريخيِّ لها، والمراحلِ التي مرَّتْ بها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الحضارةُ الرومانيّةُ", "en": "Roman civilization" },
+            { "ar": "الحروبُ البونيّةُ", "en": "Punic Wars" }
+          ]
+        },
+        {
+          "id": "u1_l4",
+          "order": 4,
+          "title_ar": "الحياةُ العامّةُ في الحضارةِ الرومانيّةِ",
+          "title_en": "Public Life in the Roman Civilization",
+          "main_idea_ar": "التعرُّفُ إلى مظاهرِ الحياةِ العامّةِ في الإمبراطوريّةِ الرومانيّةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الكوليسيومُ", "en": "The Colosseum" },
+            { "ar": "الپانثيونُ", "en": "Pantheon" },
+            { "ar": "الإنياذةُ", "en": "The Aeneid" },
+            { "ar": "نظامُ الإقطاعِ", "en": "Feudal System" },
+            { "ar": "مجلسُ الشيوخِ (السناتو)", "en": "The Senate" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "الأيّوبيّون والمماليك",
+      "title_en": "The Ayyubids and the Mamluks",
+      "general_idea_ar": "تركَتِ الدولتانِ الأيّوبيّةُ والمملوكيّةُ بصمةً واضحةً في التاريخِ الإسلاميِّ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المصطلحات» box; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "الدولةُ الأيّوبيّةُ (569-648هـ/1174-1250م)",
+          "title_en": "The Ayyubid State (569-648 AH / 1174-1250 CE)",
+          "main_idea_ar": "التعرُّفُ إلى التاريخِ السياسيِّ للدولةِ الأيّوبيّةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الدولةُ الأيّوبيّةُ", "en": "The Ayyubid State" },
+            { "ar": "الدولةُ الزنكيّةُ", "en": "The Zengid State" }
+          ]
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "الحياةُ العامّةُ في الدولةِ الأيّوبيّةِ",
+          "title_en": "Public Life in the Ayyubid State",
+          "main_idea_ar": "التعرُّفُ إلى الحياةِ العامّةِ في الدولةِ الأيّوبيّةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "القلعةُ", "en": "Castle" },
+            { "ar": "المنجنيقُ", "en": "Catapult" },
+            { "ar": "الخزفُ", "en": "Ceramics" }
+          ]
+        },
+        {
+          "id": "u2_l3",
+          "order": 3,
+          "title_ar": "الدولةُ المملوكيّةُ (648-923هـ/1250-1517م)",
+          "title_en": "The Mamluk State (648-923 AH / 1250-1517 CE)",
+          "main_idea_ar": "التعرُّفُ إلى التاريخِ السياسيِّ للدولةِ المملوكيّةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الدولةُ المملوكيّةُ", "en": "The Mamluk State" },
+            { "ar": "الدولةُ العثمانيّةُ", "en": "The Ottoman State" }
+          ]
+        },
+        {
+          "id": "u2_l4",
+          "order": 4,
+          "title_ar": "الحياةُ العامّةُ في الدولةِ المملوكيّةِ",
+          "title_en": "Public Life in the Mamluk State",
+          "main_idea_ar": "التعرُّفُ إلى الحياةِ العامّةِ في الدولةِ المملوكيّةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الإقطاعُ العسكريُّ", "en": "Military Feudalism" },
+            { "ar": "الموانئُ", "en": "Seaports" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "الغزوُ الخارجيُّ للعالمِ العربيِّ الإسلاميِّ",
+      "title_en": "External Invasions of the Arab Islamic World",
+      "general_idea_ar": "تعرَّضَ العالمُ العربيُّ الإسلاميُّ للغزوِ الخارجيِّ الفِرِنجيِّ والمغوليِّ، وكانَ لَهُ تأثيراتٌ في الحضارةِ العربيّةِ الإسلاميّةِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المصطلحات» box; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "الغزوُ الفِرِنجيُّ للعالمِ العربيِّ الإسلاميِّ",
+          "title_en": "The Frankish Invasion of the Arab Islamic World",
+          "main_idea_ar": "التعرُّفُ إلى الغزوِ الفِرِنجيِّ للعالمِ العربيِّ الإسلاميِّ وآثارِهِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الحمَلاتُ الفِرِنجيّةُ", "en": "Frankish Campaigns" }
+          ]
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "الغزوُ المغوليُّ للعالمِ العربيِّ الإسلاميِّ",
+          "title_en": "The Mongol Invasion of the Arab Islamic World",
+          "main_idea_ar": "التعرُّفُ إلى الغزوِ الفِرِنجيِّ للعالمِ العربيِّ الإسلاميِّ وآثارِهِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "المغولُ", "en": "Mughal" },
+            { "ar": "الدولةُ الخوارزميّةُ", "en": "The Khwarazmian State" }
+          ]
+        }
+      ]
+    }
+  ]
+}

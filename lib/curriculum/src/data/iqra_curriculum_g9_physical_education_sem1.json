@@ -1,0 +1,269 @@
+{
+  "meta": {
+    "grade": "الصف التاسع",
+    "grade_en": "Grade 9",
+    "subject": "التربية الرياضية",
+    "subject_en": "Physical Education",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 1,
+    "schema_version": "1.0",
+    "provenance_note": "نُقلت الوحداتُ الخمسُ ودروسُها السّتّةَ عشرَ من كتاب الطالب (الطبعة الأولى، 2024) في 2026-09-09، بقراءةِ صفحةِ المحتوياتِ لعناوينِ الوحداتِ والدروسِ، ثمَّ قراءةِ صفحةِ افتتاحِ كلِّ وحدةٍ (لِـ«الفكرةِ العامّةِ») وصفحةِ افتتاحِ كلِّ درسٍ (لِـ«الفكرةِ الرئيسةِ» و«المفاهيمِ والمصطلحاتِ») مباشرةً منَ الـ PDF (4 ميغابايت، ضمنَ حدِّ أداةِ القراءةِ المباشرةِ). هذا أوّلُ كتابِ تربيةٍ رياضيةٍ يُدخَلُ في نظامِ إقرأ.",
+    "source_books": {
+      "student_book": "كتاب الطالب لمادة التربية الرياضية - الصف التاسع - الفصل الدراسي الأول - المركز الوطني لتطوير المناهج والتقويم (الطبعة الأولى، 2024)"
+    },
+    "known_gaps": [
+      "لا نتاجاتِ تعلُّمٍ مُرقَّمةً في هذا الكتابِ؛ بدلًا منها صندوقُ «الفكرةِ الرئيسةِ» (فقرةٌ واحدةٌ) لكلِّ درسٍ، وصندوقُ «الفكرةِ العامّةِ» لكلِّ وحدةٍ — وكلاهما منقولٌ هنا (main_idea_ar وgeneral_idea_ar). لا دليلَ معلمٍ لهذه المادةِ على القرصِ، فحقلُ objectives فارغٌ لكلِّ درسٍ عمدًا.",
+      "هذا كتابٌ لموادَّ حركيةٍ (كرةُ القدمِ، كرةُ السلّةِ، الريشةُ الطائرةُ، الإيقاعُ الحركيُّ، الإسعافاتُ الأوّليّةُ)، لا موادُّ نظريّةٌ. القسمُ الأكبرُ منْ كلِّ درسٍ صندوقُ «النواحي الفَنّيّة» — تعليماتٌ حركيّةٌ عمليّةٌ (كيفَ يُؤدَّى المهارةُ خطوةً خطوةً) لا يوجدُ لَها حقلٌ في هذا المخطَّطِ ولمْ تُنقَلْ؛ main_idea_ar وvocabulary وحدَهما ما يصفانِ الدرسَ هنا.",
+      "لا صندوقَ «مصطلحات» في بعضِ الدروسِ (دروسُ «ربطُ المهاراتِ بتدريباتٍ ولَعِبٍ جماعيٍّ» في كلِّ وحدةٍ، ودرسُ التصويبةِ السُّلَّمِيّةِ، ودرسُ حَجلةِ الحصانِ، ودرسُ الإسعافاتِ الأوّليّةِ)، فـ vocabulary فارغةٌ لَها تحديدًا.",
+      "عددُ الحصصِ لكلِّ درسٍ غيرُ معروفٍ (periods وtotal_periods = null): لا دليلَ معلمٍ لهذه المادةِ على القرصِ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "كرةُ القدمِ",
+      "title_en": "Football",
+      "general_idea_ar": "تأديةُ بعضِ المهاراتِ الحركيّةِ الخاصّةِ بكرةِ القدمِ مِنَ الثباتِ والحركةِ؛ بأدواتٍ ومِنْ دونِ أدواتٍ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms — where present — from each lesson's «المفاهيم والمصطلحات» box; no teacher guide on disk, so no objectives or periods; the technical-skill instruction boxes are not carried over — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "المُراوغةُ والخِداعُ",
+          "title_en": "Dribbling and Faking",
+          "main_idea_ar": "تُعدُّ مهارةُ المُراوغةِ والخِداعِ منَ الأساليبِ الهجوميّةِ في كرةِ القدمِ التي تجعلُ اللاعبَ المُنافِسَ يتوقَّعُ حركةَ اللاعبِ المستحوذِ على الكرةِ توقُّعًا غيرَ صحيحٍ، بحيثُ يُوهِمُ اللاعبُ المهاجمُ اللاعبَ المدافعَ بأنّهُ سيُصوِّبُ، ولكنّهُ يُمرِّرُ الكرةَ أوْ يوقِفُها ويلعبُها بطريقةٍ لا يتوقَّعُها المُنافِسُ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الخِداعُ", "en": "Fake" }
+          ]
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "التمويةُ بتغييرِ حركةِ الجسمِ وسُرعتِهِ",
+          "title_en": "Camouflage by Changing Body Movement and Speed",
+          "main_idea_ar": "التمويةُ منَ المهاراتِ الأساسيّةِ في كرةِ القدمِ، وتنقسِمُ إلى التمويةِ بكرةٍ ومنْ دونِ كرةٍ، والهدفُ منَ التمويةِ هوَ التخلُّصُ منَ الخصمِ أوْ منْ ضغطِهِ، أوْ خلقُ فراغٍ في الملعبِ للاعبينَ الآخرينَ/للاعباتِ الأُخرَياتِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "السرعةُ", "en": "Speed" },
+            { "ar": "الحركةُ", "en": "Movement" },
+            { "ar": "التمويةُ", "en": "Camouflage" }
+          ]
+        },
+        {
+          "id": "u1_l3",
+          "order": 3,
+          "title_ar": "ربطُ المهاراتِ بتدريباتٍ ولَعِبٍ جماعيٍّ",
+          "title_en": "Linking Skills with Drills and Team Play",
+          "main_idea_ar": "توظيفُ المهاراتِ المُكتسَبةِ عنْ طريقِ دمجِها في التدريباتِ واللَعِبِ الجماعيِّ وفقَ إطارِ قانونِ اللعبةِ؛ وذلكَ لتنميةِ المهاراتِ المُقرَّرةِ والتنافُسِ بروحٍ رياضيةٍ، ضِمنَ الأنظمةِ والقوانينِ الخاصّةِ باللعبةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "كرةُ السّلّةِ",
+      "title_en": "Basketball",
+      "general_idea_ar": "تأديةُ بعضِ المهاراتِ الحركيّةِ الخاصّةِ بكرةِ السلّةِ مِنَ الثباتِ والحركةِ؛ بأدواتٍ ومِنْ دونِ أدواتٍ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms — where present — from each lesson's «المفاهيم والمصطلحات» box; no teacher guide on disk, so no objectives or periods; the technical-skill instruction boxes are not carried over — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "التمريرُ بكِلتا اليدَينِ مِنْ فوقِ الرأسِ",
+          "title_en": "Two-Handed Overhead Pass",
+          "main_idea_ar": "تُستخدَمُ هذهِ المهارةُ منْ قِبلِ اللاعبِ/اللاعبةِ التي يُواجِهُ لاعبًا مُدافعًا أقصرَ منهُ قامةً. وهيَ جيّدةٌ أيضًا للشروعِ بِبَدءِ الهجومِ السريعِ ضدَّ ضغطِ المُدافعينَ، أوْ كتمريرةٍ مُقوّسةٍ لمسافاتٍ مُتوسّطةٍ أوْ بعيدةٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "تمريرٌ منْ فوقِ الرأسِ", "en": "Overhead Pass" }
+          ]
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "التصويبُ مِنَ القفزِ",
+          "title_en": "Jump Shot",
+          "main_idea_ar": "يُعدُّ التصويبُ منَ القفزِ قوّةً فعّالةً ناجحةً ضدَّ الدفاعِ، بعدَ استلامِ اللاعبِ المُهاجمِ الكرةَ، واتّخاذِ الظرفِ المُناسبِ ليكونَ الجسمُ مُواجِهًا للهدفِ، سواءٌ أكانَ هذا اللاعبُ قريبًا منَ الهدفِ فيُصوّبُ بنُقطَتَينِ، أمْ بعيدًا عنهُ فيُصوّبُ بثلاثِ نقاطٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التصويبُ منَ الوثبِ", "en": "Jump Shot" }
+          ]
+        },
+        {
+          "id": "u2_l3",
+          "order": 3,
+          "title_ar": "التصويبةُ السُّلَّمِيّةُ",
+          "title_en": "Layup Shot",
+          "main_idea_ar": "تُعدُّ التصويبةُ السُّلَّمِيّةُ منَ التصويباتِ القصيرةِ نسبيًّا، يؤدّيها اللاعبُ/اللاعبةُ عندَما يُنطّطُ الكرةَ، أوْ عندَما يجري ويستلِمُ الكرةَ مِنْ زميلِهِ/زميلتِها وهوَ قريبٌ منْ سلّةِ الفريقِ المُنافِسِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l4",
+          "order": 4,
+          "title_ar": "الارتكازُ الأماميُّ والخلفيُّ",
+          "title_en": "Forward and Backward Pivot",
+          "main_idea_ar": "الارتكازُ منْ أقوى المهاراتِ المُستخدَمةِ في كرةِ السلّةِ، ويَعُدُّها البعضُ أقوى منَ المُحاورةِ والتمريرِ، وهيَ تُشبِهُ حركةَ الفِرجارِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الارتكازُ الأماميُّ", "en": "Forward Pivot" },
+            { "ar": "الارتكازُ الخلفيُّ", "en": "Backward Pivot" }
+          ]
+        },
+        {
+          "id": "u2_l5",
+          "order": 5,
+          "title_ar": "المُراوغةُ بالتنظيطِ",
+          "title_en": "Dribbling Fake",
+          "main_idea_ar": "تُعدُّ منْ أهمِّ المُراوغاتِ الأكثرِ شُيوعًا التي يُنفِّذُها لاعِبو/لاعباتُ كرةِ السلّةِ على جميعِ المُستوياتِ. وتُعدُّ هذهِ المُحاورةُ فعّالةً في إرباكِ المُدافعينَ وخلقِ مساحةٍ مفتوحةٍ للتمريرِ أوِ التصويبِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "المُحاورةُ المُرتفعةُ", "en": "High Dribbling" },
+            { "ar": "المُحاورةُ المُنخفضةُ", "en": "Low Dribbling" }
+          ]
+        },
+        {
+          "id": "u2_l6",
+          "order": 6,
+          "title_ar": "ربطُ المهاراتِ بتدريباتٍ ولَعِبٍ جماعيٍّ",
+          "title_en": "Linking Skills with Drills and Team Play",
+          "main_idea_ar": "توظيفُ جميعِ المهاراتِ التي تعلَّمتُها في هذهِ الوَحدةِ عنْ طريقِ دمجِها في التدريباتِ واللَعِبِ الجماعيِّ وفقَ إطارِ قانونِ اللعبةِ؛ وذلكَ لتنميةِ المهاراتِ عبرَ تأديَتِها في التدريباتِ والتنافُسِ بروحٍ رياضيةٍ، ضِمنَ الأنظمةِ والقوانينِ الخاصّةِ باللعبةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "الريشةُ الطائرةُ",
+      "title_en": "Badminton",
+      "general_idea_ar": "تأديةُ بعضِ المهاراتِ الحركيّةِ الخاصّةِ بالريشةِ الطائرةِ مِنَ الثباتِ والحركةِ؛ بأدواتٍ ومِنْ دونِ أدواتٍ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms — where present — from each lesson's «المفاهيم والمصطلحات» box; no teacher guide on disk, so no objectives or periods; the technical-skill instruction boxes are not carried over — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "الإرسالُ المُرتفِعُ",
+          "title_en": "High Serve",
+          "main_idea_ar": "يُستخدَمُ الإرسالُ المُرتفِعُ بصورةٍ كبيرةٍ في اللعبِ الفرديِّ، بحيثُ تُرسَلُ الريشةُ لتطيرَ إلى أعلى وأبعدِ مُستوى ممكنٍ للحدودِ الخلفيّةِ لملعبِ المُنافِسِ؛ لإجبارِهِ على الرجوعِ إلى الوراءِ، وإضعافِ هجومِهِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الإرسالُ المُرتفِعُ", "en": "High Serve" }
+          ]
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "الضرَباتُ المُسقَطةُ الأماميّةُ",
+          "title_en": "Forehand Drop Shots",
+          "main_idea_ar": "الضرَباتُ المُسقَطةُ الأماميّةُ هيَ إحدى المهاراتِ التي تُستخدَمُ في حالةِ الهجومِ، ويكونُ مسارُ الريشةِ غالبًا أفقيًّا وتعملُ على إرباكِ المُنافِسِ؛ إذْ تُضرَبُ الريشةُ لتسقُطَ في المَنطِقةِ القريبةِ منَ الشبكةِ لملعبِ المُنافسِ. وتُستخدَمُ هذهِ المهارةُ عندَما يكونُ المُنافِسُ بعيدًا عنِ الشبكةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الضرَباتُ الأماميّةُ", "en": "Forehand" },
+            { "ar": "الإسقاطُ", "en": "Drop" }
+          ]
+        },
+        {
+          "id": "u3_l3",
+          "order": 3,
+          "title_ar": "الضرَباتُ المُقوَّسةُ",
+          "title_en": "Arced Shots",
+          "main_idea_ar": "تأديةُ الضرَباتِ المُقوَّسةِ في أثناءِ مُمارسةِ لعبةِ الريشةِ الطائرةِ بصورةٍ صحيحةٍ. تكمُنُ أهمّيّةُ هذهِ الضربةِ في الاستجابةِ أوِ الردِّ على الهجومِ. (الضرَباتُ الساحقةُ المدفوعةُ).",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "ضرَباتٌ خلفيّةٌ", "en": "Backhand" },
+            { "ar": "ضرَباتٌ أماميّةٌ", "en": "Forehand" }
+          ]
+        },
+        {
+          "id": "u3_l4",
+          "order": 4,
+          "title_ar": "ربطُ المهاراتِ بتدريباتٍ ولَعِبٍ جماعيٍّ",
+          "title_en": "Linking Skills with Drills and Team Play",
+          "main_idea_ar": "توظيفُ جميعِ المهاراتِ التي تعلَّمتُها في هذهِ الوَحدةِ عنْ طريقِ دمجِها في التدريباتِ واللَعِبِ الجماعيِّ وفقَ إطارِ قانونِ اللعبةِ؛ لتنميةِ المهاراتِ المُقرَّرةِ عنْ طريقِ تأديَتِها في التدريباتِ واللَعِبِ الجماعيِّ والتنافُسِ بروحٍ رياضيّةٍ، وتطبيقِ الأنظمةِ والقوانينِ الخاصّةِ باللعبةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "number": 4,
+      "title_ar": "الإيقاعُ الحركيُّ",
+      "title_en": "Rhythmic Movement",
+      "general_idea_ar": "تأديةُ بعضِ المهاراتِ والأنماطِ الحركيّةِ الخاصّةِ؛ لتنميةِ الجوانبِ العقليّةِ والاجتماعيّةِ والصحّيّةِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms — where present — from each lesson's «المفاهيم والمصطلحات» box; no teacher guide on disk, so no objectives or periods; the technical-skill instruction boxes are not carried over — see known_gaps)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u4_l1",
+          "order": 1,
+          "title_ar": "وثبةُ الفجوةِ",
+          "title_en": "Split Leap",
+          "main_idea_ar": "تُعدُّ وثبةُ الفجوةِ منَ الوثباتِ التي تُستخدَمُ غالبًا في العروضِ الرياضيّةِ والمهرجاناتِ الرياضيّةِ عندَ دخولِ الأفرادِ، وتُضفي هذهِ الوثبةُ جماليّةً على العرضِ الرياضيِّ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "وثبةُ الفجوةِ", "en": "Split leap" }
+          ]
+        },
+        {
+          "id": "u4_l2",
+          "order": 2,
+          "title_ar": "حَجلةُ الحصانِ",
+          "title_en": "Horse Hop",
+          "main_idea_ar": "تُعدُّ حَجلةُ الحصانِ منَ الحركاتِ الانتقاليّةِ التي تُستخدَمُ في المهرجاناتِ الرياضيّةِ، وتُستخدَمُ غالبًا عندَ تأديةِ جُملةٍ حركيّةٍ كاملةٍ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    },
+    {
+      "id": "u5",
+      "number": 5,
+      "title_ar": "السلامةُ العامّةُ",
+      "title_en": "General Safety",
+      "general_idea_ar": "معرفةُ أنواعِ الكسورِ وكيفيّةِ التعامُلِ معَها، وتقديمُ الإسعافاتِ الأوّليّةِ للمُصابِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u5_l1",
+          "order": 1,
+          "title_ar": "الإسعافاتُ الأوّليّةُ في حالةِ الكسورِ البسيطةِ والوقايةُ منْها",
+          "title_en": "First Aid for Simple Fractures and Their Prevention",
+          "main_idea_ar": "تقديمُ الإسعافاتِ الأوّليّةِ للمُصابِ بالكسرِ؛ لأنّها السبيلُ للحدِّ منْ مُضاعفةِ الإصابةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": []
+        }
+      ]
+    }
+  ]
+}

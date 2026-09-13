@@ -6,25 +6,24 @@
  * `g10EnglishVocational.ts` and use their own `eng-commerce` / `eng-agri` /
  * `eng-hospitality` / `eng-industry` subject slugs; this one is `eng`.
  *
- * Modelled as ONE lesson per unit, exactly like those four and unlike every
- * science catalog. That is forced by the book, not chosen for convenience: it
- * prints seven lesson slots per unit (LESSON 1A..7A, 18pt, in the page header)
- * and gives none of them a title — only a skill banner (VOCABULARY, GRAMMAR,
- * READING AND VOCABULARY …) whose order changes from unit to unit, and in
- * semester 1 two slots share page 52 with competing banners. A seven-lesson
- * breakdown would therefore be a guess about which slot owns which page, and
- * a figure filed under a guessed lesson is worse than no figure.
+ * Seven lessons per unit, on the same evidence as `g10EnglishSem1.ts` — read
+ * that file's doc comment: this one used to carry the identical (and wrong)
+ * "one lesson per unit is forced by the book" justification, page-52 claim
+ * included, about a page in the *other* book. This book prints the same
+ * `LESSON nA` headers and exactly one `□ I can …` per lesson, 35 of them,
+ * 5 units × 7.
  *
- * There are also no نتاجات التعلم to copy: this series prints none, unlike the
- * science student books whose lesson openers state them. `objectives` is empty
- * everywhere here, and `verify --gaps` will say so rather than the catalog
- * pretending otherwise.
+ * Two things are this book's own. It is a DRAFT — 79 of its 80 pages carry
+ * «نسخة قيد الإعداد والتجهيز» — and its contents spread misprints one page
+ * reference: unit 6's «p9 Relationships and caring for others» is printed on
+ * page 11, under the banner `LESSON 6A VOCABULARY | Relationships, caring for
+ * others`. The banner decides where the entry is filed; the reference is kept
+ * as printed. Both are recorded in the JSON's `known_gaps`.
  *
- * What the book DOES print, and what is therefore carried, is the two-page
- * scope-and-sequence spread: grammar, vocabulary, reading, listening, speaking
- * and writing per unit, with the book's own page references kept intact. Those
- * become the lesson's key concepts, which is what grounding and the generators
- * read.
+ * The two-page 'Contents' scope-and-sequence spread is still carried — with
+ * the book's own page references intact — and still becomes the lesson's key
+ * concepts, which is what grounding and the generators read; each entry now
+ * sits on the lesson whose printed pages it names.
  *
  * Note: does not import knowledgeBase (avoids circular dependency).
  */
@@ -33,6 +32,7 @@ import raw from '../data/iqra_curriculum_g10_english_sem2.json' with { type: 'js
 import {
   lessonKbId,
   lessonKbPrefix,
+  objectiveId,
   unitKbId,
   type CurriculumIdScope,
 } from '../curriculumIds.ts';
@@ -48,6 +48,8 @@ export type EngSem2Lesson = {
   order: number;
   title_ar: string;
   title_en: string;
+  /** The lesson's printed `I can …` statement. English, as the book prints it. */
+  main_idea_ar: string;
   periods: number | null;
   objectives: string[];
   vocabulary: string[];
@@ -178,8 +180,12 @@ export function buildEngSem2Catalog(): { units: EngKbUnit[]; lessons: EngKbLesso
         order: lesson.order,
         titleAr: lesson.title_ar,
         titleEn: lesson.title_en,
-        summaryAr: `وحدة «${u.title_ar}» من كتاب اللغة الإنجليزية للصف العاشر، الفصل الثاني.`,
-        summaryEn: `Unit “${u.title_en}” of the Grade 10 English student book, semester 2.`,
+        // The lesson's own `I can` line, same as `makeNccdCatalog` does with
+        // `main_idea_ar`. The unit sentence is the fallback, not the summary.
+        summaryAr: lesson.main_idea_ar
+          || `وحدة «${u.title_ar}» من كتاب اللغة الإنجليزية للصف العاشر، الفصل الثاني.`,
+        summaryEn: lesson.main_idea_ar
+          || `Unit “${u.title_en}” of the Grade 10 English student book, semester 2.`,
         keyConceptsAr: topicLines(lesson, 'ar'),
         keyConceptsEn: topicLines(lesson, 'en'),
         keyTerms: [],
@@ -230,15 +236,15 @@ type EngBrowserLesson = {
 
 /**
  * Map the English S2 JSON into curriculum-browser rows for
- * book-english-10-s2 — the book row that has existed since the catalog was
- * written and has carried zero lessons ever since, so a teacher who picked
- * English and opened it saw nothing at all.
+ * book-english-10-s2 — the book row that carried zero lessons until
+ * 2026-09-05, and five title-only stubs until 2026-09-10.
  *
- * `outcomes` is empty rather than defaulted. Every other catalog emits one
- * `'Understand'` outcome per objective; this book states no objectives, so
- * emitting a defaulted outcome would invent a learning outcome the Ministry
- * never wrote. Bloom's coverage then reports English as having none, which is
- * the truth.
+ * `outcomes` used to be empty on the grounds that the book states no
+ * objectives. It states 35 of them per semester, one `I can` per lesson, so
+ * this now emits the same one-`'Understand'`-outcome-per-objective row every
+ * other catalog does. The level is the builder's blanket default, not a
+ * judgement; `isDerivedObjectiveId` recognises the `o-eng-s2-` prefix minted
+ * here, so `objectives.ts` reports it as derived rather than authored.
  */
 export function buildEngSem2BrowserCatalog(): {
   units: EngBrowserUnit[];
@@ -262,21 +268,30 @@ export function buildEngSem2BrowserCatalog(): {
   for (const u of nccdG10EngSem2.units) {
     const uKbId = engSem2UnitKbId(u.id);
     for (const lesson of u.lessons) {
+      const objectives = [...(lesson.objectives ?? [])];
+      const lKbId = engSem2LessonKbId(lesson.id);
       lessons.push({
-        id: engSem2LessonKbId(lesson.id),
+        id: lKbId,
         unitId: uKbId,
         title: lesson.title_en,
         titleAr: lesson.title_ar,
         // The book states no period count; 45 minutes is one period, the same
         // fallback every other browser catalog uses for a null.
         estimatedDuration: (lesson.periods ?? 1) * 45,
-        objectives: [],
-        objectivesAr: [],
+        objectives,
+        objectivesAr: [...objectives],
         keywords: topicLines(lesson, 'en'),
         keywordsAr: topicLines(lesson, 'ar'),
         teacherNotes: '',
         teacherNotesAr: '',
-        outcomes: [],
+        outcomes: objectives.map((o, i) => ({
+          id: objectiveId(SCOPE, lesson.id, i),
+          lessonId: lKbId,
+          description: o,
+          descriptionAr: o,
+          bloomsLevel: 'Understand' as const,
+          skills: [] as string[],
+        })),
       });
     }
   }

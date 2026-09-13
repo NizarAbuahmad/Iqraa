@@ -17,6 +17,10 @@
  */
 import type { GradingMode, QuestionType } from "@workspace/db";
 import { matchesAny, normalizeArabic } from "./normalize.ts";
+import { MAX_WORDS, normalizeForReading, scoreReading } from "./readAloud.ts";
+
+/** Below this a single mispronounced word moves the score too far to mean anything. */
+const MIN_PASSAGE_WORDS = 10;
 
 export interface QuestionDraft {
   type: QuestionType;
@@ -296,6 +300,81 @@ const practicalTask: TypeModule = {
   },
 };
 
+/**
+ * Read a passage aloud.
+ *
+ * The odd one out in two ways, both deliberate.
+ *
+ * **The reference text lives in `body`, and `expectedAnswer` stays empty.**
+ * Every other type hides its key from the student; here the student must read
+ * the passage off the screen, so the "answer" is the prompt. Putting it in
+ * `body` means `sanitizeForStudent` can hand it over without a special case,
+ * and — more usefully — there is no key left to leak. `studentView.test.ts`
+ * blacklists any field whose name contains "answer" precisely so a future
+ * refactor cannot quietly reintroduce one here.
+ *
+ * **It grades deterministically.** The passage is known, so word accuracy is a
+ * measurement, not a judgement. A model asked to rate the reading would be
+ * inferring fluency from a transcript that has already discarded the
+ * pronunciation, and would return a confident number for it.
+ *
+ * `grade` stays synchronous like the rest of the registry: transcription
+ * happens at upload time in `studentAttempt.ts`, which writes the transcript
+ * into the stored response. Making one type async would turn `gradeAttempt`
+ * and both its callers async for the other eight.
+ */
+const readAloud: TypeModule = {
+  defaultGradingMode: "deterministic",
+  // A mock generator would have to invent English prose at a controlled
+  // reading level, which is exactly the "invent subject content" line the
+  // other types decline to cross. Passages come from the curated manifest.
+  mockable: false,
+  validate(q) {
+    const errors: string[] = [];
+    const passage = str(q.body["passage"]);
+    if (!passage) {
+      errors.push("Passage is empty");
+    } else {
+      const words = normalizeForReading(passage).length;
+      // Too short and one mispronounced word swings the score wildly; too long
+      // and the student is reciting, not reading, well past the point the score
+      // says anything new.
+      if (words < MIN_PASSAGE_WORDS) errors.push(`Passage is ${words} words, minimum ${MIN_PASSAGE_WORDS}`);
+      if (words > MAX_WORDS) errors.push(`Passage is ${words} words, maximum ${MAX_WORDS}`);
+    }
+    if (Object.keys(q.expectedAnswer).length > 0) {
+      // Not pedantry: the passage is the reference, so anything parked in
+      // `expectedAnswer` is either duplicated (and will drift out of sync with
+      // what the student was shown) or is a key that does not belong here.
+      errors.push("Read-aloud grades against body.passage; expectedAnswer must be empty");
+    }
+    return errors;
+  },
+  sanitizeForStudent(q) {
+    return {
+      passage: q.body["passage"],
+      maxSeconds: q.body["maxSeconds"],
+    };
+  },
+  grade(q, response) {
+    const transcript = str(response["transcript"]);
+    const attempted = Boolean(str(response["audioKey"]));
+    // No recording at all is unanswered. A recording that transcribed to
+    // nothing is an attempt that earned nothing — a different diagnosis, and
+    // one a teacher should see, because it usually means a microphone problem
+    // rather than a student who cannot read.
+    if (!attempted) return UNANSWERED;
+
+    const score = scoreReading(str(q.body["passage"]), transcript);
+    const pct = Math.round(score.accuracy * 100);
+    return scored(
+      score.accuracy,
+      true,
+      `${pct}% of ${score.referenceWords} words matched (${score.errors} error${score.errors === 1 ? "" : "s"})`,
+    );
+  },
+};
+
 export const QUESTION_TYPES: Record<QuestionType, TypeModule> = {
   multiple_choice: multipleChoice,
   true_false: trueFalse,
@@ -305,6 +384,7 @@ export const QUESTION_TYPES: Record<QuestionType, TypeModule> = {
   open_ended: openResponse("ai_rubric", [], true),
   problem_solving: openResponse("ai_rubric", ["scenario"], true),
   practical_task: practicalTask,
+  read_aloud: readAloud,
 };
 
 export function moduleFor(type: QuestionType): TypeModule | undefined {

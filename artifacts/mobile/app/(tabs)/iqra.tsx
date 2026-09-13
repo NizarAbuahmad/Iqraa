@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -38,7 +38,7 @@ import {
   searchKBRanked,
   searchKBSemantic,
 } from '@/services/knowledgeBase';
-import { getPickerGrades, getPickerSubjects } from '@/services/curriculumData';
+import { getPickerGrades, getPickerSubjects, hasCurriculumForSubjectGrade } from '@/services/curriculumData';
 import { loadLessonPick, saveLessonPick } from '@/services/lessonContext';
 import {
   buildResponse,
@@ -335,6 +335,38 @@ function ContextBanner({
   // `TopicSelectionDetail.lessonId`.
   const [draftLessonId, setDraftLessonId] = useState<string | null>(null);
 
+  /**
+   * Which of CONTEXT_SUBJECTS to actually show, for the grade drafted in this
+   * sheet. The eight `/ai-tools` screens have always done this — they pass
+   * `subjectsWithoutCurriculum(grade)` into PickerField, which drops the
+   * masked options — but this sheet does not use PickerField and so offered
+   * all eighteen against every grade. On Grade 8 that meant pills for
+   * chemistry, physics, biology, earth science, geography, history and civic
+   * education, none of which NCCD teaches as Grade 8 subjects; they are folded
+   * into the combined Science and Social Studies books.
+   *
+   * These are indices INTO the canonical array, not a re-indexed list. The
+   * array stays whole so `draftSubjIdx` keeps meaning what it meant — see
+   * CLAUDE.md on picker positions being meaning-bearing. Only what renders is
+   * filtered.
+   */
+  const visibleSubjIdxs = useMemo(
+    () => CONTEXT_SUBJECTS
+      .map((s, i) => ({ s, i }))
+      .filter(({ s }) => hasCurriculumForSubjectGrade(s.subjectId, draftGradeId))
+      .map(({ i }) => i),
+    [draftGradeId],
+  );
+
+  // Changing grade can strand the current pick on a subject that grade does
+  // not teach. Move to the first subject it does, rather than leaving a
+  // selection the teacher can no longer see.
+  useEffect(() => {
+    if (visibleSubjIdxs.length > 0 && !visibleSubjIdxs.includes(draftSubjIdx)) {
+      setDraftSubjIdx(visibleSubjIdxs[0]);
+    }
+  }, [visibleSubjIdxs, draftSubjIdx]);
+
   const subj = CONTEXT_SUBJECTS[draftSubjIdx];
   const isOpen = externalOpen ?? modalOpen;
   const setOpen = (v: boolean) => {
@@ -496,7 +528,9 @@ function ContextBanner({
               {lang === 'ar' ? 'المادة' : 'Subject'}
             </Text>
             <View style={[ctxStyles.subjRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-              {CONTEXT_SUBJECTS.map((s, i) => (
+              {visibleSubjIdxs.map(i => CONTEXT_SUBJECTS[i]).map((s, vi) => {
+                const i = visibleSubjIdxs[vi];
+                return (
                 <Pressable
                   key={s.subjectId}
                   onPress={() => { setDraftSubjIdx(i); setDraftTopic(''); setDraftLessonId(null); }}
@@ -514,25 +548,27 @@ function ContextBanner({
                     {lang === 'ar' ? s.labelAr : s.labelEn}
                   </Text>
                 </Pressable>
-              ))}
+                );
+              })}
             </View>
 
-            {/* Topic selector */}
-            <Text style={[ctxStyles.modalSectionLabel, { color: colors.mutedForeground, fontFamily: 'Cairo_500Medium', textAlign: isRTL ? 'right' : 'left', marginTop: 18 }]}>
-              {lang === 'ar' ? 'الدرس' : 'Lesson'}
-            </Text>
-            <TopicSelector
-              subjectId={subj.subjectId}
-              gradeId={draftGradeId}
-              value={draftTopic}
-              onChange={setDraftTopic}
-              onSelectionDetail={d => setDraftLessonId(d.lessonId)}
-              lang={lang}
-              isRTL={isRTL}
-              colors={colors}
-              accent={colors.primary}
-              t={t}
-            />
+            {/* Topic selector — no section header here: TopicSelector renders its
+                own «موضوع الدرس» label, so one field carried two labels. The
+                wrapper keeps the 18px gap the removed header used to provide. */}
+            <View style={{ marginTop: 18 }}>
+              <TopicSelector
+                subjectId={subj.subjectId}
+                gradeId={draftGradeId}
+                value={draftTopic}
+                onChange={setDraftTopic}
+                onSelectionDetail={d => setDraftLessonId(d.lessonId)}
+                lang={lang}
+                isRTL={isRTL}
+                colors={colors}
+                accent={colors.primary}
+                t={t}
+              />
+            </View>
           </ScrollView>
 
           {/* CTA at bottom */}
@@ -3044,8 +3080,13 @@ const ctxStyles = StyleSheet.create({
   pill:       { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
   pillText:   { fontSize: 12 },
   clearBtn:   { padding: 4 },
-  subjRow:    { flexDirection: 'row', gap: 8, marginBottom: 4 },
-  subjPill:   { paddingHorizontal: 14, paddingVertical: 6 },
+  // Must wrap: Grade 10 offers 13 subjects, and an unwrapped row pushed all but
+  // the first four off the screen edge (RTL row-reverse, so off to the left)
+  // with no scroll to reach them — the subjects were rendered but unreachable.
+  subjRow:    { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 },
+  // paddingVertical 8, not 6: at 6 the pill is ~26px tall, well under the 44px
+  // touch target, and these wrap to several rows of small tap targets.
+  subjPill:   { paddingHorizontal: 14, paddingVertical: 8 },
   subjText:   { fontSize: 13 },
   // Modal
   modal:        { flex: 1 },

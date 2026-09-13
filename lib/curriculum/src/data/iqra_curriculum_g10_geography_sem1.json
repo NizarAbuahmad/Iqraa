@@ -1,0 +1,189 @@
+{
+  "meta": {
+    "grade": "الصف العاشر",
+    "grade_en": "Grade 10",
+    "subject": "الجغرافيا",
+    "subject_en": "Geography",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 1,
+    "schema_version": "1.0",
+    "provenance_note": "نُقلت الوحداتُ الثلاثُ ودروسُها التسعةُ من كتاب الطالب (الطبعة الثانية، 2023) في 2026-09-09، بقراءةِ صفحةِ المحتوياتِ لعناوينِ الوحداتِ والدروسِ، ثمَّ قراءةِ صفحةِ افتتاحِ كلِّ وحدةٍ (لِـ«الفكرةِ العامّةِ») وصفحةِ افتتاحِ كلِّ درسٍ (لِـ«الفكرةِ الرئيسةِ» و«المفاهيمِ والمصطلحاتِ») مباشرةً منَ الـ PDF (70.6 ميغابايت، ضمنَ حدِّ أداةِ القراءةِ المباشرةِ). هذا امتدادُ الصفِّ العاشرِ لمادةِ الجغرافيا، بعدَ أنْ بُنيَ الصفُّ التاسعُ منها في 2026-09-09 (نفسُ اليومِ) كمادةٍ جديدةٍ كليًّا على النظامِ؛ subjectId وTag الداخليُّ (geo) نفسُهما، إذْ لا تعارُضَ بينَ نصَّي الكتابينِ.",
+    "source_books": {
+      "student_book": "كتاب الطالب لمادة الجغرافيا - الصف العاشر - الفصل الدراسي الأول - المركز الوطني لتطوير المناهج والتقويم (الطبعة الثانية، 2023)"
+    },
+    "known_gaps": [
+      "لا نتاجاتِ تعلُّمٍ مُرقَّمةً في هذا الكتابِ؛ بدلًا منها صندوقُ «الفكرةِ الرئيسةِ» (فقرةٌ واحدةٌ) لكلِّ درسٍ، وصندوقُ «الفكرةِ العامّةِ» لكلِّ وحدةٍ — وكلاهما منقولٌ هنا (main_idea_ar وgeneral_idea_ar). لا دليلَ معلمٍ لهذه المادةِ على القرصِ، فحقلُ objectives فارغٌ لكلِّ درسٍ عمدًا.",
+      "كلُّ درسٍ يحملُ أيضًا صندوقَ «مهاراتِ التعلُّمِ» — وسمٌ تربويٌّ (كالتصنيفِ، أوِ السببِ والنتيجةِ) لا مصطلحًا مُعرَّفًا، فلا حقلَ لهُ في هذا المخطَّطِ ولمْ يُنقَلْ.",
+      "عددُ الحصصِ لكلِّ درسٍ غيرُ معروفٍ (periods وtotal_periods = null): لا دليلَ معلمٍ لهذه المادةِ على القرصِ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u1",
+      "number": 1,
+      "title_ar": "الجغرافيا الطبيعيّةُ",
+      "title_en": "Physical Geography",
+      "general_idea_ar": "تحليلُ العلاقاتِ المُتبادلةِ بينَ الإنسانِ والبيئةِ عنْ طريقِ دراسةِ خصائصِ الغلافِ الجوّيِّ والغلافِ الحيويِّ ومُكوِّناتِهما وأثرِهما في التنوُّعِ الحيويِّ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المفاهيم والمصطلحات» box; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u1_l1",
+          "order": 1,
+          "title_ar": "الغلافُ الجوّيُّ",
+          "title_en": "The Atmosphere",
+          "main_idea_ar": "تعرُّفُ أهمّيّةِ الغلافِ الجوّيِّ، ومكوِّناتِهِ وخصائصِ الطبقاتِ الجوّيّةِ، وتفسيرُ أسبابِ تلوُّثِ الغلافِ الجوّيِّ وآثارِهِ في الحياةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الغلافُ الجوّيُّ", "en": "Atmosphere" },
+            { "ar": "غازاتُ الدفيئةِ", "en": "Greenhouse Gases" },
+            { "ar": "تلوُّثُ الهواءِ", "en": "Air Pollution" },
+            { "ar": "المطرُ الحمضيُّ", "en": "Acid Rain" },
+            { "ar": "الاحترارُ العالميُّ", "en": "Global Warming" }
+          ]
+        },
+        {
+          "id": "u1_l2",
+          "order": 2,
+          "title_ar": "الغلافُ الحيويُّ",
+          "title_en": "The Biosphere",
+          "main_idea_ar": "تعرُّفُ الغلافِ الحيويِّ ومُكوِّناتِهِ، وأهمّيّتِهِ، وأهمِّ العواملِ المُؤثِّرةِ فيهِ، وطرقِ المُحافظةِ عليهِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الغلافُ الحيويُّ", "en": "Biosphere" },
+            { "ar": "الرعيُ الجائرُ", "en": "Overgrazing" },
+            { "ar": "التبدُّلُ النباتيُّ", "en": "Vegetation Change" }
+          ]
+        },
+        {
+          "id": "u1_l3",
+          "order": 3,
+          "title_ar": "التنوُّعُ الحيويُّ",
+          "title_en": "Biodiversity",
+          "main_idea_ar": "تعرُّفُ أهمّيّةِ التنوُّعِ الحيويِّ وأصنافِهِ، والعواملِ الجغرافيّةِ المُؤثِّرةِ فيهِ، ومشكلاتِهِ، وطرقِ المُحافظةِ عليهِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التنوُّعُ الحيويُّ", "en": "Biodiversity" },
+            { "ar": "التنوُّعُ الجينيُّ", "en": "Genetic Diversity" },
+            { "ar": "التنوُّعُ المرئيُّ", "en": "Visual Diversity" },
+            { "ar": "الموطنُ البيئيُّ", "en": "Habitat" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "number": 2,
+      "title_ar": "السّياحةُ والنقلُ",
+      "title_en": "Tourism and Transport",
+      "general_idea_ar": "دراسةُ المُعطياتِ الطبيعيّةِ والبشريّةِ للسّياحةِ، وتقييمُ العلاقةِ بينَ الطلبِ والمُنتَجِ السّياحيِّ، وإدراكُ أهمّيّةِ دراسةِ النقلِ الذي يهدفُ إلى تنميةِ المُجتمعِ بما يتَّفقُ معَ مُتطلَّباتِ الأنشطةِ الاقتصاديّةِ والبشريّةِ المُختلفةِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المفاهيم والمصطلحات» box; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u2_l1",
+          "order": 1,
+          "title_ar": "مُقوِّماتُ السّياحةِ",
+          "title_en": "Tourism Resources",
+          "main_idea_ar": "تُمثِّلُ السّياحةُ رافدًا أساسيًّا للاقتصادِ، ومصدرَ دخلٍ لآلافِ المُواطنينَ، ومَوردًا مُهمًّا لتوفيرِ العُملاتِ الصعبةِ التي تُنعِشُ القطاعاتِ الاقتصاديّةَ المُختلفةَ، إضافةً إلى تأثيرِها الاجتماعيِّ والثقافيِّ في كلٍّ منَ السُّيّاحِ والسُّكّانِ المحلّيّينَ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "السّياحةُ", "en": "Tourism" },
+            { "ar": "السّياحةُ الداخليّةُ", "en": "Domestic Tourism" },
+            { "ar": "السّياحةُ الخارجيّةُ", "en": "International Tourism" }
+          ]
+        },
+        {
+          "id": "u2_l2",
+          "order": 2,
+          "title_ar": "الآثارُ الاقتصاديّةُ والاجتماعيّةُ للسّياحةِ",
+          "title_en": "The Economic and Social Effects of Tourism",
+          "main_idea_ar": "معرفةُ حركةِ السّياحةِ الدَّوليّةِ وعواملِ تطوُّرِها، وتعرُّفُ الآثارِ الاقتصاديّةِ والاجتماعيّةِ الإيجابيّةِ والسّلبيّةِ للسّياحةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "حركةُ السّياحةِ الدَّوليّةِ", "en": "Trends of International Tourism" },
+            { "ar": "الدخلُ القوميُّ", "en": "National Income" },
+            { "ar": "الناتجُ المحلّيُّ الإجماليُّ", "en": "Gross Domestic Product" }
+          ]
+        },
+        {
+          "id": "u2_l3",
+          "order": 3,
+          "title_ar": "النقلُ",
+          "title_en": "Transport",
+          "main_idea_ar": "تعرُّفُ أهمّيّةِ النقلِ، ومراحلِ تطوُّرِهِ، وأنواعِهِ، والعلاقةِ بينَ الجغرافيا والنقلِ، والمُشكلاتِ التي يُعانيها قطاعُ النقلِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "النقلُ", "en": "Transport" },
+            { "ar": "قناةٌ مائيّةٌ", "en": "Canal" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "number": 3,
+      "title_ar": "التقنياتُ الجغرافيّةُ",
+      "title_en": "Geographic Technologies",
+      "general_idea_ar": "القُدرةُ على قراءةِ الخرائطِ الموضوعيّةِ عنْ طريقِ الرموزِ النوعيّةِ والكمّيّةِ المُستخدَمةِ في إعدادِها، وإدراكُ دورِ التقنياتِ الحديثةِ المُستخدَمةِ في إنشاءِ الخرائطِ وتحليلِها، وتعرُّفُ خصائصِ تقنيةِ أنظمةِ المعلوماتِ الرقميّةِ والجغرافيّةِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المفاهيم والمصطلحات» box; no teacher guide on disk, so no objectives or periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u3_l1",
+          "order": 1,
+          "title_ar": "الخرائطُ الموضوعيّةُ",
+          "title_en": "Thematic Maps",
+          "main_idea_ar": "تعرُّفُ مفهومِ الخرائطِ الموضوعيّةِ، وأنواعِها، والرموزِ المُستخدَمةِ فيها، وأهمّيّتِها، ومراحلِ إعدادِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الخرائطُ الموضوعيّةُ", "en": "Thematic Maps" },
+            { "ar": "الخرائطُ النوعيّةُ", "en": "Qualitative Maps" },
+            { "ar": "الخرائطُ الكمّيّةُ", "en": "Quantitative Maps" }
+          ]
+        },
+        {
+          "id": "u3_l2",
+          "order": 2,
+          "title_ar": "نُظُمُ المعلوماتِ الجغرافيّةِ",
+          "title_en": "Geographic Information Systems",
+          "main_idea_ar": "تعرُّفُ أهمّيّةِ نُظُمِ المعلوماتِ الرقميّةِ والجغرافيّةِ ومُكوِّناتِها وتطبيقاتِها، وآليّةِ تمثيلِ الظواهرِ فيها، ومصادرِ البياناتِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "نُظُمُ المعلوماتِ الجغرافيّةِ", "en": "Geographic Information Systems" },
+            { "ar": "المعلوماتُ الرقميّةُ", "en": "Digital Information" },
+            { "ar": "البياناتُ", "en": "Data" },
+            { "ar": "الخرائطُ الرقميّةُ", "en": "Digital Map" },
+            { "ar": "نظامُ تحديدِ المواقعِ العالميُّ", "en": "Global Positioning System" },
+            { "ar": "التحليلُ المكانيُّ", "en": "Spatial Analysis" }
+          ]
+        },
+        {
+          "id": "u3_l3",
+          "order": 3,
+          "title_ar": "الأقمارُ الصناعيّةُ وتحليلُ الصورِ الفضائيّةِ",
+          "title_en": "Satellites and Satellite Imagery Analysis",
+          "main_idea_ar": "تعرُّفُ تطوُّرِ الأقمارِ الصناعيّةِ، وأنواعِها، ووظائفِها. تعرُّفُ طرقِ تحليلِ الصورِ الفضائيّةِ، واستخداماتِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الأقمارُ الصناعيّةُ", "en": "Satellites" },
+            { "ar": "الصورُ الفضائيّةُ", "en": "Satellite Imagery" },
+            { "ar": "الاستشعارُ عنْ بُعدٍ", "en": "Remote Sensing" }
+          ]
+        }
+      ]
+    }
+  ]
+}

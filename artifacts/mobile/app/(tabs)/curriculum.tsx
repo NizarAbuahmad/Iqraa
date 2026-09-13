@@ -13,6 +13,7 @@ import {
   Grade, Subject,
   getVisibleGrades, getSubjectsForGrade,
 } from '@/services/curriculumData';
+import { qrResourceCountForGrade } from '@/services/bookQrLinks';
 
 const SUBJECT_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   arabic:      'text',
@@ -74,6 +75,10 @@ export default function CurriculumScreen() {
 
   const topPad = insets.top + (insets.top === 0 ? 67 : 0);
   const showGradePicker = visibleGrades.length > 1;
+
+  // Hidden rather than shown-and-empty: grades 6, 7 and 8 have no printed codes
+  // at all, so on those an entry row would be a promise with nothing behind it.
+  const qrCount = qrResourceCountForGrade(selectedGrade.id);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -164,9 +169,49 @@ export default function CurriculumScreen() {
         columnWrapperStyle={{ gap: 12 }}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
-          <Text style={[styles.gradeLabel, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
-            {t('subjects_count', subjects.length)} · {lang === 'ar' ? selectedGrade.nameAr : selectedGrade.name}
-          </Text>
+          <>
+            {/* The library of what this grade's books point at. Above the
+                subject grid because it is the one thing here that is not the
+                curriculum restated — it is material a student can open now. */}
+            {qrCount > 0 ? (
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push({
+                    pathname: '/curriculum/resources',
+                    params: {
+                      gradeId: selectedGrade.id,
+                      gradeName: lang === 'ar' ? selectedGrade.nameAr : selectedGrade.name,
+                    },
+                  });
+                }}
+                style={({ pressed }) => [
+                  styles.libraryRow,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                    borderRadius: colors.radius,
+                    flexDirection: isRTL ? 'row-reverse' : 'row',
+                    opacity: pressed ? 0.85 : 1,
+                  },
+                ]}
+              >
+                <Ionicons name="library-outline" size={20} color={colors.primary} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.libraryTitle, { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', textAlign: isRTL ? 'right' : 'left' }]}>
+                    {t('qrLibraryEntry')}
+                  </Text>
+                  <Text style={[styles.libraryMeta, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+                    {t('qrLibraryCount', qrCount)}
+                  </Text>
+                </View>
+                <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.mutedForeground} />
+              </Pressable>
+            ) : null}
+            <Text style={[styles.gradeLabel, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+              {t('subjects_count', subjects.length)} · {lang === 'ar' ? selectedGrade.nameAr : selectedGrade.name}
+            </Text>
+          </>
         }
         ListEmptyComponent={
           <View style={styles.empty}>
@@ -213,6 +258,9 @@ const styles = StyleSheet.create({
   gradeChipText: { fontSize: 13 },
   grid: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 120 },
   gradeLabel: { fontSize: 12, marginBottom: 12 },
+  libraryRow: { alignItems: 'center', gap: 12, borderWidth: 1, padding: 14, marginBottom: 14 },
+  libraryTitle: { fontSize: 14 },
+  libraryMeta: { fontSize: 11.5, marginTop: 2 },
   subjectCard: { flex: 1, padding: 18, borderWidth: 1, alignItems: 'center', gap: 8 },
   subjectIcon: { width: 60, height: 60, alignItems: 'center', justifyContent: 'center' },
   subjectName: { fontSize: 13 },

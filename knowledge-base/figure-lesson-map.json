@@ -986,70 +986,2508 @@
       "unit": 1,
       "lesson": 1,
       "kbLessonId": "kbl-eng-s1-nccd-u1_l1",
-      "matchedBy": "hand-checked: one lesson per unit; s2 book units 1-5 are curriculum units 6-10"
+      "matchedBy": "hand-checked: unit granularity, filed on the unit first lesson (the extractor reads the unit, not the LESSON header); s2 book units 1-5 are curriculum units 6-10"
     },
     {
       "sourceId": "eng-s1-student-book",
       "unit": 2,
       "lesson": 1,
       "kbLessonId": "kbl-eng-s1-nccd-u2_l1",
-      "matchedBy": "hand-checked: one lesson per unit; s2 book units 1-5 are curriculum units 6-10"
+      "matchedBy": "hand-checked: unit granularity, filed on the unit first lesson (the extractor reads the unit, not the LESSON header); s2 book units 1-5 are curriculum units 6-10"
     },
     {
       "sourceId": "eng-s1-student-book",
       "unit": 3,
       "lesson": 1,
       "kbLessonId": "kbl-eng-s1-nccd-u3_l1",
-      "matchedBy": "hand-checked: one lesson per unit; s2 book units 1-5 are curriculum units 6-10"
+      "matchedBy": "hand-checked: unit granularity, filed on the unit first lesson (the extractor reads the unit, not the LESSON header); s2 book units 1-5 are curriculum units 6-10"
     },
     {
       "sourceId": "eng-s1-student-book",
       "unit": 4,
       "lesson": 1,
       "kbLessonId": "kbl-eng-s1-nccd-u4_l1",
-      "matchedBy": "hand-checked: one lesson per unit; s2 book units 1-5 are curriculum units 6-10"
+      "matchedBy": "hand-checked: unit granularity, filed on the unit first lesson (the extractor reads the unit, not the LESSON header); s2 book units 1-5 are curriculum units 6-10"
     },
     {
       "sourceId": "eng-s1-student-book",
       "unit": 5,
       "lesson": 1,
       "kbLessonId": "kbl-eng-s1-nccd-u5_l1",
-      "matchedBy": "hand-checked: one lesson per unit; s2 book units 1-5 are curriculum units 6-10"
+      "matchedBy": "hand-checked: unit granularity, filed on the unit first lesson (the extractor reads the unit, not the LESSON header); s2 book units 1-5 are curriculum units 6-10"
     },
     {
       "sourceId": "eng-s2-student-book",
       "unit": 1,
       "lesson": 1,
       "kbLessonId": "kbl-eng-s2-nccd-u6_l1",
-      "matchedBy": "hand-checked: one lesson per unit; s2 book units 1-5 are curriculum units 6-10"
+      "matchedBy": "hand-checked: unit granularity, filed on the unit first lesson (the extractor reads the unit, not the LESSON header); s2 book units 1-5 are curriculum units 6-10"
     },
     {
       "sourceId": "eng-s2-student-book",
       "unit": 2,
       "lesson": 1,
       "kbLessonId": "kbl-eng-s2-nccd-u7_l1",
-      "matchedBy": "hand-checked: one lesson per unit; s2 book units 1-5 are curriculum units 6-10"
+      "matchedBy": "hand-checked: unit granularity, filed on the unit first lesson (the extractor reads the unit, not the LESSON header); s2 book units 1-5 are curriculum units 6-10"
     },
     {
       "sourceId": "eng-s2-student-book",
       "unit": 3,
       "lesson": 1,
       "kbLessonId": "kbl-eng-s2-nccd-u8_l1",
-      "matchedBy": "hand-checked: one lesson per unit; s2 book units 1-5 are curriculum units 6-10"
+      "matchedBy": "hand-checked: unit granularity, filed on the unit first lesson (the extractor reads the unit, not the LESSON header); s2 book units 1-5 are curriculum units 6-10"
     },
     {
       "sourceId": "eng-s2-student-book",
       "unit": 4,
       "lesson": 1,
       "kbLessonId": "kbl-eng-s2-nccd-u9_l1",
-      "matchedBy": "hand-checked: one lesson per unit; s2 book units 1-5 are curriculum units 6-10"
+      "matchedBy": "hand-checked: unit granularity, filed on the unit first lesson (the extractor reads the unit, not the LESSON header); s2 book units 1-5 are curriculum units 6-10"
     },
     {
       "sourceId": "eng-s2-student-book",
       "unit": 5,
       "lesson": 1,
       "kbLessonId": "kbl-eng-s2-nccd-u10_l1",
-      "matchedBy": "hand-checked: one lesson per unit; s2 book units 1-5 are curriculum units 6-10"
+      "matchedBy": "hand-checked: unit granularity, filed on the unit first lesson (the extractor reads the unit, not the LESSON header); s2 book units 1-5 are curriculum units 6-10"
+    },
+    {
+      "sourceId": "g9-biology-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "العلومُ الحياتيةُ وأهميتُها",
+      "kbLessonId": "kbl-g9-biology-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 9 sciences, added 2026-09-11. The join is 1:1 with no offset, and that is checked rather than assumed: each book's lesson-opener pages were read and print exactly the curriculum's lesson titles, in order — «العلومُ الحياتيةُ وأهميتُها» opens u1 l2. Unlike Grade 10 maths, these books carry no extra opening lesson, so the printed number is the curriculum's number."
+    },
+    {
+      "sourceId": "g9-biology-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "تركيبُ الخليةِ ووظائفُ مُكوِّناتِها",
+      "kbLessonId": "kbl-g9-biology-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-biology-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "عملياتٌ حيويةٌ في الخليةِ",
+      "kbLessonId": "kbl-g9-biology-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-biology-s1-student-book",
+      "unit": 2,
+      "lesson": 3,
+      "bookTitleAr": "دورةُ الخليةِ",
+      "kbLessonId": "kbl-g9-biology-s1-nccd-u2_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-chemistry-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "مكوِّناتُ الذرَّةِ",
+      "kbLessonId": "kbl-g9-chem-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 9 sciences, added 2026-09-11. The join is 1:1 with no offset, and that is checked rather than assumed: each book's lesson-opener pages were read and print exactly the curriculum's lesson titles, in order — «مكوِّناتُ الذرَّةِ» opens u1 l1. Unlike Grade 10 maths, these books carry no extra opening lesson, so the printed number is the curriculum's number."
+    },
+    {
+      "sourceId": "g9-chemistry-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "التوزيعُ الإلكترونيُّ والجدولُ الدوريُّ",
+      "kbLessonId": "kbl-g9-chem-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-chemistry-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "خصائصُ الحُموضِ والقواعدِ",
+      "kbLessonId": "kbl-g9-chem-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-chemistry-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "تفاعلُ الحُموضِ والقواعدِ",
+      "kbLessonId": "kbl-g9-chem-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-chemistry-s2-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "تفاعلاتُ الفلزاتِ",
+      "kbLessonId": "kbl-g9-chem-s2-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 9 sciences, added 2026-09-11. The join is 1:1 with no offset, and that is checked rather than assumed: each book's lesson-opener pages were read and print exactly the curriculum's lesson titles, in order — «تفاعلاتُ الفلزاتِ» opens u3 l1. Unlike Grade 10 maths, these books carry no extra opening lesson, so the printed number is the curriculum's number."
+    },
+    {
+      "sourceId": "g9-chemistry-s2-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "سلسلةُ النشاطِ الكيميائيِّ وتآكُلُ الفلزاتِ",
+      "kbLessonId": "kbl-g9-chem-s2-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-chemistry-s2-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "التأكسدُ والاختزالُ والخلايا الجلفانيةُ",
+      "kbLessonId": "kbl-g9-chem-s2-nccd-u4_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-chemistry-s2-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "خلايا التحليلِ الكهربائيِّ",
+      "kbLessonId": "kbl-g9-chem-s2-nccd-u4_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-earth-science-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "المعادنُ وأنظمتُها البلَّوريةُ",
+      "kbLessonId": "kbl-g9-earth-science-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 9 sciences, added 2026-09-11. The join is 1:1 with no offset, and that is checked rather than assumed: each book's lesson-opener pages were read and print exactly the curriculum's lesson titles, in order — «المعادنُ وأنظمتُها البلَّوريةُ» opens u1 l1. Unlike Grade 10 maths, these books carry no extra opening lesson, so the printed number is the curriculum's number."
+    },
+    {
+      "sourceId": "g9-earth-science-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "مجموعاتُ المعادنِ",
+      "kbLessonId": "kbl-g9-earth-science-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-earth-science-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "المياهُ السطحيةُ",
+      "kbLessonId": "kbl-g9-earth-science-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-earth-science-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "المياهُ الجوفيةُ",
+      "kbLessonId": "kbl-g9-earth-science-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-earth-science-s2-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "نشأةُ النظامِ الشمسيِّ",
+      "kbLessonId": "kbl-g9-earth-science-s2-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 9 sciences, added 2026-09-11. The join is 1:1 with no offset, and that is checked rather than assumed: each book's lesson-opener pages were read and print exactly the curriculum's lesson titles, in order — «نشأةُ النظامِ الشمسيِّ» opens u3 l1. Unlike Grade 10 maths, these books carry no extra opening lesson, so the printed number is the curriculum's number."
+    },
+    {
+      "sourceId": "g9-earth-science-s2-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "مكوّناتُ النظامِ الشمسيِّ",
+      "kbLessonId": "kbl-g9-earth-science-s2-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-earth-science-s2-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "مصادرُ النفاياتِ الصُّلبةِ",
+      "kbLessonId": "kbl-g9-earth-science-s2-nccd-u4_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-earth-science-s2-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "التخلّصُ من النفاياتِ الصُّلبةِ",
+      "kbLessonId": "kbl-g9-earth-science-s2-nccd-u4_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-earth-science-s2-student-book",
+      "unit": 5,
+      "lesson": 1,
+      "bookTitleAr": "خصائصُ الغلافِ الجويِّ",
+      "kbLessonId": "kbl-g9-earth-science-s2-nccd-u5_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-earth-science-s2-student-book",
+      "unit": 5,
+      "lesson": 2,
+      "bookTitleAr": "تسخينُ الغلافِ الجويِّ",
+      "kbLessonId": "kbl-g9-earth-science-s2-nccd-u5_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-physics-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "النظامُ الدوليُّ للوَحداتِ",
+      "kbLessonId": "kbl-g9-phys-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 9 sciences, added 2026-09-11. The join is 1:1 with no offset, and that is checked rather than assumed: each book's lesson-opener pages were read and print exactly the curriculum's lesson titles, in order — «النظامُ الدوليُّ للوَحداتِ» opens u1 l1. Unlike Grade 10 maths, these books carry no extra opening lesson, so the printed number is the curriculum's number."
+    },
+    {
+      "sourceId": "g9-physics-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "القياسُ والأرقامُ المعنويّةُ",
+      "kbLessonId": "kbl-g9-phys-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-physics-s1-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "أخطاءُ القياسِ",
+      "kbLessonId": "kbl-g9-phys-s1-nccd-u1_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-physics-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "تطبيقاتٌ على القوى",
+      "kbLessonId": "kbl-g9-phys-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-physics-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "الشغلُ والقدرةُ",
+      "kbLessonId": "kbl-g9-phys-s1-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-physics-s1-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "الآلاتُ البسيطةُ",
+      "kbLessonId": "kbl-g9-phys-s1-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-physics-s2-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "المائعُ الساكنُ",
+      "kbLessonId": "kbl-g9-phys-s2-nccd-u4_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 9 sciences, added 2026-09-11. The join is 1:1 with no offset, and that is checked rather than assumed: each book's lesson-opener pages were read and print exactly the curriculum's lesson titles, in order — «المائعُ الساكنُ» opens u4 l1. Unlike Grade 10 maths, these books carry no extra opening lesson, so the printed number is the curriculum's number."
+    },
+    {
+      "sourceId": "g9-physics-s2-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "قياسُ الضغطِ",
+      "kbLessonId": "kbl-g9-phys-s2-nccd-u4_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-physics-s2-student-book",
+      "unit": 5,
+      "lesson": 1,
+      "bookTitleAr": "انكسارُ الضوءِ",
+      "kbLessonId": "kbl-g9-phys-s2-nccd-u5_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-physics-s2-student-book",
+      "unit": 5,
+      "lesson": 2,
+      "bookTitleAr": "تطبيقاتٌ وظواهرُ بصريّةٌ",
+      "kbLessonId": "kbl-g9-phys-s2-nccd-u5_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-physics-s2-student-book",
+      "unit": 5,
+      "lesson": 3,
+      "bookTitleAr": "العدساتُ الرقيقةُ",
+      "kbLessonId": "kbl-g9-phys-s2-nccd-u5_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-biology-s2-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "الأنسجةُ الحيوانيةُ",
+      "kbLessonId": "kbl-g9-biology-s2-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 9 sciences, added 2026-09-11 — see the g9-bio-s1 entry. One thing is specific to this book: `lesson_start` misses unit 4's SECOND lesson opener («دراسةُ الجماعاتِ الحيويةِ», p49), so pages 49-54 are filed under u4_l1. It costs nothing today because no crop from those pages survived review, but a re-run that finds one would file it a lesson early."
+    },
+    {
+      "sourceId": "g9-biology-s2-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "الأنسجةُ النباتيةُ",
+      "kbLessonId": "kbl-g9-biology-s2-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-biology-s2-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "الأنظمةُ البيئيةُ",
+      "kbLessonId": "kbl-g9-biology-s2-nccd-u4_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-biology-s2-student-book",
+      "unit": 4,
+      "lesson": 3,
+      "bookTitleAr": "استدامةُ الطاقةِ والموادِّ في الأنظمةِ البيئيةِ",
+      "kbLessonId": "kbl-g9-biology-s2-nccd-u4_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "geo-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "الغلافُ الجوّيُّ",
+      "kbLessonId": "kbl-geo-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 10 geography S1."
+    },
+    {
+      "sourceId": "geo-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "الغلافُ الحيويُّ",
+      "kbLessonId": "kbl-geo-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "geo-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "مُقوِّماتُ السّياحةِ",
+      "kbLessonId": "kbl-geo-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "geo-s1-student-book",
+      "unit": 2,
+      "lesson": 3,
+      "bookTitleAr": "النقلُ",
+      "kbLessonId": "kbl-geo-s1-nccd-u2_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "geo-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "الخرائطُ الموضوعيّةُ",
+      "kbLessonId": "kbl-geo-s1-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "geo-s1-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "نُظُمُ المعلوماتِ الجغرافيّةِ",
+      "kbLessonId": "kbl-geo-s1-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "geo-s1-student-book",
+      "unit": 3,
+      "lesson": 3,
+      "bookTitleAr": "الأقمارُ الصناعيّةُ وتحليلُ الصورِ الفضائيّةِ",
+      "kbLessonId": "kbl-geo-s1-nccd-u3_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "history-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "الإمبراطوريّةُ الفارسيّةُ: النشأةُ والتطوُّرُ (560ق.م-651م)",
+      "kbLessonId": "kbl-hist-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "History and geography, added 2026-09-11. Checked the way the sciences were: every lesson title the page text yields unscrambled lands exactly on the opener page `outline` detected (8 of 12 here; the four blanks are titles whose RTL extraction breaks the substring, not mismatches), and the number of openers equals the catalog's lesson count. These books print no unit running header, which is why `EXPECTED_UNITS` has no entry for them — see the comment there."
+    },
+    {
+      "sourceId": "history-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "الدَّولةُ الساسانيّةُ (226م-651م)",
+      "kbLessonId": "kbl-hist-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "history-s1-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "الحكمُ والمُؤسَّساتُ في الدَّولةِ الساسانيّةِ",
+      "kbLessonId": "kbl-hist-s1-nccd-u1_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "history-s1-student-book",
+      "unit": 1,
+      "lesson": 5,
+      "bookTitleAr": "علاقاتُ الدَّولةِ الساسانيّةِ الخارجيّةُ",
+      "kbLessonId": "kbl-hist-s1-nccd-u1_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "history-s1-student-book",
+      "unit": 1,
+      "lesson": 6,
+      "bookTitleAr": "نهايةُ الدَّولةِ الساسانيّةِ",
+      "kbLessonId": "kbl-hist-s1-nccd-u1_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "history-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "نشأةُ الدَّولةِ العثمانيّةِ",
+      "kbLessonId": "kbl-hist-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "history-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "فتحُ القسطنطينيّةِ (إسطنبولَ)",
+      "kbLessonId": "kbl-hist-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "history-s1-student-book",
+      "unit": 2,
+      "lesson": 3,
+      "bookTitleAr": "الحياةُ العامّةُ في الدَّولةِ العثمانيّةِ",
+      "kbLessonId": "kbl-hist-s1-nccd-u2_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "history-s1-student-book",
+      "unit": 2,
+      "lesson": 4,
+      "bookTitleAr": "الوطنُ العربيُّ في ظِلِّ الحُكمِ العثمانيِّ",
+      "kbLessonId": "kbl-hist-s1-nccd-u2_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "history-s1-student-book",
+      "unit": 2,
+      "lesson": 5,
+      "bookTitleAr": "الأردنُّ في ظِلِّ الحُكمِ العثمانيِّ",
+      "kbLessonId": "kbl-hist-s1-nccd-u2_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "history-s1-student-book",
+      "unit": 2,
+      "lesson": 6,
+      "bookTitleAr": "نهايةُ الدَّولةِ العثمانيّةِ",
+      "kbLessonId": "kbl-hist-s1-nccd-u2_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-geography-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "مُكوِّناتُ الغلافِ الصخريِّ وأهمّيّتُهُ",
+      "kbLessonId": "kbl-g9-geo-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 9 geography S1."
+    },
+    {
+      "sourceId": "g9-geography-s1-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "الصخورُ والتربةُ",
+      "kbLessonId": "kbl-g9-geo-s1-nccd-u1_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-geography-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "مُكوِّناتُ الغلافِ المائيِّ",
+      "kbLessonId": "kbl-g9-geo-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-geography-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "حركةُ المياهِ في البحارِ والمحيطاتِ",
+      "kbLessonId": "kbl-g9-geo-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-geography-s1-student-book",
+      "unit": 2,
+      "lesson": 3,
+      "bookTitleAr": "إدارةُ الموارِدِ المائيةِ",
+      "kbLessonId": "kbl-g9-geo-s1-nccd-u2_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-geography-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "الملامحُ الطبيعيةُ للوطنِ العربيِّ",
+      "kbLessonId": "kbl-g9-geo-s1-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-geography-s1-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "الملامحُ البشريةُ للوطنِ العربيِّ",
+      "kbLessonId": "kbl-g9-geo-s1-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-geography-s1-student-book",
+      "unit": 3,
+      "lesson": 3,
+      "bookTitleAr": "التحدّياتُ الاقتصاديةُ والاجتماعيةُ في الوطنِ العربيِّ",
+      "kbLessonId": "kbl-g9-geo-s1-nccd-u3_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-history-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "الحضارةُ اليونانيّةُ",
+      "kbLessonId": "kbl-g9-hist-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 9 history S1. 7 of its 10 lesson titles land on the detected opener page; the three blanks are the Ayyubid/Mamluk titles, whose Hijri-Gregorian date parentheses break a substring match. Its SEMESTER 2 book is absent on purpose: `lesson_start` finds one opener in it against 13 lessons, so `outline` refuses it and every crop would be unplaced."
+    },
+    {
+      "sourceId": "g9-history-s1-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "الحضارةُ الرومانيّةُ",
+      "kbLessonId": "kbl-g9-hist-s1-nccd-u1_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-history-s1-student-book",
+      "unit": 1,
+      "lesson": 4,
+      "bookTitleAr": "الحياةُ العامّةُ في الحضارةِ الرومانيّةِ",
+      "kbLessonId": "kbl-g9-hist-s1-nccd-u1_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-history-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "الدولةُ الأيّوبيّةُ (569-648هـ/1174-1250م)",
+      "kbLessonId": "kbl-g9-hist-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-history-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "الحياةُ العامّةُ في الدولةِ الأيّوبيّةِ",
+      "kbLessonId": "kbl-g9-hist-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-history-s1-student-book",
+      "unit": 2,
+      "lesson": 3,
+      "bookTitleAr": "الدولةُ المملوكيّةُ (648-923هـ/1250-1517م)",
+      "kbLessonId": "kbl-g9-hist-s1-nccd-u2_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-history-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "الغزوُ الفِرِنجيُّ للعالمِ العربيِّ الإسلاميِّ",
+      "kbLessonId": "kbl-g9-hist-s1-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-history-s1-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "الغزوُ المغوليُّ للعالمِ العربيِّ الإسلاميِّ",
+      "kbLessonId": "kbl-g9-hist-s1-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "geo-s2-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "التغيُّرُ المناخيُّ",
+      "kbLessonId": "kbl-geo-s2-nccd-u4_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Offset by 3 — book units 1-3 are the curriculum's 4-6, for the reason the history-s2 entry gives. Five of the nine titles land exactly on their detected opener; the other four are titles whose RTL extraction breaks a substring match, not disagreements."
+    },
+    {
+      "sourceId": "geo-s2-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "تقييمُ الأثرِ البيئيِّ",
+      "kbLessonId": "kbl-geo-s2-nccd-u4_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "geo-s2-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "التنميةُ المُستدامةُ",
+      "kbLessonId": "kbl-geo-s2-nccd-u5_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "geo-s2-student-book",
+      "unit": 2,
+      "lesson": 3,
+      "bookTitleAr": "الريادةُ والابتكارُ",
+      "kbLessonId": "kbl-geo-s2-nccd-u5_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "geo-s2-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "أمريكا الشماليّةُ والوسطى: الملامحُ الطبيعيّةُ والبشريّةُ",
+      "kbLessonId": "kbl-geo-s2-nccd-u6_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "geo-s2-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "أمريكا الجنوبيّةُ: الملامحُ الطبيعيّةُ والبشريّةُ",
+      "kbLessonId": "kbl-geo-s2-nccd-u6_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "geo-s2-student-book",
+      "unit": 3,
+      "lesson": 3,
+      "bookTitleAr": "قارّةُ أوقيانوسيا",
+      "kbLessonId": "kbl-geo-s2-nccd-u6_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "history-s2-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "الثورةُ الصناعيّةُ",
+      "kbLessonId": "kbl-hist-s2-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "UNIT NUMBERS ARE OFFSET BY 2 HERE, and the offset is the entry, not a bug to correct upstream. This book prints no «الوحدة N» running header, so `outline` counts opener resets inside the one PDF and calls its units 1 and 2; the curriculum numbers them 3 and 4 across the year. Verified before it was written down: all eight of unit 3's lesson titles land exactly on the opener page `outline` detected. Same shape as the English S2 offset."
+    },
+    {
+      "sourceId": "history-s2-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "إنجازاتُ الثورةِ الصناعيّةِ",
+      "kbLessonId": "kbl-hist-s2-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "history-s2-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "الثورةُ الأمريكيّةُ",
+      "kbLessonId": "kbl-hist-s2-nccd-u3_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "history-s2-student-book",
+      "unit": 1,
+      "lesson": 4,
+      "bookTitleAr": "مراحلُ الثورةِ الأمريكيّةِ",
+      "kbLessonId": "kbl-hist-s2-nccd-u3_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "history-s2-student-book",
+      "unit": 1,
+      "lesson": 5,
+      "bookTitleAr": "الثورةُ الفرنسيّةُ",
+      "kbLessonId": "kbl-hist-s2-nccd-u3_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "history-s2-student-book",
+      "unit": 1,
+      "lesson": 6,
+      "bookTitleAr": "نتائجُ الثورةِ الفرنسيّةِ",
+      "kbLessonId": "kbl-hist-s2-nccd-u3_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "history-s2-student-book",
+      "unit": 1,
+      "lesson": 7,
+      "bookTitleAr": "الثورةُ الروسيّةُ",
+      "kbLessonId": "kbl-hist-s2-nccd-u3_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "history-s2-student-book",
+      "unit": 1,
+      "lesson": 8,
+      "bookTitleAr": "العالَمُ في القرنِ العشرينَ",
+      "kbLessonId": "kbl-hist-s2-nccd-u3_l8",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "history-s2-student-book",
+      "unit": 2,
+      "lesson": 3,
+      "bookTitleAr": "زيغريد هونكه (1913م-1999م)",
+      "kbLessonId": "kbl-hist-s2-nccd-u4_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-geography-s2-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "قارّةُ آسيا: الملامحُ الطبيعيةُ والبشريةُ",
+      "kbLessonId": "kbl-g9-geo-s2-nccd-u6_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Offset by 3, same as its Grade 10 sibling. ONE figure survived review out of 14 crops — this book's maps and photographs are rasters the vector extractor cannot seed on, so all it found was drawn page furniture. It is wired for that single Asia map; the rest of the book needs the raster pipeline (`extract_book_photos.py`), not another run of this one."
+    },
+    {
+      "sourceId": "g8-science-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "المادةُ الوراثيةُ",
+      "kbLessonId": "kbl-g8-science-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 8's first book of any kind, added 2026-09-12. Nine of its ten lesson titles land exactly on the opener page `outline` detected; the tenth («تركيب الذرّة والتوزيع الإلكترونيّ») is a long title whose RTL extraction breaks a substring match, not a disagreement. Its SEMESTER 2 book is absent on purpose: only two pages in it carry «الدرس» as text and both are the contents spread, so `outline` returns nothing and every crop would be unplaced."
+    },
+    {
+      "sourceId": "g8-science-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "التكاثُرُ",
+      "kbLessonId": "kbl-g8-science-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-science-s1-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "الوراثةُ",
+      "kbLessonId": "kbl-g8-science-s1-nccd-u1_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-science-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "تركيبُ الذرّةِ والتوزيعُ الإلكترونيُّ",
+      "kbLessonId": "kbl-g8-science-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-science-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "الجدولُ الدوريُّ وخصائصُ العناصرِ",
+      "kbLessonId": "kbl-g8-science-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-science-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "الضغطُ",
+      "kbLessonId": "kbl-g8-science-s1-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-science-s1-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "الكثافةُ والطَّفوُ",
+      "kbLessonId": "kbl-g8-science-s1-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-science-s1-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "الصفائحُ التكتونيةُ وحركتُها",
+      "kbLessonId": "kbl-g8-science-s1-nccd-u4_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-science-s1-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "الموارِدُ الطبيعيةُ",
+      "kbLessonId": "kbl-g8-science-s1-nccd-u4_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-science-s1-student-book",
+      "unit": 4,
+      "lesson": 3,
+      "bookTitleAr": "استدامةُ المواردِ الطبيعيةِ",
+      "kbLessonId": "kbl-g8-science-s1-nccd-u4_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "الجذور الصماء",
+      "kbLessonId": "kbl-g8-math-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 8 maths, added 2026-09-13. Both books needed a new `OPENER_PROFILES` entry and it took two tries: the sizes alone got 15 of 17 openers in S1 and 14 of 20 in S2, because a handful of pages emit «الدرس» FUSED to the title in one span («الدرسُالنسبةُ المئويّة»), which an equality test cannot see. `dars_prefix` fixes that and both books now detect their catalog counts exactly. Worth knowing why that mattered: a missed opener does not leave a gap, it extends the PREVIOUS lesson over the missing one's pages and files its figures under the wrong lesson."
+    },
+    {
+      "sourceId": "g8-math-s1-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "نظرية فيثاغورس",
+      "kbLessonId": "kbl-g8-math-s1-nccd-u1_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s1-student-book",
+      "unit": 1,
+      "lesson": 4,
+      "bookTitleAr": "الأعداد الحقيقية",
+      "kbLessonId": "kbl-g8-math-s1-nccd-u1_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s1-student-book",
+      "unit": 1,
+      "lesson": 5,
+      "bookTitleAr": "النسبة المئوية",
+      "kbLessonId": "kbl-g8-math-s1-nccd-u1_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "التحليل بإخراج العامل المشترك الأكبر",
+      "kbLessonId": "kbl-g8-math-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "تحليل ثلاثيات الحدود x²+bx+c",
+      "kbLessonId": "kbl-g8-math-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s1-student-book",
+      "unit": 2,
+      "lesson": 4,
+      "bookTitleAr": "حالات خاصة من التحليل",
+      "kbLessonId": "kbl-g8-math-s1-nccd-u2_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "المعادلة الخطية بالصورة القياسية",
+      "kbLessonId": "kbl-g8-math-s1-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s1-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "ميل المستقيم",
+      "kbLessonId": "kbl-g8-math-s1-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s1-student-book",
+      "unit": 3,
+      "lesson": 3,
+      "bookTitleAr": "معادلة المستقيم بصيغة الميل والمقطع",
+      "kbLessonId": "kbl-g8-math-s1-nccd-u3_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s1-student-book",
+      "unit": 3,
+      "lesson": 4,
+      "bookTitleAr": "معادلة المستقيم بصيغة الميل ونقطة",
+      "kbLessonId": "kbl-g8-math-s1-nccd-u3_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s1-student-book",
+      "unit": 3,
+      "lesson": 5,
+      "bookTitleAr": "المستقيمات المتوازية والمتعامدة",
+      "kbLessonId": "kbl-g8-math-s1-nccd-u3_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s1-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "تطابق المثلثات (SSS, SAS, HL)",
+      "kbLessonId": "kbl-g8-math-s1-nccd-u4_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s1-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "تطابق المثلثات (ASA, AAS)",
+      "kbLessonId": "kbl-g8-math-s1-nccd-u4_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s1-student-book",
+      "unit": 4,
+      "lesson": 3,
+      "bookTitleAr": "المثلثات المتطابقة الضلعين والمثلثات المتطابقة الأضلاع",
+      "kbLessonId": "kbl-g8-math-s1-nccd-u4_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s2-student-book",
+      "unit": 5,
+      "lesson": 3,
+      "bookTitleAr": "حلّ المتباينات بالضرب والقسمة",
+      "kbLessonId": "kbl-g8-math-s2-nccd-u5_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s2-student-book",
+      "unit": 5,
+      "lesson": 4,
+      "bookTitleAr": "حلّ المتباينات متعددة الخطوات",
+      "kbLessonId": "kbl-g8-math-s2-nccd-u5_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s2-student-book",
+      "unit": 6,
+      "lesson": 1,
+      "bookTitleAr": "حلّ نظام من معادلتين خطّيّتين بيانيًّا",
+      "kbLessonId": "kbl-g8-math-s2-nccd-u6_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s2-student-book",
+      "unit": 6,
+      "lesson": 3,
+      "bookTitleAr": "حلّ نظام من معادلتين خطّيّتين بالحذف",
+      "kbLessonId": "kbl-g8-math-s2-nccd-u6_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s2-student-book",
+      "unit": 7,
+      "lesson": 2,
+      "bookTitleAr": "متوازي الأضلاع",
+      "kbLessonId": "kbl-g8-math-s2-nccd-u7_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s2-student-book",
+      "unit": 7,
+      "lesson": 3,
+      "bookTitleAr": "تمييز متوازي الأضلاع",
+      "kbLessonId": "kbl-g8-math-s2-nccd-u7_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s2-student-book",
+      "unit": 7,
+      "lesson": 5,
+      "bookTitleAr": "تشابه المثلثات",
+      "kbLessonId": "kbl-g8-math-s2-nccd-u7_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s2-student-book",
+      "unit": 7,
+      "lesson": 6,
+      "bookTitleAr": "التمدّد",
+      "kbLessonId": "kbl-g8-math-s2-nccd-u7_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s2-student-book",
+      "unit": 8,
+      "lesson": 1,
+      "bookTitleAr": "رسم الأشكال ثلاثيّة الأبعاد",
+      "kbLessonId": "kbl-g8-math-s2-nccd-u8_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s2-student-book",
+      "unit": 8,
+      "lesson": 2,
+      "bookTitleAr": "المقاطع والمجسّمات الدّورانيّة",
+      "kbLessonId": "kbl-g8-math-s2-nccd-u8_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s2-student-book",
+      "unit": 8,
+      "lesson": 3,
+      "bookTitleAr": "حجم الكرة ومساحة سطحها",
+      "kbLessonId": "kbl-g8-math-s2-nccd-u8_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s2-student-book",
+      "unit": 9,
+      "lesson": 2,
+      "bookTitleAr": "اختيار التمثيل الأنسب",
+      "kbLessonId": "kbl-g8-math-s2-nccd-u9_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s2-student-book",
+      "unit": 9,
+      "lesson": 3,
+      "bookTitleAr": "عدّ النَّواتج",
+      "kbLessonId": "kbl-g8-math-s2-nccd-u9_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-math-s2-student-book",
+      "unit": 9,
+      "lesson": 4,
+      "bookTitleAr": "احتمال الحوادث المركَّبة",
+      "kbLessonId": "kbl-g8-math-s2-nccd-u9_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s1-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "الاستماع والمفردات",
+      "kbLessonId": "kbl-eng-s1-nccd-u1_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s1-student-book",
+      "unit": 1,
+      "lesson": 6,
+      "bookTitleAr": "المحادثة",
+      "kbLessonId": "kbl-eng-s1-nccd-u1_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s1-student-book",
+      "unit": 2,
+      "lesson": 5,
+      "bookTitleAr": "الاستماع والمفردات",
+      "kbLessonId": "kbl-eng-s1-nccd-u2_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s1-student-book",
+      "unit": 2,
+      "lesson": 6,
+      "bookTitleAr": "المحادثة",
+      "kbLessonId": "kbl-eng-s1-nccd-u2_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s1-student-book",
+      "unit": 2,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: A blog post",
+      "kbLessonId": "kbl-eng-s1-nccd-u2_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s1-student-book",
+      "unit": 3,
+      "lesson": 3,
+      "bookTitleAr": "الاستماع والمفردات",
+      "kbLessonId": "kbl-eng-s1-nccd-u3_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s1-student-book",
+      "unit": 3,
+      "lesson": 5,
+      "bookTitleAr": "المحادثة والمفردات",
+      "kbLessonId": "kbl-eng-s1-nccd-u3_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s1-student-book",
+      "unit": 3,
+      "lesson": 6,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-eng-s1-nccd-u3_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s1-student-book",
+      "unit": 4,
+      "lesson": 4,
+      "bookTitleAr": "القواعد",
+      "kbLessonId": "kbl-eng-s1-nccd-u4_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s1-student-book",
+      "unit": 4,
+      "lesson": 5,
+      "bookTitleAr": "الاستماع والمفردات",
+      "kbLessonId": "kbl-eng-s1-nccd-u4_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s1-student-book",
+      "unit": 4,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: A formal email of enquiry",
+      "kbLessonId": "kbl-eng-s1-nccd-u4_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s1-student-book",
+      "unit": 5,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: Personal statement as part of a university application",
+      "kbLessonId": "kbl-eng-s1-nccd-u5_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s2-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-eng-s2-nccd-u6_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s2-student-book",
+      "unit": 1,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: A for-and-against essay",
+      "kbLessonId": "kbl-eng-s2-nccd-u6_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s2-student-book",
+      "unit": 2,
+      "lesson": 4,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-eng-s2-nccd-u7_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s2-student-book",
+      "unit": 2,
+      "lesson": 6,
+      "bookTitleAr": "المحادثة",
+      "kbLessonId": "kbl-eng-s2-nccd-u7_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s2-student-book",
+      "unit": 2,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة والمفردات: A review of a play",
+      "kbLessonId": "kbl-eng-s2-nccd-u7_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s2-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "الاستماع والمفردات",
+      "kbLessonId": "kbl-eng-s2-nccd-u8_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s2-student-book",
+      "unit": 3,
+      "lesson": 3,
+      "bookTitleAr": "المفردات: Money",
+      "kbLessonId": "kbl-eng-s2-nccd-u8_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s2-student-book",
+      "unit": 3,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: An opinion essay",
+      "kbLessonId": "kbl-eng-s2-nccd-u8_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s2-student-book",
+      "unit": 4,
+      "lesson": 6,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-eng-s2-nccd-u9_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s2-student-book",
+      "unit": 4,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة والمفردات: An article",
+      "kbLessonId": "kbl-eng-s2-nccd-u9_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s2-student-book",
+      "unit": 5,
+      "lesson": 3,
+      "bookTitleAr": "القواعد",
+      "kbLessonId": "kbl-eng-s2-nccd-u10_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s2-student-book",
+      "unit": 5,
+      "lesson": 6,
+      "bookTitleAr": "الاستماع والمفردات",
+      "kbLessonId": "kbl-eng-s2-nccd-u10_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "eng-s2-student-book",
+      "unit": 5,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: A formal letter",
+      "kbLessonId": "kbl-eng-s2-nccd-u10_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "المفردات: Free-time activities and frequency expressions",
+      "kbLessonId": "kbl-g8-eng-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 8 English, added 2026-09-13. Grade 8's second subject."
+    },
+    {
+      "sourceId": "g8-english-s1-student-book",
+      "unit": 1,
+      "lesson": 4,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-g8-eng-s1-nccd-u1_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s1-student-book",
+      "unit": 1,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: A personal profile",
+      "kbLessonId": "kbl-g8-eng-s1-nccd-u1_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s1-student-book",
+      "unit": 2,
+      "lesson": 4,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-g8-eng-s1-nccd-u2_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s1-student-book",
+      "unit": 3,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: A restaurant review",
+      "kbLessonId": "kbl-g8-eng-s1-nccd-u3_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s1-student-book",
+      "unit": 4,
+      "lesson": 4,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-g8-eng-s1-nccd-u4_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s1-student-book",
+      "unit": 4,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: An internet forum post",
+      "kbLessonId": "kbl-g8-eng-s1-nccd-u4_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s1-student-book",
+      "unit": 5,
+      "lesson": 5,
+      "bookTitleAr": "الاستماع والمفردات",
+      "kbLessonId": "kbl-g8-eng-s1-nccd-u5_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s1-student-book",
+      "unit": 5,
+      "lesson": 6,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-g8-eng-s1-nccd-u5_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s1-student-book",
+      "unit": 5,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: An informal email",
+      "kbLessonId": "kbl-g8-eng-s1-nccd-u5_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s2-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-g8-eng-s2-nccd-u6_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s2-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "المفردات: Literature",
+      "kbLessonId": "kbl-g8-eng-s2-nccd-u6_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s2-student-book",
+      "unit": 1,
+      "lesson": 5,
+      "bookTitleAr": "الاستماع والمفردات",
+      "kbLessonId": "kbl-g8-eng-s2-nccd-u6_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s2-student-book",
+      "unit": 1,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: A book review",
+      "kbLessonId": "kbl-g8-eng-s2-nccd-u6_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s2-student-book",
+      "unit": 2,
+      "lesson": 6,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-g8-eng-s2-nccd-u7_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s2-student-book",
+      "unit": 2,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: A short message",
+      "kbLessonId": "kbl-g8-eng-s2-nccd-u7_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s2-student-book",
+      "unit": 3,
+      "lesson": 6,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-g8-eng-s2-nccd-u8_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s2-student-book",
+      "unit": 3,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: A notice",
+      "kbLessonId": "kbl-g8-eng-s2-nccd-u8_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s2-student-book",
+      "unit": 4,
+      "lesson": 6,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-g8-eng-s2-nccd-u9_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s2-student-book",
+      "unit": 4,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: An online forum post",
+      "kbLessonId": "kbl-g8-eng-s2-nccd-u9_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s2-student-book",
+      "unit": 5,
+      "lesson": 4,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-g8-eng-s2-nccd-u10_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s2-student-book",
+      "unit": 5,
+      "lesson": 5,
+      "bookTitleAr": "الاستماع والمفردات",
+      "kbLessonId": "kbl-g8-eng-s2-nccd-u10_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s2-student-book",
+      "unit": 5,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: An article",
+      "kbLessonId": "kbl-g8-eng-s2-nccd-u10_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s1-student-book",
+      "unit": 1,
+      "lesson": 6,
+      "bookTitleAr": "المحادثة",
+      "kbLessonId": "kbl-g9-eng-s1-nccd-u1_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 9 English, added 2026-09-13 — the raster pipeline, same series and same 5x7 catalog shape as Grade 10."
+    },
+    {
+      "sourceId": "g9-english-s1-student-book",
+      "unit": 1,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: An informal email of introduction",
+      "kbLessonId": "kbl-g9-eng-s1-nccd-u1_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "المفردات والقواعد",
+      "kbLessonId": "kbl-g9-eng-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "المفردات",
+      "kbLessonId": "kbl-g9-eng-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s1-student-book",
+      "unit": 2,
+      "lesson": 3,
+      "bookTitleAr": "القواعد",
+      "kbLessonId": "kbl-g9-eng-s1-nccd-u2_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s1-student-book",
+      "unit": 2,
+      "lesson": 5,
+      "bookTitleAr": "الاستماع والمفردات",
+      "kbLessonId": "kbl-g9-eng-s1-nccd-u2_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s1-student-book",
+      "unit": 2,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة",
+      "kbLessonId": "kbl-g9-eng-s1-nccd-u2_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "المفردات والقواعد",
+      "kbLessonId": "kbl-g9-eng-s1-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s1-student-book",
+      "unit": 3,
+      "lesson": 6,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-g9-eng-s1-nccd-u3_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s1-student-book",
+      "unit": 3,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة والمفردات: A blog post The world is your oyster",
+      "kbLessonId": "kbl-g9-eng-s1-nccd-u3_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s1-student-book",
+      "unit": 4,
+      "lesson": 4,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-g9-eng-s1-nccd-u4_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s1-student-book",
+      "unit": 4,
+      "lesson": 5,
+      "bookTitleAr": "الاستماع والمفردات",
+      "kbLessonId": "kbl-g9-eng-s1-nccd-u4_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s1-student-book",
+      "unit": 4,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: A formal letter of complaint",
+      "kbLessonId": "kbl-g9-eng-s1-nccd-u4_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s1-student-book",
+      "unit": 5,
+      "lesson": 1,
+      "bookTitleAr": "المفردات والقواعد",
+      "kbLessonId": "kbl-g9-eng-s1-nccd-u5_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s1-student-book",
+      "unit": 5,
+      "lesson": 2,
+      "bookTitleAr": "المفردات: Household chores",
+      "kbLessonId": "kbl-g9-eng-s1-nccd-u5_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s1-student-book",
+      "unit": 5,
+      "lesson": 6,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-g9-eng-s1-nccd-u5_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s1-student-book",
+      "unit": 5,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: A note/short message",
+      "kbLessonId": "kbl-g9-eng-s1-nccd-u5_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "المفردات والقواعد",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u6_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u6_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "القواعد والمفردات",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u6_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 1,
+      "lesson": 4,
+      "bookTitleAr": "الاستماع والمفردات",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u6_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 1,
+      "lesson": 6,
+      "bookTitleAr": "المحادثة",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u6_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 1,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u6_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "المفردات والقواعد",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u7_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 2,
+      "lesson": 5,
+      "bookTitleAr": "المحادثة",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u7_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 2,
+      "lesson": 6,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u7_l6",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 2,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة والمفردات: A formal email of application",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u7_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 3,
+      "lesson": 4,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u8_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 3,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة والمفردات: An opinion essay",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u8_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "المفردات: Creative jobs",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u9_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 4,
+      "lesson": 4,
+      "bookTitleAr": "القراءة والمفردات",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u9_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 4,
+      "lesson": 5,
+      "bookTitleAr": "المحادثة",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u9_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 5,
+      "lesson": 3,
+      "bookTitleAr": "الاستماع والمفردات",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u10_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 5,
+      "lesson": 5,
+      "bookTitleAr": "المحادثة",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u10_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 5,
+      "lesson": 7,
+      "bookTitleAr": "الكتابة: A story In December",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u10_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-english-s1-student-book",
+      "unit": 1,
+      "lesson": 9,
+      "bookTitleAr": "الإنجليزية في الاستخدام: السؤال عن معلومات السفر",
+      "kbLessonId": "kbl-g7-eng-s1-nccd-u1_l9",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 7 English, added 2026-09-13, and it is the odd one of the four grades. FOUR units of nine lessons where 8, 9 and 10 are five of seven; its header is «Lesson 7» at 14.999968528747559pt, not «LESSON 7A» at 18pt (a `>= 15` gate silently matches NONE of them); its unit boundary is «In this unit I will …» rather than a lesson-number reset, because its numbering has gaps — 1,2,3,5,6,8,9,10,11. `where_of_page_g7` in extract_book_photos.py carries all three."
+    },
+    {
+      "sourceId": "g7-english-s1-student-book",
+      "unit": 2,
+      "lesson": 9,
+      "bookTitleAr": "الإنجليزية في الاستخدام: تقديم المساعدة والرد عليها",
+      "kbLessonId": "kbl-g7-eng-s1-nccd-u2_l9",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-english-s1-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "حوار الفريق: استطلاع القراءة الصفي",
+      "kbLessonId": "kbl-g7-eng-s1-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-english-s1-student-book",
+      "unit": 3,
+      "lesson": 5,
+      "bookTitleAr": "نادي الكتاب: ما الذي في البرج؟ (قصة غامضة)",
+      "kbLessonId": "kbl-g7-eng-s1-nccd-u3_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-english-s1-student-book",
+      "unit": 3,
+      "lesson": 8,
+      "bookTitleAr": "الثقافة: ألغاز بلا إجابات",
+      "kbLessonId": "kbl-g7-eng-s1-nccd-u3_l8",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-english-s1-student-book",
+      "unit": 3,
+      "lesson": 9,
+      "bookTitleAr": "الإنجليزية في الاستخدام: الموافقة والاعتراض",
+      "kbLessonId": "kbl-g7-eng-s1-nccd-u3_l9",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-english-s1-student-book",
+      "unit": 4,
+      "lesson": 5,
+      "bookTitleAr": "نادي الكتاب: تجربة مرعبة (يوميات)",
+      "kbLessonId": "kbl-g7-eng-s1-nccd-u4_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-english-s1-student-book",
+      "unit": 4,
+      "lesson": 8,
+      "bookTitleAr": "الثقافة: التغيّر المناخي والحيوانات",
+      "kbLessonId": "kbl-g7-eng-s1-nccd-u4_l8",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-english-s1-student-book",
+      "unit": 4,
+      "lesson": 9,
+      "bookTitleAr": "الإنجليزية في الاستخدام: تقديم النصيحة",
+      "kbLessonId": "kbl-g7-eng-s1-nccd-u4_l9",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-english-s2-student-book",
+      "unit": 2,
+      "lesson": 7,
+      "bookTitleAr": "اللغة في الاستخدام",
+      "kbLessonId": "kbl-g7-eng-s2-nccd-u6_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Offset by 4 (S2 units are 5-8, not 6-10 like the other grades) AND lesson-remapped. Both Grade 7 books PRINT 1,2,3,5,6,8,9,10,11, but only the S1 catalog carries those numbers; the S2 catalog renumbers them 1..9. The two are positionally identical — checked title by title against u4/u7 — so the join here is the printed number's POSITION. Mapping l9 to l9 would file «English in action» photos under «Writing»."
+    },
+    {
+      "sourceId": "g7-english-s2-student-book",
+      "unit": 3,
+      "lesson": 7,
+      "bookTitleAr": "اللغة في الاستخدام",
+      "kbLessonId": "kbl-g7-eng-s2-nccd-u7_l7",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-english-s2-student-book",
+      "unit": 3,
+      "lesson": 9,
+      "bookTitleAr": "الكتابة: مقابلة",
+      "kbLessonId": "kbl-g7-eng-s2-nccd-u7_l9",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-english-s2-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "المفردات",
+      "kbLessonId": "kbl-g7-eng-s2-nccd-u8_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g7-english-s2-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "حوار الفريق",
+      "kbLessonId": "kbl-g7-eng-s2-nccd-u8_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g6-science-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "الخَلِيَّةُ",
+      "kbLessonId": "kbl-g6-science-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 6's first figures, added 2026-09-13, the week its curriculum landed. Its openers set the lesson number at 37.08pt on some pages and 40.0pt on others WITHIN THE SAME BOOK, so the default profile's `>= 40` found 3 of the 9 — the worst outcome, because the six misses extend the previous lesson over their pages rather than leaving a gap. `G6_SCIENCE_OPENER` lowers that one gate to 35 and detection is 9/9 and 10/10."
+    },
+    {
+      "sourceId": "g6-science-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "نَقْلُ المَوادِّ وَالعَمَلِيّاتُ الحَيَوِيَّةُ في الخَلِيَّةِ",
+      "kbLessonId": "kbl-g6-science-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g6-science-s1-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "مُسْتَوَياتُ التَّنْظيمِ في الكائِناتِ الحَيَّةِ",
+      "kbLessonId": "kbl-g6-science-s1-nccd-u1_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g6-science-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "الذَّرّاتُ وَالجُزَيْئاتُ",
+      "kbLessonId": "kbl-g6-science-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g6-science-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "الفِلِزّاتُ وَاللّافِلِزّاتُ",
+      "kbLessonId": "kbl-g6-science-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g6-science-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "الطّاقَةُ الميكانيكِيَّةُ",
+      "kbLessonId": "kbl-g6-science-s1-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g6-science-s1-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "الآلاتُ البَسيطَةُ",
+      "kbLessonId": "kbl-g6-science-s1-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g6-science-s1-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "التَّلَوُّثُ",
+      "kbLessonId": "kbl-g6-science-s1-nccd-u4_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g6-science-s2-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "الأَنْظِمَةُ البيئِيَّةُ",
+      "kbLessonId": "kbl-g6-science-s2-nccd-u5_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Offset by 4: the extractor reports units 1-5, the catalog numbers them 5-9. Corroborated by content rather than arithmetic alone — the waves and bat-echolocation crops land on «الموجات»/«الصوت والسمع», the kettle and convection arrows on «الحرارة», the star discs on «المجرات»."
+    },
+    {
+      "sourceId": "g6-science-s2-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "الجَماعاتُ الحَيَوِيَّةُ",
+      "kbLessonId": "kbl-g6-science-s2-nccd-u5_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g6-science-s2-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "فَصْلُ المَخاليطِ",
+      "kbLessonId": "kbl-g6-science-s2-nccd-u6_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g6-science-s2-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "المَوْجاتُ",
+      "kbLessonId": "kbl-g6-science-s2-nccd-u7_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g6-science-s2-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "الصَّوْتُ وَالسَّمْعُ",
+      "kbLessonId": "kbl-g6-science-s2-nccd-u7_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g6-science-s2-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "الحَرارَةُ وَطَرائِقُ انْتِقالِها",
+      "kbLessonId": "kbl-g6-science-s2-nccd-u8_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g6-science-s2-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "الحَرارَةُ في حَياتِنا",
+      "kbLessonId": "kbl-g6-science-s2-nccd-u8_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g6-science-s2-student-book",
+      "unit": 5,
+      "lesson": 1,
+      "bookTitleAr": "المَجَرّاتُ",
+      "kbLessonId": "kbl-g6-science-s2-nccd-u9_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g6-science-s2-student-book",
+      "unit": 5,
+      "lesson": 2,
+      "bookTitleAr": "الفَضاءُ وَالكَوْنُ",
+      "kbLessonId": "kbl-g6-science-s2-nccd-u9_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-finlit-s1-student-book",
+      "unit": 1,
+      "lesson": 4,
+      "bookTitleAr": "قراراتي الماليّةُ وترشيدُ الاستهلاكِ",
+      "kbLessonId": "kbl-g8-finlit-s1-nccd-u1_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 8 financial literacy, added 2026-09-13 — the only one of Grade 8's five remaining subjects whose openers `outline` can read (8 of 8, exact). A thin book: 8 crops, 5 kept. Social studies detects 15 of 21 and 14 of 22 and is NOT here — its misses are real openers the detector cannot see, and a missed opener extends the previous lesson over its pages rather than leaving a gap. Creative arts, digital literacy and vocational education detect zero; digital literacy carries «الدرس» on no page of its 187."
+    },
+    {
+      "sourceId": "g8-finlit-s1-student-book",
+      "unit": 1,
+      "lesson": 5,
+      "bookTitleAr": "أثرُ الإعلاناتِ في اتّخاذِ القراراتِ الماليّةِ",
+      "kbLessonId": "kbl-g8-finlit-s1-nccd-u1_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-finlit-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "العملُ والدخلُ",
+      "kbLessonId": "kbl-g8-finlit-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "عناصرُ المُناخِ",
+      "kbLessonId": "kbl-g8-social-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Grade 8 social studies, added 2026-09-13, and nearly written off. The default profile found 15 of its 21 openers and 14 of S2's 22 — and the six misses were NOT missing headers: they carry «الدرس» at 21.6pt with a 57.3pt number sitting at y=69, where the default ceiling is y<65. Four points. `G8_SOCIAL_OPENER` raises only that ceiling, to 75, still far above the y=120+ where this book's contents pages put the word. Detection is then 21/21 and 22/22, unit-for-unit against the catalog.\n\nThe misses were proved real against the book's own contents spread, which lists all 21 lessons with their pages (6, 8, 14, 19, 26, 28, 36, 43, …) — worth knowing because that spread is also the mechanism that would unlock the books no opener profile can reach."
+    },
+    {
+      "sourceId": "g8-social-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "البيئاتُ الطبيعيةُ",
+      "kbLessonId": "kbl-g8-social-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "الحضارةُ السومريةُ (4000-2200 ق.م)",
+      "kbLessonId": "kbl-g8-social-s1-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s1-student-book",
+      "unit": 3,
+      "lesson": 5,
+      "bookTitleAr": "الحضارةُ الكلدانيةُ (612-464 ق.م)",
+      "kbLessonId": "kbl-g8-social-s1-nccd-u3_l5",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s1-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "السّكّانُ والتنميةُ",
+      "kbLessonId": "kbl-g8-social-s1-nccd-u4_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s1-student-book",
+      "unit": 4,
+      "lesson": 3,
+      "bookTitleAr": "التنميةُ المُستدامةُ",
+      "kbLessonId": "kbl-g8-social-s1-nccd-u4_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s2-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "العدالةُ وتكافؤُ الفُرَصِ",
+      "kbLessonId": "kbl-g8-social-s2-nccd-u7_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title",
+      "why": "Offset by 6: extractor reports units 1-6, catalog numbers them 7-12."
+    },
+    {
+      "sourceId": "g8-social-s2-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "النزاهةُ",
+      "kbLessonId": "kbl-g8-social-s2-nccd-u7_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s2-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "الحضارةُ المصريةُ القديمةُ: الموقعُ والنشأةُ",
+      "kbLessonId": "kbl-g8-social-s2-nccd-u8_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s2-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "مظاهرُ الحياةِ العامّةِ في الحضارةِ المصريةِ القديمةِ",
+      "kbLessonId": "kbl-g8-social-s2-nccd-u8_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s2-student-book",
+      "unit": 2,
+      "lesson": 3,
+      "bookTitleAr": "إنجازاتُ الحضارةِ المصريةِ القديمةِ",
+      "kbLessonId": "kbl-g8-social-s2-nccd-u8_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s2-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "الخرائطُ: أنواعُها، وأهمّيّتُها",
+      "kbLessonId": "kbl-g8-social-s2-nccd-u9_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s2-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "الصورُ الجوّيّةُ والفضائيةُ",
+      "kbLessonId": "kbl-g8-social-s2-nccd-u9_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s2-student-book",
+      "unit": 3,
+      "lesson": 3,
+      "bookTitleAr": "نُظُمُ المعلوماتِ الجغرافيةِ",
+      "kbLessonId": "kbl-g8-social-s2-nccd-u9_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s2-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "الشبابُ والحياةُ العامّةُ",
+      "kbLessonId": "kbl-g8-social-s2-nccd-u10_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s2-student-book",
+      "unit": 4,
+      "lesson": 3,
+      "bookTitleAr": "تحدّياتٌ اجتماعيةٌ",
+      "kbLessonId": "kbl-g8-social-s2-nccd-u10_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s2-student-book",
+      "unit": 4,
+      "lesson": 4,
+      "bookTitleAr": "السلوكُ الاجتماعيُّ الإيجابيُّ",
+      "kbLessonId": "kbl-g8-social-s2-nccd-u10_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s2-student-book",
+      "unit": 5,
+      "lesson": 1,
+      "bookTitleAr": "الدولةُ العباسيةُ: النشأةُ والتطوُّرُ",
+      "kbLessonId": "kbl-g8-social-s2-nccd-u11_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s2-student-book",
+      "unit": 5,
+      "lesson": 2,
+      "bookTitleAr": "المظاهرُ الحضاريةُ في الدولةِ العباسيةِ",
+      "kbLessonId": "kbl-g8-social-s2-nccd-u11_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s2-student-book",
+      "unit": 5,
+      "lesson": 3,
+      "bookTitleAr": "ضعفُ الدولةِ العباسيةِ",
+      "kbLessonId": "kbl-g8-social-s2-nccd-u11_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s2-student-book",
+      "unit": 5,
+      "lesson": 4,
+      "bookTitleAr": "الدولةُ الأمويّةُ في الأندلسِ",
+      "kbLessonId": "kbl-g8-social-s2-nccd-u11_l4",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s2-student-book",
+      "unit": 6,
+      "lesson": 1,
+      "bookTitleAr": "رحلةٌ في محافظةِ مأدبا",
+      "kbLessonId": "kbl-g8-social-s2-nccd-u12_l1",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s2-student-book",
+      "unit": 6,
+      "lesson": 2,
+      "bookTitleAr": "رحلةٌ في محافظةِ الطفيلةِ",
+      "kbLessonId": "kbl-g8-social-s2-nccd-u12_l2",
+      "score": 1,
+      "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-social-s2-student-book",
+      "unit": 6,
+      "lesson": 3,
+      "bookTitleAr": "رحلةٌ في محافظةِ عجلونَ",
+      "kbLessonId": "kbl-g8-social-s2-nccd-u12_l3",
+      "score": 1,
+      "matchedBy": "book-opener-title"
     }
   ],
   "unitNumbering": "The curriculum's `u{n}_l{m}` matches the number the book PRINTS in every unit except unit 1, where the book has an extra opening lesson («حل معادلات خاصة») and the rest shift by one. Units 1-4 are semester 1 and units 5-8 are semester 2, so the printed unit number also identifies which student book a figure came from — `check_semester` in scripts/extract_book_figures.py enforces that. Note the maths PDFs in attached_assets are named backwards: the file called `1st_semester` is the second-semester book. Source ids follow the books' contents, not their filenames."

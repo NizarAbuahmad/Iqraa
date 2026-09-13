@@ -19,6 +19,7 @@ import {
   itemsForUnitTags,
   questionBanks,
   usePolicy,
+  type LicenseId,
 } from '../bank.ts';
 
 const usable = bankItems();
@@ -77,6 +78,11 @@ describe('manifest shape', () => {
       arabic: /^(arabic-s[12]|g9-arabic-s[12])$/,
       islamic: /^(islamic-s[12]|g9-islamic-s[12])$/,
       history: /^history-s[12]$/,
+      // Combined «العلوم», taught as one subject at Grade 8 and below. No bare
+      // form: Grade 10 (the implicit grade) splits science into the four
+      // subjects above, so `science-s1` would name a book that cannot exist.
+      // The slug and this record's key agree here, unlike the five noted above.
+      science: /^g\d+-science-s[12]$/,
       english: /^(eng-s[12]|g9-eng-s[12])$/,
       geography: /^geo-s[12]$/,
       'digital-literacy': /^(digital-s[12]|g9-digital-s[12])$/,
@@ -216,6 +222,61 @@ describe('use policy', () => {
   it('names the author in the refusal, so the reason is legible', () => {
     const paper = examPapers({ authority: 'teacher' })[0]!;
     assert.throws(() => assertQuotable(paper), new RegExp(paper.authorAr!));
+  });
+});
+
+/**
+ * An explicit licence overrides the authority rule, because it is a direct
+ * statement of what the rightsholder permits and `authority` is only a record
+ * of who wrote the thing. Without this, every external source is `third-party`
+ * and therefore reference-only — which is wrong in both directions: a
+ * public-domain VOA transcript may be reprinted outright, and a PhET
+ * simulation may be shown but never copied.
+ */
+describe('use policy — explicit licences', () => {
+  /** Only the two fields `usePolicy` reads; it takes a structural Pick. */
+  const item = (license?: LicenseId) => ({ authority: 'third-party' as const, license });
+
+  it('lets an openly-licensed third-party source be quoted', () => {
+    assert.equal(usePolicy(item('public-domain')), 'quotable');
+    assert.equal(usePolicy(item('CC0-1.0')), 'quotable');
+    assert.equal(usePolicy(item('CC-BY-4.0')), 'quotable');
+    // 2.0 is the generation most of the usable science photography on
+    // Wikimedia Commons was released under. Attribution-only, no share-alike,
+    // commercial use permitted — same substance as 4.0 for our purposes.
+    assert.equal(usePolicy(item('CC-BY-2.0')), 'quotable');
+    assert.equal(usePolicy(item('CC-BY-3.0')), 'quotable');
+  });
+
+  it('keeps embed-only material out of anything that reproduces text', () => {
+    assert.equal(usePolicy(item('embed-terms')), 'embed-only');
+  });
+
+  it('declines share-alike rather than risk licensing our own material', () => {
+    assert.equal(usePolicy(item('CC-BY-SA-4.0')), 'reference-only');
+  });
+
+  it('falls closed on a licence string this build does not know', () => {
+    // Reachable: the manifest is JSON, cast on load, so the compiler's
+    // exhaustiveness proves nothing about what is on disk. A typo must cost
+    // access, never grant it.
+    assert.equal(usePolicy(item('CC-BY-9000' as LicenseId)), 'reference-only');
+  });
+
+  it('leaves every existing source on the authority rule', () => {
+    // The licence field is additive. Nothing in G10_SOURCES carries one, so
+    // this is the guard that the change moved no existing document.
+    for (const s of G10_SOURCES) {
+      assert.equal(usePolicy(s), s.authority === 'nccd' ? 'quotable' : 'reference-only', s.id);
+    }
+  });
+
+  it('names the licence in the refusal, not just the authority', () => {
+    // The message used to print `authority` alone, so a licence-driven refusal
+    // reported a cause it did not have and read as a bug in the gate.
+    const sim = { ...examPapers({ authority: 'teacher' })[0]!, license: 'embed-terms' as LicenseId };
+    assert.throws(() => assertQuotable(sim), /embed-terms/);
+    assert.throws(() => assertQuotable(sim), /embed-only/);
   });
 });
 

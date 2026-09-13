@@ -226,4 +226,11 @@ export const LOCAL_FILES: Record<string, string> = {
   'g9-financial-literacy-s2-student-book': 'knowledge-base/grade-9-finlit/support-pdfs/كتاب الطالب لمادة الثقافة المالية للصف التاسع الفصل الثاني.pdf',
   'g9-digital-literacy-s1-student-book': 'knowledge-base/grade-9-digital-literacy/support-pdfs/كتاب الطالب لمادة المهارات الرقمية الصف التاسع الفصل الأول.pdf',
   'g9-digital-literacy-s2-student-book': 'knowledge-base/grade-9-digital-literacy/support-pdfs/كتاب الطالب لمادة المهارات الرقمية الصف التاسع الفصل الثاني.pdf',
+  'g6-math-s1-student-book': 'knowledge-base/grade-6-math/support-pdfs/كتاب الطالب لمادة الرياضيات الصف السادس الفصل الأول.pdf',
+  'g6-science-s1-student-book': 'knowledge-base/grade-6-science/support-pdfs/كتاب الطالب لمادة العلوم الصف السادس الفصل الأول.pdf',
+  'g6-science-s2-student-book': 'knowledge-base/grade-6-science/support-pdfs/كتاب الطالب لمادة العلوم الصف السادس الفصل الثاني.pdf',
+  'g6-science-s1-activity-book': 'knowledge-base/grade-6-science/support-pdfs/كتاب الأنشطة والتمارين لمادة العلوم الصف السادس الفصل الأول.pdf',
+  'g6-science-s2-activity-book': 'knowledge-base/grade-6-science/support-pdfs/كتاب الأنشطة والتمارين لمادة العلوم الصف السادس الفصل الثاني.pdf',
+  'g6-science-s1-teacher-guide': 'knowledge-base/grade-6-science/support-pdfs/دليل المعلم لمادة العلوم الصف السادس الفصل الأول.pdf',
+  'g6-science-s2-teacher-guide': 'knowledge-base/grade-6-science/support-pdfs/دليل المعلم لمادة العلوم الصف السادس الفصل الثاني.pdf',
 };

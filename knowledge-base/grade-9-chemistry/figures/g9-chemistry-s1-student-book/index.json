@@ -1,0 +1,277 @@
+{
+  "sourceId": "g9-chemistry-s1-student-book",
+  "figures": [
+    {
+      "file": "p010.png",
+      "sourceId": "g9-chemistry-s1-student-book",
+      "pdfPage": 10,
+      "rect": [
+        40.1,
+        432.5,
+        360.1,
+        732.3
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p013.png",
+      "sourceId": "g9-chemistry-s1-student-book",
+      "pdfPage": 13,
+      "rect": [
+        57.4,
+        90.2,
+        262.8,
+        174.3
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p013b.png",
+      "sourceId": "g9-chemistry-s1-student-book",
+      "pdfPage": 13,
+      "rect": [
+        57.4,
+        268.3,
+        262.8,
+        400.2
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p013c.png",
+      "sourceId": "g9-chemistry-s1-student-book",
+      "pdfPage": 13,
+      "rect": [
+        57.4,
+        402.5,
+        262.8,
+        488.1
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p013d.png",
+      "sourceId": "g9-chemistry-s1-student-book",
+      "pdfPage": 13,
+      "rect": [
+        69.3,
+        514.4,
+        273.7,
+        779.4
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p014.png",
+      "sourceId": "g9-chemistry-s1-student-book",
+      "pdfPage": 14,
+      "rect": [
+        117.5,
+        436.4,
+        455.1,
+        711.3
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p017.png",
+      "sourceId": "g9-chemistry-s1-student-book",
+      "pdfPage": 17,
+      "rect": [
+        208.3,
+        507.9,
+        548.6,
+        680.0
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p019.png",
+      "sourceId": "g9-chemistry-s1-student-book",
+      "pdfPage": 19,
+      "rect": [
+        47.2,
+        440.1,
+        360.1,
+        729.5
+      ],
+      "unit": 1,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 19
+    },
+    {
+      "file": "p028.png",
+      "sourceId": "g9-chemistry-s1-student-book",
+      "pdfPage": 28,
+      "rect": [
+        391.1,
+        130.3,
+        544.6,
+        238.7
+      ],
+      "unit": 1,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 19
+    },
+    {
+      "file": "p035.png",
+      "sourceId": "g9-chemistry-s1-student-book",
+      "pdfPage": 35,
+      "rect": [
+        79.4,
+        202.7,
+        258.9,
+        368.8
+      ],
+      "unit": 1,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 19
+    },
+    {
+      "file": "p039.png",
+      "sourceId": "g9-chemistry-s1-student-book",
+      "pdfPage": 39,
+      "rect": [
+        69.4,
+        50.8,
+        184.4,
+        208.7
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 36
+    },
+    {
+      "file": "p041.png",
+      "sourceId": "g9-chemistry-s1-student-book",
+      "pdfPage": 41,
+      "rect": [
+        60.2,
+        407.3,
+        182.6,
+        555.7
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 36
+    },
+    {
+      "file": "p044.png",
+      "sourceId": "g9-chemistry-s1-student-book",
+      "pdfPage": 44,
+      "rect": [
+        200.6,
+        16.5,
+        414.5,
+        89.0
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 36
+    },
+    {
+      "file": "p044b.png",
+      "sourceId": "g9-chemistry-s1-student-book",
+      "pdfPage": 44,
+      "rect": [
+        309.1,
+        75.0,
+        387.2,
+        199.2
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 36
+    },
+    {
+      "file": "p051.png",
+      "sourceId": "g9-chemistry-s1-student-book",
+      "pdfPage": 51,
+      "rect": [
+        47.2,
+        249.9,
+        207.8,
+        588.7
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 49
+    },
+    {
+      "file": "p058.png",
+      "sourceId": "g9-chemistry-s1-student-book",
+      "pdfPage": 58,
+      "rect": [
+        51.0,
+        464.0,
+        225.9,
+        568.5
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 49
+    },
+    {
+      "file": "p058b.png",
+      "sourceId": "g9-chemistry-s1-student-book",
+      "pdfPage": 58,
+      "rect": [
+        224.1,
+        468.3,
+        337.0,
+        600.1
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 49
+    }
+  ]
+}

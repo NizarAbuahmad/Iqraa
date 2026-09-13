@@ -1,0 +1,391 @@
+{
+  "meta": {
+    "grade": "الصف الثامن",
+    "grade_en": "Grade 8",
+    "subject": "الدراسات الاجتماعية",
+    "subject_en": "Social Studies",
+    "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 2,
+    "schema_version": "1.0",
+    "provenance_note": "نُقلت الوحداتُ الستُّ (السابعةُ إلى الثانيةَ عشرةَ، مُكمِّلةٌ لترقيمِ الفصلِ الأولِ) ودروسُها الاثنانِ والعشرونَ من كتاب الطالب (الطبعةُ الأولى التجريبيةُ، 2024م، رقمُ الإيداعِ 2024/9/5269، ISBN 978-9923-41-706-5) في 2026-09-09، بقراءةِ صفحةِ افتتاحِ كلِّ وحدةٍ وصفحةِ افتتاحِ كلِّ درسٍ مباشرةً منَ الـ PDF.",
+    "source_books": {
+      "student_book": "كتاب الطالب لمادة الدراسات الاجتماعية - الصف الثامن - الفصل الدراسي الثاني - المركز الوطني لتطوير المناهج (الطبعة الأولى، 2024)"
+    },
+    "known_gaps": [
+      "نفسُ الفجواتِ المُسجَّلةِ في ملفِّ الفصلِ الأولِ: لا دليلَ معلمٍ (periods وtotal_periods = null)، وصندوقُ «ماذا سأتعلَّمُ؟» يسرُدُ عناوينَ محاورَ لا نتاجاتِ تعلُّمٍ مُرقَّمةً، فحقلُ objectives فارغٌ عمدًا لكلِّ دروسِ هذه المادةِ، وصندوقُ «مهاراتِ التعلُّمِ» لمْ يُنقَلْ."
+    ]
+  },
+  "units": [
+    {
+      "id": "u7",
+      "number": 7,
+      "title_ar": "العيشُ المُشترَكُ",
+      "title_en": "Coexistence",
+      "general_idea_ar": "يُعزِّزُ التنوُّعُ الثقافيُّ الثقةَ والاحترامَ والتسامحَ والتعايشَ السلميَّ بينَ الأفرادِ والجماعاتِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box, bilingual vocabulary from the box's own «المفاهيم والمصطلحات» list; no measurable objectives printed, so objectives is empty for every lesson — see known_gaps; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u7_l1",
+          "order": 1,
+          "title_ar": "التنوُّعُ الثقافيُّ",
+          "title_en": "Cultural Diversity",
+          "main_idea_ar": "تعرُّفُ مفهومِ التنوُّعِ الثقافيِّ، وأهمّيّتِهِ، وأشكالِهِ، وعلاقتِهِ بالتسامحِ بينَ الأفرادِ والجماعاتِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التنوُّعُ الثقافيُّ", "en": "Cultural Diversity" },
+            { "ar": "التسامحُ", "en": "Tolerance" }
+          ]
+        },
+        {
+          "id": "u7_l2",
+          "order": 2,
+          "title_ar": "العدالةُ وتكافؤُ الفُرَصِ",
+          "title_en": "Justice and Equal Opportunities",
+          "main_idea_ar": "تعرُّفُ مفهومِ العدالةِ وتكافؤِ الفُرَصِ، وأهمّيّتِهِما في بناءِ المجتمعاتِ واستقرارِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "العدالةُ", "en": "Justice" },
+            { "ar": "المساواةُ", "en": "Equality" },
+            { "ar": "تكافؤُ الفُرَصِ", "en": "Equal Opportunities" },
+            { "ar": "الشفافيةُ", "en": "Transparency" },
+            { "ar": "حقُّ الوصولِ إلى العدالةِ", "en": "Access to Justice" }
+          ]
+        },
+        {
+          "id": "u7_l3",
+          "order": 3,
+          "title_ar": "النزاهةُ",
+          "title_en": "Integrity",
+          "main_idea_ar": "تعرُّفُ مفهومِ النزاهةِ، وأهمّيّتِها في تماسُكِ المجتمعِ وتحقيقِ العيشِ المُشترَكِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "النزاهةُ", "en": "Integrity" },
+            { "ar": "مكافحةُ الفسادِ", "en": "Anti-Corruption" }
+          ]
+        },
+        {
+          "id": "u7_l4",
+          "order": 4,
+          "title_ar": "مواجهةُ التطرُّفِ",
+          "title_en": "Countering Extremism",
+          "main_idea_ar": "تعرُّفُ مفهومِ التطرُّفِ، وأهمّيّةِ مواجهةِ الفكرِ المتطرِّفِ وخطابِ الكراهيةِ، وطرقِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "التطرُّفُ", "en": "Extremism" },
+            { "ar": "خطابُ الكراهيةِ", "en": "Hate Speech" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u8",
+      "number": 8,
+      "title_ar": "الحضارةُ المصريةُ القديمةُ",
+      "title_en": "The Ancient Egyptian Civilization",
+      "general_idea_ar": "نشأتْ في مصرَ على ضفافِ نهرِ النيلِ حضارةٌ منْ أقدمِ الحضاراتِ في العالَمِ لا تزالُ آثارُها ماثلةً حتّى اليومِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box, bilingual vocabulary from the box's own «المفاهيم والمصطلحات» list; no measurable objectives printed, so objectives is empty for every lesson — see known_gaps; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u8_l1",
+          "order": 1,
+          "title_ar": "الحضارةُ المصريةُ القديمةُ: الموقعُ والنشأةُ",
+          "title_en": "The Ancient Egyptian Civilization: Location and Origin",
+          "main_idea_ar": "تعرُّفُ الحضارةِ المصريةِ القديمةِ منْ حيثُ: موقعُها، ومراحلُها، وأثرُ نهرِ النيلِ في نشوئِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الحضارةُ المصريةُ القديمةُ", "en": "Civilization of the Ancient Egypt" },
+            { "ar": "حضارةُ وادي النيلِ", "en": "Nile Valley Civilization" },
+            { "ar": "نهرُ النيلِ", "en": "The Nile River" },
+            { "ar": "الهكسوسُ", "en": "Hyksos" }
+          ]
+        },
+        {
+          "id": "u8_l2",
+          "order": 2,
+          "title_ar": "مظاهرُ الحياةِ العامّةِ في الحضارةِ المصريةِ القديمةِ",
+          "title_en": "Aspects of Public Life in the Ancient Egyptian Civilization",
+          "main_idea_ar": "تعرُّفُ مظاهرِ الحياةِ العامّةِ في الحضارةِ المصريةِ القديمةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "نباتُ البرديِّ", "en": "Bulrush" }
+          ]
+        },
+        {
+          "id": "u8_l3",
+          "order": 3,
+          "title_ar": "إنجازاتُ الحضارةِ المصريةِ القديمةِ",
+          "title_en": "Achievements of the Ancient Egyptian Civilization",
+          "main_idea_ar": "تعرُّفُ أهمِّ إنجازاتِ الحضارةِ المصريةِ القديمةِ في العلومِ والطبِّ والبناءِ والفنِّ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الهيروغليفيةُ", "en": "Hieroglyphic" },
+            { "ar": "حجرُ رشيدَ", "en": "Rosetta Stone" },
+            { "ar": "التحنيطُ", "en": "Mummification" }
+          ]
+        },
+        {
+          "id": "u8_l4",
+          "order": 4,
+          "title_ar": "العلاقاتُ الخارجيةُ في الحضارةِ المصريةِ القديمةِ",
+          "title_en": "Foreign Relations in the Ancient Egyptian Civilization",
+          "main_idea_ar": "تعرُّفُ العلاقاتِ الخارجيةِ للحضارةِ المصريةِ القديمةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "البطالمةُ", "en": "The Ptolemies" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u9",
+      "number": 9,
+      "title_ar": "الخرائطُ والتقنياتُ الجغرافيةُ",
+      "title_en": "Maps and Geographic Technologies",
+      "general_idea_ar": "الخريطةُ تُمثِّلُ سطحَ الأرضِ أوْ جزءًا منهُ، وتُستخدَمُ في مجالاتٍ عدّةٍ. وتُعدُّ الصورُ الجوّيةُ والمرئياتُ الفضائيةُ مصدرًا لإعدادِ الخرائطِ وتوفيرِ المعلوماتِ عنِ الأرضِ، وتعمَلُ نُظُمُ المعلوماتِ الجغرافيةِ على تجميعِ البياناتِ المرتبطةِ بالمكانِ، وتخزينِها، ومعالجتِها، وتحليلِها.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box, bilingual vocabulary from the box's own «المفاهيم والمصطلحات» list; no measurable objectives printed, so objectives is empty for every lesson — see known_gaps; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u9_l1",
+          "order": 1,
+          "title_ar": "الخرائطُ: أنواعُها، وأهمّيّتُها",
+          "title_en": "Maps: Types and Importance",
+          "main_idea_ar": "تعرُّفُ مفهومِ الخريطةِ، وعناصرِها، وأنواعِها، وأهمّيّتِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الخريطةُ", "en": "Map" },
+            { "ar": "خرائطُ استخدامِ الأرضِ", "en": "Land-Use Maps" }
+          ]
+        },
+        {
+          "id": "u9_l2",
+          "order": 2,
+          "title_ar": "الصورُ الجوّيّةُ والفضائيةُ",
+          "title_en": "Aerial and Satellite Imagery",
+          "main_idea_ar": "تعرُّفُ الصورِ الجوّيّةِ والفضائيةِ، وأهمّيّتِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الصورُ الجوّيّةُ", "en": "Aerial Photography" },
+            { "ar": "المرئياتُ الفضائيةُ", "en": "Satellite Imagery" },
+            { "ar": "الاستشعارُ عنْ بُعدٍ", "en": "Remote Sensing" }
+          ]
+        },
+        {
+          "id": "u9_l3",
+          "order": 3,
+          "title_ar": "نُظُمُ المعلوماتِ الجغرافيةِ",
+          "title_en": "Geographic Information Systems",
+          "main_idea_ar": "تعرُّفُ مفهومِ نُظُمِ المعلوماتِ الجغرافيةِ، واستخداماتِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "نُظُمُ المعلوماتِ الجغرافيةِ", "en": "Geographic Information Systems (GIS)" },
+            { "ar": "البياناتُ المكانيةُ", "en": "Spatial Data" },
+            { "ar": "البياناتُ الوصفيةُ", "en": "Attribute Data" },
+            { "ar": "البياناتُ الخطيةُ", "en": "Vector Data" },
+            { "ar": "البياناتُ الشبكيةُ", "en": "Raster Data" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u10",
+      "number": 10,
+      "title_ar": "أنا والمجتمعُ",
+      "title_en": "Me and Society",
+      "general_idea_ar": "يتكوَّنُ المجتمعُ منْ فئاتٍ اجتماعيةٍ متنوّعةٍ تشمَلُ الأطفالَ والشبابَ وكبارَ السِّنِّ، وتربطُها مجموعةٌ منَ القِيَمِ والمبادئِ التي تنظِّمُ قواعدَ السلوكِ والعلاقاتِ بينَ الأفرادِ، ويُشكِّلُ الشبابُ مُكوَّنًا منْ مُكوِّناتِ المجتمعِ يُؤدّي دورًا أساسيًّا في تنميةِ الاقتصادِ الوطنيِّ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box, bilingual vocabulary from the box's own «المفاهيم والمصطلحات» list; no measurable objectives printed, so objectives is empty for every lesson — see known_gaps; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u10_l1",
+          "order": 1,
+          "title_ar": "الشبابُ والمجتمعُ",
+          "title_en": "Youth and Society",
+          "main_idea_ar": "تعرُّفُ مفهومِ الشبابِ، وأهمِّ السِّماتِ التي تُميِّزُهُمْ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الشبابُ", "en": "Youth" },
+            { "ar": "تمكينُ الشبابِ", "en": "Empowering Youth" }
+          ]
+        },
+        {
+          "id": "u10_l2",
+          "order": 2,
+          "title_ar": "الشبابُ والحياةُ العامّةُ",
+          "title_en": "Youth and Public Life",
+          "main_idea_ar": "تعرُّفُ دورِ الشبابِ في الحياةِ العامّةِ والاقتصادِ الوطنيِّ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "العملُ التطوُّعيُّ", "en": "Volunteer Work" },
+            { "ar": "ريادةُ الأعمالِ", "en": "Entrepreneurship" },
+            { "ar": "التجارةُ الإلكترونيةُ", "en": "E-commerce" },
+            { "ar": "المشاركةُ السياسيةُ", "en": "Political Participation" }
+          ]
+        },
+        {
+          "id": "u10_l3",
+          "order": 3,
+          "title_ar": "تحدّياتٌ اجتماعيةٌ",
+          "title_en": "Social Challenges",
+          "main_idea_ar": "تعرُّفُ بعضِ التحدّياتِ الاجتماعيةِ في الأردنِّ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الفقرُ", "en": "Poverty" },
+            { "ar": "البطالةُ", "en": "Unemployment" },
+            { "ar": "الإدمانُ على المُخدِّراتِ", "en": "Drug Addiction" },
+            { "ar": "التدخينُ السلبيُّ", "en": "Passive Smoking" },
+            { "ar": "التنمُّرُ الإلكترونيُّ", "en": "Cyberbullying" }
+          ]
+        },
+        {
+          "id": "u10_l4",
+          "order": 4,
+          "title_ar": "السلوكُ الاجتماعيُّ الإيجابيُّ",
+          "title_en": "Positive Social Behavior",
+          "main_idea_ar": "تعرُّفُ مفهومِ السلوكِ الإيجابيِّ وأهمّيّتِهِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "السلوكُ الإيجابيُّ", "en": "Positive Behavior" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u11",
+      "number": 11,
+      "title_ar": "الحضارةُ العربيةُ الإسلاميةُ",
+      "title_en": "The Arab Islamic Civilization",
+      "general_idea_ar": "تعرُّفُ الأحداثِ التاريخيةِ والإنجازاتِ الحضاريةِ في العصرِ العباسيِّ، وإنجازاتِ الدولةِ الأمويةِ في الأندلسِ.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box, bilingual vocabulary from the box's own «المفاهيم والمصطلحات» list where a printed English gloss exists — several terms here are proper names with none printed, so en is left empty for them; no measurable objectives printed, so objectives is empty for every lesson; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u11_l1",
+          "order": 1,
+          "title_ar": "الدولةُ العباسيةُ: النشأةُ والتطوُّرُ",
+          "title_en": "The Abbasid State: Origin and Development",
+          "main_idea_ar": "تعرُّفُ نشأةِ الدولةِ العباسيةِ وعواملِ قيامِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الخلافةُ العباسيةُ", "en": "The Abbasid Caliphate" }
+          ]
+        },
+        {
+          "id": "u11_l2",
+          "order": 2,
+          "title_ar": "المظاهرُ الحضاريةُ في الدولةِ العباسيةِ",
+          "title_en": "Civilizational Aspects of the Abbasid State",
+          "main_idea_ar": "تعرُّفُ أهمِّ إنجازاتِ الدولةِ العباسيةِ في مختلَفِ المجالاتِ الحضاريةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "المدرسةُ النِّظاميةُ", "en": "" },
+            { "ar": "المدرسةُ المُستنصِريةُ", "en": "" }
+          ]
+        },
+        {
+          "id": "u11_l3",
+          "order": 3,
+          "title_ar": "ضعفُ الدولةِ العباسيةِ",
+          "title_en": "The Decline of the Abbasid State",
+          "main_idea_ar": "تعرُّفُ عواملِ ضعفِ الدولةِ العباسيةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "الدويلاتُ الانفصاليةُ", "en": "" }
+          ]
+        },
+        {
+          "id": "u11_l4",
+          "order": 4,
+          "title_ar": "الدولةُ الأمويّةُ في الأندلسِ",
+          "title_en": "The Umayyad State in Andalusia",
+          "main_idea_ar": "تعرُّفُ تاريخِ الدولةِ الأمويةِ في الأندلسِ، وأهمِّ إنجازاتِها.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "قصرُ الحمراءِ", "en": "" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u12",
+      "number": 12,
+      "title_ar": "رحلةٌ في وطني",
+      "title_en": "A Journey in My Homeland",
+      "general_idea_ar": "التعرُّفُ إلى أبرزِ المعالمِ التاريخيةِ والحضاريةِ في وطني.",
+      "total_periods": null,
+      "data_tier": "lesson-level (student book only: main idea from each lesson's opener box, bilingual vocabulary from the box's own «المفاهيم والمصطلحات» list; no measurable objectives printed, so objectives is empty for every lesson — see known_gaps; no teacher guide on disk, so no periods)",
+      "prior_knowledge": [],
+      "lessons": [
+        {
+          "id": "u12_l1",
+          "order": 1,
+          "title_ar": "رحلةٌ في محافظةِ مأدبا",
+          "title_en": "A Journey in Madaba Governorate",
+          "main_idea_ar": "التعرُّفُ إلى المواقعِ السياحيةِ والتاريخيةِ في محافظةِ مأدبا.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "قلعةُ مكاوَرَ", "en": "Makawir Castle" },
+            { "ar": "كنيسةُ الخريطةِ", "en": "Church of The Map" },
+            { "ar": "جبلُ نيبو", "en": "Mount Nebo" }
+          ]
+        },
+        {
+          "id": "u12_l2",
+          "order": 2,
+          "title_ar": "رحلةٌ في محافظةِ الطفيلةِ",
+          "title_en": "A Journey in Tafilah Governorate",
+          "main_idea_ar": "تعرُّفُ المواقعِ الأثريةِ والدينيةِ والسياحيةِ في محافظةِ الطفيلةِ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "محميةُ ضانا", "en": "Dana Reserve" },
+            { "ar": "وادي فينانَ", "en": "Wadi Faynan" },
+            { "ar": "حَمّاماتُ عَفرا", "en": "Afra Baths" },
+            { "ar": "المملكةُ الأدوميةُ", "en": "Adomite Kingdom" }
+          ]
+        },
+        {
+          "id": "u12_l3",
+          "order": 3,
+          "title_ar": "رحلةٌ في محافظةِ عجلونَ",
+          "title_en": "A Journey in Ajloun Governorate",
+          "main_idea_ar": "التعرُّفُ إلى المواقعِ الأثريةِ والسياحيةِ والبيئيةِ في محافظةِ عجلونَ.",
+          "periods": null,
+          "objectives": [],
+          "vocabulary": [
+            { "ar": "قلعةُ عجلونَ", "en": "Ajloun Castle" },
+            { "ar": "مارُ الياسُ", "en": "Mar Elias" },
+            { "ar": "مزارُ سيّدةِ الجبلِ", "en": "Lady of the Mountain Shrine" }
+          ]
+        }
+      ]
+    }
+  ]
+}

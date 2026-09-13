@@ -43,6 +43,19 @@ import type { TranslationKey } from '@/services/i18n';
 
 const ACCENT = '#1B6B62';
 
+/**
+ * The types a teacher may ask the generator for.
+ *
+ * `read_aloud` is deliberately absent. Its passage has to be real English at a
+ * controlled reading level, and a model asked for one would invent it — text
+ * nobody vetted, put in front of a class as a reading exercise. Passages come
+ * from the curated external-resource manifest instead, and the server refuses
+ * the type here too (`NOT_AI_GENERATABLE` in routes/evaluations.ts) so a stale
+ * client cannot ask anyway.
+ *
+ * It still has a label in TYPE_LABEL_KEY below: existing read-aloud questions
+ * are displayed all over the teacher UI, they just are not born here.
+ */
 const ALL_TYPES: QuestionType[] = [
   'multiple_choice',
   'true_false',
@@ -62,6 +75,7 @@ const TYPE_LABEL_KEY: Record<QuestionType, TranslationKey> = {
   open_ended: 'typeOpenEnded',
   problem_solving: 'typeProblemSolving',
   practical_task: 'typePracticalTask',
+  read_aloud: 'typeReadAloud',
 };
 const DIFFICULTIES: Difficulty[] = ['basic', 'standard', 'advanced'];
 const DIFFICULTY_KEY: Record<Difficulty, TranslationKey> = {

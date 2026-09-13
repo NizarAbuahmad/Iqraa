@@ -1,0 +1,1157 @@
+{
+  "sourceId": "g8-math-s2-student-book",
+  "figures": [
+    {
+      "file": "p028.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 28,
+      "rect": [
+        62.1,
+        439.3,
+        150.5,
+        527.6
+      ],
+      "unit": 5,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرسِحلُّ المتبايناتِ بالضربِ والقسمة",
+      "lessonStartPage": 22
+    },
+    {
+      "file": "p037.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 37,
+      "rect": [
+        47.3,
+        500.4,
+        131.6,
+        640.3
+      ],
+      "unit": 5,
+      "lesson": 4,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "حلُّ المتبايناتِ متعددةِ الخطوات الدرس",
+      "lessonStartPage": 29
+    },
+    {
+      "file": "p042.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 42,
+      "rect": [
+        421.2,
+        577.2,
+        527.1,
+        686.0
+      ],
+      "unit": 6,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس حلُّ نظامٍ مِنْ معادلتَينِ خطّيّتَينِ بيانيًّا",
+      "lessonStartPage": 40
+    },
+    {
+      "file": "p043.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 43,
+      "rect": [
+        72.4,
+        155.8,
+        212.2,
+        310.2
+      ],
+      "unit": 6,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس حلُّ نظامٍ مِنْ معادلتَينِ خطّيّتَينِ بيانيًّا",
+      "lessonStartPage": 40
+    },
+    {
+      "file": "p044.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 44,
+      "rect": [
+        61.5,
+        456.7,
+        232.3,
+        656.3
+      ],
+      "unit": 6,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس حلُّ نظامٍ مِنْ معادلتَينِ خطّيّتَينِ بيانيًّا",
+      "lessonStartPage": 40
+    },
+    {
+      "file": "p045.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 45,
+      "rect": [
+        47.9,
+        360.4,
+        249.3,
+        548.2
+      ],
+      "unit": 6,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس حلُّ نظامٍ مِنْ معادلتَينِ خطّيّتَينِ بيانيًّا",
+      "lessonStartPage": 40
+    },
+    {
+      "file": "p065.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 65,
+      "rect": [
+        47.4,
+        111.2,
+        238.7,
+        228.8
+      ],
+      "unit": 6,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "ِحلُّ نظامٍ مِنْ معادلتَينِ خطّيّتَينِ بالحذف الدرس",
+      "lessonStartPage": 56
+    },
+    {
+      "file": "p066.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 66,
+      "rect": [
+        82.7,
+        424.4,
+        285.8,
+        613.0
+      ],
+      "unit": 6,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "ِحلُّ نظامٍ مِنْ معادلتَينِ خطّيّتَينِ بالحذف الدرس",
+      "lessonStartPage": 56
+    },
+    {
+      "file": "p069b.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 69,
+      "rect": [
+        166.2,
+        617.7,
+        237.4,
+        704.8
+      ],
+      "unit": 6,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "ِحلُّ نظامٍ مِنْ معادلتَينِ خطّيّتَينِ بالحذف الدرس",
+      "lessonStartPage": 56
+    },
+    {
+      "file": "p078.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 78,
+      "rect": [
+        142.9,
+        632.3,
+        262.1,
+        721.4
+      ],
+      "unit": 7,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "متوازي األضالع الدرس",
+      "lessonStartPage": 77
+    },
+    {
+      "file": "p084b.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 84,
+      "rect": [
+        129.5,
+        95.9,
+        211.6,
+        178.0
+      ],
+      "unit": 7,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس تمييزُ متوازي األضالع",
+      "lessonStartPage": 84
+    },
+    {
+      "file": "p086.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 86,
+      "rect": [
+        64.8,
+        616.6,
+        215.7,
+        706.0
+      ],
+      "unit": 7,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس تمييزُ متوازي األضالع",
+      "lessonStartPage": 84
+    },
+    {
+      "file": "p088.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 88,
+      "rect": [
+        62.9,
+        225.0,
+        225.6,
+        350.1
+      ],
+      "unit": 7,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس تمييزُ متوازي األضالع",
+      "lessonStartPage": 84
+    },
+    {
+      "file": "p089.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 89,
+      "rect": [
+        76.3,
+        579.1,
+        228.8,
+        653.2
+      ],
+      "unit": 7,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس تمييزُ متوازي األضالع",
+      "lessonStartPage": 84
+    },
+    {
+      "file": "p090.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 90,
+      "rect": [
+        64.4,
+        330.6,
+        193.8,
+        452.7
+      ],
+      "unit": 7,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس تمييزُ متوازي األضالع",
+      "lessonStartPage": 84
+    },
+    {
+      "file": "p103.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 103,
+      "rect": [
+        50.3,
+        251.9,
+        232.5,
+        346.5
+      ],
+      "unit": 7,
+      "lesson": 5,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرسِ",
+      "lessonStartPage": 99
+    },
+    {
+      "file": "p104.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 104,
+      "rect": [
+        96.9,
+        106.0,
+        246.4,
+        212.7
+      ],
+      "unit": 7,
+      "lesson": 5,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرسِ",
+      "lessonStartPage": 99
+    },
+    {
+      "file": "p108.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 108,
+      "rect": [
+        62.5,
+        190.2,
+        239.0,
+        348.3
+      ],
+      "unit": 7,
+      "lesson": 6,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس",
+      "lessonStartPage": 106
+    },
+    {
+      "file": "p109.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 109,
+      "rect": [
+        49.5,
+        438.3,
+        215.6,
+        605.7
+      ],
+      "unit": 7,
+      "lesson": 6,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس",
+      "lessonStartPage": 106
+    },
+    {
+      "file": "p110.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 110,
+      "rect": [
+        91.1,
+        444.4,
+        192.8,
+        558.8
+      ],
+      "unit": 7,
+      "lesson": 6,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس",
+      "lessonStartPage": 106
+    },
+    {
+      "file": "p113.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 113,
+      "rect": [
+        46.7,
+        210.1,
+        190.7,
+        333.7
+      ],
+      "unit": 7,
+      "lesson": 6,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس",
+      "lessonStartPage": 106
+    },
+    {
+      "file": "p116b.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 116,
+      "rect": [
+        60.2,
+        373.2,
+        257.0,
+        495.2
+      ],
+      "unit": 8,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس رسمُ األشكالِ ثالثيةِ األبعاد",
+      "lessonStartPage": 116
+    },
+    {
+      "file": "p128.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 128,
+      "rect": [
+        159.7,
+        122.5,
+        255.1,
+        208.6
+      ],
+      "unit": 8,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "ُالمقاطعُ والمجسّماتُ الدّوَرانية الدرس",
+      "lessonStartPage": 124
+    },
+    {
+      "file": "p128b.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 128,
+      "rect": [
+        260.9,
+        410.7,
+        374.2,
+        495.9
+      ],
+      "unit": 8,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "ُالمقاطعُ والمجسّماتُ الدّوَرانية الدرس",
+      "lessonStartPage": 124
+    },
+    {
+      "file": "p130.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 130,
+      "rect": [
+        61.0,
+        93.9,
+        302.2,
+        171.5
+      ],
+      "unit": 8,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "ُالمقاطعُ والمجسّماتُ الدّوَرانية الدرس",
+      "lessonStartPage": 124
+    },
+    {
+      "file": "p130b.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 130,
+      "rect": [
+        63.4,
+        619.0,
+        164.3,
+        697.9
+      ],
+      "unit": 8,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "ُالمقاطعُ والمجسّماتُ الدّوَرانية الدرس",
+      "lessonStartPage": 124
+    },
+    {
+      "file": "p131.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 131,
+      "rect": [
+        169.5,
+        585.7,
+        308.5,
+        682.8
+      ],
+      "unit": 8,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "ُالمقاطعُ والمجسّماتُ الدّوَرانية الدرس",
+      "lessonStartPage": 124
+    },
+    {
+      "file": "p132b.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 132,
+      "rect": [
+        62.2,
+        265.3,
+        222.6,
+        449.9
+      ],
+      "unit": 8,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس حجمُ الكرةِ ومساحةُ سطحِها",
+      "lessonStartPage": 132
+    },
+    {
+      "file": "p132c.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 132,
+      "rect": [
+        238.1,
+        590.4,
+        381.2,
+        734.4
+      ],
+      "unit": 8,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس حجمُ الكرةِ ومساحةُ سطحِها",
+      "lessonStartPage": 132
+    },
+    {
+      "file": "p133.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 133,
+      "rect": [
+        88.5,
+        140.9,
+        182.2,
+        234.6
+      ],
+      "unit": 8,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس حجمُ الكرةِ ومساحةُ سطحِها",
+      "lessonStartPage": 132
+    },
+    {
+      "file": "p133b.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 133,
+      "rect": [
+        87.2,
+        328.7,
+        187.5,
+        419.3
+      ],
+      "unit": 8,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس حجمُ الكرةِ ومساحةُ سطحِها",
+      "lessonStartPage": 132
+    },
+    {
+      "file": "p133c.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 133,
+      "rect": [
+        79.9,
+        501.6,
+        173.7,
+        595.3
+      ],
+      "unit": 8,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس حجمُ الكرةِ ومساحةُ سطحِها",
+      "lessonStartPage": 132
+    },
+    {
+      "file": "p134.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 134,
+      "rect": [
+        96.4,
+        123.5,
+        189.9,
+        212.2
+      ],
+      "unit": 8,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس حجمُ الكرةِ ومساحةُ سطحِها",
+      "lessonStartPage": 132
+    },
+    {
+      "file": "p134b.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 134,
+      "rect": [
+        345.3,
+        124.5,
+        438.2,
+        217.3
+      ],
+      "unit": 8,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس حجمُ الكرةِ ومساحةُ سطحِها",
+      "lessonStartPage": 132
+    },
+    {
+      "file": "p134c.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 134,
+      "rect": [
+        71.6,
+        287.6,
+        156.9,
+        379.0
+      ],
+      "unit": 8,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس حجمُ الكرةِ ومساحةُ سطحِها",
+      "lessonStartPage": 132
+    },
+    {
+      "file": "p134d.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 134,
+      "rect": [
+        72.4,
+        628.3,
+        157.9,
+        719.8
+      ],
+      "unit": 8,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس حجمُ الكرةِ ومساحةُ سطحِها",
+      "lessonStartPage": 132
+    },
+    {
+      "file": "p135.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 135,
+      "rect": [
+        289.5,
+        324.1,
+        533.0,
+        436.1
+      ],
+      "unit": 8,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس حجمُ الكرةِ ومساحةُ سطحِها",
+      "lessonStartPage": 132
+    },
+    {
+      "file": "p136.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 136,
+      "rect": [
+        80.7,
+        413.5,
+        174.4,
+        507.2
+      ],
+      "unit": 8,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس حجمُ الكرةِ ومساحةُ سطحِها",
+      "lessonStartPage": 132
+    },
+    {
+      "file": "p136b.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 136,
+      "rect": [
+        102.1,
+        571.0,
+        214.7,
+        691.3
+      ],
+      "unit": 8,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس حجمُ الكرةِ ومساحةُ سطحِها",
+      "lessonStartPage": 132
+    },
+    {
+      "file": "p137.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 137,
+      "rect": [
+        82.0,
+        116.7,
+        179.8,
+        189.8
+      ],
+      "unit": 8,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس حجمُ الكرةِ ومساحةُ سطحِها",
+      "lessonStartPage": 132
+    },
+    {
+      "file": "p137b.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 137,
+      "rect": [
+        83.1,
+        278.1,
+        182.1,
+        377.1
+      ],
+      "unit": 8,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس حجمُ الكرةِ ومساحةُ سطحِها",
+      "lessonStartPage": 132
+    },
+    {
+      "file": "p137c.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 137,
+      "rect": [
+        343.6,
+        283.9,
+        441.5,
+        373.6
+      ],
+      "unit": 8,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس حجمُ الكرةِ ومساحةُ سطحِها",
+      "lessonStartPage": 132
+    },
+    {
+      "file": "p137d.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 137,
+      "rect": [
+        52.0,
+        443.3,
+        163.1,
+        531.4
+      ],
+      "unit": 8,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس حجمُ الكرةِ ومساحةُ سطحِها",
+      "lessonStartPage": 132
+    },
+    {
+      "file": "p138.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 138,
+      "rect": [
+        84.7,
+        280.3,
+        179.2,
+        368.9
+      ],
+      "unit": 8,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس حجمُ الكرةِ ومساحةُ سطحِها",
+      "lessonStartPage": 132
+    },
+    {
+      "file": "p138b.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 138,
+      "rect": [
+        277.5,
+        280.1,
+        367.0,
+        369.6
+      ],
+      "unit": 8,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس حجمُ الكرةِ ومساحةُ سطحِها",
+      "lessonStartPage": 132
+    },
+    {
+      "file": "p138c.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 138,
+      "rect": [
+        273.0,
+        364.3,
+        360.6,
+        456.7
+      ],
+      "unit": 8,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس حجمُ الكرةِ ومساحةُ سطحِها",
+      "lessonStartPage": 132
+    },
+    {
+      "file": "p138d.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 138,
+      "rect": [
+        78.9,
+        372.3,
+        191.8,
+        446.4
+      ],
+      "unit": 8,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس حجمُ الكرةِ ومساحةُ سطحِها",
+      "lessonStartPage": 132
+    },
+    {
+      "file": "p138e.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 138,
+      "rect": [
+        89.2,
+        570.3,
+        191.8,
+        658.9
+      ],
+      "unit": 8,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس حجمُ الكرةِ ومساحةُ سطحِها",
+      "lessonStartPage": 132
+    },
+    {
+      "file": "p138f.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 138,
+      "rect": [
+        274.4,
+        570.2,
+        370.0,
+        643.8
+      ],
+      "unit": 8,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس حجمُ الكرةِ ومساحةُ سطحِها",
+      "lessonStartPage": 132
+    },
+    {
+      "file": "p138g.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 138,
+      "rect": [
+        89.2,
+        660.6,
+        183.3,
+        755.9
+      ],
+      "unit": 8,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس حجمُ الكرةِ ومساحةُ سطحِها",
+      "lessonStartPage": 132
+    },
+    {
+      "file": "p140.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 140,
+      "rect": [
+        318.5,
+        287.6,
+        427.3,
+        387.0
+      ],
+      "unit": 8,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس حجمُ الكرةِ ومساحةُ سطحِها",
+      "lessonStartPage": 132
+    },
+    {
+      "file": "p141.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 141,
+      "rect": [
+        46.7,
+        298.8,
+        155.7,
+        460.2
+      ],
+      "unit": 8,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرس حجمُ الكرةِ ومساحةُ سطحِها",
+      "lessonStartPage": 132
+    },
+    {
+      "file": "p157.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 157,
+      "rect": [
+        347.0,
+        578.8,
+        511.6,
+        728.6
+      ],
+      "unit": 9,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرسِاختيارُ التمثيلِ األنسب",
+      "lessonStartPage": 154
+    },
+    {
+      "file": "p159.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 159,
+      "rect": [
+        72.0,
+        90.0,
+        220.8,
+        272.6
+      ],
+      "unit": 9,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرسِاختيارُ التمثيلِ األنسب",
+      "lessonStartPage": 154
+    },
+    {
+      "file": "p160.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 160,
+      "rect": [
+        62.0,
+        89.4,
+        165.9,
+        179.5
+      ],
+      "unit": 9,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرسِاختيارُ التمثيلِ األنسب",
+      "lessonStartPage": 154
+    },
+    {
+      "file": "p160b.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 160,
+      "rect": [
+        164.5,
+        491.0,
+        273.2,
+        591.3
+      ],
+      "unit": 9,
+      "lesson": 2,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرسِاختيارُ التمثيلِ األنسب",
+      "lessonStartPage": 154
+    },
+    {
+      "file": "p161.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 161,
+      "rect": [
+        83.5,
+        218.9,
+        165.2,
+        295.4
+      ],
+      "unit": 9,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرسِعَدُّ النواتج",
+      "lessonStartPage": 161
+    },
+    {
+      "file": "p162.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 162,
+      "rect": [
+        129.8,
+        288.0,
+        207.7,
+        365.9
+      ],
+      "unit": 9,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرسِعَدُّ النواتج",
+      "lessonStartPage": 161
+    },
+    {
+      "file": "p163.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 163,
+      "rect": [
+        71.2,
+        175.6,
+        220.6,
+        345.8
+      ],
+      "unit": 9,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرسِعَدُّ النواتج",
+      "lessonStartPage": 161
+    },
+    {
+      "file": "p163b.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 163,
+      "rect": [
+        51.1,
+        349.6,
+        134.3,
+        432.8
+      ],
+      "unit": 9,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرسِعَدُّ النواتج",
+      "lessonStartPage": 161
+    },
+    {
+      "file": "p164.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 164,
+      "rect": [
+        68.9,
+        237.0,
+        159.2,
+        327.3
+      ],
+      "unit": 9,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرسِعَدُّ النواتج",
+      "lessonStartPage": 161
+    },
+    {
+      "file": "p164b.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 164,
+      "rect": [
+        149.3,
+        506.5,
+        238.2,
+        614.6
+      ],
+      "unit": 9,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرسِعَدُّ النواتج",
+      "lessonStartPage": 161
+    },
+    {
+      "file": "p164c.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 164,
+      "rect": [
+        60.6,
+        511.1,
+        144.9,
+        614.6
+      ],
+      "unit": 9,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرسِعَدُّ النواتج",
+      "lessonStartPage": 161
+    },
+    {
+      "file": "p165.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 165,
+      "rect": [
+        46.6,
+        385.1,
+        223.6,
+        549.0
+      ],
+      "unit": 9,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرسِعَدُّ النواتج",
+      "lessonStartPage": 161
+    },
+    {
+      "file": "p166.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 166,
+      "rect": [
+        61.6,
+        488.3,
+        144.8,
+        571.5
+      ],
+      "unit": 9,
+      "lesson": 4,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرسِاحتمالُ الحوادثِ المركَّبة",
+      "lessonStartPage": 166
+    },
+    {
+      "file": "p167.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 167,
+      "rect": [
+        55.3,
+        452.3,
+        147.9,
+        551.0
+      ],
+      "unit": 9,
+      "lesson": 4,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرسِاحتمالُ الحوادثِ المركَّبة",
+      "lessonStartPage": 166
+    },
+    {
+      "file": "p168.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 168,
+      "rect": [
+        87.4,
+        539.5,
+        236.8,
+        710.6
+      ],
+      "unit": 9,
+      "lesson": 4,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرسِاحتمالُ الحوادثِ المركَّبة",
+      "lessonStartPage": 166
+    },
+    {
+      "file": "p169.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 169,
+      "rect": [
+        74.5,
+        98.8,
+        223.8,
+        269.9
+      ],
+      "unit": 9,
+      "lesson": 4,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرسِاحتمالُ الحوادثِ المركَّبة",
+      "lessonStartPage": 166
+    },
+    {
+      "file": "p169b.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 169,
+      "rect": [
+        104.8,
+        413.3,
+        207.7,
+        519.6
+      ],
+      "unit": 9,
+      "lesson": 4,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرسِاحتمالُ الحوادثِ المركَّبة",
+      "lessonStartPage": 166
+    },
+    {
+      "file": "p169c.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 169,
+      "rect": [
+        104.8,
+        585.8,
+        207.7,
+        692.1
+      ],
+      "unit": 9,
+      "lesson": 4,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرسِاحتمالُ الحوادثِ المركَّبة",
+      "lessonStartPage": 166
+    },
+    {
+      "file": "p171.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 171,
+      "rect": [
+        47.9,
+        289.6,
+        126.9,
+        368.6
+      ],
+      "unit": 9,
+      "lesson": 4,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرسِاحتمالُ الحوادثِ المركَّبة",
+      "lessonStartPage": 166
+    },
+    {
+      "file": "p171b.png",
+      "sourceId": "g8-math-s2-student-book",
+      "pdfPage": 171,
+      "rect": [
+        124.5,
+        289.6,
+        203.5,
+        368.6
+      ],
+      "unit": 9,
+      "lesson": 4,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "الدرسِاحتمالُ الحوادثِ المركَّبة",
+      "lessonStartPage": 166
+    }
+  ]
+}

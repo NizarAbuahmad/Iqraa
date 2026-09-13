@@ -10,8 +10,10 @@
  * grade would silently overwrite the first in every `Map` keyed by unit id.
  *
  * The grade was never missing from the data — every unit reaches one through
- * `book.gradeId`, and the catalog already spans `grade-10` and a `grade-8`
- * science stub. It was missing only from the strings, and only because each of
+ * `book.gradeId`, and the catalog already spanned `grade-10` and a `grade-8`
+ * science stub (since replaced by the real Grade 8 books, `grade-8` and
+ * `grade-9` now being fully catalogued). It was missing only from the strings,
+ * and only because each of
  * the five catalog modules interpolated its own prefix inline:
  * `` `kbu-math-s1-nccd-${jsonUnitId}` ``, five times, with five different
  * objective shapes and the prefix repeated again as a string literal wherever
@@ -61,6 +63,11 @@ const SUBJECTS = {
   'finlit': { tag: 'finlit-', unitLevel: false },
   'arabic': { tag: 'arabic-', unitLevel: false },
   'islamic': { tag: 'islamic-', unitLevel: false },
+  'geo': { tag: 'geo-', unitLevel: false },
+  'hist': { tag: 'hist-', unitLevel: false },
+  'civ': { tag: 'civ-', unitLevel: false },
+  // Physical Education. Tagged 'pe', not 'phys', to stay clear of physics.
+  'pe': { tag: 'pe-', unitLevel: false },
   // General English, distinct from the four vocational ESP tracks below. The
   // manifest already tags its books `eng-s1` / `eng-s2`, so the stem matches.
   // `UNIT_ID_RE` sorts these keys longest-first precisely so this shorter slug
@@ -73,6 +80,23 @@ const SUBJECTS = {
   'eng-agri': { tag: 'eng-agri-', unitLevel: false },
   'eng-hospitality': { tag: 'eng-hospitality-', unitLevel: false },
   'eng-industry': { tag: 'eng-industry-', unitLevel: false },
+  // Art, Music and Drama Education (creative-arts). Grade 8's book is not
+  // split by semester — see g8CreativeArts.ts for why the scope still
+  // carries semester: 1.
+  'arts': { tag: 'arts-', unitLevel: false },
+  // Vocational Education (التربية المهنية).
+  'voc': { tag: 'voc-', unitLevel: false },
+  // Social Studies (الدراسات الاجتماعية) — Grade 8's combined civics/
+  // history/geography/philosophy book. The 'social' app subjectId
+  // predates any book behind it; this is its first id-namespacing tag.
+  'social': { tag: 'social-', unitLevel: false },
+  // General Science (العلوم) — Grade 8's single book covering biology,
+  // chemistry, physics and earth science together, which Grade 9/10 split
+  // into 'chem'/'phys'/'biology'/'earth-science' above. The 'science' app
+  // subjectId predates any book behind it; this is its first id-namespacing
+  // tag. `unitLevel: false` like every other new subject — the bank holds no
+  // Grade 8 science material, so `g8-science-s1-u2` would name nothing.
+  'science': { tag: 'science-', unitLevel: false },
 } as const;
 
 /** Subject slug as it appears inside an id. Not the app's `subjectId`. */

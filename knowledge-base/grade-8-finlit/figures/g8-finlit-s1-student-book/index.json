@@ -1,0 +1,85 @@
+{
+  "sourceId": "g8-finlit-s1-student-book",
+  "figures": [
+    {
+      "file": "p020.png",
+      "sourceId": "g8-finlit-s1-student-book",
+      "pdfPage": 20,
+      "rect": [
+        110.5,
+        159.9,
+        220.0,
+        292.7
+      ],
+      "unit": 1,
+      "lesson": 4,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "ِقراراتي الماليُةُ وترشيُدُ االستهالِك",
+      "lessonStartPage": 20
+    },
+    {
+      "file": "p020b.png",
+      "sourceId": "g8-finlit-s1-student-book",
+      "pdfPage": 20,
+      "rect": [
+        381.4,
+        163.6,
+        466.0,
+        290.1
+      ],
+      "unit": 1,
+      "lesson": 4,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "ِقراراتي الماليُةُ وترشيُدُ االستهالِك",
+      "lessonStartPage": 20
+    },
+    {
+      "file": "p024.png",
+      "sourceId": "g8-finlit-s1-student-book",
+      "pdfPage": 24,
+      "rect": [
+        239.3,
+        160.0,
+        504.5,
+        361.0
+      ],
+      "unit": 1,
+      "lesson": 5,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "ِأثُرُ اإلعالناِتِ يف اِّتِخاِذِ القراراِتِ الماليِة",
+      "lessonStartPage": 24
+    },
+    {
+      "file": "p036.png",
+      "sourceId": "g8-finlit-s1-student-book",
+      "pdfPage": 36,
+      "rect": [
+        473.3,
+        670.1,
+        595.3,
+        793.7
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "العمُلُ والدخُل",
+      "lessonStartPage": 34
+    },
+    {
+      "file": "p036b.png",
+      "sourceId": "g8-finlit-s1-student-book",
+      "pdfPage": 36,
+      "rect": [
+        360.7,
+        673.8,
+        486.4,
+        793.7
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "العمُلُ والدخُل",
+      "lessonStartPage": 34
+    }
+  ]
+}

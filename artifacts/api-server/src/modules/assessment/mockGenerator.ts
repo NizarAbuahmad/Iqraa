@@ -27,6 +27,7 @@ import {
   getLessonById,
   itemsForUnit,
   usePolicy,
+  type BankUsePolicy,
   type CurriculumObjective,
   type CurriculumSource,
   type SourceKind,
@@ -113,7 +114,10 @@ export interface BankContext {
     title: string;
     kind: SourceKind;
     authorAr: string | null;
-    usePolicy: "quotable" | "reference-only";
+    // The union, not a copy of its members: spelling them out here meant this
+    // file silently claimed to know every policy the bank would ever have, and
+    // adding one broke it here rather than where the decision was made.
+    usePolicy: BankUsePolicy;
   }>;
   total: number;
   /**

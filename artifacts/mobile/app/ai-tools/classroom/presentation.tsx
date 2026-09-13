@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Image,
-  Linking,
   Modal,
   Platform,
   Pressable,
@@ -27,12 +26,13 @@ import { useLanguage } from '@/context/LanguageContext';
 import { ActivitySlide, ClassroomActivity } from '@/services/ai/AIService';
 import { getPendingClassroomActivity, clearClassroomActivity } from '@/services/classroomStore';
 import { timerColor, timerSecondsForSlide } from '@/services/presentationUtils';
+import { openExternal } from '@/services/externalLinks';
 import Svg, { Line, Polyline, Rect } from 'react-native-svg';
 import { plotGeometry, visualForSlide } from '@/services/deckVisuals';
 // Shared with both exports so the projected slide and the exported one cannot
 // disagree about what a bullet, an equation or a section glyph is.
 import { isBulletLine, isEnglishSlideContent, looksLikeEquation, splitEmoji, stripBullet } from '@/services/deckText';
-import { geogebraCommandUrl, openGeogebraWithCommands } from '@/services/geogebra';
+import { openGeogebraWithCommands } from '@/services/geogebra';
 import { youtubeEmbedUrl } from '@/services/classMedia';
 import {
   createGame, podium, resetScores, setAwards, toggleAward, type GameState,
@@ -44,12 +44,13 @@ import { hasRenderableMath, isolateForeignRuns, prettifySymPy } from '@/services
 /** Open a media URL outside the app (native fallback — no WebView dep). */
 async function openExternalMedia(url: string): Promise<void> {
   if (!url) return;
+  // `externalLinks.ts` exists because this dance had already been written
+  // twice and drifted; its header records that "a third copy was about to
+  // land, so it moved here instead". This was the fourth. What stays local is
+  // the swallow: mid-presentation there is nothing useful to say, and an
+  // unhandled rejection would surface over the projected slide.
   try {
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      window.open(url, '_blank', 'noopener,noreferrer');
-      return;
-    }
-    await Linking.openURL(url);
+    await openExternal(url);
   } catch {
     // ignore — nothing to project
   }
@@ -143,13 +144,22 @@ function VisualView({ slide }: { slide: ActivitySlide }) {
 
 const VISUAL_COLORS = ['#1B6B62', '#C2410C', '#4F46E5', '#B91C1C'];
 
-// ─── Graph slide (GeoGebra) ───────────────────────────────────────────────────
-// On web (the projector case) the calculator is embedded so the class sees the
-// curve inside the deck; on native there's no WebView dependency, so we open
-// GeoGebra full-screen instead.
+// ─── Graph slide ──────────────────────────────────────────────────────────────
+// The curve is drawn from the slide's own commands as react-native-svg — the
+// same picture the PDF and PPTX exports draw, so all three surfaces agree.
+//
+// It used to be a GeoGebra iframe on web. Framing their calculator inside a
+// product is not something their licence grants: non-commercial use is limited
+// to "personal or individual classroom teaching", and the licence is personal
+// to the holder ("must not ... permit any third party to benefit from it").
+// Reviewed 2026-09-10 — see STATUS.md.
+//
+// The button stays, and on web too. Opening geogebra.org in a browser is an
+// ordinary visit to a free site by a teacher, and it is the only thing on offer
+// when `visualForSlide` refuses a command it cannot plot honestly —
+// `Circle(...)`, a trig function — where VisualView renders nothing at all.
 function GraphView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; t: (k: any, arg?: any) => string }) {
   const commands = slide.graphCommands ?? [];
-  const url = geogebraCommandUrl(commands);
 
   return (
     <View style={mediaStyles.wrap}>
@@ -173,26 +183,17 @@ function GraphView({ slide, isRTL, t }: { slide: ActivitySlide; isRTL: boolean; 
         </Text>
       )}
 
-      {Platform.OS === 'web' ? (
-        <View style={mediaStyles.frame}>
-          {React.createElement('iframe', {
-            src: url,
-            style: { width: '100%', height: '100%', border: '0', borderRadius: 14 },
-            allowFullScreen: true,
-            title: 'GeoGebra',
-          })}
-        </View>
-      ) : (
-        <Pressable
-          onPress={() => { void openGeogebraWithCommands(commands); }}
-          style={[mediaStyles.openBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-        >
-          <Ionicons name="stats-chart" size={20} color="#fff" />
-          <Text style={[mediaStyles.openBtnText, { fontFamily: 'Cairo_700Bold' }]}>
-            {t('openGraph')}
-          </Text>
-        </Pressable>
-      )}
+      <VisualView slide={slide} />
+
+      <Pressable
+        onPress={() => { void openGeogebraWithCommands(commands); }}
+        style={[mediaStyles.openBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+      >
+        <Ionicons name="stats-chart" size={20} color="#fff" />
+        <Text style={[mediaStyles.openBtnText, { fontFamily: 'Cairo_700Bold' }]}>
+          {t('openGraph')}
+        </Text>
+      </Pressable>
     </View>
   );
 }
@@ -332,6 +333,17 @@ function HeroSlideView({ slide, accent }: { slide: ActivitySlide; accent: string
         style={StyleSheet.absoluteFill}
       />
       {body}
+      {/* The credit is a licence condition, not decoration. Unsplash requires
+          photographer attribution, CC-BY requires it by name, and VOA asks for
+          it — and this slide type carried `mediaCaption` for months without
+          ever drawing it, so every hero photo shipped uncredited. Media slides
+          already render theirs; this is the same line, sized not to compete
+          with the title. */}
+      {!!slide.mediaCaption && (
+        <Text style={[heroStyles.credit, { fontFamily: 'Cairo_400Regular' }]}>
+          {isolateForeignRuns(slide.mediaCaption)}
+        </Text>
+      )}
     </View>
   );
 }
@@ -1070,11 +1082,11 @@ export default function PresentationScreen() {
             ? <HeroSlideView slide={slide} accent={slideTypeAccent(slide.type)} />
             : <SlideView slide={slide} isRTL={isRTL} />}
 
-          {/* Graph (GeoGebra) and media (image / YouTube) slides */}
+          {/* Graph and media (image / YouTube) slides */}
           {slide.type === 'graph' && <GraphView slide={slide} isRTL={isRTL} t={t} />}
-          {/* An explicit visual — a finance chart, a stats bar. Graph slides
-              keep GeoGebra above instead: live, a curve the teacher can drag
-              beats a static drawing, and only the exports need the static one. */}
+          {/* An explicit visual — a finance chart, a stats bar. Graph slides are
+              excluded because GraphView draws the same VisualView itself, under
+              the command pills; rendering it here too would double the plot. */}
           {slide.type !== 'graph' && <VisualView slide={slide} />}
           {slide.type === 'media' && <MediaView slide={slide} isRTL={isRTL} t={t} />}
 
@@ -1428,6 +1440,15 @@ const heroStyles = StyleSheet.create({
   textWrap: { alignItems: 'center', maxWidth: 560 },
   title: { fontSize: 34, color: '#fff', textAlign: 'center', lineHeight: 46 },
   subtitle: { fontSize: 16, color: 'rgba(255,255,255,0.85)', textAlign: 'center', marginTop: 12, lineHeight: 24 },
+  credit: {
+    position: 'absolute',
+    bottom: 10,
+    left: 16,
+    right: 16,
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.72)',
+    textAlign: 'center',
+  },
 });
 
 // Graph + media slides: the frame is the star, sized for a projector.

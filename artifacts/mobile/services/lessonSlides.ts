@@ -124,11 +124,14 @@ export const MID_LESSON_CHECK_MAX = 2;
  * Book figures shown per lesson, at most.
  *
  * Lessons carry up to six (median three). All six would be six slides of
- * looking at pictures in a 45-minute period, so the deck shows the first two
- * in book order and leaves the rest — the same omit-rather-than-pad rule the
- * graph slide follows.
+ * looking at pictures in a 45-minute period, so the deck still stops short of
+ * that — but two was too few: subjects without a stated "rule" or worked
+ * examples (biology, physics, earth science) lean on the book's own diagrams
+ * to explain the lesson at all, and two disconnected images could not carry
+ * that. Four in book order, the rest left out — the same omit-rather-than-pad
+ * rule the graph slide follows.
  */
-export const BOOK_FIGURE_MAX = 2;
+export const BOOK_FIGURE_MAX = 4;
 /** Exit-ticket questions, at most. */
 export const EXIT_TICKET_MAX = 3;
 /**

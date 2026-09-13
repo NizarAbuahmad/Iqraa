@@ -13,12 +13,15 @@ import {
   classGroups,
   classMemberships,
   students,
+  emailVerificationTokens,
+  passwordResetTokens,
 } from "@workspace/db";
-import { eq, and, asc, gt, inArray, isNotNull, isNull } from "drizzle-orm";
+import { eq, and, asc, desc, gt, inArray, isNotNull, isNull } from "drizzle-orm";
 import { authMiddleware, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { logger } from "../lib/logger.js";
 import { createRateLimiter } from "../lib/rateLimit.js";
-import { deleteObject } from "../lib/r2.js";
+import { emailKey } from "../lib/rateLimitKeys.js";
+import { deleteObject, deletePublicObject, isPublicR2Configured, newAvatarKey, publicUrl, putPublicObject } from "../lib/r2.js";
 import { googleClientIds } from "../lib/googleClients.js";
 import { studentAccountsEnabled } from "../lib/features.js";
 import {
@@ -26,22 +29,101 @@ import {
   ROSTER_CONSENT_VERSION,
 } from "../lib/rosterConsent.js";
 import { isStrongPassword, PASSWORD_POLICY_MESSAGE } from "../lib/passwordPolicy.js";
+import { sendPasswordResetEmail, sendVerificationEmail } from "../lib/email.js";
+import {
+  generateVerificationCode,
+  hashVerificationCode,
+  VERIFICATION_CODE_TTL_MS,
+  VERIFICATION_MAX_ATTEMPTS,
+} from "../lib/emailVerification.js";
+import {
+  generateResetCode,
+  hashResetCode,
+  RESET_CODE_TTL_MS,
+} from "../lib/passwordReset.js";
 import { resolveClaimCode, type ClaimRole } from "../lib/rosterClaim.js";
 import { normalizeShareCode } from "../modules/assessment/studentView.ts";
+import { extensionForAvatarMime, MAX_AVATAR_DATA_URL_LENGTH } from "../lib/avatarUpload.js";
+import { parseDataUrl } from "../lib/lessonMediaUpload.js";
 
 const router = Router();
+
+/** null key -> null url, so every response-building site below can stay a one-liner. */
+function avatarUrlFor(avatarKey: string | null): string | null {
+  return avatarKey ? publicUrl(avatarKey) : null;
+}
+
+/*
+ * A school is one NAT address. An IP-keyed signup limit is therefore a limit
+ * on the school: the sixth teacher to sign up on the staffroom wifi was told
+ * "too many attempts" for something five colleagues had already done, with
+ * nothing in the message to explain it and nothing they could do about it.
+ * The tight limits below are keyed on the address instead — see
+ * lib/rateLimitKeys.ts.
+ */
 
 // Login gets more headroom than register since real users mistype passwords;
 // a burst of registrations is rarely legitimate at any volume.
 const loginLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, name: "login" });
-const registerLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5, name: "register" });
 const googleLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, name: "google-auth" });
+
+/*
+ * The signup and verification routes are limited twice: tightly per address,
+ * loosely per IP. Neither alone is right — per-IP alone punishes a shared
+ * school connection, and per-address alone leaves bulk automation free to
+ * create unlimited accounts from one host as long as each uses a fresh email.
+ */
+const registerEmailLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 3, name: "register-email", key: emailKey });
+const registerLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 30, name: "register" });
+
+const verifyEmailAddressLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, name: "verify-email-address", key: emailKey });
+const verifyEmailLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 60, name: "verify-email" });
+
+// Tighter than register per address: this exists to recover from a failed
+// send, not to resend on a whim, and an unlimited resend is a free
+// email-bombing vector aimed at whoever owns that mailbox.
+const resendVerificationEmailLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 3, name: "resend-verification-email", key: emailKey });
+const resendVerificationLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 20, name: "resend-verification" });
+
+// Same pair, keyed on the address the pending signup currently has. Every
+// attempt also has to survive a bcrypt compare, so the per-address ceiling
+// can match login's rather than resend's — a mistyped address is worth a few
+// honest retries, and this route sends mail only once the password checks out.
+const changeEmailAddressLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, name: "change-unverified-email-address", key: emailKey });
+const changeEmailLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 30, name: "change-unverified-email" });
 // /claim was the only code-redeeming route without one, which made it an
 // authenticated guessing surface against a 6-character alphabet. More headroom
 // than register because a parent with three children legitimately claims three
 // times in a sitting. Dormant while STUDENT_ACCOUNTS is off — the route 403s
 // before reaching the handler — so this is insurance for the day it flips.
 const claimLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 10, name: "claim" });
+// Same reasoning as resend-verification: asking costs someone else an email.
+const forgotPasswordLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 3, name: "forgot-password" });
+/**
+ * Keyed on the **email**, not the caller's IP.
+ *
+ * `password_reset_tokens` has no attempts column — the email-verification
+ * table grew one, this older table predates it, and adding one would mean a
+ * hand-run migration against production for a flow that can be made safe
+ * without it. A 6-digit code is 1e6 possibilities, so what actually has to be
+ * capped is guesses *against one account*, and an IP-keyed limiter caps
+ * nothing an attacker with a handful of addresses cares about. The counter is
+ * shared Postgres (lib/rateLimit.ts), so this holds across instances.
+ *
+ * Falls back to the IP when no email was sent, so a malformed body still
+ * meets a limit rather than slipping past one.
+ */
+const resetPasswordLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  name: "reset-password",
+  key: req => {
+    const email = (req.body as { email?: unknown } | undefined)?.email;
+    return typeof email === "string" && email.trim() !== ""
+      ? email.toLowerCase().trim()
+      : req.ip ?? "unknown";
+  },
+});
 
 // Unset means the endpoint answers 503 and the client-side button never
 // renders (see GoogleSignInButton) — never a failure, just no button, same
@@ -83,16 +165,49 @@ async function storeRefreshToken(userId: string, tokenValue: string): Promise<vo
   await db.insert(refreshTokens).values({ userId, tokenHash, expiresAt });
 }
 
+/**
+ * Mints a fresh 6-digit code, stores its hash, and emails it. Does not throw
+ * on a failed send — an email outage must not strand a real signup with no
+ * account at all; /auth/resend-verification is the recovery path once the
+ * outage clears.
+ */
+async function issueVerificationCode(userId: string, email: string): Promise<void> {
+  const code = generateVerificationCode();
+  await db.insert(emailVerificationTokens).values({
+    userId,
+    codeHash: hashVerificationCode(code),
+    expiresAt: new Date(Date.now() + VERIFICATION_CODE_TTL_MS),
+  });
+  const sent = await sendVerificationEmail(email, code);
+  if (!sent) {
+    logger.error({ userId, email }, "verification email not sent — account created unverified with no code delivered");
+  }
+}
+
 /** An empty or whitespace-only picked name is "none given", not a name that fails to match. */
 function trimmedOrUndefined(value: unknown): string | undefined {
   const trimmed = typeof value === "string" ? value.trim() : "";
   return trimmed === "" ? undefined : trimmed;
 }
 
+/**
+ * Whether a parent/student account has claimed any roster row yet. Only ever
+ * queried for those two roles — a teacher never has rosterLinks, and running
+ * this on every teacher request would be a wasted query on the common path.
+ */
+async function hasAnyRosterLink(userId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: rosterLinks.id })
+    .from(rosterLinks)
+    .where(eq(rosterLinks.userId, userId))
+    .limit(1);
+  return !!row;
+}
+
 // POST /auth/register
-router.post("/register", registerLimiter, async (req, res) => {
+router.post("/register", registerLimiter, registerEmailLimiter, async (req, res) => {
   try {
-    const { firstName, lastName, email, password, confirmPassword, role: rawRole, claimCode, studentId } =
+    const { firstName, lastName, email, password, confirmPassword, role: rawRole } =
       req.body as {
         firstName?: string;
         lastName?: string;
@@ -101,16 +216,6 @@ router.post("/register", registerLimiter, async (req, res) => {
         confirmPassword?: string;
         /** Defaults to 'teacher' — the only role that needed no signup step until now. */
         role?: string;
-        /** Required for role 'student'/'parent' — see /students/:id/claim-code in roster.ts. */
-        claimCode?: string;
-        /**
-         * Which roster row this person says they are. Required only when
-         * `claimCode` is a whole-class join code, which names no student of its
-         * own; a per-student claim code ignores it. Never trusted as identity —
-         * it is checked for membership of that code's class, and a name already
-         * held by a student account is refused (lib/claimDecision.ts).
-         */
-        studentId?: string;
       };
 
     if (!firstName?.trim()) {
@@ -137,34 +242,21 @@ router.post("/register", registerLimiter, async (req, res) => {
     const role: "teacher" | ClaimRole =
       rawRole === "student" || rawRole === "parent" ? rawRole : "teacher";
 
-    // Resolved before any write: a student/parent account must never be
-    // created dangling off an invalid code.
-    let claim: { studentId: string; relation: "self" | "guardian" } | null = null;
-    if (role !== "teacher") {
-      // v1 is teacher-only. A student account is an account for a minor, and
-      // the consent posture around one needs a lawyer and a matching store
-      // declaration — see lib/features.ts. Refused here rather than hidden in
-      // the app, because the app is not the security boundary.
-      if (!studentAccountsEnabled()) {
-        res.status(403).json({
-          code: "student_accounts_disabled",
-          error: "Parent and student accounts are not available yet.",
-        });
-        return;
-      }
-      const code = claimCode?.trim();
-      if (!code) {
-        res.status(400).json({ error: "A class code is required to sign up as a parent or student" });
-        return;
-      }
-      // studentId is the name picked off a class roster (see GET /auth/join/:code).
-      // A per-student claim code names its own student and ignores this.
-      const resolved = await resolveClaimCode(code, role, trimmedOrUndefined(studentId));
-      if (!resolved.ok) {
-        res.status(resolved.status).json({ error: resolved.error });
-        return;
-      }
-      claim = { studentId: resolved.studentId, relation: resolved.relation };
+    // v1 is teacher-only. A student account is an account for a minor, and
+    // the consent posture around one needs a lawyer and a matching store
+    // declaration — see lib/features.ts. Refused here rather than hidden in
+    // the app, because the app is not the security boundary.
+    //
+    // No roster code is asked for or resolved at this point anymore: a
+    // parent/student account is created bare, and links to a roster row
+    // afterwards through the one claiming path, POST /auth/claim — see
+    // hasAnyRosterLink and the client-side gate that gets them there.
+    if (role !== "teacher" && !studentAccountsEnabled()) {
+      res.status(403).json({
+        code: "student_accounts_disabled",
+        error: "Parent and student accounts are not available yet.",
+      });
+      return;
     }
 
     // Check duplicate email
@@ -194,28 +286,15 @@ router.post("/register", registerLimiter, async (req, res) => {
 
     if (!user) throw new Error("Failed to create user");
 
-    if (claim) {
-      await db
-        .insert(rosterLinks)
-        .values({ studentId: claim.studentId, userId: user.id, relation: claim.relation })
-        .onConflictDoNothing();
-    }
-
-    const { accessToken, refreshTokenValue } = generateTokens(user.id, user.email, user.role);
-    await storeRefreshToken(user.id, refreshTokenValue);
+    // No tokens issued here: a password account is unverified until it
+    // proves the address at POST /auth/verify-email, which is what hands
+    // back the session. Google accounts skip all of this — they set
+    // emailVerified: true and log in immediately, further down this file.
+    await issueVerificationCode(user.id, user.email);
 
     res.status(201).json({
-      accessToken,
-      refreshToken: refreshTokenValue,
-      user: {
-        id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        role: user.role,
-        preferredLanguage: user.preferredLanguage,
-        createdAt: user.createdAt,
-      },
+      email: user.email,
+      message: "Account created. Check your email for a 6-digit verification code.",
     });
   } catch (err: any) {
     if (err.code === "23505") {
@@ -227,12 +306,387 @@ router.post("/register", registerLimiter, async (req, res) => {
   }
 });
 
+// POST /auth/verify-email
+router.post("/verify-email", verifyEmailLimiter, verifyEmailAddressLimiter, async (req, res) => {
+  try {
+    const { email, code } = req.body as { email?: string; code?: string };
+    if (!email || !code) {
+      res.status(400).json({ error: "Email and code are required" });
+      return;
+    }
+
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email.toLowerCase().trim()))
+      .limit(1);
+
+    // Same generic message for "no such account" and "wrong/expired code" —
+    // same shape as login's "invalid email or password" — so a wrong guess
+    // here cannot be used to enumerate which codes are close. Registration's
+    // own duplicate-email check already tells a caller an address is taken,
+    // so this isn't hiding account existence, just not adding a second,
+    // finer-grained oracle on top of it.
+    const invalid = () => res.status(400).json({ error: "Invalid or expired code" });
+
+    if (!user) {
+      invalid();
+      return;
+    }
+    if (user.emailVerified) {
+      res.status(400).json({ error: "This email is already verified" });
+      return;
+    }
+
+    const [token] = await db
+      .select()
+      .from(emailVerificationTokens)
+      .where(
+        and(
+          eq(emailVerificationTokens.userId, user.id),
+          eq(emailVerificationTokens.used, false),
+          gt(emailVerificationTokens.expiresAt, new Date()),
+        ),
+      )
+      .orderBy(desc(emailVerificationTokens.createdAt))
+      .limit(1);
+
+    if (!token || token.attempts >= VERIFICATION_MAX_ATTEMPTS) {
+      invalid();
+      return;
+    }
+
+    if (token.codeHash !== hashVerificationCode(code.trim())) {
+      await db
+        .update(emailVerificationTokens)
+        .set({ attempts: token.attempts + 1 })
+        .where(eq(emailVerificationTokens.id, token.id));
+      invalid();
+      return;
+    }
+
+    await db
+      .update(emailVerificationTokens)
+      .set({ used: true })
+      .where(eq(emailVerificationTokens.id, token.id));
+    const [verified] = await db
+      .update(users)
+      .set({ emailVerified: true })
+      .where(eq(users.id, user.id))
+      .returning();
+
+    const { accessToken, refreshTokenValue } = generateTokens(verified.id, verified.email, verified.role);
+    await storeRefreshToken(verified.id, refreshTokenValue);
+
+    res.json({
+      accessToken,
+      refreshToken: refreshTokenValue,
+      user: {
+        id: verified.id,
+        firstName: verified.firstName,
+        lastName: verified.lastName,
+        email: verified.email,
+        role: verified.role,
+        preferredLanguage: verified.preferredLanguage,
+        avatarUrl: avatarUrlFor(verified.avatarKey),
+        createdAt: verified.createdAt,
+        // This is the call that hands back the session register used to, so
+        // it owes the client the same field login does — without it a
+        // freshly verified parent/student arrives with hasRosterLink absent
+        // and the claim gate cannot tell "no link yet" from "not asked".
+        // Always false rather than queried: nothing between register and here
+        // can have created a roster link for this account.
+        ...(verified.role === "teacher" ? {} : { hasRosterLink: false }),
+      },
+    });
+  } catch (err) {
+    logger.error({ err }, "verify email failed");
+    res.status(500).json({ error: "Verification failed" });
+  }
+});
+
+// POST /auth/resend-verification
+router.post("/resend-verification", resendVerificationLimiter, resendVerificationEmailLimiter, async (req, res) => {
+  try {
+    const { email } = req.body as { email?: string };
+    if (!email) {
+      res.status(400).json({ error: "Email is required" });
+      return;
+    }
+
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email.toLowerCase().trim()))
+      .limit(1);
+
+    // Same response either way — an unknown address, an already-verified
+    // account, and a fresh code all answer identically so this cannot be
+    // used to probe which emails are registered.
+    if (user && !user.emailVerified) {
+      await issueVerificationCode(user.id, user.email);
+    }
+
+    res.json({ ok: true, message: "If that email needs verifying, a new code was sent." });
+  } catch (err) {
+    logger.error({ err }, "resend verification failed");
+    res.status(500).json({ error: "Failed to resend code" });
+  }
+});
+
+/**
+ * POST /auth/change-unverified-email
+ *
+ * Repoints a pending signup at a different address. Without this a typo is
+ * unrecoverable: the account exists on an address its owner cannot read, no
+ * code can arrive, and the unique constraint means a mistyped *real* address
+ * is squatted — the person who actually owns it can then never register.
+ *
+ * The password is what makes this safe to leave unauthenticated. The account
+ * has no session yet (that is the whole point of the screen this serves), so
+ * the password is the only proof of ownership available, and without it
+ * anyone could redirect a stranger's pending signup to an address they
+ * control and collect the code.
+ *
+ * Deliberately refuses once the account is verified: past that point changing
+ * an address is a profile edit made from a real session, with the old address
+ * owed a notification — a different feature with a different threat model,
+ * not this one widened.
+ */
+router.post("/change-unverified-email", changeEmailLimiter, changeEmailAddressLimiter, async (req, res) => {
+  try {
+    const { email, password, newEmail } = req.body as {
+      email?: string;
+      password?: string;
+      newEmail?: string;
+    };
+
+    if (!email || !password || !newEmail?.includes("@")) {
+      res.status(400).json({ error: "Current email, password and a valid new email are required" });
+      return;
+    }
+
+    const current = email.toLowerCase().trim();
+    const next = newEmail.toLowerCase().trim();
+
+    if (current === next) {
+      res.status(400).json({ error: "That is already the address on this account" });
+      return;
+    }
+
+    const [user] = await db.select().from(users).where(eq(users.email, current)).limit(1);
+
+    // One message for "no such account" and "wrong password", same as login:
+    // this route is reachable without a session, so it must not confirm which
+    // addresses have pending signups.
+    if (!user?.passwordHash || !(await bcrypt.compare(password, user.passwordHash))) {
+      res.status(401).json({ error: "Invalid email or password" });
+      return;
+    }
+
+    if (user.emailVerified) {
+      res.status(400).json({ error: "This account is already verified" });
+      return;
+    }
+
+    const [taken] = await db.select({ id: users.id }).from(users).where(eq(users.email, next)).limit(1);
+    if (taken) {
+      res.status(409).json({ error: "An account with this email already exists" });
+      return;
+    }
+
+    const [updated] = await db
+      .update(users)
+      .set({ email: next })
+      .where(eq(users.id, user.id))
+      .returning();
+
+    // Codes already sent named the old address. Burn them rather than leave
+    // them usable — /verify-email takes the newest unused token, so a stale
+    // one would otherwise stay valid until it expired.
+    await db
+      .update(emailVerificationTokens)
+      .set({ used: true })
+      .where(
+        and(
+          eq(emailVerificationTokens.userId, user.id),
+          eq(emailVerificationTokens.used, false),
+        ),
+      );
+
+    await issueVerificationCode(updated.id, updated.email);
+
+    logger.info({ userId: updated.id }, "pending signup repointed to a new email");
+    res.json({ email: updated.email, message: "A new code was sent to that address." });
+  } catch (err: any) {
+    if (err.code === "23505") {
+      res.status(409).json({ error: "An account with this email already exists" });
+      return;
+    }
+    logger.error({ err }, "change unverified email failed");
+    res.status(500).json({ error: "Failed to change email" });
+  }
+});
+
 /**
  * Links an already-signed-in parent or student to one more roster row — a
  * second child for the same parent, a second parent for the same child, or a
  * second teacher's roster for the same student. Same resolver as /register,
  * just without creating a user row first.
  */
+/**
+ * POST /auth/forgot-password
+ *
+ * Restored 2026-09-12. It was deleted on 2026-09-10 because there was no way
+ * to send the email — that was true for about thirty hours, until the Resend
+ * integration landed with email verification. What it left behind was 23
+ * accounts holding a password and no Google account, one forgotten password
+ * away from needing an administrator.
+ *
+ * Answers `{ ok: true }` in every case that is not a malformed request:
+ * account found, account absent, account exists but signs in with Google and
+ * has no password to reset, mail provider refused the send. The caller learns
+ * only that the request was accepted, which is the point — anything finer is
+ * an oracle for which addresses have accounts here.
+ */
+router.post("/forgot-password", forgotPasswordLimiter, async (req, res) => {
+  try {
+    const { email } = req.body as { email?: string };
+    if (!email?.includes("@")) {
+      res.status(400).json({ error: "Valid email is required" });
+      return;
+    }
+
+    const [user] = await db
+      .select({ id: users.id, email: users.email, passwordHash: users.passwordHash })
+      .from(users)
+      .where(eq(users.email, email.toLowerCase().trim()))
+      .limit(1);
+
+    // No account, or a Google-only account with no password to reset. Both
+    // stop here, and both answer exactly as success does.
+    if (!user || !user.passwordHash) {
+      res.json({ ok: true });
+      return;
+    }
+
+    const code = generateResetCode();
+
+    // One live code per account: asking again replaces the previous one rather
+    // than leaving two valid. Without this, every request widens the window an
+    // attacker is guessing against instead of resetting it.
+    await db.delete(passwordResetTokens).where(eq(passwordResetTokens.userId, user.id));
+    await db.insert(passwordResetTokens).values({
+      userId: user.id,
+      tokenHash: hashResetCode(user.id, code),
+      expiresAt: new Date(Date.now() + RESET_CODE_TTL_MS),
+    });
+
+    const sent = await sendPasswordResetEmail(user.email, code);
+    // Logged without the code and without a way to tie it back to one, because
+    // a failed send is an operational problem and a code in a log is a
+    // takeover. lib/email.ts records the provider's own reason.
+    if (!sent) logger.error({ userId: user.id }, "password reset code could not be emailed");
+
+    res.json({ ok: true });
+  } catch (err) {
+    logger.error({ err }, "forgot password failed");
+    res.status(500).json({ error: "Failed to process request" });
+  }
+});
+
+/**
+ * POST /auth/reset-password
+ *
+ * Takes the email alongside the code: the code is hashed together with the
+ * user id (lib/passwordReset.ts), so it cannot be looked up on its own, and a
+ * code is only ever valid for the account it was sent to.
+ */
+router.post("/reset-password", resetPasswordLimiter, async (req, res) => {
+  try {
+    const { email, code, password, confirmPassword } = req.body as {
+      email?: string;
+      code?: string;
+      password?: string;
+      confirmPassword?: string;
+    };
+
+    if (!email || !code) {
+      res.status(400).json({ error: "Email and code are required" });
+      return;
+    }
+    if (!password || !isStrongPassword(password)) {
+      res.status(400).json({ error: PASSWORD_POLICY_MESSAGE });
+      return;
+    }
+    if (confirmPassword !== undefined && confirmPassword !== password) {
+      res.status(400).json({ error: "Passwords do not match" });
+      return;
+    }
+
+    // One message for every way this can fail, same as /verify-email: a wrong
+    // code, an expired one, an address with no account, an account that has
+    // no password. Distinguishing them tells a guesser which door to keep
+    // knocking on.
+    const invalid = () => res.status(400).json({ error: "Invalid or expired code" });
+
+    const [user] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.email, email.toLowerCase().trim()))
+      .limit(1);
+
+    if (!user) {
+      invalid();
+      return;
+    }
+
+    const [stored] = await db
+      .select()
+      .from(passwordResetTokens)
+      .where(
+        and(
+          eq(passwordResetTokens.userId, user.id),
+          eq(passwordResetTokens.tokenHash, hashResetCode(user.id, code.trim())),
+          eq(passwordResetTokens.used, false),
+          gt(passwordResetTokens.expiresAt, new Date()),
+        ),
+      )
+      .limit(1);
+
+    if (!stored) {
+      invalid();
+      return;
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+    await db.update(users).set({
+      passwordHash,
+      // Reading a code sent to that address is the same proof registration
+      // asks for, so a reset settles verification too. Without this, someone
+      // who reset their password could still be refused at login for an
+      // address they just demonstrably control.
+      emailVerified: true,
+    }).where(eq(users.id, user.id));
+
+    await db
+      .update(passwordResetTokens)
+      .set({ used: true })
+      .where(eq(passwordResetTokens.id, stored.id));
+
+    // Every existing session dies with the old password. If this reset was
+    // someone taking their account back, the sessions worth ending are exactly
+    // the ones already open.
+    await db.delete(refreshTokens).where(eq(refreshTokens.userId, user.id));
+
+    logger.info({ userId: user.id }, "password reset completed");
+    res.json({ ok: true });
+  } catch (err) {
+    logger.error({ err }, "reset password failed");
+    res.status(500).json({ error: "Failed to reset password" });
+  }
+});
+
 router.post("/claim", claimLimiter, authMiddleware, async (req: AuthenticatedRequest, res) => {
   try {
     // Closed for the same reason /register is. No such account can exist
@@ -262,7 +716,10 @@ router.post("/claim", claimLimiter, authMiddleware, async (req: AuthenticatedReq
 
     const resolved = await resolveClaimCode(code, role, trimmedOrUndefined(studentId));
     if (!resolved.ok) {
-      res.status(resolved.status).json({ error: resolved.error });
+      // `code` as well as `error`: the app is Arabic-first and these strings
+      // are English, so the screen translates the code rather than printing
+      // the sentence (services/claimCodeGate.ts).
+      res.status(resolved.status).json({ error: resolved.error, code: resolved.code });
       return;
     }
 
@@ -347,15 +804,25 @@ router.get("/join/:code", joinLookupLimiter, async (req, res) => {
     // the second parent could not find their own child and the class code
     // would appear broken to them. The names are visible either way, so
     // filtering would buy no privacy and cost a real case.
-    const selfLinked = await db
-      .select({ studentId: rosterLinks.studentId })
-      .from(rosterLinks)
-      .where(
-        and(
-          eq(rosterLinks.relation, "self"),
-          inArray(rosterLinks.studentId, roster.length > 0 ? roster.map(s => s.id) : [""]),
-        ),
-      );
+    // Skipped entirely on an empty roster rather than asked with a placeholder
+    // id. `rosterLinks.studentId` is a uuid column, so the `[""]` that used to
+    // stand in for "no ids" made Postgres reject the whole statement — every
+    // class whose teacher had minted a join code before adding any names
+    // answered 500 here, the app read that as "not a class code", hid the
+    // picker, and let the joiner submit a nameless claim that came back
+    // "Choose your name from the class list".
+    const selfLinked =
+      roster.length === 0
+        ? []
+        : await db
+            .select({ studentId: rosterLinks.studentId })
+            .from(rosterLinks)
+            .where(
+              and(
+                eq(rosterLinks.relation, "self"),
+                inArray(rosterLinks.studentId, roster.map(s => s.id)),
+              ),
+            );
     const taken = new Set(selfLinked.map(r => r.studentId));
 
     res.json({
@@ -397,6 +864,20 @@ router.post("/login", loginLimiter, async (req, res) => {
       return;
     }
 
+    // Checked after the password too, and before suspension, for the same
+    // enumeration reason as the suspension check below: nothing about this
+    // account is confirmed until the password has already proved who is
+    // asking. A Google account never reaches this false — see /auth/google,
+    // which sets emailVerified: true itself, and register's pre-existing
+    // account-linking path, which does the same.
+    if (!user.emailVerified) {
+      res.status(403).json({
+        error: "Please verify your email before signing in.",
+        code: "email_not_verified",
+      });
+      return;
+    }
+
     // Checked after the password, not before: answering differently to a
     // suspended account before proving who is asking would turn this into an
     // oracle for which addresses are suspended. Past the password there is no
@@ -421,6 +902,13 @@ router.post("/login", loginLimiter, async (req, res) => {
     const { accessToken, refreshTokenValue } = generateTokens(user.id, user.email, user.role);
     await storeRefreshToken(user.id, refreshTokenValue);
 
+    // Only asked of the database for the two roles the app's routing gate
+    // cares about — a teacher never has (or needs) a rosterLinks row.
+    const hasRosterLink =
+      user.role === "student" || user.role === "parent"
+        ? await hasAnyRosterLink(user.id)
+        : undefined;
+
     res.json({
       accessToken,
       refreshToken: refreshTokenValue,
@@ -431,8 +919,10 @@ router.post("/login", loginLimiter, async (req, res) => {
         email: user.email,
         role: user.role,
         preferredLanguage: user.preferredLanguage,
+        avatarUrl: avatarUrlFor(user.avatarKey),
         createdAt: user.createdAt,
         lastLogin: user.lastLogin,
+        ...(hasRosterLink === undefined ? {} : { hasRosterLink }),
       },
     });
   } catch (err) {
@@ -449,7 +939,11 @@ router.post("/google", googleLimiter, async (req, res) => {
       return;
     }
 
-    const { credential } = req.body as { credential?: string };
+    const { credential, role: rawRole } = req.body as {
+      credential?: string;
+      /** Only consulted when Google is minting a brand-new account — see below. */
+      role?: string;
+    };
     if (!credential) {
       res.status(400).json({ error: "Google credential is required" });
       return;
@@ -483,30 +977,56 @@ router.post("/google", googleLimiter, async (req, res) => {
     const email = payload.email.toLowerCase().trim();
 
     let [user] = await db.select().from(users).where(eq(users.googleId, payload.sub)).limit(1);
+    // True only for the branch below that inserts a brand-new row — that
+    // account can never already hold a roster link, so its hasRosterLink is
+    // known without a query. Every other branch (matched or email-linked) may
+    // have claimed one at any point in the past via /auth/claim, so those
+    // still need to ask.
+    let isNewAccount = false;
 
     if (!user) {
       // Link to an existing password account with the same email if one
       // exists, otherwise create a fresh Google-only account.
       [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
 
-      [user] = user
-        ? await db
-            .update(users)
-            .set({ googleId: payload.sub, emailVerified: true })
-            .where(eq(users.id, user.id))
-            .returning()
-        : await db
-            .insert(users)
-            .values({
-              firstName: payload.given_name?.trim() || email.split("@")[0],
-              lastName: payload.family_name?.trim() || "",
-              email,
-              googleId: payload.sub,
-              role: "teacher",
-              preferredLanguage: "en",
-              emailVerified: true,
-            })
-            .returning();
+      if (user) {
+        [user] = await db
+          .update(users)
+          .set({ googleId: payload.sub, emailVerified: true })
+          .where(eq(users.id, user.id))
+          .returning();
+      } else {
+        // A brand-new account: the register screen's role picker reaches this
+        // route too (its "Continue with Google" button), and used to always
+        // land here as a plain teacher with no code ever asked — same v1 gate
+        // as /register, checked before any row is written. No roster code is
+        // asked for here either anymore — see the matching change in
+        // /register; claiming happens afterwards through POST /auth/claim.
+        const role: "teacher" | ClaimRole =
+          rawRole === "student" || rawRole === "parent" ? rawRole : "teacher";
+
+        if (role !== "teacher" && !studentAccountsEnabled()) {
+          res.status(403).json({
+            code: "student_accounts_disabled",
+            error: "Parent and student accounts are not available yet.",
+          });
+          return;
+        }
+
+        isNewAccount = true;
+        [user] = await db
+          .insert(users)
+          .values({
+            firstName: payload.given_name?.trim() || email.split("@")[0],
+            lastName: payload.family_name?.trim() || "",
+            email,
+            googleId: payload.sub,
+            role,
+            preferredLanguage: "en",
+            emailVerified: true,
+          })
+          .returning();
+      }
     }
 
     if (!user) throw new Error("Failed to resolve Google user");
@@ -527,6 +1047,13 @@ router.post("/google", googleLimiter, async (req, res) => {
     const { accessToken, refreshTokenValue } = generateTokens(user.id, user.email, user.role);
     await storeRefreshToken(user.id, refreshTokenValue);
 
+    const hasRosterLink =
+      user.role !== "student" && user.role !== "parent"
+        ? undefined
+        : isNewAccount
+          ? false
+          : await hasAnyRosterLink(user.id);
+
     res.json({
       accessToken,
       refreshToken: refreshTokenValue,
@@ -537,8 +1064,10 @@ router.post("/google", googleLimiter, async (req, res) => {
         email: user.email,
         role: user.role,
         preferredLanguage: user.preferredLanguage,
+        avatarUrl: avatarUrlFor(user.avatarKey),
         createdAt: user.createdAt,
         lastLogin: user.lastLogin,
+        ...(hasRosterLink === undefined ? {} : { hasRosterLink }),
       },
     });
   } catch (err: any) {
@@ -637,6 +1166,15 @@ router.get("/me", authMiddleware, async (req: AuthenticatedRequest, res) => {
       return;
     }
 
+    // The mobile app's routing gate reads this to decide whether a
+    // parent/student may reach the tabs yet, on every boot and refresh — not
+    // just right after signup — so it has to be answered here, not only at
+    // login/register/google.
+    const hasRosterLink =
+      user.role === "student" || user.role === "parent"
+        ? await hasAnyRosterLink(user.id)
+        : undefined;
+
     res.json({
       id: user.id,
       firstName: user.firstName,
@@ -644,6 +1182,7 @@ router.get("/me", authMiddleware, async (req: AuthenticatedRequest, res) => {
       email: user.email,
       role: user.role,
       preferredLanguage: user.preferredLanguage,
+      avatarUrl: avatarUrlFor(user.avatarKey),
       emailVerified: user.emailVerified,
       // Which proof `DELETE /auth/users/me` will accept from this account: a
       // password, or — for a Google-only account, which has no hash to check
@@ -660,6 +1199,7 @@ router.get("/me", authMiddleware, async (req: AuthenticatedRequest, res) => {
       rosterConsentVersion: user.rosterConsentVersion,
       createdAt: user.createdAt,
       lastLogin: user.lastLogin,
+      ...(hasRosterLink === undefined ? {} : { hasRosterLink }),
     });
   } catch (err) {
     logger.error({ err }, "get profile failed");
@@ -699,11 +1239,96 @@ router.patch("/users/profile", authMiddleware, async (req: AuthenticatedRequest,
       email: updated.email,
       role: updated.role,
       preferredLanguage: updated.preferredLanguage,
+      avatarUrl: avatarUrlFor(updated.avatarKey),
       createdAt: updated.createdAt,
     });
   } catch (err) {
     logger.error({ err }, "update profile failed");
     res.status(500).json({ error: "Failed to update profile" });
+  }
+});
+
+function fail503Avatar(res: Parameters<Parameters<typeof router.post>[1]>[1]): void {
+  res.status(503).json({
+    code: "avatar_unavailable",
+    error: "Profile pictures are not set up on this server yet.",
+  });
+}
+
+// POST /users/avatar — set or replace the caller's own profile picture.
+router.post("/users/avatar", authMiddleware, async (req: AuthenticatedRequest, res) => {
+  try {
+    if (!isPublicR2Configured()) {
+      fail503Avatar(res);
+      return;
+    }
+
+    const dataUrl = typeof req.body?.dataUrl === "string" ? req.body.dataUrl : "";
+    if (dataUrl.length > MAX_AVATAR_DATA_URL_LENGTH) {
+      res.status(413).json({
+        error: "That photo is too large. Try a different one.",
+        code: "file_too_large",
+      });
+      return;
+    }
+    const parsed = parseDataUrl(dataUrl);
+    if (!parsed) {
+      res.status(400).json({ error: "dataUrl must be a data: URL", code: "bad_data_url" });
+      return;
+    }
+    const extension = extensionForAvatarMime(parsed.mime);
+    if (!extension) {
+      res.status(400).json({ error: `Unsupported image type: ${parsed.mime}`, code: "unsupported_type" });
+      return;
+    }
+
+    const [existing] = await db.select().from(users).where(eq(users.id, req.user!.id));
+    if (!existing) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    const key = newAvatarKey(extension);
+    await putPublicObject(key, parsed.buffer, parsed.mime);
+
+    const [updated] = await db
+      .update(users)
+      .set({ avatarKey: key })
+      .where(eq(users.id, req.user!.id))
+      .returning();
+
+    // Old object is orphaned otherwise — deleted only after the new one is
+    // safely written and recorded, so a mid-request failure never leaves a
+    // user with no photo at all.
+    if (existing.avatarKey && existing.avatarKey !== key) {
+      await deletePublicObject(existing.avatarKey);
+    }
+
+    res.json({ avatarUrl: avatarUrlFor(updated!.avatarKey) });
+  } catch (err) {
+    logger.error({ err }, "avatar upload failed");
+    res.status(500).json({ error: "Failed to update profile picture" });
+  }
+});
+
+// DELETE /users/avatar — revert the caller's own profile picture to initials.
+router.delete("/users/avatar", authMiddleware, async (req: AuthenticatedRequest, res) => {
+  try {
+    const [existing] = await db.select().from(users).where(eq(users.id, req.user!.id));
+    if (!existing) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    if (existing.avatarKey) {
+      await deletePublicObject(existing.avatarKey);
+      await db.update(users).set({ avatarKey: null }).where(eq(users.id, req.user!.id));
+    }
+
+    res.json({ avatarUrl: null });
+  } catch (err) {
+    logger.error({ err }, "avatar removal failed");
+    res.status(500).json({ error: "Failed to remove profile picture" });
   }
 });
 

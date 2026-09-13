@@ -19,6 +19,10 @@ export * from './blooms.ts';
 export * from './objectives.ts';
 export * from './sources.ts';
 export * from './bank.ts';
+// Safe here, unlike `passages.ts`: this manifest is metadata — ids, licences,
+// credits, R2 keys — not content. The ingested bytes live in R2, so nothing
+// here grows with the size of the library.
+export * from './external.ts';
 // `passages.ts` is NOT re-exported. It reads the ~2.1 MB extracted corpus from
 // disk with node:fs; the mobile app imports this package, so exporting it here
 // would eventually put the whole corpus in a phone bundle. Server-side callers

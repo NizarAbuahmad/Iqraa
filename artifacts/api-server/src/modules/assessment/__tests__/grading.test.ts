@@ -200,15 +200,102 @@ describe("fill-in-the-blank grading", () => {
   });
 });
 
+describe("read-aloud grading", () => {
+  const PASSAGE = "The power of appearance is greater than most people think today.";
+  const q: QuestionDraft = {
+    type: "read_aloud",
+    body: { passage: PASSAGE, maxSeconds: 60 },
+    expectedAnswer: {},
+  };
+  const readAloud = QUESTION_TYPES.read_aloud;
+
+  it("marks a faithful reading correct", () => {
+    const r = readAloud.grade!(q, { audioKey: "k", transcript: PASSAGE });
+    assert.equal(r.status, "correct");
+    assert.equal(r.fraction, 1);
+  });
+
+  it("separates no recording from a recording of silence", () => {
+    // Different diagnoses: one is a student who did not attempt the question,
+    // the other is usually a broken microphone. A teacher needs to tell them
+    // apart, so silence is an attempt that earned nothing, not "unanswered".
+    assert.equal(readAloud.grade!(q, {}).status, "unanswered");
+    assert.equal(readAloud.grade!(q, { audioKey: "k", transcript: "" }).status, "incorrect");
+  });
+
+  it("says how it marked, in words a teacher can check", () => {
+    const r = readAloud.grade!(q, { audioKey: "k", transcript: "The power of appearance is smaller than most people think today." });
+    assert.match(r.detail ?? "", /\d+% of 11 words matched \(1 error\)/);
+  });
+
+  it("does not hand marks to a recording of the wrong thing", () => {
+    const r = readAloud.grade!(q, { audioKey: "k", transcript: "bananas and other unrelated words entirely" });
+    assert.ok(r.fraction < 0.2, `expected a low score, got ${r.fraction}`);
+  });
+
+  it("shows the student the passage and nothing else", () => {
+    const shown = readAloud.sanitizeForStudent(q);
+    assert.equal(shown["passage"], PASSAGE);
+    assert.deepEqual(Object.keys(shown).sort(), ["maxSeconds", "passage"]);
+  });
+
+  it("rejects a question whose passage is missing or unreadably short", () => {
+    assert.match(readAloud.validate({ ...q, body: {} }).join("\n"), /Passage is empty/);
+    assert.match(readAloud.validate({ ...q, body: { passage: "Too short." } }).join("\n"), /minimum/);
+  });
+
+  it("refuses an answer key, because the passage is the key", () => {
+    // Anything parked in expectedAnswer either duplicates the passage and
+    // drifts from what the student was shown, or is a key that has no business
+    // existing for this type.
+    const errors = readAloud.validate({ ...q, expectedAnswer: { modelAnswer: PASSAGE } });
+    assert.match(errors.join("\n"), /expectedAnswer must be empty/);
+  });
+});
+
 describe("what may be auto-marked at all", () => {
+  /**
+   * Types that mark themselves, because the answer is knowable without a
+   * judgement. `read_aloud` belongs here despite being an open response: the
+   * passage is printed on the student's screen, so word accuracy against it is
+   * a measurement.
+   */
+  const SELF_MARKING = [
+    "multiple_choice",
+    "true_false",
+    "matching",
+    "fill_blank",
+    "read_aloud",
+  ] as const;
+
+  /**
+   * Types that need a rubric grader or a teacher. The absence of `grade()` is
+   * the signal; a caller that defaulted them to zero would report a level
+   * built on questions nobody marked.
+   */
+  const NEEDS_JUDGEMENT = [
+    "short_answer",
+    "open_ended",
+    "problem_solving",
+    "practical_task",
+  ] as const;
+
+  it("classifies every registered type as one or the other", () => {
+    // The lists used to be two hardcoded sets that did not have to add up to
+    // the registry, so a new type was covered by neither and this suite went
+    // quietly incomplete — which is what happened when `read_aloud` landed.
+    assert.deepEqual(
+      [...SELF_MARKING, ...NEEDS_JUDGEMENT].sort(),
+      Object.keys(QUESTION_TYPES).sort(),
+      "a new question type must be classified here as self-marking or not",
+    );
+  });
+
   it("exposes grade() only where marking is not a judgement call", () => {
-    for (const type of ["multiple_choice", "true_false", "matching", "fill_blank"] as const) {
+    for (const type of SELF_MARKING) {
       assert.ok(QUESTION_TYPES[type].grade, `${type} must be auto-markable`);
     }
-    // These need a rubric grader or a teacher. Their absence is the signal;
-    // a caller that defaulted them to zero would report a level built on
-    // questions nobody marked.
-    for (const type of ["short_answer", "open_ended", "problem_solving", "practical_task"] as const) {
+    for (const type of NEEDS_JUDGEMENT) {
       assert.equal(QUESTION_TYPES[type].grade, undefined, `${type} must not self-mark`);
     }
   });

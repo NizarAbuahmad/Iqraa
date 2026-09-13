@@ -40,6 +40,17 @@ describe('isAnswered', () => {
     assert.equal(isAnswered({ blanks: ['', '  '] }), false);
   });
 
+  it('counts a recording, even one that transcribed to nothing', () => {
+    // The recording is the answer, so `audioKey` is what counts — not the
+    // transcript. A student whose microphone produced silence has still
+    // answered, and marking that question untouched would send them back to
+    // re-record something the server already accepted and paid to transcribe.
+    assert.equal(isAnswered({ audioKey: 'attempt-audio/x.webm', transcript: 'hello' }), true);
+    assert.equal(isAnswered({ audioKey: 'attempt-audio/x.webm', transcript: '' }), true);
+    assert.equal(isAnswered({ audioKey: '' }), false);
+    assert.equal(isAnswered({ transcript: 'heard something' }), false);
+  });
+
   it('is unanswered for a shape it does not recognise', () => {
     // Fail closed: warning a student about a question they did answer is a
     // smaller harm than letting them hand in one they missed.

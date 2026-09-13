@@ -18,6 +18,12 @@ export function isAnswered(response: StudentResponse | undefined): boolean {
   if (Array.isArray(response['blanks'])) {
     return (response['blanks'] as unknown[]).some(b => typeof b === 'string' && b.trim());
   }
+  // A read-aloud answer is the recording, keyed by `audioKey`. Deliberately not
+  // the transcript: a student who recorded silence, or whose microphone failed,
+  // has an empty transcript but has certainly answered — and the review dots
+  // showing that question as untouched would send them back to re-record
+  // something the server has already accepted and charged for.
+  if (typeof response['audioKey'] === 'string') return response['audioKey'].length > 0;
   return false;
 }
 

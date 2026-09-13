@@ -39,6 +39,35 @@ import earthS1 from '../../../knowledge-base/grade-10-earth-science/figures/eart
 import earthS2 from '../../../knowledge-base/grade-10-earth-science/figures/earth-s2-student-book/index.json' with { type: 'json' };
 import engS1 from '../../../knowledge-base/grade-10-english/figures/eng-s1-student-book/index.json' with { type: 'json' };
 import engS2 from '../../../knowledge-base/grade-10-english/figures/eng-s2-student-book/index.json' with { type: 'json' };
+import g9PhysS1 from '../../../knowledge-base/grade-9-physics/figures/g9-physics-s1-student-book/index.json' with { type: 'json' };
+import g9PhysS2 from '../../../knowledge-base/grade-9-physics/figures/g9-physics-s2-student-book/index.json' with { type: 'json' };
+import g9ChemS1 from '../../../knowledge-base/grade-9-chemistry/figures/g9-chemistry-s1-student-book/index.json' with { type: 'json' };
+import g9ChemS2 from '../../../knowledge-base/grade-9-chemistry/figures/g9-chemistry-s2-student-book/index.json' with { type: 'json' };
+import g9BioS1 from '../../../knowledge-base/grade-9-biology/figures/g9-biology-s1-student-book/index.json' with { type: 'json' };
+import g9BioS2 from '../../../knowledge-base/grade-9-biology/figures/g9-biology-s2-student-book/index.json' with { type: 'json' };
+import g9EarthS1 from '../../../knowledge-base/grade-9-earth-science/figures/g9-earth-science-s1-student-book/index.json' with { type: 'json' };
+import g9EarthS2 from '../../../knowledge-base/grade-9-earth-science/figures/g9-earth-science-s2-student-book/index.json' with { type: 'json' };
+import histS1 from '../../../knowledge-base/grade-10-history/figures/history-s1-student-book/index.json' with { type: 'json' };
+import geoS1 from '../../../knowledge-base/grade-10-geography/figures/geo-s1-student-book/index.json' with { type: 'json' };
+import g9HistS1 from '../../../knowledge-base/grade-9-history/figures/g9-history-s1-student-book/index.json' with { type: 'json' };
+import g9GeoS1 from '../../../knowledge-base/grade-9-geography/figures/g9-geography-s1-student-book/index.json' with { type: 'json' };
+import histS2 from '../../../knowledge-base/grade-10-history/figures/history-s2-student-book/index.json' with { type: 'json' };
+import geoS2 from '../../../knowledge-base/grade-10-geography/figures/geo-s2-student-book/index.json' with { type: 'json' };
+import g9GeoS2 from '../../../knowledge-base/grade-9-geography/figures/g9-geography-s2-student-book/index.json' with { type: 'json' };
+import g8SciS1 from '../../../knowledge-base/grade-8-science/figures/g8-science-s1-student-book/index.json' with { type: 'json' };
+import g8MathS1 from '../../../knowledge-base/grade-8-math/figures/g8-math-s1-student-book/index.json' with { type: 'json' };
+import g8MathS2 from '../../../knowledge-base/grade-8-math/figures/g8-math-s2-student-book/index.json' with { type: 'json' };
+import g9EngS1 from '../../../knowledge-base/grade-9-english/figures/g9-english-s1-student-book/index.json' with { type: 'json' };
+import g9EngS2 from '../../../knowledge-base/grade-9-english/figures/g9-english-s2-student-book/index.json' with { type: 'json' };
+import g8EngS1 from '../../../knowledge-base/grade-8-english/figures/g8-english-s1-student-book/index.json' with { type: 'json' };
+import g8EngS2 from '../../../knowledge-base/grade-8-english/figures/g8-english-s2-student-book/index.json' with { type: 'json' };
+import g7EngS1 from '../../../knowledge-base/grade-7-english/figures/g7-english-s1-student-book/index.json' with { type: 'json' };
+import g7EngS2 from '../../../knowledge-base/grade-7-english/figures/g7-english-s2-student-book/index.json' with { type: 'json' };
+import g6SciS1 from '../../../knowledge-base/grade-6-science/figures/g6-science-s1-student-book/index.json' with { type: 'json' };
+import g6SciS2 from '../../../knowledge-base/grade-6-science/figures/g6-science-s2-student-book/index.json' with { type: 'json' };
+import g8FinlitS1 from '../../../knowledge-base/grade-8-finlit/figures/g8-finlit-s1-student-book/index.json' with { type: 'json' };
+import g8SocialS1 from '../../../knowledge-base/grade-8-social/figures/g8-social-s1-student-book/index.json' with { type: 'json' };
+import g8SocialS2 from '../../../knowledge-base/grade-8-social/figures/g8-social-s2-student-book/index.json' with { type: 'json' };
 
 export type BookFigure = {
   /** File name inside the book's figure directory, e.g. `p021.png`. */
@@ -82,6 +111,35 @@ const INDEXES: { sourceId: string; figures: BookFigure[] }[] = [
   earthS2 as { sourceId: string; figures: BookFigure[] },
   engS1 as { sourceId: string; figures: BookFigure[] },
   engS2 as { sourceId: string; figures: BookFigure[] },
+  g9PhysS1 as { sourceId: string; figures: BookFigure[] },
+  g9PhysS2 as { sourceId: string; figures: BookFigure[] },
+  g9ChemS1 as { sourceId: string; figures: BookFigure[] },
+  g9ChemS2 as { sourceId: string; figures: BookFigure[] },
+  g9BioS1 as { sourceId: string; figures: BookFigure[] },
+  g9BioS2 as { sourceId: string; figures: BookFigure[] },
+  g9EarthS1 as { sourceId: string; figures: BookFigure[] },
+  g9EarthS2 as { sourceId: string; figures: BookFigure[] },
+  histS1 as { sourceId: string; figures: BookFigure[] },
+  geoS1 as { sourceId: string; figures: BookFigure[] },
+  g9HistS1 as { sourceId: string; figures: BookFigure[] },
+  g9GeoS1 as { sourceId: string; figures: BookFigure[] },
+  histS2 as { sourceId: string; figures: BookFigure[] },
+  geoS2 as { sourceId: string; figures: BookFigure[] },
+  g9GeoS2 as { sourceId: string; figures: BookFigure[] },
+  g8SciS1 as { sourceId: string; figures: BookFigure[] },
+  g8MathS1 as { sourceId: string; figures: BookFigure[] },
+  g8MathS2 as { sourceId: string; figures: BookFigure[] },
+  g9EngS1 as { sourceId: string; figures: BookFigure[] },
+  g9EngS2 as { sourceId: string; figures: BookFigure[] },
+  g8EngS1 as { sourceId: string; figures: BookFigure[] },
+  g8EngS2 as { sourceId: string; figures: BookFigure[] },
+  g7EngS1 as { sourceId: string; figures: BookFigure[] },
+  g7EngS2 as { sourceId: string; figures: BookFigure[] },
+  g6SciS1 as { sourceId: string; figures: BookFigure[] },
+  g6SciS2 as { sourceId: string; figures: BookFigure[] },
+  g8FinlitS1 as { sourceId: string; figures: BookFigure[] },
+  g8SocialS1 as { sourceId: string; figures: BookFigure[] },
+  g8SocialS2 as { sourceId: string; figures: BookFigure[] },
 ];
 
 /** `sourceId|unit|lesson`, the only key both files share. */

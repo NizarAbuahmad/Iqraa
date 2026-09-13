@@ -6,13 +6,18 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import {
   getLessonById,
   isBrowserLessonTitleOnly,
 } from '@/services/curriculumData';
 import { LessonPrepPanel } from '@/components/ui/LessonPrepPanel';
+import { LessonMediaPanel } from '@/components/ui/LessonMediaPanel';
+import { ReadAloudPracticePanel } from '@/components/ui/ReadAloudPracticePanel';
 import { LessonShelfPanel } from '@/components/ui/LessonShelfPanel';
 import { askAboutLessonHandoff } from '@/services/lessonShelf';
+import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
+import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
 
 const BLOOMS_COLORS: Record<string, string> = {
   Remember: '#6366F1',
@@ -27,6 +32,8 @@ export default function LessonDetailScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
+  const { user } = useAuth();
+  const isTeacher = isTeacherRole(user?.role);
   const { lessonId, subjectColor, openLessonPlan } = useLocalSearchParams<{
     lessonId: string;
     subjectColor: string;
@@ -102,7 +109,22 @@ export default function LessonDetailScreen() {
       </View>
 
       <View style={styles.body}>
-        {/* Action buttons row */}
+        {/*
+          Teacher-only, and not merely cosmetically.
+
+          A student can reach this page — `/curriculum` is on the non-teacher
+          allowlist — and both buttons were shown to every role. «حضّر» runs
+          generation, which the server refuses without a teacher role; but
+          `RemoteAIService` falls back to `MockAIService` on failure, and its own
+          header says mock output "is indistinguishable from a real answer by
+          inspection: it is a well-formed Arabic lesson plan either way". So a
+          student did not get a 403 — they got a fabricated lesson plan. "Ask
+          iQra" pushes `/(tabs)/iqra`, which the route guard bounces.
+
+          Gated here rather than in `routeGating`: allowlisting the iQra tab
+          would hand students the teacher chat, which is the opposite of the fix.
+        */}
+        {isTeacher ? (
         <View style={[styles.actionRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <Pressable
             onPress={() => {
@@ -138,14 +160,49 @@ export default function LessonDetailScreen() {
             </Text>
           </Pressable>
         </View>
+        ) : null}
 
-        {/* Preparation — in place, on the lesson it belongs to */}
-        {prepOpen ? <LessonPrepPanel lessonId={lesson.id} accent={color} /> : null}
+        {/* Preparation — in place, on the lesson it belongs to. Teacher-only
+            for the same reason as the button that opens it. */}
+        {isTeacher && prepOpen ? <LessonPrepPanel lessonId={lesson.id} accent={color} /> : null}
 
         {/* What the library actually holds for this lesson. Above the
             curriculum sections because a teacher preparing tomorrow wants the
             worksheets before they want the Bloom's levels. */}
         <LessonShelfPanel lessonId={lesson.id} accent={color} />
+
+        {/* Curated video and images, played and shown in place rather than
+            linked. Below the shelf, which lists everything including these:
+            the shelf answers "what is there", this answers "show me". Renders
+            nothing when the lesson has no curated media, which is most of
+            them until the library is curated. */}
+        <LessonMediaPanel lessonId={lesson.id} accent={color} />
+
+        {/* The book's own diagrams for this lesson.
+
+            These were already bundled and already resolved — `BookFiguresPanel`
+            has been rendering them on six teacher screens and inside the exam a
+            student sits since `bookFigureAssets.ts` landed. They were never on
+            the page a student reads while studying, which is the one place a
+            diagram from their own book is most obviously wanted. 249 lessons
+            have them; the panel returns null for the rest.
+
+            Its own note key is exam-worded («الدروس التي يغطّيها هذا الاختبار»),
+            so this passes a lesson-page one instead of reusing a sentence that
+            would name an exam that does not exist here. */}
+        <View style={{ paddingHorizontal: 20 }}>
+          <BookFiguresPanel
+            figures={bookFigureRefsForLesson(lesson.id, lang === 'ar')}
+            isRTL={isRTL}
+            colors={colors}
+            labels={{ title: t('bookFiguresTitle'), note: t('bookFiguresLessonNote') }}
+          />
+        </View>
+
+        {/* The one thing on this page built for a student rather than a
+            teacher. Renders nothing when the lesson has no curated passage,
+            which is most of them until the library is filled. */}
+        <ReadAloudPracticePanel lessonId={lesson.id} accent={color} />
 
         {/* Objectives */}
         <Section title={t('learningObjectives')} icon="checkmark-circle-outline" color={color} isRTL={isRTL}>
