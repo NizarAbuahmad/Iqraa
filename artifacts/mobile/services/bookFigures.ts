@@ -55,6 +55,8 @@ import histS2 from '../../../knowledge-base/grade-10-history/figures/history-s2-
 import geoS2 from '../../../knowledge-base/grade-10-geography/figures/geo-s2-student-book/index.json' with { type: 'json' };
 import g9GeoS2 from '../../../knowledge-base/grade-9-geography/figures/g9-geography-s2-student-book/index.json' with { type: 'json' };
 import g8SciS1 from '../../../knowledge-base/grade-8-science/figures/g8-science-s1-student-book/index.json' with { type: 'json' };
+import g8MathS1 from '../../../knowledge-base/grade-8-math/figures/g8-math-s1-student-book/index.json' with { type: 'json' };
+import g8MathS2 from '../../../knowledge-base/grade-8-math/figures/g8-math-s2-student-book/index.json' with { type: 'json' };
 
 export type BookFigure = {
   /** File name inside the book's figure directory, e.g. `p021.png`. */
@@ -114,6 +116,8 @@ const INDEXES: { sourceId: string; figures: BookFigure[] }[] = [
   geoS2 as { sourceId: string; figures: BookFigure[] },
   g9GeoS2 as { sourceId: string; figures: BookFigure[] },
   g8SciS1 as { sourceId: string; figures: BookFigure[] },
+  g8MathS1 as { sourceId: string; figures: BookFigure[] },
+  g8MathS2 as { sourceId: string; figures: BookFigure[] },
 ];
 
 /** `sourceId|unit|lesson`, the only key both files share. */

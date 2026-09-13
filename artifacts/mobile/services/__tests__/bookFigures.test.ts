@@ -108,6 +108,7 @@ describe('figuresForLesson', () => {
       // here — but note neither can be derived by splitting on '-s', which
       // lands inside '-science'.
       'g8-science': 'g8-science',
+      'g8-math': 'g8-math',
     };
 
     for (const id of lessonsWithFigures()) {

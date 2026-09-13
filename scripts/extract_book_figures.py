@@ -314,6 +314,14 @@ BOOKS: dict[str, tuple[str, str]] = {
     # One book covers all of science at this grade rather than splitting into
     # physics/chemistry/biology, so its units run 1-9 across the year: 1-4 in
     # semester 1 and 5-9 in semester 2.
+    "g8-math-s1-student-book": (
+        "grade-8-math",
+        MIRROR_G8 + "Math/كتاب الطالب لمادة الرياضيات الصف الثامن الفصل الأول.pdf",
+    ),
+    "g8-math-s2-student-book": (
+        "grade-8-math",
+        MIRROR_G8 + "Math/كتاب الطالب لمادة الرياضيات الصف الثامن الفصل الثاني.pdf",
+    ),
     "g8-science-s1-student-book": (
         "grade-8-science",
         MIRROR_G8 + "العلوم/كتاب الطالب لمادة العلوم الصف الثامن الفصل الأول.pdf",
@@ -436,6 +444,12 @@ PREFER_CARD_BOUNDARY: set[str] = {
 class OpenerProfile(NamedTuple):
     dars_size: float
     dars_top: float
+    # True when the book emits «الدرس» FUSED to the lesson title in one span —
+    # «الدرسُالنسبةُ المئويّة» — so an equality test cannot see it. Off by
+    # default: `startswith` is a superset of the exact match every other book
+    # is already matched by, and widening it globally would let a heading like
+    # «الدرسُ السابق» in the top band pass for an opener.
+    dars_prefix: bool
     number_size: float
     number_top: float
     number_parenthesised: bool
@@ -444,16 +458,29 @@ class OpenerProfile(NamedTuple):
 
 
 DEFAULT_OPENER = OpenerProfile(
-    dars_size=20, dars_top=90,
+    dars_size=20, dars_top=90, dars_prefix=False,
     number_size=40, number_top=65, number_parenthesised=False,
     title_size=24, title_top=60,
 )
 ISLAMIC_OPENER = OpenerProfile(
-    dars_size=15, dars_top=90,
+    dars_size=15, dars_top=90, dars_prefix=False,
     number_size=15, number_top=95, number_parenthesised=True,
     title_size=20, title_top=95,
 )
+# Grade 8 maths prints the maths layout at a smaller point size, and ONLY the
+# sizes differ — measured 2026-09-12: «الدرس» 17.0pt at y=42-48 (default wants
+# >= 20), its Arabic title 17.0pt in the same band (default wants >= 24), and a
+# 50pt bare lesson number at y=17 that the default already accepts. So this is
+# two numbers, not a layout: the tight `number_*` gate is what still tells an
+# opener from a page that merely says the word, and it is left untouched.
+G8_MATH_OPENER = OpenerProfile(
+    dars_size=16, dars_top=90, dars_prefix=True,
+    number_size=40, number_top=65, number_parenthesised=False,
+    title_size=16, title_top=60,
+)
 OPENER_PROFILES: dict[str, OpenerProfile] = {
+    "g8-math-s1-student-book": G8_MATH_OPENER,
+    "g8-math-s2-student-book": G8_MATH_OPENER,
     "islamic-s1-student-book": ISLAMIC_OPENER,
     "islamic-s2-student-book": ISLAMIC_OPENER,
     "g9-islamic-s1-student-book": ISLAMIC_OPENER,
@@ -549,9 +576,10 @@ def lesson_start(page: pymupdf.Page, profile: OpenerProfile = DEFAULT_OPENER) ->
     """
     if not any(
         _bare(s["text"]) == "\u0627\u0644\u062F\u0631\u0633"
-        and s["size"] >= profile.dars_size
-        and s["bbox"][1] < profile.dars_top
+        if not profile.dars_prefix
+        else _bare(s["text"]).startswith("الدرس")
         for s in _spans(page)
+        if s["size"] >= profile.dars_size and s["bbox"][1] < profile.dars_top
     ):
         return None
     number = None
